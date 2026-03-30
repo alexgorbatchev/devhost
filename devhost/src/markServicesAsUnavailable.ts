@@ -1,11 +1,10 @@
-import { DEVHOST_SERVICE_NAME } from "./devtools/constants";
 import type { ServiceHealth } from "./devtools/types";
 
-export function markServicesAsUnavailable(services: ServiceHealth[]): ServiceHealth[] {
+export function markServicesAsUnavailable(services: ServiceHealth[], fallbackServiceName: string): ServiceHealth[] {
   if (services.length === 0) {
     return [
       {
-        name: DEVHOST_SERVICE_NAME,
+        name: fallbackServiceName,
         status: false,
       },
     ];

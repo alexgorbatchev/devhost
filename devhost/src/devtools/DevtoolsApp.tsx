@@ -1,7 +1,10 @@
 import type { JSX } from "preact";
 
+import type { DevtoolsPosition } from "../stackTypes";
 import { DEVTOOLS_ROOT_ID } from "./constants";
 import { getDevtoolsTheme, type IDevtoolsTheme } from "./devtoolsTheme";
+import { readDevtoolsPosition } from "./readDevtoolsPosition";
+import { selectVisibleServices } from "../selectVisibleServices";
 import type { ServiceHealth } from "./types";
 import { useResolvedColorScheme } from "./useResolvedColorScheme";
 import { useServiceHealth } from "./useServiceHealth";
@@ -9,9 +12,11 @@ import { useServiceHealth } from "./useServiceHealth";
 export function DevtoolsApp(): JSX.Element | null {
   const colorScheme = useResolvedColorScheme();
   const devtoolsTheme: IDevtoolsTheme = getDevtoolsTheme(colorScheme);
+  const devtoolsPosition: DevtoolsPosition = readDevtoolsPosition();
   const { errorMessage, services } = useServiceHealth();
+  const visibleServices: ServiceHealth[] = selectVisibleServices(services);
 
-  if (errorMessage === null && services.length === 0) {
+  if (errorMessage === null && visibleServices.length === 0) {
     return null;
   }
 
@@ -19,13 +24,13 @@ export function DevtoolsApp(): JSX.Element | null {
     <section
       id={DEVTOOLS_ROOT_ID}
       aria-label="devhost services"
-      style={createPanelStyle(devtoolsTheme)}
+      style={createPanelStyle(devtoolsTheme, devtoolsPosition)}
       data-testid="DevtoolsApp"
     >
       {errorMessage !== null ? <div style={createErrorStyle(devtoolsTheme)}>{errorMessage}</div> : null}
-      {services.length > 0 ? (
+      {visibleServices.length > 0 ? (
         <ul style={listStyle} data-testid="DevtoolsApp--service-list">
-          {services.map((service: ServiceHealth) => {
+          {visibleServices.map((service: ServiceHealth) => {
             return (
               <li key={service.name} style={rowStyle}>
                 <span aria-hidden="true" style={createStatusDotStyle(service.status, devtoolsTheme)} />
@@ -53,15 +58,24 @@ const rowStyle: JSX.CSSProperties = {
   gap: "6px",
 };
 
-function createPanelStyle(devtoolsTheme: IDevtoolsTheme): JSX.CSSProperties {
+function createPanelStyle(devtoolsTheme: IDevtoolsTheme, devtoolsPosition: DevtoolsPosition): JSX.CSSProperties {
+  const verticalPositionStyle: JSX.CSSProperties =
+    devtoolsPosition === "top-left" || devtoolsPosition === "top-right"
+      ? { top: devtoolsTheme.spacing.sm }
+      : { bottom: devtoolsTheme.spacing.sm };
+  const horizontalPositionStyle: JSX.CSSProperties =
+    devtoolsPosition === "top-left" || devtoolsPosition === "bottom-left"
+      ? { left: devtoolsTheme.spacing.sm }
+      : { right: devtoolsTheme.spacing.sm };
+
   return {
+    ...verticalPositionStyle,
+    ...horizontalPositionStyle,
     position: "fixed",
-    right: devtoolsTheme.spacing.lg,
-    bottom: devtoolsTheme.spacing.lg,
     zIndex: devtoolsTheme.zIndices.floating,
     width: "fit-content",
-    maxWidth: "calc(100vw - 32px)",
-    padding: devtoolsTheme.spacing.sm,
+    maxWidth: "calc(100vw - 20px)",
+    padding: `${devtoolsTheme.spacing.xxs} ${devtoolsTheme.spacing.xs}`,
     border: `1px solid ${devtoolsTheme.colors.border}`,
     borderRadius: devtoolsTheme.radii.md,
     background: devtoolsTheme.colors.background,

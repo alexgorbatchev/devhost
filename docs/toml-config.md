@@ -75,11 +75,16 @@ The root manifest defines:
 - stack metadata
 - the primary service name
 - an optional `devtools` boolean
+- an optional `devtoolsPosition` corner selector
 - the full service map
 
 `devtools` is optional and defaults to `true`.
-When `devtools = true`, routed HTML documents go through the injector path and `/__devhost__/*` goes to the devtools control server.
+`devtoolsPosition` is optional and defaults to `"bottom-right"`.
+When `devtools = true`, routed HTML documents go through the injector path and
+`/__devhost__/*` goes to the devtools control server.
 When `devtools = false`, routed services proxy directly to the app.
+The injected devtools UI supports exactly these positions:
+`top-left`, `top-right`, `bottom-left`, `bottom-right`.
 
 `devhost` must run the whole graph in one parent process.
 `devhost` must not create a daemon in v1.
@@ -93,6 +98,7 @@ interface DevhostManifest {
   name: string;
   primaryService: string;
   devtools?: boolean;
+  devtoolsPosition?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
   services: Record<string, DevhostServiceConfig>;
 }
 
@@ -119,6 +125,7 @@ Example TOML:
 name = "hello-stack"
 primaryService = "web"
 devtools = true
+devtoolsPosition = "top-right"
 
 [services.web]
 command = ["bun", "run", "web:dev"]
@@ -159,6 +166,7 @@ interface ResolvedDevhostManifest {
   manifestPath: string;
   manifestDirectoryPath: string;
   devtools: boolean;
+  devtoolsPosition: "top-left" | "top-right" | "bottom-left" | "bottom-right";
   services: Record<string, ResolvedDevhostService>;
 }
 
@@ -186,12 +194,16 @@ type ResolvedHealthConfig =
 `devhost` must apply these defaults exactly:
 
 - `devtools` defaults to `true`.
+- `devtoolsPosition` defaults to `"bottom-right"`.
 - `cwd` defaults to the manifest directory.
 - `env` defaults to an empty object before parent-process environment merging.
 - `bindHost` defaults to `127.0.0.1`.
 - `dependsOn` defaults to `[]`.
-- If `port` is set to an integer and `health` is omitted, the effective health check becomes `{ kind: "tcp", host: bindHost, port }`.
-- If `port` is set to `"auto"`, `devhost` must allocate an available TCP port before spawning the service and the effective health check becomes `{ kind: "tcp", host: bindHost, port: <resolved port> }`.
+- If `port` is set to an integer and `health` is omitted, the effective health
+  check becomes `{ kind: "tcp", host: bindHost, port }`.
+- If `port` is set to `"auto"`, `devhost` must allocate an available TCP port
+  before spawning the service and the effective health check becomes
+  `{ kind: "tcp", host: bindHost, port: <resolved port> }`.
 - If `port` is not set and `health` is omitted, validation must fail.
 - `host` has no default.
 
@@ -464,6 +476,7 @@ This work is done only when all of the following are true:
 - existing single-service mode still works unchanged.
 - services with `port = "auto"` receive a unique injected `PORT` value before spawn.
 - root-level `devtools` defaults to `true` and can be set to `false`.
+- root-level `devtoolsPosition` defaults to `"bottom-right"` and controls the injected UI corner.
 - every routed service is reachable through Caddy only after its health check passes.
 - startup failure tears down all started services and removes all routes and reservations.
 - shutdown on `SIGINT` and `SIGTERM` removes all routes and reservations.

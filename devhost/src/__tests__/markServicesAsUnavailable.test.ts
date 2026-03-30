@@ -7,7 +7,7 @@ describe("markServicesAsUnavailable", () => {
     expect(
       markServicesAsUnavailable([
         {
-          name: "devhost",
+          name: "hello-stack",
           status: true,
         },
         {
@@ -18,10 +18,10 @@ describe("markServicesAsUnavailable", () => {
           name: "worker",
           status: false,
         },
-      ]),
+      ], "hello-stack"),
     ).toEqual([
       {
-        name: "devhost",
+        name: "hello-stack",
         status: false,
       },
       {
@@ -35,10 +35,10 @@ describe("markServicesAsUnavailable", () => {
     ]);
   });
 
-  test("falls back to a synthetic devhost entry when no services have been received yet", () => {
-    expect(markServicesAsUnavailable([])).toEqual([
+  test("falls back to the configured stack name when no services have been received yet", () => {
+    expect(markServicesAsUnavailable([], "hello-stack")).toEqual([
       {
-        name: "devhost",
+        name: "hello-stack",
         status: false,
       },
     ]);

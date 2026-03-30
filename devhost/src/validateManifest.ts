@@ -13,6 +13,8 @@ import type {
   IValidatedDevhostService,
 } from "./stackTypes";
 
+const devtoolsPositionSchema = z.enum(["top-left", "top-right", "bottom-left", "bottom-right"]);
+
 const nonEmptyStringSchema = z.string().refine((value: string): boolean => value.trim().length > 0, {
   message: "Expected a non-empty string.",
 });
@@ -37,6 +39,7 @@ const serviceSchema = z
 const manifestSchema = z
   .object({
     devtools: z.boolean().optional(),
+    devtoolsPosition: devtoolsPositionSchema.optional(),
     name: nonEmptyStringSchema,
     primaryService: nonEmptyStringSchema,
     services: z.record(z.string(), serviceSchema),
@@ -96,6 +99,7 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
 
   return {
     devtools: parsedManifest.devtools ?? true,
+    devtoolsPosition: parsedManifest.devtoolsPosition ?? "bottom-right",
     manifestDirectoryPath,
     manifestPath,
     name: parsedManifest.name,

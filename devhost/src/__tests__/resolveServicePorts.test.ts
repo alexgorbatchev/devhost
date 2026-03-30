@@ -15,6 +15,7 @@ describe("resolveServicePorts", () => {
     const manifest = validateManifest(getFixturePath("basic-stack", "devhost.toml"), await readFixtureToml("basic-stack", "devhost.toml"));
     const resolvedManifest: IResolvedDevhostManifest = await resolveServicePorts(manifest);
 
+    expect(resolvedManifest.devtoolsPosition).toBe("bottom-right");
     expect(typeof resolvedManifest.services.db.port).toBe("number");
     expect(resolvedManifest.services.db.portSource).toBe("auto");
     expect(resolvedManifest.services.db.health).toEqual({
@@ -51,6 +52,7 @@ describe("resolveServicePorts", () => {
   test("preserves explicit health checks and fixed ports", async () => {
     const manifest = validateManifest("/tmp/devhost.toml", {
       devtools: false,
+      devtoolsPosition: "top-left",
       name: "hello-stack",
       primaryService: "api",
       services: {
@@ -66,6 +68,7 @@ describe("resolveServicePorts", () => {
     const resolvedManifest: IResolvedDevhostManifest = await resolveServicePorts(manifest);
 
     expect(resolvedManifest.devtools).toBe(false);
+    expect(resolvedManifest.devtoolsPosition).toBe("top-left");
     expect(resolvedManifest.services.api.port).toBe(4000);
     expect(resolvedManifest.services.api.portSource).toBe("fixed");
     expect(resolvedManifest.services.api.health).toEqual({

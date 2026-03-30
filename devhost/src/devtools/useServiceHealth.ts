@@ -2,6 +2,7 @@ import { useEffect, useState } from "preact/hooks";
 
 import { markServicesAsUnavailable } from "../markServicesAsUnavailable";
 import { HEALTH_WEBSOCKET_PATH } from "./constants";
+import { readDevtoolsStackName } from "./readDevtoolsStackName";
 import type { HealthResponse, ServiceHealth } from "./types";
 
 const normalClosureCode: number = 1_000;
@@ -16,6 +17,7 @@ export function useServiceHealth(): IUseServiceHealthResult {
   const [services, setServices] = useState<ServiceHealth[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
+  const devtoolsStackName: string = readDevtoolsStackName();
 
   useEffect(() => {
     let websocket: WebSocket | null = null;
@@ -56,7 +58,7 @@ export function useServiceHealth(): IUseServiceHealthResult {
       }
 
       setServices((currentServices: ServiceHealth[]): ServiceHealth[] => {
-        return markServicesAsUnavailable(currentServices);
+        return markServicesAsUnavailable(currentServices, devtoolsStackName);
       });
       setErrorMessage(null);
     };
@@ -71,7 +73,7 @@ export function useServiceHealth(): IUseServiceHealthResult {
       isDisposed = true;
       websocket?.close(normalClosureCode, "devtools unmounted");
     };
-  }, []);
+  }, [devtoolsStackName]);
 
   return {
     errorMessage,

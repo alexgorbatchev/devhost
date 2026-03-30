@@ -11,10 +11,13 @@ export type DevhostHealthConfig =
 
 export type DevhostPortConfig = number | "auto";
 
+export type DevtoolsPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+
 export interface IDevhostManifest {
   name: string;
   primaryService: string;
   devtools?: boolean;
+  devtoolsPosition?: DevtoolsPosition;
   services: Record<string, IDevhostServiceConfig>;
 }
 
@@ -35,6 +38,7 @@ export interface IValidatedDevhostManifest {
   manifestPath: string;
   manifestDirectoryPath: string;
   devtools: boolean;
+  devtoolsPosition: DevtoolsPosition;
   services: Record<string, IValidatedDevhostService>;
 }
 
@@ -56,6 +60,7 @@ export interface IResolvedDevhostManifest {
   manifestPath: string;
   manifestDirectoryPath: string;
   devtools: boolean;
+  devtoolsPosition: DevtoolsPosition;
   services: Record<string, IResolvedDevhostService>;
 }
 

@@ -1,4 +1,3 @@
-import { DEVHOST_SERVICE_NAME } from "./devtools/constants";
 import type { HealthResponse, ServiceHealth } from "./devtools/types";
 import type { IResolvedDevhostService } from "./stackTypes";
 import { checkServiceHealth } from "./waitForServiceHealth";
@@ -14,6 +13,7 @@ export interface IManagedService {
 }
 
 export async function collectManagedServicesHealth(
+  devhostServiceName: string,
   managedServices: IResolvedDevhostService[],
   startedServices: IManagedService[],
 ): Promise<HealthResponse> {
@@ -45,7 +45,7 @@ export async function collectManagedServicesHealth(
   return {
     services: [
       {
-        name: DEVHOST_SERVICE_NAME,
+        name: devhostServiceName,
         status: true,
       },
       ...services,

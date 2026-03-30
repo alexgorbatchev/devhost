@@ -82,9 +82,11 @@ export async function startStack(
 
     if (manifest.devtools && routedServices.length > 0) {
       devtoolsControlServer = await startDevtoolsControlServer({
+        devtoolsPosition: manifest.devtoolsPosition,
         getHealthResponse: async () => {
-          return await collectManagedServicesHealth(managedServices, startedServices);
+          return await collectManagedServicesHealth(manifest.name, managedServices, startedServices);
         },
+        stackName: manifest.name,
       });
       await devtoolsControlServer.publishHealthResponse();
     }

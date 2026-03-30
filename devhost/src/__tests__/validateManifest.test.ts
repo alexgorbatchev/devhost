@@ -21,6 +21,7 @@ describe("validateManifest", () => {
     const manifest: IValidatedDevhostManifest = validateManifest(manifestPath, manifestValue);
 
     expect(manifest.devtools).toBe(true);
+    expect(manifest.devtoolsPosition).toBe("bottom-right");
     expect(manifest.services.web.bindHost).toBe("127.0.0.1");
     expect(manifest.services.web.cwd).toEndWith("basic-stack");
     expect(manifest.services.web.dependsOn).toEqual([]);
@@ -36,11 +37,28 @@ describe("validateManifest", () => {
     const manifest: IValidatedDevhostManifest = validateManifest(manifestPath, manifestValue);
 
     expect(manifest.devtools).toBe(true);
+    expect(manifest.devtoolsPosition).toBe("bottom-right");
     expect(manifest.primaryService).toBe("web");
     expect(manifest.services.db.port).toBe("auto");
     expect(manifest.services.api.health).toEqual({
       http: "http://127.0.0.1:4000/healthz",
     });
+  });
+
+  test("accepts an explicit devtools position", () => {
+    const manifest: IValidatedDevhostManifest = validateManifest("/tmp/devhost.toml", {
+      devtoolsPosition: "top-left",
+      name: "hello-stack",
+      primaryService: "web",
+      services: {
+        web: {
+          command: ["bun", "run", "dev"],
+          port: 3000,
+        },
+      },
+    });
+
+    expect(manifest.devtoolsPosition).toBe("top-left");
   });
 
   test("rejects syntactically invalid public hosts", async () => {

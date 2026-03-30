@@ -30,9 +30,11 @@ describe("startDevtoolsControlServer", () => {
       ],
     };
     const controlServer = await startDevtoolsControlServer({
+      devtoolsPosition: "top-left",
       getHealthResponse: async (): Promise<HealthResponse> => {
         return healthResponse;
       },
+      stackName: "hello-stack",
     });
 
     stopFunctions.push(controlServer.stop);

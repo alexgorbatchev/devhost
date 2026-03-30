@@ -87,6 +87,7 @@ Top-level fields:
 name = "hello-test-app"
 primaryService = "hello"
 devtools = true
+devtoolsPosition = "bottom-right"
 ```
 
 Example routed service:
@@ -118,6 +119,7 @@ Rules worth remembering:
 - `port = "auto"` is supported
 - `port = "auto"` must omit explicit `health` in v1
 - `devtools` defaults to `true`
+- `devtoolsPosition` defaults to `"bottom-right"`
 
 For the full contract, read `../docs/toml-config.md`.
 
@@ -166,12 +168,17 @@ Current control routes:
 - `/__devhost__/inject.js`
 - `/__devhost__/ws/health`
   - websocket stream of `{ services: [{ name, status }] }`
-  - always includes a `devhost` entry for the control process itself
+  - always includes an entry for the control process itself
+  - in manifest mode that entry uses the manifest `name`; in single-service mode it falls back to `devhost`
   - pushes updates when managed service status changes, including immediate process-exit updates
   - `status` is still derived from the managed service's configured health check
 
 The injected devtools UI now follows the host page's resolved `color-scheme` (`light` or `dark`).
 For best results, apps should expose theme changes through standard `color-scheme` behavior on the document root.
+Manifest mode also supports a root-level `devtoolsPosition` field with these values:
+`top-left`, `top-right`, `bottom-left`, `bottom-right`.
+When all services are healthy, the UI collapses to a single green row using the manifest `name`.
+When any service is unhealthy, the UI shows only the unhealthy services in red.
 
 If manifest `devtools = false`, devhost does not mount these control routes for that stack.
 

@@ -39,6 +39,7 @@ export interface IDevtoolsTheme {
     sm: string;
     xl: string;
     xs: string;
+    xxs: string;
   };
   zIndices: {
     floating: JSX.CSSProperties["zIndex"];
@@ -76,6 +77,7 @@ const sharedSpacing: IDevtoolsTheme["spacing"] = {
   sm: "10px",
   xl: "64px",
   xs: "8px",
+  xxs: "4px",
 };
 const sharedZIndices: IDevtoolsTheme["zIndices"] = {
   floating: 2147483647,
@@ -98,7 +100,7 @@ const lightDevtoolsTheme: IDevtoolsTheme = {
   fontSizes: sharedFontSizes,
   radii: sharedRadii,
   shadows: {
-    floating: "0 10px 30px rgba(15, 23, 42, 0.12)",
+    floating: "0px 5px 5px rgba(15, 23, 42, 0.12)",
   },
   spacing: sharedSpacing,
   zIndices: sharedZIndices,
@@ -121,7 +123,7 @@ const darkDevtoolsTheme: IDevtoolsTheme = {
   fontSizes: sharedFontSizes,
   radii: sharedRadii,
   shadows: {
-    floating: "0 10px 30px rgba(2, 6, 23, 0.45)",
+    floating: "0px 5px 5px rgba(15, 23, 42, 0.12)",
   },
   spacing: sharedSpacing,
   zIndices: sharedZIndices,

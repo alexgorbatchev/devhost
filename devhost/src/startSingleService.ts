@@ -38,6 +38,7 @@ export function createSingleServiceManifest(arguments_: ISingleServiceCommandLin
 
   return {
     devtools: true,
+    devtoolsPosition: "bottom-right",
     manifestDirectoryPath: process.cwd(),
     manifestPath: join(process.cwd(), syntheticManifestFileName),
     name: syntheticStackName,

@@ -1,6 +1,8 @@
 import { buildDevtoolsScript } from "./buildDevtoolsScript";
+import { createConfiguredDevtoolsScript } from "./createConfiguredDevtoolsScript";
 import { HEALTH_WEBSOCKET_PATH, INJECTED_SCRIPT_PATH } from "./devtools/constants";
 import type { HealthResponse } from "./devtools/types";
+import type { DevtoolsPosition } from "./stackTypes";
 
 const healthTopicName: string = "devhost-health";
 const healthPollIntervalInMilliseconds: number = 1_000;
@@ -12,13 +14,19 @@ interface IDevtoolsControlServer {
 }
 
 interface IStartDevtoolsControlServerOptions {
+  devtoolsPosition: DevtoolsPosition;
   getHealthResponse: () => Promise<HealthResponse>;
+  stackName: string;
 }
 
 export async function startDevtoolsControlServer(
   options: IStartDevtoolsControlServerOptions,
 ): Promise<IDevtoolsControlServer> {
-  const devtoolsScript: string = await buildDevtoolsScript();
+  const devtoolsScript: string = createConfiguredDevtoolsScript(
+    await buildDevtoolsScript(),
+    options.devtoolsPosition,
+    options.stackName,
+  );
   let isStopped: boolean = false;
   let lastPublishedMessage: string | null = null;
 
