@@ -1,0 +1,11 @@
+{
+  "name": "devhost",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run index.ts"
+  },
+  "dependencies": {
+    "preact": "^10.27.2"
+  }
+}

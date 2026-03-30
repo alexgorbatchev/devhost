@@ -1,15 +1,17 @@
 import { fileURLToPath } from "node:url";
 
 const devtoolsEntrypointPath: string = fileURLToPath(new URL("./devtools/index.ts", import.meta.url));
+const tsconfigPath: string = fileURLToPath(new URL("./tsconfig.json", import.meta.url));
 
 export async function buildDevtoolsScript(): Promise<string> {
   const buildResult = await Bun.build({
     entrypoints: [devtoolsEntrypointPath],
     format: "esm",
-    minify: false,
+    minify: true,
     splitting: false,
     target: "browser",
     throw: false,
+    tsconfig: tsconfigPath,
     write: false,
   });
 

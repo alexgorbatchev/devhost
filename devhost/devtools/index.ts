@@ -1,3 +1,3 @@
-import { mountDevtools } from "./mountDevtools";
+import { renderDevtools } from "./renderDevtools";
 
-mountDevtools();
+renderDevtools();
