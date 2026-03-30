@@ -65,7 +65,13 @@ Then open:
 https://hello.xcv.lol
 ```
 
-The demo page is HTML. `devhost` now proxies it through a tiny local injector that appends one script tag. The injected script adds a button that fetches the current time from a local devhost API and appends it to the page.
+The demo page is HTML. `devhost` now uses a split-routing model:
+
+- `/__devhost__/*` goes to the local devhost control server
+- document navigation requests go to a small HTML injector that appends one script tag
+- all other requests go directly to the app server
+
+This keeps assets, HMR, fetches, and WebSockets out of devhost's proxy path while still allowing page-level injection.
 
 ## How `devhost` works
 

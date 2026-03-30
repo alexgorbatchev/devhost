@@ -1,51 +1,22 @@
-import { buildDevtoolsScript } from "./buildDevtoolsScript";
-import { INJECTED_SCRIPT_PATH, TIME_API_PATH } from "./devtools/constants";
+import { INJECTED_SCRIPT_PATH } from "./devtools/constants";
 
-type IStartInjectionProxyOptions = {
+type IStartDocumentInjectionServerOptions = {
   backendHost: string;
   backendPort: number;
 };
 
-type IInjectionProxy = {
+type IDocumentInjectionServer = {
   port: number;
   stop: () => Promise<void>;
 };
 
-export async function startInjectionProxy(options: IStartInjectionProxyOptions): Promise<IInjectionProxy> {
-  const devtoolsScript: string = await buildDevtoolsScript();
+export function startDocumentInjectionServer(
+  options: IStartDocumentInjectionServerOptions,
+): IDocumentInjectionServer {
   const server = Bun.serve({
     hostname: "127.0.0.1",
     port: 0,
     fetch: async (request: Request): Promise<Response> => {
-      const requestUrl: URL = new URL(request.url);
-
-      if (requestUrl.pathname === INJECTED_SCRIPT_PATH) {
-        return new Response(devtoolsScript, {
-          headers: {
-            "content-type": "application/javascript; charset=utf-8",
-            "cache-control": "no-store",
-          },
-        });
-      }
-
-      if (requestUrl.pathname === TIME_API_PATH) {
-        return new Response(
-          JSON.stringify(
-            {
-              currentTime: new Date().toISOString(),
-            },
-            null,
-            2,
-          ),
-          {
-            headers: {
-              "content-type": "application/json; charset=utf-8",
-              "cache-control": "no-store",
-            },
-          },
-        );
-      }
-
       const upstreamRequest: Request = createUpstreamRequest(request, options);
       const upstreamResponse: Response = await fetch(upstreamRequest);
 
@@ -67,9 +38,9 @@ export async function startInjectionProxy(options: IStartInjectionProxyOptions):
       responseHeaders.delete("content-length");
 
       return new Response(transformedResponse.body, {
+        headers: responseHeaders,
         status: transformedResponse.status,
         statusText: transformedResponse.statusText,
-        headers: responseHeaders,
       });
     },
   });
@@ -82,7 +53,7 @@ export async function startInjectionProxy(options: IStartInjectionProxyOptions):
   };
 }
 
-function createUpstreamRequest(request: Request, options: IStartInjectionProxyOptions): Request {
+function createUpstreamRequest(request: Request, options: IStartDocumentInjectionServerOptions): Request {
   const requestUrl: URL = new URL(request.url);
   const upstreamUrl: URL = new URL(requestUrl.toString());
   const upstreamHeaders: Headers = new Headers(request.headers);
@@ -93,22 +64,22 @@ function createUpstreamRequest(request: Request, options: IStartInjectionProxyOp
   upstreamUrl.port = String(options.backendPort);
 
   upstreamHeaders.delete("host");
+  upstreamHeaders.set("x-devhost-injected", "true");
   upstreamHeaders.set("x-forwarded-host", requestUrl.host);
   upstreamHeaders.set("x-forwarded-proto", "https");
-  upstreamHeaders.set("x-devhost-injected", "true");
 
   if (!canRequestHaveBody(requestMethod)) {
     return new Request(upstreamUrl, {
-      method: request.method,
       headers: upstreamHeaders,
+      method: request.method,
       redirect: "manual",
     });
   }
 
   return new Request(upstreamUrl, {
-    method: request.method,
-    headers: upstreamHeaders,
     body: request.body,
+    headers: upstreamHeaders,
+    method: request.method,
     redirect: "manual",
   });
 }

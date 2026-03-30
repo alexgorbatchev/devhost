@@ -2,7 +2,8 @@ import { access, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promise
 import { createConnection } from "node:net";
 import { join } from "node:path";
 
-import { startInjectionProxy } from "./startInjectionProxy";
+import { startDevtoolsControlServer } from "./startDevtoolsControlServer";
+import { startDocumentInjectionServer } from "./startDocumentInjectionServer";
 
 type ISupportedSignal = "SIGINT" | "SIGTERM" | "SIGHUP";
 
@@ -63,7 +64,8 @@ process.exit(exitCode);
 async function main(): Promise<number> {
   let childProcess: Bun.Subprocess | null = null;
   let hostReservation: IRegistration | null = null;
-  let injectionProxy: Awaited<ReturnType<typeof startInjectionProxy>> | null = null;
+  let devtoolsControlServer: Awaited<ReturnType<typeof startDevtoolsControlServer>> | null = null;
+  let documentInjectionServer: ReturnType<typeof startDocumentInjectionServer> | null = null;
   let receivedSignal: ISupportedSignal | null = null;
   let isRegistered: boolean = false;
 
@@ -115,15 +117,21 @@ async function main(): Promise<number> {
       return startupState.exitCode;
     }
 
-    injectionProxy = await startInjectionProxy({
+    devtoolsControlServer = await startDevtoolsControlServer();
+    documentInjectionServer = startDocumentInjectionServer({
       backendHost: bindHost,
       backendPort: commandLineArguments.port,
     });
 
-    await activateRoute(commandLineArguments.host, injectionProxy.port);
+    await activateRoute(
+      commandLineArguments.host,
+      commandLineArguments.port,
+      devtoolsControlServer.port,
+      documentInjectionServer.port,
+    );
     isRegistered = true;
     console.log(
-      `devhost registered https://${commandLineArguments.host} -> injector:${injectionProxy.port} -> http://${bindHost}:${commandLineArguments.port}`,
+      `devhost registered https://${commandLineArguments.host} -> app:${commandLineArguments.port}, control:${devtoolsControlServer.port}, document:${documentInjectionServer.port}`,
     );
 
     const exitCode: number = await childProcess.exited;
@@ -152,8 +160,12 @@ async function main(): Promise<number> {
       }
     }
 
-    if (injectionProxy !== null) {
-      await injectionProxy.stop();
+    if (documentInjectionServer !== null) {
+      await documentInjectionServer.stop();
+    }
+
+    if (devtoolsControlServer !== null) {
+      await devtoolsControlServer.stop();
     }
   }
 }
@@ -318,11 +330,16 @@ function createRegistration(host: string, port: number): IRegistration {
   };
 }
 
-async function activateRoute(host: string, port: number): Promise<void> {
+async function activateRoute(
+  host: string,
+  appPort: number,
+  devtoolsControlPort: number,
+  documentInjectionPort: number,
+): Promise<void> {
   const routePath: string = getRoutePath(host);
 
   try {
-    await writeFile(routePath, renderRouteSnippet(host, port), "utf8");
+    await writeFile(routePath, renderRouteSnippet(host, appPort, devtoolsControlPort, documentInjectionPort), "utf8");
     reloadCaddy();
   } catch (error) {
     await removeRouteFiles(host);
@@ -413,11 +430,29 @@ function reloadCaddy(): void {
   }
 }
 
-function renderRouteSnippet(host: string, port: number): string {
+function renderRouteSnippet(
+  host: string,
+  appPort: number,
+  devtoolsControlPort: number,
+  documentInjectionPort: number,
+): string {
   return [
     `${host} {`,
     "    tls internal",
-    `    reverse_proxy ${bindHost}:${port}`,
+    "",
+    "    @devhost_control path /__devhost__/*",
+    "    handle @devhost_control {",
+    `        reverse_proxy ${bindHost}:${devtoolsControlPort}`,
+    "    }",
+    "",
+    "    @devhost_document header Sec-Fetch-Dest document",
+    "    handle @devhost_document {",
+    `        reverse_proxy ${bindHost}:${documentInjectionPort}`,
+    "    }",
+    "",
+    "    handle {",
+    `        reverse_proxy ${bindHost}:${appPort}`,
+    "    }",
     "}",
     "",
   ].join("\n");
