@@ -6,9 +6,47 @@
     <title>Hello from Bun + React</title>
     <style>
       :root {
-        color-scheme: light;
+        color-scheme: light dark;
         font-family: Inter, system-ui, sans-serif;
         line-height: 1.5;
+        --page-background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+        --page-foreground: #0f172a;
+        --panel-background: rgba(255, 255, 255, 0.92);
+        --panel-border: #cbd5e1;
+        --panel-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+        --muted-foreground: #334155;
+        --control-background: #ffffff;
+        --control-border: #cbd5e1;
+      }
+
+      :root[data-theme="light"] {
+        color-scheme: light;
+      }
+
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --page-background: linear-gradient(180deg, #020617 0%, #0f172a 100%);
+        --page-foreground: #e2e8f0;
+        --panel-background: rgba(15, 23, 42, 0.92);
+        --panel-border: #334155;
+        --panel-shadow: 0 20px 40px rgba(2, 6, 23, 0.45);
+        --muted-foreground: #94a3b8;
+        --control-background: #0f172a;
+        --control-border: #475569;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme]),
+        :root[data-theme="system"] {
+          --page-background: linear-gradient(180deg, #020617 0%, #0f172a 100%);
+          --page-foreground: #e2e8f0;
+          --panel-background: rgba(15, 23, 42, 0.92);
+          --panel-border: #334155;
+          --panel-shadow: 0 20px 40px rgba(2, 6, 23, 0.45);
+          --muted-foreground: #94a3b8;
+          --control-background: #0f172a;
+          --control-border: #475569;
+        }
       }
 
       * {
@@ -18,8 +56,8 @@
       body {
         margin: 0;
         min-height: 100vh;
-        background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
-        color: #0f172a;
+        background: var(--page-background);
+        color: var(--page-foreground);
       }
 
       #root {
@@ -32,10 +70,18 @@
       .app-shell {
         width: min(100%, 720px);
         padding: 32px;
-        border: 1px solid #cbd5e1;
+        border: 1px solid var(--panel-border);
         border-radius: 20px;
-        background: rgba(255, 255, 255, 0.92);
-        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+        background: var(--panel-background);
+        box-shadow: var(--panel-shadow);
+      }
+
+      .app-header {
+        display: flex;
+        gap: 24px;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 20px;
       }
 
       .app-title {
@@ -44,8 +90,8 @@
       }
 
       .app-lead {
-        margin: 0 0 20px;
-        color: #334155;
+        margin: 0;
+        color: var(--muted-foreground);
       }
 
       .app-list {
@@ -58,6 +104,38 @@
       .app-code {
         font-family: "SFMono-Regular", Consolas, monospace;
         font-size: 0.95rem;
+      }
+
+      .theme-toggle {
+        display: grid;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+
+      .theme-toggle__label {
+        font-size: 0.9rem;
+        font-weight: 600;
+      }
+
+      .theme-toggle__control {
+        min-width: 120px;
+        padding: 8px 10px;
+        border: 1px solid var(--control-border);
+        border-radius: 10px;
+        background: var(--control-background);
+        color: inherit;
+        font: inherit;
+      }
+
+      @media (max-width: 640px) {
+        .app-shell {
+          padding: 24px;
+        }
+
+        .app-header {
+          flex-direction: column;
+          align-items: stretch;
+        }
       }
     </style>
   </head>
