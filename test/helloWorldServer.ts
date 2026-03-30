@@ -1,7 +1,7 @@
 import indexHtml from "./index.html";
 
 const bindHost: string = process.env.DEVHOST_BIND_HOST ?? "127.0.0.1";
-const host: string = process.env.HOST ?? "hello.xcv.lol";
+const host: string = process.env.DEVHOST_HOST ?? "hello.xcv.lol";
 const portText: string = process.env.PORT ?? "3200";
 const port: number = Number.parseInt(portText, 10);
 

@@ -52,7 +52,9 @@ cd devhost && bun run test:coverage
 ## Logging rules
 
 - All devhost-owned logs must go through the injected logger utility.
-- Devhost-owned foreground lines must keep the `[devhost]` prefix.
+- Devhost-owned foreground lines must use the injected logger prefix.
+- Manifest-mode logs must use the manifest `name` as the prefix label.
+- Single-service and pre-manifest logs must fall back to the `devhost` label.
 - Child process logs must remain prefixed with `[service-name]`.
 - Do not print successful Caddy reload chatter.
 - Surface Caddy output only on failure.

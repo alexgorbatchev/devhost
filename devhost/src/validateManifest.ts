@@ -6,7 +6,7 @@ import { defaultBindHost } from "./constants";
 import { isValidHost } from "./isValidHost";
 import type {
   DevhostPortConfig,
-  DevhostReadyConfig,
+  DevhostHealthConfig,
   IDevhostManifest,
   IDevhostServiceConfig,
   IValidatedDevhostManifest,
@@ -17,7 +17,7 @@ const nonEmptyStringSchema = z.string().refine((value: string): boolean => value
   message: "Expected a non-empty string.",
 });
 const portSchema = z.union([z.number().int().min(1).max(65_535), z.literal("auto")]);
-const readySchema = z.union([
+const healthSchema = z.union([
   z.object({ tcp: z.number().int().min(1).max(65_535) }).strict(),
   z.object({ http: z.string().url() }).strict(),
   z.object({ process: z.literal(true) }).strict(),
@@ -30,8 +30,8 @@ const serviceSchema = z
     dependsOn: z.array(nonEmptyStringSchema).optional(),
     env: z.record(z.string(), z.string()).optional(),
     port: portSchema.optional(),
-    publicHost: z.string().optional(),
-    ready: readySchema.optional(),
+    host: z.string().optional(),
+    health: healthSchema.optional(),
   })
   .strict();
 const manifestSchema = z
@@ -68,7 +68,7 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
   }
 
   const validatedServices: Record<string, IValidatedDevhostService> = {};
-  const publicHosts: Set<string> = new Set<string>();
+  const hosts: Set<string> = new Set<string>();
   const fixedBindPorts: Set<string> = new Set<string>();
 
   for (const [serviceName, serviceConfig] of Object.entries(parsedManifest.services)) {
@@ -82,7 +82,7 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
       serviceConfig,
       manifestDirectoryPath,
       serviceNames,
-      publicHosts,
+      hosts,
       fixedBindPorts,
       errors,
     );
@@ -109,7 +109,7 @@ function validateService(
   serviceConfig: IDevhostServiceConfig,
   manifestDirectoryPath: string,
   serviceNames: string[],
-  publicHosts: Set<string>,
+  hosts: Set<string>,
   fixedBindPorts: Set<string>,
   errors: string[],
 ): IValidatedDevhostService {
@@ -118,8 +118,8 @@ function validateService(
   const dependsOn: string[] = serviceConfig.dependsOn ?? [];
   const env: Record<string, string> = serviceConfig.env ?? {};
   const port: DevhostPortConfig | null = serviceConfig.port ?? null;
-  const publicHost: string | null = serviceConfig.publicHost ?? null;
-  const ready: DevhostReadyConfig | null = serviceConfig.ready ?? null;
+  const host: string | null = serviceConfig.host ?? null;
+  const health: DevhostHealthConfig | null = serviceConfig.health ?? null;
   const relativeCwdPath: string = relative(manifestDirectoryPath, cwd);
 
   if (relativeCwdPath.startsWith("..") || isAbsolute(relativeCwdPath)) {
@@ -132,36 +132,36 @@ function validateService(
     }
   }
 
-  if (publicHost !== null) {
-    if (!isValidHost(publicHost)) {
-      errors.push(`services.${serviceName}.publicHost must be a valid hostname, received: ${publicHost}`);
+  if (host !== null) {
+    if (!isValidHost(host)) {
+      errors.push(`services.${serviceName}.host must be a valid hostname, received: ${host}`);
     }
 
-    if (publicHosts.has(publicHost)) {
-      errors.push(`services.${serviceName}.publicHost duplicates another routed service: ${publicHost}`);
+    if (hosts.has(host)) {
+      errors.push(`services.${serviceName}.host duplicates another routed service: ${host}`);
     }
 
-    publicHosts.add(publicHost);
+    hosts.add(host);
 
     if (port === null) {
-      errors.push(`services.${serviceName}.publicHost requires services.${serviceName}.port.`);
+      errors.push(`services.${serviceName}.host requires services.${serviceName}.port.`);
     }
   }
 
-  if (ready !== null && "process" in ready && publicHost !== null) {
-    errors.push(`services.${serviceName} must not use ready.process on a routed service.`);
+  if (health !== null && "process" in health && host !== null) {
+    errors.push(`services.${serviceName} must not use health.process on a routed service.`);
   }
 
-  if (port === "auto" && ready !== null) {
-    errors.push(`services.${serviceName} must omit ready when port = "auto" in v1.`);
+  if (port === "auto" && health !== null) {
+    errors.push(`services.${serviceName} must omit health when port = "auto" in v1.`);
   }
 
-  if (port === null && ready === null) {
-    errors.push(`services.${serviceName} must define either port or ready.`);
+  if (port === null && health === null) {
+    errors.push(`services.${serviceName} must define either port or health.`);
   }
 
-  if (ready !== null && "http" in ready) {
-    validateReadyHttp(serviceName, ready.http, errors);
+  if (health !== null && "http" in health) {
+    validateHealthHttp(serviceName, health.http, errors);
   }
 
   if (typeof port === "number") {
@@ -182,23 +182,23 @@ function validateService(
     env,
     name: serviceName,
     port,
-    publicHost,
-    ready,
+    host,
+    health,
   };
 }
 
-function validateReadyHttp(serviceName: string, rawUrl: string, errors: string[]): void {
+function validateHealthHttp(serviceName: string, rawUrl: string, errors: string[]): void {
   let parsedUrl: URL;
 
   try {
     parsedUrl = new URL(rawUrl);
   } catch {
-    errors.push(`services.${serviceName}.ready.http must be an absolute URL, received: ${rawUrl}`);
+    errors.push(`services.${serviceName}.health.http must be an absolute URL, received: ${rawUrl}`);
     return;
   }
 
   if (!["127.0.0.1", "localhost", "::1"].includes(parsedUrl.hostname)) {
-    errors.push(`services.${serviceName}.ready.http must target 127.0.0.1, localhost, or ::1.`);
+    errors.push(`services.${serviceName}.health.http must target 127.0.0.1, localhost, or ::1.`);
   }
 }
 

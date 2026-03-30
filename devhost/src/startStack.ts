@@ -15,7 +15,7 @@ import { resolveProxyHost } from "./resolveProxyHost";
 import { startDevtoolsControlServer } from "./startDevtoolsControlServer";
 import { startDocumentInjectionServer } from "./startDocumentInjectionServer";
 import type { IInjectedServiceEnvironment, IResolvedDevhostManifest, IResolvedDevhostService } from "./stackTypes";
-import { waitForServiceReady } from "./waitForServiceReady";
+import { waitForServiceHealth } from "./waitForServiceHealth";
 
 const shutdownGracePeriodInMilliseconds: number = 10_000;
 
@@ -34,7 +34,7 @@ export async function startStack(
   const activeHosts: Set<string> = new Set<string>();
   const documentInjectionServers: Map<string, ReturnType<typeof startDocumentInjectionServer>> = new Map();
   const routedServices: IResolvedDevhostService[] = Object.values(manifest.services).filter(
-    (service: IResolvedDevhostService): boolean => service.publicHost !== null,
+    (service: IResolvedDevhostService): boolean => service.host !== null,
   );
   let devtoolsControlServer: Awaited<ReturnType<typeof startDevtoolsControlServer>> | null = null;
   let receivedSignal: SupportedSignal | null = null;
@@ -50,12 +50,12 @@ export async function startStack(
     await ensureCaddyAdminAvailable();
 
     for (const service of routedServices) {
-      if (service.publicHost === null || service.port === null) {
+      if (service.host === null || service.port === null) {
         continue;
       }
 
-      await claimRegistration(service.publicHost, service.port);
-      reservedHosts.push(service.publicHost);
+      await claimRegistration(service.host, service.port);
+      reservedHosts.push(service.host);
     }
 
     if (manifest.devtools && routedServices.length > 0) {
@@ -102,13 +102,13 @@ export async function startStack(
         console.error(line);
       });
 
-      await waitForServiceReady({
+      await waitForServiceHealth({
         childProcess,
-        ready: service.ready,
+        health: service.health,
         serviceName,
       });
 
-      if (service.publicHost !== null && service.port !== null) {
+      if (service.host !== null && service.port !== null) {
         if (manifest.devtools) {
           const documentInjectionServer = startDocumentInjectionServer({
             backendHost: resolveProxyHost(service.bindHost),
@@ -121,17 +121,17 @@ export async function startStack(
             appPort: service.port,
             devtoolsControlPort: devtoolsControlServer?.port,
             documentInjectionPort: documentInjectionServer.port,
-            host: service.publicHost,
+            host: service.host,
           });
         } else {
           await activateRoute({
             appBindHost: service.bindHost,
             appPort: service.port,
-            host: service.publicHost,
+            host: service.host,
           });
         }
 
-        activeHosts.add(service.publicHost);
+        activeHosts.add(service.host);
       }
     }
 
@@ -203,14 +203,14 @@ export async function startStack(
   }
 }
 
-function createInjectedServiceEnvironment(
+export function createInjectedServiceEnvironment(
   manifest: IResolvedDevhostManifest,
   service: IResolvedDevhostService,
 ): IInjectedServiceEnvironment {
   const environment: IInjectedServiceEnvironment = {
     DEVHOST_BIND_HOST: service.bindHost,
     DEVHOST_MANIFEST_PATH: manifest.manifestPath,
-    DEVHOST_SERVICE: service.name,
+    DEVHOST_SERVICE_NAME: service.name,
     DEVHOST_STACK: manifest.name,
   };
 
@@ -218,9 +218,8 @@ function createInjectedServiceEnvironment(
     environment.PORT = String(service.port);
   }
 
-  if (service.publicHost !== null) {
-    environment.DEVHOST_PUBLIC_HOST = service.publicHost;
-    environment.HOST = service.publicHost;
+  if (service.host !== null) {
+    environment.DEVHOST_HOST = service.host;
   }
 
   return environment;
@@ -282,8 +281,8 @@ async function waitForExitWithinGracePeriod(childProcess: Bun.Subprocess): Promi
 function logPrimaryService(manifest: IResolvedDevhostManifest, logger: IDevhostLogger): void {
   const primaryService: IResolvedDevhostService = manifest.services[manifest.primaryService];
 
-  if (primaryService.publicHost !== null) {
-    logger.info(`primary https://${primaryService.publicHost}`);
+  if (primaryService.host !== null) {
+    logger.info(`primary https://${primaryService.host}`);
     return;
   }
 

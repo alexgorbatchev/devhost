@@ -13,7 +13,7 @@ describe("validateManifest", () => {
         web: {
           command: ["bun", "run", "dev"],
           port: 3000,
-          publicHost: "hello.local.test",
+          host: "hello.local.test",
         },
       },
     };
@@ -25,9 +25,9 @@ describe("validateManifest", () => {
     expect(manifest.services.web.cwd).toEndWith("basic-stack");
     expect(manifest.services.web.dependsOn).toEqual([]);
     expect(manifest.services.web.env).toEqual({});
-    expect(manifest.services.web.publicHost).toBe("hello.local.test");
+    expect(manifest.services.web.host).toBe("hello.local.test");
     expect(manifest.services.web.port).toBe(3000);
-    expect(manifest.services.web.ready).toBeNull();
+    expect(manifest.services.web.health).toBeNull();
   });
 
   test("accepts the documented basic stack fixture", async () => {
@@ -38,7 +38,7 @@ describe("validateManifest", () => {
     expect(manifest.devtools).toBe(true);
     expect(manifest.primaryService).toBe("web");
     expect(manifest.services.db.port).toBe("auto");
-    expect(manifest.services.api.ready).toEqual({
+    expect(manifest.services.api.health).toEqual({
       http: "http://127.0.0.1:4000/healthz",
     });
   });
@@ -48,16 +48,16 @@ describe("validateManifest", () => {
     const manifestValue: unknown = await readFixtureToml("invalid-public-host", "devhost.toml");
 
     expect(() => validateManifest(manifestPath, manifestValue)).toThrow(
-      "services.web.publicHost must be a valid hostname",
+      "services.web.host must be a valid hostname",
     );
   });
 
-  test("rejects explicit readiness when port is auto", async () => {
-    const manifestPath: string = getFixturePath("invalid-auto-port-readiness", "devhost.toml");
-    const manifestValue: unknown = await readFixtureToml("invalid-auto-port-readiness", "devhost.toml");
+  test("rejects explicit health checks when port is auto", async () => {
+    const manifestPath: string = getFixturePath("invalid-auto-port-health", "devhost.toml");
+    const manifestValue: unknown = await readFixtureToml("invalid-auto-port-health", "devhost.toml");
 
     expect(() => validateManifest(manifestPath, manifestValue)).toThrow(
-      "services.db must omit ready when port = \"auto\" in v1.",
+      "services.db must omit health when port = \"auto\" in v1.",
     );
   });
 
@@ -69,14 +69,14 @@ describe("validateManifest", () => {
         services: {
           web: {
             command: ["bun", "run", "dev"],
-            publicHost: "hello.local.test",
+            host: "hello.local.test",
           },
         },
       }),
-    ).toThrow("services.web.publicHost requires services.web.port.");
+    ).toThrow("services.web.host requires services.web.port.");
   });
 
-  test("rejects ready.process on routed services", () => {
+  test("rejects health.process on routed services", () => {
     expect(() =>
       validateManifest("/tmp/devhost.toml", {
         name: "hello-stack",
@@ -85,14 +85,14 @@ describe("validateManifest", () => {
           web: {
             command: ["bun", "run", "dev"],
             port: 3000,
-            publicHost: "hello.local.test",
-            ready: {
+            host: "hello.local.test",
+            health: {
               process: true,
             },
           },
         },
       }),
-    ).toThrow("services.web must not use ready.process on a routed service.");
+    ).toThrow("services.web must not use health.process on a routed service.");
   });
 
   test("rejects duplicate fixed bind ports", () => {

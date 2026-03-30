@@ -1,4 +1,4 @@
-export type DevhostReadyConfig =
+export type DevhostHealthConfig =
   | {
       tcp: number;
     }
@@ -24,9 +24,9 @@ export interface IDevhostServiceConfig {
   env?: Record<string, string>;
   port?: DevhostPortConfig;
   bindHost?: string;
-  publicHost?: string;
+  host?: string;
   dependsOn?: string[];
-  ready?: DevhostReadyConfig;
+  health?: DevhostHealthConfig;
 }
 
 export interface IValidatedDevhostManifest {
@@ -45,9 +45,9 @@ export interface IValidatedDevhostService {
   env: Record<string, string>;
   port: DevhostPortConfig | null;
   bindHost: string;
-  publicHost: string | null;
+  host: string | null;
   dependsOn: string[];
-  ready: DevhostReadyConfig | null;
+  health: DevhostHealthConfig | null;
 }
 
 export interface IResolvedDevhostManifest {
@@ -66,13 +66,13 @@ export interface IResolvedDevhostService {
   env: Record<string, string>;
   port: number | null;
   bindHost: string;
-  publicHost: string | null;
+  host: string | null;
   dependsOn: string[];
-  ready: ResolvedReadyConfig;
+  health: ResolvedHealthConfig;
   portSource: "fixed" | "auto" | "none";
 }
 
-export type ResolvedReadyConfig =
+export type ResolvedHealthConfig =
   | {
       kind: "tcp";
       host: string;
@@ -88,10 +88,9 @@ export type ResolvedReadyConfig =
 
 export interface IInjectedServiceEnvironment {
   DEVHOST_STACK: string;
-  DEVHOST_SERVICE: string;
+  DEVHOST_SERVICE_NAME: string;
   DEVHOST_BIND_HOST: string;
   DEVHOST_MANIFEST_PATH: string;
   PORT?: string;
-  DEVHOST_PUBLIC_HOST?: string;
-  HOST?: string;
+  DEVHOST_HOST?: string;
 }

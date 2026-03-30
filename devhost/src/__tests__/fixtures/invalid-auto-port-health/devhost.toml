@@ -5,5 +5,5 @@ primaryService = "db"
 command = ["bun", "run", "db:dev"]
 port = "auto"
 
-[services.db.ready]
+[services.db.health]
 tcp = 5432

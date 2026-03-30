@@ -1,21 +1,21 @@
 import { pollIntervalInMilliseconds, startupTimeoutInMilliseconds } from "./constants";
 import { canConnectToPort, isReadyHttpEndpoint } from "./networkUtils";
 import { resolveProxyHost } from "./resolveProxyHost";
-import type { ResolvedReadyConfig } from "./stackTypes";
+import type { ResolvedHealthConfig } from "./stackTypes";
 
 interface ISubprocessLike {
   exitCode: number | null;
   exited: Promise<number>;
 }
 
-interface IWaitForServiceReadyOptions {
+interface IWaitForServiceHealthOptions {
   childProcess: ISubprocessLike;
-  ready: ResolvedReadyConfig;
+  health: ResolvedHealthConfig;
   serviceName: string;
 }
 
-export async function waitForServiceReady(options: IWaitForServiceReadyOptions): Promise<void> {
-  if (options.ready.kind === "process") {
+export async function waitForServiceHealth(options: IWaitForServiceHealthOptions): Promise<void> {
+  if (options.health.kind === "process") {
     await throwIfExited(options.childProcess, options.serviceName);
     return;
   }
@@ -23,7 +23,7 @@ export async function waitForServiceReady(options: IWaitForServiceReadyOptions):
   const deadline: number = Date.now() + startupTimeoutInMilliseconds;
 
   while (Date.now() < deadline) {
-    if (await isServiceReady(options.ready)) {
+    if (await isServiceHealthy(options.health)) {
       return;
     }
 
@@ -32,7 +32,7 @@ export async function waitForServiceReady(options: IWaitForServiceReadyOptions):
   }
 
   throw new Error(
-    `Service ${options.serviceName} did not become ready within ${startupTimeoutInMilliseconds}ms.`,
+    `Service ${options.serviceName} did not pass its health check within ${startupTimeoutInMilliseconds}ms.`,
   );
 }
 
@@ -42,13 +42,13 @@ async function throwIfExited(childProcess: ISubprocessLike, serviceName: string)
   }
 
   const exitCode: number = await childProcess.exited;
-  throw new Error(`Service ${serviceName} exited before readiness with code ${exitCode}.`);
+  throw new Error(`Service ${serviceName} exited before passing its health check with code ${exitCode}.`);
 }
 
-async function isServiceReady(ready: ResolvedReadyConfig): Promise<boolean> {
-  if (ready.kind === "tcp") {
-    return await canConnectToPort(resolveProxyHost(ready.host), ready.port);
+async function isServiceHealthy(health: ResolvedHealthConfig): Promise<boolean> {
+  if (health.kind === "tcp") {
+    return await canConnectToPort(resolveProxyHost(health.host), health.port);
   }
 
-  return await isReadyHttpEndpoint(ready.url);
+  return await isReadyHttpEndpoint(health.url);
 }

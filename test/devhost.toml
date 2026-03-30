@@ -5,4 +5,4 @@ primaryService = "hello"
 command = ["bun", "run", "dev"]
 cwd = "."
 port = 3200
-publicHost = "hello.xcv.lol"
+host = "hello.xcv.lol"

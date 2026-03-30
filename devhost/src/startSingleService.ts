@@ -13,7 +13,17 @@ import {
 } from "./routeUtils";
 import { startDevtoolsControlServer } from "./startDevtoolsControlServer";
 import { startDocumentInjectionServer } from "./startDocumentInjectionServer";
-import { waitForServiceReady } from "./waitForServiceReady";
+import { waitForServiceHealth } from "./waitForServiceHealth";
+
+export function createSingleServiceEnvironment(
+  arguments_: ISingleServiceCommandLineArguments,
+): Record<string, string | undefined> {
+  return {
+    DEVHOST_BIND_HOST: defaultBindHost,
+    DEVHOST_HOST: arguments_.host,
+    PORT: String(arguments_.port),
+  };
+}
 
 export async function startSingleService(
   arguments_: ISingleServiceCommandLineArguments,
@@ -34,9 +44,7 @@ export async function startSingleService(
 
     const childEnvironment: Record<string, string | undefined> = {
       ...process.env,
-      DEVHOST_BIND_HOST: defaultBindHost,
-      HOST: arguments_.host,
-      PORT: String(arguments_.port),
+      ...createSingleServiceEnvironment(arguments_),
     };
 
     childProcess = Bun.spawn(arguments_.command, {
@@ -57,9 +65,9 @@ export async function startSingleService(
       });
     }
 
-    await waitForServiceReady({
+    await waitForServiceHealth({
       childProcess,
-      ready: {
+      health: {
         kind: "tcp",
         host: defaultBindHost,
         port: arguments_.port,

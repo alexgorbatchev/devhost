@@ -6,7 +6,7 @@ devtools = true
 command = ["bun", "run", "web:dev"]
 cwd = "./app"
 port = 3000
-publicHost = "hello.local.test"
+host = "hello.local.test"
 dependsOn = ["api"]
 
 [services.web.env]
@@ -16,10 +16,10 @@ NODE_ENV = "development"
 command = ["bun", "run", "api:dev"]
 cwd = "./api"
 port = 4000
-publicHost = "api.hello.local.test"
+host = "api.hello.local.test"
 dependsOn = ["db"]
 
-[services.api.ready]
+[services.api.health]
 http = "http://127.0.0.1:4000/healthz"
 
 [services.db]

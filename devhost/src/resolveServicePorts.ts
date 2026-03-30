@@ -5,7 +5,7 @@ import type {
   IResolvedDevhostService,
   IValidatedDevhostManifest,
   IValidatedDevhostService,
-  ResolvedReadyConfig,
+  ResolvedHealthConfig,
 } from "./stackTypes";
 
 export async function resolveServicePorts(manifest: IValidatedDevhostManifest): Promise<IResolvedDevhostManifest> {
@@ -32,7 +32,7 @@ export async function resolveServicePorts(manifest: IValidatedDevhostManifest): 
       portSource = "auto";
     }
 
-    const ready: ResolvedReadyConfig = resolveReadyConfig(service, resolvedPort);
+    const health: ResolvedHealthConfig = resolveHealthConfig(service, resolvedPort);
     const runtimeBindPortKey: string | null = resolvedPort === null ? null : `${service.bindHost}:${resolvedPort}`;
 
     if (runtimeBindPortKey !== null && hasRuntimeBindPortConflict(runtimeBindPortKey, resolvedServices)) {
@@ -48,8 +48,8 @@ export async function resolveServicePorts(manifest: IValidatedDevhostManifest): 
       name: service.name,
       port: resolvedPort,
       portSource,
-      publicHost: service.publicHost,
-      ready,
+      host: service.host,
+      health,
     };
   }
 
@@ -84,20 +84,20 @@ function collectFixedPorts(
   return excludedPortsByHost;
 }
 
-function resolveReadyConfig(service: IValidatedDevhostService, resolvedPort: number | null): ResolvedReadyConfig {
-  if (service.ready !== null) {
-    if ("tcp" in service.ready) {
+function resolveHealthConfig(service: IValidatedDevhostService, resolvedPort: number | null): ResolvedHealthConfig {
+  if (service.health !== null) {
+    if ("tcp" in service.health) {
       return {
         kind: "tcp",
         host: service.bindHost,
-        port: service.ready.tcp,
+        port: service.health.tcp,
       };
     }
 
-    if ("http" in service.ready) {
+    if ("http" in service.health) {
       return {
         kind: "http",
-        url: service.ready.http,
+        url: service.health.http,
       };
     }
 
@@ -105,7 +105,7 @@ function resolveReadyConfig(service: IValidatedDevhostService, resolvedPort: num
   }
 
   if (resolvedPort === null) {
-    throw new Error(`Service ${service.name} is missing an effective readiness rule.`);
+    throw new Error(`Service ${service.name} is missing an effective health check.`);
   }
 
   return {

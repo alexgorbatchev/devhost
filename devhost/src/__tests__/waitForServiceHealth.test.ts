@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 
-import { waitForServiceReady } from "../waitForServiceReady";
+import { waitForServiceHealth } from "../waitForServiceHealth";
 
 interface ITestChildProcess {
   exitCode: number | null;
@@ -17,14 +17,14 @@ afterEach(async () => {
   );
 });
 
-describe("waitForServiceReady", () => {
-  test("accepts process readiness when the child is still running", async () => {
+describe("waitForServiceHealth", () => {
+  test("accepts process health checks when the child is still running", async () => {
     const childProcess: ITestChildProcess = createRunningChildProcess();
 
     await expect(
-      waitForServiceReady({
+      waitForServiceHealth({
         childProcess,
-        ready: { kind: "process" },
+        health: { kind: "process" },
         serviceName: "worker",
       }),
     ).resolves.toBeUndefined();
@@ -43,9 +43,9 @@ describe("waitForServiceReady", () => {
     servers.push(server);
 
     await expect(
-      waitForServiceReady({
+      waitForServiceHealth({
         childProcess,
-        ready: {
+        health: {
           kind: "tcp",
           host: "127.0.0.1",
           port: server.port,
@@ -55,7 +55,7 @@ describe("waitForServiceReady", () => {
     ).resolves.toBeUndefined();
   });
 
-  test("waits for an http readiness endpoint", async () => {
+  test("waits for an http health endpoint", async () => {
     const server = Bun.serve({
       fetch(): Response {
         return new Response("ok");
@@ -68,9 +68,9 @@ describe("waitForServiceReady", () => {
     servers.push(server);
 
     await expect(
-      waitForServiceReady({
+      waitForServiceHealth({
         childProcess,
-        ready: {
+        health: {
           kind: "http",
           url: `http://127.0.0.1:${server.port}/healthz`,
         },
@@ -79,23 +79,23 @@ describe("waitForServiceReady", () => {
     ).resolves.toBeUndefined();
   });
 
-  test("fails fast when the child exits before readiness", async () => {
+  test("fails fast when the child exits before passing its health check", async () => {
     const childProcess: ITestChildProcess = {
       exitCode: 2,
       exited: Promise.resolve(2),
     };
 
     await expect(
-      waitForServiceReady({
+      waitForServiceHealth({
         childProcess,
-        ready: {
+        health: {
           kind: "tcp",
           host: "127.0.0.1",
           port: 65534,
         },
         serviceName: "web",
       }),
-    ).rejects.toThrow("Service web exited before readiness with code 2.");
+    ).rejects.toThrow("Service web exited before passing its health check with code 2.");
   });
 });
 

@@ -4,4 +4,4 @@ primaryService = "web"
 [services.web]
 command = ["bun", "run", "web:dev"]
 port = 3000
-publicHost = "hello_example"
+host = "hello_example"

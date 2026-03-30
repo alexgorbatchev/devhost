@@ -17,7 +17,7 @@ describe("resolveServicePorts", () => {
 
     expect(typeof resolvedManifest.services.db.port).toBe("number");
     expect(resolvedManifest.services.db.portSource).toBe("auto");
-    expect(resolvedManifest.services.db.ready).toEqual({
+    expect(resolvedManifest.services.db.health).toEqual({
       kind: "tcp",
       host: "127.0.0.1",
       port: resolvedManifest.services.db.port,
@@ -38,7 +38,7 @@ describe("resolveServicePorts", () => {
         web: {
           bindHost: "0.0.0.0",
           command: ["bun", "run", "web:dev"],
-          ready: {
+          health: {
             tcp: 3000,
           },
         },
@@ -48,7 +48,7 @@ describe("resolveServicePorts", () => {
     await expect(resolveServicePorts(manifest)).resolves.toBeDefined();
   });
 
-  test("preserves explicit readiness and fixed ports", async () => {
+  test("preserves explicit health checks and fixed ports", async () => {
     const manifest = validateManifest("/tmp/devhost.toml", {
       devtools: false,
       name: "hello-stack",
@@ -57,7 +57,7 @@ describe("resolveServicePorts", () => {
         api: {
           command: ["bun", "run", "api:dev"],
           port: 4000,
-          ready: {
+          health: {
             http: "http://127.0.0.1:4000/healthz",
           },
         },
@@ -68,7 +68,7 @@ describe("resolveServicePorts", () => {
     expect(resolvedManifest.devtools).toBe(false);
     expect(resolvedManifest.services.api.port).toBe(4000);
     expect(resolvedManifest.services.api.portSource).toBe("fixed");
-    expect(resolvedManifest.services.api.ready).toEqual({
+    expect(resolvedManifest.services.api.health).toEqual({
       kind: "http",
       url: "http://127.0.0.1:4000/healthz",
     });

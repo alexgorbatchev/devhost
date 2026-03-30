@@ -4,18 +4,18 @@
 
 It has two modes:
 
-- **single-service mode** — start one app, wait for readiness, and register one public host
-- **manifest mode** — load `devhost.toml`, start a local stack, wait for each service, and register routed hosts
+- **single-service mode** — start one app, wait for its health gate, and register one public host
+- **manifest mode** — load `devhost.toml`, start a local stack, wait for each service health gate, and register routed hosts
 
 ## What it does
 
 `devhost`:
 
 - starts local child processes
-- injects `HOST`, `PORT`, and `DEVHOST_*` environment variables
+- injects `PORT` and `DEVHOST_*` environment variables
 - validates and loads `devhost.toml` with Bun TOML parsing plus Zod v4 validation
 - reserves public hosts before starting routed services
-- waits for readiness before enabling routes
+- waits for health checks before enabling routes
 - reloads Caddy when routes change
 - prefixes its own logs with the manifest `name` in manifest mode, falling back to `[devhost]`
 - prefixes child service logs with `[service-name]`
@@ -40,7 +40,7 @@ bun run dev --help
 ### Single-service mode
 
 ```bash
-bun run dev --host hello.xcv.lol --port 3200 -- bun run test:hello
+bun run dev --host hello.local.test --port 3200 -- bun run test:hello
 ```
 
 Behavior:
@@ -74,7 +74,7 @@ Behavior:
 5. verifies Caddy admin availability
 6. reserves all public hosts
 7. starts services in dependency order
-8. waits for readiness before routing each service
+8. waits for each service health check before routing it
 9. tears down routes and children on exit or failure
 
 ## `devhost.toml`
@@ -94,7 +94,7 @@ Example routed service:
 command = ["bun", "run", "dev"]
 cwd = "."
 port = 3200
-publicHost = "hello.xcv.lol"
+host = "hello.local.test"
 ```
 
 Supported service fields:
@@ -104,9 +104,9 @@ Supported service fields:
 - `env?: Record<string, string>`
 - `port?: number | "auto"`
 - `bindHost?: "127.0.0.1" | "0.0.0.0" | "::1" | "::"`
-- `publicHost?: string`
+- `host?: string`
 - `dependsOn?: string[]`
-- `ready?: { tcp: number } | { http: string } | { process: true }`
+- `health?: { tcp: number } | { http: string } | { process: true }`
 
 Rules worth remembering:
 
@@ -114,24 +114,40 @@ Rules worth remembering:
 - `cwd` must stay inside the manifest directory tree
 - `command` must be an argv array, not a shell string
 - `port = "auto"` is supported
-- `port = "auto"` must omit explicit `ready` in v1
+- `port = "auto"` must omit explicit `health` in v1
 - `devtools` defaults to `true`
 
 For the full contract, read `../docs/toml-config.md`.
 
 ## Injected environment
 
-For routed services, `devhost` injects:
+`devhost` injects different variables depending on mode.
+
+### Always relevant
+
+- `DEVHOST_BIND_HOST`
+  - the actual interface the child process is expected to listen on
+  - use this for binding sockets
+- `PORT`
+  - the listening port selected by `devhost`
+  - in manifest mode this is the resolved port, including `port = "auto"`
+
+### Manifest-mode variables
 
 - `DEVHOST_STACK`
-- `DEVHOST_SERVICE`
-- `DEVHOST_BIND_HOST`
+  - the manifest `name`
+- `DEVHOST_SERVICE_NAME`
+  - the service's manifest name
+  - example: `[services.api]` means `DEVHOST_SERVICE_NAME=api`
 - `DEVHOST_MANIFEST_PATH`
-- `PORT` when a resolved port exists
-- `DEVHOST_PUBLIC_HOST` when routed
-- `HOST` when routed
+  - the absolute path to the active `devhost.toml`
 
-`HOST` is compatibility-only. Some frameworks treat it as a bind address, so do not assume every dev server handles it correctly.
+### Routed-service variables
+
+- `DEVHOST_HOST`
+  - the public routed hostname from the service `host` field
+  - use this when the app needs to know its external development URL host
+  - example: `host = "hello.xcv.lol"` means `DEVHOST_HOST=hello.xcv.lol`
 
 ## Devtools injection
 

@@ -103,8 +103,9 @@ When `devtools = false`, routed services bypass the HTML injector and proxy stra
 
 `devhost`:
 - starts your app
-- sets `HOST` and `PORT`
+- sets `PORT`
 - sets `DEVHOST_BIND_HOST=127.0.0.1` for safe local binding
+- sets `DEVHOST_HOST=<public hostname>` for routed-host awareness
 - waits for the app port to open
 - registers `https://<host>` in Caddy
 - removes the route when the app exits
@@ -118,7 +119,7 @@ When `devtools = false`, routed services bypass the HTML injector and proxy stra
 - reserves every public host before starting any service
 - starts services in dependency order
 - prefixes service logs with `[service-name]`
-- activates Caddy routes only after readiness passes
+- activates Caddy routes only after health checks pass
 - removes routes and reservations on shutdown or startup failure
 
 ## Domain note
@@ -141,17 +142,23 @@ xcv.lol, *.xcv.lol {
 
 That forces local-development certificates instead of public ACME automation.
 
-## Important note about `HOST`
+## Important note about bind vs routed host
 
-`devhost` sets `HOST=<public hostname>` only as a compatibility variable for child processes.
-That is not universally safe across dev servers.
-Many frameworks interpret `HOST` as the bind address, not the public URL.
+`devhost` separates bind behavior from routed-host awareness.
 
-That is why `devhost` also sets:
+Use:
 
 ```text
 DEVHOST_BIND_HOST=127.0.0.1
 ```
 
+for socket binding, and use:
+
+```text
+DEVHOST_HOST=<public hostname>
+```
+
+when the app needs to know its routed development hostname.
+
 For manifest mode, `DEVHOST_BIND_HOST` is the configured service bind host.
-If a framework breaks when `HOST=app.xcv.lol`, configure that framework to bind explicitly to `127.0.0.1`, `0.0.0.0`, `::1`, or `::`.
+Do not reuse the routed host as the bind address unless the framework explicitly requires that behavior and you have verified it.

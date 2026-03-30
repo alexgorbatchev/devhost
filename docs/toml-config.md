@@ -19,8 +19,8 @@ When run from inside a project containing `devhost.toml`, `devhost` must:
 3. validate it with Zod v4 plus semantic checks
 4. reserve every public hostname before starting any child process
 5. start all services in dependency order
-6. wait for each service readiness check
-7. register Caddy routes for every service with `publicHost`
+6. wait for each service health check
+7. register Caddy routes for every service with `host`
 8. stream prefixed logs for all services
 9. shut everything down and clean up routes on exit or failure
 
@@ -35,7 +35,7 @@ The following items are out of scope for `devhost.toml` v1:
 - shell-string command execution as the primary command format
 - profiles, matrices, or environment overlays
 - lifecycle hooks
-- log-pattern readiness checks
+- log-pattern health checks
 - remote hosts or remote routing
 - wildcard host generation
 
@@ -62,7 +62,7 @@ These baseline facts are verified from the repository at the time of writing:
 - Manifest schema validation must use Zod v4.
 - The manifest command format must be an array of argv tokens, not a shell string.
 - `devhost` must never leave child processes running after startup failure.
-- `devhost` must never activate a Caddy route for a service that has not passed readiness.
+- `devhost` must never activate a Caddy route for a service that has not passed its health check.
 - `devhost` must reserve all public hosts before starting any service process.
 - `devhost` must reject ambiguous bind and routing configuration instead of guessing.
 - Runtime binding and public hostname routing must remain separate concepts.
@@ -102,12 +102,12 @@ interface DevhostServiceConfig {
   env?: Record<string, string>;
   port?: number | "auto";
   bindHost?: string;
-  publicHost?: string;
+  host?: string;
   dependsOn?: string[];
-  ready?: DevhostReadyConfig;
+  health?: DevhostHealthConfig;
 }
 
-type DevhostReadyConfig =
+type DevhostHealthConfig =
   | { tcp: number }
   | { http: string }
   | { process: true };
@@ -124,7 +124,7 @@ devtools = true
 command = ["bun", "run", "web:dev"]
 cwd = "./app"
 port = 3000
-publicHost = "hello.local.test"
+host = "hello.local.test"
 dependsOn = ["api"]
 
 [services.web.env]
@@ -134,10 +134,10 @@ NODE_ENV = "development"
 command = ["bun", "run", "api:dev"]
 cwd = "./api"
 port = 4000
-publicHost = "api.hello.local.test"
+host = "api.hello.local.test"
 dependsOn = ["db"]
 
-[services.api.ready]
+[services.api.health]
 http = "http://127.0.0.1:4000/healthz"
 
 [services.db]
@@ -169,13 +169,13 @@ interface ResolvedDevhostService {
   env: Record<string, string>;
   port: number | null;
   bindHost: string;
-  publicHost: string | null;
+  host: string | null;
   dependsOn: string[];
-  ready: ResolvedReadyConfig;
+  health: ResolvedHealthConfig;
   portSource: "fixed" | "auto" | "none";
 }
 
-type ResolvedReadyConfig =
+type ResolvedHealthConfig =
   | { kind: "tcp"; host: string; port: number }
   | { kind: "http"; url: string }
   | { kind: "process" };
@@ -190,10 +190,10 @@ type ResolvedReadyConfig =
 - `env` defaults to an empty object before parent-process environment merging.
 - `bindHost` defaults to `127.0.0.1`.
 - `dependsOn` defaults to `[]`.
-- If `port` is set to an integer and `ready` is omitted, the effective readiness becomes `{ kind: "tcp", host: bindHost, port }`.
-- If `port` is set to `"auto"`, `devhost` must allocate an available TCP port before spawning the service and the effective readiness becomes `{ kind: "tcp", host: bindHost, port: <resolved port> }`.
-- If `port` is not set and `ready` is omitted, validation must fail.
-- `publicHost` has no default.
+- If `port` is set to an integer and `health` is omitted, the effective health check becomes `{ kind: "tcp", host: bindHost, port }`.
+- If `port` is set to `"auto"`, `devhost` must allocate an available TCP port before spawning the service and the effective health check becomes `{ kind: "tcp", host: bindHost, port: <resolved port> }`.
+- If `port` is not set and `health` is omitted, validation must fail.
+- `host` has no default.
 
 ### Injected environment variables
 
@@ -208,24 +208,22 @@ For every started service, `devhost` must merge environment in this exact order:
 ```ts
 interface InjectedServiceEnvironment {
   DEVHOST_STACK: string;
-  DEVHOST_SERVICE: string;
+  DEVHOST_SERVICE_NAME: string;
   DEVHOST_BIND_HOST: string;
   DEVHOST_MANIFEST_PATH: string;
   PORT?: string;
-  DEVHOST_PUBLIC_HOST?: string;
-  HOST?: string;
+  DEVHOST_HOST?: string;
 }
 ```
 
 Injection rules:
 
 - `DEVHOST_STACK` must equal manifest `name`.
-- `DEVHOST_SERVICE` must equal the service key.
-- `DEVHOST_BIND_HOST` must equal the resolved `bindHost`.
+- `DEVHOST_SERVICE_NAME` must equal the service key. Example: `[services.api]` maps to `DEVHOST_SERVICE_NAME=api`.
+- `DEVHOST_BIND_HOST` must equal the resolved `bindHost`. This is the socket bind host and must be treated as the authoritative bind target.
 - `DEVHOST_MANIFEST_PATH` must equal the absolute manifest path.
-- `PORT` must be injected only when the resolved runtime port is known.
-- `DEVHOST_PUBLIC_HOST` must be injected only when `publicHost` is set.
-- `HOST` must be injected only when `publicHost` is set. It exists only for child-process compatibility.
+- `PORT` must be injected only when the resolved runtime port is known. In manifest mode this includes auto-resolved ports.
+- `DEVHOST_HOST` must be injected only when `host` is set. This is the routed public hostname from the manifest.
 
 ## 7. Exact file plan
 
@@ -243,8 +241,8 @@ Injection rules:
   - dependency graph validation and topological ordering
 - `devhost/src/resolveServicePorts.ts`
   - resolves `port = "auto"` using `get-port`
-- `devhost/src/waitForServiceReady.ts`
-  - readiness checks for tcp, http, and process
+- `devhost/src/waitForServiceHealth.ts`
+  - health checks for tcp, http, and process
 - `devhost/src/startStack.ts`
   - multi-service orchestration, cleanup, and route activation
 - `test/devhost.toml`
@@ -287,12 +285,12 @@ Manifest mode must execute this exact sequence:
 3. validate the schema with Zod v4
 4. validate semantic rules
 5. resolve every `port = "auto"` using `get-port` with `reserve: true`
-6. reserve every `publicHost`
+6. reserve every `host`
 7. compute dependency order
 8. start services in topological order
-9. wait for the current service readiness to pass
-10. activate that service's Caddy route if `publicHost` is set
-11. continue until all services are ready
+9. wait for the current service health check to pass
+10. activate that service's Caddy route if `host` is set
+11. continue until all services are healthy
 12. wait for a child exit or process signal
 13. stop services in reverse startup order
 14. remove all routes and reservations
@@ -359,15 +357,15 @@ Manifest validation must enforce all of the following:
 - Every service `port`, if present, must be either an integer in the range `1..65535` or the exact string `"auto"`.
 - Every service `dependsOn` target must exist.
 - The dependency graph must be acyclic.
-- Every service must have exactly one effective readiness rule after defaults are applied.
-- `ready.tcp` must be an integer in the range `1..65535`.
-- `ready.http` must be an absolute URL whose host is `127.0.0.1`, `localhost`, or `::1`.
-- `ready.process` must be exactly `true`.
-- `publicHost` must be a syntactically valid hostname.
-- No two services may define the same `publicHost`.
-- A service with `publicHost` must also define `port`.
-- A service with `publicHost` must not use `ready.process`.
-- A service with `port = "auto"` must omit `ready` in v1.
+- Every service must have exactly one effective health check after defaults are applied.
+- `health.tcp` must be an integer in the range `1..65535`.
+- `health.http` must be an absolute URL whose host is `127.0.0.1`, `localhost`, or `::1`.
+- `health.process` must be exactly `true`.
+- `host` must be a syntactically valid hostname.
+- No two services may define the same `host`.
+- A service with `host` must also define `port`.
+- A service with `host` must not use `health.process`.
+- A service with `port = "auto"` must omit `health` in v1.
 - No two services may share the same fixed `{ bindHost, port }` pair in the manifest.
 - No two services may share the same resolved `{ bindHost, port }` pair at runtime.
 - `bindHost` must be one of `127.0.0.1`, `0.0.0.0`, `::1`, or `::`.
@@ -416,7 +414,7 @@ Rules:
 5. add Zod v4 schema validation and semantic validation in `devhost/src/validateManifest.ts`
 6. add dependency ordering in `devhost/src/resolveServiceOrder.ts`
 7. add auto-port resolution in `devhost/src/resolveServicePorts.ts`
-8. add readiness logic in `devhost/src/waitForServiceReady.ts`
+8. add health-check logic in `devhost/src/waitForServiceHealth.ts`
 9. add stack startup and shutdown orchestration in `devhost/src/startStack.ts`
 10. wire manifest mode into `devhost/src/index.ts`
 11. add a sample manifest for the test app
@@ -433,14 +431,14 @@ The test suite must cover:
 - invalid TOML parse failure
 - missing `primaryService`
 - cyclic dependencies
-- duplicate `publicHost`
-- invalid `publicHost` syntax
-- `publicHost` without `port`
-- `ready.process` on a routed service rejection
+- duplicate `host`
+- invalid `host` syntax
+- `host` without `port`
+- `health.process` on a routed service rejection
 - duplicate fixed `{ bindHost, port }` rejection
 - `port = "auto"` resolving to unique runtime ports
 - startup-order dependency resolution
-- readiness behavior for tcp, http, and process modes
+- health-check behavior for tcp, http, and process modes
 - compatibility of existing single-service CLI argument parsing
 
 ## 13. Out-of-scope / rejection list
@@ -449,7 +447,7 @@ Reject implementations that:
 
 - treat `command` as a shell string in v1
 - hardcode a private domain suffix into devhost source code
-- activate routes before readiness passes
+- activate routes before health checks pass
 - keep running services after startup failure
 - search for multiple manifests and merge them
 - replace the existing single-service CLI mode
@@ -466,7 +464,7 @@ This work is done only when all of the following are true:
 - existing single-service mode still works unchanged.
 - services with `port = "auto"` receive a unique injected `PORT` value before spawn.
 - root-level `devtools` defaults to `true` and can be set to `false`.
-- every routed service is reachable through Caddy only after readiness passes.
+- every routed service is reachable through Caddy only after its health check passes.
 - startup failure tears down all started services and removes all routes and reservations.
 - shutdown on `SIGINT` and `SIGTERM` removes all routes and reservations.
 - manifest validation errors are deterministic and name the exact offending service and field.
