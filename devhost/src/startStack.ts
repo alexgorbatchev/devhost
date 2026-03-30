@@ -1,4 +1,5 @@
 import { signalExitCodes, supportedSignals, type SupportedSignal } from "./constants";
+import { collectManagedServicesHealth } from "./collectManagedServicesHealth";
 import type { IDevhostLogger } from "./createLogger";
 import { pipeSubprocessOutput } from "./pipeSubprocessOutput";
 import {
@@ -19,6 +20,12 @@ import { waitForServiceHealth } from "./waitForServiceHealth";
 
 const shutdownGracePeriodInMilliseconds: number = 10_000;
 
+export interface IStartStackOptions {
+  pipeServiceOutput?: boolean;
+  runtimeMode?: "manifest" | "single-service";
+  stdinMode?: "ignore" | "inherit";
+}
+
 type StartedService = {
   childProcess: Bun.Subprocess;
   service: IResolvedDevhostService;
@@ -28,17 +35,30 @@ export async function startStack(
   manifest: IResolvedDevhostManifest,
   serviceOrder: string[],
   logger: IDevhostLogger,
+  options: IStartStackOptions = {},
 ): Promise<number> {
+  const resolvedOptions: Required<IStartStackOptions> = {
+    pipeServiceOutput: options.pipeServiceOutput ?? true,
+    runtimeMode: options.runtimeMode ?? "manifest",
+    stdinMode: options.stdinMode ?? "ignore",
+  };
   const startedServices: StartedService[] = [];
   const reservedHosts: string[] = [];
   const activeHosts: Set<string> = new Set<string>();
   const documentInjectionServers: Map<string, ReturnType<typeof startDocumentInjectionServer>> = new Map();
+  const managedServices: IResolvedDevhostService[] = serviceOrder.map((serviceName: string): IResolvedDevhostService => {
+    return manifest.services[serviceName];
+  });
   const routedServices: IResolvedDevhostService[] = Object.values(manifest.services).filter(
     (service: IResolvedDevhostService): boolean => service.host !== null,
   );
   let devtoolsControlServer: Awaited<ReturnType<typeof startDevtoolsControlServer>> | null = null;
   let receivedSignal: SupportedSignal | null = null;
   let resolveSignal: ((signal: SupportedSignal) => void) | null = null;
+  const signalHandlers: Array<{
+    handler: () => void;
+    signalName: SupportedSignal;
+  }> = [];
   const signalPromise: Promise<SupportedSignal> = new Promise<SupportedSignal>((resolve) => {
     resolveSignal = resolve;
   });
@@ -59,11 +79,15 @@ export async function startStack(
     }
 
     if (manifest.devtools && routedServices.length > 0) {
-      devtoolsControlServer = await startDevtoolsControlServer();
+      devtoolsControlServer = await startDevtoolsControlServer({
+        getHealthResponse: async () => {
+          return await collectManagedServicesHealth(managedServices, startedServices);
+        },
+      });
     }
 
     for (const signalName of supportedSignals) {
-      process.on(signalName, () => {
+      const handler = (): void => {
         receivedSignal = signalName;
         resolveSignal?.(signalName);
 
@@ -72,7 +96,13 @@ export async function startStack(
             startedService.childProcess.kill(signalName);
           }
         }
+      };
+
+      signalHandlers.push({
+        handler,
+        signalName,
       });
+      process.on(signalName, handler);
     }
 
     for (const serviceName of serviceOrder) {
@@ -80,27 +110,37 @@ export async function startStack(
       const childEnvironment: Record<string, string | undefined> = {
         ...process.env,
         ...service.env,
-        ...createInjectedServiceEnvironment(manifest, service),
+        ...createInjectedServiceEnvironment(manifest, service, resolvedOptions.runtimeMode),
       };
-      const childProcess = Bun.spawn(service.command, {
-        cwd: service.cwd,
-        env: childEnvironment,
-        stderr: "pipe",
-        stdin: "ignore",
-        stdout: "pipe",
-      });
+      const childProcess = resolvedOptions.pipeServiceOutput
+        ? Bun.spawn(service.command, {
+            cwd: service.cwd,
+            env: childEnvironment,
+            stderr: "pipe",
+            stdin: resolvedOptions.stdinMode,
+            stdout: "pipe",
+          })
+        : Bun.spawn(service.command, {
+            cwd: service.cwd,
+            env: childEnvironment,
+            stderr: "inherit",
+            stdin: resolvedOptions.stdinMode,
+            stdout: "inherit",
+          });
 
       startedServices.push({
         childProcess,
         service,
       });
 
-      void pipeSubprocessOutput(childProcess.stdout, `[${service.name}] `, (line: string) => {
-        console.log(line);
-      });
-      void pipeSubprocessOutput(childProcess.stderr, `[${service.name}] `, (line: string) => {
-        console.error(line);
-      });
+      if (resolvedOptions.pipeServiceOutput) {
+        void pipeSubprocessOutput(childProcess.stdout, `[${service.name}] `, (line: string) => {
+          console.log(line);
+        });
+        void pipeSubprocessOutput(childProcess.stderr, `[${service.name}] `, (line: string) => {
+          console.error(line);
+        });
+      }
 
       await waitForServiceHealth({
         childProcess,
@@ -180,6 +220,10 @@ export async function startStack(
 
     throw error;
   } finally {
+    for (const { handler, signalName } of signalHandlers) {
+      process.off(signalName, handler);
+    }
+
     await stopStartedServices(startedServices);
 
     for (const [serviceName, documentInjectionServer] of documentInjectionServers.entries()) {
@@ -206,13 +250,17 @@ export async function startStack(
 export function createInjectedServiceEnvironment(
   manifest: IResolvedDevhostManifest,
   service: IResolvedDevhostService,
+  runtimeMode: "manifest" | "single-service" = "manifest",
 ): IInjectedServiceEnvironment {
   const environment: IInjectedServiceEnvironment = {
     DEVHOST_BIND_HOST: service.bindHost,
-    DEVHOST_MANIFEST_PATH: manifest.manifestPath,
-    DEVHOST_SERVICE_NAME: service.name,
-    DEVHOST_STACK: manifest.name,
   };
+
+  if (runtimeMode === "manifest") {
+    environment.DEVHOST_MANIFEST_PATH = manifest.manifestPath;
+    environment.DEVHOST_SERVICE_NAME = service.name;
+    environment.DEVHOST_STACK = manifest.name;
+  }
 
   if (service.port !== null) {
     environment.PORT = String(service.port);

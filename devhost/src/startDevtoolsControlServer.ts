@@ -1,17 +1,24 @@
 import { buildDevtoolsScript } from "./buildDevtoolsScript";
-import { INJECTED_SCRIPT_PATH, TIME_API_PATH } from "./devtools/constants";
+import { HEALTH_API_PATH, INJECTED_SCRIPT_PATH, TIME_API_PATH } from "./devtools/constants";
+import type { HealthResponse } from "./devtools/types";
 
 interface IDevtoolsControlServer {
   port: number;
   stop: () => Promise<void>;
 }
 
-export async function startDevtoolsControlServer(): Promise<IDevtoolsControlServer> {
+interface IStartDevtoolsControlServerOptions {
+  getHealthResponse: () => Promise<HealthResponse>;
+}
+
+export async function startDevtoolsControlServer(
+  options: IStartDevtoolsControlServerOptions,
+): Promise<IDevtoolsControlServer> {
   const devtoolsScript: string = await buildDevtoolsScript();
   const server = Bun.serve({
     hostname: "127.0.0.1",
     port: 0,
-    fetch(request: Request): Response {
+    async fetch(request: Request): Promise<Response> {
       const requestUrl: URL = new URL(request.url);
 
       if (requestUrl.pathname === INJECTED_SCRIPT_PATH) {
@@ -24,21 +31,18 @@ export async function startDevtoolsControlServer(): Promise<IDevtoolsControlServ
       }
 
       if (requestUrl.pathname === TIME_API_PATH) {
-        return new Response(
-          JSON.stringify(
-            {
-              currentTime: new Date().toISOString(),
-            },
-            null,
-            2,
-          ),
-          {
-            headers: {
-              "cache-control": "no-store",
-              "content-type": "application/json; charset=utf-8",
-            },
-          },
-        );
+        return createJsonResponse({
+          currentTime: new Date().toISOString(),
+        });
+      }
+
+      if (requestUrl.pathname === HEALTH_API_PATH) {
+        try {
+          return createJsonResponse(await options.getHealthResponse());
+        } catch (error: unknown) {
+          const message: string = error instanceof Error ? error.message : String(error);
+          return new Response(message, { status: 500 });
+        }
       }
 
       return new Response("Not Found", { status: 404 });
@@ -51,4 +55,13 @@ export async function startDevtoolsControlServer(): Promise<IDevtoolsControlServ
       await server.stop(true);
     },
   };
+}
+
+function createJsonResponse(payload: unknown): Response {
+  return new Response(JSON.stringify(payload, null, 2), {
+    headers: {
+      "cache-control": "no-store",
+      "content-type": "application/json; charset=utf-8",
+    },
+  });
 }

@@ -23,7 +23,7 @@ export async function waitForServiceHealth(options: IWaitForServiceHealthOptions
   const deadline: number = Date.now() + startupTimeoutInMilliseconds;
 
   while (Date.now() < deadline) {
-    if (await isServiceHealthy(options.health)) {
+    if (await checkServiceHealth(options.health)) {
       return;
     }
 
@@ -45,7 +45,11 @@ async function throwIfExited(childProcess: ISubprocessLike, serviceName: string)
   throw new Error(`Service ${serviceName} exited before passing its health check with code ${exitCode}.`);
 }
 
-async function isServiceHealthy(health: ResolvedHealthConfig): Promise<boolean> {
+export async function checkServiceHealth(health: ResolvedHealthConfig): Promise<boolean> {
+  if (health.kind === "process") {
+    return true;
+  }
+
   if (health.kind === "tcp") {
     return await canConnectToPort(resolveProxyHost(health.host), health.port);
   }

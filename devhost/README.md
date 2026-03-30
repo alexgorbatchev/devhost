@@ -20,6 +20,7 @@ It has two modes:
 - prefixes its own logs with the manifest `name` in manifest mode, falling back to `[devhost]`
 - prefixes child service logs with `[service-name]`
 - optionally injects a small devtools UI into HTML document navigations
+- exposes devhost control endpoints under `/__devhost__/*` when devtools control routing is enabled
 
 ## Requirements
 
@@ -158,6 +159,15 @@ When devtools are enabled, routed traffic is split like this:
 - everything else → app directly
 
 That keeps assets, HMR, fetches, SSE, and WebSockets off the injection path.
+
+Current control endpoints:
+
+- `/__devhost__/api/time`
+- `/__devhost__/api/health`
+  - returns `{ services: [{ name, status }] }`
+  - `status` is a live boolean derived from the managed service's configured health check
+
+If manifest `devtools = false`, devhost does not mount these control endpoints for that stack.
 
 ### Important caveat
 

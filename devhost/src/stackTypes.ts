@@ -87,10 +87,10 @@ export type ResolvedHealthConfig =
     };
 
 export interface IInjectedServiceEnvironment {
-  DEVHOST_STACK: string;
-  DEVHOST_SERVICE_NAME: string;
   DEVHOST_BIND_HOST: string;
-  DEVHOST_MANIFEST_PATH: string;
-  PORT?: string;
   DEVHOST_HOST?: string;
+  DEVHOST_MANIFEST_PATH?: string;
+  DEVHOST_SERVICE_NAME?: string;
+  DEVHOST_STACK?: string;
+  PORT?: string;
 }
