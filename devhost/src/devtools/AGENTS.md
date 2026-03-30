@@ -2,6 +2,8 @@
 
 These rules apply to all UI code under `devhost/src/devtools/`.
 
+- This `AGENTS.md` file must be kept up to date after devtools-specific UI policy, styling, or theming rules change.
+
 ## Styling isolation
 
 - All visual styling must be applied directly through JSX `style={...}` props.
