@@ -1,5 +1,6 @@
 name = "hello-test-app"
 primaryService = "hello"
+devtoolsPosition = "top-right"
 
 [services.hello]
 command = ["bun", "run", "dev"]
