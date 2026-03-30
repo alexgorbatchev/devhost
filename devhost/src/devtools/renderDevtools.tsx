@@ -1,15 +1,15 @@
 import { render } from "preact";
 
-import { TOOLBAR_BUTTON_ID } from "./constants";
+import { DEVTOOLS_ROOT_ID } from "./constants";
 import { DevtoolsApp } from "./DevtoolsApp";
 
 export function renderDevtools(): void {
-  if (document.getElementById(TOOLBAR_BUTTON_ID) !== null) {
+  if (document.getElementById(DEVTOOLS_ROOT_ID) !== null) {
     return;
   }
 
   const mountApplication = (): void => {
-    if (document.body === null || document.getElementById(TOOLBAR_BUTTON_ID) !== null) {
+    if (document.body === null || document.getElementById(DEVTOOLS_ROOT_ID) !== null) {
       return;
     }
 

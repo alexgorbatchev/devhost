@@ -1,7 +1,3 @@
-export interface TimeResponse {
-  currentTime: string;
-}
-
 export type ServiceHealth = {
   name: string;
   status: boolean;

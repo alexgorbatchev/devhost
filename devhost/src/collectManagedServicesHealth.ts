@@ -1,3 +1,4 @@
+import { DEVHOST_SERVICE_NAME } from "./devtools/constants";
 import type { HealthResponse, ServiceHealth } from "./devtools/types";
 import type { IResolvedDevhostService } from "./stackTypes";
 import { checkServiceHealth } from "./waitForServiceHealth";
@@ -42,6 +43,12 @@ export async function collectManagedServicesHealth(
   );
 
   return {
-    services,
+    services: [
+      {
+        name: DEVHOST_SERVICE_NAME,
+        status: true,
+      },
+      ...services,
+    ],
   };
 }

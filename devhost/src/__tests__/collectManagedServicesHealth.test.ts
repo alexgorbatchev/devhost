@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
 
-import { collectManagedServicesHealth, type IManagedService, type IManagedSubprocess } from "../collectManagedServicesHealth";
+import {
+  collectManagedServicesHealth,
+  type IManagedService,
+  type IManagedSubprocess,
+} from "../collectManagedServicesHealth";
 import type { IResolvedDevhostService } from "../stackTypes";
 
 const servers: Bun.Server[] = [];
@@ -99,6 +103,10 @@ describe("collectManagedServicesHealth", () => {
 
     await expect(collectManagedServicesHealth(managedServices, startedServices)).resolves.toEqual({
       services: [
+        {
+          name: "devhost",
+          status: true,
+        },
         {
           name: "web",
           status: true,

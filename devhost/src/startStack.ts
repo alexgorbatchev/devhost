@@ -46,9 +46,11 @@ export async function startStack(
   const reservedHosts: string[] = [];
   const activeHosts: Set<string> = new Set<string>();
   const documentInjectionServers: Map<string, ReturnType<typeof startDocumentInjectionServer>> = new Map();
-  const managedServices: IResolvedDevhostService[] = serviceOrder.map((serviceName: string): IResolvedDevhostService => {
-    return manifest.services[serviceName];
-  });
+  const managedServices: IResolvedDevhostService[] = serviceOrder.map(
+    (serviceName: string): IResolvedDevhostService => {
+      return manifest.services[serviceName];
+    },
+  );
   const routedServices: IResolvedDevhostService[] = Object.values(manifest.services).filter(
     (service: IResolvedDevhostService): boolean => service.host !== null,
   );
@@ -84,6 +86,7 @@ export async function startStack(
           return await collectManagedServicesHealth(managedServices, startedServices);
         },
       });
+      await devtoolsControlServer.publishHealthResponse();
     }
 
     for (const signalName of supportedSignals) {
@@ -132,6 +135,10 @@ export async function startStack(
         childProcess,
         service,
       });
+      void childProcess.exited.then(async (): Promise<void> => {
+        await devtoolsControlServer?.publishHealthResponse();
+      });
+      await devtoolsControlServer?.publishHealthResponse();
 
       if (resolvedOptions.pipeServiceOutput) {
         void pipeSubprocessOutput(childProcess.stdout, `[${service.name}] `, (line: string) => {
@@ -147,6 +154,7 @@ export async function startStack(
         health: service.health,
         serviceName,
       });
+      await devtoolsControlServer?.publishHealthResponse();
 
       if (service.host !== null && service.port !== null) {
         if (manifest.devtools) {
