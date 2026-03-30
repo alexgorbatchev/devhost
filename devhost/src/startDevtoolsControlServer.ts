@@ -1,10 +1,10 @@
 import { buildDevtoolsScript } from "./buildDevtoolsScript";
 import { INJECTED_SCRIPT_PATH, TIME_API_PATH } from "./devtools/constants";
 
-type IDevtoolsControlServer = {
+interface IDevtoolsControlServer {
   port: number;
   stop: () => Promise<void>;
-};
+}
 
 export async function startDevtoolsControlServer(): Promise<IDevtoolsControlServer> {
   const devtoolsScript: string = await buildDevtoolsScript();

@@ -4,7 +4,7 @@
 
 ### Objective
 
-Add a manifest-driven stack mode to `devhost` so a project can define its full local development stack in one file and start it with no routing arguments.
+Add a manifest-driven stack mode to `devhost` so a project can define its local development stack in one file and start it with no routing flags.
 
 The v1 command contract is:
 
@@ -15,76 +15,74 @@ bun run devhost
 When run from inside a project containing `devhost.toml`, `devhost` must:
 
 1. discover the manifest
-2. validate it
-3. reserve every public hostname before starting any child process
-4. start all services in dependency order
-5. wait for each service readiness check
-6. register Caddy routes for every service with `publicHost`
-7. stream prefixed logs for all services
-8. shut everything down and clean up routes on exit or failure
+2. parse it with Bun's built-in TOML parser
+3. validate it with Zod v4 plus semantic checks
+4. reserve every public hostname before starting any child process
+5. start all services in dependency order
+6. wait for each service readiness check
+7. register Caddy routes for every service with `publicHost`
+8. stream prefixed logs for all services
+9. shut everything down and clean up routes on exit or failure
 
 ### Non-goals
 
 The following items are out of scope for `devhost.toml` v1:
 
-- browser UI injection
-- global control-plane daemon
-- per-service restart buttons in a browser
+- per-service `devtools` overrides
+- a global control-plane daemon
+- automatic manifest merging
 - Docker or Compose orchestration
 - shell-string command execution as the primary command format
 - profiles, matrices, or environment overlays
 - lifecycle hooks
 - log-pattern readiness checks
-- remote hosts or non-local routing
-- arbitrary wildcard host generation
+- remote hosts or remote routing
+- wildcard host generation
 
 ## 2. Current codebase baseline
 
 These baseline facts are verified from the repository at the time of writing:
 
-- `devhost/index.ts` currently supports a single-service CLI mode with required `--host` and `--port` flags followed by `-- <command...>`.
-- `devhost/index.ts` claims a host reservation before spawning the child process.
-- `devhost/index.ts` waits for a TCP port to open before activating the Caddy route.
-- `devhost/index.ts` writes one Caddy route file per host into `caddy/routes/`.
-- `devhost/index.ts` writes one registration file per host into `caddy/routes/.registrations/`.
-- `caddy/Caddyfile` uses `tls internal` and imports `./routes/*.caddy` at the top level.
-- `README.md` documents only the single-service `--host` / `--port` workflow.
-- No manifest parser, service graph, or multi-service supervisor exists today.
+- `devhost/src/index.ts` is the CLI entrypoint.
+- `devhost/src/startSingleService.ts` supports the existing `--host` / `--port` single-service mode.
+- single-service mode claims a host reservation before spawning the child process.
+- single-service mode waits for a TCP port to open before activating the Caddy route.
+- `devhost/src/startStack.ts` is the stack-mode orchestrator.
+- `devhost` code now lives under `devhost/src/`.
+- `devhost` has its own `package.json`, `bun.lock`, and `tsconfig.json`.
+- `caddy/Caddyfile` still determines which domains are actually routable in this repository.
+- browser devtools injection already exists and is implemented as split routing.
 
 ## 3. Non-negotiable constraints
 
 - The manifest filename must be exactly `devhost.toml`.
-- The manifest mode must be additive. Existing `--host` / `--port` single-service mode must continue to work.
-- The primary process runtime must remain Bun.
+- Manifest mode must be additive. Existing single-service mode must continue to work.
+- The primary runtime must remain Bun.
+- Manifest parsing must use Bun's built-in TOML support. No external TOML library is allowed.
+- Manifest schema validation must use Zod v4.
 - The manifest command format must be an array of argv tokens, not a shell string.
-- Public routing must remain limited to `xcv.lol` or subdomains of `xcv.lol` in v1.
-- `devhost` must never leave a child process running after manifest startup fails.
+- `devhost` must never leave child processes running after startup failure.
 - `devhost` must never activate a Caddy route for a service that has not passed readiness.
 - `devhost` must reserve all public hosts before starting any service process.
-- `devhost` must reject ambiguous bind/routing configuration instead of guessing.
-- The manifest model must separate runtime binding from public hostname routing.
+- `devhost` must reject ambiguous bind and routing configuration instead of guessing.
+- Runtime binding and public hostname routing must remain separate concepts.
 
 ## 4. Exact architecture choice
 
 `devhost.toml` v1 uses a single manifest file with an explicit service graph.
 
-Each service defines:
+The root manifest defines:
+- stack metadata
+- the primary service name
+- an optional `devtools` boolean
+- the full service map
 
-- an argv command array
-- an optional working directory
-- optional environment variables
-- an optional local port, which may be a fixed integer or the literal string `"auto"`
-- an optional public hostname
-- zero or more service dependencies
-- exactly one effective readiness rule
+`devtools` is optional and defaults to `true`.
+When `devtools = true`, routed HTML documents go through the injector path and `/__devhost__/*` goes to the devtools control server.
+When `devtools = false`, routed services proxy directly to the app.
 
-`devhost` must run the entire graph in a single parent process.
-
+`devhost` must run the whole graph in one parent process.
 `devhost` must not create a daemon in v1.
-
-`devhost` must not inject UI code into proxied responses in v1.
-
-`devhost` must not treat a database or internal dependency as a public host unless the manifest explicitly sets `publicHost`.
 
 ## 5. Data model / manifest schema
 
@@ -94,6 +92,7 @@ The top-level manifest shape is:
 interface DevhostManifest {
   name: string;
   primaryService: string;
+  devtools?: boolean;
   services: Record<string, DevhostServiceConfig>;
 }
 
@@ -114,30 +113,28 @@ type DevhostReadyConfig =
   | { process: true };
 ```
 
-The exact TOML representation is:
+Example TOML:
 
 ```toml
 name = "hello-stack"
 primaryService = "web"
+devtools = true
 
 [services.web]
 command = ["bun", "run", "web:dev"]
-cwd = "."
+cwd = "./app"
 port = 3000
-publicHost = "hello.xcv.lol"
+publicHost = "hello.local.test"
 dependsOn = ["api"]
 
 [services.web.env]
 NODE_ENV = "development"
 
-[services.web.ready]
-tcp = 3000
-
 [services.api]
 command = ["bun", "run", "api:dev"]
-cwd = "."
+cwd = "./api"
 port = 4000
-publicHost = "api.hello.xcv.lol"
+publicHost = "api.hello.local.test"
 dependsOn = ["db"]
 
 [services.api.ready]
@@ -145,6 +142,7 @@ http = "http://127.0.0.1:4000/healthz"
 
 [services.db]
 command = ["bun", "run", "db:dev"]
+cwd = "./db"
 port = "auto"
 ```
 
@@ -157,9 +155,10 @@ After defaults are applied, runtime code must use these exact shapes:
 ```ts
 interface ResolvedDevhostManifest {
   name: string;
+  primaryService: string;
   manifestPath: string;
   manifestDirectoryPath: string;
-  primaryService: string;
+  devtools: boolean;
   services: Record<string, ResolvedDevhostService>;
 }
 
@@ -186,13 +185,14 @@ type ResolvedReadyConfig =
 
 `devhost` must apply these defaults exactly:
 
+- `devtools` defaults to `true`.
 - `cwd` defaults to the manifest directory.
 - `env` defaults to an empty object before parent-process environment merging.
 - `bindHost` defaults to `127.0.0.1`.
 - `dependsOn` defaults to `[]`.
 - If `port` is set to an integer and `ready` is omitted, the effective readiness becomes `{ kind: "tcp", host: bindHost, port }`.
 - If `port` is set to `"auto"`, `devhost` must allocate an available TCP port before spawning the service and the effective readiness becomes `{ kind: "tcp", host: bindHost, port: <resolved port> }`.
-- If `port` is not set and `ready` is omitted, manifest validation must fail.
+- If `port` is not set and `ready` is omitted, validation must fail.
 - `publicHost` has no default.
 
 ### Injected environment variables
@@ -225,47 +225,41 @@ Injection rules:
 - `DEVHOST_MANIFEST_PATH` must equal the absolute manifest path.
 - `PORT` must be injected only when the resolved runtime port is known.
 - `DEVHOST_PUBLIC_HOST` must be injected only when `publicHost` is set.
-- `HOST` must be injected only when `publicHost` is set. This exists only for compatibility with existing development servers. `devhost` runtime logic must not depend on `HOST`.
+- `HOST` must be injected only when `publicHost` is set. It exists only for child-process compatibility.
 
 ## 7. Exact file plan
 
 ### Add
 
-- `docs/toml-config.md`
-  - exact v1 manifest spec and implementation plan
-- `devhost/stackTypes.ts`
-  - manifest, resolved manifest, and service runtime types
-- `devhost/resolveManifestPath.ts`
-  - manifest discovery from current working directory
-- `devhost/readManifest.ts`
-  - TOML loading and parsing
-- `devhost/validateManifest.ts`
-  - schema and semantic validation
-- `devhost/resolveServiceOrder.ts`
+- `devhost/src/stackTypes.ts`
+  - manifest and runtime types
+- `devhost/src/resolveManifestPath.ts`
+  - upward manifest discovery
+- `devhost/src/readManifest.ts`
+  - TOML loading via Bun
+- `devhost/src/validateManifest.ts`
+  - Zod v4 schema validation plus semantic checks
+- `devhost/src/resolveServiceOrder.ts`
   - dependency graph validation and topological ordering
-- `devhost/resolveServicePorts.ts`
+- `devhost/src/resolveServicePorts.ts`
   - resolves `port = "auto"` using `get-port`
-- `devhost/waitForServiceReady.ts`
+- `devhost/src/waitForServiceReady.ts`
   - readiness checks for tcp, http, and process
-- `devhost/startStack.ts`
+- `devhost/src/startStack.ts`
   - multi-service orchestration, cleanup, and route activation
-- `test/fixtures/devhost/basic-stack/devhost.toml`
-  - valid multi-service fixture
-- `test/fixtures/devhost/invalid-cycle/devhost.toml`
-  - invalid cyclic dependency fixture
-- `test/fixtures/devhost/invalid-public-host/devhost.toml`
-  - invalid host fixture outside `xcv.lol`
-- `test/fixtures/devhost/invalid-auto-port-readiness/devhost.toml`
-  - invalid use of `port = "auto"` with explicit readiness
+- `test/devhost.toml`
+  - sample manifest for the demo app
 
 ### Modify
 
+- `devhost/package.json`
+  - add `get-port` and `zod`
+- `devhost/tsconfig.json`
+  - compile only `src/`
 - `package.json`
-  - add `get-port` dependency for runtime auto-port resolution
-- `devhost/index.ts`
-  - add no-arg manifest mode while keeping existing single-service mode
+  - run the devhost package from the repository root
 - `README.md`
-  - document manifest mode and example `devhost.toml`
+  - document manifest mode and the test app manifest
 
 ## 8. Runtime behavior
 
@@ -290,26 +284,34 @@ Manifest mode must execute this exact sequence:
 
 1. discover manifest
 2. parse TOML
-3. validate static manifest rules
-4. resolve every `port = "auto"` using `get-port` with `reserve: true`
-5. validate resolved runtime uniqueness for `{ bindHost, port }`
+3. validate the schema with Zod v4
+4. validate semantic rules
+5. resolve every `port = "auto"` using `get-port` with `reserve: true`
 6. reserve every `publicHost`
 7. compute dependency order
 8. start services in topological order
 9. wait for the current service readiness to pass
 10. activate that service's Caddy route if `publicHost` is set
 11. continue until all services are ready
-12. wait for child exits or process signals
+12. wait for a child exit or process signal
 13. stop services in reverse startup order
 14. remove all routes and reservations
 
-A service becomes startable only when all services in `dependsOn` are ready.
-
 Services must start sequentially in v1.
+
+### Routing behavior
+
+For a routed service with `devtools = true`, Caddy must route:
+
+1. `/__devhost__/*` to the devtools control server
+2. requests with `Sec-Fetch-Dest: document` to the document injector server
+3. everything else directly to the app
+
+For a routed service with `devtools = false`, Caddy must route directly to the app.
 
 ### Auto-port resolution
 
-`devhost` must use the `get-port` package for `port = "auto"`.
+`devhost` must use `get-port` for `port = "auto"`.
 
 The exact resolution algorithm is:
 
@@ -319,12 +321,8 @@ The exact resolution algorithm is:
 4. add the returned port to the exclusion set for that `bindHost`
 5. store the resolved port in the runtime service config before any child process is spawned
 
-`excludedPorts` must include:
-
-- every fixed numeric port already declared for the same `bindHost`
-- every auto-resolved port already chosen earlier for the same `bindHost`
-
-The `get-port` reservation is an in-process safeguard only. It must be treated as protection against in-process collisions, not as a guarantee against external-process races.
+The reservation is an in-process safeguard only.
+It must not be treated as protection against external-process races.
 
 ### Shutdown behavior
 
@@ -332,7 +330,7 @@ On parent exit, signal, or startup failure:
 
 1. stop services in reverse startup order with `SIGTERM`
 2. wait up to `10_000ms` per service
-3. send `SIGKILL` to any remaining live service process
+3. send `SIGKILL` to any remaining live service
 4. remove Caddy route files for all services
 5. remove reservation files for all services
 
@@ -365,7 +363,7 @@ Manifest validation must enforce all of the following:
 - `ready.tcp` must be an integer in the range `1..65535`.
 - `ready.http` must be an absolute URL whose host is `127.0.0.1`, `localhost`, or `::1`.
 - `ready.process` must be exactly `true`.
-- `publicHost` must be `xcv.lol` or a subdomain of `xcv.lol`.
+- `publicHost` must be a syntactically valid hostname.
 - No two services may define the same `publicHost`.
 - A service with `publicHost` must also define `port`.
 - A service with `publicHost` must not use `ready.process`.
@@ -381,7 +379,7 @@ Manifest validation must enforce all of the following:
 This mode remains valid and unchanged:
 
 ```bash
-bun run devhost --host hello.xcv.lol --port 3200 -- bun run test:hello
+bun run devhost --host hello.local.test --port 3200 -- bun run test:hello
 ```
 
 ### New manifest mode
@@ -411,55 +409,53 @@ Rules:
 
 ## 11. Implementation order
 
-1. add `docs/toml-config.md`
-2. add manifest and resolved-manifest types in `devhost/stackTypes.ts`
-3. add manifest discovery in `devhost/resolveManifestPath.ts`
-4. add TOML parsing in `devhost/readManifest.ts`
-5. add semantic validation in `devhost/validateManifest.ts`
-6. add dependency ordering in `devhost/resolveServiceOrder.ts`
-7. add auto-port resolution in `devhost/resolveServicePorts.ts` using `get-port`
-8. add readiness logic in `devhost/waitForServiceReady.ts`
-9. add stack startup and shutdown orchestration in `devhost/startStack.ts`
-10. wire manifest mode into `devhost/index.ts`
-11. update `README.md`
+1. move devhost code under `devhost/src/`
+2. add manifest and runtime types in `devhost/src/stackTypes.ts`
+3. add manifest discovery in `devhost/src/resolveManifestPath.ts`
+4. add TOML parsing in `devhost/src/readManifest.ts`
+5. add Zod v4 schema validation and semantic validation in `devhost/src/validateManifest.ts`
+6. add dependency ordering in `devhost/src/resolveServiceOrder.ts`
+7. add auto-port resolution in `devhost/src/resolveServicePorts.ts`
+8. add readiness logic in `devhost/src/waitForServiceReady.ts`
+9. add stack startup and shutdown orchestration in `devhost/src/startStack.ts`
+10. wire manifest mode into `devhost/src/index.ts`
+11. add a sample manifest for the test app
+12. update `README.md`
 
 ## 12. Testing plan
 
-The implementation must include tests for:
+The implementation must include tests in `devhost/src/__tests__/` with at least 90% line coverage for the manifest-related modules.
+
+The test suite must cover:
 
 - manifest discovery from nested directories
-- explicit `--manifest` path loading
+- explicit `--manifest` path parsing
 - invalid TOML parse failure
 - missing `primaryService`
 - cyclic dependencies
 - duplicate `publicHost`
-- invalid `publicHost` outside `xcv.lol`
+- invalid `publicHost` syntax
 - `publicHost` without `port`
 - `ready.process` on a routed service rejection
 - duplicate fixed `{ bindHost, port }` rejection
 - `port = "auto"` resolving to unique runtime ports
-- `port = "auto"` plus explicit `ready` rejection
-- startup order respecting `dependsOn`
-- route activation only after readiness passes
-- startup failure cleaning all already-started child processes
-- signal handling stopping all services and removing routes
-- compatibility of existing `--host` / `--port` mode
+- startup-order dependency resolution
+- readiness behavior for tcp, http, and process modes
+- compatibility of existing single-service CLI argument parsing
 
 ## 13. Out-of-scope / rejection list
 
 Reject implementations that:
 
 - treat `command` as a shell string in v1
-- infer public hosts from service names
-- route every service automatically
-- use `HOST` as the internal routing source of truth
-- start services concurrently in v1
+- hardcode a private domain suffix into devhost source code
 - activate routes before readiness passes
-- keep running services after any startup failure
+- keep running services after startup failure
 - search for multiple manifests and merge them
-- add browser UI injection to satisfy this config spec
 - replace the existing single-service CLI mode
-- implement HTTP-health placeholders for auto ports in v1
+- implement per-service devtools flags in v1
+- add an external TOML parsing dependency
+- skip Zod v4 for schema validation
 
 ## 14. Definition of done
 
@@ -469,8 +465,9 @@ This work is done only when all of the following are true:
 - `bun run devhost --manifest ./devhost.toml` starts the same stack.
 - existing single-service mode still works unchanged.
 - services with `port = "auto"` receive a unique injected `PORT` value before spawn.
+- root-level `devtools` defaults to `true` and can be set to `false`.
 - every routed service is reachable through Caddy only after readiness passes.
 - startup failure tears down all started services and removes all routes and reservations.
 - shutdown on `SIGINT` and `SIGTERM` removes all routes and reservations.
-- validation errors are deterministic and name the exact offending service and field.
-- `README.md` includes one valid multi-service `devhost.toml` example, including at least one service with `port = "auto"`.
+- manifest validation errors are deterministic and name the exact offending service and field.
+- `test/devhost.toml` provides a working sample manifest for the demo app.

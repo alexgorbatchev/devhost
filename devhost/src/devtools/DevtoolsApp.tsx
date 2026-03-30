@@ -1,6 +1,7 @@
 import type { JSX } from "preact";
 import { useState } from "preact/hooks";
 
+import { TIME_OUTPUT_ID, TOOLBAR_BUTTON_ID } from "./constants";
 import { fetchCurrentTime } from "./fetchCurrentTime";
 
 const buttonStyle: JSX.CSSProperties = {
@@ -50,13 +51,13 @@ export function DevtoolsApp(): JSX.Element {
 
   return (
     <>
-      <button style={buttonStyle} type="button" onClick={handleAppendTime}>
+      <button id={TOOLBAR_BUTTON_ID} style={buttonStyle} type="button" onClick={handleAppendTime}>
         Append devhost time
       </button>
-      <div style={outputStyle}>
+      <div id={TIME_OUTPUT_ID} style={outputStyle}>
         {errorMessage !== null ? <div>{errorMessage}</div> : null}
-        {lines.map((line) => (
-          <div key={line}>{line}</div>
+        {lines.map((line, index) => (
+          <div key={`${line}-${index}`}>{line}</div>
         ))}
       </div>
     </>

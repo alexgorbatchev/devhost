@@ -1,0 +1,12 @@
+name = "cycle"
+primaryService = "web"
+
+[services.web]
+command = ["bun", "run", "web:dev"]
+port = 3000
+dependsOn = ["api"]
+
+[services.api]
+command = ["bun", "run", "api:dev"]
+port = 4000
+dependsOn = ["web"]

@@ -3,9 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun run index.ts"
+    "dev": "bun run src/index.ts",
+    "test:coverage": "bun test --coverage"
   },
   "dependencies": {
-    "preact": "^10.27.2"
+    "get-port": "^7.2.0",
+    "preact": "^10.29.0",
+    "zod": "^4.1.12"
   }
 }

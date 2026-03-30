@@ -1,0 +1,9 @@
+name = "bad-auto"
+primaryService = "db"
+
+[services.db]
+command = ["bun", "run", "db:dev"]
+port = "auto"
+
+[services.db.ready]
+tcp = 5432

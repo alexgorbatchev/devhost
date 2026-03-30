@@ -1,0 +1,8 @@
+name = "hello-test-app"
+primaryService = "hello"
+
+[services.hello]
+command = ["bun", "run", "dev"]
+cwd = "."
+port = 3200
+publicHost = "hello.xcv.lol"

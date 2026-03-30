@@ -1,14 +1,14 @@
 import { INJECTED_SCRIPT_PATH } from "./devtools/constants";
 
-type IStartDocumentInjectionServerOptions = {
+interface IStartDocumentInjectionServerOptions {
   backendHost: string;
   backendPort: number;
-};
+}
 
-type IDocumentInjectionServer = {
+interface IDocumentInjectionServer {
   port: number;
   stop: () => Promise<void>;
-};
+}
 
 export function startDocumentInjectionServer(
   options: IStartDocumentInjectionServerOptions,

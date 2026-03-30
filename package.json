@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "devhost": "bun run devhost/index.ts",
+    "devhost": "bun run ./devhost/src/index.ts",
     "test:hello": "cd test && bun run dev"
   }
 }

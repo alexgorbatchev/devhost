@@ -1,0 +1,278 @@
+import { signalExitCodes, supportedSignals, type SupportedSignal } from "./constants";
+import { pipeSubprocessOutput } from "./pipeSubprocessOutput";
+import { activateRoute, claimRegistration, cleanupStaleRegistrations, ensureCaddyfileExists, ensureRouteDirectories, removeRouteFiles, unregisterRoute } from "./routeUtils";
+import { resolveProxyHost } from "./resolveProxyHost";
+import { startDevtoolsControlServer } from "./startDevtoolsControlServer";
+import { startDocumentInjectionServer } from "./startDocumentInjectionServer";
+import type { IInjectedServiceEnvironment, IResolvedDevhostManifest, IResolvedDevhostService } from "./stackTypes";
+import { waitForServiceReady } from "./waitForServiceReady";
+
+const shutdownGracePeriodInMilliseconds: number = 10_000;
+
+type StartedService = {
+  childProcess: Bun.Subprocess;
+  service: IResolvedDevhostService;
+};
+
+export async function startStack(manifest: IResolvedDevhostManifest, serviceOrder: string[]): Promise<number> {
+  const startedServices: StartedService[] = [];
+  const reservedHosts: string[] = [];
+  const activeHosts: Set<string> = new Set<string>();
+  const documentInjectionServers: Map<string, ReturnType<typeof startDocumentInjectionServer>> = new Map();
+  const routedServices: IResolvedDevhostService[] = Object.values(manifest.services).filter(
+    (service: IResolvedDevhostService): boolean => service.publicHost !== null,
+  );
+  let devtoolsControlServer: Awaited<ReturnType<typeof startDevtoolsControlServer>> | null = null;
+  let receivedSignal: SupportedSignal | null = null;
+  let resolveSignal: ((signal: SupportedSignal) => void) | null = null;
+  const signalPromise: Promise<SupportedSignal> = new Promise<SupportedSignal>((resolve) => {
+    resolveSignal = resolve;
+  });
+
+  try {
+    await ensureRouteDirectories();
+    await ensureCaddyfileExists();
+    await cleanupStaleRegistrations();
+
+    for (const service of routedServices) {
+      if (service.publicHost === null || service.port === null) {
+        continue;
+      }
+
+      await claimRegistration(service.publicHost, service.port);
+      reservedHosts.push(service.publicHost);
+    }
+
+    if (manifest.devtools && routedServices.length > 0) {
+      devtoolsControlServer = await startDevtoolsControlServer();
+    }
+
+    for (const signalName of supportedSignals) {
+      process.on(signalName, () => {
+        receivedSignal = signalName;
+        resolveSignal?.(signalName);
+
+        for (const startedService of startedServices) {
+          if (!startedService.childProcess.killed && startedService.childProcess.exitCode === null) {
+            startedService.childProcess.kill(signalName);
+          }
+        }
+      });
+    }
+
+    for (const serviceName of serviceOrder) {
+      const service: IResolvedDevhostService = manifest.services[serviceName];
+      const childEnvironment: Record<string, string | undefined> = {
+        ...process.env,
+        ...service.env,
+        ...createInjectedServiceEnvironment(manifest, service),
+      };
+      const childProcess = Bun.spawn(service.command, {
+        cwd: service.cwd,
+        env: childEnvironment,
+        stderr: "pipe",
+        stdin: "ignore",
+        stdout: "pipe",
+      });
+
+      startedServices.push({
+        childProcess,
+        service,
+      });
+
+      void pipeSubprocessOutput(childProcess.stdout, `[${service.name}] `, (line: string) => {
+        console.log(line);
+      });
+      void pipeSubprocessOutput(childProcess.stderr, `[${service.name}] `, (line: string) => {
+        console.error(line);
+      });
+
+      await waitForServiceReady({
+        childProcess,
+        ready: service.ready,
+        serviceName,
+      });
+
+      if (service.publicHost !== null && service.port !== null) {
+        if (manifest.devtools) {
+          const documentInjectionServer = startDocumentInjectionServer({
+            backendHost: resolveProxyHost(service.bindHost),
+            backendPort: service.port,
+          });
+
+          documentInjectionServers.set(service.name, documentInjectionServer);
+          await activateRoute({
+            appBindHost: service.bindHost,
+            appPort: service.port,
+            devtoolsControlPort: devtoolsControlServer?.port,
+            documentInjectionPort: documentInjectionServer.port,
+            host: service.publicHost,
+          });
+        } else {
+          await activateRoute({
+            appBindHost: service.bindHost,
+            appPort: service.port,
+            host: service.publicHost,
+          });
+        }
+
+        activeHosts.add(service.publicHost);
+      }
+    }
+
+    logPrimaryService(manifest);
+
+    const raceResult:
+      | {
+          type: "signal";
+          signal: SupportedSignal;
+        }
+      | {
+          type: "exit";
+          serviceName: string;
+          exitCode: number;
+        } = await Promise.race([
+      signalPromise.then(
+        (signal): {
+          type: "signal";
+          signal: SupportedSignal;
+        } => ({
+          signal,
+          type: "signal",
+        }),
+      ),
+      waitForAnyServiceExit(startedServices).then(
+        (result): {
+          type: "exit";
+          serviceName: string;
+          exitCode: number;
+        } => ({
+          ...result,
+          type: "exit",
+        }),
+      ),
+    ]);
+
+    if (raceResult.type === "signal") {
+      return signalExitCodes[raceResult.signal];
+    }
+
+    return raceResult.exitCode;
+  } catch (error) {
+    if (receivedSignal !== null) {
+      return signalExitCodes[receivedSignal];
+    }
+
+    throw error;
+  } finally {
+    await stopStartedServices(startedServices);
+
+    for (const [serviceName, documentInjectionServer] of documentInjectionServers.entries()) {
+      await documentInjectionServer.stop();
+      documentInjectionServers.delete(serviceName);
+    }
+
+    if (devtoolsControlServer !== null) {
+      await devtoolsControlServer.stop();
+    }
+
+    for (const host of activeHosts) {
+      await unregisterRoute(host);
+    }
+
+    for (const host of reservedHosts) {
+      if (!activeHosts.has(host)) {
+        await removeRouteFiles(host);
+      }
+    }
+  }
+}
+
+function createInjectedServiceEnvironment(
+  manifest: IResolvedDevhostManifest,
+  service: IResolvedDevhostService,
+): IInjectedServiceEnvironment {
+  const environment: IInjectedServiceEnvironment = {
+    DEVHOST_BIND_HOST: service.bindHost,
+    DEVHOST_MANIFEST_PATH: manifest.manifestPath,
+    DEVHOST_SERVICE: service.name,
+    DEVHOST_STACK: manifest.name,
+  };
+
+  if (service.port !== null) {
+    environment.PORT = String(service.port);
+  }
+
+  if (service.publicHost !== null) {
+    environment.DEVHOST_PUBLIC_HOST = service.publicHost;
+    environment.HOST = service.publicHost;
+  }
+
+  return environment;
+}
+
+async function waitForAnyServiceExit(startedServices: StartedService[]): Promise<{ serviceName: string; exitCode: number }> {
+  return await Promise.race(
+    startedServices.map(async (startedService) => {
+      const exitCode: number = await startedService.childProcess.exited;
+
+      return {
+        exitCode,
+        serviceName: startedService.service.name,
+      };
+    }),
+  );
+}
+
+async function stopStartedServices(startedServices: StartedService[]): Promise<void> {
+  for (const startedService of [...startedServices].reverse()) {
+    const { childProcess } = startedService;
+
+    if (childProcess.exitCode === null && !childProcess.killed) {
+      childProcess.kill("SIGTERM");
+    }
+  }
+
+  for (const startedService of [...startedServices].reverse()) {
+    const { childProcess } = startedService;
+
+    if (childProcess.exitCode !== null) {
+      await childProcess.exited;
+      continue;
+    }
+
+    const didExitGracefully: boolean = await waitForExitWithinGracePeriod(childProcess);
+
+    if (didExitGracefully) {
+      continue;
+    }
+
+    if (!childProcess.killed && childProcess.exitCode === null) {
+      childProcess.kill("SIGKILL");
+    }
+
+    await childProcess.exited;
+  }
+}
+
+async function waitForExitWithinGracePeriod(childProcess: Bun.Subprocess): Promise<boolean> {
+  const gracefulExitResult: number | null = await Promise.race([
+    childProcess.exited,
+    Bun.sleep(shutdownGracePeriodInMilliseconds).then(() => null),
+  ]);
+
+  return gracefulExitResult !== null;
+}
+
+function logPrimaryService(manifest: IResolvedDevhostManifest): void {
+  const primaryService: IResolvedDevhostService = manifest.services[manifest.primaryService];
+
+  if (primaryService.publicHost !== null) {
+    console.log(`devhost primary https://${primaryService.publicHost}`);
+    return;
+  }
+
+  if (primaryService.port !== null) {
+    console.log(`devhost primary ${primaryService.name} -> http://${resolveProxyHost(primaryService.bindHost)}:${primaryService.port}`);
+  }
+}
