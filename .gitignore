@@ -1,4 +1,5 @@
 .cache/
+node_modules/
 
 caddy/routes/*.caddy
 caddy/routes/.registrations/*.json

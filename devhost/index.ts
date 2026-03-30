@@ -1,6 +1,8 @@
 import { access, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import { createConnection } from "node:net";
+import { join } from "node:path";
+
+import { startInjectionProxy } from "./startInjectionProxy";
 
 type ISupportedSignal = "SIGINT" | "SIGTERM" | "SIGHUP";
 
@@ -61,6 +63,7 @@ process.exit(exitCode);
 async function main(): Promise<number> {
   let childProcess: Bun.Subprocess | null = null;
   let hostReservation: IRegistration | null = null;
+  let injectionProxy: Awaited<ReturnType<typeof startInjectionProxy>> | null = null;
   let receivedSignal: ISupportedSignal | null = null;
   let isRegistered: boolean = false;
 
@@ -112,9 +115,16 @@ async function main(): Promise<number> {
       return startupState.exitCode;
     }
 
-    await activateRoute(commandLineArguments.host, commandLineArguments.port);
+    injectionProxy = await startInjectionProxy({
+      backendHost: bindHost,
+      backendPort: commandLineArguments.port,
+    });
+
+    await activateRoute(commandLineArguments.host, injectionProxy.port);
     isRegistered = true;
-    console.log(`devhost registered https://${commandLineArguments.host} -> http://${bindHost}:${commandLineArguments.port}`);
+    console.log(
+      `devhost registered https://${commandLineArguments.host} -> injector:${injectionProxy.port} -> http://${bindHost}:${commandLineArguments.port}`,
+    );
 
     const exitCode: number = await childProcess.exited;
 
@@ -140,6 +150,10 @@ async function main(): Promise<number> {
       } else {
         await removeRouteFiles(hostReservation.host);
       }
+    }
+
+    if (injectionProxy !== null) {
+      await injectionProxy.stop();
     }
   }
 }

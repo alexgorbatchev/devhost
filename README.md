@@ -26,7 +26,10 @@ brew install caddy
 - `caddy/Caddyfile` — shared local ingress config using `tls internal`
 - `caddy/run.sh` — runs Caddy with the project config
 - `devhost/index.ts` — Bun CLI wrapper for starting apps and registering routes
-- `test/helloWorldServer.ts` — demo Bun server
+- `test/helloWorldServer.ts` — demo Bun server using Bun HTML imports
+- `test/index.html` — HTML entrypoint for the test React app
+- `test/App.tsx` — React entrypoint mounted from `index.html`
+- `test/package.json` — isolated test app dependencies and scripts
 
 ## Initial setup
 
@@ -44,6 +47,12 @@ caddy trust
 
 ## Demo
 
+Install the isolated test app dependencies once:
+
+```bash
+cd test && bun install
+```
+
 In another terminal, run the sample app through `devhost`:
 
 ```bash
@@ -55,6 +64,8 @@ Then open:
 ```text
 https://hello.xcv.lol
 ```
+
+The demo page is HTML. `devhost` now proxies it through a tiny local injector that appends one script tag. The injected script adds a button that fetches the current time from a local devhost API and appends it to the page.
 
 ## How `devhost` works
 

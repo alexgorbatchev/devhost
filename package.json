@@ -4,6 +4,6 @@
   "type": "module",
   "scripts": {
     "devhost": "bun run devhost/index.ts",
-    "test:hello": "bun run test/helloWorldServer.ts"
+    "test:hello": "cd test && bun run dev"
   }
 }
