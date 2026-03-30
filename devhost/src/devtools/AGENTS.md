@@ -1,8 +1,6 @@
-# Devtools UI rules
+# `devhost/src/devtools/`
 
-These rules apply to all UI code under `devhost/src/devtools/`.
-
-- This `AGENTS.md` file must be kept up to date after devtools-specific UI policy, styling, or theming rules change.
+This `AGENTS.md` file must be kept up to date.
 
 ## Styling isolation
 
