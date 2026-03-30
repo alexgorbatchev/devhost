@@ -2,6 +2,7 @@
   "name": "localhost-domains",
   "private": true,
   "type": "module",
+  "workspaces": ["devhost", "test"],
   "scripts": {
     "devhost": "bun run ./devhost/src/index.ts",
     "test:hello": "cd test && bun run dev"

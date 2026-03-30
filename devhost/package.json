@@ -1,7 +1,11 @@
 {
   "name": "devhost",
   "private": true,
+  "version": "0.0.0",
   "type": "module",
+  "bin": {
+    "devhost": "./bin/devhost.ts"
+  },
   "scripts": {
     "dev": "bun run src/index.ts",
     "test:coverage": "bun test --coverage"
