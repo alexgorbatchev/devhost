@@ -1,22 +1,34 @@
 export interface IDevhostLogger {
   info: (message: string, ...arguments_: unknown[]) => void;
   error: (message: string, ...arguments_: unknown[]) => void;
+  withLabel: (label: string) => IDevhostLogger;
 }
 
 interface ICreateLoggerOptions {
-  infoSink: (message: string, ...arguments_: unknown[]) => void;
   errorSink: (message: string, ...arguments_: unknown[]) => void;
+  infoSink: (message: string, ...arguments_: unknown[]) => void;
+  label?: string;
 }
 
-const logPrefix: string = "[devhost]";
+const defaultLabel: string = "devhost";
 
 export function createLogger(options: ICreateLoggerOptions): IDevhostLogger {
+  const resolvedLabel: string = resolveLabel(options.label);
+  const logPrefix: string = `[${resolvedLabel}]`;
+
   return {
     error(message: string, ...arguments_: unknown[]): void {
-      writePrefixedMessage(message, arguments_, options.errorSink);
+      writePrefixedMessage(message, arguments_, logPrefix, options.errorSink);
     },
     info(message: string, ...arguments_: unknown[]): void {
-      writePrefixedMessage(message, arguments_, options.infoSink);
+      writePrefixedMessage(message, arguments_, logPrefix, options.infoSink);
+    },
+    withLabel(label: string): IDevhostLogger {
+      return createLogger({
+        errorSink: options.errorSink,
+        infoSink: options.infoSink,
+        label,
+      });
     },
   };
 }
@@ -24,6 +36,7 @@ export function createLogger(options: ICreateLoggerOptions): IDevhostLogger {
 function writePrefixedMessage(
   message: string,
   arguments_: unknown[],
+  logPrefix: string,
   sink: (message: string, ...arguments_: unknown[]) => void,
 ): void {
   const lines: string[] = splitLines(message);
@@ -35,4 +48,12 @@ function writePrefixedMessage(
 
 function splitLines(message: string): string[] {
   return message.replaceAll("\r\n", "\n").split("\n");
+}
+
+function resolveLabel(label: string | undefined): string {
+  if (label === undefined || label.trim().length === 0) {
+    return defaultLabel;
+  }
+
+  return label;
 }

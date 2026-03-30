@@ -34,4 +34,22 @@ describe("createLogger", () => {
 
     expect(errorCalls).toEqual([["[devhost] failed: boom", 500, "extra"]]);
   });
+
+  test("supports overriding the label and falling back when it is blank", () => {
+    const infoCalls: unknown[][] = [];
+    const logger = createLogger({
+      errorSink(message: string): void {
+        throw new Error(`unexpected error sink call: ${message}`);
+      },
+      infoSink(...arguments_: unknown[]): void {
+        infoCalls.push(arguments_);
+      },
+      label: "hello-stack",
+    });
+
+    logger.info("ready");
+    logger.withLabel("").info("fallback");
+
+    expect(infoCalls).toEqual([["[hello-stack] ready"], ["[devhost] fallback"]]);
+  });
 });

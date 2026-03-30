@@ -10,6 +10,8 @@ import { startStack } from "./startStack";
 import { validateManifest } from "./validateManifest";
 
 export async function runDevhost(rawArguments: string[], logger: IDevhostLogger): Promise<number> {
+  let activeLogger: IDevhostLogger = logger;
+
   try {
     if (rawArguments.includes("--help") || rawArguments.includes("-h")) {
       logger.info(helpText);
@@ -26,13 +28,16 @@ export async function runDevhost(rawArguments: string[], logger: IDevhostLogger)
       commandLineArguments.manifestPath ?? (await resolveManifestPath(process.cwd()));
     const manifestValue: unknown = await readManifest(manifestPath);
     const validatedManifest = validateManifest(manifestPath, manifestValue);
+
+    activeLogger = logger.withLabel(validatedManifest.name);
+
     const serviceOrder: string[] = resolveServiceOrder(validatedManifest);
     const resolvedManifest = await resolveServicePorts(validatedManifest);
 
-    return await startStack(resolvedManifest, serviceOrder, logger);
+    return await startStack(resolvedManifest, serviceOrder, activeLogger);
   } catch (error: unknown) {
     const message: string = error instanceof Error ? error.message : String(error);
-    logger.error(`failed: ${message}`);
+    activeLogger.error(`failed: ${message}`);
     return 1;
   }
 }

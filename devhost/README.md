@@ -17,7 +17,7 @@ It has two modes:
 - reserves public hosts before starting routed services
 - waits for readiness before enabling routes
 - reloads Caddy when routes change
-- prefixes its own logs with `[devhost]`
+- prefixes its own logs with the manifest `name` in manifest mode, falling back to `[devhost]`
 - prefixes child service logs with `[service-name]`
 - optionally injects a small devtools UI into HTML document navigations
 
@@ -154,14 +154,15 @@ That is acceptable for the current prototype, but it is a real correctness/secur
 
 ## Logging
 
-- `devhost` logs are prefixed with `[devhost]`
+- manifest-mode `devhost` logs are prefixed with `[<manifest name>]`
+- single-service and pre-manifest `devhost` logs fall back to `[devhost]`
 - child stdout/stderr lines are prefixed with `[service-name]`
 
 Example:
 
 ```text
-[devhost] primary https://hello.xcv.lol
-[hello] helloWorldServer listening on http://127.0.0.1:3200 for hello.xcv.lol
+[hello-test-app] primary https://hello.local.test
+[hello] helloWorldServer listening on http://127.0.0.1:3200 for hello.local.test
 ```
 
 ## Workspace usage in this repository
