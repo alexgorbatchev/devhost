@@ -1,7 +1,14 @@
 import { access, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { caddyDirectoryPath, caddyfilePath, registrationsDirectoryPath, routesDirectoryPath } from "./constants";
+import {
+  caddyAdminApiUrl,
+  caddyAdminTimeoutInMilliseconds,
+  caddyDirectoryPath,
+  caddyfilePath,
+  registrationsDirectoryPath,
+  routesDirectoryPath,
+} from "./constants";
 import { formatProxyAddress, resolveProxyHost } from "./resolveProxyHost";
 
 interface IRegistration {
@@ -19,6 +26,8 @@ interface IActivateRouteOptions {
   documentInjectionPort?: number;
 }
 
+type FetchImplementation = (input: string, init?: RequestInit) => Promise<Response>;
+
 export async function ensureRouteDirectories(): Promise<void> {
   await mkdir(registrationsDirectoryPath, { recursive: true });
 }
@@ -28,6 +37,24 @@ export async function ensureCaddyfileExists(): Promise<void> {
     await access(caddyfilePath);
   } catch {
     throw new Error(`Required file is missing: ${caddyfilePath}`);
+  }
+}
+
+export async function ensureCaddyAdminAvailable(fetchImplementation: FetchImplementation = fetch): Promise<void> {
+  try {
+    const response: Response = await fetchImplementation(caddyAdminApiUrl, {
+      method: "GET",
+      redirect: "manual",
+      signal: AbortSignal.timeout(caddyAdminTimeoutInMilliseconds),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} ${response.statusText}`.trim());
+    }
+  } catch (error: unknown) {
+    const detail: string = error instanceof Error ? error.message : String(error);
+
+    throw new Error(createCaddyAdminUnavailableErrorMessage(detail));
   }
 }
 
@@ -169,13 +196,54 @@ function parseRegistration(registrationText: string): IRegistration {
 function reloadCaddy(): void {
   const result = Bun.spawnSync(["caddy", "reload", "--config", caddyfilePath, "--adapter", "caddyfile"], {
     cwd: caddyDirectoryPath,
-    stdout: "inherit",
-    stderr: "inherit",
+    stdout: "pipe",
+    stderr: "pipe",
   });
 
   if (!result.success) {
-    throw new Error("Caddy reload failed. Is Caddy already running?");
+    throw new Error(createCaddyReloadErrorMessage(result.stdout, result.stderr));
   }
+}
+
+export function createCaddyAdminUnavailableErrorMessage(detail: string | null): string {
+  const baseMessage: string = "Caddy admin API is not available.";
+  const normalizedDetail: string | null = normalizeCaddyAdminErrorDetail(detail);
+
+  if (normalizedDetail === null) {
+    return baseMessage;
+  }
+
+  return `${baseMessage}\ndetail: ${normalizedDetail}`;
+}
+
+function normalizeCaddyAdminErrorDetail(detail: string | null): string | null {
+  if (detail === null) {
+    return null;
+  }
+
+  const trimmedDetail: string = detail.trim().replace(" Is the computer able to access the url?", "");
+
+  if (trimmedDetail.length === 0) {
+    return null;
+  }
+
+  return trimmedDetail;
+}
+
+export function createCaddyReloadErrorMessage(stdout: Uint8Array, stderr: Uint8Array): string {
+  const stdoutText: string = decodeProcessOutput(stdout);
+  const stderrText: string = decodeProcessOutput(stderr);
+  const combinedOutput: string = [stderrText, stdoutText].filter((text: string): boolean => text.length > 0).join("\n");
+
+  if (combinedOutput.length === 0) {
+    return "Caddy reload failed. Is Caddy already running?";
+  }
+
+  return `Caddy reload failed. Is Caddy already running?\n${combinedOutput}`;
+}
+
+function decodeProcessOutput(output: Uint8Array): string {
+  return new TextDecoder().decode(output).trim();
 }
 
 function renderRouteSnippet(options: IActivateRouteOptions): string {

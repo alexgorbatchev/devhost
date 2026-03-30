@@ -1,11 +1,24 @@
 import { defaultBindHost, signalExitCodes, supportedSignals, type SupportedSignal } from "./constants";
-import { activateRoute, claimRegistration, cleanupStaleRegistrations, ensureCaddyfileExists, ensureRouteDirectories, removeRouteFiles, unregisterRoute } from "./routeUtils";
+import type { IDevhostLogger } from "./createLogger";
+import type { ISingleServiceCommandLineArguments } from "./parseCommandLineArguments";
+import {
+  activateRoute,
+  claimRegistration,
+  cleanupStaleRegistrations,
+  ensureCaddyAdminAvailable,
+  ensureCaddyfileExists,
+  ensureRouteDirectories,
+  removeRouteFiles,
+  unregisterRoute,
+} from "./routeUtils";
 import { startDevtoolsControlServer } from "./startDevtoolsControlServer";
 import { startDocumentInjectionServer } from "./startDocumentInjectionServer";
-import type { ISingleServiceCommandLineArguments } from "./parseCommandLineArguments";
 import { waitForServiceReady } from "./waitForServiceReady";
 
-export async function startSingleService(arguments_: ISingleServiceCommandLineArguments): Promise<number> {
+export async function startSingleService(
+  arguments_: ISingleServiceCommandLineArguments,
+  logger: IDevhostLogger,
+): Promise<number> {
   let childProcess: Bun.Subprocess | null = null;
   let devtoolsControlServer: Awaited<ReturnType<typeof startDevtoolsControlServer>> | null = null;
   let documentInjectionServer: ReturnType<typeof startDocumentInjectionServer> | null = null;
@@ -16,6 +29,7 @@ export async function startSingleService(arguments_: ISingleServiceCommandLineAr
     await ensureRouteDirectories();
     await ensureCaddyfileExists();
     await cleanupStaleRegistrations();
+    await ensureCaddyAdminAvailable();
     await claimRegistration(arguments_.host, arguments_.port);
 
     const childEnvironment: Record<string, string | undefined> = {
@@ -67,8 +81,8 @@ export async function startSingleService(arguments_: ISingleServiceCommandLineAr
       host: arguments_.host,
     });
     isRegistered = true;
-    console.log(
-      `devhost registered https://${arguments_.host} -> app:${arguments_.port}, control:${devtoolsControlServer.port}, document:${documentInjectionServer.port}`,
+    logger.info(
+      `registered https://${arguments_.host} -> app:${arguments_.port}, control:${devtoolsControlServer.port}, document:${documentInjectionServer.port}`,
     );
 
     const exitCode: number = await childProcess.exited;
@@ -88,7 +102,7 @@ export async function startSingleService(arguments_: ISingleServiceCommandLineAr
   } finally {
     if (isRegistered) {
       await unregisterRoute(arguments_.host);
-      console.log(`devhost removed https://${arguments_.host}`);
+      logger.info(`removed https://${arguments_.host}`);
     } else {
       await removeRouteFiles(arguments_.host);
     }

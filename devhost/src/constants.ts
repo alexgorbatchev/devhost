@@ -18,6 +18,8 @@ export const caddyDirectoryPath: string = join(projectPath, "caddy");
 export const routesDirectoryPath: string = join(caddyDirectoryPath, "routes");
 export const registrationsDirectoryPath: string = join(routesDirectoryPath, ".registrations");
 export const caddyfilePath: string = join(caddyDirectoryPath, "Caddyfile");
+export const caddyAdminApiUrl: string = "http://127.0.0.1:2019/config/";
+export const caddyAdminTimeoutInMilliseconds: number = 1_000;
 export const helpText: string = [
   "Usage:",
   "  bun run devhost --host hello.local.test --port 3200 -- bun run test:hello",

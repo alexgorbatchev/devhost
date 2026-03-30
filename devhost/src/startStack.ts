@@ -1,6 +1,16 @@
 import { signalExitCodes, supportedSignals, type SupportedSignal } from "./constants";
+import type { IDevhostLogger } from "./createLogger";
 import { pipeSubprocessOutput } from "./pipeSubprocessOutput";
-import { activateRoute, claimRegistration, cleanupStaleRegistrations, ensureCaddyfileExists, ensureRouteDirectories, removeRouteFiles, unregisterRoute } from "./routeUtils";
+import {
+  activateRoute,
+  claimRegistration,
+  cleanupStaleRegistrations,
+  ensureCaddyAdminAvailable,
+  ensureCaddyfileExists,
+  ensureRouteDirectories,
+  removeRouteFiles,
+  unregisterRoute,
+} from "./routeUtils";
 import { resolveProxyHost } from "./resolveProxyHost";
 import { startDevtoolsControlServer } from "./startDevtoolsControlServer";
 import { startDocumentInjectionServer } from "./startDocumentInjectionServer";
@@ -14,7 +24,11 @@ type StartedService = {
   service: IResolvedDevhostService;
 };
 
-export async function startStack(manifest: IResolvedDevhostManifest, serviceOrder: string[]): Promise<number> {
+export async function startStack(
+  manifest: IResolvedDevhostManifest,
+  serviceOrder: string[],
+  logger: IDevhostLogger,
+): Promise<number> {
   const startedServices: StartedService[] = [];
   const reservedHosts: string[] = [];
   const activeHosts: Set<string> = new Set<string>();
@@ -33,6 +47,7 @@ export async function startStack(manifest: IResolvedDevhostManifest, serviceOrde
     await ensureRouteDirectories();
     await ensureCaddyfileExists();
     await cleanupStaleRegistrations();
+    await ensureCaddyAdminAvailable();
 
     for (const service of routedServices) {
       if (service.publicHost === null || service.port === null) {
@@ -120,7 +135,7 @@ export async function startStack(manifest: IResolvedDevhostManifest, serviceOrde
       }
     }
 
-    logPrimaryService(manifest);
+    logPrimaryService(manifest, logger);
 
     const raceResult:
       | {
@@ -264,15 +279,15 @@ async function waitForExitWithinGracePeriod(childProcess: Bun.Subprocess): Promi
   return gracefulExitResult !== null;
 }
 
-function logPrimaryService(manifest: IResolvedDevhostManifest): void {
+function logPrimaryService(manifest: IResolvedDevhostManifest, logger: IDevhostLogger): void {
   const primaryService: IResolvedDevhostService = manifest.services[manifest.primaryService];
 
   if (primaryService.publicHost !== null) {
-    console.log(`devhost primary https://${primaryService.publicHost}`);
+    logger.info(`primary https://${primaryService.publicHost}`);
     return;
   }
 
   if (primaryService.port !== null) {
-    console.log(`devhost primary ${primaryService.name} -> http://${resolveProxyHost(primaryService.bindHost)}:${primaryService.port}`);
+    logger.info(`primary ${primaryService.name} -> http://${resolveProxyHost(primaryService.bindHost)}:${primaryService.port}`);
   }
 }
