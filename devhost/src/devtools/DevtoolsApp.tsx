@@ -2,37 +2,47 @@ import type { JSX } from "preact";
 import { useState } from "preact/hooks";
 
 import { TIME_OUTPUT_ID, TOOLBAR_BUTTON_ID } from "./constants";
+import { devtoolsTheme } from "./devtoolsTheme";
 import { fetchCurrentTime } from "./fetchCurrentTime";
 
 const buttonStyle: JSX.CSSProperties = {
   position: "fixed",
-  right: "16px",
-  bottom: "16px",
-  zIndex: "2147483647",
-  padding: "10px 14px",
-  border: "1px solid #111827",
-  borderRadius: "999px",
-  background: "#111827",
-  color: "#ffffff",
-  fontFamily: "system-ui, sans-serif",
-  fontSize: "14px",
+  right: devtoolsTheme.spacing.lg,
+  bottom: devtoolsTheme.spacing.lg,
+  zIndex: devtoolsTheme.zIndices.floating,
+  padding: `${devtoolsTheme.spacing.sm} ${devtoolsTheme.spacing.md}`,
+  border: `1px solid ${devtoolsTheme.colors.foreground}`,
+  borderRadius: devtoolsTheme.radii.pill,
+  background: devtoolsTheme.colors.accentBackground,
+  color: devtoolsTheme.colors.accentForeground,
+  fontFamily: devtoolsTheme.fontFamilies.monospace,
+  fontSize: devtoolsTheme.fontSizes.md,
   cursor: "pointer",
 };
 
 const outputStyle: JSX.CSSProperties = {
   position: "fixed",
-  right: "16px",
-  bottom: "64px",
-  zIndex: "2147483647",
+  right: devtoolsTheme.spacing.lg,
+  bottom: devtoolsTheme.spacing.xl,
+  zIndex: devtoolsTheme.zIndices.floating,
   maxWidth: "320px",
-  padding: "12px",
-  border: "1px solid #d1d5db",
-  borderRadius: "12px",
-  background: "#ffffff",
-  color: "#111827",
-  fontFamily: "system-ui, sans-serif",
-  fontSize: "14px",
-  boxShadow: "0 10px 30px rgba(0, 0, 0, 0.12)",
+  padding: devtoolsTheme.spacing.md,
+  border: `1px solid ${devtoolsTheme.colors.border}`,
+  borderRadius: devtoolsTheme.radii.lg,
+  background: devtoolsTheme.colors.background,
+  color: devtoolsTheme.colors.foreground,
+  fontFamily: devtoolsTheme.fontFamilies.monospace,
+  fontSize: devtoolsTheme.fontSizes.md,
+  boxShadow: devtoolsTheme.shadows.floating,
+};
+
+const errorStyle: JSX.CSSProperties = {
+  color: devtoolsTheme.colors.dangerForeground,
+  marginBottom: devtoolsTheme.spacing.xs,
+};
+
+const lineStyle: JSX.CSSProperties = {
+  color: devtoolsTheme.colors.foreground,
 };
 
 export function DevtoolsApp(): JSX.Element {
@@ -55,9 +65,11 @@ export function DevtoolsApp(): JSX.Element {
         Append devhost time
       </button>
       <div id={TIME_OUTPUT_ID} style={outputStyle}>
-        {errorMessage !== null ? <div>{errorMessage}</div> : null}
+        {errorMessage !== null ? <div style={errorStyle}>{errorMessage}</div> : null}
         {lines.map((line, index) => (
-          <div key={`${line}-${index}`}>{line}</div>
+          <div key={`${line}-${index}`} style={lineStyle}>
+            {line}
+          </div>
         ))}
       </div>
     </>
