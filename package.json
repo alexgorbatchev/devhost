@@ -1,0 +1,9 @@
+{
+  "name": "localhost-domains",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "devhost": "bun run devhost/index.ts",
+    "test:hello": "bun run test/helloWorldServer.ts"
+  }
+}
