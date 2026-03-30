@@ -73,7 +73,7 @@ Each service defines:
 - an argv command array
 - an optional working directory
 - optional environment variables
-- an optional local port
+- an optional local port, which may be a fixed integer or the literal string `"auto"`
 - an optional public hostname
 - zero or more service dependencies
 - exactly one effective readiness rule
@@ -101,7 +101,7 @@ interface DevhostServiceConfig {
   command: string[];
   cwd?: string;
   env?: Record<string, string>;
-  port?: number;
+  port?: number | "auto";
   bindHost?: string;
   publicHost?: string;
   dependsOn?: string[];
@@ -145,10 +145,7 @@ http = "http://127.0.0.1:4000/healthz"
 
 [services.db]
 command = ["bun", "run", "db:dev"]
-port = 5432
-
-[services.db.ready]
-tcp = 5432
+port = "auto"
 ```
 
 ## 6. Types and contracts
@@ -176,6 +173,7 @@ interface ResolvedDevhostService {
   publicHost: string | null;
   dependsOn: string[];
   ready: ResolvedReadyConfig;
+  portSource: "fixed" | "auto" | "none";
 }
 
 type ResolvedReadyConfig =
@@ -192,7 +190,8 @@ type ResolvedReadyConfig =
 - `env` defaults to an empty object before parent-process environment merging.
 - `bindHost` defaults to `127.0.0.1`.
 - `dependsOn` defaults to `[]`.
-- If `port` is set and `ready` is omitted, the effective readiness becomes `{ kind: "tcp", host: bindHost, port }`.
+- If `port` is set to an integer and `ready` is omitted, the effective readiness becomes `{ kind: "tcp", host: bindHost, port }`.
+- If `port` is set to `"auto"`, `devhost` must allocate an available TCP port before spawning the service and the effective readiness becomes `{ kind: "tcp", host: bindHost, port: <resolved port> }`.
 - If `port` is not set and `ready` is omitted, manifest validation must fail.
 - `publicHost` has no default.
 
@@ -224,7 +223,7 @@ Injection rules:
 - `DEVHOST_SERVICE` must equal the service key.
 - `DEVHOST_BIND_HOST` must equal the resolved `bindHost`.
 - `DEVHOST_MANIFEST_PATH` must equal the absolute manifest path.
-- `PORT` must be injected only when `port` is set.
+- `PORT` must be injected only when the resolved runtime port is known.
 - `DEVHOST_PUBLIC_HOST` must be injected only when `publicHost` is set.
 - `HOST` must be injected only when `publicHost` is set. This exists only for compatibility with existing development servers. `devhost` runtime logic must not depend on `HOST`.
 
@@ -244,6 +243,8 @@ Injection rules:
   - schema and semantic validation
 - `devhost/resolveServiceOrder.ts`
   - dependency graph validation and topological ordering
+- `devhost/resolveServicePorts.ts`
+  - resolves `port = "auto"` using `get-port`
 - `devhost/waitForServiceReady.ts`
   - readiness checks for tcp, http, and process
 - `devhost/startStack.ts`
@@ -254,9 +255,13 @@ Injection rules:
   - invalid cyclic dependency fixture
 - `test/fixtures/devhost/invalid-public-host/devhost.toml`
   - invalid host fixture outside `xcv.lol`
+- `test/fixtures/devhost/invalid-auto-port-readiness/devhost.toml`
+  - invalid use of `port = "auto"` with explicit readiness
 
 ### Modify
 
+- `package.json`
+  - add `get-port` dependency for runtime auto-port resolution
 - `devhost/index.ts`
   - add no-arg manifest mode while keeping existing single-service mode
 - `README.md`
@@ -285,20 +290,41 @@ Manifest mode must execute this exact sequence:
 
 1. discover manifest
 2. parse TOML
-3. validate manifest
-4. reserve every `publicHost`
-5. compute dependency order
-6. start services in topological order
-7. wait for the current service readiness to pass
-8. activate that service's Caddy route if `publicHost` is set
-9. continue until all services are ready
-10. wait for child exits or process signals
-11. stop services in reverse startup order
-12. remove all routes and reservations
+3. validate static manifest rules
+4. resolve every `port = "auto"` using `get-port` with `reserve: true`
+5. validate resolved runtime uniqueness for `{ bindHost, port }`
+6. reserve every `publicHost`
+7. compute dependency order
+8. start services in topological order
+9. wait for the current service readiness to pass
+10. activate that service's Caddy route if `publicHost` is set
+11. continue until all services are ready
+12. wait for child exits or process signals
+13. stop services in reverse startup order
+14. remove all routes and reservations
 
 A service becomes startable only when all services in `dependsOn` are ready.
 
 Services must start sequentially in v1.
+
+### Auto-port resolution
+
+`devhost` must use the `get-port` package for `port = "auto"`.
+
+The exact resolution algorithm is:
+
+1. collect every fixed numeric port grouped by `bindHost`
+2. iterate services in stable manifest key order
+3. for each `port = "auto"` service, call `getPort({ host: bindHost, exclude: excludedPorts, reserve: true })`
+4. add the returned port to the exclusion set for that `bindHost`
+5. store the resolved port in the runtime service config before any child process is spawned
+
+`excludedPorts` must include:
+
+- every fixed numeric port already declared for the same `bindHost`
+- every auto-resolved port already chosen earlier for the same `bindHost`
+
+The `get-port` reservation is an in-process safeguard only. It must be treated as protection against in-process collisions, not as a guarantee against external-process races.
 
 ### Shutdown behavior
 
@@ -332,7 +358,7 @@ Manifest validation must enforce all of the following:
 - Every service `command` must contain at least one non-empty string.
 - Every service `cwd`, if present, must resolve inside the manifest directory or one of its descendants.
 - Every service `env` value must be a string.
-- Every service `port`, if present, must be an integer in the range `1..65535`.
+- Every service `port`, if present, must be either an integer in the range `1..65535` or the exact string `"auto"`.
 - Every service `dependsOn` target must exist.
 - The dependency graph must be acyclic.
 - Every service must have exactly one effective readiness rule after defaults are applied.
@@ -343,7 +369,9 @@ Manifest validation must enforce all of the following:
 - No two services may define the same `publicHost`.
 - A service with `publicHost` must also define `port`.
 - A service with `publicHost` must not use `ready.process`.
-- No two services may share the same `{ bindHost, port }` pair.
+- A service with `port = "auto"` must omit `ready` in v1.
+- No two services may share the same fixed `{ bindHost, port }` pair in the manifest.
+- No two services may share the same resolved `{ bindHost, port }` pair at runtime.
 - `bindHost` must be one of `127.0.0.1`, `0.0.0.0`, `::1`, or `::`.
 
 ## 10. Exact CLI surface
@@ -389,10 +417,11 @@ Rules:
 4. add TOML parsing in `devhost/readManifest.ts`
 5. add semantic validation in `devhost/validateManifest.ts`
 6. add dependency ordering in `devhost/resolveServiceOrder.ts`
-7. add readiness logic in `devhost/waitForServiceReady.ts`
-8. add stack startup and shutdown orchestration in `devhost/startStack.ts`
-9. wire manifest mode into `devhost/index.ts`
-10. update `README.md`
+7. add auto-port resolution in `devhost/resolveServicePorts.ts` using `get-port`
+8. add readiness logic in `devhost/waitForServiceReady.ts`
+9. add stack startup and shutdown orchestration in `devhost/startStack.ts`
+10. wire manifest mode into `devhost/index.ts`
+11. update `README.md`
 
 ## 12. Testing plan
 
@@ -407,7 +436,9 @@ The implementation must include tests for:
 - invalid `publicHost` outside `xcv.lol`
 - `publicHost` without `port`
 - `ready.process` on a routed service rejection
-- duplicate `{ bindHost, port }` rejection
+- duplicate fixed `{ bindHost, port }` rejection
+- `port = "auto"` resolving to unique runtime ports
+- `port = "auto"` plus explicit `ready` rejection
 - startup order respecting `dependsOn`
 - route activation only after readiness passes
 - startup failure cleaning all already-started child processes
@@ -428,6 +459,7 @@ Reject implementations that:
 - search for multiple manifests and merge them
 - add browser UI injection to satisfy this config spec
 - replace the existing single-service CLI mode
+- implement HTTP-health placeholders for auto ports in v1
 
 ## 14. Definition of done
 
@@ -436,8 +468,9 @@ This work is done only when all of the following are true:
 - `bun run devhost` starts a valid `devhost.toml` stack from the current project with no `--host` or `--port` flags.
 - `bun run devhost --manifest ./devhost.toml` starts the same stack.
 - existing single-service mode still works unchanged.
+- services with `port = "auto"` receive a unique injected `PORT` value before spawn.
 - every routed service is reachable through Caddy only after readiness passes.
 - startup failure tears down all started services and removes all routes and reservations.
 - shutdown on `SIGINT` and `SIGTERM` removes all routes and reservations.
 - validation errors are deterministic and name the exact offending service and field.
-- `README.md` includes one valid multi-service `devhost.toml` example.
+- `README.md` includes one valid multi-service `devhost.toml` example, including at least one service with `port = "auto"`.
