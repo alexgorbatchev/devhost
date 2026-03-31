@@ -55,6 +55,7 @@ export async function resolveServicePorts(manifest: IValidatedDevhostManifest): 
 
   return {
     devtools: manifest.devtools,
+    devtoolsMinimapPosition: manifest.devtoolsMinimapPosition,
     devtoolsPosition: manifest.devtoolsPosition,
     manifestDirectoryPath: manifest.manifestDirectoryPath,
     manifestPath: manifest.manifestPath,

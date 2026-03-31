@@ -87,6 +87,7 @@ Top-level fields:
 name = "hello-test-app"
 primaryService = "hello"
 devtools = true
+devtoolsMinimapPosition = "right"
 devtoolsPosition = "bottom-right"
 ```
 
@@ -119,6 +120,7 @@ Rules worth remembering:
 - `port = "auto"` is supported
 - `port = "auto"` must omit explicit `health` in v1
 - `devtools` defaults to `true`
+- `devtoolsMinimapPosition` defaults to `"right"`
 - `devtoolsPosition` defaults to `"bottom-right"`
 
 For the full contract, read `../docs/toml-config.md`.
@@ -172,13 +174,20 @@ Current control routes:
   - in manifest mode that entry uses the manifest `name`; in single-service mode it falls back to `devhost`
   - pushes updates when managed service status changes, including immediate process-exit updates
   - `status` is still derived from the managed service's configured health check
+- `/__devhost__/ws/logs`
+  - websocket stream for the injected log minimap
+  - replays retained combined service logs on connect, then pushes new stdout/stderr lines live
+  - stdout remains intentionally subtle; stderr is highlighted red in the minimap
 
 The injected devtools UI now follows the host page's resolved `color-scheme` (`light` or `dark`).
 For best results, apps should expose theme changes through standard `color-scheme` behavior on the document root.
 Manifest mode also supports a root-level `devtoolsPosition` field with these values:
 `top-left`, `top-right`, `bottom-left`, `bottom-right`.
+Manifest mode also supports a root-level `devtoolsMinimapPosition` field with these values:
+`left`, `right`.
 When all services are healthy, the UI collapses to a single green row using the manifest `name`.
 When any service is unhealthy, the UI shows only the unhealthy services in red.
+When devtools are enabled, the injected UI also renders a 100px-wide log minimap on the configured side.
 
 If manifest `devtools = false`, devhost does not mount these control routes for that stack.
 

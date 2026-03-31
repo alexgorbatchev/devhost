@@ -7,12 +7,14 @@ describe("createConfiguredDevtoolsScript", () => {
     const configuredScript: string = createConfiguredDevtoolsScript(
       "console.log('hello');",
       "top-left",
+      "left",
       "hello-stack",
     );
 
-    expect(configuredScript).toBe(
-      'globalThis.__DEVHOST_INJECTED_CONFIG__={"position":"top-left","stackName":"hello-stack"};\n' +
-        "console.log('hello');",
-    );
+    const expectedInjectedConfigPrefix: string =
+      'globalThis.__DEVHOST_INJECTED_CONFIG__={' +
+      '"minimapPosition":"left","position":"top-left","stackName":"hello-stack"};\n';
+
+    expect(configuredScript).toBe(expectedInjectedConfigPrefix + "console.log('hello');");
   });
 });

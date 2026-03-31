@@ -2,6 +2,7 @@ import { useEffect, useState } from "preact/hooks";
 
 import { markServicesAsUnavailable } from "../markServicesAsUnavailable";
 import { HEALTH_WEBSOCKET_PATH } from "./constants";
+import { createDevtoolsWebSocketUrl } from "./createDevtoolsWebSocketUrl";
 import { readDevtoolsStackName } from "./readDevtoolsStackName";
 import type { HealthResponse, ServiceHealth } from "./types";
 
@@ -63,7 +64,7 @@ export function useServiceHealth(): IUseServiceHealthResult {
       setErrorMessage(null);
     };
 
-    websocket = new WebSocket(createHealthWebSocketUrl(window.location));
+    websocket = new WebSocket(createDevtoolsWebSocketUrl(HEALTH_WEBSOCKET_PATH, window.location));
     websocket.addEventListener("open", handleOpen);
     websocket.addEventListener("message", handleMessage);
     websocket.addEventListener("error", handleError);
@@ -80,12 +81,6 @@ export function useServiceHealth(): IUseServiceHealthResult {
     isConnected,
     services,
   };
-}
-
-function createHealthWebSocketUrl(location: Pick<Location, "host" | "protocol">): string {
-  const protocol: string = location.protocol === "https:" ? "wss:" : "ws:";
-
-  return new URL(HEALTH_WEBSOCKET_PATH, `${protocol}//${location.host}`).toString();
 }
 
 function parseHealthResponse(message: string): HealthResponse | null {

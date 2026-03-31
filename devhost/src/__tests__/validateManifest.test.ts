@@ -21,6 +21,7 @@ describe("validateManifest", () => {
     const manifest: IValidatedDevhostManifest = validateManifest(manifestPath, manifestValue);
 
     expect(manifest.devtools).toBe(true);
+    expect(manifest.devtoolsMinimapPosition).toBe("right");
     expect(manifest.devtoolsPosition).toBe("bottom-right");
     expect(manifest.services.web.bindHost).toBe("127.0.0.1");
     expect(manifest.services.web.cwd).toEndWith("basic-stack");
@@ -37,6 +38,7 @@ describe("validateManifest", () => {
     const manifest: IValidatedDevhostManifest = validateManifest(manifestPath, manifestValue);
 
     expect(manifest.devtools).toBe(true);
+    expect(manifest.devtoolsMinimapPosition).toBe("right");
     expect(manifest.devtoolsPosition).toBe("bottom-right");
     expect(manifest.primaryService).toBe("web");
     expect(manifest.services.db.port).toBe("auto");
@@ -45,8 +47,9 @@ describe("validateManifest", () => {
     });
   });
 
-  test("accepts an explicit devtools position", () => {
+  test("accepts explicit devtools UI positions", () => {
     const manifest: IValidatedDevhostManifest = validateManifest("/tmp/devhost.toml", {
+      devtoolsMinimapPosition: "left",
       devtoolsPosition: "top-left",
       name: "hello-stack",
       primaryService: "web",
@@ -58,6 +61,7 @@ describe("validateManifest", () => {
       },
     });
 
+    expect(manifest.devtoolsMinimapPosition).toBe("left");
     expect(manifest.devtoolsPosition).toBe("top-left");
   });
 

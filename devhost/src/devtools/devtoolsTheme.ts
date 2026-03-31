@@ -12,6 +12,9 @@ export interface IDevtoolsTheme {
     dangerForeground: string;
     dangerGlow: string;
     foreground: string;
+    logMinimapBackground: string;
+    logMinimapStderr: string;
+    logMinimapStdout: string;
     mutedForeground: string;
     successBackground: string;
     successGlow: string;
@@ -19,6 +22,10 @@ export interface IDevtoolsTheme {
   fontFamilies: {
     body: string;
     monospace: string;
+  };
+  opacities: {
+    logMinimapActive: number;
+    logMinimapResting: number;
   };
   fontSizes: {
     lg: string;
@@ -29,6 +36,10 @@ export interface IDevtoolsTheme {
     lg: string;
     md: string;
     pill: string;
+  };
+  sizes: {
+    logMinimapPeekWidth: string;
+    logMinimapWidth: string;
   };
   shadows: {
     floating: string;
@@ -66,10 +77,18 @@ const sharedFontSizes: IDevtoolsTheme["fontSizes"] = {
   md: "14px",
   sm: "12px",
 };
+const sharedOpacities: IDevtoolsTheme["opacities"] = {
+  logMinimapActive: 1,
+  logMinimapResting: 0.5,
+};
 const sharedRadii: IDevtoolsTheme["radii"] = {
   lg: "12px",
   md: "8px",
   pill: "999px",
+};
+const sharedSizes: IDevtoolsTheme["sizes"] = {
+  logMinimapPeekWidth: "20px",
+  logMinimapWidth: "100px",
 };
 const sharedSpacing: IDevtoolsTheme["spacing"] = {
   lg: "16px",
@@ -86,19 +105,24 @@ const lightDevtoolsTheme: IDevtoolsTheme = {
   colors: {
     accentBackground: "#111827",
     accentForeground: "#ffffff",
-    background: "rgba(255, 255, 255, 0.92)",
+    background: "#ffffff",
     border: "#cbd5e1",
     dangerBackground: "#ef4444",
     dangerForeground: "#b91c1c",
     dangerGlow: "rgba(239, 68, 68, 0.45)",
     foreground: "#111827",
+    logMinimapBackground: "#ffffff",
+    logMinimapStderr: "rgba(220, 38, 38, 0.9)",
+    logMinimapStdout: "rgba(15, 23, 42, 0.14)",
     mutedForeground: "#6b7280",
     successBackground: "#22c55e",
     successGlow: "rgba(34, 197, 94, 0.45)",
   },
   fontFamilies: sharedFontFamilies,
   fontSizes: sharedFontSizes,
+  opacities: sharedOpacities,
   radii: sharedRadii,
+  sizes: sharedSizes,
   shadows: {
     floating: "0px 5px 5px rgba(15, 23, 42, 0.12)",
   },
@@ -109,19 +133,24 @@ const darkDevtoolsTheme: IDevtoolsTheme = {
   colors: {
     accentBackground: "#e2e8f0",
     accentForeground: "#020617",
-    background: "rgba(15, 23, 42, 0.92)",
+    background: "#0f172a",
     border: "#334155",
     dangerBackground: "#f87171",
     dangerForeground: "#fecaca",
     dangerGlow: "rgba(248, 113, 113, 0.38)",
     foreground: "#e2e8f0",
+    logMinimapBackground: "#0f172a",
+    logMinimapStderr: "rgba(248, 113, 113, 0.92)",
+    logMinimapStdout: "rgba(226, 232, 240, 0.12)",
     mutedForeground: "#94a3b8",
     successBackground: "#4ade80",
     successGlow: "rgba(74, 222, 128, 0.38)",
   },
   fontFamilies: sharedFontFamilies,
   fontSizes: sharedFontSizes,
+  opacities: sharedOpacities,
   radii: sharedRadii,
+  sizes: sharedSizes,
   shadows: {
     floating: "0px 5px 5px rgba(15, 23, 42, 0.12)",
   },

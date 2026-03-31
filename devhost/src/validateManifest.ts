@@ -13,6 +13,7 @@ import type {
   IValidatedDevhostService,
 } from "./stackTypes";
 
+const devtoolsMinimapPositionSchema = z.enum(["left", "right"]);
 const devtoolsPositionSchema = z.enum(["top-left", "top-right", "bottom-left", "bottom-right"]);
 
 const nonEmptyStringSchema = z.string().refine((value: string): boolean => value.trim().length > 0, {
@@ -39,6 +40,7 @@ const serviceSchema = z
 const manifestSchema = z
   .object({
     devtools: z.boolean().optional(),
+    devtoolsMinimapPosition: devtoolsMinimapPositionSchema.optional(),
     devtoolsPosition: devtoolsPositionSchema.optional(),
     name: nonEmptyStringSchema,
     primaryService: nonEmptyStringSchema,
@@ -99,6 +101,7 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
 
   return {
     devtools: parsedManifest.devtools ?? true,
+    devtoolsMinimapPosition: parsedManifest.devtoolsMinimapPosition ?? "right",
     devtoolsPosition: parsedManifest.devtoolsPosition ?? "bottom-right",
     manifestDirectoryPath,
     manifestPath,

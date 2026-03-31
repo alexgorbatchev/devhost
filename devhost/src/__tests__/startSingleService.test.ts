@@ -31,6 +31,7 @@ describe("createSingleServiceEnvironment", () => {
 
     expect(createSingleServiceManifest(arguments_)).toEqual({
       devtools: true,
+      devtoolsMinimapPosition: "right",
       devtoolsPosition: "bottom-right",
       manifestDirectoryPath: process.cwd(),
       manifestPath: join(process.cwd(), "devhost.synthetic.toml"),

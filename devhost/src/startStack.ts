@@ -82,6 +82,7 @@ export async function startStack(
 
     if (manifest.devtools && routedServices.length > 0) {
       devtoolsControlServer = await startDevtoolsControlServer({
+        devtoolsMinimapPosition: manifest.devtoolsMinimapPosition,
         devtoolsPosition: manifest.devtoolsPosition,
         getHealthResponse: async () => {
           return await collectManagedServicesHealth(manifest.name, managedServices, startedServices);
@@ -144,9 +145,11 @@ export async function startStack(
 
       if (resolvedOptions.pipeServiceOutput) {
         void pipeSubprocessOutput(childProcess.stdout, `[${service.name}] `, (line: string) => {
+          devtoolsControlServer?.publishLogEntry(service.name, "stdout", line);
           console.log(line);
         });
         void pipeSubprocessOutput(childProcess.stderr, `[${service.name}] `, (line: string) => {
+          devtoolsControlServer?.publishLogEntry(service.name, "stderr", line);
           console.error(line);
         });
       }
@@ -283,7 +286,9 @@ export function createInjectedServiceEnvironment(
   return environment;
 }
 
-async function waitForAnyServiceExit(startedServices: StartedService[]): Promise<{ serviceName: string; exitCode: number }> {
+async function waitForAnyServiceExit(
+  startedServices: StartedService[],
+): Promise<{ serviceName: string; exitCode: number }> {
   return await Promise.race(
     startedServices.map(async (startedService) => {
       const exitCode: number = await startedService.childProcess.exited;
@@ -345,6 +350,8 @@ function logPrimaryService(manifest: IResolvedDevhostManifest, logger: IDevhostL
   }
 
   if (primaryService.port !== null) {
-    logger.info(`primary ${primaryService.name} -> http://${resolveProxyHost(primaryService.bindHost)}:${primaryService.port}`);
+    logger.info(
+      `primary ${primaryService.name} -> http://${resolveProxyHost(primaryService.bindHost)}:${primaryService.port}`,
+    );
   }
 }

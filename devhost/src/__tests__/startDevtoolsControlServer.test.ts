@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 
-import { HEALTH_WEBSOCKET_PATH } from "../devtools/constants";
+import { HEALTH_WEBSOCKET_PATH, LOGS_WEBSOCKET_PATH } from "../devtools/constants";
 import type { HealthResponse } from "../devtools/types";
 import { startDevtoolsControlServer } from "../startDevtoolsControlServer";
 
@@ -30,6 +30,7 @@ describe("startDevtoolsControlServer", () => {
       ],
     };
     const controlServer = await startDevtoolsControlServer({
+      devtoolsMinimapPosition: "right",
       devtoolsPosition: "top-left",
       getHealthResponse: async (): Promise<HealthResponse> => {
         return healthResponse;
@@ -59,6 +60,57 @@ describe("startDevtoolsControlServer", () => {
     await controlServer.publishHealthResponse();
 
     await expect(nextMessagePromise).resolves.toBe(JSON.stringify(healthResponse));
+  });
+
+  test("replays retained logs and streams new log entries over websocket", async () => {
+    const controlServer = await startDevtoolsControlServer({
+      devtoolsMinimapPosition: "left",
+      devtoolsPosition: "bottom-right",
+      getHealthResponse: async (): Promise<HealthResponse> => {
+        return {
+          services: [],
+        };
+      },
+      stackName: "hello-stack",
+    });
+
+    stopFunctions.push(controlServer.stop);
+
+    controlServer.publishLogEntry("api", "stdout", "[api] ready");
+
+    const websocket = new WebSocket(`ws://127.0.0.1:${controlServer.port}${LOGS_WEBSOCKET_PATH}`);
+
+    websockets.push(websocket);
+
+    await expect(waitForWebSocketMessage(websocket)).resolves.toBe(
+      JSON.stringify({
+        entries: [
+          {
+            id: 1,
+            line: "[api] ready",
+            serviceName: "api",
+            stream: "stdout",
+          },
+        ],
+        type: "snapshot",
+      }),
+    );
+
+    const nextMessagePromise: Promise<string> = waitForWebSocketMessage(websocket);
+
+    controlServer.publishLogEntry("api", "stderr", "[api] failed");
+
+    await expect(nextMessagePromise).resolves.toBe(
+      JSON.stringify({
+        entry: {
+          id: 2,
+          line: "[api] failed",
+          serviceName: "api",
+          stream: "stderr",
+        },
+        type: "entry",
+      }),
+    );
   });
 });
 
