@@ -16,6 +16,7 @@
   },
   "scripts": {
     "dev": "bun run helloWorldServer.ts",
+    "log-demo": "bun run emitDemoLogs.ts",
     "typecheck": "tsgo --project tsconfig.json"
   }
 }

@@ -61,15 +61,16 @@
       }
 
       #root {
-        display: grid;
-        place-items: center;
         min-height: 100vh;
         padding: 24px;
       }
 
       .app-shell {
         width: min(100%, 720px);
+        margin: 0 auto;
         padding: 32px;
+        display: grid;
+        gap: 28px;
         border: 1px solid var(--panel-border);
         border-radius: 20px;
         background: var(--panel-background);
@@ -99,6 +100,32 @@
         gap: 10px;
         padding-left: 20px;
         margin: 0;
+      }
+
+      .app-sections {
+        display: grid;
+        gap: 18px;
+      }
+
+      .app-section {
+        padding: 20px;
+        border: 1px solid var(--panel-border);
+        border-radius: 16px;
+        background: color-mix(in srgb, var(--panel-background) 82%, transparent);
+      }
+
+      .app-section__title {
+        margin: 0 0 10px;
+        font-size: 1.15rem;
+      }
+
+      .app-section__body {
+        margin: 0;
+        color: var(--muted-foreground);
+      }
+
+      .app-section__body + .app-section__body {
+        margin-top: 10px;
       }
 
       .app-code {
