@@ -13,6 +13,8 @@ export interface IDevtoolsTheme {
     dangerGlow: string;
     foreground: string;
     logMinimapBackground: string;
+    logMinimapOverlayBackground: string;
+    logMinimapOverlayBorder: string;
     logMinimapStderr: string;
     logMinimapStdout: string;
     mutedForeground: string;
@@ -40,6 +42,7 @@ export interface IDevtoolsTheme {
   sizes: {
     logMinimapPeekWidth: string;
     logMinimapWidth: string;
+    logPreviewWidth: string;
   };
   shadows: {
     floating: string;
@@ -89,6 +92,7 @@ const sharedRadii: IDevtoolsTheme["radii"] = {
 const sharedSizes: IDevtoolsTheme["sizes"] = {
   logMinimapPeekWidth: "20px",
   logMinimapWidth: "100px",
+  logPreviewWidth: "420px",
 };
 const sharedSpacing: IDevtoolsTheme["spacing"] = {
   lg: "16px",
@@ -112,6 +116,8 @@ const lightDevtoolsTheme: IDevtoolsTheme = {
     dangerGlow: "rgba(239, 68, 68, 0.45)",
     foreground: "#111827",
     logMinimapBackground: "#ffffff",
+    logMinimapOverlayBackground: "rgba(15, 23, 42, 0.08)",
+    logMinimapOverlayBorder: "rgba(15, 23, 42, 0.18)",
     logMinimapStderr: "rgba(220, 38, 38, 0.9)",
     logMinimapStdout: "rgba(15, 23, 42, 0.14)",
     mutedForeground: "#6b7280",
@@ -140,6 +146,8 @@ const darkDevtoolsTheme: IDevtoolsTheme = {
     dangerGlow: "rgba(248, 113, 113, 0.38)",
     foreground: "#e2e8f0",
     logMinimapBackground: "#0f172a",
+    logMinimapOverlayBackground: "rgba(148, 163, 184, 0.12)",
+    logMinimapOverlayBorder: "rgba(148, 163, 184, 0.24)",
     logMinimapStderr: "rgba(248, 113, 113, 0.92)",
     logMinimapStdout: "rgba(226, 232, 240, 0.12)",
     mutedForeground: "#94a3b8",

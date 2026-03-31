@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 
 import { LOGS_WEBSOCKET_PATH, maximumRetainedLogEntries } from "./constants";
 import { createDevtoolsWebSocketUrl } from "./createDevtoolsWebSocketUrl";
@@ -6,8 +6,14 @@ import type { ServiceLogEntry, ServiceLogMessage } from "./types";
 
 const normalClosureCode: number = 1_000;
 
-export function useServiceLogs(): ServiceLogEntry[] {
+export function useServiceLogs(isPaused: boolean): ServiceLogEntry[] {
   const [entries, setEntries] = useState<ServiceLogEntry[]>([]);
+  const entriesReference = useRef<ServiceLogEntry[]>(entries);
+  const isPausedReference = useRef<boolean>(isPaused);
+  const pendingEntriesReference = useRef<ServiceLogEntry[] | null>(null);
+
+  entriesReference.current = entries;
+  isPausedReference.current = isPaused;
 
   useEffect(() => {
     let websocket: WebSocket | null = null;
@@ -24,13 +30,16 @@ export function useServiceLogs(): ServiceLogEntry[] {
       }
 
       if (message.type === "snapshot") {
-        setEntries(limitRetainedLogEntries(message.entries));
+        applyIncomingEntries(limitRetainedLogEntries(message.entries));
         return;
       }
 
-      setEntries((currentEntries: ServiceLogEntry[]): ServiceLogEntry[] => {
-        return limitRetainedLogEntries([...currentEntries, message.entry]);
-      });
+      const nextEntries: ServiceLogEntry[] = limitRetainedLogEntries([
+        ...(pendingEntriesReference.current ?? entriesReference.current),
+        message.entry,
+      ]);
+
+      applyIncomingEntries(nextEntries);
     };
 
     websocket = new WebSocket(createDevtoolsWebSocketUrl(LOGS_WEBSOCKET_PATH, window.location));
@@ -43,7 +52,25 @@ export function useServiceLogs(): ServiceLogEntry[] {
     };
   }, []);
 
+  useEffect(() => {
+    if (isPaused || pendingEntriesReference.current === null) {
+      return;
+    }
+
+    setEntries(pendingEntriesReference.current);
+    pendingEntriesReference.current = null;
+  }, [isPaused]);
+
   return entries;
+
+  function applyIncomingEntries(nextEntries: ServiceLogEntry[]): void {
+    if (isPausedReference.current) {
+      pendingEntriesReference.current = nextEntries;
+      return;
+    }
+
+    setEntries(nextEntries);
+  }
 }
 
 function limitRetainedLogEntries(entries: ServiceLogEntry[]): ServiceLogEntry[] {

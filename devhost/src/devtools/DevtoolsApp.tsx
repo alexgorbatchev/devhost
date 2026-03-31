@@ -1,4 +1,5 @@
 import type { JSX } from "preact";
+import { useState } from "preact/hooks";
 
 import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../stackTypes";
 import { selectVisibleServices } from "../selectVisibleServices";
@@ -18,8 +19,9 @@ export function DevtoolsApp(): JSX.Element | null {
   const devtoolsPosition: DevtoolsPosition = readDevtoolsPosition();
   const devtoolsMinimapPosition: DevtoolsMinimapPosition = readDevtoolsMinimapPosition();
   const { errorMessage, services } = useServiceHealth();
+  const [isMinimapHovered, setIsMinimapHovered] = useState<boolean>(false);
   const visibleServices: ServiceHealth[] = selectVisibleServices(services);
-  const logEntries = useServiceLogs();
+  const logEntries = useServiceLogs(isMinimapHovered);
   const shouldRenderPanel: boolean = errorMessage !== null || visibleServices.length > 0;
   const shouldRenderMinimap: boolean = logEntries.length > 0;
 
@@ -52,7 +54,9 @@ export function DevtoolsApp(): JSX.Element | null {
       {shouldRenderMinimap ? (
         <DevtoolsLogMinimap
           entries={logEntries}
+          isHovered={isMinimapHovered}
           minimapPosition={devtoolsMinimapPosition}
+          onHoveredChange={setIsMinimapHovered}
           theme={devtoolsTheme}
         />
       ) : null}

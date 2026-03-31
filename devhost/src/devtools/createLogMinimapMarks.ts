@@ -6,6 +6,7 @@ const markHeightInPixels: number = 2;
 const minimumWidthRatio: number = 0.12;
 
 export interface ILogMinimapMark {
+  entryIndex: number;
   height: number;
   id: number;
   stream: ServiceLogStream;
@@ -41,6 +42,7 @@ export function createLogMinimapMarks(
       const wrappedRowLength: number = wrappedRowLengths[wrappedRowIndex];
 
       marksFromBottom.push({
+        entryIndex,
         height: markHeightInPixels,
         id: entry.id,
         stream: entry.stream,

@@ -22,6 +22,7 @@ describe("createLogMinimapMarks", () => {
 
     expect(createLogMinimapMarks(entries, 40, 100)).toEqual([
       {
+        entryIndex: 0,
         height: 2,
         id: 1,
         stream: "stdout",
@@ -29,6 +30,7 @@ describe("createLogMinimapMarks", () => {
         width: 13,
       },
       {
+        entryIndex: 1,
         height: 2,
         id: 2,
         stream: "stderr",
@@ -74,6 +76,7 @@ describe("createLogMinimapMarks", () => {
 
     expect(createLogMinimapMarks(entries, 8, 100)).toEqual([
       {
+        entryIndex: 2,
         height: 2,
         id: 3,
         stream: "stdout",
@@ -81,6 +84,7 @@ describe("createLogMinimapMarks", () => {
         width: 12,
       },
       {
+        entryIndex: 3,
         height: 2,
         id: 4,
         stream: "stderr",
@@ -88,6 +92,7 @@ describe("createLogMinimapMarks", () => {
         width: 12,
       },
       {
+        entryIndex: 4,
         height: 2,
         id: 5,
         stream: "stdout",
@@ -115,6 +120,7 @@ describe("createLogMinimapMarks", () => {
 
     expect(createLogMinimapMarks(entries, 8, 100)).toEqual([
       {
+        entryIndex: 1,
         height: 2,
         id: 2,
         stream: "stderr",
@@ -122,6 +128,7 @@ describe("createLogMinimapMarks", () => {
         width: 100,
       },
       {
+        entryIndex: 1,
         height: 2,
         id: 2,
         stream: "stderr",
@@ -129,6 +136,7 @@ describe("createLogMinimapMarks", () => {
         width: 100,
       },
       {
+        entryIndex: 1,
         height: 2,
         id: 2,
         stream: "stderr",
