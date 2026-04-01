@@ -32,11 +32,13 @@ Run the full test suite:
 cd devhost && bun test src/__tests__
 ```
 
-Run coverage:
+Run the package check suite:
 
 ```bash
-cd devhost && bun run test:coverage
+cd devhost && bun run check
 ```
+
+The check script runs the native TypeScript typecheck and the coverage test suite.
 
 ## Internal package layout
 
