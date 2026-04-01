@@ -16,32 +16,32 @@ function createMark(top: number, entryIndex: number): ILogMinimapMark {
 
 describe("resolveLogPreviewLayout", () => {
   test("follows the hovered row on the y axis when there is room to move", () => {
-    const marks: ILogMinimapMark[] = Array.from({ length: 100 }, (_, index: number): ILogMinimapMark => {
+    const marks: ILogMinimapMark[] = Array.from({ length: 200 }, (_, index: number): ILogMinimapMark => {
       return createMark(index * 3, index);
     });
 
     expect(
       resolveLogPreviewLayout({
         borderWidth: 1,
-        hoveredRowIndex: 60,
+        hoveredRowIndex: 120,
         marks,
         previewPadding: 8,
         rowGap: 4,
         rowHeight: 24,
-        viewportHeight: 600,
+        viewportHeight: 700,
         viewportPadding: 10,
       }),
     ).toEqual({
       range: {
-        endIndex: 66,
-        startIndex: 55,
+        endIndex: 131,
+        startIndex: 110,
       },
-      top: 20,
+      top: 60,
     });
   });
 
   test("clamps the preview to the viewport when centering would push it off-screen", () => {
-    const marks: ILogMinimapMark[] = Array.from({ length: 100 }, (_, index: number): ILogMinimapMark => {
+    const marks: ILogMinimapMark[] = Array.from({ length: 200 }, (_, index: number): ILogMinimapMark => {
       return createMark(index * 3, index);
     });
 
@@ -53,12 +53,12 @@ describe("resolveLogPreviewLayout", () => {
         previewPadding: 8,
         rowGap: 4,
         rowHeight: 24,
-        viewportHeight: 600,
+        viewportHeight: 700,
         viewportPadding: 10,
       }),
     ).toEqual({
       range: {
-        endIndex: 11,
+        endIndex: 21,
         startIndex: 0,
       },
       top: 10,
