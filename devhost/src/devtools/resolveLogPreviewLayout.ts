@@ -57,7 +57,9 @@ export function resolveLogPreviewLayout(options: IResolveLogPreviewLayoutOptions
   const hoveredMarkCenter: number = hoveredMark.top + hoveredMark.height / 2;
   const hoveredRowOffset: number = (options.hoveredRowIndex - range.startIndex) * rowStride;
   const desiredTop: number =
-    hoveredMarkCenter - (resolvedBorderWidth + resolvedPreviewPadding + hoveredRowOffset + resolvedRowHeight / 2);
+    range.startIndex === 0
+      ? hoveredMarkCenter - previewHeight / 2
+      : hoveredMarkCenter - (resolvedBorderWidth + resolvedPreviewPadding + hoveredRowOffset + resolvedRowHeight / 2);
   const minimumTop: number = resolvedViewportPadding;
   const maximumTop: number = Math.max(resolvedViewportPadding, resolvedViewportHeight - resolvedViewportPadding - previewHeight);
   const top: number = Math.min(maximumTop, Math.max(minimumTop, desiredTop));

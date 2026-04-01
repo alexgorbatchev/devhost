@@ -115,7 +115,7 @@ export function DevtoolsLogMinimap(props: IDevtoolsLogMinimapProps): JSX.Element
       hoveredRowIndex,
       marks: marksReference.current,
       previewPadding: readPixelValue(props.theme.spacing.xs),
-      rowGap: readPixelValue(props.theme.spacing.xxs),
+      rowGap: 0,
       rowHeight: readPixelValue(props.theme.sizes.logPreviewRowHeight),
       viewportHeight: canvasReference.current?.clientHeight ?? 0,
       viewportPadding: readPixelValue(props.theme.spacing.sm),
