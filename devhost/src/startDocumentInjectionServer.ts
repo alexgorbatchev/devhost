@@ -45,8 +45,14 @@ export function startDocumentInjectionServer(
     },
   });
 
+  const serverPort: number | undefined = server.port;
+
+  if (serverPort === undefined) {
+    throw new Error("Failed to start document injection server: no port was assigned.");
+  }
+
   return {
-    port: server.port,
+    port: serverPort,
     stop: async (): Promise<void> => {
       await server.stop(true);
     },

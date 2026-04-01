@@ -179,18 +179,25 @@ function isErrorWithCode(error: unknown): error is Error & { code: string } {
 function parseRegistration(registrationText: string): IRegistration {
   const parsedValue: unknown = JSON.parse(registrationText);
 
-  if (
-    typeof parsedValue !== "object" ||
-    parsedValue === null ||
-    typeof Reflect.get(parsedValue, "host") !== "string" ||
-    typeof Reflect.get(parsedValue, "port") !== "number" ||
-    typeof Reflect.get(parsedValue, "ownerPid") !== "number" ||
-    typeof Reflect.get(parsedValue, "createdAt") !== "string"
-  ) {
+  if (typeof parsedValue !== "object" || parsedValue === null) {
     throw new Error("Registration file is malformed.");
   }
 
-  return parsedValue;
+  const host: unknown = Reflect.get(parsedValue, "host");
+  const port: unknown = Reflect.get(parsedValue, "port");
+  const ownerPid: unknown = Reflect.get(parsedValue, "ownerPid");
+  const createdAt: unknown = Reflect.get(parsedValue, "createdAt");
+
+  if (typeof host !== "string" || typeof port !== "number" || typeof ownerPid !== "number" || typeof createdAt !== "string") {
+    throw new Error("Registration file is malformed.");
+  }
+
+  return {
+    host,
+    port,
+    ownerPid,
+    createdAt,
+  };
 }
 
 function reloadCaddy(): void {

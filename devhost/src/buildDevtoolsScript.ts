@@ -12,7 +12,6 @@ export async function buildDevtoolsScript(): Promise<string> {
     target: "browser",
     throw: false,
     tsconfig: tsconfigPath,
-    write: false,
   });
 
   if (!buildResult.success) {

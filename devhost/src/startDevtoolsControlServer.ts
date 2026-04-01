@@ -99,6 +99,7 @@ export async function startDevtoolsControlServer(
       return new Response("Not Found", { status: 404 });
     },
     websocket: {
+      message(): void {},
       async open(websocket: Bun.ServerWebSocket<DevtoolsWebSocketData>): Promise<void> {
         websocket.subscribe(websocket.data.topicName);
 
@@ -121,6 +122,12 @@ export async function startDevtoolsControlServer(
       },
     },
   });
+  const serverPort: number | undefined = server.port;
+
+  if (serverPort === undefined) {
+    throw new Error("Failed to start devtools control server: no port was assigned.");
+  }
+
   const pollIntervalId: ReturnType<typeof setInterval> = setInterval((): void => {
     if (server.subscriberCount(healthTopicName) === 0) {
       return;
@@ -130,7 +137,7 @@ export async function startDevtoolsControlServer(
   }, healthPollIntervalInMilliseconds);
 
   return {
-    port: server.port,
+    port: serverPort,
     publishHealthResponse,
     publishLogEntry,
     stop: async (): Promise<void> => {

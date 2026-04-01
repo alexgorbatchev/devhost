@@ -1,3 +1,5 @@
+import assert from "node:assert";
+
 import { afterEach, describe, expect, test } from "bun:test";
 
 import {
@@ -7,11 +9,11 @@ import {
 } from "../collectManagedServicesHealth";
 import type { IResolvedDevhostService } from "../stackTypes";
 
-const servers: Bun.Server[] = [];
+const servers: Array<Bun.Server<undefined>> = [];
 
 afterEach(async () => {
   await Promise.all(
-    servers.splice(0).map(async (server: Bun.Server): Promise<void> => {
+    servers.splice(0).map(async (server: Bun.Server<undefined>): Promise<void> => {
       await server.stop(true);
     }),
   );
@@ -34,6 +36,11 @@ describe("collectManagedServicesHealth", () => {
       port: 0,
     });
 
+    const tcpPort: number | undefined = tcpServer.port;
+    const httpPort: number | undefined = httpServer.port;
+
+    assert(tcpPort !== undefined);
+    assert(httpPort !== undefined);
     servers.push(tcpServer, httpServer);
 
     const managedServices: IResolvedDevhostService[] = [
@@ -41,18 +48,18 @@ describe("collectManagedServicesHealth", () => {
         health: {
           host: "127.0.0.1",
           kind: "tcp",
-          port: tcpServer.port,
+          port: tcpPort,
         },
         name: "web",
-        port: tcpServer.port,
+        port: tcpPort,
       }),
       createService({
         health: {
           kind: "http",
-          url: `http://127.0.0.1:${httpServer.port}/healthz`,
+          url: `http://127.0.0.1:${httpPort}/healthz`,
         },
         name: "api",
-        port: httpServer.port,
+        port: httpPort,
       }),
       createService({
         health: {

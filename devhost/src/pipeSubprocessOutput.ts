@@ -1,9 +1,9 @@
 export function pipeSubprocessOutput(
-  stream: ReadableStream<Uint8Array> | null,
+  stream: ReadableStream<Uint8Array> | null | undefined,
   prefix: string,
   writer: (line: string) => void,
 ): Promise<void> {
-  if (stream === null) {
+  if (stream === null || stream === undefined) {
     return Promise.resolve();
   }
 
@@ -16,20 +16,23 @@ async function pipeReadableStreamLines(
   stream: ReadableStream<Uint8Array>,
   writer: (line: string) => void,
 ): Promise<void> {
-  const reader: ReadableStreamDefaultReader<string> = stream.pipeThrough(new TextDecoderStream()).getReader();
+  const reader: ReadableStreamDefaultReader<Uint8Array> = stream.getReader();
+  const textDecoder: TextDecoder = new TextDecoder();
   let bufferedText: string = "";
 
   try {
     while (true) {
-      const result: ReadableStreamReadResult<string> = await reader.read();
+      const result = await reader.read();
 
       if (result.done) {
         break;
       }
 
-      bufferedText += result.value;
+      bufferedText += textDecoder.decode(result.value, { stream: true });
       bufferedText = flushCompleteLines(bufferedText, writer);
     }
+
+    bufferedText += textDecoder.decode();
 
     if (bufferedText.length > 0) {
       writer(bufferedText);

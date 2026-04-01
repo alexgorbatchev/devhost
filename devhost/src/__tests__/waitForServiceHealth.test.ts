@@ -1,3 +1,5 @@
+import assert from "node:assert";
+
 import { afterEach, describe, expect, test } from "bun:test";
 
 import { waitForServiceHealth } from "../waitForServiceHealth";
@@ -7,7 +9,7 @@ interface ITestChildProcess {
   exited: Promise<number>;
 }
 
-const servers: Bun.Server[] = [];
+const servers: Array<Bun.Server<undefined>> = [];
 
 afterEach(async () => {
   await Promise.all(
@@ -39,7 +41,9 @@ describe("waitForServiceHealth", () => {
       port: 0,
     });
     const childProcess: ITestChildProcess = createRunningChildProcess();
+    const serverPort: number | undefined = server.port;
 
+    assert(serverPort !== undefined);
     servers.push(server);
 
     await expect(
@@ -48,7 +52,7 @@ describe("waitForServiceHealth", () => {
         health: {
           kind: "tcp",
           host: "127.0.0.1",
-          port: server.port,
+          port: serverPort,
         },
         serviceName: "web",
       }),
@@ -64,7 +68,9 @@ describe("waitForServiceHealth", () => {
       port: 0,
     });
     const childProcess: ITestChildProcess = createRunningChildProcess();
+    const serverPort: number | undefined = server.port;
 
+    assert(serverPort !== undefined);
     servers.push(server);
 
     await expect(
@@ -72,7 +78,7 @@ describe("waitForServiceHealth", () => {
         childProcess,
         health: {
           kind: "http",
-          url: `http://127.0.0.1:${server.port}/healthz`,
+          url: `http://127.0.0.1:${serverPort}/healthz`,
         },
         serviceName: "api",
       }),

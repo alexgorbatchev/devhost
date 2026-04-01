@@ -1,3 +1,5 @@
+import assert from "node:assert";
+
 import { afterEach, describe, expect, test } from "bun:test";
 import { clearLockedPorts } from "get-port";
 
@@ -20,15 +22,17 @@ describe("resolveServicePorts", () => {
 
     expect(resolvedManifest.devtoolsMinimapPosition).toBe("right");
     expect(resolvedManifest.devtoolsPosition).toBe("bottom-right");
-    expect(typeof resolvedManifest.services.db.port).toBe("number");
+    const databasePort: number | null = resolvedManifest.services.db.port;
+
+    assert(databasePort !== null);
     expect(resolvedManifest.services.db.portSource).toBe("auto");
     expect(resolvedManifest.services.db.health).toEqual({
       kind: "tcp",
       host: "127.0.0.1",
-      port: resolvedManifest.services.db.port,
+      port: databasePort,
     });
-    expect(resolvedManifest.services.db.port).not.toBe(3000);
-    expect(resolvedManifest.services.db.port).not.toBe(4000);
+    expect(databasePort).not.toBe(3000);
+    expect(databasePort).not.toBe(4000);
   });
 
   test("treats different bind hosts as different runtime sockets", async () => {
