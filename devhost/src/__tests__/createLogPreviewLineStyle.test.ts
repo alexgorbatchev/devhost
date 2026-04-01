@@ -9,7 +9,6 @@ describe("createLogPreviewLineStyle", () => {
 
     expect(createLogPreviewLineStyle(theme, "stderr")).toEqual({
       background: theme.colors.logPreviewStderrBackground,
-      borderRadius: theme.radii.sm,
       boxSizing: "border-box",
       color: theme.colors.logPreviewStderrForeground,
       height: theme.sizes.logPreviewRowHeight,
@@ -26,7 +25,6 @@ describe("createLogPreviewLineStyle", () => {
 
     expect(createLogPreviewLineStyle(theme, "stdout")).toEqual({
       background: undefined,
-      borderRadius: theme.radii.sm,
       boxSizing: "border-box",
       color: theme.colors.foreground,
       height: theme.sizes.logPreviewRowHeight,

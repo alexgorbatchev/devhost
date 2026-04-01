@@ -178,7 +178,7 @@ Current control routes:
   - websocket stream for the injected log minimap
   - replays retained combined service logs on connect, then pushes new stdout/stderr lines live
   - stdout remains intentionally subtle; stderr is highlighted red in the minimap and uses stronger red emphasis in the line-only hover preview
-  - hover preview rows now mirror the exact visible minimap rows, follow the hovered row on the y-axis, and clamp within the viewport while centering the hovered row when surrounding rows are available
+  - hover preview rows now mirror the exact visible minimap rows, follow the hovered row on the y-axis, clamp within the viewport, and render as contiguous flush rows when a single log message spans multiple preview lines
 
 The injected devtools UI now follows the host page's resolved `color-scheme` (`light` or `dark`).
 For best results, apps should expose theme changes through standard `color-scheme` behavior on the document root.

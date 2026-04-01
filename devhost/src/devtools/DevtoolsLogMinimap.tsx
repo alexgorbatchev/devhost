@@ -196,7 +196,7 @@ const overlayShadowStyle: JSX.CSSProperties["boxShadow"] = "inset 0 0 0 1px";
 function createPreviewListStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
   return {
     display: "grid",
-    gap: theme.spacing.xxs,
+    gap: 0,
     listStyle: "none",
     margin: 0,
     padding: 0,

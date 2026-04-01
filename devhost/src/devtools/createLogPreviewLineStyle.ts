@@ -13,7 +13,6 @@ export function createLogPreviewLineStyle(
     height: theme.sizes.logPreviewRowHeight,
     padding: `0 ${theme.spacing.xs}`,
     boxSizing: "border-box",
-    borderRadius: theme.radii.sm,
     background: isStderr ? theme.colors.logPreviewStderrBackground : undefined,
     color: isStderr ? theme.colors.logPreviewStderrForeground : theme.colors.foreground,
     lineHeight: theme.sizes.logPreviewRowHeight,
