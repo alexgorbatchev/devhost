@@ -14,14 +14,14 @@ export function resolveLogPreviewOverlay(
     return null;
   }
 
-  const overlayMarks: ILogMinimapMark[] = marks.filter((mark: ILogMinimapMark): boolean => {
-    return mark.entryIndex >= previewRange.startIndex && mark.entryIndex < previewRange.endIndex;
-  });
+  const startIndex: number = Math.max(0, previewRange.startIndex);
+  const endIndex: number = Math.min(marks.length, previewRange.endIndex);
 
-  if (overlayMarks.length === 0) {
+  if (startIndex >= endIndex) {
     return null;
   }
 
+  const overlayMarks: ILogMinimapMark[] = marks.slice(startIndex, endIndex);
   const top: number = overlayMarks[0].top;
   const lastMark: ILogMinimapMark = overlayMarks[overlayMarks.length - 1];
   const height: number = lastMark.top + lastMark.height - top;

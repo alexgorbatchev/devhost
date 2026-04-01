@@ -1,12 +1,16 @@
+import type { IVisibleLogRow } from "./createVisibleLogRows";
 import { createLogPreviewRange } from "./createLogPreviewRange";
-import type { ServiceLogEntry } from "./types";
 
-export function createLogPreviewWindow(entries: ServiceLogEntry[], entryIndex: number): ServiceLogEntry[] {
-  const previewRange = createLogPreviewRange(entries.length, entryIndex);
+export function createLogPreviewWindow(
+  rows: IVisibleLogRow[],
+  rowIndex: number,
+  maximumVisibleRows?: number,
+): IVisibleLogRow[] {
+  const previewRange = createLogPreviewRange(rows.length, rowIndex, maximumVisibleRows);
 
   if (previewRange === null) {
     return [];
   }
 
-  return entries.slice(previewRange.startIndex, previewRange.endIndex);
+  return rows.slice(previewRange.startIndex, previewRange.endIndex);
 }

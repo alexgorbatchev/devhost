@@ -3,15 +3,25 @@ export interface ILogPreviewRange {
   startIndex: number;
 }
 
-const previewContextRadius: number = 10;
+const defaultMaximumVisibleRows: number = 21;
 
-export function createLogPreviewRange(totalEntries: number, entryIndex: number): ILogPreviewRange | null {
+export function createLogPreviewRange(
+  totalEntries: number,
+  entryIndex: number,
+  maximumVisibleRows: number = defaultMaximumVisibleRows,
+): ILogPreviewRange | null {
   if (totalEntries <= 0 || entryIndex < 0 || entryIndex >= totalEntries) {
     return null;
   }
 
+  const resolvedMaximumVisibleRows: number = Math.max(1, Math.floor(maximumVisibleRows));
+  const precedingRowCount: number = Math.floor((resolvedMaximumVisibleRows - 1) / 2);
+  const startIndex: number = Math.max(0, entryIndex - precedingRowCount);
+  const endIndex: number = Math.min(totalEntries, startIndex + resolvedMaximumVisibleRows);
+  const adjustedStartIndex: number = Math.max(0, endIndex - resolvedMaximumVisibleRows);
+
   return {
-    endIndex: Math.min(totalEntries, entryIndex + previewContextRadius + 1),
-    startIndex: Math.max(0, entryIndex - previewContextRadius),
+    endIndex,
+    startIndex: adjustedStartIndex,
   };
 }

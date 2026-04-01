@@ -41,8 +41,8 @@ describe("resolveLogPreviewOverlay", () => {
       },
     ];
     const previewRange: ILogPreviewRange = {
-      endIndex: 10,
-      startIndex: 8,
+      endIndex: 3,
+      startIndex: 1,
     };
 
     expect(resolveLogPreviewOverlay(marks, previewRange)).toEqual({
@@ -51,7 +51,7 @@ describe("resolveLogPreviewOverlay", () => {
     });
   });
 
-  test("returns null when the preview range is fully outside the visible marks", () => {
+  test("returns null when the preview range falls fully outside the visible row list", () => {
     const marks: ILogMinimapMark[] = [
       {
         entryIndex: 1,
@@ -63,7 +63,7 @@ describe("resolveLogPreviewOverlay", () => {
       },
     ];
     const previewRange: ILogPreviewRange = {
-      endIndex: 5,
+      endIndex: 4,
       startIndex: 3,
     };
 

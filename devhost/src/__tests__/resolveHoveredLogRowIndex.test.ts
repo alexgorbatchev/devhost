@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
 import type { ILogMinimapMark } from "../devtools/createLogMinimapMarks";
-import { resolveHoveredLogEntryIndex } from "../devtools/resolveHoveredLogEntryIndex";
+import { resolveHoveredLogRowIndex } from "../devtools/resolveHoveredLogRowIndex";
 
-describe("resolveHoveredLogEntryIndex", () => {
+describe("resolveHoveredLogRowIndex", () => {
   test("returns the closest visible row index for the mouse position", () => {
     const marks: ILogMinimapMark[] = [
       {
@@ -32,10 +32,10 @@ describe("resolveHoveredLogEntryIndex", () => {
       },
     ];
 
-    expect(resolveHoveredLogEntryIndex(marks, 16)).toBe(1);
+    expect(resolveHoveredLogRowIndex(marks, 16)).toBe(1);
   });
 
   test("returns null when no marks are visible", () => {
-    expect(resolveHoveredLogEntryIndex([], 10)).toBeNull();
+    expect(resolveHoveredLogRowIndex([], 10)).toBeNull();
   });
 });

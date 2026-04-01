@@ -1,24 +1,27 @@
 import { describe, expect, test } from "bun:test";
 
+import type { IVisibleLogRow } from "../devtools/createVisibleLogRows";
 import { createLogPreviewWindow } from "../devtools/createLogPreviewWindow";
-import type { ServiceLogEntry } from "../devtools/types";
 
-function createEntry(id: number): ServiceLogEntry {
+function createRow(id: number): IVisibleLogRow {
   return {
+    entryIndex: id - 1,
+    height: 2,
     id,
-    line: `line ${id}`,
-    serviceName: "api",
     stream: id % 2 === 0 ? "stderr" : "stdout",
+    text: `row ${id}`,
+    top: id * 3,
+    width: 60,
   };
 }
 
 describe("createLogPreviewWindow", () => {
-  test("returns the hovered line with ten lines of context on each side when available", () => {
-    const entries: ServiceLogEntry[] = Array.from({ length: 30 }, (_, index: number): ServiceLogEntry => {
-      return createEntry(index + 1);
+  test("returns the hovered visible row with ten rows of context on each side when available", () => {
+    const rows: IVisibleLogRow[] = Array.from({ length: 30 }, (_, index: number): IVisibleLogRow => {
+      return createRow(index + 1);
     });
 
-    expect(createLogPreviewWindow(entries, 15).map((entry: ServiceLogEntry): number => entry.id)).toEqual([
+    expect(createLogPreviewWindow(rows, 15).map((row: IVisibleLogRow): number => row.id)).toEqual([
       6,
       7,
       8,
@@ -43,12 +46,12 @@ describe("createLogPreviewWindow", () => {
     ]);
   });
 
-  test("clips the preview window at the start of the log list", () => {
-    const entries: ServiceLogEntry[] = Array.from({ length: 5 }, (_, index: number): ServiceLogEntry => {
-      return createEntry(index + 1);
+  test("clips the preview window at the start of the visible row list", () => {
+    const rows: IVisibleLogRow[] = Array.from({ length: 5 }, (_, index: number): IVisibleLogRow => {
+      return createRow(index + 1);
     });
 
-    expect(createLogPreviewWindow(entries, 0).map((entry: ServiceLogEntry): number => entry.id)).toEqual([
+    expect(createLogPreviewWindow(rows, 0).map((row: IVisibleLogRow): number => row.id)).toEqual([
       1,
       2,
       3,

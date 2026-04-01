@@ -17,6 +17,13 @@ describe("createLogPreviewRange", () => {
     });
   });
 
+  test("supports smaller centered windows when a custom visible-row count is provided", () => {
+    expect(createLogPreviewRange(30, 15, 5)).toEqual({
+      endIndex: 18,
+      startIndex: 13,
+    });
+  });
+
   test("returns null for invalid targets", () => {
     expect(createLogPreviewRange(0, 0)).toBeNull();
     expect(createLogPreviewRange(5, -1)).toBeNull();
