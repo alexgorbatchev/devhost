@@ -16,6 +16,8 @@ Its vital that when devtools are injected into the user's web application, CSS t
 
 ## Theme tokens
 
+- Shared visual values must come from the devtools theme context instead of being threaded through component props.
+- Presentational devtools components must read theme values via the shared theme hook/provider, not a `theme` prop.
 - Shared visual values must come from a basic theme object instead of being duplicated inline across components.
 - Reusable tokens must include, at minimum:
   - font sizes: `sm`, `md`, `lg`

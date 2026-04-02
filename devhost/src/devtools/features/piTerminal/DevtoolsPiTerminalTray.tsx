@@ -1,7 +1,6 @@
-import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "preact";
 
-import { css, type IDevtoolsTheme } from "../../shared";
+import { css, useDevtoolsTheme } from "../../shared";
 import { DevtoolsPiTerminalPanel } from "./DevtoolsPiTerminalPanel";
 import type { IPiTerminalSession } from "./types";
 
@@ -10,10 +9,10 @@ interface IDevtoolsPiTerminalTrayProps {
   onMinimizeSession: (sessionId: string) => void;
   onRemoveSession: (sessionId: string) => void;
   sessions: IPiTerminalSession[];
-  theme: IDevtoolsTheme;
 }
 
 export function DevtoolsPiTerminalTray(props: IDevtoolsPiTerminalTrayProps): JSX.Element | null {
+  const theme = useDevtoolsTheme();
   const expandedSession: IPiTerminalSession | undefined = props.sessions.find((session: IPiTerminalSession): boolean => session.isExpanded);
   const minimizedSessions: IPiTerminalSession[] = props.sessions.filter((session: IPiTerminalSession): boolean => !session.isExpanded);
 
@@ -21,9 +20,31 @@ export function DevtoolsPiTerminalTray(props: IDevtoolsPiTerminalTrayProps): JSX
     return null;
   }
 
-  const dockClassName: string = css(createDockStyle(props.theme));
-  const rootClassName: string = css(createRootStyle(props.theme));
-  const sessionListClassName: string = css(createSessionListStyle(props.theme));
+  const dockClassName: string = css({
+    bottom: theme.spacing.sm,
+    display: "flex",
+    justifyContent: "center",
+    left: theme.spacing.sm,
+    pointerEvents: "none",
+    position: "fixed",
+    right: theme.spacing.sm,
+    zIndex: theme.zIndices.floating,
+  });
+  const rootClassName: string = css({
+    inset: 0,
+    pointerEvents: "none",
+    position: "fixed",
+    zIndex: theme.zIndices.floating,
+  });
+  const sessionListClassName: string = css({
+    alignItems: "flex-end",
+    display: "flex",
+    gap: theme.spacing.sm,
+    maxWidth: "100%",
+    overflowX: "auto",
+    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
+    pointerEvents: "auto",
+  });
 
   return (
     <div class={rootClassName} data-testid="DevtoolsPiTerminalTray">
@@ -32,7 +53,6 @@ export function DevtoolsPiTerminalTray(props: IDevtoolsPiTerminalTrayProps): JSX
           annotation={expandedSession.annotation}
           isExpanded={true}
           sessionId={expandedSession.sessionId}
-          theme={props.theme}
           onExpand={noop}
           onMinimize={(): void => {
             props.onMinimizeSession(expandedSession.sessionId);
@@ -52,7 +72,6 @@ export function DevtoolsPiTerminalTray(props: IDevtoolsPiTerminalTrayProps): JSX
                   annotation={session.annotation}
                   isExpanded={false}
                   sessionId={session.sessionId}
-                  theme={props.theme}
                   onExpand={(): void => {
                     props.onExpandSession(session.sessionId);
                   }}
@@ -68,40 +87,6 @@ export function DevtoolsPiTerminalTray(props: IDevtoolsPiTerminalTrayProps): JSX
       ) : null}
     </div>
   );
-}
-
-function createDockStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    position: "fixed",
-    left: theme.spacing.sm,
-    right: theme.spacing.sm,
-    bottom: theme.spacing.sm,
-    display: "flex",
-    justifyContent: "center",
-    pointerEvents: "none",
-    zIndex: theme.zIndices.floating,
-  };
-}
-
-function createRootStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    position: "fixed",
-    inset: 0,
-    pointerEvents: "none",
-    zIndex: theme.zIndices.floating,
-  };
-}
-
-function createSessionListStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    display: "flex",
-    alignItems: "flex-end",
-    gap: theme.spacing.sm,
-    maxWidth: "100%",
-    overflowX: "auto",
-    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
-    pointerEvents: "auto",
-  };
 }
 
 function noop(): void {}

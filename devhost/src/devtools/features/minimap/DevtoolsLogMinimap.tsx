@@ -3,10 +3,9 @@ import type { JSX } from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 import type { DevtoolsMinimapPosition } from "../../../stackTypes";
-import { css, type IDevtoolsTheme } from "../../shared";
+import { css, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
 import type { ServiceLogEntry } from "../../shared/types";
 import { createLogMinimapMarksFromVisibleRows, type ILogMinimapMark } from "./createLogMinimapMarks";
-import { createLogPreviewLineStyle } from "./createLogPreviewLineStyle";
 import { createLogPreviewWindow } from "./createLogPreviewWindow";
 import { createVisibleLogRows, type IVisibleLogRow } from "./createVisibleLogRows";
 import { resolveHoveredLogRowIndex } from "./resolveHoveredLogRowIndex";
@@ -18,24 +17,24 @@ interface IDevtoolsLogMinimapProps {
   isHovered: boolean;
   minimapPosition: DevtoolsMinimapPosition;
   onHoveredChange: (isHovered: boolean) => void;
-  theme: IDevtoolsTheme;
 }
 
 const minimapTransitionStyle: CSSObject["transition"] = "opacity 160ms ease, transform 160ms ease";
 
 export function DevtoolsLogMinimap(props: IDevtoolsLogMinimapProps): JSX.Element | null {
+  const theme = useDevtoolsTheme();
   const canvasReference = useRef<HTMLCanvasElement | null>(null);
   const entriesReference = useRef<ServiceLogEntry[]>(props.entries);
   const marksReference = useRef<ILogMinimapMark[]>([]);
   const visibleRowsReference = useRef<IVisibleLogRow[]>([]);
   const renderCanvasReference = useRef<() => void>(() => {});
-  const stderrColorReference = useRef<string>(props.theme.colors.logMinimapStderr);
-  const stdoutColorReference = useRef<string>(props.theme.colors.logMinimapStdout);
+  const stderrColorReference = useRef<string>(theme.colors.logMinimapStderr);
+  const stdoutColorReference = useRef<string>(theme.colors.logMinimapStdout);
   const [hoveredRowIndex, setHoveredRowIndex] = useState<number | null>(null);
 
   entriesReference.current = props.entries;
-  stderrColorReference.current = props.theme.colors.logMinimapStderr;
-  stdoutColorReference.current = props.theme.colors.logMinimapStdout;
+  stderrColorReference.current = theme.colors.logMinimapStderr;
+  stdoutColorReference.current = theme.colors.logMinimapStdout;
 
   useEffect(() => {
     const canvas: HTMLCanvasElement | null = canvasReference.current;
@@ -104,7 +103,7 @@ export function DevtoolsLogMinimap(props: IDevtoolsLogMinimapProps): JSX.Element
 
   useEffect(() => {
     renderCanvasReference.current();
-  }, [props.entries, props.theme.colors.logMinimapStderr, props.theme.colors.logMinimapStdout]);
+  }, [props.entries, theme.colors.logMinimapStderr, theme.colors.logMinimapStdout]);
 
   const previewLayout = useMemo(() => {
     if (hoveredRowIndex === null) {
@@ -115,13 +114,13 @@ export function DevtoolsLogMinimap(props: IDevtoolsLogMinimapProps): JSX.Element
       borderWidth: 1,
       hoveredRowIndex,
       marks: marksReference.current,
-      previewPadding: readPixelValue(props.theme.spacing.xs),
+      previewPadding: readPixelValue(theme.spacing.xs),
       rowGap: 0,
-      rowHeight: readPixelValue(props.theme.sizes.logPreviewRowHeight),
+      rowHeight: readPixelValue(theme.sizes.logPreviewRowHeight),
       viewportHeight: canvasReference.current?.clientHeight ?? 0,
-      viewportPadding: readPixelValue(props.theme.spacing.sm),
+      viewportPadding: readPixelValue(theme.spacing.sm),
     });
-  }, [hoveredRowIndex, props.entries, props.theme]);
+  }, [hoveredRowIndex, props.entries, theme]);
   const previewRows: IVisibleLogRow[] = useMemo((): IVisibleLogRow[] => {
     if (hoveredRowIndex === null || previewLayout === null) {
       return [];
@@ -140,10 +139,10 @@ export function DevtoolsLogMinimap(props: IDevtoolsLogMinimapProps): JSX.Element
   }
 
   const canvasClassName: string = css(canvasStyle);
-  const minimapClassName: string = css(createMinimapStyle(props.theme, props.minimapPosition, props.isHovered));
+  const minimapClassName: string = css(createMinimapStyle(theme, props.minimapPosition, props.isHovered));
   const previewClassName: string =
-    previewLayout === null ? "" : css(createPreviewStyle(props.theme, props.minimapPosition, previewLayout.top));
-  const previewListClassName: string = css(createPreviewListStyle(props.theme));
+    previewLayout === null ? "" : css(createPreviewStyle(theme, props.minimapPosition, previewLayout.top));
+  const previewListClassName: string = css(createPreviewListStyle(theme));
 
   return (
     <aside
@@ -167,7 +166,7 @@ export function DevtoolsLogMinimap(props: IDevtoolsLogMinimapProps): JSX.Element
       <canvas ref={canvasReference} class={canvasClassName} data-testid="DevtoolsLogMinimap--canvas" />
       {props.isHovered && previewOverlay !== null ? (
         <div
-          class={css(createOverlayStyle(props.theme, previewOverlay.top, previewOverlay.height))}
+          class={css(createOverlayStyle(theme, previewOverlay.top, previewOverlay.height))}
           data-testid="DevtoolsLogMinimap--preview-overlay"
         />
       ) : null}
@@ -176,7 +175,7 @@ export function DevtoolsLogMinimap(props: IDevtoolsLogMinimapProps): JSX.Element
           <ol class={previewListClassName}>
             {previewRows.map((row: IVisibleLogRow) => {
               return (
-                <li key={`${row.id}-${row.top}`} class={css(createLogPreviewLineStyle(props.theme, row.stream))}>
+                <li key={`${row.id}-${row.top}`} class={css(readPreviewLineStyle(theme, row.stream))}>
                   {row.text}
                 </li>
               );
@@ -196,6 +195,22 @@ const canvasStyle: CSSObject = {
 };
 
 const overlayShadowStyle: CSSObject["boxShadow"] = "inset 0 0 0 1px";
+
+function readPreviewLineStyle(theme: IDevtoolsTheme, stream: ServiceLogEntry["stream"]): CSSObject {
+  const isStderr: boolean = stream === "stderr";
+
+  return {
+    background: isStderr ? theme.colors.logPreviewStderrBackground : undefined,
+    boxSizing: "border-box",
+    color: isStderr ? theme.colors.logPreviewStderrForeground : theme.colors.foreground,
+    height: theme.sizes.logPreviewRowHeight,
+    lineHeight: theme.sizes.logPreviewRowHeight,
+    overflow: "hidden",
+    padding: `0 ${theme.spacing.xs}`,
+    textOverflow: "ellipsis",
+    whiteSpace: "pre",
+  };
+}
 
 function createPreviewListStyle(theme: IDevtoolsTheme): CSSObject {
   return {

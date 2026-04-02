@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 
-import { Button, css, type IDevtoolsTheme } from "../../shared";
+import { Button, css, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
 import { createDevtoolsWebSocketUrl } from "../../shared/createDevtoolsWebSocketUrl";
 import {
   DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME,
@@ -23,7 +23,6 @@ interface IDevtoolsPiTerminalPanelProps {
   onMinimize: () => void;
   onTerminate: () => void;
   sessionId: string;
-  theme: IDevtoolsTheme;
 }
 
 interface IPanelSize {
@@ -40,6 +39,7 @@ const trayTransitionDurationInMilliseconds: number = 180;
 const xtermStylesheetId: string = "devhost-xterm-stylesheet";
 
 export function DevtoolsPiTerminalPanel(props: IDevtoolsPiTerminalPanelProps): JSX.Element {
+  const theme = useDevtoolsTheme();
   const fitAddonReference = useRef<FitAddon | null>(null);
   const resizeAnimationFrameReference = useRef<number | null>(null);
   const terminalContainerReference = useRef<HTMLDivElement | null>(null);
@@ -118,11 +118,11 @@ export function DevtoolsPiTerminalPanel(props: IDevtoolsPiTerminalPanelProps): J
       cols: 120,
       cursorBlink: true,
       disableStdin: !props.isExpanded,
-      fontFamily: props.theme.fontFamilies.monospace,
-      fontSize: Number.parseInt(props.theme.fontSizes.md, 10),
+      fontFamily: theme.fontFamilies.monospace,
+      fontSize: Number.parseInt(theme.fontSizes.md, 10),
       rows: 80,
       scrollback: 2_000,
-      theme: createXtermTheme(props.theme),
+      theme: createXtermTheme(theme),
     });
     const fitAddon = new FitAddon();
     const websocketUrl: URL = new URL(createDevtoolsWebSocketUrl(PI_SESSION_WEBSOCKET_PATH, window.location));
@@ -221,9 +221,9 @@ export function DevtoolsPiTerminalPanel(props: IDevtoolsPiTerminalPanelProps): J
     }
 
     terminal.options.disableStdin = !props.isExpanded;
-    terminal.options.theme = createXtermTheme(props.theme);
-    terminal.options.fontFamily = props.theme.fontFamilies.monospace;
-    terminal.options.fontSize = Number.parseInt(props.theme.fontSizes.md, 10);
+    terminal.options.theme = createXtermTheme(theme);
+    terminal.options.fontFamily = theme.fontFamilies.monospace;
+    terminal.options.fontSize = Number.parseInt(theme.fontSizes.md, 10);
 
     if (props.isExpanded) {
       terminal.focus();
@@ -233,26 +233,26 @@ export function DevtoolsPiTerminalPanel(props: IDevtoolsPiTerminalPanelProps): J
     }
 
     scheduleTerminalResize();
-  }, [panelSize, props.isExpanded, props.theme, scheduleTerminalResize]);
+  }, [panelSize, props.isExpanded, scheduleTerminalResize, theme]);
 
-  const annotationClassName: string = css(createAnnotationStyle(props.theme));
-  const annotationCommentClassName: string = css(createAnnotationCommentStyle(props.theme));
-  const annotationEyebrowClassName: string = css(createAnnotationEyebrowStyle(props.theme));
-  const annotationMetaClassName: string = css(createAnnotationMetaStyle(props.theme));
+  const annotationClassName: string = css(createAnnotationStyle(theme));
+  const annotationCommentClassName: string = css(createAnnotationCommentStyle(theme));
+  const annotationEyebrowClassName: string = css(createAnnotationEyebrowStyle(theme));
+  const annotationMetaClassName: string = css(createAnnotationMetaStyle(theme));
   const buttonGroupClassName: string = css(buttonGroupStyle);
-  const chromeClassName: string = css(createChromeStyle(props.theme, panelSize));
-  const expandedPanelClassName: string = css(createExpandedPanelStyle(props.theme, panelSize));
-  const headerClassName: string = css(createHeaderStyle(props.theme));
+  const chromeClassName: string = css(createChromeStyle(theme, panelSize, props.isExpanded));
+  const expandedPanelClassName: string = css(createExpandedPanelStyle(theme, panelSize));
+  const headerClassName: string = css(createHeaderStyle(theme));
   const headerTextClassName: string = css(headerTextStyle);
-  const statusClassName: string = css(createStatusStyle(props.theme, errorMessage !== null));
+  const statusClassName: string = css(createStatusStyle(theme, errorMessage !== null));
   const terminalContainerClassName: string = css(terminalContainerStyle);
-  const terminalViewportClassName: string = css(createTerminalViewportStyle(props.theme));
-  const trayBadgeClassName: string = css(createTrayBadgeStyle(props.theme));
-  const trayOverlayButtonClassName: string = css(createTrayOverlayButtonStyle(props.theme));
+  const terminalViewportClassName: string = css(createTerminalViewportStyle(theme));
+  const trayBadgeClassName: string = css(createTrayBadgeStyle(theme));
+  const trayOverlayButtonClassName: string = css(createTrayOverlayButtonStyle(theme));
   const trayScaledContentClassName: string = css(createTrayScaledContentStyle(panelSize));
-  const trayShellClassName: string = css(createTrayShellStyle(props.theme, panelSize, isTrayMounted));
-  const trayTooltipClassName: string = css(createTrayTooltipStyle(props.theme));
-  const trayTooltipCommentClassName: string = css(createTrayTooltipCommentStyle(props.theme));
+  const trayShellClassName: string = css(createTrayShellStyle(theme, panelSize, isTrayMounted));
+  const trayTooltipClassName: string = css(createTrayTooltipStyle(theme));
+  const trayTooltipCommentClassName: string = css(createTrayTooltipCommentStyle(theme));
 
   const panelContent: JSX.Element = (
     <div class={chromeClassName}>
@@ -265,7 +265,6 @@ export function DevtoolsPiTerminalPanel(props: IDevtoolsPiTerminalPanelProps): J
           <div class={buttonGroupClassName}>
             <Button
               testId="DevtoolsPiTerminalPanel--minimize"
-              theme={props.theme}
               title="Minimize Pi terminal"
               variant="secondary"
               onClick={props.onMinimize}
@@ -274,7 +273,6 @@ export function DevtoolsPiTerminalPanel(props: IDevtoolsPiTerminalPanelProps): J
             </Button>
             <Button
               testId="DevtoolsPiTerminalPanel--terminate"
-              theme={props.theme}
               title="Terminate Pi terminal"
               variant="danger"
               onClick={(): void => {
@@ -391,7 +389,7 @@ function createAnnotationStyle(theme: IDevtoolsTheme): CSSObject {
   };
 }
 
-function createChromeStyle(theme: IDevtoolsTheme, panelSize: IPanelSize): CSSObject {
+function createChromeStyle(theme: IDevtoolsTheme, panelSize: IPanelSize, isExpanded: boolean): CSSObject {
   return {
     width: `${panelSize.width}px`,
     height: `${panelSize.height}px`,
@@ -401,7 +399,7 @@ function createChromeStyle(theme: IDevtoolsTheme, panelSize: IPanelSize): CSSObj
     padding: theme.spacing.sm,
     boxSizing: "border-box",
     border: `1px solid ${theme.colors.border}`,
-    borderRadius: theme.radii.lg,
+    borderRadius: isExpanded ? theme.radii.lg : theme.radii.md,
     background: theme.colors.background,
     color: theme.colors.foreground,
     boxShadow: theme.shadows.floating,
@@ -467,7 +465,7 @@ function createTrayBadgeStyle(theme: IDevtoolsTheme): CSSObject {
     right: theme.spacing.xs,
     bottom: theme.spacing.xs,
     padding: `${theme.spacing.xxs} ${theme.spacing.xs}`,
-    borderRadius: theme.radii.pill,
+    borderRadius: theme.radii.md,
     background: theme.colors.logMinimapOverlayBackground,
     color: theme.colors.foreground,
     fontSize: theme.fontSizes.sm,
@@ -483,7 +481,7 @@ function createTrayOverlayButtonStyle(theme: IDevtoolsTheme): CSSObject {
     position: "absolute",
     inset: 0,
     border: `1px solid ${theme.colors.border}`,
-    borderRadius: theme.radii.lg,
+    borderRadius: theme.radii.md,
     background: "transparent",
     cursor: "pointer",
     overflow: "hidden",

@@ -2,8 +2,10 @@ import type { CSSObject } from "@emotion/css/create-instance";
 import type { ComponentChildren, JSX } from "preact";
 
 import { css } from "./devtoolsCss";
-import { createButtonStyle, type ButtonVariant } from "./createButtonStyle";
 import type { IDevtoolsTheme } from "./devtoolsTheme";
+import { useDevtoolsTheme } from "./useDevtoolsTheme";
+
+export type ButtonVariant = "danger" | "primary" | "secondary";
 
 interface IButtonProps {
   ariaPressed?: boolean;
@@ -16,7 +18,6 @@ interface IButtonProps {
   style?: CSSObject;
   styleHover?: CSSObject;
   testId?: string;
-  theme: IDevtoolsTheme;
   title?: string;
   type?: "button" | "reset" | "submit";
   variant?: ButtonVariant;
@@ -41,23 +42,32 @@ export function Button({
   style,
   styleHover,
   testId,
-  theme,
   title,
   type = "button",
   variant = "secondary",
 }: IButtonProps): JSX.Element {
+  const theme = useDevtoolsTheme();
   const buttonClassName: string = css({
-    ...createButtonStyle(theme, {
-      isDisabled: disabled,
-      variant,
-    }),
+    ...readVariantStyle(variant, theme),
+    alignItems: "center",
+    borderRadius: theme.radii.sm,
+    boxShadow: theme.shadows.floating,
+    cursor: disabled ? "not-allowed" : "pointer",
+    display: "inline-flex",
+    fontFamily: theme.fontFamilies.monospace,
+    fontSize: theme.fontSizes.sm,
+    gap: theme.spacing.xs,
+    justifyContent: "center",
+    opacity: disabled ? 0.5 : 1,
+    padding: `${theme.spacing.xxs} ${theme.spacing.xs}`,
+    transition: "opacity 120ms ease",
     ...style,
     ...(disabled || styleHover === undefined
       ? undefined
       : {
           [buttonHoverSelector]: styleHover,
         }),
-    ...(endEnhancerStyleHover === undefined || disabled
+    ...(disabled || endEnhancerStyleHover === undefined
       ? undefined
       : {
           [`${buttonHoverSelector} [${buttonEndEnhancerAttributeName}]`]: endEnhancerStyleHover,
@@ -86,4 +96,28 @@ export function Button({
       ) : null}
     </button>
   );
+}
+
+function readVariantStyle(variant: ButtonVariant, theme: IDevtoolsTheme): CSSObject {
+  if (variant === "secondary") {
+    return {
+      background: theme.colors.background,
+      border: `1px solid ${theme.colors.border}`,
+      color: theme.colors.foreground,
+    };
+  }
+
+  if (variant === "danger") {
+    return {
+      background: theme.colors.dangerBackground,
+      border: `1px solid ${theme.colors.dangerBackground}`,
+      color: theme.colors.accentForeground,
+    };
+  }
+
+  return {
+    background: theme.colors.accentBackground,
+    border: `1px solid ${theme.colors.accentBackground}`,
+    color: theme.colors.accentForeground,
+  };
 }

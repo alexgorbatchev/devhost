@@ -1,17 +1,16 @@
-import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "preact";
 
-import { css, type IDevtoolsTheme } from "../../shared";
+import { css, useDevtoolsTheme } from "../../shared";
 import type { ServiceHealth } from "../../shared/types";
 import { selectVisibleServices } from "./selectVisibleServices";
 
 interface IDevtoolsServiceStatusPanelProps {
   errorMessage: string | null;
   services: ServiceHealth[];
-  theme: IDevtoolsTheme;
 }
 
 export function DevtoolsServiceStatusPanel(props: IDevtoolsServiceStatusPanelProps): JSX.Element | null {
+  const theme = useDevtoolsTheme();
   const visibleServices: ServiceHealth[] = selectVisibleServices(props.services);
   const shouldRenderPanel: boolean = props.errorMessage !== null || visibleServices.length > 0;
 
@@ -19,11 +18,37 @@ export function DevtoolsServiceStatusPanel(props: IDevtoolsServiceStatusPanelPro
     return null;
   }
 
-  const errorClassName: string = css(createErrorStyle(props.theme));
-  const listClassName: string = css(listStyle);
-  const nameClassName: string = css(createNameStyle(props.theme));
-  const panelClassName: string = css(createPanelStyle(props.theme));
-  const rowClassName: string = css(rowStyle);
+  const errorClassName: string = css({
+    color: theme.colors.dangerForeground,
+    fontSize: theme.fontSizes.sm,
+    marginBottom: "6px",
+  });
+  const listClassName: string = css({
+    display: "grid",
+    gap: "4px",
+    listStyle: "none",
+    margin: 0,
+    padding: 0,
+  });
+  const nameClassName: string = css({
+    color: theme.colors.foreground,
+    fontSize: theme.fontSizes.sm,
+  });
+  const panelClassName: string = css({
+    background: theme.colors.background,
+    border: `1px solid ${theme.colors.border}`,
+    borderRadius: theme.radii.md,
+    boxShadow: theme.shadows.floating,
+    color: theme.colors.foreground,
+    fontFamily: theme.fontFamilies.monospace,
+    fontSize: theme.fontSizes.sm,
+    padding: `${theme.spacing.xxs} ${theme.spacing.xs}`,
+  });
+  const rowClassName: string = css({
+    alignItems: "center",
+    display: "flex",
+    gap: "6px",
+  });
 
   return (
     <section aria-label="devhost services" class={panelClassName} data-testid="DevtoolsServiceStatusPanel">
@@ -31,7 +56,16 @@ export function DevtoolsServiceStatusPanel(props: IDevtoolsServiceStatusPanelPro
       {visibleServices.length > 0 ? (
         <ul class={listClassName} data-testid="DevtoolsServiceStatusPanel--service-list">
           {visibleServices.map((service: ServiceHealth) => {
-            const statusDotClassName: string = css(createStatusDotStyle(service.status, props.theme));
+            const statusDotClassName: string = css({
+              background: service.status ? theme.colors.successBackground : theme.colors.dangerBackground,
+              borderRadius: theme.radii.pill,
+              boxShadow: service.status
+                ? `0 0 10px ${theme.colors.successGlow}, 0 0 4px ${theme.colors.successGlow}`
+                : `0 0 10px ${theme.colors.dangerGlow}, 0 0 4px ${theme.colors.dangerGlow}`,
+              flexShrink: 0,
+              height: "8px",
+              width: "8px",
+            });
 
             return (
               <li key={service.name} class={rowClassName}>
@@ -44,59 +78,4 @@ export function DevtoolsServiceStatusPanel(props: IDevtoolsServiceStatusPanelPro
       ) : null}
     </section>
   );
-}
-
-const listStyle: CSSObject = {
-  display: "grid",
-  gap: "4px",
-  listStyle: "none",
-  margin: 0,
-  padding: 0,
-};
-
-const rowStyle: CSSObject = {
-  display: "flex",
-  alignItems: "center",
-  gap: "6px",
-};
-
-function createPanelStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    padding: `${theme.spacing.xxs} ${theme.spacing.xs}`,
-    border: `1px solid ${theme.colors.border}`,
-    borderRadius: theme.radii.md,
-    background: theme.colors.background,
-    color: theme.colors.foreground,
-    fontFamily: theme.fontFamilies.monospace,
-    fontSize: theme.fontSizes.sm,
-    boxShadow: theme.shadows.floating,
-  };
-}
-
-function createErrorStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    marginBottom: "6px",
-    color: theme.colors.dangerForeground,
-    fontSize: theme.fontSizes.sm,
-  };
-}
-
-function createNameStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    color: theme.colors.foreground,
-    fontSize: theme.fontSizes.sm,
-  };
-}
-
-function createStatusDotStyle(isHealthy: boolean, theme: IDevtoolsTheme): CSSObject {
-  return {
-    width: "8px",
-    height: "8px",
-    flexShrink: 0,
-    borderRadius: theme.radii.pill,
-    background: isHealthy ? theme.colors.successBackground : theme.colors.dangerBackground,
-    boxShadow: isHealthy
-      ? `0 0 10px ${theme.colors.successGlow}, 0 0 4px ${theme.colors.successGlow}`
-      : `0 0 10px ${theme.colors.dangerGlow}, 0 0 4px ${theme.colors.dangerGlow}`,
-  };
 }

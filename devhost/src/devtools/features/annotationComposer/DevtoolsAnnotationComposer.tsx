@@ -2,7 +2,7 @@ import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "preact";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 
-import { Button, css, type IDevtoolsTheme } from "../../shared";
+import { Button, css, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME, DEVTOOLS_ROOT_ID } from "../../shared/constants";
 import type { IAnnotationSubmitResult } from "../piTerminal/types";
 import { collectElementSnapshot, identifyElement } from "./collectElementSnapshot";
@@ -14,7 +14,6 @@ import type { IAnnotationSubmitDetail, ISelectedElementDraft } from "./types";
 interface IDevtoolsAnnotationComposerProps {
   onSubmit: (detail: IAnnotationSubmitDetail) => Promise<IAnnotationSubmitResult>;
   stackName: string;
-  theme: IDevtoolsTheme;
 }
 
 interface IMarkerRenderModel {
@@ -33,6 +32,7 @@ const popupWidth: number = 320;
 const selectionCursorStyleId: string = "devhost-annotation-cursor-style";
 
 export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerProps): JSX.Element {
+  const theme = useDevtoolsTheme();
   const [comment, setComment] = useState<string>("");
   const [hoveredElement, setHoveredElement] = useState<HTMLElement | null>(null);
   const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
@@ -45,7 +45,7 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
   const hoveredElementReference = useRef<HTMLElement | null>(null);
   const popupReference = useRef<HTMLDivElement | null>(null);
   const scheduledFrameReference = useRef<number | null>(null);
-  const viewportPadding: number = readPixelValue(props.theme.spacing.sm);
+  const viewportPadding: number = readPixelValue(theme.spacing.sm);
   const trimmedComment: string = comment.trim();
   const hasDraft: boolean = isSelectionMode || selectedElements.length > 0 || trimmedComment.length > 0;
 
@@ -346,7 +346,7 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
   const isHoveredElementSelected: boolean =
     hoveredElement !== null && selectedElements.some((selection: ISelectedElementDraft): boolean => selection.element === hoveredElement);
   const buttonLabel: string = hasDraft ? (isSubmitting ? "Starting Pi…" : "Cancel draft") : "Annotate";
-  const errorClassName: string = css(createSubmissionErrorStyle(props.theme));
+  const errorClassName: string = css(createSubmissionErrorStyle(theme));
   const markerListClassName: string = css(markerListStyle);
   const markerListItemClassName: string = css(markerListItemStyle);
   const markerListTextClassName: string = css(markerListTextStyle);
@@ -361,7 +361,6 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
         ariaPressed={hasDraft}
         disabled={isSubmitting}
         testId="DevtoolsAnnotationComposer--toggle"
-        theme={props.theme}
         title={hasDraft ? "Cancel annotation draft" : "Start annotation mode"}
         variant={hasDraft ? "danger" : "primary"}
         onClick={(): void => {
@@ -378,7 +377,7 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
       <div class={overlayClassName}>
         {isSelectionMode && hoveredRectangle !== null && !isHoveredElementSelected ? (
           <div
-            class={css(createHoverHighlightStyle(props.theme, hoveredRectangle))}
+            class={css(createHoverHighlightStyle(theme, hoveredRectangle))}
             data-testid="DevtoolsAnnotationComposer--hover-highlight"
           />
         ) : null}
@@ -389,8 +388,8 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
 
           return (
             <div key={marker.markerNumber}>
-              <div class={css(createSelectionHighlightStyle(props.theme, marker))} />
-              <div class={css(createMarkerStyle(props.theme, marker))} data-testid="DevtoolsAnnotationComposer--marker">
+              <div class={css(createSelectionHighlightStyle(theme, marker))} />
+              <div class={css(createMarkerStyle(theme, marker))} data-testid="DevtoolsAnnotationComposer--marker">
                 {marker.markerNumber}
               </div>
             </div>
@@ -401,7 +400,7 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
         <div
           ref={popupReference}
           data-testid="DevtoolsAnnotationComposer--popup"
-          class={css(createPopupStyle(props.theme, popupCoordinates.left, popupCoordinates.top))}
+          class={css(createPopupStyle(theme, popupCoordinates.left, popupCoordinates.top))}
           onClick={(event: JSX.TargetedMouseEvent<HTMLDivElement>): void => {
             event.stopPropagation();
           }}
@@ -419,7 +418,7 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
             {selectedElements.map((selection: ISelectedElementDraft) => {
               return (
                 <li key={selection.markerNumber} class={markerListItemClassName}>
-                  <span class={css(createMarkerPillStyle(props.theme))}>{selection.markerNumber}</span>
+                  <span class={css(createMarkerPillStyle(theme))}>{selection.markerNumber}</span>
                   <span class={markerListTextClassName}>
                     <strong>#{selection.markerNumber}</strong> {selection.elementName}
                   </span>
@@ -432,7 +431,7 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
             data-testid="DevtoolsAnnotationComposer--comment"
             placeholder="Describe the change and refer to markers like #1, #2, #3…"
             rows={5}
-            class={css(createTextareaStyle(props.theme))}
+            class={css(createTextareaStyle(theme))}
             value={comment}
             onInput={(event: JSX.TargetedEvent<HTMLTextAreaElement, Event>): void => {
               setComment(event.currentTarget.value);
@@ -447,11 +446,10 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
             <Button
               disabled={isSubmitting}
               endEnhancer="Esc"
-              endEnhancerStyle={createShortcutBadgeStyle(props.theme)}
+              endEnhancerStyle={createShortcutBadgeStyle(theme)}
               endEnhancerStyleHover={shortcutBadgeHoverStyle}
-              style={createCancelButtonStyle(props.theme)}
-              styleHover={createActionButtonHoverStyle(props.theme)}
-              theme={props.theme}
+              style={createCancelButtonStyle(theme)}
+              styleHover={createActionButtonHoverStyle(theme)}
               variant="secondary"
               onClick={cancelDraft}
             >
@@ -460,11 +458,10 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
             <Button
               disabled={trimmedComment.length === 0 || isSubmitting}
               endEnhancer="⌘ ↵"
-              endEnhancerStyle={createShortcutBadgeStyle(props.theme)}
+              endEnhancerStyle={createShortcutBadgeStyle(theme)}
               endEnhancerStyleHover={shortcutBadgeHoverStyle}
-              style={createSubmitButtonStyle(props.theme)}
-              styleHover={createActionButtonHoverStyle(props.theme)}
-              theme={props.theme}
+              style={createSubmitButtonStyle(theme)}
+              styleHover={createActionButtonHoverStyle(theme)}
               variant="primary"
               onClick={(): void => {
                 void submitDraft();
