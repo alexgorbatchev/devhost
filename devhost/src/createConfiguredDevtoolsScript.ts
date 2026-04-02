@@ -6,8 +6,10 @@ export function createConfiguredDevtoolsScript(
   devtoolsPosition: DevtoolsPosition,
   devtoolsMinimapPosition: DevtoolsMinimapPosition,
   stackName: string,
+  controlToken: string,
 ): string {
   const injectedConfig: string = JSON.stringify({
+    controlToken,
     minimapPosition: devtoolsMinimapPosition,
     position: devtoolsPosition,
     stackName,

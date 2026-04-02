@@ -2,7 +2,9 @@ import { managedCaddyPaths } from "./caddyPaths";
 import { signalExitCodes, supportedSignals, type SupportedSignal } from "./constants";
 import { collectManagedServicesHealth } from "./collectManagedServicesHealth";
 import type { IDevhostLogger } from "./createLogger";
+import { createPiAnnotationPrompt } from "./createPiAnnotationPrompt";
 import { ensureManagedCaddyConfig } from "./ensureManagedCaddyConfig";
+import { launchPiTerminalSession } from "./launchPiTerminalSession";
 import { pipeSubprocessOutput } from "./pipeSubprocessOutput";
 import {
   activateRoute,
@@ -87,6 +89,15 @@ export async function startStack(
           return await collectManagedServicesHealth(manifest.name, managedServices, startedServices);
         },
         stackName: manifest.name,
+        startPiTerminalSession: (detail, onData) => {
+          return launchPiTerminalSession({
+            cols: 120,
+            cwd: manifest.manifestDirectoryPath,
+            onData,
+            prompt: createPiAnnotationPrompt(detail),
+            rows: 80,
+          });
+        },
       });
       await devtoolsControlServer.publishHealthResponse();
     }

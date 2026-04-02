@@ -2,11 +2,8 @@ import type { JSX } from "preact";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 import { Button, type IDevtoolsTheme } from "../../shared";
-import {
-  DEVTOOLS_ANNOTATION_SUBMIT_EVENT_NAME,
-  DEVTOOLS_ROOT_ATTRIBUTE_NAME,
-  DEVTOOLS_ROOT_ID,
-} from "../../shared/constants";
+import { DEVTOOLS_ROOT_ATTRIBUTE_NAME, DEVTOOLS_ROOT_ID } from "../../shared/constants";
+import type { IAnnotationSubmitResult } from "../piTerminal/types";
 import { collectElementSnapshot, identifyElement } from "./collectElementSnapshot";
 import { createAnnotationSubmitDetail } from "./createAnnotationSubmitDetail";
 import { resolvePopupCoordinates } from "./resolvePopupCoordinates";
@@ -14,6 +11,7 @@ import { resolveAnnotationTarget } from "./resolveAnnotationTarget";
 import type { IAnnotationSubmitDetail, ISelectedElementDraft } from "./types";
 
 interface IDevtoolsAnnotationComposerProps {
+  onSubmit: (detail: IAnnotationSubmitDetail) => Promise<IAnnotationSubmitResult>;
   stackName: string;
   theme: IDevtoolsTheme;
 }
@@ -37,9 +35,11 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
   const [comment, setComment] = useState<string>("");
   const [hoveredElement, setHoveredElement] = useState<HTMLElement | null>(null);
   const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [layoutVersion, setLayoutVersion] = useState<number>(0);
   const [popupHeight, setPopupHeight] = useState<number>(220);
   const [selectedElements, setSelectedElements] = useState<ISelectedElementDraft[]>([]);
+  const [submissionErrorMessage, setSubmissionErrorMessage] = useState<string | null>(null);
   const hoveredElementReference = useRef<HTMLElement | null>(null);
   const popupReference = useRef<HTMLDivElement | null>(null);
   const scheduledFrameReference = useRef<number | null>(null);
@@ -52,12 +52,14 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
     setHoveredElement(null);
     hoveredElementReference.current = null;
     setIsSelectionMode(false);
+    setIsSubmitting(false);
     setSelectedElements([]);
+    setSubmissionErrorMessage(null);
     setLayoutVersion((currentVersion: number): number => currentVersion + 1);
   }, []);
 
-  const submitDraft = useCallback((): void => {
-    if (trimmedComment.length === 0 || selectedElements.length === 0) {
+  const submitDraft = useCallback(async (): Promise<void> => {
+    if (trimmedComment.length === 0 || selectedElements.length === 0 || isSubmitting) {
       return;
     }
 
@@ -71,14 +73,24 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
       url: window.location.href,
     });
 
-    window.dispatchEvent(
-      new CustomEvent<IAnnotationSubmitDetail>(DEVTOOLS_ANNOTATION_SUBMIT_EVENT_NAME, {
-        detail,
-      }),
-    );
-    console.info("[devhost] Submitted annotation draft", detail);
-    cancelDraft();
-  }, [cancelDraft, props.stackName, selectedElements, trimmedComment]);
+    setIsSubmitting(true);
+    setSubmissionErrorMessage(null);
+
+    try {
+      const submitResult: IAnnotationSubmitResult = await props.onSubmit(detail);
+
+      if (submitResult.success) {
+        cancelDraft();
+        return;
+      }
+
+      setSubmissionErrorMessage(submitResult.errorMessage ?? "Failed to start the Pi session.");
+    } catch (error) {
+      setSubmissionErrorMessage(error instanceof Error ? error.message : String(error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [cancelDraft, isSubmitting, props, selectedElements, trimmedComment]);
 
   useEffect(() => {
     if (!hasDraft) {
@@ -253,7 +265,7 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
     return () => {
       window.cancelAnimationFrame(animationFrameId);
     };
-  }, [comment, layoutVersion, selectedElements.length]);
+  }, [comment, isSubmitting, layoutVersion, selectedElements.length, submissionErrorMessage]);
 
   const markerRenderModels: IMarkerRenderModel[] = useMemo((): IMarkerRenderModel[] => {
     return selectedElements.map((selection: ISelectedElementDraft): IMarkerRenderModel => {
@@ -313,12 +325,13 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
   }, [hoveredElement, layoutVersion]);
   const isHoveredElementSelected: boolean =
     hoveredElement !== null && selectedElements.some((selection: ISelectedElementDraft): boolean => selection.element === hoveredElement);
-  const buttonLabel: string = hasDraft ? "Cancel draft" : "Annotate";
+  const buttonLabel: string = hasDraft ? (isSubmitting ? "Starting Pi…" : "Cancel draft") : "Annotate";
 
   return (
     <div data-testid="DevtoolsAnnotationComposer">
       <Button
         ariaPressed={hasDraft}
+        disabled={isSubmitting}
         testId="DevtoolsAnnotationComposer--toggle"
         theme={props.theme}
         title={hasDraft ? "Cancel annotation draft" : "Start annotation mode"}
@@ -370,7 +383,9 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
         >
           <div style={popupHeaderStyle}>
             <strong>Annotation draft</strong>
-            <span style={popupMetaStyle}>{selectedElements.length} markers selected</span>
+            <span style={popupMetaStyle}>
+              {isSubmitting ? "Starting Pi session…" : `${selectedElements.length} markers selected`}
+            </span>
           </div>
           <ol data-testid="DevtoolsAnnotationComposer--marker-list" style={markerListStyle}>
             {selectedElements.map((selection: ISelectedElementDraft) => {
@@ -394,12 +409,24 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
               setComment(event.currentTarget.value);
             }}
           />
+          {submissionErrorMessage !== null ? (
+            <div data-testid="DevtoolsAnnotationComposer--error" style={createSubmissionErrorStyle(props.theme)}>
+              {submissionErrorMessage}
+            </div>
+          ) : null}
           <div style={popupActionsStyle}>
-            <Button theme={props.theme} variant="secondary" onClick={cancelDraft}>
+            <Button disabled={isSubmitting} theme={props.theme} variant="secondary" onClick={cancelDraft}>
               Cancel
             </Button>
-            <Button disabled={trimmedComment.length === 0} theme={props.theme} variant="primary" onClick={submitDraft}>
-              Submit
+            <Button
+              disabled={trimmedComment.length === 0 || isSubmitting}
+              theme={props.theme}
+              variant="primary"
+              onClick={(): void => {
+                void submitDraft();
+              }}
+            >
+              {isSubmitting ? "Starting Pi…" : "Submit"}
             </Button>
           </div>
         </div>
@@ -423,6 +450,14 @@ const popupMetaStyle: JSX.CSSProperties = {
   fontSize: "12px",
   opacity: 0.72,
 };
+
+function createSubmissionErrorStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+  return {
+    color: theme.colors.dangerForeground,
+    fontSize: theme.fontSizes.sm,
+    lineHeight: 1.4,
+  };
+}
 
 const markerListStyle: JSX.CSSProperties = {
   display: "grid",

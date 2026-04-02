@@ -4,6 +4,7 @@ import { useState } from "preact/hooks";
 import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../stackTypes";
 import { DevtoolsAnnotationComposer } from "./features/annotationComposer";
 import { DevtoolsLogMinimap, useServiceLogs } from "./features/minimap";
+import { DevtoolsPiTerminalPanel, usePiTerminalSession } from "./features/piTerminal";
 import { DevtoolsServiceStatusPanel, useServiceHealth } from "./features/serviceStatusPanel";
 import {
   createCornerDockStyle,
@@ -23,6 +24,7 @@ export function DevtoolsApp(): JSX.Element | null {
   const devtoolsMinimapPosition: DevtoolsMinimapPosition = readDevtoolsMinimapPosition();
   const stackName: string = readDevtoolsStackName();
   const { errorMessage, services } = useServiceHealth();
+  const { activeSessionId, closePanel, submitAnnotation } = usePiTerminalSession();
   const [isMinimapHovered, setIsMinimapHovered] = useState<boolean>(false);
   const logEntries = useServiceLogs(isMinimapHovered);
   const shouldRenderPanel: boolean = errorMessage !== null || services.length > 0;
@@ -41,11 +43,16 @@ export function DevtoolsApp(): JSX.Element | null {
         })}
       >
         {shouldRenderButtonFirst ? (
-          <DevtoolsAnnotationComposer stackName={stackName} theme={devtoolsTheme} />
+          <DevtoolsAnnotationComposer onSubmit={submitAnnotation} stackName={stackName} theme={devtoolsTheme} />
         ) : null}
         {shouldRenderPanel ? <DevtoolsServiceStatusPanel errorMessage={errorMessage} services={services} theme={devtoolsTheme} /> : null}
-        {shouldRenderButtonFirst ? null : <DevtoolsAnnotationComposer stackName={stackName} theme={devtoolsTheme} />}
+        {shouldRenderButtonFirst ? null : (
+          <DevtoolsAnnotationComposer onSubmit={submitAnnotation} stackName={stackName} theme={devtoolsTheme} />
+        )}
       </div>
+      {activeSessionId !== null ? (
+        <DevtoolsPiTerminalPanel onClose={closePanel} sessionId={activeSessionId} theme={devtoolsTheme} />
+      ) : null}
       {shouldRenderMinimap ? (
         <DevtoolsLogMinimap
           entries={logEntries}

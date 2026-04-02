@@ -1,10 +1,15 @@
 export const CONTROL_PATH_PREFIX: string = "/__devhost__";
 export const INJECTED_SCRIPT_PATH: string = `${CONTROL_PATH_PREFIX}/inject.js`;
+export const XTERM_STYLESHEET_PATH: string = `${CONTROL_PATH_PREFIX}/xterm.css`;
+export const PI_SESSION_START_PATH: string = `${CONTROL_PATH_PREFIX}/pi-sessions`;
 export const HEALTH_WEBSOCKET_PATH: string = `${CONTROL_PATH_PREFIX}/ws/health`;
 export const LOGS_WEBSOCKET_PATH: string = `${CONTROL_PATH_PREFIX}/ws/logs`;
+export const PI_SESSION_WEBSOCKET_PATH: string = `${CONTROL_PATH_PREFIX}/ws/pi`;
 export const DEVHOST_SERVICE_NAME: string = "devhost";
+export const DEVTOOLS_CONTROL_TOKEN_HEADER_NAME: string = "x-devhost-control-token";
+export const DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME: string = "token";
+export const PI_SESSION_ID_QUERY_PARAMETER_NAME: string = "sessionId";
 export const DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME: string = "__DEVHOST_INJECTED_CONFIG__";
 export const DEVTOOLS_ROOT_ID: string = "devhost-services-panel";
 export const DEVTOOLS_ROOT_ATTRIBUTE_NAME: string = "data-devhost-devtools";
-export const DEVTOOLS_ANNOTATION_SUBMIT_EVENT_NAME: string = "devhost:annotation-submit";
 export const maximumRetainedLogEntries: number = 512;

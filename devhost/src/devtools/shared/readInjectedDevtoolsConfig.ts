@@ -2,12 +2,14 @@ import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../../stackTypes
 import { DEVHOST_SERVICE_NAME, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "./constants";
 
 export interface IInjectedDevtoolsConfig {
+  controlToken: string;
   minimapPosition: DevtoolsMinimapPosition;
   position: DevtoolsPosition;
   stackName: string;
 }
 
 const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
+  controlToken: "",
   minimapPosition: "right",
   position: "bottom-right",
   stackName: DEVHOST_SERVICE_NAME,
@@ -20,15 +22,23 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
     return defaultInjectedDevtoolsConfig;
   }
 
+  const controlToken: string = readControlTokenValue(injectedConfig);
   const position: DevtoolsPosition = readDevtoolsPositionValue(injectedConfig);
   const minimapPosition: DevtoolsMinimapPosition = readDevtoolsMinimapPositionValue(injectedConfig);
   const stackName: string = readStackNameValue(injectedConfig);
 
   return {
+    controlToken,
     minimapPosition,
     position,
     stackName,
   };
+}
+
+function readControlTokenValue(injectedConfig: object): string {
+  const controlToken: unknown = Reflect.get(injectedConfig, "controlToken");
+
+  return typeof controlToken === "string" ? controlToken : defaultInjectedDevtoolsConfig.controlToken;
 }
 
 function readDevtoolsPositionValue(injectedConfig: object): DevtoolsPosition {

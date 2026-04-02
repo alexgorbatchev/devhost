@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, test } from "bun:test";
 
-import { HEALTH_WEBSOCKET_PATH, LOGS_WEBSOCKET_PATH } from "../devtools/shared/constants";
+import { PI_SESSION_START_PATH, HEALTH_WEBSOCKET_PATH, INJECTED_SCRIPT_PATH, LOGS_WEBSOCKET_PATH, PI_SESSION_WEBSOCKET_PATH } from "../devtools/shared/constants";
+import type { IAnnotationSubmitDetail } from "../devtools/features/annotationComposer/types";
 import type { HealthResponse } from "../devtools/shared/types";
+import type { ILaunchedPiTerminalSession } from "../launchPiTerminalSession";
 import { startDevtoolsControlServer } from "../startDevtoolsControlServer";
 
 const stopFunctions: Array<() => Promise<void>> = [];
@@ -112,7 +114,203 @@ describe("startDevtoolsControlServer", () => {
       }),
     );
   });
+
+  test("starts a Pi terminal session for submitted annotations", async () => {
+    const piTerminalStub = createPiTerminalStub();
+    const controlServer = await startDevtoolsControlServer({
+      devtoolsMinimapPosition: "left",
+      devtoolsPosition: "bottom-right",
+      getHealthResponse: async (): Promise<HealthResponse> => {
+        return {
+          services: [],
+        };
+      },
+      stackName: "hello-stack",
+      startPiTerminalSession: piTerminalStub.start,
+    });
+
+    stopFunctions.push(controlServer.stop);
+
+    const injectedScriptResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${INJECTED_SCRIPT_PATH}`);
+    const controlToken: string = extractControlToken(await injectedScriptResponse.text());
+    const startResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${PI_SESSION_START_PATH}`, {
+      body: JSON.stringify({
+        annotation: createAnnotationDetail(),
+      }),
+      headers: {
+        "content-type": "application/json",
+        "x-devhost-control-token": controlToken,
+      },
+      method: "POST",
+    });
+
+    expect(startResponse.status).toBe(200);
+    expect(piTerminalStub.startedAnnotations).toEqual([createAnnotationDetail()]);
+
+    const startResponseBody: unknown = await startResponse.json();
+
+    expect(isSessionStartResponse(startResponseBody)).toBe(true);
+
+    const websocketUrl: URL = new URL(`ws://127.0.0.1:${controlServer.port}${PI_SESSION_WEBSOCKET_PATH}`);
+
+    websocketUrl.searchParams.set("sessionId", (startResponseBody as { sessionId: string }).sessionId);
+    websocketUrl.searchParams.set("token", controlToken);
+
+    const websocket = new WebSocket(websocketUrl);
+
+    websockets.push(websocket);
+
+    await expect(waitForWebSocketMessage(websocket)).resolves.toBe(JSON.stringify({ data: "", type: "snapshot" }));
+
+    const outputMessagePromise: Promise<string> = waitForWebSocketMessage(websocket);
+
+    piTerminalStub.emit("[pi] hello\n");
+
+    await expect(outputMessagePromise).resolves.toBe(JSON.stringify({ data: "[pi] hello\n", type: "output" }));
+
+    const closePromise: Promise<void> = waitForWebSocketClose(websocket);
+
+    websocket.send(JSON.stringify({ data: "fix it\n", type: "input" }));
+    websocket.send(JSON.stringify({ cols: 100, rows: 30, type: "resize" }));
+    websocket.send(JSON.stringify({ type: "close" }));
+
+    await closePromise;
+
+    expect(piTerminalStub.writes).toEqual(["fix it\n"]);
+    expect(piTerminalStub.resizes).toEqual([
+      {
+        cols: 100,
+        rows: 30,
+      },
+    ]);
+    expect(piTerminalStub.closeCount).toBe(1);
+  });
 });
+
+function createAnnotationDetail(): IAnnotationSubmitDetail {
+  return {
+    comment: "Replace #1 with the new CTA.",
+    markers: [
+      {
+        accessibility: 'role="button", focusable',
+        boundingBox: {
+          height: 24,
+          width: 120,
+          x: 16,
+          y: 40,
+        },
+        computedStyles: "color: rgb(17, 24, 39)",
+        computedStylesObj: {
+          color: "rgb(17, 24, 39)",
+        },
+        cssClasses: "cta-button",
+        element: 'button "Save changes"',
+        elementPath: ".toolbar > button",
+        fullPath: "body > div.toolbar > button",
+        isFixed: false,
+        markerNumber: 1,
+        nearbyElements: 'a "Docs"',
+        nearbyText: "Save your work",
+        selectedText: "Save changes",
+      },
+    ],
+    stackName: "hello-stack",
+    submittedAt: 1_743_362_700_000,
+    title: "Example page",
+    url: "https://example.test/products",
+  };
+}
+
+function createPiTerminalStub(): {
+  closeCount: number;
+  emit: (text: string) => void;
+  resizes: Array<{ cols: number; rows: number }>;
+  start: (detail: IAnnotationSubmitDetail, onData: (data: Uint8Array) => void) => ILaunchedPiTerminalSession;
+  startedAnnotations: IAnnotationSubmitDetail[];
+  writes: string[];
+} {
+  const encoder: TextEncoder = new TextEncoder();
+  const resizes: Array<{ cols: number; rows: number }> = [];
+  const startedAnnotations: IAnnotationSubmitDetail[] = [];
+  const writes: string[] = [];
+  let closeCount: number = 0;
+  let dataHandler: ((data: Uint8Array) => void) | null = null;
+
+  return {
+    get closeCount(): number {
+      return closeCount;
+    },
+    emit: (text: string): void => {
+      dataHandler?.(encoder.encode(text));
+    },
+    resizes,
+    start: (detail: IAnnotationSubmitDetail, onData: (data: Uint8Array) => void): ILaunchedPiTerminalSession => {
+      startedAnnotations.push(detail);
+      dataHandler = onData;
+
+      return {
+        childProcess: {
+          exitCode: null,
+          exited: new Promise<number>(() => {}),
+          killed: false,
+          signalCode: null,
+        } as Bun.Subprocess,
+        close: (): void => {
+          closeCount += 1;
+        },
+        resize: (cols: number, rows: number): void => {
+          resizes.push({ cols, rows });
+        },
+        write: (data: string): void => {
+          writes.push(data);
+        },
+      };
+    },
+    startedAnnotations,
+    writes,
+  };
+}
+
+function extractControlToken(injectedScript: string): string {
+  const tokenMatch: RegExpMatchArray | null = injectedScript.match(/"controlToken":"([^"]+)"/);
+
+  if (tokenMatch === null) {
+    throw new Error("Expected the injected script to include a control token.");
+  }
+
+  return tokenMatch[1];
+}
+
+function isSessionStartResponse(value: unknown): value is { sessionId: string } {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const sessionId: unknown = Reflect.get(value, "sessionId");
+
+  return typeof sessionId === "string" && sessionId.length > 0;
+}
+
+function waitForWebSocketClose(websocket: WebSocket): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const handleClose = (): void => {
+      cleanup();
+      resolve();
+    };
+    const handleError = (): void => {
+      cleanup();
+      reject(new Error("WebSocket error."));
+    };
+
+    const cleanup = (): void => {
+      websocket.removeEventListener("close", handleClose);
+      websocket.removeEventListener("error", handleError);
+    };
+
+    websocket.addEventListener("close", handleClose);
+    websocket.addEventListener("error", handleError);
+  });
+}
 
 function waitForWebSocketMessage(websocket: WebSocket): Promise<string> {
   return new Promise<string>((resolve, reject) => {

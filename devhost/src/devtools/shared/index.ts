@@ -3,6 +3,7 @@ export { createButtonStyle, type ButtonVariant } from "./createButtonStyle";
 export { createCornerDockStyle } from "./createCornerDockStyle";
 export { DEVTOOLS_ROOT_ID } from "./constants";
 export { getDevtoolsTheme, type IDevtoolsTheme } from "./devtoolsTheme";
+export { readDevtoolsControlToken } from "./readDevtoolsControlToken";
 export { readDevtoolsMinimapPosition } from "./readDevtoolsMinimapPosition";
 export { readDevtoolsPosition } from "./readDevtoolsPosition";
 export { readDevtoolsStackName } from "./readDevtoolsStackName";

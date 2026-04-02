@@ -9,11 +9,12 @@ describe("createConfiguredDevtoolsScript", () => {
       "top-left",
       "left",
       "hello-stack",
+      "control-token",
     );
 
     const expectedInjectedConfigPrefix: string =
       'globalThis.__DEVHOST_INJECTED_CONFIG__={' +
-      '"minimapPosition":"left","position":"top-left","stackName":"hello-stack"};\n';
+      '"controlToken":"control-token","minimapPosition":"left","position":"top-left","stackName":"hello-stack"};\n';
 
     expect(configuredScript).toBe(expectedInjectedConfigPrefix + "console.log('hello');");
   });

@@ -6,6 +6,7 @@ This `AGENTS.md` file must be kept up to date.
 
 - All visual styling must be applied directly through JSX `style={...}` props.
 - Do not use external stylesheets, CSS modules, `<style>` tags, or global class names.
+- Exception: `@xterm/xterm` may load its required stylesheet and class names for the interactive terminal feature. Keep that exception narrow and do not reuse xterm's stylesheet mechanism for unrelated devtools UI.
 - Do not rely on inherited app CSS for layout, typography, spacing, colors, borders, or shadows.
 - The injected devtools UI must remain visually isolated from the host page.
 
