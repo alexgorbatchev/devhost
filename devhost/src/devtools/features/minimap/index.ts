@@ -1,2 +1,2 @@
-export { DevtoolsLogMinimap } from "./DevtoolsLogMinimap";
+export { LogMinimap } from "./LogMinimap";
 export { useServiceLogs } from "./useServiceLogs";

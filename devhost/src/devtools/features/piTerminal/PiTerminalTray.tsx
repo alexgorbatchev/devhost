@@ -1,17 +1,17 @@
 import type { JSX } from "preact";
 
 import { css, useDevtoolsTheme } from "../../shared";
-import { DevtoolsPiTerminalPanel } from "./DevtoolsPiTerminalPanel";
+import { PiTerminalPanel } from "./PiTerminalPanel";
 import type { IPiTerminalSession } from "./types";
 
-interface IDevtoolsPiTerminalTrayProps {
+interface IPiTerminalTrayProps {
   onExpandSession: (sessionId: string) => void;
   onMinimizeSession: (sessionId: string) => void;
   onRemoveSession: (sessionId: string) => void;
   sessions: IPiTerminalSession[];
 }
 
-export function DevtoolsPiTerminalTray(props: IDevtoolsPiTerminalTrayProps): JSX.Element | null {
+export function PiTerminalTray(props: IPiTerminalTrayProps): JSX.Element | null {
   const theme = useDevtoolsTheme();
   const expandedSession: IPiTerminalSession | undefined = props.sessions.find((session: IPiTerminalSession): boolean => session.isExpanded);
   const minimizedSessions: IPiTerminalSession[] = props.sessions.filter((session: IPiTerminalSession): boolean => !session.isExpanded);
@@ -49,7 +49,7 @@ export function DevtoolsPiTerminalTray(props: IDevtoolsPiTerminalTrayProps): JSX
   return (
     <div class={rootClassName} data-testid="DevtoolsPiTerminalTray">
       {expandedSession !== undefined ? (
-        <DevtoolsPiTerminalPanel
+        <PiTerminalPanel
           annotation={expandedSession.annotation}
           isExpanded={true}
           sessionId={expandedSession.sessionId}
@@ -67,7 +67,7 @@ export function DevtoolsPiTerminalTray(props: IDevtoolsPiTerminalTrayProps): JSX
           <div class={sessionListClassName} data-testid="DevtoolsPiTerminalTray--session-list">
             {minimizedSessions.map((session: IPiTerminalSession) => {
               return (
-                <DevtoolsPiTerminalPanel
+                <PiTerminalPanel
                   key={session.sessionId}
                   annotation={session.annotation}
                   isExpanded={false}

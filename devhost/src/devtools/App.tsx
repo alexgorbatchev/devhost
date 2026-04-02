@@ -3,14 +3,14 @@ import type { JSX } from "preact";
 import { useState } from "preact/hooks";
 
 import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../stackTypes";
-import { DevtoolsAnnotationComposer } from "./features/annotationComposer";
-import { DevtoolsLogMinimap, useServiceLogs } from "./features/minimap";
-import { DevtoolsPiTerminalTray, usePiTerminalSession } from "./features/piTerminal";
-import { DevtoolsServiceStatusPanel, useServiceHealth } from "./features/serviceStatusPanel";
+import { AnnotationComposer } from "./features/annotationComposer";
+import { LogMinimap, useServiceLogs } from "./features/minimap";
+import { PiTerminalTray, usePiTerminalSession } from "./features/piTerminal";
+import { ServiceStatusPanel, useServiceHealth } from "./features/serviceStatusPanel";
 import {
   css,
   DEVTOOLS_ROOT_ID,
-  DevtoolsThemeProvider,
+  ThemeProvider,
   type IDevtoolsTheme,
   readDevtoolsMinimapPosition,
   readDevtoolsPosition,
@@ -19,17 +19,17 @@ import {
   useResolvedColorScheme,
 } from "./shared";
 
-export function DevtoolsApp(): JSX.Element {
+export function App(): JSX.Element {
   const colorScheme = useResolvedColorScheme();
 
   return (
-    <DevtoolsThemeProvider colorScheme={colorScheme}>
-      <DevtoolsAppContent />
-    </DevtoolsThemeProvider>
+    <ThemeProvider colorScheme={colorScheme}>
+      <AppContent />
+    </ThemeProvider>
   );
 }
 
-function DevtoolsAppContent(): JSX.Element {
+function AppContent(): JSX.Element {
   const devtoolsMinimapPosition: DevtoolsMinimapPosition = readDevtoolsMinimapPosition();
   const devtoolsPosition: DevtoolsPosition = readDevtoolsPosition();
   const stackName: string = readDevtoolsStackName();
@@ -57,18 +57,18 @@ function DevtoolsAppContent(): JSX.Element {
   return (
     <div id={DEVTOOLS_ROOT_ID} data-devhost-devtools="" data-testid="DevtoolsApp">
       <div class={cornerDockClassName} data-testid="DevtoolsApp--corner-dock">
-        {shouldRenderButtonFirst ? <DevtoolsAnnotationComposer onSubmit={submitAnnotation} stackName={stackName} /> : null}
-        {shouldRenderPanel ? <DevtoolsServiceStatusPanel errorMessage={errorMessage} services={services} /> : null}
-        {shouldRenderButtonFirst ? null : <DevtoolsAnnotationComposer onSubmit={submitAnnotation} stackName={stackName} />}
+        {shouldRenderButtonFirst ? <AnnotationComposer onSubmit={submitAnnotation} stackName={stackName} /> : null}
+        {shouldRenderPanel ? <ServiceStatusPanel errorMessage={errorMessage} services={services} /> : null}
+        {shouldRenderButtonFirst ? null : <AnnotationComposer onSubmit={submitAnnotation} stackName={stackName} />}
       </div>
-      <DevtoolsPiTerminalTray
+      <PiTerminalTray
         sessions={piTerminalSessions}
         onExpandSession={expandSession}
         onMinimizeSession={minimizeSession}
         onRemoveSession={removeSession}
       />
       {shouldRenderMinimap ? (
-        <DevtoolsLogMinimap
+        <LogMinimap
           entries={logEntries}
           isHovered={isMinimapHovered}
           minimapPosition={devtoolsMinimapPosition}

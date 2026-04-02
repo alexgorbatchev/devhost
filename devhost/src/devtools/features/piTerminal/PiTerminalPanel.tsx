@@ -16,7 +16,7 @@ import { readDevtoolsControlToken } from "../../shared/readDevtoolsControlToken"
 import type { IAnnotationSubmitDetail } from "../annotationComposer/types";
 import type { PiTerminalClientMessage, PiTerminalServerMessage } from "./types";
 
-interface IDevtoolsPiTerminalPanelProps {
+interface IPiTerminalPanelProps {
   annotation: IAnnotationSubmitDetail;
   isExpanded: boolean;
   onExpand: () => void;
@@ -38,7 +38,7 @@ const trayScale: number = 0.32;
 const trayTransitionDurationInMilliseconds: number = 180;
 const xtermStylesheetId: string = "devhost-xterm-stylesheet";
 
-export function DevtoolsPiTerminalPanel(props: IDevtoolsPiTerminalPanelProps): JSX.Element {
+export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
   const theme = useDevtoolsTheme();
   const fitAddonReference = useRef<FitAddon | null>(null);
   const resizeAnimationFrameReference = useRef<number | null>(null);

@@ -7,7 +7,7 @@ export function useDevtoolsTheme(): IDevtoolsTheme {
   const theme: IDevtoolsTheme | null = useContext(devtoolsThemeContext);
 
   if (theme === null) {
-    throw new Error("Devtools theme is unavailable outside DevtoolsThemeProvider.");
+    throw new Error("Devtools theme is unavailable outside ThemeProvider.");
   }
 
   return theme;

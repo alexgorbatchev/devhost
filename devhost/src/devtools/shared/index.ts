@@ -1,7 +1,7 @@
 export { Button } from "./Button";
 export { DEVTOOLS_HOST_ID, DEVTOOLS_ROOT_ID } from "./constants";
 export { configureDevtoolsCss, css, cx, injectGlobal } from "./devtoolsCss";
-export { DevtoolsThemeProvider } from "./DevtoolsThemeProvider";
+export { ThemeProvider } from "./ThemeProvider";
 export { type IDevtoolsTheme } from "./devtoolsTheme";
 export { readDevtoolsControlToken } from "./readDevtoolsControlToken";
 export { readDevtoolsMinimapPosition } from "./readDevtoolsMinimapPosition";

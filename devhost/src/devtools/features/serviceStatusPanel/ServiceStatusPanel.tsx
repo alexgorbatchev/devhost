@@ -4,12 +4,12 @@ import { css, useDevtoolsTheme } from "../../shared";
 import type { ServiceHealth } from "../../shared/types";
 import { selectVisibleServices } from "./selectVisibleServices";
 
-interface IDevtoolsServiceStatusPanelProps {
+interface IServiceStatusPanelProps {
   errorMessage: string | null;
   services: ServiceHealth[];
 }
 
-export function DevtoolsServiceStatusPanel(props: IDevtoolsServiceStatusPanelProps): JSX.Element | null {
+export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element | null {
   const theme = useDevtoolsTheme();
   const visibleServices: ServiceHealth[] = selectVisibleServices(props.services);
   const shouldRenderPanel: boolean = props.errorMessage !== null || visibleServices.length > 0;

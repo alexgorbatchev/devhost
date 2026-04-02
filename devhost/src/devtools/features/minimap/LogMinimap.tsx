@@ -12,7 +12,7 @@ import { resolveHoveredLogRowIndex } from "./resolveHoveredLogRowIndex";
 import { resolveLogPreviewLayout } from "./resolveLogPreviewLayout";
 import { resolveLogPreviewOverlay } from "./resolveLogPreviewOverlay";
 
-interface IDevtoolsLogMinimapProps {
+interface ILogMinimapProps {
   entries: ServiceLogEntry[];
   isHovered: boolean;
   minimapPosition: DevtoolsMinimapPosition;
@@ -21,7 +21,7 @@ interface IDevtoolsLogMinimapProps {
 
 const minimapTransitionStyle: CSSObject["transition"] = "opacity 160ms ease, transform 160ms ease";
 
-export function DevtoolsLogMinimap(props: IDevtoolsLogMinimapProps): JSX.Element | null {
+export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
   const theme = useDevtoolsTheme();
   const canvasReference = useRef<HTMLCanvasElement | null>(null);
   const entriesReference = useRef<ServiceLogEntry[]>(props.entries);

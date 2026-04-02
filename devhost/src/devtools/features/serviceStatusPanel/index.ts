@@ -1,2 +1,2 @@
-export { DevtoolsServiceStatusPanel } from "./DevtoolsServiceStatusPanel";
+export { ServiceStatusPanel } from "./ServiceStatusPanel";
 export { useServiceHealth } from "./useServiceHealth";

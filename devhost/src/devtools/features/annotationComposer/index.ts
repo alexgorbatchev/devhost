@@ -1,1 +1,1 @@
-export { DevtoolsAnnotationComposer } from "./DevtoolsAnnotationComposer";
+export { AnnotationComposer } from "./AnnotationComposer";

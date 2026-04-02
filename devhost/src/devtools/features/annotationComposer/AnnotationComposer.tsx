@@ -11,7 +11,7 @@ import { resolvePopupCoordinates } from "./resolvePopupCoordinates";
 import { resolveAnnotationTarget } from "./resolveAnnotationTarget";
 import type { IAnnotationSubmitDetail, ISelectedElementDraft } from "./types";
 
-interface IDevtoolsAnnotationComposerProps {
+interface IAnnotationComposerProps {
   onSubmit: (detail: IAnnotationSubmitDetail) => Promise<IAnnotationSubmitResult>;
   stackName: string;
 }
@@ -31,7 +31,7 @@ const markerSize: number = 24;
 const popupWidth: number = 320;
 const selectionCursorStyleId: string = "devhost-annotation-cursor-style";
 
-export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerProps): JSX.Element {
+export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element {
   const theme = useDevtoolsTheme();
   const [comment, setComment] = useState<string>("");
   const [hoveredElement, setHoveredElement] = useState<HTMLElement | null>(null);
