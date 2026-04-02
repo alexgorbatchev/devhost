@@ -197,6 +197,8 @@ When devtools are enabled, routed traffic is split like this:
 
 That keeps assets, HMR, fetches, SSE, and WebSockets off the injection path.
 
+The injected devtools UI mounts inside its own Shadow DOM container so its runtime styles do not leak into the host page.
+
 The injected UI now includes an always-visible `Annotate` button. In annotation mode:
 
 - click one or more page elements to place numbered markers

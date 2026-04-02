@@ -6,10 +6,12 @@ This `AGENTS.md` file must be kept up to date.
 
 Its vital that when devtools are injected into the user's web application, CSS that devtools uses/defines must never ever conflict or affect the host application.
 
-- All visual styling must be applied directly through JSX `style={...}` props.
-- Do not use external stylesheets, CSS modules, `<style>` tags, or global class names.
-- Exception: `@xterm/xterm` may load its required stylesheet and class names for the interactive terminal feature. Keep that exception narrow and do not reuse xterm's stylesheet mechanism for unrelated devtools UI.
+- The injected devtools UI must mount inside its own Shadow DOM root.
+- Devtools component styling must use Emotion-generated classes injected into that Shadow DOM root, not direct JSX `style={...}` props for regular component styling.
+- Do not add external stylesheets, CSS modules, or host-page global CSS for devtools UI styling.
+- Exception: `@xterm/xterm` may load its required stylesheet and class names for the interactive terminal feature, but that stylesheet must be mounted inside the devtools Shadow DOM root rather than `document.head`.
 - Do not rely on inherited app CSS for layout, typography, spacing, colors, borders, or shadows.
+- Any intentional document-level styling escape hatch must be narrowly justified at the use site because it breaks isolation guarantees.
 - The injected devtools UI must remain visually isolated from the host page.
 
 ## Theme tokens
