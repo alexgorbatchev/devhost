@@ -148,7 +148,7 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
     <aside
       aria-hidden="true"
       class={minimapClassName}
-      data-testid="DevtoolsLogMinimap"
+      data-testid="LogMinimap"
       onMouseEnter={(): void => {
         props.onHoveredChange(true);
       }}
@@ -163,15 +163,15 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
         setHoveredRowIndex(resolveHoveredLogRowIndex(marksReference.current, mouseOffsetY));
       }}
     >
-      <canvas ref={canvasReference} class={canvasClassName} data-testid="DevtoolsLogMinimap--canvas" />
+      <canvas ref={canvasReference} class={canvasClassName} data-testid="LogMinimap--canvas" />
       {props.isHovered && previewOverlay !== null ? (
         <div
           class={css(createOverlayStyle(theme, previewOverlay.top, previewOverlay.height))}
-          data-testid="DevtoolsLogMinimap--preview-overlay"
+          data-testid="LogMinimap--preview-overlay"
         />
       ) : null}
       {props.isHovered && previewLayout !== null && hoveredRowIndex !== null && previewRows.length > 0 ? (
-        <div class={previewClassName} data-testid="DevtoolsLogMinimap--preview">
+        <div class={previewClassName} data-testid="LogMinimap--preview">
           <ol class={previewListClassName}>
             {previewRows.map((row: IVisibleLogRow) => {
               return (

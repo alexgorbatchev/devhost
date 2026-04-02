@@ -47,7 +47,7 @@ export function PiTerminalTray(props: IPiTerminalTrayProps): JSX.Element | null 
   });
 
   return (
-    <div class={rootClassName} data-testid="DevtoolsPiTerminalTray">
+    <div class={rootClassName} data-testid="PiTerminalTray">
       {expandedSession !== undefined ? (
         <PiTerminalPanel
           annotation={expandedSession.annotation}
@@ -63,8 +63,8 @@ export function PiTerminalTray(props: IPiTerminalTrayProps): JSX.Element | null 
         />
       ) : null}
       {minimizedSessions.length > 0 ? (
-        <div class={dockClassName} data-testid="DevtoolsPiTerminalTray--dock">
-          <div class={sessionListClassName} data-testid="DevtoolsPiTerminalTray--session-list">
+        <div class={dockClassName} data-testid="PiTerminalTray--dock">
+          <div class={sessionListClassName} data-testid="PiTerminalTray--session-list">
             {minimizedSessions.map((session: IPiTerminalSession) => {
               return (
                 <PiTerminalPanel

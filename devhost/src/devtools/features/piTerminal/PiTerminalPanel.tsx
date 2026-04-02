@@ -256,7 +256,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
 
   const panelContent: JSX.Element = (
     <div class={chromeClassName}>
-      <header class={headerClassName} data-testid="DevtoolsPiTerminalPanel--header">
+      <header class={headerClassName} data-testid="PiTerminalPanel--header">
         <div class={headerTextClassName}>
           <strong>Pi terminal</strong>
           <span class={statusClassName}>{errorMessage ?? statusText}</span>
@@ -264,7 +264,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
         {props.isExpanded ? (
           <div class={buttonGroupClassName}>
             <Button
-              testId="DevtoolsPiTerminalPanel--minimize"
+              testId="PiTerminalPanel--minimize"
               title="Minimize Pi terminal"
               variant="secondary"
               onClick={props.onMinimize}
@@ -272,7 +272,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
               Minimize
             </Button>
             <Button
-              testId="DevtoolsPiTerminalPanel--terminate"
+              testId="PiTerminalPanel--terminate"
               title="Terminate Pi terminal"
               variant="danger"
               onClick={(): void => {
@@ -286,7 +286,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
         ) : null}
       </header>
       {props.isExpanded ? (
-        <section class={annotationClassName} data-testid="DevtoolsPiTerminalPanel--annotation">
+        <section class={annotationClassName} data-testid="PiTerminalPanel--annotation">
           <span class={annotationEyebrowClassName}>Original annotation</span>
           <strong class={annotationCommentClassName}>{props.annotation.comment}</strong>
           <div class={annotationMetaClassName}>
@@ -297,7 +297,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
           </div>
         </section>
       ) : null}
-      <div ref={terminalViewportReference} class={terminalViewportClassName} data-testid="DevtoolsPiTerminalPanel--terminal">
+      <div ref={terminalViewportReference} class={terminalViewportClassName} data-testid="PiTerminalPanel--terminal">
         <div ref={terminalContainerReference} class={terminalContainerClassName} />
       </div>
     </div>
@@ -305,19 +305,19 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
 
   if (props.isExpanded) {
     return (
-      <section class={expandedPanelClassName} data-testid="DevtoolsPiTerminalPanel">
+      <section class={expandedPanelClassName} data-testid="PiTerminalPanel">
         {panelContent}
       </section>
     );
   }
 
   return (
-    <section class={trayShellClassName} data-testid="DevtoolsPiTerminalPanel">
+    <section class={trayShellClassName} data-testid="PiTerminalPanel">
       <div class={trayScaledContentClassName}>{panelContent}</div>
       <button
         aria-label="Expand Pi terminal preview"
         class={trayOverlayButtonClassName}
-        data-testid="DevtoolsPiTerminalPanel--expand"
+        data-testid="PiTerminalPanel--expand"
         type="button"
         onBlur={(): void => {
           setIsTrayHoverVisible(false);
@@ -336,7 +336,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
         <span class={trayBadgeClassName}>{errorMessage ?? statusText}</span>
       </button>
       {isTrayHoverVisible ? (
-        <div class={trayTooltipClassName} data-testid="DevtoolsPiTerminalPanel--tooltip">
+        <div class={trayTooltipClassName} data-testid="PiTerminalPanel--tooltip">
           <span class={annotationEyebrowClassName}>Original annotation</span>
           <strong class={trayTooltipCommentClassName}>{props.annotation.comment}</strong>
         </div>

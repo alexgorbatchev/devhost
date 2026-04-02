@@ -55,8 +55,8 @@ function AppContent(): JSX.Element {
   });
 
   return (
-    <div id={DEVTOOLS_ROOT_ID} data-devhost-devtools="" data-testid="DevtoolsApp">
-      <div class={cornerDockClassName} data-testid="DevtoolsApp--corner-dock">
+    <div id={DEVTOOLS_ROOT_ID} data-devhost-devtools="" data-testid="App">
+      <div class={cornerDockClassName} data-testid="App--corner-dock">
         {shouldRenderButtonFirst ? <AnnotationComposer onSubmit={submitAnnotation} stackName={stackName} /> : null}
         {shouldRenderPanel ? <ServiceStatusPanel errorMessage={errorMessage} services={services} /> : null}
         {shouldRenderButtonFirst ? null : <AnnotationComposer onSubmit={submitAnnotation} stackName={stackName} />}

@@ -51,10 +51,10 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
   });
 
   return (
-    <section aria-label="devhost services" class={panelClassName} data-testid="DevtoolsServiceStatusPanel">
+    <section aria-label="devhost services" class={panelClassName} data-testid="ServiceStatusPanel">
       {props.errorMessage !== null ? <div class={errorClassName}>{props.errorMessage}</div> : null}
       {visibleServices.length > 0 ? (
-        <ul class={listClassName} data-testid="DevtoolsServiceStatusPanel--service-list">
+        <ul class={listClassName} data-testid="ServiceStatusPanel--service-list">
           {visibleServices.map((service: ServiceHealth) => {
             const statusDotClassName: string = css({
               background: service.status ? theme.colors.successBackground : theme.colors.dangerBackground,

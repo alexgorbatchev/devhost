@@ -356,11 +356,11 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
   const popupMetaClassName: string = css(popupMetaStyle);
 
   return (
-    <div data-testid="DevtoolsAnnotationComposer">
+    <div data-testid="AnnotationComposer">
       <Button
         ariaPressed={hasDraft}
         disabled={isSubmitting}
-        testId="DevtoolsAnnotationComposer--toggle"
+        testId="AnnotationComposer--toggle"
         title={hasDraft ? "Cancel annotation draft" : "Start annotation mode"}
         variant={hasDraft ? "danger" : "primary"}
         onClick={(): void => {
@@ -378,7 +378,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
         {isSelectionMode && hoveredRectangle !== null && !isHoveredElementSelected ? (
           <div
             class={css(createHoverHighlightStyle(theme, hoveredRectangle))}
-            data-testid="DevtoolsAnnotationComposer--hover-highlight"
+            data-testid="AnnotationComposer--hover-highlight"
           />
         ) : null}
         {markerRenderModels.map((marker: IMarkerRenderModel) => {
@@ -389,7 +389,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
           return (
             <div key={marker.markerNumber}>
               <div class={css(createSelectionHighlightStyle(theme, marker))} />
-              <div class={css(createMarkerStyle(theme, marker))} data-testid="DevtoolsAnnotationComposer--marker">
+              <div class={css(createMarkerStyle(theme, marker))} data-testid="AnnotationComposer--marker">
                 {marker.markerNumber}
               </div>
             </div>
@@ -399,7 +399,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
       {selectedElements.length > 0 && popupCoordinates !== null ? (
         <div
           ref={popupReference}
-          data-testid="DevtoolsAnnotationComposer--popup"
+          data-testid="AnnotationComposer--popup"
           class={css(createPopupStyle(theme, popupCoordinates.left, popupCoordinates.top))}
           onClick={(event: JSX.TargetedMouseEvent<HTMLDivElement>): void => {
             event.stopPropagation();
@@ -414,7 +414,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
               {isSubmitting ? "Starting Pi session…" : `${selectedElements.length} markers selected`}
             </span>
           </div>
-          <ol class={markerListClassName} data-testid="DevtoolsAnnotationComposer--marker-list">
+          <ol class={markerListClassName} data-testid="AnnotationComposer--marker-list">
             {selectedElements.map((selection: ISelectedElementDraft) => {
               return (
                 <li key={selection.markerNumber} class={markerListItemClassName}>
@@ -428,7 +428,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
           </ol>
           <textarea
             ref={commentTextareaReference}
-            data-testid="DevtoolsAnnotationComposer--comment"
+            data-testid="AnnotationComposer--comment"
             placeholder="Describe the change and refer to markers like #1, #2, #3…"
             rows={5}
             class={css(createTextareaStyle(theme))}
@@ -438,7 +438,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
             }}
           />
           {submissionErrorMessage !== null ? (
-            <div class={errorClassName} data-testid="DevtoolsAnnotationComposer--error">
+            <div class={errorClassName} data-testid="AnnotationComposer--error">
               {submissionErrorMessage}
             </div>
           ) : null}
