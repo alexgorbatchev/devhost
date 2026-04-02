@@ -4,7 +4,7 @@ import { useState } from "preact/hooks";
 import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../stackTypes";
 import { DevtoolsAnnotationComposer } from "./features/annotationComposer";
 import { DevtoolsLogMinimap, useServiceLogs } from "./features/minimap";
-import { DevtoolsPiTerminalPanel, usePiTerminalSession } from "./features/piTerminal";
+import { DevtoolsPiTerminalTray, usePiTerminalSession } from "./features/piTerminal";
 import { DevtoolsServiceStatusPanel, useServiceHealth } from "./features/serviceStatusPanel";
 import {
   createCornerDockStyle,
@@ -24,7 +24,7 @@ export function DevtoolsApp(): JSX.Element | null {
   const devtoolsMinimapPosition: DevtoolsMinimapPosition = readDevtoolsMinimapPosition();
   const stackName: string = readDevtoolsStackName();
   const { errorMessage, services } = useServiceHealth();
-  const { activeSessionId, closePanel, submitAnnotation } = usePiTerminalSession();
+  const { expandSession, minimizeSession, piTerminalSessions, removeSession, submitAnnotation } = usePiTerminalSession();
   const [isMinimapHovered, setIsMinimapHovered] = useState<boolean>(false);
   const logEntries = useServiceLogs(isMinimapHovered);
   const shouldRenderPanel: boolean = errorMessage !== null || services.length > 0;
@@ -50,9 +50,13 @@ export function DevtoolsApp(): JSX.Element | null {
           <DevtoolsAnnotationComposer onSubmit={submitAnnotation} stackName={stackName} theme={devtoolsTheme} />
         )}
       </div>
-      {activeSessionId !== null ? (
-        <DevtoolsPiTerminalPanel onClose={closePanel} sessionId={activeSessionId} theme={devtoolsTheme} />
-      ) : null}
+      <DevtoolsPiTerminalTray
+        sessions={piTerminalSessions}
+        theme={devtoolsTheme}
+        onExpandSession={expandSession}
+        onMinimizeSession={minimizeSession}
+        onRemoveSession={removeSession}
+      />
       {shouldRenderMinimap ? (
         <DevtoolsLogMinimap
           entries={logEntries}

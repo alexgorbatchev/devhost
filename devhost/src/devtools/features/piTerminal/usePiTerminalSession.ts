@@ -1,34 +1,46 @@
 import { useCallback, useState } from "preact/hooks";
 
-import {
-  DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
-  PI_SESSION_START_PATH,
-} from "../../shared/constants";
+import { DEVTOOLS_CONTROL_TOKEN_HEADER_NAME, PI_SESSION_START_PATH } from "../../shared/constants";
 import { readDevtoolsControlToken } from "../../shared/readDevtoolsControlToken";
 import type { IAnnotationSubmitDetail } from "../annotationComposer/types";
-import type { IAnnotationSubmitResult, IStartPiSessionResponse } from "./types";
+import {
+  appendPiTerminalSession,
+  expandPiTerminalSession,
+  minimizePiTerminalSession,
+  removePiTerminalSession,
+} from "./managePiTerminalSessions";
+import type { IAnnotationSubmitResult, IPiTerminalSession, IStartPiSessionResponse } from "./types";
 
 interface IUsePiTerminalSessionResult {
-  activeSessionId: string | null;
-  closePanel: () => void;
+  expandSession: (sessionId: string) => void;
+  minimizeSession: (sessionId: string) => void;
+  piTerminalSessions: IPiTerminalSession[];
+  removeSession: (sessionId: string) => void;
   submitAnnotation: (annotation: IAnnotationSubmitDetail) => Promise<IAnnotationSubmitResult>;
 }
 
 export function usePiTerminalSession(): IUsePiTerminalSessionResult {
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [piTerminalSessions, setPiTerminalSessions] = useState<IPiTerminalSession[]>([]);
 
-  const closePanel = useCallback((): void => {
-    setActiveSessionId(null);
+  const expandSession = useCallback((sessionId: string): void => {
+    setPiTerminalSessions((currentSessions: IPiTerminalSession[]): IPiTerminalSession[] => {
+      return expandPiTerminalSession(currentSessions, sessionId);
+    });
+  }, []);
+
+  const minimizeSession = useCallback((sessionId: string): void => {
+    setPiTerminalSessions((currentSessions: IPiTerminalSession[]): IPiTerminalSession[] => {
+      return minimizePiTerminalSession(currentSessions, sessionId);
+    });
+  }, []);
+
+  const removeSession = useCallback((sessionId: string): void => {
+    setPiTerminalSessions((currentSessions: IPiTerminalSession[]): IPiTerminalSession[] => {
+      return removePiTerminalSession(currentSessions, sessionId);
+    });
   }, []);
 
   const submitAnnotation = useCallback(async (annotation: IAnnotationSubmitDetail): Promise<IAnnotationSubmitResult> => {
-    if (activeSessionId !== null) {
-      return {
-        errorMessage: "Close the active Pi terminal before starting another annotation run.",
-        success: false,
-      };
-    }
-
     try {
       const response = await fetch(PI_SESSION_START_PATH, {
         body: JSON.stringify({ annotation }),
@@ -55,7 +67,13 @@ export function usePiTerminalSession(): IUsePiTerminalSessionResult {
         };
       }
 
-      setActiveSessionId(responseBody.sessionId);
+      setPiTerminalSessions((currentSessions: IPiTerminalSession[]): IPiTerminalSession[] => {
+        return appendPiTerminalSession(currentSessions, {
+          annotation,
+          isExpanded: false,
+          sessionId: responseBody.sessionId,
+        });
+      });
 
       return {
         success: true,
@@ -66,11 +84,13 @@ export function usePiTerminalSession(): IUsePiTerminalSessionResult {
         success: false,
       };
     }
-  }, [activeSessionId]);
+  }, []);
 
   return {
-    activeSessionId,
-    closePanel,
+    expandSession,
+    minimizeSession,
+    piTerminalSessions,
+    removeSession,
     submitAnnotation,
   };
 }

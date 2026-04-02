@@ -1,2 +1,2 @@
-export { DevtoolsPiTerminalPanel } from "./DevtoolsPiTerminalPanel";
+export { DevtoolsPiTerminalTray } from "./DevtoolsPiTerminalTray";
 export { usePiTerminalSession } from "./usePiTerminalSession";

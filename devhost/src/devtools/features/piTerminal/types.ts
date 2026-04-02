@@ -13,6 +13,12 @@ export interface IAnnotationSubmitResult {
   success: boolean;
 }
 
+export interface IPiTerminalSession {
+  annotation: IAnnotationSubmitDetail;
+  isExpanded: boolean;
+  sessionId: string;
+}
+
 export interface IPiTerminalInputMessage {
   data: string;
   type: "input";
