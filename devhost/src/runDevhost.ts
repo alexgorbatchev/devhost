@@ -1,6 +1,7 @@
 import { helpText } from "./constants";
 import type { IDevhostLogger } from "./createLogger";
 import { parseCommandLineArguments } from "./parseCommandLineArguments";
+import { runManagedCaddyLifecycleCommand } from "./runManagedCaddyLifecycleCommand";
 import { readManifest } from "./readManifest";
 import { resolveManifestPath } from "./resolveManifestPath";
 import { resolveServiceOrder } from "./resolveServiceOrder";
@@ -19,6 +20,10 @@ export async function runDevhost(rawArguments: string[], logger: IDevhostLogger)
     }
 
     const commandLineArguments = parseCommandLineArguments(rawArguments);
+
+    if (commandLineArguments.kind === "caddy") {
+      return await runManagedCaddyLifecycleCommand(commandLineArguments.action, logger);
+    }
 
     if (commandLineArguments.kind === "single-service") {
       return await startSingleService(commandLineArguments, logger);

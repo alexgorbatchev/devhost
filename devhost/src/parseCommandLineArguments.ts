@@ -1,6 +1,14 @@
 import { isValidHost } from "./isValidHost";
 
-export type CommandLineArguments = ISingleServiceCommandLineArguments | IManifestCommandLineArguments;
+export type CommandLineArguments =
+  | ICaddyCommandLineArguments
+  | ISingleServiceCommandLineArguments
+  | IManifestCommandLineArguments;
+
+export interface ICaddyCommandLineArguments {
+  kind: "caddy";
+  action: "start" | "stop" | "trust";
+}
 
 export interface ISingleServiceCommandLineArguments {
   kind: "single-service";
@@ -15,6 +23,10 @@ export interface IManifestCommandLineArguments {
 }
 
 export function parseCommandLineArguments(rawArguments: string[]): CommandLineArguments {
+  if (rawArguments[0] === "caddy") {
+    return parseCaddyCommandLineArguments(rawArguments.slice(1));
+  }
+
   const hostIndex: number = rawArguments.indexOf("--host");
   const manifestIndex: number = rawArguments.indexOf("--manifest");
 
@@ -84,6 +96,27 @@ export function parseCommandLineArguments(rawArguments: string[]): CommandLineAr
     host,
     kind: "single-service",
     port,
+  };
+}
+
+function parseCaddyCommandLineArguments(rawArguments: string[]): ICaddyCommandLineArguments {
+  const action: string | undefined = rawArguments[0];
+
+  if (action === undefined) {
+    throw new Error("Expected a caddy action: start, stop, or trust.");
+  }
+
+  if (rawArguments.length !== 1) {
+    throw new Error("Caddy commands do not accept additional arguments.");
+  }
+
+  if (action !== "start" && action !== "stop" && action !== "trust") {
+    throw new Error(`Unsupported caddy action: ${action}`);
+  }
+
+  return {
+    action,
+    kind: "caddy",
   };
 }
 

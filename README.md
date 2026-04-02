@@ -1,8 +1,8 @@
-# localhost domains with Caddy internal TLS
+# localhost domains with managed Caddy
 
-This repo gives you a single local Caddy instance plus a `devhost` Bun wrapper.
+This repo gives you a `devhost` Bun wrapper plus a devhost-managed Caddy instance.
 
-`devhost` now supports two modes:
+`devhost` supports two runtime modes:
 - **single-service mode** via `--host` / `--port`
 - **manifest mode** via `devhost.toml`
 
@@ -17,38 +17,51 @@ On macOS:
 brew install caddy
 ```
 
-## Files
+## Managed Caddy
 
-- `caddy/Caddyfile` — shared local ingress config using `tls internal`
-- `caddy/run.sh` — runs Caddy with the project config
-- `devhost/package.json` — isolated devhost package dependencies and scripts
-- `devhost/src/index.ts` — devhost CLI entrypoint
-- `devhost/src/startStack.ts` — manifest-mode orchestration
-- `devhost/src/startSingleService.ts` — existing single-service workflow
-- `docs/toml-config.md` — manifest design and implementation contract
-- `test/helloWorldServer.ts` — demo Bun server using Bun HTML imports
-- `test/index.html` — HTML entrypoint for the test React app
-- `test/App.tsx` — React entrypoint mounted from `index.html`
-- `test/devhost.toml` — sample manifest for the test app
-- `test/package.json` — isolated test app dependencies and scripts
+`devhost` no longer relies on a checked-in `caddy/` directory.
+Instead it generates and manages its own Caddy config under:
 
-## Initial setup
+- `DEVHOST_STATE_DIR`, when set
+- otherwise `XDG_STATE_HOME/devhost`, when `XDG_STATE_HOME` is set
+- otherwise `~/.local/state/devhost/caddy`
 
-Start Caddy in one terminal:
+Start the managed Caddy instance once:
 
 ```bash
-bash caddy/run.sh
+bun run devhost caddy start
 ```
 
-If your browser does not trust Caddy's local CA automatically, install it once:
+Stop it later:
 
 ```bash
-caddy trust
+bun run devhost caddy stop
 ```
+
+On first startup, managed Caddy may prompt for your password so it can install its local CA into the system trust store.
+`devhost caddy start` and `devhost caddy trust` now stream Caddy's own output directly so you can see exactly what is happening.
+If your browser does not trust Caddy's local CA yet, trust it once after Caddy is running:
+
+```bash
+bun run devhost caddy trust
+```
+
+The managed Caddy admin API listens on `http://127.0.0.1:20193/config/` by default.
+Override it with `DEVHOST_CADDY_ADMIN_ADDRESS` if needed.
+
+On macOS, `devhost caddy start` now uses wildcard listeners instead of loopback-only binding.
+That is deliberate: macOS allows rootless binds on `:443` for wildcard listeners, but still rejects loopback-specific binds like `127.0.0.1:443`.
+On non-macOS platforms, opening `:443` still requires privileged-port setup outside `devhost`.
+
+## Important limitation: DNS is still your job
+
+`devhost` now manages Caddy config and lifecycle, but it still does **not** manage DNS.
+Your development hostnames must already resolve to this machine.
+That can come from `/etc/hosts`, a local DNS server, or a real wildcard DNS setup.
 
 ## Demo app setup
 
-This repository now uses Bun workspaces.
+This repository uses Bun workspaces.
 Install dependencies once from the repository root:
 
 ```bash
@@ -57,7 +70,7 @@ bun install
 
 ## Single-service mode
 
-In another terminal, run the sample app through `devhost`:
+Run the sample app through `devhost`:
 
 ```bash
 bun run devhost --host hello.xcv.lol --port 3200 -- bun run test:hello
@@ -69,7 +82,7 @@ Then open:
 https://hello.xcv.lol
 ```
 
-The demo page is HTML. `devhost` uses a split-routing model:
+`devhost` uses a split-routing model:
 
 - `/__devhost__/*` goes to the local devhost control server
 - document navigation requests go to a small HTML injector that appends one script tag
@@ -79,7 +92,7 @@ This keeps assets, HMR, fetches, and WebSockets out of devhost's proxy path whil
 
 ## Manifest mode
 
-The test app now has a sample manifest at `test/devhost.toml`.
+The test app has a sample manifest at `test/devhost.toml`.
 
 Run it explicitly from the repository root:
 
@@ -121,26 +134,6 @@ When `devtools = false`, routed services bypass the HTML injector and proxy stra
 - prefixes service logs with `[service-name]`
 - activates Caddy routes only after health checks pass
 - removes routes and reservations on shutdown or startup failure
-
-## Domain note
-
-The devhost code no longer hardcodes a specific private domain suffix.
-Host validation is syntactic only.
-The domains that actually work in this repo are still determined by `caddy/Caddyfile`, which currently routes `xcv.lol` and its subdomains.
-
-## Why this uses `tls internal`
-
-Caddy already supports local HTTPS with its own internal CA. For this setup, adding `mkcert` would just duplicate certificate management for no benefit.
-
-Because `xcv.lol` is a real domain and not `localhost`, the config explicitly uses:
-
-```caddy
-xcv.lol, *.xcv.lol {
-    tls internal
-}
-```
-
-That forces local-development certificates instead of public ACME automation.
 
 ## Important note about bind vs routed host
 

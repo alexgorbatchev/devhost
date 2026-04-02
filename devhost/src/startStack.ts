@@ -1,14 +1,14 @@
+import { managedCaddyPaths } from "./caddyPaths";
 import { signalExitCodes, supportedSignals, type SupportedSignal } from "./constants";
 import { collectManagedServicesHealth } from "./collectManagedServicesHealth";
 import type { IDevhostLogger } from "./createLogger";
+import { ensureManagedCaddyConfig } from "./ensureManagedCaddyConfig";
 import { pipeSubprocessOutput } from "./pipeSubprocessOutput";
 import {
   activateRoute,
   claimRegistration,
   cleanupStaleRegistrations,
   ensureCaddyAdminAvailable,
-  ensureCaddyfileExists,
-  ensureRouteDirectories,
   removeRouteFiles,
   unregisterRoute,
 } from "./routeUtils";
@@ -66,9 +66,8 @@ export async function startStack(
   });
 
   try {
-    await ensureRouteDirectories();
-    await ensureCaddyfileExists();
-    await cleanupStaleRegistrations();
+    await ensureManagedCaddyConfig();
+    await cleanupStaleRegistrations(managedCaddyPaths.registrationsDirectoryPath);
     await ensureCaddyAdminAvailable();
 
     for (const service of routedServices) {
@@ -76,7 +75,7 @@ export async function startStack(
         continue;
       }
 
-      await claimRegistration(service.host, service.port);
+      await claimRegistration(service.host, service.port, managedCaddyPaths.registrationsDirectoryPath);
       reservedHosts.push(service.host);
     }
 
@@ -169,19 +168,25 @@ export async function startStack(
           });
 
           documentInjectionServers.set(service.name, documentInjectionServer);
-          await activateRoute({
-            appBindHost: service.bindHost,
-            appPort: service.port,
-            devtoolsControlPort: devtoolsControlServer?.port,
-            documentInjectionPort: documentInjectionServer.port,
-            host: service.host,
-          });
+          await activateRoute(
+            {
+              appBindHost: service.bindHost,
+              appPort: service.port,
+              devtoolsControlPort: devtoolsControlServer?.port,
+              documentInjectionPort: documentInjectionServer.port,
+              host: service.host,
+            },
+            managedCaddyPaths.routesDirectoryPath,
+          );
         } else {
-          await activateRoute({
-            appBindHost: service.bindHost,
-            appPort: service.port,
-            host: service.host,
-          });
+          await activateRoute(
+            {
+              appBindHost: service.bindHost,
+              appPort: service.port,
+              host: service.host,
+            },
+            managedCaddyPaths.routesDirectoryPath,
+          );
         }
 
         activeHosts.add(service.host);
@@ -249,12 +254,16 @@ export async function startStack(
     }
 
     for (const host of activeHosts) {
-      await unregisterRoute(host);
+      await unregisterRoute(host, managedCaddyPaths.registrationsDirectoryPath);
     }
 
     for (const host of reservedHosts) {
       if (!activeHosts.has(host)) {
-        await removeRouteFiles(host);
+        await removeRouteFiles(
+          host,
+          managedCaddyPaths.registrationsDirectoryPath,
+          managedCaddyPaths.routesDirectoryPath,
+        );
       }
     }
   }

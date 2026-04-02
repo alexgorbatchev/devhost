@@ -50,7 +50,8 @@ These baseline facts are verified from the repository at the time of writing:
 - `devhost/src/startStack.ts` is the stack-mode orchestrator.
 - `devhost` code now lives under `devhost/src/`.
 - `devhost` has its own `package.json`, `bun.lock`, and `tsconfig.json`.
-- `caddy/Caddyfile` still determines which domains are actually routable in this repository.
+- `devhost` now generates and manages its own Caddyfile under `DEVHOST_STATE_DIR` or `~/.local/state/devhost/caddy`.
+- routable domains are no longer constrained by a checked-in Caddyfile, but they still must resolve to the local machine outside `devhost`.
 - browser devtools injection already exists and is implemented as split routing.
 
 ## 3. Non-negotiable constraints

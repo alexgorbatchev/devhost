@@ -1,11 +1,17 @@
 # devhost
 
-`devhost` is a Bun-based local development host runner for projects behind Caddy.
+`devhost` is a Bun-based local development host runner for projects behind a devhost-managed Caddy instance.
 
-It has two modes:
+It has two runtime modes:
 
 - **single-service mode** — start one app, wait for its health gate, and register one public host
 - **manifest mode** — load `devhost.toml`, start a local stack, wait for each service health gate, and register routed hosts
+
+It also has Caddy lifecycle commands:
+
+- `devhost caddy start`
+- `devhost caddy stop`
+- `devhost caddy trust`
 
 ## What it does
 
@@ -16,7 +22,10 @@ It has two modes:
 - validates and loads `devhost.toml` with Bun TOML parsing plus Zod v4 validation
 - reserves public hosts before starting routed services
 - waits for health checks before enabling routes
-- reloads Caddy when routes change
+- reloads a managed Caddy instance when routes change
+- stores generated Caddy config under `DEVHOST_STATE_DIR`, `XDG_STATE_HOME/devhost`, or `~/.local/state/devhost/caddy`
+- uses wildcard listeners on macOS so rootless Caddy can open `:443`
+- keeps loopback-only binding on non-macOS platforms
 - prefixes its own logs with the manifest `name` in manifest mode, falling back to `[devhost]`
 - prefixes child service logs with `[service-name]`
 - optionally injects a small devtools UI into HTML document navigations
@@ -27,9 +36,6 @@ It has two modes:
 
 - `bun`
 - `caddy`
-- a running Caddy admin API reachable at `127.0.0.1:2019`
-
-If Caddy is not running, `devhost` now fails fast before spawning child apps.
 
 ## CLI usage
 
@@ -39,6 +45,35 @@ Show help:
 bun run dev --help
 ```
 
+### Managed Caddy commands
+
+Start the managed Caddy instance:
+
+```bash
+bun run dev caddy start
+```
+
+Stop it:
+
+```bash
+bun run dev caddy stop
+```
+
+Managed Caddy may prompt for your password when it needs to install its local CA into the system trust store.
+`devhost caddy start` and `devhost caddy trust` stream Caddy's own output directly so the trust/install flow is visible.
+Trust its local CA once after it is running:
+
+```bash
+bun run dev caddy trust
+```
+
+The generated Caddy config uses these defaults:
+
+- state dir: `DEVHOST_STATE_DIR`, else `XDG_STATE_HOME/devhost`, else `~/.local/state/devhost`
+- admin API: `127.0.0.1:20193` unless `DEVHOST_CADDY_ADMIN_ADDRESS` is set
+- listener binding on macOS: wildcard listeners, because macOS denies rootless loopback-specific binds on `:443`
+- listener binding on non-macOS: loopback only via Caddy `default_bind 127.0.0.1 [::1]`
+
 ### Single-service mode
 
 ```bash
@@ -47,12 +82,12 @@ bun run dev --host hello.local.test --port 3200 -- bun run test:hello
 
 Behavior:
 
-1. verifies Caddy admin availability
+1. verifies the managed Caddy admin API is available
 2. reserves the host
 3. starts the child command
 4. waits for the target port to accept connections
 5. starts devtools control/document servers
-6. writes the Caddy route and reloads Caddy
+6. writes the Caddy route and reloads the managed Caddy instance
 7. removes the route on exit
 
 ### Manifest mode
@@ -73,11 +108,26 @@ Behavior:
 2. parses TOML with Bun
 3. validates schema and semantics
 4. resolves `port = "auto"`
-5. verifies Caddy admin availability
+5. verifies the managed Caddy admin API is available
 6. reserves all public hosts
 7. starts services in dependency order
 8. waits for each service health check before routing it
 9. tears down routes and children on exit or failure
+
+## Platform caveat
+
+On macOS, this now starts rootlessly by avoiding loopback-specific listener binding.
+That fixes startup, but it also means the managed Caddy instance is not loopback-only on that platform.
+If you need strict loopback-only HTTPS on privileged ports, the correct solution is a privileged launcher such as `launchd` socket activation, not pretending wildcard binding is equivalent.
+
+On non-macOS platforms, opening HTTPS on `:443` still requires privileged-port setup outside `devhost`.
+`devhost` does not configure `sudo`, `setcap`, `authbind`, or firewall redirection for you.
+
+## DNS caveat
+
+`devhost` manages Caddy, not name resolution.
+Your chosen hostnames must already resolve to this machine.
+Without that, automatic Caddy management is irrelevant because the browser will never reach the local proxy.
 
 ## `devhost.toml`
 
@@ -112,22 +162,9 @@ Supported service fields:
 - `dependsOn?: string[]`
 - `health?: { tcp: number } | { http: string } | { process: true }`
 
-Rules worth remembering:
-
-- `cwd` is resolved relative to the directory containing `devhost.toml`
-- `cwd` must stay inside the manifest directory tree
-- `command` must be an argv array, not a shell string
-- `port = "auto"` is supported
-- `port = "auto"` must omit explicit `health` in v1
-- `devtools` defaults to `true`
-- `devtoolsMinimapPosition` defaults to `"right"`
-- `devtoolsPosition` defaults to `"bottom-right"`
-
 For the full contract, read `../docs/toml-config.md`.
 
 ## Injected environment
-
-`devhost` injects different variables depending on mode.
 
 ### Always relevant
 
@@ -141,19 +178,13 @@ For the full contract, read `../docs/toml-config.md`.
 ### Manifest-mode variables
 
 - `DEVHOST_STACK`
-  - the manifest `name`
 - `DEVHOST_SERVICE_NAME`
-  - the service's manifest name
-  - example: `[services.api]` means `DEVHOST_SERVICE_NAME=api`
 - `DEVHOST_MANIFEST_PATH`
-  - the absolute path to the active `devhost.toml`
 
 ### Routed-service variables
 
 - `DEVHOST_HOST`
   - the public routed hostname from the service `host` field
-  - use this when the app needs to know its external development URL host
-  - example: `host = "hello.xcv.lol"` means `DEVHOST_HOST=hello.xcv.lol`
 
 ## Devtools injection
 
@@ -165,90 +196,20 @@ When devtools are enabled, routed traffic is split like this:
 
 That keeps assets, HMR, fetches, SSE, and WebSockets off the injection path.
 
-Current control routes:
-
-- `/__devhost__/inject.js`
-- `/__devhost__/ws/health`
-  - websocket stream of `{ services: [{ name, status }] }`
-  - always includes an entry for the control process itself
-  - in manifest mode that entry uses the manifest `name`; in single-service mode it falls back to `devhost`
-  - pushes updates when managed service status changes, including immediate process-exit updates
-  - `status` is still derived from the managed service's configured health check
-- `/__devhost__/ws/logs`
-  - websocket stream for the injected log minimap
-  - replays retained combined service logs on connect, then pushes new stdout/stderr lines live
-  - stdout remains intentionally subtle; stderr is highlighted red in the minimap and uses stronger red emphasis in the line-only hover preview
-  - hover preview rows now mirror the exact visible minimap rows, follow the hovered row on the y-axis, clamp within the viewport, center around early visible rows when the viewport has room, and render as contiguous flush rows when a single log message spans multiple preview lines
-
-The injected devtools UI now follows the host page's resolved `color-scheme` (`light` or `dark`).
-For best results, apps should expose theme changes through standard `color-scheme` behavior on the document root.
-Manifest mode also supports a root-level `devtoolsPosition` field with these values:
-`top-left`, `top-right`, `bottom-left`, `bottom-right`.
-Manifest mode also supports a root-level `devtoolsMinimapPosition` field with these values:
-`left`, `right`.
-When all services are healthy, the UI collapses to a single green row using the manifest `name`.
-When any service is unhealthy, the UI shows only the unhealthy services in red.
-When devtools are enabled, the injected UI also renders a 100px-wide log minimap on the configured side.
-
 If manifest `devtools = false`, devhost does not mount these control routes for that stack.
-
-### Important caveat
-
-The current HTML injector rewrites HTML and strips these headers from rewritten responses:
-
-- `content-security-policy`
-- `content-security-policy-report-only`
-
-That is acceptable for the current prototype, but it is a real correctness/security compromise and must not be ignored.
-
-## Logging
-
-- manifest-mode `devhost` logs are prefixed with `[<manifest name>]`
-- single-service and pre-manifest `devhost` logs fall back to `[devhost]`
-- child stdout/stderr lines are prefixed with `[service-name]`
-
-Example:
-
-```text
-[hello-test-app] primary https://hello.local.test
-[hello] helloWorldServer listening on http://127.0.0.1:3200 for hello.local.test
-```
-
-## Workspace usage in this repository
-
-From the repository root:
-
-```bash
-bun run devhost --manifest ./test/devhost.toml
-```
-
-From the `test/` workspace, using `devhost` as a workspace dev dependency:
-
-```bash
-cd test && bun run devhost --manifest ./devhost.toml
-```
 
 ## Contributor notes
 
-Internal development details now live in:
+Internal development details live in:
 
 - `./AGENTS.md`
-
-That file covers:
-
-- contributor workflow and test commands
-- internal package layout
-- logging rules
-- devtools UI rules
-- the requirement to keep this README up to date after changes
 
 ## Non-goals
 
 `devhost` is not trying to be:
 
 - Docker Compose
-- a persistent daemon
+- a persistent daemon beyond the explicitly managed Caddy process
 - a remote orchestration system
+- a DNS manager
 - a generic wildcard-host generator
-
-If you want those, this tool is the wrong layer.

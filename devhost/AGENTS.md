@@ -45,10 +45,15 @@ The check script runs the native TypeScript typecheck and the coverage test suit
 - `bin/devhost.ts` — workspace CLI entrypoint
 - `src/index.ts` — runtime entrypoint
 - `src/runDevhost.ts` — top-level orchestration and mode selection
+- `src/runManagedCaddyLifecycleCommand.ts` — `devhost caddy start|stop|trust`
+- `src/caddyPaths.ts` — managed Caddy state paths and admin address resolution
+- `src/resolveManagedCaddyBindDirective.ts` — platform-aware listener binding policy for managed Caddy
+- `src/ensureManagedCaddyConfig.ts` — generates the managed Caddyfile and state directories
+- `src/runManagedCaddyCommand.ts` — shared Caddy CLI wrapper for start/stop/trust/reload
 - `src/startSingleService.ts` — single-service flow
 - `src/startStack.ts` — manifest-mode flow
 - `src/validateManifest.ts` — Zod v4 schema + semantic validation
-- `src/routeUtils.ts` — route file management and Caddy reload logic
+- `src/routeUtils.ts` — route file management and managed Caddy reload logic
 - `src/devtools/` — injected browser UI code
 
 ## Logging rules

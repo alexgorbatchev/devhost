@@ -1,15 +1,10 @@
-import { access, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import {
-  caddyAdminApiUrl,
-  caddyAdminTimeoutInMilliseconds,
-  caddyDirectoryPath,
-  caddyfilePath,
-  registrationsDirectoryPath,
-  routesDirectoryPath,
-} from "./constants";
+import { caddyAdminApiUrl } from "./caddyPaths";
+import { caddyAdminTimeoutInMilliseconds } from "./constants";
 import { formatProxyAddress, resolveProxyHost } from "./resolveProxyHost";
+import { createManagedCaddyCommandErrorMessage, runManagedCaddyCommand } from "./runManagedCaddyCommand";
 
 interface IRegistration {
   host: string;
@@ -27,18 +22,6 @@ interface IActivateRouteOptions {
 }
 
 type FetchImplementation = (input: string, init?: RequestInit) => Promise<Response>;
-
-export async function ensureRouteDirectories(): Promise<void> {
-  await mkdir(registrationsDirectoryPath, { recursive: true });
-}
-
-export async function ensureCaddyfileExists(): Promise<void> {
-  try {
-    await access(caddyfilePath);
-  } catch {
-    throw new Error(`Required file is missing: ${caddyfilePath}`);
-  }
-}
 
 export async function ensureCaddyAdminAvailable(fetchImplementation: FetchImplementation = fetch): Promise<void> {
   try {
@@ -58,7 +41,7 @@ export async function ensureCaddyAdminAvailable(fetchImplementation: FetchImplem
   }
 }
 
-export async function cleanupStaleRegistrations(): Promise<void> {
+export async function cleanupStaleRegistrations(registrationsDirectoryPath: string): Promise<void> {
   const registrationFileNames: string[] = await readdir(registrationsDirectoryPath);
 
   for (const registrationFileName of registrationFileNames) {
@@ -74,7 +57,7 @@ export async function cleanupStaleRegistrations(): Promise<void> {
       continue;
     }
 
-    await removeRouteFiles(registration.host);
+    await removeRouteFiles(registration.host, registrationsDirectoryPath, getRoutesDirectoryPath(registrationsDirectoryPath));
   }
 }
 
@@ -89,9 +72,10 @@ export function createRegistration(host: string, port: number): string {
   return JSON.stringify(registration, null, 2);
 }
 
-export async function claimRegistration(host: string, port: number): Promise<void> {
-  const registrationPath: string = getRegistrationPath(host);
+export async function claimRegistration(host: string, port: number, registrationsDirectoryPath: string): Promise<void> {
+  const registrationPath: string = getRegistrationPath(host, registrationsDirectoryPath);
   const registrationText: string = createRegistration(host, port);
+  const routesDirectoryPath: string = getRoutesDirectoryPath(registrationsDirectoryPath);
 
   try {
     await writeFile(registrationPath, registrationText, {
@@ -112,7 +96,7 @@ export async function claimRegistration(host: string, port: number): Promise<voi
       );
     }
 
-    await removeRouteFiles(existingRegistration.host);
+    await removeRouteFiles(existingRegistration.host, registrationsDirectoryPath, routesDirectoryPath);
     await writeFile(registrationPath, registrationText, {
       encoding: "utf8",
       flag: "wx",
@@ -120,20 +104,22 @@ export async function claimRegistration(host: string, port: number): Promise<voi
   }
 }
 
-export async function activateRoute(options: IActivateRouteOptions): Promise<void> {
-  const routePath: string = getRoutePath(options.host);
+export async function activateRoute(options: IActivateRouteOptions, routesDirectoryPath: string): Promise<void> {
+  const routePath: string = getRoutePath(options.host, routesDirectoryPath);
+  const registrationsDirectoryPath: string = getRegistrationsDirectoryPath(routesDirectoryPath);
 
   try {
     await writeFile(routePath, renderRouteSnippet(options), "utf8");
     reloadCaddy();
   } catch (error) {
-    await removeRouteFiles(options.host);
+    await removeRouteFiles(options.host, registrationsDirectoryPath, routesDirectoryPath);
     throw error;
   }
 }
 
-export async function unregisterRoute(host: string): Promise<void> {
-  const registrationPath: string = getRegistrationPath(host);
+export async function unregisterRoute(host: string, registrationsDirectoryPath: string): Promise<void> {
+  const registrationPath: string = getRegistrationPath(host, registrationsDirectoryPath);
+  const routesDirectoryPath: string = getRoutesDirectoryPath(registrationsDirectoryPath);
 
   try {
     const registrationText: string = await readFile(registrationPath, "utf8");
@@ -146,21 +132,33 @@ export async function unregisterRoute(host: string): Promise<void> {
     return;
   }
 
-  await removeRouteFiles(host);
+  await removeRouteFiles(host, registrationsDirectoryPath, routesDirectoryPath);
   reloadCaddy();
 }
 
-export async function removeRouteFiles(host: string): Promise<void> {
-  await rm(getRegistrationPath(host), { force: true });
-  await rm(getRoutePath(host), { force: true });
+export async function removeRouteFiles(
+  host: string,
+  registrationsDirectoryPath: string,
+  routesDirectoryPath: string,
+): Promise<void> {
+  await rm(getRegistrationPath(host, registrationsDirectoryPath), { force: true });
+  await rm(getRoutePath(host, routesDirectoryPath), { force: true });
 }
 
-function getRegistrationPath(host: string): string {
+function getRegistrationPath(host: string, registrationsDirectoryPath: string): string {
   return join(registrationsDirectoryPath, `${host}.json`);
 }
 
-function getRoutePath(host: string): string {
+function getRoutePath(host: string, routesDirectoryPath: string): string {
   return join(routesDirectoryPath, `${host}.caddy`);
+}
+
+function getRegistrationsDirectoryPath(routesDirectoryPath: string): string {
+  return join(routesDirectoryPath, ".registrations");
+}
+
+function getRoutesDirectoryPath(registrationsDirectoryPath: string): string {
+  return join(registrationsDirectoryPath, "..");
 }
 
 function isProcessAlive(processId: number): boolean {
@@ -188,7 +186,12 @@ function parseRegistration(registrationText: string): IRegistration {
   const ownerPid: unknown = Reflect.get(parsedValue, "ownerPid");
   const createdAt: unknown = Reflect.get(parsedValue, "createdAt");
 
-  if (typeof host !== "string" || typeof port !== "number" || typeof ownerPid !== "number" || typeof createdAt !== "string") {
+  if (
+    typeof host !== "string" ||
+    typeof port !== "number" ||
+    typeof ownerPid !== "number" ||
+    typeof createdAt !== "string"
+  ) {
     throw new Error("Registration file is malformed.");
   }
 
@@ -201,11 +204,7 @@ function parseRegistration(registrationText: string): IRegistration {
 }
 
 function reloadCaddy(): void {
-  const result = Bun.spawnSync(["caddy", "reload", "--config", caddyfilePath, "--adapter", "caddyfile"], {
-    cwd: caddyDirectoryPath,
-    stdout: "pipe",
-    stderr: "pipe",
-  });
+  const result = runManagedCaddyCommand(["reload"]);
 
   if (!result.success) {
     throw new Error(createCaddyReloadErrorMessage(result.stdout, result.stderr));
@@ -213,7 +212,7 @@ function reloadCaddy(): void {
 }
 
 export function createCaddyAdminUnavailableErrorMessage(detail: string | null): string {
-  const baseMessage: string = "Caddy admin API is not available.";
+  const baseMessage: string = "Caddy admin API is not available. Run 'devhost caddy start' first.";
   const normalizedDetail: string | null = normalizeCaddyAdminErrorDetail(detail);
 
   if (normalizedDetail === null) {
@@ -238,19 +237,20 @@ function normalizeCaddyAdminErrorDetail(detail: string | null): string | null {
 }
 
 export function createCaddyReloadErrorMessage(stdout: Uint8Array, stderr: Uint8Array): string {
-  const stdoutText: string = decodeProcessOutput(stdout);
-  const stderrText: string = decodeProcessOutput(stderr);
-  const combinedOutput: string = [stderrText, stdoutText].filter((text: string): boolean => text.length > 0).join("\n");
+  const baseMessage: string = "Caddy reload failed. Is Caddy already running?";
+  const renderedMessage: string = createManagedCaddyCommandErrorMessage("reload", {
+    stderr,
+    stdout,
+    success: false,
+  });
 
-  if (combinedOutput.length === 0) {
-    return "Caddy reload failed. Is Caddy already running?";
+  if (renderedMessage === "Caddy reload failed.") {
+    return baseMessage;
   }
 
-  return `Caddy reload failed. Is Caddy already running?\n${combinedOutput}`;
-}
+  const detail: string = renderedMessage.replace("Caddy reload failed.\n", "");
 
-function decodeProcessOutput(output: Uint8Array): string {
-  return new TextDecoder().decode(output).trim();
+  return `${baseMessage}\n${detail}`;
 }
 
 function renderRouteSnippet(options: IActivateRouteOptions): string {

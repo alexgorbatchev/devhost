@@ -8,12 +8,14 @@ import {
 
 describe("createCaddyAdminUnavailableErrorMessage", () => {
   test("returns the base message when there is no detail", () => {
-    expect(createCaddyAdminUnavailableErrorMessage(null)).toBe("Caddy admin API is not available.");
+    expect(createCaddyAdminUnavailableErrorMessage(null)).toBe(
+      "Caddy admin API is not available. Run 'devhost caddy start' first.",
+    );
   });
 
   test("appends the normalized detail", () => {
     expect(createCaddyAdminUnavailableErrorMessage("Unable to connect. Is the computer able to access the url?")).toBe(
-      "Caddy admin API is not available.\ndetail: Unable to connect.",
+      "Caddy admin API is not available. Run 'devhost caddy start' first.\ndetail: Unable to connect.",
     );
   });
 });
@@ -37,7 +39,9 @@ describe("ensureCaddyAdminAvailable", () => {
           statusText: "Service Unavailable",
         });
       }),
-    ).rejects.toThrow("Caddy admin API is not available.\ndetail: HTTP 503 Service Unavailable");
+    ).rejects.toThrow(
+      "Caddy admin API is not available. Run 'devhost caddy start' first.\ndetail: HTTP 503 Service Unavailable",
+    );
   });
 
   test("wraps thrown fetch errors", async () => {
@@ -45,7 +49,9 @@ describe("ensureCaddyAdminAvailable", () => {
       ensureCaddyAdminAvailable(async (): Promise<Response> => {
         throw new Error("Unable to connect. Is the computer able to access the url?");
       }),
-    ).rejects.toThrow("Caddy admin API is not available.\ndetail: Unable to connect.");
+    ).rejects.toThrow(
+      "Caddy admin API is not available. Run 'devhost caddy start' first.\ndetail: Unable to connect.",
+    );
   });
 });
 
