@@ -40,6 +40,7 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
   const [popupHeight, setPopupHeight] = useState<number>(220);
   const [selectedElements, setSelectedElements] = useState<ISelectedElementDraft[]>([]);
   const [submissionErrorMessage, setSubmissionErrorMessage] = useState<string | null>(null);
+  const commentTextareaReference = useRef<HTMLTextAreaElement | null>(null);
   const hoveredElementReference = useRef<HTMLElement | null>(null);
   const popupReference = useRef<HTMLDivElement | null>(null);
   const scheduledFrameReference = useRef<number | null>(null);
@@ -216,12 +217,16 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
     }
 
     const handleKeyDown = (event: KeyboardEvent): void => {
-      if (event.key !== "Escape") {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        cancelDraft();
         return;
       }
 
-      event.preventDefault();
-      cancelDraft();
+      if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        void submitDraft();
+      }
     };
 
     document.addEventListener("keydown", handleKeyDown, true);
@@ -229,7 +234,7 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
     return () => {
       document.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [cancelDraft, hasDraft]);
+  }, [cancelDraft, hasDraft, submitDraft]);
 
   useEffect(() => {
     if (!isSelectionMode) {
@@ -246,6 +251,20 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
       removeSelectionCursorStyle();
     };
   }, [isSelectionMode]);
+
+  useEffect(() => {
+    if (selectedElements.length !== 1) {
+      return;
+    }
+
+    const animationFrameId: number = window.requestAnimationFrame((): void => {
+      commentTextareaReference.current?.focus();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+    };
+  }, [selectedElements.length]);
 
   useEffect(() => {
     const popupElement: HTMLDivElement | null = popupReference.current;
@@ -400,6 +419,7 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
             })}
           </ol>
           <textarea
+            ref={commentTextareaReference}
             data-testid="DevtoolsAnnotationComposer--comment"
             placeholder="Describe the change and refer to markers like #1, #2, #3…"
             rows={5}
@@ -415,11 +435,26 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
             </div>
           ) : null}
           <div style={popupActionsStyle}>
-            <Button disabled={isSubmitting} theme={props.theme} variant="secondary" onClick={cancelDraft}>
+            <Button
+              disabled={isSubmitting}
+              endEnhancer="Esc"
+              endEnhancerStyle={createShortcutBadgeStyle(props.theme)}
+              endEnhancerStyleHover={shortcutBadgeHoverStyle}
+              style={createCancelButtonStyle(props.theme)}
+              styleHover={createActionButtonHoverStyle(props.theme)}
+              theme={props.theme}
+              variant="secondary"
+              onClick={cancelDraft}
+            >
               Cancel
             </Button>
             <Button
               disabled={trimmedComment.length === 0 || isSubmitting}
+              endEnhancer="⌘ ↵"
+              endEnhancerStyle={createShortcutBadgeStyle(props.theme)}
+              endEnhancerStyleHover={shortcutBadgeHoverStyle}
+              style={createSubmitButtonStyle(props.theme)}
+              styleHover={createActionButtonHoverStyle(props.theme)}
               theme={props.theme}
               variant="primary"
               onClick={(): void => {
@@ -473,10 +508,11 @@ const markerListItemStyle: JSX.CSSProperties = {
   display: "grid",
   gridTemplateColumns: "auto 1fr",
   gap: "8px",
-  alignItems: "start",
+  alignItems: "center",
 };
 
 const markerListTextStyle: JSX.CSSProperties = {
+  alignSelf: "center",
   lineHeight: 1.35,
 };
 
@@ -485,6 +521,55 @@ const popupActionsStyle: JSX.CSSProperties = {
   justifyContent: "flex-end",
   gap: "8px",
 };
+
+const shortcutBadgeHoverStyle: JSX.CSSProperties = {
+  color: "rgba(255, 255, 255, 1)",
+};
+
+const actionButtonMutedForeground: string = "rgba(255, 255, 255, 0.6)";
+const actionButtonShortcutBackground: string = "rgba(255, 255, 255, 0.1)";
+const actionButtonSubmitForeground: string = "rgba(255, 255, 255, 1)";
+const actionButtonHoverRing: string = "rgba(255, 255, 255, 0.22)";
+
+function createActionButtonHoverStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+  return {
+    border: `1px solid ${actionButtonSubmitForeground}`,
+    boxShadow: `0 0 0 1px ${actionButtonHoverRing}, ${theme.shadows.floating}`,
+    color: actionButtonSubmitForeground,
+  };
+}
+
+function createCancelButtonStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+  return {
+    border: `1px solid ${theme.colors.border}`,
+    boxShadow: theme.shadows.floating,
+    color: actionButtonMutedForeground,
+  };
+}
+
+function createShortcutBadgeStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+  return {
+    minWidth: "32px",
+    padding: `0 ${theme.spacing.xs}`,
+    border: "none",
+    borderRadius: theme.radii.sm,
+    background: actionButtonShortcutBackground,
+    color: actionButtonMutedForeground,
+    fontFamily: theme.fontFamilies.monospace,
+    fontSize: "80%",
+    lineHeight: 1.6,
+    boxSizing: "border-box",
+  };
+}
+
+function createSubmitButtonStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+  return {
+    border: `1px solid ${theme.colors.selectionBorder}`,
+    boxShadow: theme.shadows.floating,
+    background: theme.colors.selectionBackground,
+    color: actionButtonSubmitForeground,
+  };
+}
 
 function createHoverHighlightStyle(theme: IDevtoolsTheme, hoveredRectangle: DOMRect): JSX.CSSProperties {
   return {
@@ -582,6 +667,7 @@ function createMarkerPillStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
     height: `${markerSize}px`,
     display: "grid",
     placeItems: "center",
+    alignSelf: "start",
     borderRadius: theme.radii.pill,
     background: theme.colors.accentBackground,
     color: theme.colors.accentForeground,

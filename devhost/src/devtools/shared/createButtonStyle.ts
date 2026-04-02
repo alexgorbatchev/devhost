@@ -17,6 +17,10 @@ export function createButtonStyle(
 
   return {
     ...variantStyle,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.spacing.xs,
     padding: `${theme.spacing.xxs} ${theme.spacing.xs}`,
     borderRadius: theme.radii.sm,
     fontFamily: theme.fontFamilies.monospace,
