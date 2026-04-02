@@ -1,6 +1,7 @@
+import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "preact";
 
-import type { IDevtoolsTheme } from "../../shared";
+import { css, type IDevtoolsTheme } from "../../shared";
 import type { ServiceHealth } from "../../shared/types";
 import { selectVisibleServices } from "./selectVisibleServices";
 
@@ -18,20 +19,24 @@ export function DevtoolsServiceStatusPanel(props: IDevtoolsServiceStatusPanelPro
     return null;
   }
 
+  const errorClassName: string = css(createErrorStyle(props.theme));
+  const listClassName: string = css(listStyle);
+  const nameClassName: string = css(createNameStyle(props.theme));
+  const panelClassName: string = css(createPanelStyle(props.theme));
+  const rowClassName: string = css(rowStyle);
+
   return (
-    <section
-      aria-label="devhost services"
-      data-testid="DevtoolsServiceStatusPanel"
-      style={createPanelStyle(props.theme)}
-    >
-      {props.errorMessage !== null ? <div style={createErrorStyle(props.theme)}>{props.errorMessage}</div> : null}
+    <section aria-label="devhost services" class={panelClassName} data-testid="DevtoolsServiceStatusPanel">
+      {props.errorMessage !== null ? <div class={errorClassName}>{props.errorMessage}</div> : null}
       {visibleServices.length > 0 ? (
-        <ul style={listStyle} data-testid="DevtoolsServiceStatusPanel--service-list">
+        <ul class={listClassName} data-testid="DevtoolsServiceStatusPanel--service-list">
           {visibleServices.map((service: ServiceHealth) => {
+            const statusDotClassName: string = css(createStatusDotStyle(service.status, props.theme));
+
             return (
-              <li key={service.name} style={rowStyle}>
-                <span aria-hidden="true" style={createStatusDotStyle(service.status, props.theme)} />
-                <span style={createNameStyle(props.theme)}>{service.name}</span>
+              <li key={service.name} class={rowClassName}>
+                <span aria-hidden="true" class={statusDotClassName} />
+                <span class={nameClassName}>{service.name}</span>
               </li>
             );
           })}
@@ -41,7 +46,7 @@ export function DevtoolsServiceStatusPanel(props: IDevtoolsServiceStatusPanelPro
   );
 }
 
-const listStyle: JSX.CSSProperties = {
+const listStyle: CSSObject = {
   display: "grid",
   gap: "4px",
   listStyle: "none",
@@ -49,13 +54,13 @@ const listStyle: JSX.CSSProperties = {
   padding: 0,
 };
 
-const rowStyle: JSX.CSSProperties = {
+const rowStyle: CSSObject = {
   display: "flex",
   alignItems: "center",
   gap: "6px",
 };
 
-function createPanelStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createPanelStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     padding: `${theme.spacing.xxs} ${theme.spacing.xs}`,
     border: `1px solid ${theme.colors.border}`,
@@ -68,7 +73,7 @@ function createPanelStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
   };
 }
 
-function createErrorStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createErrorStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     marginBottom: "6px",
     color: theme.colors.dangerForeground,
@@ -76,14 +81,14 @@ function createErrorStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
   };
 }
 
-function createNameStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createNameStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     color: theme.colors.foreground,
     fontSize: theme.fontSizes.sm,
   };
 }
 
-function createStatusDotStyle(isHealthy: boolean, theme: IDevtoolsTheme): JSX.CSSProperties {
+function createStatusDotStyle(isHealthy: boolean, theme: IDevtoolsTheme): CSSObject {
   return {
     width: "8px",
     height: "8px",

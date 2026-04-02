@@ -1,8 +1,9 @@
+import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 import type { DevtoolsMinimapPosition } from "../../../stackTypes";
-import type { IDevtoolsTheme } from "../../shared/devtoolsTheme";
+import { css, type IDevtoolsTheme } from "../../shared";
 import type { ServiceLogEntry } from "../../shared/types";
 import { createLogMinimapMarksFromVisibleRows, type ILogMinimapMark } from "./createLogMinimapMarks";
 import { createLogPreviewLineStyle } from "./createLogPreviewLineStyle";
@@ -20,7 +21,7 @@ interface IDevtoolsLogMinimapProps {
   theme: IDevtoolsTheme;
 }
 
-const minimapTransitionStyle: JSX.CSSProperties["transition"] = "opacity 160ms ease, transform 160ms ease";
+const minimapTransitionStyle: CSSObject["transition"] = "opacity 160ms ease, transform 160ms ease";
 
 export function DevtoolsLogMinimap(props: IDevtoolsLogMinimapProps): JSX.Element | null {
   const canvasReference = useRef<HTMLCanvasElement | null>(null);
@@ -138,10 +139,16 @@ export function DevtoolsLogMinimap(props: IDevtoolsLogMinimapProps): JSX.Element
     return null;
   }
 
+  const canvasClassName: string = css(canvasStyle);
+  const minimapClassName: string = css(createMinimapStyle(props.theme, props.minimapPosition, props.isHovered));
+  const previewClassName: string =
+    previewLayout === null ? "" : css(createPreviewStyle(props.theme, props.minimapPosition, previewLayout.top));
+  const previewListClassName: string = css(createPreviewListStyle(props.theme));
+
   return (
     <aside
       aria-hidden="true"
-      style={createMinimapStyle(props.theme, props.minimapPosition, props.isHovered)}
+      class={minimapClassName}
       data-testid="DevtoolsLogMinimap"
       onMouseEnter={(): void => {
         props.onHoveredChange(true);
@@ -157,22 +164,19 @@ export function DevtoolsLogMinimap(props: IDevtoolsLogMinimapProps): JSX.Element
         setHoveredRowIndex(resolveHoveredLogRowIndex(marksReference.current, mouseOffsetY));
       }}
     >
-      <canvas ref={canvasReference} style={canvasStyle} data-testid="DevtoolsLogMinimap--canvas" />
+      <canvas ref={canvasReference} class={canvasClassName} data-testid="DevtoolsLogMinimap--canvas" />
       {props.isHovered && previewOverlay !== null ? (
         <div
-          style={createOverlayStyle(props.theme, previewOverlay.top, previewOverlay.height)}
+          class={css(createOverlayStyle(props.theme, previewOverlay.top, previewOverlay.height))}
           data-testid="DevtoolsLogMinimap--preview-overlay"
         />
       ) : null}
       {props.isHovered && previewLayout !== null && hoveredRowIndex !== null && previewRows.length > 0 ? (
-        <div
-          style={createPreviewStyle(props.theme, props.minimapPosition, previewLayout.top)}
-          data-testid="DevtoolsLogMinimap--preview"
-        >
-          <ol style={createPreviewListStyle(props.theme)}>
+        <div class={previewClassName} data-testid="DevtoolsLogMinimap--preview">
+          <ol class={previewListClassName}>
             {previewRows.map((row: IVisibleLogRow) => {
               return (
-                <li key={`${row.id}-${row.top}`} style={createLogPreviewLineStyle(props.theme, row.stream)}>
+                <li key={`${row.id}-${row.top}`} class={css(createLogPreviewLineStyle(props.theme, row.stream))}>
                   {row.text}
                 </li>
               );
@@ -184,16 +188,16 @@ export function DevtoolsLogMinimap(props: IDevtoolsLogMinimapProps): JSX.Element
   );
 }
 
-const canvasStyle: JSX.CSSProperties = {
+const canvasStyle: CSSObject = {
   display: "block",
   width: "100%",
   height: "100%",
   pointerEvents: "none",
 };
 
-const overlayShadowStyle: JSX.CSSProperties["boxShadow"] = "inset 0 0 0 1px";
+const overlayShadowStyle: CSSObject["boxShadow"] = "inset 0 0 0 1px";
 
-function createPreviewListStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createPreviewListStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     display: "grid",
     gap: 0,
@@ -207,8 +211,8 @@ function createMinimapStyle(
   theme: IDevtoolsTheme,
   minimapPosition: DevtoolsMinimapPosition,
   isHovered: boolean,
-): JSX.CSSProperties {
-  const edgeStyle: JSX.CSSProperties =
+): CSSObject {
+  const edgeStyle: CSSObject =
     minimapPosition === "left"
       ? {
           borderRight: `1px solid ${theme.colors.border}`,
@@ -236,7 +240,7 @@ function createMinimapStyle(
   };
 }
 
-function createOverlayStyle(theme: IDevtoolsTheme, top: number, height: number): JSX.CSSProperties {
+function createOverlayStyle(theme: IDevtoolsTheme, top: number, height: number): CSSObject {
   return {
     position: "absolute",
     top,
@@ -253,8 +257,8 @@ function createPreviewStyle(
   theme: IDevtoolsTheme,
   minimapPosition: DevtoolsMinimapPosition,
   top: number,
-): JSX.CSSProperties {
-  const horizontalPositionStyle: JSX.CSSProperties =
+): CSSObject {
+  const horizontalPositionStyle: CSSObject =
     minimapPosition === "left"
       ? {
           left: `calc(100% + ${theme.spacing.xs})`,

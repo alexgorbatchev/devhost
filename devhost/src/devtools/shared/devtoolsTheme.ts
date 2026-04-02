@@ -62,7 +62,7 @@ export interface IDevtoolsTheme {
     xxs: string;
   };
   zIndices: {
-    floating: JSX.CSSProperties["zIndex"];
+    floating: NonNullable<JSX.CSSProperties["zIndex"]>;
   };
 }
 

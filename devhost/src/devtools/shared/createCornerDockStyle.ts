@@ -1,4 +1,4 @@
-import type { JSX } from "preact";
+import type { CSSObject } from "@emotion/css/create-instance";
 
 import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../../stackTypes";
 import type { IDevtoolsTheme } from "./devtoolsTheme";
@@ -12,12 +12,12 @@ interface ICreateCornerDockStyleOptions {
 export function createCornerDockStyle(
   theme: IDevtoolsTheme,
   options: ICreateCornerDockStyleOptions,
-): JSX.CSSProperties {
-  const verticalPositionStyle: JSX.CSSProperties =
+): CSSObject {
+  const verticalPositionStyle: CSSObject =
     options.devtoolsPosition === "top-left" || options.devtoolsPosition === "top-right"
       ? { top: theme.spacing.sm }
       : { bottom: theme.spacing.sm };
-  const horizontalPositionStyle: JSX.CSSProperties = createHorizontalPositionStyle(theme, options);
+  const horizontalPositionStyle: CSSObject = createHorizontalPositionStyle(theme, options);
 
   return {
     ...verticalPositionStyle,
@@ -43,7 +43,7 @@ function createCornerDockMaxWidth(theme: IDevtoolsTheme, hasVisibleMinimap: bool
 function createHorizontalPositionStyle(
   theme: IDevtoolsTheme,
   options: ICreateCornerDockStyleOptions,
-): JSX.CSSProperties {
+): CSSObject {
   const panelSide: DevtoolsMinimapPosition =
     options.devtoolsPosition === "top-left" || options.devtoolsPosition === "bottom-left"
       ? "left"

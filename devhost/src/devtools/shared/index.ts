@@ -1,7 +1,8 @@
 export { Button } from "./Button";
 export { createButtonStyle, type ButtonVariant } from "./createButtonStyle";
 export { createCornerDockStyle } from "./createCornerDockStyle";
-export { DEVTOOLS_ROOT_ID } from "./constants";
+export { configureDevtoolsCss, css, cx, injectGlobal } from "./devtoolsCss";
+export { DEVTOOLS_HOST_ID, DEVTOOLS_ROOT_ID } from "./constants";
 export { getDevtoolsTheme, type IDevtoolsTheme } from "./devtoolsTheme";
 export { readDevtoolsControlToken } from "./readDevtoolsControlToken";
 export { readDevtoolsMinimapPosition } from "./readDevtoolsMinimapPosition";

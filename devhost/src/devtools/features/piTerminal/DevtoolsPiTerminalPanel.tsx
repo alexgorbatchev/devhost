@@ -1,9 +1,10 @@
+import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "preact";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 
-import { Button, type IDevtoolsTheme } from "../../shared";
+import { Button, css, type IDevtoolsTheme } from "../../shared";
 import { createDevtoolsWebSocketUrl } from "../../shared/createDevtoolsWebSocketUrl";
 import {
   DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME,
@@ -103,14 +104,14 @@ export function DevtoolsPiTerminalPanel(props: IDevtoolsPiTerminalPanelProps): J
   }, [props.isExpanded, props.sessionId]);
 
   useEffect(() => {
-    ensureXtermStylesheet();
-
     const terminalContainer: HTMLDivElement | null = terminalContainerReference.current;
     const terminalViewport: HTMLDivElement | null = terminalViewportReference.current;
 
     if (terminalContainer === null || terminalViewport === null) {
       return;
     }
+
+    ensureXtermStylesheet(terminalContainer.getRootNode());
 
     const terminal = new Terminal({
       allowTransparency: true,
@@ -234,15 +235,34 @@ export function DevtoolsPiTerminalPanel(props: IDevtoolsPiTerminalPanelProps): J
     scheduleTerminalResize();
   }, [panelSize, props.isExpanded, props.theme, scheduleTerminalResize]);
 
+  const annotationClassName: string = css(createAnnotationStyle(props.theme));
+  const annotationCommentClassName: string = css(createAnnotationCommentStyle(props.theme));
+  const annotationEyebrowClassName: string = css(createAnnotationEyebrowStyle(props.theme));
+  const annotationMetaClassName: string = css(createAnnotationMetaStyle(props.theme));
+  const buttonGroupClassName: string = css(buttonGroupStyle);
+  const chromeClassName: string = css(createChromeStyle(props.theme, panelSize));
+  const expandedPanelClassName: string = css(createExpandedPanelStyle(props.theme, panelSize));
+  const headerClassName: string = css(createHeaderStyle(props.theme));
+  const headerTextClassName: string = css(headerTextStyle);
+  const statusClassName: string = css(createStatusStyle(props.theme, errorMessage !== null));
+  const terminalContainerClassName: string = css(terminalContainerStyle);
+  const terminalViewportClassName: string = css(createTerminalViewportStyle(props.theme));
+  const trayBadgeClassName: string = css(createTrayBadgeStyle(props.theme));
+  const trayOverlayButtonClassName: string = css(createTrayOverlayButtonStyle(props.theme));
+  const trayScaledContentClassName: string = css(createTrayScaledContentStyle(panelSize));
+  const trayShellClassName: string = css(createTrayShellStyle(props.theme, panelSize, isTrayMounted));
+  const trayTooltipClassName: string = css(createTrayTooltipStyle(props.theme));
+  const trayTooltipCommentClassName: string = css(createTrayTooltipCommentStyle(props.theme));
+
   const panelContent: JSX.Element = (
-    <div style={createChromeStyle(props.theme, panelSize)}>
-      <header data-testid="DevtoolsPiTerminalPanel--header" style={createHeaderStyle(props.theme)}>
-        <div style={headerTextStyle}>
+    <div class={chromeClassName}>
+      <header class={headerClassName} data-testid="DevtoolsPiTerminalPanel--header">
+        <div class={headerTextClassName}>
           <strong>Pi terminal</strong>
-          <span style={createStatusStyle(props.theme, errorMessage !== null)}>{errorMessage ?? statusText}</span>
+          <span class={statusClassName}>{errorMessage ?? statusText}</span>
         </div>
         {props.isExpanded ? (
-          <div style={buttonGroupStyle}>
+          <div class={buttonGroupClassName}>
             <Button
               testId="DevtoolsPiTerminalPanel--minimize"
               theme={props.theme}
@@ -268,10 +288,10 @@ export function DevtoolsPiTerminalPanel(props: IDevtoolsPiTerminalPanelProps): J
         ) : null}
       </header>
       {props.isExpanded ? (
-        <section data-testid="DevtoolsPiTerminalPanel--annotation" style={createAnnotationStyle(props.theme)}>
-          <span style={createAnnotationEyebrowStyle(props.theme)}>Original annotation</span>
-          <strong style={createAnnotationCommentStyle(props.theme)}>{props.annotation.comment}</strong>
-          <div style={createAnnotationMetaStyle(props.theme)}>
+        <section class={annotationClassName} data-testid="DevtoolsPiTerminalPanel--annotation">
+          <span class={annotationEyebrowClassName}>Original annotation</span>
+          <strong class={annotationCommentClassName}>{props.annotation.comment}</strong>
+          <div class={annotationMetaClassName}>
             <span>{props.annotation.markers.length} markers</span>
             <span>{props.annotation.title}</span>
             <span>{new URL(props.annotation.url).host}</span>
@@ -279,27 +299,27 @@ export function DevtoolsPiTerminalPanel(props: IDevtoolsPiTerminalPanelProps): J
           </div>
         </section>
       ) : null}
-      <div ref={terminalViewportReference} data-testid="DevtoolsPiTerminalPanel--terminal" style={createTerminalViewportStyle(props.theme)}>
-        <div ref={terminalContainerReference} style={terminalContainerStyle} />
+      <div ref={terminalViewportReference} class={terminalViewportClassName} data-testid="DevtoolsPiTerminalPanel--terminal">
+        <div ref={terminalContainerReference} class={terminalContainerClassName} />
       </div>
     </div>
   );
 
   if (props.isExpanded) {
     return (
-      <section data-testid="DevtoolsPiTerminalPanel" style={createExpandedPanelStyle(props.theme, panelSize)}>
+      <section class={expandedPanelClassName} data-testid="DevtoolsPiTerminalPanel">
         {panelContent}
       </section>
     );
   }
 
   return (
-    <section data-testid="DevtoolsPiTerminalPanel" style={createTrayShellStyle(props.theme, panelSize, isTrayMounted)}>
-      <div style={createTrayScaledContentStyle(panelSize)}>{panelContent}</div>
+    <section class={trayShellClassName} data-testid="DevtoolsPiTerminalPanel">
+      <div class={trayScaledContentClassName}>{panelContent}</div>
       <button
         aria-label="Expand Pi terminal preview"
+        class={trayOverlayButtonClassName}
         data-testid="DevtoolsPiTerminalPanel--expand"
-        style={createTrayOverlayButtonStyle(props.theme)}
         type="button"
         onBlur={(): void => {
           setIsTrayHoverVisible(false);
@@ -315,12 +335,12 @@ export function DevtoolsPiTerminalPanel(props: IDevtoolsPiTerminalPanelProps): J
           setIsTrayHoverVisible(false);
         }}
       >
-        <span style={createTrayBadgeStyle(props.theme)}>{errorMessage ?? statusText}</span>
+        <span class={trayBadgeClassName}>{errorMessage ?? statusText}</span>
       </button>
       {isTrayHoverVisible ? (
-        <div data-testid="DevtoolsPiTerminalPanel--tooltip" style={createTrayTooltipStyle(props.theme)}>
-          <span style={createAnnotationEyebrowStyle(props.theme)}>Original annotation</span>
-          <strong style={createTrayTooltipCommentStyle(props.theme)}>{props.annotation.comment}</strong>
+        <div class={trayTooltipClassName} data-testid="DevtoolsPiTerminalPanel--tooltip">
+          <span class={annotationEyebrowClassName}>Original annotation</span>
+          <strong class={trayTooltipCommentClassName}>{props.annotation.comment}</strong>
         </div>
       ) : null}
     </section>
@@ -334,14 +354,14 @@ function appendPiSessionParameters(websocketUrl: URL, sessionId: string): URL {
   return websocketUrl;
 }
 
-function createAnnotationCommentStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createAnnotationCommentStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     fontSize: theme.fontSizes.lg,
     lineHeight: 1.45,
   };
 }
 
-function createAnnotationEyebrowStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createAnnotationEyebrowStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     color: theme.colors.mutedForeground,
     fontSize: theme.fontSizes.sm,
@@ -350,7 +370,7 @@ function createAnnotationEyebrowStyle(theme: IDevtoolsTheme): JSX.CSSProperties 
   };
 }
 
-function createAnnotationMetaStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createAnnotationMetaStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     display: "flex",
     flexWrap: "wrap",
@@ -360,7 +380,7 @@ function createAnnotationMetaStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
   };
 }
 
-function createAnnotationStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createAnnotationStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     display: "grid",
     gap: theme.spacing.xs,
@@ -371,7 +391,7 @@ function createAnnotationStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
   };
 }
 
-function createChromeStyle(theme: IDevtoolsTheme, panelSize: IPanelSize): JSX.CSSProperties {
+function createChromeStyle(theme: IDevtoolsTheme, panelSize: IPanelSize): CSSObject {
   return {
     width: `${panelSize.width}px`,
     height: `${panelSize.height}px`,
@@ -388,7 +408,7 @@ function createChromeStyle(theme: IDevtoolsTheme, panelSize: IPanelSize): JSX.CS
   };
 }
 
-function createExpandedPanelStyle(theme: IDevtoolsTheme, panelSize: IPanelSize): JSX.CSSProperties {
+function createExpandedPanelStyle(theme: IDevtoolsTheme, panelSize: IPanelSize): CSSObject {
   return {
     position: "fixed",
     top: "50%",
@@ -413,7 +433,7 @@ function createExitStatusText(exitCode: number | null, signalCode: string | null
   return `Pi exited with code ${exitCode}.`;
 }
 
-function createHeaderStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createHeaderStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     display: "flex",
     justifyContent: "space-between",
@@ -422,7 +442,7 @@ function createHeaderStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
   };
 }
 
-function createStatusStyle(theme: IDevtoolsTheme, isError: boolean): JSX.CSSProperties {
+function createStatusStyle(theme: IDevtoolsTheme, isError: boolean): CSSObject {
   return {
     color: isError ? theme.colors.dangerForeground : theme.colors.mutedForeground,
     fontSize: theme.fontSizes.sm,
@@ -430,7 +450,7 @@ function createStatusStyle(theme: IDevtoolsTheme, isError: boolean): JSX.CSSProp
   };
 }
 
-function createTerminalViewportStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createTerminalViewportStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     minHeight: 0,
     overflow: "hidden",
@@ -440,7 +460,7 @@ function createTerminalViewportStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
   };
 }
 
-function createTrayBadgeStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createTrayBadgeStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     position: "absolute",
     left: theme.spacing.xs,
@@ -458,7 +478,7 @@ function createTrayBadgeStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
   };
 }
 
-function createTrayOverlayButtonStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createTrayOverlayButtonStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     position: "absolute",
     inset: 0,
@@ -470,7 +490,7 @@ function createTrayOverlayButtonStyle(theme: IDevtoolsTheme): JSX.CSSProperties 
   };
 }
 
-function createTrayScaledContentStyle(panelSize: IPanelSize): JSX.CSSProperties {
+function createTrayScaledContentStyle(panelSize: IPanelSize): CSSObject {
   return {
     position: "absolute",
     left: 0,
@@ -483,7 +503,7 @@ function createTrayScaledContentStyle(panelSize: IPanelSize): JSX.CSSProperties 
   };
 }
 
-function createTrayShellStyle(theme: IDevtoolsTheme, panelSize: IPanelSize, isTrayMounted: boolean): JSX.CSSProperties {
+function createTrayShellStyle(theme: IDevtoolsTheme, panelSize: IPanelSize, isTrayMounted: boolean): CSSObject {
   return {
     position: "relative",
     flex: "0 0 auto",
@@ -502,14 +522,14 @@ function createTrayShellStyle(theme: IDevtoolsTheme, panelSize: IPanelSize, isTr
   };
 }
 
-function createTrayTooltipCommentStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createTrayTooltipCommentStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     color: theme.colors.foreground,
     lineHeight: 1.45,
   };
 }
 
-function createTrayTooltipStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createTrayTooltipStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     position: "absolute",
     left: 0,
@@ -535,8 +555,12 @@ function createXtermTheme(theme: IDevtoolsTheme): NonNullable<ConstructorParamet
   };
 }
 
-function ensureXtermStylesheet(): void {
-  if (document.getElementById(xtermStylesheetId) !== null) {
+function ensureXtermStylesheet(rootNode: Node): void {
+  if (!(rootNode instanceof ShadowRoot)) {
+    throw new Error("Pi terminal must render inside a shadow root.");
+  }
+
+  if (rootNode.getElementById(xtermStylesheetId) !== null) {
     return;
   }
 
@@ -545,7 +569,7 @@ function ensureXtermStylesheet(): void {
   stylesheetLink.id = xtermStylesheetId;
   stylesheetLink.rel = "stylesheet";
   stylesheetLink.href = XTERM_STYLESHEET_PATH;
-  document.head.append(stylesheetLink);
+  rootNode.append(stylesheetLink);
 }
 
 function parsePiTerminalServerMessage(messageText: string): PiTerminalServerMessage | null {
@@ -638,16 +662,16 @@ function terminateSession(websocket: WebSocket | null): void {
   }
 }
 
-const buttonGroupStyle: JSX.CSSProperties = {
+const buttonGroupStyle: CSSObject = {
   display: "flex",
   gap: "8px",
 };
 
-const headerTextStyle: JSX.CSSProperties = {
+const headerTextStyle: CSSObject = {
   display: "grid",
 };
 
-const terminalContainerStyle: JSX.CSSProperties = {
+const terminalContainerStyle: CSSObject = {
   width: "100%",
   height: "100%",
 };

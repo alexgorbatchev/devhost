@@ -1,7 +1,7 @@
+import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "preact";
 
-import type { IAnnotationSubmitDetail } from "../annotationComposer/types";
-import { type IDevtoolsTheme } from "../../shared";
+import { css, type IDevtoolsTheme } from "../../shared";
 import { DevtoolsPiTerminalPanel } from "./DevtoolsPiTerminalPanel";
 import type { IPiTerminalSession } from "./types";
 
@@ -21,8 +21,12 @@ export function DevtoolsPiTerminalTray(props: IDevtoolsPiTerminalTrayProps): JSX
     return null;
   }
 
+  const dockClassName: string = css(createDockStyle(props.theme));
+  const rootClassName: string = css(createRootStyle(props.theme));
+  const sessionListClassName: string = css(createSessionListStyle(props.theme));
+
   return (
-    <div data-testid="DevtoolsPiTerminalTray" style={createRootStyle(props.theme)}>
+    <div class={rootClassName} data-testid="DevtoolsPiTerminalTray">
       {expandedSession !== undefined ? (
         <DevtoolsPiTerminalPanel
           annotation={expandedSession.annotation}
@@ -39,8 +43,8 @@ export function DevtoolsPiTerminalTray(props: IDevtoolsPiTerminalTrayProps): JSX
         />
       ) : null}
       {minimizedSessions.length > 0 ? (
-        <div data-testid="DevtoolsPiTerminalTray--dock" style={createDockStyle(props.theme)}>
-          <div data-testid="DevtoolsPiTerminalTray--session-list" style={createSessionListStyle(props.theme)}>
+        <div class={dockClassName} data-testid="DevtoolsPiTerminalTray--dock">
+          <div class={sessionListClassName} data-testid="DevtoolsPiTerminalTray--session-list">
             {minimizedSessions.map((session: IPiTerminalSession) => {
               return (
                 <DevtoolsPiTerminalPanel
@@ -66,7 +70,7 @@ export function DevtoolsPiTerminalTray(props: IDevtoolsPiTerminalTrayProps): JSX
   );
 }
 
-function createDockStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createDockStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     position: "fixed",
     left: theme.spacing.sm,
@@ -79,7 +83,7 @@ function createDockStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
   };
 }
 
-function createRootStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createRootStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     position: "fixed",
     inset: 0,
@@ -88,7 +92,7 @@ function createRootStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
   };
 }
 
-function createSessionListStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createSessionListStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     display: "flex",
     alignItems: "flex-end",

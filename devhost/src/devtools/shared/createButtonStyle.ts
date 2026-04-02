@@ -1,4 +1,4 @@
-import type { JSX } from "preact";
+import type { CSSObject } from "@emotion/css/create-instance";
 
 import type { IDevtoolsTheme } from "./devtoolsTheme";
 
@@ -12,8 +12,8 @@ interface ICreateButtonStyleOptions {
 export function createButtonStyle(
   theme: IDevtoolsTheme,
   options: ICreateButtonStyleOptions,
-): JSX.CSSProperties {
-  const variantStyle: JSX.CSSProperties = createVariantStyle(theme, options.variant);
+): CSSObject {
+  const variantStyle: CSSObject = createVariantStyle(theme, options.variant);
 
   return {
     ...variantStyle,
@@ -32,7 +32,7 @@ export function createButtonStyle(
   };
 }
 
-function createVariantStyle(theme: IDevtoolsTheme, variant: ButtonVariant): JSX.CSSProperties {
+function createVariantStyle(theme: IDevtoolsTheme, variant: ButtonVariant): CSSObject {
   if (variant === "secondary") {
     return {
       border: `1px solid ${theme.colors.border}`,

@@ -8,6 +8,7 @@ import { DevtoolsPiTerminalTray, usePiTerminalSession } from "./features/piTermi
 import { DevtoolsServiceStatusPanel, useServiceHealth } from "./features/serviceStatusPanel";
 import {
   createCornerDockStyle,
+  css,
   DEVTOOLS_ROOT_ID,
   getDevtoolsTheme,
   type IDevtoolsTheme,
@@ -32,16 +33,17 @@ export function DevtoolsApp(): JSX.Element | null {
   const shouldRenderButtonFirst: boolean =
     devtoolsPosition === "top-left" || devtoolsPosition === "top-right";
 
+  const cornerDockClassName: string = css(
+    createCornerDockStyle(devtoolsTheme, {
+      devtoolsMinimapPosition: devtoolsMinimapPosition,
+      devtoolsPosition,
+      hasVisibleMinimap: shouldRenderMinimap,
+    }),
+  );
+
   return (
     <div id={DEVTOOLS_ROOT_ID} data-devhost-devtools="" data-testid="DevtoolsApp">
-      <div
-        data-testid="DevtoolsApp--corner-dock"
-        style={createCornerDockStyle(devtoolsTheme, {
-          devtoolsMinimapPosition: devtoolsMinimapPosition,
-          devtoolsPosition,
-          hasVisibleMinimap: shouldRenderMinimap,
-        })}
-      >
+      <div class={cornerDockClassName} data-testid="DevtoolsApp--corner-dock">
         {shouldRenderButtonFirst ? (
           <DevtoolsAnnotationComposer onSubmit={submitAnnotation} stackName={stackName} theme={devtoolsTheme} />
         ) : null}

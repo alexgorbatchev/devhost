@@ -1,4 +1,4 @@
-import type { JSX } from "preact";
+import type { CSSObject } from "@emotion/css/create-instance";
 
 import type { IDevtoolsTheme } from "../../shared/devtoolsTheme";
 import type { ServiceLogEntry } from "../../shared/types";
@@ -6,7 +6,7 @@ import type { ServiceLogEntry } from "../../shared/types";
 export function createLogPreviewLineStyle(
   theme: IDevtoolsTheme,
   stream: ServiceLogEntry["stream"],
-): JSX.CSSProperties {
+): CSSObject {
   const isStderr: boolean = stream === "stderr";
 
   return {

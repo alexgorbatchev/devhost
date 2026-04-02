@@ -10,6 +10,7 @@ export const DEVTOOLS_CONTROL_TOKEN_HEADER_NAME: string = "x-devhost-control-tok
 export const DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME: string = "token";
 export const PI_SESSION_ID_QUERY_PARAMETER_NAME: string = "sessionId";
 export const DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME: string = "__DEVHOST_INJECTED_CONFIG__";
+export const DEVTOOLS_HOST_ID: string = "devhost-devtools-host";
 export const DEVTOOLS_ROOT_ID: string = "devhost-services-panel";
 export const DEVTOOLS_ROOT_ATTRIBUTE_NAME: string = "data-devhost-devtools";
 export const maximumRetainedLogEntries: number = 512;

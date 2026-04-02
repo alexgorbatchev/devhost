@@ -1,7 +1,8 @@
+import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "preact";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 
-import { Button, type IDevtoolsTheme } from "../../shared";
+import { Button, css, type IDevtoolsTheme } from "../../shared";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME, DEVTOOLS_ROOT_ID } from "../../shared/constants";
 import type { IAnnotationSubmitResult } from "../piTerminal/types";
 import { collectElementSnapshot, identifyElement } from "./collectElementSnapshot";
@@ -345,6 +346,14 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
   const isHoveredElementSelected: boolean =
     hoveredElement !== null && selectedElements.some((selection: ISelectedElementDraft): boolean => selection.element === hoveredElement);
   const buttonLabel: string = hasDraft ? (isSubmitting ? "Starting Pi…" : "Cancel draft") : "Annotate";
+  const errorClassName: string = css(createSubmissionErrorStyle(props.theme));
+  const markerListClassName: string = css(markerListStyle);
+  const markerListItemClassName: string = css(markerListItemStyle);
+  const markerListTextClassName: string = css(markerListTextStyle);
+  const overlayClassName: string = css(overlayStyle);
+  const popupActionsClassName: string = css(popupActionsStyle);
+  const popupHeaderClassName: string = css(popupHeaderStyle);
+  const popupMetaClassName: string = css(popupMetaStyle);
 
   return (
     <div data-testid="DevtoolsAnnotationComposer">
@@ -366,11 +375,11 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
       >
         {buttonLabel}
       </Button>
-      <div style={overlayStyle}>
+      <div class={overlayClassName}>
         {isSelectionMode && hoveredRectangle !== null && !isHoveredElementSelected ? (
           <div
+            class={css(createHoverHighlightStyle(props.theme, hoveredRectangle))}
             data-testid="DevtoolsAnnotationComposer--hover-highlight"
-            style={createHoverHighlightStyle(props.theme, hoveredRectangle)}
           />
         ) : null}
         {markerRenderModels.map((marker: IMarkerRenderModel) => {
@@ -380,8 +389,8 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
 
           return (
             <div key={marker.markerNumber}>
-              <div style={createSelectionHighlightStyle(props.theme, marker)} />
-              <div data-testid="DevtoolsAnnotationComposer--marker" style={createMarkerStyle(props.theme, marker)}>
+              <div class={css(createSelectionHighlightStyle(props.theme, marker))} />
+              <div class={css(createMarkerStyle(props.theme, marker))} data-testid="DevtoolsAnnotationComposer--marker">
                 {marker.markerNumber}
               </div>
             </div>
@@ -392,7 +401,7 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
         <div
           ref={popupReference}
           data-testid="DevtoolsAnnotationComposer--popup"
-          style={createPopupStyle(props.theme, popupCoordinates.left, popupCoordinates.top)}
+          class={css(createPopupStyle(props.theme, popupCoordinates.left, popupCoordinates.top))}
           onClick={(event: JSX.TargetedMouseEvent<HTMLDivElement>): void => {
             event.stopPropagation();
           }}
@@ -400,18 +409,18 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
             event.stopPropagation();
           }}
         >
-          <div style={popupHeaderStyle}>
+          <div class={popupHeaderClassName}>
             <strong>Annotation draft</strong>
-            <span style={popupMetaStyle}>
+            <span class={popupMetaClassName}>
               {isSubmitting ? "Starting Pi session…" : `${selectedElements.length} markers selected`}
             </span>
           </div>
-          <ol data-testid="DevtoolsAnnotationComposer--marker-list" style={markerListStyle}>
+          <ol class={markerListClassName} data-testid="DevtoolsAnnotationComposer--marker-list">
             {selectedElements.map((selection: ISelectedElementDraft) => {
               return (
-                <li key={selection.markerNumber} style={markerListItemStyle}>
-                  <span style={createMarkerPillStyle(props.theme)}>{selection.markerNumber}</span>
-                  <span style={markerListTextStyle}>
+                <li key={selection.markerNumber} class={markerListItemClassName}>
+                  <span class={css(createMarkerPillStyle(props.theme))}>{selection.markerNumber}</span>
+                  <span class={markerListTextClassName}>
                     <strong>#{selection.markerNumber}</strong> {selection.elementName}
                   </span>
                 </li>
@@ -423,18 +432,18 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
             data-testid="DevtoolsAnnotationComposer--comment"
             placeholder="Describe the change and refer to markers like #1, #2, #3…"
             rows={5}
-            style={createTextareaStyle(props.theme)}
+            class={css(createTextareaStyle(props.theme))}
             value={comment}
             onInput={(event: JSX.TargetedEvent<HTMLTextAreaElement, Event>): void => {
               setComment(event.currentTarget.value);
             }}
           />
           {submissionErrorMessage !== null ? (
-            <div data-testid="DevtoolsAnnotationComposer--error" style={createSubmissionErrorStyle(props.theme)}>
+            <div class={errorClassName} data-testid="DevtoolsAnnotationComposer--error">
               {submissionErrorMessage}
             </div>
           ) : null}
-          <div style={popupActionsStyle}>
+          <div class={popupActionsClassName}>
             <Button
               disabled={isSubmitting}
               endEnhancer="Esc"
@@ -470,23 +479,23 @@ export function DevtoolsAnnotationComposer(props: IDevtoolsAnnotationComposerPro
   );
 }
 
-const overlayStyle: JSX.CSSProperties = {
+const overlayStyle: CSSObject = {
   position: "fixed",
   inset: 0,
   pointerEvents: "none",
 };
 
-const popupHeaderStyle: JSX.CSSProperties = {
+const popupHeaderStyle: CSSObject = {
   display: "grid",
   gap: "4px",
 };
 
-const popupMetaStyle: JSX.CSSProperties = {
+const popupMetaStyle: CSSObject = {
   fontSize: "12px",
   opacity: 0.72,
 };
 
-function createSubmissionErrorStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createSubmissionErrorStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     color: theme.colors.dangerForeground,
     fontSize: theme.fontSizes.sm,
@@ -494,7 +503,7 @@ function createSubmissionErrorStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
   };
 }
 
-const markerListStyle: JSX.CSSProperties = {
+const markerListStyle: CSSObject = {
   display: "grid",
   gap: "8px",
   listStyle: "none",
@@ -504,25 +513,25 @@ const markerListStyle: JSX.CSSProperties = {
   padding: 0,
 };
 
-const markerListItemStyle: JSX.CSSProperties = {
+const markerListItemStyle: CSSObject = {
   display: "grid",
   gridTemplateColumns: "auto 1fr",
   gap: "8px",
   alignItems: "center",
 };
 
-const markerListTextStyle: JSX.CSSProperties = {
+const markerListTextStyle: CSSObject = {
   alignSelf: "center",
   lineHeight: 1.35,
 };
 
-const popupActionsStyle: JSX.CSSProperties = {
+const popupActionsStyle: CSSObject = {
   display: "flex",
   justifyContent: "flex-end",
   gap: "8px",
 };
 
-const shortcutBadgeHoverStyle: JSX.CSSProperties = {
+const shortcutBadgeHoverStyle: CSSObject = {
   color: "rgba(255, 255, 255, 1)",
 };
 
@@ -531,7 +540,7 @@ const actionButtonShortcutBackground: string = "rgba(255, 255, 255, 0.1)";
 const actionButtonSubmitForeground: string = "rgba(255, 255, 255, 1)";
 const actionButtonHoverRing: string = "rgba(255, 255, 255, 0.22)";
 
-function createActionButtonHoverStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createActionButtonHoverStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     border: `1px solid ${actionButtonSubmitForeground}`,
     boxShadow: `0 0 0 1px ${actionButtonHoverRing}, ${theme.shadows.floating}`,
@@ -539,7 +548,7 @@ function createActionButtonHoverStyle(theme: IDevtoolsTheme): JSX.CSSProperties 
   };
 }
 
-function createCancelButtonStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createCancelButtonStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     border: `1px solid ${theme.colors.border}`,
     boxShadow: theme.shadows.floating,
@@ -547,7 +556,7 @@ function createCancelButtonStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
   };
 }
 
-function createShortcutBadgeStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createShortcutBadgeStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     minWidth: "32px",
     padding: `0 ${theme.spacing.xs}`,
@@ -562,7 +571,7 @@ function createShortcutBadgeStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
   };
 }
 
-function createSubmitButtonStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createSubmitButtonStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     border: `1px solid ${theme.colors.selectionBorder}`,
     boxShadow: theme.shadows.floating,
@@ -571,7 +580,7 @@ function createSubmitButtonStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
   };
 }
 
-function createHoverHighlightStyle(theme: IDevtoolsTheme, hoveredRectangle: DOMRect): JSX.CSSProperties {
+function createHoverHighlightStyle(theme: IDevtoolsTheme, hoveredRectangle: DOMRect): CSSObject {
   return {
     position: "fixed",
     top: hoveredRectangle.top,
@@ -587,7 +596,7 @@ function createHoverHighlightStyle(theme: IDevtoolsTheme, hoveredRectangle: DOMR
   };
 }
 
-function createSelectionHighlightStyle(theme: IDevtoolsTheme, marker: IMarkerRenderModel): JSX.CSSProperties {
+function createSelectionHighlightStyle(theme: IDevtoolsTheme, marker: IMarkerRenderModel): CSSObject {
   return {
     position: "fixed",
     top: marker.elementTop,
@@ -603,7 +612,7 @@ function createSelectionHighlightStyle(theme: IDevtoolsTheme, marker: IMarkerRen
   };
 }
 
-function createMarkerStyle(theme: IDevtoolsTheme, marker: IMarkerRenderModel): JSX.CSSProperties {
+function createMarkerStyle(theme: IDevtoolsTheme, marker: IMarkerRenderModel): CSSObject {
   return {
     position: "fixed",
     top: marker.markerTop,
@@ -624,7 +633,7 @@ function createMarkerStyle(theme: IDevtoolsTheme, marker: IMarkerRenderModel): J
   };
 }
 
-function createPopupStyle(theme: IDevtoolsTheme, left: number, top: number): JSX.CSSProperties {
+function createPopupStyle(theme: IDevtoolsTheme, left: number, top: number): CSSObject {
   return {
     position: "fixed",
     top,
@@ -645,7 +654,7 @@ function createPopupStyle(theme: IDevtoolsTheme, left: number, top: number): JSX
   };
 }
 
-function createTextareaStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createTextareaStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     width: "100%",
     minHeight: "96px",
@@ -661,7 +670,7 @@ function createTextareaStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
   };
 }
 
-function createMarkerPillStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
+function createMarkerPillStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     minWidth: `${markerSize}px`,
     height: `${markerSize}px`,
@@ -705,6 +714,8 @@ function isInteractionInsideDevtools(target: EventTarget | null): boolean {
 }
 
 function createSelectionCursorStyleText(): string {
+  // Intentionally document-scoped: selection mode targets host-page elements outside the devtools shadow root,
+  // so the cursor affordance must temporarily apply beyond the injected UI boundary.
   return `
     body * {
       cursor: crosshair !important;
