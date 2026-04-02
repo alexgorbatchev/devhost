@@ -1,15 +1,11 @@
 import type { JSX } from "preact";
 
-import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../../../stackTypes";
 import type { IDevtoolsTheme } from "../../shared";
 import type { ServiceHealth } from "../../shared/types";
 import { selectVisibleServices } from "./selectVisibleServices";
 
 interface IDevtoolsServiceStatusPanelProps {
-  devtoolsMinimapPosition: DevtoolsMinimapPosition;
-  devtoolsPosition: DevtoolsPosition;
   errorMessage: string | null;
-  hasVisibleMinimap: boolean;
   services: ServiceHealth[];
   theme: IDevtoolsTheme;
 }
@@ -26,12 +22,7 @@ export function DevtoolsServiceStatusPanel(props: IDevtoolsServiceStatusPanelPro
     <section
       aria-label="devhost services"
       data-testid="DevtoolsServiceStatusPanel"
-      style={createPanelStyle(
-        props.theme,
-        props.devtoolsPosition,
-        props.devtoolsMinimapPosition,
-        props.hasVisibleMinimap,
-      )}
+      style={createPanelStyle(props.theme)}
     >
       {props.errorMessage !== null ? <div style={createErrorStyle(props.theme)}>{props.errorMessage}</div> : null}
       {visibleServices.length > 0 ? (
@@ -64,30 +55,8 @@ const rowStyle: JSX.CSSProperties = {
   gap: "6px",
 };
 
-function createPanelStyle(
-  theme: IDevtoolsTheme,
-  devtoolsPosition: DevtoolsPosition,
-  devtoolsMinimapPosition: DevtoolsMinimapPosition,
-  hasVisibleMinimap: boolean,
-): JSX.CSSProperties {
-  const verticalPositionStyle: JSX.CSSProperties =
-    devtoolsPosition === "top-left" || devtoolsPosition === "top-right"
-      ? { top: theme.spacing.sm }
-      : { bottom: theme.spacing.sm };
-  const horizontalPositionStyle: JSX.CSSProperties = createHorizontalPositionStyle(
-    theme,
-    devtoolsPosition,
-    devtoolsMinimapPosition,
-    hasVisibleMinimap,
-  );
-
+function createPanelStyle(theme: IDevtoolsTheme): JSX.CSSProperties {
   return {
-    ...verticalPositionStyle,
-    ...horizontalPositionStyle,
-    position: "fixed",
-    zIndex: theme.zIndices.floating,
-    width: "fit-content",
-    maxWidth: createPanelMaxWidth(theme, hasVisibleMinimap),
     padding: `${theme.spacing.xxs} ${theme.spacing.xs}`,
     border: `1px solid ${theme.colors.border}`,
     borderRadius: theme.radii.md,
@@ -97,34 +66,6 @@ function createPanelStyle(
     fontSize: theme.fontSizes.sm,
     boxShadow: theme.shadows.floating,
   };
-}
-
-function createPanelMaxWidth(theme: IDevtoolsTheme, hasVisibleMinimap: boolean): string {
-  if (!hasVisibleMinimap) {
-    return "calc(100vw - 20px)";
-  }
-
-  return `calc(100vw - 20px - ${theme.sizes.logMinimapPeekWidth} - ${theme.spacing.xxs})`;
-}
-
-function createHorizontalPositionStyle(
-  theme: IDevtoolsTheme,
-  devtoolsPosition: DevtoolsPosition,
-  devtoolsMinimapPosition: DevtoolsMinimapPosition,
-  hasVisibleMinimap: boolean,
-): JSX.CSSProperties {
-  const panelSide: DevtoolsMinimapPosition =
-    devtoolsPosition === "top-left" || devtoolsPosition === "bottom-left" ? "left" : "right";
-  const baseOffset: string = theme.spacing.sm;
-
-  if (!hasVisibleMinimap || panelSide !== devtoolsMinimapPosition) {
-    return panelSide === "left" ? { left: baseOffset } : { right: baseOffset };
-  }
-
-  const shiftedOffset: string =
-    `calc(${baseOffset} + ${theme.sizes.logMinimapPeekWidth} + ${theme.spacing.xxs})`;
-
-  return panelSide === "left" ? { left: shiftedOffset } : { right: shiftedOffset };
 }
 
 function createErrorStyle(theme: IDevtoolsTheme): JSX.CSSProperties {

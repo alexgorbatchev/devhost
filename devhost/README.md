@@ -29,6 +29,7 @@ It also has Caddy lifecycle commands:
 - prefixes its own logs with the manifest `name` in manifest mode, falling back to `[devhost]`
 - prefixes child service logs with `[service-name]`
 - optionally injects a small devtools UI into HTML document navigations
+- includes an always-visible annotation button for selecting multiple page elements and drafting a comment
 - exposes devhost control routes under `/__devhost__/*`
 - includes a websocket status stream when devtools control routing is enabled
 
@@ -195,6 +196,16 @@ When devtools are enabled, routed traffic is split like this:
 - everything else → app directly
 
 That keeps assets, HMR, fetches, SSE, and WebSockets off the injection path.
+
+The injected UI now includes an always-visible `Annotate` button. In annotation mode:
+
+- click one or more page elements to place numbered markers
+- write a comment that references markers like `#1` and `#2`
+- click `Submit` to dispatch a `window` custom event named `devhost:annotation-submit`
+- `Submit` also logs the emitted payload to the browser console for now
+- click `Cancel` or press `Escape` to discard the draft
+
+The submitted event detail contains the current stack name, page URL/title, comment text, and collected per-marker element metadata.
 
 If manifest `devtools = false`, devhost does not mount these control routes for that stack.
 

@@ -20,6 +20,8 @@ export interface IDevtoolsTheme {
     logPreviewStderrBackground: string;
     logPreviewStderrForeground: string;
     mutedForeground: string;
+    selectionBackground: string;
+    selectionBorder: string;
     successBackground: string;
     successGlow: string;
   };
@@ -129,6 +131,8 @@ const lightDevtoolsTheme: IDevtoolsTheme = {
     logPreviewStderrBackground: "rgba(239, 68, 68, 0.12)",
     logPreviewStderrForeground: "#991b1b",
     mutedForeground: "#6b7280",
+    selectionBackground: "rgba(59, 130, 246, 0.12)",
+    selectionBorder: "rgba(59, 130, 246, 0.55)",
     successBackground: "#22c55e",
     successGlow: "rgba(34, 197, 94, 0.45)",
   },
@@ -161,6 +165,8 @@ const darkDevtoolsTheme: IDevtoolsTheme = {
     logPreviewStderrBackground: "rgba(248, 113, 113, 0.18)",
     logPreviewStderrForeground: "#fca5a5",
     mutedForeground: "#94a3b8",
+    selectionBackground: "rgba(96, 165, 250, 0.18)",
+    selectionBorder: "rgba(96, 165, 250, 0.6)",
     successBackground: "#4ade80",
     successGlow: "rgba(74, 222, 128, 0.38)",
   },
