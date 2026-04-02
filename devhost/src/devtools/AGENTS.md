@@ -4,6 +4,8 @@ This `AGENTS.md` file must be kept up to date.
 
 ## Styling isolation
 
+Its vital that when devtools are injected into the user's web application, CSS that devtools uses/defines must never ever conflict or affect the host application.
+
 - All visual styling must be applied directly through JSX `style={...}` props.
 - Do not use external stylesheets, CSS modules, `<style>` tags, or global class names.
 - Exception: `@xterm/xterm` may load its required stylesheet and class names for the interactive terminal feature. Keep that exception narrow and do not reuse xterm's stylesheet mechanism for unrelated devtools UI.
