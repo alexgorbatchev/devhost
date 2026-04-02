@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
-import type { ILogMinimapMark } from "../devtools/createLogMinimapMarks";
-import type { ILogPreviewRange } from "../devtools/createLogPreviewRange";
-import { resolveLogPreviewOverlay } from "../devtools/resolveLogPreviewOverlay";
+import type { ILogMinimapMark } from "../devtools/features/minimap/createLogMinimapMarks";
+import type { ILogPreviewRange } from "../devtools/features/minimap/createLogPreviewRange";
+import { resolveLogPreviewOverlay } from "../devtools/features/minimap/resolveLogPreviewOverlay";
 
 describe("resolveLogPreviewOverlay", () => {
   test("returns overlay bounds for the visible preview range", () => {

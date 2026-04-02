@@ -22,6 +22,13 @@ This `AGENTS.md` file must be kept up to date.
 - Repeated hardcoded visual values are not allowed when they belong in the shared theme.
 - Component styles must compose from the shared theme first and add only the minimum component-local overrides.
 
+## Feature organization
+
+- Organize devtools code by feature first.
+- Put feature-owned components, hooks, and helpers under `features/<featureName>/`.
+- Keep cross-feature theme, config, websocket helpers, and shared types under `shared/`.
+- Do not leave feature-specific logic in the `src/devtools/` root when it belongs to a concrete feature folder.
+
 ## Implementation intent
 
 - Keep the theme small and explicit.

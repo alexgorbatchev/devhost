@@ -1,23 +1,21 @@
 import { useEffect, useState } from "preact/hooks";
 
-import { markServicesAsUnavailable } from "../markServicesAsUnavailable";
-import { HEALTH_WEBSOCKET_PATH } from "./constants";
-import { createDevtoolsWebSocketUrl } from "./createDevtoolsWebSocketUrl";
-import { readDevtoolsStackName } from "./readDevtoolsStackName";
-import type { HealthResponse, ServiceHealth } from "./types";
+import { HEALTH_WEBSOCKET_PATH } from "../../shared/constants";
+import { createDevtoolsWebSocketUrl } from "../../shared/createDevtoolsWebSocketUrl";
+import { readDevtoolsStackName } from "../../shared/readDevtoolsStackName";
+import type { HealthResponse, ServiceHealth } from "../../shared/types";
+import { markServicesAsUnavailable } from "./markServicesAsUnavailable";
 
 const normalClosureCode: number = 1_000;
 
 interface IUseServiceHealthResult {
   errorMessage: string | null;
-  isConnected: boolean;
   services: ServiceHealth[];
 }
 
 export function useServiceHealth(): IUseServiceHealthResult {
   const [services, setServices] = useState<ServiceHealth[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isConnected, setIsConnected] = useState<boolean>(false);
   const devtoolsStackName: string = readDevtoolsStackName();
 
   useEffect(() => {
@@ -25,7 +23,6 @@ export function useServiceHealth(): IUseServiceHealthResult {
     let isDisposed: boolean = false;
 
     const handleOpen = (): void => {
-      setIsConnected(true);
       setErrorMessage(null);
     };
 
@@ -46,13 +43,8 @@ export function useServiceHealth(): IUseServiceHealthResult {
       setErrorMessage(null);
     };
 
-    const handleError = (): void => {
-      setIsConnected(false);
-    };
-
     const handleClose = (event: CloseEvent): void => {
       websocket = null;
-      setIsConnected(false);
 
       if (isDisposed || event.code === normalClosureCode) {
         return;
@@ -67,7 +59,6 @@ export function useServiceHealth(): IUseServiceHealthResult {
     websocket = new WebSocket(createDevtoolsWebSocketUrl(HEALTH_WEBSOCKET_PATH, window.location));
     websocket.addEventListener("open", handleOpen);
     websocket.addEventListener("message", handleMessage);
-    websocket.addEventListener("error", handleError);
     websocket.addEventListener("close", handleClose);
 
     return () => {
@@ -78,7 +69,6 @@ export function useServiceHealth(): IUseServiceHealthResult {
 
   return {
     errorMessage,
-    isConnected,
     services,
   };
 }
@@ -113,4 +103,3 @@ function isHealthResponse(value: unknown): value is HealthResponse {
     );
   });
 }
-

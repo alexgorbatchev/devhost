@@ -1,6 +1,6 @@
 import { render } from "preact";
 
-import { DEVTOOLS_ROOT_ID } from "./constants";
+import { DEVTOOLS_ROOT_ID } from "./shared";
 import { DevtoolsApp } from "./DevtoolsApp";
 
 export function renderDevtools(): void {

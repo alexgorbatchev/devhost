@@ -5,14 +5,14 @@ import {
   INJECTED_SCRIPT_PATH,
   LOGS_WEBSOCKET_PATH,
   maximumRetainedLogEntries,
-} from "./devtools/constants";
+} from "./devtools/shared/constants";
 import type {
   HealthResponse,
   ServiceLogEntry,
   ServiceLogSnapshotMessage,
   ServiceLogStream,
   ServiceLogUpdateMessage,
-} from "./devtools/types";
+} from "./devtools/shared/types";
 import type { DevtoolsMinimapPosition, DevtoolsPosition } from "./stackTypes";
 
 const healthTopicName: string = "devhost-health";

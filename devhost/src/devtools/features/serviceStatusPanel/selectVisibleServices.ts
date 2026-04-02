@@ -1,4 +1,4 @@
-import type { ServiceHealth } from "./devtools/types";
+import type { ServiceHealth } from "../../shared/types";
 
 export function selectVisibleServices(services: ServiceHealth[]): ServiceHealth[] {
   if (services.length === 0) {

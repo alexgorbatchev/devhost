@@ -1,4 +1,4 @@
-import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../stackTypes";
+import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../../stackTypes";
 import { DEVHOST_SERVICE_NAME, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "./constants";
 
 export interface IInjectedDevtoolsConfig {

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import type { ILogMinimapMark } from "../devtools/createLogMinimapMarks";
-import { resolveLogPreviewLayout } from "../devtools/resolveLogPreviewLayout";
+import type { ILogMinimapMark } from "../devtools/features/minimap/createLogMinimapMarks";
+import { resolveLogPreviewLayout } from "../devtools/features/minimap/resolveLogPreviewLayout";
 
 function createMark(top: number, entryIndex: number): ILogMinimapMark {
   return {

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 
-import { HEALTH_WEBSOCKET_PATH, LOGS_WEBSOCKET_PATH } from "../devtools/constants";
-import type { HealthResponse } from "../devtools/types";
+import { HEALTH_WEBSOCKET_PATH, LOGS_WEBSOCKET_PATH } from "../devtools/shared/constants";
+import type { HealthResponse } from "../devtools/shared/types";
 import { startDevtoolsControlServer } from "../startDevtoolsControlServer";
 
 const stopFunctions: Array<() => Promise<void>> = [];

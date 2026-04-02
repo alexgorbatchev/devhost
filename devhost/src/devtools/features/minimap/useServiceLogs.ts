@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 
-import { LOGS_WEBSOCKET_PATH, maximumRetainedLogEntries } from "./constants";
-import { createDevtoolsWebSocketUrl } from "./createDevtoolsWebSocketUrl";
-import type { ServiceLogEntry, ServiceLogMessage } from "./types";
+import { LOGS_WEBSOCKET_PATH, maximumRetainedLogEntries } from "../../shared/constants";
+import { createDevtoolsWebSocketUrl } from "../../shared/createDevtoolsWebSocketUrl";
+import type { ServiceLogEntry, ServiceLogMessage } from "../../shared/types";
 
 const normalClosureCode: number = 1_000;
 

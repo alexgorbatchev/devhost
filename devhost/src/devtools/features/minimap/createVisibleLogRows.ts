@@ -1,4 +1,4 @@
-import type { ServiceLogEntry, ServiceLogStream } from "./types";
+import type { ServiceLogEntry, ServiceLogStream } from "../../shared/types";
 
 const maximumCharactersPerWrappedRow: number = 80;
 const markGapInPixels: number = 1;

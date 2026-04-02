@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import type { ILogMinimapMark } from "../devtools/createLogMinimapMarks";
-import { resolveHoveredLogEntryIndex } from "../devtools/resolveHoveredLogEntryIndex";
+import type { ILogMinimapMark } from "../devtools/features/minimap/createLogMinimapMarks";
+import { resolveHoveredLogEntryIndex } from "../devtools/features/minimap/resolveHoveredLogEntryIndex";
 
 describe("resolveHoveredLogEntryIndex", () => {
   test("returns the closest visible row index for the mouse position", () => {

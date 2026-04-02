@@ -1,16 +1,16 @@
 import type { JSX } from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
-import type { DevtoolsMinimapPosition } from "../stackTypes";
+import type { DevtoolsMinimapPosition } from "../../../stackTypes";
+import type { IDevtoolsTheme } from "../../shared/devtoolsTheme";
+import type { ServiceLogEntry } from "../../shared/types";
 import { createLogMinimapMarksFromVisibleRows, type ILogMinimapMark } from "./createLogMinimapMarks";
 import { createLogPreviewLineStyle } from "./createLogPreviewLineStyle";
 import { createLogPreviewWindow } from "./createLogPreviewWindow";
 import { createVisibleLogRows, type IVisibleLogRow } from "./createVisibleLogRows";
-import type { IDevtoolsTheme } from "./devtoolsTheme";
 import { resolveHoveredLogRowIndex } from "./resolveHoveredLogRowIndex";
 import { resolveLogPreviewLayout } from "./resolveLogPreviewLayout";
 import { resolveLogPreviewOverlay } from "./resolveLogPreviewOverlay";
-import type { ServiceLogEntry } from "./types";
 
 interface IDevtoolsLogMinimapProps {
   entries: ServiceLogEntry[];

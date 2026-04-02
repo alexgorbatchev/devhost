@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { markServicesAsUnavailable } from "../markServicesAsUnavailable";
+import { markServicesAsUnavailable } from "../devtools/features/serviceStatusPanel/markServicesAsUnavailable";
 
 describe("markServicesAsUnavailable", () => {
   test("marks every known service as unavailable", () => {

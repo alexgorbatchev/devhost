@@ -55,6 +55,8 @@ The check script runs the native TypeScript typecheck and the coverage test suit
 - `src/validateManifest.ts` — Zod v4 schema + semantic validation
 - `src/routeUtils.ts` — route file management and managed Caddy reload logic
 - `src/devtools/` — injected browser UI code
+  - `src/devtools/features/` — feature-owned UI modules such as `minimap/` and `serviceStatusPanel/`
+  - `src/devtools/shared/` — cross-feature theme, config, transport, and shared types
 
 ## Logging rules
 

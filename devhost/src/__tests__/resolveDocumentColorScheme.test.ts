@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { resolveDocumentColorScheme } from "../devtools/resolveDocumentColorScheme";
+import { resolveDocumentColorScheme } from "../devtools/shared/resolveDocumentColorScheme";
 
 describe("resolveDocumentColorScheme", () => {
   test("returns the explicit dark color scheme when computed style is dark", () => {

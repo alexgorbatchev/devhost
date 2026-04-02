@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import { createVisibleLogRows } from "../devtools/createVisibleLogRows";
-import type { ServiceLogEntry } from "../devtools/types";
+import { createVisibleLogRows } from "../devtools/features/minimap/createVisibleLogRows";
+import type { ServiceLogEntry } from "../devtools/shared/types";
 
 describe("createVisibleLogRows", () => {
   test("splits long log lines into visible wrapped rows with matching text slices", () => {

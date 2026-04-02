@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import type { IVisibleLogRow } from "../devtools/createVisibleLogRows";
-import { createLogPreviewWindow } from "../devtools/createLogPreviewWindow";
+import type { IVisibleLogRow } from "../devtools/features/minimap/createVisibleLogRows";
+import { createLogPreviewWindow } from "../devtools/features/minimap/createLogPreviewWindow";
 
 function createRow(id: number): IVisibleLogRow {
   return {

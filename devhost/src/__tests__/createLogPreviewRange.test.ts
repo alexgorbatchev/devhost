@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { createLogPreviewRange } from "../devtools/createLogPreviewRange";
+import { createLogPreviewRange } from "../devtools/features/minimap/createLogPreviewRange";
 
 describe("createLogPreviewRange", () => {
   test("returns a centered preview range when enough context exists", () => {

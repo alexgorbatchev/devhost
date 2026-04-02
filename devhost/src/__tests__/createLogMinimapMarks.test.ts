@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import { createLogMinimapMarks } from "../devtools/createLogMinimapMarks";
-import type { ServiceLogEntry } from "../devtools/types";
+import { createLogMinimapMarks } from "../devtools/features/minimap/createLogMinimapMarks";
+import type { ServiceLogEntry } from "../devtools/shared/types";
 
 describe("createLogMinimapMarks", () => {
   test("anchors visible marks to the bottom with consistent spacing", () => {

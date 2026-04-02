@@ -1,4 +1,4 @@
-import { DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "./devtools/constants";
+import { DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "./devtools/shared/constants";
 import type { DevtoolsMinimapPosition, DevtoolsPosition } from "./stackTypes";
 
 export function createConfiguredDevtoolsScript(

@@ -1,5 +1,5 @@
 import { createVisibleLogRows, type IVisibleLogRow } from "./createVisibleLogRows";
-import type { ServiceLogEntry, ServiceLogStream } from "./types";
+import type { ServiceLogEntry, ServiceLogStream } from "../../shared/types";
 
 export interface ILogMinimapMark {
   entryIndex: number;

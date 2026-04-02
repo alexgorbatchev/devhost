@@ -1,4 +1,4 @@
-import type { HealthResponse, ServiceHealth } from "./devtools/types";
+import type { HealthResponse, ServiceHealth } from "./devtools/shared/types";
 import type { IResolvedDevhostService } from "./stackTypes";
 import { checkServiceHealth } from "./waitForServiceHealth";
 

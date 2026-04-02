@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { selectVisibleServices } from "../selectVisibleServices";
+import { selectVisibleServices } from "../devtools/features/serviceStatusPanel/selectVisibleServices";
 
 describe("selectVisibleServices", () => {
   test("returns an empty list when there are no services", () => {

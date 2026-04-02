@@ -1,7 +1,7 @@
 import type { JSX } from "preact";
 
-import type { IDevtoolsTheme } from "./devtoolsTheme";
-import type { ServiceLogEntry } from "./types";
+import type { IDevtoolsTheme } from "../../shared/devtoolsTheme";
+import type { ServiceLogEntry } from "../../shared/types";
 
 export function createLogPreviewLineStyle(
   theme: IDevtoolsTheme,

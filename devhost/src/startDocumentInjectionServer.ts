@@ -1,4 +1,4 @@
-import { INJECTED_SCRIPT_PATH } from "./devtools/constants";
+import { INJECTED_SCRIPT_PATH } from "./devtools/shared/constants";
 
 interface IStartDocumentInjectionServerOptions {
   backendHost: string;

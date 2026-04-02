@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import { createLogPreviewLineStyle } from "../devtools/createLogPreviewLineStyle";
-import { getDevtoolsTheme } from "../devtools/devtoolsTheme";
+import { createLogPreviewLineStyle } from "../devtools/features/minimap/createLogPreviewLineStyle";
+import { getDevtoolsTheme } from "../devtools/shared/devtoolsTheme";
 
 describe("createLogPreviewLineStyle", () => {
   test("uses the dedicated stderr preview colors so error rows read red at a glance", () => {
