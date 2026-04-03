@@ -15,6 +15,7 @@ import {
 import { readDevtoolsControlToken } from "../../shared/readDevtoolsControlToken";
 import { createXtermTheme } from "./createXtermTheme";
 import { readPiTerminalPrimaryAction } from "./readPiTerminalPrimaryAction";
+import { resolveTerminalPanelLayout, type IPanelSize } from "./resolveTerminalPanelLayout";
 import { shouldAutoRemoveTerminalSession } from "./shouldAutoRemoveTerminalSession";
 import type { ITerminalSession, PiTerminalClientMessage, PiTerminalServerMessage } from "./types";
 
@@ -24,11 +25,6 @@ interface IPiTerminalPanelProps {
   onMinimize: () => void;
   onRemove: () => void;
   session: ITerminalSession;
-}
-
-interface IPanelSize {
-  height: number;
-  width: number;
 }
 
 interface ITrayTooltipLayout {
@@ -46,10 +42,7 @@ interface ISessionSummary {
   trayTooltipSecondary?: string;
 }
 
-const maximumPanelHeight: number = 720;
-const maximumPanelWidth: number = 1040;
 const normalClosureCode: number = 1000;
-const panelViewportMargin: number = 24;
 const trayScale: number = 0.32;
 const trayTransitionDurationInMilliseconds: number = 180;
 const xtermStylesheetId: string = "devhost-xterm-stylesheet";
@@ -69,10 +62,21 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
   const [isTrayHoverVisible, setIsTrayHoverVisible] = useState<boolean>(false);
   const [isTrayMounted, setIsTrayMounted] = useState<boolean>(false);
   const [trayTooltipLayout, setTrayTooltipLayout] = useState<ITrayTooltipLayout | null>(null);
-  const [panelSize, setPanelSize] = useState<IPanelSize>(() => {
-    return resolvePanelSize(window.innerWidth, window.innerHeight);
+  const [viewportSize, setViewportSize] = useState<IPanelSize>(() => {
+    return {
+      height: window.innerHeight,
+      width: window.innerWidth,
+    };
   });
   const [statusText, setStatusText] = useState<string>("Connecting…");
+  const terminalPanelLayout = resolveTerminalPanelLayout(
+    props.session.kind,
+    viewportSize.width,
+    viewportSize.height,
+  );
+  const activePanelSize: IPanelSize = props.isExpanded
+    ? terminalPanelLayout.expandedPanelSize
+    : terminalPanelLayout.trayPanelSize;
 
   const scheduleTerminalResize = useCallback((): void => {
     const fitAddon: FitAddon | null = fitAddonReference.current;
@@ -95,7 +99,10 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
 
   useEffect(() => {
     const handleWindowResize = (): void => {
-      setPanelSize(resolvePanelSize(window.innerWidth, window.innerHeight));
+      setViewportSize({
+        height: window.innerHeight,
+        width: window.innerWidth,
+      });
     };
 
     window.addEventListener("resize", handleWindowResize);
@@ -309,7 +316,14 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
     }
 
     scheduleTerminalResize();
-  }, [hasExited, panelSize, props.isExpanded, scheduleTerminalResize, theme]);
+  }, [
+    activePanelSize.height,
+    activePanelSize.width,
+    hasExited,
+    props.isExpanded,
+    scheduleTerminalResize,
+    theme,
+  ]);
 
   useEffect(() => {
     if (!shouldAutoRemoveTerminalSession(props.session, hasExited)) {
@@ -326,10 +340,14 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
   const annotationEyebrowClassName: string = css(createAnnotationEyebrowStyle(theme));
   const annotationMetaClassName: string = css(createAnnotationMetaStyle(theme));
   const buttonGroupClassName: string = css(buttonGroupStyle);
-  const chromeClassName: string = css(createChromeStyle(theme, panelSize, props.isExpanded));
+  const chromeClassName: string = css(
+    createChromeStyle(theme, activePanelSize, terminalPanelLayout.isFullscreenExpanded && props.isExpanded),
+  );
   const backdropClassName: string = css(createBackdropStyle(theme));
   const expandedOverlayClassName: string = css(createExpandedOverlayStyle(theme));
-  const expandedPanelClassName: string = css(createExpandedPanelStyle(theme, panelSize));
+  const expandedPanelClassName: string = css(
+    createExpandedPanelStyle(activePanelSize, terminalPanelLayout.isFullscreenExpanded),
+  );
   const headerClassName: string = css(createHeaderStyle(theme));
   const headerTextClassName: string = css(headerTextStyle);
   const statusClassName: string = css(createStatusStyle(theme, errorMessage !== null));
@@ -339,8 +357,10 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
   const trayCompletionIconClassName: string = css(createTrayCompletionIconStyle(theme));
   const trayCompletionOverlayClassName: string = css(createTrayCompletionOverlayStyle());
   const trayOverlayButtonClassName: string = css(createTrayOverlayButtonStyle(theme));
-  const trayScaledContentClassName: string = css(createTrayScaledContentStyle(panelSize));
-  const trayShellClassName: string = css(createTrayShellStyle(theme, panelSize, isTrayMounted));
+  const trayScaledContentClassName: string = css(createTrayScaledContentStyle(terminalPanelLayout.trayPanelSize));
+  const trayShellClassName: string = css(
+    createTrayShellStyle(theme, terminalPanelLayout.trayPanelSize, isTrayMounted),
+  );
   const trayTooltipClassName: string = css(createTrayTooltipStyle(theme, trayTooltipLayout));
   const trayTooltipCommentClassName: string = css(createTrayTooltipCommentStyle(theme));
   const trayTooltipMetaClassName: string = css(createTrayTooltipMetaStyle(theme));
@@ -531,7 +551,7 @@ function createBackdropStyle(theme: IDevtoolsTheme): CSSObject {
   };
 }
 
-function createChromeStyle(theme: IDevtoolsTheme, panelSize: IPanelSize, isExpanded: boolean): CSSObject {
+function createChromeStyle(theme: IDevtoolsTheme, panelSize: IPanelSize, isFullscreen: boolean): CSSObject {
   return {
     width: `${panelSize.width}px`,
     height: `${panelSize.height}px`,
@@ -540,11 +560,11 @@ function createChromeStyle(theme: IDevtoolsTheme, panelSize: IPanelSize, isExpan
     gap: theme.spacing.sm,
     padding: theme.spacing.sm,
     boxSizing: "border-box",
-    border: `1px solid ${theme.colors.border}`,
-    borderRadius: theme.radii.md,
+    border: isFullscreen ? "none" : `1px solid ${theme.colors.border}`,
+    borderRadius: isFullscreen ? "0px" : theme.radii.md,
     background: theme.colors.background,
     color: theme.colors.foreground,
-    boxShadow: theme.shadows.popup,
+    boxShadow: isFullscreen ? "none" : theme.shadows.popup,
   };
 }
 
@@ -557,14 +577,14 @@ function createExpandedOverlayStyle(theme: IDevtoolsTheme): CSSObject {
   };
 }
 
-function createExpandedPanelStyle(theme: IDevtoolsTheme, panelSize: IPanelSize): CSSObject {
+function createExpandedPanelStyle(panelSize: IPanelSize, isFullscreen: boolean): CSSObject {
   return {
     position: "fixed",
-    top: "50%",
-    left: "50%",
+    top: isFullscreen ? "0px" : "50%",
+    left: isFullscreen ? "0px" : "50%",
     width: `${panelSize.width}px`,
     height: `${panelSize.height}px`,
-    transform: "translate(-50%, -50%)",
+    transform: isFullscreen ? "none" : "translate(-50%, -50%)",
     pointerEvents: "auto",
     zIndex: 1,
   };
@@ -819,13 +839,6 @@ function resizeTerminal(terminal: Terminal, fitAddon: FitAddon, websocket: WebSo
     rows: terminal.rows,
     type: "resize",
   });
-}
-
-function resolvePanelSize(viewportWidth: number, viewportHeight: number): IPanelSize {
-  return {
-    height: Math.max(240, Math.min(maximumPanelHeight, viewportHeight - panelViewportMargin)),
-    width: Math.max(320, Math.min(maximumPanelWidth, viewportWidth - panelViewportMargin)),
-  };
 }
 
 function sendClientMessage(websocket: WebSocket, message: PiTerminalClientMessage): void {
