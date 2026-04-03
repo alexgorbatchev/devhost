@@ -1,3 +1,4 @@
+import { symbolicateSourceLocation } from "./symbolicateSourceLocation";
 import type { IAnnotationSourceLocation } from "./types";
 
 interface IReactFiberNode {
@@ -44,89 +45,32 @@ interface IStandardSourceShape {
   lineNumber: number;
 }
 
-interface ISourceLocationDebugEntry {
-  details?: Record<string, unknown>;
-  step: string;
-}
-
 const maximumFiberDepth: number = 50;
 
-export function getElementSourceLocation(
+export async function getElementSourceLocation(
   element: HTMLElement,
-): IAnnotationSourceLocation | undefined {
-  const debugTrace: ISourceLocationDebugEntry[] = [];
+): Promise<IAnnotationSourceLocation | undefined> {
+  const rawSourceLocation: IAnnotationSourceLocation | undefined =
+    getSourceLocationFromRendererInterface(element) ?? getSourceLocationFromFiber(element);
 
-  appendSourceLocationDebugEntry(debugTrace, "start", {
-    element: describeElementForDebug(element),
-  });
-
-  const devToolsSourceLocation: IAnnotationSourceLocation | undefined =
-    getSourceLocationFromRendererInterface(element, debugTrace);
-
-  if (devToolsSourceLocation !== undefined) {
-    appendSourceLocationDebugEntry(debugTrace, "resolved-from-renderer-interface", {
-      sourceLocation: devToolsSourceLocation,
-    });
-    flushSourceLocationDebugTrace(element, debugTrace, devToolsSourceLocation);
-    return devToolsSourceLocation;
+  if (rawSourceLocation === undefined) {
+    return undefined;
   }
 
-  let currentFiber: IReactFiberNode | null = getFiberFromElement(element, debugTrace);
-  let depth: number = 0;
+  const symbolicatedSourceLocation: IAnnotationSourceLocation | undefined = await symbolicateSourceLocation(
+    rawSourceLocation,
+  );
 
-  while (currentFiber !== null && depth < maximumFiberDepth) {
-    appendSourceLocationDebugEntry(debugTrace, "visit-fiber", {
-      depth,
-      fiber: describeFiberForDebug(currentFiber),
-    });
+  return normalizeSourceLocation(symbolicatedSourceLocation ?? rawSourceLocation);
+}
 
-    const directSource: IStandardSourceShape | null = readDirectSource(currentFiber);
-    if (directSource !== null) {
-      const sourceLocation: IAnnotationSourceLocation = createSourceLocation(
-        currentFiber,
-        directSource,
-      );
-
-      appendSourceLocationDebugEntry(debugTrace, "resolved-from-fiber", {
-        depth,
-        sourceLocation,
-      });
-      flushSourceLocationDebugTrace(element, debugTrace, sourceLocation);
-      return sourceLocation;
-    }
-
-    const ownerFiber: IReactFiberNode | null = readOwnerFiber(currentFiber);
-    if (ownerFiber !== null) {
-      appendSourceLocationDebugEntry(debugTrace, "visit-owner-fiber", {
-        depth,
-        fiber: describeFiberForDebug(ownerFiber),
-      });
-
-      const ownerSource: IStandardSourceShape | null = readDirectSource(ownerFiber);
-      if (ownerSource !== null) {
-        const sourceLocation: IAnnotationSourceLocation = createSourceLocation(
-          ownerFiber,
-          ownerSource,
-        );
-
-        appendSourceLocationDebugEntry(debugTrace, "resolved-from-owner-fiber", {
-          depth,
-          sourceLocation,
-        });
-        flushSourceLocationDebugTrace(element, debugTrace, sourceLocation);
-        return sourceLocation;
-      }
-    }
-
-    currentFiber = readParentFiber(currentFiber);
-    depth += 1;
-  }
-
-  appendSourceLocationDebugEntry(debugTrace, "resolution-failed", {
-    reason: "no-source-metadata-found",
-  });
-  flushSourceLocationDebugTrace(element, debugTrace, undefined);
-  return undefined;
+function normalizeSourceLocation(sourceLocation: IAnnotationSourceLocation): IAnnotationSourceLocation {
+  return {
+    columnNumber: sourceLocation.columnNumber,
+    componentName: sourceLocation.componentName,
+    fileName: cleanSourcePath(sourceLocation.fileName),
+    lineNumber: sourceLocation.lineNumber,
+  };
 }
 
 function createSourceLocation(
@@ -136,7 +80,7 @@ function createSourceLocation(
   return {
     columnNumber: source.columnNumber,
     componentName: readComponentName(fiber),
-    fileName: cleanSourcePath(source.fileName),
+    fileName: source.fileName,
     lineNumber: source.lineNumber,
   };
 }
@@ -156,87 +100,74 @@ function cleanSourcePath(rawPath: string): string {
     .replace(/^\.\//, "");
 }
 
-function getFiberFromDevTools(
-  element: HTMLElement,
-  debugTrace: ISourceLocationDebugEntry[],
-): IReactFiberNode | null {
+function getSourceLocationFromFiber(element: HTMLElement): IAnnotationSourceLocation | undefined {
+  let currentFiber: IReactFiberNode | null = getFiberFromElement(element);
+  let depth: number = 0;
+
+  while (currentFiber !== null && depth < maximumFiberDepth) {
+    const directSource: IStandardSourceShape | null = readDirectSource(currentFiber);
+
+    if (directSource !== null) {
+      return createSourceLocation(currentFiber, directSource);
+    }
+
+    const ownerFiber: IReactFiberNode | null = readOwnerFiber(currentFiber);
+
+    if (ownerFiber !== null) {
+      const ownerSource: IStandardSourceShape | null = readDirectSource(ownerFiber);
+
+      if (ownerSource !== null) {
+        return createSourceLocation(ownerFiber, ownerSource);
+      }
+    }
+
+    currentFiber = readParentFiber(currentFiber);
+    depth += 1;
+  }
+
+  return undefined;
+}
+
+function getFiberFromDevTools(element: HTMLElement): IReactFiberNode | null {
   if (typeof window !== "object") {
-    appendSourceLocationDebugEntry(debugTrace, "devtools-renderer-fiber-skipped", {
-      reason: "window-unavailable",
-    });
     return null;
   }
 
   const hook: IReactDevToolsHook | null = readReactDevToolsHook();
 
   if (hook === null) {
-    appendSourceLocationDebugEntry(debugTrace, "devtools-renderer-fiber-skipped", {
-      reason: "react-devtools-hook-missing",
-    });
     return null;
   }
 
   const renderers: unknown = hook.renderers;
 
   if (!(renderers instanceof Map)) {
-    appendSourceLocationDebugEntry(debugTrace, "devtools-renderer-fiber-skipped", {
-      reason: "renderers-map-missing",
-    });
     return null;
   }
 
-  appendSourceLocationDebugEntry(debugTrace, "devtools-renderers-discovered", {
-    rendererCount: renderers.size,
-  });
-
-  let rendererIndex: number = 0;
-
   for (const renderer of renderers.values()) {
-    rendererIndex += 1;
-
     if (!isReactRenderer(renderer)) {
-      appendSourceLocationDebugEntry(debugTrace, "devtools-renderer-ignored", {
-        reason: "invalid-renderer-shape",
-        rendererIndex,
-      });
       continue;
     }
 
     try {
       const fiber: IReactFiberNode | null = renderer.findFiberByHostInstance(element);
 
-      appendSourceLocationDebugEntry(debugTrace, "devtools-renderer-fiber-attempt", {
-        matchedFiber: isReactFiberNode(fiber),
-        rendererIndex,
-      });
-
       if (isReactFiberNode(fiber)) {
         return fiber;
       }
-    } catch (error) {
-      appendSourceLocationDebugEntry(debugTrace, "devtools-renderer-fiber-error", {
-        errorMessage: getErrorMessage(error),
-        rendererIndex,
-      });
+    } catch {
+      continue;
     }
   }
 
-  appendSourceLocationDebugEntry(debugTrace, "devtools-renderer-fiber-miss", {
-    reason: "no-renderer-returned-fiber",
-  });
   return null;
 }
 
-function getFiberFromElement(
-  element: HTMLElement,
-  debugTrace: ISourceLocationDebugEntry[],
-): IReactFiberNode | null {
-  const fiberFromDevTools: IReactFiberNode | null = getFiberFromDevTools(element, debugTrace);
+function getFiberFromElement(element: HTMLElement): IReactFiberNode | null {
+  const fiberFromDevTools: IReactFiberNode | null = getFiberFromDevTools(element);
 
   if (fiberFromDevTools !== null) {
-    appendSourceLocationDebugEntry(debugTrace, "resolved-fiber-from-devtools-renderer", {
-      fiber: describeFiberForDebug(fiberFromDevTools),
-    });
     return fiberFromDevTools;
   }
 
@@ -248,36 +179,21 @@ function getFiberFromElement(
     );
   });
 
-  appendSourceLocationDebugEntry(debugTrace, "dom-react-properties-scanned", {
-    reactPropertyKeys,
-  });
-
   for (const key of reactPropertyKeys) {
     const candidateFiber: unknown = Reflect.get(element, key);
 
     if (isReactFiberNode(candidateFiber)) {
-      appendSourceLocationDebugEntry(debugTrace, "resolved-fiber-from-dom-property", {
-        fiber: describeFiberForDebug(candidateFiber),
-        key,
-      });
       return candidateFiber;
     }
   }
 
-  appendSourceLocationDebugEntry(debugTrace, "fiber-resolution-failed", {
-    reason: "no-react-fiber-on-element",
-  });
   return null;
 }
 
 function getSourceLocationFromRendererInterface(
   element: HTMLElement,
-  debugTrace: ISourceLocationDebugEntry[],
 ): IAnnotationSourceLocation | undefined {
   if (typeof window !== "object") {
-    appendSourceLocationDebugEntry(debugTrace, "renderer-interface-skipped", {
-      reason: "window-unavailable",
-    });
     return undefined;
   }
 
@@ -285,36 +201,16 @@ function getSourceLocationFromRendererInterface(
   const rendererInterfaces: unknown = hook?.rendererInterfaces;
 
   if (!(rendererInterfaces instanceof Map)) {
-    appendSourceLocationDebugEntry(debugTrace, "renderer-interface-skipped", {
-      reason: "renderer-interfaces-map-missing",
-    });
     return undefined;
   }
 
-  appendSourceLocationDebugEntry(debugTrace, "renderer-interfaces-discovered", {
-    rendererInterfaceCount: rendererInterfaces.size,
-  });
-
-  let rendererIndex: number = 0;
-
   for (const rendererInterface of rendererInterfaces.values()) {
-    rendererIndex += 1;
-
     if (!isReactDevToolsRendererInterface(rendererInterface)) {
-      appendSourceLocationDebugEntry(debugTrace, "renderer-interface-ignored", {
-        reason: "invalid-renderer-interface-shape",
-        rendererIndex,
-      });
       continue;
     }
 
     try {
       const elementId: number | null = rendererInterface.getElementIDForHostInstance(element);
-
-      appendSourceLocationDebugEntry(debugTrace, "renderer-interface-element-id", {
-        elementId,
-        rendererIndex,
-      });
 
       if (elementId === null) {
         continue;
@@ -328,12 +224,6 @@ function getSourceLocationFromRendererInterface(
       );
       const source: IStandardSourceShape | undefined = readInspectedElementSource(inspectedElement);
 
-      appendSourceLocationDebugEntry(debugTrace, "renderer-interface-inspect-result", {
-        inspectedElement: summarizeInspectedElement(inspectedElement),
-        rendererIndex,
-        resolvedSource: source ?? null,
-      });
-
       if (source === undefined) {
         continue;
       }
@@ -341,20 +231,14 @@ function getSourceLocationFromRendererInterface(
       return {
         columnNumber: source.columnNumber,
         componentName: rendererInterface.getDisplayNameForElementID(elementId) ?? undefined,
-        fileName: cleanSourcePath(source.fileName),
+        fileName: source.fileName,
         lineNumber: source.lineNumber,
       };
-    } catch (error) {
-      appendSourceLocationDebugEntry(debugTrace, "renderer-interface-error", {
-        errorMessage: getErrorMessage(error),
-        rendererIndex,
-      });
+    } catch {
+      continue;
     }
   }
 
-  appendSourceLocationDebugEntry(debugTrace, "renderer-interface-miss", {
-    reason: "no-renderer-interface-returned-source",
-  });
   return undefined;
 }
 
@@ -386,10 +270,7 @@ function isReactDevToolsRendererInterface(
 }
 
 function isReactRenderer(value: unknown): value is IReactRenderer {
-  return (
-    isRecord(value) &&
-    typeof Reflect.get(value, "findFiberByHostInstance") === "function"
-  );
+  return isRecord(value) && typeof Reflect.get(value, "findFiberByHostInstance") === "function";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -453,10 +334,7 @@ function readComponentName(fiber: IReactFiberNode): string | undefined {
   const renderedType: unknown = Reflect.get(componentType, "render");
 
   if (isRecord(renderedType)) {
-    const renderedDisplayName: string | undefined = readNamedProperty(
-      renderedType,
-      "displayName",
-    );
+    const renderedDisplayName: string | undefined = readNamedProperty(renderedType, "displayName");
 
     if (renderedDisplayName !== undefined) {
       return renderedDisplayName;
@@ -472,10 +350,7 @@ function readComponentName(fiber: IReactFiberNode): string | undefined {
   const nestedType: unknown = Reflect.get(componentType, "type");
 
   if (isRecord(nestedType)) {
-    const nestedDisplayName: string | undefined = readNamedProperty(
-      nestedType,
-      "displayName",
-    );
+    const nestedDisplayName: string | undefined = readNamedProperty(nestedType, "displayName");
 
     if (nestedDisplayName !== undefined) {
       return nestedDisplayName;
@@ -568,9 +443,7 @@ function readNamedProperty(
 ): string | undefined {
   const propertyValue: unknown = Reflect.get(value, propertyName);
 
-  return typeof propertyValue === "string" && propertyValue.length > 0
-    ? propertyValue
-    : undefined;
+  return typeof propertyValue === "string" && propertyValue.length > 0 ? propertyValue : undefined;
 }
 
 function readOwnerFiber(fiber: IReactFiberNode): IReactFiberNode | null {
@@ -583,74 +456,6 @@ function readParentFiber(fiber: IReactFiberNode): IReactFiberNode | null {
   const parentFiber: unknown = Reflect.get(fiber, "return");
 
   return isReactFiberNode(parentFiber) ? parentFiber : null;
-}
-
-function appendSourceLocationDebugEntry(
-  debugTrace: ISourceLocationDebugEntry[],
-  step: string,
-  details?: Record<string, unknown>,
-): void {
-  debugTrace.push({
-    details,
-    step,
-  });
-}
-
-function describeElementForDebug(element: HTMLElement): Record<string, unknown> {
-  const tagName: string | null =
-    typeof element.tagName === "string" ? element.tagName.toLowerCase() : null;
-  const className: string | null =
-    typeof element.className === "string" && element.className.length > 0 ? element.className : null;
-  const textContent: string | null =
-    typeof element.textContent === "string" && element.textContent.trim().length > 0
-      ? element.textContent.trim().slice(0, 80)
-      : null;
-
-  return {
-    className,
-    dataElement: element.dataset?.element ?? null,
-    id: element.id || null,
-    tagName,
-    textContent,
-  };
-}
-
-function describeFiberForDebug(fiber: IReactFiberNode): Record<string, unknown> {
-  return {
-    componentName: readComponentName(fiber) ?? null,
-    hasDirectSource: readDirectSource(fiber) !== null,
-    hasOwnerFiber: readOwnerFiber(fiber) !== null,
-    hasParentFiber: readParentFiber(fiber) !== null,
-  };
-}
-
-function flushSourceLocationDebugTrace(
-  element: HTMLElement,
-  debugTrace: readonly ISourceLocationDebugEntry[],
-  sourceLocation: IAnnotationSourceLocation | undefined,
-): void {
-  console.log("[devhost] Source location resolution trace", {
-    element: describeElementForDebug(element),
-    resolvedSourceLocation: sourceLocation ?? null,
-    trace: debugTrace,
-  });
-}
-
-function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-function summarizeInspectedElement(
-  inspectedElement: IDevToolsInspectElementPayload,
-): Record<string, unknown> {
-  const stack: IReactStackFrameTuple[] | null | undefined = inspectedElement.value?.stack;
-
-  return {
-    firstStackFrame: stack?.[0] ?? null,
-    source: inspectedElement.value?.source ?? null,
-    stackLength: stack?.length ?? null,
-    type: inspectedElement.type ?? null,
-  };
 }
 
 function readReactDevToolsHook(): IReactDevToolsHook | null {

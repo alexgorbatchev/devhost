@@ -30,6 +30,7 @@ type ReactFiberTestNode = {
   } | null;
 };
 
+const originalFetch: typeof fetch = globalThis.fetch;
 const originalWindow: unknown = Reflect.get(globalThis, "window");
 
 function createElementWithFiber(fiber: ReactFiberTestNode): HTMLElement {
@@ -43,9 +44,58 @@ function createElementWithFiber(fiber: ReactFiberTestNode): HTMLElement {
 describe("getElementSourceLocation", () => {
   afterEach(() => {
     Reflect.set(globalThis, "window", originalWindow);
+    Reflect.set(globalThis, "fetch", originalFetch);
   });
 
-  test("prefers the React DevTools renderer interface source when available", () => {
+  test("symbolicates generated bundle locations through source maps", async () => {
+    const element: HTMLElement = createElementWithFiber({
+      _debugSource: {
+        columnNumber: 6,
+        fileName: "http://localhost:3000/_bun/client/index.js",
+        lineNumber: 1,
+      },
+      type: {
+        name: "App",
+      },
+    });
+
+    Reflect.set(globalThis, "window", {
+      location: {
+        href: "http://localhost:3000/",
+        origin: "http://localhost:3000",
+      },
+    });
+    Reflect.set(globalThis, "fetch", async (input: RequestInfo | URL): Promise<Response> => {
+      const requestUrl: string = String(input);
+
+      if (requestUrl === "http://localhost:3000/_bun/client/index.js") {
+        return new Response('console.log("app");\n//# sourceMappingURL=index.js.map');
+      }
+
+      if (requestUrl === "http://localhost:3000/_bun/client/index.js.map") {
+        return new Response(
+          JSON.stringify({
+            file: "index.js",
+            mappings: "KAyCIA",
+            names: ["App"],
+            sources: ["file:///Users/test/app/App.tsx"],
+            version: 3,
+          }),
+        );
+      }
+
+      return new Response(null, { status: 404 });
+    });
+
+    expect(await getElementSourceLocation(element)).toEqual({
+      columnNumber: 5,
+      componentName: "App",
+      fileName: "/Users/test/app/App.tsx",
+      lineNumber: 42,
+    });
+  });
+
+  test("prefers the React DevTools renderer interface source when available", async () => {
     const element: HTMLElement = {} as HTMLElement;
     let receivedInspectPath: unknown = "not-called";
 
@@ -80,9 +130,13 @@ describe("getElementSourceLocation", () => {
           ],
         ]),
       },
+      location: {
+        href: "http://localhost:3000/",
+        origin: "http://localhost:3000",
+      },
     });
 
-    expect(getElementSourceLocation(element)).toEqual({
+    expect(await getElementSourceLocation(element)).toEqual({
       columnNumber: 11,
       componentName: "PrimaryButton",
       fileName: "src/components/PrimaryButton.tsx",
@@ -91,7 +145,7 @@ describe("getElementSourceLocation", () => {
     expect(receivedInspectPath).toBeNull();
   });
 
-  test("falls back to the inspected element stack when the renderer source is absent", () => {
+  test("falls back to the inspected element stack when the renderer source is absent", async () => {
     const element: HTMLElement = {} as HTMLElement;
 
     Reflect.set(globalThis, "window", {
@@ -115,9 +169,13 @@ describe("getElementSourceLocation", () => {
           ],
         ]),
       },
+      location: {
+        href: "http://localhost:3000/",
+        origin: "http://localhost:3000",
+      },
     });
 
-    expect(getElementSourceLocation(element)).toEqual({
+    expect(await getElementSourceLocation(element)).toEqual({
       columnNumber: 17,
       componentName: "Toolbar",
       fileName: "src/components/Toolbar.tsx",
@@ -125,7 +183,7 @@ describe("getElementSourceLocation", () => {
     });
   });
 
-  test("reads direct debug source metadata from the host fiber", () => {
+  test("reads direct debug source metadata from the host fiber", async () => {
     const element: HTMLElement = createElementWithFiber({
       _debugSource: {
         columnNumber: 9,
@@ -137,7 +195,7 @@ describe("getElementSourceLocation", () => {
       },
     });
 
-    expect(getElementSourceLocation(element)).toEqual({
+    expect(await getElementSourceLocation(element)).toEqual({
       columnNumber: 9,
       componentName: "Button",
       fileName: "src/components/Button.tsx",
@@ -145,7 +203,7 @@ describe("getElementSourceLocation", () => {
     });
   });
 
-  test("falls back to owner source metadata when the clicked fiber has none", () => {
+  test("falls back to owner source metadata when the clicked fiber has none", async () => {
     const ownerFiber: ReactFiberTestNode = {
       _debugSource: {
         columnNumber: 3,
@@ -164,7 +222,7 @@ describe("getElementSourceLocation", () => {
       },
     });
 
-    expect(getElementSourceLocation(element)).toEqual({
+    expect(await getElementSourceLocation(element)).toEqual({
       columnNumber: 3,
       componentName: "ActionButton",
       fileName: "/Users/test/app/src/toolbar/ActionButton.tsx",
@@ -172,7 +230,7 @@ describe("getElementSourceLocation", () => {
     });
   });
 
-  test("reads babel-style __source metadata from memoized props", () => {
+  test("reads babel-style __source metadata from memoized props", async () => {
     const element: HTMLElement = createElementWithFiber({
       memoizedProps: {
         __source: {
@@ -186,7 +244,7 @@ describe("getElementSourceLocation", () => {
       },
     });
 
-    expect(getElementSourceLocation(element)).toEqual({
+    expect(await getElementSourceLocation(element)).toEqual({
       columnNumber: 5,
       componentName: "DashboardPage",
       fileName: "src/routes/dashboard/page.tsx",
@@ -194,13 +252,13 @@ describe("getElementSourceLocation", () => {
     });
   });
 
-  test("returns undefined when the element has no recoverable source metadata", () => {
+  test("returns undefined when the element has no recoverable source metadata", async () => {
     const element: HTMLElement = createElementWithFiber({
       type: {
         name: "AnonymousWidget",
       },
     });
 
-    expect(getElementSourceLocation(element)).toBeUndefined();
+    expect(await getElementSourceLocation(element)).toBeUndefined();
   });
 });

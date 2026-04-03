@@ -208,7 +208,7 @@ The injected UI now includes an always-visible `Annotate` button. In annotation 
 
 The submitted draft includes the current stack name, page URL/title, comment text, and collected per-marker element metadata.
 
-When the host page is a React development build that exposes component source metadata, each marker also captures the nearest available component source location (file path, line, column, and component name when available). Each selected marker is logged to the browser console with its collected metadata for annotation debugging.
+When the host page is a React development build that exposes component source metadata, each marker also captures the nearest available component source location (file path, line, column, and component name when available). When the host app serves fetchable source maps, devhost also attempts to symbolicate generated bundle locations back to original source files before storing the annotation.
 
 If manifest `devtools = false`, devhost does not mount these control routes for that stack.
 

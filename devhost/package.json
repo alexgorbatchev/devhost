@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@emotion/css": "^11.13.5",
+    "@jridgewell/trace-mapping": "^0.3.31",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "get-port": "^7.2.0",

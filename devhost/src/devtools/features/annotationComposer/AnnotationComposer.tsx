@@ -46,6 +46,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
   const hoveredElementReference = useRef<HTMLElement | null>(null);
   const popupReference = useRef<HTMLDivElement | null>(null);
   const scheduledFrameReference = useRef<number | null>(null);
+  const selectedElementsReference = useRef<ISelectedElementDraft[]>([]);
   const viewportPadding: number = readPixelValue(theme.spacing.sm);
   const trimmedComment: string = comment.trim();
   const hasDraft: boolean = isSelectionMode || selectedElements.length > 0 || trimmedComment.length > 0;
@@ -56,6 +57,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
     hoveredElementReference.current = null;
     setIsSelectionMode(false);
     setIsSubmitting(false);
+    selectedElementsReference.current = [];
     setSelectedElements([]);
     setSubmissionErrorMessage(null);
     setLayoutVersion((currentVersion: number): number => currentVersion + 1);
@@ -94,6 +96,10 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
       setIsSubmitting(false);
     }
   }, [cancelDraft, isSubmitting, props, selectedElements, trimmedComment]);
+
+  useEffect(() => {
+    selectedElementsReference.current = selectedElements;
+  }, [selectedElements]);
 
   useEffect(() => {
     if (!hasDraft) {
@@ -165,7 +171,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
       event.stopPropagation();
       event.stopImmediatePropagation();
     };
-    const handleDocumentClick = (event: MouseEvent): void => {
+    const handleDocumentClick = async (event: MouseEvent): Promise<void> => {
       if (isInteractionInsideDevtools(event.target)) {
         return;
       }
@@ -180,25 +186,37 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
       event.stopPropagation();
       event.stopImmediatePropagation();
 
+      const currentSelections: ISelectedElementDraft[] = selectedElementsReference.current;
+
       if (
-        selectedElements.some((selection: ISelectedElementDraft): boolean => selection.element === interactionTarget)
+        currentSelections.some((selection: ISelectedElementDraft): boolean => selection.element === interactionTarget)
       ) {
         return;
       }
 
       const identifiedElement = identifyElement(interactionTarget);
       const selectedText: string | undefined = readSelectedText();
+      const sourceLocation = await getElementSourceLocation(interactionTarget);
+      const latestSelections: ISelectedElementDraft[] = selectedElementsReference.current;
+
+      if (
+        latestSelections.some((selection: ISelectedElementDraft): boolean => selection.element === interactionTarget)
+      ) {
+        return;
+      }
+
       const nextSelection: ISelectedElementDraft = {
         element: interactionTarget,
         elementName: identifiedElement.name,
         elementPath: identifiedElement.path,
-        markerNumber: selectedElements.length + 1,
+        markerNumber: latestSelections.length + 1,
         selectedText,
-        sourceLocation: getElementSourceLocation(interactionTarget),
+        sourceLocation,
       };
+      const nextSelections: ISelectedElementDraft[] = [...latestSelections, nextSelection];
 
-      console.log("[devhost] Annotation element metadata", collectElementSnapshot(nextSelection));
-      setSelectedElements([...selectedElements, nextSelection]);
+      selectedElementsReference.current = nextSelections;
+      setSelectedElements(nextSelections);
       hoveredElementReference.current = interactionTarget;
       setHoveredElement(interactionTarget);
       setLayoutVersion((currentVersion: number): number => currentVersion + 1);
@@ -211,7 +229,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
       document.removeEventListener("mousedown", handleMouseDown, true);
       document.removeEventListener("click", handleDocumentClick, true);
     };
-  }, [isSelectionMode, selectedElements]);
+  }, [isSelectionMode]);
 
   useEffect(() => {
     if (!hasDraft) {
