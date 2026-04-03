@@ -533,12 +533,12 @@ function createChromeStyle(theme: IDevtoolsTheme, panelSize: IPanelSize, isFulls
   };
 }
 
-function createExpandedOverlayStyle(theme: IDevtoolsTheme): CSSObject {
+function createExpandedOverlayStyle(_theme: IDevtoolsTheme): CSSObject {
   return {
     position: "fixed",
     inset: 0,
     pointerEvents: "none",
-    zIndex: Number(theme.zIndices.floating) + 2,
+    zIndex: 3,
   };
 }
 
@@ -648,7 +648,7 @@ function createTrayScaledContentStyle(panelSize: IPanelSize): CSSObject {
   };
 }
 
-function createTrayShellStyle(theme: IDevtoolsTheme, panelSize: IPanelSize, isTrayMounted: boolean): CSSObject {
+function createTrayShellStyle(_theme: IDevtoolsTheme, panelSize: IPanelSize, isTrayMounted: boolean): CSSObject {
   return {
     position: "relative",
     flex: "0 0 auto",
@@ -658,7 +658,7 @@ function createTrayShellStyle(theme: IDevtoolsTheme, panelSize: IPanelSize, isTr
     transition: [`width ${trayTransitionDurationInMilliseconds}ms ease`, `opacity ${trayTransitionDurationInMilliseconds}ms ease`].join(", "),
     pointerEvents: "auto",
     overflow: "visible",
-    zIndex: Number(theme.zIndices.floating) + 1,
+    zIndex: 1,
   };
 }
 
@@ -698,7 +698,7 @@ function createTrayTooltipStyle(theme: IDevtoolsTheme, trayTooltipLayout: ITrayT
     background: theme.colors.background,
     color: theme.colors.foreground,
     boxShadow: theme.shadows.popup,
-    zIndex: Number(theme.zIndices.floating) + 2,
+    zIndex: 2,
   };
 }
 
