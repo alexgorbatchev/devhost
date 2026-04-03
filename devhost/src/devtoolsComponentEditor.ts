@@ -23,3 +23,19 @@ export function isDevtoolsComponentEditor(value: unknown): value is DevtoolsComp
 export function readDevtoolsComponentEditorValue(value: unknown): DevtoolsComponentEditor {
   return isDevtoolsComponentEditor(value) ? value : defaultDevtoolsComponentEditor;
 }
+
+export function readDevtoolsComponentEditorLabel(editor: DevtoolsComponentEditor): string {
+  switch (editor) {
+    case "cursor":
+      return "Cursor";
+    case "neovim":
+      return "Neovim";
+    case "vscode-insiders":
+      return "VS Code Insiders";
+    case "webstorm":
+      return "WebStorm";
+    case "vscode":
+    default:
+      return "VS Code";
+  }
+}

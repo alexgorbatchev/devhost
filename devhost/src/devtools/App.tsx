@@ -77,6 +77,7 @@ function AppContent(): JSX.Element {
           errorMessage={componentMenu.errorMessage}
           items={componentMenu.items}
           position={{ x: componentMenu.x, y: componentMenu.y }}
+          title={componentMenu.title}
           onItemClick={(itemIndex: number): void => {
             void openComponentSource(itemIndex);
           }}

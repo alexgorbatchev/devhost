@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "preact/hooks";
 
-import type { DevtoolsComponentEditor } from "../../../devtoolsComponentEditor";
+import { readDevtoolsComponentEditorLabel, type DevtoolsComponentEditor } from "../../../devtoolsComponentEditor";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../shared/constants";
 import { resolveAnnotationTarget } from "../annotationComposer/resolveAnnotationTarget";
 import type { ITerminalSessionStartResult } from "../piTerminal/types";
@@ -176,6 +176,7 @@ async function openComponentMenu(
 
       return createMenuItem(inspection, index, sourceLabel, componentEditor, projectRootPath);
     }),
+    title: `Open in ${readDevtoolsComponentEditorLabel(componentEditor)}`,
     x,
     y,
   });

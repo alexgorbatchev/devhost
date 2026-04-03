@@ -33,6 +33,7 @@ export type IComponentSourceMenuItem =
 export interface IComponentSourceMenuState {
   errorMessage?: string;
   items: IComponentSourceMenuItem[];
+  title: string;
   x: number;
   y: number;
 }

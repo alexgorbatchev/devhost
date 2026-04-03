@@ -11,6 +11,7 @@ interface IComponentSourceMenuProps {
     x: number;
     y: number;
   };
+  title: string;
   errorMessage?: string;
   onItemClick: (index: number) => void;
 }
@@ -18,10 +19,9 @@ interface IComponentSourceMenuProps {
 const menuWidthInPixels: number = 420;
 const menuViewportPaddingInPixels: number = 16;
 const menuPerItemHeightInPixels: number = 88;
-const menuHeaderText: string = "Open in editor";
 const itemInteractiveSelector: string = "&:is(:hover, :focus-visible)";
 
-export function ComponentSourceMenu({ items, position, errorMessage, onItemClick }: IComponentSourceMenuProps): JSX.Element | null {
+export function ComponentSourceMenu({ items, position, title, errorMessage, onItemClick }: IComponentSourceMenuProps): JSX.Element | null {
   const theme = useDevtoolsTheme();
   const [hoveredItemIndex, setHoveredItemIndex] = useState<number | null>(null);
   const menuPosition = useMemo(() => {
@@ -54,7 +54,7 @@ export function ComponentSourceMenu({ items, position, errorMessage, onItemClick
   return (
     <div class={menuClassName} data-component-source-menu="" data-testid="ComponentSourceMenu">
       <header class={headerClassName}>
-        <strong class={titleClassName}>{menuHeaderText}</strong>
+        <strong class={titleClassName}>{title}</strong>
         {errorMessage !== undefined ? (
           <div class={errorClassName} role="alert">
             {errorMessage}
