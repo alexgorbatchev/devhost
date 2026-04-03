@@ -19,6 +19,12 @@ Its vital that when devtools are injected into the user's web application, CSS t
 - Shared visual values must come from the devtools theme context instead of being threaded through component props.
 - Presentational devtools components must read theme values via the shared theme hook/provider, not a `theme` prop.
 - Shared visual values must come from a basic theme object instead of being duplicated inline across components.
+- When the devtools theme intentionally follows Tokyo Night, use `folke/tokyonight.nvim` as the palette reference instead of eyeballing approximations.
+- Prefer the canonical palette files and shipped Pi extras when mapping tokens:
+  - `lua/tokyonight/colors/storm.lua`
+  - `lua/tokyonight/colors/day.lua`
+  - `extras/pi/tokyonight_storm.json`
+  - `extras/pi/tokyonight_day.json`
 - Reusable tokens must include, at minimum:
   - font sizes: `sm`, `md`, `lg`
   - colors: background, foreground, muted, border, accent, danger when needed
