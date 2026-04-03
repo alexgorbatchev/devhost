@@ -1,3 +1,4 @@
+import { readTerminalSessionKindConfig } from "./readTerminalSessionKindConfig";
 import type { ITerminalSession } from "./types";
 
 const maximumPanelHeight: number = 720;
@@ -26,7 +27,8 @@ export function resolveTerminalPanelLayout(
     height: Math.max(minimumPanelHeight, Math.min(maximumPanelHeight, viewportHeight - panelViewportMargin)),
     width: Math.max(minimumPanelWidth, Math.min(maximumPanelWidth, viewportWidth - panelViewportMargin)),
   };
-  const isFullscreenExpanded: boolean = sessionKind === "component-source";
+  const sessionKindConfig = readTerminalSessionKindConfig(sessionKind);
+  const isFullscreenExpanded: boolean = sessionKindConfig.isFullscreenExpanded;
 
   return {
     expandedPanelSize: isFullscreenExpanded

@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
-import type { ITerminalSession } from "../devtools/features/piTerminal/types";
+import type { ITerminalSession } from "../devtools/features/terminalSessions/types";
 import {
-  appendPiTerminalSession,
-  expandPiTerminalSession,
-  minimizePiTerminalSession,
-  removePiTerminalSession,
-} from "../devtools/features/piTerminal/managePiTerminalSessions";
+  appendTerminalSession,
+  expandTerminalSession,
+  minimizeTerminalSession,
+  removeTerminalSession,
+} from "../devtools/features/terminalSessions/manageTerminalSessions";
 
 const FIRST_SESSION: ITerminalSession = {
   annotation: {
@@ -42,9 +42,9 @@ const THIRD_SESSION: ITerminalSession = {
   sourceLabel: "src/components/PrimaryButton.tsx:42:8",
 };
 
-describe("managePiTerminalSessions", () => {
+describe("manageTerminalSessions", () => {
   test("appends new sessions at the front of the tray order", () => {
-    expect(appendPiTerminalSession([FIRST_SESSION, SECOND_SESSION], THIRD_SESSION)).toEqual([
+    expect(appendTerminalSession([FIRST_SESSION, SECOND_SESSION], THIRD_SESSION)).toEqual([
       THIRD_SESSION,
       FIRST_SESSION,
       SECOND_SESSION,
@@ -57,7 +57,7 @@ describe("managePiTerminalSessions", () => {
       isExpanded: true,
     };
 
-    expect(appendPiTerminalSession([FIRST_SESSION, SECOND_SESSION], expandedComponentSourceSession)).toEqual([
+    expect(appendTerminalSession([FIRST_SESSION, SECOND_SESSION], expandedComponentSourceSession)).toEqual([
       expandedComponentSourceSession,
       FIRST_SESSION,
       {
@@ -68,7 +68,7 @@ describe("managePiTerminalSessions", () => {
   });
 
   test("expands the requested session and collapses the others", () => {
-    expect(expandPiTerminalSession([FIRST_SESSION, SECOND_SESSION, THIRD_SESSION], THIRD_SESSION.sessionId)).toEqual([
+    expect(expandTerminalSession([FIRST_SESSION, SECOND_SESSION, THIRD_SESSION], THIRD_SESSION.sessionId)).toEqual([
       FIRST_SESSION,
       {
         ...SECOND_SESSION,
@@ -82,14 +82,14 @@ describe("managePiTerminalSessions", () => {
   });
 
   test("keeps the current state when expanding an unknown session", () => {
-    expect(expandPiTerminalSession([FIRST_SESSION, SECOND_SESSION], "missing-session")).toEqual([
+    expect(expandTerminalSession([FIRST_SESSION, SECOND_SESSION], "missing-session")).toEqual([
       FIRST_SESSION,
       SECOND_SESSION,
     ]);
   });
 
   test("minimizes only the requested session", () => {
-    expect(minimizePiTerminalSession([FIRST_SESSION, SECOND_SESSION], SECOND_SESSION.sessionId)).toEqual([
+    expect(minimizeTerminalSession([FIRST_SESSION, SECOND_SESSION], SECOND_SESSION.sessionId)).toEqual([
       FIRST_SESSION,
       {
         ...SECOND_SESSION,
@@ -99,7 +99,7 @@ describe("managePiTerminalSessions", () => {
   });
 
   test("removes terminated sessions from the collection", () => {
-    expect(removePiTerminalSession([FIRST_SESSION, SECOND_SESSION, THIRD_SESSION], SECOND_SESSION.sessionId)).toEqual([
+    expect(removeTerminalSession([FIRST_SESSION, SECOND_SESSION, THIRD_SESSION], SECOND_SESSION.sessionId)).toEqual([
       FIRST_SESSION,
       THIRD_SESSION,
     ]);

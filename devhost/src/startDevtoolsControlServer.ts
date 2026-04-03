@@ -6,9 +6,9 @@ import type { DevtoolsComponentEditor } from "./devtoolsComponentEditor";
 import type { IAnnotationMarkerPayload, IAnnotationSubmitDetail } from "./devtools/features/annotationComposer/types";
 import type {
   IStartTerminalSessionRequest,
-  PiTerminalClientMessage,
-  PiTerminalServerMessage,
-} from "./devtools/features/piTerminal/types";
+  TerminalSessionClientMessage,
+  TerminalSessionServerMessage,
+} from "./devtools/features/terminalSessions/types";
 import type { ISourceLocation } from "./devtools/shared/sourceLocation";
 import {
   DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
@@ -17,9 +17,9 @@ import {
   INJECTED_SCRIPT_PATH,
   LOGS_WEBSOCKET_PATH,
   maximumRetainedLogEntries,
-  PI_SESSION_ID_QUERY_PARAMETER_NAME,
-  PI_SESSION_START_PATH,
-  PI_SESSION_WEBSOCKET_PATH,
+  TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME,
+  TERMINAL_SESSION_START_PATH,
+  TERMINAL_SESSION_WEBSOCKET_PATH,
   XTERM_STYLESHEET_PATH,
 } from "./devtools/shared/constants";
 import type {
@@ -34,13 +34,13 @@ import type { DevtoolsMinimapPosition, DevtoolsPosition } from "./stackTypes";
 
 const healthTopicName: string = "devhost-health";
 const logsTopicName: string = "devhost-logs";
-const piSessionTopicName: string = "devhost-pi-session";
+const terminalSessionTopicName: string = "devhost-terminal-session";
 const healthPollIntervalInMilliseconds: number = 1_000;
-const idlePiSessionTimeoutInMilliseconds: number = 10_000;
+const idleTerminalSessionTimeoutInMilliseconds: number = 10_000;
 const maximumRetainedTerminalOutputCharacters: number = 128_000;
 const xtermStylesheetFilePath: string = fileURLToPath(import.meta.resolve("@xterm/xterm/css/xterm.css"));
 
-type WebSocketTopicName = typeof healthTopicName | typeof logsTopicName | typeof piSessionTopicName;
+type WebSocketTopicName = typeof healthTopicName | typeof logsTopicName | typeof terminalSessionTopicName;
 
 type DevtoolsWebSocketData = {
   sessionId?: string;
@@ -67,15 +67,15 @@ interface IStartDevtoolsControlServerOptions {
   ) => ILaunchedTerminalSession;
 }
 
-interface IPiSessionExitStatus {
+interface ITerminalSessionExitStatus {
   exitCode: number | null;
   signalCode: string | null;
 }
 
-interface IPiTerminalSessionState {
+interface ITerminalSessionState {
   close: () => void;
   decoder: TextDecoder;
-  exited: IPiSessionExitStatus | null;
+  exited: ITerminalSessionExitStatus | null;
   idleTimeoutId: ReturnType<typeof setTimeout> | null;
   outputBuffer: string;
   resize: (cols: number, rows: number) => void;
@@ -97,7 +97,7 @@ export async function startDevtoolsControlServer(
     controlToken,
   );
   const retainedLogEntries: ServiceLogEntry[] = [];
-  const piSessions: Map<string, IPiTerminalSessionState> = new Map<string, IPiTerminalSessionState>();
+  const terminalSessions: Map<string, ITerminalSessionState> = new Map<string, ITerminalSessionState>();
   const xtermStylesheetText: string = await Bun.file(xtermStylesheetFilePath).text();
   let isStopped: boolean = false;
   let lastPublishedMessage: string | null = null;
@@ -127,7 +127,7 @@ export async function startDevtoolsControlServer(
         });
       }
 
-      if (requestUrl.pathname === PI_SESSION_START_PATH && request.method.toUpperCase() === "POST") {
+      if (requestUrl.pathname === TERMINAL_SESSION_START_PATH && request.method.toUpperCase() === "POST") {
         if (!isAuthorizedControlRequest(request, controlToken)) {
           return new Response("Forbidden", { status: 403 });
         }
@@ -179,8 +179,8 @@ export async function startDevtoolsControlServer(
         return new Response("Upgrade failed", { status: 400 });
       }
 
-      if (requestUrl.pathname === PI_SESSION_WEBSOCKET_PATH) {
-        const sessionId: string | null = requestUrl.searchParams.get(PI_SESSION_ID_QUERY_PARAMETER_NAME);
+      if (requestUrl.pathname === TERMINAL_SESSION_WEBSOCKET_PATH) {
+        const sessionId: string | null = requestUrl.searchParams.get(TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME);
         const requestControlToken: string | null = requestUrl.searchParams.get(DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME);
 
         if (requestControlToken !== controlToken) {
@@ -191,14 +191,14 @@ export async function startDevtoolsControlServer(
           return new Response("Missing sessionId query parameter.", { status: 400 });
         }
 
-        if (!piSessions.has(sessionId)) {
+        if (!terminalSessions.has(sessionId)) {
           return new Response("Terminal session was not found.", { status: 404 });
         }
 
         const didUpgrade: boolean = bunServer.upgrade(request, {
           data: {
             sessionId,
-            topicName: piSessionTopicName,
+            topicName: terminalSessionTopicName,
           },
         });
 
@@ -213,26 +213,26 @@ export async function startDevtoolsControlServer(
     },
     websocket: {
       message(websocket: Bun.ServerWebSocket<DevtoolsWebSocketData>, message: string | ArrayBuffer | Uint8Array): void {
-        if (websocket.data.topicName !== piSessionTopicName) {
+        if (websocket.data.topicName !== terminalSessionTopicName) {
           return;
         }
 
         if (typeof message !== "string") {
-          websocket.send(JSON.stringify(createPiTerminalErrorMessage("Terminal messages must be text frames.")));
+          websocket.send(JSON.stringify(createTerminalSessionErrorMessage("Terminal messages must be text frames.")));
           return;
         }
 
-        const clientMessage: PiTerminalClientMessage | null = parsePiTerminalClientMessage(message);
+        const clientMessage: TerminalSessionClientMessage | null = parseTerminalSessionClientMessage(message);
 
         if (clientMessage === null) {
-          websocket.send(JSON.stringify(createPiTerminalErrorMessage("Invalid terminal message.")));
+          websocket.send(JSON.stringify(createTerminalSessionErrorMessage("Invalid terminal message.")));
           return;
         }
 
-        const session: IPiTerminalSessionState | undefined = readPiSession(websocket.data.sessionId, piSessions);
+        const session: ITerminalSessionState | undefined = readTerminalSession(websocket.data.sessionId, terminalSessions);
 
         if (session === undefined) {
-          websocket.send(JSON.stringify(createPiTerminalErrorMessage("Terminal session is no longer available.")));
+          websocket.send(JSON.stringify(createTerminalSessionErrorMessage("Terminal session is no longer available.")));
           websocket.close(1008, "terminal session not found");
           return;
         }
@@ -254,7 +254,7 @@ export async function startDevtoolsControlServer(
         }
 
         if (websocket.data.sessionId !== undefined) {
-          closePiSession(websocket.data.sessionId, piSessions);
+          closeTerminalSession(websocket.data.sessionId, terminalSessions);
         }
 
         websocket.close(normalClosureCode, "terminal session closed");
@@ -279,30 +279,30 @@ export async function startDevtoolsControlServer(
           return;
         }
 
-        const session: IPiTerminalSessionState | undefined = readPiSession(websocket.data.sessionId, piSessions);
+        const session: ITerminalSessionState | undefined = readTerminalSession(websocket.data.sessionId, terminalSessions);
 
         if (session === undefined) {
-          websocket.send(JSON.stringify(createPiTerminalErrorMessage("Terminal session is no longer available.")));
+          websocket.send(JSON.stringify(createTerminalSessionErrorMessage("Terminal session is no longer available.")));
           websocket.close(1008, "terminal session not found");
           return;
         }
 
-        cancelIdlePiSessionShutdown(session);
+        cancelIdleTerminalSessionShutdown(session);
         session.sockets.add(websocket);
-        websocket.send(JSON.stringify(createPiTerminalSnapshotMessage(session.outputBuffer)));
+        websocket.send(JSON.stringify(createTerminalSessionSnapshotMessage(session.outputBuffer)));
 
         if (session.exited !== null) {
-          websocket.send(JSON.stringify(createPiTerminalExitMessage(session.exited.exitCode, session.exited.signalCode)));
+          websocket.send(JSON.stringify(createTerminalSessionExitMessage(session.exited.exitCode, session.exited.signalCode)));
         }
       },
       close(websocket: Bun.ServerWebSocket<DevtoolsWebSocketData>): void {
         websocket.unsubscribe(websocket.data.topicName);
 
-        if (websocket.data.topicName !== piSessionTopicName) {
+        if (websocket.data.topicName !== terminalSessionTopicName) {
           return;
         }
 
-        const session: IPiTerminalSessionState | undefined = readPiSession(websocket.data.sessionId, piSessions);
+        const session: ITerminalSessionState | undefined = readTerminalSession(websocket.data.sessionId, terminalSessions);
 
         if (session === undefined) {
           return;
@@ -311,7 +311,7 @@ export async function startDevtoolsControlServer(
         session.sockets.delete(websocket);
 
         if (session.sockets.size === 0 && websocket.data.sessionId !== undefined) {
-          scheduleIdlePiSessionShutdown(websocket.data.sessionId, session, piSessions);
+          scheduleIdleTerminalSessionShutdown(websocket.data.sessionId, session, terminalSessions);
         }
       },
     },
@@ -338,16 +338,16 @@ export async function startDevtoolsControlServer(
       isStopped = true;
       clearInterval(pollIntervalId);
 
-      for (const [sessionId] of piSessions) {
-        closePiSession(sessionId, piSessions);
+      for (const [sessionId] of terminalSessions) {
+        closeTerminalSession(sessionId, terminalSessions);
       }
 
       void server.stop(true);
     },
   };
 
-  function appendPiTerminalOutput(sessionId: string, data: Uint8Array): void {
-    const session: IPiTerminalSessionState | undefined = piSessions.get(sessionId);
+  function appendTerminalSessionOutput(sessionId: string, data: Uint8Array): void {
+    const session: ITerminalSessionState | undefined = terminalSessions.get(sessionId);
 
     if (session === undefined) {
       return;
@@ -360,7 +360,7 @@ export async function startDevtoolsControlServer(
     }
 
     session.outputBuffer = retainTerminalBufferTail(session.outputBuffer + outputChunk);
-    publishPiTerminalMessage(session, createPiTerminalOutputMessage(outputChunk));
+    publishTerminalSessionMessage(session, createTerminalSessionOutputMessage(outputChunk));
   }
 
   function createTerminalSession(request: IStartTerminalSessionRequest): string {
@@ -373,10 +373,10 @@ export async function startDevtoolsControlServer(
     const launchedSession: ILaunchedTerminalSession = startTerminalSession(
       request,
       (data: Uint8Array): void => {
-        appendPiTerminalOutput(sessionId, data);
+        appendTerminalSessionOutput(sessionId, data);
       },
     );
-    const session: IPiTerminalSessionState = {
+    const session: ITerminalSessionState = {
       close: launchedSession.close,
       decoder: new TextDecoder(),
       exited: null,
@@ -387,10 +387,10 @@ export async function startDevtoolsControlServer(
       write: launchedSession.write,
     };
 
-    piSessions.set(sessionId, session);
-    scheduleIdlePiSessionShutdown(sessionId, session, piSessions);
+    terminalSessions.set(sessionId, session);
+    scheduleIdleTerminalSessionShutdown(sessionId, session, terminalSessions);
     void launchedSession.childProcess.exited.then((exitCode: number): void => {
-      const activeSession: IPiTerminalSessionState | undefined = piSessions.get(sessionId);
+      const activeSession: ITerminalSessionState | undefined = terminalSessions.get(sessionId);
 
       if (activeSession === undefined) {
         return;
@@ -400,17 +400,17 @@ export async function startDevtoolsControlServer(
 
       if (trailingOutput.length > 0) {
         activeSession.outputBuffer = retainTerminalBufferTail(activeSession.outputBuffer + trailingOutput);
-        publishPiTerminalMessage(activeSession, createPiTerminalOutputMessage(trailingOutput));
+        publishTerminalSessionMessage(activeSession, createTerminalSessionOutputMessage(trailingOutput));
       }
 
       activeSession.exited = {
         exitCode,
         signalCode: launchedSession.childProcess.signalCode,
       };
-      publishPiTerminalMessage(activeSession, createPiTerminalExitMessage(exitCode, launchedSession.childProcess.signalCode));
+      publishTerminalSessionMessage(activeSession, createTerminalSessionExitMessage(exitCode, launchedSession.childProcess.signalCode));
 
       if (activeSession.sockets.size === 0) {
-        scheduleIdlePiSessionShutdown(sessionId, activeSession, piSessions);
+        scheduleIdleTerminalSessionShutdown(sessionId, activeSession, terminalSessions);
       }
     });
 
@@ -469,7 +469,7 @@ export async function startDevtoolsControlServer(
   }
 }
 
-function cancelIdlePiSessionShutdown(session: IPiTerminalSessionState): void {
+function cancelIdleTerminalSessionShutdown(session: ITerminalSessionState): void {
   if (session.idleTimeoutId === null) {
     return;
   }
@@ -478,14 +478,14 @@ function cancelIdlePiSessionShutdown(session: IPiTerminalSessionState): void {
   session.idleTimeoutId = null;
 }
 
-function closePiSession(sessionId: string, piSessions: Map<string, IPiTerminalSessionState>): void {
-  const session: IPiTerminalSessionState | undefined = piSessions.get(sessionId);
+function closeTerminalSession(sessionId: string, terminalSessions: Map<string, ITerminalSessionState>): void {
+  const session: ITerminalSessionState | undefined = terminalSessions.get(sessionId);
 
   if (session === undefined) {
     return;
   }
 
-  cancelIdlePiSessionShutdown(session);
+  cancelIdleTerminalSessionShutdown(session);
 
   for (const websocket of session.sockets) {
     websocket.close(normalClosureCode, "terminal session closed");
@@ -493,17 +493,17 @@ function closePiSession(sessionId: string, piSessions: Map<string, IPiTerminalSe
 
   session.sockets.clear();
   session.close();
-  piSessions.delete(sessionId);
+  terminalSessions.delete(sessionId);
 }
 
-function createPiTerminalErrorMessage(message: string): PiTerminalServerMessage {
+function createTerminalSessionErrorMessage(message: string): TerminalSessionServerMessage {
   return {
     message,
     type: "error",
   };
 }
 
-function createPiTerminalExitMessage(exitCode: number | null, signalCode: string | null): PiTerminalServerMessage {
+function createTerminalSessionExitMessage(exitCode: number | null, signalCode: string | null): TerminalSessionServerMessage {
   return {
     exitCode,
     signalCode,
@@ -511,14 +511,14 @@ function createPiTerminalExitMessage(exitCode: number | null, signalCode: string
   };
 }
 
-function createPiTerminalOutputMessage(data: string): PiTerminalServerMessage {
+function createTerminalSessionOutputMessage(data: string): TerminalSessionServerMessage {
   return {
     data,
     type: "output",
   };
 }
 
-function createPiTerminalSnapshotMessage(data: string): PiTerminalServerMessage {
+function createTerminalSessionSnapshotMessage(data: string): TerminalSessionServerMessage {
   return {
     data,
     type: "snapshot",
@@ -667,7 +667,7 @@ function isStringRecord(value: unknown): value is Record<string, string> {
   return Object.values(value).every((entry: unknown): boolean => typeof entry === "string");
 }
 
-function parsePiTerminalClientMessage(messageText: string): PiTerminalClientMessage | null {
+function parseTerminalSessionClientMessage(messageText: string): TerminalSessionClientMessage | null {
   const parsedValue: unknown = JSON.parse(messageText);
 
   if (typeof parsedValue !== "object" || parsedValue === null) {
@@ -720,7 +720,7 @@ function parsePiTerminalClientMessage(messageText: string): PiTerminalClientMess
   return null;
 }
 
-function publishPiTerminalMessage(session: IPiTerminalSessionState, message: PiTerminalServerMessage): void {
+function publishTerminalSessionMessage(session: ITerminalSessionState, message: TerminalSessionServerMessage): void {
   const serializedMessage: string = JSON.stringify(message);
 
   for (const websocket of session.sockets) {
@@ -732,15 +732,15 @@ function publishPiTerminalMessage(session: IPiTerminalSessionState, message: PiT
   }
 }
 
-function readPiSession(
+function readTerminalSession(
   sessionId: string | undefined,
-  piSessions: Map<string, IPiTerminalSessionState>,
-): IPiTerminalSessionState | undefined {
+  terminalSessions: Map<string, ITerminalSessionState>,
+): ITerminalSessionState | undefined {
   if (sessionId === undefined) {
     return undefined;
   }
 
-  return piSessions.get(sessionId);
+  return terminalSessions.get(sessionId);
 }
 
 async function readRequestJson(request: Request): Promise<unknown> {
@@ -759,15 +759,15 @@ function retainTerminalBufferTail(outputBuffer: string): string {
   return outputBuffer.slice(outputBuffer.length - maximumRetainedTerminalOutputCharacters);
 }
 
-function scheduleIdlePiSessionShutdown(
+function scheduleIdleTerminalSessionShutdown(
   sessionId: string,
-  session: IPiTerminalSessionState,
-  piSessions: Map<string, IPiTerminalSessionState>,
+  session: ITerminalSessionState,
+  terminalSessions: Map<string, ITerminalSessionState>,
 ): void {
-  cancelIdlePiSessionShutdown(session);
+  cancelIdleTerminalSessionShutdown(session);
   session.idleTimeoutId = setTimeout((): void => {
-    closePiSession(sessionId, piSessions);
-  }, idlePiSessionTimeoutInMilliseconds);
+    closeTerminalSession(sessionId, terminalSessions);
+  }, idleTerminalSessionTimeoutInMilliseconds);
 }
 
 const normalClosureCode: number = 1000;

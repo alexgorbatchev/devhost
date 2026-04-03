@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks"
 
 import { Button, css, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME, DEVTOOLS_ROOT_ID } from "../../shared/constants";
-import type { ITerminalSessionStartResult } from "../piTerminal/types";
+import type { ITerminalSessionStartResult } from "../terminalSessions/types";
 import { collectElementSnapshot, identifyElement } from "./collectElementSnapshot";
 import { createAnnotationSubmitDetail } from "./createAnnotationSubmitDetail";
 import { getElementSourceLocation } from "./getElementSourceLocation";

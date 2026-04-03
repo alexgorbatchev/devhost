@@ -1,17 +1,17 @@
 import type { ButtonVariant } from "../../shared/Button";
 
-interface IPiTerminalPrimaryAction {
+interface ITerminalSessionPrimaryAction {
   label: string;
   testId: string;
   title: string;
   variant: ButtonVariant;
 }
 
-export function readPiTerminalPrimaryAction(hasExited: boolean): IPiTerminalPrimaryAction {
+export function readTerminalSessionPrimaryAction(hasExited: boolean): ITerminalSessionPrimaryAction {
   if (hasExited) {
     return {
       label: "Close",
-      testId: "PiTerminalPanel--close",
+      testId: "TerminalSessionPanel--close",
       title: "Close terminal session",
       variant: "secondary",
     };
@@ -19,7 +19,7 @@ export function readPiTerminalPrimaryAction(hasExited: boolean): IPiTerminalPrim
 
   return {
     label: "Terminate",
-    testId: "PiTerminalPanel--terminate",
+    testId: "TerminalSessionPanel--terminate",
     title: "Terminate terminal session",
     variant: "danger",
   };

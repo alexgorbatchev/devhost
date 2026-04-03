@@ -1,17 +1,17 @@
 import type { JSX } from "preact";
 
 import { css, useDevtoolsTheme } from "../../shared";
-import { PiTerminalPanel } from "./PiTerminalPanel";
+import { TerminalSessionPanel } from "./TerminalSessionPanel";
 import type { ITerminalSession } from "./types";
 
-interface IPiTerminalTrayProps {
+interface ITerminalSessionTrayProps {
   onExpandSession: (sessionId: string) => void;
   onMinimizeSession: (sessionId: string) => void;
   onRemoveSession: (sessionId: string) => void;
   sessions: ITerminalSession[];
 }
 
-export function PiTerminalTray(props: IPiTerminalTrayProps): JSX.Element | null {
+export function TerminalSessionTray(props: ITerminalSessionTrayProps): JSX.Element | null {
   const theme = useDevtoolsTheme();
   const expandedSession: ITerminalSession | undefined = props.sessions.find((session: ITerminalSession): boolean => session.isExpanded);
   const minimizedSessions: ITerminalSession[] = props.sessions.filter((session: ITerminalSession): boolean => !session.isExpanded);
@@ -47,9 +47,9 @@ export function PiTerminalTray(props: IPiTerminalTrayProps): JSX.Element | null 
   });
 
   return (
-    <div class={rootClassName} data-testid="PiTerminalTray">
+    <div class={rootClassName} data-testid="TerminalSessionTray">
       {expandedSession !== undefined ? (
-        <PiTerminalPanel
+        <TerminalSessionPanel
           isExpanded={true}
           session={expandedSession}
           onExpand={noop}
@@ -62,11 +62,11 @@ export function PiTerminalTray(props: IPiTerminalTrayProps): JSX.Element | null 
         />
       ) : null}
       {minimizedSessions.length > 0 ? (
-        <div class={dockClassName} data-testid="PiTerminalTray--dock">
-          <div class={sessionListClassName} data-testid="PiTerminalTray--session-list">
+        <div class={dockClassName} data-testid="TerminalSessionTray--dock">
+          <div class={sessionListClassName} data-testid="TerminalSessionTray--session-list">
             {minimizedSessions.map((session: ITerminalSession) => {
               return (
-                <PiTerminalPanel
+                <TerminalSessionPanel
                   key={session.sessionId}
                   isExpanded={false}
                   session={session}

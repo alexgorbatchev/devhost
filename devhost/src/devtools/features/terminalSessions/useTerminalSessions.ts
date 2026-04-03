@@ -1,15 +1,16 @@
 import { useCallback, useState } from "preact/hooks";
 
-import { DEVTOOLS_CONTROL_TOKEN_HEADER_NAME, PI_SESSION_START_PATH } from "../../shared/constants";
+import { DEVTOOLS_CONTROL_TOKEN_HEADER_NAME, TERMINAL_SESSION_START_PATH } from "../../shared/constants";
 import { readDevtoolsControlToken } from "../../shared/readDevtoolsControlToken";
 import type { IComponentSourceMenuItem } from "../componentSourceNavigation/types";
 import type { IAnnotationSubmitDetail } from "../annotationComposer/types";
 import {
-  appendPiTerminalSession,
-  expandPiTerminalSession,
-  minimizePiTerminalSession,
-  removePiTerminalSession,
-} from "./managePiTerminalSessions";
+  appendTerminalSession,
+  expandTerminalSession,
+  minimizeTerminalSession,
+  removeTerminalSession,
+} from "./manageTerminalSessions";
+import { readTerminalSessionKindConfig } from "./readTerminalSessionKindConfig";
 import type {
   IStartTerminalSessionRequest,
   IStartTerminalSessionResponse,
@@ -17,33 +18,33 @@ import type {
   ITerminalSessionStartResult,
 } from "./types";
 
-interface IUsePiTerminalSessionResult {
+interface IUseTerminalSessionsResult {
   expandSession: (sessionId: string) => void;
   minimizeSession: (sessionId: string) => void;
-  piTerminalSessions: ITerminalSession[];
+  terminalSessions: ITerminalSession[];
   removeSession: (sessionId: string) => void;
   startComponentSourceSession: (menuItem: IComponentSourceMenuItem) => Promise<ITerminalSessionStartResult>;
   submitAnnotation: (annotation: IAnnotationSubmitDetail) => Promise<ITerminalSessionStartResult>;
 }
 
-export function usePiTerminalSession(): IUsePiTerminalSessionResult {
-  const [piTerminalSessions, setPiTerminalSessions] = useState<ITerminalSession[]>([]);
+export function useTerminalSessions(): IUseTerminalSessionsResult {
+  const [terminalSessions, setTerminalSessions] = useState<ITerminalSession[]>([]);
 
   const expandSession = useCallback((sessionId: string): void => {
-    setPiTerminalSessions((currentSessions: ITerminalSession[]): ITerminalSession[] => {
-      return expandPiTerminalSession(currentSessions, sessionId);
+    setTerminalSessions((currentSessions: ITerminalSession[]): ITerminalSession[] => {
+      return expandTerminalSession(currentSessions, sessionId);
     });
   }, []);
 
   const minimizeSession = useCallback((sessionId: string): void => {
-    setPiTerminalSessions((currentSessions: ITerminalSession[]): ITerminalSession[] => {
-      return minimizePiTerminalSession(currentSessions, sessionId);
+    setTerminalSessions((currentSessions: ITerminalSession[]): ITerminalSession[] => {
+      return minimizeTerminalSession(currentSessions, sessionId);
     });
   }, []);
 
   const removeSession = useCallback((sessionId: string): void => {
-    setPiTerminalSessions((currentSessions: ITerminalSession[]): ITerminalSession[] => {
-      return removePiTerminalSession(currentSessions, sessionId);
+    setTerminalSessions((currentSessions: ITerminalSession[]): ITerminalSession[] => {
+      return removeTerminalSession(currentSessions, sessionId);
     });
   }, []);
 
@@ -53,7 +54,7 @@ export function usePiTerminalSession(): IUsePiTerminalSessionResult {
       createSession: (sessionId: string) => ITerminalSession,
     ): Promise<ITerminalSessionStartResult> => {
       try {
-        const response = await fetch(PI_SESSION_START_PATH, {
+        const response = await fetch(TERMINAL_SESSION_START_PATH, {
           body: JSON.stringify(request),
           headers: {
             "content-type": "application/json",
@@ -78,8 +79,8 @@ export function usePiTerminalSession(): IUsePiTerminalSessionResult {
           };
         }
 
-        setPiTerminalSessions((currentSessions: ITerminalSession[]): ITerminalSession[] => {
-          return appendPiTerminalSession(currentSessions, createSession(responseBody.sessionId));
+        setTerminalSessions((currentSessions: ITerminalSession[]): ITerminalSession[] => {
+          return appendTerminalSession(currentSessions, createSession(responseBody.sessionId));
         });
 
         return {
@@ -104,7 +105,7 @@ export function usePiTerminalSession(): IUsePiTerminalSessionResult {
       (sessionId: string): ITerminalSession => {
         return {
           annotation,
-          isExpanded: false,
+          isExpanded: readTerminalSessionKindConfig("pi-annotation").defaultIsExpanded,
           kind: "pi-annotation",
           sessionId,
         };
@@ -124,7 +125,7 @@ export function usePiTerminalSession(): IUsePiTerminalSessionResult {
         (sessionId: string): ITerminalSession => {
           return {
             componentName: menuItem.displayName,
-            isExpanded: true,
+            isExpanded: readTerminalSessionKindConfig("component-source").defaultIsExpanded,
             kind: "component-source",
             sessionId,
             sourceLabel: menuItem.sourceLabel,
@@ -138,7 +139,7 @@ export function usePiTerminalSession(): IUsePiTerminalSessionResult {
   return {
     expandSession,
     minimizeSession,
-    piTerminalSessions,
+    terminalSessions,
     removeSession,
     startComponentSourceSession,
     submitAnnotation,

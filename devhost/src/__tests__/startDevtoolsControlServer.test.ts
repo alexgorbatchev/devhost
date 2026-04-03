@@ -3,13 +3,13 @@ import assert from "node:assert";
 import { afterEach, describe, expect, test } from "bun:test";
 
 import type { IAnnotationSubmitDetail } from "../devtools/features/annotationComposer/types";
-import type { IStartTerminalSessionRequest } from "../devtools/features/piTerminal/types";
+import type { IStartTerminalSessionRequest } from "../devtools/features/terminalSessions/types";
 import {
   HEALTH_WEBSOCKET_PATH,
   INJECTED_SCRIPT_PATH,
   LOGS_WEBSOCKET_PATH,
-  PI_SESSION_START_PATH,
-  PI_SESSION_WEBSOCKET_PATH,
+  TERMINAL_SESSION_START_PATH,
+  TERMINAL_SESSION_WEBSOCKET_PATH,
 } from "../devtools/shared/constants";
 import type { HealthResponse } from "../devtools/shared/types";
 import type { ILaunchedTerminalSession } from "../launchTerminalSession";
@@ -151,7 +151,7 @@ describe("startDevtoolsControlServer", () => {
       kind: "pi-annotation",
     };
     const controlToken: string = await readControlToken(controlServer.port);
-    const startResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${PI_SESSION_START_PATH}`, {
+    const startResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${TERMINAL_SESSION_START_PATH}`, {
       body: JSON.stringify(annotationRequest),
       headers: {
         "content-type": "application/json",
@@ -226,7 +226,7 @@ describe("startDevtoolsControlServer", () => {
       sourceLabel: "src/components/SaveButton.tsx:42:8",
     };
     const controlToken: string = await readControlToken(controlServer.port);
-    const startResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${PI_SESSION_START_PATH}`, {
+    const startResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${TERMINAL_SESSION_START_PATH}`, {
       body: JSON.stringify(componentSourceRequest),
       headers: {
         "content-type": "application/json",
@@ -258,7 +258,7 @@ describe("startDevtoolsControlServer", () => {
     stopFunctions.push(controlServer.stop);
 
     const controlToken: string = await readControlToken(controlServer.port);
-    const startResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${PI_SESSION_START_PATH}`, {
+    const startResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${TERMINAL_SESSION_START_PATH}`, {
       body: JSON.stringify({
         annotation: createAnnotationDetail(),
         kind: "pi-annotation",
@@ -419,7 +419,7 @@ async function readControlToken(port: number): Promise<string> {
 }
 
 function createSessionWebSocket(port: number, sessionId: string, controlToken: string): WebSocket {
-  const websocketUrl: URL = new URL(`ws://127.0.0.1:${port}${PI_SESSION_WEBSOCKET_PATH}`);
+  const websocketUrl: URL = new URL(`ws://127.0.0.1:${port}${TERMINAL_SESSION_WEBSOCKET_PATH}`);
 
   websocketUrl.searchParams.set("sessionId", sessionId);
   websocketUrl.searchParams.set("token", controlToken);

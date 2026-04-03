@@ -8,18 +8,19 @@ import { Button, css, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared
 import { createDevtoolsWebSocketUrl } from "../../shared/createDevtoolsWebSocketUrl";
 import {
   DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME,
-  PI_SESSION_ID_QUERY_PARAMETER_NAME,
-  PI_SESSION_WEBSOCKET_PATH,
+  TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME,
+  TERMINAL_SESSION_WEBSOCKET_PATH,
   XTERM_STYLESHEET_PATH,
 } from "../../shared/constants";
 import { readDevtoolsControlToken } from "../../shared/readDevtoolsControlToken";
 import { createXtermTheme } from "./createXtermTheme";
-import { readPiTerminalPrimaryAction } from "./readPiTerminalPrimaryAction";
+import { readTerminalSessionPrimaryAction } from "./readTerminalSessionPrimaryAction";
+import { readTerminalSessionSummary, type ITerminalSessionSummary } from "./readTerminalSessionSummary";
 import { resolveTerminalPanelLayout, type IPanelSize } from "./resolveTerminalPanelLayout";
 import { shouldAutoRemoveTerminalSession } from "./shouldAutoRemoveTerminalSession";
-import type { ITerminalSession, PiTerminalClientMessage, PiTerminalServerMessage } from "./types";
+import type { ITerminalSession, TerminalSessionClientMessage, TerminalSessionServerMessage } from "./types";
 
-interface IPiTerminalPanelProps {
+interface ITerminalSessionPanelProps {
   isExpanded: boolean;
   onExpand: () => void;
   onMinimize: () => void;
@@ -33,21 +34,12 @@ interface ITrayTooltipLayout {
   width: number;
 }
 
-interface ISessionSummary {
-  eyebrow: string;
-  headline: string;
-  meta: string[];
-  terminalTitle: string;
-  trayTooltipPrimary: string;
-  trayTooltipSecondary?: string;
-}
-
 const normalClosureCode: number = 1000;
 const trayScale: number = 0.32;
 const trayTransitionDurationInMilliseconds: number = 180;
 const xtermStylesheetId: string = "devhost-xterm-stylesheet";
 
-export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
+export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Element {
   const theme = useDevtoolsTheme();
   const fitAddonReference = useRef<FitAddon | null>(null);
   const hasExitedReference = useRef<boolean>(false);
@@ -203,8 +195,8 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
       theme: createXtermTheme(theme),
     });
     const fitAddon = new FitAddon();
-    const websocketUrl: URL = new URL(createDevtoolsWebSocketUrl(PI_SESSION_WEBSOCKET_PATH, window.location));
-    const websocket = new WebSocket(appendPiSessionParameters(websocketUrl, props.session.sessionId).toString());
+    const websocketUrl: URL = new URL(createDevtoolsWebSocketUrl(TERMINAL_SESSION_WEBSOCKET_PATH, window.location));
+    const websocket = new WebSocket(appendTerminalSessionParameters(websocketUrl, props.session.sessionId).toString());
 
     fitAddonReference.current = fitAddon;
     terminalReference.current = terminal;
@@ -241,7 +233,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
       setErrorMessage("The terminal websocket failed.");
     };
     const handleMessage = (event: MessageEvent<string>): void => {
-      const message: PiTerminalServerMessage | null = parsePiTerminalServerMessage(event.data);
+      const message: TerminalSessionServerMessage | null = parseTerminalSessionServerMessage(event.data);
 
       if (message === null) {
         setErrorMessage("Received an invalid terminal message.");
@@ -333,8 +325,8 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
     props.onRemove();
   }, [hasExited, props.onRemove, props.session]);
 
-  const primaryAction = readPiTerminalPrimaryAction(hasExited);
-  const sessionSummary: ISessionSummary = readSessionSummary(props.session);
+  const primaryAction = readTerminalSessionPrimaryAction(hasExited);
+  const sessionSummary: ITerminalSessionSummary = readTerminalSessionSummary(props.session);
   const annotationClassName: string = css(createAnnotationStyle(theme));
   const annotationCommentClassName: string = css(createAnnotationCommentStyle(theme));
   const annotationEyebrowClassName: string = css(createAnnotationEyebrowStyle(theme));
@@ -367,7 +359,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
 
   const panelContent: JSX.Element = (
     <div class={chromeClassName}>
-      <header class={headerClassName} data-testid="PiTerminalPanel--header">
+      <header class={headerClassName} data-testid="TerminalSessionPanel--header">
         <div class={headerTextClassName}>
           <strong>{sessionSummary.terminalTitle}</strong>
           <span class={statusClassName}>{errorMessage ?? statusText}</span>
@@ -375,7 +367,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
         {props.isExpanded ? (
           <div class={buttonGroupClassName}>
             <Button
-              testId="PiTerminalPanel--minimize"
+              testId="TerminalSessionPanel--minimize"
               title={`Minimize ${sessionSummary.terminalTitle}`}
               variant="secondary"
               onClick={props.onMinimize}
@@ -400,7 +392,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
         ) : null}
       </header>
       {props.isExpanded ? (
-        <section class={annotationClassName} data-testid="PiTerminalPanel--annotation">
+        <section class={annotationClassName} data-testid="TerminalSessionPanel--annotation">
           <span class={annotationEyebrowClassName}>{sessionSummary.eyebrow}</span>
           <strong class={annotationCommentClassName}>{sessionSummary.headline}</strong>
           <div class={annotationMetaClassName}>
@@ -410,7 +402,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
           </div>
         </section>
       ) : null}
-      <div ref={terminalViewportReference} class={terminalViewportClassName} data-testid="PiTerminalPanel--terminal">
+      <div ref={terminalViewportReference} class={terminalViewportClassName} data-testid="TerminalSessionPanel--terminal">
         <div ref={terminalContainerReference} class={terminalContainerClassName} />
       </div>
     </div>
@@ -418,9 +410,9 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
 
   if (props.isExpanded) {
     return (
-      <div class={expandedOverlayClassName} data-testid="PiTerminalPanel">
-        <div aria-hidden="true" class={backdropClassName} data-testid="PiTerminalPanel--backdrop" />
-        <section class={expandedPanelClassName} data-testid="PiTerminalPanel--content">
+      <div class={expandedOverlayClassName} data-testid="TerminalSessionPanel">
+        <div aria-hidden="true" class={backdropClassName} data-testid="TerminalSessionPanel--backdrop" />
+        <section class={expandedPanelClassName} data-testid="TerminalSessionPanel--content">
           {panelContent}
         </section>
       </div>
@@ -428,12 +420,12 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
   }
 
   return (
-    <section ref={trayShellReference} class={trayShellClassName} data-testid="PiTerminalPanel">
+    <section ref={trayShellReference} class={trayShellClassName} data-testid="TerminalSessionPanel">
       <div class={trayScaledContentClassName}>{panelContent}</div>
       <button
         aria-label={`Expand ${sessionSummary.terminalTitle} preview`}
         class={trayOverlayButtonClassName}
-        data-testid="PiTerminalPanel--expand"
+        data-testid="TerminalSessionPanel--expand"
         type="button"
         onBlur={(): void => {
           setIsTrayHoverVisible(false);
@@ -454,14 +446,14 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
         <span class={trayBadgeClassName}>{errorMessage ?? statusText}</span>
       </button>
       {hasExited ? (
-        <div aria-hidden="true" class={trayCompletionOverlayClassName} data-testid="PiTerminalPanel--completion-indicator">
+        <div aria-hidden="true" class={trayCompletionOverlayClassName} data-testid="TerminalSessionPanel--completion-indicator">
           <svg class={trayCompletionIconClassName} viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
             <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM369 209L241 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L335 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z" />
           </svg>
         </div>
       ) : null}
       {isTrayHoverVisible && trayTooltipLayout !== null ? (
-        <div class={trayTooltipClassName} data-testid="PiTerminalPanel--tooltip">
+        <div class={trayTooltipClassName} data-testid="TerminalSessionPanel--tooltip">
           <strong class={trayTooltipCommentClassName}>{sessionSummary.trayTooltipPrimary}</strong>
           {sessionSummary.trayTooltipSecondary !== undefined ? (
             <span class={trayTooltipMetaClassName}>{sessionSummary.trayTooltipSecondary}</span>
@@ -472,35 +464,9 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
   );
 }
 
-function readSessionSummary(session: ITerminalSession): ISessionSummary {
-  if (session.kind === "pi-annotation") {
-    return {
-      eyebrow: "Original annotation",
-      headline: session.annotation.comment,
-      meta: [
-        `${session.annotation.markers.length} markers`,
-        session.annotation.title,
-        new URL(session.annotation.url).host,
-        new Date(session.annotation.submittedAt).toLocaleString(),
-      ],
-      terminalTitle: "Pi terminal",
-      trayTooltipPrimary: session.annotation.comment,
-    };
-  }
-
-  return {
-    eyebrow: "Component source",
-    headline: `<${session.componentName}>`,
-    meta: [session.sourceLabel],
-    terminalTitle: "Neovim",
-    trayTooltipPrimary: `<${session.componentName}>`,
-    trayTooltipSecondary: session.sourceLabel,
-  };
-}
-
-function appendPiSessionParameters(websocketUrl: URL, sessionId: string): URL {
+function appendTerminalSessionParameters(websocketUrl: URL, sessionId: string): URL {
   websocketUrl.searchParams.set(DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME, readDevtoolsControlToken());
-  websocketUrl.searchParams.set(PI_SESSION_ID_QUERY_PARAMETER_NAME, sessionId);
+  websocketUrl.searchParams.set(TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME, sessionId);
 
   return websocketUrl;
 }
@@ -774,7 +740,7 @@ function ensureXtermStylesheet(rootNode: Node): void {
   rootNode.append(stylesheetLink);
 }
 
-function parsePiTerminalServerMessage(messageText: string): PiTerminalServerMessage | null {
+function parseTerminalSessionServerMessage(messageText: string): TerminalSessionServerMessage | null {
   const parsedValue: unknown = JSON.parse(messageText);
 
   if (typeof parsedValue !== "object" || parsedValue === null) {
@@ -841,7 +807,7 @@ function resizeTerminal(terminal: Terminal, fitAddon: FitAddon, websocket: WebSo
   });
 }
 
-function sendClientMessage(websocket: WebSocket, message: PiTerminalClientMessage): void {
+function sendClientMessage(websocket: WebSocket, message: TerminalSessionClientMessage): void {
   if (websocket.readyState !== WebSocket.OPEN) {
     return;
   }

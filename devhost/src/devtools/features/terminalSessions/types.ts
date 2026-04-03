@@ -1,7 +1,7 @@
 import type { ISourceLocation } from "../../shared/sourceLocation";
 import type { IAnnotationSubmitDetail } from "../annotationComposer/types";
 
-export interface IStartPiAnnotationSessionRequest {
+export interface IStartAnnotationTerminalSessionRequest {
   annotation: IAnnotationSubmitDetail;
   kind: "pi-annotation";
 }
@@ -13,7 +13,7 @@ export interface IStartComponentSourceSessionRequest {
   sourceLabel: string;
 }
 
-export type IStartTerminalSessionRequest = IStartPiAnnotationSessionRequest | IStartComponentSourceSessionRequest;
+export type IStartTerminalSessionRequest = IStartAnnotationTerminalSessionRequest | IStartComponentSourceSessionRequest;
 
 export interface IStartTerminalSessionResponse {
   sessionId: string;
@@ -29,7 +29,7 @@ interface ITerminalSessionBase {
   sessionId: string;
 }
 
-export interface IPiAnnotationTerminalSession extends ITerminalSessionBase {
+export interface IAnnotationTerminalSession extends ITerminalSessionBase {
   annotation: IAnnotationSubmitDetail;
   kind: "pi-annotation";
 }
@@ -40,48 +40,48 @@ export interface IComponentSourceTerminalSession extends ITerminalSessionBase {
   sourceLabel: string;
 }
 
-export type ITerminalSession = IPiAnnotationTerminalSession | IComponentSourceTerminalSession;
+export type ITerminalSession = IAnnotationTerminalSession | IComponentSourceTerminalSession;
 
-export interface IPiTerminalInputMessage {
+export interface ITerminalSessionInputMessage {
   data: string;
   type: "input";
 }
 
-export interface IPiTerminalResizeMessage {
+export interface ITerminalSessionResizeMessage {
   cols: number;
   rows: number;
   type: "resize";
 }
 
-export interface IPiTerminalCloseMessage {
+export interface ITerminalSessionCloseMessage {
   type: "close";
 }
 
-export type PiTerminalClientMessage = IPiTerminalInputMessage | IPiTerminalResizeMessage | IPiTerminalCloseMessage;
+export type TerminalSessionClientMessage = ITerminalSessionInputMessage | ITerminalSessionResizeMessage | ITerminalSessionCloseMessage;
 
-export interface IPiTerminalSnapshotMessage {
+export interface ITerminalSessionSnapshotMessage {
   data: string;
   type: "snapshot";
 }
 
-export interface IPiTerminalOutputMessage {
+export interface ITerminalSessionOutputMessage {
   data: string;
   type: "output";
 }
 
-export interface IPiTerminalExitMessage {
+export interface ITerminalSessionExitMessage {
   exitCode: number | null;
   signalCode: string | null;
   type: "exit";
 }
 
-export interface IPiTerminalErrorMessage {
+export interface ITerminalSessionErrorMessage {
   message: string;
   type: "error";
 }
 
-export type PiTerminalServerMessage =
-  | IPiTerminalSnapshotMessage
-  | IPiTerminalOutputMessage
-  | IPiTerminalExitMessage
-  | IPiTerminalErrorMessage;
+export type TerminalSessionServerMessage =
+  | ITerminalSessionSnapshotMessage
+  | ITerminalSessionOutputMessage
+  | ITerminalSessionExitMessage
+  | ITerminalSessionErrorMessage;

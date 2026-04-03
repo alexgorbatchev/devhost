@@ -1,11 +1,9 @@
 import { managedCaddyPaths } from "./caddyPaths";
 import { signalExitCodes, supportedSignals, type SupportedSignal } from "./constants";
 import { collectManagedServicesHealth } from "./collectManagedServicesHealth";
-import { createNeovimSessionCommand } from "./createNeovimSessionCommand";
+import { createTerminalSessionCommand } from "./createTerminalSessionCommand";
 import type { IDevhostLogger } from "./createLogger";
-import { createPiAnnotationPrompt } from "./createPiAnnotationPrompt";
 import { ensureManagedCaddyConfig } from "./ensureManagedCaddyConfig";
-import { launchPiTerminalSession } from "./launchPiTerminalSession";
 import { launchTerminalSession } from "./launchTerminalSession";
 import { pipeSubprocessOutput } from "./pipeSubprocessOutput";
 import {
@@ -94,23 +92,13 @@ export async function startStack(
         projectRootPath: manifest.manifestDirectoryPath,
         stackName: manifest.name,
         startTerminalSession: (request, onData) => {
-          if (request.kind === "pi-annotation") {
-            return launchPiTerminalSession({
-              cols: 120,
-              cwd: manifest.manifestDirectoryPath,
-              onData,
-              prompt: createPiAnnotationPrompt(request.annotation),
-              rows: 80,
-            });
-          }
-
-          if (manifest.devtoolsComponentEditor !== "neovim") {
-            throw new Error('Component source terminal sessions require devtoolsComponentEditor = "neovim".');
-          }
-
           return launchTerminalSession({
             cols: 120,
-            command: createNeovimSessionCommand(request.source, manifest.manifestDirectoryPath),
+            command: createTerminalSessionCommand({
+              componentEditor: manifest.devtoolsComponentEditor,
+              projectRootPath: manifest.manifestDirectoryPath,
+              request,
+            }),
             cwd: manifest.manifestDirectoryPath,
             onData,
             rows: 80,

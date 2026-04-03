@@ -1,6 +1,6 @@
 import type { ITerminalSession } from "./types";
 
-export function appendPiTerminalSession(
+export function appendTerminalSession(
   currentSessions: ITerminalSession[],
   nextSession: ITerminalSession,
 ): ITerminalSession[] {
@@ -16,7 +16,7 @@ export function appendPiTerminalSession(
   return [nextSession, ...normalizedCurrentSessions];
 }
 
-export function expandPiTerminalSession(
+export function expandTerminalSession(
   currentSessions: ITerminalSession[],
   targetSessionId: string,
 ): ITerminalSession[] {
@@ -36,7 +36,7 @@ export function expandPiTerminalSession(
   });
 }
 
-export function minimizePiTerminalSession(
+export function minimizeTerminalSession(
   currentSessions: ITerminalSession[],
   targetSessionId: string,
 ): ITerminalSession[] {
@@ -52,7 +52,7 @@ export function minimizePiTerminalSession(
   });
 }
 
-export function removePiTerminalSession(
+export function removeTerminalSession(
   currentSessions: ITerminalSession[],
   targetSessionId: string,
 ): ITerminalSession[] {

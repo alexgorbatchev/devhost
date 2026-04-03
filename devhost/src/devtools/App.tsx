@@ -6,7 +6,7 @@ import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../stackTypes";
 import { AnnotationComposer } from "./features/annotationComposer";
 import { ComponentSourceMenu, useComponentSourceNavigation } from "./features/componentSourceNavigation";
 import { LogMinimap, useServiceLogs } from "./features/minimap";
-import { PiTerminalTray, usePiTerminalSession } from "./features/piTerminal";
+import { TerminalSessionTray, useTerminalSessions } from "./features/terminalSessions";
 import { ServiceStatusPanel, useServiceHealth } from "./features/serviceStatusPanel";
 import {
   css,
@@ -43,11 +43,11 @@ function AppContent(): JSX.Element {
   const {
     expandSession,
     minimizeSession,
-    piTerminalSessions,
+    terminalSessions,
     removeSession,
     startComponentSourceSession,
     submitAnnotation,
-  } = usePiTerminalSession();
+  } = useTerminalSessions();
   const [isMinimapHovered, setIsMinimapHovered] = useState<boolean>(false);
   const logEntries = useServiceLogs(isMinimapHovered);
   const { componentMenu, openComponentSource } = useComponentSourceNavigation({
@@ -86,8 +86,8 @@ function AppContent(): JSX.Element {
       <div class={cornerDockClassName} data-testid="App--corner-dock">
         {shouldRenderPanel ? <ServiceStatusPanel errorMessage={errorMessage} services={services} /> : null}
       </div>
-      <PiTerminalTray
-        sessions={piTerminalSessions}
+      <TerminalSessionTray
+        sessions={terminalSessions}
         onExpandSession={expandSession}
         onMinimizeSession={minimizeSession}
         onRemoveSession={removeSession}

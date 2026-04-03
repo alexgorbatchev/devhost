@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "preact/hooks";
 import { readDevtoolsComponentEditorLabel, type DevtoolsComponentEditor } from "../../../devtoolsComponentEditor";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../shared/constants";
 import { resolveAnnotationTarget } from "../annotationComposer/resolveAnnotationTarget";
-import type { ITerminalSessionStartResult } from "../piTerminal/types";
+import type { ITerminalSessionStartResult } from "../terminalSessions/types";
 import { createComponentSourceUrl, formatComponentSourcePath } from "./componentSourceUtils";
 import { inspectComponentElement } from "./inspectComponentElement";
 import type { IComponentSourceMenuItem, IComponentSourceMenuState } from "./types";
