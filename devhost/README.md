@@ -29,7 +29,7 @@ It also has Caddy lifecycle commands:
 - prefixes its own logs with the manifest `name` in manifest mode, falling back to `[devhost]`
 - prefixes child service logs with `[service-name]`
 - optionally injects a small devtools UI into HTML document navigations
-- includes an always-visible annotation button for selecting multiple page elements, drafting a comment, and starting a Pi session from that draft
+- includes an Alt-held annotation mode for selecting multiple page elements, drafting a comment, and starting a Pi session from that draft
 - exposes devhost control routes under `/__devhost__/*`
 - includes a websocket status stream when devtools control routing is enabled
 
@@ -199,9 +199,11 @@ That keeps assets, HMR, fetches, SSE, and WebSockets off the injection path.
 
 The injected devtools UI mounts inside its own Shadow DOM container so its runtime styles do not leak into the host page.
 
-The injected UI now includes an always-visible `Annotate` button. In annotation mode:
+The injected UI now uses a hold-to-select annotation trigger instead of a persistent corner button. In annotation mode:
 
-- click one or more page elements to place numbered markers
+- hold `Alt` (`Option` on macOS) to enter annotation selection mode
+- click one or more page elements while holding `Alt` to place numbered markers
+- release `Alt` to leave selection mode while keeping the current draft open
 - write a comment that references markers like `#1` and `#2`
 - click `Submit` or press `⌘ ↵` / `Ctrl + Enter` to start a Pi session seeded with the draft
 - click `Cancel` or press `Escape` to discard the draft

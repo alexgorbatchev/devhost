@@ -40,8 +40,6 @@ function AppContent(): JSX.Element {
   const logEntries = useServiceLogs(isMinimapHovered);
   const shouldRenderPanel: boolean = errorMessage !== null || services.length > 0;
   const shouldRenderMinimap: boolean = logEntries.length > 0;
-  const shouldRenderButtonFirst: boolean =
-    devtoolsPosition === "top-left" || devtoolsPosition === "top-right";
   const cornerDockClassName: string = css({
     ...readVerticalPositionStyle(theme, devtoolsPosition),
     ...readHorizontalPositionStyle(theme, devtoolsMinimapPosition, devtoolsPosition, shouldRenderMinimap),
@@ -56,10 +54,9 @@ function AppContent(): JSX.Element {
 
   return (
     <div id={DEVTOOLS_ROOT_ID} data-devhost-devtools="" data-testid="App">
+      <AnnotationComposer onSubmit={submitAnnotation} stackName={stackName} />
       <div class={cornerDockClassName} data-testid="App--corner-dock">
-        {shouldRenderButtonFirst ? <AnnotationComposer onSubmit={submitAnnotation} stackName={stackName} /> : null}
         {shouldRenderPanel ? <ServiceStatusPanel errorMessage={errorMessage} services={services} /> : null}
-        {shouldRenderButtonFirst ? null : <AnnotationComposer onSubmit={submitAnnotation} stackName={stackName} />}
       </div>
       <PiTerminalTray
         sessions={piTerminalSessions}

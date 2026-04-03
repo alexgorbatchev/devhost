@@ -28,9 +28,18 @@ interface IMarkerRenderModel {
   markerTop: number;
 }
 
+interface ISelectionHighlightFrame {
+  height: number;
+  left: number;
+  top: number;
+  width: number;
+}
+
 const markerSize: number = 24;
 const popupWidth: number = 320;
 const selectionCursorStyleId: string = "devhost-annotation-cursor-style";
+const selectionHighlightHorizontalPadding: number = 2;
+const selectionHighlightVerticalPadding: number = 1;
 
 export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element {
   const theme = useDevtoolsTheme();
@@ -232,11 +241,20 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
   }, [isSelectionMode]);
 
   useEffect(() => {
-    if (!hasDraft) {
-      return;
-    }
-
     const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === "Alt") {
+        if (isSubmitting || doesEventTargetAcceptTextInput(event.target)) {
+          return;
+        }
+
+        setIsSelectionMode(true);
+        return;
+      }
+
+      if (!hasDraft) {
+        return;
+      }
+
       if (event.key === "Escape") {
         event.preventDefault();
         cancelDraft();
@@ -248,13 +266,27 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
         void submitDraft();
       }
     };
+    const handleKeyUp = (event: KeyboardEvent): void => {
+      if (event.key !== "Alt") {
+        return;
+      }
+
+      setIsSelectionMode(false);
+    };
+    const handleWindowBlur = (): void => {
+      setIsSelectionMode(false);
+    };
 
     document.addEventListener("keydown", handleKeyDown, true);
+    document.addEventListener("keyup", handleKeyUp, true);
+    window.addEventListener("blur", handleWindowBlur);
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown, true);
+      document.removeEventListener("keyup", handleKeyUp, true);
+      window.removeEventListener("blur", handleWindowBlur);
     };
-  }, [cancelDraft, hasDraft, submitDraft]);
+  }, [cancelDraft, hasDraft, isSubmitting, submitDraft]);
 
   useEffect(() => {
     if (!isSelectionMode) {
@@ -305,6 +337,30 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
       window.cancelAnimationFrame(animationFrameId);
     };
   }, [comment, isSubmitting, layoutVersion, selectedElements.length, submissionErrorMessage]);
+
+  useEffect(() => {
+    const popupElement: HTMLDivElement | null = popupReference.current;
+
+    if (popupElement === null || selectedElements.length === 0) {
+      return;
+    }
+
+    const handlePopupKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      cancelDraft();
+    };
+
+    popupElement.addEventListener("keydown", handlePopupKeyDown, true);
+
+    return () => {
+      popupElement.removeEventListener("keydown", handlePopupKeyDown, true);
+    };
+  }, [cancelDraft, selectedElements.length]);
 
   const markerRenderModels: IMarkerRenderModel[] = useMemo((): IMarkerRenderModel[] => {
     return selectedElements.map((selection: ISelectedElementDraft): IMarkerRenderModel => {
@@ -364,7 +420,6 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
   }, [hoveredElement, layoutVersion]);
   const isHoveredElementSelected: boolean =
     hoveredElement !== null && selectedElements.some((selection: ISelectedElementDraft): boolean => selection.element === hoveredElement);
-  const buttonLabel: string = hasDraft ? (isSubmitting ? "Starting Pi…" : "Cancel draft") : "Annotate";
   const errorClassName: string = css(createSubmissionErrorStyle(theme));
   const markerListClassName: string = css(markerListStyle);
   const markerListItemClassName: string = css(markerListItemStyle);
@@ -376,23 +431,6 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
 
   return (
     <div data-testid="AnnotationComposer">
-      <Button
-        ariaPressed={hasDraft}
-        disabled={isSubmitting}
-        testId="AnnotationComposer--toggle"
-        title={hasDraft ? "Cancel annotation draft" : "Start annotation mode"}
-        variant={hasDraft ? "danger" : "primary"}
-        onClick={(): void => {
-          if (hasDraft) {
-            cancelDraft();
-            return;
-          }
-
-          setIsSelectionMode(true);
-        }}
-      >
-        {buttonLabel}
-      </Button>
       <div class={overlayClassName}>
         {isSelectionMode && hoveredRectangle !== null && !isHoveredElementSelected ? (
           <div
@@ -463,18 +501,6 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
           ) : null}
           <div class={popupActionsClassName}>
             <Button
-              disabled={isSubmitting}
-              endEnhancer="Esc"
-              endEnhancerStyle={createShortcutBadgeStyle(theme)}
-              endEnhancerStyleHover={shortcutBadgeHoverStyle}
-              style={createCancelButtonStyle(theme)}
-              styleHover={createActionButtonHoverStyle(theme)}
-              variant="secondary"
-              onClick={cancelDraft}
-            >
-              Cancel
-            </Button>
-            <Button
               disabled={trimmedComment.length === 0 || isSubmitting}
               endEnhancer="⌘ ↵"
               endEnhancerStyle={createShortcutBadgeStyle(theme)}
@@ -487,6 +513,18 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
               }}
             >
               {isSubmitting ? "Starting Pi…" : "Submit"}
+            </Button>
+            <Button
+              disabled={isSubmitting}
+              endEnhancer="Esc"
+              endEnhancerStyle={createShortcutBadgeStyle(theme)}
+              endEnhancerStyleHover={shortcutBadgeHoverStyle}
+              style={createCancelButtonStyle(theme)}
+              styleHover={createActionButtonHoverStyle(theme)}
+              variant="secondary"
+              onClick={cancelDraft}
+            >
+              Cancel
             </Button>
           </div>
         </div>
@@ -543,7 +581,7 @@ const markerListTextStyle: CSSObject = {
 
 const popupActionsStyle: CSSObject = {
   display: "flex",
-  justifyContent: "flex-end",
+  justifyContent: "flex-start",
   gap: "8px",
 };
 
@@ -597,31 +635,35 @@ function createSubmitButtonStyle(theme: IDevtoolsTheme): CSSObject {
 }
 
 function createHoverHighlightStyle(theme: IDevtoolsTheme, hoveredRectangle: DOMRect): CSSObject {
-  return {
-    position: "fixed",
-    top: hoveredRectangle.top,
-    left: hoveredRectangle.left,
-    width: hoveredRectangle.width,
+  return createSelectionHighlightFrameStyle(theme, {
     height: hoveredRectangle.height,
-    boxSizing: "border-box",
-    border: `2px solid ${theme.colors.selectionBorder}`,
-    background: theme.colors.selectionBackground,
-    borderRadius: theme.radii.sm,
-    pointerEvents: "none",
-    zIndex: theme.zIndices.floating,
-  };
+    left: hoveredRectangle.left,
+    top: hoveredRectangle.top,
+    width: hoveredRectangle.width,
+  });
 }
 
 function createSelectionHighlightStyle(theme: IDevtoolsTheme, marker: IMarkerRenderModel): CSSObject {
+  return createSelectionHighlightFrameStyle(theme, {
+    height: marker.elementHeight,
+    left: marker.elementLeft,
+    top: marker.elementTop,
+    width: marker.elementWidth,
+  });
+}
+
+function createSelectionHighlightFrameStyle(
+  theme: IDevtoolsTheme,
+  selectionHighlightFrame: ISelectionHighlightFrame,
+): CSSObject {
   return {
     position: "fixed",
-    top: marker.elementTop,
-    left: marker.elementLeft,
-    width: marker.elementWidth,
-    height: marker.elementHeight,
+    top: selectionHighlightFrame.top - selectionHighlightVerticalPadding,
+    left: selectionHighlightFrame.left - selectionHighlightHorizontalPadding,
+    width: selectionHighlightFrame.width + selectionHighlightHorizontalPadding * 2,
+    height: selectionHighlightFrame.height + selectionHighlightVerticalPadding * 2,
     boxSizing: "border-box",
     border: `2px solid ${theme.colors.selectionBorder}`,
-    background: theme.colors.selectionBackground,
     borderRadius: theme.radii.sm,
     pointerEvents: "none",
     zIndex: theme.zIndices.floating,
@@ -674,7 +716,7 @@ function createTextareaStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     width: "100%",
     minHeight: "96px",
-    resize: "vertical",
+    resize: "none",
     boxSizing: "border-box",
     padding: theme.spacing.xs,
     border: `1px solid ${theme.colors.border}`,
@@ -727,6 +769,19 @@ function isInteractionInsideDevtools(target: EventTarget | null): boolean {
   }
 
   return target.closest(`[${DEVTOOLS_ROOT_ATTRIBUTE_NAME}], #${DEVTOOLS_ROOT_ID}`) !== null;
+}
+
+function doesEventTargetAcceptTextInput(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLSelectElement ||
+    target instanceof HTMLTextAreaElement ||
+    target.isContentEditable
+  );
 }
 
 function createSelectionCursorStyleText(): string {
