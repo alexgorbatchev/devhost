@@ -9,14 +9,14 @@
         color-scheme: light dark;
         font-family: Inter, system-ui, sans-serif;
         line-height: 1.5;
-        --page-background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
-        --page-foreground: #0f172a;
-        --panel-background: rgba(255, 255, 255, 0.92);
-        --panel-border: #cbd5e1;
-        --panel-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
-        --muted-foreground: #334155;
-        --control-background: #ffffff;
-        --control-border: #cbd5e1;
+        --page-background: linear-gradient(180deg, #f5f3ef 0%, #dfd8cf 100%);
+        --page-foreground: #1f1b17;
+        --panel-background: rgba(251, 248, 243, 0.94);
+        --panel-border: #cfc5b8;
+        --panel-shadow: 0 20px 40px rgba(32, 27, 22, 0.14);
+        --muted-foreground: #5a5248;
+        --control-background: #f6f2ec;
+        --control-border: #b8aea1;
       }
 
       :root[data-theme="light"] {
@@ -25,27 +25,27 @@
 
       :root[data-theme="dark"] {
         color-scheme: dark;
-        --page-background: linear-gradient(180deg, #020617 0%, #0f172a 100%);
-        --page-foreground: #e2e8f0;
-        --panel-background: rgba(15, 23, 42, 0.92);
-        --panel-border: #334155;
-        --panel-shadow: 0 20px 40px rgba(2, 6, 23, 0.45);
-        --muted-foreground: #94a3b8;
-        --control-background: #0f172a;
-        --control-border: #475569;
+        --page-background: linear-gradient(180deg, #141311 0%, #25211d 100%);
+        --page-foreground: #f4f0e8;
+        --panel-background: rgba(35, 31, 27, 0.9);
+        --panel-border: #5d564f;
+        --panel-shadow: 0 20px 40px rgba(4, 3, 2, 0.48);
+        --muted-foreground: #cbc2b8;
+        --control-background: #2f2a25;
+        --control-border: #756c62;
       }
 
       @media (prefers-color-scheme: dark) {
         :root:not([data-theme]),
         :root[data-theme="system"] {
-          --page-background: linear-gradient(180deg, #020617 0%, #0f172a 100%);
-          --page-foreground: #e2e8f0;
-          --panel-background: rgba(15, 23, 42, 0.92);
-          --panel-border: #334155;
-          --panel-shadow: 0 20px 40px rgba(2, 6, 23, 0.45);
-          --muted-foreground: #94a3b8;
-          --control-background: #0f172a;
-          --control-border: #475569;
+          --page-background: linear-gradient(180deg, #141311 0%, #25211d 100%);
+          --page-foreground: #f4f0e8;
+          --panel-background: rgba(35, 31, 27, 0.9);
+          --panel-border: #5d564f;
+          --panel-shadow: 0 20px 40px rgba(4, 3, 2, 0.48);
+          --muted-foreground: #cbc2b8;
+          --control-background: #2f2a25;
+          --control-border: #756c62;
         }
       }
 
@@ -72,7 +72,7 @@
         display: grid;
         gap: 28px;
         border: 1px solid var(--panel-border);
-        border-radius: 20px;
+        border-radius: 10px;
         background: var(--panel-background);
         box-shadow: var(--panel-shadow);
       }
@@ -110,7 +110,7 @@
       .app-section {
         padding: 20px;
         border: 1px solid var(--panel-border);
-        border-radius: 16px;
+        border-radius: 8px;
         background: color-mix(in srgb, var(--panel-background) 82%, transparent);
       }
 
@@ -133,6 +133,15 @@
         font-size: 0.95rem;
       }
 
+      .app-code--underlined {
+        text-decoration: underline;
+        text-underline-offset: 0.14em;
+      }
+
+      .app-code--strong {
+        font-weight: 700;
+      }
+
       .theme-toggle {
         display: grid;
         gap: 6px;
@@ -148,7 +157,7 @@
         min-width: 120px;
         padding: 8px 10px;
         border: 1px solid var(--control-border);
-        border-radius: 10px;
+        border-radius: 5px;
         background: var(--control-background);
         color: inherit;
         font: inherit;

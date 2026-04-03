@@ -12,7 +12,9 @@ if (!Number.isInteger(port) || port < 1 || port > 65_535) {
 const server = Bun.serve({
   hostname: bindHost,
   port,
-  development: true,
+  development: {
+    hmr: false,
+  },
   routes: {
     "/": indexHtml,
   },
