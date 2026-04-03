@@ -1,11 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
+import { createDefaultDevhostAgent } from "../createDefaultDevhostAgent";
 import { createInjectedServiceEnvironment } from "../startStack";
 import type { IResolvedDevhostManifest, IResolvedDevhostService } from "../stackTypes";
 
 describe("createInjectedServiceEnvironment", () => {
   test("injects manifest-mode variables for routed services without HOST", () => {
     const manifest: IResolvedDevhostManifest = {
+      agent: createDefaultDevhostAgent(),
       devtools: true,
       devtoolsComponentEditor: "vscode",
       devtoolsMinimapPosition: "right",
@@ -45,6 +47,7 @@ describe("createInjectedServiceEnvironment", () => {
 
   test("omits routed-host and port variables when they are unavailable", () => {
     const manifest: IResolvedDevhostManifest = {
+      agent: createDefaultDevhostAgent(),
       devtools: false,
       devtoolsComponentEditor: "vscode",
       devtoolsMinimapPosition: "right",

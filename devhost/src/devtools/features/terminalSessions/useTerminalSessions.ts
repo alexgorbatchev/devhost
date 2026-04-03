@@ -1,6 +1,10 @@
 import { useCallback, useState } from "preact/hooks";
 
-import { DEVTOOLS_CONTROL_TOKEN_HEADER_NAME, TERMINAL_SESSION_START_PATH } from "../../shared/constants";
+import {
+  DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
+  TERMINAL_SESSION_START_PATH,
+} from "../../shared/constants";
+import { readDevtoolsAgentDisplayName } from "../../shared/readDevtoolsAgentDisplayName";
 import { readDevtoolsControlToken } from "../../shared/readDevtoolsControlToken";
 import type { IComponentSourceMenuItem } from "../componentSourceNavigation/types";
 import type { IAnnotationSubmitDetail } from "../annotationComposer/types";
@@ -29,6 +33,7 @@ interface IUseTerminalSessionsResult {
 
 export function useTerminalSessions(): IUseTerminalSessionsResult {
   const [terminalSessions, setTerminalSessions] = useState<ITerminalSession[]>([]);
+  const agentDisplayName: string = readDevtoolsAgentDisplayName();
 
   const expandSession = useCallback((sessionId: string): void => {
     setTerminalSessions((currentSessions: ITerminalSession[]): ITerminalSession[] => {
@@ -77,7 +82,7 @@ export function useTerminalSessions(): IUseTerminalSessionsResult {
         }
 
         setTerminalSessions((currentSessions: ITerminalSession[]): ITerminalSession[] => {
-          return appendTerminalSession(currentSessions, createTerminalSession(responseBody.sessionId, request));
+          return appendTerminalSession(currentSessions, createTerminalSession(responseBody.sessionId, request, agentDisplayName));
         });
 
         return {
@@ -90,14 +95,13 @@ export function useTerminalSessions(): IUseTerminalSessionsResult {
         };
       }
     },
-    [],
+    [agentDisplayName],
   );
 
   const submitAnnotation = useCallback(async (annotation: IAnnotationSubmitDetail): Promise<ITerminalSessionStartResult> => {
     return await startSession({
       annotation,
       kind: "agent",
-      launcher: "pi",
     });
   }, [startSession]);
 

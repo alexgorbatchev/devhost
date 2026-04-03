@@ -75,12 +75,16 @@ These baseline facts are verified from the repository at the time of writing:
 The root manifest defines:
 - stack metadata
 - the primary service name
+- an optional root-level `agent` launcher table for annotation sessions
 - an optional `devtools` boolean
 - an optional `devtoolsComponentEditor` selector
 - an optional `devtoolsMinimapPosition` side selector
 - an optional `devtoolsPosition` corner selector
 - the full service map
 
+`agent` is optional.
+When `agent` is omitted, annotation sessions launch Pi by default.
+When `agent` is present, `devhost` executes the configured `command` array directly and passes annotation context through temp-file environment variables.
 `devtools` is optional and defaults to `true`.
 `devtoolsComponentEditor` is optional and defaults to `"vscode"`.
 Supported editor values are `"vscode"`, `"vscode-insiders"`, `"cursor"`, `"webstorm"`, and `"neovim"`.
@@ -104,6 +108,7 @@ The top-level manifest shape is:
 
 ```ts
 interface DevhostManifest {
+  agent?: DevhostAgentConfig;
   name: string;
   primaryService: string;
   devtools?: boolean;
@@ -111,6 +116,13 @@ interface DevhostManifest {
   devtoolsMinimapPosition?: "left" | "right";
   devtoolsPosition?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
   services: Record<string, DevhostServiceConfig>;
+}
+
+interface DevhostAgentConfig {
+  command: string[];
+  cwd?: string;
+  displayName: string;
+  env?: Record<string, string>;
 }
 
 interface DevhostServiceConfig {
@@ -139,6 +151,11 @@ devtools = true
 devtoolsComponentEditor = "neovim"
 devtoolsMinimapPosition = "right"
 devtoolsPosition = "top-right"
+
+[agent]
+displayName = "Claude Code"
+command = ["bun", "./scripts/devhost-agent.ts"]
+cwd = "."
 
 [services.web]
 command = ["bun", "run", "web:dev"]
@@ -174,6 +191,7 @@ After defaults are applied, runtime code must use these exact shapes:
 
 ```ts
 interface ResolvedDevhostManifest {
+  agent: ResolvedDevhostAgent;
   name: string;
   primaryService: string;
   manifestPath: string;
@@ -184,6 +202,16 @@ interface ResolvedDevhostManifest {
   devtoolsPosition: "top-left" | "top-right" | "bottom-left" | "bottom-right";
   services: Record<string, ResolvedDevhostService>;
 }
+
+type ResolvedDevhostAgent =
+  | { kind: "pi"; displayName: string }
+  | {
+      kind: "configured";
+      command: string[];
+      cwd: string;
+      displayName: string;
+      env: Record<string, string>;
+    };
 
 interface ResolvedDevhostService {
   name: string;
@@ -208,6 +236,9 @@ type ResolvedHealthConfig =
 
 `devhost` must apply these defaults exactly:
 
+- `agent` defaults to `{ kind: "pi", displayName: "Pi" }`.
+- configured `agent.cwd` defaults to the manifest directory.
+- configured `agent.env` defaults to `{}`.
 - `devtools` defaults to `true`.
 - `devtoolsComponentEditor` defaults to `"vscode"`.
 - `devtoolsMinimapPosition` defaults to `"right"`.
@@ -253,6 +284,30 @@ Injection rules:
 - `DEVHOST_MANIFEST_PATH` must equal the absolute manifest path.
 - `PORT` must be injected only when the resolved runtime port is known. In manifest mode this includes auto-resolved ports.
 - `DEVHOST_HOST` must be injected only when `host` is set. This is the routed public hostname from the manifest.
+
+### Configured annotation-agent environment variables
+
+When the root-level `[agent]` table is present, `devhost` must write annotation payload files and inject these exact variables into the configured agent command:
+
+```ts
+interface InjectedAnnotationAgentEnvironment {
+  DEVHOST_AGENT_ANNOTATION_FILE: string;
+  DEVHOST_AGENT_PROMPT_FILE: string;
+  DEVHOST_AGENT_DISPLAY_NAME: string;
+  DEVHOST_AGENT_TRANSPORT: "files";
+  DEVHOST_PROJECT_ROOT: string;
+  DEVHOST_STACK_NAME: string;
+}
+```
+
+Rules:
+
+- `DEVHOST_AGENT_ANNOTATION_FILE` must point to a temp JSON file containing the raw annotation payload.
+- `DEVHOST_AGENT_PROMPT_FILE` must point to a temp UTF-8 text file containing the rendered annotation prompt.
+- `DEVHOST_AGENT_DISPLAY_NAME` must equal the resolved agent display name.
+- `DEVHOST_AGENT_TRANSPORT` must equal `files`.
+- `DEVHOST_PROJECT_ROOT` must equal the manifest directory path.
+- `DEVHOST_STACK_NAME` must equal the manifest `name`.
 
 ## 7. Exact file plan
 
@@ -502,3 +557,4 @@ This work is done only when all of the following are true:
 - shutdown on `SIGINT` and `SIGTERM` removes all routes and reservations.
 - manifest validation errors are deterministic and name the exact offending service and field.
 - `test/devhost.toml` provides a working sample manifest for the demo app.
+- the root-level `[agent]` table launches a configured annotation agent command when present, and Pi when omitted.

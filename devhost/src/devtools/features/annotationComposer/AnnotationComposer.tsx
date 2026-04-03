@@ -13,6 +13,7 @@ import { resolveAnnotationTarget } from "./resolveAnnotationTarget";
 import type { IAnnotationSubmitDetail, ISelectedElementDraft } from "./types";
 
 interface IAnnotationComposerProps {
+  agentDisplayName: string;
   onSubmit: (detail: IAnnotationSubmitDetail) => Promise<ITerminalSessionStartResult>;
   stackName: string;
 }
@@ -98,7 +99,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
         return;
       }
 
-      setSubmissionErrorMessage(submitResult.errorMessage ?? "Failed to start the Pi session.");
+      setSubmissionErrorMessage(submitResult.errorMessage ?? `Failed to start the ${props.agentDisplayName} session.`);
     } catch (error) {
       setSubmissionErrorMessage(error instanceof Error ? error.message : String(error));
     } finally {
@@ -468,7 +469,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
           <div class={popupHeaderClassName}>
             <strong>Annotation draft</strong>
             <span class={popupMetaClassName}>
-              {isSubmitting ? "Starting Pi session…" : `${selectedElements.length} markers selected`}
+              {isSubmitting ? `Starting ${props.agentDisplayName} session…` : `${selectedElements.length} markers selected`}
             </span>
           </div>
           <ol class={markerListClassName} data-testid="AnnotationComposer--marker-list">
@@ -512,7 +513,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
                 void submitDraft();
               }}
             >
-              {isSubmitting ? "Starting Pi…" : "Submit"}
+              {isSubmitting ? `Starting ${props.agentDisplayName}…` : "Submit"}
             </Button>
             <Button
               disabled={isSubmitting}

@@ -1,6 +1,7 @@
 import { join } from "node:path";
 
 import { defaultBindHost } from "./constants";
+import { createDefaultDevhostAgent } from "./createDefaultDevhostAgent";
 import { readDevtoolsComponentEditorValue } from "./devtoolsComponentEditor";
 import type { IDevhostLogger } from "./createLogger";
 import type { ISingleServiceCommandLineArguments } from "./parseCommandLineArguments";
@@ -39,6 +40,7 @@ export function createSingleServiceManifest(arguments_: ISingleServiceCommandLin
   };
 
   return {
+    agent: createDefaultDevhostAgent(),
     devtools: true,
     devtoolsComponentEditor: readDevtoolsComponentEditorValue(
       process.env[devtoolsComponentEditorEnvironmentVariableName],

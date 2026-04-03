@@ -83,6 +83,7 @@ export async function startStack(
 
     if (manifest.devtools && routedServices.length > 0) {
       devtoolsControlServer = await startDevtoolsControlServer({
+        agentDisplayName: manifest.agent.displayName,
         componentEditor: manifest.devtoolsComponentEditor,
         devtoolsMinimapPosition: manifest.devtoolsMinimapPosition,
         devtoolsPosition: manifest.devtoolsPosition,
@@ -92,17 +93,28 @@ export async function startStack(
         projectRootPath: manifest.manifestDirectoryPath,
         stackName: manifest.name,
         startTerminalSession: (request, onData) => {
-          return launchTerminalSession({
-            cols: 120,
-            command: createTerminalSessionCommand({
-              componentEditor: manifest.devtoolsComponentEditor,
-              projectRootPath: manifest.manifestDirectoryPath,
-              request,
-            }),
-            cwd: manifest.manifestDirectoryPath,
-            onData,
-            rows: 80,
+          const terminalSessionCommand = createTerminalSessionCommand({
+            agent: manifest.agent,
+            componentEditor: manifest.devtoolsComponentEditor,
+            projectRootPath: manifest.manifestDirectoryPath,
+            request,
+            stackName: manifest.name,
           });
+
+          try {
+            return launchTerminalSession({
+              cleanup: terminalSessionCommand.cleanup,
+              cols: 120,
+              command: terminalSessionCommand.command,
+              cwd: terminalSessionCommand.cwd,
+              env: terminalSessionCommand.env,
+              onData,
+              rows: 80,
+            });
+          } catch (error) {
+            terminalSessionCommand.cleanup();
+            throw error;
+          }
         },
       });
       await devtoolsControlServer.publishHealthResponse();

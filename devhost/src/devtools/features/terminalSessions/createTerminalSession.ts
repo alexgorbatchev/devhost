@@ -1,5 +1,4 @@
 import type {
-  AgentTerminalLauncher,
   EditorTerminalLauncher,
   IAgentTerminalSession,
   IEditorTerminalSession,
@@ -11,12 +10,10 @@ import type {
   ITerminalSessionSummary,
 } from "./types";
 
-const terminalBehaviorByAgentLauncher: Record<AgentTerminalLauncher, ITerminalSessionBehavior> = {
-  pi: {
-    defaultIsExpanded: false,
-    isFullscreenExpanded: false,
-    shouldAutoRemoveOnExit: false,
-  },
+const agentTerminalBehavior: ITerminalSessionBehavior = {
+  defaultIsExpanded: false,
+  isFullscreenExpanded: false,
+  shouldAutoRemoveOnExit: false,
 };
 
 const terminalBehaviorByEditorLauncher: Record<EditorTerminalLauncher, ITerminalSessionBehavior> = {
@@ -27,31 +24,27 @@ const terminalBehaviorByEditorLauncher: Record<EditorTerminalLauncher, ITerminal
   },
 };
 
-const terminalTitleByAgentLauncher: Record<AgentTerminalLauncher, string> = {
-  pi: "Agent terminal",
-};
-
-const trayTooltipSecondaryByAgentLauncher: Record<AgentTerminalLauncher, string> = {
-  pi: "Pi",
-};
+const agentTerminalTitle: string = "Agent terminal";
 
 const terminalTitleByEditorLauncher: Record<EditorTerminalLauncher, string> = {
   neovim: "Neovim",
 };
 
-export function createTerminalSession(sessionId: string, request: IStartTerminalSessionRequest): ITerminalSession {
+export function createTerminalSession(
+  sessionId: string,
+  request: IStartTerminalSessionRequest,
+  agentDisplayName: string,
+): ITerminalSession {
   if (request.kind === "agent") {
-    const behavior: ITerminalSessionBehavior = terminalBehaviorByAgentLauncher[request.launcher];
-
     return {
       annotation: request.annotation,
-      behavior,
-      isExpanded: behavior.defaultIsExpanded,
+      behavior: agentTerminalBehavior,
+      displayName: agentDisplayName,
+      isExpanded: agentTerminalBehavior.defaultIsExpanded,
       kind: "agent",
-      launcher: request.launcher,
       sessionId,
-      summary: createAgentTerminalSummary(request),
-    };
+      summary: createAgentTerminalSummary(request, agentDisplayName),
+    } satisfies IAgentTerminalSession;
   }
 
   const behavior: ITerminalSessionBehavior = terminalBehaviorByEditorLauncher[request.launcher];
@@ -65,10 +58,13 @@ export function createTerminalSession(sessionId: string, request: IStartTerminal
     sessionId,
     sourceLabel: request.sourceLabel,
     summary: createEditorTerminalSummary(request),
-  };
+  } satisfies IEditorTerminalSession;
 }
 
-function createAgentTerminalSummary(request: IStartAgentTerminalSessionRequest): ITerminalSessionSummary {
+function createAgentTerminalSummary(
+  request: IStartAgentTerminalSessionRequest,
+  agentDisplayName: string,
+): ITerminalSessionSummary {
   return {
     eyebrow: "Annotation task",
     headline: request.annotation.comment,
@@ -78,9 +74,9 @@ function createAgentTerminalSummary(request: IStartAgentTerminalSessionRequest):
       new URL(request.annotation.url).host,
       new Date(request.annotation.submittedAt).toLocaleString(),
     ],
-    terminalTitle: terminalTitleByAgentLauncher[request.launcher],
+    terminalTitle: agentTerminalTitle,
     trayTooltipPrimary: request.annotation.comment,
-    trayTooltipSecondary: trayTooltipSecondaryByAgentLauncher[request.launcher],
+    trayTooltipSecondary: agentDisplayName,
   };
 }
 

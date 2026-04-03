@@ -1,6 +1,6 @@
-import { DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "./devtools/shared/constants";
 import type { DevtoolsComponentEditor } from "./devtoolsComponentEditor";
 import type { DevtoolsMinimapPosition, DevtoolsPosition } from "./stackTypes";
+import { DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "./devtools/shared/constants";
 
 export function createConfiguredDevtoolsScript(
   devtoolsScript: string,
@@ -9,9 +9,11 @@ export function createConfiguredDevtoolsScript(
   componentEditor: DevtoolsComponentEditor,
   projectRootPath: string,
   stackName: string,
+  agentDisplayName: string,
   controlToken: string,
 ): string {
   const injectedConfig: string = JSON.stringify({
+    agentDisplayName,
     componentEditor,
     controlToken,
     minimapPosition: devtoolsMinimapPosition,

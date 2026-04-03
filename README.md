@@ -109,8 +109,36 @@ cd test && bun run devhost --manifest ./devhost.toml
 Manifest mode uses Bun's built-in TOML parser and Zod v4 validation.
 A root-level `devtools` flag is supported and defaults to `true`.
 A root-level `devtoolsComponentEditor` flag is supported and defaults to `"vscode"`.
-Supported editor values are `"vscode"`, `"vscode-insiders"`, `"cursor"`, and `"webstorm"`.
+Supported editor values are `"vscode"`, `"vscode-insiders"`, `"cursor"`, `"webstorm"`, and `"neovim"`.
+A root-level `[agent]` table is supported for custom annotation-agent launchers.
+When `[agent]` is omitted, `devhost` starts Pi by default.
 When `devtools = false`, routed services bypass the HTML injector and proxy straight to the app.
+
+### Custom annotation agents
+
+Configure a project-local annotation launcher with a root-level `[agent]` table:
+
+```toml
+[agent]
+displayName = "Claude Code"
+command = ["bun", "./scripts/devhost-agent.ts"]
+cwd = "."
+
+[agent.env]
+DEVHOST_AGENT_MODE = "annotation"
+```
+
+`devhost` executes `command` directly, not through a shell string.
+For configured agents, `devhost` writes the annotation JSON and rendered prompt to temp files and injects:
+
+- `DEVHOST_AGENT_ANNOTATION_FILE`
+- `DEVHOST_AGENT_PROMPT_FILE`
+- `DEVHOST_AGENT_DISPLAY_NAME`
+- `DEVHOST_AGENT_TRANSPORT=files`
+- `DEVHOST_PROJECT_ROOT`
+- `DEVHOST_STACK_NAME`
+
+Use a Bun TypeScript wrapper when your preferred agent CLI needs custom setup.
 
 ## How `devhost` works
 
@@ -138,6 +166,7 @@ When `devtools = false`, routed services bypass the HTML injector and proxy stra
 - prefixes service logs with `[service-name]`
 - injects Alt + right-click React component-source navigation for routed pages when devtools are enabled
 - opens component sources through the configured editor protocol and also copies the resolved source path to the clipboard when the browser allows it
+- starts annotation sessions with the configured manifest agent, or Pi when `[agent]` is omitted
 - activates Caddy routes only after health checks pass
 - removes routes and reservations on shutdown or startup failure
 

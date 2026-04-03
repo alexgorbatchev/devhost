@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import { validateManifest } from "../validateManifest";
 import type { IValidatedDevhostManifest } from "../stackTypes";
+import { validateManifest } from "../validateManifest";
 import { getFixturePath, readFixtureToml } from "./testUtils";
 
 describe("validateManifest", () => {
@@ -20,6 +20,10 @@ describe("validateManifest", () => {
     const manifestPath: string = getFixturePath("basic-stack", "devhost.toml");
     const manifest: IValidatedDevhostManifest = validateManifest(manifestPath, manifestValue);
 
+    expect(manifest.agent).toEqual({
+      displayName: "Pi",
+      kind: "pi",
+    });
     expect(manifest.devtools).toBe(true);
     expect(manifest.devtoolsComponentEditor).toBe("vscode");
     expect(manifest.devtoolsMinimapPosition).toBe("right");
@@ -38,6 +42,10 @@ describe("validateManifest", () => {
     const manifestValue: unknown = await readFixtureToml("basic-stack", "devhost.toml");
     const manifest: IValidatedDevhostManifest = validateManifest(manifestPath, manifestValue);
 
+    expect(manifest.agent).toEqual({
+      displayName: "Pi",
+      kind: "pi",
+    });
     expect(manifest.devtools).toBe(true);
     expect(manifest.devtoolsComponentEditor).toBe("vscode");
     expect(manifest.devtoolsMinimapPosition).toBe("right");
@@ -49,8 +57,16 @@ describe("validateManifest", () => {
     });
   });
 
-  test("accepts explicit devtools UI positions and component editor", () => {
+  test("accepts explicit devtools UI positions, component editor, and a configured agent", () => {
     const manifest: IValidatedDevhostManifest = validateManifest("/tmp/devhost.toml", {
+      agent: {
+        command: ["bun", "./scripts/devhost-agent.ts"],
+        cwd: ".",
+        displayName: "Claude Code",
+        env: {
+          DEVHOST_AGENT_MODE: "annotation",
+        },
+      },
       devtoolsComponentEditor: "neovim",
       devtoolsMinimapPosition: "left",
       devtoolsPosition: "top-left",
@@ -64,9 +80,38 @@ describe("validateManifest", () => {
       },
     });
 
+    expect(manifest.agent).toEqual({
+      command: ["bun", "./scripts/devhost-agent.ts"],
+      cwd: "/tmp",
+      displayName: "Claude Code",
+      env: {
+        DEVHOST_AGENT_MODE: "annotation",
+      },
+      kind: "configured",
+    });
     expect(manifest.devtoolsComponentEditor).toBe("neovim");
     expect(manifest.devtoolsMinimapPosition).toBe("left");
     expect(manifest.devtoolsPosition).toBe("top-left");
+  });
+
+  test("rejects a configured agent cwd that escapes the manifest directory", () => {
+    expect(() =>
+      validateManifest("/tmp/project/devhost.toml", {
+        agent: {
+          command: ["bun", "./scripts/devhost-agent.ts"],
+          cwd: "../outside",
+          displayName: "Claude Code",
+        },
+        name: "hello-stack",
+        primaryService: "web",
+        services: {
+          web: {
+            command: ["bun", "run", "dev"],
+            port: 3000,
+          },
+        },
+      }),
+    ).toThrow("agent.cwd must stay within /tmp/project.");
   });
 
   test("rejects syntactically invalid public hosts", async () => {
@@ -83,7 +128,7 @@ describe("validateManifest", () => {
     const manifestValue: unknown = await readFixtureToml("invalid-auto-port-health", "devhost.toml");
 
     expect(() => validateManifest(manifestPath, manifestValue)).toThrow(
-      "services.db must omit health when port = \"auto\" in v1.",
+      'services.db must omit health when port = "auto" in v1.',
     );
   });
 

@@ -3,6 +3,7 @@ import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { z } from "zod";
 
 import { defaultBindHost } from "./constants";
+import { createDefaultDevhostAgent } from "./createDefaultDevhostAgent";
 import {
   defaultDevtoolsComponentEditor,
   supportedDevtoolsComponentEditors,
@@ -11,8 +12,11 @@ import { isValidHost } from "./isValidHost";
 import type {
   DevhostPortConfig,
   DevhostHealthConfig,
+  IConfiguredDevhostAgent,
+  IDevhostAgentConfig,
   IDevhostManifest,
   IDevhostServiceConfig,
+  IValidatedDevhostAgent,
   IValidatedDevhostManifest,
   IValidatedDevhostService,
 } from "./stackTypes";
@@ -30,6 +34,14 @@ const healthSchema = z.union([
   z.object({ http: z.string().url() }).strict(),
   z.object({ process: z.literal(true) }).strict(),
 ]);
+const agentSchema = z
+  .object({
+    command: z.array(nonEmptyStringSchema).min(1),
+    cwd: z.string().optional(),
+    displayName: nonEmptyStringSchema,
+    env: z.record(z.string(), z.string()).optional(),
+  })
+  .strict();
 const serviceSchema = z
   .object({
     bindHost: z.enum(["127.0.0.1", "0.0.0.0", "::1", "::"]).optional(),
@@ -44,6 +56,7 @@ const serviceSchema = z
   .strict();
 const manifestSchema = z
   .object({
+    agent: agentSchema.optional(),
     devtools: z.boolean().optional(),
     devtoolsComponentEditor: devtoolsComponentEditorSchema.optional(),
     devtoolsMinimapPosition: devtoolsMinimapPositionSchema.optional(),
@@ -101,11 +114,14 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
     validatedServices[serviceName] = validatedService;
   }
 
+  const validatedAgent: IValidatedDevhostAgent = validateAgent(parsedManifest.agent, manifestDirectoryPath, errors);
+
   if (errors.length > 0) {
     throw new Error(`Manifest validation failed:\n${errors.join("\n")}`);
   }
 
   return {
+    agent: validatedAgent,
     devtools: parsedManifest.devtools ?? true,
     devtoolsComponentEditor: parsedManifest.devtoolsComponentEditor ?? defaultDevtoolsComponentEditor,
     devtoolsMinimapPosition: parsedManifest.devtoolsMinimapPosition ?? "right",
@@ -118,6 +134,26 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
   };
 }
 
+function validateAgent(
+  agentConfig: IDevhostAgentConfig | undefined,
+  manifestDirectoryPath: string,
+  errors: string[],
+): IValidatedDevhostAgent {
+  if (agentConfig === undefined) {
+    return createDefaultDevhostAgent();
+  }
+
+  const cwd: string = resolveConstrainedPath("agent.cwd", agentConfig.cwd ?? ".", manifestDirectoryPath, errors);
+
+  return {
+    command: agentConfig.command,
+    cwd,
+    displayName: agentConfig.displayName,
+    env: agentConfig.env ?? {},
+    kind: "configured",
+  } satisfies IConfiguredDevhostAgent;
+}
+
 function validateService(
   serviceName: string,
   serviceConfig: IDevhostServiceConfig,
@@ -127,18 +163,18 @@ function validateService(
   fixedBindPorts: Set<string>,
   errors: string[],
 ): IValidatedDevhostService {
-  const cwd: string = resolve(manifestDirectoryPath, serviceConfig.cwd ?? ".");
+  const cwd: string = resolveConstrainedPath(
+    `services.${serviceName}.cwd`,
+    serviceConfig.cwd ?? ".",
+    manifestDirectoryPath,
+    errors,
+  );
   const bindHost: string = serviceConfig.bindHost ?? defaultBindHost;
   const dependsOn: string[] = serviceConfig.dependsOn ?? [];
   const env: Record<string, string> = serviceConfig.env ?? {};
   const port: DevhostPortConfig | null = serviceConfig.port ?? null;
   const host: string | null = serviceConfig.host ?? null;
   const health: DevhostHealthConfig | null = serviceConfig.health ?? null;
-  const relativeCwdPath: string = relative(manifestDirectoryPath, cwd);
-
-  if (relativeCwdPath.startsWith("..") || isAbsolute(relativeCwdPath)) {
-    errors.push(`services.${serviceName}.cwd must stay within ${manifestDirectoryPath}.`);
-  }
 
   for (const dependencyName of dependsOn) {
     if (!serviceNames.includes(dependencyName)) {
@@ -199,6 +235,22 @@ function validateService(
     host,
     health,
   };
+}
+
+function resolveConstrainedPath(
+  fieldPath: string,
+  candidatePath: string,
+  manifestDirectoryPath: string,
+  errors: string[],
+): string {
+  const resolvedPath: string = resolve(manifestDirectoryPath, candidatePath);
+  const relativePath: string = relative(manifestDirectoryPath, resolvedPath);
+
+  if (relativePath.startsWith("..") || isAbsolute(relativePath)) {
+    errors.push(`${fieldPath} must stay within ${manifestDirectoryPath}.`);
+  }
+
+  return resolvedPath;
 }
 
 function validateHealthHttp(serviceName: string, rawUrl: string, errors: string[]): void {

@@ -1,15 +1,18 @@
 import { createTerminalSessionEnvironment } from "./createTerminalSessionEnvironment";
 
 interface ILaunchTerminalSessionOptions {
+  cleanup?: () => void;
   cols: number;
   command: string[];
   cwd: string;
+  env?: Record<string, string>;
   onData: (data: Uint8Array) => void;
   rows: number;
 }
 
 export interface ILaunchedTerminalSession {
   childProcess: Bun.Subprocess;
+  cleanup: () => void;
   close: () => void;
   resize: (cols: number, rows: number) => void;
   write: (data: string) => void;
@@ -18,7 +21,10 @@ export interface ILaunchedTerminalSession {
 export function launchTerminalSession(options: ILaunchTerminalSessionOptions): ILaunchedTerminalSession {
   const childProcess = Bun.spawn(options.command, {
     cwd: options.cwd,
-    env: createTerminalSessionEnvironment(process.env),
+    env: createTerminalSessionEnvironment({
+      ...process.env,
+      ...options.env,
+    }),
     terminal: {
       cols: options.cols,
       data: (_terminal: Bun.Terminal, data: Uint8Array): void => {
@@ -36,6 +42,7 @@ export function launchTerminalSession(options: ILaunchTerminalSessionOptions): I
 
   return {
     childProcess,
+    cleanup: options.cleanup ?? (() => {}),
     close: (): void => {
       terminal.close();
 

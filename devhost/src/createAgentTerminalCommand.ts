@@ -1,15 +1,44 @@
-import type { IStartAgentTerminalSessionRequest } from "./devtools/features/terminalSessions/types";
+import type { ITerminalSessionCommand } from "./ITerminalSessionCommand";
+import { createAgentSessionFiles } from "./createAgentSessionFiles";
 import { createAnnotationAgentPrompt } from "./createAnnotationAgentPrompt";
 import { createPiAgentCommand } from "./createPiAgentCommand";
+import type { IStartAgentTerminalSessionRequest } from "./devtools/features/terminalSessions/types";
+import type { IValidatedDevhostAgent } from "./stackTypes";
 
-type AgentTerminalCommandBuilder = (request: IStartAgentTerminalSessionRequest) => string[];
+interface ICreateAgentTerminalCommandOptions {
+  agent: IValidatedDevhostAgent;
+  projectRootPath: string;
+  request: IStartAgentTerminalSessionRequest;
+  stackName: string;
+}
 
-const agentTerminalCommandBuilderByLauncher: Record<IStartAgentTerminalSessionRequest["launcher"], AgentTerminalCommandBuilder> = {
-  pi: (request: IStartAgentTerminalSessionRequest): string[] => {
-    return createPiAgentCommand(createAnnotationAgentPrompt(request.annotation));
-  },
-};
+export function createAgentTerminalCommand(options: ICreateAgentTerminalCommandOptions): ITerminalSessionCommand {
+  const prompt: string = createAnnotationAgentPrompt(options.request.annotation);
 
-export function createAgentTerminalCommand(request: IStartAgentTerminalSessionRequest): string[] {
-  return agentTerminalCommandBuilderByLauncher[request.launcher](request);
+  if (options.agent.kind === "pi") {
+    return {
+      cleanup: (): void => {},
+      command: createPiAgentCommand(prompt),
+      cwd: options.projectRootPath,
+      env: {},
+    };
+  }
+
+  const sessionFiles = createAgentSessionFiles({
+    annotation: options.request.annotation,
+    displayName: options.agent.displayName,
+    projectRootPath: options.projectRootPath,
+    prompt,
+    stackName: options.stackName,
+  });
+
+  return {
+    cleanup: sessionFiles.cleanup,
+    command: options.agent.command,
+    cwd: options.agent.cwd,
+    env: {
+      ...options.agent.env,
+      ...sessionFiles.env,
+    },
+  };
 }

@@ -1,4 +1,5 @@
 import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../../stackTypes";
+import { createDefaultDevhostAgent } from "../../createDefaultDevhostAgent";
 import {
   defaultDevtoolsComponentEditor,
   readDevtoolsComponentEditorValue,
@@ -7,6 +8,7 @@ import {
 import { DEVHOST_SERVICE_NAME, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "./constants";
 
 export interface IInjectedDevtoolsConfig {
+  agentDisplayName: string;
   componentEditor: DevtoolsComponentEditor;
   controlToken: string;
   minimapPosition: DevtoolsMinimapPosition;
@@ -16,6 +18,7 @@ export interface IInjectedDevtoolsConfig {
 }
 
 const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
+  agentDisplayName: createDefaultDevhostAgent().displayName,
   componentEditor: defaultDevtoolsComponentEditor,
   controlToken: "",
   minimapPosition: "right",
@@ -31,6 +34,7 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
     return defaultInjectedDevtoolsConfig;
   }
 
+  const agentDisplayName: string = readAgentDisplayNameValue(injectedConfig);
   const componentEditor: DevtoolsComponentEditor = readComponentEditorValue(injectedConfig);
   const controlToken: string = readControlTokenValue(injectedConfig);
   const position: DevtoolsPosition = readDevtoolsPositionValue(injectedConfig);
@@ -39,6 +43,7 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
   const stackName: string = readStackNameValue(injectedConfig);
 
   return {
+    agentDisplayName,
     componentEditor,
     controlToken,
     minimapPosition,
@@ -46,6 +51,14 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
     projectRootPath,
     stackName,
   };
+}
+
+function readAgentDisplayNameValue(injectedConfig: object): string {
+  const agentDisplayName: unknown = Reflect.get(injectedConfig, "agentDisplayName");
+
+  return typeof agentDisplayName === "string" && agentDisplayName.trim().length > 0
+    ? agentDisplayName
+    : defaultInjectedDevtoolsConfig.agentDisplayName;
 }
 
 function readComponentEditorValue(injectedConfig: object): DevtoolsComponentEditor {

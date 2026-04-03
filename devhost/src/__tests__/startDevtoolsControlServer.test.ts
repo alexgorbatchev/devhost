@@ -41,6 +41,7 @@ describe("startDevtoolsControlServer", () => {
       ],
     };
     const controlServer = await startDevtoolsControlServer({
+      agentDisplayName: "Pi",
       componentEditor: "vscode",
       devtoolsMinimapPosition: "right",
       devtoolsPosition: "top-left",
@@ -77,6 +78,7 @@ describe("startDevtoolsControlServer", () => {
 
   test("replays retained logs and streams new log entries over websocket", async () => {
     const controlServer = await startDevtoolsControlServer({
+      agentDisplayName: "Pi",
       componentEditor: "vscode",
       devtoolsMinimapPosition: "left",
       devtoolsPosition: "bottom-right",
@@ -131,6 +133,7 @@ describe("startDevtoolsControlServer", () => {
   test("starts a terminal session for submitted annotations", async () => {
     const terminalStub = createTerminalStub();
     const controlServer = await startDevtoolsControlServer({
+      agentDisplayName: "Pi",
       componentEditor: "vscode",
       devtoolsMinimapPosition: "left",
       devtoolsPosition: "bottom-right",
@@ -149,7 +152,6 @@ describe("startDevtoolsControlServer", () => {
     const annotationRequest: IStartTerminalSessionRequest = {
       annotation: createAnnotationDetail(),
       kind: "agent",
-      launcher: "pi",
     };
     const controlToken: string = await readControlToken(controlServer.port);
     const startResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${TERMINAL_SESSION_START_PATH}`, {
@@ -201,6 +203,7 @@ describe("startDevtoolsControlServer", () => {
   test("starts a terminal session for editor navigation", async () => {
     const terminalStub = createTerminalStub();
     const controlServer = await startDevtoolsControlServer({
+      agentDisplayName: "Pi",
       componentEditor: "neovim",
       devtoolsMinimapPosition: "left",
       devtoolsPosition: "bottom-right",
@@ -244,6 +247,7 @@ describe("startDevtoolsControlServer", () => {
   test("keeps the terminal websocket open after the process exits until the client closes it", async () => {
     const terminalStub = createTerminalStub();
     const controlServer = await startDevtoolsControlServer({
+      agentDisplayName: "Pi",
       componentEditor: "vscode",
       devtoolsMinimapPosition: "left",
       devtoolsPosition: "bottom-right",
@@ -264,7 +268,6 @@ describe("startDevtoolsControlServer", () => {
       body: JSON.stringify({
         annotation: createAnnotationDetail(),
         kind: "agent",
-        launcher: "pi",
       }),
       headers: {
         "content-type": "application/json",
@@ -399,6 +402,7 @@ function createTerminalStub(): {
             return signalCode;
           },
         } as Bun.Subprocess,
+        cleanup: (): void => {},
         close: (): void => {
           closeCount += 1;
         },

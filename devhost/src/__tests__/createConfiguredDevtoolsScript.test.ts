@@ -11,11 +11,13 @@ describe("createConfiguredDevtoolsScript", () => {
       "cursor",
       "/tmp/project",
       "hello-stack",
+      "Claude Code",
       "control-token",
     );
 
     const expectedInjectedConfigPrefix: string =
       'globalThis.__DEVHOST_INJECTED_CONFIG__={' +
+      '"agentDisplayName":"Claude Code",' +
       '"componentEditor":"cursor",' +
       '"controlToken":"control-token",' +
       '"minimapPosition":"left",' +

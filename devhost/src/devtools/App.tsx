@@ -13,6 +13,7 @@ import {
   DEVTOOLS_ROOT_ID,
   ThemeProvider,
   type IDevtoolsTheme,
+  readDevtoolsAgentDisplayName,
   readDevtoolsComponentEditor,
   readDevtoolsMinimapPosition,
   readDevtoolsPosition,
@@ -33,6 +34,7 @@ export function App(): JSX.Element {
 }
 
 function AppContent(): JSX.Element {
+  const agentDisplayName: string = readDevtoolsAgentDisplayName();
   const componentEditor = readDevtoolsComponentEditor();
   const devtoolsMinimapPosition: DevtoolsMinimapPosition = readDevtoolsMinimapPosition();
   const devtoolsPosition: DevtoolsPosition = readDevtoolsPosition();
@@ -71,7 +73,7 @@ function AppContent(): JSX.Element {
 
   return (
     <div id={DEVTOOLS_ROOT_ID} data-devhost-devtools="" data-testid="App">
-      <AnnotationComposer onSubmit={submitAnnotation} stackName={stackName} />
+      <AnnotationComposer agentDisplayName={agentDisplayName} onSubmit={submitAnnotation} stackName={stackName} />
       {componentMenu !== null ? (
         <ComponentSourceMenu
           errorMessage={componentMenu.errorMessage}

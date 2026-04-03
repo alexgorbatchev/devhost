@@ -44,6 +44,10 @@ describe("createSingleServiceEnvironment", () => {
     };
 
     expect(createSingleServiceManifest(arguments_)).toEqual({
+      agent: {
+        displayName: "Pi",
+        kind: "pi",
+      },
       devtools: true,
       devtoolsComponentEditor: "vscode",
       devtoolsMinimapPosition: "right",

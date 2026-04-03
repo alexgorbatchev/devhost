@@ -1,3 +1,5 @@
+import type { DevtoolsComponentEditor } from "./devtoolsComponentEditor";
+
 export type DevhostHealthConfig =
   | {
       tcp: number;
@@ -11,12 +13,33 @@ export type DevhostHealthConfig =
 
 export type DevhostPortConfig = number | "auto";
 
-import type { DevtoolsComponentEditor } from "./devtoolsComponentEditor";
-
 export type DevtoolsPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 export type DevtoolsMinimapPosition = "left" | "right";
 
+export interface IDevhostAgentConfig {
+  command: string[];
+  cwd?: string;
+  displayName: string;
+  env?: Record<string, string>;
+}
+
+export interface IDefaultDevhostAgent {
+  displayName: string;
+  kind: "pi";
+}
+
+export interface IConfiguredDevhostAgent {
+  command: string[];
+  cwd: string;
+  displayName: string;
+  env: Record<string, string>;
+  kind: "configured";
+}
+
+export type IValidatedDevhostAgent = IDefaultDevhostAgent | IConfiguredDevhostAgent;
+
 export interface IDevhostManifest {
+  agent?: IDevhostAgentConfig;
   name: string;
   primaryService: string;
   devtools?: boolean;
@@ -38,6 +61,7 @@ export interface IDevhostServiceConfig {
 }
 
 export interface IValidatedDevhostManifest {
+  agent: IValidatedDevhostAgent;
   name: string;
   primaryService: string;
   manifestPath: string;
@@ -62,6 +86,7 @@ export interface IValidatedDevhostService {
 }
 
 export interface IResolvedDevhostManifest {
+  agent: IValidatedDevhostAgent;
   name: string;
   primaryService: string;
   manifestPath: string;

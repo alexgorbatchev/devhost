@@ -55,6 +55,7 @@ interface IDevtoolsControlServer {
 }
 
 interface IStartDevtoolsControlServerOptions {
+  agentDisplayName: string;
   componentEditor: DevtoolsComponentEditor;
   devtoolsMinimapPosition: DevtoolsMinimapPosition;
   devtoolsPosition: DevtoolsPosition;
@@ -94,6 +95,7 @@ export async function startDevtoolsControlServer(
     options.componentEditor,
     options.projectRootPath,
     options.stackName,
+    options.agentDisplayName,
     controlToken,
   );
   const retainedLogEntries: ServiceLogEntry[] = [];
@@ -389,30 +391,37 @@ export async function startDevtoolsControlServer(
 
     terminalSessions.set(sessionId, session);
     scheduleIdleTerminalSessionShutdown(sessionId, session, terminalSessions);
-    void launchedSession.childProcess.exited.then((exitCode: number): void => {
-      const activeSession: ITerminalSessionState | undefined = terminalSessions.get(sessionId);
+    void launchedSession.childProcess.exited
+      .then((exitCode: number): void => {
+        const activeSession: ITerminalSessionState | undefined = terminalSessions.get(sessionId);
 
-      if (activeSession === undefined) {
-        return;
-      }
+        if (activeSession === undefined) {
+          return;
+        }
 
-      const trailingOutput: string = activeSession.decoder.decode();
+        const trailingOutput: string = activeSession.decoder.decode();
 
-      if (trailingOutput.length > 0) {
-        activeSession.outputBuffer = retainTerminalBufferTail(activeSession.outputBuffer + trailingOutput);
-        publishTerminalSessionMessage(activeSession, createTerminalSessionOutputMessage(trailingOutput));
-      }
+        if (trailingOutput.length > 0) {
+          activeSession.outputBuffer = retainTerminalBufferTail(activeSession.outputBuffer + trailingOutput);
+          publishTerminalSessionMessage(activeSession, createTerminalSessionOutputMessage(trailingOutput));
+        }
 
-      activeSession.exited = {
-        exitCode,
-        signalCode: launchedSession.childProcess.signalCode,
-      };
-      publishTerminalSessionMessage(activeSession, createTerminalSessionExitMessage(exitCode, launchedSession.childProcess.signalCode));
+        activeSession.exited = {
+          exitCode,
+          signalCode: launchedSession.childProcess.signalCode,
+        };
+        publishTerminalSessionMessage(
+          activeSession,
+          createTerminalSessionExitMessage(exitCode, launchedSession.childProcess.signalCode),
+        );
 
-      if (activeSession.sockets.size === 0) {
-        scheduleIdleTerminalSessionShutdown(sessionId, activeSession, terminalSessions);
-      }
-    });
+        if (activeSession.sockets.size === 0) {
+          scheduleIdleTerminalSessionShutdown(sessionId, activeSession, terminalSessions);
+        }
+      })
+      .finally((): void => {
+        launchedSession.cleanup();
+      });
 
     return sessionId;
   }
@@ -646,7 +655,7 @@ function isStartTerminalSessionRequest(value: unknown): value is IStartTerminalS
   if (requestKind === "agent") {
     const annotation: unknown = Reflect.get(value, "annotation");
 
-    return launcher === "pi" && isAnnotationSubmitDetail(annotation);
+    return isAnnotationSubmitDetail(annotation);
   }
 
   if (requestKind === "editor") {

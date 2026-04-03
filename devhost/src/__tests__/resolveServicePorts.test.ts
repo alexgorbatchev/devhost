@@ -20,6 +20,10 @@ describe("resolveServicePorts", () => {
     );
     const resolvedManifest: IResolvedDevhostManifest = await resolveServicePorts(manifest);
 
+    expect(resolvedManifest.agent).toEqual({
+      displayName: "Pi",
+      kind: "pi",
+    });
     expect(resolvedManifest.devtoolsComponentEditor).toBe("vscode");
     expect(resolvedManifest.devtoolsMinimapPosition).toBe("right");
     expect(resolvedManifest.devtoolsPosition).toBe("bottom-right");
@@ -58,8 +62,12 @@ describe("resolveServicePorts", () => {
     await expect(resolveServicePorts(manifest)).resolves.toBeDefined();
   });
 
-  test("preserves explicit health checks and fixed ports", async () => {
+  test("preserves explicit health checks, fixed ports, and configured agents", async () => {
     const manifest = validateManifest("/tmp/devhost.toml", {
+      agent: {
+        command: ["bun", "./scripts/devhost-agent.ts"],
+        displayName: "Claude Code",
+      },
       devtools: false,
       devtoolsComponentEditor: "webstorm",
       devtoolsMinimapPosition: "left",
@@ -78,6 +86,13 @@ describe("resolveServicePorts", () => {
     });
     const resolvedManifest: IResolvedDevhostManifest = await resolveServicePorts(manifest);
 
+    expect(resolvedManifest.agent).toEqual({
+      command: ["bun", "./scripts/devhost-agent.ts"],
+      cwd: "/tmp",
+      displayName: "Claude Code",
+      env: {},
+      kind: "configured",
+    });
     expect(resolvedManifest.devtools).toBe(false);
     expect(resolvedManifest.devtoolsComponentEditor).toBe("webstorm");
     expect(resolvedManifest.devtoolsMinimapPosition).toBe("left");

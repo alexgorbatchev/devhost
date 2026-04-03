@@ -14,6 +14,7 @@ describe("readInjectedDevtoolsConfig", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, undefined);
 
     expect(readInjectedDevtoolsConfig()).toEqual({
+      agentDisplayName: "Pi",
       componentEditor: "vscode",
       controlToken: "",
       minimapPosition: "right",
@@ -25,6 +26,7 @@ describe("readInjectedDevtoolsConfig", () => {
 
   test("reads the injected editor and project-root config", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
+      agentDisplayName: "Claude Code",
       componentEditor: "neovim",
       controlToken: "control-token",
       minimapPosition: "left",
@@ -34,6 +36,7 @@ describe("readInjectedDevtoolsConfig", () => {
     });
 
     expect(readInjectedDevtoolsConfig()).toEqual({
+      agentDisplayName: "Claude Code",
       componentEditor: "neovim",
       controlToken: "control-token",
       minimapPosition: "left",

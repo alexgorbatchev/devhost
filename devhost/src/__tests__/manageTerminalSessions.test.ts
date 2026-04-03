@@ -1,55 +1,65 @@
 import { describe, expect, test } from "bun:test";
 
 import { createTerminalSession } from "../devtools/features/terminalSessions/createTerminalSession";
-import type { ITerminalSession } from "../devtools/features/terminalSessions/types";
 import {
   appendTerminalSession,
   expandTerminalSession,
   minimizeTerminalSession,
   removeTerminalSession,
 } from "../devtools/features/terminalSessions/manageTerminalSessions";
+import type { ITerminalSession } from "../devtools/features/terminalSessions/types";
 
-const FIRST_SESSION: ITerminalSession = createTerminalSession("session-a", {
-  annotation: {
-    comment: "First annotation",
-    markers: [],
-    stackName: "stack-a",
-    submittedAt: 1,
-    title: "Page A",
-    url: "https://example.test/a",
-  },
-  kind: "agent",
-  launcher: "pi",
-});
-
-const SECOND_SESSION: ITerminalSession = {
-  ...createTerminalSession("session-b", {
+const FIRST_SESSION: ITerminalSession = createTerminalSession(
+  "session-a",
+  {
     annotation: {
-      comment: "Second annotation",
+      comment: "First annotation",
       markers: [],
-      stackName: "stack-b",
-      submittedAt: 2,
-      title: "Page B",
-      url: "https://example.test/b",
+      stackName: "stack-a",
+      submittedAt: 1,
+      title: "Page A",
+      url: "https://example.test/a",
     },
     kind: "agent",
-    launcher: "pi",
-  }),
+  },
+  "Claude Code",
+);
+
+const SECOND_SESSION: ITerminalSession = {
+  ...createTerminalSession(
+    "session-b",
+    {
+      annotation: {
+        comment: "Second annotation",
+        markers: [],
+        stackName: "stack-b",
+        submittedAt: 2,
+        title: "Page B",
+        url: "https://example.test/b",
+      },
+      kind: "agent",
+    },
+    "Claude Code",
+  ),
   isExpanded: true,
 };
 
 const THIRD_SESSION: ITerminalSession = {
-  ...createTerminalSession("session-c", {
-    componentName: "PrimaryButton",
-    kind: "editor",
-    launcher: "neovim",
-    source: {
-      columnNumber: 8,
-      fileName: "src/components/PrimaryButton.tsx",
-      lineNumber: 42,
+  ...createTerminalSession(
+    "session-c",
+    {
+      componentName: "PrimaryButton",
+      kind: "editor",
+      launcher: "neovim",
+      source: {
+        columnNumber: 8,
+        fileName: "src/components/PrimaryButton.tsx",
+        lineNumber: 42,
+      },
+      sourceLabel: "src/components/PrimaryButton.tsx:42:8",
     },
-    sourceLabel: "src/components/PrimaryButton.tsx:42:8",
-  }),
+    "Claude Code",
+  ),
   isExpanded: false,
 };
 

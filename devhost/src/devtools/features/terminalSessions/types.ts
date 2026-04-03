@@ -16,13 +16,11 @@ export interface ITerminalSessionSummary {
   trayTooltipSecondary?: string;
 }
 
-export type AgentTerminalLauncher = "pi";
 export type EditorTerminalLauncher = "neovim";
 
 export interface IStartAgentTerminalSessionRequest {
   annotation: IAnnotationSubmitDetail;
   kind: "agent";
-  launcher: AgentTerminalLauncher;
 }
 
 export interface IStartEditorTerminalSessionRequest {
@@ -53,8 +51,8 @@ interface ITerminalSessionBase {
 
 export interface IAgentTerminalSession extends ITerminalSessionBase {
   annotation: IAnnotationSubmitDetail;
+  displayName: string;
   kind: "agent";
-  launcher: AgentTerminalLauncher;
 }
 
 export interface IEditorTerminalSession extends ITerminalSessionBase {

@@ -3,30 +3,37 @@ import { describe, expect, test } from "bun:test";
 import { createTerminalSession } from "../createTerminalSession";
 import { resolveTerminalPanelLayout } from "../resolveTerminalPanelLayout";
 
-const AGENT_TERMINAL_BEHAVIOR = createTerminalSession("session-a", {
-  annotation: {
-    comment: "Fix button",
-    markers: [],
-    stackName: "stack-a",
-    submittedAt: 1,
-    title: "Page A",
-    url: "https://example.test/a",
+const AGENT_TERMINAL_BEHAVIOR = createTerminalSession(
+  "session-a",
+  {
+    annotation: {
+      comment: "Fix button",
+      markers: [],
+      stackName: "stack-a",
+      submittedAt: 1,
+      title: "Page A",
+      url: "https://example.test/a",
+    },
+    kind: "agent",
   },
-  kind: "agent",
-  launcher: "pi",
-}).behavior;
+  "Claude Code",
+).behavior;
 
-const EDITOR_TERMINAL_BEHAVIOR = createTerminalSession("session-b", {
-  componentName: "PrimaryButton",
-  kind: "editor",
-  launcher: "neovim",
-  source: {
-    columnNumber: 8,
-    fileName: "src/components/PrimaryButton.tsx",
-    lineNumber: 42,
+const EDITOR_TERMINAL_BEHAVIOR = createTerminalSession(
+  "session-b",
+  {
+    componentName: "PrimaryButton",
+    kind: "editor",
+    launcher: "neovim",
+    source: {
+      columnNumber: 8,
+      fileName: "src/components/PrimaryButton.tsx",
+      lineNumber: 42,
+    },
+    sourceLabel: "src/components/PrimaryButton.tsx:42:8",
   },
-  sourceLabel: "src/components/PrimaryButton.tsx:42:8",
-}).behavior;
+  "Claude Code",
+).behavior;
 
 describe("resolveTerminalPanelLayout", () => {
   test("keeps agent terminal sessions at the bounded modal size", () => {
