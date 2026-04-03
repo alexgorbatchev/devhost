@@ -7,6 +7,7 @@ describe("createInjectedServiceEnvironment", () => {
   test("injects manifest-mode variables for routed services without HOST", () => {
     const manifest: IResolvedDevhostManifest = {
       devtools: true,
+      devtoolsComponentEditor: "vscode",
       devtoolsMinimapPosition: "right",
       devtoolsPosition: "bottom-right",
       manifestDirectoryPath: "/tmp/project",
@@ -45,6 +46,7 @@ describe("createInjectedServiceEnvironment", () => {
   test("omits routed-host and port variables when they are unavailable", () => {
     const manifest: IResolvedDevhostManifest = {
       devtools: false,
+      devtoolsComponentEditor: "vscode",
       devtoolsMinimapPosition: "right",
       devtoolsPosition: "bottom-right",
       manifestDirectoryPath: "/tmp/project",

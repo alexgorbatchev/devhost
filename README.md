@@ -108,6 +108,8 @@ cd test && bun run devhost --manifest ./devhost.toml
 
 Manifest mode uses Bun's built-in TOML parser and Zod v4 validation.
 A root-level `devtools` flag is supported and defaults to `true`.
+A root-level `devtoolsComponentEditor` flag is supported and defaults to `"vscode"`.
+Supported editor values are `"vscode"`, `"vscode-insiders"`, `"cursor"`, and `"webstorm"`.
 When `devtools = false`, routed services bypass the HTML injector and proxy straight to the app.
 
 ## How `devhost` works
@@ -119,6 +121,8 @@ When `devtools = false`, routed services bypass the HTML injector and proxy stra
 - sets `PORT`
 - sets `DEVHOST_BIND_HOST=127.0.0.1` for safe local binding
 - sets `DEVHOST_HOST=<public hostname>` for routed-host awareness
+- defaults Alt + right-click component navigation to `vscode`
+- accepts `DEVHOST_COMPONENT_EDITOR` to override the single-service editor target
 - waits for the app port to open
 - registers `https://<host>` in Caddy
 - removes the route when the app exits
@@ -132,6 +136,8 @@ When `devtools = false`, routed services bypass the HTML injector and proxy stra
 - reserves every public host before starting any service
 - starts services in dependency order
 - prefixes service logs with `[service-name]`
+- injects Alt + right-click React component-source navigation for routed pages when devtools are enabled
+- opens component sources through the configured editor protocol and also copies the resolved source path to the clipboard when the browser allows it
 - activates Caddy routes only after health checks pass
 - removes routes and reservations on shutdown or startup failure
 
@@ -155,3 +161,13 @@ when the app needs to know its routed development hostname.
 
 For manifest mode, `DEVHOST_BIND_HOST` is the configured service bind host.
 Do not reuse the routed host as the bind address unless the framework explicitly requires that behavior and you have verified it.
+
+## Component-source navigation
+
+When devtools are enabled on a routed page, `devhost` now supports Alt + right-click component inspection for React apps.
+If the host page exposes React development source metadata, `devhost` opens the matching source file in the configured editor protocol and copies the resolved source path to the clipboard.
+
+Important constraints:
+- this is best-effort React development metadata introspection, not a production-safe contract
+- host apps that strip React source metadata or source maps may show no component-source menu
+- relative source paths are resolved against the stack manifest directory before editor URLs are built

@@ -32,11 +32,13 @@ describe("startDevtoolsControlServer", () => {
       ],
     };
     const controlServer = await startDevtoolsControlServer({
+      componentEditor: "vscode",
       devtoolsMinimapPosition: "right",
       devtoolsPosition: "top-left",
       getHealthResponse: async (): Promise<HealthResponse> => {
         return healthResponse;
       },
+      projectRootPath: "/tmp/project",
       stackName: "hello-stack",
     });
 
@@ -66,6 +68,7 @@ describe("startDevtoolsControlServer", () => {
 
   test("replays retained logs and streams new log entries over websocket", async () => {
     const controlServer = await startDevtoolsControlServer({
+      componentEditor: "vscode",
       devtoolsMinimapPosition: "left",
       devtoolsPosition: "bottom-right",
       getHealthResponse: async (): Promise<HealthResponse> => {
@@ -73,6 +76,7 @@ describe("startDevtoolsControlServer", () => {
           services: [],
         };
       },
+      projectRootPath: "/tmp/project",
       stackName: "hello-stack",
     });
 
@@ -118,6 +122,7 @@ describe("startDevtoolsControlServer", () => {
   test("starts a Pi terminal session for submitted annotations", async () => {
     const piTerminalStub = createPiTerminalStub();
     const controlServer = await startDevtoolsControlServer({
+      componentEditor: "vscode",
       devtoolsMinimapPosition: "left",
       devtoolsPosition: "bottom-right",
       getHealthResponse: async (): Promise<HealthResponse> => {
@@ -125,6 +130,7 @@ describe("startDevtoolsControlServer", () => {
           services: [],
         };
       },
+      projectRootPath: "/tmp/project",
       stackName: "hello-stack",
       startPiTerminalSession: piTerminalStub.start,
     });
@@ -189,6 +195,7 @@ describe("startDevtoolsControlServer", () => {
   test("keeps the Pi terminal websocket open after the process exits until the client closes it", async () => {
     const piTerminalStub = createPiTerminalStub();
     const controlServer = await startDevtoolsControlServer({
+      componentEditor: "vscode",
       devtoolsMinimapPosition: "left",
       devtoolsPosition: "bottom-right",
       getHealthResponse: async (): Promise<HealthResponse> => {
@@ -196,6 +203,7 @@ describe("startDevtoolsControlServer", () => {
           services: [],
         };
       },
+      projectRootPath: "/tmp/project",
       stackName: "hello-stack",
       startPiTerminalSession: piTerminalStub.start,
     });

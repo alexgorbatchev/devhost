@@ -8,13 +8,20 @@ describe("createConfiguredDevtoolsScript", () => {
       "console.log('hello');",
       "top-left",
       "left",
+      "cursor",
+      "/tmp/project",
       "hello-stack",
       "control-token",
     );
 
     const expectedInjectedConfigPrefix: string =
       'globalThis.__DEVHOST_INJECTED_CONFIG__={' +
-      '"controlToken":"control-token","minimapPosition":"left","position":"top-left","stackName":"hello-stack"};\n';
+      '"componentEditor":"cursor",' +
+      '"controlToken":"control-token",' +
+      '"minimapPosition":"left",' +
+      '"position":"top-left",' +
+      '"projectRootPath":"/tmp/project",' +
+      '"stackName":"hello-stack"};\n';
 
     expect(configuredScript).toBe(expectedInjectedConfigPrefix + "console.log('hello');");
   });

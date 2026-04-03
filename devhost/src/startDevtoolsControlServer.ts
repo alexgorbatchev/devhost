@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 
 import { buildDevtoolsScript } from "./buildDevtoolsScript";
 import { createConfiguredDevtoolsScript } from "./createConfiguredDevtoolsScript";
+import type { DevtoolsComponentEditor } from "./devtoolsComponentEditor";
 import type { IAnnotationMarkerPayload, IAnnotationSubmitDetail } from "./devtools/features/annotationComposer/types";
 import type {
   PiTerminalClientMessage,
@@ -53,9 +54,11 @@ interface IDevtoolsControlServer {
 }
 
 interface IStartDevtoolsControlServerOptions {
+  componentEditor: DevtoolsComponentEditor;
   devtoolsMinimapPosition: DevtoolsMinimapPosition;
   devtoolsPosition: DevtoolsPosition;
   getHealthResponse: () => Promise<HealthResponse>;
+  projectRootPath: string;
   stackName: string;
   startPiTerminalSession?: (
     detail: IAnnotationSubmitDetail,
@@ -87,6 +90,8 @@ export async function startDevtoolsControlServer(
     await buildDevtoolsScript(),
     options.devtoolsPosition,
     options.devtoolsMinimapPosition,
+    options.componentEditor,
+    options.projectRootPath,
     options.stackName,
     controlToken,
   );

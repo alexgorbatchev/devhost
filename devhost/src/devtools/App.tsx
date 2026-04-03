@@ -4,6 +4,7 @@ import { useState } from "preact/hooks";
 
 import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../stackTypes";
 import { AnnotationComposer } from "./features/annotationComposer";
+import { ComponentSourceMenu, useComponentSourceNavigation } from "./features/componentSourceNavigation";
 import { LogMinimap, useServiceLogs } from "./features/minimap";
 import { PiTerminalTray, usePiTerminalSession } from "./features/piTerminal";
 import { ServiceStatusPanel, useServiceHealth } from "./features/serviceStatusPanel";
@@ -12,8 +13,10 @@ import {
   DEVTOOLS_ROOT_ID,
   ThemeProvider,
   type IDevtoolsTheme,
+  readDevtoolsComponentEditor,
   readDevtoolsMinimapPosition,
   readDevtoolsPosition,
+  readDevtoolsProjectRootPath,
   readDevtoolsStackName,
   useDevtoolsTheme,
   useResolvedColorScheme,
@@ -30,14 +33,26 @@ export function App(): JSX.Element {
 }
 
 function AppContent(): JSX.Element {
+  const componentEditor = readDevtoolsComponentEditor();
   const devtoolsMinimapPosition: DevtoolsMinimapPosition = readDevtoolsMinimapPosition();
   const devtoolsPosition: DevtoolsPosition = readDevtoolsPosition();
+  const projectRootPath: string = readDevtoolsProjectRootPath();
   const stackName: string = readDevtoolsStackName();
   const theme = useDevtoolsTheme();
   const { errorMessage, services } = useServiceHealth();
-  const { expandSession, minimizeSession, piTerminalSessions, removeSession, submitAnnotation } = usePiTerminalSession();
+  const {
+    expandSession,
+    minimizeSession,
+    piTerminalSessions,
+    removeSession,
+    submitAnnotation,
+  } = usePiTerminalSession();
   const [isMinimapHovered, setIsMinimapHovered] = useState<boolean>(false);
   const logEntries = useServiceLogs(isMinimapHovered);
+  const { componentMenu, openComponentSource } = useComponentSourceNavigation({
+    componentEditor,
+    projectRootPath,
+  });
   const shouldRenderPanel: boolean = errorMessage !== null || services.length > 0;
   const shouldRenderMinimap: boolean = logEntries.length > 0;
   const cornerDockClassName: string = css({
@@ -55,6 +70,15 @@ function AppContent(): JSX.Element {
   return (
     <div id={DEVTOOLS_ROOT_ID} data-devhost-devtools="" data-testid="App">
       <AnnotationComposer onSubmit={submitAnnotation} stackName={stackName} />
+      {componentMenu !== null ? (
+        <ComponentSourceMenu
+          items={componentMenu.items}
+          position={{ x: componentMenu.x, y: componentMenu.y }}
+          onItemClick={(itemIndex: number): void => {
+            void openComponentSource(itemIndex);
+          }}
+        />
+      ) : null}
       <div class={cornerDockClassName} data-testid="App--corner-dock">
         {shouldRenderPanel ? <ServiceStatusPanel errorMessage={errorMessage} services={services} /> : null}
       </div>

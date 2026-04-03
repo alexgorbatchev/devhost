@@ -31,6 +31,7 @@ export const helpText: string = [
   "",
   "Behavior:",
   "  - single-service mode keeps the existing --host / --port workflow",
+  "  - single-service editor navigation can be overridden with DEVHOST_COMPONENT_EDITOR",
   "  - manifest mode discovers devhost.toml upward from the current working directory",
   "  - routed services get devtools injection unless manifest devtools = false",
   "  - `devhost caddy start` generates a managed Caddyfile under DEVHOST_STATE_DIR or ~/.local/state/devhost",

@@ -20,6 +20,7 @@ describe("resolveServicePorts", () => {
     );
     const resolvedManifest: IResolvedDevhostManifest = await resolveServicePorts(manifest);
 
+    expect(resolvedManifest.devtoolsComponentEditor).toBe("vscode");
     expect(resolvedManifest.devtoolsMinimapPosition).toBe("right");
     expect(resolvedManifest.devtoolsPosition).toBe("bottom-right");
     const databasePort: number | null = resolvedManifest.services.db.port;
@@ -60,6 +61,7 @@ describe("resolveServicePorts", () => {
   test("preserves explicit health checks and fixed ports", async () => {
     const manifest = validateManifest("/tmp/devhost.toml", {
       devtools: false,
+      devtoolsComponentEditor: "webstorm",
       devtoolsMinimapPosition: "left",
       devtoolsPosition: "top-left",
       name: "hello-stack",
@@ -77,6 +79,7 @@ describe("resolveServicePorts", () => {
     const resolvedManifest: IResolvedDevhostManifest = await resolveServicePorts(manifest);
 
     expect(resolvedManifest.devtools).toBe(false);
+    expect(resolvedManifest.devtoolsComponentEditor).toBe("webstorm");
     expect(resolvedManifest.devtoolsMinimapPosition).toBe("left");
     expect(resolvedManifest.devtoolsPosition).toBe("top-left");
     expect(resolvedManifest.services.api.port).toBe(4000);

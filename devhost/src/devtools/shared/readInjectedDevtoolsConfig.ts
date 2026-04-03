@@ -1,17 +1,26 @@
 import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../../stackTypes";
+import {
+  defaultDevtoolsComponentEditor,
+  readDevtoolsComponentEditorValue,
+  type DevtoolsComponentEditor,
+} from "../../devtoolsComponentEditor";
 import { DEVHOST_SERVICE_NAME, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "./constants";
 
 export interface IInjectedDevtoolsConfig {
+  componentEditor: DevtoolsComponentEditor;
   controlToken: string;
   minimapPosition: DevtoolsMinimapPosition;
   position: DevtoolsPosition;
+  projectRootPath: string;
   stackName: string;
 }
 
 const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
+  componentEditor: defaultDevtoolsComponentEditor,
   controlToken: "",
   minimapPosition: "right",
   position: "bottom-right",
+  projectRootPath: "",
   stackName: DEVHOST_SERVICE_NAME,
 };
 
@@ -22,17 +31,27 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
     return defaultInjectedDevtoolsConfig;
   }
 
+  const componentEditor: DevtoolsComponentEditor = readComponentEditorValue(injectedConfig);
   const controlToken: string = readControlTokenValue(injectedConfig);
   const position: DevtoolsPosition = readDevtoolsPositionValue(injectedConfig);
   const minimapPosition: DevtoolsMinimapPosition = readDevtoolsMinimapPositionValue(injectedConfig);
+  const projectRootPath: string = readProjectRootPathValue(injectedConfig);
   const stackName: string = readStackNameValue(injectedConfig);
 
   return {
+    componentEditor,
     controlToken,
     minimapPosition,
     position,
+    projectRootPath,
     stackName,
   };
+}
+
+function readComponentEditorValue(injectedConfig: object): DevtoolsComponentEditor {
+  const componentEditor: unknown = Reflect.get(injectedConfig, "componentEditor");
+
+  return readDevtoolsComponentEditorValue(componentEditor);
 }
 
 function readControlTokenValue(injectedConfig: object): string {
@@ -64,6 +83,12 @@ function readDevtoolsMinimapPositionValue(injectedConfig: object): DevtoolsMinim
   }
 
   return defaultInjectedDevtoolsConfig.minimapPosition;
+}
+
+function readProjectRootPathValue(injectedConfig: object): string {
+  const projectRootPath: unknown = Reflect.get(injectedConfig, "projectRootPath");
+
+  return typeof projectRootPath === "string" ? projectRootPath : defaultInjectedDevtoolsConfig.projectRootPath;
 }
 
 function readStackNameValue(injectedConfig: object): string {

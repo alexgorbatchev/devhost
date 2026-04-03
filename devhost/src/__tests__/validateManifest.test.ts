@@ -21,6 +21,7 @@ describe("validateManifest", () => {
     const manifest: IValidatedDevhostManifest = validateManifest(manifestPath, manifestValue);
 
     expect(manifest.devtools).toBe(true);
+    expect(manifest.devtoolsComponentEditor).toBe("vscode");
     expect(manifest.devtoolsMinimapPosition).toBe("right");
     expect(manifest.devtoolsPosition).toBe("bottom-right");
     expect(manifest.services.web.bindHost).toBe("127.0.0.1");
@@ -38,6 +39,7 @@ describe("validateManifest", () => {
     const manifest: IValidatedDevhostManifest = validateManifest(manifestPath, manifestValue);
 
     expect(manifest.devtools).toBe(true);
+    expect(manifest.devtoolsComponentEditor).toBe("vscode");
     expect(manifest.devtoolsMinimapPosition).toBe("right");
     expect(manifest.devtoolsPosition).toBe("bottom-right");
     expect(manifest.primaryService).toBe("web");
@@ -47,8 +49,9 @@ describe("validateManifest", () => {
     });
   });
 
-  test("accepts explicit devtools UI positions", () => {
+  test("accepts explicit devtools UI positions and component editor", () => {
     const manifest: IValidatedDevhostManifest = validateManifest("/tmp/devhost.toml", {
+      devtoolsComponentEditor: "cursor",
       devtoolsMinimapPosition: "left",
       devtoolsPosition: "top-left",
       name: "hello-stack",
@@ -61,6 +64,7 @@ describe("validateManifest", () => {
       },
     });
 
+    expect(manifest.devtoolsComponentEditor).toBe("cursor");
     expect(manifest.devtoolsMinimapPosition).toBe("left");
     expect(manifest.devtoolsPosition).toBe("top-left");
   });

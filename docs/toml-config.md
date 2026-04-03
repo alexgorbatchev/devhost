@@ -76,11 +76,14 @@ The root manifest defines:
 - stack metadata
 - the primary service name
 - an optional `devtools` boolean
+- an optional `devtoolsComponentEditor` selector
 - an optional `devtoolsMinimapPosition` side selector
 - an optional `devtoolsPosition` corner selector
 - the full service map
 
 `devtools` is optional and defaults to `true`.
+`devtoolsComponentEditor` is optional and defaults to `"vscode"`.
+Supported editor values are `"vscode"`, `"vscode-insiders"`, `"cursor"`, and `"webstorm"`.
 `devtoolsMinimapPosition` is optional and defaults to `"right"`.
 `devtoolsPosition` is optional and defaults to `"bottom-right"`.
 When `devtools = true`, routed HTML documents go through the injector path and
@@ -103,6 +106,7 @@ interface DevhostManifest {
   name: string;
   primaryService: string;
   devtools?: boolean;
+  devtoolsComponentEditor?: "vscode" | "vscode-insiders" | "cursor" | "webstorm";
   devtoolsMinimapPosition?: "left" | "right";
   devtoolsPosition?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
   services: Record<string, DevhostServiceConfig>;
@@ -131,6 +135,7 @@ Example TOML:
 name = "hello-stack"
 primaryService = "web"
 devtools = true
+devtoolsComponentEditor = "cursor"
 devtoolsMinimapPosition = "right"
 devtoolsPosition = "top-right"
 
@@ -173,6 +178,7 @@ interface ResolvedDevhostManifest {
   manifestPath: string;
   manifestDirectoryPath: string;
   devtools: boolean;
+  devtoolsComponentEditor: "vscode" | "vscode-insiders" | "cursor" | "webstorm";
   devtoolsMinimapPosition: "left" | "right";
   devtoolsPosition: "top-left" | "top-right" | "bottom-left" | "bottom-right";
   services: Record<string, ResolvedDevhostService>;
@@ -202,6 +208,7 @@ type ResolvedHealthConfig =
 `devhost` must apply these defaults exactly:
 
 - `devtools` defaults to `true`.
+- `devtoolsComponentEditor` defaults to `"vscode"`.
 - `devtoolsMinimapPosition` defaults to `"right"`.
 - `devtoolsPosition` defaults to `"bottom-right"`.
 - `cwd` defaults to the manifest directory.
@@ -485,6 +492,7 @@ This work is done only when all of the following are true:
 - existing single-service mode still works unchanged.
 - services with `port = "auto"` receive a unique injected `PORT` value before spawn.
 - root-level `devtools` defaults to `true` and can be set to `false`.
+- root-level `devtoolsComponentEditor` defaults to `"vscode"` and controls Alt + right-click component-source navigation.
 - root-level `devtoolsMinimapPosition` defaults to `"right"` and controls the injected log minimap side.
 - root-level `devtoolsPosition` defaults to `"bottom-right"` and controls the injected status-panel corner.
 - every routed service is reachable through Caddy only after its health check passes.

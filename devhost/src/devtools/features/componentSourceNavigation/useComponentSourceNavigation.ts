@@ -1,0 +1,198 @@
+import { useCallback, useEffect, useState } from "preact/hooks";
+
+import type { DevtoolsComponentEditor } from "../../../devtoolsComponentEditor";
+import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../shared/constants";
+import { resolveAnnotationTarget } from "../annotationComposer/resolveAnnotationTarget";
+import { createComponentSourceUrl, formatComponentSourcePath } from "./componentSourceUtils";
+import { inspectComponentElement } from "./inspectComponentElement";
+import type { IComponentSourceMenuItem, IComponentSourceMenuState } from "./types";
+
+type UseComponentSourceNavigationParams = {
+  componentEditor: DevtoolsComponentEditor;
+  projectRootPath: string;
+};
+
+type UseComponentSourceNavigationResult = {
+  closeComponentMenu: () => void;
+  componentMenu: IComponentSourceMenuState | null;
+  openComponentSource: (index: number) => Promise<void>;
+};
+
+export function useComponentSourceNavigation({
+  componentEditor,
+  projectRootPath,
+}: UseComponentSourceNavigationParams): UseComponentSourceNavigationResult {
+  const [componentMenu, setComponentMenu] = useState<IComponentSourceMenuState | null>(null);
+
+  const closeComponentMenu = useCallback((): void => {
+    setComponentMenu(null);
+  }, []);
+
+  const openComponentSource = useCallback(
+    async (index: number): Promise<void> => {
+      const menuItem: IComponentSourceMenuItem | undefined = componentMenu?.items[index];
+
+      if (menuItem === undefined) {
+        return;
+      }
+
+      const sourcePath: string = formatComponentSourcePath(menuItem.source, projectRootPath);
+
+      if (typeof navigator === "object" && navigator.clipboard !== undefined) {
+        try {
+          await navigator.clipboard.writeText(sourcePath);
+        } catch {
+          // Ignore clipboard failures and still attempt editor navigation.
+        }
+      }
+
+      window.location.assign(menuItem.sourceUrl);
+      closeComponentMenu();
+    },
+    [closeComponentMenu, componentMenu, projectRootPath],
+  );
+
+  useEffect(() => {
+    const handleContextMenu = (event: MouseEvent): void => {
+      if (!event.altKey) {
+        closeComponentMenu();
+        return;
+      }
+
+      if (isEventInsideDevtools(event)) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const targetElement: HTMLElement | null = resolveAnnotationTarget(event.clientX, event.clientY);
+
+      if (targetElement === null) {
+        closeComponentMenu();
+        return;
+      }
+
+      void openComponentMenu(
+        targetElement,
+        event.clientX,
+        event.clientY,
+        componentEditor,
+        projectRootPath,
+        setComponentMenu,
+      );
+    };
+
+    document.addEventListener("contextmenu", handleContextMenu, true);
+
+    return () => {
+      document.removeEventListener("contextmenu", handleContextMenu, true);
+    };
+  }, [closeComponentMenu, componentEditor, projectRootPath]);
+
+  useEffect(() => {
+    if (componentMenu === null) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent): void => {
+      if (isEventInsideComponentMenu(event)) {
+        return;
+      }
+
+      closeComponentMenu();
+    };
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      event.preventDefault();
+      closeComponentMenu();
+    };
+
+    document.addEventListener("mousedown", handlePointerDown, true);
+    document.addEventListener("keydown", handleKeyDown, true);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown, true);
+      document.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [closeComponentMenu, componentMenu]);
+
+  return {
+    closeComponentMenu,
+    componentMenu,
+    openComponentSource,
+  };
+}
+
+async function openComponentMenu(
+  targetElement: HTMLElement,
+  x: number,
+  y: number,
+  componentEditor: DevtoolsComponentEditor,
+  projectRootPath: string,
+  setComponentMenu: (menu: IComponentSourceMenuState | null) => void,
+): Promise<void> {
+  const inspectedComponents = await inspectComponentElement(targetElement);
+
+  if (inspectedComponents.length === 0) {
+    setComponentMenu(null);
+    return;
+  }
+
+  setComponentMenu({
+    items: inspectedComponents.map((inspection, index): IComponentSourceMenuItem => {
+      const sourceLabel: string = formatComponentSourcePath(inspection.source, projectRootPath);
+
+      return {
+        displayName: inspection.displayName,
+        key: `${sourceLabel}:${index}`,
+        props: Object.entries(inspection.props).map(([name, value]) => {
+          return {
+            name,
+            title: `${name}=${value}`,
+          };
+        }),
+        source: inspection.source,
+        sourceLabel,
+        sourceUrl: createComponentSourceUrl(inspection.source, componentEditor, projectRootPath),
+      };
+    }),
+    x,
+    y,
+  });
+}
+
+function getEventTargetElement(event: Event): HTMLElement | null {
+  const eventPath = event.composedPath();
+
+  for (const eventTarget of eventPath) {
+    if (eventTarget instanceof HTMLElement) {
+      return eventTarget;
+    }
+  }
+
+  return event.target instanceof HTMLElement ? event.target : null;
+}
+
+function isEventInsideComponentMenu(event: Event): boolean {
+  const targetElement: HTMLElement | null = getEventTargetElement(event);
+
+  return targetElement?.closest("[data-component-source-menu]") !== null;
+}
+
+function isEventInsideDevtools(event: Event): boolean {
+  for (const eventTarget of event.composedPath()) {
+    if (!(eventTarget instanceof HTMLElement)) {
+      continue;
+    }
+
+    if (eventTarget.hasAttribute(DEVTOOLS_ROOT_ATTRIBUTE_NAME)) {
+      return true;
+    }
+  }
+
+  return false;
+}

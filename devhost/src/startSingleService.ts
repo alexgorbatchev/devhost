@@ -1,6 +1,7 @@
 import { join } from "node:path";
 
 import { defaultBindHost } from "./constants";
+import { readDevtoolsComponentEditorValue } from "./devtoolsComponentEditor";
 import type { IDevhostLogger } from "./createLogger";
 import type { ISingleServiceCommandLineArguments } from "./parseCommandLineArguments";
 import { createInjectedServiceEnvironment, startStack } from "./startStack";
@@ -8,6 +9,7 @@ import type { IInjectedServiceEnvironment, IResolvedDevhostManifest, IResolvedDe
 
 const syntheticManifestFileName: string = "devhost.synthetic.toml";
 const syntheticStackName: string = "devhost";
+const devtoolsComponentEditorEnvironmentVariableName: string = "DEVHOST_COMPONENT_EDITOR";
 
 export function createSingleServiceEnvironment(
   arguments_: ISingleServiceCommandLineArguments,
@@ -38,6 +40,9 @@ export function createSingleServiceManifest(arguments_: ISingleServiceCommandLin
 
   return {
     devtools: true,
+    devtoolsComponentEditor: readDevtoolsComponentEditorValue(
+      process.env[devtoolsComponentEditorEnvironmentVariableName],
+    ),
     devtoolsMinimapPosition: "right",
     devtoolsPosition: "bottom-right",
     manifestDirectoryPath: process.cwd(),

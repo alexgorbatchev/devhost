@@ -1,9 +1,23 @@
 import { join } from "node:path";
 
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 
 import type { ISingleServiceCommandLineArguments } from "../parseCommandLineArguments";
 import { createSingleServiceEnvironment, createSingleServiceManifest } from "../startSingleService";
+
+const originalDevtoolsComponentEditor: string | undefined = process.env.DEVHOST_COMPONENT_EDITOR;
+
+function restoreDevtoolsComponentEditorEnvironment(): void {
+  delete process.env.DEVHOST_COMPONENT_EDITOR;
+
+  if (originalDevtoolsComponentEditor !== undefined) {
+    process.env.DEVHOST_COMPONENT_EDITOR = originalDevtoolsComponentEditor;
+  }
+}
+
+afterEach(() => {
+  restoreDevtoolsComponentEditorEnvironment();
+});
 
 describe("createSingleServiceEnvironment", () => {
   test("injects bind host, routed host, and port without HOST", () => {
@@ -31,6 +45,7 @@ describe("createSingleServiceEnvironment", () => {
 
     expect(createSingleServiceManifest(arguments_)).toEqual({
       devtools: true,
+      devtoolsComponentEditor: "vscode",
       devtoolsMinimapPosition: "right",
       devtoolsPosition: "bottom-right",
       manifestDirectoryPath: process.cwd(),
@@ -56,5 +71,18 @@ describe("createSingleServiceEnvironment", () => {
         },
       },
     });
+  });
+
+  test("reads the single-service component editor from the environment", () => {
+    process.env.DEVHOST_COMPONENT_EDITOR = "cursor";
+
+    const arguments_: ISingleServiceCommandLineArguments = {
+      command: ["bun", "run", "dev"],
+      host: "hello.xcv.lol",
+      kind: "single-service",
+      port: 3200,
+    };
+
+    expect(createSingleServiceManifest(arguments_).devtoolsComponentEditor).toBe("cursor");
   });
 });

@@ -83,11 +83,13 @@ export async function startStack(
 
     if (manifest.devtools && routedServices.length > 0) {
       devtoolsControlServer = await startDevtoolsControlServer({
+        componentEditor: manifest.devtoolsComponentEditor,
         devtoolsMinimapPosition: manifest.devtoolsMinimapPosition,
         devtoolsPosition: manifest.devtoolsPosition,
         getHealthResponse: async () => {
           return await collectManagedServicesHealth(manifest.name, managedServices, startedServices);
         },
+        projectRootPath: manifest.manifestDirectoryPath,
         stackName: manifest.name,
         startPiTerminalSession: (detail, onData) => {
           return launchPiTerminalSession({

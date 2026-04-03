@@ -3,6 +3,10 @@ import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { z } from "zod";
 
 import { defaultBindHost } from "./constants";
+import {
+  defaultDevtoolsComponentEditor,
+  supportedDevtoolsComponentEditors,
+} from "./devtoolsComponentEditor";
 import { isValidHost } from "./isValidHost";
 import type {
   DevhostPortConfig,
@@ -13,6 +17,7 @@ import type {
   IValidatedDevhostService,
 } from "./stackTypes";
 
+const devtoolsComponentEditorSchema = z.enum(supportedDevtoolsComponentEditors);
 const devtoolsMinimapPositionSchema = z.enum(["left", "right"]);
 const devtoolsPositionSchema = z.enum(["top-left", "top-right", "bottom-left", "bottom-right"]);
 
@@ -40,6 +45,7 @@ const serviceSchema = z
 const manifestSchema = z
   .object({
     devtools: z.boolean().optional(),
+    devtoolsComponentEditor: devtoolsComponentEditorSchema.optional(),
     devtoolsMinimapPosition: devtoolsMinimapPositionSchema.optional(),
     devtoolsPosition: devtoolsPositionSchema.optional(),
     name: nonEmptyStringSchema,
@@ -101,6 +107,7 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
 
   return {
     devtools: parsedManifest.devtools ?? true,
+    devtoolsComponentEditor: parsedManifest.devtoolsComponentEditor ?? defaultDevtoolsComponentEditor,
     devtoolsMinimapPosition: parsedManifest.devtoolsMinimapPosition ?? "right",
     devtoolsPosition: parsedManifest.devtoolsPosition ?? "bottom-right",
     manifestDirectoryPath,
