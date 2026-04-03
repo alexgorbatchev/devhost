@@ -6,6 +6,7 @@ export interface IDevtoolsTheme {
   colors: {
     accentBackground: string;
     accentForeground: string;
+    backdrop: string;
     background: string;
     border: string;
     dangerBackground: string;
@@ -52,6 +53,7 @@ export interface IDevtoolsTheme {
   };
   shadows: {
     floating: string;
+    popup: string;
   };
   spacing: {
     lg: string;
@@ -113,10 +115,15 @@ const sharedSpacing: IDevtoolsTheme["spacing"] = {
 const sharedZIndices: IDevtoolsTheme["zIndices"] = {
   floating: 2147483647,
 };
+const sharedShadows: IDevtoolsTheme["shadows"] = {
+  floating: "0px 10px 24px rgba(15, 23, 42, 0.14)",
+  popup: "4px 5px 10px rgba(0, 0, 0, 0.8), -4px 5px 10px rgba(0, 0, 0, 0.4)",
+};
 const lightDevtoolsTheme: IDevtoolsTheme = {
   colors: {
     accentBackground: "#111827",
     accentForeground: "#ffffff",
+    backdrop: "rgba(255, 255, 255, 0.72)",
     background: "#ffffff",
     border: "#cbd5e1",
     dangerBackground: "#ef4444",
@@ -141,9 +148,7 @@ const lightDevtoolsTheme: IDevtoolsTheme = {
   opacities: sharedOpacities,
   radii: sharedRadii,
   sizes: sharedSizes,
-  shadows: {
-    floating: "0px 5px 5px rgba(15, 23, 42, 0.12)",
-  },
+  shadows: sharedShadows,
   spacing: sharedSpacing,
   zIndices: sharedZIndices,
 };
@@ -151,6 +156,7 @@ const darkDevtoolsTheme: IDevtoolsTheme = {
   colors: {
     accentBackground: "#e2e8f0",
     accentForeground: "#020617",
+    backdrop: "rgba(15, 23, 42, 0.68)",
     background: "#0f172a",
     border: "#334155",
     dangerBackground: "#f87171",
@@ -175,9 +181,7 @@ const darkDevtoolsTheme: IDevtoolsTheme = {
   opacities: sharedOpacities,
   radii: sharedRadii,
   sizes: sharedSizes,
-  shadows: {
-    floating: "0px 5px 5px rgba(15, 23, 42, 0.12)",
-  },
+  shadows: sharedShadows,
   spacing: sharedSpacing,
   zIndices: sharedZIndices,
 };

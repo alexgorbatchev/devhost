@@ -185,6 +185,75 @@ describe("startDevtoolsControlServer", () => {
     ]);
     expect(piTerminalStub.closeCount).toBe(1);
   });
+
+  test("keeps the Pi terminal websocket open after the process exits until the client closes it", async () => {
+    const piTerminalStub = createPiTerminalStub();
+    const controlServer = await startDevtoolsControlServer({
+      devtoolsMinimapPosition: "left",
+      devtoolsPosition: "bottom-right",
+      getHealthResponse: async (): Promise<HealthResponse> => {
+        return {
+          services: [],
+        };
+      },
+      stackName: "hello-stack",
+      startPiTerminalSession: piTerminalStub.start,
+    });
+
+    stopFunctions.push(controlServer.stop);
+
+    const injectedScriptResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${INJECTED_SCRIPT_PATH}`);
+    const controlToken: string = extractControlToken(await injectedScriptResponse.text());
+    const startResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${PI_SESSION_START_PATH}`, {
+      body: JSON.stringify({
+        annotation: createAnnotationDetail(),
+      }),
+      headers: {
+        "content-type": "application/json",
+        "x-devhost-control-token": controlToken,
+      },
+      method: "POST",
+    });
+    const startResponseBody: unknown = await startResponse.json();
+
+    expect(startResponse.status).toBe(200);
+    expect(isSessionStartResponse(startResponseBody)).toBe(true);
+
+    const websocketUrl: URL = new URL(`ws://127.0.0.1:${controlServer.port}${PI_SESSION_WEBSOCKET_PATH}`);
+
+    websocketUrl.searchParams.set("sessionId", (startResponseBody as { sessionId: string }).sessionId);
+    websocketUrl.searchParams.set("token", controlToken);
+
+    const websocket = new WebSocket(websocketUrl);
+
+    websockets.push(websocket);
+
+    await expect(waitForWebSocketMessage(websocket)).resolves.toBe(JSON.stringify({ data: "", type: "snapshot" }));
+
+    const exitMessagePromise: Promise<string> = waitForWebSocketMessage(websocket);
+
+    piTerminalStub.exitWith(0, null);
+
+    await expect(exitMessagePromise).resolves.toBe(JSON.stringify({ exitCode: 0, signalCode: null, type: "exit" }));
+
+    websocket.send(JSON.stringify({ data: "ignored after exit\n", type: "input" }));
+    websocket.send(JSON.stringify({ cols: 120, rows: 40, type: "resize" }));
+
+    await Bun.sleep(0);
+
+    expect(websocket.readyState).toBe(WebSocket.OPEN);
+    expect(piTerminalStub.closeCount).toBe(0);
+    expect(piTerminalStub.resizes).toEqual([]);
+    expect(piTerminalStub.writes).toEqual([]);
+
+    const closePromise: Promise<void> = waitForWebSocketClose(websocket);
+
+    websocket.send(JSON.stringify({ type: "close" }));
+
+    await closePromise;
+
+    expect(piTerminalStub.closeCount).toBe(1);
+  });
 });
 
 function createAnnotationDetail(): IAnnotationSubmitDetail {
@@ -230,6 +299,7 @@ function createAnnotationDetail(): IAnnotationSubmitDetail {
 function createPiTerminalStub(): {
   closeCount: number;
   emit: (text: string) => void;
+  exitWith: (exitCode: number, signalCode: string | null) => void;
   resizes: Array<{ cols: number; rows: number }>;
   start: (detail: IAnnotationSubmitDetail, onData: (data: Uint8Array) => void) => ILaunchedPiTerminalSession;
   startedAnnotations: IAnnotationSubmitDetail[];
@@ -241,6 +311,12 @@ function createPiTerminalStub(): {
   const writes: string[] = [];
   let closeCount: number = 0;
   let dataHandler: ((data: Uint8Array) => void) | null = null;
+  let exitCode: number | null = null;
+  let resolveExit: ((value: number) => void) | null = null;
+  let signalCode: string | null = null;
+  const exitPromise: Promise<number> = new Promise<number>((resolve): void => {
+    resolveExit = resolve;
+  });
 
   return {
     get closeCount(): number {
@@ -249,6 +325,11 @@ function createPiTerminalStub(): {
     emit: (text: string): void => {
       dataHandler?.(encoder.encode(text));
     },
+    exitWith: (nextExitCode: number, nextSignalCode: string | null): void => {
+      exitCode = nextExitCode;
+      signalCode = nextSignalCode;
+      resolveExit?.(nextExitCode);
+    },
     resizes,
     start: (detail: IAnnotationSubmitDetail, onData: (data: Uint8Array) => void): ILaunchedPiTerminalSession => {
       startedAnnotations.push(detail);
@@ -256,10 +337,14 @@ function createPiTerminalStub(): {
 
       return {
         childProcess: {
-          exitCode: null,
-          exited: new Promise<number>(() => {}),
+          get exitCode(): number | null {
+            return exitCode;
+          },
+          exited: exitPromise,
           killed: false,
-          signalCode: null,
+          get signalCode(): string | null {
+            return signalCode;
+          },
         } as Bun.Subprocess,
         close: (): void => {
           closeCount += 1;

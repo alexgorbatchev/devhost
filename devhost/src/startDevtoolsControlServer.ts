@@ -232,12 +232,18 @@ export async function startDevtoolsControlServer(
         }
 
         if (clientMessage.type === "input") {
-          session.write(clientMessage.data);
+          if (session.exited === null) {
+            session.write(clientMessage.data);
+          }
+
           return;
         }
 
         if (clientMessage.type === "resize") {
-          session.resize(clientMessage.cols, clientMessage.rows);
+          if (session.exited === null) {
+            session.resize(clientMessage.cols, clientMessage.rows);
+          }
+
           return;
         }
 

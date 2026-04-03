@@ -1,3 +1,5 @@
+import { createPiTerminalSessionCommand } from "./createPiTerminalSessionCommand";
+
 interface ILaunchPiTerminalSessionOptions {
   cols: number;
   cwd: string;
@@ -14,7 +16,7 @@ export interface ILaunchedPiTerminalSession {
 }
 
 export function launchPiTerminalSession(options: ILaunchPiTerminalSessionOptions): ILaunchedPiTerminalSession {
-  const childProcess = Bun.spawn(["pi", options.prompt], {
+  const childProcess = Bun.spawn(createPiTerminalSessionCommand(options.prompt), {
     cwd: options.cwd,
     env: process.env,
     terminal: {

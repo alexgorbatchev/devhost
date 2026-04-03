@@ -14,6 +14,7 @@ import {
 } from "../../shared/constants";
 import { readDevtoolsControlToken } from "../../shared/readDevtoolsControlToken";
 import type { IAnnotationSubmitDetail } from "../annotationComposer/types";
+import { readPiTerminalPrimaryAction } from "./readPiTerminalPrimaryAction";
 import type { PiTerminalClientMessage, PiTerminalServerMessage } from "./types";
 
 interface IPiTerminalPanelProps {
@@ -21,12 +22,18 @@ interface IPiTerminalPanelProps {
   isExpanded: boolean;
   onExpand: () => void;
   onMinimize: () => void;
-  onTerminate: () => void;
+  onRemove: () => void;
   sessionId: string;
 }
 
 interface IPanelSize {
   height: number;
+  width: number;
+}
+
+interface ITrayTooltipLayout {
+  bottom: number;
+  left: number;
   width: number;
 }
 
@@ -41,14 +48,18 @@ const xtermStylesheetId: string = "devhost-xterm-stylesheet";
 export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
   const theme = useDevtoolsTheme();
   const fitAddonReference = useRef<FitAddon | null>(null);
+  const hasExitedReference = useRef<boolean>(false);
   const resizeAnimationFrameReference = useRef<number | null>(null);
   const terminalContainerReference = useRef<HTMLDivElement | null>(null);
   const terminalReference = useRef<Terminal | null>(null);
   const terminalViewportReference = useRef<HTMLDivElement | null>(null);
+  const trayShellReference = useRef<HTMLElement | null>(null);
   const websocketReference = useRef<WebSocket | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [hasExited, setHasExited] = useState<boolean>(false);
   const [isTrayHoverVisible, setIsTrayHoverVisible] = useState<boolean>(false);
   const [isTrayMounted, setIsTrayMounted] = useState<boolean>(false);
+  const [trayTooltipLayout, setTrayTooltipLayout] = useState<ITrayTooltipLayout | null>(null);
   const [panelSize, setPanelSize] = useState<IPanelSize>(() => {
     return resolvePanelSize(window.innerWidth, window.innerHeight);
   });
@@ -59,7 +70,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
     const terminal: Terminal | null = terminalReference.current;
     const websocket: WebSocket | null = websocketReference.current;
 
-    if (fitAddon === null || terminal === null || websocket === null) {
+    if (hasExitedReference.current || fitAddon === null || terminal === null || websocket === null) {
       return;
     }
 
@@ -103,9 +114,60 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
     };
   }, [props.isExpanded, props.sessionId]);
 
+  const updateTrayTooltipLayout = useCallback((): void => {
+    const trayShell: HTMLElement | null = trayShellReference.current;
+
+    if (trayShell === null) {
+      return;
+    }
+
+    const trayShellBounds: DOMRect = trayShell.getBoundingClientRect();
+
+    setTrayTooltipLayout(resolveTrayTooltipLayout(trayShellBounds, window.innerWidth, window.innerHeight));
+  }, []);
+
+  useEffect(() => {
+    if (!props.isExpanded) {
+      return;
+    }
+
+    const { body, documentElement } = document;
+    const previousBodyOverflow: string = body.style.overflow;
+    const previousDocumentOverflow: string = documentElement.style.overflow;
+
+    body.style.overflow = "hidden";
+    documentElement.style.overflow = "hidden";
+
+    return () => {
+      body.style.overflow = previousBodyOverflow;
+      documentElement.style.overflow = previousDocumentOverflow;
+    };
+  }, [props.isExpanded]);
+
+  useEffect(() => {
+    if (!isTrayHoverVisible || props.isExpanded) {
+      return;
+    }
+
+    const handleWindowResize = (): void => {
+      updateTrayTooltipLayout();
+    };
+
+    window.addEventListener("resize", handleWindowResize);
+
+    return () => {
+      window.removeEventListener("resize", handleWindowResize);
+    };
+  }, [isTrayHoverVisible, props.isExpanded, updateTrayTooltipLayout]);
+
   useEffect(() => {
     const terminalContainer: HTMLDivElement | null = terminalContainerReference.current;
     const terminalViewport: HTMLDivElement | null = terminalViewportReference.current;
+
+    setErrorMessage(null);
+    setHasExited(false);
+    hasExitedReference.current = false;
+    setStatusText("Connecting to Pi…");
 
     if (terminalContainer === null || terminalViewport === null) {
       return;
@@ -145,7 +207,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
     });
     const handleOpen = (): void => {
       setErrorMessage(null);
-      setStatusText("Pi session is running");
+      setStatusText("Working...");
       scheduleTerminalResize();
 
       if (props.isExpanded) {
@@ -153,7 +215,10 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
       }
     };
     const handleClose = (): void => {
-      setStatusText("Pi session disconnected");
+      if (!hasExitedReference.current) {
+        setStatusText("Pi session disconnected");
+      }
+
       setIsTrayHoverVisible(false);
     };
     const handleError = (): void => {
@@ -173,6 +238,8 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
       }
 
       if (message.type === "exit") {
+        hasExitedReference.current = true;
+        setHasExited(true);
         setStatusText(createExitStatusText(message.exitCode, message.signalCode));
         return;
       }
@@ -220,12 +287,12 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
       return;
     }
 
-    terminal.options.disableStdin = !props.isExpanded;
+    terminal.options.disableStdin = !props.isExpanded || hasExited;
     terminal.options.theme = createXtermTheme(theme);
     terminal.options.fontFamily = theme.fontFamilies.monospace;
     terminal.options.fontSize = Number.parseInt(theme.fontSizes.md, 10);
 
-    if (props.isExpanded) {
+    if (props.isExpanded && !hasExited) {
       terminal.focus();
     } else {
       terminal.blur();
@@ -233,14 +300,17 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
     }
 
     scheduleTerminalResize();
-  }, [panelSize, props.isExpanded, scheduleTerminalResize, theme]);
+  }, [hasExited, panelSize, props.isExpanded, scheduleTerminalResize, theme]);
 
+  const primaryAction = readPiTerminalPrimaryAction(hasExited);
   const annotationClassName: string = css(createAnnotationStyle(theme));
   const annotationCommentClassName: string = css(createAnnotationCommentStyle(theme));
   const annotationEyebrowClassName: string = css(createAnnotationEyebrowStyle(theme));
   const annotationMetaClassName: string = css(createAnnotationMetaStyle(theme));
   const buttonGroupClassName: string = css(buttonGroupStyle);
   const chromeClassName: string = css(createChromeStyle(theme, panelSize, props.isExpanded));
+  const backdropClassName: string = css(createBackdropStyle(theme));
+  const expandedOverlayClassName: string = css(createExpandedOverlayStyle(theme));
   const expandedPanelClassName: string = css(createExpandedPanelStyle(theme, panelSize));
   const headerClassName: string = css(createHeaderStyle(theme));
   const headerTextClassName: string = css(headerTextStyle);
@@ -248,10 +318,12 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
   const terminalContainerClassName: string = css(terminalContainerStyle);
   const terminalViewportClassName: string = css(createTerminalViewportStyle(theme));
   const trayBadgeClassName: string = css(createTrayBadgeStyle(theme));
+  const trayCompletionIconClassName: string = css(createTrayCompletionIconStyle(theme));
+  const trayCompletionOverlayClassName: string = css(createTrayCompletionOverlayStyle());
   const trayOverlayButtonClassName: string = css(createTrayOverlayButtonStyle(theme));
   const trayScaledContentClassName: string = css(createTrayScaledContentStyle(panelSize));
   const trayShellClassName: string = css(createTrayShellStyle(theme, panelSize, isTrayMounted));
-  const trayTooltipClassName: string = css(createTrayTooltipStyle(theme));
+  const trayTooltipClassName: string = css(createTrayTooltipStyle(theme, trayTooltipLayout));
   const trayTooltipCommentClassName: string = css(createTrayTooltipCommentStyle(theme));
 
   const panelContent: JSX.Element = (
@@ -272,15 +344,18 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
               Minimize
             </Button>
             <Button
-              testId="PiTerminalPanel--terminate"
-              title="Terminate Pi terminal"
-              variant="danger"
+              testId={primaryAction.testId}
+              title={primaryAction.title}
+              variant={primaryAction.variant}
               onClick={(): void => {
-                terminateSession(websocketReference.current);
-                props.onTerminate();
+                if (!hasExited) {
+                  terminateSession(websocketReference.current);
+                }
+
+                props.onRemove();
               }}
             >
-              Terminate
+              {primaryAction.label}
             </Button>
           </div>
         ) : null}
@@ -305,14 +380,17 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
 
   if (props.isExpanded) {
     return (
-      <section class={expandedPanelClassName} data-testid="PiTerminalPanel">
-        {panelContent}
-      </section>
+      <div class={expandedOverlayClassName} data-testid="PiTerminalPanel">
+        <div aria-hidden="true" class={backdropClassName} data-testid="PiTerminalPanel--backdrop" />
+        <section class={expandedPanelClassName} data-testid="PiTerminalPanel--content">
+          {panelContent}
+        </section>
+      </div>
     );
   }
 
   return (
-    <section class={trayShellClassName} data-testid="PiTerminalPanel">
+    <section ref={trayShellReference} class={trayShellClassName} data-testid="PiTerminalPanel">
       <div class={trayScaledContentClassName}>{panelContent}</div>
       <button
         aria-label="Expand Pi terminal preview"
@@ -324,9 +402,11 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
         }}
         onClick={props.onExpand}
         onFocus={(): void => {
+          updateTrayTooltipLayout();
           setIsTrayHoverVisible(true);
         }}
         onMouseEnter={(): void => {
+          updateTrayTooltipLayout();
           setIsTrayHoverVisible(true);
         }}
         onMouseLeave={(): void => {
@@ -335,9 +415,15 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
       >
         <span class={trayBadgeClassName}>{errorMessage ?? statusText}</span>
       </button>
-      {isTrayHoverVisible ? (
+      {hasExited ? (
+        <div aria-hidden="true" class={trayCompletionOverlayClassName} data-testid="PiTerminalPanel--completion-indicator">
+          <svg class={trayCompletionIconClassName} viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+            <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM369 209L241 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L335 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z" />
+          </svg>
+        </div>
+      ) : null}
+      {isTrayHoverVisible && trayTooltipLayout !== null ? (
         <div class={trayTooltipClassName} data-testid="PiTerminalPanel--tooltip">
-          <span class={annotationEyebrowClassName}>Original annotation</span>
           <strong class={trayTooltipCommentClassName}>{props.annotation.comment}</strong>
         </div>
       ) : null}
@@ -384,8 +470,17 @@ function createAnnotationStyle(theme: IDevtoolsTheme): CSSObject {
     gap: theme.spacing.xs,
     padding: theme.spacing.sm,
     border: `1px solid ${theme.colors.selectionBorder}`,
-    borderRadius: theme.radii.md,
+    borderRadius: theme.radii.sm,
     background: theme.colors.selectionBackground,
+  };
+}
+
+function createBackdropStyle(theme: IDevtoolsTheme): CSSObject {
+  return {
+    position: "fixed",
+    inset: 0,
+    background: theme.colors.backdrop,
+    pointerEvents: "auto",
   };
 }
 
@@ -399,10 +494,19 @@ function createChromeStyle(theme: IDevtoolsTheme, panelSize: IPanelSize, isExpan
     padding: theme.spacing.sm,
     boxSizing: "border-box",
     border: `1px solid ${theme.colors.border}`,
-    borderRadius: isExpanded ? theme.radii.lg : theme.radii.md,
+    borderRadius: theme.radii.md,
     background: theme.colors.background,
     color: theme.colors.foreground,
-    boxShadow: theme.shadows.floating,
+    boxShadow: theme.shadows.popup,
+  };
+}
+
+function createExpandedOverlayStyle(theme: IDevtoolsTheme): CSSObject {
+  return {
+    position: "fixed",
+    inset: 0,
+    pointerEvents: "none",
+    zIndex: Number(theme.zIndices.floating) + 2,
   };
 }
 
@@ -415,20 +519,12 @@ function createExpandedPanelStyle(theme: IDevtoolsTheme, panelSize: IPanelSize):
     height: `${panelSize.height}px`,
     transform: "translate(-50%, -50%)",
     pointerEvents: "auto",
-    zIndex: Number(theme.zIndices.floating) + 2,
+    zIndex: 1,
   };
 }
 
-function createExitStatusText(exitCode: number | null, signalCode: string | null): string {
-  if (signalCode !== null) {
-    return `Pi exited via ${signalCode}.`;
-  }
-
-  if (exitCode === null) {
-    return "Pi exited.";
-  }
-
-  return `Pi exited with code ${exitCode}.`;
+function createExitStatusText(_exitCode: number | null, _signalCode: string | null): string {
+  return "Finished";
 }
 
 function createHeaderStyle(theme: IDevtoolsTheme): CSSObject {
@@ -452,8 +548,6 @@ function createTerminalViewportStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     minHeight: 0,
     overflow: "hidden",
-    border: `1px solid ${theme.colors.border}`,
-    borderRadius: theme.radii.md,
     background: theme.colors.background,
   };
 }
@@ -476,6 +570,28 @@ function createTrayBadgeStyle(theme: IDevtoolsTheme): CSSObject {
   };
 }
 
+function createTrayCompletionIconStyle(theme: IDevtoolsTheme): CSSObject {
+  return {
+    width: "22px",
+    height: "22px",
+    display: "block",
+    color: theme.colors.successBackground,
+    fill: "currentColor",
+    filter: `drop-shadow(0px 2px 6px ${theme.colors.successGlow})`,
+  };
+}
+
+function createTrayCompletionOverlayStyle(): CSSObject {
+  return {
+    position: "absolute",
+    inset: 0,
+    display: "grid",
+    placeItems: "center",
+    pointerEvents: "none",
+    zIndex: 1,
+  };
+}
+
 function createTrayOverlayButtonStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     position: "absolute",
@@ -484,7 +600,6 @@ function createTrayOverlayButtonStyle(theme: IDevtoolsTheme): CSSObject {
     borderRadius: theme.radii.md,
     background: "transparent",
     cursor: "pointer",
-    overflow: "hidden",
   };
 }
 
@@ -508,12 +623,7 @@ function createTrayShellStyle(theme: IDevtoolsTheme, panelSize: IPanelSize, isTr
     width: isTrayMounted ? `${panelSize.width * trayScale}px` : "0px",
     height: `${panelSize.height * trayScale}px`,
     opacity: isTrayMounted ? 1 : 0,
-    transform: isTrayMounted ? "translateY(0px)" : "translateY(16px)",
-    transition: [
-      `width ${trayTransitionDurationInMilliseconds}ms ease`,
-      `opacity ${trayTransitionDurationInMilliseconds}ms ease`,
-      `transform ${trayTransitionDurationInMilliseconds}ms ease`,
-    ].join(", "),
+    transition: [`width ${trayTransitionDurationInMilliseconds}ms ease`, `opacity ${trayTransitionDurationInMilliseconds}ms ease`].join(", "),
     pointerEvents: "auto",
     overflow: "visible",
     zIndex: Number(theme.zIndices.floating) + 1,
@@ -527,12 +637,18 @@ function createTrayTooltipCommentStyle(theme: IDevtoolsTheme): CSSObject {
   };
 }
 
-function createTrayTooltipStyle(theme: IDevtoolsTheme): CSSObject {
+function createTrayTooltipStyle(theme: IDevtoolsTheme, trayTooltipLayout: ITrayTooltipLayout | null): CSSObject {
+  if (trayTooltipLayout === null) {
+    return {
+      display: "none",
+    };
+  }
+
   return {
-    position: "absolute",
-    left: 0,
-    bottom: `calc(100% + ${theme.spacing.xs})`,
-    width: "min(360px, calc(100vw - 48px))",
+    position: "fixed",
+    left: `${trayTooltipLayout.left}px`,
+    bottom: `${trayTooltipLayout.bottom}px`,
+    width: `${trayTooltipLayout.width}px`,
     display: "grid",
     gap: theme.spacing.xxs,
     padding: theme.spacing.sm,
@@ -540,7 +656,28 @@ function createTrayTooltipStyle(theme: IDevtoolsTheme): CSSObject {
     borderRadius: theme.radii.md,
     background: theme.colors.background,
     color: theme.colors.foreground,
-    boxShadow: theme.shadows.floating,
+    boxShadow: theme.shadows.popup,
+    zIndex: Number(theme.zIndices.floating) + 2,
+  };
+}
+
+function resolveTrayTooltipLayout(
+  trayShellBounds: DOMRect,
+  viewportWidth: number,
+  viewportHeight: number,
+): ITrayTooltipLayout {
+  const viewportPadding: number = 24;
+  const width: number = Math.min(trayShellBounds.width, viewportWidth - viewportPadding * 2);
+  const left: number = Math.max(
+    viewportPadding,
+    Math.min(trayShellBounds.left, viewportWidth - viewportPadding - width),
+  );
+  const bottom: number = viewportHeight - trayShellBounds.top + 8;
+
+  return {
+    bottom,
+    left,
+    width,
   };
 }
 

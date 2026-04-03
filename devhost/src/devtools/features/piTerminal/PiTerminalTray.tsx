@@ -57,7 +57,7 @@ export function PiTerminalTray(props: IPiTerminalTrayProps): JSX.Element | null 
           onMinimize={(): void => {
             props.onMinimizeSession(expandedSession.sessionId);
           }}
-          onTerminate={(): void => {
+          onRemove={(): void => {
             props.onRemoveSession(expandedSession.sessionId);
           }}
         />
@@ -76,7 +76,7 @@ export function PiTerminalTray(props: IPiTerminalTrayProps): JSX.Element | null 
                     props.onExpandSession(session.sessionId);
                   }}
                   onMinimize={noop}
-                  onTerminate={(): void => {
+                  onRemove={(): void => {
                     props.onRemoveSession(session.sessionId);
                   }}
                 />

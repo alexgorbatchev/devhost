@@ -664,7 +664,7 @@ function createPopupStyle(theme: IDevtoolsTheme, left: number, top: number): CSS
     color: theme.colors.foreground,
     fontFamily: theme.fontFamilies.body,
     fontSize: theme.fontSizes.sm,
-    boxShadow: theme.shadows.floating,
+    boxShadow: theme.shadows.popup,
     pointerEvents: "auto",
     zIndex: theme.zIndices.floating,
   };
