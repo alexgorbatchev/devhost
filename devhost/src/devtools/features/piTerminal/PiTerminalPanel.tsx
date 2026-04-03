@@ -14,6 +14,7 @@ import {
 } from "../../shared/constants";
 import { readDevtoolsControlToken } from "../../shared/readDevtoolsControlToken";
 import { readPiTerminalPrimaryAction } from "./readPiTerminalPrimaryAction";
+import { shouldAutoRemoveTerminalSession } from "./shouldAutoRemoveTerminalSession";
 import type { ITerminalSession, PiTerminalClientMessage, PiTerminalServerMessage } from "./types";
 
 interface IPiTerminalPanelProps {
@@ -308,6 +309,14 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
 
     scheduleTerminalResize();
   }, [hasExited, panelSize, props.isExpanded, scheduleTerminalResize, theme]);
+
+  useEffect(() => {
+    if (!shouldAutoRemoveTerminalSession(props.session, hasExited)) {
+      return;
+    }
+
+    props.onRemove();
+  }, [hasExited, props.onRemove, props.session]);
 
   const primaryAction = readPiTerminalPrimaryAction(hasExited);
   const sessionSummary: ISessionSummary = readSessionSummary(props.session);
