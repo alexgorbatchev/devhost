@@ -2,6 +2,7 @@ import { useCallback, useState } from "preact/hooks";
 
 import { DEVTOOLS_CONTROL_TOKEN_HEADER_NAME, PI_SESSION_START_PATH } from "../../shared/constants";
 import { readDevtoolsControlToken } from "../../shared/readDevtoolsControlToken";
+import type { IComponentSourceMenuItem } from "../componentSourceNavigation/types";
 import type { IAnnotationSubmitDetail } from "../annotationComposer/types";
 import {
   appendPiTerminalSession,
@@ -9,93 +10,142 @@ import {
   minimizePiTerminalSession,
   removePiTerminalSession,
 } from "./managePiTerminalSessions";
-import type { IAnnotationSubmitResult, IPiTerminalSession, IStartPiSessionResponse } from "./types";
+import type {
+  IStartTerminalSessionRequest,
+  IStartTerminalSessionResponse,
+  ITerminalSession,
+  ITerminalSessionStartResult,
+} from "./types";
 
 interface IUsePiTerminalSessionResult {
   expandSession: (sessionId: string) => void;
   minimizeSession: (sessionId: string) => void;
-  piTerminalSessions: IPiTerminalSession[];
+  piTerminalSessions: ITerminalSession[];
   removeSession: (sessionId: string) => void;
-  submitAnnotation: (annotation: IAnnotationSubmitDetail) => Promise<IAnnotationSubmitResult>;
+  startComponentSourceSession: (menuItem: IComponentSourceMenuItem) => Promise<ITerminalSessionStartResult>;
+  submitAnnotation: (annotation: IAnnotationSubmitDetail) => Promise<ITerminalSessionStartResult>;
 }
 
 export function usePiTerminalSession(): IUsePiTerminalSessionResult {
-  const [piTerminalSessions, setPiTerminalSessions] = useState<IPiTerminalSession[]>([]);
+  const [piTerminalSessions, setPiTerminalSessions] = useState<ITerminalSession[]>([]);
 
   const expandSession = useCallback((sessionId: string): void => {
-    setPiTerminalSessions((currentSessions: IPiTerminalSession[]): IPiTerminalSession[] => {
+    setPiTerminalSessions((currentSessions: ITerminalSession[]): ITerminalSession[] => {
       return expandPiTerminalSession(currentSessions, sessionId);
     });
   }, []);
 
   const minimizeSession = useCallback((sessionId: string): void => {
-    setPiTerminalSessions((currentSessions: IPiTerminalSession[]): IPiTerminalSession[] => {
+    setPiTerminalSessions((currentSessions: ITerminalSession[]): ITerminalSession[] => {
       return minimizePiTerminalSession(currentSessions, sessionId);
     });
   }, []);
 
   const removeSession = useCallback((sessionId: string): void => {
-    setPiTerminalSessions((currentSessions: IPiTerminalSession[]): IPiTerminalSession[] => {
+    setPiTerminalSessions((currentSessions: ITerminalSession[]): ITerminalSession[] => {
       return removePiTerminalSession(currentSessions, sessionId);
     });
   }, []);
 
-  const submitAnnotation = useCallback(async (annotation: IAnnotationSubmitDetail): Promise<IAnnotationSubmitResult> => {
-    try {
-      const response = await fetch(PI_SESSION_START_PATH, {
-        body: JSON.stringify({ annotation }),
-        headers: {
-          "content-type": "application/json",
-          [DEVTOOLS_CONTROL_TOKEN_HEADER_NAME]: readDevtoolsControlToken(),
-        },
-        method: "POST",
-      });
+  const startSession = useCallback(
+    async (
+      request: IStartTerminalSessionRequest,
+      createSession: (sessionId: string) => ITerminalSession,
+    ): Promise<ITerminalSessionStartResult> => {
+      try {
+        const response = await fetch(PI_SESSION_START_PATH, {
+          body: JSON.stringify(request),
+          headers: {
+            "content-type": "application/json",
+            [DEVTOOLS_CONTROL_TOKEN_HEADER_NAME]: readDevtoolsControlToken(),
+          },
+          method: "POST",
+        });
 
-      if (!response.ok) {
+        if (!response.ok) {
+          return {
+            errorMessage: await response.text(),
+            success: false,
+          };
+        }
+
+        const responseBody: unknown = await response.json();
+
+        if (!isStartSessionResponse(responseBody)) {
+          return {
+            errorMessage: "Terminal session start returned an invalid response.",
+            success: false,
+          };
+        }
+
+        setPiTerminalSessions((currentSessions: ITerminalSession[]): ITerminalSession[] => {
+          return appendPiTerminalSession(currentSessions, createSession(responseBody.sessionId));
+        });
+
         return {
-          errorMessage: await response.text(),
+          success: true,
+        };
+      } catch (error) {
+        return {
+          errorMessage: error instanceof Error ? error.message : String(error),
           success: false,
         };
       }
+    },
+    [],
+  );
 
-      const responseBody: unknown = await response.json();
-
-      if (!isStartPiSessionResponse(responseBody)) {
+  const submitAnnotation = useCallback(async (annotation: IAnnotationSubmitDetail): Promise<ITerminalSessionStartResult> => {
+    return await startSession(
+      {
+        annotation,
+        kind: "pi-annotation",
+      },
+      (sessionId: string): ITerminalSession => {
         return {
-          errorMessage: "Pi session start returned an invalid response.",
-          success: false,
-        };
-      }
-
-      setPiTerminalSessions((currentSessions: IPiTerminalSession[]): IPiTerminalSession[] => {
-        return appendPiTerminalSession(currentSessions, {
           annotation,
           isExpanded: false,
-          sessionId: responseBody.sessionId,
-        });
-      });
+          kind: "pi-annotation",
+          sessionId,
+        };
+      },
+    );
+  }, [startSession]);
 
-      return {
-        success: true,
-      };
-    } catch (error) {
-      return {
-        errorMessage: error instanceof Error ? error.message : String(error),
-        success: false,
-      };
-    }
-  }, []);
+  const startComponentSourceSession = useCallback(
+    async (menuItem: IComponentSourceMenuItem): Promise<ITerminalSessionStartResult> => {
+      return await startSession(
+        {
+          componentName: menuItem.displayName,
+          kind: "component-source",
+          source: menuItem.source,
+          sourceLabel: menuItem.sourceLabel,
+        },
+        (sessionId: string): ITerminalSession => {
+          return {
+            componentName: menuItem.displayName,
+            isExpanded: true,
+            kind: "component-source",
+            sessionId,
+            sourceLabel: menuItem.sourceLabel,
+          };
+        },
+      );
+    },
+    [startSession],
+  );
 
   return {
     expandSession,
     minimizeSession,
     piTerminalSessions,
     removeSession,
+    startComponentSourceSession,
     submitAnnotation,
   };
 }
 
-function isStartPiSessionResponse(value: unknown): value is IStartPiSessionResponse {
+function isStartSessionResponse(value: unknown): value is IStartTerminalSessionResponse {
   if (typeof value !== "object" || value === null) {
     return false;
   }

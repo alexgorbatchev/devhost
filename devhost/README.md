@@ -37,6 +37,7 @@ It also has Caddy lifecycle commands:
 
 - `bun`
 - `caddy`
+- `nvim` when `devtoolsComponentEditor = "neovim"`
 
 ## CLI usage
 
@@ -138,6 +139,7 @@ Top-level fields:
 name = "hello-test-app"
 primaryService = "hello"
 devtools = true
+devtoolsComponentEditor = "vscode"
 devtoolsMinimapPosition = "right"
 devtoolsPosition = "bottom-right"
 ```
@@ -211,6 +213,8 @@ The injected UI now uses a hold-to-select annotation trigger instead of a persis
 The submitted draft includes the current stack name, page URL/title, comment text, and collected per-marker element metadata.
 
 When the host page is a React development build that exposes component source metadata, each marker also captures the nearest available component source location (file path, line, column, and component name when available). When the host app serves fetchable source maps, devhost also attempts to symbolicate generated bundle locations back to original source files before storing the annotation.
+
+Alt + right-click component-source navigation uses the configured `devtoolsComponentEditor`. Protocol-based editors such as VS Code, VS Code Insiders, Cursor, and WebStorm open via their browser URL handlers. When `devtoolsComponentEditor = "neovim"`, devhost launches Neovim inside the injected xterm terminal instead, so `nvim` must be available on the machine running `devhost`.
 
 If manifest `devtools = false`, devhost does not mount these control routes for that stack.
 

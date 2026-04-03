@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "preact/hooks";
 import type { DevtoolsComponentEditor } from "../../../devtoolsComponentEditor";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../shared/constants";
 import { resolveAnnotationTarget } from "../annotationComposer/resolveAnnotationTarget";
+import type { ITerminalSessionStartResult } from "../piTerminal/types";
 import { createComponentSourceUrl, formatComponentSourcePath } from "./componentSourceUtils";
 import { inspectComponentElement } from "./inspectComponentElement";
 import type { IComponentSourceMenuItem, IComponentSourceMenuState } from "./types";
@@ -10,6 +11,7 @@ import type { IComponentSourceMenuItem, IComponentSourceMenuState } from "./type
 type UseComponentSourceNavigationParams = {
   componentEditor: DevtoolsComponentEditor;
   projectRootPath: string;
+  startComponentSourceSession: (menuItem: IComponentSourceMenuItem) => Promise<ITerminalSessionStartResult>;
 };
 
 type UseComponentSourceNavigationResult = {
@@ -21,11 +23,25 @@ type UseComponentSourceNavigationResult = {
 export function useComponentSourceNavigation({
   componentEditor,
   projectRootPath,
+  startComponentSourceSession,
 }: UseComponentSourceNavigationParams): UseComponentSourceNavigationResult {
   const [componentMenu, setComponentMenu] = useState<IComponentSourceMenuState | null>(null);
 
   const closeComponentMenu = useCallback((): void => {
     setComponentMenu(null);
+  }, []);
+
+  const setComponentMenuErrorMessage = useCallback((errorMessage: string): void => {
+    setComponentMenu((currentMenu: IComponentSourceMenuState | null): IComponentSourceMenuState | null => {
+      if (currentMenu === null) {
+        return null;
+      }
+
+      return {
+        ...currentMenu,
+        errorMessage,
+      };
+    });
   }, []);
 
   const openComponentSource = useCallback(
@@ -46,10 +62,22 @@ export function useComponentSourceNavigation({
         }
       }
 
-      window.location.assign(menuItem.sourceUrl);
+      if (menuItem.action.kind === "external-editor") {
+        window.location.assign(menuItem.action.sourceUrl);
+        closeComponentMenu();
+        return;
+      }
+
+      const startResult: ITerminalSessionStartResult = await startComponentSourceSession(menuItem);
+
+      if (!startResult.success) {
+        setComponentMenuErrorMessage(startResult.errorMessage ?? "Failed to start the Neovim session.");
+        return;
+      }
+
       closeComponentMenu();
     },
-    [closeComponentMenu, componentMenu, projectRootPath],
+    [closeComponentMenu, componentMenu, projectRootPath, setComponentMenuErrorMessage, startComponentSourceSession],
   );
 
   useEffect(() => {
@@ -146,23 +174,51 @@ async function openComponentMenu(
     items: inspectedComponents.map((inspection, index): IComponentSourceMenuItem => {
       const sourceLabel: string = formatComponentSourcePath(inspection.source, projectRootPath);
 
-      return {
-        displayName: inspection.displayName,
-        key: `${sourceLabel}:${index}`,
-        props: Object.entries(inspection.props).map(([name, value]) => {
-          return {
-            name,
-            title: `${name}=${value}`,
-          };
-        }),
-        source: inspection.source,
-        sourceLabel,
-        sourceUrl: createComponentSourceUrl(inspection.source, componentEditor, projectRootPath),
-      };
+      return createMenuItem(inspection, index, sourceLabel, componentEditor, projectRootPath);
     }),
     x,
     y,
   });
+}
+
+function createMenuItem(
+  inspection: Awaited<ReturnType<typeof inspectComponentElement>>[number],
+  index: number,
+  sourceLabel: string,
+  componentEditor: DevtoolsComponentEditor,
+  projectRootPath: string,
+): IComponentSourceMenuItem {
+  const props = Object.entries(inspection.props).map(([name, value]) => {
+    return {
+      name,
+      title: `${name}=${value}`,
+    };
+  });
+
+  if (componentEditor === "neovim") {
+    return {
+      action: {
+        kind: "neovim",
+      },
+      displayName: inspection.displayName,
+      key: `${sourceLabel}:${index}`,
+      props,
+      source: inspection.source,
+      sourceLabel,
+    };
+  }
+
+  return {
+    action: {
+      kind: "external-editor",
+      sourceUrl: createComponentSourceUrl(inspection.source, componentEditor, projectRootPath),
+    },
+    displayName: inspection.displayName,
+    key: `${sourceLabel}:${index}`,
+    props,
+    source: inspection.source,
+    sourceLabel,
+  };
 }
 
 function getEventTargetElement(event: Event): HTMLElement | null {

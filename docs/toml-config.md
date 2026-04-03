@@ -83,7 +83,8 @@ The root manifest defines:
 
 `devtools` is optional and defaults to `true`.
 `devtoolsComponentEditor` is optional and defaults to `"vscode"`.
-Supported editor values are `"vscode"`, `"vscode-insiders"`, `"cursor"`, and `"webstorm"`.
+Supported editor values are `"vscode"`, `"vscode-insiders"`, `"cursor"`, `"webstorm"`, and `"neovim"`.
+When `devtoolsComponentEditor = "neovim"`, Alt + right-click component-source navigation launches an embedded xterm-backed Neovim session and requires `nvim` on `PATH`.
 `devtoolsMinimapPosition` is optional and defaults to `"right"`.
 `devtoolsPosition` is optional and defaults to `"bottom-right"`.
 When `devtools = true`, routed HTML documents go through the injector path and
@@ -106,7 +107,7 @@ interface DevhostManifest {
   name: string;
   primaryService: string;
   devtools?: boolean;
-  devtoolsComponentEditor?: "vscode" | "vscode-insiders" | "cursor" | "webstorm";
+  devtoolsComponentEditor?: "vscode" | "vscode-insiders" | "cursor" | "webstorm" | "neovim";
   devtoolsMinimapPosition?: "left" | "right";
   devtoolsPosition?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
   services: Record<string, DevhostServiceConfig>;
@@ -135,7 +136,7 @@ Example TOML:
 name = "hello-stack"
 primaryService = "web"
 devtools = true
-devtoolsComponentEditor = "cursor"
+devtoolsComponentEditor = "neovim"
 devtoolsMinimapPosition = "right"
 devtoolsPosition = "top-right"
 
@@ -178,7 +179,7 @@ interface ResolvedDevhostManifest {
   manifestPath: string;
   manifestDirectoryPath: string;
   devtools: boolean;
-  devtoolsComponentEditor: "vscode" | "vscode-insiders" | "cursor" | "webstorm";
+  devtoolsComponentEditor: "vscode" | "vscode-insiders" | "cursor" | "webstorm" | "neovim";
   devtoolsMinimapPosition: "left" | "right";
   devtoolsPosition: "top-left" | "top-right" | "bottom-left" | "bottom-right";
   services: Record<string, ResolvedDevhostService>;
@@ -493,6 +494,7 @@ This work is done only when all of the following are true:
 - services with `port = "auto"` receive a unique injected `PORT` value before spawn.
 - root-level `devtools` defaults to `true` and can be set to `false`.
 - root-level `devtoolsComponentEditor` defaults to `"vscode"` and controls Alt + right-click component-source navigation.
+- `devtoolsComponentEditor = "neovim"` launches that navigation target inside an embedded xterm-backed Neovim session and requires `nvim` on `PATH`.
 - root-level `devtoolsMinimapPosition` defaults to `"right"` and controls the injected log minimap side.
 - root-level `devtoolsPosition` defaults to `"bottom-right"` and controls the injected status-panel corner.
 - every routed service is reachable through Caddy only after its health check passes.

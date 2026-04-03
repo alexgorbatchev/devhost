@@ -25,7 +25,7 @@ describe("readInjectedDevtoolsConfig", () => {
 
   test("reads the injected editor and project-root config", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
-      componentEditor: "cursor",
+      componentEditor: "neovim",
       controlToken: "control-token",
       minimapPosition: "left",
       position: "top-left",
@@ -34,7 +34,7 @@ describe("readInjectedDevtoolsConfig", () => {
     });
 
     expect(readInjectedDevtoolsConfig()).toEqual({
-      componentEditor: "cursor",
+      componentEditor: "neovim",
       controlToken: "control-token",
       minimapPosition: "left",
       position: "top-left",

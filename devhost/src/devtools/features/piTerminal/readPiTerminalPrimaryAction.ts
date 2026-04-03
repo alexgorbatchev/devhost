@@ -12,7 +12,7 @@ export function readPiTerminalPrimaryAction(hasExited: boolean): IPiTerminalPrim
     return {
       label: "Close",
       testId: "PiTerminalPanel--close",
-      title: "Close Pi terminal",
+      title: "Close terminal session",
       variant: "secondary",
     };
   }
@@ -20,7 +20,7 @@ export function readPiTerminalPrimaryAction(hasExited: boolean): IPiTerminalPrim
   return {
     label: "Terminate",
     testId: "PiTerminalPanel--terminate",
-    title: "Terminate Pi terminal",
+    title: "Terminate terminal session",
     variant: "danger",
   };
 }

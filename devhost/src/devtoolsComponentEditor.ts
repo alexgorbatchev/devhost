@@ -1,5 +1,6 @@
 export const supportedDevtoolsComponentEditors = [
   "cursor",
+  "neovim",
   "vscode",
   "vscode-insiders",
   "webstorm",
@@ -12,6 +13,7 @@ export const defaultDevtoolsComponentEditor: DevtoolsComponentEditor = "vscode";
 export function isDevtoolsComponentEditor(value: unknown): value is DevtoolsComponentEditor {
   return (
     value === "cursor" ||
+    value === "neovim" ||
     value === "vscode" ||
     value === "vscode-insiders" ||
     value === "webstorm"

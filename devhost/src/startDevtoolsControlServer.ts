@@ -5,10 +5,11 @@ import { createConfiguredDevtoolsScript } from "./createConfiguredDevtoolsScript
 import type { DevtoolsComponentEditor } from "./devtoolsComponentEditor";
 import type { IAnnotationMarkerPayload, IAnnotationSubmitDetail } from "./devtools/features/annotationComposer/types";
 import type {
+  IStartTerminalSessionRequest,
   PiTerminalClientMessage,
   PiTerminalServerMessage,
-  IStartPiSessionRequest,
 } from "./devtools/features/piTerminal/types";
+import type { ISourceLocation } from "./devtools/shared/sourceLocation";
 import {
   DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
   DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME,
@@ -28,7 +29,7 @@ import type {
   ServiceLogStream,
   ServiceLogUpdateMessage,
 } from "./devtools/shared/types";
-import type { ILaunchedPiTerminalSession } from "./launchPiTerminalSession";
+import type { ILaunchedTerminalSession } from "./launchTerminalSession";
 import type { DevtoolsMinimapPosition, DevtoolsPosition } from "./stackTypes";
 
 const healthTopicName: string = "devhost-health";
@@ -60,10 +61,10 @@ interface IStartDevtoolsControlServerOptions {
   getHealthResponse: () => Promise<HealthResponse>;
   projectRootPath: string;
   stackName: string;
-  startPiTerminalSession?: (
-    detail: IAnnotationSubmitDetail,
+  startTerminalSession?: (
+    request: IStartTerminalSessionRequest,
     onData: (data: Uint8Array) => void,
-  ) => ILaunchedPiTerminalSession;
+  ) => ILaunchedTerminalSession;
 }
 
 interface IPiSessionExitStatus {
@@ -133,12 +134,12 @@ export async function startDevtoolsControlServer(
 
         const requestBody: unknown = await readRequestJson(request);
 
-        if (!isStartPiSessionRequest(requestBody)) {
-          return new Response("Invalid annotation payload.", { status: 400 });
+        if (!isStartTerminalSessionRequest(requestBody)) {
+          return new Response("Invalid terminal session payload.", { status: 400 });
         }
 
         try {
-          const sessionId: string = createPiSession(requestBody.annotation);
+          const sessionId: string = createTerminalSession(requestBody);
 
           return Response.json({
             sessionId,
@@ -191,7 +192,7 @@ export async function startDevtoolsControlServer(
         }
 
         if (!piSessions.has(sessionId)) {
-          return new Response("Pi session was not found.", { status: 404 });
+          return new Response("Terminal session was not found.", { status: 404 });
         }
 
         const didUpgrade: boolean = bunServer.upgrade(request, {
@@ -217,22 +218,22 @@ export async function startDevtoolsControlServer(
         }
 
         if (typeof message !== "string") {
-          websocket.send(JSON.stringify(createPiTerminalErrorMessage("Pi terminal messages must be text frames.")));
+          websocket.send(JSON.stringify(createPiTerminalErrorMessage("Terminal messages must be text frames.")));
           return;
         }
 
         const clientMessage: PiTerminalClientMessage | null = parsePiTerminalClientMessage(message);
 
         if (clientMessage === null) {
-          websocket.send(JSON.stringify(createPiTerminalErrorMessage("Invalid Pi terminal message.")));
+          websocket.send(JSON.stringify(createPiTerminalErrorMessage("Invalid terminal message.")));
           return;
         }
 
         const session: IPiTerminalSessionState | undefined = readPiSession(websocket.data.sessionId, piSessions);
 
         if (session === undefined) {
-          websocket.send(JSON.stringify(createPiTerminalErrorMessage("Pi session is no longer available.")));
-          websocket.close(1008, "pi session not found");
+          websocket.send(JSON.stringify(createPiTerminalErrorMessage("Terminal session is no longer available.")));
+          websocket.close(1008, "terminal session not found");
           return;
         }
 
@@ -256,7 +257,7 @@ export async function startDevtoolsControlServer(
           closePiSession(websocket.data.sessionId, piSessions);
         }
 
-        websocket.close(normalClosureCode, "pi session closed");
+        websocket.close(normalClosureCode, "terminal session closed");
       },
       async open(websocket: Bun.ServerWebSocket<DevtoolsWebSocketData>): Promise<void> {
         websocket.subscribe(websocket.data.topicName);
@@ -281,8 +282,8 @@ export async function startDevtoolsControlServer(
         const session: IPiTerminalSessionState | undefined = readPiSession(websocket.data.sessionId, piSessions);
 
         if (session === undefined) {
-          websocket.send(JSON.stringify(createPiTerminalErrorMessage("Pi session is no longer available.")));
-          websocket.close(1008, "pi session not found");
+          websocket.send(JSON.stringify(createPiTerminalErrorMessage("Terminal session is no longer available.")));
+          websocket.close(1008, "terminal session not found");
           return;
         }
 
@@ -362,15 +363,15 @@ export async function startDevtoolsControlServer(
     publishPiTerminalMessage(session, createPiTerminalOutputMessage(outputChunk));
   }
 
-  function createPiSession(annotation: IAnnotationSubmitDetail): string {
+  function createTerminalSession(request: IStartTerminalSessionRequest): string {
     const sessionId: string = crypto.randomUUID();
-    const startPiTerminalSession =
-      options.startPiTerminalSession ??
+    const startTerminalSession =
+      options.startTerminalSession ??
       (() => {
-        throw new Error("Pi terminal session launching is not configured.");
+        throw new Error("Terminal session launching is not configured.");
       });
-    const launchedSession: ILaunchedPiTerminalSession = startPiTerminalSession(
-      annotation,
+    const launchedSession: ILaunchedTerminalSession = startTerminalSession(
+      request,
       (data: Uint8Array): void => {
         appendPiTerminalOutput(sessionId, data);
       },
@@ -487,7 +488,7 @@ function closePiSession(sessionId: string, piSessions: Map<string, IPiTerminalSe
   cancelIdlePiSessionShutdown(session);
 
   for (const websocket of session.sockets) {
-    websocket.close(normalClosureCode, "pi session closed");
+    websocket.close(normalClosureCode, "terminal session closed");
   }
 
   session.sockets.clear();
@@ -614,14 +615,48 @@ function isRectSnapshot(value: unknown): boolean {
   return typeof height === "number" && typeof width === "number" && typeof x === "number" && typeof y === "number";
 }
 
-function isStartPiSessionRequest(value: unknown): value is IStartPiSessionRequest {
+function isSourceLocation(value: unknown): value is ISourceLocation {
   if (typeof value !== "object" || value === null) {
     return false;
   }
 
-  const annotation: unknown = Reflect.get(value, "annotation");
+  const fileName: unknown = Reflect.get(value, "fileName");
+  const lineNumber: unknown = Reflect.get(value, "lineNumber");
+  const columnNumber: unknown = Reflect.get(value, "columnNumber");
+  const componentName: unknown = Reflect.get(value, "componentName");
 
-  return isAnnotationSubmitDetail(annotation);
+  return (
+    typeof fileName === "string" &&
+    typeof lineNumber === "number" &&
+    Number.isInteger(lineNumber) &&
+    lineNumber > 0 &&
+    (columnNumber === undefined || (typeof columnNumber === "number" && Number.isInteger(columnNumber) && columnNumber > 0)) &&
+    (componentName === undefined || typeof componentName === "string")
+  );
+}
+
+function isStartTerminalSessionRequest(value: unknown): value is IStartTerminalSessionRequest {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const requestKind: unknown = Reflect.get(value, "kind");
+
+  if (requestKind === "pi-annotation") {
+    const annotation: unknown = Reflect.get(value, "annotation");
+
+    return isAnnotationSubmitDetail(annotation);
+  }
+
+  if (requestKind === "component-source") {
+    const componentName: unknown = Reflect.get(value, "componentName");
+    const source: unknown = Reflect.get(value, "source");
+    const sourceLabel: unknown = Reflect.get(value, "sourceLabel");
+
+    return typeof componentName === "string" && isSourceLocation(source) && typeof sourceLabel === "string";
+  }
+
+  return false;
 }
 
 function isStringRecord(value: unknown): value is Record<string, string> {

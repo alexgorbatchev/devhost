@@ -45,6 +45,7 @@ function AppContent(): JSX.Element {
     minimizeSession,
     piTerminalSessions,
     removeSession,
+    startComponentSourceSession,
     submitAnnotation,
   } = usePiTerminalSession();
   const [isMinimapHovered, setIsMinimapHovered] = useState<boolean>(false);
@@ -52,6 +53,7 @@ function AppContent(): JSX.Element {
   const { componentMenu, openComponentSource } = useComponentSourceNavigation({
     componentEditor,
     projectRootPath,
+    startComponentSourceSession,
   });
   const shouldRenderPanel: boolean = errorMessage !== null || services.length > 0;
   const shouldRenderMinimap: boolean = logEntries.length > 0;
@@ -72,6 +74,7 @@ function AppContent(): JSX.Element {
       <AnnotationComposer onSubmit={submitAnnotation} stackName={stackName} />
       {componentMenu !== null ? (
         <ComponentSourceMenu
+          errorMessage={componentMenu.errorMessage}
           items={componentMenu.items}
           position={{ x: componentMenu.x, y: componentMenu.y }}
           onItemClick={(itemIndex: number): void => {

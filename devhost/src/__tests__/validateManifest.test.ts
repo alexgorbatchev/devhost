@@ -51,7 +51,7 @@ describe("validateManifest", () => {
 
   test("accepts explicit devtools UI positions and component editor", () => {
     const manifest: IValidatedDevhostManifest = validateManifest("/tmp/devhost.toml", {
-      devtoolsComponentEditor: "cursor",
+      devtoolsComponentEditor: "neovim",
       devtoolsMinimapPosition: "left",
       devtoolsPosition: "top-left",
       name: "hello-stack",
@@ -64,7 +64,7 @@ describe("validateManifest", () => {
       },
     });
 
-    expect(manifest.devtoolsComponentEditor).toBe("cursor");
+    expect(manifest.devtoolsComponentEditor).toBe("neovim");
     expect(manifest.devtoolsMinimapPosition).toBe("left");
     expect(manifest.devtoolsPosition).toBe("top-left");
   });

@@ -1,23 +1,46 @@
+import type { ISourceLocation } from "../../shared/sourceLocation";
 import type { IAnnotationSubmitDetail } from "../annotationComposer/types";
 
-export interface IStartPiSessionRequest {
+export interface IStartPiAnnotationSessionRequest {
   annotation: IAnnotationSubmitDetail;
+  kind: "pi-annotation";
 }
 
-export interface IStartPiSessionResponse {
+export interface IStartComponentSourceSessionRequest {
+  componentName: string;
+  kind: "component-source";
+  source: ISourceLocation;
+  sourceLabel: string;
+}
+
+export type IStartTerminalSessionRequest = IStartPiAnnotationSessionRequest | IStartComponentSourceSessionRequest;
+
+export interface IStartTerminalSessionResponse {
   sessionId: string;
 }
 
-export interface IAnnotationSubmitResult {
+export interface ITerminalSessionStartResult {
   errorMessage?: string;
   success: boolean;
 }
 
-export interface IPiTerminalSession {
-  annotation: IAnnotationSubmitDetail;
+interface ITerminalSessionBase {
   isExpanded: boolean;
   sessionId: string;
 }
+
+export interface IPiAnnotationTerminalSession extends ITerminalSessionBase {
+  annotation: IAnnotationSubmitDetail;
+  kind: "pi-annotation";
+}
+
+export interface IComponentSourceTerminalSession extends ITerminalSessionBase {
+  componentName: string;
+  kind: "component-source";
+  sourceLabel: string;
+}
+
+export type ITerminalSession = IPiAnnotationTerminalSession | IComponentSourceTerminalSession;
 
 export interface IPiTerminalInputMessage {
   data: string;

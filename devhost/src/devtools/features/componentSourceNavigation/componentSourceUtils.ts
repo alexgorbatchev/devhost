@@ -1,4 +1,9 @@
 import type { DevtoolsComponentEditor } from "../../../devtoolsComponentEditor";
+import {
+  isWindowsDrivePath,
+  normalizeFilePath,
+  resolveSourceFilePath,
+} from "../../../resolveSourceFilePath";
 import { cleanSourcePath, type ISourceLocation } from "../../shared/sourceLocation";
 
 export function formatComponentSourcePath(source: ISourceLocation, projectRootPath: string): string {
@@ -107,63 +112,3 @@ function toFileUrl(filePath: string): string {
   return `file:///${normalizedPath}`;
 }
 
-function resolveSourceFilePath(rawFileName: string, projectRootPath: string): string {
-  const normalizedSourcePath: string = normalizeFilePath(cleanSourcePath(rawFileName));
-
-  if (isAbsoluteFilePath(normalizedSourcePath)) {
-    return normalizedSourcePath;
-  }
-
-  if (projectRootPath.length === 0) {
-    return normalizedSourcePath;
-  }
-
-  return joinFilePaths(projectRootPath, normalizedSourcePath);
-}
-
-function joinFilePaths(basePath: string, relativePath: string): string {
-  const normalizedBasePath: string = normalizeFilePath(basePath).replace(/\/+$/, "");
-  const normalizedRelativePath: string = normalizeFilePath(relativePath);
-  const baseHasLeadingSlash: boolean = normalizedBasePath.startsWith("/");
-  const baseSegments: string[] = normalizedBasePath.split("/").filter((segment: string): boolean => {
-    return segment.length > 0;
-  });
-  const relativeSegments: string[] = normalizedRelativePath.split("/");
-  const joinedSegments: string[] = [...baseSegments];
-
-  for (const segment of relativeSegments) {
-    if (segment.length === 0 || segment === ".") {
-      continue;
-    }
-
-    if (segment === "..") {
-      const canPopSegment: boolean =
-        joinedSegments.length > 1 ||
-        (joinedSegments.length === 1 && !isWindowsDrivePath(joinedSegments[0]));
-
-      if (canPopSegment) {
-        joinedSegments.pop();
-      }
-
-      continue;
-    }
-
-    joinedSegments.push(segment);
-  }
-
-  const joinedPath: string = joinedSegments.join("/");
-
-  return baseHasLeadingSlash ? `/${joinedPath}` : joinedPath;
-}
-
-function isAbsoluteFilePath(path: string): boolean {
-  return path.startsWith("/") || isWindowsDrivePath(path) || path.startsWith("//");
-}
-
-function isWindowsDrivePath(path: string): boolean {
-  return /^[A-Za-z]:\//.test(path);
-}
-
-function normalizeFilePath(path: string): string {
-  return path.replace(/\\/g, "/");
-}

@@ -2,6 +2,7 @@ name = "hello-test-app"
 primaryService = "hello"
 devtoolsMinimapPosition = "right"
 devtoolsPosition = "top-right"
+devtoolsComponentEditor = "neovim"
 
 [services.hello]
 command = ["bun", "run", "dev"]

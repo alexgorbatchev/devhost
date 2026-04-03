@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import type { IPiTerminalSession } from "../devtools/features/piTerminal/types";
+import type { ITerminalSession } from "../devtools/features/piTerminal/types";
 import {
   appendPiTerminalSession,
   expandPiTerminalSession,
@@ -8,7 +8,7 @@ import {
   removePiTerminalSession,
 } from "../devtools/features/piTerminal/managePiTerminalSessions";
 
-const FIRST_SESSION: IPiTerminalSession = {
+const FIRST_SESSION: ITerminalSession = {
   annotation: {
     comment: "First annotation",
     markers: [],
@@ -18,9 +18,10 @@ const FIRST_SESSION: IPiTerminalSession = {
     url: "https://example.test/a",
   },
   isExpanded: false,
+  kind: "pi-annotation",
   sessionId: "session-a",
 };
-const SECOND_SESSION: IPiTerminalSession = {
+const SECOND_SESSION: ITerminalSession = {
   annotation: {
     comment: "Second annotation",
     markers: [],
@@ -30,19 +31,15 @@ const SECOND_SESSION: IPiTerminalSession = {
     url: "https://example.test/b",
   },
   isExpanded: true,
+  kind: "pi-annotation",
   sessionId: "session-b",
 };
-const THIRD_SESSION: IPiTerminalSession = {
-  annotation: {
-    comment: "Third annotation",
-    markers: [],
-    stackName: "stack-c",
-    submittedAt: 3,
-    title: "Page C",
-    url: "https://example.test/c",
-  },
+const THIRD_SESSION: ITerminalSession = {
+  componentName: "PrimaryButton",
   isExpanded: false,
+  kind: "component-source",
   sessionId: "session-c",
+  sourceLabel: "src/components/PrimaryButton.tsx:42:8",
 };
 
 describe("managePiTerminalSessions", () => {
@@ -51,6 +48,22 @@ describe("managePiTerminalSessions", () => {
       THIRD_SESSION,
       FIRST_SESSION,
       SECOND_SESSION,
+    ]);
+  });
+
+  test("collapses existing expanded sessions when appending a new expanded session", () => {
+    const expandedComponentSourceSession: ITerminalSession = {
+      ...THIRD_SESSION,
+      isExpanded: true,
+    };
+
+    expect(appendPiTerminalSession([FIRST_SESSION, SECOND_SESSION], expandedComponentSourceSession)).toEqual([
+      expandedComponentSourceSession,
+      FIRST_SESSION,
+      {
+        ...SECOND_SESSION,
+        isExpanded: false,
+      },
     ]);
   });
 

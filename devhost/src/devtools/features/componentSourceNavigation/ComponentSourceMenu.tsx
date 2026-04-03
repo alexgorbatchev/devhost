@@ -11,6 +11,7 @@ interface IComponentSourceMenuProps {
     x: number;
     y: number;
   };
+  errorMessage?: string;
   onItemClick: (index: number) => void;
 }
 
@@ -20,7 +21,7 @@ const menuPerItemHeightInPixels: number = 88;
 const menuHeaderText: string = "Open in editor";
 const itemInteractiveSelector: string = "&:is(:hover, :focus-visible)";
 
-export function ComponentSourceMenu({ items, position, onItemClick }: IComponentSourceMenuProps): JSX.Element | null {
+export function ComponentSourceMenu({ items, position, errorMessage, onItemClick }: IComponentSourceMenuProps): JSX.Element | null {
   const theme = useDevtoolsTheme();
   const [hoveredItemIndex, setHoveredItemIndex] = useState<number | null>(null);
   const menuPosition = useMemo(() => {
@@ -28,7 +29,8 @@ export function ComponentSourceMenu({ items, position, onItemClick }: IComponent
       menuViewportPaddingInPixels,
       window.innerWidth - menuWidthInPixels - menuViewportPaddingInPixels,
     );
-    const estimatedMenuHeight: number = 64 + items.length * menuPerItemHeightInPixels;
+    const errorMessageHeightInPixels: number = errorMessage === undefined ? 0 : 56;
+    const estimatedMenuHeight: number = 64 + errorMessageHeightInPixels + items.length * menuPerItemHeightInPixels;
     const maxTop: number = Math.max(
       menuViewportPaddingInPixels,
       window.innerHeight - estimatedMenuHeight - menuViewportPaddingInPixels,
@@ -38,11 +40,12 @@ export function ComponentSourceMenu({ items, position, onItemClick }: IComponent
       left: Math.min(position.x, maxLeft),
       top: Math.min(position.y, maxTop),
     };
-  }, [items.length, position.x, position.y]);
+  }, [errorMessage, items.length, position.x, position.y]);
   const menuClassName: string = css(createMenuStyle(theme, menuPosition.left, menuPosition.top));
   const headerClassName: string = css(headerStyle);
   const titleClassName: string = css(titleStyle);
   const listClassName: string = css(listStyle);
+  const errorClassName: string = css(createErrorStyle(theme));
 
   if (items.length === 0) {
     return null;
@@ -52,6 +55,11 @@ export function ComponentSourceMenu({ items, position, onItemClick }: IComponent
     <div class={menuClassName} data-component-source-menu="" data-testid="ComponentSourceMenu">
       <header class={headerClassName}>
         <strong class={titleClassName}>{menuHeaderText}</strong>
+        {errorMessage !== undefined ? (
+          <div class={errorClassName} role="alert">
+            {errorMessage}
+          </div>
+        ) : null}
       </header>
       <div class={listClassName}>
         {items.map((item: IComponentSourceMenuItem, index: number) => {
@@ -133,6 +141,18 @@ const propsRowStyle: CSSObject = {
 const titleStyle: CSSObject = {
   lineHeight: 1.25,
 };
+
+function createErrorStyle(theme: IDevtoolsTheme): CSSObject {
+  return {
+    background: theme.colors.dangerBackground,
+    border: `1px solid ${theme.colors.dangerForeground}`,
+    borderRadius: theme.radii.sm,
+    color: theme.colors.dangerForeground,
+    fontSize: theme.fontSizes.sm,
+    lineHeight: 1.4,
+    padding: theme.spacing.xs,
+  };
+}
 
 function createMenuStyle(theme: IDevtoolsTheme, left: number, top: number): CSSObject {
   return {

@@ -13,17 +13,15 @@ import {
   XTERM_STYLESHEET_PATH,
 } from "../../shared/constants";
 import { readDevtoolsControlToken } from "../../shared/readDevtoolsControlToken";
-import type { IAnnotationSubmitDetail } from "../annotationComposer/types";
 import { readPiTerminalPrimaryAction } from "./readPiTerminalPrimaryAction";
-import type { PiTerminalClientMessage, PiTerminalServerMessage } from "./types";
+import type { ITerminalSession, PiTerminalClientMessage, PiTerminalServerMessage } from "./types";
 
 interface IPiTerminalPanelProps {
-  annotation: IAnnotationSubmitDetail;
   isExpanded: boolean;
   onExpand: () => void;
   onMinimize: () => void;
   onRemove: () => void;
-  sessionId: string;
+  session: ITerminalSession;
 }
 
 interface IPanelSize {
@@ -35,6 +33,15 @@ interface ITrayTooltipLayout {
   bottom: number;
   left: number;
   width: number;
+}
+
+interface ISessionSummary {
+  eyebrow: string;
+  headline: string;
+  meta: string[];
+  terminalTitle: string;
+  trayTooltipPrimary: string;
+  trayTooltipSecondary?: string;
 }
 
 const maximumPanelHeight: number = 720;
@@ -63,7 +70,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
   const [panelSize, setPanelSize] = useState<IPanelSize>(() => {
     return resolvePanelSize(window.innerWidth, window.innerHeight);
   });
-  const [statusText, setStatusText] = useState<string>("Connecting to Pi…");
+  const [statusText, setStatusText] = useState<string>("Connecting…");
 
   const scheduleTerminalResize = useCallback((): void => {
     const fitAddon: FitAddon | null = fitAddonReference.current;
@@ -112,7 +119,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
     return () => {
       window.cancelAnimationFrame(animationFrameId);
     };
-  }, [props.isExpanded, props.sessionId]);
+  }, [props.isExpanded, props.session.sessionId]);
 
   const updateTrayTooltipLayout = useCallback((): void => {
     const trayShell: HTMLElement | null = trayShellReference.current;
@@ -167,7 +174,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
     setErrorMessage(null);
     setHasExited(false);
     hasExitedReference.current = false;
-    setStatusText("Connecting to Pi…");
+    setStatusText("Connecting…");
 
     if (terminalContainer === null || terminalViewport === null) {
       return;
@@ -188,7 +195,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
     });
     const fitAddon = new FitAddon();
     const websocketUrl: URL = new URL(createDevtoolsWebSocketUrl(PI_SESSION_WEBSOCKET_PATH, window.location));
-    const websocket = new WebSocket(appendPiSessionParameters(websocketUrl, props.sessionId).toString());
+    const websocket = new WebSocket(appendPiSessionParameters(websocketUrl, props.session.sessionId).toString());
 
     fitAddonReference.current = fitAddon;
     terminalReference.current = terminal;
@@ -207,7 +214,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
     });
     const handleOpen = (): void => {
       setErrorMessage(null);
-      setStatusText("Working...");
+      setStatusText("Running…");
       scheduleTerminalResize();
 
       if (props.isExpanded) {
@@ -216,19 +223,19 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
     };
     const handleClose = (): void => {
       if (!hasExitedReference.current) {
-        setStatusText("Pi session disconnected");
+        setStatusText("Terminal session disconnected");
       }
 
       setIsTrayHoverVisible(false);
     };
     const handleError = (): void => {
-      setErrorMessage("The Pi terminal websocket failed.");
+      setErrorMessage("The terminal websocket failed.");
     };
     const handleMessage = (event: MessageEvent<string>): void => {
       const message: PiTerminalServerMessage | null = parsePiTerminalServerMessage(event.data);
 
       if (message === null) {
-        setErrorMessage("Received an invalid Pi terminal message.");
+        setErrorMessage("Received an invalid terminal message.");
         return;
       }
 
@@ -276,7 +283,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
       terminalReference.current = null;
       websocketReference.current = null;
     };
-  }, [props.sessionId, scheduleTerminalResize]);
+  }, [props.session.sessionId, scheduleTerminalResize]);
 
   useEffect(() => {
     const fitAddon: FitAddon | null = fitAddonReference.current;
@@ -303,6 +310,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
   }, [hasExited, panelSize, props.isExpanded, scheduleTerminalResize, theme]);
 
   const primaryAction = readPiTerminalPrimaryAction(hasExited);
+  const sessionSummary: ISessionSummary = readSessionSummary(props.session);
   const annotationClassName: string = css(createAnnotationStyle(theme));
   const annotationCommentClassName: string = css(createAnnotationCommentStyle(theme));
   const annotationEyebrowClassName: string = css(createAnnotationEyebrowStyle(theme));
@@ -325,19 +333,20 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
   const trayShellClassName: string = css(createTrayShellStyle(theme, panelSize, isTrayMounted));
   const trayTooltipClassName: string = css(createTrayTooltipStyle(theme, trayTooltipLayout));
   const trayTooltipCommentClassName: string = css(createTrayTooltipCommentStyle(theme));
+  const trayTooltipMetaClassName: string = css(createTrayTooltipMetaStyle(theme));
 
   const panelContent: JSX.Element = (
     <div class={chromeClassName}>
       <header class={headerClassName} data-testid="PiTerminalPanel--header">
         <div class={headerTextClassName}>
-          <strong>Pi terminal</strong>
+          <strong>{sessionSummary.terminalTitle}</strong>
           <span class={statusClassName}>{errorMessage ?? statusText}</span>
         </div>
         {props.isExpanded ? (
           <div class={buttonGroupClassName}>
             <Button
               testId="PiTerminalPanel--minimize"
-              title="Minimize Pi terminal"
+              title={`Minimize ${sessionSummary.terminalTitle}`}
               variant="secondary"
               onClick={props.onMinimize}
             >
@@ -362,13 +371,12 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
       </header>
       {props.isExpanded ? (
         <section class={annotationClassName} data-testid="PiTerminalPanel--annotation">
-          <span class={annotationEyebrowClassName}>Original annotation</span>
-          <strong class={annotationCommentClassName}>{props.annotation.comment}</strong>
+          <span class={annotationEyebrowClassName}>{sessionSummary.eyebrow}</span>
+          <strong class={annotationCommentClassName}>{sessionSummary.headline}</strong>
           <div class={annotationMetaClassName}>
-            <span>{props.annotation.markers.length} markers</span>
-            <span>{props.annotation.title}</span>
-            <span>{new URL(props.annotation.url).host}</span>
-            <span>{new Date(props.annotation.submittedAt).toLocaleString()}</span>
+            {sessionSummary.meta.map((entry: string) => {
+              return <span key={entry}>{entry}</span>;
+            })}
           </div>
         </section>
       ) : null}
@@ -393,7 +401,7 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
     <section ref={trayShellReference} class={trayShellClassName} data-testid="PiTerminalPanel">
       <div class={trayScaledContentClassName}>{panelContent}</div>
       <button
-        aria-label="Expand Pi terminal preview"
+        aria-label={`Expand ${sessionSummary.terminalTitle} preview`}
         class={trayOverlayButtonClassName}
         data-testid="PiTerminalPanel--expand"
         type="button"
@@ -424,11 +432,40 @@ export function PiTerminalPanel(props: IPiTerminalPanelProps): JSX.Element {
       ) : null}
       {isTrayHoverVisible && trayTooltipLayout !== null ? (
         <div class={trayTooltipClassName} data-testid="PiTerminalPanel--tooltip">
-          <strong class={trayTooltipCommentClassName}>{props.annotation.comment}</strong>
+          <strong class={trayTooltipCommentClassName}>{sessionSummary.trayTooltipPrimary}</strong>
+          {sessionSummary.trayTooltipSecondary !== undefined ? (
+            <span class={trayTooltipMetaClassName}>{sessionSummary.trayTooltipSecondary}</span>
+          ) : null}
         </div>
       ) : null}
     </section>
   );
+}
+
+function readSessionSummary(session: ITerminalSession): ISessionSummary {
+  if (session.kind === "pi-annotation") {
+    return {
+      eyebrow: "Original annotation",
+      headline: session.annotation.comment,
+      meta: [
+        `${session.annotation.markers.length} markers`,
+        session.annotation.title,
+        new URL(session.annotation.url).host,
+        new Date(session.annotation.submittedAt).toLocaleString(),
+      ],
+      terminalTitle: "Pi terminal",
+      trayTooltipPrimary: session.annotation.comment,
+    };
+  }
+
+  return {
+    eyebrow: "Component source",
+    headline: `<${session.componentName}>`,
+    meta: [session.sourceLabel],
+    terminalTitle: "Neovim",
+    trayTooltipPrimary: `<${session.componentName}>`,
+    trayTooltipSecondary: session.sourceLabel,
+  };
 }
 
 function appendPiSessionParameters(websocketUrl: URL, sessionId: string): URL {
@@ -637,6 +674,15 @@ function createTrayTooltipCommentStyle(theme: IDevtoolsTheme): CSSObject {
   };
 }
 
+function createTrayTooltipMetaStyle(theme: IDevtoolsTheme): CSSObject {
+  return {
+    color: theme.colors.mutedForeground,
+    fontFamily: theme.fontFamilies.monospace,
+    fontSize: theme.fontSizes.sm,
+    lineHeight: 1.4,
+  };
+}
+
 function createTrayTooltipStyle(theme: IDevtoolsTheme, trayTooltipLayout: ITrayTooltipLayout | null): CSSObject {
   if (trayTooltipLayout === null) {
     return {
@@ -692,7 +738,7 @@ function createXtermTheme(theme: IDevtoolsTheme): NonNullable<ConstructorParamet
 
 function ensureXtermStylesheet(rootNode: Node): void {
   if (!(rootNode instanceof ShadowRoot)) {
-    throw new Error("Pi terminal must render inside a shadow root.");
+    throw new Error("The terminal panel must render inside a shadow root.");
   }
 
   if (rootNode.getElementById(xtermStylesheetId) !== null) {

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks"
 
 import { Button, css, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME, DEVTOOLS_ROOT_ID } from "../../shared/constants";
-import type { IAnnotationSubmitResult } from "../piTerminal/types";
+import type { ITerminalSessionStartResult } from "../piTerminal/types";
 import { collectElementSnapshot, identifyElement } from "./collectElementSnapshot";
 import { createAnnotationSubmitDetail } from "./createAnnotationSubmitDetail";
 import { getElementSourceLocation } from "./getElementSourceLocation";
@@ -13,7 +13,7 @@ import { resolveAnnotationTarget } from "./resolveAnnotationTarget";
 import type { IAnnotationSubmitDetail, ISelectedElementDraft } from "./types";
 
 interface IAnnotationComposerProps {
-  onSubmit: (detail: IAnnotationSubmitDetail) => Promise<IAnnotationSubmitResult>;
+  onSubmit: (detail: IAnnotationSubmitDetail) => Promise<ITerminalSessionStartResult>;
   stackName: string;
 }
 
@@ -91,7 +91,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
     setSubmissionErrorMessage(null);
 
     try {
-      const submitResult: IAnnotationSubmitResult = await props.onSubmit(detail);
+      const submitResult: ITerminalSessionStartResult = await props.onSubmit(detail);
 
       if (submitResult.success) {
         cancelDraft();

@@ -1,17 +1,26 @@
-import type { IPiTerminalSession } from "./types";
+import type { ITerminalSession } from "./types";
 
 export function appendPiTerminalSession(
-  currentSessions: IPiTerminalSession[],
-  nextSession: IPiTerminalSession,
-): IPiTerminalSession[] {
-  return [nextSession, ...currentSessions];
+  currentSessions: ITerminalSession[],
+  nextSession: ITerminalSession,
+): ITerminalSession[] {
+  const normalizedCurrentSessions: ITerminalSession[] = nextSession.isExpanded
+    ? currentSessions.map((session: ITerminalSession): ITerminalSession => {
+        return {
+          ...session,
+          isExpanded: false,
+        };
+      })
+    : currentSessions;
+
+  return [nextSession, ...normalizedCurrentSessions];
 }
 
 export function expandPiTerminalSession(
-  currentSessions: IPiTerminalSession[],
+  currentSessions: ITerminalSession[],
   targetSessionId: string,
-): IPiTerminalSession[] {
-  const hasTargetSession: boolean = currentSessions.some((session: IPiTerminalSession): boolean => {
+): ITerminalSession[] {
+  const hasTargetSession: boolean = currentSessions.some((session: ITerminalSession): boolean => {
     return session.sessionId === targetSessionId;
   });
 
@@ -19,7 +28,7 @@ export function expandPiTerminalSession(
     return currentSessions;
   }
 
-  return currentSessions.map((session: IPiTerminalSession): IPiTerminalSession => {
+  return currentSessions.map((session: ITerminalSession): ITerminalSession => {
     return {
       ...session,
       isExpanded: session.sessionId === targetSessionId,
@@ -28,10 +37,10 @@ export function expandPiTerminalSession(
 }
 
 export function minimizePiTerminalSession(
-  currentSessions: IPiTerminalSession[],
+  currentSessions: ITerminalSession[],
   targetSessionId: string,
-): IPiTerminalSession[] {
-  return currentSessions.map((session: IPiTerminalSession): IPiTerminalSession => {
+): ITerminalSession[] {
+  return currentSessions.map((session: ITerminalSession): ITerminalSession => {
     if (session.sessionId !== targetSessionId) {
       return session;
     }
@@ -44,8 +53,8 @@ export function minimizePiTerminalSession(
 }
 
 export function removePiTerminalSession(
-  currentSessions: IPiTerminalSession[],
+  currentSessions: ITerminalSession[],
   targetSessionId: string,
-): IPiTerminalSession[] {
-  return currentSessions.filter((session: IPiTerminalSession): boolean => session.sessionId !== targetSessionId);
+): ITerminalSession[] {
+  return currentSessions.filter((session: ITerminalSession): boolean => session.sessionId !== targetSessionId);
 }

@@ -1,9 +1,18 @@
+import assert from "node:assert";
+
 import { afterEach, describe, expect, test } from "bun:test";
 
-import { PI_SESSION_START_PATH, HEALTH_WEBSOCKET_PATH, INJECTED_SCRIPT_PATH, LOGS_WEBSOCKET_PATH, PI_SESSION_WEBSOCKET_PATH } from "../devtools/shared/constants";
 import type { IAnnotationSubmitDetail } from "../devtools/features/annotationComposer/types";
+import type { IStartTerminalSessionRequest } from "../devtools/features/piTerminal/types";
+import {
+  HEALTH_WEBSOCKET_PATH,
+  INJECTED_SCRIPT_PATH,
+  LOGS_WEBSOCKET_PATH,
+  PI_SESSION_START_PATH,
+  PI_SESSION_WEBSOCKET_PATH,
+} from "../devtools/shared/constants";
 import type { HealthResponse } from "../devtools/shared/types";
-import type { ILaunchedPiTerminalSession } from "../launchPiTerminalSession";
+import type { ILaunchedTerminalSession } from "../launchTerminalSession";
 import { startDevtoolsControlServer } from "../startDevtoolsControlServer";
 
 const stopFunctions: Array<() => Promise<void>> = [];
@@ -119,8 +128,8 @@ describe("startDevtoolsControlServer", () => {
     );
   });
 
-  test("starts a Pi terminal session for submitted annotations", async () => {
-    const piTerminalStub = createPiTerminalStub();
+  test("starts a terminal session for submitted annotations", async () => {
+    const terminalStub = createTerminalStub();
     const controlServer = await startDevtoolsControlServer({
       componentEditor: "vscode",
       devtoolsMinimapPosition: "left",
@@ -132,17 +141,18 @@ describe("startDevtoolsControlServer", () => {
       },
       projectRootPath: "/tmp/project",
       stackName: "hello-stack",
-      startPiTerminalSession: piTerminalStub.start,
+      startTerminalSession: terminalStub.start,
     });
 
     stopFunctions.push(controlServer.stop);
 
-    const injectedScriptResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${INJECTED_SCRIPT_PATH}`);
-    const controlToken: string = extractControlToken(await injectedScriptResponse.text());
+    const annotationRequest: IStartTerminalSessionRequest = {
+      annotation: createAnnotationDetail(),
+      kind: "pi-annotation",
+    };
+    const controlToken: string = await readControlToken(controlServer.port);
     const startResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${PI_SESSION_START_PATH}`, {
-      body: JSON.stringify({
-        annotation: createAnnotationDetail(),
-      }),
+      body: JSON.stringify(annotationRequest),
       headers: {
         "content-type": "application/json",
         "x-devhost-control-token": controlToken,
@@ -151,18 +161,13 @@ describe("startDevtoolsControlServer", () => {
     });
 
     expect(startResponse.status).toBe(200);
-    expect(piTerminalStub.startedAnnotations).toEqual([createAnnotationDetail()]);
+    expect(terminalStub.startedRequests).toEqual([annotationRequest]);
 
     const startResponseBody: unknown = await startResponse.json();
 
-    expect(isSessionStartResponse(startResponseBody)).toBe(true);
+    assert(isSessionStartResponse(startResponseBody));
 
-    const websocketUrl: URL = new URL(`ws://127.0.0.1:${controlServer.port}${PI_SESSION_WEBSOCKET_PATH}`);
-
-    websocketUrl.searchParams.set("sessionId", (startResponseBody as { sessionId: string }).sessionId);
-    websocketUrl.searchParams.set("token", controlToken);
-
-    const websocket = new WebSocket(websocketUrl);
+    const websocket = createSessionWebSocket(controlServer.port, startResponseBody.sessionId, controlToken);
 
     websockets.push(websocket);
 
@@ -170,7 +175,7 @@ describe("startDevtoolsControlServer", () => {
 
     const outputMessagePromise: Promise<string> = waitForWebSocketMessage(websocket);
 
-    piTerminalStub.emit("[pi] hello\n");
+    terminalStub.emit("[pi] hello\n");
 
     await expect(outputMessagePromise).resolves.toBe(JSON.stringify({ data: "[pi] hello\n", type: "output" }));
 
@@ -182,18 +187,60 @@ describe("startDevtoolsControlServer", () => {
 
     await closePromise;
 
-    expect(piTerminalStub.writes).toEqual(["fix it\n"]);
-    expect(piTerminalStub.resizes).toEqual([
+    expect(terminalStub.writes).toEqual(["fix it\n"]);
+    expect(terminalStub.resizes).toEqual([
       {
         cols: 100,
         rows: 30,
       },
     ]);
-    expect(piTerminalStub.closeCount).toBe(1);
+    expect(terminalStub.closeCount).toBe(1);
   });
 
-  test("keeps the Pi terminal websocket open after the process exits until the client closes it", async () => {
-    const piTerminalStub = createPiTerminalStub();
+  test("starts a terminal session for component-source navigation", async () => {
+    const terminalStub = createTerminalStub();
+    const controlServer = await startDevtoolsControlServer({
+      componentEditor: "neovim",
+      devtoolsMinimapPosition: "left",
+      devtoolsPosition: "bottom-right",
+      getHealthResponse: async (): Promise<HealthResponse> => {
+        return {
+          services: [],
+        };
+      },
+      projectRootPath: "/tmp/project",
+      stackName: "hello-stack",
+      startTerminalSession: terminalStub.start,
+    });
+
+    stopFunctions.push(controlServer.stop);
+
+    const componentSourceRequest: IStartTerminalSessionRequest = {
+      componentName: "SaveButton",
+      kind: "component-source",
+      source: {
+        columnNumber: 8,
+        fileName: "src/components/SaveButton.tsx",
+        lineNumber: 42,
+      },
+      sourceLabel: "src/components/SaveButton.tsx:42:8",
+    };
+    const controlToken: string = await readControlToken(controlServer.port);
+    const startResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${PI_SESSION_START_PATH}`, {
+      body: JSON.stringify(componentSourceRequest),
+      headers: {
+        "content-type": "application/json",
+        "x-devhost-control-token": controlToken,
+      },
+      method: "POST",
+    });
+
+    expect(startResponse.status).toBe(200);
+    expect(terminalStub.startedRequests).toEqual([componentSourceRequest]);
+  });
+
+  test("keeps the terminal websocket open after the process exits until the client closes it", async () => {
+    const terminalStub = createTerminalStub();
     const controlServer = await startDevtoolsControlServer({
       componentEditor: "vscode",
       devtoolsMinimapPosition: "left",
@@ -205,16 +252,16 @@ describe("startDevtoolsControlServer", () => {
       },
       projectRootPath: "/tmp/project",
       stackName: "hello-stack",
-      startPiTerminalSession: piTerminalStub.start,
+      startTerminalSession: terminalStub.start,
     });
 
     stopFunctions.push(controlServer.stop);
 
-    const injectedScriptResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${INJECTED_SCRIPT_PATH}`);
-    const controlToken: string = extractControlToken(await injectedScriptResponse.text());
+    const controlToken: string = await readControlToken(controlServer.port);
     const startResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${PI_SESSION_START_PATH}`, {
       body: JSON.stringify({
         annotation: createAnnotationDetail(),
+        kind: "pi-annotation",
       }),
       headers: {
         "content-type": "application/json",
@@ -225,14 +272,9 @@ describe("startDevtoolsControlServer", () => {
     const startResponseBody: unknown = await startResponse.json();
 
     expect(startResponse.status).toBe(200);
-    expect(isSessionStartResponse(startResponseBody)).toBe(true);
+    assert(isSessionStartResponse(startResponseBody));
 
-    const websocketUrl: URL = new URL(`ws://127.0.0.1:${controlServer.port}${PI_SESSION_WEBSOCKET_PATH}`);
-
-    websocketUrl.searchParams.set("sessionId", (startResponseBody as { sessionId: string }).sessionId);
-    websocketUrl.searchParams.set("token", controlToken);
-
-    const websocket = new WebSocket(websocketUrl);
+    const websocket = createSessionWebSocket(controlServer.port, startResponseBody.sessionId, controlToken);
 
     websockets.push(websocket);
 
@@ -240,7 +282,7 @@ describe("startDevtoolsControlServer", () => {
 
     const exitMessagePromise: Promise<string> = waitForWebSocketMessage(websocket);
 
-    piTerminalStub.exitWith(0, null);
+    terminalStub.exitWith(0, null);
 
     await expect(exitMessagePromise).resolves.toBe(JSON.stringify({ exitCode: 0, signalCode: null, type: "exit" }));
 
@@ -250,9 +292,9 @@ describe("startDevtoolsControlServer", () => {
     await Bun.sleep(0);
 
     expect(websocket.readyState).toBe(WebSocket.OPEN);
-    expect(piTerminalStub.closeCount).toBe(0);
-    expect(piTerminalStub.resizes).toEqual([]);
-    expect(piTerminalStub.writes).toEqual([]);
+    expect(terminalStub.closeCount).toBe(0);
+    expect(terminalStub.resizes).toEqual([]);
+    expect(terminalStub.writes).toEqual([]);
 
     const closePromise: Promise<void> = waitForWebSocketClose(websocket);
 
@@ -260,7 +302,7 @@ describe("startDevtoolsControlServer", () => {
 
     await closePromise;
 
-    expect(piTerminalStub.closeCount).toBe(1);
+    expect(terminalStub.closeCount).toBe(1);
   });
 });
 
@@ -304,18 +346,18 @@ function createAnnotationDetail(): IAnnotationSubmitDetail {
   };
 }
 
-function createPiTerminalStub(): {
+function createTerminalStub(): {
   closeCount: number;
   emit: (text: string) => void;
   exitWith: (exitCode: number, signalCode: string | null) => void;
   resizes: Array<{ cols: number; rows: number }>;
-  start: (detail: IAnnotationSubmitDetail, onData: (data: Uint8Array) => void) => ILaunchedPiTerminalSession;
-  startedAnnotations: IAnnotationSubmitDetail[];
+  start: (request: IStartTerminalSessionRequest, onData: (data: Uint8Array) => void) => ILaunchedTerminalSession;
+  startedRequests: IStartTerminalSessionRequest[];
   writes: string[];
 } {
   const encoder: TextEncoder = new TextEncoder();
   const resizes: Array<{ cols: number; rows: number }> = [];
-  const startedAnnotations: IAnnotationSubmitDetail[] = [];
+  const startedRequests: IStartTerminalSessionRequest[] = [];
   const writes: string[] = [];
   let closeCount: number = 0;
   let dataHandler: ((data: Uint8Array) => void) | null = null;
@@ -339,8 +381,8 @@ function createPiTerminalStub(): {
       resolveExit?.(nextExitCode);
     },
     resizes,
-    start: (detail: IAnnotationSubmitDetail, onData: (data: Uint8Array) => void): ILaunchedPiTerminalSession => {
-      startedAnnotations.push(detail);
+    start: (request: IStartTerminalSessionRequest, onData: (data: Uint8Array) => void): ILaunchedTerminalSession => {
+      startedRequests.push(request);
       dataHandler = onData;
 
       return {
@@ -365,9 +407,24 @@ function createPiTerminalStub(): {
         },
       };
     },
-    startedAnnotations,
+    startedRequests,
     writes,
   };
+}
+
+async function readControlToken(port: number): Promise<string> {
+  const injectedScriptResponse: Response = await fetch(`http://127.0.0.1:${port}${INJECTED_SCRIPT_PATH}`);
+
+  return extractControlToken(await injectedScriptResponse.text());
+}
+
+function createSessionWebSocket(port: number, sessionId: string, controlToken: string): WebSocket {
+  const websocketUrl: URL = new URL(`ws://127.0.0.1:${port}${PI_SESSION_WEBSOCKET_PATH}`);
+
+  websocketUrl.searchParams.set("sessionId", sessionId);
+  websocketUrl.searchParams.set("token", controlToken);
+
+  return new WebSocket(websocketUrl);
 }
 
 function extractControlToken(injectedScript: string): string {

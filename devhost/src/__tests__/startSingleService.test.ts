@@ -74,7 +74,7 @@ describe("createSingleServiceEnvironment", () => {
   });
 
   test("reads the single-service component editor from the environment", () => {
-    process.env.DEVHOST_COMPONENT_EDITOR = "cursor";
+    process.env.DEVHOST_COMPONENT_EDITOR = "neovim";
 
     const arguments_: ISingleServiceCommandLineArguments = {
       command: ["bun", "run", "dev"],
@@ -83,6 +83,6 @@ describe("createSingleServiceEnvironment", () => {
       port: 3200,
     };
 
-    expect(createSingleServiceManifest(arguments_).devtoolsComponentEditor).toBe("cursor");
+    expect(createSingleServiceManifest(arguments_).devtoolsComponentEditor).toBe("neovim");
   });
 });
