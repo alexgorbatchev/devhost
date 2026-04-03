@@ -170,6 +170,7 @@ Use a Bun TypeScript wrapper when your preferred agent CLI needs custom setup.
 - expands annotation-agent and Neovim terminal sessions to the full viewport when opened
 - shows embedded Neovim sessions with a compact one-line source summary using the raw source path
 - swaps a finished tray preview's green completion badge for a hover-only close button without disabling expand/reopen behavior
+- tucks the service-status panel behind the viewport edge, renders it above the minimap, nudges it 20px closer to the screen edge, and slides it in on hover while keeping the status dot visible on either side
 - activates Caddy routes only after health checks pass
 - removes routes and reservations on shutdown or startup failure
 

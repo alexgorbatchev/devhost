@@ -59,16 +59,17 @@ function AppContent(): JSX.Element {
   });
   const shouldRenderPanel: boolean = errorMessage !== null || services.length > 0;
   const shouldRenderMinimap: boolean = logEntries.length > 0;
+  const servicePanelSide: "left" | "right" = readPanelSide(devtoolsPosition);
   const cornerDockClassName: string = css({
     ...readVerticalPositionStyle(theme, devtoolsPosition),
     ...readHorizontalPositionStyle(theme, devtoolsMinimapPosition, devtoolsPosition, shouldRenderMinimap),
     display: "grid",
     gap: theme.spacing.xxs,
-    maxWidth: readCornerDockMaxWidth(theme, shouldRenderMinimap),
+    maxWidth: readCornerDockMaxWidth(theme),
     pointerEvents: "auto",
     position: "fixed",
     width: "fit-content",
-    zIndex: theme.zIndices.floating,
+    zIndex: Number(theme.zIndices.floating) + 1,
   });
 
   return (
@@ -86,7 +87,9 @@ function AppContent(): JSX.Element {
         />
       ) : null}
       <div class={cornerDockClassName} data-testid="App--corner-dock">
-        {shouldRenderPanel ? <ServiceStatusPanel errorMessage={errorMessage} services={services} /> : null}
+        {shouldRenderPanel ? (
+          <ServiceStatusPanel errorMessage={errorMessage} panelSide={servicePanelSide} services={services} />
+        ) : null}
       </div>
       <TerminalSessionTray
         sessions={terminalSessions}
@@ -106,12 +109,8 @@ function AppContent(): JSX.Element {
   );
 }
 
-function readCornerDockMaxWidth(theme: IDevtoolsTheme, hasVisibleMinimap: boolean): string {
-  if (!hasVisibleMinimap) {
-    return "calc(100vw - 20px)";
-  }
-
-  return `calc(100vw - 20px - ${theme.sizes.logMinimapPeekWidth} - ${theme.spacing.xxs})`;
+function readCornerDockMaxWidth(theme: IDevtoolsTheme): string {
+  return `calc(100vw - 20px - ${theme.spacing.xxs})`;
 }
 
 function readHorizontalPositionStyle(
@@ -128,9 +127,9 @@ function readHorizontalPositionStyle(
     return panelSide === "left" ? { left: baseOffset } : { right: baseOffset };
   }
 
-  const shiftedOffset: string = `calc(${baseOffset} + ${theme.sizes.logMinimapPeekWidth} + ${theme.spacing.xxs})`;
+  const overlaidOffset: string = `calc(${baseOffset} + ${theme.spacing.xxs})`;
 
-  return panelSide === "left" ? { left: shiftedOffset } : { right: shiftedOffset };
+  return panelSide === "left" ? { left: overlaidOffset } : { right: overlaidOffset };
 }
 
 function readVerticalPositionStyle(
@@ -140,4 +139,8 @@ function readVerticalPositionStyle(
   return devtoolsPosition === "top-left" || devtoolsPosition === "top-right"
     ? { top: theme.spacing.sm }
     : { bottom: theme.spacing.sm };
+}
+
+function readPanelSide(devtoolsPosition: DevtoolsPosition): "left" | "right" {
+  return devtoolsPosition === "top-left" || devtoolsPosition === "bottom-left" ? "left" : "right";
 }

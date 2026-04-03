@@ -68,6 +68,7 @@ export interface IDevtoolsTheme {
     logMinimapWidth: string;
     logPreviewRowHeight: string;
     logPreviewWidth: string;
+    serviceStatusPanelPeekWidth: string;
   };
   shadows: {
     floating: string;
@@ -121,6 +122,7 @@ const sharedSizes: IDevtoolsTheme["sizes"] = {
   logMinimapWidth: "100px",
   logPreviewRowHeight: "24px",
   logPreviewWidth: "80ch",
+  serviceStatusPanelPeekWidth: "40px",
 };
 const sharedSpacing: IDevtoolsTheme["spacing"] = {
   lg: "16px",
