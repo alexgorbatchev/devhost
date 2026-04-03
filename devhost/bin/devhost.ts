@@ -1,3 +1,3 @@
 #!/usr/bin/env bun
 
-import "../src/index.ts";
+import "../src/main.ts";

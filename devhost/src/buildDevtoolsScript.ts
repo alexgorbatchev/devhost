@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 
-const devtoolsEntrypointPath: string = fileURLToPath(new URL("./devtools/index.ts", import.meta.url));
+const devtoolsEntrypointPath: string = fileURLToPath(new URL("./devtools/main.ts", import.meta.url));
 const tsconfigPath: string = fileURLToPath(new URL("../tsconfig.json", import.meta.url));
 
 export async function buildDevtoolsScript(): Promise<string> {

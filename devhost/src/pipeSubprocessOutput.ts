@@ -1,7 +1,9 @@
+export type LineWriterFunction = (line: string) => void;
+
 export function pipeSubprocessOutput(
   stream: ReadableStream<Uint8Array> | null | undefined,
   prefix: string,
-  writer: (line: string) => void,
+  writer: LineWriterFunction,
 ): Promise<void> {
   if (stream === null || stream === undefined) {
     return Promise.resolve();
@@ -12,10 +14,7 @@ export function pipeSubprocessOutput(
   });
 }
 
-async function pipeReadableStreamLines(
-  stream: ReadableStream<Uint8Array>,
-  writer: (line: string) => void,
-): Promise<void> {
+async function pipeReadableStreamLines(stream: ReadableStream<Uint8Array>, writer: LineWriterFunction): Promise<void> {
   const reader: ReadableStreamDefaultReader<Uint8Array> = stream.getReader();
   const textDecoder: TextDecoder = new TextDecoder();
   let bufferedText: string = "";
@@ -42,7 +41,7 @@ async function pipeReadableStreamLines(
   }
 }
 
-function flushCompleteLines(bufferedText: string, writer: (line: string) => void): string {
+function flushCompleteLines(bufferedText: string, writer: LineWriterFunction): string {
   const normalizedText: string = bufferedText.replaceAll("\r\n", "\n");
   const lines: string[] = normalizedText.split("\n");
   const trailingFragment: string | undefined = lines.pop();

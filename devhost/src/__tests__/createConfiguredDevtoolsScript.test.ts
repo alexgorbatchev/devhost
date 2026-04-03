@@ -16,7 +16,7 @@ describe("createConfiguredDevtoolsScript", () => {
     );
 
     const expectedInjectedConfigPrefix: string =
-      'globalThis.__DEVHOST_INJECTED_CONFIG__={' +
+      "globalThis.__DEVHOST_INJECTED_CONFIG__={" +
       '"agentDisplayName":"Claude Code",' +
       '"componentEditor":"cursor",' +
       '"controlToken":"control-token",' +

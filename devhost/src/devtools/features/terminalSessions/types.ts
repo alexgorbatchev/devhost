@@ -31,7 +31,7 @@ export interface IStartEditorTerminalSessionRequest {
   sourceLabel: string;
 }
 
-export type IStartTerminalSessionRequest = IStartAgentTerminalSessionRequest | IStartEditorTerminalSessionRequest;
+export type StartTerminalSessionRequest = IStartAgentTerminalSessionRequest | IStartEditorTerminalSessionRequest;
 
 export interface IStartTerminalSessionResponse {
   sessionId: string;
@@ -62,7 +62,7 @@ export interface IEditorTerminalSession extends ITerminalSessionBase {
   sourceLabel: string;
 }
 
-export type ITerminalSession = IAgentTerminalSession | IEditorTerminalSession;
+export type TerminalSession = IAgentTerminalSession | IEditorTerminalSession;
 
 export interface ITerminalSessionInputMessage {
   data: string;
@@ -79,7 +79,10 @@ export interface ITerminalSessionCloseMessage {
   type: "close";
 }
 
-export type TerminalSessionClientMessage = ITerminalSessionInputMessage | ITerminalSessionResizeMessage | ITerminalSessionCloseMessage;
+export type TerminalSessionClientMessage =
+  | ITerminalSessionInputMessage
+  | ITerminalSessionResizeMessage
+  | ITerminalSessionCloseMessage;
 
 export interface ITerminalSessionSnapshotMessage {
   data: string;

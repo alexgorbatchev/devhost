@@ -9,9 +9,7 @@ interface ICreateAnnotationSubmitDetailOptions {
   url: string;
 }
 
-export function createAnnotationSubmitDetail(
-  options: ICreateAnnotationSubmitDetailOptions,
-): IAnnotationSubmitDetail {
+export function createAnnotationSubmitDetail(options: ICreateAnnotationSubmitDetailOptions): IAnnotationSubmitDetail {
   return {
     comment: options.comment,
     markers: options.markers,

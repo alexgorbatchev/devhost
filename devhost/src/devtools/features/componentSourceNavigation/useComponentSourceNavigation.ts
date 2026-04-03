@@ -6,12 +6,12 @@ import { resolveAnnotationTarget } from "../annotationComposer/resolveAnnotation
 import type { ITerminalSessionStartResult } from "../terminalSessions/types";
 import { createComponentSourceUrl, formatComponentSourcePath } from "./componentSourceUtils";
 import { inspectComponentElement } from "./inspectComponentElement";
-import type { IComponentSourceMenuItem, IComponentSourceMenuState } from "./types";
+import type { ComponentSourceMenuItem, IComponentSourceMenuState, ISetComponentMenuFunction } from "./types";
 
 type UseComponentSourceNavigationParams = {
   componentEditor: DevtoolsComponentEditor;
   projectRootPath: string;
-  startComponentSourceSession: (menuItem: IComponentSourceMenuItem) => Promise<ITerminalSessionStartResult>;
+  startComponentSourceSession: (menuItem: ComponentSourceMenuItem) => Promise<ITerminalSessionStartResult>;
 };
 
 type UseComponentSourceNavigationResult = {
@@ -46,7 +46,7 @@ export function useComponentSourceNavigation({
 
   const openComponentSource = useCallback(
     async (index: number): Promise<void> => {
-      const menuItem: IComponentSourceMenuItem | undefined = componentMenu?.items[index];
+      const menuItem: ComponentSourceMenuItem | undefined = componentMenu?.items[index];
 
       if (menuItem === undefined) {
         return;
@@ -161,7 +161,7 @@ async function openComponentMenu(
   y: number,
   componentEditor: DevtoolsComponentEditor,
   projectRootPath: string,
-  setComponentMenu: (menu: IComponentSourceMenuState | null) => void,
+  setComponentMenu: ISetComponentMenuFunction,
 ): Promise<void> {
   const inspectedComponents = await inspectComponentElement(targetElement);
 
@@ -171,7 +171,7 @@ async function openComponentMenu(
   }
 
   setComponentMenu({
-    items: inspectedComponents.map((inspection, index): IComponentSourceMenuItem => {
+    items: inspectedComponents.map((inspection, index): ComponentSourceMenuItem => {
       const sourceLabel: string = formatComponentSourcePath(inspection.source, projectRootPath);
 
       return createMenuItem(inspection, index, sourceLabel, componentEditor, projectRootPath);
@@ -188,7 +188,7 @@ function createMenuItem(
   sourceLabel: string,
   componentEditor: DevtoolsComponentEditor,
   projectRootPath: string,
-): IComponentSourceMenuItem {
+): ComponentSourceMenuItem {
   const props = Object.entries(inspection.props).map(([name, value]) => {
     return {
       name,

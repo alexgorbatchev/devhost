@@ -32,14 +32,10 @@ function visitService(
   visitingServices.add(serviceName);
 
   for (const dependencyName of services[serviceName].dependsOn) {
-    visitService(
-      dependencyName,
-      services,
-      visitingServices,
-      visitedServices,
-      orderedServices,
-      [...ancestry, serviceName],
-    );
+    visitService(dependencyName, services, visitingServices, visitedServices, orderedServices, [
+      ...ancestry,
+      serviceName,
+    ]);
   }
 
   visitingServices.delete(serviceName);

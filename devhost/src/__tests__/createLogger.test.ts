@@ -1,3 +1,5 @@
+import assert from "node:assert";
+
 import { describe, expect, test } from "bun:test";
 
 import { createLogger } from "../createLogger";
@@ -7,7 +9,7 @@ describe("createLogger", () => {
     const infoCalls: unknown[][] = [];
     const logger = createLogger({
       errorSink(message: string): void {
-        throw new Error(`unexpected error sink call: ${message}`);
+        assert.fail(`unexpected error sink call: ${message}`);
       },
       infoSink(...arguments_: unknown[]): void {
         infoCalls.push(arguments_);
@@ -26,7 +28,7 @@ describe("createLogger", () => {
         errorCalls.push(arguments_);
       },
       infoSink(message: string): void {
-        throw new Error(`unexpected info sink call: ${message}`);
+        assert.fail(`unexpected info sink call: ${message}`);
       },
     });
 
@@ -39,7 +41,7 @@ describe("createLogger", () => {
     const infoCalls: unknown[][] = [];
     const logger = createLogger({
       errorSink(message: string): void {
-        throw new Error(`unexpected error sink call: ${message}`);
+        assert.fail(`unexpected error sink call: ${message}`);
       },
       infoSink(...arguments_: unknown[]): void {
         infoCalls.push(arguments_);

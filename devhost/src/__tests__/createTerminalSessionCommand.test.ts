@@ -6,8 +6,9 @@ import { createAnnotationAgentPrompt } from "../createAnnotationAgentPrompt";
 import { createPiAgentCommand } from "../createPiAgentCommand";
 import { createTerminalSessionCommand } from "../createTerminalSessionCommand";
 import type { IAnnotationSubmitDetail } from "../devtools/features/annotationComposer/types";
+import type { TestCleanupFunction } from "./testTypes";
 
-const cleanupFunctions: Array<() => void> = [];
+const cleanupFunctions: Array<TestCleanupFunction> = [];
 
 afterEach(() => {
   for (const cleanup of cleanupFunctions.splice(0)) {
@@ -86,10 +87,12 @@ describe("createTerminalSessionCommand", () => {
     expect(terminalSessionCommand.env.DEVHOST_AGENT_TRANSPORT).toBe("files");
     expect(terminalSessionCommand.env.DEVHOST_PROJECT_ROOT).toBe("/tmp/project");
     expect(terminalSessionCommand.env.DEVHOST_STACK_NAME).toBe("hello-stack");
-    expect(
-      readFileSync(terminalSessionCommand.env.DEVHOST_AGENT_PROMPT_FILE, "utf8"),
-    ).toBe(createAnnotationAgentPrompt(annotation));
-    expect(JSON.parse(readFileSync(terminalSessionCommand.env.DEVHOST_AGENT_ANNOTATION_FILE, "utf8"))).toEqual(annotation);
+    expect(readFileSync(terminalSessionCommand.env.DEVHOST_AGENT_PROMPT_FILE, "utf8")).toBe(
+      createAnnotationAgentPrompt(annotation),
+    );
+    expect(JSON.parse(readFileSync(terminalSessionCommand.env.DEVHOST_AGENT_ANNOTATION_FILE, "utf8"))).toEqual(
+      annotation,
+    );
   });
 
   test("builds the Neovim command for editor sessions", () => {

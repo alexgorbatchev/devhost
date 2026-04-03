@@ -73,6 +73,7 @@ These baseline facts are verified from the repository at the time of writing:
 `devhost.toml` v1 uses a single manifest file with an explicit service graph.
 
 The root manifest defines:
+
 - stack metadata
 - the primary service name
 - an optional root-level `agent` launcher table for annotation sessions
@@ -136,10 +137,7 @@ interface DevhostServiceConfig {
   health?: DevhostHealthConfig;
 }
 
-type DevhostHealthConfig =
-  | { tcp: number }
-  | { http: string }
-  | { process: true };
+type DevhostHealthConfig = { tcp: number } | { http: string } | { process: true };
 ```
 
 Example TOML:

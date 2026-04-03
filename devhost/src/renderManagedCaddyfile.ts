@@ -28,7 +28,9 @@ export function renderManagedCaddyfile(
     '    respond "No devhost route is registered for {host}." 404',
     "}",
     "",
-  ].filter((line): line is string => line !== null).join("\n");
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
 }
 
 function quoteCaddyToken(value: string): string {

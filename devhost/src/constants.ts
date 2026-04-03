@@ -1,11 +1,9 @@
 import { caddyAdminApiUrl } from "./caddyPaths";
 
-export type SupportedSignal = "SIGINT" | "SIGTERM" | "SIGHUP";
-
 export { caddyAdminApiUrl };
 
-export const supportedSignals: SupportedSignal[] = ["SIGINT", "SIGTERM", "SIGHUP"];
-export const signalExitCodes: Record<SupportedSignal, number> = {
+export const supportedSignals = ["SIGINT", "SIGTERM", "SIGHUP"] as const;
+export const signalExitCodes: Readonly<Record<(typeof supportedSignals)[number], number>> = {
   SIGINT: 130,
   SIGTERM: 143,
   SIGHUP: 129,

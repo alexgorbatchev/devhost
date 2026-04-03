@@ -6,9 +6,7 @@ const sourceTextCache: Map<string, Promise<string | null>> = new Map();
 const traceMapCache: Map<string, Promise<TraceMap | null>> = new Map();
 const sourceMapAnnotationPrefix: string = "sourceMappingURL=";
 
-export async function symbolicateSourceLocation(
-  sourceLocation: ISourceLocation,
-): Promise<ISourceLocation | undefined> {
+export async function symbolicateSourceLocation(sourceLocation: ISourceLocation): Promise<ISourceLocation | undefined> {
   if (!isLikelyGeneratedJavaScriptPath(sourceLocation.fileName)) {
     return undefined;
   }

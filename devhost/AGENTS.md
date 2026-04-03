@@ -38,12 +38,13 @@ Run the package check suite:
 cd devhost && bun run check
 ```
 
-The check script runs the native TypeScript typecheck and the coverage test suite.
+The check script runs the native TypeScript typecheck, the coverage test suite, and the Storybook component test suite.
 
 ## Internal package layout
 
 - `bin/devhost.ts` — workspace CLI entrypoint
-- `src/index.ts` — runtime entrypoint
+- `src/main.ts` — runtime entrypoint
+- `src/index.ts` — public barrel re-exports
 - `src/runDevhost.ts` — top-level orchestration and mode selection
 - `src/runManagedCaddyLifecycleCommand.ts` — `devhost caddy start|stop|trust`
 - `src/caddyPaths.ts` — managed Caddy state paths and admin address resolution

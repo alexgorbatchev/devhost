@@ -12,13 +12,15 @@ export interface IManagedService {
   service: IResolvedDevhostService;
 }
 
+export type ManagedServiceEntry = [string, IManagedService];
+
 export async function collectManagedServicesHealth(
   devhostServiceName: string,
   managedServices: IResolvedDevhostService[],
   startedServices: IManagedService[],
 ): Promise<HealthResponse> {
   const startedServicesByName: Map<string, IManagedService> = new Map(
-    startedServices.map((startedService: IManagedService): [string, IManagedService] => {
+    startedServices.map((startedService: IManagedService): ManagedServiceEntry => {
       return [startedService.service.name, startedService];
     }),
   );

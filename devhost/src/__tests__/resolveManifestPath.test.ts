@@ -23,7 +23,10 @@ describe("resolveManifestPath", () => {
     temporaryDirectories.push(rootDirectoryPath);
     await mkdir(join(rootDirectoryPath, ".git"));
     await mkdir(nestedDirectoryPath, { recursive: true });
-    await writeFile(join(rootDirectoryPath, "devhost.toml"), 'name = "stack"\nprimaryService = "web"\n[services.web]\ncommand = ["bun"]\nport = 3000\n');
+    await writeFile(
+      join(rootDirectoryPath, "devhost.toml"),
+      'name = "stack"\nprimaryService = "web"\n[services.web]\ncommand = ["bun"]\nport = 3000\n',
+    );
 
     await expect(resolveManifestPath(nestedDirectoryPath)).resolves.toBe(join(rootDirectoryPath, "devhost.toml"));
   });

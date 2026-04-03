@@ -29,8 +29,7 @@ export async function runDevhost(rawArguments: string[], logger: IDevhostLogger)
       return await startSingleService(commandLineArguments, logger);
     }
 
-    const manifestPath: string =
-      commandLineArguments.manifestPath ?? (await resolveManifestPath(process.cwd()));
+    const manifestPath: string = commandLineArguments.manifestPath ?? (await resolveManifestPath(process.cwd()));
     const manifestValue: unknown = await readManifest(manifestPath);
     const validatedManifest = validateManifest(manifestPath, manifestValue);
 

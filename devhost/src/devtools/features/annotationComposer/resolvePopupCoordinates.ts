@@ -31,11 +31,7 @@ export function resolvePopupCoordinates(options: IResolvePopupCoordinatesOptions
     options.viewportPadding,
     options.viewportHeight - options.popupHeight - options.viewportPadding,
   );
-  const top: number = clamp(
-    preferredTop,
-    options.viewportPadding,
-    maxTop,
-  );
+  const top: number = clamp(preferredTop, options.viewportPadding, maxTop);
 
   if (preferredTop > maxTop && options.anchorBottom < options.viewportHeight) {
     return {

@@ -364,6 +364,8 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
   }, [cancelDraft, selectedElements.length]);
 
   const markerRenderModels: IMarkerRenderModel[] = useMemo((): IMarkerRenderModel[] => {
+    void layoutVersion;
+
     return selectedElements.map((selection: ISelectedElementDraft): IMarkerRenderModel => {
       const elementRectangle: DOMRect = selection.element.getBoundingClientRect();
       const markerTop: number = clamp(
@@ -398,6 +400,8 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
   }, [layoutVersion, selectedElements, viewportPadding]);
   const anchorSelection: ISelectedElementDraft | undefined = selectedElements[0];
   const anchorRectangle: DOMRect | null = useMemo((): DOMRect | null => {
+    void layoutVersion;
+
     return anchorSelection?.element.getBoundingClientRect() ?? null;
   }, [anchorSelection, layoutVersion]);
   const popupCoordinates = useMemo(() => {
@@ -417,10 +421,13 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
     });
   }, [anchorRectangle, popupHeight, viewportPadding]);
   const hoveredRectangle: DOMRect | null = useMemo((): DOMRect | null => {
+    void layoutVersion;
+
     return hoveredElement?.getBoundingClientRect() ?? null;
   }, [hoveredElement, layoutVersion]);
   const isHoveredElementSelected: boolean =
-    hoveredElement !== null && selectedElements.some((selection: ISelectedElementDraft): boolean => selection.element === hoveredElement);
+    hoveredElement !== null &&
+    selectedElements.some((selection: ISelectedElementDraft): boolean => selection.element === hoveredElement);
   const errorClassName: string = css(createSubmissionErrorStyle(theme));
   const markerListClassName: string = css(markerListStyle);
   const markerListItemClassName: string = css(markerListItemStyle);
@@ -469,7 +476,9 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
           <div class={popupHeaderClassName}>
             <strong>Annotation draft</strong>
             <span class={popupMetaClassName}>
-              {isSubmitting ? `Starting ${props.agentDisplayName} session…` : `${selectedElements.length} markers selected`}
+              {isSubmitting
+                ? `Starting ${props.agentDisplayName} session…`
+                : `${selectedElements.length} markers selected`}
             </span>
           </div>
           <ol class={markerListClassName} data-testid="AnnotationComposer--marker-list">

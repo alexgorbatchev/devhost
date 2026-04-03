@@ -1,10 +1,4 @@
-export const supportedDevtoolsComponentEditors = [
-  "cursor",
-  "neovim",
-  "vscode",
-  "vscode-insiders",
-  "webstorm",
-] as const;
+export const supportedDevtoolsComponentEditors = ["cursor", "neovim", "vscode", "vscode-insiders", "webstorm"] as const;
 
 export type DevtoolsComponentEditor = (typeof supportedDevtoolsComponentEditors)[number];
 

@@ -13,11 +13,11 @@ const GENERIC_CONTAINER_TAGS: ReadonlySet<string> = new Set([
 ]);
 
 export function resolveAnnotationTarget(clientX: number, clientY: number): HTMLElement | null {
-  const candidateElements: HTMLElement[] = document.elementsFromPoint(clientX, clientY).filter(
-    (element: Element): element is HTMLElement => {
+  const candidateElements: HTMLElement[] = document
+    .elementsFromPoint(clientX, clientY)
+    .filter((element: Element): element is HTMLElement => {
       return element instanceof HTMLElement;
-    },
-  );
+    });
 
   if (candidateElements.length === 0) {
     return null;

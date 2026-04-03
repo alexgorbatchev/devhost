@@ -17,14 +17,19 @@ import { createXtermTheme } from "./createXtermTheme";
 import { readTerminalSessionPrimaryAction } from "./readTerminalSessionPrimaryAction";
 import { resolveTerminalPanelLayout, type IPanelSize } from "./resolveTerminalPanelLayout";
 import { shouldAutoRemoveTerminalSession } from "./shouldAutoRemoveTerminalSession";
-import type { ITerminalSession, ITerminalSessionSummary, TerminalSessionClientMessage, TerminalSessionServerMessage } from "./types";
+import type {
+  TerminalSession,
+  ITerminalSessionSummary,
+  TerminalSessionClientMessage,
+  TerminalSessionServerMessage,
+} from "./types";
 
 interface ITerminalSessionPanelProps {
   isExpanded: boolean;
   onExpand: () => void;
   onMinimize: () => void;
   onRemove: () => void;
-  session: ITerminalSession;
+  session: TerminalSession;
 }
 
 interface ITrayTooltipLayout {
@@ -46,8 +51,10 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
   const terminalContainerReference = useRef<HTMLDivElement | null>(null);
   const terminalReference = useRef<Terminal | null>(null);
   const terminalViewportReference = useRef<HTMLDivElement | null>(null);
+  const themeReference = useRef<IDevtoolsTheme>(theme);
   const trayShellReference = useRef<HTMLElement | null>(null);
   const websocketReference = useRef<WebSocket | null>(null);
+  const isExpandedReference = useRef<boolean>(props.isExpanded);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [hasExited, setHasExited] = useState<boolean>(false);
   const [isTrayHoverVisible, setIsTrayHoverVisible] = useState<boolean>(false);
@@ -60,6 +67,11 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
     };
   });
   const [statusText, setStatusText] = useState<string>("Connecting…");
+  const onRemove = props.onRemove;
+  const session: TerminalSession = props.session;
+
+  themeReference.current = theme;
+  isExpandedReference.current = props.isExpanded;
   const terminalPanelLayout = resolveTerminalPanelLayout(
     props.session.behavior,
     viewportSize.width,
@@ -182,16 +194,17 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
 
     ensureXtermStylesheet(terminalContainer.getRootNode());
 
+    const currentTheme: IDevtoolsTheme = themeReference.current;
     const terminal = new Terminal({
       allowTransparency: true,
       cols: 120,
       cursorBlink: true,
-      disableStdin: !props.isExpanded,
-      fontFamily: theme.fontFamilies.monospace,
-      fontSize: Number.parseInt(theme.fontSizes.md, 10),
+      disableStdin: !isExpandedReference.current,
+      fontFamily: currentTheme.fontFamilies.monospace,
+      fontSize: Number.parseInt(currentTheme.fontSizes.md, 10),
       rows: 80,
       scrollback: 2_000,
-      theme: createXtermTheme(theme),
+      theme: createXtermTheme(currentTheme),
     });
     const fitAddon = new FitAddon();
     const websocketUrl: URL = new URL(createDevtoolsWebSocketUrl(TERMINAL_SESSION_WEBSOCKET_PATH, window.location));
@@ -217,7 +230,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
       setStatusText("Running…");
       scheduleTerminalResize();
 
-      if (props.isExpanded) {
+      if (isExpandedReference.current) {
         terminal.focus();
       }
     };
@@ -307,22 +320,15 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
     }
 
     scheduleTerminalResize();
-  }, [
-    activePanelSize.height,
-    activePanelSize.width,
-    hasExited,
-    props.isExpanded,
-    scheduleTerminalResize,
-    theme,
-  ]);
+  }, [activePanelSize.height, activePanelSize.width, hasExited, props.isExpanded, scheduleTerminalResize, theme]);
 
   useEffect(() => {
-    if (!shouldAutoRemoveTerminalSession(props.session, hasExited)) {
+    if (!shouldAutoRemoveTerminalSession(session, hasExited)) {
       return;
     }
 
-    props.onRemove();
-  }, [hasExited, props.onRemove, props.session]);
+    onRemove();
+  }, [hasExited, onRemove, session]);
 
   const primaryAction = readTerminalSessionPrimaryAction(hasExited);
   const sessionSummary: ITerminalSessionSummary = props.session.summary;
@@ -353,9 +359,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
   const trayCompletionOverlayClassName: string = css(createTrayCompletionOverlayStyle());
   const trayOverlayButtonClassName: string = css(createTrayOverlayButtonStyle(theme));
   const trayScaledContentClassName: string = css(createTrayScaledContentStyle(terminalPanelLayout.trayPanelSize));
-  const trayShellClassName: string = css(
-    createTrayShellStyle(theme, terminalPanelLayout.trayPanelSize, isTrayMounted),
-  );
+  const trayShellClassName: string = css(createTrayShellStyle(theme, terminalPanelLayout.trayPanelSize, isTrayMounted));
   const trayTooltipClassName: string = css(createTrayTooltipStyle(theme, trayTooltipLayout));
   const trayTooltipCommentClassName: string = css(createTrayTooltipCommentStyle(theme));
   const trayTooltipMetaClassName: string = css(createTrayTooltipMetaStyle(theme));
@@ -412,7 +416,11 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
           </section>
         )
       ) : null}
-      <div ref={terminalViewportReference} class={terminalViewportClassName} data-testid="TerminalSessionPanel--terminal">
+      <div
+        ref={terminalViewportReference}
+        class={terminalViewportClassName}
+        data-testid="TerminalSessionPanel--terminal"
+      >
         <div ref={terminalContainerReference} class={terminalContainerClassName} />
       </div>
     </div>
@@ -460,7 +468,11 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
         <span class={trayBadgeClassName}>{errorMessage ?? statusText}</span>
       </button>
       {hasExited && !isTrayHoverVisible ? (
-        <div aria-hidden="true" class={trayCompletionOverlayClassName} data-testid="TerminalSessionPanel--completion-indicator">
+        <div
+          aria-hidden="true"
+          class={trayCompletionOverlayClassName}
+          data-testid="TerminalSessionPanel--completion-indicator"
+        >
           <svg class={trayCompletionIconClassName} viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
             <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM369 209L241 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L335 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z" />
           </svg>
@@ -697,15 +709,15 @@ function createTrayCloseButtonStyle(theme: IDevtoolsTheme): CSSObject {
     transition: "color 120ms ease",
     width: "24px",
     zIndex: 2,
-    '& svg': {
+    "& svg": {
       filter: `drop-shadow(0px 2px 6px ${theme.colors.successGlow})`,
       transition: "filter 120ms ease",
     },
-    '&:is(:hover, :focus-visible)': {
+    "&:is(:hover, :focus-visible)": {
       color: theme.colors.dangerForeground,
       outline: "none",
     },
-    '&:is(:hover, :focus-visible) svg': {
+    "&:is(:hover, :focus-visible) svg": {
       filter: `drop-shadow(0px 2px 6px ${theme.colors.dangerGlow})`,
     },
   };
@@ -762,7 +774,10 @@ function createTrayShellStyle(_theme: IDevtoolsTheme, panelSize: IPanelSize, isT
     width: isTrayMounted ? `${panelSize.width * trayScale}px` : "0px",
     height: `${panelSize.height * trayScale}px`,
     opacity: isTrayMounted ? 1 : 0,
-    transition: [`width ${trayTransitionDurationInMilliseconds}ms ease`, `opacity ${trayTransitionDurationInMilliseconds}ms ease`].join(", "),
+    transition: [
+      `width ${trayTransitionDurationInMilliseconds}ms ease`,
+      `opacity ${trayTransitionDurationInMilliseconds}ms ease`,
+    ].join(", "),
     pointerEvents: "auto",
     overflow: "visible",
     zIndex: 1,
@@ -872,7 +887,10 @@ function parseTerminalSessionServerMessage(messageText: string): TerminalSession
     const exitCode: unknown = Reflect.get(parsedValue, "exitCode");
     const signalCode: unknown = Reflect.get(parsedValue, "signalCode");
 
-    if ((typeof exitCode !== "number" && exitCode !== null) || (typeof signalCode !== "string" && signalCode !== null)) {
+    if (
+      (typeof exitCode !== "number" && exitCode !== null) ||
+      (typeof signalCode !== "string" && signalCode !== null)
+    ) {
       return null;
     }
 

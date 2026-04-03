@@ -1,6 +1,6 @@
-import type { IValidatedDevhostAgent } from "./stackTypes";
+import type { ValidatedDevhostAgent } from "./stackTypes";
 
-export function createDefaultDevhostAgent(): IValidatedDevhostAgent {
+export function createDefaultDevhostAgent(): ValidatedDevhostAgent {
   return {
     displayName: "Pi",
     kind: "pi",

@@ -13,13 +13,7 @@ describe("createNeovimSessionCommand", () => {
         },
         "/tmp/project",
       ),
-    ).toEqual([
-      "nvim",
-      "-c",
-      "call cursor(42, 8)",
-      "--",
-      "/tmp/project/src/components/PrimaryButton.tsx",
-    ]);
+    ).toEqual(["nvim", "-c", "call cursor(42, 8)", "--", "/tmp/project/src/components/PrimaryButton.tsx"]);
   });
 
   test("defaults the cursor column to 1 when the source location omits it", () => {

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 
 import { getElementSourceLocation } from "../devtools/features/annotationComposer/getElementSourceLocation";
+import type { TestFetchInput } from "./testTypes";
 
 type ReactFiberTestNode = {
   __source?: {
@@ -65,15 +66,14 @@ describe("getElementSourceLocation", () => {
         origin: "http://localhost:3000",
       },
     });
-    Reflect.set(globalThis, "fetch", async (input: RequestInfo | URL): Promise<Response> => {
-      const requestUrl: string = String(input);
-
-      if (requestUrl === "http://localhost:3000/_bun/client/index.js") {
-        return new Response('console.log("app");\n//# sourceMappingURL=index.js.map');
-      }
-
-      if (requestUrl === "http://localhost:3000/_bun/client/index.js.map") {
-        return new Response(
+    const responseByUrl: Map<string, Response> = new Map<string, Response>([
+      [
+        "http://localhost:3000/_bun/client/index.js",
+        new Response('console.log("app");\n//# sourceMappingURL=index.js.map'),
+      ],
+      [
+        "http://localhost:3000/_bun/client/index.js.map",
+        new Response(
           JSON.stringify({
             file: "index.js",
             mappings: "KAyCIA",
@@ -81,10 +81,14 @@ describe("getElementSourceLocation", () => {
             sources: ["file:///Users/test/app/App.tsx"],
             version: 3,
           }),
-        );
-      }
+        ),
+      ],
+    ]);
 
-      return new Response(null, { status: 404 });
+    Reflect.set(globalThis, "fetch", async (input: TestFetchInput): Promise<Response> => {
+      const requestUrl: string = String(input);
+
+      return responseByUrl.get(requestUrl) ?? new Response(null, { status: 404 });
     });
 
     expect(await getElementSourceLocation(element)).toEqual({
@@ -107,22 +111,13 @@ describe("getElementSourceLocation", () => {
             {
               getDisplayNameForElementID: (): string => "PrimaryButton",
               getElementIDForHostInstance: (): number => 7,
-              inspectElement: (
-                _requestId: number,
-                _id: number,
-                path: unknown,
-              ) => {
+              inspectElement: (_requestId: number, _id: number, path: unknown) => {
                 receivedInspectPath = path;
 
                 return {
                   type: "full-data",
                   value: {
-                    source: [
-                      "PrimaryButton",
-                      "webpack:///./src/components/PrimaryButton.tsx?macro=true",
-                      54,
-                      11,
-                    ],
+                    source: ["PrimaryButton", "webpack:///./src/components/PrimaryButton.tsx?macro=true", 54, 11],
                   },
                 };
               },

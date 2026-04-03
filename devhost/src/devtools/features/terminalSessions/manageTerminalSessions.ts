@@ -1,11 +1,11 @@
-import type { ITerminalSession } from "./types";
+import type { TerminalSession } from "./types";
 
 export function appendTerminalSession(
-  currentSessions: ITerminalSession[],
-  nextSession: ITerminalSession,
-): ITerminalSession[] {
-  const normalizedCurrentSessions: ITerminalSession[] = nextSession.isExpanded
-    ? currentSessions.map((session: ITerminalSession): ITerminalSession => {
+  currentSessions: TerminalSession[],
+  nextSession: TerminalSession,
+): TerminalSession[] {
+  const normalizedCurrentSessions: TerminalSession[] = nextSession.isExpanded
+    ? currentSessions.map((session: TerminalSession): TerminalSession => {
         return {
           ...session,
           isExpanded: false,
@@ -16,11 +16,8 @@ export function appendTerminalSession(
   return [nextSession, ...normalizedCurrentSessions];
 }
 
-export function expandTerminalSession(
-  currentSessions: ITerminalSession[],
-  targetSessionId: string,
-): ITerminalSession[] {
-  const hasTargetSession: boolean = currentSessions.some((session: ITerminalSession): boolean => {
+export function expandTerminalSession(currentSessions: TerminalSession[], targetSessionId: string): TerminalSession[] {
+  const hasTargetSession: boolean = currentSessions.some((session: TerminalSession): boolean => {
     return session.sessionId === targetSessionId;
   });
 
@@ -28,7 +25,7 @@ export function expandTerminalSession(
     return currentSessions;
   }
 
-  return currentSessions.map((session: ITerminalSession): ITerminalSession => {
+  return currentSessions.map((session: TerminalSession): TerminalSession => {
     return {
       ...session,
       isExpanded: session.sessionId === targetSessionId,
@@ -37,10 +34,10 @@ export function expandTerminalSession(
 }
 
 export function minimizeTerminalSession(
-  currentSessions: ITerminalSession[],
+  currentSessions: TerminalSession[],
   targetSessionId: string,
-): ITerminalSession[] {
-  return currentSessions.map((session: ITerminalSession): ITerminalSession => {
+): TerminalSession[] {
+  return currentSessions.map((session: TerminalSession): TerminalSession => {
     if (session.sessionId !== targetSessionId) {
       return session;
     }
@@ -52,9 +49,6 @@ export function minimizeTerminalSession(
   });
 }
 
-export function removeTerminalSession(
-  currentSessions: ITerminalSession[],
-  targetSessionId: string,
-): ITerminalSession[] {
-  return currentSessions.filter((session: ITerminalSession): boolean => session.sessionId !== targetSessionId);
+export function removeTerminalSession(currentSessions: TerminalSession[], targetSessionId: string): TerminalSession[] {
+  return currentSessions.filter((session: TerminalSession): boolean => session.sessionId !== targetSessionId);
 }

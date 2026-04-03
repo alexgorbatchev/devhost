@@ -1,3 +1,1 @@
-import { renderDevtools } from "./renderDevtools";
-
-renderDevtools();
+export { renderDevtools } from "./renderDevtools";

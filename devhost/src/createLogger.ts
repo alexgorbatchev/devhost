@@ -1,12 +1,14 @@
+export type LogSinkFunction = (message: string, ...arguments_: unknown[]) => void;
+
 export interface IDevhostLogger {
-  info: (message: string, ...arguments_: unknown[]) => void;
-  error: (message: string, ...arguments_: unknown[]) => void;
+  info: LogSinkFunction;
+  error: LogSinkFunction;
   withLabel: (label: string) => IDevhostLogger;
 }
 
 interface ICreateLoggerOptions {
-  errorSink: (message: string, ...arguments_: unknown[]) => void;
-  infoSink: (message: string, ...arguments_: unknown[]) => void;
+  errorSink: LogSinkFunction;
+  infoSink: LogSinkFunction;
   label?: string;
 }
 
@@ -33,12 +35,7 @@ export function createLogger(options: ICreateLoggerOptions): IDevhostLogger {
   };
 }
 
-function writePrefixedMessage(
-  message: string,
-  arguments_: unknown[],
-  logPrefix: string,
-  sink: (message: string, ...arguments_: unknown[]) => void,
-): void {
+function writePrefixedMessage(message: string, arguments_: unknown[], logPrefix: string, sink: LogSinkFunction): void {
   const lines: string[] = splitLines(message);
 
   lines.forEach((line: string, index: number): void => {

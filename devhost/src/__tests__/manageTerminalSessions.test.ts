@@ -7,9 +7,9 @@ import {
   minimizeTerminalSession,
   removeTerminalSession,
 } from "../devtools/features/terminalSessions/manageTerminalSessions";
-import type { ITerminalSession } from "../devtools/features/terminalSessions/types";
+import type { TerminalSession } from "../devtools/features/terminalSessions/types";
 
-const FIRST_SESSION: ITerminalSession = createTerminalSession(
+const FIRST_SESSION: TerminalSession = createTerminalSession(
   "session-a",
   {
     annotation: {
@@ -25,7 +25,7 @@ const FIRST_SESSION: ITerminalSession = createTerminalSession(
   "Claude Code",
 );
 
-const SECOND_SESSION: ITerminalSession = {
+const SECOND_SESSION: TerminalSession = {
   ...createTerminalSession(
     "session-b",
     {
@@ -44,7 +44,7 @@ const SECOND_SESSION: ITerminalSession = {
   isExpanded: true,
 };
 
-const THIRD_SESSION: ITerminalSession = {
+const THIRD_SESSION: TerminalSession = {
   ...createTerminalSession(
     "session-c",
     {
@@ -73,7 +73,7 @@ describe("manageTerminalSessions", () => {
   });
 
   test("collapses existing expanded sessions when appending a new expanded session", () => {
-    const expandedEditorSession: ITerminalSession = {
+    const expandedEditorSession: TerminalSession = {
       ...THIRD_SESSION,
       isExpanded: true,
     };

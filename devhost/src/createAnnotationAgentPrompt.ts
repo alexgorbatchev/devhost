@@ -57,8 +57,7 @@ function formatAnnotationSourceLocation(marker: IAnnotationMarkerPayload): strin
     return "(not available)";
   }
 
-  const columnSuffix: string =
-    sourceLocation.columnNumber === undefined ? "" : `:${sourceLocation.columnNumber}`;
+  const columnSuffix: string = sourceLocation.columnNumber === undefined ? "" : `:${sourceLocation.columnNumber}`;
   const componentPrefix: string =
     sourceLocation.componentName === undefined ? "" : `${sourceLocation.componentName} @ `;
 

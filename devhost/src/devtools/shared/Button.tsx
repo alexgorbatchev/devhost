@@ -82,7 +82,8 @@ export function Button({
     <button
       aria-pressed={ariaPressed}
       class={buttonClassName}
-      data-testid={testId}
+      data-devhost-instance-testid={testId}
+      data-testid="Button"
       disabled={disabled}
       title={title}
       type={type}

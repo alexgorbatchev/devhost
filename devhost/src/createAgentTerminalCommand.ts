@@ -3,10 +3,10 @@ import { createAgentSessionFiles } from "./createAgentSessionFiles";
 import { createAnnotationAgentPrompt } from "./createAnnotationAgentPrompt";
 import { createPiAgentCommand } from "./createPiAgentCommand";
 import type { IStartAgentTerminalSessionRequest } from "./devtools/features/terminalSessions/types";
-import type { IValidatedDevhostAgent } from "./stackTypes";
+import type { ValidatedDevhostAgent } from "./stackTypes";
 
 interface ICreateAgentTerminalCommandOptions {
-  agent: IValidatedDevhostAgent;
+  agent: ValidatedDevhostAgent;
   projectRootPath: string;
   request: IStartAgentTerminalSessionRequest;
   stackName: string;

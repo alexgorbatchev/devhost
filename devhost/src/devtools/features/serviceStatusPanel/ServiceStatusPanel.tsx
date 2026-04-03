@@ -6,10 +6,11 @@ import { css, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
 import type { ServiceHealth } from "../../shared/types";
 import { resolveServiceStatusPanelTransform } from "./resolveServiceStatusPanelTransform";
 import { selectVisibleServices } from "./selectVisibleServices";
+import type { PanelSide } from "./types";
 
 interface IServiceStatusPanelProps {
   errorMessage: string | null;
-  panelSide: "left" | "right";
+  panelSide: PanelSide;
   services: ServiceHealth[];
 }
 
@@ -63,7 +64,7 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
   );
 }
 
-function createErrorStyle(theme: IDevtoolsTheme, panelSide: "left" | "right"): CSSObject {
+function createErrorStyle(theme: IDevtoolsTheme, panelSide: PanelSide): CSSObject {
   return {
     color: theme.colors.dangerForeground,
     fontSize: theme.fontSizes.sm,
@@ -83,7 +84,7 @@ function createListStyle(theme: IDevtoolsTheme): CSSObject {
   };
 }
 
-function createNameStyle(theme: IDevtoolsTheme, panelSide: "left" | "right"): CSSObject {
+function createNameStyle(theme: IDevtoolsTheme, panelSide: PanelSide): CSSObject {
   return {
     color: theme.colors.foreground,
     fontSize: theme.fontSizes.sm,
@@ -94,11 +95,7 @@ function createNameStyle(theme: IDevtoolsTheme, panelSide: "left" | "right"): CS
   };
 }
 
-function createPanelStyle(
-  theme: IDevtoolsTheme,
-  panelSide: "left" | "right",
-  isHovered: boolean,
-): CSSObject {
+function createPanelStyle(theme: IDevtoolsTheme, panelSide: PanelSide, isHovered: boolean): CSSObject {
   return {
     background: theme.colors.background,
     border: `1px solid ${theme.colors.border}`,
@@ -117,7 +114,7 @@ function createPanelStyle(
   };
 }
 
-function createRowStyle(theme: IDevtoolsTheme, panelSide: "left" | "right"): CSSObject {
+function createRowStyle(theme: IDevtoolsTheme, panelSide: PanelSide): CSSObject {
   return {
     alignItems: "center",
     display: "flex",

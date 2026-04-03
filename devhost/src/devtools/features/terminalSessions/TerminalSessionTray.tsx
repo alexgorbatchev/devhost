@@ -2,19 +2,23 @@ import type { JSX } from "preact";
 
 import { css, useDevtoolsTheme } from "../../shared";
 import { TerminalSessionPanel } from "./TerminalSessionPanel";
-import type { ITerminalSession } from "./types";
+import type { TerminalSession } from "./types";
 
 interface ITerminalSessionTrayProps {
   onExpandSession: (sessionId: string) => void;
   onMinimizeSession: (sessionId: string) => void;
   onRemoveSession: (sessionId: string) => void;
-  sessions: ITerminalSession[];
+  sessions: TerminalSession[];
 }
 
 export function TerminalSessionTray(props: ITerminalSessionTrayProps): JSX.Element | null {
   const theme = useDevtoolsTheme();
-  const expandedSession: ITerminalSession | undefined = props.sessions.find((session: ITerminalSession): boolean => session.isExpanded);
-  const minimizedSessions: ITerminalSession[] = props.sessions.filter((session: ITerminalSession): boolean => !session.isExpanded);
+  const expandedSession: TerminalSession | undefined = props.sessions.find(
+    (session: TerminalSession): boolean => session.isExpanded,
+  );
+  const minimizedSessions: TerminalSession[] = props.sessions.filter(
+    (session: TerminalSession): boolean => !session.isExpanded,
+  );
 
   if (expandedSession === undefined && minimizedSessions.length === 0) {
     return null;
@@ -63,7 +67,7 @@ export function TerminalSessionTray(props: ITerminalSessionTrayProps): JSX.Eleme
       {minimizedSessions.length > 0 ? (
         <div class={dockClassName} data-testid="TerminalSessionTray--dock">
           <div class={sessionListClassName} data-testid="TerminalSessionTray--session-list">
-            {minimizedSessions.map((session: ITerminalSession) => {
+            {minimizedSessions.map((session: TerminalSession) => {
               return (
                 <TerminalSessionPanel
                   key={session.sessionId}

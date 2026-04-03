@@ -1,4 +1,4 @@
-import { render } from "preact";
+import { h, render } from "preact";
 
 import { App } from "./App";
 import { DEVTOOLS_HOST_ID, configureDevtoolsCss, injectGlobal } from "./shared";
@@ -41,7 +41,7 @@ export function renderDevtools(): void {
         font: "inherit",
       },
     });
-    render(<App />, mountNode);
+    render(h(App, {}), mountNode);
   };
 
   if (document.readyState === "loading") {

@@ -1,5 +1,5 @@
 import { managedCaddyPaths } from "./caddyPaths";
-import { signalExitCodes, supportedSignals, type SupportedSignal } from "./constants";
+import { signalExitCodes, supportedSignals } from "./constants";
 import { collectManagedServicesHealth } from "./collectManagedServicesHealth";
 import { createTerminalSessionCommand } from "./createTerminalSessionCommand";
 import type { IDevhostLogger } from "./createLogger";
@@ -17,14 +17,26 @@ import {
 import { resolveProxyHost } from "./resolveProxyHost";
 import { startDevtoolsControlServer } from "./startDevtoolsControlServer";
 import { startDocumentInjectionServer } from "./startDocumentInjectionServer";
-import type { IInjectedServiceEnvironment, IResolvedDevhostManifest, IResolvedDevhostService } from "./stackTypes";
+import type {
+  IInjectedServiceEnvironment,
+  IResolvedDevhostManifest,
+  IResolvedDevhostService,
+  IServiceExitResult,
+  ISignalHandlerRegistration,
+  ISignalRaceResult,
+  IExitRaceResult,
+  RaceResult,
+  RuntimeMode,
+  SignalHandlerCallback,
+  SupportedSignal,
+} from "./stackTypes";
 import { waitForServiceHealth } from "./waitForServiceHealth";
 
 const shutdownGracePeriodInMilliseconds: number = 10_000;
 
 export interface IStartStackOptions {
   pipeServiceOutput?: boolean;
-  runtimeMode?: "manifest" | "single-service";
+  runtimeMode?: RuntimeMode;
   stdinMode?: "ignore" | "inherit";
 }
 
@@ -58,11 +70,8 @@ export async function startStack(
   );
   let devtoolsControlServer: Awaited<ReturnType<typeof startDevtoolsControlServer>> | null = null;
   let receivedSignal: SupportedSignal | null = null;
-  let resolveSignal: ((signal: SupportedSignal) => void) | null = null;
-  const signalHandlers: Array<{
-    handler: () => void;
-    signalName: SupportedSignal;
-  }> = [];
+  let resolveSignal: SignalHandlerCallback | null = null;
+  const signalHandlers: ISignalHandlerRegistration[] = [];
   const signalPromise: Promise<SupportedSignal> = new Promise<SupportedSignal>((resolve) => {
     resolveSignal = resolve;
   });
@@ -224,31 +233,15 @@ export async function startStack(
 
     logPrimaryService(manifest, logger);
 
-    const raceResult:
-      | {
-          type: "signal";
-          signal: SupportedSignal;
-        }
-      | {
-          type: "exit";
-          serviceName: string;
-          exitCode: number;
-        } = await Promise.race([
+    const raceResult: RaceResult = await Promise.race([
       signalPromise.then(
-        (signal): {
-          type: "signal";
-          signal: SupportedSignal;
-        } => ({
+        (signal): ISignalRaceResult => ({
           signal,
           type: "signal",
         }),
       ),
       waitForAnyServiceExit(startedServices).then(
-        (result): {
-          type: "exit";
-          serviceName: string;
-          exitCode: number;
-        } => ({
+        (result): IExitRaceResult => ({
           ...result,
           type: "exit",
         }),
@@ -301,7 +294,7 @@ export async function startStack(
 export function createInjectedServiceEnvironment(
   manifest: IResolvedDevhostManifest,
   service: IResolvedDevhostService,
-  runtimeMode: "manifest" | "single-service" = "manifest",
+  runtimeMode: RuntimeMode = "manifest",
 ): IInjectedServiceEnvironment {
   const environment: IInjectedServiceEnvironment = {
     DEVHOST_BIND_HOST: service.bindHost,
@@ -324,9 +317,7 @@ export function createInjectedServiceEnvironment(
   return environment;
 }
 
-async function waitForAnyServiceExit(
-  startedServices: StartedService[],
-): Promise<{ serviceName: string; exitCode: number }> {
+async function waitForAnyServiceExit(startedServices: StartedService[]): Promise<IServiceExitResult> {
   return await Promise.race(
     startedServices.map(async (startedService) => {
       const exitCode: number = await startedService.childProcess.exited;

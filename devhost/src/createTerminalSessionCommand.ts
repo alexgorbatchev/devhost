@@ -2,14 +2,14 @@ import type { ITerminalSessionCommand } from "./ITerminalSessionCommand";
 import { createAgentTerminalCommand } from "./createAgentTerminalCommand";
 import { createEditorTerminalCommand } from "./createEditorTerminalCommand";
 import type { DevtoolsComponentEditor } from "./devtoolsComponentEditor";
-import type { IStartTerminalSessionRequest } from "./devtools/features/terminalSessions/types";
-import type { IValidatedDevhostAgent } from "./stackTypes";
+import type { StartTerminalSessionRequest } from "./devtools/features/terminalSessions/types";
+import type { ValidatedDevhostAgent } from "./stackTypes";
 
 interface ICreateTerminalSessionCommandOptions {
-  agent: IValidatedDevhostAgent;
+  agent: ValidatedDevhostAgent;
   componentEditor: DevtoolsComponentEditor;
   projectRootPath: string;
-  request: IStartTerminalSessionRequest;
+  request: StartTerminalSessionRequest;
   stackName: string;
 }
 

@@ -57,13 +57,13 @@ describe("createAnnotationAgentPrompt", () => {
       
       ## Annotated markers
       ## Marker #1
-      - Element: button \"Save changes\"
+      - Element: button "Save changes"
       - Element path: .toolbar > button
       - Full path: body > div.toolbar > button
-      - Accessibility: role=\"button\", focusable
+      - Accessibility: role="button", focusable
       - CSS classes: cta-button
       - Nearby text: Save your work
-      - Nearby elements: a \"Docs\"
+      - Nearby elements: a "Docs"
       - Selected text: Save changes
       - Source location: SaveButton @ src/components/SaveButton.tsx:42:8
       - Fixed positioned: no
@@ -72,7 +72,7 @@ describe("createAnnotationAgentPrompt", () => {
       color: rgb(17, 24, 39)
       - Computed style object:
       {
-        \"color\": \"rgb(17, 24, 39)\"
+        "color": "rgb(17, 24, 39)"
       }
       
       ## Required behavior

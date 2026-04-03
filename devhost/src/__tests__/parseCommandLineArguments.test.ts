@@ -19,13 +19,14 @@ describe("parseCommandLineArguments", () => {
   });
 
   test("parses single-service mode", () => {
-    expect(parseCommandLineArguments(["--host", "hello.local.test", "--port", "3200", "--", "bun", "run", "dev"]))
-      .toEqual({
-        command: ["bun", "run", "dev"],
-        host: "hello.local.test",
-        kind: "single-service",
-        port: 3200,
-      });
+    expect(
+      parseCommandLineArguments(["--host", "hello.local.test", "--port", "3200", "--", "bun", "run", "dev"]),
+    ).toEqual({
+      command: ["bun", "run", "dev"],
+      host: "hello.local.test",
+      kind: "single-service",
+      port: 3200,
+    });
   });
 
   test("parses implicit manifest mode", () => {
@@ -43,20 +44,18 @@ describe("parseCommandLineArguments", () => {
   });
 
   test("rejects invalid single-service input", () => {
-    expect(() => parseCommandLineArguments(["--host", "bad host", "--port", "3200", "--", "bun"]))
-      .toThrow("Host must be a valid hostname");
+    expect(() => parseCommandLineArguments(["--host", "bad host", "--port", "3200", "--", "bun"])).toThrow(
+      "Host must be a valid hostname",
+    );
     expect(() => parseCommandLineArguments(["--port", "3200"])).toThrow("--port requires --host.");
-    expect(() => parseCommandLineArguments(["--host", "hello.local.test", "--port", "0", "--", "bun"]))
-      .toThrow("Port must be a valid TCP port");
+    expect(() => parseCommandLineArguments(["--host", "hello.local.test", "--port", "0", "--", "bun"])).toThrow(
+      "Port must be a valid TCP port",
+    );
   });
 
   test("rejects invalid caddy commands", () => {
-    expect(() => parseCommandLineArguments(["caddy"])).toThrow(
-      "Expected a caddy action: start, stop, or trust.",
-    );
-    expect(() => parseCommandLineArguments(["caddy", "restart"])).toThrow(
-      "Unsupported caddy action: restart",
-    );
+    expect(() => parseCommandLineArguments(["caddy"])).toThrow("Expected a caddy action: start, stop, or trust.");
+    expect(() => parseCommandLineArguments(["caddy", "restart"])).toThrow("Unsupported caddy action: restart");
     expect(() => parseCommandLineArguments(["caddy", "start", "now"])).toThrow(
       "Caddy commands do not accept additional arguments.",
     );

@@ -366,7 +366,9 @@ function getElementPath(target: HTMLElement, maxDepth: number = 4): string {
     } else if (typeof currentElement.className === "string" && currentElement.className.length > 0) {
       const meaningfulClass: string | undefined = currentElement.className
         .split(/\s+/)
-        .find((value: string): boolean => value.length > 2 && !/^[a-z]{1,2}$/.test(value) && !/[A-Z0-9]{5,}/.test(value));
+        .find(
+          (value: string): boolean => value.length > 2 && !/^[a-z]{1,2}$/.test(value) && !/[A-Z0-9]{5,}/.test(value),
+        );
 
       if (meaningfulClass !== undefined) {
         identifier = `.${meaningfulClass.split("_")[0]}`;

@@ -128,12 +128,7 @@ describe("inspectComponentElement", () => {
                 return {
                   type: "full-data",
                   value: {
-                    source: [
-                      "PrimaryButton",
-                      "webpack:///./src/components/PrimaryButton.tsx?macro=true",
-                      54,
-                      11,
-                    ],
+                    source: ["PrimaryButton", "webpack:///./src/components/PrimaryButton.tsx?macro=true", 54, 11],
                   },
                 };
               },

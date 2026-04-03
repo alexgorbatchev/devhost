@@ -67,9 +67,7 @@ export async function resolveServicePorts(manifest: IValidatedDevhostManifest): 
   };
 }
 
-function collectFixedPorts(
-  services: Record<string, IValidatedDevhostService>,
-): Map<string, Set<number>> {
+function collectFixedPorts(services: Record<string, IValidatedDevhostService>): Map<string, Set<number>> {
   const excludedPortsByHost: Map<string, Set<number>> = new Map<string, Set<number>>();
 
   for (const serviceName of Object.keys(services)) {

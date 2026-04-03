@@ -11,15 +11,16 @@ import {
   type ICaddyCommandResult,
   type ManagedCaddyCommandRunner,
 } from "./runManagedCaddyCommand";
+import type { AsyncBooleanFunction, AsyncVoidFunction } from "./types";
 
 export type ManagedCaddyLifecycleAction = "start" | "stop" | "trust";
 
 interface IRunManagedCaddyLifecycleCommandDependencies {
-  ensureManagedCaddyConfig?: () => Promise<void>;
-  hasManagedPidFile?: () => Promise<boolean>;
-  hasManagedRootCertificate?: () => Promise<boolean>;
-  isManagedCaddyAvailable?: () => Promise<boolean>;
-  removeManagedPidFile?: () => Promise<void>;
+  ensureManagedCaddyConfig?: AsyncVoidFunction;
+  hasManagedPidFile?: AsyncBooleanFunction;
+  hasManagedRootCertificate?: AsyncBooleanFunction;
+  isManagedCaddyAvailable?: AsyncBooleanFunction;
+  removeManagedPidFile?: AsyncVoidFunction;
   runManagedCaddyCommand?: ManagedCaddyCommandRunner;
 }
 
@@ -28,14 +29,14 @@ export async function runManagedCaddyLifecycleCommand(
   logger: IDevhostLogger,
   dependencies: IRunManagedCaddyLifecycleCommandDependencies = {},
 ): Promise<number> {
-  const ensureManagedCaddyConfigImplementation: () => Promise<void> =
+  const ensureManagedCaddyConfigImplementation: AsyncVoidFunction =
     dependencies.ensureManagedCaddyConfig ?? ensureManagedCaddyConfig;
-  const hasManagedPidFile: () => Promise<boolean> = dependencies.hasManagedPidFile ?? defaultHasManagedPidFile;
-  const hasManagedRootCertificate: () => Promise<boolean> =
+  const hasManagedPidFile: AsyncBooleanFunction = dependencies.hasManagedPidFile ?? defaultHasManagedPidFile;
+  const hasManagedRootCertificate: AsyncBooleanFunction =
     dependencies.hasManagedRootCertificate ?? defaultHasManagedRootCertificate;
-  const isManagedCaddyAvailable: () => Promise<boolean> =
+  const isManagedCaddyAvailable: AsyncBooleanFunction =
     dependencies.isManagedCaddyAvailable ?? defaultIsManagedCaddyAvailable;
-  const removeManagedPidFile: () => Promise<void> = dependencies.removeManagedPidFile ?? defaultRemoveManagedPidFile;
+  const removeManagedPidFile: AsyncVoidFunction = dependencies.removeManagedPidFile ?? defaultRemoveManagedPidFile;
   const runManagedCaddyCommandImplementation: ManagedCaddyCommandRunner =
     dependencies.runManagedCaddyCommand ?? runManagedCaddyCommand;
 
@@ -76,8 +77,8 @@ export async function runManagedCaddyLifecycleCommand(
 
 async function startManagedCaddy(
   logger: IDevhostLogger,
-  hasManagedPidFile: () => Promise<boolean>,
-  isManagedCaddyAvailable: () => Promise<boolean>,
+  hasManagedPidFile: AsyncBooleanFunction,
+  isManagedCaddyAvailable: AsyncBooleanFunction,
   runManagedCaddyCommandImplementation: ManagedCaddyCommandRunner,
 ): Promise<number> {
   if (await isManagedCaddyAvailable()) {
@@ -97,7 +98,7 @@ async function startManagedCaddy(
   );
 
   if (!result.success) {
-    throw new Error(createManagedCaddyStartErrorMessage(result));
+    throw new Error(createManagedCaddyCommandErrorMessage("start", result));
   }
 
   logger.info(`managed caddy started with ${managedCaddyPaths.caddyfilePath}`);
@@ -106,9 +107,9 @@ async function startManagedCaddy(
 
 async function stopManagedCaddy(
   logger: IDevhostLogger,
-  hasManagedPidFile: () => Promise<boolean>,
-  isManagedCaddyAvailable: () => Promise<boolean>,
-  removeManagedPidFile: () => Promise<void>,
+  hasManagedPidFile: AsyncBooleanFunction,
+  isManagedCaddyAvailable: AsyncBooleanFunction,
+  removeManagedPidFile: AsyncVoidFunction,
   runManagedCaddyCommandImplementation: ManagedCaddyCommandRunner,
 ): Promise<number> {
   const isManagedProcessKnown: boolean = await hasManagedPidFile();
@@ -144,8 +145,8 @@ async function stopManagedCaddy(
 
 async function trustManagedCaddy(
   logger: IDevhostLogger,
-  hasManagedPidFile: () => Promise<boolean>,
-  isManagedCaddyAvailable: () => Promise<boolean>,
+  hasManagedPidFile: AsyncBooleanFunction,
+  isManagedCaddyAvailable: AsyncBooleanFunction,
   runManagedCaddyCommandImplementation: ManagedCaddyCommandRunner,
 ): Promise<number> {
   if (!(await isManagedCaddyAvailable())) {
@@ -201,7 +202,7 @@ async function defaultHasManagedRootCertificate(): Promise<boolean> {
 
 async function warnAboutAutomaticTrustInstall(
   logger: IDevhostLogger,
-  hasManagedRootCertificate: () => Promise<boolean>,
+  hasManagedRootCertificate: AsyncBooleanFunction,
 ): Promise<void> {
   if (await hasManagedRootCertificate()) {
     return;

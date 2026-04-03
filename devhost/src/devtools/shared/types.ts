@@ -1,3 +1,5 @@
+import type { IStandardSourceShape } from "./reactSourceInspection";
+
 export type ServiceHealth = {
   name: string;
   status: boolean;
@@ -27,3 +29,14 @@ export type ServiceLogUpdateMessage = {
 };
 
 export type ServiceLogMessage = ServiceLogSnapshotMessage | ServiceLogUpdateMessage;
+
+type ReactFunctionLocationTuple = [string, string, number, number];
+
+export type NormalizedSourceValue = ReactFunctionLocationTuple | IStandardSourceShape | null | undefined;
+
+export type WebSocketMessageData = string | ArrayBuffer | Uint8Array;
+
+export interface ILocationHostProtocol {
+  host: string;
+  protocol: string;
+}

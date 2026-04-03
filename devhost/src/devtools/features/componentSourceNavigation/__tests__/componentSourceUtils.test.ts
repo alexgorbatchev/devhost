@@ -41,9 +41,7 @@ describe("componentSourceUtils", () => {
         "cursor",
         "/Users/test/project",
       ),
-    ).toBe(
-      "cursor://open?url=file%3A%2F%2F%2FUsers%2Ftest%2Fproject%2Fsrc%2FApp.tsx&line=42&column=5",
-    );
+    ).toBe("cursor://open?url=file%3A%2F%2F%2FUsers%2Ftest%2Fproject%2Fsrc%2FApp.tsx&line=42&column=5");
   });
 
   test("builds a WebStorm URL from a cleaned webpack path", () => {

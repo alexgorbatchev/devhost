@@ -26,14 +26,16 @@ export interface INeovimComponentSourceMenuItem extends IComponentSourceMenuItem
   };
 }
 
-export type IComponentSourceMenuItem =
-  | IExternalEditorComponentSourceMenuItem
-  | INeovimComponentSourceMenuItem;
+export type ComponentSourceMenuItem = IExternalEditorComponentSourceMenuItem | INeovimComponentSourceMenuItem;
 
 export interface IComponentSourceMenuState {
   errorMessage?: string;
-  items: IComponentSourceMenuItem[];
+  items: ComponentSourceMenuItem[];
   title: string;
   x: number;
   y: number;
+}
+
+export interface ISetComponentMenuFunction {
+  (menu: IComponentSourceMenuState | null): void;
 }

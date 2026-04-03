@@ -1,12 +1,9 @@
 import { useCallback, useState } from "preact/hooks";
 
-import {
-  DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
-  TERMINAL_SESSION_START_PATH,
-} from "../../shared/constants";
+import { DEVTOOLS_CONTROL_TOKEN_HEADER_NAME, TERMINAL_SESSION_START_PATH } from "../../shared/constants";
 import { readDevtoolsAgentDisplayName } from "../../shared/readDevtoolsAgentDisplayName";
 import { readDevtoolsControlToken } from "../../shared/readDevtoolsControlToken";
-import type { IComponentSourceMenuItem } from "../componentSourceNavigation/types";
+import type { ComponentSourceMenuItem } from "../componentSourceNavigation/types";
 import type { IAnnotationSubmitDetail } from "../annotationComposer/types";
 import { createTerminalSession } from "./createTerminalSession";
 import {
@@ -16,45 +13,45 @@ import {
   removeTerminalSession,
 } from "./manageTerminalSessions";
 import type {
-  IStartTerminalSessionRequest,
+  StartTerminalSessionRequest,
   IStartTerminalSessionResponse,
-  ITerminalSession,
+  TerminalSession,
   ITerminalSessionStartResult,
 } from "./types";
 
 interface IUseTerminalSessionsResult {
   expandSession: (sessionId: string) => void;
   minimizeSession: (sessionId: string) => void;
-  terminalSessions: ITerminalSession[];
+  terminalSessions: TerminalSession[];
   removeSession: (sessionId: string) => void;
-  startComponentSourceSession: (menuItem: IComponentSourceMenuItem) => Promise<ITerminalSessionStartResult>;
+  startComponentSourceSession: (menuItem: ComponentSourceMenuItem) => Promise<ITerminalSessionStartResult>;
   submitAnnotation: (annotation: IAnnotationSubmitDetail) => Promise<ITerminalSessionStartResult>;
 }
 
 export function useTerminalSessions(): IUseTerminalSessionsResult {
-  const [terminalSessions, setTerminalSessions] = useState<ITerminalSession[]>([]);
+  const [terminalSessions, setTerminalSessions] = useState<TerminalSession[]>([]);
   const agentDisplayName: string = readDevtoolsAgentDisplayName();
 
   const expandSession = useCallback((sessionId: string): void => {
-    setTerminalSessions((currentSessions: ITerminalSession[]): ITerminalSession[] => {
+    setTerminalSessions((currentSessions: TerminalSession[]): TerminalSession[] => {
       return expandTerminalSession(currentSessions, sessionId);
     });
   }, []);
 
   const minimizeSession = useCallback((sessionId: string): void => {
-    setTerminalSessions((currentSessions: ITerminalSession[]): ITerminalSession[] => {
+    setTerminalSessions((currentSessions: TerminalSession[]): TerminalSession[] => {
       return minimizeTerminalSession(currentSessions, sessionId);
     });
   }, []);
 
   const removeSession = useCallback((sessionId: string): void => {
-    setTerminalSessions((currentSessions: ITerminalSession[]): ITerminalSession[] => {
+    setTerminalSessions((currentSessions: TerminalSession[]): TerminalSession[] => {
       return removeTerminalSession(currentSessions, sessionId);
     });
   }, []);
 
   const startSession = useCallback(
-    async (request: IStartTerminalSessionRequest): Promise<ITerminalSessionStartResult> => {
+    async (request: StartTerminalSessionRequest): Promise<ITerminalSessionStartResult> => {
       try {
         const response = await fetch(TERMINAL_SESSION_START_PATH, {
           body: JSON.stringify(request),
@@ -81,8 +78,11 @@ export function useTerminalSessions(): IUseTerminalSessionsResult {
           };
         }
 
-        setTerminalSessions((currentSessions: ITerminalSession[]): ITerminalSession[] => {
-          return appendTerminalSession(currentSessions, createTerminalSession(responseBody.sessionId, request, agentDisplayName));
+        setTerminalSessions((currentSessions: TerminalSession[]): TerminalSession[] => {
+          return appendTerminalSession(
+            currentSessions,
+            createTerminalSession(responseBody.sessionId, request, agentDisplayName),
+          );
         });
 
         return {
@@ -98,15 +98,18 @@ export function useTerminalSessions(): IUseTerminalSessionsResult {
     [agentDisplayName],
   );
 
-  const submitAnnotation = useCallback(async (annotation: IAnnotationSubmitDetail): Promise<ITerminalSessionStartResult> => {
-    return await startSession({
-      annotation,
-      kind: "agent",
-    });
-  }, [startSession]);
+  const submitAnnotation = useCallback(
+    async (annotation: IAnnotationSubmitDetail): Promise<ITerminalSessionStartResult> => {
+      return await startSession({
+        annotation,
+        kind: "agent",
+      });
+    },
+    [startSession],
+  );
 
   const startComponentSourceSession = useCallback(
-    async (menuItem: IComponentSourceMenuItem): Promise<ITerminalSessionStartResult> => {
+    async (menuItem: ComponentSourceMenuItem): Promise<ITerminalSessionStartResult> => {
       return await startSession({
         componentName: menuItem.displayName,
         kind: "editor",

@@ -61,7 +61,9 @@ export function resolveDevhostStateDirectoryPath(environment: NodeJS.ProcessEnv 
   return join(homeDirectoryPath, ...defaultStateDirectorySegments);
 }
 
-export function createManagedCaddyPaths(stateDirectoryPath: string = resolveDevhostStateDirectoryPath()): IManagedCaddyPaths {
+export function createManagedCaddyPaths(
+  stateDirectoryPath: string = resolveDevhostStateDirectoryPath(),
+): IManagedCaddyPaths {
   const caddyDirectoryPath: string = join(stateDirectoryPath, "caddy");
   const routesDirectoryPath: string = join(caddyDirectoryPath, "routes");
 

@@ -1,14 +1,17 @@
 import { describe, expect, test } from "bun:test";
 
+import type { ServiceLogStream } from "../devtools/shared/types";
 import type { ILogMinimapMark } from "../devtools/features/minimap/createLogMinimapMarks";
 import { resolveLogPreviewLayout } from "../devtools/features/minimap/resolveLogPreviewLayout";
+
+const logStreams: ServiceLogStream[] = ["stdout", "stderr"];
 
 function createMark(top: number, entryIndex: number): ILogMinimapMark {
   return {
     entryIndex,
     height: 2,
     id: entryIndex + 1,
-    stream: entryIndex % 2 === 0 ? "stdout" : "stderr",
+    stream: logStreams[entryIndex % logStreams.length] ?? "stdout",
     top,
     width: 60,
   };

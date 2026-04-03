@@ -1,0 +1,440 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, system-ui, sans-serif;
+  --surface-base: #000000;
+  --surface-raised: #141415;
+  --surface-subtle: #0d0d0f;
+  --surface-overlay: #f8f8f1;
+  --text-heading: #f4f4f4;
+  --text-primary: #d1cfd0;
+  --text-muted: #89786e;
+  --text-accent: #d8ad9d;
+  --border-default: #494453;
+  --focus-ring: #5e6ad2;
+  --control-background: #141415;
+  --control-border: #494453;
+  --interactive-hover: #1b1b1d;
+  --interactive-selected-background: #f8f8f1;
+  --interactive-selected-text: #000000;
+  --metric-background: #0d0d0f;
+  --surface-shadow: 0 16px 40px rgba(0, 0, 0, 0.24);
+  --header-height: 72px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 15px;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --surface-base: #f8f8f1;
+  --surface-raised: #ffffff;
+  --surface-subtle: #f1ede7;
+  --surface-overlay: #141415;
+  --text-heading: #141415;
+  --text-primary: #403833;
+  --text-muted: #6d635e;
+  --text-accent: #8e5f51;
+  --border-default: #cdc3b8;
+  --control-background: #ffffff;
+  --control-border: #cdc3b8;
+  --interactive-hover: #f1ede7;
+  --interactive-selected-background: #141415;
+  --interactive-selected-text: #f8f8f1;
+  --metric-background: #f1ede7;
+  --surface-shadow: 0 16px 40px rgba(20, 20, 21, 0.08);
+}
+
+:root[data-theme="system"] {
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root[data-theme="system"] {
+    color-scheme: light;
+    --surface-base: #f8f8f1;
+    --surface-raised: #ffffff;
+    --surface-subtle: #f1ede7;
+    --surface-overlay: #141415;
+    --text-heading: #141415;
+    --text-primary: #403833;
+    --text-muted: #6d635e;
+    --text-accent: #8e5f51;
+    --border-default: #cdc3b8;
+    --control-background: #ffffff;
+    --control-border: #cdc3b8;
+    --interactive-hover: #f1ede7;
+    --interactive-selected-background: #141415;
+    --interactive-selected-text: #f8f8f1;
+    --metric-background: #f1ede7;
+    --surface-shadow: 0 16px 40px rgba(20, 20, 21, 0.08);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--surface-base);
+  color: var(--text-primary);
+  font-family: Inter, system-ui, sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  color: inherit;
+  font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgba(94, 106, 210, 0.36);
+  color: var(--surface-overlay);
+}
+
+.app-shell {
+  min-height: 100dvh;
+  background: var(--surface-base);
+}
+
+.app-frame {
+  width: min(100%, 1920px);
+  margin: 0 auto;
+  padding-block: calc(env(safe-area-inset-top) + 32px) calc(env(safe-area-inset-bottom) + 48px);
+  padding-inline: calc(env(safe-area-inset-left) + 32px) calc(env(safe-area-inset-right) + 32px);
+  display: grid;
+  gap: 32px;
+}
+
+.app-header,
+.hero-panel,
+.inspection-section,
+.signal-card,
+.diagnostic-card,
+.lane-detail {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  box-shadow: var(--surface-shadow);
+}
+
+.app-header {
+  min-height: var(--header-height);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.app-header__copy,
+.hero-section__copy,
+.inspection-section__intro,
+.diagnostic-stack__intro,
+.theme-control {
+  display: grid;
+  gap: 12px;
+}
+
+.app-header__actions {
+  display: grid;
+  gap: 16px;
+  width: min(100%, 880px);
+}
+
+.app-kicker,
+.panel-kicker,
+.app-header__title,
+.metric-pill__label,
+.theme-control__label {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+
+.theme-control {
+  justify-items: start;
+}
+
+.theme-control__select {
+  min-width: 160px;
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-sm);
+  background: var(--control-background);
+}
+
+.app-header__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.metric-pill {
+  min-height: 72px;
+  padding: 12px 16px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--metric-background);
+  display: grid;
+  gap: 4px;
+  align-content: center;
+}
+
+.metric-pill__value,
+.diagnostic-index {
+  margin: 0;
+  color: var(--text-heading);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(360px, 0.9fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.hero-section__copy {
+  gap: 20px;
+  padding-block: 24px;
+}
+
+.app-title,
+.section-title {
+  margin: 0;
+  color: var(--text-heading);
+  font-weight: 700;
+  text-wrap: balance;
+}
+
+.app-title {
+  max-width: 12ch;
+  font-size: 93px;
+  line-height: 0.94;
+}
+
+.section-title {
+  font-size: 36px;
+  line-height: 1.05;
+}
+
+.app-body,
+.card-body,
+.diagnostic-body,
+.bullet-list li {
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 500;
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+
+.app-body {
+  max-width: 32ch;
+  font-size: 23px;
+}
+
+.card-body,
+.diagnostic-body,
+.bullet-list li {
+  font-size: 18px;
+}
+
+.hero-panel,
+.inspection-section,
+.signal-card,
+.diagnostic-card,
+.lane-detail {
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.bullet-list {
+  margin: 0;
+  padding-left: 24px;
+  display: grid;
+  gap: 12px;
+}
+
+.inspection-section {
+  gap: 24px;
+}
+
+.inspection-section__content {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  gap: 24px;
+}
+
+.lane-button-group {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.lane-button {
+  min-height: 56px;
+  padding: 16px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.lane-button:hover {
+  background: var(--interactive-hover);
+}
+
+.lane-button[aria-pressed="true"] {
+  background: var(--interactive-selected-background);
+  border-color: var(--interactive-selected-background);
+  color: var(--interactive-selected-text);
+}
+
+.lane-detail {
+  background: var(--surface-subtle);
+}
+
+.signal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.diagnostic-stack {
+  display: grid;
+  gap: 24px;
+}
+
+.diagnostic-stack__grid {
+  display: grid;
+  gap: 16px;
+}
+
+.diagnostic-card__header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.diagnostic-index {
+  display: inline-flex;
+  min-width: 48px;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-base);
+}
+
+@media (max-width: 1320px) {
+  .app-header {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .app-header__actions,
+  .app-header__metrics,
+  .signal-grid,
+  .hero-section,
+  .inspection-section__content {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app-header__actions,
+  .inspection-section__content {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 960px) {
+  .app-frame {
+    padding-block: calc(env(safe-area-inset-top) + 24px) calc(env(safe-area-inset-bottom) + 32px);
+    padding-inline: calc(env(safe-area-inset-left) + 20px) calc(env(safe-area-inset-right) + 20px);
+  }
+
+  .app-header__metrics,
+  .signal-grid,
+  .hero-section {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-title {
+    font-size: 72px;
+  }
+
+  .section-title {
+    font-size: 32px;
+  }
+
+  .app-body {
+    max-width: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-frame {
+    gap: 24px;
+  }
+
+  .app-header,
+  .hero-panel,
+  .inspection-section,
+  .signal-card,
+  .diagnostic-card,
+  .lane-detail {
+    padding: 20px;
+  }
+
+  .app-title {
+    font-size: 56px;
+  }
+
+  .section-title {
+    font-size: 28px;
+  }
+
+  .app-body {
+    font-size: 20px;
+  }
+
+  .card-body,
+  .diagnostic-body,
+  .bullet-list li {
+    font-size: 16px;
+  }
+}

@@ -65,9 +65,11 @@ function createStderrMessage(serviceName: string, requestId: string, durationInM
     return baseMessage;
   }
 
-  return `${baseMessage}; context service=${serviceName} requestId=${requestId} duration=${durationInMilliseconds}ms phase=render; ` +
+  return (
+    `${baseMessage}; context service=${serviceName} requestId=${requestId} duration=${durationInMilliseconds}ms phase=render; ` +
     `downstream cache=miss region=local-dev shard=${randomInteger(1, 4)} worker=${randomInteger(1, 8)}; ` +
-    `recovery action=retryable escalation=none trace=demo-${sequenceNumber.toString().padStart(4, "0")}`;
+    `recovery action=retryable escalation=none trace=demo-${sequenceNumber.toString().padStart(4, "0")}`
+  );
 }
 
 function pickRandomItem(items: string[], label: string): string {

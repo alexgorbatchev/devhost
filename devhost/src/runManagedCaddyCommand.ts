@@ -1,5 +1,7 @@
 import { managedCaddyPaths } from "./caddyPaths";
 
+export type StdioMode = "inherit" | "pipe";
+
 export interface ICaddyCommandResult {
   stderr: Uint8Array;
   stdout: Uint8Array;
@@ -7,7 +9,7 @@ export interface ICaddyCommandResult {
 }
 
 export interface IRunManagedCaddyCommandOptions {
-  stdioMode?: "inherit" | "pipe";
+  stdioMode?: StdioMode;
 }
 
 export type ManagedCaddyCommandRunner = (
@@ -23,7 +25,7 @@ export function runManagedCaddyCommand(
   arguments_: string[],
   options: IRunManagedCaddyCommandOptions = {},
 ): ICaddyCommandResult {
-  const resolvedStdioMode: "inherit" | "pipe" = options.stdioMode ?? "pipe";
+  const resolvedStdioMode: StdioMode = options.stdioMode ?? "pipe";
   const result = Bun.spawnSync(["caddy", ...createManagedCaddyCommandArguments(arguments_)], {
     cwd: managedCaddyPaths.caddyDirectoryPath,
     stderr: resolvedStdioMode,

@@ -1,5 +1,6 @@
 import { normalizeSourceLocation, type ISourceLocation } from "./sourceLocation";
 import { symbolicateSourceLocation } from "./symbolicateSourceLocation";
+import type { NormalizedSourceValue } from "./types";
 
 export interface IReactFiberNode {
   _debugOwner?: IReactFiberNode | null;
@@ -14,7 +15,7 @@ type ReactStackFrameTuple = [string, string, number, number, number, number, boo
 interface IDevToolsInspectElementPayload {
   type?: string;
   value?: {
-    source?: ReactFunctionLocationTuple | IStandardSourceShape | null;
+    source?: NormalizedSourceValue;
     stack?: ReactStackFrameTuple[] | null;
   };
 }
@@ -39,7 +40,7 @@ interface IReactRenderer {
   findFiberByHostInstance: (element: HTMLElement) => IReactFiberNode | null;
 }
 
-interface IStandardSourceShape {
+export interface IStandardSourceShape {
   columnNumber?: number;
   fileName: string;
   lineNumber: number;
@@ -68,11 +69,7 @@ export function getFiberFromElement(element: HTMLElement): IReactFiberNode | nul
   }
 
   const reactPropertyKeys: string[] = Object.keys(element).filter((key: string): boolean => {
-    return (
-      key.startsWith("__reactFiber$") ||
-      key.startsWith("__reactInternalInstance$") ||
-      key.startsWith("__react")
-    );
+    return key.startsWith("__reactFiber$") || key.startsWith("__reactInternalInstance$") || key.startsWith("__react");
   });
 
   for (const key of reactPropertyKeys) {
@@ -299,16 +296,9 @@ function createSourceLocation(fiber: IReactFiberNode, source: IStandardSourceSha
 function isReactFiberNode(value: unknown): value is IReactFiberNode {
   return (
     isRecord(value) &&
-    [
-      "_debugOwner",
-      "return",
-      "memoizedProps",
-      "type",
-      "_debugSource",
-      "_source",
-      "__source",
-      "debugSource",
-    ].some((propertyName: string): boolean => propertyName in value)
+    ["_debugOwner", "return", "memoizedProps", "type", "_debugSource", "_source", "__source", "debugSource"].some(
+      (propertyName: string): boolean => propertyName in value,
+    )
   );
 }
 
@@ -393,9 +383,7 @@ function readInspectedElementSource(
   return undefined;
 }
 
-function normalizeInspectedSource(
-  value: ReactFunctionLocationTuple | IStandardSourceShape | null | undefined,
-): IStandardSourceShape | undefined {
+function normalizeInspectedSource(value: NormalizedSourceValue): IStandardSourceShape | undefined {
   if (isStandardSourceShape(value)) {
     return value;
   }

@@ -118,9 +118,7 @@ describe("validateManifest", () => {
     const manifestPath: string = getFixturePath("invalid-public-host", "devhost.toml");
     const manifestValue: unknown = await readFixtureToml("invalid-public-host", "devhost.toml");
 
-    expect(() => validateManifest(manifestPath, manifestValue)).toThrow(
-      "services.web.host must be a valid hostname",
-    );
+    expect(() => validateManifest(manifestPath, manifestValue)).toThrow("services.web.host must be a valid hostname");
   });
 
   test("rejects explicit health checks when port is auto", async () => {

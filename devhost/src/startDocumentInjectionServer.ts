@@ -10,9 +10,7 @@ interface IDocumentInjectionServer {
   stop: () => Promise<void>;
 }
 
-export function startDocumentInjectionServer(
-  options: IStartDocumentInjectionServerOptions,
-): IDocumentInjectionServer {
+export function startDocumentInjectionServer(options: IStartDocumentInjectionServerOptions): IDocumentInjectionServer {
   const server = Bun.serve({
     hostname: "127.0.0.1",
     port: 0,

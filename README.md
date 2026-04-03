@@ -3,6 +3,7 @@
 This repo gives you a `devhost` Bun wrapper plus a devhost-managed Caddy instance.
 
 `devhost` supports two runtime modes:
+
 - **single-service mode** via `--host` / `--port`
 - **manifest mode** via `devhost.toml`
 
@@ -66,7 +67,30 @@ Install dependencies once from the repository root:
 
 ```bash
 bun install
+bun run storybook:install-browser
 ```
+
+## TypeScript AI policy
+
+This repository now wires the shared `@alexgorbatchev/typescript-ai-policy` config at the repository root.
+Use the root check script to run formatting, linting, package typechecks, Bun tests, and Storybook component tests across the repo:
+
+```bash
+bun check
+```
+
+When you want automatic semantic cleanup assistance from the policy package, run:
+
+```bash
+bun run policy:fix:semantic
+```
+
+Policy configuration lives in:
+
+- `./oxfmt.config.ts`
+- `./oxlint.config.ts`
+
+`bun check` performs formatting verification before linting, then runs each workspace check script.
 
 ## Single-service mode
 
@@ -145,6 +169,7 @@ Use a Bun TypeScript wrapper when your preferred agent CLI needs custom setup.
 ### Single-service mode
 
 `devhost`:
+
 - starts your app
 - sets `PORT`
 - sets `DEVHOST_BIND_HOST=127.0.0.1` for safe local binding
@@ -158,6 +183,7 @@ Use a Bun TypeScript wrapper when your preferred agent CLI needs custom setup.
 ### Manifest mode
 
 `devhost`:
+
 - discovers `devhost.toml` or accepts `--manifest`
 - validates the manifest with Zod v4
 - resolves `port = "auto"` before spawning children
@@ -201,6 +227,7 @@ When devtools are enabled on a routed page, `devhost` now supports Alt + right-c
 If the host page exposes React development source metadata, `devhost` opens the matching source file in the configured editor protocol and copies the resolved source path to the clipboard.
 
 Important constraints:
+
 - this is best-effort React development metadata introspection, not a production-safe contract
 - host apps that strip React source metadata or source maps may show no component-source menu
 - relative source paths are resolved against the stack manifest directory before editor URLs are built

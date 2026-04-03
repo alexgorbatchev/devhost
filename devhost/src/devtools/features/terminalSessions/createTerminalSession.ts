@@ -4,8 +4,8 @@ import type {
   IEditorTerminalSession,
   IStartAgentTerminalSessionRequest,
   IStartEditorTerminalSessionRequest,
-  IStartTerminalSessionRequest,
-  ITerminalSession,
+  StartTerminalSessionRequest,
+  TerminalSession,
   ITerminalSessionBehavior,
   ITerminalSessionSummary,
 } from "./types";
@@ -32,9 +32,9 @@ const terminalTitleByEditorLauncher: Record<EditorTerminalLauncher, string> = {
 
 export function createTerminalSession(
   sessionId: string,
-  request: IStartTerminalSessionRequest,
+  request: StartTerminalSessionRequest,
   agentDisplayName: string,
-): ITerminalSession {
+): TerminalSession {
   if (request.kind === "agent") {
     return {
       annotation: request.annotation,

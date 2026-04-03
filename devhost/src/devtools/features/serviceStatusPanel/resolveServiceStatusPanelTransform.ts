@@ -1,5 +1,7 @@
+import type { PanelSide } from "./types";
+
 export function resolveServiceStatusPanelTransform(
-  panelSide: "left" | "right",
+  panelSide: PanelSide,
   isHovered: boolean,
   peekWidth: string,
 ): string {
@@ -7,7 +9,5 @@ export function resolveServiceStatusPanelTransform(
     return "translateX(0)";
   }
 
-  return panelSide === "left"
-    ? `translateX(calc(-100% + ${peekWidth}))`
-    : `translateX(calc(100% - ${peekWidth}))`;
+  return panelSide === "left" ? `translateX(calc(-100% + ${peekWidth}))` : `translateX(calc(100% - ${peekWidth}))`;
 }

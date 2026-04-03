@@ -3,10 +3,10 @@ import type { JSX } from "preact";
 import { useMemo, useState } from "preact/hooks";
 
 import { css, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
-import type { IComponentSourceMenuItem } from "./types";
+import type { ComponentSourceMenuItem } from "./types";
 
 interface IComponentSourceMenuProps {
-  items: IComponentSourceMenuItem[];
+  items: ComponentSourceMenuItem[];
   position: {
     x: number;
     y: number;
@@ -21,7 +21,13 @@ const menuViewportPaddingInPixels: number = 16;
 const menuPerItemHeightInPixels: number = 88;
 const itemInteractiveSelector: string = "&:is(:hover, :focus-visible)";
 
-export function ComponentSourceMenu({ items, position, title, errorMessage, onItemClick }: IComponentSourceMenuProps): JSX.Element | null {
+export function ComponentSourceMenu({
+  items,
+  position,
+  title,
+  errorMessage,
+  onItemClick,
+}: IComponentSourceMenuProps): JSX.Element | null {
   const theme = useDevtoolsTheme();
   const [hoveredItemIndex, setHoveredItemIndex] = useState<number | null>(null);
   const menuPosition = useMemo(() => {
@@ -62,7 +68,7 @@ export function ComponentSourceMenu({ items, position, title, errorMessage, onIt
         ) : null}
       </header>
       <div class={listClassName}>
-        {items.map((item: IComponentSourceMenuItem, index: number) => {
+        {items.map((item: ComponentSourceMenuItem, index: number) => {
           const itemClassName: string = css(createItemStyle(theme, hoveredItemIndex === index));
           const propsClassName: string = css(propsRowStyle);
           const sourceClassName: string = css(createSourceLabelStyle(theme));
@@ -100,11 +106,7 @@ export function ComponentSourceMenu({ items, position, title, errorMessage, onIt
                     const propClassName: string = css(createPropPillStyle(theme));
 
                     return (
-                      <span
-                        key={`${item.key}-${prop.name}`}
-                        class={propClassName}
-                        title={prop.title}
-                      >
+                      <span key={`${item.key}-${prop.name}`} class={propClassName} title={prop.title}>
                         {prop.name}
                       </span>
                     );

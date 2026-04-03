@@ -7,12 +7,23 @@ import { createSingleServiceEnvironment, createSingleServiceManifest } from "../
 
 const originalDevtoolsComponentEditor: string | undefined = process.env.DEVHOST_COMPONENT_EDITOR;
 
+type EnvironmentEntry = [string, string];
+type MaybeEnvironmentEntry = [string, string | undefined];
+
+function isEnvironmentEntry(entry: MaybeEnvironmentEntry): entry is EnvironmentEntry {
+  return typeof entry[1] === "string";
+}
+
 function restoreDevtoolsComponentEditorEnvironment(): void {
   delete process.env.DEVHOST_COMPONENT_EDITOR;
 
-  if (originalDevtoolsComponentEditor !== undefined) {
-    process.env.DEVHOST_COMPONENT_EDITOR = originalDevtoolsComponentEditor;
-  }
+  const restoredEnvironmentEntries: EnvironmentEntry[] = Object.entries({
+    DEVHOST_COMPONENT_EDITOR: originalDevtoolsComponentEditor,
+  }).filter(isEnvironmentEntry);
+
+  restoredEnvironmentEntries.forEach(([environmentName, environmentValue]: EnvironmentEntry): void => {
+    process.env[environmentName] = environmentValue;
+  });
 }
 
 afterEach(() => {

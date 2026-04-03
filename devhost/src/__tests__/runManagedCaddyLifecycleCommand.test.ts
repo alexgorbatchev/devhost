@@ -7,6 +7,12 @@ import {
   runManagedCaddyLifecycleCommand,
 } from "../runManagedCaddyLifecycleCommand";
 import type { ICaddyCommandResult } from "../runManagedCaddyCommand";
+import type { TestPromiseBoolean, TestPromiseVoid } from "./testTypes";
+
+interface ICaddyCommandCall {
+  arguments_: string[];
+  stdioMode: string | undefined;
+}
 
 const successfulCommandResult: ICaddyCommandResult = {
   stderr: new Uint8Array(),
@@ -17,7 +23,7 @@ const successfulCommandResult: ICaddyCommandResult = {
 describe("runManagedCaddyLifecycleCommand", () => {
   test("starts managed caddy when the admin API is unavailable", async () => {
     const infoMessages: string[] = [];
-    const caddyCommandCalls: Array<{ arguments_: string[]; stdioMode: string | undefined }> = [];
+    const caddyCommandCalls: ICaddyCommandCall[] = [];
     const logger = createLogger({
       errorSink: (): void => undefined,
       infoSink: (message: string): void => {
@@ -27,10 +33,10 @@ describe("runManagedCaddyLifecycleCommand", () => {
 
     await expect(
       runManagedCaddyLifecycleCommand("start", logger, {
-        ensureManagedCaddyConfig: async (): Promise<void> => undefined,
-        hasManagedPidFile: async (): Promise<boolean> => false,
-        hasManagedRootCertificate: async (): Promise<boolean> => false,
-        isManagedCaddyAvailable: async (): Promise<boolean> => false,
+        ensureManagedCaddyConfig: (async (): Promise<void> => undefined) as TestPromiseVoid,
+        hasManagedPidFile: (async (): Promise<boolean> => false) as TestPromiseBoolean,
+        hasManagedRootCertificate: (async (): Promise<boolean> => false) as TestPromiseBoolean,
+        isManagedCaddyAvailable: (async (): Promise<boolean> => false) as TestPromiseBoolean,
         runManagedCaddyCommand: (arguments_: string[], options): ICaddyCommandResult => {
           caddyCommandCalls.push({
             arguments_,
@@ -61,9 +67,9 @@ describe("runManagedCaddyLifecycleCommand", () => {
 
     await expect(
       runManagedCaddyLifecycleCommand("start", logger, {
-        ensureManagedCaddyConfig: async (): Promise<void> => undefined,
-        hasManagedPidFile: async (): Promise<boolean> => false,
-        isManagedCaddyAvailable: async (): Promise<boolean> => true,
+        ensureManagedCaddyConfig: (async (): Promise<void> => undefined) as TestPromiseVoid,
+        hasManagedPidFile: (async (): Promise<boolean> => false) as TestPromiseBoolean,
+        isManagedCaddyAvailable: (async (): Promise<boolean> => true) as TestPromiseBoolean,
       }),
     ).rejects.toThrow(
       "A Caddy admin API is already listening on the devhost-managed address, but it was not started by devhost.",
@@ -82,12 +88,12 @@ describe("runManagedCaddyLifecycleCommand", () => {
 
     await expect(
       runManagedCaddyLifecycleCommand("stop", logger, {
-        ensureManagedCaddyConfig: async (): Promise<void> => undefined,
-        hasManagedPidFile: async (): Promise<boolean> => true,
-        isManagedCaddyAvailable: async (): Promise<boolean> => false,
-        removeManagedPidFile: async (): Promise<void> => {
+        ensureManagedCaddyConfig: (async (): Promise<void> => undefined) as TestPromiseVoid,
+        hasManagedPidFile: (async (): Promise<boolean> => true) as TestPromiseBoolean,
+        isManagedCaddyAvailable: (async (): Promise<boolean> => false) as TestPromiseBoolean,
+        removeManagedPidFile: (async (): Promise<void> => {
           removedPidFiles.push(managedCaddyPaths.pidFilePath);
-        },
+        }) as TestPromiseVoid,
       }),
     ).resolves.toBe(0);
 
@@ -121,9 +127,9 @@ describe("runManagedCaddyLifecycleCommand", () => {
 
     await expect(
       runManagedCaddyLifecycleCommand("trust", logger, {
-        ensureManagedCaddyConfig: async (): Promise<void> => undefined,
-        hasManagedPidFile: async (): Promise<boolean> => true,
-        isManagedCaddyAvailable: async (): Promise<boolean> => false,
+        ensureManagedCaddyConfig: (async (): Promise<void> => undefined) as TestPromiseVoid,
+        hasManagedPidFile: (async (): Promise<boolean> => true) as TestPromiseBoolean,
+        isManagedCaddyAvailable: (async (): Promise<boolean> => false) as TestPromiseBoolean,
       }),
     ).rejects.toThrow("Managed Caddy is not running. Run 'devhost caddy start' first.");
 
@@ -140,9 +146,9 @@ describe("runManagedCaddyLifecycleCommand", () => {
 
     await expect(
       runManagedCaddyLifecycleCommand("trust", logger, {
-        ensureManagedCaddyConfig: async (): Promise<void> => undefined,
-        hasManagedPidFile: async (): Promise<boolean> => true,
-        isManagedCaddyAvailable: async (): Promise<boolean> => false,
+        ensureManagedCaddyConfig: (async (): Promise<void> => undefined) as TestPromiseVoid,
+        hasManagedPidFile: (async (): Promise<boolean> => true) as TestPromiseBoolean,
+        isManagedCaddyAvailable: (async (): Promise<boolean> => false) as TestPromiseBoolean,
       }),
     ).rejects.toThrow("Managed Caddy is not running. Run 'devhost caddy start' first.");
   });

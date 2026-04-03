@@ -11,6 +11,7 @@ import { createVisibleLogRows, type IVisibleLogRow } from "./createVisibleLogRow
 import { resolveHoveredLogRowIndex } from "./resolveHoveredLogRowIndex";
 import { resolveLogPreviewLayout } from "./resolveLogPreviewLayout";
 import { resolveLogPreviewOverlay } from "./resolveLogPreviewOverlay";
+import type { IRenderCanvasFunction } from "./types";
 
 interface ILogMinimapProps {
   entries: ServiceLogEntry[];
@@ -27,7 +28,7 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
   const entriesReference = useRef<ServiceLogEntry[]>(props.entries);
   const marksReference = useRef<ILogMinimapMark[]>([]);
   const visibleRowsReference = useRef<IVisibleLogRow[]>([]);
-  const renderCanvasReference = useRef<() => void>(() => {});
+  const renderCanvasReference = useRef<IRenderCanvasFunction>(() => {});
   const stderrColorReference = useRef<string>(theme.colors.logMinimapStderr);
   const stdoutColorReference = useRef<string>(theme.colors.logMinimapStdout);
   const [hoveredRowIndex, setHoveredRowIndex] = useState<number | null>(null);
@@ -73,8 +74,7 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
       marksReference.current = marks;
 
       for (const mark of marks) {
-        context.fillStyle =
-          mark.stream === "stderr" ? stderrColorReference.current : stdoutColorReference.current;
+        context.fillStyle = mark.stream === "stderr" ? stderrColorReference.current : stdoutColorReference.current;
         context.fillRect(
           0,
           Math.round(mark.top * devicePixelRatio),
@@ -120,7 +120,7 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
       viewportHeight: canvasReference.current?.clientHeight ?? 0,
       viewportPadding: readPixelValue(theme.spacing.sm),
     });
-  }, [hoveredRowIndex, props.entries, theme]);
+  }, [hoveredRowIndex, theme]);
   const previewRows: IVisibleLogRow[] = useMemo((): IVisibleLogRow[] => {
     if (hoveredRowIndex === null || previewLayout === null) {
       return [];
@@ -131,7 +131,7 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
       hoveredRowIndex,
       previewLayout.range.endIndex - previewLayout.range.startIndex,
     );
-  }, [hoveredRowIndex, previewLayout, props.entries]);
+  }, [hoveredRowIndex, previewLayout]);
   const previewOverlay = resolveLogPreviewOverlay(marksReference.current, previewLayout?.range ?? null);
 
   if (props.entries.length === 0) {
@@ -142,7 +142,7 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
   const minimapClassName: string = css(createMinimapStyle(theme, props.minimapPosition, props.isHovered));
   const previewClassName: string =
     previewLayout === null ? "" : css(createPreviewStyle(theme, props.minimapPosition, previewLayout.top));
-  const previewListClassName: string = css(createPreviewListStyle(theme));
+  const previewListClassName: string = css(createPreviewListStyle());
 
   return (
     <aside
@@ -212,7 +212,7 @@ function readPreviewLineStyle(theme: IDevtoolsTheme, stream: ServiceLogEntry["st
   };
 }
 
-function createPreviewListStyle(theme: IDevtoolsTheme): CSSObject {
+function createPreviewListStyle(): CSSObject {
   return {
     display: "grid",
     gap: 0,
@@ -268,11 +268,7 @@ function createOverlayStyle(theme: IDevtoolsTheme, top: number, height: number):
   };
 }
 
-function createPreviewStyle(
-  theme: IDevtoolsTheme,
-  minimapPosition: DevtoolsMinimapPosition,
-  top: number,
-): CSSObject {
+function createPreviewStyle(theme: IDevtoolsTheme, minimapPosition: DevtoolsMinimapPosition, top: number): CSSObject {
   const horizontalPositionStyle: CSSObject =
     minimapPosition === "left"
       ? {

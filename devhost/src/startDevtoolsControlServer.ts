@@ -5,7 +5,7 @@ import { createConfiguredDevtoolsScript } from "./createConfiguredDevtoolsScript
 import type { DevtoolsComponentEditor } from "./devtoolsComponentEditor";
 import type { IAnnotationMarkerPayload, IAnnotationSubmitDetail } from "./devtools/features/annotationComposer/types";
 import type {
-  IStartTerminalSessionRequest,
+  StartTerminalSessionRequest,
   TerminalSessionClientMessage,
   TerminalSessionServerMessage,
 } from "./devtools/features/terminalSessions/types";
@@ -28,6 +28,7 @@ import type {
   ServiceLogSnapshotMessage,
   ServiceLogStream,
   ServiceLogUpdateMessage,
+  WebSocketMessageData,
 } from "./devtools/shared/types";
 import type { ILaunchedTerminalSession } from "./launchTerminalSession";
 import type { DevtoolsMinimapPosition, DevtoolsPosition } from "./stackTypes";
@@ -63,7 +64,7 @@ interface IStartDevtoolsControlServerOptions {
   projectRootPath: string;
   stackName: string;
   startTerminalSession?: (
-    request: IStartTerminalSessionRequest,
+    request: StartTerminalSessionRequest,
     onData: (data: Uint8Array) => void,
   ) => ILaunchedTerminalSession;
 }
@@ -183,7 +184,9 @@ export async function startDevtoolsControlServer(
 
       if (requestUrl.pathname === TERMINAL_SESSION_WEBSOCKET_PATH) {
         const sessionId: string | null = requestUrl.searchParams.get(TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME);
-        const requestControlToken: string | null = requestUrl.searchParams.get(DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME);
+        const requestControlToken: string | null = requestUrl.searchParams.get(
+          DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME,
+        );
 
         if (requestControlToken !== controlToken) {
           return new Response("Forbidden", { status: 403 });
@@ -214,7 +217,7 @@ export async function startDevtoolsControlServer(
       return new Response("Not Found", { status: 404 });
     },
     websocket: {
-      message(websocket: Bun.ServerWebSocket<DevtoolsWebSocketData>, message: string | ArrayBuffer | Uint8Array): void {
+      message(websocket: Bun.ServerWebSocket<DevtoolsWebSocketData>, message: WebSocketMessageData): void {
         if (websocket.data.topicName !== terminalSessionTopicName) {
           return;
         }
@@ -231,7 +234,10 @@ export async function startDevtoolsControlServer(
           return;
         }
 
-        const session: ITerminalSessionState | undefined = readTerminalSession(websocket.data.sessionId, terminalSessions);
+        const session: ITerminalSessionState | undefined = readTerminalSession(
+          websocket.data.sessionId,
+          terminalSessions,
+        );
 
         if (session === undefined) {
           websocket.send(JSON.stringify(createTerminalSessionErrorMessage("Terminal session is no longer available.")));
@@ -281,7 +287,10 @@ export async function startDevtoolsControlServer(
           return;
         }
 
-        const session: ITerminalSessionState | undefined = readTerminalSession(websocket.data.sessionId, terminalSessions);
+        const session: ITerminalSessionState | undefined = readTerminalSession(
+          websocket.data.sessionId,
+          terminalSessions,
+        );
 
         if (session === undefined) {
           websocket.send(JSON.stringify(createTerminalSessionErrorMessage("Terminal session is no longer available.")));
@@ -294,7 +303,9 @@ export async function startDevtoolsControlServer(
         websocket.send(JSON.stringify(createTerminalSessionSnapshotMessage(session.outputBuffer)));
 
         if (session.exited !== null) {
-          websocket.send(JSON.stringify(createTerminalSessionExitMessage(session.exited.exitCode, session.exited.signalCode)));
+          websocket.send(
+            JSON.stringify(createTerminalSessionExitMessage(session.exited.exitCode, session.exited.signalCode)),
+          );
         }
       },
       close(websocket: Bun.ServerWebSocket<DevtoolsWebSocketData>): void {
@@ -304,7 +315,10 @@ export async function startDevtoolsControlServer(
           return;
         }
 
-        const session: ITerminalSessionState | undefined = readTerminalSession(websocket.data.sessionId, terminalSessions);
+        const session: ITerminalSessionState | undefined = readTerminalSession(
+          websocket.data.sessionId,
+          terminalSessions,
+        );
 
         if (session === undefined) {
           return;
@@ -365,19 +379,16 @@ export async function startDevtoolsControlServer(
     publishTerminalSessionMessage(session, createTerminalSessionOutputMessage(outputChunk));
   }
 
-  function createTerminalSession(request: IStartTerminalSessionRequest): string {
+  function createTerminalSession(request: StartTerminalSessionRequest): string {
     const sessionId: string = crypto.randomUUID();
     const startTerminalSession =
       options.startTerminalSession ??
       (() => {
         throw new Error("Terminal session launching is not configured.");
       });
-    const launchedSession: ILaunchedTerminalSession = startTerminalSession(
-      request,
-      (data: Uint8Array): void => {
-        appendTerminalSessionOutput(sessionId, data);
-      },
-    );
+    const launchedSession: ILaunchedTerminalSession = startTerminalSession(request, (data: Uint8Array): void => {
+      appendTerminalSessionOutput(sessionId, data);
+    });
     const session: ITerminalSessionState = {
       close: launchedSession.close,
       decoder: new TextDecoder(),
@@ -512,7 +523,10 @@ function createTerminalSessionErrorMessage(message: string): TerminalSessionServ
   };
 }
 
-function createTerminalSessionExitMessage(exitCode: number | null, signalCode: string | null): TerminalSessionServerMessage {
+function createTerminalSessionExitMessage(
+  exitCode: number | null,
+  signalCode: string | null,
+): TerminalSessionServerMessage {
   return {
     exitCode,
     signalCode,
@@ -639,12 +653,13 @@ function isSourceLocation(value: unknown): value is ISourceLocation {
     typeof lineNumber === "number" &&
     Number.isInteger(lineNumber) &&
     lineNumber > 0 &&
-    (columnNumber === undefined || (typeof columnNumber === "number" && Number.isInteger(columnNumber) && columnNumber > 0)) &&
+    (columnNumber === undefined ||
+      (typeof columnNumber === "number" && Number.isInteger(columnNumber) && columnNumber > 0)) &&
     (componentName === undefined || typeof componentName === "string")
   );
 }
 
-function isStartTerminalSessionRequest(value: unknown): value is IStartTerminalSessionRequest {
+function isStartTerminalSessionRequest(value: unknown): value is StartTerminalSessionRequest {
   if (typeof value !== "object" || value === null) {
     return false;
   }

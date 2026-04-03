@@ -32,13 +32,17 @@ export function resolveLogPreviewLayout(options: IResolveLogPreviewLayoutOptions
   const resolvedBorderWidth: number = Math.max(0, Math.floor(options.borderWidth));
   const resolvedViewportHeight: number = Math.max(0, Math.floor(options.viewportHeight));
   const previewChromeHeight: number = resolvedBorderWidth * 2 + resolvedPreviewPadding * 2;
-  const availableListHeight: number = Math.max(0, resolvedViewportHeight - resolvedViewportPadding * 2 - previewChromeHeight);
+  const availableListHeight: number = Math.max(
+    0,
+    resolvedViewportHeight - resolvedViewportPadding * 2 - previewChromeHeight,
+  );
   const rowStride: number = resolvedRowHeight + resolvedRowGap;
   const rawVisibleRows: number = Math.max(
     minimumVisibleRows,
     Math.floor((availableListHeight + resolvedRowGap) / Math.max(1, rowStride)),
   );
-  const viewportMaximumVisibleRows: number = rawVisibleRows > 1 && rawVisibleRows % 2 === 0 ? rawVisibleRows - 1 : rawVisibleRows;
+  const viewportMaximumVisibleRows: number =
+    rawVisibleRows > 1 && rawVisibleRows % 2 === 0 ? rawVisibleRows - 1 : rawVisibleRows;
   const maximumVisibleRows: number = Math.min(preferredMaximumVisibleRows, viewportMaximumVisibleRows);
   const range: ILogPreviewRange | null = createLogPreviewRange(
     options.marks.length,
@@ -61,7 +65,10 @@ export function resolveLogPreviewLayout(options: IResolveLogPreviewLayoutOptions
       ? hoveredMarkCenter - previewHeight / 2
       : hoveredMarkCenter - (resolvedBorderWidth + resolvedPreviewPadding + hoveredRowOffset + resolvedRowHeight / 2);
   const minimumTop: number = resolvedViewportPadding;
-  const maximumTop: number = Math.max(resolvedViewportPadding, resolvedViewportHeight - resolvedViewportPadding - previewHeight);
+  const maximumTop: number = Math.max(
+    resolvedViewportPadding,
+    resolvedViewportHeight - resolvedViewportPadding - previewHeight,
+  );
   const top: number = Math.min(maximumTop, Math.max(minimumTop, desiredTop));
 
   return {

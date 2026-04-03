@@ -57,7 +57,11 @@ export async function cleanupStaleRegistrations(registrationsDirectoryPath: stri
       continue;
     }
 
-    await removeRouteFiles(registration.host, registrationsDirectoryPath, getRoutesDirectoryPath(registrationsDirectoryPath));
+    await removeRouteFiles(
+      registration.host,
+      registrationsDirectoryPath,
+      getRoutesDirectoryPath(registrationsDirectoryPath),
+    );
   }
 }
 
@@ -170,7 +174,9 @@ function isProcessAlive(processId: number): boolean {
   }
 }
 
-function isErrorWithCode(error: unknown): error is Error & { code: string } {
+type ErrorWithCode = Error & { code: string };
+
+function isErrorWithCode(error: unknown): error is ErrorWithCode {
   return error instanceof Error && typeof Reflect.get(error, "code") === "string";
 }
 
@@ -181,10 +187,30 @@ function parseRegistration(registrationText: string): IRegistration {
     throw new Error("Registration file is malformed.");
   }
 
-  const host: unknown = Reflect.get(parsedValue, "host");
-  const port: unknown = Reflect.get(parsedValue, "port");
-  const ownerPid: unknown = Reflect.get(parsedValue, "ownerPid");
-  const createdAt: unknown = Reflect.get(parsedValue, "createdAt");
+  // New interface for raw parsed registration
+  interface IRawRegistration {
+    host: unknown;
+    port: unknown;
+    ownerPid: unknown;
+    createdAt: unknown;
+  }
+
+  function isRawRegistration(value: unknown): value is IRawRegistration {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      "host" in value &&
+      "port" in value &&
+      "ownerPid" in value &&
+      "createdAt" in value
+    );
+  }
+
+  if (!isRawRegistration(parsedValue)) {
+    throw new Error("Registration file is malformed.");
+  }
+
+  const { host, port, ownerPid, createdAt } = parsedValue;
 
   if (
     typeof host !== "string" ||

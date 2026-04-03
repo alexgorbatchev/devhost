@@ -1,5 +1,5 @@
-import type { ITerminalSession } from "./types";
+import type { TerminalSession } from "./types";
 
-export function shouldAutoRemoveTerminalSession(session: ITerminalSession, hasExited: boolean): boolean {
+export function shouldAutoRemoveTerminalSession(session: TerminalSession, hasExited: boolean): boolean {
   return hasExited && session.behavior.shouldAutoRemoveOnExit;
 }

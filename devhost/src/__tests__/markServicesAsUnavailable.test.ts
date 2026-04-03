@@ -5,20 +5,23 @@ import { markServicesAsUnavailable } from "../devtools/features/serviceStatusPan
 describe("markServicesAsUnavailable", () => {
   test("marks every known service as unavailable", () => {
     expect(
-      markServicesAsUnavailable([
-        {
-          name: "hello-stack",
-          status: true,
-        },
-        {
-          name: "api",
-          status: true,
-        },
-        {
-          name: "worker",
-          status: false,
-        },
-      ], "hello-stack"),
+      markServicesAsUnavailable(
+        [
+          {
+            name: "hello-stack",
+            status: true,
+          },
+          {
+            name: "api",
+            status: true,
+          },
+          {
+            name: "worker",
+            status: false,
+          },
+        ],
+        "hello-stack",
+      ),
     ).toEqual([
       {
         name: "hello-stack",

@@ -7,7 +7,7 @@ import { AnnotationComposer } from "./features/annotationComposer";
 import { ComponentSourceMenu, useComponentSourceNavigation } from "./features/componentSourceNavigation";
 import { LogMinimap, useServiceLogs } from "./features/minimap";
 import { TerminalSessionTray, useTerminalSessions } from "./features/terminalSessions";
-import { ServiceStatusPanel, useServiceHealth } from "./features/serviceStatusPanel";
+import { ServiceStatusPanel, type PanelSide, useServiceHealth } from "./features/serviceStatusPanel";
 import {
   css,
   DEVTOOLS_ROOT_ID,
@@ -59,7 +59,7 @@ function AppContent(): JSX.Element {
   });
   const shouldRenderPanel: boolean = errorMessage !== null || services.length > 0;
   const shouldRenderMinimap: boolean = logEntries.length > 0;
-  const servicePanelSide: "left" | "right" = readPanelSide(devtoolsPosition);
+  const servicePanelSide: PanelSide = readPanelSide(devtoolsPosition);
   const cornerDockClassName: string = css({
     ...readVerticalPositionStyle(theme, devtoolsPosition),
     ...readHorizontalPositionStyle(theme, devtoolsMinimapPosition, devtoolsPosition, shouldRenderMinimap),
@@ -73,7 +73,7 @@ function AppContent(): JSX.Element {
   });
 
   return (
-    <div id={DEVTOOLS_ROOT_ID} data-devhost-devtools="" data-testid="App">
+    <div id={DEVTOOLS_ROOT_ID} data-devhost-devtools="" data-testid="AppContent">
       <AnnotationComposer agentDisplayName={agentDisplayName} onSubmit={submitAnnotation} stackName={stackName} />
       {componentMenu !== null ? (
         <ComponentSourceMenu
@@ -86,7 +86,7 @@ function AppContent(): JSX.Element {
           }}
         />
       ) : null}
-      <div class={cornerDockClassName} data-testid="App--corner-dock">
+      <div class={cornerDockClassName} data-testid="AppContent--corner-dock">
         {shouldRenderPanel ? (
           <ServiceStatusPanel errorMessage={errorMessage} panelSide={servicePanelSide} services={services} />
         ) : null}
@@ -132,15 +132,12 @@ function readHorizontalPositionStyle(
   return panelSide === "left" ? { left: overlaidOffset } : { right: overlaidOffset };
 }
 
-function readVerticalPositionStyle(
-  theme: IDevtoolsTheme,
-  devtoolsPosition: DevtoolsPosition,
-): CSSObject {
+function readVerticalPositionStyle(theme: IDevtoolsTheme, devtoolsPosition: DevtoolsPosition): CSSObject {
   return devtoolsPosition === "top-left" || devtoolsPosition === "top-right"
     ? { top: theme.spacing.sm }
     : { bottom: theme.spacing.sm };
 }
 
-function readPanelSide(devtoolsPosition: DevtoolsPosition): "left" | "right" {
+function readPanelSide(devtoolsPosition: DevtoolsPosition): PanelSide {
   return devtoolsPosition === "top-left" || devtoolsPosition === "bottom-left" ? "left" : "right";
 }

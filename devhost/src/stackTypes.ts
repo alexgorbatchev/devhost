@@ -1,5 +1,7 @@
 import type { DevtoolsComponentEditor } from "./devtoolsComponentEditor";
 
+export type SupportedSignal = "SIGINT" | "SIGTERM" | "SIGHUP";
+
 export type DevhostHealthConfig =
   | {
       tcp: number;
@@ -36,7 +38,7 @@ export interface IConfiguredDevhostAgent {
   kind: "configured";
 }
 
-export type IValidatedDevhostAgent = IDefaultDevhostAgent | IConfiguredDevhostAgent;
+export type ValidatedDevhostAgent = IDefaultDevhostAgent | IConfiguredDevhostAgent;
 
 export interface IDevhostManifest {
   agent?: IDevhostAgentConfig;
@@ -61,7 +63,7 @@ export interface IDevhostServiceConfig {
 }
 
 export interface IValidatedDevhostManifest {
-  agent: IValidatedDevhostAgent;
+  agent: ValidatedDevhostAgent;
   name: string;
   primaryService: string;
   manifestPath: string;
@@ -86,7 +88,7 @@ export interface IValidatedDevhostService {
 }
 
 export interface IResolvedDevhostManifest {
-  agent: IValidatedDevhostAgent;
+  agent: ValidatedDevhostAgent;
   name: string;
   primaryService: string;
   manifestPath: string;
@@ -133,3 +135,30 @@ export interface IInjectedServiceEnvironment {
   DEVHOST_STACK?: string;
   PORT?: string;
 }
+
+export type SignalHandlerCallback = (signal: SupportedSignal) => void;
+
+export interface ISignalHandlerRegistration {
+  handler: () => void;
+  signalName: SupportedSignal;
+}
+
+export type RuntimeMode = "manifest" | "single-service";
+
+export interface IServiceExitResult {
+  serviceName: string;
+  exitCode: number;
+}
+
+export interface ISignalRaceResult {
+  type: "signal";
+  signal: SupportedSignal;
+}
+
+export interface IExitRaceResult {
+  type: "exit";
+  serviceName: string;
+  exitCode: number;
+}
+
+export type RaceResult = ISignalRaceResult | IExitRaceResult;

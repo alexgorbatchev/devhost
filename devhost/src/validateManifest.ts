@@ -4,10 +4,7 @@ import { z } from "zod";
 
 import { defaultBindHost } from "./constants";
 import { createDefaultDevhostAgent } from "./createDefaultDevhostAgent";
-import {
-  defaultDevtoolsComponentEditor,
-  supportedDevtoolsComponentEditors,
-} from "./devtoolsComponentEditor";
+import { defaultDevtoolsComponentEditor, supportedDevtoolsComponentEditors } from "./devtoolsComponentEditor";
 import { isValidHost } from "./isValidHost";
 import type {
   DevhostPortConfig,
@@ -16,7 +13,7 @@ import type {
   IDevhostAgentConfig,
   IDevhostManifest,
   IDevhostServiceConfig,
-  IValidatedDevhostAgent,
+  ValidatedDevhostAgent,
   IValidatedDevhostManifest,
   IValidatedDevhostService,
 } from "./stackTypes";
@@ -114,7 +111,7 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
     validatedServices[serviceName] = validatedService;
   }
 
-  const validatedAgent: IValidatedDevhostAgent = validateAgent(parsedManifest.agent, manifestDirectoryPath, errors);
+  const validatedAgent: ValidatedDevhostAgent = validateAgent(parsedManifest.agent, manifestDirectoryPath, errors);
 
   if (errors.length > 0) {
     throw new Error(`Manifest validation failed:\n${errors.join("\n")}`);
@@ -138,7 +135,7 @@ function validateAgent(
   agentConfig: IDevhostAgentConfig | undefined,
   manifestDirectoryPath: string,
   errors: string[],
-): IValidatedDevhostAgent {
+): ValidatedDevhostAgent {
   if (agentConfig === undefined) {
     return createDefaultDevhostAgent();
   }

@@ -3,7 +3,7 @@ import assert from "node:assert";
 import { afterEach, describe, expect, test } from "bun:test";
 
 import type { IAnnotationSubmitDetail } from "../devtools/features/annotationComposer/types";
-import type { IStartTerminalSessionRequest } from "../devtools/features/terminalSessions/types";
+import type { StartTerminalSessionRequest } from "../devtools/features/terminalSessions/types";
 import {
   HEALTH_WEBSOCKET_PATH,
   INJECTED_SCRIPT_PATH,
@@ -14,8 +14,16 @@ import {
 import type { HealthResponse } from "../devtools/shared/types";
 import type { ILaunchedTerminalSession } from "../launchTerminalSession";
 import { startDevtoolsControlServer } from "../startDevtoolsControlServer";
+import type {
+  TestPromiseVoid,
+  TestResizeEvent,
+  TestSessionStartResponse,
+  TestTerminalDataHandler,
+  TestTerminalExitResolver,
+  TestTerminalStub,
+} from "./testTypes";
 
-const stopFunctions: Array<() => Promise<void>> = [];
+const stopFunctions: Array<TestPromiseVoid> = [];
 const websockets: WebSocket[] = [];
 
 afterEach(async () => {
@@ -24,7 +32,7 @@ afterEach(async () => {
   }
 
   await Promise.all(
-    stopFunctions.splice(0).map(async (stop): Promise<void> => {
+    stopFunctions.splice(0).map(async (stop: TestPromiseVoid): Promise<void> => {
       await stop();
     }),
   );
@@ -131,7 +139,7 @@ describe("startDevtoolsControlServer", () => {
   });
 
   test("starts a terminal session for submitted annotations", async () => {
-    const terminalStub = createTerminalStub();
+    const terminalStub: TestTerminalStub = createTerminalStub();
     const controlServer = await startDevtoolsControlServer({
       agentDisplayName: "Pi",
       componentEditor: "vscode",
@@ -149,19 +157,22 @@ describe("startDevtoolsControlServer", () => {
 
     stopFunctions.push(controlServer.stop);
 
-    const annotationRequest: IStartTerminalSessionRequest = {
+    const annotationRequest: StartTerminalSessionRequest = {
       annotation: createAnnotationDetail(),
       kind: "agent",
     };
     const controlToken: string = await readControlToken(controlServer.port);
-    const startResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${TERMINAL_SESSION_START_PATH}`, {
-      body: JSON.stringify(annotationRequest),
-      headers: {
-        "content-type": "application/json",
-        "x-devhost-control-token": controlToken,
+    const startResponse: Response = await fetch(
+      `http://127.0.0.1:${controlServer.port}${TERMINAL_SESSION_START_PATH}`,
+      {
+        body: JSON.stringify(annotationRequest),
+        headers: {
+          "content-type": "application/json",
+          "x-devhost-control-token": controlToken,
+        },
+        method: "POST",
       },
-      method: "POST",
-    });
+    );
 
     expect(startResponse.status).toBe(200);
     expect(terminalStub.startedRequests).toEqual([annotationRequest]);
@@ -201,7 +212,7 @@ describe("startDevtoolsControlServer", () => {
   });
 
   test("starts a terminal session for editor navigation", async () => {
-    const terminalStub = createTerminalStub();
+    const terminalStub: TestTerminalStub = createTerminalStub();
     const controlServer = await startDevtoolsControlServer({
       agentDisplayName: "Pi",
       componentEditor: "neovim",
@@ -219,7 +230,7 @@ describe("startDevtoolsControlServer", () => {
 
     stopFunctions.push(controlServer.stop);
 
-    const componentSourceRequest: IStartTerminalSessionRequest = {
+    const componentSourceRequest: StartTerminalSessionRequest = {
       componentName: "SaveButton",
       kind: "editor",
       launcher: "neovim",
@@ -231,21 +242,24 @@ describe("startDevtoolsControlServer", () => {
       sourceLabel: "src/components/SaveButton.tsx:42:8",
     };
     const controlToken: string = await readControlToken(controlServer.port);
-    const startResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${TERMINAL_SESSION_START_PATH}`, {
-      body: JSON.stringify(componentSourceRequest),
-      headers: {
-        "content-type": "application/json",
-        "x-devhost-control-token": controlToken,
+    const startResponse: Response = await fetch(
+      `http://127.0.0.1:${controlServer.port}${TERMINAL_SESSION_START_PATH}`,
+      {
+        body: JSON.stringify(componentSourceRequest),
+        headers: {
+          "content-type": "application/json",
+          "x-devhost-control-token": controlToken,
+        },
+        method: "POST",
       },
-      method: "POST",
-    });
+    );
 
     expect(startResponse.status).toBe(200);
     expect(terminalStub.startedRequests).toEqual([componentSourceRequest]);
   });
 
   test("keeps the terminal websocket open after the process exits until the client closes it", async () => {
-    const terminalStub = createTerminalStub();
+    const terminalStub: TestTerminalStub = createTerminalStub();
     const controlServer = await startDevtoolsControlServer({
       agentDisplayName: "Pi",
       componentEditor: "vscode",
@@ -264,17 +278,20 @@ describe("startDevtoolsControlServer", () => {
     stopFunctions.push(controlServer.stop);
 
     const controlToken: string = await readControlToken(controlServer.port);
-    const startResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${TERMINAL_SESSION_START_PATH}`, {
-      body: JSON.stringify({
-        annotation: createAnnotationDetail(),
-        kind: "agent",
-      }),
-      headers: {
-        "content-type": "application/json",
-        "x-devhost-control-token": controlToken,
+    const startResponse: Response = await fetch(
+      `http://127.0.0.1:${controlServer.port}${TERMINAL_SESSION_START_PATH}`,
+      {
+        body: JSON.stringify({
+          annotation: createAnnotationDetail(),
+          kind: "agent",
+        }),
+        headers: {
+          "content-type": "application/json",
+          "x-devhost-control-token": controlToken,
+        },
+        method: "POST",
       },
-      method: "POST",
-    });
+    );
     const startResponseBody: unknown = await startResponse.json();
 
     expect(startResponse.status).toBe(200);
@@ -352,23 +369,15 @@ function createAnnotationDetail(): IAnnotationSubmitDetail {
   };
 }
 
-function createTerminalStub(): {
-  closeCount: number;
-  emit: (text: string) => void;
-  exitWith: (exitCode: number, signalCode: string | null) => void;
-  resizes: Array<{ cols: number; rows: number }>;
-  start: (request: IStartTerminalSessionRequest, onData: (data: Uint8Array) => void) => ILaunchedTerminalSession;
-  startedRequests: IStartTerminalSessionRequest[];
-  writes: string[];
-} {
+function createTerminalStub(): TestTerminalStub {
   const encoder: TextEncoder = new TextEncoder();
-  const resizes: Array<{ cols: number; rows: number }> = [];
-  const startedRequests: IStartTerminalSessionRequest[] = [];
+  const resizes: Array<TestResizeEvent> = [];
+  const startedRequests: StartTerminalSessionRequest[] = [];
   const writes: string[] = [];
   let closeCount: number = 0;
-  let dataHandler: ((data: Uint8Array) => void) | null = null;
+  let dataHandler: TestTerminalDataHandler | null = null;
   let exitCode: number | null = null;
-  let resolveExit: ((value: number) => void) | null = null;
+  let resolveExit: TestTerminalExitResolver | null = null;
   let signalCode: string | null = null;
   const exitPromise: Promise<number> = new Promise<number>((resolve): void => {
     resolveExit = resolve;
@@ -387,7 +396,7 @@ function createTerminalStub(): {
       resolveExit?.(nextExitCode);
     },
     resizes,
-    start: (request: IStartTerminalSessionRequest, onData: (data: Uint8Array) => void): ILaunchedTerminalSession => {
+    start: (request: StartTerminalSessionRequest, onData: TestTerminalDataHandler): ILaunchedTerminalSession => {
       startedRequests.push(request);
       dataHandler = onData;
 
@@ -437,19 +446,14 @@ function createSessionWebSocket(port: number, sessionId: string, controlToken: s
 function extractControlToken(injectedScript: string): string {
   const tokenMatch: RegExpMatchArray | null = injectedScript.match(/"controlToken":"([^"]+)"/);
 
-  if (tokenMatch === null) {
-    throw new Error("Expected the injected script to include a control token.");
-  }
+  assert(tokenMatch !== null, "Expected the injected script to include a control token.");
+  assert(tokenMatch[1] !== undefined, "Expected the injected script to include a capture group for the control token.");
 
   return tokenMatch[1];
 }
 
-function isSessionStartResponse(value: unknown): value is { sessionId: string } {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  const sessionId: unknown = Reflect.get(value, "sessionId");
+function isSessionStartResponse(value: unknown): value is TestSessionStartResponse {
+  const sessionId: unknown = Reflect.get(Object(value), "sessionId");
 
   return typeof sessionId === "string" && sessionId.length > 0;
 }
@@ -488,12 +492,12 @@ function waitForWebSocketMessage(websocket: WebSocket): Promise<string> {
     const handleMessage = (event: MessageEvent): void => {
       cleanup();
 
-      if (typeof event.data !== "string") {
-        reject(new Error("Expected a text websocket message."));
-        return;
+      try {
+        assert(typeof event.data === "string", "Expected a text websocket message.");
+        resolve(event.data);
+      } catch (error) {
+        reject(error);
       }
-
-      resolve(event.data);
     };
 
     const cleanup = (): void => {
