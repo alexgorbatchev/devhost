@@ -26,6 +26,12 @@ describe("createAnnotationSubmitDetail", () => {
         markerNumber: 1,
         nearbyElements: 'a "Docs"',
         nearbyText: "Save your work",
+        sourceLocation: {
+          columnNumber: 8,
+          componentName: "SaveButton",
+          fileName: "src/components/SaveButton.tsx",
+          lineNumber: 42,
+        },
       },
     ];
     const detail = createAnnotationSubmitDetail({

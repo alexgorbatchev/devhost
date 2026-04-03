@@ -212,6 +212,12 @@ function createAnnotationDetail(): IAnnotationSubmitDetail {
         nearbyElements: 'a "Docs"',
         nearbyText: "Save your work",
         selectedText: "Save changes",
+        sourceLocation: {
+          columnNumber: 8,
+          componentName: "SaveButton",
+          fileName: "src/components/SaveButton.tsx",
+          lineNumber: 42,
+        },
       },
     ],
     stackName: "hello-stack",

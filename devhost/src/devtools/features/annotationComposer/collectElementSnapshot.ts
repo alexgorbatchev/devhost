@@ -112,6 +112,7 @@ export function collectElementSnapshot(draft: ISelectedElementDraft): IAnnotatio
     nearbyElements: getNearbyElements(draft.element),
     nearbyText: getNearbyText(draft.element),
     selectedText: draft.selectedText,
+    sourceLocation: draft.sourceLocation,
   };
 }
 

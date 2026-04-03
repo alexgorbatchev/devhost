@@ -36,6 +36,12 @@ Its vital that when devtools are injected into the user's web application, CSS t
 - Keep cross-feature theme, config, websocket helpers, and shared types under `shared/`.
 - Do not leave feature-specific logic in the `src/devtools/` root when it belongs to a concrete feature folder.
 
+## Annotation metadata
+
+- Annotation capture may collect optional React development source metadata from host-page elements when the host app exposes it via React fiber debug/source fields.
+- Treat source metadata capture as best-effort host introspection, not a guaranteed contract across all frameworks, bundlers, or production builds.
+- Any annotation-selection console logging must be deliberate, clearly labeled, and limited to development debugging because it can expose host source paths.
+
 ## Implementation intent
 
 - Keep the theme small and explicit.

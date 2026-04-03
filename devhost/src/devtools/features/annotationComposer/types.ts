@@ -5,12 +5,20 @@ export interface IRectSnapshot {
   height: number;
 }
 
+export interface IAnnotationSourceLocation {
+  columnNumber?: number;
+  componentName?: string;
+  fileName: string;
+  lineNumber: number;
+}
+
 export interface ISelectedElementDraft {
   element: HTMLElement;
   elementName: string;
   elementPath: string;
   markerNumber: number;
   selectedText?: string;
+  sourceLocation?: IAnnotationSourceLocation;
 }
 
 export interface IAnnotationMarkerPayload {
@@ -27,6 +35,7 @@ export interface IAnnotationMarkerPayload {
   nearbyElements: string;
   nearbyText: string;
   selectedText?: string;
+  sourceLocation?: IAnnotationSourceLocation;
 }
 
 export interface IAnnotationSubmitDetail {

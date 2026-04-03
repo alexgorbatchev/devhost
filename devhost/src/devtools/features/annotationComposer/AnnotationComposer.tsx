@@ -7,6 +7,7 @@ import { DEVTOOLS_ROOT_ATTRIBUTE_NAME, DEVTOOLS_ROOT_ID } from "../../shared/con
 import type { IAnnotationSubmitResult } from "../piTerminal/types";
 import { collectElementSnapshot, identifyElement } from "./collectElementSnapshot";
 import { createAnnotationSubmitDetail } from "./createAnnotationSubmitDetail";
+import { getElementSourceLocation } from "./getElementSourceLocation";
 import { resolvePopupCoordinates } from "./resolvePopupCoordinates";
 import { resolveAnnotationTarget } from "./resolveAnnotationTarget";
 import type { IAnnotationSubmitDetail, ISelectedElementDraft } from "./types";
@@ -179,25 +180,25 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
       event.stopPropagation();
       event.stopImmediatePropagation();
 
+      if (
+        selectedElements.some((selection: ISelectedElementDraft): boolean => selection.element === interactionTarget)
+      ) {
+        return;
+      }
+
       const identifiedElement = identifyElement(interactionTarget);
       const selectedText: string | undefined = readSelectedText();
+      const nextSelection: ISelectedElementDraft = {
+        element: interactionTarget,
+        elementName: identifiedElement.name,
+        elementPath: identifiedElement.path,
+        markerNumber: selectedElements.length + 1,
+        selectedText,
+        sourceLocation: getElementSourceLocation(interactionTarget),
+      };
 
-      setSelectedElements((currentSelections: ISelectedElementDraft[]): ISelectedElementDraft[] => {
-        if (currentSelections.some((selection: ISelectedElementDraft): boolean => selection.element === interactionTarget)) {
-          return currentSelections;
-        }
-
-        return [
-          ...currentSelections,
-          {
-            element: interactionTarget,
-            elementName: identifiedElement.name,
-            elementPath: identifiedElement.path,
-            markerNumber: currentSelections.length + 1,
-            selectedText,
-          },
-        ];
-      });
+      console.log("[devhost] Annotation element metadata", collectElementSnapshot(nextSelection));
+      setSelectedElements([...selectedElements, nextSelection]);
       hoveredElementReference.current = interactionTarget;
       setHoveredElement(interactionTarget);
       setLayoutVersion((currentVersion: number): number => currentVersion + 1);
@@ -210,7 +211,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
       document.removeEventListener("mousedown", handleMouseDown, true);
       document.removeEventListener("click", handleDocumentClick, true);
     };
-  }, [isSelectionMode]);
+  }, [isSelectionMode, selectedElements]);
 
   useEffect(() => {
     if (!hasDraft) {

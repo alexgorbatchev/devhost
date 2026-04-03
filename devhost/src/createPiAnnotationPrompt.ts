@@ -13,6 +13,7 @@ export function createPiAnnotationPrompt(annotation: IAnnotationSubmitDetail): s
         `- Nearby text: ${marker.nearbyText || "(none)"}`,
         `- Nearby elements: ${marker.nearbyElements || "(none)"}`,
         `- Selected text: ${marker.selectedText ?? "(none)"}`,
+        `- Source location: ${formatAnnotationSourceLocation(marker)}`,
         `- Fixed positioned: ${marker.isFixed ? "yes" : "no"}`,
         `- Bounding box: x=${marker.boundingBox.x}, y=${marker.boundingBox.y}, width=${marker.boundingBox.width}, height=${marker.boundingBox.height}`,
         "- Computed styles:",
@@ -47,4 +48,19 @@ export function createPiAnnotationPrompt(annotation: IAnnotationSubmitDetail): s
     "- If the request is ambiguous, ask clarifying questions before making irreversible changes.",
     "- Prefer correct, durable fixes over quick workarounds.",
   ].join("\n");
+}
+
+function formatAnnotationSourceLocation(marker: IAnnotationMarkerPayload): string {
+  const sourceLocation = marker.sourceLocation;
+
+  if (sourceLocation === undefined) {
+    return "(not available)";
+  }
+
+  const columnSuffix: string =
+    sourceLocation.columnNumber === undefined ? "" : `:${sourceLocation.columnNumber}`;
+  const componentPrefix: string =
+    sourceLocation.componentName === undefined ? "" : `${sourceLocation.componentName} @ `;
+
+  return `${componentPrefix}${sourceLocation.fileName}:${sourceLocation.lineNumber}${columnSuffix}`;
 }

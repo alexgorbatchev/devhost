@@ -28,6 +28,12 @@ describe("createPiAnnotationPrompt", () => {
           nearbyElements: 'a "Docs"',
           nearbyText: "Save your work",
           selectedText: "Save changes",
+          sourceLocation: {
+            columnNumber: 8,
+            componentName: "SaveButton",
+            fileName: "src/components/SaveButton.tsx",
+            lineNumber: 42,
+          },
         },
       ],
       stackName: "hello-stack",
@@ -59,6 +65,7 @@ describe("createPiAnnotationPrompt", () => {
       - Nearby text: Save your work
       - Nearby elements: a \"Docs\"
       - Selected text: Save changes
+      - Source location: SaveButton @ src/components/SaveButton.tsx:42:8
       - Fixed positioned: no
       - Bounding box: x=16, y=40, width=120, height=24
       - Computed styles:
