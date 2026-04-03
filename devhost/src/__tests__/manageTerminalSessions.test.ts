@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { createTerminalSession } from "../devtools/features/terminalSessions/createTerminalSession";
 import type { ITerminalSession } from "../devtools/features/terminalSessions/types";
 import {
   appendTerminalSession,
@@ -8,7 +9,7 @@ import {
   removeTerminalSession,
 } from "../devtools/features/terminalSessions/manageTerminalSessions";
 
-const FIRST_SESSION: ITerminalSession = {
+const FIRST_SESSION: ITerminalSession = createTerminalSession("session-a", {
   annotation: {
     comment: "First annotation",
     markers: [],
@@ -17,29 +18,39 @@ const FIRST_SESSION: ITerminalSession = {
     title: "Page A",
     url: "https://example.test/a",
   },
-  isExpanded: false,
-  kind: "pi-annotation",
-  sessionId: "session-a",
-};
+  kind: "agent",
+  launcher: "pi",
+});
+
 const SECOND_SESSION: ITerminalSession = {
-  annotation: {
-    comment: "Second annotation",
-    markers: [],
-    stackName: "stack-b",
-    submittedAt: 2,
-    title: "Page B",
-    url: "https://example.test/b",
-  },
+  ...createTerminalSession("session-b", {
+    annotation: {
+      comment: "Second annotation",
+      markers: [],
+      stackName: "stack-b",
+      submittedAt: 2,
+      title: "Page B",
+      url: "https://example.test/b",
+    },
+    kind: "agent",
+    launcher: "pi",
+  }),
   isExpanded: true,
-  kind: "pi-annotation",
-  sessionId: "session-b",
 };
+
 const THIRD_SESSION: ITerminalSession = {
-  componentName: "PrimaryButton",
+  ...createTerminalSession("session-c", {
+    componentName: "PrimaryButton",
+    kind: "editor",
+    launcher: "neovim",
+    source: {
+      columnNumber: 8,
+      fileName: "src/components/PrimaryButton.tsx",
+      lineNumber: 42,
+    },
+    sourceLabel: "src/components/PrimaryButton.tsx:42:8",
+  }),
   isExpanded: false,
-  kind: "component-source",
-  sessionId: "session-c",
-  sourceLabel: "src/components/PrimaryButton.tsx:42:8",
 };
 
 describe("manageTerminalSessions", () => {
@@ -52,13 +63,13 @@ describe("manageTerminalSessions", () => {
   });
 
   test("collapses existing expanded sessions when appending a new expanded session", () => {
-    const expandedComponentSourceSession: ITerminalSession = {
+    const expandedEditorSession: ITerminalSession = {
       ...THIRD_SESSION,
       isExpanded: true,
     };
 
-    expect(appendTerminalSession([FIRST_SESSION, SECOND_SESSION], expandedComponentSourceSession)).toEqual([
-      expandedComponentSourceSession,
+    expect(appendTerminalSession([FIRST_SESSION, SECOND_SESSION], expandedEditorSession)).toEqual([
+      expandedEditorSession,
       FIRST_SESSION,
       {
         ...SECOND_SESSION,

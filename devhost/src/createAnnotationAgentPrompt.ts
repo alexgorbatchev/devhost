@@ -1,6 +1,6 @@
 import type { IAnnotationSubmitDetail, IAnnotationMarkerPayload } from "./devtools/features/annotationComposer/types";
 
-export function createPiAnnotationPrompt(annotation: IAnnotationSubmitDetail): string {
+export function createAnnotationAgentPrompt(annotation: IAnnotationSubmitDetail): string {
   const markerSections: string = annotation.markers
     .map((marker: IAnnotationMarkerPayload): string => {
       const sectionLines: string[] = [

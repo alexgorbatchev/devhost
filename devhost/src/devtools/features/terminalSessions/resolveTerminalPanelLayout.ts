@@ -1,11 +1,4 @@
-import { readTerminalSessionKindConfig } from "./readTerminalSessionKindConfig";
-import type { ITerminalSession } from "./types";
-
-const maximumPanelHeight: number = 720;
-const maximumPanelWidth: number = 1040;
-const minimumPanelHeight: number = 240;
-const minimumPanelWidth: number = 320;
-const panelViewportMargin: number = 24;
+import type { ITerminalSessionBehavior } from "./types";
 
 export interface IPanelSize {
   height: number;
@@ -18,17 +11,22 @@ export interface IResolvedTerminalPanelLayout {
   trayPanelSize: IPanelSize;
 }
 
+const minimumPanelHeight: number = 240;
+const minimumPanelWidth: number = 320;
+const panelViewportMargin: number = 80;
+const preferredPanelHeight: number = 720;
+const preferredPanelWidth: number = 1040;
+
 export function resolveTerminalPanelLayout(
-  sessionKind: ITerminalSession["kind"],
+  behavior: ITerminalSessionBehavior,
   viewportWidth: number,
   viewportHeight: number,
 ): IResolvedTerminalPanelLayout {
   const trayPanelSize: IPanelSize = {
-    height: Math.max(minimumPanelHeight, Math.min(maximumPanelHeight, viewportHeight - panelViewportMargin)),
-    width: Math.max(minimumPanelWidth, Math.min(maximumPanelWidth, viewportWidth - panelViewportMargin)),
+    height: Math.max(minimumPanelHeight, Math.min(preferredPanelHeight, viewportHeight - panelViewportMargin)),
+    width: Math.max(minimumPanelWidth, Math.min(preferredPanelWidth, viewportWidth - panelViewportMargin)),
   };
-  const sessionKindConfig = readTerminalSessionKindConfig(sessionKind);
-  const isFullscreenExpanded: boolean = sessionKindConfig.isFullscreenExpanded;
+  const isFullscreenExpanded: boolean = behavior.isFullscreenExpanded;
 
   return {
     expandedPanelSize: isFullscreenExpanded

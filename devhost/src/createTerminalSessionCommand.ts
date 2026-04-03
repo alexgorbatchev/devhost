@@ -1,8 +1,7 @@
 import type { DevtoolsComponentEditor } from "./devtoolsComponentEditor";
 import type { IStartTerminalSessionRequest } from "./devtools/features/terminalSessions/types";
-import { createNeovimSessionCommand } from "./createNeovimSessionCommand";
-import { createPiAnnotationPrompt } from "./createPiAnnotationPrompt";
-import { createPiTerminalSessionCommand } from "./createPiTerminalSessionCommand";
+import { createAgentTerminalCommand } from "./createAgentTerminalCommand";
+import { createEditorTerminalCommand } from "./createEditorTerminalCommand";
 
 interface ICreateTerminalSessionCommandOptions {
   componentEditor: DevtoolsComponentEditor;
@@ -11,13 +10,13 @@ interface ICreateTerminalSessionCommandOptions {
 }
 
 export function createTerminalSessionCommand(options: ICreateTerminalSessionCommandOptions): string[] {
-  if (options.request.kind === "pi-annotation") {
-    return createPiTerminalSessionCommand(createPiAnnotationPrompt(options.request.annotation));
+  if (options.request.kind === "agent") {
+    return createAgentTerminalCommand(options.request);
   }
 
-  if (options.componentEditor !== "neovim") {
-    throw new Error('Component source terminal sessions require devtoolsComponentEditor = "neovim".');
-  }
-
-  return createNeovimSessionCommand(options.request.source, options.projectRootPath);
+  return createEditorTerminalCommand({
+    componentEditor: options.componentEditor,
+    projectRootPath: options.projectRootPath,
+    request: options.request,
+  });
 }

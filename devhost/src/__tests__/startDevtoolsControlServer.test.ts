@@ -148,7 +148,8 @@ describe("startDevtoolsControlServer", () => {
 
     const annotationRequest: IStartTerminalSessionRequest = {
       annotation: createAnnotationDetail(),
-      kind: "pi-annotation",
+      kind: "agent",
+      launcher: "pi",
     };
     const controlToken: string = await readControlToken(controlServer.port);
     const startResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${TERMINAL_SESSION_START_PATH}`, {
@@ -197,7 +198,7 @@ describe("startDevtoolsControlServer", () => {
     expect(terminalStub.closeCount).toBe(1);
   });
 
-  test("starts a terminal session for component-source navigation", async () => {
+  test("starts a terminal session for editor navigation", async () => {
     const terminalStub = createTerminalStub();
     const controlServer = await startDevtoolsControlServer({
       componentEditor: "neovim",
@@ -217,7 +218,8 @@ describe("startDevtoolsControlServer", () => {
 
     const componentSourceRequest: IStartTerminalSessionRequest = {
       componentName: "SaveButton",
-      kind: "component-source",
+      kind: "editor",
+      launcher: "neovim",
       source: {
         columnNumber: 8,
         fileName: "src/components/SaveButton.tsx",
@@ -261,7 +263,8 @@ describe("startDevtoolsControlServer", () => {
     const startResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${TERMINAL_SESSION_START_PATH}`, {
       body: JSON.stringify({
         annotation: createAnnotationDetail(),
-        kind: "pi-annotation",
+        kind: "agent",
+        launcher: "pi",
       }),
       headers: {
         "content-type": "application/json",

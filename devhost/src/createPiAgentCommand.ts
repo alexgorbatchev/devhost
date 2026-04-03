@@ -4,6 +4,6 @@ const autoExitOnAgentEndExtensionPath: string = fileURLToPath(
   import.meta.resolve("./registerAutoExitOnAgentEndExtension.ts"),
 );
 
-export function createPiTerminalSessionCommand(prompt: string): string[] {
+export function createPiAgentCommand(prompt: string): string[] {
   return ["pi", "-e", autoExitOnAgentEndExtensionPath, prompt];
 }

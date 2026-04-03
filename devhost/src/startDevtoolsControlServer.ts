@@ -641,19 +641,25 @@ function isStartTerminalSessionRequest(value: unknown): value is IStartTerminalS
   }
 
   const requestKind: unknown = Reflect.get(value, "kind");
+  const launcher: unknown = Reflect.get(value, "launcher");
 
-  if (requestKind === "pi-annotation") {
+  if (requestKind === "agent") {
     const annotation: unknown = Reflect.get(value, "annotation");
 
-    return isAnnotationSubmitDetail(annotation);
+    return launcher === "pi" && isAnnotationSubmitDetail(annotation);
   }
 
-  if (requestKind === "component-source") {
+  if (requestKind === "editor") {
     const componentName: unknown = Reflect.get(value, "componentName");
     const source: unknown = Reflect.get(value, "source");
     const sourceLabel: unknown = Reflect.get(value, "sourceLabel");
 
-    return typeof componentName === "string" && isSourceLocation(source) && typeof sourceLabel === "string";
+    return (
+      launcher === "neovim" &&
+      typeof componentName === "string" &&
+      isSourceLocation(source) &&
+      typeof sourceLabel === "string"
+    );
   }
 
   return false;

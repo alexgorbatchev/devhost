@@ -4,13 +4,13 @@ import { DEVTOOLS_CONTROL_TOKEN_HEADER_NAME, TERMINAL_SESSION_START_PATH } from 
 import { readDevtoolsControlToken } from "../../shared/readDevtoolsControlToken";
 import type { IComponentSourceMenuItem } from "../componentSourceNavigation/types";
 import type { IAnnotationSubmitDetail } from "../annotationComposer/types";
+import { createTerminalSession } from "./createTerminalSession";
 import {
   appendTerminalSession,
   expandTerminalSession,
   minimizeTerminalSession,
   removeTerminalSession,
 } from "./manageTerminalSessions";
-import { readTerminalSessionKindConfig } from "./readTerminalSessionKindConfig";
 import type {
   IStartTerminalSessionRequest,
   IStartTerminalSessionResponse,
@@ -49,10 +49,7 @@ export function useTerminalSessions(): IUseTerminalSessionsResult {
   }, []);
 
   const startSession = useCallback(
-    async (
-      request: IStartTerminalSessionRequest,
-      createSession: (sessionId: string) => ITerminalSession,
-    ): Promise<ITerminalSessionStartResult> => {
+    async (request: IStartTerminalSessionRequest): Promise<ITerminalSessionStartResult> => {
       try {
         const response = await fetch(TERMINAL_SESSION_START_PATH, {
           body: JSON.stringify(request),
@@ -80,7 +77,7 @@ export function useTerminalSessions(): IUseTerminalSessionsResult {
         }
 
         setTerminalSessions((currentSessions: ITerminalSession[]): ITerminalSession[] => {
-          return appendTerminalSession(currentSessions, createSession(responseBody.sessionId));
+          return appendTerminalSession(currentSessions, createTerminalSession(responseBody.sessionId, request));
         });
 
         return {
@@ -97,41 +94,22 @@ export function useTerminalSessions(): IUseTerminalSessionsResult {
   );
 
   const submitAnnotation = useCallback(async (annotation: IAnnotationSubmitDetail): Promise<ITerminalSessionStartResult> => {
-    return await startSession(
-      {
-        annotation,
-        kind: "pi-annotation",
-      },
-      (sessionId: string): ITerminalSession => {
-        return {
-          annotation,
-          isExpanded: readTerminalSessionKindConfig("pi-annotation").defaultIsExpanded,
-          kind: "pi-annotation",
-          sessionId,
-        };
-      },
-    );
+    return await startSession({
+      annotation,
+      kind: "agent",
+      launcher: "pi",
+    });
   }, [startSession]);
 
   const startComponentSourceSession = useCallback(
     async (menuItem: IComponentSourceMenuItem): Promise<ITerminalSessionStartResult> => {
-      return await startSession(
-        {
-          componentName: menuItem.displayName,
-          kind: "component-source",
-          source: menuItem.source,
-          sourceLabel: menuItem.sourceLabel,
-        },
-        (sessionId: string): ITerminalSession => {
-          return {
-            componentName: menuItem.displayName,
-            isExpanded: readTerminalSessionKindConfig("component-source").defaultIsExpanded,
-            kind: "component-source",
-            sessionId,
-            sourceLabel: menuItem.sourceLabel,
-          };
-        },
-      );
+      return await startSession({
+        componentName: menuItem.displayName,
+        kind: "editor",
+        launcher: "neovim",
+        source: menuItem.source,
+        sourceLabel: menuItem.sourceLabel,
+      });
     },
     [startSession],
   );

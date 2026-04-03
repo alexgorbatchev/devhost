@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
+import { createAnnotationAgentPrompt } from "../createAnnotationAgentPrompt";
+import { createPiAgentCommand } from "../createPiAgentCommand";
 import { createTerminalSessionCommand } from "../createTerminalSessionCommand";
-import { createPiAnnotationPrompt } from "../createPiAnnotationPrompt";
-import { createPiTerminalSessionCommand } from "../createPiTerminalSessionCommand";
 import type { IAnnotationSubmitDetail } from "../devtools/features/annotationComposer/types";
 
 describe("createTerminalSessionCommand", () => {
-  test("builds the Pi terminal command for annotation sessions", () => {
+  test("builds the agent terminal command for annotation sessions", () => {
     const annotation: IAnnotationSubmitDetail = {
       comment: "Fix the primary button spacing.",
       markers: [],
@@ -22,20 +22,22 @@ describe("createTerminalSessionCommand", () => {
         projectRootPath: "/tmp/project",
         request: {
           annotation,
-          kind: "pi-annotation",
+          kind: "agent",
+          launcher: "pi",
         },
       }),
-    ).toEqual(createPiTerminalSessionCommand(createPiAnnotationPrompt(annotation)));
+    ).toEqual(createPiAgentCommand(createAnnotationAgentPrompt(annotation)));
   });
 
-  test("builds the Neovim command for component-source sessions", () => {
+  test("builds the Neovim command for editor sessions", () => {
     expect(
       createTerminalSessionCommand({
         componentEditor: "neovim",
         projectRootPath: "/tmp/project",
         request: {
           componentName: "PrimaryButton",
-          kind: "component-source",
+          kind: "editor",
+          launcher: "neovim",
           source: {
             columnNumber: 8,
             fileName: "webpack:///./src/components/PrimaryButton.tsx",
@@ -47,14 +49,15 @@ describe("createTerminalSessionCommand", () => {
     ).toEqual(["nvim", "-c", "call cursor(42, 8)", "--", "/tmp/project/src/components/PrimaryButton.tsx"]);
   });
 
-  test("rejects component-source sessions when Neovim is not configured", () => {
+  test("rejects editor sessions when Neovim is not configured", () => {
     expect(() => {
       createTerminalSessionCommand({
         componentEditor: "cursor",
         projectRootPath: "/tmp/project",
         request: {
           componentName: "PrimaryButton",
-          kind: "component-source",
+          kind: "editor",
+          launcher: "neovim",
           source: {
             fileName: "src/components/PrimaryButton.tsx",
             lineNumber: 42,
@@ -62,6 +65,6 @@ describe("createTerminalSessionCommand", () => {
           sourceLabel: "src/components/PrimaryButton.tsx:42:1",
         },
       });
-    }).toThrow('Component source terminal sessions require devtoolsComponentEditor = "neovim".');
+    }).toThrow('Editor terminal sessions require devtoolsComponentEditor = "neovim".');
   });
 });

@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
-import { createPiAnnotationPrompt } from "../createPiAnnotationPrompt";
+import { createAnnotationAgentPrompt } from "../createAnnotationAgentPrompt";
 
-describe("createPiAnnotationPrompt", () => {
-  test("renders the annotation detail into a structured Pi prompt", () => {
-    const prompt: string = createPiAnnotationPrompt({
+describe("createAnnotationAgentPrompt", () => {
+  test("renders the annotation detail into a structured agent prompt", () => {
+    const prompt: string = createAnnotationAgentPrompt({
       comment: "Replace #1 with the new primary CTA and keep #2 aligned.",
       markers: [
         {

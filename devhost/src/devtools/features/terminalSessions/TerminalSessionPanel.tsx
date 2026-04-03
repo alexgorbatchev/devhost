@@ -15,10 +15,9 @@ import {
 import { readDevtoolsControlToken } from "../../shared/readDevtoolsControlToken";
 import { createXtermTheme } from "./createXtermTheme";
 import { readTerminalSessionPrimaryAction } from "./readTerminalSessionPrimaryAction";
-import { readTerminalSessionSummary, type ITerminalSessionSummary } from "./readTerminalSessionSummary";
 import { resolveTerminalPanelLayout, type IPanelSize } from "./resolveTerminalPanelLayout";
 import { shouldAutoRemoveTerminalSession } from "./shouldAutoRemoveTerminalSession";
-import type { ITerminalSession, TerminalSessionClientMessage, TerminalSessionServerMessage } from "./types";
+import type { ITerminalSession, ITerminalSessionSummary, TerminalSessionClientMessage, TerminalSessionServerMessage } from "./types";
 
 interface ITerminalSessionPanelProps {
   isExpanded: boolean;
@@ -62,7 +61,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
   });
   const [statusText, setStatusText] = useState<string>("Connecting…");
   const terminalPanelLayout = resolveTerminalPanelLayout(
-    props.session.kind,
+    props.session.behavior,
     viewportSize.width,
     viewportSize.height,
   );
@@ -326,11 +325,11 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
   }, [hasExited, props.onRemove, props.session]);
 
   const primaryAction = readTerminalSessionPrimaryAction(hasExited);
-  const sessionSummary: ITerminalSessionSummary = readTerminalSessionSummary(props.session);
-  const annotationClassName: string = css(createAnnotationStyle(theme));
-  const annotationCommentClassName: string = css(createAnnotationCommentStyle(theme));
-  const annotationEyebrowClassName: string = css(createAnnotationEyebrowStyle(theme));
-  const annotationMetaClassName: string = css(createAnnotationMetaStyle(theme));
+  const sessionSummary: ITerminalSessionSummary = props.session.summary;
+  const summaryClassName: string = css(createSummaryStyle(theme));
+  const summaryHeadlineClassName: string = css(createSummaryHeadlineStyle(theme));
+  const summaryEyebrowClassName: string = css(createSummaryEyebrowStyle(theme));
+  const summaryMetaClassName: string = css(createSummaryMetaStyle(theme));
   const buttonGroupClassName: string = css(buttonGroupStyle);
   const chromeClassName: string = css(
     createChromeStyle(theme, activePanelSize, terminalPanelLayout.isFullscreenExpanded && props.isExpanded),
@@ -392,10 +391,10 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
         ) : null}
       </header>
       {props.isExpanded ? (
-        <section class={annotationClassName} data-testid="TerminalSessionPanel--annotation">
-          <span class={annotationEyebrowClassName}>{sessionSummary.eyebrow}</span>
-          <strong class={annotationCommentClassName}>{sessionSummary.headline}</strong>
-          <div class={annotationMetaClassName}>
+        <section class={summaryClassName} data-testid="TerminalSessionPanel--summary">
+          <span class={summaryEyebrowClassName}>{sessionSummary.eyebrow}</span>
+          <strong class={summaryHeadlineClassName}>{sessionSummary.headline}</strong>
+          <div class={summaryMetaClassName}>
             {sessionSummary.meta.map((entry: string) => {
               return <span key={entry}>{entry}</span>;
             })}
@@ -471,14 +470,14 @@ function appendTerminalSessionParameters(websocketUrl: URL, sessionId: string): 
   return websocketUrl;
 }
 
-function createAnnotationCommentStyle(theme: IDevtoolsTheme): CSSObject {
+function createSummaryHeadlineStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     fontSize: theme.fontSizes.lg,
     lineHeight: 1.45,
   };
 }
 
-function createAnnotationEyebrowStyle(theme: IDevtoolsTheme): CSSObject {
+function createSummaryEyebrowStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     color: theme.colors.mutedForeground,
     fontSize: theme.fontSizes.sm,
@@ -487,7 +486,7 @@ function createAnnotationEyebrowStyle(theme: IDevtoolsTheme): CSSObject {
   };
 }
 
-function createAnnotationMetaStyle(theme: IDevtoolsTheme): CSSObject {
+function createSummaryMetaStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     display: "flex",
     flexWrap: "wrap",
@@ -497,7 +496,7 @@ function createAnnotationMetaStyle(theme: IDevtoolsTheme): CSSObject {
   };
 }
 
-function createAnnotationStyle(theme: IDevtoolsTheme): CSSObject {
+function createSummaryStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     display: "grid",
     gap: theme.spacing.xs,

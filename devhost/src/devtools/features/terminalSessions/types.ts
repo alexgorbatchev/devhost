@@ -1,19 +1,39 @@
 import type { ISourceLocation } from "../../shared/sourceLocation";
 import type { IAnnotationSubmitDetail } from "../annotationComposer/types";
 
-export interface IStartAnnotationTerminalSessionRequest {
-  annotation: IAnnotationSubmitDetail;
-  kind: "pi-annotation";
+export interface ITerminalSessionBehavior {
+  defaultIsExpanded: boolean;
+  isFullscreenExpanded: boolean;
+  shouldAutoRemoveOnExit: boolean;
 }
 
-export interface IStartComponentSourceSessionRequest {
+export interface ITerminalSessionSummary {
+  eyebrow: string;
+  headline: string;
+  meta: string[];
+  terminalTitle: string;
+  trayTooltipPrimary: string;
+  trayTooltipSecondary?: string;
+}
+
+export type AgentTerminalLauncher = "pi";
+export type EditorTerminalLauncher = "neovim";
+
+export interface IStartAgentTerminalSessionRequest {
+  annotation: IAnnotationSubmitDetail;
+  kind: "agent";
+  launcher: AgentTerminalLauncher;
+}
+
+export interface IStartEditorTerminalSessionRequest {
   componentName: string;
-  kind: "component-source";
+  kind: "editor";
+  launcher: EditorTerminalLauncher;
   source: ISourceLocation;
   sourceLabel: string;
 }
 
-export type IStartTerminalSessionRequest = IStartAnnotationTerminalSessionRequest | IStartComponentSourceSessionRequest;
+export type IStartTerminalSessionRequest = IStartAgentTerminalSessionRequest | IStartEditorTerminalSessionRequest;
 
 export interface IStartTerminalSessionResponse {
   sessionId: string;
@@ -25,22 +45,26 @@ export interface ITerminalSessionStartResult {
 }
 
 interface ITerminalSessionBase {
+  behavior: ITerminalSessionBehavior;
   isExpanded: boolean;
   sessionId: string;
+  summary: ITerminalSessionSummary;
 }
 
-export interface IAnnotationTerminalSession extends ITerminalSessionBase {
+export interface IAgentTerminalSession extends ITerminalSessionBase {
   annotation: IAnnotationSubmitDetail;
-  kind: "pi-annotation";
+  kind: "agent";
+  launcher: AgentTerminalLauncher;
 }
 
-export interface IComponentSourceTerminalSession extends ITerminalSessionBase {
+export interface IEditorTerminalSession extends ITerminalSessionBase {
   componentName: string;
-  kind: "component-source";
+  kind: "editor";
+  launcher: EditorTerminalLauncher;
   sourceLabel: string;
 }
 
-export type ITerminalSession = IAnnotationTerminalSession | IComponentSourceTerminalSession;
+export type ITerminalSession = IAgentTerminalSession | IEditorTerminalSession;
 
 export interface ITerminalSessionInputMessage {
   data: string;

@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
+import { createTerminalSession } from "../createTerminalSession";
 import { shouldAutoRemoveTerminalSession } from "../shouldAutoRemoveTerminalSession";
-import type { ITerminalSession } from "../types";
 
-const PI_ANNOTATION_SESSION: ITerminalSession = {
+const AGENT_TERMINAL_SESSION = createTerminalSession("session-a", {
   annotation: {
     comment: "Fix button",
     markers: [],
@@ -12,29 +12,32 @@ const PI_ANNOTATION_SESSION: ITerminalSession = {
     title: "Page A",
     url: "https://example.test/a",
   },
-  isExpanded: true,
-  kind: "pi-annotation",
-  sessionId: "session-a",
-};
+  kind: "agent",
+  launcher: "pi",
+});
 
-const COMPONENT_SOURCE_SESSION: ITerminalSession = {
+const EDITOR_TERMINAL_SESSION = createTerminalSession("session-b", {
   componentName: "PrimaryButton",
-  isExpanded: true,
-  kind: "component-source",
-  sessionId: "session-b",
+  kind: "editor",
+  launcher: "neovim",
+  source: {
+    columnNumber: 8,
+    fileName: "src/components/PrimaryButton.tsx",
+    lineNumber: 42,
+  },
   sourceLabel: "src/components/PrimaryButton.tsx:42:8",
-};
+});
 
 describe("shouldAutoRemoveTerminalSession", () => {
-  test("does not auto-remove a running component-source session", () => {
-    expect(shouldAutoRemoveTerminalSession(COMPONENT_SOURCE_SESSION, false)).toBe(false);
+  test("does not auto-remove a running editor terminal session", () => {
+    expect(shouldAutoRemoveTerminalSession(EDITOR_TERMINAL_SESSION, false)).toBe(false);
   });
 
-  test("auto-removes an exited component-source session", () => {
-    expect(shouldAutoRemoveTerminalSession(COMPONENT_SOURCE_SESSION, true)).toBe(true);
+  test("auto-removes an exited editor terminal session", () => {
+    expect(shouldAutoRemoveTerminalSession(EDITOR_TERMINAL_SESSION, true)).toBe(true);
   });
 
-  test("does not auto-remove an exited Pi annotation session", () => {
-    expect(shouldAutoRemoveTerminalSession(PI_ANNOTATION_SESSION, true)).toBe(false);
+  test("does not auto-remove an exited agent terminal session", () => {
+    expect(shouldAutoRemoveTerminalSession(AGENT_TERMINAL_SESSION, true)).toBe(false);
   });
 });
