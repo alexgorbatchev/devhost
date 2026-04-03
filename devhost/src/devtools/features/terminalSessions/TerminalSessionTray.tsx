@@ -28,7 +28,6 @@ export function TerminalSessionTray(props: ITerminalSessionTrayProps): JSX.Eleme
     pointerEvents: "none",
     position: "fixed",
     right: theme.spacing.sm,
-    zIndex: theme.zIndices.floating,
   });
   const rootClassName: string = css({
     inset: 0,

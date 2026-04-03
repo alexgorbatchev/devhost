@@ -327,6 +327,8 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
   const primaryAction = readTerminalSessionPrimaryAction(hasExited);
   const sessionSummary: ITerminalSessionSummary = props.session.summary;
   const summaryClassName: string = css(createSummaryStyle(theme));
+  const compactSummaryClassName: string = css(createCompactSummaryStyle(theme));
+  const compactSummaryPathClassName: string = css(createCompactSummaryPathStyle(theme));
   const summaryHeadlineClassName: string = css(createSummaryHeadlineStyle(theme));
   const summaryEyebrowClassName: string = css(createSummaryEyebrowStyle(theme));
   const summaryMetaClassName: string = css(createSummaryMetaStyle(theme));
@@ -346,6 +348,8 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
   const terminalViewportClassName: string = css(createTerminalViewportStyle(theme));
   const trayBadgeClassName: string = css(createTrayBadgeStyle(theme));
   const trayCompletionIconClassName: string = css(createTrayCompletionIconStyle(theme));
+  const trayCloseButtonClassName: string = css(createTrayCloseButtonStyle(theme));
+  const trayCloseIconClassName: string = css(createTrayCloseIconStyle(theme));
   const trayCompletionOverlayClassName: string = css(createTrayCompletionOverlayStyle());
   const trayOverlayButtonClassName: string = css(createTrayOverlayButtonStyle(theme));
   const trayScaledContentClassName: string = css(createTrayScaledContentStyle(terminalPanelLayout.trayPanelSize));
@@ -391,15 +395,22 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
         ) : null}
       </header>
       {props.isExpanded ? (
-        <section class={summaryClassName} data-testid="TerminalSessionPanel--summary">
-          <span class={summaryEyebrowClassName}>{sessionSummary.eyebrow}</span>
-          <strong class={summaryHeadlineClassName}>{sessionSummary.headline}</strong>
-          <div class={summaryMetaClassName}>
-            {sessionSummary.meta.map((entry: string) => {
-              return <span key={entry}>{entry}</span>;
-            })}
-          </div>
-        </section>
+        props.session.kind === "editor" ? (
+          <section class={compactSummaryClassName} data-testid="TerminalSessionPanel--summary">
+            <strong class={summaryHeadlineClassName}>{sessionSummary.headline}</strong>
+            <span class={compactSummaryPathClassName}>{sessionSummary.meta[0]}</span>
+          </section>
+        ) : (
+          <section class={summaryClassName} data-testid="TerminalSessionPanel--summary">
+            <span class={summaryEyebrowClassName}>{sessionSummary.eyebrow}</span>
+            <strong class={summaryHeadlineClassName}>{sessionSummary.headline}</strong>
+            <div class={summaryMetaClassName}>
+              {sessionSummary.meta.map((entry: string) => {
+                return <span key={entry}>{entry}</span>;
+              })}
+            </div>
+          </section>
+        )
       ) : null}
       <div ref={terminalViewportReference} class={terminalViewportClassName} data-testid="TerminalSessionPanel--terminal">
         <div ref={terminalContainerReference} class={terminalContainerClassName} />
@@ -419,7 +430,18 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
   }
 
   return (
-    <section ref={trayShellReference} class={trayShellClassName} data-testid="TerminalSessionPanel">
+    <section
+      ref={trayShellReference}
+      class={trayShellClassName}
+      data-testid="TerminalSessionPanel"
+      onMouseEnter={(): void => {
+        updateTrayTooltipLayout();
+        setIsTrayHoverVisible(true);
+      }}
+      onMouseLeave={(): void => {
+        setIsTrayHoverVisible(false);
+      }}
+    >
       <div class={trayScaledContentClassName}>{panelContent}</div>
       <button
         aria-label={`Expand ${sessionSummary.terminalTitle} preview`}
@@ -434,22 +456,39 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
           updateTrayTooltipLayout();
           setIsTrayHoverVisible(true);
         }}
-        onMouseEnter={(): void => {
-          updateTrayTooltipLayout();
-          setIsTrayHoverVisible(true);
-        }}
-        onMouseLeave={(): void => {
-          setIsTrayHoverVisible(false);
-        }}
       >
         <span class={trayBadgeClassName}>{errorMessage ?? statusText}</span>
       </button>
-      {hasExited ? (
+      {hasExited && !isTrayHoverVisible ? (
         <div aria-hidden="true" class={trayCompletionOverlayClassName} data-testid="TerminalSessionPanel--completion-indicator">
           <svg class={trayCompletionIconClassName} viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
             <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM369 209L241 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L335 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z" />
           </svg>
         </div>
+      ) : null}
+      {hasExited && isTrayHoverVisible ? (
+        <button
+          aria-label="Close terminal session"
+          class={trayCloseButtonClassName}
+          data-testid="TerminalSessionPanel--tray-close"
+          title="Close terminal session"
+          type="button"
+          onClick={(event: JSX.TargetedMouseEvent<HTMLButtonElement>): void => {
+            event.stopPropagation();
+            props.onRemove();
+          }}
+        >
+          <svg
+            class={trayCloseIconClassName}
+            fill="currentColor"
+            stroke="currentColor"
+            strokeWidth="0"
+            viewBox="0 0 512 512"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM175 175c9.4-9.4 24.6-9.4 33.9 0l47 47 47-47c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9l-47 47 47 47c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-47-47-47 47c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l47-47-47-47c-9.4-9.4-9.4-24.6 0-33.9z" />
+          </svg>
+        </button>
       ) : null}
       {isTrayHoverVisible && trayTooltipLayout !== null ? (
         <div class={trayTooltipClassName} data-testid="TerminalSessionPanel--tooltip">
@@ -470,8 +509,35 @@ function appendTerminalSessionParameters(websocketUrl: URL, sessionId: string): 
   return websocketUrl;
 }
 
+function createCompactSummaryStyle(theme: IDevtoolsTheme): CSSObject {
+  return {
+    alignItems: "center",
+    background: theme.colors.selectionBackground,
+    border: `1px solid ${theme.colors.selectionBorder}`,
+    borderRadius: theme.radii.sm,
+    display: "flex",
+    gap: theme.spacing.sm,
+    minWidth: 0,
+    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
+  };
+}
+
+function createCompactSummaryPathStyle(theme: IDevtoolsTheme): CSSObject {
+  return {
+    color: theme.colors.mutedForeground,
+    flex: "1 1 auto",
+    fontFamily: theme.fontFamilies.monospace,
+    fontSize: theme.fontSizes.sm,
+    minWidth: 0,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  };
+}
+
 function createSummaryHeadlineStyle(theme: IDevtoolsTheme): CSSObject {
   return {
+    flex: "0 0 auto",
     fontSize: theme.fontSizes.lg,
     lineHeight: 1.45,
   };
@@ -604,12 +670,53 @@ function createTrayBadgeStyle(theme: IDevtoolsTheme): CSSObject {
 
 function createTrayCompletionIconStyle(theme: IDevtoolsTheme): CSSObject {
   return {
-    width: "22px",
-    height: "22px",
+    width: "24px",
+    height: "24px",
     display: "block",
     color: theme.colors.successBackground,
     fill: "currentColor",
     filter: `drop-shadow(0px 2px 6px ${theme.colors.successGlow})`,
+  };
+}
+
+function createTrayCloseButtonStyle(theme: IDevtoolsTheme): CSSObject {
+  return {
+    alignItems: "center",
+    appearance: "none",
+    background: "transparent",
+    border: "none",
+    color: theme.colors.successBackground,
+    cursor: "pointer",
+    display: "grid",
+    height: "24px",
+    inset: 0,
+    justifyItems: "center",
+    margin: "auto",
+    padding: 0,
+    position: "absolute",
+    transition: "color 120ms ease",
+    width: "24px",
+    zIndex: 2,
+    '& svg': {
+      filter: `drop-shadow(0px 2px 6px ${theme.colors.successGlow})`,
+      transition: "filter 120ms ease",
+    },
+    '&:is(:hover, :focus-visible)': {
+      color: theme.colors.dangerForeground,
+      outline: "none",
+    },
+    '&:is(:hover, :focus-visible) svg': {
+      filter: `drop-shadow(0px 2px 6px ${theme.colors.dangerGlow})`,
+    },
+  };
+}
+
+function createTrayCloseIconStyle(_theme: IDevtoolsTheme): CSSObject {
+  return {
+    display: "block",
+    fill: "currentColor",
+    height: "24px",
+    width: "24px",
   };
 }
 

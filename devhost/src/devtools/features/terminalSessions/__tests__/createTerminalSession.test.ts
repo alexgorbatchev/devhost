@@ -31,7 +31,7 @@ describe("createTerminalSession", () => {
       },
       behavior: {
         defaultIsExpanded: false,
-        isFullscreenExpanded: false,
+        isFullscreenExpanded: true,
         shouldAutoRemoveOnExit: false,
       },
       displayName: "Claude Code",
@@ -81,7 +81,7 @@ describe("createTerminalSession", () => {
       summary: {
         eyebrow: "Component source",
         headline: "<PrimaryButton>",
-        meta: ["src/components/PrimaryButton.tsx:42:8"],
+        meta: ["webpack:///./src/components/PrimaryButton.tsx:42:8"],
         terminalTitle: "Neovim",
         trayTooltipPrimary: "<PrimaryButton>",
         trayTooltipSecondary: "src/components/PrimaryButton.tsx:42:8",

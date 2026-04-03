@@ -36,13 +36,13 @@ const EDITOR_TERMINAL_BEHAVIOR = createTerminalSession(
 ).behavior;
 
 describe("resolveTerminalPanelLayout", () => {
-  test("keeps agent terminal sessions at the bounded modal size", () => {
+  test("expands agent terminal sessions to the full viewport", () => {
     expect(resolveTerminalPanelLayout(AGENT_TERMINAL_BEHAVIOR, 1600, 1000)).toEqual({
       expandedPanelSize: {
-        height: 720,
-        width: 1040,
+        height: 1000,
+        width: 1600,
       },
-      isFullscreenExpanded: false,
+      isFullscreenExpanded: true,
       trayPanelSize: {
         height: 720,
         width: 1040,

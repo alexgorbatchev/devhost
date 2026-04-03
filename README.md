@@ -167,6 +167,9 @@ Use a Bun TypeScript wrapper when your preferred agent CLI needs custom setup.
 - injects Alt + right-click React component-source navigation for routed pages when devtools are enabled
 - opens component sources through the configured editor protocol and also copies the resolved source path to the clipboard when the browser allows it
 - starts annotation sessions with the configured manifest agent, or Pi when `[agent]` is omitted
+- expands annotation-agent and Neovim terminal sessions to the full viewport when opened
+- shows embedded Neovim sessions with a compact one-line source summary using the raw source path
+- swaps a finished tray preview's green completion badge for a hover-only close button without disabling expand/reopen behavior
 - activates Caddy routes only after health checks pass
 - removes routes and reservations on shutdown or startup failure
 

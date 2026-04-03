@@ -12,7 +12,7 @@ import type {
 
 const agentTerminalBehavior: ITerminalSessionBehavior = {
   defaultIsExpanded: false,
-  isFullscreenExpanded: false,
+  isFullscreenExpanded: true,
   shouldAutoRemoveOnExit: false,
 };
 
@@ -84,9 +84,15 @@ function createEditorTerminalSummary(request: IStartEditorTerminalSessionRequest
   return {
     eyebrow: "Component source",
     headline: `<${request.componentName}>`,
-    meta: [request.sourceLabel],
+    meta: [formatRawSourceLocation(request)],
     terminalTitle: terminalTitleByEditorLauncher[request.launcher],
     trayTooltipPrimary: `<${request.componentName}>`,
     trayTooltipSecondary: request.sourceLabel,
   };
+}
+
+function formatRawSourceLocation(request: IStartEditorTerminalSessionRequest): string {
+  const columnSuffix: string = request.source.columnNumber === undefined ? "" : `:${request.source.columnNumber}`;
+
+  return `${request.source.fileName}:${request.source.lineNumber}${columnSuffix}`;
 }
