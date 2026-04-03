@@ -13,6 +13,7 @@ import {
   XTERM_STYLESHEET_PATH,
 } from "../../shared/constants";
 import { readDevtoolsControlToken } from "../../shared/readDevtoolsControlToken";
+import { createXtermTheme } from "./createXtermTheme";
 import { readPiTerminalPrimaryAction } from "./readPiTerminalPrimaryAction";
 import { shouldAutoRemoveTerminalSession } from "./shouldAutoRemoveTerminalSession";
 import type { ITerminalSession, PiTerminalClientMessage, PiTerminalServerMessage } from "./types";
@@ -733,15 +734,6 @@ function resolveTrayTooltipLayout(
     bottom,
     left,
     width,
-  };
-}
-
-function createXtermTheme(theme: IDevtoolsTheme): NonNullable<ConstructorParameters<typeof Terminal>[0]>["theme"] {
-  return {
-    background: theme.colors.background,
-    cursor: theme.colors.accentBackground,
-    foreground: theme.colors.foreground,
-    selectionBackground: theme.colors.selectionBackground,
   };
 }
 

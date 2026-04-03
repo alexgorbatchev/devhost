@@ -30,6 +30,24 @@ export interface IDevtoolsTheme {
     body: string;
     monospace: string;
   };
+  terminal: {
+    black: string;
+    blue: string;
+    brightBlack: string;
+    brightBlue: string;
+    brightCyan: string;
+    brightGreen: string;
+    brightMagenta: string;
+    brightRed: string;
+    brightWhite: string;
+    brightYellow: string;
+    cyan: string;
+    green: string;
+    magenta: string;
+    red: string;
+    white: string;
+    yellow: string;
+  };
   opacities: {
     logMinimapActive: number;
     logMinimapResting: number;
@@ -119,6 +137,42 @@ const sharedShadows: IDevtoolsTheme["shadows"] = {
   floating: "0px 10px 24px rgba(15, 23, 42, 0.14)",
   popup: "4px 5px 10px rgba(0, 0, 0, 0.8), -4px 5px 10px rgba(0, 0, 0, 0.4)",
 };
+const lightTerminalColors: IDevtoolsTheme["terminal"] = {
+  black: "#b4b5b9",
+  blue: "#2e7de9",
+  brightBlack: "#a1a6c5",
+  brightBlue: "#358aff",
+  brightCyan: "#007ea8",
+  brightGreen: "#5c8524",
+  brightMagenta: "#a463ff",
+  brightRed: "#ff4774",
+  brightWhite: "#3760bf",
+  brightYellow: "#a27629",
+  cyan: "#007197",
+  green: "#587539",
+  magenta: "#9854f1",
+  red: "#f52a65",
+  white: "#6172b0",
+  yellow: "#8c6c3e",
+};
+const darkTerminalColors: IDevtoolsTheme["terminal"] = {
+  black: "#1d202f",
+  blue: "#7aa2f7",
+  brightBlack: "#414868",
+  brightBlue: "#8db0ff",
+  brightCyan: "#a4daff",
+  brightGreen: "#9fe044",
+  brightMagenta: "#c7a9ff",
+  brightRed: "#ff899d",
+  brightWhite: "#c0caf5",
+  brightYellow: "#faba4a",
+  cyan: "#7dcfff",
+  green: "#9ece6a",
+  magenta: "#bb9af7",
+  red: "#f7768e",
+  white: "#a9b1d6",
+  yellow: "#e0af68",
+};
 const lightDevtoolsTheme: IDevtoolsTheme = {
   colors: {
     accentBackground: "#2e7de9",
@@ -147,6 +201,7 @@ const lightDevtoolsTheme: IDevtoolsTheme = {
   fontSizes: sharedFontSizes,
   opacities: sharedOpacities,
   radii: sharedRadii,
+  terminal: lightTerminalColors,
   sizes: sharedSizes,
   shadows: sharedShadows,
   spacing: sharedSpacing,
@@ -180,6 +235,7 @@ const darkDevtoolsTheme: IDevtoolsTheme = {
   fontSizes: sharedFontSizes,
   opacities: sharedOpacities,
   radii: sharedRadii,
+  terminal: darkTerminalColors,
   sizes: sharedSizes,
   shadows: sharedShadows,
   spacing: sharedSpacing,

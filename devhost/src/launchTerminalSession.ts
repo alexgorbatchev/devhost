@@ -1,3 +1,5 @@
+import { createTerminalSessionEnvironment } from "./createTerminalSessionEnvironment";
+
 interface ILaunchTerminalSessionOptions {
   cols: number;
   command: string[];
@@ -16,7 +18,7 @@ export interface ILaunchedTerminalSession {
 export function launchTerminalSession(options: ILaunchTerminalSessionOptions): ILaunchedTerminalSession {
   const childProcess = Bun.spawn(options.command, {
     cwd: options.cwd,
-    env: process.env,
+    env: createTerminalSessionEnvironment(process.env),
     terminal: {
       cols: options.cols,
       data: (_terminal: Bun.Terminal, data: Uint8Array): void => {
