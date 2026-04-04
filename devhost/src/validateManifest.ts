@@ -7,10 +7,10 @@ import { createDefaultDevhostAgent } from "./createDefaultDevhostAgent";
 import { defaultDevtoolsComponentEditor, supportedDevtoolsComponentEditors } from "./devtoolsComponentEditor";
 import { isValidHost } from "./isValidHost";
 import type {
+  DevhostAgentConfig,
   DevhostPortConfig,
   DevhostHealthConfig,
   IConfiguredDevhostAgent,
-  IDevhostAgentConfig,
   IDevhostManifest,
   IDevhostServiceConfig,
   ValidatedDevhostAgent,
@@ -31,14 +31,23 @@ const healthSchema = z.union([
   z.object({ http: z.string().url() }).strict(),
   z.object({ process: z.literal(true) }).strict(),
 ]);
-const agentSchema = z
-  .object({
-    command: z.array(nonEmptyStringSchema).min(1),
-    cwd: z.string().optional(),
-    displayName: nonEmptyStringSchema,
-    env: z.record(z.string(), z.string()).optional(),
-  })
-  .strict();
+const agentAdapterSchema = z.enum(["pi", "claude-code", "opencode"]);
+
+const agentSchema = z.union([
+  z
+    .object({
+      adapter: agentAdapterSchema,
+    })
+    .strict(),
+  z
+    .object({
+      command: z.array(nonEmptyStringSchema).min(1),
+      cwd: z.string().optional(),
+      displayName: nonEmptyStringSchema,
+      env: z.record(z.string(), z.string()).optional(),
+    })
+    .strict(),
+]);
 const serviceSchema = z
   .object({
     bindHost: z.enum(["127.0.0.1", "0.0.0.0", "::1", "::"]).optional(),
@@ -132,12 +141,23 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
 }
 
 function validateAgent(
-  agentConfig: IDevhostAgentConfig | undefined,
+  agentConfig: DevhostAgentConfig | undefined,
   manifestDirectoryPath: string,
   errors: string[],
 ): ValidatedDevhostAgent {
   if (agentConfig === undefined) {
     return createDefaultDevhostAgent();
+  }
+
+  if ("adapter" in agentConfig) {
+    let displayName = "Pi";
+    if (agentConfig.adapter === "claude-code") displayName = "Claude Code";
+    if (agentConfig.adapter === "opencode") displayName = "OpenCode";
+
+    return {
+      displayName,
+      kind: agentConfig.adapter,
+    };
   }
 
   const cwd: string = resolveConstrainedPath("agent.cwd", agentConfig.cwd ?? ".", manifestDirectoryPath, errors);

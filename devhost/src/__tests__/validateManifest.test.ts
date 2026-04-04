@@ -57,6 +57,27 @@ describe("validateManifest", () => {
     });
   });
 
+  test("accepts a built-in claude-code agent adapter", () => {
+    const manifest: IValidatedDevhostManifest = validateManifest("/tmp/devhost.toml", {
+      agent: {
+        adapter: "claude-code",
+      },
+      name: "hello-stack",
+      primaryService: "web",
+      services: {
+        web: {
+          command: ["bun", "run", "dev"],
+          port: 3000,
+        },
+      },
+    });
+
+    expect(manifest.agent).toEqual({
+      displayName: "Claude Code",
+      kind: "claude-code",
+    });
+  });
+
   test("accepts explicit devtools UI positions, component editor, and a configured agent", () => {
     const manifest: IValidatedDevhostManifest = validateManifest("/tmp/devhost.toml", {
       agent: {

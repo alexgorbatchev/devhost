@@ -17,6 +17,57 @@ afterEach(() => {
 });
 
 describe("createTerminalSessionCommand", () => {
+  test("builds the Claude Code agent terminal command for annotation sessions", () => {
+    const annotation: IAnnotationSubmitDetail = {
+      comment: "Fix the primary button spacing.",
+      markers: [],
+      stackName: "hello-stack",
+      submittedAt: 1_717_171_717_000,
+      title: "Buttons",
+      url: "https://hello.test/buttons",
+    };
+
+    expect(
+      createTerminalSessionCommand({
+        agent: {
+          displayName: "Claude Code",
+          kind: "claude-code",
+        },
+        componentEditor: "vscode",
+        projectRootPath: "/tmp/project",
+        request: {
+          annotation,
+          kind: "agent",
+        },
+        stackName: "hello-stack",
+      }).command,
+    ).toEqual([
+      "claude",
+      [
+        "You are responding to a browser annotation captured by devhost.",
+        "Use the annotation context below to inspect the local codebase and drive the requested change.",
+        "",
+        "## Requested change",
+        "Fix the primary button spacing.",
+        "",
+        "## Page context",
+        "- Stack: hello-stack",
+        "- URL: https://hello.test/buttons",
+        "- Title: Buttons",
+        "- Submitted at: 2024-05-31T16:08:37.000Z",
+        "",
+        "## Annotated markers",
+        "",
+        "",
+        "## Required behavior",
+        "- Inspect the local codebase before proposing changes.",
+        "- Use the marker references (#1, #2, ...) when reasoning about the requested UI or behavior.",
+        "- If the request is ambiguous, ask clarifying questions before making irreversible changes.",
+        "- Prefer correct, durable fixes over quick workarounds.",
+      ].join("\n"),
+    ]);
+  });
+
   test("builds the default Pi agent terminal command for annotation sessions", () => {
     const annotation: IAnnotationSubmitDetail = {
       comment: "Fix the primary button spacing.",

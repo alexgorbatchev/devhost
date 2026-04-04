@@ -18,16 +18,24 @@ export type DevhostPortConfig = number | "auto";
 export type DevtoolsPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 export type DevtoolsMinimapPosition = "left" | "right";
 
-export interface IDevhostAgentConfig {
+export type BuiltInDevhostAgentAdapter = "pi" | "claude-code" | "opencode";
+
+export interface IBuiltInDevhostAgentConfig {
+  adapter: BuiltInDevhostAgentAdapter;
+}
+
+export interface ICustomDevhostAgentConfig {
   command: string[];
   cwd?: string;
   displayName: string;
   env?: Record<string, string>;
 }
 
+export type DevhostAgentConfig = IBuiltInDevhostAgentConfig | ICustomDevhostAgentConfig;
+
 export interface IDefaultDevhostAgent {
   displayName: string;
-  kind: "pi";
+  kind: BuiltInDevhostAgentAdapter;
 }
 
 export interface IConfiguredDevhostAgent {
@@ -41,7 +49,7 @@ export interface IConfiguredDevhostAgent {
 export type ValidatedDevhostAgent = IDefaultDevhostAgent | IConfiguredDevhostAgent;
 
 export interface IDevhostManifest {
-  agent?: IDevhostAgentConfig;
+  agent?: DevhostAgentConfig;
   name: string;
   primaryService: string;
   devtools?: boolean;
