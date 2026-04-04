@@ -19,7 +19,9 @@ const Default: Story = {
     const annotationTab = canvas.getByRole("tab", { name: "Annotation handoff" });
     const sourceNavigationTab = canvas.getByRole("tab", { name: "Source navigation" });
     const stackContractTab = canvas.getByRole("tab", { name: "Stack contract" });
-    const featureSection = canvas.getByRole("region", { name: "A routed development surface, not another localhost wrapper." });
+    const featureSection = canvas.getByRole("region", {
+      name: "A routed development surface, not another localhost wrapper.",
+    });
     const proofSection = canvas.getByRole("region", {
       name: "The page now sells the real constraints, not decorative abstractions.",
     });
@@ -27,8 +29,12 @@ const Default: Story = {
     await expect(
       canvas.getByRole("heading", { name: "devhost is the storefront for routed local stacks." }),
     ).toBeInTheDocument();
-    await expect(within(featureSection).getByRole("heading", { name: "Local HTTPS is a first-class workflow" })).toBeInTheDocument();
-    await expect(within(proofSection).queryByRole("heading", { name: "Local HTTPS is a first-class workflow" })).not.toBeInTheDocument();
+    await expect(
+      within(featureSection).getByRole("heading", { name: "Local HTTPS is a first-class workflow" }),
+    ).toBeInTheDocument();
+    await expect(
+      within(proofSection).queryByRole("heading", { name: "Local HTTPS is a first-class workflow" }),
+    ).not.toBeInTheDocument();
     await userEvent.selectOptions(themeSelect, "light");
     await expect(themeSelect).toHaveValue("light");
     await userEvent.click(annotationTab);
