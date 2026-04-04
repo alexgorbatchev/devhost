@@ -7,11 +7,6 @@ export interface IThemeOption {
   value: ThemePreference;
 }
 
-export interface IAuditMetric {
-  label: string;
-  value: string;
-}
-
 export interface IInspectionLane {
   body: string;
   checklist: string[];

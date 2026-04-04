@@ -234,20 +234,8 @@ export function RrwebDemoPanel(props: IRrwebDemoPanelProps): JSX.Element {
   }
 
   return (
-    <section className="rrweb-section" aria-labelledby="rrweb-section-title" data-testid="RrwebDemoPanel">
+    <section className="rrweb-section" aria-label="rrweb replay panel" data-testid="RrwebDemoPanel">
       <div className="rrweb-section__header">
-        <div>
-          <p className="panel-kicker">rrweb sandbox</p>
-          <h2 id="rrweb-section-title" className="section-title">
-            Start and stop recording yourself, then autoplay the replay
-          </h2>
-        </div>
-
-        <p className="app-body rrweb-section__body">
-          The player loads the default rrweb recording on page load and starts playing immediately. In development mode
-          you can replace it by recording a new session, stopping it, and exporting the resulting JSON.
-        </p>
-
         <div className="rrweb-shortcut-grid" aria-label="rrweb recording shortcuts">
           <p className="rrweb-demo-pill">Player: autoplay on load</p>
           <p className="rrweb-demo-pill">Controls: hover to reveal</p>

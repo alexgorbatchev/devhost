@@ -1,7 +1,7 @@
 const burstProbability: number = 0.28;
 const longStderrProbability: number = 0.12;
-const minimumDelayInMilliseconds: number = 45;
-const maximumDelayInMilliseconds: number = 520;
+const minimumDelayInMilliseconds: number = 500;
+const maximumDelayInMilliseconds: number = 2500;
 const stderrProbability: number = 0.18;
 
 const requestIds: string[] = ["req-17a", "req-20f", "req-42c", "req-5de", "req-91b"];

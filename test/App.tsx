@@ -10,7 +10,6 @@ import {
 import { exportRrwebDemoRecording } from "./exportRrwebDemoRecording";
 import { loadRrwebDemoRecording } from "./loadRrwebDemoRecording";
 import type {
-  IAuditMetric,
   IAuditSection,
   IDiagnosticSection,
   IInspectionLane,
@@ -24,12 +23,6 @@ const themeOptions: IThemeOption[] = [
   { label: "System", value: "system" },
   { label: "Light", value: "light" },
   { label: "Dark", value: "dark" },
-];
-const auditMetrics: IAuditMetric[] = [
-  { label: "Base viewport", value: "1920 px" },
-  { label: "Header", value: "72 px" },
-  { label: "Grid", value: "4 px" },
-  { label: "Modes", value: "3" },
 ];
 const inspectionLanes: IInspectionLane[] = [
   {
@@ -246,11 +239,6 @@ export function App(props: IAppProps): JSX.Element {
     <main className="app-shell" data-testid="App">
       <div className="app-frame">
         <header className="app-header">
-          <div className="app-header__copy">
-            <p className="app-kicker">Devhost test app</p>
-            <p className="app-header__title">Framer audit with restored theme switching</p>
-          </div>
-
           <div className="app-header__actions">
             <label className="theme-control" htmlFor="theme-preference">
               <span className="theme-control__label">Theme</span>
@@ -271,34 +259,8 @@ export function App(props: IAppProps): JSX.Element {
                 })}
               </select>
             </label>
-
-            <div className="app-header__metrics" aria-label="Audit metrics">
-              {auditMetrics.map((auditMetric: IAuditMetric) => {
-                return (
-                  <article
-                    key={auditMetric.label}
-                    className="metric-pill"
-                    aria-label={auditMetric.label}
-                  >
-                    <p className="metric-pill__label">{auditMetric.label}</p>
-                    <p className="metric-pill__value">{auditMetric.value}</p>
-                  </article>
-                );
-              })}
-            </div>
           </div>
         </header>
-
-        {initialRecordingUrl !== null || isDevelopmentMode || rrwebDemoRecording !== null ? (
-          <RrwebDemoPanel
-            isDevelopmentMode={isDevelopmentMode}
-            isRecording={isRecordingRrwebDemo}
-            onExportRecording={handleExportRrwebRecording}
-            onStartRecording={handleStartRrwebRecording}
-            onStopRecording={handleStopRrwebRecording}
-            recording={rrwebDemoRecording}
-          />
-        ) : null}
 
         <section className="hero-section">
           <div className="hero-section__copy">
@@ -322,6 +284,17 @@ export function App(props: IAppProps): JSX.Element {
             </ul>
           </aside>
         </section>
+
+        {initialRecordingUrl !== null || isDevelopmentMode || rrwebDemoRecording !== null ? (
+          <RrwebDemoPanel
+            isDevelopmentMode={isDevelopmentMode}
+            isRecording={isRecordingRrwebDemo}
+            onExportRecording={handleExportRrwebRecording}
+            onStartRecording={handleStartRrwebRecording}
+            onStopRecording={handleStopRrwebRecording}
+            recording={rrwebDemoRecording}
+          />
+        ) : null}
 
         <section className="inspection-section" aria-labelledby="inspection-section-title">
           <div className="inspection-section__intro">
