@@ -7,8 +7,7 @@
     "@rrweb/all": "^2.0.0-alpha.20",
     "@rrweb/types": "^2.0.0-alpha.20",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "rrweb-player": "2.0.0-alpha.20"
+    "react-dom": "^19.1.1"
   },
   "devDependencies": {
     "@storybook/addon-vitest": "10.3.4",

@@ -10,4 +10,4 @@ if (rootElement === null) {
 
 const root = createRoot(rootElement);
 
-root.render(<App />);
+root.render(<App initialRecordingUrl="/recording.json" isDevelopmentMode />);

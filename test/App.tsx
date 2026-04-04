@@ -8,6 +8,7 @@ import {
   type IRrwebDemoRecordingController,
 } from "./createRrwebDemoRecording";
 import { exportRrwebDemoRecording } from "./exportRrwebDemoRecording";
+import { loadRrwebDemoRecording } from "./loadRrwebDemoRecording";
 import type {
   IAuditMetric,
   IAuditSection,
@@ -150,7 +151,12 @@ const diagnosticSections: IDiagnosticSection[] = [
   },
 ];
 
-export function App(): JSX.Element {
+export interface IAppProps {
+  initialRecordingUrl?: string | null;
+  isDevelopmentMode?: boolean;
+}
+
+export function App(props: IAppProps): JSX.Element {
   const activeRecordingControllerRef = useRef<IRrwebDemoRecordingController | null>(null);
   const [activeLaneId, setActiveLaneId] = useState<InspectionLaneId>("shell");
   const [isRecordingRrwebDemo, setIsRecordingRrwebDemo] = useState<boolean>(false);
@@ -159,6 +165,8 @@ export function App(): JSX.Element {
     return readStoredThemePreference(window.localStorage);
   });
   const activeLane: IInspectionLane = findInspectionLaneById(activeLaneId);
+  const initialRecordingUrl: string | null = props.initialRecordingUrl ?? null;
+  const isDevelopmentMode: boolean = props.isDevelopmentMode ?? false;
 
   function handleStartRrwebRecording(): void {
     if (isRecordingRrwebDemo) {
@@ -202,6 +210,32 @@ export function App(): JSX.Element {
       }
     };
   }, []);
+
+  useEffect((): (() => void) | void => {
+    if (initialRecordingUrl === null) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    void loadRrwebDemoRecording(initialRecordingUrl)
+      .then((recording: IRrwebDemoRecording | null): void => {
+        if (isCancelled || recording === null || activeRecordingControllerRef.current !== null) {
+          return;
+        }
+
+        setRrwebDemoRecording((currentRecording: IRrwebDemoRecording | null): IRrwebDemoRecording | null => {
+          return currentRecording ?? recording;
+        });
+      })
+      .catch((error: unknown): void => {
+        console.error(error);
+      });
+
+    return (): void => {
+      isCancelled = true;
+    };
+  }, [initialRecordingUrl]);
 
   useEffect((): void => {
     document.documentElement.dataset.theme = themePreference;
@@ -254,6 +288,17 @@ export function App(): JSX.Element {
             </div>
           </div>
         </header>
+
+        {initialRecordingUrl !== null || isDevelopmentMode || rrwebDemoRecording !== null ? (
+          <RrwebDemoPanel
+            isDevelopmentMode={isDevelopmentMode}
+            isRecording={isRecordingRrwebDemo}
+            onExportRecording={handleExportRrwebRecording}
+            onStartRecording={handleStartRrwebRecording}
+            onStopRecording={handleStopRrwebRecording}
+            recording={rrwebDemoRecording}
+          />
+        ) : null}
 
         <section className="hero-section">
           <div className="hero-section__copy">
@@ -325,14 +370,6 @@ export function App(): JSX.Element {
             </article>
           </div>
         </section>
-
-        <RrwebDemoPanel
-          isRecording={isRecordingRrwebDemo}
-          onExportRecording={handleExportRrwebRecording}
-          onStartRecording={handleStartRrwebRecording}
-          onStopRecording={handleStopRrwebRecording}
-          recording={rrwebDemoRecording}
-        />
 
         <section className="signal-grid" aria-label="Framer audit cards">
           {auditSections.map((auditSection: IAuditSection) => {

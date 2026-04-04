@@ -6,7 +6,7 @@ import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 import { defineConfig } from "vitest/config";
 
 const dirname: string = typeof __dirname !== "undefined" ? __dirname : path.dirname(fileURLToPath(import.meta.url));
-const optimizedDependencyIds: string[] = ["@rrweb/all", "rrweb-player"];
+const optimizedDependencyIds: string[] = ["@rrweb/all"];
 
 export default defineConfig({
   optimizeDeps: {

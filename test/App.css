@@ -388,24 +388,147 @@ textarea:focus-visible {
   overflow: hidden;
 }
 
-.rrweb-player-root,
+.rrweb-player-stage,
 .rrweb-placeholder {
   min-height: 420px;
 }
 
-.rrweb-player-root {
+.rrweb-player-stage {
+  position: relative;
   display: grid;
   place-items: center;
   padding: 16px;
 }
 
-.rrweb-player-root .rr-player {
-  background: var(--surface-base);
-  box-shadow: none;
+.rrweb-player-root {
+  position: relative;
+  max-width: 100%;
 }
 
-.rrweb-player-root .rr-player__frame {
+.replayer-wrapper {
+  position: relative;
+  transform-origin: top left;
+}
+
+.replayer-wrapper > iframe {
+  display: block;
+  border: none;
+  border-radius: var(--radius-sm);
   background: var(--surface-base);
+}
+
+.replayer-mouse {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  transition: left 0.05s linear, top 0.05s linear;
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-image: url("data:image/svg+xml;base64,PHN2ZyBoZWlnaHQ9JzMwMHB4JyB3aWR0aD0nMzAwMHB4JyBmaWxsPSIjMDAwMDAwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGRhdGEtbmFtZT0iTGF5ZXIgMSIgdmlld0JveD0iMCAwIDUwIDUwIiB4PSIwcHgiIHk9IjBweCI+PHRpdGxlPkRlc2lnbl90bnA8L3RpdGxlPjxwYXRoIGQ9Ik00OC43MSw0Mi45MUwzNC4wOCwyOC4yOSw0NC4zMywxOEExLDEsMCwwLDAsNDQsMTYuMzlMMi4zNSwxLjA2QTEsMSwwLDAsMCwxLjA2LDIuMzVMMTYuMzksNDRhMSwxLDAsMCwwLDEuNjUuMzZMMjguMjksMzQuMDgsNDIuOTEsNDguNzFhMSwxLDAsMCwwLDEuNDEsMGw0LjM4LTQuMzhBMSwxLDAsMCwwLDQ4LjcxLDQyLjkxWm0tNS4wOSwzLjY3TDI5LDMyYTEsMSwwLDAsMC0xLjQxLDBsLTkuODUsOS44NUwzLjY5LDMuNjlsMzguMTIsMTRMMzIsMjcuNThBMSwxLDAsMCwwLDMyLDI5TDQ2LjU5LDQzLjYyWiI+PC9wYXRoPjwvc3ZnPg==");
+  border-color: transparent;
+}
+
+.replayer-mouse::after {
+  content: "";
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  background: rgb(73, 80, 246);
+  border-radius: 100%;
+  transform: translate(-50%, -50%);
+  opacity: 0.3;
+}
+
+.replayer-mouse.active::after {
+  animation: click 0.2s ease-in-out 1;
+}
+
+.replayer-mouse.touch-device {
+  background-image: none;
+  width: 70px;
+  height: 70px;
+  border-width: 4px;
+  border-style: solid;
+  border-radius: 100%;
+  margin-left: -37px;
+  margin-top: -37px;
+  border-color: rgba(73, 80, 246, 0);
+  transition: left 0s linear, top 0s linear, border-color 0.2s ease-in-out;
+}
+
+.replayer-mouse.touch-device.touch-active {
+  border-color: rgba(73, 80, 246, 1);
+  transition: left 0.25s linear, top 0.25s linear, border-color 0.2s ease-in-out;
+}
+
+.replayer-mouse.touch-device::after {
+  opacity: 0;
+}
+
+.replayer-mouse.touch-device.active::after {
+  animation: touch-click 0.2s ease-in-out 1;
+}
+
+.replayer-mouse-tail {
+  position: absolute;
+  pointer-events: none;
+}
+
+.rrweb-player-controls {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid rgba(248, 248, 241, 0.16);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, rgba(20, 20, 21, 0.7) 0%, rgba(20, 20, 21, 0.9) 100%);
+  backdrop-filter: blur(16px);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(18px);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.rrweb-player-stage:hover .rrweb-player-controls,
+.rrweb-player-stage:focus-within .rrweb-player-controls {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.rrweb-player-toggle {
+  min-width: 84px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid rgba(248, 248, 241, 0.22);
+  border-radius: var(--radius-sm);
+  background: rgba(248, 248, 241, 0.08);
+  color: #f8f8f1;
+  cursor: pointer;
+}
+
+.rrweb-player-toggle:hover {
+  background: rgba(248, 248, 241, 0.14);
+}
+
+.rrweb-player-timeline {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--focus-ring);
+}
+
+.rrweb-player-time {
+  margin: 0;
+  color: #f8f8f1;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .rrweb-placeholder {
@@ -417,6 +540,34 @@ textarea:focus-visible {
 .rrweb-placeholder__copy {
   max-width: 36ch;
   text-align: center;
+}
+
+@keyframes click {
+  0% {
+    opacity: 0.3;
+    width: 20px;
+    height: 20px;
+  }
+
+  50% {
+    opacity: 0.5;
+    width: 10px;
+    height: 10px;
+  }
+}
+
+@keyframes touch-click {
+  0% {
+    opacity: 0;
+    width: 20px;
+    height: 20px;
+  }
+
+  50% {
+    opacity: 0.5;
+    width: 10px;
+    height: 10px;
+  }
 }
 
 .lane-button-group {
