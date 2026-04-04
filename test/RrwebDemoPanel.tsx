@@ -23,6 +23,8 @@ export interface IRrwebDemoPanelProps {
   recording: IRrwebDemoRecording | null;
 }
 
+type EffectCallbackResult = (() => void) | void;
+
 export function RrwebDemoPanel(props: IRrwebDemoPanelProps): JSX.Element {
   const playerRootRef = useRef<HTMLDivElement | null>(null);
   const playerStageRef = useRef<HTMLDivElement | null>(null);
@@ -36,7 +38,7 @@ export function RrwebDemoPanel(props: IRrwebDemoPanelProps): JSX.Element {
     width: defaultReplayViewportWidth,
   });
 
-  useEffect((): (() => void) | void => {
+  useEffect((): EffectCallbackResult => {
     if (!props.isDevelopmentMode) {
       return;
     }
@@ -62,9 +64,9 @@ export function RrwebDemoPanel(props: IRrwebDemoPanelProps): JSX.Element {
     return (): void => {
       window.removeEventListener("keydown", handleWindowKeyDown);
     };
-  }, [props.isDevelopmentMode, props.onStartRecording, props.onStopRecording]);
+  }, [props]);
 
-  useEffect((): (() => void) | void => {
+  useEffect((): EffectCallbackResult => {
     const playerRootElement = playerRootRef.current;
 
     if (playerRootElement === null) {
@@ -138,7 +140,7 @@ export function RrwebDemoPanel(props: IRrwebDemoPanelProps): JSX.Element {
     };
   }, [props.recording]);
 
-  useEffect((): (() => void) | void => {
+  useEffect((): EffectCallbackResult => {
     if (!isPlaying) {
       return;
     }
@@ -163,7 +165,7 @@ export function RrwebDemoPanel(props: IRrwebDemoPanelProps): JSX.Element {
     };
   }, [isPlaying, totalTimeMs]);
 
-  useEffect((): (() => void) | void => {
+  useEffect((): EffectCallbackResult => {
     const playerStageElement = playerStageRef.current;
 
     if (playerStageElement === null) {
