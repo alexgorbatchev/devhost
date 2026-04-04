@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type JSX } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type JSX, type KeyboardEvent } from "react";
 
 import "./App.css";
 import { RrwebDemoPanel } from "./RrwebDemoPanel";
@@ -10,11 +10,12 @@ import {
 import { exportRrwebDemoRecording } from "./exportRrwebDemoRecording";
 import { loadRrwebDemoRecording } from "./loadRrwebDemoRecording";
 import type {
-  IAuditSection,
-  IDiagnosticSection,
-  IInspectionLane,
+  FeatureHighlightId,
+  IFeatureHighlight,
+  IProofCard,
   IThemeOption,
-  InspectionLaneId,
+  IWorkflowStep,
+  ProofCardId,
   ThemePreference,
 } from "./types";
 
@@ -24,124 +25,150 @@ const themeOptions: IThemeOption[] = [
   { label: "Light", value: "light" },
   { label: "Dark", value: "dark" },
 ];
-const inspectionLanes: IInspectionLane[] = [
+const launchCommands: string[] = ["bun devhost caddy start", "bun devhost --manifest ./test/devhost.toml"];
+const featureHighlights: IFeatureHighlight[] = [
   {
     body:
-      "Dark mode remains the reference surface because that is what the Framer skill asked for." +
-      " Light mode exists now only as an explicit comparison path, so token drift and contrast regressions" +
-      " become easier to catch.",
+      "devhost reserves public hosts before the app goes live, waits for each health check to pass," +
+      " and only then reloads the managed Caddy instance.",
     checklist: [
-      "Confirm dark mode still uses the black base and restrained raised surfaces.",
-      "Switch to light mode and verify it becomes a real token change rather than a mislabeled dark theme.",
-      "Use system mode and confirm the page follows the browser preference after reload.",
+      "Use real hostnames instead of juggling localhost ports by hand.",
+      "Keep routes aligned with process lifetime so stale hosts disappear automatically.",
+      "Avoid exposing half-ready services just because the child process started.",
     ],
-    id: "shell",
-    kicker: "Theme parity",
-    title: "Theme switching is real again",
+    id: "routing",
+    kicker: "Managed routing",
+    title: "Route the app only after it is actually healthy",
   },
   {
     body:
-      "The typography stays intentionally large in both themes." +
-      " If overlays become hard to read only after switching themes, that exposes a real contrast failure" +
-      " instead of a styling preference.",
-    checklist: [
-      "Read the hero copy in dark mode without zooming or squinting.",
-      "Switch to light mode and compare muted labels against the brighter surface.",
-      "Open devhost chrome and confirm it does not wash out either reading layer.",
-    ],
-    id: "contrast",
-    kicker: "Contrast sanity",
-    title: "Contrast survives the theme change",
+      "Routes are held back until the service passes its configured health check," +
+      " which is the only sane time to expose a hostname.",
+    checklist: [],
+    id: "health-checks",
+    kicker: "Release discipline",
+    title: "Health checks gate exposure",
   },
   {
     body:
-      "The document is still tall on purpose." +
-      " Fixed controls, minimaps, and annotations should feel attached to the viewport" +
-      " whether the page is currently dark or light.",
+      "The injected devtools split document navigation from asset traffic and mount inside a Shadow DOM root," +
+      " so the overlay can inspect the page without polluting the host app's CSS.",
     checklist: [
-      "Scroll from top to bottom in dark mode and watch whether fixed overlays drift visually.",
-      "Repeat in light mode so the background shift cannot hide spacing or anchoring defects.",
-      "Check the lower sections for any collapse in spacing rhythm or panel hierarchy.",
+      "Keep HMR, assets, fetches, SSE, and WebSockets off the injection path.",
+      "Inject the debugging chrome only where page-level context matters.",
+      "Preserve visual isolation between the app and the overlay runtime.",
     ],
-    id: "scroll",
-    kicker: "Scroll depth",
-    title: "Scroll depth stays attached",
+    id: "overlay",
+    kicker: "Devtools overlay",
+    title: "Inspect live pages without turning the proxy into a bottleneck",
+  },
+  {
+    body:
+      "Hold Alt, tag page elements, draft a note, and submit a Pi session seeded with the stack name, page URL," +
+      " selected elements, and component source details when React metadata is available.",
+    checklist: [
+      "Mark multiple elements in one draft instead of losing context between screenshots.",
+      "Carry component source paths into the handoff when the page exposes them.",
+      "Start a coding session from the page itself instead of rewriting the bug report elsewhere.",
+    ],
+    id: "annotation",
+    kicker: "Annotation handoff",
+    title: "Send annotated page state straight into Pi",
+  },
+  {
+    body: "Alt + right-click component inspection can open the nearest React source in the editor you configured.",
+    checklist: [
+      "Jump from the routed page to the nearest component without manually tracing the tree.",
+      "Keep source navigation wired to the editor the stack already expects.",
+      "Use the inspection loop to move from page evidence into code without re-establishing context.",
+    ],
+    id: "source-jumps",
+    kicker: "Source navigation",
+    title: "Editor-aware component jumps",
+  },
+  {
+    body:
+      "Component-source jumps and annotation sessions can open embedded terminals, including Neovim, with a" +
+      " normalized xterm.js environment so terminal UIs render correctly inside the browser surface.",
+    checklist: [
+      "Keep source navigation and editing inside the same inspection flow.",
+      "Normalize TERM and color capabilities for browser-backed terminal sessions.",
+      "Use the session tray as persistent working memory while you inspect the page.",
+    ],
+    id: "sessions",
+    kicker: "Terminal sessions",
+    title: "Keep the editor and agent session attached to the inspection loop",
+  },
+  {
+    body: "The manifest resolves ports, hostnames, dependencies, and optional agent configuration in one place.",
+    checklist: [],
+    id: "stack-contract",
+    kicker: "Stack contract",
+    title: "One file defines the local stack",
   },
 ];
-const auditSections: IAuditSection[] = [
+const workflowSteps: IWorkflowStep[] = [
   {
-    body:
-      "Dark mode is still the primary Framer-style reference surface," +
-      " but the app now carries a separate light token set." +
-      " That is an explicit override, not an accident, and it makes theme regressions testable.",
-    eyebrow: "Color contract",
-    title: "Reference dark mode with a deliberate light override",
+    body: "Start the managed Caddy instance once so devhost can own route registration and local TLS.",
+    step: "01",
+    title: "Boot the managed edge",
   },
   {
-    body:
-      "The hero keeps the 93 px heading and 23 px body copy at the base viewport in both themes." +
-      " Large type exposes wrap, spacing, and overlay collisions faster than decorative motion ever will.",
-    eyebrow: "Typography contract",
-    title: "Readable scale stays constant across themes",
+    body: "Launch one service or a whole manifest and let devhost resolve ports, dependencies, and health checks.",
+    step: "02",
+    title: "Run the stack from a manifest",
   },
   {
-    body:
-      "The theme control uses a visible 2 px focus ring, clear labeling, and persistent state." +
-      " A control that changes the whole shell should never rely on vague hover styling to explain itself.",
-    eyebrow: "Interaction contract",
-    title: "Theme control is explicit and testable",
+    body: "Open the routed hostname and inspect the real page with source-aware devtools layered on top.",
+    step: "03",
+    title: "Work on the routed host",
+  },
+  {
+    body: "Annotate the page, jump to source, or spawn a terminal session without leaving the browser loop.",
+    step: "04",
+    title: "Hand off context without rewriting it",
   },
 ];
-const diagnosticSections: IDiagnosticSection[] = [
+const proofCards: IProofCard[] = [
   {
-    paragraphs: [
-      "This section exists to validate that top chrome remains visually attached to the viewport while the document" +
-        " grows below it.",
-      "If a minimap or annotation rail looks like it floats away during scroll, that is a layout issue and not a" +
-        " theme issue.",
-    ],
-    title: "Viewport anchoring",
+    body: "Document navigations are injected, but assets and hot-reload traffic stay on the direct app path.",
+    eyebrow: "Proxy discipline",
+    id: "proxy-discipline",
+    title: "Devtools stay off the noisy traffic",
   },
   {
-    paragraphs: [
-      "Long-form copy is intentionally calmer than the shell around it." +
-        " A reading pane should never compete with inspection chrome for attention.",
-      "If visual fatigue appears in one theme but not the other, the token system is inconsistent and needs fixing.",
-    ],
-    title: "Reading comfort",
+    body: "The overlay lives inside its own Shadow DOM container so host styles do not quietly corrupt the tooling UI.",
+    eyebrow: "Isolation",
+    id: "isolation",
+    title: "The debugging shell is visually contained",
   },
   {
-    paragraphs: [
-      "Muted labels stay restrained while body text stays much stronger." +
-        " That separation should remain obvious in both the dark reference mode and the restored light mode.",
-      "If labels and body copy collapse into the same apparent weight, the hierarchy is wrong.",
-    ],
-    title: "Muted hierarchy",
+    body:
+      "Managed Caddy trust and lifecycle commands are exposed directly because local TLS setup is part of the" +
+      " product, not a side quest.",
+    eyebrow: "Operational honesty",
+    id: "local-https",
+    title: "Local HTTPS is a first-class workflow",
   },
-  {
-    paragraphs: [
-      "The cards below keep the 4 px grid intact with deliberate 24 px and 32 px jumps." +
-        " Random spacing values would make the shell look improvised instead of governed.",
-      "That matters because sloppy spacing makes overlay debugging harder than it needs to be.",
-    ],
-    title: "Spacing rhythm",
-  },
-  {
-    paragraphs: [
-      "The lane selector and the theme selector both use visible focus treatment and explicit state." +
-        " Nothing here depends on a hover gimmick to explain which control is active.",
-      "If users cannot tell the current mode from still pixels, the control is wrong.",
-    ],
-    title: "State clarity",
-  },
-  {
-    paragraphs: [
-      "This final section pushes the document deep enough to judge top, middle, and bottom scroll positions with the" +
-        " same visual language.",
-      "A real test surface should not become less trustworthy just because you reached the lower half of the page.",
-    ],
-    title: "Depth confidence",
-  },
+];
+const featureSectionProofCardId: ProofCardId = "local-https";
+const featureSectionProofCard: IProofCard = findProofCardById(featureSectionProofCardId);
+const proofGridCards: IProofCard[] = proofCards.filter((proofCard: IProofCard): boolean => {
+  return proofCard.id !== featureSectionProofCardId;
+});
+const manifestPreviewLines: string[] = [
+  'name = "hello-test-app"',
+  'primaryService = "hello"',
+  'devtoolsPosition = "top-right"',
+  'devtoolsComponentEditor = "neovim"',
+  "",
+  "[services.hello]",
+  'command = ["bun", "dev"]',
+  "port = 3200",
+  'host = "hello.xcv.lol"',
+  "",
+  "[services.logs.health]",
+  "process = true",
 ];
 
 export interface IAppProps {
@@ -151,15 +178,65 @@ export interface IAppProps {
 
 export function App(props: IAppProps): JSX.Element {
   const activeRecordingControllerRef = useRef<IRrwebDemoRecordingController | null>(null);
-  const [activeLaneId, setActiveLaneId] = useState<InspectionLaneId>("shell");
+  const [activeFeatureId, setActiveFeatureId] = useState<FeatureHighlightId>("routing");
   const [isRecordingRrwebDemo, setIsRecordingRrwebDemo] = useState<boolean>(false);
   const [rrwebDemoRecording, setRrwebDemoRecording] = useState<IRrwebDemoRecording | null>(null);
   const [themePreference, setThemePreference] = useState<ThemePreference>(() => {
     return readStoredThemePreference(window.localStorage);
   });
-  const activeLane: IInspectionLane = findInspectionLaneById(activeLaneId);
+  const activeFeature: IFeatureHighlight = findFeatureHighlightById(activeFeatureId);
+  const activeFeaturePanelId: string = createFeaturePanelId(activeFeatureId);
+  const activeFeatureTabId: string = createFeatureTabId(activeFeatureId);
+  const featureTabRefs = useRef<Map<FeatureHighlightId, HTMLButtonElement>>(new Map());
   const initialRecordingUrl: string | null = props.initialRecordingUrl ?? null;
   const isDevelopmentMode: boolean = props.isDevelopmentMode ?? false;
+  const shouldShowRrwebPanel: boolean =
+    initialRecordingUrl !== null || isDevelopmentMode || rrwebDemoRecording !== null;
+
+  function handleFeatureTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, featureIndex: number): void {
+    const lastFeatureIndex: number = featureHighlights.length - 1;
+
+    let nextFeatureIndex: number | null = null;
+
+    switch (event.key) {
+      case "ArrowDown":
+      case "ArrowRight": {
+        nextFeatureIndex = featureIndex === lastFeatureIndex ? 0 : featureIndex + 1;
+        break;
+      }
+      case "ArrowLeft":
+      case "ArrowUp": {
+        nextFeatureIndex = featureIndex === 0 ? lastFeatureIndex : featureIndex - 1;
+        break;
+      }
+      case "Home": {
+        nextFeatureIndex = 0;
+        break;
+      }
+      case "End": {
+        nextFeatureIndex = lastFeatureIndex;
+        break;
+      }
+      default: {
+        return;
+      }
+    }
+
+    event.preventDefault();
+
+    if (nextFeatureIndex === null) {
+      return;
+    }
+
+    const nextFeature = featureHighlights[nextFeatureIndex];
+
+    if (nextFeature === undefined) {
+      return;
+    }
+
+    setActiveFeatureId(nextFeature.id);
+    featureTabRefs.current.get(nextFeature.id)?.focus();
+  }
 
   function handleStartRrwebRecording(): void {
     if (isRecordingRrwebDemo) {
@@ -193,7 +270,7 @@ export function App(props: IAppProps): JSX.Element {
     exportRrwebDemoRecording(rrwebDemoRecording);
   }
 
-  useEffect((): (() => void) => {
+  useEffect(() => {
     return (): void => {
       const activeRecordingController = activeRecordingControllerRef.current;
 
@@ -204,7 +281,7 @@ export function App(props: IAppProps): JSX.Element {
     };
   }, []);
 
-  useEffect((): (() => void) | void => {
+  useEffect(() => {
     if (initialRecordingUrl === null) {
       return;
     }
@@ -238,151 +315,226 @@ export function App(props: IAppProps): JSX.Element {
   return (
     <main className="app-shell" data-testid="App">
       <div className="app-frame">
-        <header className="app-header">
-          <div className="app-header__actions">
-            <label className="theme-control" htmlFor="theme-preference">
-              <span className="theme-control__label">Theme</span>
-              <select
-                id="theme-preference"
-                className="theme-control__select"
-                value={themePreference}
-                onChange={(event: ChangeEvent<HTMLSelectElement>): void => {
-                  setThemePreference(parseThemePreference(event.currentTarget.value));
-                }}
-              >
-                {themeOptions.map((themeOption: IThemeOption) => {
-                  return (
-                    <option key={themeOption.value} value={themeOption.value}>
-                      {themeOption.label}
-                    </option>
-                  );
-                })}
-              </select>
-            </label>
+        <header className="app-topbar">
+          <div className="brand-lockup">
+            <p className="brand-lockup__eyebrow">devhost</p>
+            <p className="brand-lockup__caption">Managed Caddy, routed hosts, source-aware devtools</p>
           </div>
+
+          <label className="theme-control" htmlFor="theme-preference">
+            <span className="theme-control__label">Theme</span>
+            <select
+              id="theme-preference"
+              className="theme-control__select"
+              value={themePreference}
+              onChange={(event: ChangeEvent<HTMLSelectElement>): void => {
+                setThemePreference(parseThemePreference(event.currentTarget.value));
+              }}
+            >
+              {themeOptions.map((themeOption: IThemeOption) => {
+                return (
+                  <option key={themeOption.value} value={themeOption.value}>
+                    {themeOption.label}
+                  </option>
+                );
+              })}
+            </select>
+          </label>
         </header>
 
-        <section className="hero-section">
-          <div className="hero-section__copy">
-            <p className="app-kicker">Dark Framer baseline, explicit light override</p>
-            <h1 className="app-title">Framer-style overlay audit surface</h1>
+        <section className="hero-section" aria-labelledby="hero-title">
+          <div className="hero-copy">
+            <p className="panel-kicker">Managed local stacks behind real hosts</p>
+            <h1 id="hero-title" className="app-title">
+              devhost is the storefront for routed local stacks.
+            </h1>
             <p className="app-body">
-              I restored a real System, Light, and Dark switch because that is what you asked for. Dark remains the
-              reference mode from the Framer skill, while light mode is now an explicit override for comparison work.
+              Start the app, wait for health, route a real hostname through managed Caddy, and layer source-aware
+              devtools on top without dragging every asset request through the proxy.
             </p>
+            <ul className="hero-bullets">
+              <li>Single-service mode when you need one app.</li>
+              <li>Manifest mode when the stack has real dependencies.</li>
+              <li>Annotation, source navigation, and terminal sessions from the page itself.</li>
+            </ul>
           </div>
 
           <aside className="hero-panel" aria-labelledby="hero-panel-title">
-            <p className="panel-kicker">What changed</p>
+            <p className="panel-kicker">Launch sequence</p>
             <h2 id="hero-panel-title" className="section-title">
-              The shell can compare themes again without faking it
+              From clean boot to routed app in two commands.
             </h2>
+            <div className="command-stack">
+              {launchCommands.map((command: string) => {
+                return (
+                  <pre key={command} className="command-card">
+                    <code>{command}</code>
+                  </pre>
+                );
+              })}
+            </div>
             <ul className="bullet-list">
-              <li>Dark mode remains the baseline audit surface instead of being silently downgraded.</li>
-              <li>System, Light, and Dark now switch actual token sets rather than relabeling one palette.</li>
-              <li>The selected mode persists so the app and Storybook can validate the same behavior.</li>
+              <li>Start the managed edge once, then let devhost own route registration.</li>
+              <li>Run the manifest and let health checks decide when a hostname becomes real.</li>
+              <li>Open the routed page with devtools that understand the stack around it.</li>
             </ul>
           </aside>
         </section>
 
-        {initialRecordingUrl !== null || isDevelopmentMode || rrwebDemoRecording !== null ? (
-          <RrwebDemoPanel
-            isDevelopmentMode={isDevelopmentMode}
-            isRecording={isRecordingRrwebDemo}
-            onExportRecording={handleExportRrwebRecording}
-            onStartRecording={handleStartRrwebRecording}
-            onStopRecording={handleStopRrwebRecording}
-            recording={rrwebDemoRecording}
-          />
+        {shouldShowRrwebPanel ? (
+          <section className="demo-band" aria-label="Live replay demo">
+            <RrwebDemoPanel
+              isDevelopmentMode={isDevelopmentMode}
+              isRecording={isRecordingRrwebDemo}
+              onExportRecording={handleExportRrwebRecording}
+              onStartRecording={handleStartRrwebRecording}
+              onStopRecording={handleStopRrwebRecording}
+              recording={rrwebDemoRecording}
+            />
+          </section>
         ) : null}
 
-        <section className="inspection-section" aria-labelledby="inspection-section-title">
-          <div className="inspection-section__intro">
-            <p className="panel-kicker">Inspection lanes</p>
-            <h2 id="inspection-section-title" className="section-title">
-              Switch the lane, then verify the shell still feels coherent
+        <section className="feature-section" aria-labelledby="feature-section-title">
+          <div className="section-intro">
+            <p className="panel-kicker">What you are buying</p>
+            <h2 id="feature-section-title" className="section-title">
+              A routed development surface, not another localhost wrapper.
             </h2>
-            <p className="app-body">
-              The controls stay intentionally plain. If state clarity depends on a hover gimmick or a blur trick, the UI
-              is doing presentation instead of product work.
+            <p className="section-body">
+              The point is not to proxy everything. The point is to expose the right host, keep the stack honest, and
+              put the debugging workflow where the page already lives.
             </p>
           </div>
 
-          <div className="inspection-section__content">
-            <div className="lane-button-group" role="group" aria-label="Inspection lanes">
-              {inspectionLanes.map((inspectionLane: IInspectionLane) => {
-                const isActive: boolean = inspectionLane.id === activeLaneId;
+          <div className="feature-layout">
+            <div
+              className="feature-tab-list"
+              role="tablist"
+              aria-label="Devhost product highlights"
+              aria-orientation="vertical"
+            >
+              {featureHighlights.map((featureHighlight: IFeatureHighlight, featureIndex: number) => {
+                const isActive: boolean = featureHighlight.id === activeFeatureId;
+                const featurePanelId: string = createFeaturePanelId(featureHighlight.id);
+                const featureTabId: string = createFeatureTabId(featureHighlight.id);
 
                 return (
                   <button
-                    key={inspectionLane.id}
+                    key={featureHighlight.id}
+                    id={featureTabId}
+                    ref={(element: HTMLButtonElement | null): void => {
+                      if (element === null) {
+                        featureTabRefs.current.delete(featureHighlight.id);
+                        return;
+                      }
+
+                      featureTabRefs.current.set(featureHighlight.id, element);
+                    }}
                     type="button"
-                    className="lane-button"
-                    aria-pressed={isActive}
+                    role="tab"
+                    className="feature-button"
+                    aria-controls={featurePanelId}
+                    aria-selected={isActive}
+                    tabIndex={isActive ? 0 : -1}
                     onClick={(): void => {
-                      setActiveLaneId(inspectionLane.id);
+                      setActiveFeatureId(featureHighlight.id);
+                    }}
+                    onKeyDown={(event: KeyboardEvent<HTMLButtonElement>): void => {
+                      handleFeatureTabKeyDown(event, featureIndex);
                     }}
                   >
-                    {inspectionLane.kicker}
+                    {featureHighlight.kicker}
                   </button>
                 );
               })}
             </div>
 
-            <article className="lane-detail" aria-labelledby="active-lane-title">
-              <p className="panel-kicker">{activeLane.kicker}</p>
-              <h3 id="active-lane-title" className="section-title">
-                {activeLane.title}
-              </h3>
-              <p className="app-body">{activeLane.body}</p>
-              <ul className="bullet-list">
-                {activeLane.checklist.map((checklistItem: string) => {
-                  return <li key={checklistItem}>{checklistItem}</li>;
-                })}
-              </ul>
+            <article
+              id={activeFeaturePanelId}
+              className="feature-detail"
+              role="tabpanel"
+              aria-labelledby={activeFeatureTabId}
+            >
+              <p className="panel-kicker">{activeFeature.kicker}</p>
+              <h3 className="section-title">{activeFeature.title}</h3>
+              <p className="section-body">{activeFeature.body}</p>
+              {activeFeature.checklist.length > 0 ? (
+                <ul className="bullet-list">
+                  {activeFeature.checklist.map((checklistItem: string) => {
+                    return <li key={checklistItem}>{checklistItem}</li>;
+                  })}
+                </ul>
+              ) : null}
             </article>
+
+            <aside className="proof-card feature-proof-card" aria-labelledby="feature-proof-card-title">
+              <p className="panel-kicker">{featureSectionProofCard.eyebrow}</p>
+              <h3 id="feature-proof-card-title" className="proof-card__title">
+                {featureSectionProofCard.title}
+              </h3>
+              <p className="proof-card__body">{featureSectionProofCard.body}</p>
+            </aside>
           </div>
         </section>
 
-        <section className="signal-grid" aria-label="Framer audit cards">
-          {auditSections.map((auditSection: IAuditSection) => {
-            return (
-              <article key={auditSection.title} className="signal-card">
-                <p className="panel-kicker">{auditSection.eyebrow}</p>
-                <h2 className="section-title">{auditSection.title}</h2>
-                <p className="card-body">{auditSection.body}</p>
-              </article>
-            );
-          })}
-        </section>
-
-        <section className="diagnostic-stack" aria-labelledby="diagnostic-stack-title">
-          <div className="diagnostic-stack__intro">
-            <p className="panel-kicker">Long-form diagnostics</p>
-            <h2 id="diagnostic-stack-title" className="section-title">
-              Scroll through the full page and look for hierarchy drift
+        <section className="workflow-section" aria-labelledby="workflow-section-title">
+          <div className="section-intro">
+            <p className="panel-kicker">Workflow</p>
+            <h2 id="workflow-section-title" className="section-title">
+              Give the stack a disciplined path from boot to inspection.
             </h2>
-            <p className="app-body">
-              The content below exists to create enough depth for real overlay evaluation. If fixed chrome feels
-              detached or the reading panes become noisy in one theme, the shell still needs work.
+            <p className="section-body">
+              This is where devhost earns its keep: boot the edge, resolve the stack, route the host, then keep the
+              debugging workflow close enough to the page that context does not leak away.
             </p>
           </div>
 
-          <div className="diagnostic-stack__grid">
-            {diagnosticSections.map((diagnosticSection: IDiagnosticSection, index: number) => {
+          <div className="workflow-layout">
+            <div className="workflow-stack">
+              {workflowSteps.map((workflowStep: IWorkflowStep) => {
+                return (
+                  <article key={workflowStep.step} className="workflow-card">
+                    <p className="workflow-card__step">{workflowStep.step}</p>
+                    <div className="workflow-card__content">
+                      <h3 className="workflow-card__title">{workflowStep.title}</h3>
+                      <p className="workflow-card__body">{workflowStep.body}</p>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+
+            <aside className="manifest-card" aria-labelledby="manifest-card-title">
+              <p className="panel-kicker">Manifest preview</p>
+              <h2 id="manifest-card-title" className="section-title">
+                The demo app now reads like product evidence.
+              </h2>
+              <p className="section-body">
+                The sample manifest is still the fastest way to explain what devhost owns: stack identity, primary
+                routing, devtools placement, editor preference, and service-level process contracts.
+              </p>
+              <pre className="manifest-preview">
+                <code>{manifestPreviewLines.join("\n")}</code>
+              </pre>
+            </aside>
+          </div>
+        </section>
+
+        <section className="proof-section" aria-labelledby="proof-section-title">
+          <div className="section-intro">
+            <p className="panel-kicker">Why this shell is credible</p>
+            <h2 id="proof-section-title" className="section-title">
+              The page now sells the real constraints, not decorative abstractions.
+            </h2>
+          </div>
+
+          <div className="proof-grid">
+            {proofGridCards.map((proofCard: IProofCard) => {
               return (
-                <article key={diagnosticSection.title} className="diagnostic-card">
-                  <div className="diagnostic-card__header">
-                    <span className="diagnostic-index">{String(index + 1).padStart(2, "0")}</span>
-                    <h3 className="section-title">{diagnosticSection.title}</h3>
-                  </div>
-                  {diagnosticSection.paragraphs.map((paragraph: string) => {
-                    return (
-                      <p key={paragraph} className="diagnostic-body">
-                        {paragraph}
-                      </p>
-                    );
-                  })}
+                <article key={proofCard.id} className="proof-card">
+                  <p className="panel-kicker">{proofCard.eyebrow}</p>
+                  <h3 className="proof-card__title">{proofCard.title}</h3>
+                  <p className="proof-card__body">{proofCard.body}</p>
                 </article>
               );
             })}
@@ -391,6 +543,14 @@ export function App(props: IAppProps): JSX.Element {
       </div>
     </main>
   );
+}
+
+function createFeatureTabId(featureHighlightId: FeatureHighlightId): string {
+  return `feature-tab-${featureHighlightId}`;
+}
+
+function createFeaturePanelId(featureHighlightId: FeatureHighlightId): string {
+  return `feature-panel-${featureHighlightId}`;
 }
 
 function readStoredThemePreference(storage: Pick<Storage, "getItem">): ThemePreference {
@@ -405,16 +565,28 @@ function parseThemePreference(value: string | null): ThemePreference {
   return "system";
 }
 
-function findInspectionLaneById(activeLaneId: InspectionLaneId): IInspectionLane {
-  const activeLane: IInspectionLane | undefined = inspectionLanes.find(
-    (inspectionLane: IInspectionLane): boolean => {
-      return inspectionLane.id === activeLaneId;
+function findProofCardById(proofCardId: ProofCardId): IProofCard {
+  const proofCard: IProofCard | undefined = proofCards.find((candidateProofCard: IProofCard): boolean => {
+    return candidateProofCard.id === proofCardId;
+  });
+
+  if (proofCard === undefined) {
+    throw new Error(`Missing proof card for id: ${proofCardId}`);
+  }
+
+  return proofCard;
+}
+
+function findFeatureHighlightById(activeFeatureId: FeatureHighlightId): IFeatureHighlight {
+  const activeFeature: IFeatureHighlight | undefined = featureHighlights.find(
+    (featureHighlight: IFeatureHighlight): boolean => {
+      return featureHighlight.id === activeFeatureId;
     },
   );
 
-  if (activeLane === undefined) {
-    throw new Error(`Missing inspection lane for id: ${activeLaneId}`);
+  if (activeFeature === undefined) {
+    throw new Error(`Missing feature highlight for id: ${activeFeatureId}`);
   }
 
-  return activeLane;
+  return activeFeature;
 }

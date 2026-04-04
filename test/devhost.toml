@@ -5,13 +5,13 @@ devtoolsPosition = "top-right"
 devtoolsComponentEditor = "neovim"
 
 [services.hello]
-command = ["bun", "run", "dev"]
+command = ["bun", "dev"]
 cwd = "."
 port = 3200
 host = "hello.xcv.lol"
 
 [services.logs]
-command = ["bun", "run", "log-demo"]
+command = ["bun", "log-demo"]
 cwd = "."
 
 [services.logs.health]

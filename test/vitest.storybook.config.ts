@@ -19,7 +19,7 @@ export default defineConfig({
         plugins: [
           storybookTest({
             configDir: path.join(dirname, ".storybook"),
-            storybookScript: "bun run storybook",
+            storybookScript: "bun storybook",
             storybookUrl: "http://127.0.0.1:6007",
           }),
         ],

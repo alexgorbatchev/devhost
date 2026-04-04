@@ -1,27 +1,38 @@
 export type ThemePreference = "system" | "light" | "dark";
 
-export type InspectionLaneId = "shell" | "contrast" | "scroll";
+export type FeatureHighlightId =
+  | "routing"
+  | "health-checks"
+  | "overlay"
+  | "annotation"
+  | "source-jumps"
+  | "sessions"
+  | "stack-contract";
 
 export interface IThemeOption {
   label: string;
   value: ThemePreference;
 }
 
-export interface IInspectionLane {
+export interface IFeatureHighlight {
   body: string;
   checklist: string[];
-  id: InspectionLaneId;
+  id: FeatureHighlightId;
   kicker: string;
   title: string;
 }
 
-export interface IAuditSection {
+export interface IWorkflowStep {
   body: string;
-  eyebrow: string;
+  step: string;
   title: string;
 }
 
-export interface IDiagnosticSection {
-  paragraphs: string[];
+export type ProofCardId = "proxy-discipline" | "isolation" | "local-https";
+
+export interface IProofCard {
+  body: string;
+  eyebrow: string;
+  id: ProofCardId;
   title: string;
 }
