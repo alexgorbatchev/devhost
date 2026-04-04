@@ -29,7 +29,7 @@ cd devhost && bun run dev --help
 Run the full test suite:
 
 ```bash
-cd devhost && bun test src/__tests__
+cd devhost && bun test
 ```
 
 Run the package check suite:
@@ -46,15 +46,13 @@ The check script runs the native TypeScript typecheck, the coverage test suite, 
 - `src/main.ts` — runtime entrypoint
 - `src/index.ts` — public barrel re-exports
 - `src/runDevhost.ts` — top-level orchestration and mode selection
-- `src/runManagedCaddyLifecycleCommand.ts` — `devhost caddy start|stop|trust`
-- `src/caddyPaths.ts` — managed Caddy state paths and admin address resolution
-- `src/resolveManagedCaddyBindDirective.ts` — platform-aware listener binding policy for managed Caddy
-- `src/ensureManagedCaddyConfig.ts` — generates the managed Caddyfile and state directories
-- `src/runManagedCaddyCommand.ts` — shared Caddy CLI wrapper for start/stop/trust/reload
-- `src/startSingleService.ts` — single-service flow
-- `src/startStack.ts` — manifest-mode flow
-- `src/validateManifest.ts` — Zod v4 schema + semantic validation
-- `src/routeUtils.ts` — route file management and managed Caddy reload logic
+- `src/agents/` — agent adapters and terminal commands
+- `src/caddy/` — managed Caddy lifecycle, paths, and binding directives
+- `src/devtools-server/` — injected browser UI injector and control servers
+- `src/manifest/` — Zod v4 schema + semantic validation, and TOML loading
+- `src/services/` — child process, dependency ordering, port resolution, and health check logic
+- `src/utils/` — route utils, logging, and networking helpers
+- `src/types/` — core stack types
 - `src/devtools/` — injected browser UI code
   - `src/devtools/features/` — feature-owned UI modules such as `minimap/` and `serviceStatusPanel/`
   - `src/devtools/shared/` — cross-feature theme, config, transport, and shared types

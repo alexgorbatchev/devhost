@@ -119,12 +119,14 @@ interface DevhostManifest {
   services: Record<string, DevhostServiceConfig>;
 }
 
-interface DevhostAgentConfig {
-  command: string[];
-  cwd?: string;
-  displayName: string;
-  env?: Record<string, string>;
-}
+type DevhostAgentConfig =
+  | { adapter: "pi" | "claude-code" | "opencode" }
+  | {
+      command: string[];
+      cwd?: string;
+      displayName: string;
+      env?: Record<string, string>;
+    };
 
 interface DevhostServiceConfig {
   command: string[];
@@ -202,7 +204,7 @@ interface ResolvedDevhostManifest {
 }
 
 type ResolvedDevhostAgent =
-  | { kind: "pi"; displayName: string }
+  | { kind: "pi" | "claude-code" | "opencode"; displayName: string }
   | {
       kind: "configured";
       command: string[];

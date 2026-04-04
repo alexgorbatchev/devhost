@@ -138,13 +138,24 @@ A root-level `[agent]` table is supported for custom annotation-agent launchers.
 When `[agent]` is omitted, `devhost` starts Pi by default.
 When `devtools = false`, routed services bypass the HTML injector and proxy straight to the app.
 
-### Custom annotation agents
+### Annotation agents
 
-Configure a project-local annotation launcher with a root-level `[agent]` table:
+Configure a project-local annotation launcher with a root-level `[agent]` table.
+
+Use built-in agent adapters for quick setup:
 
 ```toml
 [agent]
-displayName = "Claude Code"
+adapter = "claude-code"
+```
+
+Supported adapters are `"pi"`, `"claude-code"`, and `"opencode"`. When `[agent]` is omitted, `devhost` uses `adapter = "pi"` by default.
+
+For custom annotation agents, provide an explicit command:
+
+```toml
+[agent]
+displayName = "My Agent"
 command = ["bun", "./scripts/devhost-agent.ts"]
 cwd = "."
 
@@ -152,7 +163,7 @@ cwd = "."
 DEVHOST_AGENT_MODE = "annotation"
 ```
 
-`devhost` executes `command` directly, not through a shell string.
+`devhost` executes custom `command` entries directly, not through a shell string.
 For configured agents, `devhost` writes the annotation JSON and rendered prompt to temp files and injects:
 
 - `DEVHOST_AGENT_ANNOTATION_FILE`
@@ -192,7 +203,7 @@ Use a Bun TypeScript wrapper when your preferred agent CLI needs custom setup.
 - prefixes service logs with `[service-name]`
 - injects Alt + right-click React component-source navigation for routed pages when devtools are enabled
 - opens component sources through the configured editor protocol and also copies the resolved source path to the clipboard when the browser allows it
-- starts annotation sessions with the configured manifest agent, or Pi when `[agent]` is omitted
+- starts annotation sessions with the configured manifest agent, or the Pi adapter when `[agent]` is omitted
 - expands annotation-agent and Neovim terminal sessions to the full viewport when opened
 - shows embedded Neovim sessions with a compact one-line source summary using the raw source path
 - swaps a finished tray preview's green completion badge for a hover-only close button without disabling expand/reopen behavior

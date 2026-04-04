@@ -142,6 +142,9 @@ devtools = true
 devtoolsComponentEditor = "vscode"
 devtoolsMinimapPosition = "right"
 devtoolsPosition = "bottom-right"
+
+[agent]
+adapter = "pi"
 ```
 
 Example routed service:
@@ -207,7 +210,7 @@ The injected UI now uses a hold-to-select annotation trigger instead of a persis
 - click one or more page elements while holding `Alt` to place numbered markers
 - release `Alt` to leave selection mode while keeping the current draft open
 - write a comment that references markers like `#1` and `#2`
-- click `Submit` or press `⌘ ↵` / `Ctrl + Enter` to start a Pi session seeded with the draft
+- click `Submit` or press `⌘ ↵` / `Ctrl + Enter` to start an agent session seeded with the draft
 - click `Cancel` or press `Escape` to discard the draft
 
 The submitted draft includes the current stack name, page URL/title, comment text, and collected per-marker element metadata.
@@ -218,7 +221,35 @@ Alt + right-click component-source navigation uses the configured `devtoolsCompo
 
 Embedded terminal sessions now normalize their terminal environment to `TERM=xterm-256color` and `COLORTERM=truecolor` so terminal UIs like Neovim render against the actual xterm.js emulator instead of inheriting incompatible host-terminal identities. Neovim component-source sessions also expand to fill the available viewport when opened as a modal.
 
-If manifest `devtools = false`, devhost does not mount these control routes for that stack.
+When `devtools = false`, devhost does not mount these control routes for that stack.
+
+### Annotation agents
+
+Configure a project-local annotation launcher with a root-level `[agent]` table.
+
+Use built-in agent adapters for quick setup:
+
+```toml
+[agent]
+adapter = "claude-code"
+```
+
+Supported adapters: `"pi"`, `"claude-code"`, and `"opencode"`. When `[agent]` is omitted, `devhost` starts Pi by default.
+
+For custom annotation agents, provide an explicit command:
+
+```toml
+[agent]
+displayName = "My Agent"
+command = ["bun", "./scripts/devhost-agent.ts"]
+cwd = "."
+
+[agent.env]
+DEVHOST_AGENT_MODE = "annotation"
+```
+
+`devhost` executes custom agent commands directly, not through a shell string.
+For configured commands, `devhost` writes the annotation JSON and rendered prompt to temp files and injects them via `DEVHOST_AGENT_*` environment variables. Built-in adapters receive the rendered prompt natively via command-line arguments.
 
 ## Contributor notes
 
