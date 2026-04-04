@@ -16,6 +16,10 @@ describe("parseCommandLineArguments", () => {
       action: "trust",
       kind: "caddy",
     });
+    expect(parseCommandLineArguments(["caddy", "download"])).toEqual({
+      action: "download",
+      kind: "caddy",
+    });
   });
 
   test("parses single-service mode", () => {
@@ -54,7 +58,9 @@ describe("parseCommandLineArguments", () => {
   });
 
   test("rejects invalid caddy commands", () => {
-    expect(() => parseCommandLineArguments(["caddy"])).toThrow("Expected a caddy action: start, stop, or trust.");
+    expect(() => parseCommandLineArguments(["caddy"])).toThrow(
+      "Expected a caddy action: start, stop, trust, or download.",
+    );
     expect(() => parseCommandLineArguments(["caddy", "restart"])).toThrow("Unsupported caddy action: restart");
     expect(() => parseCommandLineArguments(["caddy", "start", "now"])).toThrow(
       "Caddy commands do not accept additional arguments.",

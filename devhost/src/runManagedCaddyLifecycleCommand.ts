@@ -13,7 +13,7 @@ import {
 } from "./runManagedCaddyCommand";
 import type { AsyncBooleanFunction, AsyncVoidFunction } from "./types";
 
-export type ManagedCaddyLifecycleAction = "start" | "stop" | "trust";
+export type ManagedCaddyLifecycleAction = "start" | "stop" | "trust" | "download";
 
 interface IRunManagedCaddyLifecycleCommandDependencies {
   ensureManagedCaddyConfig?: AsyncVoidFunction;
@@ -61,6 +61,12 @@ export async function runManagedCaddyLifecycleCommand(
       removeManagedPidFile,
       runManagedCaddyCommandImplementation,
     );
+  }
+
+  if (action === "download") {
+    const { downloadCaddy } = await import("./downloadCaddy");
+    await downloadCaddy(logger);
+    return 0;
   }
 
   logger.info(

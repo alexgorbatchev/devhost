@@ -7,7 +7,7 @@ export type CommandLineArguments =
 
 export interface ICaddyCommandLineArguments {
   kind: "caddy";
-  action: "start" | "stop" | "trust";
+  action: "start" | "stop" | "trust" | "download";
 }
 
 export interface ISingleServiceCommandLineArguments {
@@ -103,14 +103,14 @@ function parseCaddyCommandLineArguments(rawArguments: string[]): ICaddyCommandLi
   const action: string | undefined = rawArguments[0];
 
   if (action === undefined) {
-    throw new Error("Expected a caddy action: start, stop, or trust.");
+    throw new Error("Expected a caddy action: start, stop, trust, or download.");
   }
 
   if (rawArguments.length !== 1) {
     throw new Error("Caddy commands do not accept additional arguments.");
   }
 
-  if (action !== "start" && action !== "stop" && action !== "trust") {
+  if (action !== "start" && action !== "stop" && action !== "trust" && action !== "download") {
     throw new Error(`Unsupported caddy action: ${action}`);
   }
 

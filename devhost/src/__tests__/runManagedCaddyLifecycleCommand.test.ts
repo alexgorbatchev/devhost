@@ -116,6 +116,25 @@ describe("runManagedCaddyLifecycleCommand", () => {
     );
   });
 
+  test("downloads caddy when the download action is requested", async () => {
+    const logger = createLogger({
+      errorSink: (): void => undefined,
+      infoSink: (): void => undefined,
+    });
+
+    const originalPlatform = process.platform;
+    Object.defineProperty(process, "platform", { value: "invalidos" });
+
+    // We can test the integration by expecting the error from downloadCaddy
+    await expect(
+      runManagedCaddyLifecycleCommand("download", logger, {
+        ensureManagedCaddyConfig: (async (): Promise<void> => undefined) as TestPromiseVoid,
+      }),
+    ).rejects.toThrow("Unsupported OS: invalidos");
+
+    Object.defineProperty(process, "platform", { value: originalPlatform });
+  });
+
   test("warns before installing trust explicitly", async () => {
     const infoMessages: string[] = [];
     const logger = createLogger({

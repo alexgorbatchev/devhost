@@ -21,6 +21,7 @@ export const helpText: string = [
   "  bun run devhost caddy start",
   "  bun run devhost caddy stop",
   "  bun run devhost caddy trust",
+  "  bun run devhost caddy download",
   "",
   "Options:",
   "  --host      Public hostname to register in Caddy.",

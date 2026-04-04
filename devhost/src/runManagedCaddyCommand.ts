@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { managedCaddyPaths } from "./caddyPaths";
 
 export type StdioMode = "inherit" | "pipe";
@@ -21,12 +23,34 @@ export function createManagedCaddyCommandArguments(arguments_: string[]): string
   return [...arguments_, "--config", managedCaddyPaths.caddyfilePath, "--adapter", "caddyfile"];
 }
 
+export type ExistsSyncImplementation = (path: string) => boolean;
+
+export function resolveCaddyExecutablePath(
+  existsSyncImplementation: ExistsSyncImplementation = existsSync,
+  osOverride: string = process.platform,
+): string {
+  const extension = osOverride === "win32" ? ".exe" : "";
+  const isolatedPath = join(managedCaddyPaths.caddyDirectoryPath, `caddy${extension}`);
+
+  if (existsSyncImplementation(isolatedPath)) {
+    return isolatedPath;
+  }
+
+  return "caddy";
+}
+
+export interface IRunManagedCaddyCommandDependencies {
+  existsSync?: ExistsSyncImplementation;
+}
+
 export function runManagedCaddyCommand(
   arguments_: string[],
   options: IRunManagedCaddyCommandOptions = {},
+  dependencies: IRunManagedCaddyCommandDependencies = {},
 ): ICaddyCommandResult {
   const resolvedStdioMode: StdioMode = options.stdioMode ?? "pipe";
-  const result = Bun.spawnSync(["caddy", ...createManagedCaddyCommandArguments(arguments_)], {
+  const executable: string = resolveCaddyExecutablePath(dependencies.existsSync);
+  const result = Bun.spawnSync([executable, ...createManagedCaddyCommandArguments(arguments_)], {
     cwd: managedCaddyPaths.caddyDirectoryPath,
     stderr: resolvedStdioMode,
     stdin: resolvedStdioMode === "inherit" ? "inherit" : undefined,
