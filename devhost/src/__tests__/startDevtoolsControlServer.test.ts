@@ -258,6 +258,64 @@ describe("startDevtoolsControlServer", () => {
     expect(terminalStub.startedRequests).toEqual([componentSourceRequest]);
   });
 
+  test("lists active terminal sessions for reconnecting devtools clients", async () => {
+    const terminalStub: TestTerminalStub = createTerminalStub();
+    const controlServer = await startDevtoolsControlServer({
+      agentDisplayName: "Pi",
+      componentEditor: "neovim",
+      devtoolsMinimapPosition: "left",
+      devtoolsPosition: "bottom-right",
+      getHealthResponse: async (): Promise<HealthResponse> => {
+        return {
+          services: [],
+        };
+      },
+      projectRootPath: "/tmp/project",
+      stackName: "hello-stack",
+      startTerminalSession: terminalStub.start,
+    });
+
+    stopFunctions.push(controlServer.stop);
+
+    const controlToken: string = await readControlToken(controlServer.port);
+    const annotationRequest: StartTerminalSessionRequest = {
+      annotation: createAnnotationDetail(),
+      kind: "agent",
+    };
+    const startResponse: Response = await fetch(
+      `http://127.0.0.1:${controlServer.port}${TERMINAL_SESSION_START_PATH}`,
+      {
+        body: JSON.stringify(annotationRequest),
+        headers: {
+          "content-type": "application/json",
+          "x-devhost-control-token": controlToken,
+        },
+        method: "POST",
+      },
+    );
+    const startResponseBody: unknown = await startResponse.json();
+
+    expect(startResponse.status).toBe(200);
+    assert(isSessionStartResponse(startResponseBody));
+
+    const listResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${TERMINAL_SESSION_START_PATH}`, {
+      headers: {
+        "x-devhost-control-token": controlToken,
+      },
+      method: "GET",
+    });
+
+    expect(listResponse.status).toBe(200);
+    await expect(listResponse.json()).resolves.toEqual({
+      sessions: [
+        {
+          request: annotationRequest,
+          sessionId: startResponseBody.sessionId,
+        },
+      ],
+    });
+  });
+
   test("keeps the terminal websocket open after the process exits until the client closes it", async () => {
     const terminalStub: TestTerminalStub = createTerminalStub();
     const controlServer = await startDevtoolsControlServer({

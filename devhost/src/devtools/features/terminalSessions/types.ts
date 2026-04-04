@@ -37,6 +37,15 @@ export interface IStartTerminalSessionResponse {
   sessionId: string;
 }
 
+export interface IActiveTerminalSessionSnapshot {
+  request: StartTerminalSessionRequest;
+  sessionId: string;
+}
+
+export interface IListTerminalSessionsResponse {
+  sessions: IActiveTerminalSessionSnapshot[];
+}
+
 export interface ITerminalSessionStartResult {
   errorMessage?: string;
   success: boolean;

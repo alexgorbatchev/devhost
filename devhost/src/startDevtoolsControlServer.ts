@@ -5,6 +5,8 @@ import { createConfiguredDevtoolsScript } from "./createConfiguredDevtoolsScript
 import type { DevtoolsComponentEditor } from "./devtoolsComponentEditor";
 import type { IAnnotationMarkerPayload, IAnnotationSubmitDetail } from "./devtools/features/annotationComposer/types";
 import type {
+  IActiveTerminalSessionSnapshot,
+  IListTerminalSessionsResponse,
   StartTerminalSessionRequest,
   TerminalSessionClientMessage,
   TerminalSessionServerMessage,
@@ -80,6 +82,7 @@ interface ITerminalSessionState {
   exited: ITerminalSessionExitStatus | null;
   idleTimeoutId: ReturnType<typeof setTimeout> | null;
   outputBuffer: string;
+  request: StartTerminalSessionRequest;
   resize: (cols: number, rows: number) => void;
   sockets: Set<Bun.ServerWebSocket<DevtoolsWebSocketData>>;
   write: (data: string) => void;
@@ -130,27 +133,33 @@ export async function startDevtoolsControlServer(
         });
       }
 
-      if (requestUrl.pathname === TERMINAL_SESSION_START_PATH && request.method.toUpperCase() === "POST") {
+      if (requestUrl.pathname === TERMINAL_SESSION_START_PATH) {
         if (!isAuthorizedControlRequest(request, controlToken)) {
           return new Response("Forbidden", { status: 403 });
         }
 
-        const requestBody: unknown = await readRequestJson(request);
-
-        if (!isStartTerminalSessionRequest(requestBody)) {
-          return new Response("Invalid terminal session payload.", { status: 400 });
+        if (request.method.toUpperCase() === "GET") {
+          return Response.json(createTerminalSessionListResponse(terminalSessions));
         }
 
-        try {
-          const sessionId: string = createTerminalSession(requestBody);
+        if (request.method.toUpperCase() === "POST") {
+          const requestBody: unknown = await readRequestJson(request);
 
-          return Response.json({
-            sessionId,
-          });
-        } catch (error) {
-          const message: string = error instanceof Error ? error.message : String(error);
+          if (!isStartTerminalSessionRequest(requestBody)) {
+            return new Response("Invalid terminal session payload.", { status: 400 });
+          }
 
-          return new Response(message, { status: 500 });
+          try {
+            const sessionId: string = createTerminalSession(requestBody);
+
+            return Response.json({
+              sessionId,
+            });
+          } catch (error) {
+            const message: string = error instanceof Error ? error.message : String(error);
+
+            return new Response(message, { status: 500 });
+          }
         }
       }
 
@@ -395,6 +404,7 @@ export async function startDevtoolsControlServer(
       exited: null,
       idleTimeoutId: null,
       outputBuffer: "",
+      request,
       resize: launchedSession.resize,
       sockets: new Set<Bun.ServerWebSocket<DevtoolsWebSocketData>>(),
       write: launchedSession.write,
@@ -514,6 +524,21 @@ function closeTerminalSession(sessionId: string, terminalSessions: Map<string, I
   session.sockets.clear();
   session.close();
   terminalSessions.delete(sessionId);
+}
+
+function createTerminalSessionListResponse(
+  terminalSessions: Map<string, ITerminalSessionState>,
+): IListTerminalSessionsResponse {
+  const sessions: IActiveTerminalSessionSnapshot[] = Array.from(terminalSessions.entries()).map(
+    ([sessionId, session]): IActiveTerminalSessionSnapshot => {
+      return {
+        request: session.request,
+        sessionId,
+      };
+    },
+  );
+
+  return { sessions };
 }
 
 function createTerminalSessionErrorMessage(message: string): TerminalSessionServerMessage {
