@@ -296,6 +296,129 @@ textarea:focus-visible {
   gap: 24px;
 }
 
+.rrweb-section {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  box-shadow: var(--surface-shadow);
+  padding: 24px;
+  display: grid;
+  gap: 24px;
+}
+
+.rrweb-section__header {
+  display: grid;
+  gap: 16px;
+}
+
+.rrweb-section__body {
+  max-width: 44ch;
+}
+
+.rrweb-shortcut-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rrweb-section__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.rrweb-action-button {
+  min-height: 48px;
+  padding: 12px 18px;
+  border: 1px solid var(--interactive-selected-background);
+  border-radius: var(--radius-sm);
+  background: var(--interactive-selected-background);
+  color: var(--interactive-selected-text);
+  cursor: pointer;
+}
+
+.rrweb-action-button--secondary {
+  border-color: var(--border-default);
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.rrweb-action-button:hover:enabled {
+  filter: brightness(1.05);
+}
+
+.rrweb-action-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.rrweb-status-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.rrweb-demo-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rrweb-demo-pill {
+  margin: 0;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--metric-background);
+  color: var(--text-heading);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.rrweb-player-shell {
+  min-height: 420px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle);
+  overflow: hidden;
+}
+
+.rrweb-player-root,
+.rrweb-placeholder {
+  min-height: 420px;
+}
+
+.rrweb-player-root {
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.rrweb-player-root .rr-player {
+  background: var(--surface-base);
+  box-shadow: none;
+}
+
+.rrweb-player-root .rr-player__frame {
+  background: var(--surface-base);
+}
+
+.rrweb-placeholder {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.rrweb-placeholder__copy {
+  max-width: 36ch;
+  text-align: center;
+}
+
 .lane-button-group {
   display: grid;
   gap: 8px;
@@ -414,6 +537,7 @@ textarea:focus-visible {
   .app-header,
   .hero-panel,
   .inspection-section,
+  .rrweb-section,
   .signal-card,
   .diagnostic-card,
   .lane-detail {

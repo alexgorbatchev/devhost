@@ -1,6 +1,13 @@
-import { useEffect, useState, type ChangeEvent, type JSX } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type JSX } from "react";
 
 import "./App.css";
+import { RrwebDemoPanel } from "./RrwebDemoPanel";
+import {
+  createRrwebDemoRecording,
+  type IRrwebDemoRecording,
+  type IRrwebDemoRecordingController,
+} from "./createRrwebDemoRecording";
+import { exportRrwebDemoRecording } from "./exportRrwebDemoRecording";
 import type {
   IAuditMetric,
   IAuditSection,
@@ -144,11 +151,57 @@ const diagnosticSections: IDiagnosticSection[] = [
 ];
 
 export function App(): JSX.Element {
+  const activeRecordingControllerRef = useRef<IRrwebDemoRecordingController | null>(null);
   const [activeLaneId, setActiveLaneId] = useState<InspectionLaneId>("shell");
+  const [isRecordingRrwebDemo, setIsRecordingRrwebDemo] = useState<boolean>(false);
+  const [rrwebDemoRecording, setRrwebDemoRecording] = useState<IRrwebDemoRecording | null>(null);
   const [themePreference, setThemePreference] = useState<ThemePreference>(() => {
     return readStoredThemePreference(window.localStorage);
   });
   const activeLane: IInspectionLane = findInspectionLaneById(activeLaneId);
+
+  function handleStartRrwebRecording(): void {
+    if (isRecordingRrwebDemo) {
+      return;
+    }
+
+    activeRecordingControllerRef.current = createRrwebDemoRecording();
+    setRrwebDemoRecording(null);
+    setIsRecordingRrwebDemo(true);
+  }
+
+  function handleStopRrwebRecording(): void {
+    const activeRecordingController = activeRecordingControllerRef.current;
+
+    if (activeRecordingController === null) {
+      return;
+    }
+
+    const recording = activeRecordingController.stop();
+
+    activeRecordingControllerRef.current = null;
+    setIsRecordingRrwebDemo(false);
+    setRrwebDemoRecording(recording);
+  }
+
+  function handleExportRrwebRecording(): void {
+    if (rrwebDemoRecording === null) {
+      return;
+    }
+
+    exportRrwebDemoRecording(rrwebDemoRecording);
+  }
+
+  useEffect((): (() => void) => {
+    return (): void => {
+      const activeRecordingController = activeRecordingControllerRef.current;
+
+      if (activeRecordingController !== null) {
+        activeRecordingController.stop();
+        activeRecordingControllerRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect((): void => {
     document.documentElement.dataset.theme = themePreference;
@@ -272,6 +325,14 @@ export function App(): JSX.Element {
             </article>
           </div>
         </section>
+
+        <RrwebDemoPanel
+          isRecording={isRecordingRrwebDemo}
+          onExportRecording={handleExportRrwebRecording}
+          onStartRecording={handleStartRrwebRecording}
+          onStopRecording={handleStopRrwebRecording}
+          recording={rrwebDemoRecording}
+        />
 
         <section className="signal-grid" aria-label="Framer audit cards">
           {auditSections.map((auditSection: IAuditSection) => {
