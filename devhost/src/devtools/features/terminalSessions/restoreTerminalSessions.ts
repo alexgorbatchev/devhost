@@ -26,17 +26,14 @@ export function restoreTerminalSessions(
     },
     [],
   );
-  const hasExpandedCurrentSession: boolean = currentSessions.some((terminalSession: TerminalSession): boolean => {
-    return terminalSession.isExpanded;
-  });
-  const normalizedRestoredSessions: TerminalSession[] = hasExpandedCurrentSession
-    ? restoredSessions.map((terminalSession: TerminalSession): TerminalSession => {
-        return {
-          ...terminalSession,
-          isExpanded: false,
-        };
-      })
-    : restoredSessions;
+  const minimizedRestoredSessions: TerminalSession[] = restoredSessions.map(
+    (terminalSession: TerminalSession): TerminalSession => {
+      return {
+        ...terminalSession,
+        isExpanded: false,
+      };
+    },
+  );
 
-  return [...currentSessions, ...normalizedRestoredSessions];
+  return [...currentSessions, ...minimizedRestoredSessions];
 }

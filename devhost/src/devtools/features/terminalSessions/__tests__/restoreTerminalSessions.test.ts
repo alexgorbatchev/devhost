@@ -35,12 +35,18 @@ const EDITOR_SNAPSHOT: IActiveTerminalSessionSnapshot = {
 };
 
 describe("restoreTerminalSessions", () => {
-  test("restores missing sessions in newest-first order", () => {
+  test("restores missing sessions in newest-first order as minimized sessions", () => {
     const restoredSessions: TerminalSession[] = restoreTerminalSessions([], [AGENT_SNAPSHOT, EDITOR_SNAPSHOT], "Pi");
 
     expect(restoredSessions).toEqual([
-      createTerminalSession(EDITOR_SNAPSHOT.sessionId, EDITOR_SNAPSHOT.request, "Pi"),
-      createTerminalSession(AGENT_SNAPSHOT.sessionId, AGENT_SNAPSHOT.request, "Pi"),
+      {
+        ...createTerminalSession(EDITOR_SNAPSHOT.sessionId, EDITOR_SNAPSHOT.request, "Pi"),
+        isExpanded: false,
+      },
+      {
+        ...createTerminalSession(AGENT_SNAPSHOT.sessionId, AGENT_SNAPSHOT.request, "Pi"),
+        isExpanded: false,
+      },
     ]);
   });
 
