@@ -138,8 +138,10 @@ export function useTerminalSessions(): IUseTerminalSessionsResult {
   };
 }
 
+type SetTerminalSessionsCallback = (value: (currentSessions: TerminalSession[]) => TerminalSession[]) => void;
+
 async function restoreActiveTerminalSessions(
-  setTerminalSessions: (value: (currentSessions: TerminalSession[]) => TerminalSession[]) => void,
+  setTerminalSessions: SetTerminalSessionsCallback,
   agentDisplayName: string,
 ): Promise<void> {
   try {
@@ -245,9 +247,12 @@ function isListTerminalSessionsResponse(value: unknown): value is IListTerminalS
 
   const sessions: unknown = Reflect.get(value, "sessions");
 
-  return Array.isArray(sessions) && sessions.every((session: unknown): session is IActiveTerminalSessionSnapshot => {
-    return isActiveTerminalSessionSnapshot(session);
-  });
+  return (
+    Array.isArray(sessions) &&
+    sessions.every((session: unknown): session is IActiveTerminalSessionSnapshot => {
+      return isActiveTerminalSessionSnapshot(session);
+    })
+  );
 }
 
 function isRectSnapshot(value: unknown): boolean {
