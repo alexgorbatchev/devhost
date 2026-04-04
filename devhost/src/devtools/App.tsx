@@ -2,7 +2,7 @@ import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "preact";
 import { useState } from "preact/hooks";
 
-import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../stackTypes";
+import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../types/stackTypes";
 import { AnnotationComposer } from "./features/annotationComposer";
 import { ComponentSourceMenu, useComponentSourceNavigation } from "./features/componentSourceNavigation";
 import { LogMinimap, useServiceLogs } from "./features/minimap";

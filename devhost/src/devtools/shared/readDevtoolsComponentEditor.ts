@@ -1,4 +1,4 @@
-import type { DevtoolsComponentEditor } from "../../devtoolsComponentEditor";
+import type { DevtoolsComponentEditor } from "../../devtools-server/devtoolsComponentEditor";
 
 import { readInjectedDevtoolsConfig } from "./readInjectedDevtoolsConfig";
 

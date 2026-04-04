@@ -1,14 +1,14 @@
-import { helpText } from "./constants";
-import type { IDevhostLogger } from "./createLogger";
-import { parseCommandLineArguments } from "./parseCommandLineArguments";
-import { runManagedCaddyLifecycleCommand } from "./runManagedCaddyLifecycleCommand";
-import { readManifest } from "./readManifest";
-import { resolveManifestPath } from "./resolveManifestPath";
-import { resolveServiceOrder } from "./resolveServiceOrder";
-import { resolveServicePorts } from "./resolveServicePorts";
-import { startSingleService } from "./startSingleService";
-import { startStack } from "./startStack";
-import { validateManifest } from "./validateManifest";
+import { helpText } from "./utils/constants";
+import type { IDevhostLogger } from "./utils/createLogger";
+import { parseCommandLineArguments } from "./manifest/parseCommandLineArguments";
+import { runManagedCaddyLifecycleCommand } from "./caddy/runManagedCaddyLifecycleCommand";
+import { readManifest } from "./manifest/readManifest";
+import { resolveManifestPath } from "./manifest/resolveManifestPath";
+import { resolveServiceOrder } from "./services/resolveServiceOrder";
+import { resolveServicePorts } from "./services/resolveServicePorts";
+import { startSingleService } from "./services/startSingleService";
+import { startStack } from "./services/startStack";
+import { validateManifest } from "./manifest/validateManifest";
 
 export async function runDevhost(rawArguments: string[], logger: IDevhostLogger): Promise<number> {
   let activeLogger: IDevhostLogger = logger;

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "preact/hooks";
 
-import { readDevtoolsComponentEditorLabel, type DevtoolsComponentEditor } from "../../../devtoolsComponentEditor";
+import { readDevtoolsComponentEditorLabel, type DevtoolsComponentEditor } from "../../../devtools-server/devtoolsComponentEditor";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../shared/constants";
 import { resolveAnnotationTarget } from "../annotationComposer/resolveAnnotationTarget";
 import type { ITerminalSessionStartResult } from "../terminalSessions/types";

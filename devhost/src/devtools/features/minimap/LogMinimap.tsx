@@ -2,7 +2,7 @@ import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
-import type { DevtoolsMinimapPosition } from "../../../stackTypes";
+import type { DevtoolsMinimapPosition } from "../../../types/stackTypes";
 import { css, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
 import type { ServiceLogEntry } from "../../shared/types";
 import { createLogMinimapMarksFromVisibleRows, type ILogMinimapMark } from "./createLogMinimapMarks";

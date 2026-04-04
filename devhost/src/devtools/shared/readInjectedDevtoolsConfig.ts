@@ -1,10 +1,10 @@
-import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../../stackTypes";
-import { createDefaultDevhostAgent } from "../../createDefaultDevhostAgent";
+import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../../types/stackTypes";
+import { createDefaultDevhostAgent } from "../../agents/createDefaultDevhostAgent";
 import {
   defaultDevtoolsComponentEditor,
   readDevtoolsComponentEditorValue,
   type DevtoolsComponentEditor,
-} from "../../devtoolsComponentEditor";
+} from "../../devtools-server/devtoolsComponentEditor";
 import { DEVHOST_SERVICE_NAME, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "./constants";
 
 export interface IInjectedDevtoolsConfig {

@@ -1,4 +1,4 @@
-import { createLogger } from "./createLogger";
+import { createLogger } from "./utils/createLogger";
 import { runDevhost } from "./runDevhost";
 
 const logger = createLogger({

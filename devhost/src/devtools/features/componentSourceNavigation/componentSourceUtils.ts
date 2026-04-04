@@ -1,5 +1,5 @@
-import type { DevtoolsComponentEditor } from "../../../devtoolsComponentEditor";
-import { isWindowsDrivePath, normalizeFilePath, resolveSourceFilePath } from "../../../resolveSourceFilePath";
+import type { DevtoolsComponentEditor } from "../../../devtools-server/devtoolsComponentEditor";
+import { isWindowsDrivePath, normalizeFilePath, resolveSourceFilePath } from "../../../utils/resolveSourceFilePath";
 import { cleanSourcePath, type ISourceLocation } from "../../shared/sourceLocation";
 
 export function formatComponentSourcePath(source: ISourceLocation, projectRootPath: string): string {

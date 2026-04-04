@@ -1,2 +1,2 @@
-export { createLogger } from "./createLogger";
+export { createLogger } from "./utils/createLogger";
 export { runDevhost } from "./runDevhost";
