@@ -69,6 +69,10 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
   const [statusText, setStatusText] = useState<string>("Connecting…");
   const onRemove = props.onRemove;
   const session: TerminalSession = props.session;
+  const discardSession = useCallback((): void => {
+    terminateSession(websocketReference.current);
+    onRemove();
+  }, [onRemove]);
 
   themeReference.current = theme;
   isExpandedReference.current = props.isExpanded;
@@ -385,13 +389,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
               testId={primaryAction.testId}
               title={primaryAction.title}
               variant={primaryAction.variant}
-              onClick={(): void => {
-                if (!hasExited) {
-                  terminateSession(websocketReference.current);
-                }
-
-                props.onRemove();
-              }}
+              onClick={discardSession}
             >
               {primaryAction.label}
             </Button>
@@ -487,7 +485,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
           type="button"
           onClick={(event: JSX.TargetedMouseEvent<HTMLButtonElement>): void => {
             event.stopPropagation();
-            props.onRemove();
+            discardSession();
           }}
         >
           <svg

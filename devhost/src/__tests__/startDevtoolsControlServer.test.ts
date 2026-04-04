@@ -383,6 +383,15 @@ describe("startDevtoolsControlServer", () => {
 
     await closePromise;
 
+    const listResponse: Response = await fetch(`http://127.0.0.1:${controlServer.port}${TERMINAL_SESSION_START_PATH}`, {
+      headers: {
+        "x-devhost-control-token": controlToken,
+      },
+      method: "GET",
+    });
+
+    expect(listResponse.status).toBe(200);
+    await expect(listResponse.json()).resolves.toEqual({ sessions: [] });
     expect(terminalStub.closeCount).toBe(1);
   });
 });
