@@ -4,7 +4,10 @@ import { z } from "zod";
 
 import { defaultBindHost } from "../utils/constants";
 import { createDefaultDevhostAgent } from "../agents/createDefaultDevhostAgent";
-import { defaultDevtoolsComponentEditor, supportedDevtoolsComponentEditors } from "../devtools-server/devtoolsComponentEditor";
+import {
+  defaultDevtoolsComponentEditor,
+  supportedDevtoolsComponentEditors,
+} from "../devtools-server/devtoolsComponentEditor";
 import { isValidHost } from "../utils/isValidHost";
 import type {
   DevhostAgentConfig,

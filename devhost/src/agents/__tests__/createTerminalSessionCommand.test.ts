@@ -27,45 +27,27 @@ describe("createTerminalSessionCommand", () => {
       url: "https://hello.test/buttons",
     };
 
-    expect(
-      createTerminalSessionCommand({
-        agent: {
-          displayName: "Claude Code",
-          kind: "claude-code",
-        },
-        componentEditor: "vscode",
-        projectRootPath: "/tmp/project",
-        request: {
-          annotation,
-          kind: "agent",
-        },
-        stackName: "hello-stack",
-      }).command,
-    ).toEqual([
-      "claude",
-      [
-        "You are responding to a browser annotation captured by devhost.",
-        "Use the annotation context below to inspect the local codebase and drive the requested change.",
-        "",
-        "## Requested change",
-        "Fix the primary button spacing.",
-        "",
-        "## Page context",
-        "- Stack: hello-stack",
-        "- URL: https://hello.test/buttons",
-        "- Title: Buttons",
-        "- Submitted at: 2024-05-31T16:08:37.000Z",
-        "",
-        "## Annotated markers",
-        "",
-        "",
-        "## Required behavior",
-        "- Inspect the local codebase before proposing changes.",
-        "- Use the marker references (#1, #2, ...) when reasoning about the requested UI or behavior.",
-        "- If the request is ambiguous, ask clarifying questions before making irreversible changes.",
-        "- Prefer correct, durable fixes over quick workarounds.",
-      ].join("\n"),
-    ]);
+    const terminalSessionCommand = createTerminalSessionCommand({
+      agent: {
+        displayName: "Claude Code",
+        kind: "claude-code",
+      },
+      componentEditor: "vscode",
+      projectRootPath: "/tmp/project",
+      request: {
+        annotation,
+        kind: "agent",
+      },
+      stackName: "hello-stack",
+    });
+
+    cleanupFunctions.push(terminalSessionCommand.cleanup);
+
+    expect(terminalSessionCommand.command[0]).toBe("claude");
+    expect(terminalSessionCommand.command[1]).toMatch(
+      /^Please read the annotation details from .*prompt\.txt and address the requested change\.$/,
+    );
+    expect(terminalSessionCommand.env.DEVHOST_AGENT_PROMPT_FILE).toBeDefined();
   });
 
   test("builds the default Pi agent terminal command for annotation sessions", () => {
@@ -78,26 +60,27 @@ describe("createTerminalSessionCommand", () => {
       url: "https://hello.test/buttons",
     };
 
-    expect(
-      createTerminalSessionCommand({
-        agent: {
-          displayName: "Pi",
-          kind: "pi",
-        },
-        componentEditor: "vscode",
-        projectRootPath: "/tmp/project",
-        request: {
-          annotation,
-          kind: "agent",
-        },
-        stackName: "hello-stack",
-      }),
-    ).toEqual({
-      cleanup: expect.any(Function),
-      command: createPiAgentCommand(createAnnotationAgentPrompt(annotation)),
-      cwd: "/tmp/project",
-      env: {},
+    const terminalSessionCommand = createTerminalSessionCommand({
+      agent: {
+        displayName: "Pi",
+        kind: "pi",
+      },
+      componentEditor: "vscode",
+      projectRootPath: "/tmp/project",
+      request: {
+        annotation,
+        kind: "agent",
+      },
+      stackName: "hello-stack",
     });
+
+    cleanupFunctions.push(terminalSessionCommand.cleanup);
+
+    expect(terminalSessionCommand.command[0]).toBe("pi");
+    expect(terminalSessionCommand.command[1]).toBe("-e");
+    expect(terminalSessionCommand.command[3]).toMatch(/^@.*prompt\.txt$/);
+    expect(terminalSessionCommand.env.DEVHOST_AGENT_PROMPT_FILE).toBeDefined();
+    expect(terminalSessionCommand.cwd).toBe("/tmp/project");
   });
 
   test("builds a configured agent command with temp-file payloads", () => {

@@ -6,7 +6,11 @@ import { readDevtoolsComponentEditorValue } from "../devtools-server/devtoolsCom
 import type { IDevhostLogger } from "../utils/createLogger";
 import type { ISingleServiceCommandLineArguments } from "../manifest/parseCommandLineArguments";
 import { createInjectedServiceEnvironment, startStack } from "./startStack";
-import type { IInjectedServiceEnvironment, IResolvedDevhostManifest, IResolvedDevhostService } from "../types/stackTypes";
+import type {
+  IInjectedServiceEnvironment,
+  IResolvedDevhostManifest,
+  IResolvedDevhostService,
+} from "../types/stackTypes";
 
 const syntheticManifestFileName: string = "devhost.synthetic.toml";
 const syntheticStackName: string = "devhost";

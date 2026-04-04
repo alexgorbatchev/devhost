@@ -17,37 +17,6 @@ interface ICreateAgentTerminalCommandOptions {
 export function createAgentTerminalCommand(options: ICreateAgentTerminalCommandOptions): ITerminalSessionCommand {
   const prompt: string = createAnnotationAgentPrompt(options.request.annotation);
 
-  if (options.agent.kind === "pi") {
-    return {
-      cleanup: (): void => {},
-      command: createPiAgentCommand(prompt),
-      cwd: options.projectRootPath,
-      env: {},
-    };
-  }
-
-  if (options.agent.kind === "claude-code") {
-    return {
-      cleanup: (): void => {},
-      command: createClaudeCodeAgentCommand(prompt),
-      cwd: options.projectRootPath,
-      env: {},
-    };
-  }
-
-  if (options.agent.kind === "opencode") {
-    return {
-      cleanup: (): void => {},
-      command: createOpenCodeAgentCommand(prompt),
-      cwd: options.projectRootPath,
-      env: {},
-    };
-  }
-
-  if (options.agent.kind !== "configured") {
-    throw new Error(`Unsupported agent adapter: ${options.agent.kind}`);
-  }
-
   const sessionFiles = createAgentSessionFiles({
     annotation: options.request.annotation,
     displayName: options.agent.displayName,
@@ -55,6 +24,38 @@ export function createAgentTerminalCommand(options: ICreateAgentTerminalCommandO
     prompt,
     stackName: options.stackName,
   });
+
+  if (options.agent.kind === "pi") {
+    return {
+      cleanup: sessionFiles.cleanup,
+      command: createPiAgentCommand(sessionFiles.env.DEVHOST_AGENT_PROMPT_FILE),
+      cwd: options.projectRootPath,
+      env: sessionFiles.env,
+    };
+  }
+
+  if (options.agent.kind === "claude-code") {
+    return {
+      cleanup: sessionFiles.cleanup,
+      command: createClaudeCodeAgentCommand(sessionFiles.env.DEVHOST_AGENT_PROMPT_FILE),
+      cwd: options.projectRootPath,
+      env: sessionFiles.env,
+    };
+  }
+
+  if (options.agent.kind === "opencode") {
+    return {
+      cleanup: sessionFiles.cleanup,
+      command: createOpenCodeAgentCommand(sessionFiles.env.DEVHOST_AGENT_PROMPT_FILE),
+      cwd: options.projectRootPath,
+      env: sessionFiles.env,
+    };
+  }
+
+  if (options.agent.kind !== "configured") {
+    sessionFiles.cleanup();
+    throw new Error(`Unsupported agent adapter: ${options.agent.kind}`);
+  }
 
   return {
     cleanup: sessionFiles.cleanup,
