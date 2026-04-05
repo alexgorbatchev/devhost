@@ -16,7 +16,7 @@ interface IWaitForServiceHealthOptions {
 
 export async function waitForServiceHealth(options: IWaitForServiceHealthOptions): Promise<void> {
   if (options.health.kind === "process") {
-    await throwIfExited(options.childProcess, options.serviceName);
+    throwIfExited(options.childProcess, options.serviceName);
     return;
   }
 
@@ -27,7 +27,7 @@ export async function waitForServiceHealth(options: IWaitForServiceHealthOptions
       return;
     }
 
-    await throwIfExited(options.childProcess, options.serviceName);
+    throwIfExited(options.childProcess, options.serviceName);
     await Bun.sleep(pollIntervalInMilliseconds);
   }
 
@@ -36,13 +36,12 @@ export async function waitForServiceHealth(options: IWaitForServiceHealthOptions
   );
 }
 
-async function throwIfExited(childProcess: ISubprocessLike, serviceName: string): Promise<void> {
+function throwIfExited(childProcess: ISubprocessLike, serviceName: string): void {
   if (childProcess.exitCode === null) {
     return;
   }
 
-  const exitCode: number = await childProcess.exited;
-  throw new Error(`Service ${serviceName} exited before passing its health check with code ${exitCode}.`);
+  throw new Error(`Service ${serviceName} exited before passing its health check with code ${childProcess.exitCode}.`);
 }
 
 export async function checkServiceHealth(health: ResolvedHealthConfig): Promise<boolean> {
