@@ -592,19 +592,20 @@ function isAnnotationMarkerPayload(value: unknown): value is IAnnotationMarkerPa
     return false;
   }
 
-  const accessibility: unknown = Reflect.get(value, "accessibility");
-  const boundingBox: unknown = Reflect.get(value, "boundingBox");
-  const computedStyles: unknown = Reflect.get(value, "computedStyles");
-  const computedStylesObj: unknown = Reflect.get(value, "computedStylesObj");
-  const cssClasses: unknown = Reflect.get(value, "cssClasses");
-  const element: unknown = Reflect.get(value, "element");
-  const elementPath: unknown = Reflect.get(value, "elementPath");
-  const fullPath: unknown = Reflect.get(value, "fullPath");
-  const isFixed: unknown = Reflect.get(value, "isFixed");
-  const markerNumber: unknown = Reflect.get(value, "markerNumber");
-  const nearbyElements: unknown = Reflect.get(value, "nearbyElements");
-  const nearbyText: unknown = Reflect.get(value, "nearbyText");
-  const selectedText: unknown = Reflect.get(value, "selectedText");
+  const target = value as Record<string, unknown>;
+  const accessibility = target.accessibility;
+  const boundingBox = target.boundingBox;
+  const computedStyles = target.computedStyles;
+  const computedStylesObj = target.computedStylesObj;
+  const cssClasses = target.cssClasses;
+  const element = target.element;
+  const elementPath = target.elementPath;
+  const fullPath = target.fullPath;
+  const isFixed = target.isFixed;
+  const markerNumber = target.markerNumber;
+  const nearbyElements = target.nearbyElements;
+  const nearbyText = target.nearbyText;
+  const selectedText = target.selectedText;
 
   return (
     typeof accessibility === "string" &&
@@ -628,12 +629,13 @@ function isAnnotationSubmitDetail(value: unknown): value is IAnnotationSubmitDet
     return false;
   }
 
-  const comment: unknown = Reflect.get(value, "comment");
-  const markers: unknown = Reflect.get(value, "markers");
-  const stackName: unknown = Reflect.get(value, "stackName");
-  const submittedAt: unknown = Reflect.get(value, "submittedAt");
-  const title: unknown = Reflect.get(value, "title");
-  const url: unknown = Reflect.get(value, "url");
+  const target = value as Record<string, unknown>;
+  const comment = target.comment;
+  const markers = target.markers;
+  const stackName = target.stackName;
+  const submittedAt = target.submittedAt;
+  const title = target.title;
+  const url = target.url;
 
   return (
     typeof comment === "string" &&
@@ -655,10 +657,11 @@ function isRectSnapshot(value: unknown): boolean {
     return false;
   }
 
-  const height: unknown = Reflect.get(value, "height");
-  const width: unknown = Reflect.get(value, "width");
-  const x: unknown = Reflect.get(value, "x");
-  const y: unknown = Reflect.get(value, "y");
+  const target = value as Record<string, unknown>;
+  const height = target.height;
+  const width = target.width;
+  const x = target.x;
+  const y = target.y;
 
   return typeof height === "number" && typeof width === "number" && typeof x === "number" && typeof y === "number";
 }
@@ -668,10 +671,11 @@ function isSourceLocation(value: unknown): value is ISourceLocation {
     return false;
   }
 
-  const fileName: unknown = Reflect.get(value, "fileName");
-  const lineNumber: unknown = Reflect.get(value, "lineNumber");
-  const columnNumber: unknown = Reflect.get(value, "columnNumber");
-  const componentName: unknown = Reflect.get(value, "componentName");
+  const target = value as Record<string, unknown>;
+  const fileName = target.fileName;
+  const lineNumber = target.lineNumber;
+  const columnNumber = target.columnNumber;
+  const componentName = target.componentName;
 
   return (
     typeof fileName === "string" &&
@@ -689,19 +693,20 @@ function isStartTerminalSessionRequest(value: unknown): value is StartTerminalSe
     return false;
   }
 
-  const requestKind: unknown = Reflect.get(value, "kind");
-  const launcher: unknown = Reflect.get(value, "launcher");
+  const target = value as Record<string, unknown>;
+  const requestKind = target.kind;
+  const launcher = target.launcher;
 
   if (requestKind === "agent") {
-    const annotation: unknown = Reflect.get(value, "annotation");
+    const annotation = target.annotation;
 
     return isAnnotationSubmitDetail(annotation);
   }
 
   if (requestKind === "editor") {
-    const componentName: unknown = Reflect.get(value, "componentName");
-    const source: unknown = Reflect.get(value, "source");
-    const sourceLabel: unknown = Reflect.get(value, "sourceLabel");
+    const componentName = target.componentName;
+    const source = target.source;
+    const sourceLabel = target.sourceLabel;
 
     return (
       launcher === "neovim" &&
@@ -729,10 +734,11 @@ function parseTerminalSessionClientMessage(messageText: string): TerminalSession
     return null;
   }
 
-  const messageType: unknown = Reflect.get(parsedValue, "type");
+  const target = parsedValue as Record<string, unknown>;
+  const messageType = target.type;
 
   if (messageType === "input") {
-    const data: unknown = Reflect.get(parsedValue, "data");
+    const data = target.data;
 
     if (typeof data !== "string") {
       return null;
@@ -745,8 +751,8 @@ function parseTerminalSessionClientMessage(messageText: string): TerminalSession
   }
 
   if (messageType === "resize") {
-    const cols: unknown = Reflect.get(parsedValue, "cols");
-    const rows: unknown = Reflect.get(parsedValue, "rows");
+    const cols = target.cols;
+    const rows = target.rows;
 
     if (
       typeof cols !== "number" ||
