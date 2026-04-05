@@ -3,7 +3,6 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, test } from "bun:test";
 
 import { createAnnotationAgentPrompt } from "../createAnnotationAgentPrompt";
-import { createPiAgentCommand } from "../createPiAgentCommand";
 import { createTerminalSessionCommand } from "../createTerminalSessionCommand";
 import type { IAnnotationSubmitDetail } from "../../devtools/features/annotationComposer/types";
 import type { TestCleanupFunction } from "../../utils/__tests__/testTypes";
@@ -81,6 +80,39 @@ describe("createTerminalSessionCommand", () => {
     expect(terminalSessionCommand.command[3]).toMatch(/^@.*prompt\.txt$/);
     expect(terminalSessionCommand.env.DEVHOST_AGENT_PROMPT_FILE).toBeDefined();
     expect(terminalSessionCommand.cwd).toBe("/tmp/project");
+  });
+
+  test("builds the OpenCode agent terminal command for annotation sessions", () => {
+    const annotation: IAnnotationSubmitDetail = {
+      comment: "Fix the primary button spacing.",
+      markers: [],
+      stackName: "hello-stack",
+      submittedAt: 1_717_171_717_000,
+      title: "Buttons",
+      url: "https://hello.test/buttons",
+    };
+
+    const terminalSessionCommand = createTerminalSessionCommand({
+      agent: {
+        displayName: "OpenCode",
+        kind: "opencode",
+      },
+      componentEditor: "vscode",
+      projectRootPath: "/tmp/project",
+      request: {
+        annotation,
+        kind: "agent",
+      },
+      stackName: "hello-stack",
+    });
+
+    cleanupFunctions.push(terminalSessionCommand.cleanup);
+
+    expect(terminalSessionCommand.command[0]).toBe("opencode");
+    expect(terminalSessionCommand.command[1]).toMatch(
+      /^Please read the annotation details from .*prompt\.txt and address the requested change\.$/,
+    );
+    expect(terminalSessionCommand.env.DEVHOST_AGENT_PROMPT_FILE).toBeDefined();
   });
 
   test("builds a configured agent command with temp-file payloads", () => {
