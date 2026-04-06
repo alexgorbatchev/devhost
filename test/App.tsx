@@ -353,7 +353,6 @@ export function App(props: IAppProps): JSX.Element {
               devtools on top without dragging every asset request through the proxy.
             </p>
             <ul className="hero-bullets">
-              <li>Single-service mode when you need one app.</li>
               <li>Manifest mode when the stack has real dependencies.</li>
               <li>Annotation, source navigation, and terminal sessions from the page itself.</li>
             </ul>
