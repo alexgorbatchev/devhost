@@ -44,9 +44,6 @@ The following items are out of scope for `devhost.toml` v1:
 These baseline facts are verified from the repository at the time of writing:
 
 - `devhost/src/index.ts` is the CLI entrypoint.
-- `devhost/src/startSingleService.ts` supports the existing `--host` / `--port` single-service mode.
-- single-service mode claims a host reservation before spawning the child process.
-- single-service mode waits for a TCP port to open before activating the Caddy route.
 - `devhost/src/startStack.ts` is the stack-mode orchestrator.
 - `devhost` code now lives under `devhost/src/`.
 - `devhost` has its own `package.json`, `bun.lock`, and `tsconfig.json`.
@@ -57,7 +54,6 @@ These baseline facts are verified from the repository at the time of writing:
 ## 3. Non-negotiable constraints
 
 - The manifest filename must be exactly `devhost.toml`.
-- Manifest mode must be additive. Existing single-service mode must continue to work.
 - The primary runtime must remain Bun.
 - Manifest parsing must use Bun's built-in TOML support. No external TOML library is allowed.
 - Manifest schema validation must use Zod v4.
@@ -456,15 +452,7 @@ Manifest validation must enforce all of the following:
 
 ## 10. Exact CLI surface
 
-### Existing single-service mode
-
-This mode remains valid and unchanged:
-
-```bash
-bun run devhost --host hello.local.test --port 3200 -- bun run test:hello
-```
-
-### New manifest mode
+### Manifest mode
 
 ```bash
 bun run devhost
@@ -523,7 +511,7 @@ The test suite must cover:
 - `port = "auto"` resolving to unique runtime ports
 - startup-order dependency resolution
 - health-check behavior for tcp, http, and process modes
-- compatibility of existing single-service CLI argument parsing
+- compatibility of CLI argument parsing
 
 ## 13. Out-of-scope / rejection list
 
@@ -534,7 +522,6 @@ Reject implementations that:
 - activate routes before health checks pass
 - keep running services after startup failure
 - search for multiple manifests and merge them
-- replace the existing single-service CLI mode
 - implement per-service devtools flags in v1
 - add an external TOML parsing dependency
 - skip Zod v4 for schema validation
@@ -545,7 +532,6 @@ This work is done only when all of the following are true:
 
 - `bun run devhost` starts a valid `devhost.toml` stack from the current project with no `--host` or `--port` flags.
 - `bun run devhost --manifest ./devhost.toml` starts the same stack.
-- existing single-service mode still works unchanged.
 - services with `port = "auto"` receive a unique injected `PORT` value before spawn.
 - root-level `devtools` defaults to `true` and can be set to `false`.
 - root-level `devtoolsComponentEditor` defaults to `"vscode"` and controls Alt + right-click component-source navigation.

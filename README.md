@@ -2,10 +2,7 @@
 
 This repo gives you a `devhost` Bun wrapper plus a devhost-managed Caddy instance.
 
-`devhost` supports two runtime modes:
-
-- **single-service mode** via `--host` / `--port`
-- **manifest mode** via `devhost.toml`
+`devhost` manages Caddy config and app processes based on `devhost.toml`.
 
 ## Requirements
 
@@ -92,28 +89,6 @@ Policy configuration lives in:
 
 `bun check` performs formatting verification before linting, then runs each workspace check script.
 
-## Single-service mode
-
-Run the sample app through `devhost`:
-
-```bash
-bun run devhost --host hello.xcv.lol --port 3200 -- bun run test:hello
-```
-
-Then open:
-
-```text
-https://hello.xcv.lol
-```
-
-`devhost` uses a split-routing model:
-
-- `/__devhost__/*` goes to the local devhost control server
-- document navigation requests go to a small HTML injector that appends one script tag
-- all other requests go directly to the app server
-
-This keeps assets, HMR, fetches, and WebSockets out of devhost's proxy path while still allowing page-level injection.
-
 ## Manifest mode
 
 The test app has a sample manifest at `test/devhost.toml`.
@@ -176,20 +151,6 @@ For configured agents, `devhost` writes the annotation JSON and rendered prompt 
 Use a Bun TypeScript wrapper when your preferred agent CLI needs custom setup.
 
 ## How `devhost` works
-
-### Single-service mode
-
-`devhost`:
-
-- starts your app
-- sets `PORT`
-- sets `DEVHOST_BIND_HOST=127.0.0.1` for safe local binding
-- sets `DEVHOST_HOST=<public hostname>` for routed-host awareness
-- defaults Alt + right-click component navigation to `vscode`
-- accepts `DEVHOST_COMPONENT_EDITOR` to override the single-service editor target
-- waits for the app port to open
-- registers `https://<host>` in Caddy
-- removes the route when the app exits
 
 ### Manifest mode
 

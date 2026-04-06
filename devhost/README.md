@@ -4,7 +4,6 @@
 
 It has two runtime modes:
 
-- **single-service mode** — start one app, wait for its health gate, and register one public host
 - **manifest mode** — load `devhost.toml`, start a local stack, wait for each service health gate, and register routed hosts
 
 It also has Caddy lifecycle commands:
@@ -75,22 +74,6 @@ The generated Caddy config uses these defaults:
 - admin API: `127.0.0.1:20193` unless `DEVHOST_CADDY_ADMIN_ADDRESS` is set
 - listener binding on macOS: wildcard listeners, because macOS denies rootless loopback-specific binds on `:443`
 - listener binding on non-macOS: loopback only via Caddy `default_bind 127.0.0.1 [::1]`
-
-### Single-service mode
-
-```bash
-bun run dev --host hello.local.test --port 3200 -- bun run test:hello
-```
-
-Behavior:
-
-1. verifies the managed Caddy admin API is available
-2. reserves the host
-3. starts the child command
-4. waits for the target port to accept connections
-5. starts devtools control/document servers
-6. writes the Caddy route and reloads the managed Caddy instance
-7. removes the route on exit
 
 ### Manifest mode
 
