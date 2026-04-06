@@ -26,7 +26,6 @@ import type {
   ISignalRaceResult,
   IExitRaceResult,
   RaceResult,
-  RuntimeMode,
   SignalHandlerCallback,
   SupportedSignal,
 } from "../types/stackTypes";
@@ -36,7 +35,6 @@ const shutdownGracePeriodInMilliseconds: number = 10_000;
 
 export interface IStartStackOptions {
   pipeServiceOutput?: boolean;
-  runtimeMode?: RuntimeMode;
   stdinMode?: "ignore" | "inherit";
 }
 
@@ -53,7 +51,6 @@ export async function startStack(
 ): Promise<number> {
   const resolvedOptions: Required<IStartStackOptions> = {
     pipeServiceOutput: options.pipeServiceOutput ?? true,
-    runtimeMode: options.runtimeMode ?? "manifest",
     stdinMode: options.stdinMode ?? "ignore",
   };
   const startedServices: StartedService[] = [];
@@ -153,7 +150,7 @@ export async function startStack(
       const childEnvironment: Record<string, string | undefined> = {
         ...process.env,
         ...service.env,
-        ...createInjectedServiceEnvironment(manifest, service, resolvedOptions.runtimeMode),
+        ...createInjectedServiceEnvironment(manifest, service),
       };
       const childProcess = resolvedOptions.pipeServiceOutput
         ? Bun.spawn(service.command, {
@@ -294,17 +291,13 @@ export async function startStack(
 export function createInjectedServiceEnvironment(
   manifest: IResolvedDevhostManifest,
   service: IResolvedDevhostService,
-  runtimeMode: RuntimeMode = "manifest",
 ): IInjectedServiceEnvironment {
   const environment: IInjectedServiceEnvironment = {
     DEVHOST_BIND_HOST: service.bindHost,
+    DEVHOST_MANIFEST_PATH: manifest.manifestPath,
+    DEVHOST_SERVICE_NAME: service.name,
+    DEVHOST_STACK: manifest.name,
   };
-
-  if (runtimeMode === "manifest") {
-    environment.DEVHOST_MANIFEST_PATH = manifest.manifestPath;
-    environment.DEVHOST_SERVICE_NAME = service.name;
-    environment.DEVHOST_STACK = manifest.name;
-  }
 
   if (service.port !== null) {
     environment.PORT = String(service.port);

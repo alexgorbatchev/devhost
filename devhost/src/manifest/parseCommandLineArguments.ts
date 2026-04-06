@@ -1,20 +1,8 @@
-import { isValidHost } from "../utils/isValidHost";
-
-export type CommandLineArguments =
-  | ICaddyCommandLineArguments
-  | ISingleServiceCommandLineArguments
-  | IManifestCommandLineArguments;
+export type CommandLineArguments = ICaddyCommandLineArguments | IManifestCommandLineArguments;
 
 export interface ICaddyCommandLineArguments {
   kind: "caddy";
   action: "start" | "stop" | "trust" | "download";
-}
-
-export interface ISingleServiceCommandLineArguments {
-  kind: "single-service";
-  host: string;
-  port: number;
-  command: string[];
 }
 
 export interface IManifestCommandLineArguments {
@@ -27,12 +15,7 @@ export function parseCommandLineArguments(rawArguments: string[]): CommandLineAr
     return parseCaddyCommandLineArguments(rawArguments.slice(1));
   }
 
-  const hostIndex: number = rawArguments.indexOf("--host");
   const manifestIndex: number = rawArguments.indexOf("--manifest");
-
-  if (hostIndex !== -1 && manifestIndex !== -1) {
-    throw new Error("--manifest and --host are mutually exclusive.");
-  }
 
   if (manifestIndex !== -1) {
     const manifestPath: string = readRequiredOption(rawArguments, "--manifest");
@@ -51,51 +34,9 @@ export function parseCommandLineArguments(rawArguments: string[]): CommandLineAr
     };
   }
 
-  if (hostIndex === -1) {
-    if (rawArguments.includes("--port")) {
-      throw new Error("--port requires --host.");
-    }
-
-    if (rawArguments.includes("--")) {
-      throw new Error("Single-service mode requires --host and --port.");
-    }
-
-    return {
-      kind: "manifest",
-      manifestPath: null,
-    };
-  }
-
-  const separatorIndex: number = rawArguments.indexOf("--");
-
-  if (separatorIndex === -1) {
-    throw new Error("Expected '--' before the child command.");
-  }
-
-  const optionArguments: string[] = rawArguments.slice(0, separatorIndex);
-  const command: string[] = rawArguments.slice(separatorIndex + 1);
-
-  if (command.length === 0) {
-    throw new Error("Expected a child command after '--'.");
-  }
-
-  const host: string = readRequiredOption(optionArguments, "--host").trim().toLowerCase();
-  const portText: string = readRequiredOption(optionArguments, "--port").trim();
-  const port: number = Number.parseInt(portText, 10);
-
-  if (!isValidHost(host)) {
-    throw new Error(`Host must be a valid hostname, received: ${host}`);
-  }
-
-  if (!Number.isInteger(port) || port < 1 || port > 65_535) {
-    throw new Error(`Port must be a valid TCP port, received: ${portText}`);
-  }
-
   return {
-    command,
-    host,
-    kind: "single-service",
-    port,
+    kind: "manifest",
+    manifestPath: null,
   };
 }
 

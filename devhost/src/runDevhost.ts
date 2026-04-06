@@ -6,7 +6,6 @@ import { readManifest } from "./manifest/readManifest";
 import { resolveManifestPath } from "./manifest/resolveManifestPath";
 import { resolveServiceOrder } from "./services/resolveServiceOrder";
 import { resolveServicePorts } from "./services/resolveServicePorts";
-import { startSingleService } from "./services/startSingleService";
 import { startStack } from "./services/startStack";
 import { validateManifest } from "./manifest/validateManifest";
 
@@ -23,10 +22,6 @@ export async function runDevhost(rawArguments: string[], logger: IDevhostLogger)
 
     if (commandLineArguments.kind === "caddy") {
       return await runManagedCaddyLifecycleCommand(commandLineArguments.action, logger);
-    }
-
-    if (commandLineArguments.kind === "single-service") {
-      return await startSingleService(commandLineArguments, logger);
     }
 
     const manifestPath: string = commandLineArguments.manifestPath ?? (await resolveManifestPath(process.cwd()));

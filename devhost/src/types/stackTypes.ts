@@ -151,8 +151,6 @@ export interface ISignalHandlerRegistration {
   signalName: SupportedSignal;
 }
 
-export type RuntimeMode = "manifest" | "single-service";
-
 export interface IServiceExitResult {
   serviceName: string;
   exitCode: number;
