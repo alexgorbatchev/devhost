@@ -17,7 +17,6 @@
     "@types/react-dom": "^19.2.3",
     "@typescript/native-preview": "^7.0.0-dev.20260330.1",
     "@vitest/browser-playwright": "4.1.2",
-    "devhost": "workspace:*",
     "playwright": "1.59.1",
     "storybook": "10.3.4",
     "vitest": "4.1.2"

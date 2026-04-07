@@ -1,137 +1,252 @@
-# localhost domains with managed Caddy
+# devhost
 
-This repo gives you a `devhost` Bun wrapper plus a devhost-managed Caddy instance.
+`devhost` is a CLI utility for local development that lets you open your local apps on HTTPS domains instead of raw `localhost:port` URLs, and can inject useful devtools directly into routed pages.
 
-`devhost` manages Caddy config and app processes based on `devhost.toml`.
+Configure your stack in `devhost.toml`, then run it through `devhost`.
 
-## Installation
+> [!IMPORTANT]
+> `devhost` manages HTTPS routing through Caddy, not DNS.
+> Your chosen hostnames must already resolve to this machine or the browser will never reach the local proxy.
+> For custom domains, that means loopback resolution, such as exact `A` / `AAAA` records to `127.0.0.1` / `::1`, wildcard DNS records on your domain, or local host entries for exact names.
+> Good out-of-the-box choices are `localhost` and subdomains under `*.localhost`, such as `foo.localhost` and `api.foo.localhost`, because they work without additional DNS configuration.
+> If you use other domains, such as `*.local.test`, you must provide name resolution yourself. `/etc/hosts` only handles exact hostnames, so wildcard setups need real DNS records somewhere.
+
+## Quick start
+
+### Installation
 
 ```bash
 npm install -g @alexgorbatchev/devhost
 ```
+
+### Setup
+
+```toml
+name = "hello-stack"
+
+[caddy]
+autostop = true
+
+[services.ui]
+primary = true
+command = ["bun", "run", "ui:dev"]
+cwd = "."
+port = 3000
+host = "foo.localhost"
+dependsOn = ["api"]
+
+[services.api]
+command = ["bun", "run", "api:dev"]
+cwd = "."
+port = 4000
+host = "api.foo.localhost"
+health = { http = "http://127.0.0.1:4000/healthz" }
+```
+
+Then:
+
+```bash
+$ devhost
+$ open https://foo.localhost
+```
+
+`devhost` also has managed Caddy lifecycle commands:
+
+- `devhost caddy start`
+- `devhost caddy stop`
+- `devhost caddy trust`
+- `devhost caddy download`
+
+## What it does
+
+`devhost`:
+
+- starts local child processes
+- injects `PORT` and `DEVHOST_*` environment variables
+- validates and loads `devhost.toml` with Bun TOML parsing plus Zod v4 validation
+- reserves public hosts before starting routed services
+- waits for health checks before enabling routes
+- reloads a managed Caddy instance when routes change
+- stores generated Caddy config under `DEVHOST_STATE_DIR`, `XDG_STATE_HOME/devhost`, or `~/.local/state/devhost/caddy`
+- uses wildcard listeners on macOS so rootless Caddy can open `:443`
+- keeps loopback-only binding on non-macOS platforms
+- prefixes its own logs with the manifest `name` in manifest mode, falling back to `[devhost]`
+- prefixes child service logs with `[service-name]`
+- optionally injects a small devtools UI into HTML document navigations
+- includes an Alt-held annotation mode for selecting multiple page elements, drafting a comment, and starting a Pi session from that draft
+- exposes devhost control routes under `/__devhost__/*`
+- includes a websocket status stream when devtools control routing is enabled
 
 ## Requirements
 
 - `bun`
 - either:
   - a global `caddy` on your `PATH`, or
-  - a managed Caddy binary downloaded with `bun run devhost caddy download`
+  - a managed Caddy binary downloaded with `devhost caddy download`
+- `nvim` when `[devtools.editor].ide = "neovim"`
 
-If you want a global install on macOS:
+## CLI usage
+
+Show help:
 
 ```bash
-brew install caddy
+devhost --help
 ```
 
-## Managed Caddy
+### Managed Caddy commands
 
-`devhost` no longer relies on a checked-in `caddy/` directory.
-Instead it generates and manages its own Caddy config under:
-
-- `DEVHOST_STATE_DIR`, when set
-- otherwise `XDG_STATE_HOME/devhost`, when `XDG_STATE_HOME` is set
-- otherwise `~/.local/state/devhost/caddy`
-
-Download the managed Caddy binary once if you do not already have `caddy` on your `PATH`:
+Download the managed Caddy binary if you do not already have `caddy` on your `PATH`:
 
 ```bash
-bun run devhost caddy download
+devhost caddy download
 ```
 
 `devhost` uses that downloaded binary when present. Otherwise it falls back to the global `caddy` executable from your `PATH`.
-It does **not** auto-download Caddy during `devhost caddy start` or manifest startup.
+It does **not** auto-download Caddy during `devhost caddy start` or stack startup.
 
-Start the managed Caddy instance once:
-
-```bash
-bun run devhost caddy start
-```
-
-Stop it later:
+Start the managed Caddy instance:
 
 ```bash
-bun run devhost caddy stop
+devhost caddy start
 ```
 
-On first startup, managed Caddy may prompt for your password so it can install its local CA into the system trust store.
-`devhost caddy start` and `devhost caddy trust` now stream Caddy's own output directly so you can see exactly what is happening.
-If your browser does not trust Caddy's local CA yet, trust it once after Caddy is running:
+Stop it:
 
 ```bash
-bun run devhost caddy trust
+devhost caddy stop
 ```
 
-The managed Caddy admin API listens on `http://127.0.0.1:20193/config/` by default.
-Override it with `DEVHOST_CADDY_ADMIN_ADDRESS` if needed.
-
-On macOS, `devhost caddy start` now uses wildcard listeners instead of loopback-only binding.
-That is deliberate: macOS allows rootless binds on `:443` for wildcard listeners, but still rejects loopback-specific binds like `127.0.0.1:443`.
-On non-macOS platforms, opening `:443` still requires privileged-port setup outside `devhost`.
-
-## Important limitation: DNS is still your job
-
-`devhost` now manages Caddy config and lifecycle, but it still does **not** manage DNS.
-Your development hostnames must already resolve to this machine.
-That can come from `/etc/hosts`, a local DNS server, or a real wildcard DNS setup.
-
-## Demo app setup
-
-This repository uses Bun workspaces.
-Install dependencies once from the repository root:
+Managed Caddy may prompt for your password when it needs to install its local CA into the system trust store.
+`devhost caddy start` and `devhost caddy trust` stream Caddy's own output directly so the trust/install flow is visible.
+Trust its local CA once after it is running:
 
 ```bash
-bun install
-bun run storybook:install-browser
+devhost caddy trust
 ```
 
-## TypeScript AI policy
+The generated Caddy config uses these defaults:
 
-This repository now wires the shared `@alexgorbatchev/typescript-ai-policy` config at the repository root.
-Use the root check script to run formatting, linting, package typechecks, Bun tests, and Storybook component tests across the repo:
+- state dir: `DEVHOST_STATE_DIR`, else `XDG_STATE_HOME/devhost`, else `~/.local/state/devhost`
+- admin API: `127.0.0.1:20193` unless `DEVHOST_CADDY_ADMIN_ADDRESS` is set
+- listener binding on macOS: wildcard listeners, because macOS denies rootless loopback-specific binds on `:443`
+- listener binding on non-macOS: loopback only via Caddy `default_bind 127.0.0.1 [::1]`
+
+### Start a stack
 
 ```bash
-bun check
+devhost
 ```
 
-When you want automatic semantic cleanup assistance from the policy package, run:
+or:
 
 ```bash
-bun run policy:fix:semantic
+devhost --manifest ../test/devhost.toml
 ```
 
-Policy configuration lives in:
+## How `devhost` works
 
-- `./oxfmt.config.ts`
-- `./oxlint.config.ts`
+`devhost`:
 
-`bun check` performs formatting verification before linting, then runs each workspace check script.
+- discovers `devhost.toml` upward from the current directory, unless `--manifest` is provided
+- parses TOML and validates schema and semantics
+- resolves `port = "auto"` before spawning children
+- starts managed Caddy automatically when `[caddy].autostop = true`, otherwise requires the managed Caddy admin API to already be available
+  - this manages the process lifecycle only; it does **not** auto-download the Caddy binary
+- can take ownership of managed Caddy for the lifetime of the stack when `[caddy].autostop = true`
+- reserves every public host before starting any service
+- starts services in dependency order
+- prefixes service logs with `[service-name]`
+- injects Alt + right-click React component-source navigation for routed pages when devtools are enabled
+- opens component sources through the configured editor protocol and also copies the resolved source path to the clipboard when the browser allows it
+- starts annotation sessions with the configured manifest agent, or the Pi adapter when `[agent]` is omitted
+- waits for each service health check before routing it
+- removes routes and reservations on shutdown or startup failure
+- stops managed Caddy on exit when `[caddy].autostop = true`
 
-## Manifest
+When `[caddy].autostop = true`, `devhost` blocks other `devhost` stacks from starting until the owning stack exits.
 
-The test app has a sample manifest at `test/devhost.toml`.
+## Platform caveat
 
-Run it explicitly from the repository root:
+On macOS, this now starts rootlessly by avoiding loopback-specific listener binding.
+That fixes startup, but it also means the managed Caddy instance is not loopback-only on that platform.
+If you need strict loopback-only HTTPS on privileged ports, the correct solution is a privileged launcher such as `launchd` socket activation, not pretending wildcard binding is equivalent.
 
-```bash
-bun run devhost --manifest ./test/devhost.toml
-```
+On non-macOS platforms, opening HTTPS on `:443` still requires privileged-port setup outside `devhost`.
+`devhost` does not configure `sudo`, `setcap`, `authbind`, or firewall redirection for you.
 
-Or run `devhost` from inside the test workspace through its local devDependency:
+## `devhost.toml`
 
-```bash
-cd test && bun run devhost --manifest ./devhost.toml
-```
+The manifest reference lives in [`./devhost.example.toml`](./devhost.example.toml).
+Use that file as the documented source of truth for:
 
-`devhost` uses built-in TOML parser and Zod validation.
-A root-level `[caddy]` table is supported for managed Caddy lifecycle behavior.
-`[caddy].autostop` defaults to `false`.
-When `[caddy].autostop = true`, `devhost` starts managed Caddy automatically, stops it on exit, and blocks other `devhost` stacks from starting until it exits.
-Devtools are configured through `[devtools.editor]`, `[devtools.minimap]`, and `[devtools.status]`.
-Each devtools feature defaults to `enabled = true`.
-Supported editor values are `"vscode"`, `"vscode-insiders"`, `"cursor"`, `"webstorm"`, and `"neovim"`.
-A root-level `[agent]` table is supported for custom annotation-agent launchers.
-When `[agent]` is omitted, `devhost` starts Pi by default.
-When all devtools features are disabled, routed services bypass the HTML injector and proxy straight to the app.
+- top-level sections
+- allowed values
+- defaults
+- health variants
+- inline explanations and copy/paste examples
+
+Copy it to `devhost.toml` in your project root and trim it down to the services you actually run.
+
+## Injected environment
+
+`devhost` injects environment variables into each service child process.
+Only `DEVHOST_BIND_HOST` and `PORT` are operational bind inputs.
+The remaining variables are context metadata and must not be used as socket bind targets.
+
+### Operational bind inputs
+
+- `DEVHOST_BIND_HOST`
+  - the actual interface the child process is expected to listen on
+  - use this for binding sockets
+- `PORT`
+  - the listening port selected by `devhost`
+  - injected when the service defines `port`, including `port = "auto"`
+  - not injected for services that do not define `port`
+
+### Routed-service context
+
+- `DEVHOST_HOST`
+  - injected only for routed services with `host`
+  - the public routed hostname from the service `host` field
+  - use this when the app needs to know its public development URL or origin
+
+### Manifest metadata
+
+- `DEVHOST_SERVICE_NAME`
+  - the manifest service key for the current child process
+- `DEVHOST_MANIFEST_PATH`
+  - the absolute path to the resolved `devhost.toml`
+
+## Devtools injection
+
+When devtools are enabled, routed traffic is split like this:
+
+- `/__devhost__/*` → devtools control server
+- `Sec-Fetch-Dest: document` requests → document injector server
+- everything else → app directly
+
+That keeps assets, HMR, fetches, SSE, and WebSockets off the injection path.
+
+The injected devtools UI mounts inside its own Shadow DOM container so its runtime styles do not leak into the host page.
+
+The injected UI now uses a hold-to-select annotation trigger instead of a persistent corner button. In annotation mode:
+
+- hold `Alt` (`Option` on macOS) to enter annotation selection mode
+- click one or more page elements while holding `Alt` to place numbered markers
+- release `Alt` to leave selection mode while keeping the current draft open
+- write a comment that references markers like `#1` and `#2`
+- click `Submit` or press `⌘ ↵` / `Ctrl + Enter` to start an agent session seeded with the draft
+- click `Cancel` or press `Escape` to discard the draft
+
+The submitted draft includes the current stack name, page URL/title, comment text, and collected per-marker element metadata.
+
+When the host page is a React development build that exposes component source metadata, each marker also captures the nearest available component source location (file path, line, column, and component name when available). When the host app serves fetchable source maps, devhost also attempts to symbolicate generated bundle locations back to original source files before storing the annotation.
+
+Alt + right-click component-source navigation uses the configured `[devtools.editor].ide` value. The popup title names that configured editor directly, so the action stays aligned with the actual target. Protocol-based editors such as VS Code, VS Code Insiders, Cursor, and WebStorm open via their browser URL handlers. When `[devtools.editor].ide = "neovim"`, devhost launches Neovim inside the injected xterm terminal instead, so `nvim` must be available on the machine running `devhost`.
+
+Embedded terminal sessions now normalize their terminal environment to `TERM=xterm-256color` and `COLORTERM=truecolor` so terminal UIs like Neovim render against the actual xterm.js emulator instead of inheriting incompatible host-terminal identities. Neovim component-source sessions also expand to fill the available viewport when opened as a modal.
+
+When all devtools features are disabled, devhost does not mount these control routes for that stack.
 
 ### Annotation agents
 
@@ -144,7 +259,7 @@ Use built-in agent adapters for quick setup:
 adapter = "claude-code"
 ```
 
-Supported adapters are `"pi"`, `"claude-code"`, and `"opencode"`. When `[agent]` is omitted, `devhost` uses `adapter = "pi"` by default.
+Supported adapters: `"pi"`, `"claude-code"`, and `"opencode"`. When `[agent]` is omitted, `devhost` starts Pi by default.
 
 For custom annotation agents, provide an explicit command:
 
@@ -158,46 +273,21 @@ cwd = "."
 DEVHOST_AGENT_MODE = "annotation"
 ```
 
-`devhost` executes custom `command` entries directly, not through a shell string.
-For configured agents, `devhost` writes the annotation JSON and rendered prompt to temp files and injects:
+`devhost` executes custom agent commands directly, not through a shell string.
+For configured commands, `devhost` writes the annotation JSON and rendered prompt to temp files and injects them via `DEVHOST_AGENT_*` environment variables. Built-in adapters receive the rendered prompt natively via command-line arguments.
 
-- `DEVHOST_AGENT_ANNOTATION_FILE`
-- `DEVHOST_AGENT_PROMPT_FILE`
-- `DEVHOST_AGENT_DISPLAY_NAME`
-- `DEVHOST_AGENT_TRANSPORT=files`
-- `DEVHOST_PROJECT_ROOT`
-- `DEVHOST_STACK_NAME`
+## Contributor notes
 
-Use a Bun TypeScript wrapper when your preferred agent CLI needs custom setup.
+Internal development details live in:
 
-## Important note about bind vs routed host
+- `./AGENTS.md`
 
-`devhost` separates bind behavior from routed-host awareness.
+## Non-goals
 
-Use:
+`devhost` is not trying to be:
 
-```text
-DEVHOST_BIND_HOST=127.0.0.1
-```
-
-for socket binding, and use:
-
-```text
-DEVHOST_HOST=<public hostname>
-```
-
-when the app needs to know its routed development hostname.
-
-For `devhost` bound services, `DEVHOST_BIND_HOST` is the configured service bind host.
-Do not reuse the routed host as the bind address unless the framework explicitly requires that behavior and you have verified it.
-
-## Component-source navigation
-
-When devtools are enabled on a routed page, `devhost` now supports Alt + right-click component inspection for React apps.
-If the host page exposes React development source metadata, `devhost` opens the matching source file in the configured editor protocol and copies the resolved source path to the clipboard.
-
-Important constraints:
-
-- this is best-effort React development metadata introspection, not a production-safe contract
-- host apps that strip React source metadata or source maps may show no component-source menu
-- relative source paths are resolved against the stack manifest directory before editor URLs are built
+- Docker Compose
+- a persistent daemon beyond the explicitly managed Caddy process
+- a remote orchestration system
+- a DNS manager
+- a generic wildcard-host generator

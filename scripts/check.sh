@@ -4,5 +4,8 @@ set -euo pipefail
 bun --bun oxfmt --write .
 bun --bun oxlint .
 
-(cd devhost && bun run check)
-(cd test && bun run check)
+tsgo --noEmit -p tsconfig.json
+bun test --coverage
+vitest run --config ./vitest.storybook.config.ts
+
+(cd www && bun run check)

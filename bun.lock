@@ -4,19 +4,6 @@
   "workspaces": {
     "": {
       "name": "localhost-domains",
-      "devDependencies": {
-        "@alexgorbatchev/typescript-ai-policy": "^1.0.3",
-        "@typescript/native-preview": "^7.0.0-dev.20260331.1",
-        "oxfmt": "^0.42.0",
-        "oxlint": "^1.57.0",
-      },
-    },
-    "devhost": {
-      "name": "devhost",
-      "version": "0.0.0",
-      "bin": {
-        "devhost": "./bin/devhost.ts",
-      },
       "dependencies": {
         "@emotion/css": "^11.13.5",
         "@jridgewell/trace-mapping": "^0.3.31",
@@ -27,18 +14,21 @@
         "zod": "^4.1.12",
       },
       "devDependencies": {
+        "@alexgorbatchev/typescript-ai-policy": "^1.0.3",
         "@storybook/addon-vitest": "10.3.4",
         "@storybook/preact-vite": "10.3.4",
         "@types/bun": "^1.3.11",
         "@types/node": "^25.5.0",
         "@typescript/native-preview": "^7.0.0-dev.20260331.1",
         "@vitest/browser-playwright": "4.1.2",
+        "oxfmt": "^0.42.0",
+        "oxlint": "^1.57.0",
         "playwright": "1.59.1",
         "storybook": "10.3.4",
         "vitest": "4.1.2",
       },
     },
-    "test": {
+    "www": {
       "name": "devhost-test-app",
       "version": "0.0.0",
       "dependencies": {
@@ -55,7 +45,6 @@
         "@types/react-dom": "^19.2.3",
         "@typescript/native-preview": "^7.0.0-dev.20260330.1",
         "@vitest/browser-playwright": "4.1.2",
-        "devhost": "workspace:*",
         "playwright": "1.59.1",
         "storybook": "10.3.4",
         "vitest": "4.1.2",
@@ -485,9 +474,7 @@
 
     "detect-libc": ["detect-libc@2.1.2", "", {}, "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ=="],
 
-    "devhost": ["devhost@workspace:devhost"],
-
-    "devhost-test-app": ["devhost-test-app@workspace:test"],
+    "devhost-test-app": ["devhost-test-app@workspace:www"],
 
     "doctrine": ["doctrine@3.0.0", "", { "dependencies": { "esutils": "^2.0.2" } }, "sha512-yS+Q5i3hBf7GBkd4KG8a7eBNNWNGLTaEwwYWUijIYM7zrlYDM0BFXHjjPWlWZ1Rg7UaddZeIDmi9jF3HmqiQ2w=="],
 
