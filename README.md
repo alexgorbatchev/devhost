@@ -164,23 +164,6 @@ For configured agents, `devhost` writes the annotation JSON and rendered prompt 
 
 Use a Bun TypeScript wrapper when your preferred agent CLI needs custom setup.
 
-## How `devhost` works
-
-`devhost`:
-
-- discovers `devhost.toml` or accepts `--manifest`
-- validates the manifest
-- resolves `port = "auto"` before spawning children
-- can take ownership of managed Caddy for the lifetime of the stack when `[caddy].autostop = true`
-- reserves every public host before starting any service
-- starts services in dependency order
-- prefixes service logs with `[service-name]`
-- injects Alt + right-click React component-source navigation for routed pages when devtools are enabled
-- opens component sources through the configured editor protocol and also copies the resolved source path to the clipboard when the browser allows it
-- starts annotation sessions with the configured manifest agent, or the Pi adapter when `[agent]` is omitted
-- activates Caddy routes only after health checks pass
-- removes routes and reservations on shutdown or startup failure
-
 ## Important note about bind vs routed host
 
 `devhost` separates bind behavior from routed-host awareness.

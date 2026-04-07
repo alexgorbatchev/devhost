@@ -135,20 +135,27 @@ or:
 devhost --manifest ../test/devhost.toml
 ```
 
-Behavior:
+## How `devhost` works
 
-1. discovers `devhost.toml` upward from the current directory, unless `--manifest` is provided
-2. parses TOML and validates schema and semantics
-3. resolves `port = "auto"`
-4. starts managed Caddy automatically when `[caddy].autostop = true`, otherwise requires the managed Caddy admin API to already be available
+`devhost`:
+
+- discovers `devhost.toml` upward from the current directory, unless `--manifest` is provided
+- parses TOML and validates schema and semantics
+- resolves `port = "auto"` before spawning children
+- starts managed Caddy automatically when `[caddy].autostop = true`, otherwise requires the managed Caddy admin API to already be available
    - this manages the process lifecycle only; it does **not** auto-download the Caddy binary
-5. reserves all public hosts
-6. starts services in dependency order
-7. waits for each service health check before routing it
-8. tears down routes and children on exit or failure
-9. stops managed Caddy on exit when `[caddy].autostop = true`
+- can take ownership of managed Caddy for the lifetime of the stack when `[caddy].autostop = true`
+- reserves every public host before starting any service
+- starts services in dependency order
+- prefixes service logs with `[service-name]`
+- injects Alt + right-click React component-source navigation for routed pages when devtools are enabled
+- opens component sources through the configured editor protocol and also copies the resolved source path to the clipboard when the browser allows it
+- starts annotation sessions with the configured manifest agent, or the Pi adapter when `[agent]` is omitted
+- waits for each service health check before routing it
+- removes routes and reservations on shutdown or startup failure
+- stops managed Caddy on exit when `[caddy].autostop = true`
 
-When `[caddy].autostop = true`, `devhost` blocks other stacks from starting until the owning stack exits.
+When `[caddy].autostop = true`, `devhost` blocks other `devhost` stacks from starting until the owning stack exits.
 
 ## Platform caveat
 
