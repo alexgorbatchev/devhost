@@ -11,8 +11,7 @@
     "devhost": "bun run ./devhost/src/main.ts",
     "policy:fix:semantic": "bun run typescript-ai-policy-fix-semantic -- .",
     "storybook:install-browser": "cd devhost && bun x playwright install chromium",
-    "test:hello": "cd test && bun run dev",
-    "caddy:download": "./scripts/download-caddy.sh"
+    "test:hello": "cd test && bun run dev"
   },
   "devDependencies": {
     "@alexgorbatchev/typescript-ai-policy": "^1.0.3",
