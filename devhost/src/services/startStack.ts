@@ -87,12 +87,18 @@ export async function startStack(
       reservedHosts.push(service.host);
     }
 
-    if (manifest.devtools && routedServices.length > 0) {
+    const devtoolsEnabled =
+      manifest.devtools.editor.enabled || manifest.devtools.minimap.enabled || manifest.devtools.status.enabled;
+
+    if (devtoolsEnabled && routedServices.length > 0) {
       devtoolsControlServer = await startDevtoolsControlServer({
         agentDisplayName: manifest.agent.displayName,
-        componentEditor: manifest.devtoolsComponentEditor,
-        devtoolsMinimapPosition: manifest.devtoolsMinimapPosition,
-        devtoolsPosition: manifest.devtoolsPosition,
+        componentEditor: manifest.devtools.editor.ide,
+        devtoolsMinimapPosition: manifest.devtools.minimap.position,
+        devtoolsPosition: manifest.devtools.status.position,
+        editorEnabled: manifest.devtools.editor.enabled,
+        minimapEnabled: manifest.devtools.minimap.enabled,
+        statusEnabled: manifest.devtools.status.enabled,
         getHealthResponse: async () => {
           return await collectManagedServicesHealth(manifest.name, managedServices, startedServices);
         },
@@ -101,7 +107,7 @@ export async function startStack(
         startTerminalSession: (request, onData) => {
           const terminalSessionCommand = createTerminalSessionCommand({
             agent: manifest.agent,
-            componentEditor: manifest.devtoolsComponentEditor,
+            componentEditor: manifest.devtools.editor.ide,
             projectRootPath: manifest.manifestDirectoryPath,
             request,
             stackName: manifest.name,
@@ -196,7 +202,7 @@ export async function startStack(
       await devtoolsControlServer?.publishHealthResponse();
 
       if (service.host !== null && service.port !== null) {
-        if (manifest.devtools) {
+        if (devtoolsEnabled) {
           const documentInjectionServer = startDocumentInjectionServer({
             backendHost: resolveProxyHost(service.bindHost),
             backendPort: service.port,

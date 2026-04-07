@@ -15,6 +15,9 @@ export interface IInjectedDevtoolsConfig {
   position: DevtoolsPosition;
   projectRootPath: string;
   stackName: string;
+  editorEnabled: boolean;
+  minimapEnabled: boolean;
+  statusEnabled: boolean;
 }
 
 const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
@@ -25,6 +28,9 @@ const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
   position: "bottom-right",
   projectRootPath: "",
   stackName: DEVHOST_SERVICE_NAME,
+  editorEnabled: true,
+  minimapEnabled: true,
+  statusEnabled: true,
 };
 
 export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
@@ -41,6 +47,9 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
   const minimapPosition: DevtoolsMinimapPosition = readDevtoolsMinimapPositionValue(injectedConfig);
   const projectRootPath: string = readProjectRootPathValue(injectedConfig);
   const stackName: string = readStackNameValue(injectedConfig);
+  const editorEnabled: boolean = readBooleanValue(injectedConfig, "editorEnabled", true);
+  const minimapEnabled: boolean = readBooleanValue(injectedConfig, "minimapEnabled", true);
+  const statusEnabled: boolean = readBooleanValue(injectedConfig, "statusEnabled", true);
 
   return {
     agentDisplayName,
@@ -50,6 +59,9 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
     position,
     projectRootPath,
     stackName,
+    editorEnabled,
+    minimapEnabled,
+    statusEnabled,
   };
 }
 
@@ -108,4 +120,9 @@ function readStackNameValue(injectedConfig: object): string {
   const stackName: unknown = Reflect.get(injectedConfig, "stackName");
 
   return typeof stackName === "string" && stackName.length > 0 ? stackName : defaultInjectedDevtoolsConfig.stackName;
+}
+
+function readBooleanValue(injectedConfig: object, key: string, defaultValue: boolean): boolean {
+  const value = Reflect.get(injectedConfig, key);
+  return typeof value === "boolean" ? value : defaultValue;
 }

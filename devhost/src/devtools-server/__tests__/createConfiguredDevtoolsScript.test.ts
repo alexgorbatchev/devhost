@@ -23,7 +23,10 @@ describe("createConfiguredDevtoolsScript", () => {
       '"minimapPosition":"left",' +
       '"position":"top-left",' +
       '"projectRootPath":"/tmp/project",' +
-      '"stackName":"hello-stack"};\n';
+      '"stackName":"hello-stack",' +
+      '"editorEnabled":true,' +
+      '"minimapEnabled":true,' +
+      '"statusEnabled":true};\n';
 
     expect(configuredScript).toBe(expectedInjectedConfigPrefix + "console.log('hello');");
   });

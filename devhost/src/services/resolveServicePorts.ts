@@ -56,9 +56,6 @@ export async function resolveServicePorts(manifest: IValidatedDevhostManifest): 
   return {
     agent: manifest.agent,
     devtools: manifest.devtools,
-    devtoolsComponentEditor: manifest.devtoolsComponentEditor,
-    devtoolsMinimapPosition: manifest.devtoolsMinimapPosition,
-    devtoolsPosition: manifest.devtoolsPosition,
     manifestDirectoryPath: manifest.manifestDirectoryPath,
     manifestPath: manifest.manifestPath,
     name: manifest.name,
@@ -87,12 +84,19 @@ function collectFixedPorts(services: Record<string, IValidatedDevhostService>): 
 }
 
 function resolveHealthConfig(service: IValidatedDevhostService, resolvedPort: number | null): ResolvedHealthConfig {
+  const baseHealth = {
+    interval: service.health?.interval ?? 200,
+    timeout: service.health?.timeout ?? 30_000,
+    retries: service.health?.retries ?? 0,
+  };
+
   if (service.health !== null) {
     if ("tcp" in service.health) {
       return {
         kind: "tcp",
         host: service.bindHost,
         port: service.health.tcp,
+        ...baseHealth,
       };
     }
 
@@ -100,10 +104,11 @@ function resolveHealthConfig(service: IValidatedDevhostService, resolvedPort: nu
       return {
         kind: "http",
         url: service.health.http,
+        ...baseHealth,
       };
     }
 
-    return { kind: "process" };
+    return { kind: "process", ...baseHealth };
   }
 
   if (resolvedPort === null) {
@@ -114,6 +119,9 @@ function resolveHealthConfig(service: IValidatedDevhostService, resolvedPort: nu
     kind: "tcp",
     host: service.bindHost,
     port: resolvedPort,
+    interval: 200,
+    timeout: 30_000,
+    retries: 0,
   };
 }
 

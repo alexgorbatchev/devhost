@@ -15,6 +15,7 @@ type UseComponentSourceNavigationParams = {
   componentEditor: DevtoolsComponentEditor;
   projectRootPath: string;
   startComponentSourceSession: (menuItem: ComponentSourceMenuItem) => Promise<ITerminalSessionStartResult>;
+  enabled?: boolean;
 };
 
 type UseComponentSourceNavigationResult = {
@@ -27,6 +28,7 @@ export function useComponentSourceNavigation({
   componentEditor,
   projectRootPath,
   startComponentSourceSession,
+  enabled = true,
 }: UseComponentSourceNavigationParams): UseComponentSourceNavigationResult {
   const [componentMenu, setComponentMenu] = useState<IComponentSourceMenuState | null>(null);
 
@@ -84,6 +86,10 @@ export function useComponentSourceNavigation({
   );
 
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
     const handleContextMenu = (event: MouseEvent): void => {
       if (!event.altKey) {
         closeComponentMenu();
@@ -119,7 +125,7 @@ export function useComponentSourceNavigation({
     return () => {
       document.removeEventListener("contextmenu", handleContextMenu, true);
     };
-  }, [closeComponentMenu, componentEditor, projectRootPath]);
+  }, [closeComponentMenu, componentEditor, projectRootPath, enabled]);
 
   useEffect(() => {
     if (componentMenu === null) {

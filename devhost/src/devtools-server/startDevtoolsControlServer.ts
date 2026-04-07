@@ -62,6 +62,9 @@ interface IStartDevtoolsControlServerOptions {
   componentEditor: DevtoolsComponentEditor;
   devtoolsMinimapPosition: DevtoolsMinimapPosition;
   devtoolsPosition: DevtoolsPosition;
+  editorEnabled?: boolean;
+  minimapEnabled?: boolean;
+  statusEnabled?: boolean;
   getHealthResponse: () => Promise<HealthResponse>;
   projectRootPath: string;
   stackName: string;
@@ -101,6 +104,9 @@ export async function startDevtoolsControlServer(
     options.stackName,
     options.agentDisplayName,
     controlToken,
+    options.editorEnabled ?? true,
+    options.minimapEnabled ?? true,
+    options.statusEnabled ?? true,
   );
   const retainedLogEntries: ServiceLogEntry[] = [];
   const terminalSessions: Map<string, ITerminalSessionState> = new Map<string, ITerminalSessionState>();

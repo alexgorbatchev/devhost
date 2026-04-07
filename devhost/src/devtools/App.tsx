@@ -8,6 +8,7 @@ import { ComponentSourceMenu, useComponentSourceNavigation } from "./features/co
 import { LogMinimap, useServiceLogs } from "./features/minimap";
 import { TerminalSessionTray, useTerminalSessions } from "./features/terminalSessions";
 import { ServiceStatusPanel, type PanelSide, useServiceHealth } from "./features/serviceStatusPanel";
+import { readDevtoolsFeatureToggles } from "./shared/readDevtoolsFeatureToggles";
 import {
   css,
   DEVTOOLS_ROOT_ID,
@@ -40,6 +41,7 @@ function AppContent(): JSX.Element {
   const devtoolsPosition: DevtoolsPosition = readDevtoolsPosition();
   const projectRootPath: string = readDevtoolsProjectRootPath();
   const stackName: string = readDevtoolsStackName();
+  const features = readDevtoolsFeatureToggles();
   const theme = useDevtoolsTheme();
   const { errorMessage, services } = useServiceHealth();
   const {
@@ -56,9 +58,10 @@ function AppContent(): JSX.Element {
     componentEditor,
     projectRootPath,
     startComponentSourceSession,
+    enabled: features.editorEnabled,
   });
-  const shouldRenderPanel: boolean = errorMessage !== null || services.length > 0;
-  const shouldRenderMinimap: boolean = logEntries.length > 0;
+  const shouldRenderPanel: boolean = features.statusEnabled && (errorMessage !== null || services.length > 0);
+  const shouldRenderMinimap: boolean = features.minimapEnabled && logEntries.length > 0;
   const servicePanelSide: PanelSide = readPanelSide(devtoolsPosition);
   const cornerDockClassName: string = css({
     ...readVerticalPositionStyle(theme, devtoolsPosition),

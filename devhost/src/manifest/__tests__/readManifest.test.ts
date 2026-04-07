@@ -12,8 +12,49 @@ describe("readManifest", () => {
     const manifestValue: unknown = await readManifest(manifestPath);
 
     expect(manifestValue).toMatchObject({
+      devtools: {
+        editor: {
+          enabled: true,
+          ide: "vscode",
+        },
+        minimap: {
+          enabled: true,
+          position: "right",
+        },
+        status: {
+          enabled: true,
+          position: "bottom-right",
+        },
+      },
       name: "hello-stack",
-      primaryService: "web",
+      services: {
+        api: {
+          command: ["bun", "run", "api:dev"],
+          cwd: "./api",
+          dependsOn: ["db"],
+          health: {
+            http: "http://127.0.0.1:4000/healthz",
+          },
+          host: "api.hello.local.test",
+          port: 4000,
+        },
+        db: {
+          command: ["bun", "run", "db:dev"],
+          cwd: "./db",
+          port: "auto",
+        },
+        web: {
+          command: ["bun", "run", "web:dev"],
+          cwd: "./app",
+          dependsOn: ["api"],
+          env: {
+            NODE_ENV: "development",
+          },
+          host: "hello.local.test",
+          port: 3000,
+          primary: true,
+        },
+      },
     });
   });
 

@@ -1,8 +1,19 @@
 name = "hello-stack"
-primaryService = "web"
-devtools = true
+
+[devtools.editor]
+enabled = true
+ide = "vscode"
+
+[devtools.minimap]
+enabled = true
+position = "right"
+
+[devtools.status]
+enabled = true
+position = "bottom-right"
 
 [services.web]
+primary = true
 command = ["bun", "run", "web:dev"]
 cwd = "./app"
 port = 3000

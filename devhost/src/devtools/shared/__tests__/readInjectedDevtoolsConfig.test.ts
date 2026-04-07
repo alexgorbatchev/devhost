@@ -21,6 +21,9 @@ describe("readInjectedDevtoolsConfig", () => {
       position: "bottom-right",
       projectRootPath: "",
       stackName: "devhost",
+      editorEnabled: true,
+      minimapEnabled: true,
+      statusEnabled: true,
     });
   });
 
@@ -43,6 +46,9 @@ describe("readInjectedDevtoolsConfig", () => {
       position: "top-left",
       projectRootPath: "/tmp/project",
       stackName: "hello-stack",
+      editorEnabled: true,
+      minimapEnabled: true,
+      statusEnabled: true,
     });
   });
 });

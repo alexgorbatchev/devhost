@@ -29,10 +29,22 @@ const nonEmptyStringSchema = z.string().refine((value: string): boolean => value
   message: "Expected a non-empty string.",
 });
 const portSchema = z.union([z.number().int().min(1).max(65_535), z.literal("auto")]);
+const healthBaseSchema = z.object({
+  interval: z.number().int().min(1).optional(),
+  timeout: z.number().int().min(1).optional(),
+  retries: z.number().int().min(0).optional(),
+});
+
 const healthSchema = z.union([
-  z.object({ tcp: z.number().int().min(1).max(65_535) }).strict(),
-  z.object({ http: z.string().url() }).strict(),
-  z.object({ process: z.literal(true) }).strict(),
+  z
+    .object({ tcp: z.number().int().min(1).max(65_535) })
+    .merge(healthBaseSchema)
+    .strict(),
+  z.object({ http: z.string().url() }).merge(healthBaseSchema).strict(),
+  z
+    .object({ process: z.literal(true) })
+    .merge(healthBaseSchema)
+    .strict(),
 ]);
 const agentAdapterSchema = z.enum(["pi", "claude-code", "opencode"]);
 
@@ -51,10 +63,13 @@ const agentSchema = z.union([
     })
     .strict(),
 ]);
+const commandSchema = z.union([nonEmptyStringSchema, z.array(nonEmptyStringSchema).min(1)]);
+
 const serviceSchema = z
   .object({
+    primary: z.boolean().optional(),
     bindHost: z.enum(["127.0.0.1", "0.0.0.0", "::1", "::"]).optional(),
-    command: z.array(nonEmptyStringSchema).min(1),
+    command: commandSchema,
     cwd: z.string().optional(),
     dependsOn: z.array(nonEmptyStringSchema).optional(),
     env: z.record(z.string(), z.string()).optional(),
@@ -66,12 +81,29 @@ const serviceSchema = z
 const manifestSchema = z
   .object({
     agent: agentSchema.optional(),
-    devtools: z.boolean().optional(),
-    devtoolsComponentEditor: devtoolsComponentEditorSchema.optional(),
-    devtoolsMinimapPosition: devtoolsMinimapPositionSchema.optional(),
-    devtoolsPosition: devtoolsPositionSchema.optional(),
+    devtools: z
+      .object({
+        editor: z
+          .object({
+            enabled: z.boolean().optional(),
+            ide: devtoolsComponentEditorSchema.optional(),
+          })
+          .optional(),
+        minimap: z
+          .object({
+            enabled: z.boolean().optional(),
+            position: devtoolsMinimapPositionSchema.optional(),
+          })
+          .optional(),
+        status: z
+          .object({
+            enabled: z.boolean().optional(),
+            position: devtoolsPositionSchema.optional(),
+          })
+          .optional(),
+      })
+      .optional(),
     name: nonEmptyStringSchema,
-    primaryService: nonEmptyStringSchema,
     services: z.record(z.string(), serviceSchema),
   })
   .strict();
@@ -96,8 +128,13 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
     errors.push("services must contain at least one service.");
   }
 
-  if (!serviceNames.includes(parsedManifest.primaryService)) {
-    errors.push(`primaryService must name an existing service, received: ${parsedManifest.primaryService}`);
+  const primaryServices = serviceNames.filter((name) => parsedManifest.services[name].primary);
+  let resolvedPrimaryService = serviceNames[0];
+
+  if (primaryServices.length > 1) {
+    errors.push(`Multiple primary services defined: ${primaryServices.join(", ")}`);
+  } else if (primaryServices.length === 1) {
+    resolvedPrimaryService = primaryServices[0];
   }
 
   const validatedServices: Record<string, IValidatedDevhostService> = {};
@@ -131,14 +168,24 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
 
   return {
     agent: validatedAgent,
-    devtools: parsedManifest.devtools ?? true,
-    devtoolsComponentEditor: parsedManifest.devtoolsComponentEditor ?? defaultDevtoolsComponentEditor,
-    devtoolsMinimapPosition: parsedManifest.devtoolsMinimapPosition ?? "right",
-    devtoolsPosition: parsedManifest.devtoolsPosition ?? "bottom-right",
+    devtools: {
+      editor: {
+        enabled: parsedManifest.devtools?.editor?.enabled ?? true,
+        ide: parsedManifest.devtools?.editor?.ide ?? defaultDevtoolsComponentEditor,
+      },
+      minimap: {
+        enabled: parsedManifest.devtools?.minimap?.enabled ?? true,
+        position: parsedManifest.devtools?.minimap?.position ?? "right",
+      },
+      status: {
+        enabled: parsedManifest.devtools?.status?.enabled ?? true,
+        position: parsedManifest.devtools?.status?.position ?? "bottom-right",
+      },
+    },
     manifestDirectoryPath,
     manifestPath,
     name: parsedManifest.name,
-    primaryService: parsedManifest.primaryService,
+    primaryService: resolvedPrimaryService,
     services: validatedServices,
   };
 }
@@ -244,9 +291,17 @@ function validateService(
     fixedBindPorts.add(fixedBindPortKey);
   }
 
+  let command: string[];
+  if (typeof serviceConfig.command === "string") {
+    // Basic space separation since Bun.spawn can actually use this cleanly
+    command = serviceConfig.command.split(/\s+/).filter(Boolean);
+  } else {
+    command = serviceConfig.command;
+  }
+
   return {
     bindHost,
-    command: serviceConfig.command,
+    command,
     cwd,
     dependsOn,
     env,

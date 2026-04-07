@@ -8,7 +8,6 @@ describe("validateManifest", () => {
   test("returns a validated manifest with normalized defaults", async () => {
     const manifestValue: unknown = {
       name: "hello-stack",
-      primaryService: "web",
       services: {
         web: {
           command: ["bun", "run", "dev"],
@@ -24,10 +23,11 @@ describe("validateManifest", () => {
       displayName: "Pi",
       kind: "pi",
     });
-    expect(manifest.devtools).toBe(true);
-    expect(manifest.devtoolsComponentEditor).toBe("vscode");
-    expect(manifest.devtoolsMinimapPosition).toBe("right");
-    expect(manifest.devtoolsPosition).toBe("bottom-right");
+    expect(manifest.devtools).toEqual({
+      editor: { enabled: true, ide: "vscode" },
+      minimap: { enabled: true, position: "right" },
+      status: { enabled: true, position: "bottom-right" },
+    });
     expect(manifest.services.web.bindHost).toBe("127.0.0.1");
     expect(manifest.services.web.cwd).toEndWith("basic-stack");
     expect(manifest.services.web.dependsOn).toEqual([]);
@@ -46,10 +46,11 @@ describe("validateManifest", () => {
       displayName: "Pi",
       kind: "pi",
     });
-    expect(manifest.devtools).toBe(true);
-    expect(manifest.devtoolsComponentEditor).toBe("vscode");
-    expect(manifest.devtoolsMinimapPosition).toBe("right");
-    expect(manifest.devtoolsPosition).toBe("bottom-right");
+    expect(manifest.devtools).toEqual({
+      editor: { enabled: true, ide: "vscode" },
+      minimap: { enabled: true, position: "right" },
+      status: { enabled: true, position: "bottom-right" },
+    });
     expect(manifest.primaryService).toBe("web");
     expect(manifest.services.db.port).toBe("auto");
     expect(manifest.services.api.health).toEqual({
@@ -63,7 +64,6 @@ describe("validateManifest", () => {
         adapter: "claude-code",
       },
       name: "hello-stack",
-      primaryService: "web",
       services: {
         web: {
           command: ["bun", "run", "dev"],
@@ -88,11 +88,12 @@ describe("validateManifest", () => {
           DEVHOST_AGENT_MODE: "annotation",
         },
       },
-      devtoolsComponentEditor: "neovim",
-      devtoolsMinimapPosition: "left",
-      devtoolsPosition: "top-left",
+      devtools: {
+        editor: { enabled: true, ide: "neovim" },
+        minimap: { enabled: true, position: "left" },
+        status: { enabled: true, position: "top-left" },
+      },
       name: "hello-stack",
-      primaryService: "web",
       services: {
         web: {
           command: ["bun", "run", "dev"],
@@ -110,9 +111,11 @@ describe("validateManifest", () => {
       },
       kind: "configured",
     });
-    expect(manifest.devtoolsComponentEditor).toBe("neovim");
-    expect(manifest.devtoolsMinimapPosition).toBe("left");
-    expect(manifest.devtoolsPosition).toBe("top-left");
+    expect(manifest.devtools).toEqual({
+      editor: { enabled: true, ide: "neovim" },
+      minimap: { enabled: true, position: "left" },
+      status: { enabled: true, position: "top-left" },
+    });
   });
 
   test("rejects a configured agent cwd that escapes the manifest directory", () => {
@@ -124,7 +127,6 @@ describe("validateManifest", () => {
           displayName: "Claude Code",
         },
         name: "hello-stack",
-        primaryService: "web",
         services: {
           web: {
             command: ["bun", "run", "dev"],
@@ -155,7 +157,6 @@ describe("validateManifest", () => {
     expect(() =>
       validateManifest("/tmp/devhost.toml", {
         name: "hello-stack",
-        primaryService: "web",
         services: {
           web: {
             command: ["bun", "run", "dev"],
@@ -170,7 +171,6 @@ describe("validateManifest", () => {
     expect(() =>
       validateManifest("/tmp/devhost.toml", {
         name: "hello-stack",
-        primaryService: "web",
         services: {
           web: {
             command: ["bun", "run", "dev"],
@@ -189,7 +189,6 @@ describe("validateManifest", () => {
     expect(() =>
       validateManifest("/tmp/devhost.toml", {
         name: "hello-stack",
-        primaryService: "web",
         services: {
           api: {
             command: ["bun", "run", "api:dev"],
@@ -208,7 +207,6 @@ describe("validateManifest", () => {
     expect(() =>
       validateManifest("/tmp/project/devhost.toml", {
         name: "hello-stack",
-        primaryService: "web",
         services: {
           web: {
             command: ["bun", "run", "dev"],

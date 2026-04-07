@@ -11,6 +11,9 @@ export function createConfiguredDevtoolsScript(
   stackName: string,
   agentDisplayName: string,
   controlToken: string,
+  editorEnabled: boolean = true,
+  minimapEnabled: boolean = true,
+  statusEnabled: boolean = true,
 ): string {
   const injectedConfig: string = JSON.stringify({
     agentDisplayName,
@@ -20,6 +23,9 @@ export function createConfiguredDevtoolsScript(
     position: devtoolsPosition,
     projectRootPath,
     stackName,
+    editorEnabled,
+    minimapEnabled,
+    statusEnabled,
   });
 
   return `globalThis.${DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME}=${injectedConfig};\n${devtoolsScript}`;

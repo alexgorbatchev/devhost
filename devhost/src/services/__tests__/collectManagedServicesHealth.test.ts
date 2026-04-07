@@ -48,6 +48,9 @@ describe("collectManagedServicesHealth", () => {
         health: {
           host: "127.0.0.1",
           kind: "tcp",
+          interval: 200,
+          timeout: 30000,
+          retries: 0,
           port: tcpPort,
         },
         name: "web",
@@ -56,6 +59,9 @@ describe("collectManagedServicesHealth", () => {
       createService({
         health: {
           kind: "http",
+          interval: 200,
+          timeout: 30000,
+          retries: 0,
           url: `http://127.0.0.1:${httpPort}/healthz`,
         },
         name: "api",
@@ -64,6 +70,9 @@ describe("collectManagedServicesHealth", () => {
       createService({
         health: {
           kind: "process",
+          interval: 200,
+          timeout: 30000,
+          retries: 0,
         },
         host: null,
         name: "worker",
@@ -73,6 +82,9 @@ describe("collectManagedServicesHealth", () => {
       createService({
         health: {
           kind: "process",
+          interval: 200,
+          timeout: 30000,
+          retries: 0,
         },
         host: null,
         name: "stopped-worker",
@@ -82,6 +94,9 @@ describe("collectManagedServicesHealth", () => {
       createService({
         health: {
           kind: "process",
+          interval: 200,
+          timeout: 30000,
+          retries: 0,
         },
         host: null,
         name: "queued-worker",
@@ -163,6 +178,9 @@ function createService(overrides: Partial<IResolvedDevhostService>): IResolvedDe
     health: {
       host: "127.0.0.1",
       kind: "tcp",
+      interval: 200,
+      timeout: 30000,
+      retries: 0,
       port: 3200,
     },
     host: "hello.local.test",

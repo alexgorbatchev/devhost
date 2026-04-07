@@ -24,15 +24,20 @@ describe("resolveServicePorts", () => {
       displayName: "Pi",
       kind: "pi",
     });
-    expect(resolvedManifest.devtoolsComponentEditor).toBe("vscode");
-    expect(resolvedManifest.devtoolsMinimapPosition).toBe("right");
-    expect(resolvedManifest.devtoolsPosition).toBe("bottom-right");
+    expect(resolvedManifest.devtools).toEqual({
+      editor: { enabled: true, ide: "vscode" },
+      minimap: { enabled: true, position: "right" },
+      status: { enabled: true, position: "bottom-right" },
+    });
     const databasePort: number | null = resolvedManifest.services.db.port;
 
     assert(databasePort !== null);
     expect(resolvedManifest.services.db.portSource).toBe("auto");
     expect(resolvedManifest.services.db.health).toEqual({
       kind: "tcp",
+      interval: 200,
+      timeout: 30000,
+      retries: 0,
       host: "127.0.0.1",
       port: databasePort,
     });
@@ -43,7 +48,6 @@ describe("resolveServicePorts", () => {
   test("treats different bind hosts as different runtime sockets", async () => {
     const manifest = validateManifest("/tmp/devhost.toml", {
       name: "hello-stack",
-      primaryService: "web",
       services: {
         api: {
           command: ["bun", "run", "api:dev"],
@@ -68,12 +72,12 @@ describe("resolveServicePorts", () => {
         command: ["bun", "./scripts/devhost-agent.ts"],
         displayName: "Claude Code",
       },
-      devtools: false,
-      devtoolsComponentEditor: "webstorm",
-      devtoolsMinimapPosition: "left",
-      devtoolsPosition: "top-left",
+      devtools: {
+        editor: { enabled: false, ide: "webstorm" },
+        minimap: { enabled: false, position: "left" },
+        status: { enabled: false, position: "top-left" },
+      },
       name: "hello-stack",
-      primaryService: "api",
       services: {
         api: {
           command: ["bun", "run", "api:dev"],
@@ -93,14 +97,18 @@ describe("resolveServicePorts", () => {
       env: {},
       kind: "configured",
     });
-    expect(resolvedManifest.devtools).toBe(false);
-    expect(resolvedManifest.devtoolsComponentEditor).toBe("webstorm");
-    expect(resolvedManifest.devtoolsMinimapPosition).toBe("left");
-    expect(resolvedManifest.devtoolsPosition).toBe("top-left");
+    expect(resolvedManifest.devtools).toEqual({
+      editor: { enabled: false, ide: "webstorm" },
+      minimap: { enabled: false, position: "left" },
+      status: { enabled: false, position: "top-left" },
+    });
     expect(resolvedManifest.services.api.port).toBe(4000);
     expect(resolvedManifest.services.api.portSource).toBe("fixed");
     expect(resolvedManifest.services.api.health).toEqual({
       kind: "http",
+      interval: 200,
+      timeout: 30000,
+      retries: 0,
       url: "http://127.0.0.1:4000/healthz",
     });
   });

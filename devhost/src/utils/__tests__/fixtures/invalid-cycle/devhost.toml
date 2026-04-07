@@ -1,7 +1,7 @@
 name = "cycle"
-primaryService = "web"
 
 [services.web]
+primary = true
 command = ["bun", "run", "web:dev"]
 port = 3000
 dependsOn = ["api"]

@@ -1,17 +1,27 @@
 name = "hello-test-app"
-primaryService = "hello"
-devtoolsMinimapPosition = "right"
-devtoolsPosition = "top-right"
-devtoolsComponentEditor = "neovim"
+
+[devtools.editor]
+enabled = true
+ide = "neovim"
+
+[devtools.minimap]
+enabled = true
+position = "right"
+
+[devtools.status]
+enabled = true
+position = "top-right"
 
 [services.hello]
-command = ["bun", "dev"]
+primary = true
+command = "bun dev"
 cwd = "."
 port = 3200
-host = "hello.xcv.lol"
+#host = "hello.xcv.lol"
+host = "hello.localhost"
 
 [services.logs]
-command = ["bun", "log-demo"]
+command = "bun log-demo"
 cwd = "."
 
 [services.logs.health]

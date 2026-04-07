@@ -26,7 +26,7 @@ describe("waitForServiceHealth", () => {
     await expect(
       waitForServiceHealth({
         childProcess,
-        health: { kind: "process" },
+        health: { kind: "process", interval: 200, timeout: 30000, retries: 0 },
         serviceName: "worker",
       }),
     ).resolves.toBeUndefined();
@@ -51,6 +51,9 @@ describe("waitForServiceHealth", () => {
         childProcess,
         health: {
           kind: "tcp",
+          interval: 200,
+          timeout: 30000,
+          retries: 0,
           host: "127.0.0.1",
           port: serverPort,
         },
@@ -78,6 +81,9 @@ describe("waitForServiceHealth", () => {
         childProcess,
         health: {
           kind: "http",
+          interval: 200,
+          timeout: 30000,
+          retries: 0,
           url: `http://127.0.0.1:${serverPort}/healthz`,
         },
         serviceName: "api",
@@ -96,6 +102,9 @@ describe("waitForServiceHealth", () => {
         childProcess,
         health: {
           kind: "tcp",
+          interval: 200,
+          timeout: 30000,
+          retries: 0,
           host: "127.0.0.1",
           port: 65534,
         },

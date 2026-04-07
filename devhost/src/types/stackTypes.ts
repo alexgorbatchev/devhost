@@ -2,16 +2,16 @@ import type { DevtoolsComponentEditor } from "../devtools-server/devtoolsCompone
 
 export type SupportedSignal = "SIGINT" | "SIGTERM" | "SIGHUP";
 
+export interface IDevhostHealthBaseConfig {
+  interval?: number;
+  timeout?: number;
+  retries?: number;
+}
+
 export type DevhostHealthConfig =
-  | {
-      tcp: number;
-    }
-  | {
-      http: string;
-    }
-  | {
-      process: true;
-    };
+  | ({ tcp: number } & IDevhostHealthBaseConfig)
+  | ({ http: string } & IDevhostHealthBaseConfig)
+  | ({ process: true } & IDevhostHealthBaseConfig);
 
 export type DevhostPortConfig = number | "auto";
 
@@ -51,16 +51,26 @@ export type ValidatedDevhostAgent = IDefaultDevhostAgent | IConfiguredDevhostAge
 export interface IDevhostManifest {
   agent?: DevhostAgentConfig;
   name: string;
-  primaryService: string;
-  devtools?: boolean;
-  devtoolsComponentEditor?: DevtoolsComponentEditor;
-  devtoolsMinimapPosition?: DevtoolsMinimapPosition;
-  devtoolsPosition?: DevtoolsPosition;
+  devtools?: {
+    editor?: {
+      enabled?: boolean;
+      ide?: DevtoolsComponentEditor;
+    };
+    minimap?: {
+      enabled?: boolean;
+      position?: DevtoolsMinimapPosition;
+    };
+    status?: {
+      enabled?: boolean;
+      position?: DevtoolsPosition;
+    };
+  };
   services: Record<string, IDevhostServiceConfig>;
 }
 
 export interface IDevhostServiceConfig {
-  command: string[];
+  primary?: boolean;
+  command: string | string[];
   cwd?: string;
   env?: Record<string, string>;
   port?: DevhostPortConfig;
@@ -73,13 +83,23 @@ export interface IDevhostServiceConfig {
 export interface IValidatedDevhostManifest {
   agent: ValidatedDevhostAgent;
   name: string;
-  primaryService: string;
+  primaryService: string; // resolved internally
   manifestPath: string;
   manifestDirectoryPath: string;
-  devtools: boolean;
-  devtoolsComponentEditor: DevtoolsComponentEditor;
-  devtoolsMinimapPosition: DevtoolsMinimapPosition;
-  devtoolsPosition: DevtoolsPosition;
+  devtools: {
+    editor: {
+      enabled: boolean;
+      ide: DevtoolsComponentEditor;
+    };
+    minimap: {
+      enabled: boolean;
+      position: DevtoolsMinimapPosition;
+    };
+    status: {
+      enabled: boolean;
+      position: DevtoolsPosition;
+    };
+  };
   services: Record<string, IValidatedDevhostService>;
 }
 
@@ -101,10 +121,20 @@ export interface IResolvedDevhostManifest {
   primaryService: string;
   manifestPath: string;
   manifestDirectoryPath: string;
-  devtools: boolean;
-  devtoolsComponentEditor: DevtoolsComponentEditor;
-  devtoolsMinimapPosition: DevtoolsMinimapPosition;
-  devtoolsPosition: DevtoolsPosition;
+  devtools: {
+    editor: {
+      enabled: boolean;
+      ide: DevtoolsComponentEditor;
+    };
+    minimap: {
+      enabled: boolean;
+      position: DevtoolsMinimapPosition;
+    };
+    status: {
+      enabled: boolean;
+      position: DevtoolsPosition;
+    };
+  };
   services: Record<string, IResolvedDevhostService>;
 }
 
@@ -121,19 +151,25 @@ export interface IResolvedDevhostService {
   portSource: "fixed" | "auto" | "none";
 }
 
+export interface IResolvedHealthBaseConfig {
+  interval: number;
+  timeout: number;
+  retries: number;
+}
+
 export type ResolvedHealthConfig =
-  | {
+  | ({
       kind: "tcp";
       host: string;
       port: number;
-    }
-  | {
+    } & IResolvedHealthBaseConfig)
+  | ({
       kind: "http";
       url: string;
-    }
-  | {
+    } & IResolvedHealthBaseConfig)
+  | ({
       kind: "process";
-    };
+    } & IResolvedHealthBaseConfig);
 
 export interface IInjectedServiceEnvironment {
   DEVHOST_BIND_HOST: string;

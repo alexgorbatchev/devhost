@@ -1,7 +1,7 @@
 name = "bad-auto"
-primaryService = "db"
 
 [services.db]
+primary = true
 command = ["bun", "run", "db:dev"]
 port = "auto"
 
