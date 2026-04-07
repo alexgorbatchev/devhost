@@ -161,7 +161,7 @@ On non-macOS platforms, opening HTTPS on `:443` still requires privileged-port s
 
 ## `devhost.toml`
 
-The manifest reference lives in `./devhost.example.toml`.
+The manifest reference lives in [`./devhost.example.toml`](./devhost.example.toml).
 Use that file as the documented source of truth for:
 
 - top-level sections
