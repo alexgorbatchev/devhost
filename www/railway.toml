@@ -1,0 +1,4 @@
+[build]
+builder = "nixpacks"
+[deploy]
+startCommand = "bun helloWorldServer.ts"
