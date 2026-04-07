@@ -1,6 +1,6 @@
 {
   "name": "@alexgorbatchev/devhost",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "devhost is a CLI utility for local development that lets you open your local apps on HTTPS domains instead of raw localhost:port URLs, and can inject useful devtools directly into routed pages.",
   "type": "module",
   "private": false,
