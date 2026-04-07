@@ -187,7 +187,6 @@ export interface IInjectedServiceEnvironment {
   DEVHOST_HOST?: string;
   DEVHOST_MANIFEST_PATH?: string;
   DEVHOST_SERVICE_NAME?: string;
-  DEVHOST_STACK?: string;
   PORT?: string;
 }
 

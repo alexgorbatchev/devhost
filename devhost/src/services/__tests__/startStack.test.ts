@@ -47,7 +47,6 @@ describe("createInjectedServiceEnvironment", () => {
       DEVHOST_HOST: "hello.xcv.lol",
       DEVHOST_MANIFEST_PATH: "/tmp/project/devhost.toml",
       DEVHOST_SERVICE_NAME: "web",
-      DEVHOST_STACK: "hello-stack",
       PORT: "3200",
     });
   });
@@ -91,7 +90,6 @@ describe("createInjectedServiceEnvironment", () => {
       DEVHOST_BIND_HOST: "127.0.0.1",
       DEVHOST_MANIFEST_PATH: "/tmp/project/devhost.toml",
       DEVHOST_SERVICE_NAME: "worker",
-      DEVHOST_STACK: "hello-stack",
     });
   });
 });

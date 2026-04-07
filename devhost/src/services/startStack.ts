@@ -323,7 +323,6 @@ export function createInjectedServiceEnvironment(
     DEVHOST_BIND_HOST: service.bindHost,
     DEVHOST_MANIFEST_PATH: manifest.manifestPath,
     DEVHOST_SERVICE_NAME: service.name,
-    DEVHOST_STACK: manifest.name,
   };
 
   if (service.port !== null) {
