@@ -183,7 +183,7 @@ Supported service fields:
 - `dependsOn?: string[]`
 - `health?: { tcp: number } | { http: string } | { process: true }`
 
-For the full contract, read `../docs/toml-config.md`.
+For the full manifest contract and documented value examples, read `./devhost.example.toml`.
 
 ## Injected environment
 

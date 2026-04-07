@@ -14,7 +14,7 @@ This file contains internal development rules for `devhost/`.
   - logging behavior
   - devtools behavior
   - limitations, caveats, or failure modes
-- If the manifest contract changes, also update `../docs/toml-config.md`.
+- If the manifest contract changes, also update `devhost.example.toml`.
 - If devtools-specific contributor rules change, also update `src/devtools/AGENTS.md`.
 - Do not leave README or AGENTS examples/rules stale after changing implementation details.
 
