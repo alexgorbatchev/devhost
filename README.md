@@ -4,6 +4,12 @@ This repo gives you a `devhost` Bun wrapper plus a devhost-managed Caddy instanc
 
 `devhost` manages Caddy config and app processes based on `devhost.toml`.
 
+## Installation
+
+```bash
+npm install -g @alexgorbatchev/devhost
+```
+
 ## Requirements
 
 - `bun`

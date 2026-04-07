@@ -13,6 +13,14 @@ Configure your stack in `devhost.toml`, then run it through `devhost`.
 
 ## Quick start
 
+### Installation
+
+```bash
+npm install -g @alexgorbatchev/devhost
+```
+
+### Setup
+
 ```toml
 name = "hello-stack"
 
