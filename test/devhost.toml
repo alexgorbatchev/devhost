@@ -1,5 +1,8 @@
 name = "hello-test-app"
 
+[caddy]
+autostop = false
+
 [devtools.editor]
 enabled = true
 ide = "neovim"

@@ -71,26 +71,24 @@ These baseline facts are verified from the repository at the time of writing:
 The root manifest defines:
 
 - stack metadata
-- the primary service name
-- an optional root-level `agent` launcher table for annotation sessions
-- an optional `devtools` boolean
-- an optional `devtoolsComponentEditor` selector
-- an optional `devtoolsMinimapPosition` side selector
-- an optional `devtoolsPosition` corner selector
+- an optional root-level `[caddy]` table for managed Caddy lifecycle behavior
+- an optional root-level `[agent]` launcher table for annotation sessions
+- optional nested `[devtools.editor]`, `[devtools.minimap]`, and `[devtools.status]` tables
 - the full service map
 
 `agent` is optional.
-When `agent` is omitted, annotation sessions launch Pi by default.
-When `agent` is present, `devhost` executes the configured `command` array directly and passes annotation context through temp-file environment variables.
-`devtools` is optional and defaults to `true`.
-`devtoolsComponentEditor` is optional and defaults to `"vscode"`.
+When `[agent]` is omitted, annotation sessions launch Pi by default.
+When `[agent]` is present, `devhost` executes the configured `command` array directly and passes annotation context through temp-file environment variables.
+`[caddy].autostop` is optional and defaults to `false`.
+When `[caddy].autostop = true`, `devhost` starts managed Caddy automatically, stops it on exit, and blocks other manifest-mode stacks while the owning stack is active.
+`[devtools.editor].enabled`, `[devtools.minimap].enabled`, and `[devtools.status].enabled` are optional and each default to `true`.
+`[devtools.editor].ide` is optional and defaults to `"vscode"`.
 Supported editor values are `"vscode"`, `"vscode-insiders"`, `"cursor"`, `"webstorm"`, and `"neovim"`.
-When `devtoolsComponentEditor = "neovim"`, Alt + right-click component-source navigation launches an embedded xterm-backed Neovim session and requires `nvim` on `PATH`.
-`devtoolsMinimapPosition` is optional and defaults to `"right"`.
-`devtoolsPosition` is optional and defaults to `"bottom-right"`.
-When `devtools = true`, routed HTML documents go through the injector path and
-`/__devhost__/*` goes to the devtools control server.
-When `devtools = false`, routed services proxy directly to the app.
+When `[devtools.editor].ide = "neovim"`, Alt + right-click component-source navigation launches an embedded xterm-backed Neovim session and requires `nvim` on `PATH`.
+`[devtools.minimap].position` is optional and defaults to `"right"`.
+`[devtools.status].position` is optional and defaults to `"bottom-right"`.
+When any devtools feature is enabled, routed HTML documents go through the injector path and `/__devhost__/*` goes to the devtools control server.
+When all devtools features are disabled, routed services proxy directly to the app.
 The injected devtools UI supports exactly these status-panel positions:
 `top-left`, `top-right`, `bottom-left`, `bottom-right`.
 The injected log minimap supports exactly these side positions:
@@ -106,12 +104,24 @@ The top-level manifest shape is:
 ```ts
 interface DevhostManifest {
   agent?: DevhostAgentConfig;
+  caddy?: {
+    autostop?: boolean;
+  };
   name: string;
-  primaryService: string;
-  devtools?: boolean;
-  devtoolsComponentEditor?: "vscode" | "vscode-insiders" | "cursor" | "webstorm" | "neovim";
-  devtoolsMinimapPosition?: "left" | "right";
-  devtoolsPosition?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  devtools?: {
+    editor?: {
+      enabled?: boolean;
+      ide?: "vscode" | "vscode-insiders" | "cursor" | "webstorm" | "neovim";
+    };
+    minimap?: {
+      enabled?: boolean;
+      position?: "left" | "right";
+    };
+    status?: {
+      enabled?: boolean;
+      position?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+    };
+  };
   services: Record<string, DevhostServiceConfig>;
 }
 
@@ -125,6 +135,7 @@ type DevhostAgentConfig =
     };
 
 interface DevhostServiceConfig {
+  primary?: boolean;
   command: string[];
   cwd?: string;
   env?: Record<string, string>;
@@ -142,11 +153,21 @@ Example TOML:
 
 ```toml
 name = "hello-stack"
-primaryService = "web"
-devtools = true
-devtoolsComponentEditor = "neovim"
-devtoolsMinimapPosition = "right"
-devtoolsPosition = "top-right"
+
+[caddy]
+autostop = false
+
+[devtools.editor]
+enabled = true
+ide = "neovim"
+
+[devtools.minimap]
+enabled = true
+position = "right"
+
+[devtools.status]
+enabled = true
+position = "top-right"
 
 [agent]
 displayName = "Claude Code"
@@ -154,6 +175,7 @@ command = ["bun", "./scripts/devhost-agent.ts"]
 cwd = "."
 
 [services.web]
+primary = true
 command = ["bun", "run", "web:dev"]
 cwd = "./app"
 port = 3000
@@ -188,14 +210,27 @@ After defaults are applied, runtime code must use these exact shapes:
 ```ts
 interface ResolvedDevhostManifest {
   agent: ResolvedDevhostAgent;
+  caddy: {
+    autostop: boolean;
+  };
   name: string;
   primaryService: string;
   manifestPath: string;
   manifestDirectoryPath: string;
-  devtools: boolean;
-  devtoolsComponentEditor: "vscode" | "vscode-insiders" | "cursor" | "webstorm" | "neovim";
-  devtoolsMinimapPosition: "left" | "right";
-  devtoolsPosition: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  devtools: {
+    editor: {
+      enabled: boolean;
+      ide: "vscode" | "vscode-insiders" | "cursor" | "webstorm" | "neovim";
+    };
+    minimap: {
+      enabled: boolean;
+      position: "left" | "right";
+    };
+    status: {
+      enabled: boolean;
+      position: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+    };
+  };
   services: Record<string, ResolvedDevhostService>;
 }
 
@@ -235,10 +270,13 @@ type ResolvedHealthConfig =
 - `agent` defaults to `{ kind: "pi", displayName: "Pi" }`.
 - configured `agent.cwd` defaults to the manifest directory.
 - configured `agent.env` defaults to `{}`.
-- `devtools` defaults to `true`.
-- `devtoolsComponentEditor` defaults to `"vscode"`.
-- `devtoolsMinimapPosition` defaults to `"right"`.
-- `devtoolsPosition` defaults to `"bottom-right"`.
+- `caddy.autostop` defaults to `false`.
+- `devtools.editor.enabled` defaults to `true`.
+- `devtools.editor.ide` defaults to `"vscode"`.
+- `devtools.minimap.enabled` defaults to `true`.
+- `devtools.minimap.position` defaults to `"right"`.
+- `devtools.status.enabled` defaults to `true`.
+- `devtools.status.position` defaults to `"bottom-right"`.
 - `cwd` defaults to the manifest directory.
 - `env` defaults to an empty object before parent-process environment merging.
 - `bindHost` defaults to `127.0.0.1`.
@@ -250,6 +288,7 @@ type ResolvedHealthConfig =
   `{ kind: "tcp", host: bindHost, port: <resolved port> }`.
 - If `port` is not set and `health` is omitted, validation must fail.
 - `host` has no default.
+- If `caddy.autostop` is `true`, `devhost` must start managed Caddy before route registration, stop it during shutdown, and block other manifest-mode stacks while the owning stack is active.
 
 ### Injected environment variables
 
@@ -379,13 +418,13 @@ Services must start sequentially in v1.
 
 ### Routing behavior
 
-For a routed service with `devtools = true`, Caddy must route:
+For a routed service with any devtools feature enabled, Caddy must route:
 
 1. `/__devhost__/*` to the devtools control server
 2. requests with `Sec-Fetch-Dest: document` to the document injector server
 3. everything else directly to the app
 
-For a routed service with `devtools = false`, Caddy must route directly to the app.
+For a routed service with all devtools features disabled, Caddy must route directly to the app.
 
 ### Auto-port resolution
 
@@ -428,8 +467,8 @@ Example:
 Manifest validation must enforce all of the following:
 
 - `name` must be a non-empty string.
-- `primaryService` must be the name of an existing service.
 - `services` must contain at least one service.
+- at most one service may set `primary = true`.
 - Every service name must match `^[a-z][a-z0-9-]*$`.
 - Every service `command` must contain at least one non-empty string.
 - Every service `cwd`, if present, must resolve inside the manifest directory or one of its descendants.
@@ -501,7 +540,7 @@ The test suite must cover:
 - manifest discovery from nested directories
 - explicit `--manifest` path parsing
 - invalid TOML parse failure
-- missing `primaryService`
+- multiple `primary = true` services
 - cyclic dependencies
 - duplicate `host`
 - invalid `host` syntax
@@ -533,11 +572,13 @@ This work is done only when all of the following are true:
 - `bun run devhost` starts a valid `devhost.toml` stack from the current project with no `--host` or `--port` flags.
 - `bun run devhost --manifest ./devhost.toml` starts the same stack.
 - services with `port = "auto"` receive a unique injected `PORT` value before spawn.
-- root-level `devtools` defaults to `true` and can be set to `false`.
-- root-level `devtoolsComponentEditor` defaults to `"vscode"` and controls Alt + right-click component-source navigation.
-- `devtoolsComponentEditor = "neovim"` launches that navigation target inside an embedded xterm-backed Neovim session and requires `nvim` on `PATH`.
-- root-level `devtoolsMinimapPosition` defaults to `"right"` and controls the injected log minimap side.
-- root-level `devtoolsPosition` defaults to `"bottom-right"` and controls the injected status-panel corner.
+- `[caddy].autostop` defaults to `false`.
+- when `[caddy].autostop = true`, `devhost` starts managed Caddy automatically, stops it on exit, and blocks other manifest-mode stacks while the owning stack is active.
+- `[devtools.editor].enabled`, `[devtools.minimap].enabled`, and `[devtools.status].enabled` each default to `true`.
+- `[devtools.editor].ide` defaults to `"vscode"` and controls Alt + right-click component-source navigation.
+- `[devtools.editor].ide = "neovim"` launches that navigation target inside an embedded xterm-backed Neovim session and requires `nvim` on `PATH`.
+- `[devtools.minimap].position` defaults to `"right"` and controls the injected log minimap side.
+- `[devtools.status].position` defaults to `"bottom-right"` and controls the injected status-panel corner.
 - every routed service is reachable through Caddy only after its health check passes.
 - startup failure tears down all started services and removes all routes and reservations.
 - shutdown on `SIGINT` and `SIGTERM` removes all routes and reservations.

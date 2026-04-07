@@ -106,12 +106,15 @@ cd test && bun run devhost --manifest ./devhost.toml
 ```
 
 Manifest mode uses Bun's built-in TOML parser and Zod v4 validation.
-A root-level `devtools` flag is supported and defaults to `true`.
-A root-level `devtoolsComponentEditor` flag is supported and defaults to `"vscode"`.
+A root-level `[caddy]` table is supported for managed Caddy lifecycle behavior.
+`[caddy].autostop` defaults to `false`.
+When `[caddy].autostop = true`, `devhost` starts managed Caddy automatically, stops it on exit, and blocks other manifest-mode stacks from starting until it exits.
+Devtools are configured through `[devtools.editor]`, `[devtools.minimap]`, and `[devtools.status]`.
+Each devtools feature defaults to `enabled = true`.
 Supported editor values are `"vscode"`, `"vscode-insiders"`, `"cursor"`, `"webstorm"`, and `"neovim"`.
 A root-level `[agent]` table is supported for custom annotation-agent launchers.
 When `[agent]` is omitted, `devhost` starts Pi by default.
-When `devtools = false`, routed services bypass the HTML injector and proxy straight to the app.
+When all devtools features are disabled, routed services bypass the HTML injector and proxy straight to the app.
 
 ### Annotation agents
 
@@ -159,6 +162,7 @@ Use a Bun TypeScript wrapper when your preferred agent CLI needs custom setup.
 - discovers `devhost.toml` or accepts `--manifest`
 - validates the manifest with Zod v4
 - resolves `port = "auto"` before spawning children
+- can take ownership of managed Caddy for the lifetime of the stack when `[caddy].autostop = true`
 - reserves every public host before starting any service
 - starts services in dependency order
 - prefixes service logs with `[service-name]`

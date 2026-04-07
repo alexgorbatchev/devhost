@@ -36,7 +36,7 @@ It also has Caddy lifecycle commands:
 
 - `bun`
 - `caddy`
-- `nvim` when `devtoolsComponentEditor = "neovim"`
+- `nvim` when `[devtools.editor].ide = "neovim"`
 
 ## CLI usage
 
@@ -93,11 +93,14 @@ Behavior:
 2. parses TOML with Bun
 3. validates schema and semantics
 4. resolves `port = "auto"`
-5. verifies the managed Caddy admin API is available
+5. starts managed Caddy automatically when `[caddy].autostop = true`, otherwise requires the managed Caddy admin API to already be available
 6. reserves all public hosts
 7. starts services in dependency order
 8. waits for each service health check before routing it
 9. tears down routes and children on exit or failure
+10. stops managed Caddy on exit when `[caddy].autostop = true`
+
+When `[caddy].autostop = true`, `devhost` blocks other manifest-mode stacks from starting until the owning stack exits.
 
 ## Platform caveat
 
@@ -120,14 +123,31 @@ Top-level fields:
 
 ```toml
 name = "hello-test-app"
-primaryService = "hello"
-devtools = true
-devtoolsComponentEditor = "vscode"
-devtoolsMinimapPosition = "right"
-devtoolsPosition = "bottom-right"
+
+[caddy]
+autostop = false
+
+[devtools.editor]
+enabled = true
+ide = "vscode"
+
+[devtools.minimap]
+enabled = true
+position = "right"
+
+[devtools.status]
+enabled = true
+position = "bottom-right"
 
 [agent]
 adapter = "pi"
+
+[services.hello]
+primary = true
+command = ["bun", "run", "dev"]
+cwd = "."
+port = 3200
+host = "hello.local.test"
 ```
 
 Example routed service:
@@ -200,11 +220,11 @@ The submitted draft includes the current stack name, page URL/title, comment tex
 
 When the host page is a React development build that exposes component source metadata, each marker also captures the nearest available component source location (file path, line, column, and component name when available). When the host app serves fetchable source maps, devhost also attempts to symbolicate generated bundle locations back to original source files before storing the annotation.
 
-Alt + right-click component-source navigation uses the configured `devtoolsComponentEditor`. The popup title names that configured editor directly, so the action stays aligned with the actual target. Protocol-based editors such as VS Code, VS Code Insiders, Cursor, and WebStorm open via their browser URL handlers. When `devtoolsComponentEditor = "neovim"`, devhost launches Neovim inside the injected xterm terminal instead, so `nvim` must be available on the machine running `devhost`.
+Alt + right-click component-source navigation uses the configured `[devtools.editor].ide` value. The popup title names that configured editor directly, so the action stays aligned with the actual target. Protocol-based editors such as VS Code, VS Code Insiders, Cursor, and WebStorm open via their browser URL handlers. When `[devtools.editor].ide = "neovim"`, devhost launches Neovim inside the injected xterm terminal instead, so `nvim` must be available on the machine running `devhost`.
 
 Embedded terminal sessions now normalize their terminal environment to `TERM=xterm-256color` and `COLORTERM=truecolor` so terminal UIs like Neovim render against the actual xterm.js emulator instead of inheriting incompatible host-terminal identities. Neovim component-source sessions also expand to fill the available viewport when opened as a modal.
 
-When `devtools = false`, devhost does not mount these control routes for that stack.
+When all devtools features are disabled, devhost does not mount these control routes for that stack.
 
 ### Annotation agents
 

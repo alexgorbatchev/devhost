@@ -5,6 +5,7 @@ const defaultAdminAddress: string = "127.0.0.1:20193";
 const defaultStateDirectorySegments: string[] = [".local", "state", "devhost"];
 
 export interface IManagedCaddyPaths {
+  autostopLockFilePath: string;
   caddyDirectoryPath: string;
   caddyfilePath: string;
   pidFilePath: string;
@@ -68,6 +69,7 @@ export function createManagedCaddyPaths(
   const routesDirectoryPath: string = join(caddyDirectoryPath, "routes");
 
   return {
+    autostopLockFilePath: join(caddyDirectoryPath, "autostop.lock.json"),
     caddyDirectoryPath,
     caddyfilePath: join(caddyDirectoryPath, "Caddyfile"),
     pidFilePath: join(caddyDirectoryPath, "caddy.pid"),
