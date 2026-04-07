@@ -7,8 +7,11 @@ Configure your stack in `devhost.toml`, then run it through `devhost`.
 > [!IMPORTANT]
 > `devhost` manages HTTPS routing through Caddy, not DNS.
 > Your chosen hostnames must already resolve to this machine or the browser will never reach the local proxy.
+>
 > For custom domains, that means loopback resolution, such as exact `A` / `AAAA` records to `127.0.0.1` / `::1`, wildcard DNS records on your domain, or local host entries for exact names.
+>
 > Good out-of-the-box choices are `localhost` and subdomains under `*.localhost`, such as `foo.localhost` and `api.foo.localhost`, because they work without additional DNS configuration.
+>
 > If you use other domains, such as `*.local.test`, you must provide name resolution yourself. `/etc/hosts` only handles exact hostnames, so wildcard setups need real DNS records somewhere.
 
 ## Quick start
