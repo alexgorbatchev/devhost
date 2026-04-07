@@ -56,6 +56,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Install Playwright Browsers
+        run: bun run storybook:install-browser
+
       - name: Verify package
         env:
           CI: "false"
