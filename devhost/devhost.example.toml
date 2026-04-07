@@ -1,0 +1,222 @@
+# devhost example manifest
+#
+# This file is meant to be read as documentation first and copied second.
+# Rename it to `devhost.toml` in your project root when you actually want to use it.
+#
+# Top-level sections:
+# - `name` (required)
+# - `[caddy]` (optional)
+# - `[devtools.editor]` (optional)
+# - `[devtools.minimap]` (optional)
+# - `[devtools.status]` (optional)
+# - `[agent]` (optional; omit it entirely to launch Pi by default)
+# - `[services.<name>]` (required; at least one service)
+#
+# Hard validation rules:
+# - service names must match `^[a-z][a-z0-9-]*$`
+# - every service must define either `port` or `health`
+# - a routed service (`host = ...`) must also define `port`
+# - a routed service must not use `health.process`
+# - `port = "auto"` must omit `health` in v1
+# - `bindHost` must be one of: `127.0.0.1`, `0.0.0.0`, `::1`, `::`
+# - `command` is best written as a string array; string form is supported but split on whitespace
+
+# `name` identifies the stack in logs, state, and injected metadata.
+name = "hello-stack"
+
+[caddy]
+# `autostop` controls whether this stack owns the managed Caddy lifecycle.
+# - `false` (default): do not start or stop managed Caddy automatically.
+# - `true`: start managed Caddy on stack startup, stop it on shutdown, and block other manifest-mode stacks while this stack is active.
+autostop = false
+
+# The `devtools.*` sections control the browser-side devhost overlay injected into
+# routed HTML document navigations. If all devtools features are disabled, routed
+# services proxy directly to the app without the overlay.
+
+[devtools.editor]
+# `enabled` controls whether editor integration is available in the injected overlay.
+# - `true` (default): enable Alt + right-click component-source navigation when source metadata is available.
+# - `false`: disable editor integration.
+enabled = true
+# `ide` selects which editor target devhost opens for component-source navigation.
+# - `"vscode"` (default): open Visual Studio Code via its browser URL handler.
+# - `"vscode-insiders"`: open VS Code Insiders via its browser URL handler.
+# - `"cursor"`: open Cursor via its browser URL handler.
+# - `"webstorm"`: open WebStorm via its browser URL handler.
+# - `"neovim"`: open Neovim inside devhost's embedded terminal UI; requires `nvim` on PATH.
+ide = "vscode"
+
+[devtools.minimap]
+# `enabled` controls whether the injected log minimap UI is shown.
+# - `true` (default): show the log minimap in the overlay.
+# - `false`: hide the log minimap.
+enabled = true
+# `position` selects which side of the overlay the log minimap uses.
+# - `"left"`: pin the minimap to the left side.
+# - `"right"` (default): pin the minimap to the right side.
+position = "right"
+
+[devtools.status]
+# `enabled` controls whether the injected service-status panel is shown.
+# - `true` (default): show stack and service state in the overlay.
+# - `false`: hide the status panel.
+enabled = true
+# `position` selects where the status panel is anchored.
+# - `"top-left"`: anchor the panel to the top-left corner.
+# - `"top-right"`: anchor the panel to the top-right corner.
+# - `"bottom-left"`: anchor the panel to the bottom-left corner.
+# - `"bottom-right"` (default): anchor the panel to the bottom-right corner.
+position = "bottom-right"
+
+[agent]
+# `[agent]` configures the annotation agent launched from the injected annotation UI.
+# If you omit this table entirely, devhost launches Pi by default.
+#
+# `adapter` selects a built-in annotation-agent integration.
+# - `"pi"`: launch Pi.
+# - `"claude-code"`: launch Claude Code.
+# - `"opencode"`: launch OpenCode.
+adapter = "pi"
+#
+# Custom command form instead of `adapter`:
+# [agent]
+# displayName = "My Agent"
+# command = ["bun", "./scripts/devhost-agent.ts"]
+# cwd = "."
+#
+# [agent.env]
+# DEVHOST_AGENT_MODE = "annotation"
+#
+# Custom agent notes:
+# - `displayName` sets the UI label shown for the configured agent.
+# - `command` must be a string array.
+# - `cwd` defaults to the manifest directory.
+# - `env` defaults to `{}`.
+
+# -----------------------------------------------------------------------------
+# services
+# -----------------------------------------------------------------------------
+# The examples below document service fields in place instead of listing detached
+# option tables up here. Read them top to bottom:
+# - `services.web` shows a primary routed service with a fixed port
+# - `services.api.health` shows explicit HTTP health
+# - `services.cache.health` shows explicit TCP health
+# - `services.db` shows `port = "auto"`
+# - `services.worker.health` shows process health
+#
+# Health defaults still matter even when no explicit `[services.<name>.health]`
+# table is present:
+# - fixed numeric `port` + no `health` => implicit TCP health check on `bindHost:port`
+# - `port = "auto"` + no `health` => implicit TCP health check on the resolved port
+
+[services.web]
+# `primary` marks this as the default service for stack-level behavior.
+# - `true`: make this the primary service.
+# - `false` (default): do not mark this service as primary.
+primary = true
+# `command` defines the child process command line.
+# - string array (recommended): preserves argument boundaries exactly.
+# - string: supported, but devhost splits it on whitespace and does not preserve shell quoting.
+command = ["bun", "run", "web:dev"]
+# command = "bun run web:dev"
+# `cwd` sets the working directory for the child process.
+cwd = "./app"
+# `port` sets the runtime listening port or requests automatic allocation.
+# - integer `1..65535`: use the exact port you provide.
+# - `"auto"`: allocate a free port before spawn and inject it as `PORT`.
+port = 3000
+# `bindHost` sets the socket interface the child process should bind to.
+# - `"127.0.0.1"` (default): IPv4 loopback only.
+# - `"0.0.0.0"`: all IPv4 interfaces.
+# - `"::1"`: IPv6 loopback only.
+# - `"::"`: all IPv6 interfaces.
+bindHost = "127.0.0.1"
+# `host` sets the public routed hostname.
+host = "hello.local.test"
+# `dependsOn` declares services that must start before this service.
+dependsOn = ["api"]
+# No explicit `[services.web.health]` block is used here.
+# Because `port = 3000`, devhost will apply the default TCP health check for `127.0.0.1:3000`.
+
+[services.web.env]
+# `env` adds app-specific environment variables for this service.
+NODE_ENV = "development"
+PUBLIC_API_ORIGIN = "https://api.hello.local.test"
+
+[services.api]
+# A routed backend with explicit HTTP health and IPv6 loopback binding.
+command = ["bun", "run", "api:dev"]
+cwd = "./api"
+port = 4000
+bindHost = "::1"
+host = "api.hello.local.test"
+dependsOn = ["db"]
+
+[services.api.env]
+LOG_LEVEL = "debug"
+
+[services.api.health]
+# `http` defines an absolute HTTP health-check URL.
+# - absolute URL using host `127.0.0.1`.
+# - absolute URL using host `localhost`.
+# - absolute URL using host `::1`.
+http = "http://127.0.0.1:4000/healthz"
+# `interval` sets the delay between HTTP health-check attempts.
+# - integer `>= 1`; `200` is the default.
+interval = 500
+# `timeout` sets the maximum total wait time for this health check.
+# - integer `>= 1`; `30000` is the default.
+timeout = 5000
+# `retries` sets how many extra failed attempts are allowed.
+# - integer `>= 0`; `0` is the default.
+retries = 20
+
+[services.cache]
+# A non-routed service using explicit TCP health instead of `port`.
+command = ["bun", "run", "cache:dev"]
+cwd = "./cache"
+bindHost = "0.0.0.0"
+dependsOn = ["db"]
+
+[services.cache.health]
+# `tcp` defines the port used by the TCP health check.
+# - integer `1..65535`.
+tcp = 6379
+# `interval` sets the delay between TCP health-check attempts.
+# - integer `>= 1`; `200` is the default.
+interval = 250
+# `timeout` sets the maximum total wait time for this health check.
+# - integer `>= 1`; `30000` is the default.
+timeout = 3000
+# `retries` sets how many extra failed attempts are allowed.
+# - integer `>= 0`; `0` is the default.
+retries = 10
+
+[services.db]
+# `port = "auto"` is valid, but `health` must be omitted in v1.
+command = ["bun", "run", "db:dev"]
+cwd = "./db"
+port = "auto"
+bindHost = "::"
+
+[services.worker]
+# A background process with process-based health.
+# This is valid only for non-routed services.
+command = ["bun", "run", "worker:dev"]
+cwd = "./worker"
+dependsOn = ["api"]
+
+[services.worker.health]
+# `process` treats the service as healthy while the child process remains alive.
+# - `true`: enable process-based health checks.
+process = true
+# `interval` sets the delay between process-health checks.
+# - integer `>= 1`; `200` is the default.
+interval = 1000
+# `timeout` sets the maximum total wait time for this health check.
+# - integer `>= 1`; `30000` is the default.
+timeout = 1000
+# `retries` sets how many extra failed attempts are allowed.
+# - integer `>= 0`; `0` is the default.
+retries = 0
