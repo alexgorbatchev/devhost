@@ -53,5 +53,8 @@ describe("parseCommandLineArguments", () => {
     expect(() => parseCommandLineArguments(["--manifest", "./devhost.toml", "--", "bun"])).toThrow(
       "Manifest mode does not accept a child command.",
     );
+    expect(() => parseCommandLineArguments(["--manifest", "./devhost.toml", "bun"])).toThrow(
+      "Manifest mode does not accept a child command.",
+    );
   });
 });

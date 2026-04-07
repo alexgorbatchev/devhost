@@ -1,3 +1,5 @@
+import { parseArgs } from "util";
+
 export type CommandLineArguments = ICaddyCommandLineArguments | IManifestCommandLineArguments;
 
 export interface ICaddyCommandLineArguments {
@@ -11,26 +13,61 @@ export interface IManifestCommandLineArguments {
 }
 
 export function parseCommandLineArguments(rawArguments: string[]): CommandLineArguments {
-  if (rawArguments[0] === "caddy") {
-    return parseCaddyCommandLineArguments(rawArguments.slice(1));
+  let parsed;
+  try {
+    parsed = parseArgs({
+      args: rawArguments,
+      options: {
+        manifest: {
+          type: "string",
+        },
+      },
+      allowPositionals: true,
+      strict: true,
+    });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(String(error));
   }
 
-  const manifestIndex: number = rawArguments.indexOf("--manifest");
+  const { values, positionals } = parsed;
 
-  if (manifestIndex !== -1) {
-    const manifestPath: string = readRequiredOption(rawArguments, "--manifest");
+  const isCaddyCommand = positionals[0] === "caddy";
 
-    if (!manifestPath.endsWith("devhost.toml")) {
-      throw new Error(`--manifest must point to a file named devhost.toml, received: ${manifestPath}`);
+  if (isCaddyCommand) {
+    if (positionals.length === 1) {
+      throw new Error("Expected a caddy action: start, stop, trust, or download.");
+    }
+    if (positionals.length > 2) {
+      throw new Error("Caddy commands do not accept additional arguments.");
     }
 
-    if (rawArguments.includes("--")) {
+    const action = positionals[1];
+
+    if (action !== "start" && action !== "stop" && action !== "trust" && action !== "download") {
+      throw new Error(`Unsupported caddy action: ${action}`);
+    }
+
+    return {
+      kind: "caddy",
+      action: action as ICaddyCommandLineArguments["action"],
+    };
+  }
+
+  if (values.manifest) {
+    if (!values.manifest.endsWith("devhost.toml")) {
+      throw new Error(`--manifest must point to a file named devhost.toml, received: ${values.manifest}`);
+    }
+
+    if (positionals.length > 0) {
       throw new Error("Manifest mode does not accept a child command.");
     }
 
     return {
       kind: "manifest",
-      manifestPath,
+      manifestPath: values.manifest,
     };
   }
 
@@ -38,41 +75,4 @@ export function parseCommandLineArguments(rawArguments: string[]): CommandLineAr
     kind: "manifest",
     manifestPath: null,
   };
-}
-
-function parseCaddyCommandLineArguments(rawArguments: string[]): ICaddyCommandLineArguments {
-  const action: string | undefined = rawArguments[0];
-
-  if (action === undefined) {
-    throw new Error("Expected a caddy action: start, stop, trust, or download.");
-  }
-
-  if (rawArguments.length !== 1) {
-    throw new Error("Caddy commands do not accept additional arguments.");
-  }
-
-  if (action !== "start" && action !== "stop" && action !== "trust" && action !== "download") {
-    throw new Error(`Unsupported caddy action: ${action}`);
-  }
-
-  return {
-    action,
-    kind: "caddy",
-  };
-}
-
-function readRequiredOption(optionArguments: string[], optionName: string): string {
-  const optionIndex: number = optionArguments.indexOf(optionName);
-
-  if (optionIndex === -1) {
-    throw new Error(`Missing required option: ${optionName}`);
-  }
-
-  const optionValue: string | undefined = optionArguments[optionIndex + 1];
-
-  if (optionValue === undefined || optionValue.startsWith("--")) {
-    throw new Error(`Missing value for ${optionName}`);
-  }
-
-  return optionValue;
 }
