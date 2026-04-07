@@ -4,6 +4,13 @@
 
 Configure your stack in `devhost.toml`, then run it through `devhost`.
 
+> [!IMPORTANT]
+> `devhost` manages HTTPS routing through Caddy, not DNS.
+> Your chosen hostnames must already resolve to this machine or the browser will never reach the local proxy.
+> For custom domains, that means loopback resolution, such as exact `A` / `AAAA` records to `127.0.0.1` / `::1`, wildcard DNS records on your domain, or local host entries for exact names.
+> Good out-of-the-box choices are `localhost` and subdomains under `*.localhost`, such as `foo.localhost` and `api.foo.localhost`, because they work without additional DNS configuration.
+> If you use other domains, such as `*.local.test`, you must provide name resolution yourself. `/etc/hosts` only handles exact hostnames, so wildcard setups need real DNS records somewhere.
+
 ## Quick start
 
 ```toml
@@ -28,16 +35,11 @@ host = "api.foo.localhost"
 health = { http = "http://127.0.0.1:4000/healthz" }
 ```
 
-Start it:
+Then:
 
 ```bash
-devhost
-```
-
-Open it:
-
-```bash
-open https://foo.localhost
+$ devhost
+$ open https://foo.localhost
 ```
 
 `devhost` also has managed Caddy lifecycle commands:
@@ -136,16 +138,15 @@ devhost --manifest ../test/devhost.toml
 Behavior:
 
 1. discovers `devhost.toml` upward from the current directory, unless `--manifest` is provided
-2. parses TOML with Bun
-3. validates schema and semantics
-4. resolves `port = "auto"`
-5. starts managed Caddy automatically when `[caddy].autostop = true`, otherwise requires the managed Caddy admin API to already be available
+2. parses TOML and validates schema and semantics
+3. resolves `port = "auto"`
+4. starts managed Caddy automatically when `[caddy].autostop = true`, otherwise requires the managed Caddy admin API to already be available
    - this manages the process lifecycle only; it does **not** auto-download the Caddy binary
-6. reserves all public hosts
-7. starts services in dependency order
-8. waits for each service health check before routing it
-9. tears down routes and children on exit or failure
-10. stops managed Caddy on exit when `[caddy].autostop = true`
+5. reserves all public hosts
+6. starts services in dependency order
+7. waits for each service health check before routing it
+8. tears down routes and children on exit or failure
+9. stops managed Caddy on exit when `[caddy].autostop = true`
 
 When `[caddy].autostop = true`, `devhost` blocks other manifest-driven stacks from starting until the owning stack exits.
 
@@ -158,67 +159,18 @@ If you need strict loopback-only HTTPS on privileged ports, the correct solution
 On non-macOS platforms, opening HTTPS on `:443` still requires privileged-port setup outside `devhost`.
 `devhost` does not configure `sudo`, `setcap`, `authbind`, or firewall redirection for you.
 
-## DNS caveat
-
-`devhost` manages Caddy, not name resolution.
-Your chosen hostnames must already resolve to this machine.
-Without that, automatic Caddy management is irrelevant because the browser will never reach the local proxy.
-
 ## `devhost.toml`
 
-Top-level fields:
+The manifest reference lives in `./devhost.example.toml`.
+Use that file as the documented source of truth for:
 
-```toml
-name = "hello-test-app"
+- top-level sections
+- allowed values
+- defaults
+- health variants
+- inline explanations and copy/paste examples
 
-[caddy]
-autostop = false
-
-[devtools.editor]
-enabled = true
-ide = "vscode"
-
-[devtools.minimap]
-enabled = true
-position = "right"
-
-[devtools.status]
-enabled = true
-position = "bottom-right"
-
-[agent]
-adapter = "pi"
-
-[services.hello]
-primary = true
-command = ["bun", "run", "dev"]
-cwd = "."
-port = 3200
-host = "hello.local.test"
-```
-
-Example routed service:
-
-```toml
-[services.hello]
-command = ["bun", "run", "dev"]
-cwd = "."
-port = 3200
-host = "hello.local.test"
-```
-
-Supported service fields:
-
-- `command: string | string[]`
-- `cwd?: string`
-- `env?: Record<string, string>`
-- `port?: number | "auto"`
-- `bindHost?: "127.0.0.1" | "0.0.0.0" | "::1" | "::"`
-- `host?: string`
-- `dependsOn?: string[]`
-- `health?: { tcp: number } | { http: string } | { process: true }`
-
-For the full manifest contract and documented value examples, read `./devhost.example.toml`.
+Copy it to `devhost.toml` in your project root and trim it down to the services you actually run.
 
 ## Injected environment
 

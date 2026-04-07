@@ -116,7 +116,7 @@ Or run `devhost` from inside the test workspace through its local devDependency:
 cd test && bun run devhost --manifest ./devhost.toml
 ```
 
-Manifest mode uses Bun's built-in TOML parser and Zod v4 validation.
+Manifest mode uses built-in TOML parser and Zod validation.
 A root-level `[caddy]` table is supported for managed Caddy lifecycle behavior.
 `[caddy].autostop` defaults to `false`.
 When `[caddy].autostop = true`, `devhost` starts managed Caddy automatically, stops it on exit, and blocks other manifest-mode stacks from starting until it exits.
@@ -171,7 +171,7 @@ Use a Bun TypeScript wrapper when your preferred agent CLI needs custom setup.
 `devhost`:
 
 - discovers `devhost.toml` or accepts `--manifest`
-- validates the manifest with Zod v4
+- validates the manifest
 - resolves `port = "auto"` before spawning children
 - can take ownership of managed Caddy for the lifetime of the stack when `[caddy].autostop = true`
 - reserves every public host before starting any service
