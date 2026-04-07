@@ -66,4 +66,4 @@ bun run dev
 
 ## Start Building Better
 
-`devhost` requires `bun` and `caddy`. Experience the fastest, most integrated local development workflow today.
+`devhost` requires `bun` plus either a global `caddy` on your `PATH` or a managed Caddy binary downloaded with `bun run devhost caddy download`. Experience the fastest, most integrated local development workflow today.

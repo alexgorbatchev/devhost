@@ -35,7 +35,9 @@ It also has Caddy lifecycle commands:
 ## Requirements
 
 - `bun`
-- `caddy`
+- either:
+  - a global `caddy` on your `PATH`, or
+  - a managed Caddy binary downloaded with `bun run dev caddy download`
 - `nvim` when `[devtools.editor].ide = "neovim"`
 
 ## CLI usage
@@ -47,6 +49,15 @@ bun run dev --help
 ```
 
 ### Managed Caddy commands
+
+Download the managed Caddy binary if you do not already have `caddy` on your `PATH`:
+
+```bash
+bun run dev caddy download
+```
+
+`devhost` uses that downloaded binary when present. Otherwise it falls back to the global `caddy` executable from your `PATH`.
+It does **not** auto-download Caddy during `devhost caddy start` or manifest startup.
 
 Start the managed Caddy instance:
 
@@ -94,6 +105,7 @@ Behavior:
 3. validates schema and semantics
 4. resolves `port = "auto"`
 5. starts managed Caddy automatically when `[caddy].autostop = true`, otherwise requires the managed Caddy admin API to already be available
+   - this manages the process lifecycle only; it does **not** auto-download the Caddy binary
 6. reserves all public hosts
 7. starts services in dependency order
 8. waits for each service health check before routing it

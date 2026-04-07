@@ -7,9 +7,11 @@ This repo gives you a `devhost` Bun wrapper plus a devhost-managed Caddy instanc
 ## Requirements
 
 - `bun`
-- `caddy`
+- either:
+  - a global `caddy` on your `PATH`, or
+  - a managed Caddy binary downloaded with `bun run devhost caddy download`
 
-On macOS:
+If you want a global install on macOS:
 
 ```bash
 brew install caddy
@@ -23,6 +25,15 @@ Instead it generates and manages its own Caddy config under:
 - `DEVHOST_STATE_DIR`, when set
 - otherwise `XDG_STATE_HOME/devhost`, when `XDG_STATE_HOME` is set
 - otherwise `~/.local/state/devhost/caddy`
+
+Download the managed Caddy binary once if you do not already have `caddy` on your `PATH`:
+
+```bash
+bun run devhost caddy download
+```
+
+`devhost` uses that downloaded binary when present. Otherwise it falls back to the global `caddy` executable from your `PATH`.
+It does **not** auto-download Caddy during `devhost caddy start` or manifest startup.
 
 Start the managed Caddy instance once:
 
