@@ -1,16 +1,51 @@
 # devhost
 
-`devhost` is a Bun-based local development host runner for projects behind a devhost-managed Caddy instance.
+`devhost` is a CLI utility for local development that lets you open your local apps on HTTPS domains instead of raw `localhost:port` URLs, and can inject useful devtools directly into routed pages.
 
-It has two runtime modes:
+Configure your stack in `devhost.toml`, then run it through `devhost`.
 
-- **manifest mode** — load `devhost.toml`, start a local stack, wait for each service health gate, and register routed hosts
+## Quick start
 
-It also has Caddy lifecycle commands:
+```toml
+name = "hello-stack"
+
+[caddy]
+autostop = true
+
+[services.ui]
+primary = true
+command = ["bun", "run", "ui:dev"]
+cwd = "."
+port = 3000
+host = "foo.localhost"
+dependsOn = ["api"]
+
+[services.api]
+command = ["bun", "run", "api:dev"]
+cwd = "."
+port = 4000
+host = "api.foo.localhost"
+health = { http = "http://127.0.0.1:4000/healthz" }
+```
+
+Start it:
+
+```bash
+devhost
+```
+
+Open it:
+
+```bash
+open https://foo.localhost
+```
+
+`devhost` also has managed Caddy lifecycle commands:
 
 - `devhost caddy start`
 - `devhost caddy stop`
 - `devhost caddy trust`
+- `devhost caddy download`
 
 ## What it does
 
@@ -37,7 +72,7 @@ It also has Caddy lifecycle commands:
 - `bun`
 - either:
   - a global `caddy` on your `PATH`, or
-  - a managed Caddy binary downloaded with `bun run dev caddy download`
+  - a managed Caddy binary downloaded with `devhost caddy download`
 - `nvim` when `[devtools.editor].ide = "neovim"`
 
 ## CLI usage
@@ -45,7 +80,7 @@ It also has Caddy lifecycle commands:
 Show help:
 
 ```bash
-bun run dev --help
+devhost --help
 ```
 
 ### Managed Caddy commands
@@ -53,22 +88,22 @@ bun run dev --help
 Download the managed Caddy binary if you do not already have `caddy` on your `PATH`:
 
 ```bash
-bun run dev caddy download
+devhost caddy download
 ```
 
 `devhost` uses that downloaded binary when present. Otherwise it falls back to the global `caddy` executable from your `PATH`.
-It does **not** auto-download Caddy during `devhost caddy start` or manifest startup.
+It does **not** auto-download Caddy during `devhost caddy start` or stack startup.
 
 Start the managed Caddy instance:
 
 ```bash
-bun run dev caddy start
+devhost caddy start
 ```
 
 Stop it:
 
 ```bash
-bun run dev caddy stop
+devhost caddy stop
 ```
 
 Managed Caddy may prompt for your password when it needs to install its local CA into the system trust store.
@@ -76,7 +111,7 @@ Managed Caddy may prompt for your password when it needs to install its local CA
 Trust its local CA once after it is running:
 
 ```bash
-bun run dev caddy trust
+devhost caddy trust
 ```
 
 The generated Caddy config uses these defaults:
@@ -86,16 +121,16 @@ The generated Caddy config uses these defaults:
 - listener binding on macOS: wildcard listeners, because macOS denies rootless loopback-specific binds on `:443`
 - listener binding on non-macOS: loopback only via Caddy `default_bind 127.0.0.1 [::1]`
 
-### Manifest mode
+### Start a stack
 
 ```bash
-bun run dev
+devhost
 ```
 
 or:
 
 ```bash
-bun run dev --manifest ../test/devhost.toml
+devhost --manifest ../test/devhost.toml
 ```
 
 Behavior:
@@ -112,7 +147,7 @@ Behavior:
 9. tears down routes and children on exit or failure
 10. stops managed Caddy on exit when `[caddy].autostop = true`
 
-When `[caddy].autostop = true`, `devhost` blocks other manifest-mode stacks from starting until the owning stack exits.
+When `[caddy].autostop = true`, `devhost` blocks other manifest-driven stacks from starting until the owning stack exits.
 
 ## Platform caveat
 
@@ -174,7 +209,7 @@ host = "hello.local.test"
 
 Supported service fields:
 
-- `command: string[]`
+- `command: string | string[]`
 - `cwd?: string`
 - `env?: Record<string, string>`
 - `port?: number | "auto"`
@@ -187,25 +222,33 @@ For the full manifest contract and documented value examples, read `./devhost.ex
 
 ## Injected environment
 
-### Always relevant
+`devhost` injects environment variables into each service child process.
+Only `DEVHOST_BIND_HOST` and `PORT` are operational bind inputs.
+The remaining variables are context metadata and must not be used as socket bind targets.
+
+### Operational bind inputs
 
 - `DEVHOST_BIND_HOST`
   - the actual interface the child process is expected to listen on
   - use this for binding sockets
 - `PORT`
   - the listening port selected by `devhost`
-  - in manifest mode this is the resolved port, including `port = "auto"`
+  - injected when the service defines `port`, including `port = "auto"`
+  - not injected for services that do not define `port`
 
-### Manifest-mode variables
-
-- `DEVHOST_STACK`
-- `DEVHOST_SERVICE_NAME`
-- `DEVHOST_MANIFEST_PATH`
-
-### Routed-service variables
+### Routed-service context
 
 - `DEVHOST_HOST`
+  - injected only for routed services with `host`
   - the public routed hostname from the service `host` field
+  - use this when the app needs to know its public development URL or origin
+
+### Manifest metadata
+
+- `DEVHOST_SERVICE_NAME`
+  - the manifest service key for the current child process
+- `DEVHOST_MANIFEST_PATH`
+  - the absolute path to the resolved `devhost.toml`
 
 ## Devtools injection
 
