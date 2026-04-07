@@ -11,6 +11,8 @@
   },
   "devDependencies": {
     "@storybook/addon-vitest": "10.3.4",
+    "@storybook/react": "10.3.4",
+    "@storybook/react-dom-shim": "10.3.4",
     "@storybook/react-vite": "10.3.4",
     "@types/bun": "^1.3.11",
     "@types/react": "^19.2.14",
