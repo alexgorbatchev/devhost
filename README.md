@@ -100,7 +100,7 @@ Policy configuration lives in:
 
 `bun check` performs formatting verification before linting, then runs each workspace check script.
 
-## Manifest mode
+## Manifest
 
 The test app has a sample manifest at `test/devhost.toml`.
 
@@ -116,10 +116,10 @@ Or run `devhost` from inside the test workspace through its local devDependency:
 cd test && bun run devhost --manifest ./devhost.toml
 ```
 
-Manifest mode uses built-in TOML parser and Zod validation.
+`devhost` uses built-in TOML parser and Zod validation.
 A root-level `[caddy]` table is supported for managed Caddy lifecycle behavior.
 `[caddy].autostop` defaults to `false`.
-When `[caddy].autostop = true`, `devhost` starts managed Caddy automatically, stops it on exit, and blocks other manifest-mode stacks from starting until it exits.
+When `[caddy].autostop = true`, `devhost` starts managed Caddy automatically, stops it on exit, and blocks other `devhost` stacks from starting until it exits.
 Devtools are configured through `[devtools.editor]`, `[devtools.minimap]`, and `[devtools.status]`.
 Each devtools feature defaults to `enabled = true`.
 Supported editor values are `"vscode"`, `"vscode-insiders"`, `"cursor"`, `"webstorm"`, and `"neovim"`.
@@ -166,8 +166,6 @@ Use a Bun TypeScript wrapper when your preferred agent CLI needs custom setup.
 
 ## How `devhost` works
 
-### Manifest mode
-
 `devhost`:
 
 - discovers `devhost.toml` or accepts `--manifest`
@@ -180,10 +178,6 @@ Use a Bun TypeScript wrapper when your preferred agent CLI needs custom setup.
 - injects Alt + right-click React component-source navigation for routed pages when devtools are enabled
 - opens component sources through the configured editor protocol and also copies the resolved source path to the clipboard when the browser allows it
 - starts annotation sessions with the configured manifest agent, or the Pi adapter when `[agent]` is omitted
-- expands annotation-agent and Neovim terminal sessions to the full viewport when opened
-- shows embedded Neovim sessions with a compact one-line source summary using the raw source path
-- swaps a finished tray preview's green completion badge for a hover-only close button without disabling expand/reopen behavior
-- tucks the service-status panel behind the viewport edge, renders it above the minimap, nudges it 20px closer to the screen edge, and slides it in on hover while keeping the status dot visible on either side
 - activates Caddy routes only after health checks pass
 - removes routes and reservations on shutdown or startup failure
 
@@ -205,7 +199,7 @@ DEVHOST_HOST=<public hostname>
 
 when the app needs to know its routed development hostname.
 
-For manifest mode, `DEVHOST_BIND_HOST` is the configured service bind host.
+For `devhost` bound services, `DEVHOST_BIND_HOST` is the configured service bind host.
 Do not reuse the routed host as the bind address unless the framework explicitly requires that behavior and you have verified it.
 
 ## Component-source navigation

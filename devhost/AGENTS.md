@@ -61,7 +61,7 @@ The check script runs the native TypeScript typecheck, the coverage test suite, 
 
 - All devhost-owned logs must go through the injected logger utility.
 - Devhost-owned foreground lines must use the injected logger prefix.
-- Manifest-mode logs must use the manifest `name` as the prefix label.
+- Manifest logs must use the manifest `name` as the prefix label.
 - Pre-manifest logs must fall back to the `devhost` label.
 - Child process logs must remain prefixed with `[service-name]`.
 - Do not print successful Caddy reload chatter.

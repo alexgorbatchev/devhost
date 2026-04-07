@@ -148,7 +148,7 @@ Behavior:
 8. tears down routes and children on exit or failure
 9. stops managed Caddy on exit when `[caddy].autostop = true`
 
-When `[caddy].autostop = true`, `devhost` blocks other manifest-driven stacks from starting until the owning stack exits.
+When `[caddy].autostop = true`, `devhost` blocks other stacks from starting until the owning stack exits.
 
 ## Platform caveat
 

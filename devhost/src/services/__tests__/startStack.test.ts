@@ -5,7 +5,7 @@ import { createInjectedServiceEnvironment } from "../startStack";
 import type { IResolvedDevhostManifest, IResolvedDevhostService } from "../../types/stackTypes";
 
 describe("createInjectedServiceEnvironment", () => {
-  test("injects manifest-mode variables for routed services without HOST", () => {
+  test("injects manifest variables for routed services without HOST", () => {
     const manifest: IResolvedDevhostManifest = {
       agent: createDefaultDevhostAgent(),
       caddy: {

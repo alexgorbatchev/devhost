@@ -27,7 +27,7 @@ name = "hello-stack"
 [caddy]
 # `autostop` controls whether this stack owns the managed Caddy lifecycle.
 # - `false` (default): do not start or stop managed Caddy automatically.
-# - `true`: start managed Caddy on stack startup, stop it on shutdown, and block other manifest-mode stacks while this stack is active.
+# - `true`: start managed Caddy on stack startup, stop it on shutdown, and block other `devhost` stacks while this stack is active.
 autostop = false
 
 # The `devtools.*` sections control the browser-side devhost overlay injected into
