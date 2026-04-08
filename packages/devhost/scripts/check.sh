@@ -6,8 +6,6 @@ package_dir="$(cd -- "$script_dir/.." && pwd)"
 
 cd "$package_dir"
 
-bun --bun oxlint .
-
 tsgo --noEmit -p tsconfig.json
 bun test --coverage
 vitest run --config ./vitest.storybook.config.ts

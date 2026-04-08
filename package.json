@@ -1,11 +1,13 @@
 {
   "private": true,
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "check": "bun run --cwd packages/devhost check && bun run --cwd packages/www check",
+    "check": "bun --bun oxfmt --check . && bun --bun oxlint . && bun run --cwd packages/devhost check && bun run --cwd packages/www check",
     "deploy:www": "bun ./scripts/deployWwwRailway.ts",
     "dev": "bun run --cwd packages/www devhost",
-    "policy:fix:semantic": "bun run typescript-ai-policy-fix-semantic -- ."
+    "fix": "bun --bun oxfmt --write ."
   },
   "devDependencies": {
     "@alexgorbatchev/typescript-ai-policy": "^1.0.5",

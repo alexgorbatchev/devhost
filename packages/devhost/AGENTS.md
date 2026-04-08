@@ -45,7 +45,7 @@ Run the package check suite:
 bun run check
 ```
 
-The `fmt` script runs `oxfmt --write` for this workspace using the shared repo-root config. The check script runs linting, the native TypeScript typecheck, the coverage test suite, and the Storybook component test suite for this workspace only.
+The `fmt` script runs `oxfmt --write` for this workspace using the shared repo-root config. The package `check` script runs the native TypeScript typecheck, the coverage test suite, and the Storybook component test suite for this workspace only. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
 
 ## Internal package layout
 
