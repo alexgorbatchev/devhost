@@ -75,9 +75,10 @@ describe("createTerminalSessionCommand", () => {
 
     cleanupFunctions.push(terminalSessionCommand.cleanup);
 
-    expect(terminalSessionCommand.command[0]).toBe("pi");
-    expect(terminalSessionCommand.command[1]).toBe("-e");
-    expect(terminalSessionCommand.command[3]).toMatch(/^@.*prompt\.txt$/);
+    expect(terminalSessionCommand.command).toEqual([
+      "pi",
+      expect.stringMatching(/^@.*prompt\.txt$/),
+    ]);
     expect(terminalSessionCommand.env.DEVHOST_AGENT_PROMPT_FILE).toBeDefined();
     expect(terminalSessionCommand.cwd).toBe("/tmp/project");
   });
