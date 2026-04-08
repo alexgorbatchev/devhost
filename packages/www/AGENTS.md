@@ -24,3 +24,5 @@ Local React demo app for exercising `@alexgorbatchev/devhost` behavior and Story
 - `scripts/check.sh`
 - `.storybook/`
 - `railway.toml`
+- `src/server.ts`
+- `DEPLOY.md`

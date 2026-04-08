@@ -3,6 +3,7 @@
   "workspaces": ["packages/*"],
   "scripts": {
     "check": "bun run --cwd packages/devhost check && bun run --cwd packages/www check",
+    "deploy:www:railway": "bun ./scripts/deployWwwRailway.ts",
     "policy:fix:semantic": "bun run typescript-ai-policy-fix-semantic -- ."
   },
   "devDependencies": {
