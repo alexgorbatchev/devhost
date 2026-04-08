@@ -1,35 +1,42 @@
 #!/usr/bin/env bun
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { spawnSync, type SpawnSyncReturns } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import process from "node:process";
-import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 
 const projectId: string = "631518da-37bf-4d31-867f-10908bd9022c";
 const environmentId: string = "cb2b2b96-f966-46cd-a594-19c1da4e8b91";
 const serviceId: string = "5ce1c234-e1a8-4d0a-8ea0-79e3d413decd";
 const expectedBindHost: string = "0.0.0.0";
-const expectedConfigFilePath: string = "/packages/www/railway.toml";
-const expectedStartCommand: string = "bun src/server.ts";
+const expectedStartCommand: string = "bun packages/www/src/server.ts";
 const publicUrl: string = "https://devhost.up.railway.app/";
-const settingsUrl: string =
-  "https://railway.com/project/631518da-37bf-4d31-867f-10908bd9022c/service/5ce1c234-e1a8-4d0a-8ea0-79e3d413decd/settings?environmentId=cb2b2b96-f966-46cd-a594-19c1da4e8b91";
-
-const dashboardConfirmationEnvironmentVariableName: string = "RAILWAY_DASHBOARD_CONFIRMED";
+const railwayGraphqlUrl: string = "https://backboard.railway.com/graphql/v2";
 const skipDeployEnvironmentVariableName: string = "DEPLOY_WWW_RAILWAY_SKIP_DEPLOY";
+const railwayApiTokenEnvironmentVariableNames: string[] = ["RAILWAY_API_TOKEN", "RAILWAY_TOKEN"];
+
+interface IRailwayConfigFile {
+  user?: {
+    accessToken?: unknown;
+  };
+}
+
+interface IServiceInstanceSettings {
+  rootDirectory: string | null;
+  startCommand: string | null;
+}
 
 export async function deployWwwRailway(): Promise<void> {
   changeToRepositoryRoot();
   verifyRepositoryLayout();
   verifyRequiredCommands();
-  await confirmDashboardPreflight();
   installDependencies();
 
   const linkResult = linkRailwayTarget();
 
   verifyLinkedTarget(linkResult);
+  ensureRequiredServiceSettings();
   ensureRequiredServiceVariable();
   validateWwwWorkspace();
 
@@ -40,7 +47,7 @@ export async function deployWwwRailway(): Promise<void> {
 
   deployLocalCode();
   await verifyLatestDeployment();
-  verifyPublicEndpoint();
+  await verifyPublicEndpoint();
 }
 
 function changeToRepositoryRoot(): void {
@@ -72,35 +79,6 @@ function verifyRequiredCommands(): void {
   runInheritedCommand("bun", ["--version"]);
   runInheritedCommand("railway", ["--version"]);
   runInheritedCommand("curl", ["--version"]);
-}
-
-async function confirmDashboardPreflight(): Promise<void> {
-  if (readBooleanEnvironmentVariable(dashboardConfirmationEnvironmentVariableName)) {
-    return;
-  }
-
-  const confirmationMessage = [
-    `Open Railway settings and verify:`,
-    `- Config-as-code file = ${expectedConfigFilePath}`,
-    `- Root directory is unset`,
-    settingsUrl,
-    `Then rerun with ${dashboardConfirmationEnvironmentVariableName}=1, or confirm interactively.`,
-  ].join("\n");
-
-  if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    throw new Error(confirmationMessage);
-  }
-
-  console.log(confirmationMessage);
-
-  const interfaceHandle = createInterface({ input: process.stdin, output: process.stdout });
-  const response = await interfaceHandle.question("Type 'yes' to continue: ");
-
-  interfaceHandle.close();
-
-  if (response.trim() !== "yes") {
-    throw new Error("Dashboard preflight not confirmed.");
-  }
 }
 
 function installDependencies(): void {
@@ -143,15 +121,48 @@ function verifyLinkedTarget(linkResult: unknown): void {
   }
 }
 
+function ensureRequiredServiceSettings(): void {
+  logStep("Verifying required Railway service settings");
+
+  const serviceInstanceSettings = queryServiceInstanceSettings();
+
+  if (
+    serviceInstanceSettings.startCommand === expectedStartCommand &&
+    serviceInstanceSettings.rootDirectory === null
+  ) {
+    return;
+  }
+
+  logStep("Updating Railway service settings");
+
+  runRailwayGraphqlMutation(
+    "mutation($serviceId:String!,$environmentId:String!,$input:ServiceInstanceUpdateInput!){serviceInstanceUpdate(serviceId:$serviceId,environmentId:$environmentId,input:$input)}",
+    {
+      environmentId,
+      input: {
+        rootDirectory: null,
+        startCommand: expectedStartCommand,
+      },
+      serviceId,
+    },
+  );
+
+  const updatedServiceInstanceSettings = queryServiceInstanceSettings();
+
+  if (updatedServiceInstanceSettings.rootDirectory !== null) {
+    throw new Error("Railway service rootDirectory is still set after attempted update.");
+  }
+
+  if (updatedServiceInstanceSettings.startCommand !== expectedStartCommand) {
+    throw new Error(`Railway service startCommand is still ${String(updatedServiceInstanceSettings.startCommand)} after attempted update.`);
+  }
+}
+
 function ensureRequiredServiceVariable(): void {
   logStep("Verifying required Railway service variable");
 
   const variableListResult = runJsonCommand("railway", ["variable", "list", "--json"]);
-  const currentBindHost = expectStringAtPath(
-    variableListResult,
-    ["DEVHOST_BIND_HOST"],
-    "Railway variable DEVHOST_BIND_HOST",
-  );
+  const currentBindHost = readOptionalStringAtPath(variableListResult, ["DEVHOST_BIND_HOST"]);
 
   if (currentBindHost === expectedBindHost) {
     return;
@@ -198,17 +209,11 @@ async function verifyLatestDeployment(): Promise<void> {
     "node",
     "latestDeployment",
   ];
-  const configFilePath = expectStringAtPath(fullStatusResult, [...latestDeploymentPath, "meta", "configFile"], "config file path");
   const startCommand = expectStringAtPath(
     fullStatusResult,
     [...latestDeploymentPath, "meta", "serviceManifest", "deploy", "startCommand"],
     "start command",
   );
-
-  if (configFilePath !== "packages/www/railway.toml" && configFilePath !== "railway.toml") {
-    printLatestBuildLogs();
-    throw new Error(`Latest deployment used unexpected config file: ${configFilePath}`);
-  }
 
   if (startCommand !== expectedStartCommand) {
     printLatestBuildLogs();
@@ -231,9 +236,29 @@ async function waitForTerminalDeploymentStatus(): Promise<string> {
   throw new Error("Timed out while waiting for the latest Railway deployment to reach a terminal state.");
 }
 
-function verifyPublicEndpoint(): void {
+async function verifyPublicEndpoint(): Promise<void> {
   logStep("Verifying public endpoint");
-  runInheritedCommand("curl", ["-I", publicUrl]);
+
+  for (let attempt = 0; attempt < 24; attempt += 1) {
+    const responseResult = spawnSync("curl", ["-fsSIL", publicUrl], {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: "utf8",
+    });
+
+    if (responseResult.status === 0) {
+      if (responseResult.stdout.length > 0) {
+        process.stdout.write(responseResult.stdout);
+      }
+
+      return;
+    }
+
+    await waitMilliseconds(5_000);
+  }
+
+  printLatestDeploymentLogs();
+  throw new Error(`Public endpoint did not become healthy: ${publicUrl}`);
 }
 
 function printLatestBuildLogs(): void {
@@ -251,6 +276,113 @@ function printLatestBuildLogs(): void {
   if (result.stderr.length > 0) {
     process.stderr.write(result.stderr);
   }
+}
+
+function printLatestDeploymentLogs(): void {
+  logStep("Printing latest deployment logs");
+  const result = spawnSync("railway", ["logs", "--deployment", "--latest", "--lines", "200"], {
+    cwd: process.cwd(),
+    env: process.env,
+    encoding: "utf8",
+  });
+
+  if (result.stdout.length > 0) {
+    process.stdout.write(result.stdout);
+  }
+
+  if (result.stderr.length > 0) {
+    process.stderr.write(result.stderr);
+  }
+}
+
+function queryServiceInstanceSettings(): IServiceInstanceSettings {
+  const result = runRailwayGraphqlQuery(
+    "query($serviceId:String!,$environmentId:String!){serviceInstance(serviceId:$serviceId,environmentId:$environmentId){startCommand rootDirectory}}",
+    { environmentId, serviceId },
+  );
+
+  return {
+    rootDirectory: readNullableStringAtPath(result, ["data", "serviceInstance", "rootDirectory"]),
+    startCommand: readNullableStringAtPath(result, ["data", "serviceInstance", "startCommand"]),
+  };
+}
+
+function runRailwayGraphqlQuery(query: string, variables: Record<string, unknown>): unknown {
+  return runRailwayGraphqlRequest(query, variables);
+}
+
+function runRailwayGraphqlMutation(query: string, variables: Record<string, unknown>): unknown {
+  return runRailwayGraphqlRequest(query, variables);
+}
+
+function runRailwayGraphqlRequest(query: string, variables: Record<string, unknown>): unknown {
+  const railwayAccessToken = resolveRailwayAccessToken();
+
+  return fetchJson(railwayGraphqlUrl, {
+    body: JSON.stringify({ query, variables }),
+    headers: {
+      Authorization: `Bearer ${railwayAccessToken}`,
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+}
+
+function resolveRailwayAccessToken(): string {
+  for (const environmentVariableName of railwayApiTokenEnvironmentVariableNames) {
+    const environmentVariableValue = process.env[environmentVariableName];
+
+    if (typeof environmentVariableValue === "string" && environmentVariableValue.length > 0) {
+      return environmentVariableValue;
+    }
+  }
+
+  const homeDirectoryPath = process.env.HOME;
+
+  if (typeof homeDirectoryPath !== "string" || homeDirectoryPath.length === 0) {
+    throw new Error("Missing HOME; cannot resolve Railway access token from ~/.railway/config.json.");
+  }
+
+  const railwayConfigFilePath = resolve(homeDirectoryPath, ".railway/config.json");
+
+  if (!existsSync(railwayConfigFilePath)) {
+    throw new Error("Missing Railway auth config. Run `railway login` or set RAILWAY_API_TOKEN.");
+  }
+
+  const railwayConfigFileValue: unknown = JSON.parse(readFileSync(railwayConfigFilePath, "utf8"));
+
+  if (!isRailwayConfigFile(railwayConfigFileValue)) {
+    throw new Error("Unexpected Railway auth config shape in ~/.railway/config.json.");
+  }
+
+  if (typeof railwayConfigFileValue.user?.accessToken !== "string" || railwayConfigFileValue.user.accessToken.length === 0) {
+    throw new Error("Missing Railway access token. Run `railway login` or set RAILWAY_API_TOKEN.");
+  }
+
+  return railwayConfigFileValue.user.accessToken;
+}
+
+function fetchJson(url: string, requestInit: RequestInit): unknown {
+  const responseResult = spawnSync("curl", [
+    "-fsSL",
+    "-X",
+    requestInit.method ?? "GET",
+    url,
+    "-H",
+    `Authorization: ${String(requestInit.headers instanceof Headers ? requestInit.headers.get("Authorization") ?? "" : (requestInit.headers as Record<string, string>).Authorization ?? "")}`,
+    "-H",
+    `Content-Type: ${String(requestInit.headers instanceof Headers ? requestInit.headers.get("Content-Type") ?? "application/json" : (requestInit.headers as Record<string, string>)["Content-Type"] ?? "application/json")}`,
+    "--data",
+    typeof requestInit.body === "string" ? requestInit.body : "",
+  ], {
+    cwd: process.cwd(),
+    env: process.env,
+    encoding: "utf8",
+  });
+
+  throwOnCommandFailure("curl", [], responseResult);
+
+  return JSON.parse(responseResult.stdout);
 }
 
 function runInheritedCommand(command: string, arguments_: string[]): void {
@@ -329,6 +461,34 @@ function expectStringAtPath(value: unknown, path: Array<number | string>, label:
   return nestedValue;
 }
 
+function readNullableStringAtPath(value: unknown, path: Array<number | string>): string | null {
+  const nestedValue = readPath(value, path);
+
+  if (nestedValue === null || nestedValue === undefined) {
+    return null;
+  }
+
+  if (typeof nestedValue !== "string") {
+    throw new Error("Expected nested value to be a string or null.");
+  }
+
+  return nestedValue;
+}
+
+function readOptionalStringAtPath(value: unknown, path: Array<number | string>): string | null {
+  const nestedValue = readPath(value, path);
+
+  if (nestedValue === null || nestedValue === undefined) {
+    return null;
+  }
+
+  if (typeof nestedValue !== "string") {
+    throw new Error("Expected nested value to be a string or null.");
+  }
+
+  return nestedValue;
+}
+
 function readPath(value: unknown, path: Array<number | string>): unknown {
   let currentValue: unknown = value;
 
@@ -354,6 +514,10 @@ function readPath(value: unknown, path: Array<number | string>): unknown {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function isRailwayConfigFile(value: unknown): value is IRailwayConfigFile {
+  return isRecord(value);
 }
 
 function logStep(message: string): void {

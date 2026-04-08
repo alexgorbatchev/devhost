@@ -5,7 +5,6 @@
 - Project ID: `631518da-37bf-4d31-867f-10908bd9022c`
 - Environment ID: `cb2b2b96-f966-46cd-a594-19c1da4e8b91`
 - Service ID: `5ce1c234-e1a8-4d0a-8ea0-79e3d413decd`
-- Settings URL: `https://railway.com/project/631518da-37bf-4d31-867f-10908bd9022c/service/5ce1c234-e1a8-4d0a-8ea0-79e3d413decd/settings?environmentId=cb2b2b96-f966-46cd-a594-19c1da4e8b91`
 - Public URL: `https://devhost.up.railway.app/`
 
 ## Preconditions
@@ -14,34 +13,28 @@
 - Run all commands from the repository root.
 - Do not run `railway up` from `packages/www`.
 - Railway CLI must be installed.
-- Railway CLI must be authenticated.
-- Set `RAILWAY_DASHBOARD_CONFIRMED=1` only after manually verifying the dashboard state below.
+- Railway CLI must be authenticated, or `RAILWAY_API_TOKEN` must be set.
 
-### Required Railway dashboard state
+### Required Railway service state
 
-Verify in the service settings page before deploy:
+The deploy script enforces these settings before deploy:
 
-- Config-as-code file is exactly `/packages/www/railway.toml`
-- Root directory is unset
-
-### Required Railway service variable
-
-Verify before deploy:
-
-- `DEVHOST_BIND_HOST=0.0.0.0`
+- service start command = `bun packages/www/src/server.ts`
+- service root directory = unset
+- service variable `DEVHOST_BIND_HOST=0.0.0.0`
 
 ## Deploy
 
 ### Automated path
 
 ```sh
-RAILWAY_DASHBOARD_CONFIRMED=1 bun run deploy:www:railway
+bun run deploy:www:railway
 ```
 
 Optional preflight-only mode:
 
 ```sh
-RAILWAY_DASHBOARD_CONFIRMED=1 DEPLOY_WWW_RAILWAY_SKIP_DEPLOY=1 bun run deploy:www:railway
+DEPLOY_WWW_RAILWAY_SKIP_DEPLOY=1 bun run deploy:www:railway
 ```
 
 ### Manual steps used by the script
@@ -110,8 +103,7 @@ railway status --json
 Required latest deployment facts:
 
 - latest deployment status is `SUCCESS`
-- latest deployment `configFile` is not `null`
-- latest deployment effective start command is `bun src/server.ts`
+- latest deployment effective start command is `bun packages/www/src/server.ts`
 
 ### 8. Inspect latest build logs
 
@@ -131,7 +123,6 @@ This HTTP check is secondary. A successful response does not prove the latest de
 
 - Railway target IDs do not match
 - `DEVHOST_BIND_HOST` is missing or not `0.0.0.0`
-- service settings do not use `/packages/www/railway.toml`
-- root directory is set
+- service root directory is set
 - latest deployment status is `FAILED`
 - build logs contain `No start command detected`
