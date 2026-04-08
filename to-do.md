@@ -23,30 +23,30 @@
 - [x] Fail clearly if manifest still contains `[caddy].autostop`
 
 ### 2. Redefine route ownership correctly
-- [ ] Introduce an explicit route ownership model that distinguishes:
+- [x] Introduce an explicit route ownership model that distinguishes:
   - public hostname ownership across projects
   - per-path routing within a single manifest
 - [ ] Stop keying shared route registrations by `host + serviceName`
-- [ ] Add a hostname ownership claim format that can detect cross-project conflicts reliably
-- [ ] Allow multiple services in one manifest to share a hostname only when their public paths do not overlap
-- [ ] Reject any attempt by a different manifest/process to claim a hostname that is already owned
-- [ ] Normalize public paths before comparison and persistence
-- [ ] Ensure route cleanup releases hostname ownership only when the owning stack exits
+- [x] Add a hostname ownership claim format that can detect cross-project conflicts reliably
+- [x] Allow multiple services in one manifest to share a hostname only when their public paths do not overlap
+- [x] Reject any attempt by a different manifest/process to claim a hostname that is already owned
+- [x] Normalize public paths before comparison and persistence
+- [x] Ensure route cleanup releases hostname ownership only when the owning stack exits
 
 ### 3. Fix route file generation for same-host multi-path services in one stack
-- [ ] Stop generating multiple independent Caddy site blocks for the same hostname
-- [ ] Generate one hostname-level route definition that contains all path handlers for that hostname within the stack
-- [ ] Define deterministic handler ordering for overlapping-safe path matching inside one host
-- [ ] Keep devtools document injection behavior working for root-mounted services
-- [ ] Keep non-root path routing working without relying on duplicate host blocks
+- [x] Stop generating multiple independent Caddy site blocks for the same hostname
+- [x] Generate one hostname-level route definition that contains all path handlers for that hostname within the stack
+- [x] Define deterministic handler ordering for overlapping-safe path matching inside one host
+- [x] Keep devtools document injection behavior working for root-mounted services
+- [x] Keep non-root path routing working without relying on duplicate host blocks
 
 ### 4. Add cross-process fixed-port reservations
-- [ ] Introduce shared reservation files/state for explicit fixed bind `host:port`
-- [ ] Claim fixed bind ports before spawning services
-- [ ] Fail fast with a clear error when another live devhost process already owns the same fixed bind socket
-- [ ] Clean up stale fixed-port claims from dead processes
-- [ ] Release fixed-port claims on shutdown and startup failure
-- [ ] Keep per-manifest duplicate fixed-port validation as an early local check
+- [x] Introduce shared reservation files/state for explicit fixed bind `host:port`
+- [x] Claim fixed bind ports before spawning services
+- [x] Fail fast with a clear error when another live devhost process already owns the same fixed bind socket
+- [x] Clean up stale fixed-port claims from dead processes
+- [x] Release fixed-port claims on shutdown and startup failure
+- [x] Keep per-manifest duplicate fixed-port validation as an early local check
 
 ### 5. Keep `auto` ports best-effort, but harden failure handling
 - [ ] Keep current best-effort `get-port` allocation for `port = "auto"`
@@ -56,17 +56,17 @@
 - [ ] Ensure retried services update health checks and injected `PORT` consistently
 
 ### 6. Update startup/shutdown orchestration
-- [ ] Reorder startup so shared claims are acquired before child processes are spawned
-- [ ] Ensure partial-start failures unwind hostname claims, route files, and fixed-port claims correctly
-- [ ] Ensure shutdown removes routes, hostname claims, and fixed-port claims in the correct order
-- [ ] Preserve stale-registration cleanup for dead processes
+- [x] Reorder startup so shared claims are acquired before child processes are spawned
+- [x] Ensure partial-start failures unwind hostname claims, route files, and fixed-port claims correctly
+- [x] Ensure shutdown removes routes, hostname claims, and fixed-port claims in the correct order
+- [x] Preserve stale-registration cleanup for dead processes
 
 ### 7. Update manifest validation rules
 - [x] Remove `autostop` from documented manifest schema
-- [ ] Validate hostname uniqueness across services only when required by the new single-manifest path-sharing rules
-- [ ] Add exact path-overlap validation for services sharing a hostname within one manifest
-- [ ] Keep routed-service requirements for `host`, `port`, and health constraints intact
-- [ ] Keep bind-host validation intact
+- [x] Validate hostname uniqueness across services only when required by the new single-manifest path-sharing rules
+- [x] Add exact path-overlap validation for services sharing a hostname within one manifest
+- [x] Keep routed-service requirements for `host`, `port`, and health constraints intact
+- [x] Keep bind-host validation intact
 
 ### 8. Update docs and examples
 - [ ] Rewrite `packages/devhost/README.md` to describe shared-global manual Caddy lifecycle only
@@ -79,11 +79,11 @@
 - [x] Update any help text and contributor docs that still mention autostop
 
 ### 9. Expand test coverage
-- [ ] Add manifest-validation tests for same-host multi-path services in one stack
-- [ ] Add manifest-validation tests for invalid overlapping path configurations in one stack
-- [ ] Add route ownership tests for cross-project hostname conflicts
-- [ ] Add route generation tests for one hostname with multiple path handlers
-- [ ] Add fixed-port claim tests across simulated processes
+- [x] Add manifest-validation tests for same-host multi-path services in one stack
+- [x] Add manifest-validation tests for invalid overlapping path configurations in one stack
+- [x] Add route ownership tests for cross-project hostname conflicts
+- [x] Add route generation tests for one hostname with multiple path handlers
+- [x] Add fixed-port claim tests across simulated processes
 - [ ] Add startup cleanup tests for partial failures after claims are acquired
 - [ ] Add auto-port retry tests for bind-collision recovery
 - [x] Remove or rewrite tests that assert autostop behavior

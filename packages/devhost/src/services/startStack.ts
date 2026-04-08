@@ -8,10 +8,10 @@ import { launchTerminalSession } from "../agents/launchTerminalSession";
 import { pipeSubprocessOutput } from "./pipeSubprocessOutput";
 import {
   activateRoute,
-  claimRegistration,
+  claimHost,
   cleanupStaleRegistrations,
   ensureCaddyAdminAvailable,
-  removeRouteFiles,
+  releaseHostClaim,
   unregisterRoute,
 } from "../utils/routeUtils";
 import { resolveProxyHost } from "../utils/resolveProxyHost";
@@ -30,6 +30,7 @@ import type {
   SupportedSignal,
 } from "../types/stackTypes";
 import { waitForServiceHealth } from "./waitForServiceHealth";
+import { claimFixedPort, cleanupStaleFixedPortClaims, releaseFixedPortClaim } from "./fixedPortClaims";
 
 const shutdownGracePeriodInMilliseconds: number = 10_000;
 
@@ -43,9 +44,9 @@ type StartedService = {
   service: IResolvedDevhostService;
 };
 
-type ReservedHost = {
-  host: string;
-  serviceName: string;
+type ClaimedFixedPort = {
+  bindHost: string;
+  port: number;
 };
 
 export async function startStack(
@@ -59,8 +60,9 @@ export async function startStack(
     stdinMode: options.stdinMode ?? "ignore",
   };
   const startedServices: StartedService[] = [];
-  const reservedHosts: ReservedHost[] = [];
-  const activeHosts: Set<string> = new Set<string>();
+  const claimedFixedPorts: ClaimedFixedPort[] = [];
+  const claimedHosts: Set<string> = new Set<string>();
+  const activeRoutes: Set<string> = new Set<string>();
   const documentInjectionServers: Map<string, ReturnType<typeof startDocumentInjectionServer>> = new Map();
   const managedServices: IResolvedDevhostService[] = serviceOrder.map(
     (serviceName: string): IResolvedDevhostService => {
@@ -72,6 +74,9 @@ export async function startStack(
   );
   let devtoolsControlServer: Awaited<ReturnType<typeof startDevtoolsControlServer>> | null = null;
   let receivedSignal: SupportedSignal | null = null;
+  let cleanupError: unknown = null;
+  let exitCode: number | null = null;
+  let thrownError: unknown = null;
   let resolveSignal: SignalHandlerCallback | null = null;
   const signalHandlers: ISignalHandlerRegistration[] = [];
   const signalPromise: Promise<SupportedSignal> = new Promise<SupportedSignal>((resolve) => {
@@ -81,21 +86,35 @@ export async function startStack(
   try {
     await ensureManagedCaddyConfig();
     await cleanupStaleRegistrations(managedCaddyPaths.registrationsDirectoryPath);
+    await cleanupStaleFixedPortClaims(managedCaddyPaths.portClaimsDirectoryPath);
     await ensureCaddyAdminAvailable();
 
-    for (const service of routedServices) {
-      if (service.host === null || service.port === null) {
+    for (const service of Object.values(manifest.services)) {
+      if (service.portSource !== "fixed" || service.port === null) {
         continue;
       }
 
-      await claimRegistration(
-        service.name,
-        service.host,
-        service.path ?? "/",
-        service.port,
-        managedCaddyPaths.registrationsDirectoryPath,
-      );
-      reservedHosts.push({ serviceName: service.name, host: service.host });
+      await claimFixedPort({
+        bindHost: service.bindHost,
+        manifestPath: manifest.manifestPath,
+        port: service.port,
+        portClaimsDirectoryPath: managedCaddyPaths.portClaimsDirectoryPath,
+      });
+      claimedFixedPorts.push({
+        bindHost: service.bindHost,
+        port: service.port,
+      });
+    }
+
+    for (const host of new Set(routedServices.flatMap((service: IResolvedDevhostService): string[] => {
+      return service.host === null ? [] : [service.host];
+    }))) {
+      await claimHost({
+        host,
+        manifestPath: manifest.manifestPath,
+        registrationsDirectoryPath: managedCaddyPaths.registrationsDirectoryPath,
+      });
+      claimedHosts.add(host);
     }
 
     const devtoolsEnabled =
@@ -230,6 +249,7 @@ export async function startStack(
               host: service.host,
               path: service.path ?? "/",
             },
+            manifest.manifestPath,
             managedCaddyPaths.routesDirectoryPath,
           );
         } else {
@@ -241,11 +261,12 @@ export async function startStack(
               host: service.host,
               path: service.path ?? "/",
             },
+            manifest.manifestPath,
             managedCaddyPaths.routesDirectoryPath,
           );
         }
 
-        activeHosts.add(service.name);
+        activeRoutes.add(service.name);
       }
     }
 
@@ -267,16 +288,17 @@ export async function startStack(
     ]);
 
     if (raceResult.type === "signal") {
-      return signalExitCodes[raceResult.signal];
+      exitCode = signalExitCodes[raceResult.signal];
+    } else {
+      exitCode = raceResult.exitCode;
     }
-
-    return raceResult.exitCode;
   } catch (error) {
-    if (receivedSignal !== null) {
-      return signalExitCodes[receivedSignal];
-    }
+    thrownError = error;
 
-    throw error;
+    if (receivedSignal !== null) {
+      exitCode = signalExitCodes[receivedSignal];
+      thrownError = null;
+    }
   } finally {
     for (const { handler, signalName } of signalHandlers) {
       process.off(signalName, handler);
@@ -293,24 +315,63 @@ export async function startStack(
       await devtoolsControlServer.stop();
     }
 
-    for (const serviceName of activeHosts) {
-      const activeService = routedServices.find((s) => s.name === serviceName);
-      if (activeService && activeService.host) {
-        await unregisterRoute(serviceName, activeService.host, managedCaddyPaths.registrationsDirectoryPath);
+    for (const serviceName of activeRoutes) {
+      const activeService = routedServices.find((service: IResolvedDevhostService): boolean => service.name === serviceName);
+      if (activeService?.host === null || activeService?.host === undefined) {
+        continue;
+      }
+
+      try {
+        await unregisterRoute(
+          serviceName,
+          activeService.host,
+          manifest.manifestPath,
+          managedCaddyPaths.registrationsDirectoryPath,
+        );
+      } catch (error) {
+        cleanupError ??= error;
       }
     }
 
-    for (const reserved of reservedHosts) {
-      if (!activeHosts.has(reserved.serviceName)) {
-        await removeRouteFiles(
-          reserved.serviceName,
-          reserved.host,
-          managedCaddyPaths.registrationsDirectoryPath,
-          managedCaddyPaths.routesDirectoryPath,
-        );
+    for (const host of claimedHosts) {
+      try {
+        await releaseHostClaim({
+          host,
+          manifestPath: manifest.manifestPath,
+          registrationsDirectoryPath: managedCaddyPaths.registrationsDirectoryPath,
+        });
+      } catch (error) {
+        cleanupError ??= error;
+      }
+    }
+
+    for (const claimedFixedPort of claimedFixedPorts) {
+      try {
+        await releaseFixedPortClaim({
+          bindHost: claimedFixedPort.bindHost,
+          manifestPath: manifest.manifestPath,
+          port: claimedFixedPort.port,
+          portClaimsDirectoryPath: managedCaddyPaths.portClaimsDirectoryPath,
+        });
+      } catch (error) {
+        cleanupError ??= error;
       }
     }
   }
+
+  if (cleanupError !== null && thrownError === null && receivedSignal === null) {
+    thrownError = cleanupError;
+  }
+
+  if (thrownError !== null) {
+    throw thrownError;
+  }
+
+  if (exitCode === null) {
+    throw new Error("devhost exited without an exit code.");
+  }
+
+  return exitCode;
 }
 
 export function createInjectedServiceEnvironment(

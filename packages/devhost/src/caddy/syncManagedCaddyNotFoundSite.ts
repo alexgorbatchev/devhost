@@ -10,6 +10,11 @@ interface IManagedRouteRegistration {
   path: string;
 }
 
+interface ILegacyManagedRouteRegistration {
+  host: string;
+  path?: string;
+}
+
 export async function syncManagedCaddyNotFoundSite(routesDirectoryPath: string): Promise<void> {
   const caddyDirectoryPath: string = join(routesDirectoryPath, "..");
   const sitePaths = createManagedCaddyNotFoundSitePaths(caddyDirectoryPath);
@@ -23,38 +28,34 @@ export async function syncManagedCaddyNotFoundSite(routesDirectoryPath: string):
 async function readActiveRouteLinks(routesDirectoryPath: string): Promise<IManagedCaddyNotFoundRouteLink[]> {
   const registrationsDirectoryPath: string = join(routesDirectoryPath, ".registrations");
   const registrationFileNames: string[] = await readdir(registrationsDirectoryPath);
-  const routeLinks: IManagedCaddyNotFoundRouteLink[] = [];
-  const seenUrls: Set<string> = new Set<string>();
+  const routeLinksByHost: Map<string, IManagedCaddyNotFoundRouteLink> = new Map<string, IManagedCaddyNotFoundRouteLink>();
 
   for (const registrationFileName of registrationFileNames) {
     if (!registrationFileName.endsWith(".json")) {
       continue;
     }
 
-    const routeFilePath: string = join(routesDirectoryPath, registrationFileName.replace(/\.json$/, ".caddy"));
+    const registrationPath: string = join(registrationsDirectoryPath, registrationFileName);
+    const registration: IManagedRouteRegistration = parseManagedRouteRegistration(await readFile(registrationPath, "utf8"));
+    const routeFilePath: string = await readRouteFilePath(registration.host, registrationFileName, routesDirectoryPath);
 
     if (!(await pathExists(routeFilePath))) {
       continue;
     }
 
-    const registrationPath: string = join(registrationsDirectoryPath, registrationFileName);
-    const registrationText: string = await readFile(registrationPath, "utf8");
-    const registration: IManagedRouteRegistration = parseManagedRouteRegistration(registrationText);
-    const routeUrl: string = createRouteUrl(registration.host, registration.path);
-
-    if (seenUrls.has(routeUrl)) {
-      continue;
-    }
-
-    seenUrls.add(routeUrl);
-    routeLinks.push({
+    const existingLink: IManagedCaddyNotFoundRouteLink | undefined = routeLinksByHost.get(registration.host);
+    const candidateLink: IManagedCaddyNotFoundRouteLink = {
       host: registration.host,
       path: registration.path,
-      url: routeUrl,
-    });
+      url: createRouteUrl(registration.host, registration.path),
+    };
+
+    if (existingLink === undefined || compareRouteLinks(candidateLink, existingLink) < 0) {
+      routeLinksByHost.set(registration.host, candidateLink);
+    }
   }
 
-  return routeLinks.sort(compareRouteLinks);
+  return [...routeLinksByHost.values()].sort(compareRouteLinks);
 }
 
 async function pathExists(path: string): Promise<boolean> {
@@ -69,42 +70,47 @@ async function pathExists(path: string): Promise<boolean> {
 function parseManagedRouteRegistration(registrationText: string): IManagedRouteRegistration {
   const parsedValue: unknown = JSON.parse(registrationText);
 
-  if (!isRawManagedRouteRegistration(parsedValue)) {
-    throw new Error("Managed route registration is malformed.");
+  if (isManagedRouteRegistration(parsedValue)) {
+    return {
+      host: parsedValue.host,
+      path: normalizeRoutePath(parsedValue.path),
+    };
   }
 
-  return {
-    host: parsedValue.host,
-    path: normalizeRoutePath(parsedValue.path ?? "/"),
-  };
+  if (isLegacyManagedRouteRegistration(parsedValue)) {
+    return {
+      host: parsedValue.host,
+      path: normalizeRoutePath(parsedValue.path ?? "/"),
+    };
+  }
+
+  throw new Error("Managed route registration is malformed.");
 }
 
-interface IRawManagedRouteRegistration {
-  host: string;
-  path?: string;
-  port: number;
-  ownerPid: number;
-  createdAt: string;
-}
-
-function isRawManagedRouteRegistration(value: unknown): value is IRawManagedRouteRegistration {
+function isManagedRouteRegistration(value: unknown): value is IManagedRouteRegistration {
   return (
     typeof value === "object" &&
     value !== null &&
     typeof Reflect.get(value, "host") === "string" &&
-    (Reflect.get(value, "path") === undefined || typeof Reflect.get(value, "path") === "string") &&
-    typeof Reflect.get(value, "port") === "number" &&
-    typeof Reflect.get(value, "ownerPid") === "number" &&
-    typeof Reflect.get(value, "createdAt") === "string"
+    typeof Reflect.get(value, "path") === "string"
+  );
+}
+
+function isLegacyManagedRouteRegistration(value: unknown): value is ILegacyManagedRouteRegistration {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof Reflect.get(value, "host") === "string" &&
+    (Reflect.get(value, "path") === undefined || typeof Reflect.get(value, "path") === "string")
   );
 }
 
 function normalizeRoutePath(path: string): string {
-  if (path.length === 0 || path === "/") {
+  if (path === "/" || path === "/*") {
     return "/";
   }
 
-  return path.startsWith("/") ? path : `/${path}`;
+  return path;
 }
 
 function createRouteUrl(host: string, path: string): string {
@@ -123,4 +129,18 @@ function compareRouteLinks(left: IManagedCaddyNotFoundRouteLink, right: IManaged
   }
 
   return left.path.localeCompare(right.path);
+}
+
+function encodePathSegment(value: string): string {
+  return value.replaceAll(":", "_");
+}
+
+async function readRouteFilePath(host: string, registrationFileName: string, routesDirectoryPath: string): Promise<string> {
+  const hostRoutePath: string = join(routesDirectoryPath, `${encodePathSegment(host)}.caddy`);
+
+  if (await pathExists(hostRoutePath)) {
+    return hostRoutePath;
+  }
+
+  return join(routesDirectoryPath, registrationFileName.replace(/\.json$/, ".caddy"));
 }

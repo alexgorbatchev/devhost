@@ -202,6 +202,67 @@ describe("validateManifest", () => {
     ).toThrow("services.web must not use health.process on a routed service.");
   });
 
+  test("accepts multiple services on the same host when the root path acts as the fallback route", () => {
+    const manifest: IValidatedDevhostManifest = validateManifest("/tmp/devhost.toml", {
+      name: "hello-stack",
+      services: {
+        api: {
+          command: ["bun", "run", "api:dev"],
+          host: "hello.localhost",
+          path: "/api/*",
+          port: 4000,
+        },
+        web: {
+          command: ["bun", "run", "web:dev"],
+          host: "hello.localhost",
+          path: "/",
+          port: 3000,
+        },
+      },
+    });
+
+    expect(manifest.services.api.path).toBe("/api/*");
+    expect(manifest.services.web.path).toBe("/");
+  });
+
+  test("rejects overlapping routed subpaths on the same host", () => {
+    expect(() =>
+      validateManifest("/tmp/devhost.toml", {
+        name: "hello-stack",
+        services: {
+          api: {
+            command: ["bun", "run", "api:dev"],
+            host: "hello.localhost",
+            path: "/api/*",
+            port: 4000,
+          },
+          "api-v2": {
+            command: ["bun", "run", "api:v2:dev"],
+            host: "hello.localhost",
+            path: "/api/v2/*",
+            port: 4100,
+          },
+        },
+      }),
+    ).toThrow("services.api-v2.path overlaps another routed service on host hello.localhost: /api/*");
+  });
+
+  test("rejects invalid wildcard placement in routed paths", () => {
+    expect(() =>
+      validateManifest("/tmp/devhost.toml", {
+        name: "hello-stack",
+        services: {
+          api: {
+            command: ["bun", "run", "api:dev"],
+            host: "hello.localhost",
+            path: "/api/*foo/*",
+            port: 4000,
+          },
+        },
+      }),
+    ).toThrow("services.api.path must be '/' or a leading-slash path with an optional trailing '/*'.");
+  });
+
   test("rejects duplicate fixed bind ports", () => {
     expect(() =>
       validateManifest("/tmp/devhost.toml", {
@@ -212,6 +273,26 @@ describe("validateManifest", () => {
             port: 3000,
           },
           web: {
+            command: ["bun", "run", "web:dev"],
+            port: 3000,
+          },
+        },
+      }),
+    ).toThrow("services.web duplicates fixed bind port 127.0.0.1:3000.");
+  });
+
+  test("rejects duplicate fixed bind ports across overlapping bind hosts", () => {
+    expect(() =>
+      validateManifest("/tmp/devhost.toml", {
+        name: "hello-stack",
+        services: {
+          api: {
+            bindHost: "0.0.0.0",
+            command: ["bun", "run", "api:dev"],
+            port: 3000,
+          },
+          web: {
+            bindHost: "127.0.0.1",
             command: ["bun", "run", "web:dev"],
             port: 3000,
           },

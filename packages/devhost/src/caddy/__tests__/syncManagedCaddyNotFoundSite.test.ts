@@ -8,7 +8,7 @@ import { createManagedCaddyPaths } from "../caddyPaths";
 import { createManagedCaddyNotFoundSitePaths } from "../createManagedCaddyNotFoundSitePaths";
 import { managedCaddyNotFoundPageCss } from "../managedCaddyNotFoundPageCss";
 import { syncManagedCaddyNotFoundSite } from "../syncManagedCaddyNotFoundSite";
-import { createRegistration } from "../../utils/routeUtils";
+import { createRouteRegistrationText } from "../../utils/routeUtils";
 
 describe("syncManagedCaddyNotFoundSite", () => {
   test("writes a styled page that lists only active routes", async () => {
@@ -21,37 +21,64 @@ describe("syncManagedCaddyNotFoundSite", () => {
 
     await writeFile(
       join(paths.registrationsDirectoryPath, "hello.localhost_web.json"),
-      createRegistration("hello.localhost", "/", 3000),
-      "utf8",
-    );
-    await writeFile(join(paths.routesDirectoryPath, "hello.localhost_web.caddy"), "hello route", "utf8");
-
-    await writeFile(
-      join(paths.registrationsDirectoryPath, "api.localhost_api.json"),
-      createRegistration("api.localhost", "/v1", 4000),
-      "utf8",
-    );
-    await writeFile(join(paths.routesDirectoryPath, "api.localhost_api.caddy"), "api route", "utf8");
-
-    await writeFile(
-      join(paths.registrationsDirectoryPath, "legacy.localhost_legacy.json"),
-      JSON.stringify(
+      createRouteRegistrationText(
         {
-          host: "legacy.localhost",
-          port: 5000,
-          ownerPid: process.pid,
-          createdAt: new Date().toISOString(),
+          appBindHost: "127.0.0.1",
+          appPort: 3000,
+          host: "hello.localhost",
+          path: "/",
+          serviceName: "web",
         },
-        null,
-        2,
+        "/tmp/hello/devhost.toml",
       ),
       "utf8",
     );
-    await writeFile(join(paths.routesDirectoryPath, "legacy.localhost_legacy.caddy"), "legacy route", "utf8");
+    await writeFile(join(paths.routesDirectoryPath, "hello.localhost.caddy"), "hello route", "utf8");
+
+    await writeFile(
+      join(paths.registrationsDirectoryPath, "api.localhost_api.json"),
+      createRouteRegistrationText(
+        {
+          appBindHost: "127.0.0.1",
+          appPort: 4000,
+          host: "api.localhost",
+          path: "/v1",
+          serviceName: "api",
+        },
+        "/tmp/api/devhost.toml",
+      ),
+      "utf8",
+    );
+    await writeFile(join(paths.routesDirectoryPath, "api.localhost.caddy"), "api route", "utf8");
+
+    await writeFile(
+      join(paths.registrationsDirectoryPath, "legacy.localhost_legacy.json"),
+      createRouteRegistrationText(
+        {
+          appBindHost: "127.0.0.1",
+          appPort: 5000,
+          host: "legacy.localhost",
+          path: "/",
+          serviceName: "legacy",
+        },
+        "/tmp/legacy/devhost.toml",
+      ),
+      "utf8",
+    );
+    await writeFile(join(paths.routesDirectoryPath, "legacy.localhost.caddy"), "legacy route", "utf8");
 
     await writeFile(
       join(paths.registrationsDirectoryPath, "pending.localhost_pending.json"),
-      createRegistration("pending.localhost", "/pending", 6000),
+      createRouteRegistrationText(
+        {
+          appBindHost: "127.0.0.1",
+          appPort: 6000,
+          host: "pending.localhost",
+          path: "/pending",
+          serviceName: "pending",
+        },
+        "/tmp/pending/devhost.toml",
+      ),
       "utf8",
     );
 

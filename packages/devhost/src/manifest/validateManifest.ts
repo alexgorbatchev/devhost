@@ -139,7 +139,7 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
   }
 
   const validatedServices: Record<string, IValidatedDevhostService> = {};
-  const routedPaths: Set<string> = new Set<string>();
+  const routedPathsByHost: Map<string, string[]> = new Map<string, string[]>();
   const fixedBindPorts: Set<string> = new Set<string>();
 
   for (const [serviceName, serviceConfig] of Object.entries(parsedManifest.services)) {
@@ -153,7 +153,7 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
       serviceConfig,
       manifestDirectoryPath,
       serviceNames,
-      routedPaths,
+      routedPathsByHost,
       fixedBindPorts,
       errors,
     );
@@ -227,7 +227,7 @@ function validateService(
   serviceConfig: IDevhostServiceConfig,
   manifestDirectoryPath: string,
   serviceNames: string[],
-  routedPaths: Set<string>,
+  routedPathsByHost: Map<string, string[]>,
   fixedBindPorts: Set<string>,
   errors: string[],
 ): IValidatedDevhostService {
@@ -242,7 +242,7 @@ function validateService(
   const env: Record<string, string> = serviceConfig.env ?? {};
   const port: DevhostPortConfig | null = serviceConfig.port ?? null;
   const host: string | null = serviceConfig.host ?? null;
-  const path: string | null = host !== null ? (serviceConfig.path ?? "/") : null;
+  const path: string | null = host !== null ? validateRoutePath(serviceName, serviceConfig.path ?? "/", errors) : null;
   const health: DevhostHealthConfig | null = serviceConfig.health ?? null;
 
   for (const dependencyName of dependsOn) {
@@ -256,12 +256,19 @@ function validateService(
       errors.push(`services.${serviceName}.host must be a valid hostname, received: ${host}`);
     }
 
-    const routeKey = path === "/" ? host : `${host}${path}`;
-    if (routedPaths.has(routeKey)) {
-      errors.push(`services.${serviceName}.host and path duplicate another routed service: ${routeKey}`);
-    }
+    if (path !== null) {
+      const existingPaths: string[] = routedPathsByHost.get(host) ?? [];
+      const conflictingPath: string | null = readConflictingRoutePath(existingPaths, path);
 
-    routedPaths.add(routeKey);
+      if (conflictingPath !== null) {
+        errors.push(
+          `services.${serviceName}.path overlaps another routed service on host ${host}: ${conflictingPath}`,
+        );
+      }
+
+      existingPaths.push(path);
+      routedPathsByHost.set(host, existingPaths);
+    }
 
     if (port === null) {
       errors.push(`services.${serviceName}.host requires services.${serviceName}.port.`);
@@ -286,12 +293,18 @@ function validateService(
 
   if (typeof port === "number") {
     const fixedBindPortKey: string = `${bindHost}:${port}`;
+    const fixedPortClaimKeys: string[] = readFixedPortClaimKeys(bindHost, port);
+    const hasFixedPortConflict: boolean = fixedPortClaimKeys.some((claimKey: string): boolean => {
+      return fixedBindPorts.has(claimKey);
+    });
 
-    if (fixedBindPorts.has(fixedBindPortKey)) {
+    if (hasFixedPortConflict) {
       errors.push(`services.${serviceName} duplicates fixed bind port ${fixedBindPortKey}.`);
     }
 
-    fixedBindPorts.add(fixedBindPortKey);
+    for (const claimKey of fixedPortClaimKeys) {
+      fixedBindPorts.add(claimKey);
+    }
   }
 
   let command: string[];
@@ -345,6 +358,104 @@ function validateHealthHttp(serviceName: string, rawUrl: string, errors: string[
   if (!["127.0.0.1", "localhost", "::1"].includes(parsedUrl.hostname)) {
     errors.push(`services.${serviceName}.health.http must target 127.0.0.1, localhost, or ::1.`);
   }
+}
+
+function readFixedPortClaimKeys(bindHost: string, port: number): string[] {
+  return [`${readFixedPortClaimScope(bindHost)}:${port}`];
+}
+
+function readFixedPortClaimScope(bindHost: string): string {
+  if (bindHost === "127.0.0.1" || bindHost === "0.0.0.0") {
+    return "ipv4";
+  }
+
+  if (bindHost === "::1" || bindHost === "::") {
+    return "ipv6";
+  }
+
+  return bindHost;
+}
+
+function validateRoutePath(serviceName: string, rawPath: string, errors: string[]): string | null {
+  if (!rawPath.startsWith("/")) {
+    errors.push(`services.${serviceName}.path must start with '/'.`);
+    return null;
+  }
+
+  if (rawPath === "/" || rawPath === "/*") {
+    return "/";
+  }
+
+  if (rawPath.includes("*")) {
+    const wildcardBasePath: string = rawPath.endsWith("/*") ? rawPath.slice(0, -2) : rawPath;
+
+    if (!rawPath.endsWith("/*") || wildcardBasePath.includes("*")) {
+      errors.push(`services.${serviceName}.path must be '/' or a leading-slash path with an optional trailing '/*'.`);
+      return null;
+    }
+  }
+
+  return rawPath;
+}
+
+function readConflictingRoutePath(existingPaths: string[], candidatePath: string): string | null {
+  for (const existingPath of existingPaths) {
+    if (doRoutePathsConflict(existingPath, candidatePath)) {
+      return existingPath;
+    }
+  }
+
+  return null;
+}
+
+function doRoutePathsConflict(leftPath: string, rightPath: string): boolean {
+  if (leftPath === rightPath) {
+    return true;
+  }
+
+  if (leftPath === "/" || rightPath === "/") {
+    return false;
+  }
+
+  const leftRoutePath: IValidatedRoutePath = parseValidatedRoutePath(leftPath);
+  const rightRoutePath: IValidatedRoutePath = parseValidatedRoutePath(rightPath);
+
+  if (leftRoutePath.kind === "prefix" && rightRoutePath.kind === "prefix") {
+    return (
+      leftRoutePath.basePath === rightRoutePath.basePath ||
+      leftRoutePath.basePath.startsWith(`${rightRoutePath.basePath}/`) ||
+      rightRoutePath.basePath.startsWith(`${leftRoutePath.basePath}/`)
+    );
+  }
+
+  if (leftRoutePath.kind === "exact" && rightRoutePath.kind === "exact") {
+    return leftRoutePath.basePath === rightRoutePath.basePath;
+  }
+
+  if (leftRoutePath.kind === "exact" && rightRoutePath.kind === "prefix") {
+    return leftRoutePath.basePath.startsWith(`${rightRoutePath.basePath}/`);
+  }
+
+  return rightRoutePath.basePath.startsWith(`${leftRoutePath.basePath}/`);
+}
+
+interface IValidatedRoutePath {
+  basePath: string;
+  kind: "exact" | "prefix";
+}
+
+function parseValidatedRoutePath(path: string): IValidatedRoutePath {
+  if (path.endsWith("/*")) {
+    return {
+      basePath: path.slice(0, -2),
+      kind: "prefix",
+    };
+  }
+
+  return {
+    basePath: path,
+    kind: "exact",
+  };
 }
 
 function formatIssuePath(path: PropertyKey[]): string {

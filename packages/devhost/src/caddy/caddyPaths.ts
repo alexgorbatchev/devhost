@@ -7,7 +7,9 @@ const defaultStateDirectorySegments: string[] = [".local", "state", "devhost"];
 export interface IManagedCaddyPaths {
   caddyDirectoryPath: string;
   caddyfilePath: string;
+  hostClaimsDirectoryPath: string;
   pidFilePath: string;
+  portClaimsDirectoryPath: string;
   registrationsDirectoryPath: string;
   rootCertificatePath: string;
   routesDirectoryPath: string;
@@ -70,7 +72,9 @@ export function createManagedCaddyPaths(
   return {
     caddyDirectoryPath,
     caddyfilePath: join(caddyDirectoryPath, "Caddyfile"),
+    hostClaimsDirectoryPath: join(routesDirectoryPath, ".host-claims"),
     pidFilePath: join(caddyDirectoryPath, "caddy.pid"),
+    portClaimsDirectoryPath: join(caddyDirectoryPath, "port-claims"),
     registrationsDirectoryPath: join(routesDirectoryPath, ".registrations"),
     rootCertificatePath: join(caddyDirectoryPath, "storage", "pki", "authorities", "local", "root.crt"),
     routesDirectoryPath,
