@@ -1,18 +1,8 @@
-# devhost
+# @alexgorbatchev/devhost
 
-`devhost` is a CLI utility for local development that lets you open your local apps on HTTPS domains instead of raw `localhost:port` URLs, and can inject useful devtools directly into routed pages.
+`devhost` is a CLI utility for local development that lets you open your local apps on HTTPS domains instead of raw `localhost:port` URLs.
 
-Configure your stack in `devhost.toml`, then run it through `devhost`.
-
-> [!IMPORTANT]
-> `devhost` manages HTTPS routing through Caddy, not DNS.
-> Your chosen hostnames must already resolve to this machine or the browser will never reach the local proxy.
->
-> For custom domains, that means loopback resolution, such as exact `A` / `AAAA` records to `127.0.0.1` / `::1`, wildcard DNS records on your domain, or local host entries for exact names.
->
-> Good out-of-the-box choices are `localhost` and subdomains under `*.localhost`, such as `foo.localhost` and `api.foo.localhost`, because they work without additional DNS configuration.
->
-> If you use other domains, such as `*.local.test`, you must provide name resolution yourself. `/etc/hosts` only handles exact hostnames, so wildcard setups need real DNS records somewhere.
+It also injects a devtools layer into routed pages: AI annotations, Alt-right-click source jumping, and even Neovim in the browser.
 
 ## Quick start
 
@@ -24,6 +14,8 @@ npm install -g @alexgorbatchev/devhost
 
 ### Setup
 
+Configure your stack in `devhost.toml`, then run it through `devhost`.
+
 ```toml
 name = "hello-stack"
 
@@ -33,14 +25,12 @@ autostop = true
 [services.ui]
 primary = true
 command = ["bun", "run", "ui:dev"]
-cwd = "."
 port = 3000
 host = "foo.localhost"
 dependsOn = ["api"]
 
 [services.api]
 command = ["bun", "run", "api:dev"]
-cwd = "."
 port = 4000
 host = "api.foo.localhost"
 health = { http = "http://127.0.0.1:4000/healthz" }
@@ -53,12 +43,14 @@ $ devhost
 $ open https://foo.localhost
 ```
 
-`devhost` also has managed Caddy lifecycle commands:
-
-- `devhost caddy start`
-- `devhost caddy stop`
-- `devhost caddy trust`
-- `devhost caddy download`
+> [!IMPORTANT]
+> `devhost` manages HTTPS routing through Caddy, not DNS.
+> Your chosen hostnames must already resolve to this machine or the browser will never reach the local proxy.
+>
+> For custom domains, that means loopback resolution, such as exact `A` / `AAAA` records to `127.0.0.1` / `::1`, wildcard DNS records on your domain, or local host entries for exact names. `/etc/hosts` can be
+> used, however it only handles _exact_ hostnames.
+>
+> Good out-of-the-box choices are `localhost` and subdomains under `*.localhost`, such as `foo.localhost` and `api.foo.localhost`, because they work without additional DNS configuration.
 
 ## What it does
 
@@ -88,15 +80,7 @@ $ open https://foo.localhost
   - a managed Caddy binary downloaded with `devhost caddy download`
 - `nvim` when `[devtools.editor].ide = "neovim"`
 
-## CLI usage
-
-Show help:
-
-```bash
-devhost --help
-```
-
-### Managed Caddy commands
+## Managed Caddy
 
 Download the managed Caddy binary if you do not already have `caddy` on your `PATH`:
 
@@ -104,27 +88,18 @@ Download the managed Caddy binary if you do not already have `caddy` on your `PA
 devhost caddy download
 ```
 
-`devhost` uses that downloaded binary when present. Otherwise it falls back to the global `caddy` executable from your `PATH`.
-It does **not** auto-download Caddy during `devhost caddy start` or stack startup.
+`devhost` uses that downloaded binary when present. Otherwise it falls back to the global `caddy` executable from your `PATH`. It does **not** auto-download Caddy during `devhost caddy start` or stack startup.
 
-Start the managed Caddy instance:
+> [!IMPORTANT]
+> To get HTTPS working, Caddy uses a self-signed certificate, which obviously isn't trusted by default.
+>
+> The `devhost caddy trust` will prompt for your password and install Caddy's CA into the system trust store.
+
+Start/stop the managed Caddy instance:
 
 ```bash
 devhost caddy start
-```
-
-Stop it:
-
-```bash
 devhost caddy stop
-```
-
-Managed Caddy may prompt for your password when it needs to install its local CA into the system trust store.
-`devhost caddy start` and `devhost caddy trust` stream Caddy's own output directly so the trust/install flow is visible.
-Trust its local CA once after it is running:
-
-```bash
-devhost caddy trust
 ```
 
 The generated Caddy config uses these defaults:
@@ -226,17 +201,17 @@ The remaining variables are context metadata and must not be used as socket bind
 
 ## Devtools injection
 
-When devtools are enabled, routed traffic is split like this:
+When `devtools` are enabled, routed traffic is split like this:
 
-- `/__devhost__/*` → devtools control server
+- `/__devhost__/*` → `devtools` control server
 - `Sec-Fetch-Dest: document` requests → document injector server
 - everything else → app directly
 
 That keeps assets, HMR, fetches, SSE, and WebSockets off the injection path.
 
-The injected devtools UI mounts inside its own Shadow DOM container so its runtime styles do not leak into the host page.
+The injected `devtools` UI mounts inside its own Shadow DOM container so its runtime styles do not leak into the host page.
 
-The injected UI now uses a hold-to-select annotation trigger instead of a persistent corner button. In annotation mode:
+### AI Annotations
 
 - hold `Alt` (`Option` on macOS) to enter annotation selection mode
 - click one or more page elements while holding `Alt` to place numbered markers
@@ -249,7 +224,9 @@ The submitted draft includes the current stack name, page URL/title, comment tex
 
 When the host page is a React development build that exposes component source metadata, each marker also captures the nearest available component source location (file path, line, column, and component name when available). When the host app serves fetchable source maps, devhost also attempts to symbolicate generated bundle locations back to original source files before storing the annotation.
 
-Alt + right-click component-source navigation uses the configured `[devtools.editor].ide` value. The popup title names that configured editor directly, so the action stays aligned with the actual target. Protocol-based editors such as VS Code, VS Code Insiders, Cursor, and WebStorm open via their browser URL handlers. When `[devtools.editor].ide = "neovim"`, devhost launches Neovim inside the injected xterm terminal instead, so `nvim` must be available on the machine running `devhost`.
+### Open source in IDE
+
+`Alt` + `right-click` component-source navigation uses the configured `[devtools.editor].ide` value. The popup title names that configured editor directly, so the action stays aligned with the actual target. Protocol-based editors such as VS Code, VS Code Insiders, Cursor, and WebStorm open via their browser URL handlers. When `[devtools.editor].ide = "neovim"`, devhost launches Neovim inside the injected xterm terminal instead, so `nvim` must be available on the machine running `devhost`.
 
 Embedded terminal sessions now normalize their terminal environment to `TERM=xterm-256color` and `COLORTERM=truecolor` so terminal UIs like Neovim render against the actual xterm.js emulator instead of inheriting incompatible host-terminal identities. Neovim component-source sessions also expand to fill the available viewport when opened as a modal.
 
