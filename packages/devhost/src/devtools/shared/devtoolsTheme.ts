@@ -84,6 +84,8 @@ export interface IDevtoolsTheme {
   };
   zIndices: {
     floating: NonNullable<JSX.CSSProperties["zIndex"]>;
+    terminalExpanded: NonNullable<JSX.CSSProperties["zIndex"]>;
+    terminalTray: NonNullable<JSX.CSSProperties["zIndex"]>;
   };
 }
 
@@ -133,7 +135,9 @@ const sharedSpacing: IDevtoolsTheme["spacing"] = {
   xxs: "4px",
 };
 const sharedZIndices: IDevtoolsTheme["zIndices"] = {
-  floating: 2147483647,
+  floating: 2_147_483_500,
+  terminalExpanded: 2_147_483_600,
+  terminalTray: 2_147_483_400,
 };
 const sharedShadows: IDevtoolsTheme["shadows"] = {
   floating: "0px 10px 24px rgba(15, 23, 42, 0.14)",

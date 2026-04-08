@@ -33,11 +33,17 @@ export function TerminalSessionTray(props: ITerminalSessionTrayProps): JSX.Eleme
     position: "fixed",
     right: theme.spacing.sm,
   });
-  const rootClassName: string = css({
+  const expandedRootClassName: string = css({
     inset: 0,
     pointerEvents: "none",
     position: "fixed",
-    zIndex: theme.zIndices.floating,
+    zIndex: theme.zIndices.terminalExpanded,
+  });
+  const trayRootClassName: string = css({
+    inset: 0,
+    pointerEvents: "none",
+    position: "fixed",
+    zIndex: theme.zIndices.terminalTray,
   });
   const sessionListClassName: string = css({
     alignItems: "flex-end",
@@ -50,39 +56,43 @@ export function TerminalSessionTray(props: ITerminalSessionTrayProps): JSX.Eleme
   });
 
   return (
-    <div class={rootClassName} data-testid="TerminalSessionTray">
+    <div data-testid="TerminalSessionTray">
       {expandedSession !== undefined ? (
-        <TerminalSessionPanel
-          isExpanded={true}
-          session={expandedSession}
-          onExpand={noop}
-          onMinimize={(): void => {
-            props.onMinimizeSession(expandedSession.sessionId);
-          }}
-          onRemove={(): void => {
-            props.onRemoveSession(expandedSession.sessionId);
-          }}
-        />
+        <div class={expandedRootClassName} data-testid="TerminalSessionTray--expanded-root">
+          <TerminalSessionPanel
+            isExpanded={true}
+            session={expandedSession}
+            onExpand={noop}
+            onMinimize={(): void => {
+              props.onMinimizeSession(expandedSession.sessionId);
+            }}
+            onRemove={(): void => {
+              props.onRemoveSession(expandedSession.sessionId);
+            }}
+          />
+        </div>
       ) : null}
       {minimizedSessions.length > 0 ? (
-        <div class={dockClassName} data-testid="TerminalSessionTray--dock">
-          <div class={sessionListClassName} data-testid="TerminalSessionTray--session-list">
-            {minimizedSessions.map((session: TerminalSession) => {
-              return (
-                <TerminalSessionPanel
-                  key={session.sessionId}
-                  isExpanded={false}
-                  session={session}
-                  onExpand={(): void => {
-                    props.onExpandSession(session.sessionId);
-                  }}
-                  onMinimize={noop}
-                  onRemove={(): void => {
-                    props.onRemoveSession(session.sessionId);
-                  }}
-                />
-              );
-            })}
+        <div class={trayRootClassName} data-testid="TerminalSessionTray--tray-root">
+          <div class={dockClassName} data-testid="TerminalSessionTray--dock">
+            <div class={sessionListClassName} data-testid="TerminalSessionTray--session-list">
+              {minimizedSessions.map((session: TerminalSession) => {
+                return (
+                  <TerminalSessionPanel
+                    key={session.sessionId}
+                    isExpanded={false}
+                    session={session}
+                    onExpand={(): void => {
+                      props.onExpandSession(session.sessionId);
+                    }}
+                    onMinimize={noop}
+                    onRemove={(): void => {
+                      props.onRemoveSession(session.sessionId);
+                    }}
+                  />
+                );
+              })}
+            </div>
           </div>
         </div>
       ) : null}
