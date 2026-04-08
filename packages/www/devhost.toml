@@ -1,8 +1,5 @@
 name = "devhost-www"
 
-[caddy]
-autostop = false
-
 [devtools.editor]
 enabled = true
 ide = "neovim"
