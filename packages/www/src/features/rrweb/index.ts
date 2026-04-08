@@ -1,3 +1,4 @@
+export { FeatureReplayPanel } from "./FeatureReplayPanel";
 export { RrwebDemoPanel } from "./RrwebDemoPanel";
 export { createRrwebDemoRecording } from "./createRrwebDemoRecording";
 export { exportRrwebDemoRecording } from "./exportRrwebDemoRecording";

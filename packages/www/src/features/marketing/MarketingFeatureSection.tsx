@@ -1,5 +1,6 @@
 import React, { useRef, useState, type JSX, type KeyboardEvent } from "react";
 
+import { MarketingFeatureReplay } from "./MarketingFeatureReplay";
 import type { FeatureHighlightId, IFeatureHighlight, IProofCard, ProofCardId } from "./types";
 
 export interface IMarketingFeatureSectionProps {
@@ -76,7 +77,7 @@ export function MarketingFeatureSection(props: IMarketingFeatureSectionProps): J
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)_280px]">
-        <div className="rounded-lg border border-border bg-card p-2 shadow-sm">
+        <div className="rounded-lg border border-border-subtle bg-card p-2 shadow-[var(--shadow-soft)]">
           <div className="grid gap-2" role="tablist" aria-label="Devhost product highlights" aria-orientation="vertical">
             {props.featureHighlights.map((featureHighlight: IFeatureHighlight, featureIndex: number) => {
               const isActive: boolean = featureHighlight.id === activeFeatureId;
@@ -99,8 +100,8 @@ export function MarketingFeatureSection(props: IMarketingFeatureSectionProps): J
                   role="tab"
                   className={
                     isActive
-                      ? "flex w-full items-center justify-between rounded-md border border-border bg-primary px-3 py-3 text-left text-sm leading-5 text-primary-foreground shadow-sm"
-                      : "flex w-full items-center justify-between rounded-md border border-transparent px-3 py-3 text-left text-sm leading-5 text-muted-foreground transition hover:border-border hover:bg-muted hover:text-foreground"
+                      ? "flex w-full items-center justify-between rounded-md border border-transparent bg-primary px-3 py-3 text-left text-sm leading-5 text-primary-foreground shadow-[var(--shadow-soft)]"
+                      : "flex w-full items-center justify-between rounded-md border border-transparent px-3 py-3 text-left text-sm leading-5 text-muted-foreground transition hover:border-border-subtle hover:bg-surface-subtle hover:text-foreground"
                   }
                   aria-controls={featurePanelId}
                   aria-selected={isActive}
@@ -124,12 +125,12 @@ export function MarketingFeatureSection(props: IMarketingFeatureSectionProps): J
 
         <article
           id={activeFeaturePanelId}
-          className="rounded-lg border border-border bg-card p-5 shadow-sm sm:p-6"
+          className="rounded-lg border border-border-subtle bg-card p-5 shadow-[var(--shadow-soft)] sm:p-6"
           role="tabpanel"
           aria-labelledby={activeFeatureTabId}
         >
           <div className="grid gap-4">
-            <p className="text-[0.72rem] uppercase tracking-[0.28em] text-muted-foreground">{activeFeature.kicker}</p>
+            <p className="inline-flex w-fit items-center rounded-full border border-border-subtle bg-surface-subtle px-3 py-1 text-[0.72rem] uppercase tracking-[0.28em] text-muted-foreground">{activeFeature.kicker}</p>
             <h3 className="max-w-[20ch] text-balance text-2xl font-medium leading-tight tracking-[-0.05em] text-card-foreground sm:text-3xl">
               {activeFeature.title}
             </h3>
@@ -138,19 +139,20 @@ export function MarketingFeatureSection(props: IMarketingFeatureSectionProps): J
               <ul className="grid gap-2">
                 {activeFeature.checklist.map((checklistItem: string) => {
                   return (
-                    <li key={checklistItem} className="rounded-md border border-border bg-muted px-3 py-3 text-sm leading-6 text-muted-foreground">
+                    <li key={checklistItem} className="rounded-md border border-border-subtle bg-surface-subtle px-3 py-3 text-sm leading-6 text-muted-foreground">
                       {checklistItem}
                     </li>
                   );
                 })}
               </ul>
             ) : null}
+            <MarketingFeatureReplay featureHighlight={activeFeature} />
           </div>
         </article>
 
-        <aside className="rounded-lg border border-border bg-card p-5 shadow-sm" aria-labelledby="feature-proof-card-title">
+        <aside className="rounded-lg border border-border-subtle bg-surface-subtle p-5 shadow-[var(--shadow-soft)]" aria-labelledby="feature-proof-card-title">
           <div className="grid gap-3">
-            <p className="text-[0.72rem] uppercase tracking-[0.28em] text-muted-foreground">
+            <p className="inline-flex w-fit items-center rounded-full border border-border-subtle bg-card px-3 py-1 text-[0.72rem] uppercase tracking-[0.28em] text-muted-foreground">
               {featureSectionProofCard.eyebrow}
             </p>
             <h3 id="feature-proof-card-title" className="text-2xl font-medium leading-tight tracking-[-0.05em] text-card-foreground">

@@ -18,7 +18,7 @@ const Default: Story = {
     const themeSelect = canvas.getByLabelText("Theme");
     const annotationTab = canvas.getByRole("tab", { name: "Annotation handoff" });
     const sourceNavigationTab = canvas.getByRole("tab", { name: "Source navigation" });
-    const stackContractTab = canvas.getByRole("tab", { name: "Stack contract" });
+    const routingHealthTab = canvas.getByRole("tab", { name: "Routing + health" });
     const featureSection = canvas.getByRole("region", {
       name: "A routed development surface, not another localhost wrapper.",
     });
@@ -39,13 +39,17 @@ const Default: Story = {
     await expect(themeSelect).toHaveValue("light");
     await userEvent.click(annotationTab);
     await expect(annotationTab).toHaveAttribute("aria-selected", "true");
-    await expect(canvas.getByRole("heading", { name: "Send annotated page state straight into Pi" })).toBeInTheDocument();
+    await expect(
+      canvas.getByRole("heading", { level: 3, name: "Send annotated page state straight into Pi" }),
+    ).toBeInTheDocument();
     await userEvent.click(sourceNavigationTab);
     await expect(sourceNavigationTab).toHaveAttribute("aria-selected", "true");
-    await expect(canvas.getByRole("heading", { name: "Editor-aware component jumps" })).toBeInTheDocument();
-    await userEvent.click(stackContractTab);
-    await expect(stackContractTab).toHaveAttribute("aria-selected", "true");
-    await expect(canvas.getByRole("heading", { name: "One file defines the local stack" })).toBeInTheDocument();
+    await expect(canvas.getByRole("heading", { level: 3, name: "Editor-aware component jumps" })).toBeInTheDocument();
+    await userEvent.click(routingHealthTab);
+    await expect(routingHealthTab).toHaveAttribute("aria-selected", "true");
+    await expect(
+      canvas.getByRole("heading", { level: 3, name: "Reserve the host, wait for health, then expose the route" }),
+    ).toBeInTheDocument();
   },
 };
 

@@ -1,15 +1,9 @@
-export type FeatureHighlightId =
-  | "routing"
-  | "health-checks"
-  | "overlay"
-  | "annotation"
-  | "source-jumps"
-  | "sessions"
-  | "stack-contract";
+export type FeatureHighlightId = "annotation" | "source-jumps" | "sessions" | "overlay" | "routing-health";
 
 export interface IFeatureHighlight {
   body: string;
   checklist: string[];
+  demoRecordingUrl: string;
   id: FeatureHighlightId;
   kicker: string;
   title: string;

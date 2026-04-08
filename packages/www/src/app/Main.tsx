@@ -5,7 +5,7 @@ import { App } from "./App";
 import "./App.css";
 
 export function Main(): JSX.Element {
-  return <App initialRecordingUrl="/recording.json" isDevelopmentMode />;
+  return <App />;
 }
 
 const rootElement: HTMLElement | null = document.getElementById("root");

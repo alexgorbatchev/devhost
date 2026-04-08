@@ -1,43 +1,8 @@
 import type { IMarketingContent } from "./types";
 
 export const marketingContent: IMarketingContent = {
-  defaultFeatureId: "routing",
+  defaultFeatureId: "annotation",
   featureHighlights: [
-    {
-      body:
-        "devhost reserves public hosts before the app goes live, waits for each health check to pass," +
-        " and only then reloads the managed Caddy instance.",
-      checklist: [
-        "Use real hostnames instead of juggling localhost ports by hand.",
-        "Keep routes aligned with process lifetime so stale hosts disappear automatically.",
-        "Avoid exposing half-ready services just because the child process started.",
-      ],
-      id: "routing",
-      kicker: "Managed routing",
-      title: "Route the app only after it is actually healthy",
-    },
-    {
-      body:
-        "Routes are held back until the service passes its configured health check," +
-        " which is the only sane time to expose a hostname.",
-      checklist: [],
-      id: "health-checks",
-      kicker: "Release discipline",
-      title: "Health checks gate exposure",
-    },
-    {
-      body:
-        "The injected devtools split document navigation from asset traffic and mount inside a Shadow DOM root," +
-        " so the overlay can inspect the page without polluting the host app's CSS.",
-      checklist: [
-        "Keep HMR, assets, fetches, SSE, and WebSockets off the injection path.",
-        "Inject the debugging chrome only where page-level context matters.",
-        "Preserve visual isolation between the app and the overlay runtime.",
-      ],
-      id: "overlay",
-      kicker: "Devtools overlay",
-      title: "Inspect live pages without turning the proxy into a bottleneck",
-    },
     {
       body:
         "Hold Alt, tag page elements, draft a note, and submit a Pi session seeded with the stack name, page URL," +
@@ -47,6 +12,7 @@ export const marketingContent: IMarketingContent = {
         "Carry component source paths into the handoff when the page exposes them.",
         "Start a coding session from the page itself instead of rewriting the bug report elsewhere.",
       ],
+      demoRecordingUrl: "/recordings/marketing/annotation.json",
       id: "annotation",
       kicker: "Annotation handoff",
       title: "Send annotated page state straight into Pi",
@@ -58,6 +24,7 @@ export const marketingContent: IMarketingContent = {
         "Keep source navigation wired to the editor the stack already expects.",
         "Use the inspection loop to move from page evidence into code without re-establishing context.",
       ],
+      demoRecordingUrl: "/recordings/marketing/source-jumps.json",
       id: "source-jumps",
       kicker: "Source navigation",
       title: "Editor-aware component jumps",
@@ -71,16 +38,38 @@ export const marketingContent: IMarketingContent = {
         "Normalize TERM and color capabilities for browser-backed terminal sessions.",
         "Use the session tray as persistent working memory while you inspect the page.",
       ],
+      demoRecordingUrl: "/recordings/marketing/sessions.json",
       id: "sessions",
       kicker: "Terminal sessions",
       title: "Keep the editor and agent session attached to the inspection loop",
     },
     {
-      body: "The manifest resolves ports, hostnames, dependencies, and optional agent configuration in one place.",
-      checklist: [],
-      id: "stack-contract",
-      kicker: "Stack contract",
-      title: "One file defines the local stack",
+      body:
+        "The injected devtools split document navigation from asset traffic and mount inside a Shadow DOM root," +
+        " so the overlay can inspect the page without polluting the host app's CSS.",
+      checklist: [
+        "Keep HMR, assets, fetches, SSE, and WebSockets off the injection path.",
+        "Inject the debugging chrome only where page-level context matters.",
+        "Preserve visual isolation between the app and the overlay runtime.",
+      ],
+      demoRecordingUrl: "/recordings/marketing/overlay.json",
+      id: "overlay",
+      kicker: "Devtools overlay",
+      title: "Inspect live pages without turning the proxy into a bottleneck",
+    },
+    {
+      body:
+        "devhost reserves public hosts before the app goes live, waits for each health check to pass, and only then" +
+        " reloads the managed Caddy instance so the route becomes real at the correct moment.",
+      checklist: [
+        "Use real hostnames instead of juggling localhost ports by hand.",
+        "Keep routes aligned with process lifetime so stale hosts disappear automatically.",
+        "Expose the hostname only after the service is actually healthy.",
+      ],
+      demoRecordingUrl: "/recordings/marketing/routing-health.json",
+      id: "routing-health",
+      kicker: "Routing + health",
+      title: "Reserve the host, wait for health, then expose the route",
     },
   ],
   featureSectionProofCardId: "local-https",
