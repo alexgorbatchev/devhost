@@ -1,62 +1,11 @@
-import { useRef, useState, type JSX, type KeyboardEvent } from "react";
+import { useState, type JSX } from "react";
 
 import { FeatureReplay } from "./FeatureReplay";
 
 type FeatureHighlightId = "annotation" | "source-jumps" | "sessions" | "overlay" | "routing-health";
 
-const featureTabOrder: FeatureHighlightId[] = ["annotation", "source-jumps", "sessions", "overlay", "routing-health"];
-
 export function FeatureSection(): JSX.Element {
   const [activeFeatureId, setActiveFeatureId] = useState<FeatureHighlightId>("annotation");
-  const featureTabRefs = useRef<Map<FeatureHighlightId, HTMLButtonElement>>(new Map());
-  const activeFeaturePanelId: string = createFeaturePanelId(activeFeatureId);
-  const activeFeatureTabId: string = createFeatureTabId(activeFeatureId);
-
-  function handleFeatureTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, featureId: FeatureHighlightId): void {
-    const currentFeatureIndex: number = findFeatureIndexById(featureId);
-    const lastFeatureIndex: number = featureTabOrder.length - 1;
-
-    let nextFeatureIndex: number | null = null;
-
-    switch (event.key) {
-      case "ArrowDown":
-      case "ArrowRight": {
-        nextFeatureIndex = currentFeatureIndex === lastFeatureIndex ? 0 : currentFeatureIndex + 1;
-        break;
-      }
-      case "ArrowLeft":
-      case "ArrowUp": {
-        nextFeatureIndex = currentFeatureIndex === 0 ? lastFeatureIndex : currentFeatureIndex - 1;
-        break;
-      }
-      case "Home": {
-        nextFeatureIndex = 0;
-        break;
-      }
-      case "End": {
-        nextFeatureIndex = lastFeatureIndex;
-        break;
-      }
-      default: {
-        return;
-      }
-    }
-
-    event.preventDefault();
-
-    if (nextFeatureIndex === null) {
-      return;
-    }
-
-    const nextFeatureId = featureTabOrder[nextFeatureIndex];
-
-    if (nextFeatureId === undefined) {
-      return;
-    }
-
-    setActiveFeatureId(nextFeatureId);
-    featureTabRefs.current.get(nextFeatureId)?.focus();
-  }
 
   return (
     <section className="grid gap-4" aria-labelledby="feature-section-title">
@@ -78,18 +27,13 @@ export function FeatureSection(): JSX.Element {
           <div className="grid gap-2" role="tablist" aria-label="Devhost product highlights" aria-orientation="vertical">
             <button
               id={createFeatureTabId("annotation")}
-              ref={createFeatureTabRef(featureTabRefs, "annotation")}
               type="button"
               role="tab"
-              className={readFeatureTabClassName(activeFeatureId === "annotation")}
+              className={readFeatureButtonClassName(activeFeatureId === "annotation")}
               aria-controls={createFeaturePanelId("annotation")}
               aria-selected={activeFeatureId === "annotation"}
-              tabIndex={activeFeatureId === "annotation" ? 0 : -1}
               onClick={(): void => {
                 setActiveFeatureId("annotation");
-              }}
-              onKeyDown={(event: KeyboardEvent<HTMLButtonElement>): void => {
-                handleFeatureTabKeyDown(event, "annotation");
               }}
             >
               <span>Annotation handoff</span>
@@ -99,18 +43,13 @@ export function FeatureSection(): JSX.Element {
             </button>
             <button
               id={createFeatureTabId("source-jumps")}
-              ref={createFeatureTabRef(featureTabRefs, "source-jumps")}
               type="button"
               role="tab"
-              className={readFeatureTabClassName(activeFeatureId === "source-jumps")}
+              className={readFeatureButtonClassName(activeFeatureId === "source-jumps")}
               aria-controls={createFeaturePanelId("source-jumps")}
               aria-selected={activeFeatureId === "source-jumps"}
-              tabIndex={activeFeatureId === "source-jumps" ? 0 : -1}
               onClick={(): void => {
                 setActiveFeatureId("source-jumps");
-              }}
-              onKeyDown={(event: KeyboardEvent<HTMLButtonElement>): void => {
-                handleFeatureTabKeyDown(event, "source-jumps");
               }}
             >
               <span>Source navigation</span>
@@ -120,18 +59,13 @@ export function FeatureSection(): JSX.Element {
             </button>
             <button
               id={createFeatureTabId("sessions")}
-              ref={createFeatureTabRef(featureTabRefs, "sessions")}
               type="button"
               role="tab"
-              className={readFeatureTabClassName(activeFeatureId === "sessions")}
+              className={readFeatureButtonClassName(activeFeatureId === "sessions")}
               aria-controls={createFeaturePanelId("sessions")}
               aria-selected={activeFeatureId === "sessions"}
-              tabIndex={activeFeatureId === "sessions" ? 0 : -1}
               onClick={(): void => {
                 setActiveFeatureId("sessions");
-              }}
-              onKeyDown={(event: KeyboardEvent<HTMLButtonElement>): void => {
-                handleFeatureTabKeyDown(event, "sessions");
               }}
             >
               <span>Terminal sessions</span>
@@ -141,18 +75,13 @@ export function FeatureSection(): JSX.Element {
             </button>
             <button
               id={createFeatureTabId("overlay")}
-              ref={createFeatureTabRef(featureTabRefs, "overlay")}
               type="button"
               role="tab"
-              className={readFeatureTabClassName(activeFeatureId === "overlay")}
+              className={readFeatureButtonClassName(activeFeatureId === "overlay")}
               aria-controls={createFeaturePanelId("overlay")}
               aria-selected={activeFeatureId === "overlay"}
-              tabIndex={activeFeatureId === "overlay" ? 0 : -1}
               onClick={(): void => {
                 setActiveFeatureId("overlay");
-              }}
-              onKeyDown={(event: KeyboardEvent<HTMLButtonElement>): void => {
-                handleFeatureTabKeyDown(event, "overlay");
               }}
             >
               <span>Devtools overlay</span>
@@ -162,18 +91,13 @@ export function FeatureSection(): JSX.Element {
             </button>
             <button
               id={createFeatureTabId("routing-health")}
-              ref={createFeatureTabRef(featureTabRefs, "routing-health")}
               type="button"
               role="tab"
-              className={readFeatureTabClassName(activeFeatureId === "routing-health")}
+              className={readFeatureButtonClassName(activeFeatureId === "routing-health")}
               aria-controls={createFeaturePanelId("routing-health")}
               aria-selected={activeFeatureId === "routing-health"}
-              tabIndex={activeFeatureId === "routing-health" ? 0 : -1}
               onClick={(): void => {
                 setActiveFeatureId("routing-health");
-              }}
-              onKeyDown={(event: KeyboardEvent<HTMLButtonElement>): void => {
-                handleFeatureTabKeyDown(event, "routing-health");
               }}
             >
               <span>Routing + health</span>
@@ -185,10 +109,10 @@ export function FeatureSection(): JSX.Element {
         </div>
 
         <article
-          id={activeFeaturePanelId}
+          id={createFeaturePanelId(activeFeatureId)}
           className="rounded-lg border border-border-subtle bg-card p-5 shadow-[var(--shadow-soft)] sm:p-6"
           role="tabpanel"
-          aria-labelledby={activeFeatureTabId}
+          aria-labelledby={createFeatureTabId(activeFeatureId)}
         >
           {renderActiveFeature(activeFeatureId)}
         </article>
@@ -220,31 +144,7 @@ function createFeatureTabId(featureHighlightId: FeatureHighlightId): string {
   return `feature-tab-${featureHighlightId}`;
 }
 
-function createFeatureTabRef(
-  featureTabRefs: React.RefObject<Map<FeatureHighlightId, HTMLButtonElement>>,
-  featureId: FeatureHighlightId,
-): (element: HTMLButtonElement | null) => void {
-  return (element: HTMLButtonElement | null): void => {
-    if (element === null) {
-      featureTabRefs.current.delete(featureId);
-      return;
-    }
-
-    featureTabRefs.current.set(featureId, element);
-  };
-}
-
-function findFeatureIndexById(featureId: FeatureHighlightId): number {
-  const featureIndex: number = featureTabOrder.indexOf(featureId);
-
-  if (featureIndex === -1) {
-    throw new Error(`Missing feature tab for id: ${featureId}`);
-  }
-
-  return featureIndex;
-}
-
-function readFeatureTabClassName(isActive: boolean): string {
+function readFeatureButtonClassName(isActive: boolean): string {
   if (isActive) {
     return "flex w-full items-center justify-between rounded-md border border-transparent bg-primary px-3 py-3 text-left text-sm leading-5 text-primary-foreground shadow-[var(--shadow-soft)]";
   }
