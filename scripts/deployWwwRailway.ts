@@ -39,7 +39,7 @@ export async function deployWwwRailway(): Promise<void> {
   }
 
   deployLocalCode();
-  verifyLatestDeployment();
+  await verifyLatestDeployment();
   verifyPublicEndpoint();
 }
 
@@ -176,15 +176,14 @@ function deployLocalCode(): void {
   runInheritedCommand("railway", ["up"]);
 }
 
-function verifyLatestDeployment(): void {
+async function verifyLatestDeployment(): Promise<void> {
   logStep("Verifying latest deployment status");
 
-  const serviceStatusResult = runJsonCommand("railway", ["service", "status", "--json"]);
-  const deploymentStatus = expectStringAtPath(serviceStatusResult, ["status"], "latest deployment status");
+  const terminalDeploymentStatus = await waitForTerminalDeploymentStatus();
 
-  if (deploymentStatus !== "SUCCESS") {
+  if (terminalDeploymentStatus !== "SUCCESS") {
     printLatestBuildLogs();
-    throw new Error(`Latest deployment status is ${deploymentStatus}`);
+    throw new Error(`Latest deployment status is ${terminalDeploymentStatus}`);
   }
 
   const fullStatusResult = runJsonCommand("railway", ["status", "--json"]);
@@ -215,6 +214,21 @@ function verifyLatestDeployment(): void {
     printLatestBuildLogs();
     throw new Error(`Latest deployment used unexpected start command: ${startCommand}`);
   }
+}
+
+async function waitForTerminalDeploymentStatus(): Promise<string> {
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    const serviceStatusResult = runJsonCommand("railway", ["service", "status", "--json"]);
+    const deploymentStatus = expectStringAtPath(serviceStatusResult, ["status"], "latest deployment status");
+
+    if (isTerminalDeploymentStatus(deploymentStatus)) {
+      return deploymentStatus;
+    }
+
+    await waitMilliseconds(5_000);
+  }
+
+  throw new Error("Timed out while waiting for the latest Railway deployment to reach a terminal state.");
 }
 
 function verifyPublicEndpoint(): void {
@@ -348,6 +362,16 @@ function logStep(message: string): void {
 
 function readBooleanEnvironmentVariable(name: string): boolean {
   return process.env[name] === "1";
+}
+
+function isTerminalDeploymentStatus(deploymentStatus: string): boolean {
+  return deploymentStatus === "SUCCESS" || deploymentStatus === "FAILED" || deploymentStatus === "CRASHED";
+}
+
+function waitMilliseconds(milliseconds: number): Promise<void> {
+  return new Promise((resolvePromise: () => void): void => {
+    setTimeout(resolvePromise, milliseconds);
+  });
 }
 
 if (import.meta.main) {
