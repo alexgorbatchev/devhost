@@ -16,6 +16,7 @@ interface IReplayViewportSize {
 
 export interface IFeatureReplayPanelProps {
   emptyMessage: string;
+  isFullscreen?: boolean;
   recording: IRrwebDemoRecording | null;
 }
 
@@ -33,6 +34,7 @@ export function FeatureReplayPanel(props: IFeatureReplayPanelProps): JSX.Element
     height: defaultReplayViewportHeight,
     width: defaultReplayViewportWidth,
   });
+  const isFullscreen: boolean = props.isFullscreen ?? false;
 
   useEffect((): EffectCallbackResult => {
     const playerRootElement = playerRootRef.current;
@@ -204,32 +206,38 @@ export function FeatureReplayPanel(props: IFeatureReplayPanelProps): JSX.Element
   }
 
   return (
-    <div className="grid gap-3" data-testid="FeatureReplayPanel">
-      {props.recording === null ? null : (
-        <div className="flex flex-wrap gap-2" aria-label="Replay metadata">
-          <p className="rounded-md border border-border-subtle bg-surface-subtle px-3 py-2 text-[0.72rem] uppercase tracking-[0.2em] text-muted-foreground">
-            {formatEventCount(props.recording.events.length)}
-          </p>
-          <p className="rounded-md border border-border-subtle bg-surface-subtle px-3 py-2 text-[0.72rem] uppercase tracking-[0.2em] text-muted-foreground">
-            {formatDuration(props.recording.durationMs)}
-          </p>
-          <p className="rounded-md border border-border-subtle bg-surface-subtle px-3 py-2 text-[0.72rem] uppercase tracking-[0.2em] text-muted-foreground">
-            Keyboard controlled
-          </p>
-        </div>
-      )}
-
-      <div className="overflow-hidden rounded-lg border border-border-subtle bg-terminal text-terminal-foreground shadow-[var(--shadow-soft)]">
+    <div className={isFullscreen ? "grid h-full min-h-0" : "grid gap-3"} data-testid="FeatureReplayPanel">
+      <div
+        className={
+          isFullscreen
+            ? "grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-terminal text-terminal-foreground"
+            : "overflow-hidden rounded-lg border border-border-subtle bg-terminal text-terminal-foreground shadow-[var(--shadow-soft)]"
+        }
+      >
         {props.recording === null ? (
-          <div className="grid min-h-[420px] place-items-center bg-surface-subtle px-6 py-10">
+          <div className={isFullscreen ? "grid h-full min-h-0 place-items-center bg-surface-subtle px-6 py-10" : "grid min-h-[420px] place-items-center bg-surface-subtle px-6 py-10"}>
             <p className="max-w-[42ch] text-center text-sm leading-7 text-muted-foreground">{props.emptyMessage}</p>
           </div>
         ) : (
           <>
-            <div ref={playerStageRef} className="grid min-h-[420px] place-items-center overflow-hidden bg-surface-subtle p-4 sm:p-6">
+            <div
+              ref={playerStageRef}
+              className={
+                isFullscreen
+                  ? "grid min-h-0 place-items-center overflow-hidden bg-surface-subtle p-4 sm:p-6"
+                  : "grid min-h-[420px] place-items-center overflow-hidden bg-surface-subtle p-4 sm:p-6"
+              }
+            >
               <div ref={playerRootRef} className="rrweb-player-root relative max-w-full" data-testid="FeatureReplayPanel--player-root" />
             </div>
-            <div className="grid gap-3 border-t border-border-subtle bg-card px-4 py-3 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center" data-testid="FeatureReplayPanel--controls">
+            <div
+              className={
+                isFullscreen
+                  ? "grid gap-3 border-t border-border-subtle bg-card px-4 py-3 sm:px-6 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center"
+                  : "grid gap-3 border-t border-border-subtle bg-card px-4 py-3 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center"
+              }
+              data-testid="FeatureReplayPanel--controls"
+            >
               <button
                 type="button"
                 className={secondaryButtonClassName}
@@ -270,14 +278,6 @@ function computePlayerScale(playerStageElement: HTMLElement, viewportSize: IRepl
   const widthScale = availableWidth / viewportSize.width;
 
   return Math.min(heightScale, widthScale, 1);
-}
-
-function formatDuration(durationMs: number): string {
-  return `${(durationMs / 1000).toFixed(1)} s capture`;
-}
-
-function formatEventCount(eventCount: number): string {
-  return `${eventCount} events`;
 }
 
 function formatPlaybackTime(durationMs: number): string {

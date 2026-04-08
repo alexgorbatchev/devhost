@@ -66,11 +66,10 @@ export function MarketingFeatureSection(props: IMarketingFeatureSectionProps): J
   return (
     <section className="grid gap-4" aria-labelledby="feature-section-title">
       <div className="grid gap-3">
-        <p className="text-[0.72rem] uppercase tracking-[0.28em] text-muted-foreground">What you are buying</p>
-        <h2 id="feature-section-title" className="max-w-[18ch] text-balance text-3xl font-medium leading-tight tracking-[-0.06em] text-foreground sm:text-4xl">
+        <h2 id="feature-section-title" className="text-balance text-3xl font-medium leading-tight tracking-[-0.06em] text-foreground sm:text-4xl">
           A routed development surface, not another localhost wrapper.
         </h2>
-        <p className="max-w-[72ch] text-sm leading-7 text-muted-foreground">
+        <p className="text-sm leading-7 text-muted-foreground">
           The point is not to proxy everything. The point is to expose the right host, keep the stack honest, and
           put the debugging workflow where the page already lives.
         </p>
@@ -130,8 +129,7 @@ export function MarketingFeatureSection(props: IMarketingFeatureSectionProps): J
           aria-labelledby={activeFeatureTabId}
         >
           <div className="grid gap-4">
-            <p className="inline-flex w-fit items-center rounded-full border border-border-subtle bg-surface-subtle px-3 py-1 text-[0.72rem] uppercase tracking-[0.28em] text-muted-foreground">{activeFeature.kicker}</p>
-            <h3 className="max-w-[20ch] text-balance text-2xl font-medium leading-tight tracking-[-0.05em] text-card-foreground sm:text-3xl">
+            <h3 className="text-balance text-2xl font-medium leading-tight tracking-[-0.05em] text-card-foreground sm:text-3xl">
               {activeFeature.title}
             </h3>
             <p className="max-w-[72ch] text-sm leading-7 text-muted-foreground">{activeFeature.body}</p>
@@ -152,9 +150,6 @@ export function MarketingFeatureSection(props: IMarketingFeatureSectionProps): J
 
         <aside className="rounded-lg border border-border-subtle bg-surface-subtle p-5 shadow-[var(--shadow-soft)]" aria-labelledby="feature-proof-card-title">
           <div className="grid gap-3">
-            <p className="inline-flex w-fit items-center rounded-full border border-border-subtle bg-card px-3 py-1 text-[0.72rem] uppercase tracking-[0.28em] text-muted-foreground">
-              {featureSectionProofCard.eyebrow}
-            </p>
             <h3 id="feature-proof-card-title" className="text-2xl font-medium leading-tight tracking-[-0.05em] text-card-foreground">
               {featureSectionProofCard.title}
             </h3>

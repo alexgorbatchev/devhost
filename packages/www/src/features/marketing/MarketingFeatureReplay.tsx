@@ -59,7 +59,6 @@ export function MarketingFeatureReplay(props: IMarketingFeatureReplayProps): JSX
   return (
     <section className="grid gap-3 border-t border-border-subtle pt-4" aria-labelledby={replayHeadingId}>
       <div className="grid gap-2">
-        <p className="inline-flex w-fit items-center rounded-full border border-border-subtle bg-surface-subtle px-3 py-1 text-[0.72rem] uppercase tracking-[0.28em] text-muted-foreground">Feature replay</p>
         <h4 id={replayHeadingId} className="text-xl font-medium leading-tight tracking-[-0.04em] text-card-foreground sm:text-2xl">
           {props.featureHighlight.title}
         </h4>

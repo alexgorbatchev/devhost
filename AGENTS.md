@@ -24,6 +24,8 @@ Monorepo root for the published `devhost` package and the local demo app.
 - Always: run `bun run check` after changing workspace manifests, scripts, CI, or directory layout.
 - Ask first: adding a new workspace, changing cross-workspace dependency topology, or changing the publish/release flow.
 - Never: publish or pack from the repo root; publish only from `packages/devhost/`.
+- Never: start the demo dev server proactively; the user will start it when needed.
+- Testing exception: agents may start the demo dev server temporarily for validation, but must shut it down before the end of the turn.
 
 ## References
 - `packages/devhost/AGENTS.md`

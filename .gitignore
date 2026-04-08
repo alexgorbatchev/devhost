@@ -7,3 +7,5 @@ caddy/routes/.registrations/*.json
 # test coverage and storybook out
 coverage/
 storybook-static/
+.tmp
+

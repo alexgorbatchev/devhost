@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { expect, within } from "storybook/test";
 
 import { RrwebDemoPanel } from "./RrwebDemoPanel";
 
@@ -19,7 +20,12 @@ const Default: Story = {
     onStopRecording: () => {},
     recording: null,
   },
-  play: async () => {},
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+
+    await expect(canvas.getByRole("button", { name: "Start recording · Alt+Shift+A" })).toBeInTheDocument();
+    await expect(canvas.queryByRole("button", { name: "Export JSON" })).not.toBeInTheDocument();
+  },
 };
 
 export { Default as RrwebDemoPanel };

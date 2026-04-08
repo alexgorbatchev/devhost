@@ -27,7 +27,9 @@ const Default: Story = {
     });
 
     await expect(
-      canvas.getByRole("heading", { name: "devhost is the storefront for routed local stacks." }),
+      canvas.getByRole("heading", {
+        name: "devhost is the storefront for routed local stacks.",
+      }),
     ).toBeInTheDocument();
     await expect(
       within(featureSection).getByRole("heading", { name: "Local HTTPS is a first-class workflow" }),
@@ -42,6 +44,9 @@ const Default: Story = {
     await expect(
       canvas.getByRole("heading", { level: 3, name: "Send annotated page state straight into Pi" }),
     ).toBeInTheDocument();
+    await expect(canvas.queryByText("89 events")).not.toBeInTheDocument();
+    await expect(canvas.queryByText("13.2 s capture")).not.toBeInTheDocument();
+    await expect(canvas.queryByText("Keyboard controlled")).not.toBeInTheDocument();
     await userEvent.click(sourceNavigationTab);
     await expect(sourceNavigationTab).toHaveAttribute("aria-selected", "true");
     await expect(canvas.getByRole("heading", { level: 3, name: "Editor-aware component jumps" })).toBeInTheDocument();

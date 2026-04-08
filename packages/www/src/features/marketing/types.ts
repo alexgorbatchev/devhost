@@ -19,7 +19,6 @@ export type ProofCardId = "proxy-discipline" | "isolation" | "local-https";
 
 export interface IProofCard {
   body: string;
-  eyebrow: string;
   id: ProofCardId;
   title: string;
 }

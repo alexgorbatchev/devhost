@@ -21,13 +21,9 @@
   body {
     margin: 0;
     min-height: 100dvh;
-    background-color: var(--background);
-    background-image:
-      var(--page-spotlight),
-      linear-gradient(to right, var(--page-grid-line) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--page-grid-line) 1px, transparent 1px);
-    background-size: auto, 28px 28px, 28px 28px;
     background-attachment: fixed;
+    background-color: var(--background);
+    background-image: var(--page-spotlight);
     color: var(--foreground);
     font-family: var(--font-sans);
     text-rendering: optimizeLegibility;
@@ -55,6 +51,28 @@
     background: var(--selection-background);
     color: var(--selection-foreground);
   }
+}
+
+.app-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.app-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: min(28rem, 46vh);
+  background-image:
+    linear-gradient(to bottom, color-mix(in srgb, var(--muted) 52%, transparent), transparent 72%),
+    radial-gradient(circle at top, color-mix(in srgb, var(--foreground) 6%, transparent), transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app-frame {
+  position: relative;
+  z-index: 1;
 }
 
 .rrweb-player-root {

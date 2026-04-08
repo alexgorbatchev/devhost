@@ -91,13 +91,11 @@ export const marketingContent: IMarketingContent = {
   proofCards: [
     {
       body: "Document navigations are injected, but assets and hot-reload traffic stay on the direct app path.",
-      eyebrow: "Proxy discipline",
       id: "proxy-discipline",
       title: "Devtools stay off the noisy traffic",
     },
     {
       body: "The overlay lives inside its own Shadow DOM container so host styles do not quietly corrupt the tooling UI.",
-      eyebrow: "Isolation",
       id: "isolation",
       title: "The debugging shell is visually contained",
     },
@@ -105,7 +103,6 @@ export const marketingContent: IMarketingContent = {
       body:
         "Managed Caddy trust and lifecycle commands are exposed directly because local TLS setup is part of the" +
         " product, not a side quest.",
-      eyebrow: "Operational honesty",
       id: "local-https",
       title: "Local HTTPS is a first-class workflow",
     },
