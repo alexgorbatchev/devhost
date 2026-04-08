@@ -14,12 +14,13 @@
 - Do not run `railway up` from `packages/www`.
 - Railway CLI must be installed.
 - Railway CLI must be authenticated, or `RAILWAY_API_TOKEN` must be set.
+- `agent-browser` CLI must be installed for the final visual verification pass.
 
 ### Required Railway service state
 
 The deploy script enforces these settings before deploy:
 
-- service start command = `bun packages/www/src/server.ts`
+- service start command = `bun run --cwd packages/www dev`
 - service root directory = unset
 - service variable `DEVHOST_BIND_HOST=0.0.0.0`
 
@@ -103,7 +104,7 @@ railway status --json
 Required latest deployment facts:
 
 - latest deployment status is `SUCCESS`
-- latest deployment effective start command is `bun packages/www/src/server.ts`
+- latest deployment effective start command is `bun run --cwd packages/www dev`
 
 ### 8. Inspect latest build logs
 
@@ -119,6 +120,31 @@ curl -I https://devhost.up.railway.app/
 
 This HTTP check is secondary. A successful response does not prove the latest deployment succeeded by itself.
 
+### 10. Verify the rendered page with `agent-browser`
+
+Use a real browser check before calling the deploy done. The app can return `HTTP 200` while still shipping a visually broken page.
+
+```sh
+agent-browser --session-name devhost-railway-verify open https://devhost.up.railway.app/
+agent-browser --session-name devhost-railway-verify wait --load networkidle
+agent-browser --session-name devhost-railway-verify screenshot --full
+agent-browser --session-name devhost-railway-verify snapshot -i
+agent-browser --session-name devhost-railway-verify close
+```
+
+Required visual facts:
+
+- the hero headline is large and centered inside a bordered card, not tiny plaintext pinned to the top-left corner
+- the feature tabs render as distinct boxed controls, not one collapsed inline text row
+- the main sections render as spaced cards/panels, not raw stacked text on the page background
+- the replay area renders inside a framed panel, not as loose inline content
+
+Treat the deploy as failed if the screenshot shows an unstyled plaintext page even when the HTTP check passes.
+
+Common failure signature:
+
+- the page HTML references asset URLs such as `/../../chunk-*.css` or `/../../chunk-*.js`
+
 ## Stop immediately if
 
 - Railway target IDs do not match
@@ -126,3 +152,5 @@ This HTTP check is secondary. A successful response does not prove the latest de
 - service root directory is set
 - latest deployment status is `FAILED`
 - build logs contain `No start command detected`
+- `agent-browser` shows an unstyled plaintext page or collapsed layout
+- the rendered HTML references chunk assets through `/../../`
