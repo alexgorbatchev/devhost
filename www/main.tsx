@@ -9,5 +9,8 @@ export function Main(): React.JSX.Element {
 const rootElement: HTMLElement | null = document.getElementById("root");
 
 if (rootElement !== null) {
+  console.log("Rendering devhost test app!", rootElement);
   createRoot(rootElement).render(<Main />);
+} else {
+  console.error("Root element not found!");
 }
