@@ -64,7 +64,6 @@ function verifyRepositoryLayout(): void {
     "bun.lock",
     "packages/devhost",
     "packages/www/package.json",
-    "packages/www/railway.toml",
     "packages/www/src/server.ts",
   ];
 
