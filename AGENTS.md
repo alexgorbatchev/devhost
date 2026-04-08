@@ -9,7 +9,7 @@ Monorepo root for the published `devhost` package and the local demo app.
 - Check `devhost`: `bun run --cwd packages/devhost check`
 - Check demo app: `bun run --cwd packages/www check`
 - Run `devhost` help: `bun run --cwd packages/devhost dev --help`
-- Run demo app: `bun run --cwd packages/www dev`
+- Run demo app: `bun run dev`
 
 ## Workspace map
 - `packages/devhost/` — published CLI package; follow `packages/devhost/AGENTS.md`
