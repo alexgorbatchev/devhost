@@ -19,9 +19,6 @@ Configure your stack in `devhost.toml`, then run it through `devhost`.
 ```toml
 name = "hello-stack"
 
-[caddy]
-autostop = true
-
 [services.ui]
 primary = true
 command = ["bun", "run", "ui:dev"]
@@ -97,10 +94,15 @@ devhost caddy download
 >
 > The `devhost caddy trust` will prompt for your password and install Caddy's CA into the system trust store.
 
-Start/stop the managed Caddy instance:
+Start the shared managed Caddy instance before running one or more stacks:
 
 ```bash
 devhost caddy start
+```
+
+Stop it when you are done with all stacks:
+
+```bash
 devhost caddy stop
 ```
 
@@ -112,7 +114,7 @@ The generated Caddy config uses these defaults:
 - listener binding on non-macOS: loopback only via Caddy `default_bind 127.0.0.1 [::1]`
 - unmatched hostnames: a generated 404 page listing the currently active devhost routes as HTTPS links
 
-When `[caddy].autostop = true`, `devhost` takes ownership of the managed Caddy process for the stack lifetime, stops it on exit, and blocks other `devhost` stacks from taking ownership until the owning stack exits.
+Managed Caddy lifecycle is shared and manual. `devhost` stack startup requires the managed Caddy admin API to already be available.
 
 ### Platform caveats
 
@@ -130,12 +132,11 @@ When you run `devhost`, it:
 1. discovers `devhost.toml` upward from the current directory, unless `--manifest` is provided
 2. parses TOML and validates schema and semantics
 3. resolves `port = "auto"` before spawning children
-4. starts managed Caddy automatically when `[caddy].autostop = true`; otherwise the managed Caddy admin API must already be available
+4. requires the managed Caddy admin API to already be available
 5. reserves every public host before starting any service
 6. starts services in dependency order
 7. waits for each service health check before routing it
 8. removes routes and reservations on shutdown or startup failure
-9. stops managed Caddy on exit when `[caddy].autostop = true`
 
 `devhost`-owned logs use the manifest `name` when available and fall back to `[devhost]`. Child service logs remain prefixed with `[service-name]`.
 

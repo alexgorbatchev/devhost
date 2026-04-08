@@ -23,9 +23,6 @@ describe("validateManifest", () => {
       displayName: "Pi",
       kind: "pi",
     });
-    expect(manifest.caddy).toEqual({
-      autostop: false,
-    });
     expect(manifest.devtools).toEqual({
       editor: { enabled: true, ide: "vscode" },
       minimap: { enabled: true, position: "right" },
@@ -48,9 +45,6 @@ describe("validateManifest", () => {
     expect(manifest.agent).toEqual({
       displayName: "Pi",
       kind: "pi",
-    });
-    expect(manifest.caddy).toEqual({
-      autostop: false,
     });
     expect(manifest.devtools).toEqual({
       editor: { enabled: true, ide: "vscode" },
@@ -94,9 +88,6 @@ describe("validateManifest", () => {
           DEVHOST_AGENT_MODE: "annotation",
         },
       },
-      caddy: {
-        autostop: true,
-      },
       devtools: {
         editor: { enabled: true, ide: "neovim" },
         minimap: { enabled: true, position: "left" },
@@ -120,14 +111,28 @@ describe("validateManifest", () => {
       },
       kind: "configured",
     });
-    expect(manifest.caddy).toEqual({
-      autostop: true,
-    });
     expect(manifest.devtools).toEqual({
       editor: { enabled: true, ide: "neovim" },
       minimap: { enabled: true, position: "left" },
       status: { enabled: true, position: "top-left" },
     });
+  });
+
+  test("rejects manifests that still configure the removed caddy section", () => {
+    expect(() =>
+      validateManifest("/tmp/devhost.toml", {
+        caddy: {
+          autostop: true,
+        },
+        name: "hello-stack",
+        services: {
+          web: {
+            command: ["bun", "run", "dev"],
+            port: 3000,
+          },
+        },
+      }),
+    ).toThrow("Manifest schema is invalid:\nmanifest Unrecognized key: \"caddy\"");
   });
 
   test("rejects a configured agent cwd that escapes the manifest directory", () => {

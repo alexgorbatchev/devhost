@@ -5,7 +5,6 @@
 #
 # Top-level sections:
 # - `name` (required)
-# - `[caddy]` (optional)
 # - `[devtools.editor]` (optional)
 # - `[devtools.minimap]` (optional)
 # - `[devtools.status]` (optional)
@@ -24,11 +23,8 @@
 # `name` identifies the stack in logs, state, and injected metadata.
 name = "hello-stack"
 
-[caddy]
-# `autostop` controls whether this stack owns the managed Caddy lifecycle.
-# - `false` (default): do not start or stop managed Caddy automatically.
-# - `true`: start managed Caddy on stack startup, stop it on shutdown, and block other `devhost` stacks while this stack is active.
-autostop = false
+# Managed Caddy lifecycle is shared and manual.
+# Start it explicitly with `devhost caddy start` before running a stack.
 
 # The `devtools.*` sections control the browser-side devhost overlay injected into
 # routed HTML document navigations. If all devtools features are disabled, routed

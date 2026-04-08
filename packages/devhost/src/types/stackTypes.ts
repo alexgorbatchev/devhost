@@ -48,17 +48,8 @@ export interface IConfiguredDevhostAgent {
 
 export type ValidatedDevhostAgent = IDefaultDevhostAgent | IConfiguredDevhostAgent;
 
-export interface IDevhostCaddyConfig {
-  autostop?: boolean;
-}
-
-export interface IResolvedDevhostCaddyConfig {
-  autostop: boolean;
-}
-
 export interface IDevhostManifest {
   agent?: DevhostAgentConfig;
-  caddy?: IDevhostCaddyConfig;
   name: string;
   devtools?: {
     editor?: {
@@ -92,7 +83,6 @@ export interface IDevhostServiceConfig {
 
 export interface IValidatedDevhostManifest {
   agent: ValidatedDevhostAgent;
-  caddy: IResolvedDevhostCaddyConfig;
   name: string;
   primaryService: string; // resolved internally
   manifestPath: string;
@@ -129,7 +119,6 @@ export interface IValidatedDevhostService {
 
 export interface IResolvedDevhostManifest {
   agent: ValidatedDevhostAgent;
-  caddy: IResolvedDevhostCaddyConfig;
   name: string;
   primaryService: string;
   manifestPath: string;

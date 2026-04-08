@@ -82,11 +82,6 @@ const serviceSchema = z
 const manifestSchema = z
   .object({
     agent: agentSchema.optional(),
-    caddy: z
-      .object({
-        autostop: z.boolean().optional(),
-      })
-      .optional(),
     devtools: z
       .object({
         editor: z
@@ -174,9 +169,6 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
 
   return {
     agent: validatedAgent,
-    caddy: {
-      autostop: parsedManifest.caddy?.autostop ?? false,
-    },
     devtools: {
       editor: {
         enabled: parsedManifest.devtools?.editor?.enabled ?? true,

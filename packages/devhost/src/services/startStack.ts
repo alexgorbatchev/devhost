@@ -4,11 +4,6 @@ import { collectManagedServicesHealth } from "./collectManagedServicesHealth";
 import { createTerminalSessionCommand } from "../agents/createTerminalSessionCommand";
 import type { IDevhostLogger } from "../utils/createLogger";
 import { ensureManagedCaddyConfig } from "../caddy/ensureManagedCaddyConfig";
-import {
-  assertManagedCaddyAutostopIsAvailable,
-  createManagedCaddyAutostopSession,
-  type IManagedCaddyAutostopSession,
-} from "../caddy/createManagedCaddyAutostopSession";
 import { launchTerminalSession } from "../agents/launchTerminalSession";
 import { pipeSubprocessOutput } from "./pipeSubprocessOutput";
 import {
@@ -75,7 +70,6 @@ export async function startStack(
   const routedServices: IResolvedDevhostService[] = Object.values(manifest.services).filter(
     (service: IResolvedDevhostService): boolean => service.host !== null,
   );
-  let caddyAutostopSession: IManagedCaddyAutostopSession | null = null;
   let devtoolsControlServer: Awaited<ReturnType<typeof startDevtoolsControlServer>> | null = null;
   let receivedSignal: SupportedSignal | null = null;
   let resolveSignal: SignalHandlerCallback | null = null;
@@ -86,19 +80,6 @@ export async function startStack(
 
   try {
     await ensureManagedCaddyConfig();
-
-    if (manifest.caddy.autostop) {
-      caddyAutostopSession = await createManagedCaddyAutostopSession(
-        {
-          manifestPath: manifest.manifestPath,
-          stackName: manifest.name,
-        },
-        logger,
-      );
-    } else {
-      await assertManagedCaddyAutostopIsAvailable();
-    }
-
     await cleanupStaleRegistrations(managedCaddyPaths.registrationsDirectoryPath);
     await ensureCaddyAdminAvailable();
 
@@ -329,8 +310,6 @@ export async function startStack(
         );
       }
     }
-
-    await caddyAutostopSession?.release();
   }
 }
 

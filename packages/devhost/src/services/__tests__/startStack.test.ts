@@ -8,9 +8,6 @@ describe("createInjectedServiceEnvironment", () => {
   test("injects manifest variables for routed services without HOST", () => {
     const manifest: IResolvedDevhostManifest = {
       agent: createDefaultDevhostAgent(),
-      caddy: {
-        autostop: false,
-      },
       devtools: {
         editor: { enabled: true, ide: "vscode" },
         minimap: { enabled: true, position: "right" },
@@ -56,9 +53,6 @@ describe("createInjectedServiceEnvironment", () => {
   test("omits routed-host and port variables when they are unavailable", () => {
     const manifest: IResolvedDevhostManifest = {
       agent: createDefaultDevhostAgent(),
-      caddy: {
-        autostop: false,
-      },
       devtools: {
         editor: { enabled: false, ide: "vscode" },
         minimap: { enabled: false, position: "right" },
