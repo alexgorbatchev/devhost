@@ -1,7 +1,7 @@
 import { Replayer } from "@rrweb/all";
 import React, { useEffect, useRef, useState, type ChangeEvent, type JSX } from "react";
 
-import type { IRrwebDemoRecording } from "./createRrwebDemoRecording";
+import type { IRrwebDemoRecording } from "./types";
 
 const defaultReplayViewportHeight: number = 720;
 const defaultReplayViewportWidth: number = 1280;

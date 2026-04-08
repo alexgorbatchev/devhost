@@ -1,9 +1,9 @@
-import React from "react";
+import React, { type JSX } from "react";
 import { createRoot } from "react-dom/client";
 
 import { App } from "./App";
 
-export function Main(): React.JSX.Element {
+export function Main(): JSX.Element {
   return <App initialRecordingUrl="/recording.json" isDevelopmentMode />;
 }
 

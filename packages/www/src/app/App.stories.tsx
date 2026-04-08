@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent, within } from "storybook/test";
 
-import { App } from "../App";
+import { App } from "./App";
 
 const meta: Meta<typeof App> = {
   component: App,
@@ -39,9 +39,7 @@ const Default: Story = {
     await expect(themeSelect).toHaveValue("light");
     await userEvent.click(annotationTab);
     await expect(annotationTab).toHaveAttribute("aria-selected", "true");
-    await expect(
-      canvas.getByRole("heading", { name: "Send annotated page state straight into Pi" }),
-    ).toBeInTheDocument();
+    await expect(canvas.getByRole("heading", { name: "Send annotated page state straight into Pi" })).toBeInTheDocument();
     await userEvent.click(sourceNavigationTab);
     await expect(sourceNavigationTab).toHaveAttribute("aria-selected", "true");
     await expect(canvas.getByRole("heading", { name: "Editor-aware component jumps" })).toBeInTheDocument();

@@ -1,11 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { RrwebDemoPanel } from "../RrwebDemoPanel";
+
+import { RrwebDemoPanel } from "./RrwebDemoPanel";
 
 const meta: Meta<typeof RrwebDemoPanel> = {
   component: RrwebDemoPanel,
 };
 
 export default meta;
+
 type Story = StoryObj<typeof RrwebDemoPanel>;
 
 const Default: Story = {

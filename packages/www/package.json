@@ -26,8 +26,8 @@
   },
   "scripts": {
     "check": "./scripts/check.sh",
-    "dev": "bun helloWorldServer.ts",
-    "log-demo": "bun emitDemoLogs.ts",
+    "dev": "bun scripts/helloWorldServer.ts",
+    "log-demo": "bun scripts/emitDemoLogs.ts",
     "storybook": "storybook dev --ci --port 6007"
   }
 }

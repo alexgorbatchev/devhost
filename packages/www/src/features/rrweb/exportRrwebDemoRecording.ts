@@ -1,4 +1,4 @@
-import type { IRrwebDemoRecording } from "./createRrwebDemoRecording";
+import type { IRrwebDemoRecording } from "./types";
 
 export function exportRrwebDemoRecording(recording: IRrwebDemoRecording): void {
   const recordingJson = JSON.stringify(recording, null, 2);

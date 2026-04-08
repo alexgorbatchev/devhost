@@ -9,7 +9,7 @@ const config: StorybookConfig = {
     options: {},
   },
   staticDirs: ["../public"],
-  stories: ["../stories/**/*.stories.@(ts|tsx)"],
+  stories: ["../src/**/*.stories.@(ts|tsx)"],
   async viteFinal(viteConfig: UserConfig): Promise<UserConfig> {
     const existingIncludedDependencyIds: string[] = viteConfig.optimizeDeps?.include ?? [];
 

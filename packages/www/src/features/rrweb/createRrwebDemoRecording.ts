@@ -1,16 +1,6 @@
 import { record } from "@rrweb/all";
-import type { eventWithTime } from "@rrweb/types";
 
-type RecordedEvent = eventWithTime;
-
-export interface IRrwebDemoRecording {
-  durationMs: number;
-  events: RecordedEvent[];
-}
-
-export interface IRrwebDemoRecordingController {
-  stop: () => IRrwebDemoRecording;
-}
+import type { IRrwebDemoRecording, IRrwebDemoRecordingController, RecordedEvent } from "./types";
 
 export function createRrwebDemoRecording(): IRrwebDemoRecordingController {
   const events: RecordedEvent[] = [];

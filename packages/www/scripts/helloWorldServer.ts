@@ -1,6 +1,6 @@
-import indexHtml from "./index.html";
+import indexHtml from "../index.html";
 
-const recordingFile = Bun.file(new URL("./public/recording.json", import.meta.url));
+const recordingFile = Bun.file(new URL("../public/recording.json", import.meta.url));
 const bindHost: string = process.env.DEVHOST_BIND_HOST ?? "127.0.0.1";
 const host: string = process.env.DEVHOST_HOST ?? "hello.xcv.lol";
 const portText: string = process.env.PORT ?? "3200";

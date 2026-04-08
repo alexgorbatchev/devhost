@@ -1,6 +1,6 @@
 import type { eventWithTime } from "@rrweb/types";
 
-import type { IRrwebDemoRecording } from "./createRrwebDemoRecording";
+import type { IRrwebDemoRecording } from "./types";
 
 export async function loadRrwebDemoRecording(recordingUrl: string): Promise<IRrwebDemoRecording | null> {
   const response = await fetch(recordingUrl, { cache: "no-store" });

@@ -1,5 +1,3 @@
-export type ThemePreference = "system" | "light" | "dark";
-
 export type FeatureHighlightId =
   | "routing"
   | "health-checks"
@@ -8,11 +6,6 @@ export type FeatureHighlightId =
   | "source-jumps"
   | "sessions"
   | "stack-contract";
-
-export interface IThemeOption {
-  label: string;
-  value: ThemePreference;
-}
 
 export interface IFeatureHighlight {
   body: string;
@@ -35,4 +28,14 @@ export interface IProofCard {
   eyebrow: string;
   id: ProofCardId;
   title: string;
+}
+
+export interface IMarketingContent {
+  defaultFeatureId: FeatureHighlightId;
+  featureHighlights: IFeatureHighlight[];
+  featureSectionProofCardId: ProofCardId;
+  launchCommands: string[];
+  manifestPreviewLines: string[];
+  proofCards: IProofCard[];
+  workflowSteps: IWorkflowStep[];
 }
