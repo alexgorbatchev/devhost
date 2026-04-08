@@ -9,7 +9,7 @@
 
 ## Preconditions
 
-- Preferred entrypoint: `bun run deploy:www:railway`
+- Preferred entrypoint: `bun run deploy:www`
 - Run all commands from the repository root.
 - Do not run `railway up` from `packages/www`.
 - Railway CLI must be installed.
@@ -28,13 +28,13 @@ The deploy script enforces these settings before deploy:
 ### Automated path
 
 ```sh
-bun run deploy:www:railway
+bun run deploy:www
 ```
 
 Optional preflight-only mode:
 
 ```sh
-DEPLOY_WWW_RAILWAY_SKIP_DEPLOY=1 bun run deploy:www:railway
+DEPLOY_WWW_RAILWAY_SKIP_DEPLOY=1 bun run deploy:www
 ```
 
 ### Manual steps used by the script
