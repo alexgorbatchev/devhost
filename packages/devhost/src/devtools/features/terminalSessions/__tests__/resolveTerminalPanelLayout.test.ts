@@ -64,7 +64,7 @@ describe("resolveTerminalPanelLayout", () => {
     });
   });
 
-  test("keeps small viewports above the minimum tray size", () => {
+  test("keeps the tray preview size static on small viewports", () => {
     expect(resolveTerminalPanelLayout(EDITOR_TERMINAL_BEHAVIOR, 200, 180)).toEqual({
       expandedPanelSize: {
         height: 180,
@@ -72,8 +72,8 @@ describe("resolveTerminalPanelLayout", () => {
       },
       isFullscreenExpanded: true,
       trayPanelSize: {
-        height: 240,
-        width: 320,
+        height: 720,
+        width: 1040,
       },
     });
   });

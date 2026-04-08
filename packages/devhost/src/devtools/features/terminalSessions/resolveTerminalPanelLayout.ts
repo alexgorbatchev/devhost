@@ -11,11 +11,8 @@ export interface IResolvedTerminalPanelLayout {
   trayPanelSize: IPanelSize;
 }
 
-const minimumPanelHeight: number = 240;
-const minimumPanelWidth: number = 320;
-const panelViewportMargin: number = 80;
-const preferredPanelHeight: number = 720;
-const preferredPanelWidth: number = 1040;
+const trayPanelHeight: number = 720;
+const trayPanelWidth: number = 1040;
 
 export function resolveTerminalPanelLayout(
   behavior: ITerminalSessionBehavior,
@@ -23,8 +20,8 @@ export function resolveTerminalPanelLayout(
   viewportHeight: number,
 ): IResolvedTerminalPanelLayout {
   const trayPanelSize: IPanelSize = {
-    height: Math.max(minimumPanelHeight, Math.min(preferredPanelHeight, viewportHeight - panelViewportMargin)),
-    width: Math.max(minimumPanelWidth, Math.min(preferredPanelWidth, viewportWidth - panelViewportMargin)),
+    height: trayPanelHeight,
+    width: trayPanelWidth,
   };
   const isFullscreenExpanded: boolean = behavior.isFullscreenExpanded;
 
