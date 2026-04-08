@@ -6,8 +6,8 @@
     "policy:fix:semantic": "bun run typescript-ai-policy-fix-semantic -- ."
   },
   "devDependencies": {
-    "@alexgorbatchev/typescript-ai-policy": "^1.0.3",
-    "oxfmt": "^0.42.0",
-    "oxlint": "^1.57.0"
+    "@alexgorbatchev/typescript-ai-policy": "^1.0.5",
+    "oxfmt": "^0.44.0",
+    "oxlint": "^1.59.0"
   }
 }
