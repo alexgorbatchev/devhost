@@ -8,6 +8,10 @@ const defaultReplayViewportWidth: number = 1280;
 const playerPaddingPx: number = 32;
 const startShortcutLabel: string = "Alt+Shift+A";
 const stopShortcutLabel: string = "Alt+Shift+S";
+const primaryButtonClassName: string =
+  "inline-flex h-10 items-center justify-center rounded-md border border-border bg-primary px-4 text-sm text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50";
+const secondaryButtonClassName: string =
+  "inline-flex h-10 items-center justify-center rounded-md border border-border bg-background px-4 text-sm text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50";
 
 interface IReplayViewportSize {
   height: number;
@@ -236,81 +240,111 @@ export function RrwebDemoPanel(props: IRrwebDemoPanelProps): JSX.Element {
   }
 
   return (
-    <section className="rrweb-section" aria-label="rrweb replay panel" data-testid="RrwebDemoPanel">
-      <div className="rrweb-section__header">
-        <div className="rrweb-shortcut-grid" aria-label="rrweb recording shortcuts">
-          <p className="rrweb-demo-pill">Player: autoplay on load</p>
-          <p className="rrweb-demo-pill">Controls: hover to reveal</p>
-          {props.isDevelopmentMode ? <p className="rrweb-demo-pill">Start: {startShortcutLabel}</p> : null}
-          {props.isDevelopmentMode ? <p className="rrweb-demo-pill">Stop: {stopShortcutLabel}</p> : null}
-          {props.isDevelopmentMode ? <p className="rrweb-demo-pill">Export: JSON file</p> : null}
+    <section className="grid gap-4 rounded-lg border border-border bg-card p-4 shadow-sm sm:p-5" aria-label="rrweb replay panel" data-testid="RrwebDemoPanel">
+      <div className="grid gap-4 border-b border-border pb-4">
+        <div className="flex flex-wrap gap-2" aria-label="rrweb recording shortcuts">
+          <p className="rounded-md border border-border bg-muted px-3 py-2 text-[0.72rem] uppercase tracking-[0.2em] text-muted-foreground">
+            Player: autoplay on load
+          </p>
+          <p className="rounded-md border border-border bg-muted px-3 py-2 text-[0.72rem] uppercase tracking-[0.2em] text-muted-foreground">
+            Controls: live dock
+          </p>
+          {props.isDevelopmentMode ? (
+            <p className="rounded-md border border-border bg-muted px-3 py-2 text-[0.72rem] uppercase tracking-[0.2em] text-muted-foreground">
+              Start: {startShortcutLabel}
+            </p>
+          ) : null}
+          {props.isDevelopmentMode ? (
+            <p className="rounded-md border border-border bg-muted px-3 py-2 text-[0.72rem] uppercase tracking-[0.2em] text-muted-foreground">
+              Stop: {stopShortcutLabel}
+            </p>
+          ) : null}
+          {props.isDevelopmentMode ? (
+            <p className="rounded-md border border-border bg-muted px-3 py-2 text-[0.72rem] uppercase tracking-[0.2em] text-muted-foreground">
+              Export: JSON file
+            </p>
+          ) : null}
         </div>
 
-        {props.isDevelopmentMode ? (
-          <div className="rrweb-section__actions">
-            <button
-              type="button"
-              className="rrweb-action-button"
-              onClick={props.onStartRecording}
-              disabled={props.isRecording}
-            >
-              Start recording
-            </button>
-
-            <button
-              type="button"
-              className="rrweb-action-button rrweb-action-button--secondary"
-              onClick={props.onStopRecording}
-              disabled={!props.isRecording}
-            >
-              Stop recording
-            </button>
-
-            <button
-              type="button"
-              className="rrweb-action-button rrweb-action-button--secondary"
-              onClick={props.onExportRecording}
-              disabled={props.recording === null || props.isRecording}
-            >
-              Export JSON
-            </button>
-
-            <p className="rrweb-status-note" role="status">
-              {readStatusMessage(props.isDevelopmentMode, props.isRecording, props.recording)}
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <div className="grid gap-2">
+            <p className="text-[0.72rem] uppercase tracking-[0.28em] text-muted-foreground">Replay surface</p>
+            <p className="max-w-[72ch] text-sm leading-7 text-muted-foreground">
+              Record the routed host, then inspect it like an operational replay instead of a marketing screenshot.
             </p>
           </div>
-        ) : null}
 
-        {props.recording === null ? null : (
-          <div className="rrweb-demo-metadata" aria-label="rrweb replay metadata">
-            <p className="rrweb-demo-pill">{formatEventCount(props.recording.events.length)}</p>
-            <p className="rrweb-demo-pill">{formatDuration(props.recording.durationMs)}</p>
-            <p className="rrweb-demo-pill">Keyboard controlled</p>
-          </div>
-        )}
+          {props.isDevelopmentMode ? (
+            <div className="flex flex-wrap gap-2 lg:justify-end">
+              <button type="button" className={primaryButtonClassName} onClick={props.onStartRecording} disabled={props.isRecording}>
+                Start recording
+              </button>
+
+              <button
+                type="button"
+                className={secondaryButtonClassName}
+                onClick={props.onStopRecording}
+                disabled={!props.isRecording}
+              >
+                Stop recording
+              </button>
+
+              <button
+                type="button"
+                className={secondaryButtonClassName}
+                onClick={props.onExportRecording}
+                disabled={props.recording === null || props.isRecording}
+              >
+                Export JSON
+              </button>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <p className="text-sm leading-6 text-muted-foreground" role="status">
+            {readStatusMessage(props.isDevelopmentMode, props.isRecording, props.recording)}
+          </p>
+
+          {props.recording === null ? null : (
+            <div className="flex flex-wrap gap-2" aria-label="rrweb replay metadata">
+              <p className="rounded-md border border-border bg-muted px-3 py-2 text-[0.72rem] uppercase tracking-[0.2em] text-muted-foreground">
+                {formatEventCount(props.recording.events.length)}
+              </p>
+              <p className="rounded-md border border-border bg-muted px-3 py-2 text-[0.72rem] uppercase tracking-[0.2em] text-muted-foreground">
+                {formatDuration(props.recording.durationMs)}
+              </p>
+              <p className="rounded-md border border-border bg-muted px-3 py-2 text-[0.72rem] uppercase tracking-[0.2em] text-muted-foreground">
+                Keyboard controlled
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="rrweb-player-shell">
+      <div className="overflow-hidden rounded-lg border border-border bg-background">
         {props.recording === null ? (
-          <div className="rrweb-placeholder">
-            <p className="card-body rrweb-placeholder__copy">
+          <div className="grid min-h-[420px] place-items-center bg-muted/40 px-6 py-10">
+            <p className="max-w-[42ch] text-center text-sm leading-7 text-muted-foreground">
               The player appears here after the initial recording loads or after you stop a new development capture.
             </p>
           </div>
         ) : (
-          <div ref={playerStageRef} className="rrweb-player-stage">
-            <div ref={playerRootRef} className="rrweb-player-root" data-testid="RrwebDemoPanel--player-root" />
-            <div className="rrweb-player-controls" data-testid="RrwebDemoPanel--controls">
+          <>
+            <div ref={playerStageRef} className="grid min-h-[420px] place-items-center overflow-hidden bg-muted/40 p-4 sm:p-6">
+              <div ref={playerRootRef} className="rrweb-player-root relative max-w-full" data-testid="RrwebDemoPanel--player-root" />
+            </div>
+            <div className="grid gap-3 border-t border-border bg-card px-4 py-3 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center" data-testid="RrwebDemoPanel--controls">
               <button
                 type="button"
-                className="rrweb-player-toggle"
+                className={secondaryButtonClassName}
                 aria-label={isPlaying ? "Pause replay" : "Play replay"}
                 onClick={handlePlaybackToggle}
               >
                 {isPlaying ? "Pause" : "Play"}
               </button>
               <input
-                className="rrweb-player-timeline"
+                className="h-2 w-full cursor-pointer accent-foreground"
                 aria-label="Replay timeline"
                 max={Math.max(totalTimeMs, 1)}
                 min={0}
@@ -319,11 +353,11 @@ export function RrwebDemoPanel(props: IRrwebDemoPanelProps): JSX.Element {
                 type="range"
                 value={Math.min(currentTimeMs, Math.max(totalTimeMs, 1))}
               />
-              <p className="rrweb-player-time">
+              <p className="text-sm tabular-nums text-muted-foreground lg:text-right">
                 {formatPlaybackTime(currentTimeMs)} / {formatPlaybackTime(totalTimeMs)}
               </p>
             </div>
-          </div>
+          </>
         )}
       </div>
     </section>

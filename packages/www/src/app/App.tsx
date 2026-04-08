@@ -122,21 +122,24 @@ export function App(props: IAppProps): JSX.Element {
   }, [themePreference]);
 
   return (
-    <main className="app-shell min-h-dvh bg-background text-foreground" data-testid="App">
-      <div className="app-frame">
-        <header className="app-topbar">
-          <div className="brand-lockup">
-            <p className="brand-lockup__eyebrow">devhost</p>
-            <p className="brand-lockup__caption text-muted-foreground">
-              Managed Caddy, routed hosts, source-aware devtools
+    <main className="relative min-h-dvh bg-background text-foreground" data-testid="App">
+      <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
+        <header className="flex flex-col gap-4 rounded-lg border border-border bg-card px-4 py-4 shadow-sm sm:px-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="grid gap-2">
+            <div className="flex flex-wrap items-center gap-2 text-[0.72rem] uppercase tracking-[0.28em] text-muted-foreground">
+              <span className="rounded-md border border-border bg-background px-2 py-1 text-foreground">devhost</span>
+              <span>Managed Caddy, routed hosts, source-aware devtools</span>
+            </div>
+            <p className="max-w-[52ch] text-sm leading-6 text-muted-foreground">
+              Switch themes, inspect the routed surface, and keep the entire demo inside one restrained operator shell.
             </p>
           </div>
 
-          <label className="theme-control" htmlFor="theme-preference">
-            <span className="theme-control__label">Theme</span>
+          <label className="grid gap-2 lg:min-w-[180px]" htmlFor="theme-preference">
+            <span className="text-[0.72rem] uppercase tracking-[0.28em] text-muted-foreground">Theme</span>
             <select
               id="theme-preference"
-              className="theme-control__select"
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
               value={themePreference}
               onChange={(event: ChangeEvent<HTMLSelectElement>): void => {
                 setThemePreference(parseThemePreference(event.currentTarget.value));
@@ -156,7 +159,7 @@ export function App(props: IAppProps): JSX.Element {
         <MarketingHeroSection launchCommands={marketingContent.launchCommands} />
 
         {shouldShowRrwebPanel ? (
-          <section className="demo-band" aria-label="Live replay demo">
+          <section aria-label="Live replay demo">
             <RrwebDemoPanel
               isDevelopmentMode={isDevelopmentMode}
               isRecording={isRecordingRrwebDemo}

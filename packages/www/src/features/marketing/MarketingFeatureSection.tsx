@@ -63,75 +63,101 @@ export function MarketingFeatureSection(props: IMarketingFeatureSectionProps): J
   }
 
   return (
-    <section className="feature-section" aria-labelledby="feature-section-title">
-      <div className="section-intro">
-        <p className="panel-kicker">What you are buying</p>
-        <h2 id="feature-section-title" className="section-title">
+    <section className="grid gap-4" aria-labelledby="feature-section-title">
+      <div className="grid gap-3">
+        <p className="text-[0.72rem] uppercase tracking-[0.28em] text-muted-foreground">What you are buying</p>
+        <h2 id="feature-section-title" className="max-w-[18ch] text-balance text-3xl font-medium leading-tight tracking-[-0.06em] text-foreground sm:text-4xl">
           A routed development surface, not another localhost wrapper.
         </h2>
-        <p className="section-body">
+        <p className="max-w-[72ch] text-sm leading-7 text-muted-foreground">
           The point is not to proxy everything. The point is to expose the right host, keep the stack honest, and
           put the debugging workflow where the page already lives.
         </p>
       </div>
 
-      <div className="feature-layout">
-        <div className="feature-tab-list" role="tablist" aria-label="Devhost product highlights" aria-orientation="vertical">
-          {props.featureHighlights.map((featureHighlight: IFeatureHighlight, featureIndex: number) => {
-            const isActive: boolean = featureHighlight.id === activeFeatureId;
-            const featurePanelId: string = createFeaturePanelId(featureHighlight.id);
-            const featureTabId: string = createFeatureTabId(featureHighlight.id);
+      <div className="grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)_280px]">
+        <div className="rounded-lg border border-border bg-card p-2 shadow-sm">
+          <div className="grid gap-2" role="tablist" aria-label="Devhost product highlights" aria-orientation="vertical">
+            {props.featureHighlights.map((featureHighlight: IFeatureHighlight, featureIndex: number) => {
+              const isActive: boolean = featureHighlight.id === activeFeatureId;
+              const featurePanelId: string = createFeaturePanelId(featureHighlight.id);
+              const featureTabId: string = createFeatureTabId(featureHighlight.id);
 
-            return (
-              <button
-                key={featureHighlight.id}
-                id={featureTabId}
-                ref={(element: HTMLButtonElement | null): void => {
-                  if (element === null) {
-                    featureTabRefs.current.delete(featureHighlight.id);
-                    return;
+              return (
+                <button
+                  key={featureHighlight.id}
+                  id={featureTabId}
+                  ref={(element: HTMLButtonElement | null): void => {
+                    if (element === null) {
+                      featureTabRefs.current.delete(featureHighlight.id);
+                      return;
+                    }
+
+                    featureTabRefs.current.set(featureHighlight.id, element);
+                  }}
+                  type="button"
+                  role="tab"
+                  className={
+                    isActive
+                      ? "flex w-full items-center justify-between rounded-md border border-border bg-primary px-3 py-3 text-left text-sm leading-5 text-primary-foreground shadow-sm"
+                      : "flex w-full items-center justify-between rounded-md border border-transparent px-3 py-3 text-left text-sm leading-5 text-muted-foreground transition hover:border-border hover:bg-muted hover:text-foreground"
                   }
-
-                  featureTabRefs.current.set(featureHighlight.id, element);
-                }}
-                type="button"
-                role="tab"
-                className="feature-button"
-                aria-controls={featurePanelId}
-                aria-selected={isActive}
-                tabIndex={isActive ? 0 : -1}
-                onClick={(): void => {
-                  setActiveFeatureId(featureHighlight.id);
-                }}
-                onKeyDown={(event: KeyboardEvent<HTMLButtonElement>): void => {
-                  handleFeatureTabKeyDown(event, featureIndex);
-                }}
-              >
-                {featureHighlight.kicker}
-              </button>
-            );
-          })}
+                  aria-controls={featurePanelId}
+                  aria-selected={isActive}
+                  tabIndex={isActive ? 0 : -1}
+                  onClick={(): void => {
+                    setActiveFeatureId(featureHighlight.id);
+                  }}
+                  onKeyDown={(event: KeyboardEvent<HTMLButtonElement>): void => {
+                    handleFeatureTabKeyDown(event, featureIndex);
+                  }}
+                >
+                  <span>{featureHighlight.kicker}</span>
+                  <span aria-hidden="true" className="text-[0.72rem] uppercase tracking-[0.22em] opacity-70">
+                    {String(featureIndex + 1).padStart(2, "0")}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <article id={activeFeaturePanelId} className="feature-detail" role="tabpanel" aria-labelledby={activeFeatureTabId}>
-          <p className="panel-kicker">{activeFeature.kicker}</p>
-          <h3 className="section-title">{activeFeature.title}</h3>
-          <p className="section-body">{activeFeature.body}</p>
-          {activeFeature.checklist.length > 0 ? (
-            <ul className="bullet-list">
-              {activeFeature.checklist.map((checklistItem: string) => {
-                return <li key={checklistItem}>{checklistItem}</li>;
-              })}
-            </ul>
-          ) : null}
+        <article
+          id={activeFeaturePanelId}
+          className="rounded-lg border border-border bg-card p-5 shadow-sm sm:p-6"
+          role="tabpanel"
+          aria-labelledby={activeFeatureTabId}
+        >
+          <div className="grid gap-4">
+            <p className="text-[0.72rem] uppercase tracking-[0.28em] text-muted-foreground">{activeFeature.kicker}</p>
+            <h3 className="max-w-[20ch] text-balance text-2xl font-medium leading-tight tracking-[-0.05em] text-card-foreground sm:text-3xl">
+              {activeFeature.title}
+            </h3>
+            <p className="max-w-[72ch] text-sm leading-7 text-muted-foreground">{activeFeature.body}</p>
+            {activeFeature.checklist.length > 0 ? (
+              <ul className="grid gap-2">
+                {activeFeature.checklist.map((checklistItem: string) => {
+                  return (
+                    <li key={checklistItem} className="rounded-md border border-border bg-muted px-3 py-3 text-sm leading-6 text-muted-foreground">
+                      {checklistItem}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+          </div>
         </article>
 
-        <aside className="proof-card feature-proof-card" aria-labelledby="feature-proof-card-title">
-          <p className="panel-kicker">{featureSectionProofCard.eyebrow}</p>
-          <h3 id="feature-proof-card-title" className="proof-card__title">
-            {featureSectionProofCard.title}
-          </h3>
-          <p className="proof-card__body">{featureSectionProofCard.body}</p>
+        <aside className="rounded-lg border border-border bg-card p-5 shadow-sm" aria-labelledby="feature-proof-card-title">
+          <div className="grid gap-3">
+            <p className="text-[0.72rem] uppercase tracking-[0.28em] text-muted-foreground">
+              {featureSectionProofCard.eyebrow}
+            </p>
+            <h3 id="feature-proof-card-title" className="text-2xl font-medium leading-tight tracking-[-0.05em] text-card-foreground">
+              {featureSectionProofCard.title}
+            </h3>
+            <p className="text-sm leading-7 text-muted-foreground">{featureSectionProofCard.body}</p>
+          </div>
         </aside>
       </div>
     </section>
