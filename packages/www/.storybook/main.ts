@@ -1,3 +1,4 @@
+import tailwindcss from "@tailwindcss/vite";
 import type { StorybookConfig } from "@storybook/react-vite";
 import type { UserConfig } from "vite";
 
@@ -15,6 +16,7 @@ const config: StorybookConfig = {
 
     return {
       ...viteConfig,
+      plugins: [...(viteConfig.plugins ?? []), tailwindcss()],
       optimizeDeps: {
         ...viteConfig.optimizeDeps,
         include: [...new Set([...existingIncludedDependencyIds, ...optimizedDependencyIds])],

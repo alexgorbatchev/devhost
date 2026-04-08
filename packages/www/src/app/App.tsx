@@ -15,7 +15,6 @@ import {
   type IRrwebDemoRecording,
   type IRrwebDemoRecordingController,
 } from "../features/rrweb";
-import "./App.css";
 
 type ThemePreference = "system" | "light" | "dark";
 
@@ -123,12 +122,14 @@ export function App(props: IAppProps): JSX.Element {
   }, [themePreference]);
 
   return (
-    <main className="app-shell" data-testid="App">
+    <main className="app-shell min-h-dvh bg-background text-foreground" data-testid="App">
       <div className="app-frame">
         <header className="app-topbar">
           <div className="brand-lockup">
             <p className="brand-lockup__eyebrow">devhost</p>
-            <p className="brand-lockup__caption">Managed Caddy, routed hosts, source-aware devtools</p>
+            <p className="brand-lockup__caption text-muted-foreground">
+              Managed Caddy, routed hosts, source-aware devtools
+            </p>
           </div>
 
           <label className="theme-control" htmlFor="theme-preference">

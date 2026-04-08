@@ -1,5 +1,7 @@
 import type { Preview } from "@storybook/react-vite";
 
+import "../src/app/App.css";
+
 const themeStorageKey: string = "devhost-test-theme";
 
 const preview: Preview = {
