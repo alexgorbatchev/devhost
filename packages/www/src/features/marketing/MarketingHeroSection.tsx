@@ -1,7 +1,6 @@
-import React, { type JSX } from "react";
+import { type JSX } from "react";
 
 export interface IMarketingHeroSectionProps {
-  launchCommands: string[];
   themeControl: JSX.Element;
 }
 
@@ -25,10 +24,16 @@ export function MarketingHeroSection(props: IMarketingHeroSectionProps): JSX.Ele
         </div>
       </div>
 
-      <aside className="rounded-lg border border-border-subtle bg-card p-4 shadow-[var(--shadow-soft)] sm:p-5" aria-labelledby="hero-panel-title">
+      <aside
+        className="rounded-lg border border-border-subtle bg-card p-4 shadow-[var(--shadow-soft)] sm:p-5"
+        aria-labelledby="hero-panel-title"
+      >
         <div className="grid gap-4">
           <div className="grid gap-3">
-            <h2 id="hero-panel-title" className="text-2xl font-medium leading-tight tracking-[-0.06em] text-card-foreground sm:text-3xl">
+            <h2
+              id="hero-panel-title"
+              className="text-2xl font-medium leading-tight tracking-[-0.06em] text-card-foreground sm:text-3xl"
+            >
               From clean boot to routed app in two commands.
             </h2>
             <p className="text-sm leading-6 text-muted-foreground">
@@ -37,16 +42,12 @@ export function MarketingHeroSection(props: IMarketingHeroSectionProps): JSX.Ele
           </div>
 
           <div className="overflow-hidden rounded-lg border border-border-subtle bg-terminal text-terminal-foreground shadow-[var(--shadow-soft)]">
-            {props.launchCommands.map((command: string) => {
-              return (
-                <pre
-                  key={command}
-                  className="overflow-x-auto border-b border-border px-4 py-4 text-[0.95rem] leading-6 text-terminal-foreground last:border-b-0"
-                >
-                  <code>{command}</code>
-                </pre>
-              );
-            })}
+            <pre className="overflow-x-auto border-b border-border px-4 py-4 text-[0.95rem] leading-6 text-terminal-foreground">
+              <code>bun devhost caddy start</code>
+            </pre>
+            <pre className="overflow-x-auto px-4 py-4 text-[0.95rem] leading-6 text-terminal-foreground">
+              <code>bun devhost --manifest ./test/devhost.toml</code>
+            </pre>
           </div>
 
           <ul className="grid gap-2 text-sm leading-6 text-muted-foreground">
