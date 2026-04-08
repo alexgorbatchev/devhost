@@ -1,6 +1,6 @@
 import { type JSX } from "react";
 
-export function MarketingProofSection(): JSX.Element {
+export function ProofSection(): JSX.Element {
   return (
     <section className="grid gap-4" aria-labelledby="proof-section-title">
       <div className="grid gap-3">

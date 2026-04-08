@@ -1,10 +1,10 @@
 import { type JSX } from "react";
 
-export interface IMarketingHeroSectionProps {
+export interface IHeroSectionProps {
   themeControl: JSX.Element;
 }
 
-export function MarketingHeroSection(props: IMarketingHeroSectionProps): JSX.Element {
+export function HeroSection(props: IHeroSectionProps): JSX.Element {
   return (
     <section className="grid gap-4" aria-labelledby="hero-title">
       <div className="rounded-lg border border-border-subtle bg-card p-6 shadow-[var(--shadow-raised)] sm:p-8">

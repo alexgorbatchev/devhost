@@ -4,14 +4,14 @@ import { FeatureReplayPanel, loadRrwebDemoRecording, type IRrwebDemoRecording } 
 
 type ReplayLoadStatus = "error" | "loading" | "missing" | "ready";
 
-export interface IMarketingFeatureReplayProps {
+export interface IFeatureReplayProps {
   demoRecordingUrl: string;
   featureId: string;
   kicker: string;
   title: string;
 }
 
-export function MarketingFeatureReplay(props: IMarketingFeatureReplayProps): JSX.Element {
+export function FeatureReplay(props: IFeatureReplayProps): JSX.Element {
   const recordingsByUrlRef = useRef<Map<string, IRrwebDemoRecording | null>>(new Map());
   const [recording, setRecording] = useState<IRrwebDemoRecording | null>(null);
   const [status, setStatus] = useState<ReplayLoadStatus>("loading");

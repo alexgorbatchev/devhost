@@ -1,4 +1,4 @@
-export { MarketingFeatureSection } from "./MarketingFeatureSection";
-export { MarketingHeroSection } from "./MarketingHeroSection";
-export { MarketingProofSection } from "./MarketingProofSection";
-export { MarketingWorkflowSection } from "./MarketingWorkflowSection";
+export { FeatureSection } from "./FeatureSection";
+export { HeroSection } from "./HeroSection";
+export { ProofSection } from "./ProofSection";
+export { WorkflowSection } from "./WorkflowSection";

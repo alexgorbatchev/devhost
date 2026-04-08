@@ -1,6 +1,6 @@
 import { type JSX } from "react";
 
-export function MarketingWorkflowSection(): JSX.Element {
+export function WorkflowSection(): JSX.Element {
   return (
     <section className="grid gap-4" aria-labelledby="workflow-section-title">
       <div className="grid gap-3">

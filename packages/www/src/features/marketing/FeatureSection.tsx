@@ -1,12 +1,12 @@
 import { useRef, useState, type JSX, type KeyboardEvent } from "react";
 
-import { MarketingFeatureReplay } from "./MarketingFeatureReplay";
+import { FeatureReplay } from "./FeatureReplay";
 
 type FeatureHighlightId = "annotation" | "source-jumps" | "sessions" | "overlay" | "routing-health";
 
 const featureTabOrder: FeatureHighlightId[] = ["annotation", "source-jumps", "sessions", "overlay", "routing-health"];
 
-export function MarketingFeatureSection(): JSX.Element {
+export function FeatureSection(): JSX.Element {
   const [activeFeatureId, setActiveFeatureId] = useState<FeatureHighlightId>("annotation");
   const featureTabRefs = useRef<Map<FeatureHighlightId, HTMLButtonElement>>(new Map());
   const activeFeaturePanelId: string = createFeaturePanelId(activeFeatureId);
@@ -275,7 +275,7 @@ function renderActiveFeature(activeFeatureId: FeatureHighlightId): JSX.Element {
               Start a coding session from the page itself instead of rewriting the bug report elsewhere.
             </li>
           </ul>
-          <MarketingFeatureReplay
+          <FeatureReplay
             demoRecordingUrl="/recordings/marketing/annotation.json"
             featureId="annotation"
             kicker="Annotation handoff"
@@ -304,7 +304,7 @@ function renderActiveFeature(activeFeatureId: FeatureHighlightId): JSX.Element {
               Use the inspection loop to move from page evidence into code without re-establishing context.
             </li>
           </ul>
-          <MarketingFeatureReplay
+          <FeatureReplay
             demoRecordingUrl="/recordings/marketing/source-jumps.json"
             featureId="source-jumps"
             kicker="Source navigation"
@@ -334,7 +334,7 @@ function renderActiveFeature(activeFeatureId: FeatureHighlightId): JSX.Element {
               Use the session tray as persistent working memory while you inspect the page.
             </li>
           </ul>
-          <MarketingFeatureReplay
+          <FeatureReplay
             demoRecordingUrl="/recordings/marketing/sessions.json"
             featureId="sessions"
             kicker="Terminal sessions"
@@ -364,7 +364,7 @@ function renderActiveFeature(activeFeatureId: FeatureHighlightId): JSX.Element {
               Preserve visual isolation between the app and the overlay runtime.
             </li>
           </ul>
-          <MarketingFeatureReplay
+          <FeatureReplay
             demoRecordingUrl="/recordings/marketing/overlay.json"
             featureId="overlay"
             kicker="Devtools overlay"
@@ -394,7 +394,7 @@ function renderActiveFeature(activeFeatureId: FeatureHighlightId): JSX.Element {
               Expose the hostname only after the service is actually healthy.
             </li>
           </ul>
-          <MarketingFeatureReplay
+          <FeatureReplay
             demoRecordingUrl="/recordings/marketing/routing-health.json"
             featureId="routing-health"
             kicker="Routing + health"

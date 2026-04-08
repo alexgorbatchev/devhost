@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type ChangeEvent, type JSX } from "react";
 
 import {
-  MarketingFeatureSection,
-  MarketingHeroSection,
-  MarketingProofSection,
-  MarketingWorkflowSection,
+  FeatureSection,
+  HeroSection,
+  ProofSection,
+  WorkflowSection,
 } from "../features/marketing";
 import {
   createRrwebDemoRecording,
@@ -116,7 +116,7 @@ export function App(): JSX.Element {
   return (
     <main className="app-shell relative min-h-dvh bg-background text-foreground" data-testid="App">
       <div className="app-frame mx-auto flex w-full max-w-[1180px] flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
-        <MarketingHeroSection
+        <HeroSection
           themeControl={
             <label className="grid gap-2" htmlFor="theme-preference">
               <span className="text-[0.72rem] uppercase tracking-[0.28em] text-muted-foreground">Theme</span>
@@ -140,11 +140,11 @@ export function App(): JSX.Element {
           }
         />
         <div className="rounded-lg border border-border-subtle bg-surface-subtle px-4 py-5 shadow-[var(--shadow-soft)] sm:px-5 sm:py-6">
-          <MarketingFeatureSection />
+          <FeatureSection />
         </div>
-        <MarketingWorkflowSection />
+        <WorkflowSection />
         <div className="rounded-lg border border-border-subtle bg-surface-subtle px-4 py-5 shadow-[var(--shadow-soft)] sm:px-5 sm:py-6">
-          <MarketingProofSection />
+          <ProofSection />
         </div>
       </div>
       {isDevelopmentMode ? (
