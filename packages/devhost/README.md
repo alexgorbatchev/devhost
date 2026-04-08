@@ -36,12 +36,24 @@ host = "api.foo.localhost"
 health = { http = "http://127.0.0.1:4000/healthz" }
 ```
 
-Then:
+Most projects should wrap `devhost` in the package's `package.json` so you can run it through the usual dev script from the manifest directory:
+
+```json
+{
+  "scripts": {
+    "dev": "devhost"
+  }
+}
+```
+
+Then run your usual package-manager dev command from that package directory:
 
 ```bash
-$ devhost
+$ npm run dev
 $ open https://foo.localhost
 ```
+
+(`pnpm dev`, `yarn dev`, and `bun run dev` work the same way when they invoke the same script.)
 
 > [!IMPORTANT]
 > `devhost` manages HTTPS routing through Caddy, not DNS.
@@ -56,21 +68,11 @@ $ open https://foo.localhost
 
 `devhost`:
 
-- starts local child processes
-- injects `PORT` and `DEVHOST_*` environment variables
-- validates and loads `devhost.toml` with Bun TOML parsing plus Zod v4 validation
-- reserves public hosts before starting routed services
-- waits for health checks before enabling routes
-- reloads a managed Caddy instance when routes change
-- stores generated Caddy config under `DEVHOST_STATE_DIR`, `XDG_STATE_HOME/devhost`, or `~/.local/state/devhost/caddy`
-- uses wildcard listeners on macOS so rootless Caddy can open `:443`
-- keeps loopback-only binding on non-macOS platforms
-- prefixes its own logs with the manifest `name` in manifest mode, falling back to `[devhost]`
-- prefixes child service logs with `[service-name]`
-- optionally injects a small devtools UI into HTML document navigations
-- includes an Alt-held annotation mode for selecting multiple page elements, drafting a comment, and starting a Pi session from that draft
-- exposes devhost control routes under `/__devhost__/*`
-- includes a websocket status stream when devtools control routing is enabled
+- routes local apps onto HTTPS hostnames through Caddy
+- starts local child processes from `devhost.toml`
+- injects runtime context such as `PORT` and `DEVHOST_*` environment variables
+- validates manifests, reserves public hosts, and waits for health checks before routing traffic
+- optionally injects a devtools UI for annotations, source navigation, and browser-hosted Neovim
 
 ## Requirements
 
@@ -109,41 +111,9 @@ The generated Caddy config uses these defaults:
 - listener binding on macOS: wildcard listeners, because macOS denies rootless loopback-specific binds on `:443`
 - listener binding on non-macOS: loopback only via Caddy `default_bind 127.0.0.1 [::1]`
 
-### Start a stack
+When `[caddy].autostop = true`, `devhost` takes ownership of the managed Caddy process for the stack lifetime, stops it on exit, and blocks other `devhost` stacks from taking ownership until the owning stack exits.
 
-```bash
-devhost
-```
-
-or:
-
-```bash
-devhost --manifest ../test/devhost.toml
-```
-
-## How `devhost` works
-
-`devhost`:
-
-- discovers `devhost.toml` upward from the current directory, unless `--manifest` is provided
-- parses TOML and validates schema and semantics
-- resolves `port = "auto"` before spawning children
-- starts managed Caddy automatically when `[caddy].autostop = true`, otherwise requires the managed Caddy admin API to already be available
-  - this manages the process lifecycle only; it does **not** auto-download the Caddy binary
-- can take ownership of managed Caddy for the lifetime of the stack when `[caddy].autostop = true`
-- reserves every public host before starting any service
-- starts services in dependency order
-- prefixes service logs with `[service-name]`
-- injects Alt + right-click React component-source navigation for routed pages when devtools are enabled
-- opens component sources through the configured editor protocol and also copies the resolved source path to the clipboard when the browser allows it
-- starts annotation sessions with the configured manifest agent, or the Pi adapter when `[agent]` is omitted
-- waits for each service health check before routing it
-- removes routes and reservations on shutdown or startup failure
-- stops managed Caddy on exit when `[caddy].autostop = true`
-
-When `[caddy].autostop = true`, `devhost` blocks other `devhost` stacks from starting until the owning stack exits.
-
-## Platform caveat
+### Platform caveats
 
 On macOS, this now starts rootlessly by avoiding loopback-specific listener binding.
 That fixes startup, but it also means the managed Caddy instance is not loopback-only on that platform.
@@ -151,6 +121,22 @@ If you need strict loopback-only HTTPS on privileged ports, the correct solution
 
 On non-macOS platforms, opening HTTPS on `:443` still requires privileged-port setup outside `devhost`.
 `devhost` does not configure `sudo`, `setcap`, `authbind`, or firewall redirection for you.
+
+## Stack lifecycle
+
+When you run `devhost`, it:
+
+1. discovers `devhost.toml` upward from the current directory, unless `--manifest` is provided
+2. parses TOML and validates schema and semantics
+3. resolves `port = "auto"` before spawning children
+4. starts managed Caddy automatically when `[caddy].autostop = true`; otherwise the managed Caddy admin API must already be available
+5. reserves every public host before starting any service
+6. starts services in dependency order
+7. waits for each service health check before routing it
+8. removes routes and reservations on shutdown or startup failure
+9. stops managed Caddy on exit when `[caddy].autostop = true`
+
+`devhost`-owned logs use the manifest `name` when available and fall back to `[devhost]`. Child service logs remain prefixed with `[service-name]`.
 
 ## `devhost.toml`
 
@@ -199,7 +185,7 @@ The remaining variables are context metadata and must not be used as socket bind
 - `DEVHOST_MANIFEST_PATH`
   - the absolute path to the resolved `devhost.toml`
 
-## Devtools injection
+## Devtools
 
 When `devtools` are enabled, routed traffic is split like this:
 
@@ -207,11 +193,11 @@ When `devtools` are enabled, routed traffic is split like this:
 - `Sec-Fetch-Dest: document` requests → document injector server
 - everything else → app directly
 
-That keeps assets, HMR, fetches, SSE, and WebSockets off the injection path.
+That keeps assets, HMR, fetches, SSE, and WebSockets off the injection path. The control server also owns the websocket status stream used by the injected UI.
 
 The injected `devtools` UI mounts inside its own Shadow DOM container so its runtime styles do not leak into the host page.
 
-### AI Annotations
+### AI annotations
 
 - hold `Alt` (`Option` on macOS) to enter annotation selection mode
 - click one or more page elements while holding `Alt` to place numbered markers
