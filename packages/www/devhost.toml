@@ -1,4 +1,4 @@
-name = "hello-test-app"
+name = "devhost-www"
 
 [caddy]
 autostop = false
@@ -15,17 +15,14 @@ position = "right"
 enabled = true
 position = "top-right"
 
-[services.hello]
+[services.devhost-www]
 primary = true
 command = "bun dev"
 cwd = "."
 port = 3200
-#host = "hello.xcv.lol"
-host = "hello.localhost"
+host = "devhost.localhost"
 
 [services.logs]
 command = "bun log-demo"
 cwd = "."
-
-[services.logs.health]
-process = true
+health = { process = true }
