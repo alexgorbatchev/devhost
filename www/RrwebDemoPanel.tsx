@@ -1,5 +1,5 @@
 import { Replayer } from "@rrweb/all";
-import { useEffect, useRef, useState, type ChangeEvent, type JSX } from "react";
+import React, { useEffect, useRef, useState, type ChangeEvent, type JSX } from "react";
 
 import type { IRrwebDemoRecording } from "./createRrwebDemoRecording";
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type JSX, type KeyboardEvent } from "react";
+import React, { useEffect, useRef, useState, type ChangeEvent, type JSX, type KeyboardEvent } from "react";
 
 import "./App.css";
 import { RrwebDemoPanel } from "./RrwebDemoPanel";
