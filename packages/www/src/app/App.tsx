@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent, type JSX } from "react";
 
+import { Surface } from "../components/ui";
 import {
   FeatureSection,
   HeroSection,
@@ -139,13 +140,13 @@ export function App(): JSX.Element {
             </label>
           }
         />
-        <div className="rounded-lg border border-border-subtle bg-surface-subtle px-4 py-5 shadow-[var(--shadow-soft)] sm:px-5 sm:py-6">
+        <Surface className="px-4 py-5 sm:px-5 sm:py-6" tone="subtle">
           <FeatureSection />
-        </div>
+        </Surface>
         <WorkflowSection />
-        <div className="rounded-lg border border-border-subtle bg-surface-subtle px-4 py-5 shadow-[var(--shadow-soft)] sm:px-5 sm:py-6">
+        <Surface className="px-4 py-5 sm:px-5 sm:py-6" tone="subtle">
           <ProofSection />
-        </div>
+        </Surface>
       </div>
       {isDevelopmentMode ? (
         <RrwebDemoPanel

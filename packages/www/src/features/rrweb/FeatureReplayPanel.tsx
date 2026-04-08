@@ -1,13 +1,12 @@
 import { Replayer } from "@rrweb/all";
 import { useEffect, useRef, useState, type ChangeEvent, type JSX } from "react";
 
+import { Button } from "../../components/ui";
 import type { IRrwebDemoRecording } from "./types";
 
 const defaultReplayViewportHeight: number = 720;
 const defaultReplayViewportWidth: number = 1280;
 const playerPaddingPx: number = 32;
-const secondaryButtonClassName: string =
-  "inline-flex h-10 items-center justify-center rounded-md border border-border-subtle bg-card px-4 text-sm text-foreground shadow-[var(--shadow-soft)] transition hover:border-border-strong hover:bg-surface-subtle disabled:cursor-not-allowed disabled:opacity-50";
 
 interface IReplayViewportSize {
   height: number;
@@ -215,7 +214,13 @@ export function FeatureReplayPanel(props: IFeatureReplayPanelProps): JSX.Element
         }
       >
         {props.recording === null ? (
-          <div className={isFullscreen ? "grid h-full min-h-0 place-items-center bg-surface-subtle px-6 py-10" : "grid min-h-[420px] place-items-center bg-surface-subtle px-6 py-10"}>
+          <div
+            className={
+              isFullscreen
+                ? "grid h-full min-h-0 place-items-center bg-surface-subtle px-6 py-10"
+                : "grid min-h-[420px] place-items-center bg-surface-subtle px-6 py-10"
+            }
+          >
             <p className="max-w-[42ch] text-center text-sm leading-7 text-muted-foreground">{props.emptyMessage}</p>
           </div>
         ) : (
@@ -228,7 +233,11 @@ export function FeatureReplayPanel(props: IFeatureReplayPanelProps): JSX.Element
                   : "grid min-h-[420px] place-items-center overflow-hidden bg-surface-subtle p-4 sm:p-6"
               }
             >
-              <div ref={playerRootRef} className="rrweb-player-root relative max-w-full" data-testid="FeatureReplayPanel--player-root" />
+              <div
+                ref={playerRootRef}
+                className="rrweb-player-root relative max-w-full"
+                data-testid="FeatureReplayPanel--player-root"
+              />
             </div>
             <div
               className={
@@ -238,14 +247,9 @@ export function FeatureReplayPanel(props: IFeatureReplayPanelProps): JSX.Element
               }
               data-testid="FeatureReplayPanel--controls"
             >
-              <button
-                type="button"
-                className={secondaryButtonClassName}
-                aria-label={isPlaying ? "Pause replay" : "Play replay"}
-                onClick={handlePlaybackToggle}
-              >
+              <Button aria-label={isPlaying ? "Pause replay" : "Play replay"} onClick={handlePlaybackToggle}>
                 {isPlaying ? "Pause" : "Play"}
-              </button>
+              </Button>
               <input
                 className="h-2 w-full cursor-pointer accent-primary"
                 aria-label="Replay timeline"

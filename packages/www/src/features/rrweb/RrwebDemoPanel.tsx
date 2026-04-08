@@ -1,13 +1,10 @@
 import { useEffect, type JSX } from "react";
 
+import { Button } from "../../components/ui";
 import { FeatureReplayPanel } from "./FeatureReplayPanel";
 import type { IRrwebDemoRecording } from "./types";
 
 const startShortcutLabel: string = "Alt+Shift+A";
-const primaryButtonClassName: string =
-  "inline-flex h-11 items-center justify-center rounded-md border border-transparent bg-primary px-4 text-sm font-medium text-primary-foreground shadow-[var(--shadow-soft)] transition hover:-translate-y-px hover:shadow-[var(--shadow-raised)] disabled:cursor-not-allowed disabled:opacity-50";
-const secondaryButtonClassName: string =
-  "inline-flex h-11 items-center justify-center rounded-md border border-border-subtle bg-card px-4 text-sm text-foreground shadow-[var(--shadow-soft)] transition hover:border-border-strong hover:bg-surface-subtle disabled:cursor-not-allowed disabled:opacity-50";
 
 export interface IRrwebDemoPanelProps {
   isDevelopmentMode: boolean;
@@ -71,20 +68,15 @@ export function RrwebDemoPanel(props: IRrwebDemoPanelProps): JSX.Element {
           data-testid="RrwebDemoPanel"
         >
           {shouldShowStartButton ? (
-            <button
-              type="button"
-              className={primaryButtonClassName}
-              aria-keyshortcuts={startShortcutLabel}
-              onClick={props.onStartRecording}
-            >
+            <Button aria-keyshortcuts={startShortcutLabel} size="large" variant="primary" onClick={props.onStartRecording}>
               Start recording · {startShortcutLabel}
-            </button>
+            </Button>
           ) : null}
 
           {shouldShowExportButton ? (
-            <button type="button" className={secondaryButtonClassName} onClick={props.onExportRecording}>
+            <Button size="large" onClick={props.onExportRecording}>
               Export JSON
-            </button>
+            </Button>
           ) : null}
         </section>
       ) : null}

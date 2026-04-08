@@ -1,13 +1,26 @@
 import { type JSX } from "react";
 
+import { InsetList, Surface, TerminalSnippet } from "../../components/ui";
+
 export interface IHeroSectionProps {
   themeControl: JSX.Element;
 }
 
+const heroChecklistItems: readonly string[] = [
+  "Start the managed edge once, then let devhost own route registration.",
+  "Run the manifest and let health checks decide when a hostname becomes real.",
+  "Open the routed page with devtools that understand the stack around it.",
+];
+
+const heroCommandSnippets: readonly string[] = [
+  "bun devhost caddy start",
+  "bun devhost --manifest ./test/devhost.toml",
+];
+
 export function HeroSection(props: IHeroSectionProps): JSX.Element {
   return (
     <section className="grid gap-4" aria-labelledby="hero-title">
-      <div className="rounded-lg border border-border-subtle bg-card p-6 shadow-[var(--shadow-raised)] sm:p-8">
+      <Surface className="p-6 sm:p-8" shadow="raised">
         <div className="grid gap-6">
           <div className="flex justify-end">
             <div className="w-full max-w-[180px]">{props.themeControl}</div>
@@ -22,12 +35,9 @@ export function HeroSection(props: IHeroSectionProps): JSX.Element {
             </h1>
           </div>
         </div>
-      </div>
+      </Surface>
 
-      <aside
-        className="rounded-lg border border-border-subtle bg-card p-4 shadow-[var(--shadow-soft)] sm:p-5"
-        aria-labelledby="hero-panel-title"
-      >
+      <Surface element="aside" className="p-4 sm:p-5" aria-labelledby="hero-panel-title">
         <div className="grid gap-4">
           <div className="grid gap-3">
             <h2
@@ -41,28 +51,10 @@ export function HeroSection(props: IHeroSectionProps): JSX.Element {
             </p>
           </div>
 
-          <div className="overflow-hidden rounded-lg border border-border-subtle bg-terminal text-terminal-foreground shadow-[var(--shadow-soft)]">
-            <pre className="overflow-x-auto border-b border-border px-4 py-4 text-[0.95rem] leading-6 text-terminal-foreground">
-              <code>bun devhost caddy start</code>
-            </pre>
-            <pre className="overflow-x-auto px-4 py-4 text-[0.95rem] leading-6 text-terminal-foreground">
-              <code>bun devhost --manifest ./test/devhost.toml</code>
-            </pre>
-          </div>
-
-          <ul className="grid gap-2 text-sm leading-6 text-muted-foreground">
-            <li className="rounded-md border border-border-subtle bg-surface-subtle px-3 py-3">
-              Start the managed edge once, then let devhost own route registration.
-            </li>
-            <li className="rounded-md border border-border-subtle bg-surface-subtle px-3 py-3">
-              Run the manifest and let health checks decide when a hostname becomes real.
-            </li>
-            <li className="rounded-md border border-border-subtle bg-surface-subtle px-3 py-3">
-              Open the routed page with devtools that understand the stack around it.
-            </li>
-          </ul>
+          <TerminalSnippet snippets={heroCommandSnippets} />
+          <InsetList items={heroChecklistItems} />
         </div>
-      </aside>
+      </Surface>
     </section>
   );
 }
