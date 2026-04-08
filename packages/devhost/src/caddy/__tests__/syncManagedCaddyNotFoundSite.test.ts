@@ -91,9 +91,12 @@ describe("syncManagedCaddyNotFoundSite", () => {
     expect(pageText).toContain('href="https://api.localhost/v1"');
     expect(pageText).toContain('href="https://hello.localhost/"');
     expect(pageText).toContain('href="https://legacy.localhost/"');
+    expect(pageText).toContain('<span class="devhost-not-found__route">api.localhost</span>');
+    expect(pageText).toContain('<span class="devhost-not-found__route">hello.localhost</span>');
+    expect(pageText).toContain('<span class="devhost-not-found__route">legacy.localhost</span>');
     expect(pageText).not.toContain("pending.localhost");
-    expect(pageText.indexOf("api.localhost/v1")).toBeLessThan(pageText.indexOf("hello.localhost/"));
-    expect(pageText.indexOf("hello.localhost/")).toBeLessThan(pageText.indexOf("legacy.localhost/"));
+    expect(pageText.indexOf("api.localhost</span>")).toBeLessThan(pageText.indexOf("hello.localhost</span>"));
+    expect(pageText.indexOf("hello.localhost</span>")).toBeLessThan(pageText.indexOf("legacy.localhost</span>"));
     expect(stylesheetText).toBe(managedCaddyNotFoundPageCss);
   });
 
@@ -109,6 +112,6 @@ describe("syncManagedCaddyNotFoundSite", () => {
 
     const pageText: string = await readFile(sitePaths.pagePath, "utf8");
 
-    expect(pageText).toContain("No devhost routes are active right now.");
+    expect(pageText).toContain("No devhost hostnames are active right now.");
   });
 });

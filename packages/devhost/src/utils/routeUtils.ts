@@ -171,7 +171,12 @@ export async function activateRoute(
   manifestPath: string,
   routesDirectoryPath: string,
 ): Promise<void> {
-  const routeRegistrationPath: string = getRouteRegistrationPath(options.serviceName, options.host, routesDirectoryPath);
+  const routeRegistrationPath: string = getRouteRegistrationPath(
+    options.serviceName,
+    options.host,
+    options.path,
+    routesDirectoryPath,
+  );
 
   try {
     await writeFile(routeRegistrationPath, createRouteRegistrationText(options, manifestPath), "utf8");
@@ -189,10 +194,16 @@ export async function activateRoute(
 export async function unregisterRoute(
   serviceName: string,
   host: string,
+  path: string,
   manifestPath: string,
   registrationsDirectoryPath: string,
 ): Promise<void> {
-  const registrationPath: string = getRouteRegistrationPath(serviceName, host, getRoutesDirectoryPath(registrationsDirectoryPath));
+  const registrationPath: string = getRouteRegistrationPath(
+    serviceName,
+    host,
+    path,
+    getRoutesDirectoryPath(registrationsDirectoryPath),
+  );
   const routesDirectoryPath: string = getRoutesDirectoryPath(registrationsDirectoryPath);
 
   try {
@@ -242,8 +253,11 @@ function getHostClaimsDirectoryPath(registrationsDirectoryPath: string): string 
   return join(getRoutesDirectoryPath(registrationsDirectoryPath), ".host-claims");
 }
 
-function getRouteRegistrationPath(serviceName: string, host: string, routesDirectoryPath: string): string {
-  return join(getRegistrationsDirectoryPath(routesDirectoryPath), `${encodePathSegment(host)}_${serviceName}.json`);
+function getRouteRegistrationPath(serviceName: string, host: string, path: string, routesDirectoryPath: string): string {
+  return join(
+    getRegistrationsDirectoryPath(routesDirectoryPath),
+    `${encodePathSegment(host)}_${serviceName}_${encodeRoutePathSegment(normalizeRoutePath(path))}.json`,
+  );
 }
 
 function getHostRoutePath(host: string, routesDirectoryPath: string): string {
@@ -260,6 +274,10 @@ function getRoutesDirectoryPath(registrationsDirectoryPath: string): string {
 
 function encodePathSegment(value: string): string {
   return value.replaceAll(":", "_");
+}
+
+function encodeRoutePathSegment(path: string): string {
+  return Buffer.from(path).toString("hex");
 }
 
 function createHostClaimText(host: string, manifestPath: string): string {

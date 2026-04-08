@@ -65,10 +65,11 @@ $ open https://foo.localhost
 
 `devhost`:
 
-- routes local apps onto HTTPS hostnames through Caddy
+- routes local apps onto HTTPS hostnames through one shared managed Caddy instance
 - starts local child processes from `devhost.toml`
 - injects runtime context such as `PORT` and `DEVHOST_*` environment variables
-- validates manifests, reserves public hosts, and waits for health checks before routing traffic
+- validates manifests, reserves public hosts, reserves fixed bind ports, and waits for health checks before routing traffic
+- allocates `port = "auto"` best-effort and retries on clear bind-collision startup failures
 - optionally injects a devtools UI for annotations, source navigation, and browser-hosted Neovim
 
 ## Requirements
@@ -112,9 +113,21 @@ The generated Caddy config uses these defaults:
 - admin API: `127.0.0.1:20193` unless `DEVHOST_CADDY_ADMIN_ADDRESS` is set
 - listener binding on macOS: wildcard listeners, because macOS denies rootless loopback-specific binds on `:443`
 - listener binding on non-macOS: loopback only via Caddy `default_bind 127.0.0.1 [::1]`
-- unmatched hostnames: a generated 404 page listing the currently active devhost routes as HTTPS links
+- unmatched hostnames: a generated 404 page listing the currently active devhost hostnames as HTTPS links
 
 Managed Caddy lifecycle is shared and manual. `devhost` stack startup requires the managed Caddy admin API to already be available.
+
+### Shared multi-stack behavior
+
+Multiple projects can run against the same managed Caddy instance at the same time.
+
+The routing contract is strict:
+
+- hostname ownership is exclusive across projects
+- one project cannot claim a hostname that is already owned by another live devhost process
+- one manifest may mount multiple services under the same hostname on distinct paths
+- fixed numeric bind ports are claimed globally across devhost processes before service spawn
+- `port = "auto"` remains best-effort in v1; devhost retries on clear bind collisions, but it does not provide a cross-process global auto-port allocator
 
 ### Platform caveats
 
@@ -133,10 +146,11 @@ When you run `devhost`, it:
 2. parses TOML and validates schema and semantics
 3. resolves `port = "auto"` before spawning children
 4. requires the managed Caddy admin API to already be available
-5. reserves every public host before starting any service
-6. starts services in dependency order
-7. waits for each service health check before routing it
-8. removes routes and reservations on shutdown or startup failure
+5. reserves fixed numeric bind ports before starting any service that uses them
+6. reserves every public hostname before starting any service
+7. starts services in dependency order
+8. waits for each service health check before routing it
+9. removes routes and reservations on shutdown or startup failure
 
 `devhost`-owned logs use the manifest `name` when available and fall back to `[devhost]`. Child service logs remain prefixed with `[service-name]`.
 
@@ -153,6 +167,8 @@ Use that file as the documented source of truth for:
 
 Copy it to `devhost.toml` in your project root and trim it down to the services you actually run.
 
+For same-host composition within one manifest, use distinct paths such as `/api/*` and `/admin/*`, or combine one root-mounted fallback service with more specific subpath services on the same hostname.
+
 ## Injected environment
 
 `devhost` injects environment variables into each service child process.
@@ -167,6 +183,7 @@ The remaining variables are context metadata and must not be used as socket bind
 - `PORT`
   - the listening port selected by `devhost`
   - injected when the service defines `port`, including `port = "auto"`
+  - for `port = "auto"`, the selected port is best-effort in v1 and may be retried if the child reports a clear bind collision during startup
   - not injected for services that do not define `port`
 
 ### Routed-service context

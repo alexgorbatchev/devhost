@@ -19,12 +19,15 @@
 # - `port = "auto"` must omit `health` in v1
 # - `bindHost` must be one of: `127.0.0.1`, `0.0.0.0`, `::1`, `::`
 # - `command` is best written as a string array; string form is supported but split on whitespace
+# - fixed numeric bind ports are reserved across live devhost processes before spawn
+# - hostname ownership is exclusive across projects, but one manifest may mount multiple services under the same host on distinct paths
 
 # `name` identifies the stack in logs, state, and injected metadata.
 name = "hello-stack"
 
 # Managed Caddy lifecycle is shared and manual.
-# Start it explicitly with `devhost caddy start` before running a stack.
+# Start it explicitly with `devhost caddy start` before running one or more stacks.
+# All stacks share the same managed Caddy instance and the same global 404 hostname list.
 
 # The `devtools.*` sections control the browser-side devhost overlay injected into
 # routed HTML document navigations. If all devtools features are disabled, routed
@@ -120,7 +123,8 @@ command = ["bun", "run", "web:dev"]
 cwd = "./app"
 # `port` sets the runtime listening port or requests automatic allocation.
 # - integer `1..65535`: use the exact port you provide.
-# - `"auto"`: allocate a free port before spawn and inject it as `PORT`.
+# - `"auto"`: allocate a best-effort free port before spawn and inject it as `PORT`.
+#   devhost retries on clear bind collisions, but v1 does not provide a cross-process global auto-port allocator.
 port = 3000
 # `bindHost` sets the socket interface the child process should bind to.
 # - `"127.0.0.1"` (default): IPv4 loopback only.
@@ -131,6 +135,9 @@ bindHost = "127.0.0.1"
 # `host` sets the public routed hostname.
 host = "hello.local.test"
 # `path` sets a subpath for mounting (e.g. "/api/*"). Defaults to `"/"`.
+# Use same-host composition only within one manifest, for example:
+# - `services.web.host = "hello.local.test"`, `services.web.path = "/"`
+# - `services.api.host = "hello.local.test"`, `services.api.path = "/api/*"`
 # path = "/api/*"
 # `dependsOn` declares services that must start before this service.
 dependsOn = ["api"]
@@ -144,6 +151,8 @@ PUBLIC_API_ORIGIN = "https://api.hello.local.test"
 
 [services.api]
 # A routed backend with explicit HTTP health and IPv6 loopback binding.
+# This example uses its own hostname, but it could also share `hello.local.test`
+# under a distinct path such as `path = "/api/*"`.
 command = ["bun", "run", "api:dev"]
 cwd = "./api"
 port = 4000

@@ -26,7 +26,7 @@
 - [x] Introduce an explicit route ownership model that distinguishes:
   - public hostname ownership across projects
   - per-path routing within a single manifest
-- [ ] Stop keying shared route registrations by `host + serviceName`
+- [x] Stop keying shared route registrations by `host + serviceName`
 - [x] Add a hostname ownership claim format that can detect cross-project conflicts reliably
 - [x] Allow multiple services in one manifest to share a hostname only when their public paths do not overlap
 - [x] Reject any attempt by a different manifest/process to claim a hostname that is already owned
@@ -49,11 +49,11 @@
 - [x] Keep per-manifest duplicate fixed-port validation as an early local check
 
 ### 5. Keep `auto` ports best-effort, but harden failure handling
-- [ ] Keep current best-effort `get-port` allocation for `port = "auto"`
-- [ ] Detect clear bind-collision failures for auto-port services
-- [ ] Re-resolve a new auto port and retry startup automatically for those services
-- [ ] Bound retries and surface a deterministic final failure message if retries are exhausted
-- [ ] Ensure retried services update health checks and injected `PORT` consistently
+- [x] Keep current best-effort `get-port` allocation for `port = "auto"`
+- [x] Detect clear bind-collision failures for auto-port services
+- [x] Re-resolve a new auto port and retry startup automatically for those services
+- [x] Bound retries and surface a deterministic final failure message if retries are exhausted
+- [x] Ensure retried services update health checks and injected `PORT` consistently
 
 ### 6. Update startup/shutdown orchestration
 - [x] Reorder startup so shared claims are acquired before child processes are spawned
@@ -69,12 +69,12 @@
 - [x] Keep bind-host validation intact
 
 ### 8. Update docs and examples
-- [ ] Rewrite `packages/devhost/README.md` to describe shared-global manual Caddy lifecycle only
-- [ ] Document that multiple projects can share the global Caddy instance
-- [ ] Document that hostname ownership is exclusive across projects
-- [ ] Document that one manifest may mount multiple services under one hostname on distinct paths
-- [ ] Document global fixed-port reservation behavior
-- [ ] Document that `auto` ports are best-effort in v1 and can retry on bind races
+- [x] Rewrite `packages/devhost/README.md` to describe shared-global manual Caddy lifecycle only
+- [x] Document that multiple projects can share the global Caddy instance
+- [x] Document that hostname ownership is exclusive across projects
+- [x] Document that one manifest may mount multiple services under one hostname on distinct paths
+- [x] Document global fixed-port reservation behavior
+- [x] Document that `auto` ports are best-effort in v1 and can retry on bind races
 - [x] Update `packages/devhost/devhost.example.toml` to remove `autostop`
 - [x] Update any help text and contributor docs that still mention autostop
 
@@ -84,15 +84,15 @@
 - [x] Add route ownership tests for cross-project hostname conflicts
 - [x] Add route generation tests for one hostname with multiple path handlers
 - [x] Add fixed-port claim tests across simulated processes
-- [ ] Add startup cleanup tests for partial failures after claims are acquired
-- [ ] Add auto-port retry tests for bind-collision recovery
+- [x] Add startup cleanup tests for partial failures after claims are acquired
+- [x] Add auto-port retry tests for bind-collision recovery
 - [x] Remove or rewrite tests that assert autostop behavior
 
 ### 10. Final validation
 - [x] Run targeted package tests for changed areas
 - [x] Run `bun test` in `packages/devhost`
 - [x] Run `bun run check` in `packages/devhost`
-- [ ] Verify README and example manifest match actual behavior exactly
+- [x] Verify README and example manifest match actual behavior exactly
 
 ## Definition of done
 

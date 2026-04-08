@@ -26,7 +26,7 @@ export function renderManagedCaddyNotFoundPage(routeLinks: IManagedCaddyNotFound
     "        the correct host.",
     "      </p>",
     '      <section class="devhost-not-found__routes" aria-labelledby="devhost-not-found-routes">',
-    '        <h2 class="devhost-not-found__label" id="devhost-not-found-routes">Active routes</h2>',
+    '        <h2 class="devhost-not-found__label" id="devhost-not-found-routes">Active hostnames</h2>',
     renderedRoutes,
     "      </section>",
     "    </main>",
@@ -47,7 +47,7 @@ function renderRouteList(routeLinks: IManagedCaddyNotFoundRouteLink[]): string {
 }
 
 function renderRouteListItem(routeLink: IManagedCaddyNotFoundRouteLink): string {
-  const routeLabel: string = `${routeLink.host}${routeLink.path === "/" ? "/" : routeLink.path}`;
+  const routeLabel: string = routeLink.host;
 
   return [
     "          <li>",
@@ -62,7 +62,7 @@ function renderRouteListItem(routeLink: IManagedCaddyNotFoundRouteLink): string 
 function renderEmptyState(): string {
   return [
     '        <p class="devhost-not-found__empty">',
-    "          No devhost routes are active right now. Start a stack and the available hostnames will appear here.",
+    "          No devhost hostnames are active right now. Start a stack and the available hostnames will appear here.",
     "        </p>",
   ].join("\n");
 }

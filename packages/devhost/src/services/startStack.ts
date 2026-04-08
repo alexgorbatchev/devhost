@@ -31,6 +31,7 @@ import type {
 } from "../types/stackTypes";
 import { waitForServiceHealth } from "./waitForServiceHealth";
 import { claimFixedPort, cleanupStaleFixedPortClaims, releaseFixedPortClaim } from "./fixedPortClaims";
+import { reassignAutoPort, shouldRetryAutoPortStartup } from "./autoPortRetryUtils";
 
 const shutdownGracePeriodInMilliseconds: number = 10_000;
 
@@ -182,54 +183,15 @@ export async function startStack(
     }
 
     for (const serviceName of serviceOrder) {
-      const service: IResolvedDevhostService = manifest.services[serviceName];
-      const childEnvironment: Record<string, string | undefined> = {
-        ...process.env,
-        ...service.env,
-        ...createInjectedServiceEnvironment(manifest, service),
-      };
-      const childProcess = resolvedOptions.pipeServiceOutput
-        ? Bun.spawn(service.command, {
-            cwd: service.cwd,
-            env: childEnvironment,
-            stderr: "pipe",
-            stdin: resolvedOptions.stdinMode,
-            stdout: "pipe",
-          })
-        : Bun.spawn(service.command, {
-            cwd: service.cwd,
-            env: childEnvironment,
-            stderr: "inherit",
-            stdin: resolvedOptions.stdinMode,
-            stdout: "inherit",
-          });
-
-      startedServices.push({
-        childProcess,
-        service,
-      });
-      void childProcess.exited.then(async (): Promise<void> => {
-        await devtoolsControlServer?.publishHealthResponse();
-      });
-      await devtoolsControlServer?.publishHealthResponse();
-
-      if (resolvedOptions.pipeServiceOutput) {
-        void pipeSubprocessOutput(childProcess.stdout, `[${service.name}] `, (line: string) => {
-          devtoolsControlServer?.publishLogEntry(service.name, "stdout", line);
-          console.log(line);
-        });
-        void pipeSubprocessOutput(childProcess.stderr, `[${service.name}] `, (line: string) => {
-          devtoolsControlServer?.publishLogEntry(service.name, "stderr", line);
-          console.error(line);
-        });
-      }
-
-      await waitForServiceHealth({
-        childProcess,
-        health: service.health,
+      const startedService: StartedService = await startServiceWithRetries(
+        manifest,
         serviceName,
-      });
-      await devtoolsControlServer?.publishHealthResponse();
+        logger,
+        startedServices,
+        devtoolsControlServer,
+        resolvedOptions,
+      );
+      const service: IResolvedDevhostService = startedService.service;
 
       if (service.host !== null && service.port !== null) {
         if (devtoolsEnabled && (service.path === null || service.path === "/" || service.path === "/*")) {
@@ -325,6 +287,7 @@ export async function startStack(
         await unregisterRoute(
           serviceName,
           activeService.host,
+          activeService.path ?? "/",
           manifest.manifestPath,
           managedCaddyPaths.registrationsDirectoryPath,
         );
@@ -397,6 +360,137 @@ export function createInjectedServiceEnvironment(
   }
 
   return environment;
+}
+
+async function startServiceWithRetries(
+  manifest: IResolvedDevhostManifest,
+  serviceName: string,
+  logger: IDevhostLogger,
+  startedServices: StartedService[],
+  devtoolsControlServer: Awaited<ReturnType<typeof startDevtoolsControlServer>> | null,
+  options: Required<IStartStackOptions>,
+): Promise<StartedService> {
+  let retryCount: number = 0;
+
+  while (true) {
+    const service: IResolvedDevhostService = manifest.services[serviceName];
+    const attemptOutputLines: string[] = [];
+    const childEnvironment: Record<string, string | undefined> = {
+      ...process.env,
+      ...service.env,
+      ...createInjectedServiceEnvironment(manifest, service),
+    };
+    const childProcess = options.pipeServiceOutput
+      ? Bun.spawn(service.command, {
+          cwd: service.cwd,
+          env: childEnvironment,
+          stderr: "pipe",
+          stdin: options.stdinMode,
+          stdout: "pipe",
+        })
+      : Bun.spawn(service.command, {
+          cwd: service.cwd,
+          env: childEnvironment,
+          stderr: "inherit",
+          stdin: options.stdinMode,
+          stdout: "inherit",
+        });
+    const startedService: StartedService = {
+      childProcess,
+      service,
+    };
+
+    startedServices.push(startedService);
+    void childProcess.exited.then(async (): Promise<void> => {
+      await devtoolsControlServer?.publishHealthResponse();
+    });
+    await devtoolsControlServer?.publishHealthResponse();
+
+    const outputPumpPromises: Promise<void>[] = [];
+
+    if (options.pipeServiceOutput) {
+      const stdoutPumpPromise: Promise<void> = pipeSubprocessOutput(childProcess.stdout, `[${service.name}] `, (line: string) => {
+        appendAttemptOutputLine(attemptOutputLines, line);
+        devtoolsControlServer?.publishLogEntry(service.name, "stdout", line);
+        console.log(line);
+      });
+      const stderrPumpPromise: Promise<void> = pipeSubprocessOutput(childProcess.stderr, `[${service.name}] `, (line: string) => {
+        appendAttemptOutputLine(attemptOutputLines, line);
+        devtoolsControlServer?.publishLogEntry(service.name, "stderr", line);
+        console.error(line);
+      });
+
+      void stdoutPumpPromise.catch(() => undefined);
+      void stderrPumpPromise.catch(() => undefined);
+      outputPumpPromises.push(stdoutPumpPromise, stderrPumpPromise);
+    }
+
+    try {
+      await waitForServiceHealth({
+        childProcess,
+        health: service.health,
+        serviceName,
+      });
+      await devtoolsControlServer?.publishHealthResponse();
+      return startedService;
+    } catch (error) {
+      removeStartedService(startedServices, startedService);
+      await stopStartedService(startedService);
+      await Promise.allSettled(outputPumpPromises);
+      await devtoolsControlServer?.publishHealthResponse();
+
+      if (!shouldRetryAutoPortStartup(service, error, attemptOutputLines, retryCount)) {
+        throw error;
+      }
+
+      retryCount += 1;
+      logger.info(`retrying ${service.name} with a new auto port after a bind collision.`);
+      await reassignAutoPort(manifest, serviceName);
+    }
+  }
+}
+
+function appendAttemptOutputLine(outputLines: string[], line: string): void {
+  outputLines.push(line);
+
+  if (outputLines.length > 50) {
+    outputLines.shift();
+  }
+}
+
+function removeStartedService(startedServices: StartedService[], targetStartedService: StartedService): void {
+  const targetIndex: number = startedServices.indexOf(targetStartedService);
+
+  if (targetIndex === -1) {
+    return;
+  }
+
+  startedServices.splice(targetIndex, 1);
+}
+
+async function stopStartedService(startedService: StartedService): Promise<void> {
+  const { childProcess } = startedService;
+
+  if (childProcess.exitCode !== null) {
+    await childProcess.exited;
+    return;
+  }
+
+  if (!childProcess.killed) {
+    childProcess.kill("SIGTERM");
+  }
+
+  const didExitGracefully: boolean = await waitForExitWithinGracePeriod(childProcess);
+
+  if (didExitGracefully) {
+    return;
+  }
+
+  if (!childProcess.killed && childProcess.exitCode === null) {
+    childProcess.kill("SIGKILL");
+  }
+
+  await childProcess.exited;
 }
 
 async function waitForAnyServiceExit(startedServices: StartedService[]): Promise<IServiceExitResult> {
