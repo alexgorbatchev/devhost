@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks"
 
 import { Button, css, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME, DEVTOOLS_ROOT_ID } from "../../shared/constants";
+import { isEventTargetTerminalKeyboardInput } from "../../shared/isEventTargetTerminalKeyboardInput";
 import type { ITerminalSessionStartResult } from "../terminalSessions/types";
 import { collectElementSnapshot, identifyElement } from "./collectElementSnapshot";
 import { createAnnotationSubmitDetail } from "./createAnnotationSubmitDetail";
@@ -59,7 +60,8 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
   const selectedElementsReference = useRef<ISelectedElementDraft[]>([]);
   const viewportPadding: number = readPixelValue(theme.spacing.sm);
   const trimmedComment: string = comment.trim();
-  const hasDraft: boolean = isSelectionMode || selectedElements.length > 0 || trimmedComment.length > 0;
+  const hasActiveAnnotationInteraction: boolean = isSelectionMode || selectedElements.length > 0 || trimmedComment.length > 0;
+  const hasDraft: boolean = selectedElements.length > 0 || trimmedComment.length > 0;
 
   const cancelDraft = useCallback((): void => {
     setComment("");
@@ -112,7 +114,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
   }, [selectedElements]);
 
   useEffect(() => {
-    if (!hasDraft) {
+    if (!hasActiveAnnotationInteraction) {
       return;
     }
 
@@ -139,7 +141,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
         scheduledFrameReference.current = null;
       }
     };
-  }, [hasDraft]);
+  }, [hasActiveAnnotationInteraction]);
 
   useEffect(() => {
     if (!isSelectionMode) {
@@ -242,52 +244,95 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
   }, [isSelectionMode]);
 
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === "Alt") {
-        if (isSubmitting || doesEventTargetAcceptTextInput(event.target)) {
-          return;
-        }
-
-        setIsSelectionMode(true);
+    const handleAltKeyDown = (event: KeyboardEvent): void => {
+      if (isEventTargetTerminalKeyboardInput(event.target) || event.key !== "Alt") {
         return;
       }
 
-      if (!hasDraft) {
+      if (isSubmitting || doesEventTargetAcceptTextInput(event.target)) {
         return;
       }
 
-      if (event.key === "Escape") {
-        event.preventDefault();
-        cancelDraft();
-        return;
-      }
-
-      if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-        event.preventDefault();
-        void submitDraft();
-      }
+      setIsSelectionMode(true);
     };
-    const handleKeyUp = (event: KeyboardEvent): void => {
+    const handleAltKeyUp = (event: KeyboardEvent): void => {
       if (event.key !== "Alt") {
         return;
       }
 
       setIsSelectionMode(false);
     };
+
+    document.addEventListener("keydown", handleAltKeyDown, true);
+    document.addEventListener("keyup", handleAltKeyUp, true);
+
+    return () => {
+      document.removeEventListener("keydown", handleAltKeyDown, true);
+      document.removeEventListener("keyup", handleAltKeyUp, true);
+    };
+  }, [isSubmitting]);
+
+  useEffect(() => {
+    if (!hasActiveAnnotationInteraction) {
+      return;
+    }
+
+    const handleEscapeKeyDown = (event: KeyboardEvent): void => {
+      if (isEventTargetTerminalKeyboardInput(event.target) || event.key !== "Escape") {
+        return;
+      }
+
+      event.preventDefault();
+      cancelDraft();
+    };
+
+    document.addEventListener("keydown", handleEscapeKeyDown, true);
+
+    return () => {
+      document.removeEventListener("keydown", handleEscapeKeyDown, true);
+    };
+  }, [cancelDraft, hasActiveAnnotationInteraction]);
+
+  useEffect(() => {
+    if (!hasDraft) {
+      return;
+    }
+
+    const handleSubmitKeyDown = (event: KeyboardEvent): void => {
+      if (isEventTargetTerminalKeyboardInput(event.target)) {
+        return;
+      }
+
+      if (event.key !== "Enter" || (!event.metaKey && !event.ctrlKey)) {
+        return;
+      }
+
+      event.preventDefault();
+      void submitDraft();
+    };
+
+    document.addEventListener("keydown", handleSubmitKeyDown, true);
+
+    return () => {
+      document.removeEventListener("keydown", handleSubmitKeyDown, true);
+    };
+  }, [hasDraft, submitDraft]);
+
+  useEffect(() => {
+    if (!isSelectionMode) {
+      return;
+    }
+
     const handleWindowBlur = (): void => {
       setIsSelectionMode(false);
     };
 
-    document.addEventListener("keydown", handleKeyDown, true);
-    document.addEventListener("keyup", handleKeyUp, true);
     window.addEventListener("blur", handleWindowBlur);
 
     return () => {
-      document.removeEventListener("keydown", handleKeyDown, true);
-      document.removeEventListener("keyup", handleKeyUp, true);
       window.removeEventListener("blur", handleWindowBlur);
     };
-  }, [cancelDraft, hasDraft, isSubmitting, submitDraft]);
+  }, [isSelectionMode]);
 
   useEffect(() => {
     if (!isSelectionMode) {
@@ -339,29 +384,6 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
     };
   }, [comment, isSubmitting, layoutVersion, selectedElements.length, submissionErrorMessage]);
 
-  useEffect(() => {
-    const popupElement: HTMLDivElement | null = popupReference.current;
-
-    if (popupElement === null || selectedElements.length === 0) {
-      return;
-    }
-
-    const handlePopupKeyDown = (event: KeyboardEvent): void => {
-      if (event.key !== "Escape") {
-        return;
-      }
-
-      event.preventDefault();
-      event.stopPropagation();
-      cancelDraft();
-    };
-
-    popupElement.addEventListener("keydown", handlePopupKeyDown, true);
-
-    return () => {
-      popupElement.removeEventListener("keydown", handlePopupKeyDown, true);
-    };
-  }, [cancelDraft, selectedElements.length]);
 
   const markerRenderModels: IMarkerRenderModel[] = useMemo((): IMarkerRenderModel[] => {
     void layoutVersion;

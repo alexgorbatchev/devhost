@@ -5,6 +5,7 @@ import {
   type DevtoolsComponentEditor,
 } from "../../../devtools-server/devtoolsComponentEditor";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../shared/constants";
+import { isEventTargetTerminalKeyboardInput } from "../../shared/isEventTargetTerminalKeyboardInput";
 import { resolveAnnotationTarget } from "../annotationComposer/resolveAnnotationTarget";
 import type { ITerminalSessionStartResult } from "../terminalSessions/types";
 import { createComponentSourceUrl, formatComponentSourcePath } from "./componentSourceUtils";
@@ -140,6 +141,10 @@ export function useComponentSourceNavigation({
       closeComponentMenu();
     };
     const handleKeyDown = (event: KeyboardEvent): void => {
+      if (isEventTargetTerminalKeyboardInput(event.target)) {
+        return;
+      }
+
       if (event.key !== "Escape") {
         return;
       }
