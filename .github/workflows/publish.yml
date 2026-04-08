@@ -47,7 +47,7 @@ jobs:
       - name: Validate package version matches the release tag
         run: |
           set -euo pipefail
-          package_version="$(node -p "require('./package.json').version")"
+          package_version="$(node -p "require('./packages/devhost/package.json').version")"
           if [[ "$package_version" != "$RELEASE_VERSION" ]]; then
             echo "package.json version ($package_version) must match release tag version ($RELEASE_VERSION)." >&2
             exit 1
@@ -57,20 +57,21 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Install Playwright Browsers
-        run: bun run storybook:install-browser
+        run: bun run --cwd packages/devhost storybook:install-browser
 
       - name: Verify package
         env:
           CI: "false"
         run: |
           bun run check
+          cd packages/devhost
           npm pack --dry-run
 
       - name: Read package metadata
         id: package
         run: |
-          echo "name=$(node -p 'require("./package.json").name')" >> "$GITHUB_OUTPUT"
-          echo "version=$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
+          echo "name=$(node -p 'require("./packages/devhost/package.json").name')" >> "$GITHUB_OUTPUT"
+          echo "version=$(node -p 'require("./packages/devhost/package.json").version')" >> "$GITHUB_OUTPUT"
 
       - name: Check npm for existing package version
         id: npm
@@ -84,7 +85,9 @@ jobs:
 
       - name: Publish package
         if: steps.npm.outputs.alreadyPublished != 'true'
-        run: npm publish --provenance --access public
+        run: |
+          cd packages/devhost
+          npm publish --provenance --access public
 
       - name: Create GitHub Release
         env:

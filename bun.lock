@@ -4,6 +4,18 @@
   "workspaces": {
     "": {
       "name": "localhost-domains",
+      "devDependencies": {
+        "@alexgorbatchev/typescript-ai-policy": "^1.0.3",
+        "oxfmt": "^0.42.0",
+        "oxlint": "^1.57.0",
+      },
+    },
+    "packages/devhost": {
+      "name": "@alexgorbatchev/devhost",
+      "version": "0.0.2",
+      "bin": {
+        "devhost": "./bin/devhost.ts",
+      },
       "dependencies": {
         "@emotion/css": "^11.13.5",
         "@jridgewell/trace-mapping": "^0.3.31",
@@ -14,24 +26,22 @@
         "zod": "^4.1.12",
       },
       "devDependencies": {
-        "@alexgorbatchev/typescript-ai-policy": "^1.0.3",
         "@storybook/addon-vitest": "10.3.4",
         "@storybook/preact-vite": "10.3.4",
         "@types/bun": "^1.3.11",
         "@types/node": "^25.5.0",
         "@typescript/native-preview": "^7.0.0-dev.20260331.1",
         "@vitest/browser-playwright": "4.1.2",
-        "oxfmt": "^0.42.0",
-        "oxlint": "^1.57.0",
         "playwright": "1.59.1",
         "storybook": "10.3.4",
         "vitest": "4.1.2",
       },
     },
-    "www": {
+    "packages/www": {
       "name": "devhost-test-app",
       "version": "0.0.0",
       "dependencies": {
+        "@alexgorbatchev/devhost": "workspace:*",
         "@rrweb/all": "^2.0.0-alpha.20",
         "@rrweb/types": "^2.0.0-alpha.20",
         "react": "^19.1.1",
@@ -55,6 +65,8 @@
   },
   "packages": {
     "@adobe/css-tools": ["@adobe/css-tools@4.4.4", "", {}, "sha512-Elp+iwUx5rN5+Y8xLt5/GRoG20WGoDCQ/1Fb+1LiGtvwbDavuSk0jhD/eZdckHAuzcDzccnkv+rEjyWfRx18gg=="],
+
+    "@alexgorbatchev/devhost": ["@alexgorbatchev/devhost@workspace:packages/devhost"],
 
     "@alexgorbatchev/typescript-ai-policy": ["@alexgorbatchev/typescript-ai-policy@1.0.3", "", { "peerDependencies": { "@typescript/native-preview": "^7.0.0-dev.20260330.1", "oxfmt": "^0.42.0", "oxlint": "^1.57.0" }, "optionalPeers": ["@typescript/native-preview"], "bin": { "typescript-ai-policy-fix-semantic": "src/semantic-fixes/runApplySemanticFixes.ts" } }, "sha512-RWqkkwgVc0GgMpwqCfUwZ5Cl2lewk+GX9jo6fpjORqSmhJcAIpbrm0z+Bw5DhHqcL5T+5XiUd3pSfqVLH2ii1A=="],
 
@@ -476,7 +488,7 @@
 
     "detect-libc": ["detect-libc@2.1.2", "", {}, "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ=="],
 
-    "devhost-test-app": ["devhost-test-app@workspace:www"],
+    "devhost-test-app": ["devhost-test-app@workspace:packages/www"],
 
     "doctrine": ["doctrine@3.0.0", "", { "dependencies": { "esutils": "^2.0.2" } }, "sha512-yS+Q5i3hBf7GBkd4KG8a7eBNNWNGLTaEwwYWUijIYM7zrlYDM0BFXHjjPWlWZ1Rg7UaddZeIDmi9jF3HmqiQ2w=="],
 

@@ -30,7 +30,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Install Playwright Browsers
-        run: bun run storybook:install-browser
+        run: bun run --cwd packages/devhost storybook:install-browser
 
       - name: Run checks
         run: bun run check

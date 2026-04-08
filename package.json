@@ -1,60 +1,13 @@
 {
-  "name": "@alexgorbatchev/devhost",
-  "version": "0.0.2",
-  "description": "devhost is a CLI utility for local development that lets you open your local apps on HTTPS domains instead of raw localhost:port URLs, and can inject useful devtools directly into routed pages.",
-  "type": "module",
-  "private": false,
-  "bin": {
-    "devhost": "./bin/devhost.ts"
-  },
-  "workspaces": [
-    "www"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/alexgorbatchev/devhost.git"
-  },
-  "homepage": "https://github.com/alexgorbatchev/devhost#readme",
-  "author": "Alex Gorbatchev",
-  "license": "MIT",
-  "publishConfig": {
-    "access": "public"
-  },
-  "files": [
-    "bin",
-    "src",
-    "README.md",
-    "LICENSE",
-    "devhost.example.toml"
-  ],
+  "private": true,
+  "workspaces": ["packages/*"],
   "scripts": {
-    "check": "./scripts/check.sh",
-    "dev": "bun run src/main.ts",
-    "storybook:install-browser": "bun x playwright install chromium",
-    "storybook": "storybook dev --ci --port 6006",
+    "check": "bun run --cwd packages/devhost check && bun run --cwd packages/www check",
     "policy:fix:semantic": "bun run typescript-ai-policy-fix-semantic -- ."
-  },
-  "dependencies": {
-    "@emotion/css": "^11.13.5",
-    "@jridgewell/trace-mapping": "^0.3.31",
-    "@xterm/addon-fit": "^0.11.0",
-    "@xterm/xterm": "^6.0.0",
-    "get-port": "^7.2.0",
-    "preact": "^10.29.0",
-    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@alexgorbatchev/typescript-ai-policy": "^1.0.3",
-    "@storybook/addon-vitest": "10.3.4",
-    "@storybook/preact-vite": "10.3.4",
-    "@types/bun": "^1.3.11",
-    "@types/node": "^25.5.0",
-    "@typescript/native-preview": "^7.0.0-dev.20260331.1",
-    "@vitest/browser-playwright": "4.1.2",
     "oxfmt": "^0.42.0",
-    "oxlint": "^1.57.0",
-    "playwright": "1.59.1",
-    "storybook": "10.3.4",
-    "vitest": "4.1.2"
+    "oxlint": "^1.57.0"
   }
 }

@@ -14,19 +14,19 @@ reviewed_at: 2026-04-04T16:00:00Z
 - Last verified at: 2026-04-04T16:00:00Z (6d5874f2e8e91432c44edc81cb0a2a2390ef416a)
 - Setup/install commands:
   - `bun install`
-  - `bun run storybook:install-browser`
+  - `bun run --cwd packages/devhost storybook:install-browser`
 - Test commands:
-  - `bun check`
-  - `cd devhost && bun test`
-  - `cd test && bun test`
+  - `bun run check`
+  - `bun test --cwd packages/devhost`
+  - `bun run --cwd packages/www check`
 - Coverage commands:
-  - `cd devhost && bun test --coverage`
+  - `bun test --cwd packages/devhost --coverage`
 - Build/typecheck/lint commands:
-  - `bun check`
+  - `bun run check`
 - Required env/services/fixtures:
   - Managed Caddy may prompt for a password on first startup to install the local CA.
 - Monorepo/package working-directory notes:
-  - Root directory runs validation and orchestration across the `devhost` and `test` workspaces.
+  - Root directory runs validation and orchestration across the `packages/devhost` and `packages/www` workspaces.
 
 # Findings by Category
 
@@ -72,7 +72,7 @@ N/A
 
 # Test Results
 
-- Commands run: `bun check` and `cd devhost && bun test`
+- Commands run: `bun run check` and `bun test --cwd packages/devhost`
 - Result: Pass
 - Failures: None
 

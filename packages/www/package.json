@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "dependencies": {
+    "@alexgorbatchev/devhost": "workspace:*",
     "@rrweb/all": "^2.0.0-alpha.20",
     "@rrweb/types": "^2.0.0-alpha.20",
     "react": "^19.1.1",
