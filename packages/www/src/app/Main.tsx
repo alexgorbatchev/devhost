@@ -1,4 +1,4 @@
-import React, { type JSX } from "react";
+import { type JSX } from "react";
 import { createRoot } from "react-dom/client";
 
 import { App } from "./App";

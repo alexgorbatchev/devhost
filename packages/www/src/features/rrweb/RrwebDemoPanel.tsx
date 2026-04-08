@@ -1,4 +1,4 @@
-import React, { useEffect, type JSX } from "react";
+import { useEffect, type JSX } from "react";
 
 import { FeatureReplayPanel } from "./FeatureReplayPanel";
 import type { IRrwebDemoRecording } from "./types";

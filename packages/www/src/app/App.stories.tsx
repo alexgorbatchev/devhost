@@ -3,8 +3,38 @@ import { expect, userEvent, within } from "storybook/test";
 
 import { App } from "./App";
 
+const missingReplayPaths: Set<string> = new Set([
+  "/recordings/marketing/source-jumps.json",
+  "/recordings/marketing/sessions.json",
+  "/recordings/marketing/overlay.json",
+  "/recordings/marketing/routing-health.json",
+]);
+
 const meta: Meta<typeof App> = {
   component: App,
+  beforeEach(): () => void {
+    const originalFetch: typeof globalThis.fetch = globalThis.fetch;
+    const mockedFetch: typeof globalThis.fetch = Object.assign(
+      (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+        const requestUrl = readRequestUrl(input, window.location.href);
+
+        if (missingReplayPaths.has(requestUrl.pathname)) {
+          return Promise.resolve(new Response("Not Found", { status: 404 }));
+        }
+
+        return originalFetch(input, init);
+      },
+      {
+        preconnect: originalFetch.preconnect,
+      },
+    );
+
+    globalThis.fetch = mockedFetch;
+
+    return (): void => {
+      globalThis.fetch = originalFetch;
+    };
+  },
 };
 
 export default meta;
@@ -59,3 +89,15 @@ const Default: Story = {
 };
 
 export { Default as App };
+
+function readRequestUrl(input: RequestInfo | URL, baseUrl: string): URL {
+  if (typeof input === "string") {
+    return new URL(input, baseUrl);
+  }
+
+  if (input instanceof URL) {
+    return input;
+  }
+
+  return new URL(input.url, baseUrl);
+}

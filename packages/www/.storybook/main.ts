@@ -2,7 +2,7 @@ import tailwindcss from "@tailwindcss/vite";
 import type { StorybookConfig } from "@storybook/react-vite";
 import type { UserConfig } from "vite";
 
-const optimizedDependencyIds: string[] = ["@rrweb/all"];
+const optimizedDependencyIds: string[] = ["@rrweb/all", "react/jsx-dev-runtime", "react/jsx-runtime"];
 
 const config: StorybookConfig = {
   framework: {
