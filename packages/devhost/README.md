@@ -110,6 +110,7 @@ The generated Caddy config uses these defaults:
 - admin API: `127.0.0.1:20193` unless `DEVHOST_CADDY_ADMIN_ADDRESS` is set
 - listener binding on macOS: wildcard listeners, because macOS denies rootless loopback-specific binds on `:443`
 - listener binding on non-macOS: loopback only via Caddy `default_bind 127.0.0.1 [::1]`
+- unmatched hostnames: a generated 404 page listing the currently active devhost routes as HTTPS links
 
 When `[caddy].autostop = true`, `devhost` takes ownership of the managed Caddy process for the stack lifetime, stops it on exit, and blocks other `devhost` stacks from taking ownership until the owning stack exits.
 

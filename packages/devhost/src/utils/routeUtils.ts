@@ -2,12 +2,14 @@ import { readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { caddyAdminApiUrl } from "../caddy/caddyPaths";
+import { createManagedCaddyCommandErrorMessage, runManagedCaddyCommand } from "../caddy/runManagedCaddyCommand";
+import { syncManagedCaddyNotFoundSite } from "../caddy/syncManagedCaddyNotFoundSite";
 import { caddyAdminTimeoutInMilliseconds } from "./constants";
 import { formatProxyAddress, resolveProxyHost } from "./resolveProxyHost";
-import { createManagedCaddyCommandErrorMessage, runManagedCaddyCommand } from "../caddy/runManagedCaddyCommand";
 
 interface IRegistration {
   host: string;
+  path: string;
   port: number;
   ownerPid: number;
   createdAt: string;
@@ -45,6 +47,8 @@ export async function ensureCaddyAdminAvailable(fetchImplementation: FetchImplem
 
 export async function cleanupStaleRegistrations(registrationsDirectoryPath: string): Promise<void> {
   const registrationFileNames: string[] = await readdir(registrationsDirectoryPath);
+  const routesDirectoryPath: string = getRoutesDirectoryPath(registrationsDirectoryPath);
+  let didRemoveFiles = false;
 
   for (const registrationFileName of registrationFileNames) {
     if (!registrationFileName.endsWith(".json")) {
@@ -59,11 +63,12 @@ export async function cleanupStaleRegistrations(registrationsDirectoryPath: stri
       continue;
     }
 
-    await rmdirAndRouteFileByNames(
-      registrationFileName,
-      registrationsDirectoryPath,
-      getRoutesDirectoryPath(registrationsDirectoryPath),
-    );
+    didRemoveFiles = true;
+    await rmdirAndRouteFileByNames(registrationFileName, registrationsDirectoryPath, routesDirectoryPath);
+  }
+
+  if (didRemoveFiles) {
+    await syncManagedCaddyNotFoundSite(routesDirectoryPath);
   }
 }
 
@@ -77,9 +82,10 @@ async function rmdirAndRouteFileByNames(
   await rm(join(routesDirectoryPath, caddyFileName), { force: true });
 }
 
-export function createRegistration(host: string, port: number): string {
+export function createRegistration(host: string, path: string, port: number): string {
   const registration: IRegistration = {
     host,
+    path,
     port,
     ownerPid: process.pid,
     createdAt: new Date().toISOString(),
@@ -96,7 +102,7 @@ export async function claimRegistration(
   registrationsDirectoryPath: string,
 ): Promise<void> {
   const registrationPath: string = getRegistrationPath(serviceName, host, registrationsDirectoryPath);
-  const registrationText: string = createRegistration(host, port);
+  const registrationText: string = createRegistration(host, path, port);
   const routesDirectoryPath: string = getRoutesDirectoryPath(registrationsDirectoryPath);
 
   try {
@@ -133,6 +139,7 @@ export async function activateRoute(options: IActivateRouteOptions, routesDirect
 
   try {
     await writeFile(routePath, renderRouteSnippet(options), "utf8");
+    await syncManagedCaddyNotFoundSite(routesDirectoryPath);
     reloadCaddy();
   } catch (error) {
     await removeRouteFiles(options.serviceName, options.host, registrationsDirectoryPath, routesDirectoryPath);
@@ -171,6 +178,7 @@ export async function removeRouteFiles(
 ): Promise<void> {
   await rm(getRegistrationPath(serviceName, host, registrationsDirectoryPath), { force: true });
   await rm(getRoutePath(serviceName, host, routesDirectoryPath), { force: true });
+  await syncManagedCaddyNotFoundSite(routesDirectoryPath);
 }
 
 function getRegistrationPath(serviceName: string, host: string, registrationsDirectoryPath: string): string {
@@ -214,6 +222,7 @@ function parseRegistration(registrationText: string): IRegistration {
   // New interface for raw parsed registration
   interface IRawRegistration {
     host: unknown;
+    path?: unknown;
     port: unknown;
     ownerPid: unknown;
     createdAt: unknown;
@@ -234,10 +243,11 @@ function parseRegistration(registrationText: string): IRegistration {
     throw new Error("Registration file is malformed.");
   }
 
-  const { host, port, ownerPid, createdAt } = parsedValue;
+  const { host, path, port, ownerPid, createdAt } = parsedValue;
 
   if (
     typeof host !== "string" ||
+    (path !== undefined && typeof path !== "string") ||
     typeof port !== "number" ||
     typeof ownerPid !== "number" ||
     typeof createdAt !== "string"
@@ -247,6 +257,7 @@ function parseRegistration(registrationText: string): IRegistration {
 
   return {
     host,
+    path: path ?? "/",
     port,
     ownerPid,
     createdAt,

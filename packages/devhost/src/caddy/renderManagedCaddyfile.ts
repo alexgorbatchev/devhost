@@ -1,5 +1,6 @@
 import type { IManagedCaddyPaths } from "./caddyPaths";
 import { managedCaddyAdminAddress } from "./caddyPaths";
+import { createManagedCaddyNotFoundSitePaths } from "./createManagedCaddyNotFoundSitePaths";
 import { resolveManagedCaddyBindDirective } from "./resolveManagedCaddyBindDirective";
 
 export function renderManagedCaddyfile(
@@ -8,6 +9,7 @@ export function renderManagedCaddyfile(
 ): string {
   const routesGlobPath: string = `${paths.routesDirectoryPath}/*.caddy`;
   const bindDirective: string | null = resolveManagedCaddyBindDirective(platform);
+  const notFoundSitePaths = createManagedCaddyNotFoundSitePaths(paths.caddyDirectoryPath);
 
   return [
     "{",
@@ -25,7 +27,21 @@ export function renderManagedCaddyfile(
     "        on_demand",
     "    }",
     "",
-    '    respond "No devhost route is registered for {host}." 404',
+    `    root * ${quoteCaddyToken(notFoundSitePaths.directoryPath)}`,
+    "",
+    "    @devhost_route_not_found_asset file {path}",
+    "    handle @devhost_route_not_found_asset {",
+    "        file_server",
+    "    }",
+    "",
+    "    handle {",
+    "        error 404",
+    "    }",
+    "",
+    "    handle_errors 404 {",
+    "        rewrite /index.html",
+    "        file_server",
+    "    }",
     "}",
     "",
   ]
