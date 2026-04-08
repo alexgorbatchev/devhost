@@ -49,6 +49,7 @@ export async function resolveServicePorts(manifest: IValidatedDevhostManifest): 
       port: resolvedPort,
       portSource,
       host: service.host,
+      path: service.path,
       health,
     };
   }

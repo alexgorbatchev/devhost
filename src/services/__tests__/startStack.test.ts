@@ -37,6 +37,7 @@ describe("createInjectedServiceEnvironment", () => {
         port: 3200,
       },
       host: "hello.xcv.lol",
+      path: "/",
       name: "web",
       port: 3200,
       portSource: "fixed",
@@ -45,6 +46,7 @@ describe("createInjectedServiceEnvironment", () => {
     expect(createInjectedServiceEnvironment(manifest, service)).toEqual({
       DEVHOST_BIND_HOST: "127.0.0.1",
       DEVHOST_HOST: "hello.xcv.lol",
+      DEVHOST_PATH: "/",
       DEVHOST_MANIFEST_PATH: "/tmp/project/devhost.toml",
       DEVHOST_SERVICE_NAME: "web",
       PORT: "3200",
@@ -81,6 +83,7 @@ describe("createInjectedServiceEnvironment", () => {
         retries: 0,
       },
       host: null,
+      path: null,
       name: "worker",
       port: null,
       portSource: "none",

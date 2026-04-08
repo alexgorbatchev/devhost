@@ -14,7 +14,9 @@ interface IRegistration {
 }
 
 interface IActivateRouteOptions {
+  serviceName: string;
   host: string;
+  path: string;
   appBindHost: string;
   appPort: number;
   devtoolsControlPort?: number;
@@ -57,12 +59,22 @@ export async function cleanupStaleRegistrations(registrationsDirectoryPath: stri
       continue;
     }
 
-    await removeRouteFiles(
-      registration.host,
+    await rmdirAndRouteFileByNames(
+      registrationFileName,
       registrationsDirectoryPath,
       getRoutesDirectoryPath(registrationsDirectoryPath),
     );
   }
+}
+
+async function rmdirAndRouteFileByNames(
+  registrationFileName: string,
+  registrationsDirectoryPath: string,
+  routesDirectoryPath: string,
+): Promise<void> {
+  const caddyFileName = registrationFileName.replace(/\.json$/, ".caddy");
+  await rm(join(registrationsDirectoryPath, registrationFileName), { force: true });
+  await rm(join(routesDirectoryPath, caddyFileName), { force: true });
 }
 
 export function createRegistration(host: string, port: number): string {
@@ -76,8 +88,14 @@ export function createRegistration(host: string, port: number): string {
   return JSON.stringify(registration, null, 2);
 }
 
-export async function claimRegistration(host: string, port: number, registrationsDirectoryPath: string): Promise<void> {
-  const registrationPath: string = getRegistrationPath(host, registrationsDirectoryPath);
+export async function claimRegistration(
+  serviceName: string,
+  host: string,
+  path: string,
+  port: number,
+  registrationsDirectoryPath: string,
+): Promise<void> {
+  const registrationPath: string = getRegistrationPath(serviceName, host, registrationsDirectoryPath);
   const registrationText: string = createRegistration(host, port);
   const routesDirectoryPath: string = getRoutesDirectoryPath(registrationsDirectoryPath);
 
@@ -95,12 +113,13 @@ export async function claimRegistration(host: string, port: number, registration
     const existingRegistration: IRegistration = parseRegistration(existingText);
 
     if (isProcessAlive(existingRegistration.ownerPid)) {
+      const claimPath = path === "/" ? host : `${host}${path}`;
       throw new Error(
-        `${host} is already claimed by PID ${existingRegistration.ownerPid} on port ${existingRegistration.port}.`,
+        `${claimPath} is already claimed by PID ${existingRegistration.ownerPid} on port ${existingRegistration.port}.`,
       );
     }
 
-    await removeRouteFiles(existingRegistration.host, registrationsDirectoryPath, routesDirectoryPath);
+    await removeRouteFiles(serviceName, existingRegistration.host, registrationsDirectoryPath, routesDirectoryPath);
     await writeFile(registrationPath, registrationText, {
       encoding: "utf8",
       flag: "wx",
@@ -109,20 +128,24 @@ export async function claimRegistration(host: string, port: number, registration
 }
 
 export async function activateRoute(options: IActivateRouteOptions, routesDirectoryPath: string): Promise<void> {
-  const routePath: string = getRoutePath(options.host, routesDirectoryPath);
+  const routePath: string = getRoutePath(options.serviceName, options.host, routesDirectoryPath);
   const registrationsDirectoryPath: string = getRegistrationsDirectoryPath(routesDirectoryPath);
 
   try {
     await writeFile(routePath, renderRouteSnippet(options), "utf8");
     reloadCaddy();
   } catch (error) {
-    await removeRouteFiles(options.host, registrationsDirectoryPath, routesDirectoryPath);
+    await removeRouteFiles(options.serviceName, options.host, registrationsDirectoryPath, routesDirectoryPath);
     throw error;
   }
 }
 
-export async function unregisterRoute(host: string, registrationsDirectoryPath: string): Promise<void> {
-  const registrationPath: string = getRegistrationPath(host, registrationsDirectoryPath);
+export async function unregisterRoute(
+  serviceName: string,
+  host: string,
+  registrationsDirectoryPath: string,
+): Promise<void> {
+  const registrationPath: string = getRegistrationPath(serviceName, host, registrationsDirectoryPath);
   const routesDirectoryPath: string = getRoutesDirectoryPath(registrationsDirectoryPath);
 
   try {
@@ -136,25 +159,26 @@ export async function unregisterRoute(host: string, registrationsDirectoryPath: 
     return;
   }
 
-  await removeRouteFiles(host, registrationsDirectoryPath, routesDirectoryPath);
+  await removeRouteFiles(serviceName, host, registrationsDirectoryPath, routesDirectoryPath);
   reloadCaddy();
 }
 
 export async function removeRouteFiles(
+  serviceName: string,
   host: string,
   registrationsDirectoryPath: string,
   routesDirectoryPath: string,
 ): Promise<void> {
-  await rm(getRegistrationPath(host, registrationsDirectoryPath), { force: true });
-  await rm(getRoutePath(host, routesDirectoryPath), { force: true });
+  await rm(getRegistrationPath(serviceName, host, registrationsDirectoryPath), { force: true });
+  await rm(getRoutePath(serviceName, host, routesDirectoryPath), { force: true });
 }
 
-function getRegistrationPath(host: string, registrationsDirectoryPath: string): string {
-  return join(registrationsDirectoryPath, `${host}.json`);
+function getRegistrationPath(serviceName: string, host: string, registrationsDirectoryPath: string): string {
+  return join(registrationsDirectoryPath, `${host}_${serviceName}.json`);
 }
 
-function getRoutePath(host: string, routesDirectoryPath: string): string {
-  return join(routesDirectoryPath, `${host}.caddy`);
+function getRoutePath(serviceName: string, host: string, routesDirectoryPath: string): string {
+  return join(routesDirectoryPath, `${host}_${serviceName}.caddy`);
 }
 
 function getRegistrationsDirectoryPath(routesDirectoryPath: string): string {
@@ -282,14 +306,18 @@ export function createCaddyReloadErrorMessage(stdout: Uint8Array, stderr: Uint8A
 function renderRouteSnippet(options: IActivateRouteOptions): string {
   const proxyHost: string = resolveProxyHost(options.appBindHost);
   const appTarget: string = formatProxyAddress(proxyHost, options.appPort);
+  const handleDirective = options.path === "/" || options.path === "/*" ? "handle" : `handle ${options.path}`;
+  const blockHeader: string = [`${options.host} {`, "    tls internal"].join("\n");
+  const closeBlock: string = "}\n";
 
   if (options.devtoolsControlPort === undefined || options.documentInjectionPort === undefined) {
-    return [`${options.host} {`, "    tls internal", `    reverse_proxy ${appTarget}`, "}", ""].join("\n");
+    return [blockHeader, `    ${handleDirective} {`, `        reverse_proxy ${appTarget}`, "    }", closeBlock].join(
+      "\n",
+    );
   }
 
   return [
-    `${options.host} {`,
-    "    tls internal",
+    blockHeader,
     "",
     "    @devhost_control path /__devhost__/*",
     "    handle @devhost_control {",
@@ -301,10 +329,9 @@ function renderRouteSnippet(options: IActivateRouteOptions): string {
     `        reverse_proxy ${formatProxyAddress("127.0.0.1", options.documentInjectionPort)}`,
     "    }",
     "",
-    "    handle {",
+    `    ${handleDirective} {`,
     `        reverse_proxy ${appTarget}`,
     "    }",
-    "}",
-    "",
+    closeBlock,
   ].join("\n");
 }

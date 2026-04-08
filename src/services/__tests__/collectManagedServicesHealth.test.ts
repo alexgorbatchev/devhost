@@ -184,6 +184,7 @@ function createService(overrides: Partial<IResolvedDevhostService>): IResolvedDe
       port: 3200,
     },
     host: "hello.local.test",
+    path: "/",
     name: "web",
     port: 3200,
     portSource: "fixed",

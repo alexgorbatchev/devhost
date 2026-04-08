@@ -85,6 +85,7 @@ export interface IDevhostServiceConfig {
   port?: DevhostPortConfig;
   bindHost?: string;
   host?: string;
+  path?: string;
   dependsOn?: string[];
   health?: DevhostHealthConfig;
 }
@@ -121,6 +122,7 @@ export interface IValidatedDevhostService {
   port: DevhostPortConfig | null;
   bindHost: string;
   host: string | null;
+  path: string | null;
   dependsOn: string[];
   health: DevhostHealthConfig | null;
 }
@@ -157,6 +159,7 @@ export interface IResolvedDevhostService {
   port: number | null;
   bindHost: string;
   host: string | null;
+  path: string | null;
   dependsOn: string[];
   health: ResolvedHealthConfig;
   portSource: "fixed" | "auto" | "none";
@@ -185,6 +188,7 @@ export type ResolvedHealthConfig =
 export interface IInjectedServiceEnvironment {
   DEVHOST_BIND_HOST: string;
   DEVHOST_HOST?: string;
+  DEVHOST_PATH?: string;
   DEVHOST_MANIFEST_PATH?: string;
   DEVHOST_SERVICE_NAME?: string;
   PORT?: string;

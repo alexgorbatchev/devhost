@@ -134,6 +134,8 @@ port = 3000
 bindHost = "127.0.0.1"
 # `host` sets the public routed hostname.
 host = "hello.local.test"
+# `path` sets a subpath for mounting (e.g. "/api/*"). Defaults to `"/"`.
+# path = "/api/*"
 # `dependsOn` declares services that must start before this service.
 dependsOn = ["api"]
 # No explicit `[services.web.health]` block is used here.

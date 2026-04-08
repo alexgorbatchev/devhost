@@ -75,6 +75,7 @@ const serviceSchema = z
     env: z.record(z.string(), z.string()).optional(),
     port: portSchema.optional(),
     host: z.string().optional(),
+    path: nonEmptyStringSchema.optional(),
     health: healthSchema.optional(),
   })
   .strict();
@@ -143,7 +144,7 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
   }
 
   const validatedServices: Record<string, IValidatedDevhostService> = {};
-  const hosts: Set<string> = new Set<string>();
+  const routedPaths: Set<string> = new Set<string>();
   const fixedBindPorts: Set<string> = new Set<string>();
 
   for (const [serviceName, serviceConfig] of Object.entries(parsedManifest.services)) {
@@ -157,7 +158,7 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
       serviceConfig,
       manifestDirectoryPath,
       serviceNames,
-      hosts,
+      routedPaths,
       fixedBindPorts,
       errors,
     );
@@ -234,7 +235,7 @@ function validateService(
   serviceConfig: IDevhostServiceConfig,
   manifestDirectoryPath: string,
   serviceNames: string[],
-  hosts: Set<string>,
+  routedPaths: Set<string>,
   fixedBindPorts: Set<string>,
   errors: string[],
 ): IValidatedDevhostService {
@@ -249,6 +250,7 @@ function validateService(
   const env: Record<string, string> = serviceConfig.env ?? {};
   const port: DevhostPortConfig | null = serviceConfig.port ?? null;
   const host: string | null = serviceConfig.host ?? null;
+  const path: string | null = host !== null ? (serviceConfig.path ?? "/") : null;
   const health: DevhostHealthConfig | null = serviceConfig.health ?? null;
 
   for (const dependencyName of dependsOn) {
@@ -262,11 +264,12 @@ function validateService(
       errors.push(`services.${serviceName}.host must be a valid hostname, received: ${host}`);
     }
 
-    if (hosts.has(host)) {
-      errors.push(`services.${serviceName}.host duplicates another routed service: ${host}`);
+    const routeKey = path === "/" ? host : `${host}${path}`;
+    if (routedPaths.has(routeKey)) {
+      errors.push(`services.${serviceName}.host and path duplicate another routed service: ${routeKey}`);
     }
 
-    hosts.add(host);
+    routedPaths.add(routeKey);
 
     if (port === null) {
       errors.push(`services.${serviceName}.host requires services.${serviceName}.port.`);
@@ -316,6 +319,7 @@ function validateService(
     name: serviceName,
     port,
     host,
+    path,
     health,
   };
 }

@@ -48,6 +48,11 @@ type StartedService = {
   service: IResolvedDevhostService;
 };
 
+type ReservedHost = {
+  host: string;
+  serviceName: string;
+};
+
 export async function startStack(
   manifest: IResolvedDevhostManifest,
   serviceOrder: string[],
@@ -59,7 +64,7 @@ export async function startStack(
     stdinMode: options.stdinMode ?? "ignore",
   };
   const startedServices: StartedService[] = [];
-  const reservedHosts: string[] = [];
+  const reservedHosts: ReservedHost[] = [];
   const activeHosts: Set<string> = new Set<string>();
   const documentInjectionServers: Map<string, ReturnType<typeof startDocumentInjectionServer>> = new Map();
   const managedServices: IResolvedDevhostService[] = serviceOrder.map(
@@ -102,8 +107,14 @@ export async function startStack(
         continue;
       }
 
-      await claimRegistration(service.host, service.port, managedCaddyPaths.registrationsDirectoryPath);
-      reservedHosts.push(service.host);
+      await claimRegistration(
+        service.name,
+        service.host,
+        service.path ?? "/",
+        service.port,
+        managedCaddyPaths.registrationsDirectoryPath,
+      );
+      reservedHosts.push({ serviceName: service.name, host: service.host });
     }
 
     const devtoolsEnabled =
@@ -221,7 +232,7 @@ export async function startStack(
       await devtoolsControlServer?.publishHealthResponse();
 
       if (service.host !== null && service.port !== null) {
-        if (devtoolsEnabled) {
+        if (devtoolsEnabled && (service.path === null || service.path === "/" || service.path === "/*")) {
           const documentInjectionServer = startDocumentInjectionServer({
             backendHost: resolveProxyHost(service.bindHost),
             backendPort: service.port,
@@ -230,26 +241,30 @@ export async function startStack(
           documentInjectionServers.set(service.name, documentInjectionServer);
           await activateRoute(
             {
+              serviceName: service.name,
               appBindHost: service.bindHost,
               appPort: service.port,
               devtoolsControlPort: devtoolsControlServer?.port,
               documentInjectionPort: documentInjectionServer.port,
               host: service.host,
+              path: service.path ?? "/",
             },
             managedCaddyPaths.routesDirectoryPath,
           );
         } else {
           await activateRoute(
             {
+              serviceName: service.name,
               appBindHost: service.bindHost,
               appPort: service.port,
               host: service.host,
+              path: service.path ?? "/",
             },
             managedCaddyPaths.routesDirectoryPath,
           );
         }
 
-        activeHosts.add(service.host);
+        activeHosts.add(service.name);
       }
     }
 
@@ -297,14 +312,18 @@ export async function startStack(
       await devtoolsControlServer.stop();
     }
 
-    for (const host of activeHosts) {
-      await unregisterRoute(host, managedCaddyPaths.registrationsDirectoryPath);
+    for (const serviceName of activeHosts) {
+      const activeService = routedServices.find((s) => s.name === serviceName);
+      if (activeService && activeService.host) {
+        await unregisterRoute(serviceName, activeService.host, managedCaddyPaths.registrationsDirectoryPath);
+      }
     }
 
-    for (const host of reservedHosts) {
-      if (!activeHosts.has(host)) {
+    for (const reserved of reservedHosts) {
+      if (!activeHosts.has(reserved.serviceName)) {
         await removeRouteFiles(
-          host,
+          reserved.serviceName,
+          reserved.host,
           managedCaddyPaths.registrationsDirectoryPath,
           managedCaddyPaths.routesDirectoryPath,
         );
@@ -331,6 +350,10 @@ export function createInjectedServiceEnvironment(
 
   if (service.host !== null) {
     environment.DEVHOST_HOST = service.host;
+  }
+
+  if (service.path !== null) {
+    environment.DEVHOST_PATH = service.path;
   }
 
   return environment;

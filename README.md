@@ -212,6 +212,10 @@ The remaining variables are context metadata and must not be used as socket bind
   - injected only for routed services with `host`
   - the public routed hostname from the service `host` field
   - use this when the app needs to know its public development URL or origin
+- `DEVHOST_PATH`
+  - injected only for routed services with `host` and an explicit `path`
+  - the public routed subpath from the service `path` field
+  - use this when the app needs to mount its router under a specific prefix
 
 ### Manifest metadata
 
