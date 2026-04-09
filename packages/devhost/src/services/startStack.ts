@@ -43,12 +43,15 @@ export interface IStartStackOptions {
 type StartedService = {
   childProcess: Bun.Subprocess;
   service: IResolvedDevhostService;
+  isRestarting?: boolean;
 };
 
 type ClaimedFixedPort = {
   bindHost: string;
   port: number;
 };
+
+type ResolveAnyServiceExitCallback = (result: IServiceExitResult) => void;
 
 export async function startStack(
   manifest: IResolvedDevhostManifest,
@@ -79,6 +82,10 @@ export async function startStack(
   let exitCode: number | null = null;
   let thrownError: unknown = null;
   let resolveSignal: SignalHandlerCallback | null = null;
+  let resolveAnyServiceExit: ResolveAnyServiceExitCallback | null = null;
+  const anyServiceExitPromise = new Promise<IServiceExitResult>((resolve) => {
+    resolveAnyServiceExit = resolve;
+  });
   const signalHandlers: ISignalHandlerRegistration[] = [];
   const signalPromise: Promise<SupportedSignal> = new Promise<SupportedSignal>((resolve) => {
     resolveSignal = resolve;
@@ -134,6 +141,33 @@ export async function startStack(
         statusEnabled: manifest.devtools.status.enabled,
         getHealthResponse: async () => {
           return await collectManagedServicesHealth(manifest.name, managedServices, startedServices);
+        },
+        restartService: async (serviceName: string) => {
+          const startedService = startedServices.find((s) => s.service.name === serviceName);
+          if (startedService) {
+            if (startedService.isRestarting) {
+              return;
+            }
+            startedService.isRestarting = true;
+            await stopStartedService(startedService);
+            removeStartedService(startedServices, startedService);
+          }
+
+          const newStartedService = await startServiceWithRetries(
+            manifest,
+            serviceName,
+            logger,
+            startedServices,
+            devtoolsControlServer,
+            resolvedOptions,
+          );
+
+          // Watch the new service
+          void newStartedService.childProcess.exited.then((exitCode) => {
+            if (!newStartedService.isRestarting) {
+              resolveAnyServiceExit?.({ exitCode, serviceName: newStartedService.service.name });
+            }
+          });
         },
         projectRootPath: manifest.manifestDirectoryPath,
         stackName: manifest.name,
@@ -195,6 +229,12 @@ export async function startStack(
       );
       const service: IResolvedDevhostService = startedService.service;
 
+      void startedService.childProcess.exited.then((exitCode) => {
+        if (!startedService.isRestarting) {
+          resolveAnyServiceExit?.({ exitCode, serviceName: startedService.service.name });
+        }
+      });
+
       if (service.host !== null && service.port !== null) {
         if (devtoolsEnabled && (service.path === null || service.path === "/" || service.path === "/*")) {
           const documentInjectionServer = startDocumentInjectionServer({
@@ -243,7 +283,7 @@ export async function startStack(
           type: "signal",
         }),
       ),
-      waitForAnyServiceExit(startedServices).then(
+      anyServiceExitPromise.then(
         (result): IExitRaceResult => ({
           ...result,
           type: "exit",
@@ -503,19 +543,6 @@ async function stopStartedService(startedService: StartedService): Promise<void>
   }
 
   await childProcess.exited;
-}
-
-async function waitForAnyServiceExit(startedServices: StartedService[]): Promise<IServiceExitResult> {
-  return await Promise.race(
-    startedServices.map(async (startedService) => {
-      const exitCode: number = await startedService.childProcess.exited;
-
-      return {
-        exitCode,
-        serviceName: startedService.service.name,
-      };
-    }),
-  );
 }
 
 async function stopStartedServices(startedServices: StartedService[]): Promise<void> {

@@ -19,6 +19,7 @@ import {
   INJECTED_SCRIPT_PATH,
   LOGS_WEBSOCKET_PATH,
   maximumRetainedLogEntries,
+  RESTART_SERVICE_PATH,
   TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME,
   TERMINAL_SESSION_START_PATH,
   TERMINAL_SESSION_WEBSOCKET_PATH,
@@ -67,6 +68,7 @@ interface IStartDevtoolsControlServerOptions {
   statusEnabled?: boolean;
   getHealthResponse: () => Promise<HealthResponse>;
   projectRootPath: string;
+  restartService?: (serviceName: string) => Promise<void>;
   stackName: string;
   startTerminalSession?: (
     request: StartTerminalSessionRequest,
@@ -137,6 +139,38 @@ export async function startDevtoolsControlServer(
             "content-type": "text/css; charset=utf-8",
           },
         });
+      }
+
+      if (requestUrl.pathname === RESTART_SERVICE_PATH) {
+        if (!isAuthorizedControlRequest(request, controlToken)) {
+          return new Response("Forbidden", { status: 403 });
+        }
+
+        if (request.method.toUpperCase() === "POST") {
+          const requestBody: unknown = await readRequestJson(request);
+
+          if (
+            typeof requestBody !== "object" ||
+            requestBody === null ||
+            typeof (requestBody as Record<string, unknown>).serviceName !== "string"
+          ) {
+            return new Response("Invalid restart service payload.", { status: 400 });
+          }
+
+          if (options.restartService) {
+            try {
+              await options.restartService((requestBody as Record<string, string>).serviceName);
+              return Response.json({ success: true });
+            } catch (error) {
+              const message: string = error instanceof Error ? error.message : String(error);
+              return new Response(message, { status: 500 });
+            }
+          }
+
+          return new Response("Restart service not supported.", { status: 501 });
+        }
+
+        return new Response("Method not allowed", { status: 405 });
       }
 
       if (requestUrl.pathname === TERMINAL_SESSION_START_PATH) {

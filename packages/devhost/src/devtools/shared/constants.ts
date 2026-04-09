@@ -4,6 +4,7 @@ export const XTERM_STYLESHEET_PATH: string = `${CONTROL_PATH_PREFIX}/xterm.css`;
 export const TERMINAL_SESSION_START_PATH: string = `${CONTROL_PATH_PREFIX}/terminal-sessions`;
 export const HEALTH_WEBSOCKET_PATH: string = `${CONTROL_PATH_PREFIX}/ws/health`;
 export const LOGS_WEBSOCKET_PATH: string = `${CONTROL_PATH_PREFIX}/ws/logs`;
+export const RESTART_SERVICE_PATH: string = `${CONTROL_PATH_PREFIX}/restart-service`;
 export const TERMINAL_SESSION_WEBSOCKET_PATH: string = `${CONTROL_PATH_PREFIX}/ws/terminal`;
 export const DEVHOST_SERVICE_NAME: string = "devhost";
 export const DEVTOOLS_CONTROL_TOKEN_HEADER_NAME: string = "x-devhost-control-token";

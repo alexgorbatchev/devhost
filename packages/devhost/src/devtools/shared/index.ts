@@ -1,5 +1,10 @@
 export { Button } from "./Button";
-export { DEVTOOLS_HOST_ID, DEVTOOLS_ROOT_ID } from "./constants";
+export {
+  DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
+  DEVTOOLS_HOST_ID,
+  DEVTOOLS_ROOT_ID,
+  RESTART_SERVICE_PATH,
+} from "./constants";
 export { configureDevtoolsCss, css, cx, injectGlobal } from "./devtoolsCss";
 export { ThemeProvider } from "./ThemeProvider";
 export { type IDevtoolsTheme } from "./devtoolsTheme";
