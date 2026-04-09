@@ -10,7 +10,8 @@ const projectId: string = "631518da-37bf-4d31-867f-10908bd9022c";
 const environmentId: string = "cb2b2b96-f966-46cd-a594-19c1da4e8b91";
 const serviceId: string = "5ce1c234-e1a8-4d0a-8ea0-79e3d413decd";
 const expectedBindHost: string = "0.0.0.0";
-const expectedStartCommand: string = "bun run --cwd packages/www dev";
+const expectedBuildCommand: string = "bun run --cwd packages/www build";
+const expectedStartCommand: string = "bun run --cwd packages/www start";
 const publicUrl: string = "https://devhost.up.railway.app/";
 const railwayGraphqlUrl: string = "https://backboard.railway.com/graphql/v2";
 const skipDeployEnvironmentVariableName: string = "DEPLOY_WWW_RAILWAY_SKIP_DEPLOY";
@@ -23,6 +24,7 @@ interface IRailwayConfigFile {
 }
 
 interface IServiceInstanceSettings {
+  buildCommand: string | null;
   rootDirectory: string | null;
   startCommand: string | null;
 }
@@ -126,6 +128,7 @@ function ensureRequiredServiceSettings(): void {
   const serviceInstanceSettings = queryServiceInstanceSettings();
 
   if (
+    serviceInstanceSettings.buildCommand === expectedBuildCommand &&
     serviceInstanceSettings.startCommand === expectedStartCommand &&
     serviceInstanceSettings.rootDirectory === null
   ) {
@@ -139,6 +142,7 @@ function ensureRequiredServiceSettings(): void {
     {
       environmentId,
       input: {
+        buildCommand: expectedBuildCommand,
         rootDirectory: null,
         startCommand: expectedStartCommand,
       },
@@ -150,6 +154,10 @@ function ensureRequiredServiceSettings(): void {
 
   if (updatedServiceInstanceSettings.rootDirectory !== null) {
     throw new Error("Railway service rootDirectory is still set after attempted update.");
+  }
+
+  if (updatedServiceInstanceSettings.buildCommand !== expectedBuildCommand) {
+    throw new Error(`Railway service buildCommand is still ${String(updatedServiceInstanceSettings.buildCommand)} after attempted update.`);
   }
 
   if (updatedServiceInstanceSettings.startCommand !== expectedStartCommand) {
@@ -179,6 +187,7 @@ function ensureRequiredServiceVariable(): void {
 function validateWwwWorkspace(): void {
   logStep("Validating packages/www");
   runInheritedCommand("bun", ["run", "--cwd", "packages/www", "check"]);
+  runInheritedCommand("bun", ["run", "--cwd", "packages/www", "build"]);
 }
 
 function deployLocalCode(): void {
@@ -208,11 +217,20 @@ async function verifyLatestDeployment(): Promise<void> {
     "node",
     "latestDeployment",
   ];
+  const buildCommand = readNullableStringAtPath(
+    fullStatusResult,
+    [...latestDeploymentPath, "meta", "serviceManifest", "build", "buildCommand"],
+  );
   const startCommand = expectStringAtPath(
     fullStatusResult,
     [...latestDeploymentPath, "meta", "serviceManifest", "deploy", "startCommand"],
     "start command",
   );
+
+  if (buildCommand !== expectedBuildCommand) {
+    printLatestBuildLogs();
+    throw new Error(`Latest deployment used unexpected build command: ${String(buildCommand)}`);
+  }
 
   if (startCommand !== expectedStartCommand) {
     printLatestBuildLogs();
@@ -296,11 +314,12 @@ function printLatestDeploymentLogs(): void {
 
 function queryServiceInstanceSettings(): IServiceInstanceSettings {
   const result = runRailwayGraphqlQuery(
-    "query($serviceId:String!,$environmentId:String!){serviceInstance(serviceId:$serviceId,environmentId:$environmentId){startCommand rootDirectory}}",
+    "query($serviceId:String!,$environmentId:String!){serviceInstance(serviceId:$serviceId,environmentId:$environmentId){buildCommand startCommand rootDirectory}}",
     { environmentId, serviceId },
   );
 
   return {
+    buildCommand: readNullableStringAtPath(result, ["data", "serviceInstance", "buildCommand"]),
     rootDirectory: readNullableStringAtPath(result, ["data", "serviceInstance", "rootDirectory"]),
     startCommand: readNullableStringAtPath(result, ["data", "serviceInstance", "startCommand"]),
   };

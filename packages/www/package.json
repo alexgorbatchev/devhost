@@ -28,9 +28,11 @@
     "vitest": "4.1.3"
   },
   "scripts": {
+    "build": "bun scripts/buildProduction.ts",
     "check": "./scripts/check.sh",
     "dev": "bun src/server.ts",
     "log-demo": "bun scripts/emitDemoLogs.ts",
+    "start": "NODE_ENV=production bun ./dist/server.js",
     "storybook": "storybook dev --ci --port 6007"
   }
 }

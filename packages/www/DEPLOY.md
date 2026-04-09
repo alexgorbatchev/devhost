@@ -20,7 +20,8 @@
 
 The deploy script enforces these settings before deploy:
 
-- service start command = `bun run --cwd packages/www dev`
+- service build command = `bun run --cwd packages/www build`
+- service start command = `bun run --cwd packages/www start`
 - service root directory = unset
 - service variable `DEVHOST_BIND_HOST=0.0.0.0`
 
@@ -83,13 +84,30 @@ railway variable set DEVHOST_BIND_HOST=0.0.0.0 --skip-deploys
 
 ```sh
 bun run --cwd packages/www check
+bun run --cwd packages/www build
 ```
+
+What `bun run --cwd packages/www build` does:
+
+- deletes the previous `packages/www/dist/` output
+- builds the browser app from `packages/www/index.html` into static production assets under `packages/www/dist/static/`
+- builds the production Bun server from `packages/www/src/productionServer.ts` into `packages/www/dist/server.js`
+- copies `packages/www/public/` into `packages/www/dist/public/` so the recording JSON files are part of the deploy artifact
+
+This is not an optional optimization step. Railway must deploy the built frontend and the production server artifact.
 
 ### 6. Deploy local code
 
 ```sh
 railway up
 ```
+
+Railway uses the configured production commands:
+
+- build command: `bun run --cwd packages/www build`
+- start command: `bun run --cwd packages/www start`
+
+`start` runs `NODE_ENV=production bun ./dist/server.js`, so production serves the built artifact instead of the development server.
 
 Do not use `railway deploy` for this app.
 
@@ -104,7 +122,8 @@ railway status --json
 Required latest deployment facts:
 
 - latest deployment status is `SUCCESS`
-- latest deployment effective start command is `bun run --cwd packages/www dev`
+- latest deployment effective build command is `bun run --cwd packages/www build`
+- latest deployment effective start command is `bun run --cwd packages/www start`
 
 ### 8. Inspect latest build logs
 
@@ -151,6 +170,7 @@ Common failure signature:
 - `DEVHOST_BIND_HOST` is missing or not `0.0.0.0`
 - service root directory is set
 - latest deployment status is `FAILED`
+- latest deployment uses the wrong build or start command
 - build logs contain `No start command detected`
 - `agent-browser` shows an unstyled plaintext page or collapsed layout
 - the rendered HTML references chunk assets through `/../../`
