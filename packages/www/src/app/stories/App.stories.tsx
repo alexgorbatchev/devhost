@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent, within } from "storybook/test";
 
-import { App } from "./App";
+import { App } from "../App";
 
 const missingReplayPaths: Set<string> = new Set([
   "/recordings/marketing/source-jumps.json",
@@ -10,12 +10,15 @@ const missingReplayPaths: Set<string> = new Set([
   "/recordings/marketing/routing-health.json",
 ]);
 
+type FetchStoryCleanup = () => void;
+type StoryRequestInput = RequestInfo | URL;
+
 const meta: Meta<typeof App> = {
   component: App,
-  beforeEach(): () => void {
+  beforeEach(): FetchStoryCleanup {
     const originalFetch: typeof globalThis.fetch = globalThis.fetch;
     const mockedFetch: typeof globalThis.fetch = Object.assign(
-      (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+      (input: StoryRequestInput, init?: RequestInit): Promise<Response> => {
         const requestUrl = readRequestUrl(input, window.location.href);
 
         if (missingReplayPaths.has(requestUrl.pathname)) {
@@ -42,7 +45,6 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const Default: Story = {
-  args: {},
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
     const themeSelect = canvas.getByLabelText("Theme");
@@ -90,7 +92,7 @@ const Default: Story = {
 
 export { Default as App };
 
-function readRequestUrl(input: RequestInfo | URL, baseUrl: string): URL {
+function readRequestUrl(input: StoryRequestInput, baseUrl: string): URL {
   if (typeof input === "string") {
     return new URL(input, baseUrl);
   }

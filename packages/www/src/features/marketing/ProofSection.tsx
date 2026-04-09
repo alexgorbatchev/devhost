@@ -21,7 +21,7 @@ const proofCards: readonly IProofCard[] = [
 
 export function ProofSection(): JSX.Element {
   return (
-    <section className="grid gap-4" aria-labelledby="proof-section-title">
+    <section className="grid gap-4" aria-labelledby="proof-section-title" data-testid="ProofSection">
       <SectionHeader
         title="The page now sells the real constraints, not decorative abstractions."
         titleId="proof-section-title"

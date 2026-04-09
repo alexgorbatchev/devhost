@@ -19,7 +19,7 @@ const heroCommandSnippets: readonly string[] = [
 
 export function HeroSection(props: IHeroSectionProps): JSX.Element {
   return (
-    <section className="grid gap-4" aria-labelledby="hero-title">
+    <section className="grid gap-4" aria-labelledby="hero-title" data-testid="HeroSection">
       <Surface className="p-6 sm:p-8" shadow="raised">
         <div className="grid gap-6">
           <div className="flex justify-end">

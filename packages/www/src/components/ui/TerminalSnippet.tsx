@@ -6,7 +6,10 @@ export interface ITerminalSnippetProps {
 
 export function TerminalSnippet(props: ITerminalSnippetProps): JSX.Element {
   return (
-    <div className="overflow-hidden rounded-lg border border-border-subtle bg-terminal text-terminal-foreground shadow-[var(--shadow-soft)]">
+    <div
+      className="overflow-hidden rounded-lg border border-border-subtle bg-terminal text-terminal-foreground shadow-[var(--shadow-soft)]"
+      data-testid="TerminalSnippet"
+    >
       {props.snippets.map((snippet: string, index: number) => {
         const hasDivider: boolean = index < props.snippets.length - 1;
         const preClassName = [

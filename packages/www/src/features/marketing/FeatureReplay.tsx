@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type JSX } from "react";
 import { FeatureReplayPanel, loadRrwebDemoRecording, type IRrwebDemoRecording } from "../rrweb";
 
 type ReplayLoadStatus = "error" | "loading" | "missing" | "ready";
+type EffectCallbackResult = (() => void) | void;
 
 export interface IFeatureReplayProps {
   demoRecordingUrl: string;
@@ -17,7 +18,7 @@ export function FeatureReplay(props: IFeatureReplayProps): JSX.Element {
   const [status, setStatus] = useState<ReplayLoadStatus>("loading");
   const replayHeadingId: string = `feature-replay-${props.featureId}`;
 
-  useEffect((): (() => void) | void => {
+  useEffect((): EffectCallbackResult => {
     const cachedRecording: IRrwebDemoRecording | null | undefined = recordingsByUrlRef.current.get(
       props.demoRecordingUrl,
     );
@@ -59,7 +60,11 @@ export function FeatureReplay(props: IFeatureReplayProps): JSX.Element {
   }, [props.demoRecordingUrl]);
 
   return (
-    <section className="grid gap-3 border-t border-border-subtle pt-4" aria-labelledby={replayHeadingId}>
+    <section
+      className="grid gap-3 border-t border-border-subtle pt-4"
+      aria-labelledby={replayHeadingId}
+      data-testid="FeatureReplay"
+    >
       <div className="grid gap-2">
         <h4
           id={replayHeadingId}

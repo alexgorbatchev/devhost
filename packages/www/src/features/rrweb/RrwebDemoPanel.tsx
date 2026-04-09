@@ -18,8 +18,10 @@ export interface IRrwebDemoPanelProps {
 type EffectCallbackResult = (() => void) | void;
 
 export function RrwebDemoPanel(props: IRrwebDemoPanelProps): JSX.Element {
+  const { isDevelopmentMode, isRecording, onExportRecording, onStartRecording, onStopRecording, recording } = props;
+
   useEffect((): EffectCallbackResult => {
-    if (!props.isDevelopmentMode) {
+    if (!isDevelopmentMode) {
       return;
     }
 
@@ -30,12 +32,12 @@ export function RrwebDemoPanel(props: IRrwebDemoPanelProps): JSX.Element {
 
       event.preventDefault();
 
-      if (props.isRecording) {
-        props.onStopRecording();
+      if (isRecording) {
+        onStopRecording();
         return;
       }
 
-      props.onStartRecording();
+      onStartRecording();
     }
 
     window.addEventListener("keydown", handleWindowKeyDown);
@@ -43,48 +45,39 @@ export function RrwebDemoPanel(props: IRrwebDemoPanelProps): JSX.Element {
     return (): void => {
       window.removeEventListener("keydown", handleWindowKeyDown);
     };
-  }, [props.isDevelopmentMode, props.isRecording, props.onStartRecording, props.onStopRecording]);
+  }, [isDevelopmentMode, isRecording, onStartRecording, onStopRecording]);
 
-  if (!props.isDevelopmentMode) {
-    return <></>;
-  }
-
-  const shouldShowPreview: boolean = props.recording !== null && !props.isRecording;
-  const shouldShowStartButton: boolean = props.recording === null && !props.isRecording;
-  const shouldShowExportButton: boolean = props.recording !== null && !props.isRecording;
+  const shouldShowPreview: boolean = recording !== null && !isRecording;
+  const shouldShowStartButton: boolean = recording === null && !isRecording;
+  const shouldShowExportButton: boolean = recording !== null && !isRecording;
 
   return (
-    <>
-      {shouldShowPreview ? (
+    <div className="contents" data-testid="RrwebDemoPanel">
+      {isDevelopmentMode && shouldShowPreview ? (
         <div className="fixed inset-0 z-40 bg-background" data-testid="RrwebDemoPanel--preview">
-          <FeatureReplayPanel emptyMessage="Preview unavailable." isFullscreen recording={props.recording} />
+          <FeatureReplayPanel emptyMessage="Preview unavailable." isFullscreen recording={recording} />
         </div>
       ) : null}
 
-      {shouldShowStartButton || shouldShowExportButton ? (
+      {isDevelopmentMode && (shouldShowStartButton || shouldShowExportButton) ? (
         <section
           className="fixed bottom-4 left-4 z-50 flex flex-wrap items-center gap-2"
           aria-label="rrweb recording controls"
-          data-testid="RrwebDemoPanel"
+          data-testid="RrwebDemoPanel--controls"
         >
           {shouldShowStartButton ? (
-            <Button
-              aria-keyshortcuts={startShortcutLabel}
-              size="large"
-              variant="primary"
-              onClick={props.onStartRecording}
-            >
+            <Button aria-keyshortcuts={startShortcutLabel} size="large" variant="primary" onClick={onStartRecording}>
               Start recording · {startShortcutLabel}
             </Button>
           ) : null}
 
           {shouldShowExportButton ? (
-            <Button size="large" onClick={props.onExportRecording}>
+            <Button size="large" onClick={onExportRecording}>
               Export JSON
             </Button>
           ) : null}
         </section>
       ) : null}
-    </>
+    </div>
   );
 }

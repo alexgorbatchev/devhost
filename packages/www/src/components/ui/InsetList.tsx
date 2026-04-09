@@ -6,7 +6,7 @@ export interface IInsetListProps {
 
 export function InsetList(props: IInsetListProps): JSX.Element {
   return (
-    <ul className="grid gap-2">
+    <ul className="grid gap-2" data-testid="InsetList">
       {props.items.map((item: string, index: number) => {
         return (
           <li

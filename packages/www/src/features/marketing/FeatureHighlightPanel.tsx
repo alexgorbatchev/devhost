@@ -6,7 +6,7 @@ import type { IFeatureHighlight } from "./featureHighlights";
 
 export function FeatureHighlightPanel(props: IFeatureHighlight): JSX.Element {
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-4" data-testid="FeatureHighlightPanel">
       <h3 className="text-balance text-2xl font-medium leading-tight tracking-[-0.05em] text-card-foreground sm:text-3xl">
         {props.title}
       </h3>

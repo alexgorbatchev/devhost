@@ -50,7 +50,7 @@ process = true`,
 
 export function WorkflowSection(): JSX.Element {
   return (
-    <section className="grid gap-4" aria-labelledby="workflow-section-title">
+    <section className="grid gap-4" aria-labelledby="workflow-section-title" data-testid="WorkflowSection">
       <SectionHeader
         description="This is where devhost earns its keep: boot the edge, resolve the stack, route the host, then keep the debugging workflow close enough to the page that context does not leak away."
         title="Give the stack a disciplined path from boot to inspection."

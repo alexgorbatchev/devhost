@@ -42,7 +42,7 @@ export function Button(props: IButtonProps): JSX.Element {
     .join(" ");
 
   return (
-    <button {...buttonProps} className={resolvedClassName} type={type}>
+    <button {...buttonProps} className={resolvedClassName} data-testid="Button" type={type}>
       {children}
     </button>
   );

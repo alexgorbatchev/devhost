@@ -6,6 +6,8 @@ import { featureHighlights, type FeatureHighlightId, type IFeatureHighlight } fr
 
 const initialFeatureHighlight: IFeatureHighlight = readInitialFeatureHighlight();
 
+type FeatureTabRefSetter = (element: HTMLButtonElement | null) => void;
+
 export function FeatureSection(): JSX.Element {
   const [activeFeatureId, setActiveFeatureId] = useState<FeatureHighlightId>(initialFeatureHighlight.id);
   const featureTabRefs = useRef<Map<FeatureHighlightId, HTMLButtonElement>>(new Map());
@@ -60,7 +62,7 @@ export function FeatureSection(): JSX.Element {
   }
 
   return (
-    <section className="grid gap-4" aria-labelledby="feature-section-title">
+    <section className="grid gap-4" aria-labelledby="feature-section-title" data-testid="FeatureSection">
       <SectionHeader
         description="The point is not to proxy everything. The point is to expose the right host, keep the stack honest, and put the debugging workflow where the page already lives."
         title="A routed development surface, not another localhost wrapper."
@@ -146,7 +148,7 @@ function createFeatureTabId(featureHighlightId: FeatureHighlightId): string {
 function createFeatureTabRef(
   featureTabRefs: Map<FeatureHighlightId, HTMLButtonElement>,
   featureId: FeatureHighlightId,
-): (element: HTMLButtonElement | null) => void {
+): FeatureTabRefSetter {
   return (element: HTMLButtonElement | null): void => {
     if (element === null) {
       featureTabRefs.delete(featureId);
