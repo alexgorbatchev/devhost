@@ -1,4 +1,5 @@
-import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import assert from "node:assert";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -6,6 +7,24 @@ import { afterEach, describe, expect, test } from "bun:test";
 
 const temporaryDirectoryPaths: string[] = [];
 const packageRootPath: string = resolve(import.meta.dir, "..", "..", "..");
+
+type ProcessOutput = Buffer | Uint8Array | undefined;
+
+interface IStartStackCleanupFailurePayload {
+  errorMessage: string | null;
+  hostClaimFileNames: string[];
+  portClaimFileNames: string[];
+  registrationFileNames: string[];
+  routeFileNames: string[];
+}
+
+interface IStartStackAutoPortRetryPayload {
+  assignedPort: string | null;
+  errorMessage: string | null;
+  exitCode: number | null;
+  finalPort: number | null;
+  infoLines: string[];
+}
 
 afterEach(async () => {
   await Promise.all(
@@ -105,13 +124,7 @@ describe("startStack cleanup", () => {
 
     expect(stderrText).toBe("");
 
-    const payload = JSON.parse(stdoutText) as {
-      errorMessage: string | null;
-      hostClaimFileNames: string[];
-      portClaimFileNames: string[];
-      registrationFileNames: string[];
-      routeFileNames: string[];
-    };
+    const payload = parseCleanupFailurePayload(stdoutText);
 
     expect(payload.errorMessage).toBe("Service web exited before passing its health check with code 1.");
     expect(payload.hostClaimFileNames).toEqual([]);
@@ -246,13 +259,7 @@ describe("startStack cleanup", () => {
 
     expect(stderrText).toBe(`[web] listen EADDRINUSE: address already in use 127.0.0.1:${initialPort}`);
 
-    const payload = JSON.parse(stdoutText) as {
-      assignedPort: string | null;
-      errorMessage: string | null;
-      exitCode: number | null;
-      finalPort: number | null;
-      infoLines: string[];
-    };
+    const payload = parseAutoPortRetryPayload(stdoutText);
 
     expect(payload.assignedPort).toBe(String(payload.finalPort));
     expect(payload.errorMessage).toBe(null);
@@ -264,6 +271,60 @@ describe("startStack cleanup", () => {
   });
 });
 
-function decodeProcessOutput(output: Buffer | Uint8Array | undefined): string {
+function decodeProcessOutput(output: ProcessOutput): string {
   return new TextDecoder().decode(output ?? new Uint8Array()).trim();
+}
+
+function parseCleanupFailurePayload(stdoutText: string): IStartStackCleanupFailurePayload {
+  const payload: unknown = JSON.parse(stdoutText);
+
+  assert(isStartStackCleanupFailurePayload(payload), "Unexpected cleanup failure payload.");
+
+  return payload;
+}
+
+function parseAutoPortRetryPayload(stdoutText: string): IStartStackAutoPortRetryPayload {
+  const payload: unknown = JSON.parse(stdoutText);
+
+  assert(isStartStackAutoPortRetryPayload(payload), "Unexpected auto-port retry payload.");
+
+  return payload;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isNullableNumber(value: unknown): value is number | null {
+  return value === null || typeof value === "number";
+}
+
+function isNullableString(value: unknown): value is string | null {
+  return value === null || typeof value === "string";
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item: unknown): boolean => typeof item === "string");
+}
+
+function isStartStackCleanupFailurePayload(value: unknown): value is IStartStackCleanupFailurePayload {
+  return (
+    isRecord(value) &&
+    isNullableString(value.errorMessage) &&
+    isStringArray(value.hostClaimFileNames) &&
+    isStringArray(value.portClaimFileNames) &&
+    isStringArray(value.registrationFileNames) &&
+    isStringArray(value.routeFileNames)
+  );
+}
+
+function isStartStackAutoPortRetryPayload(value: unknown): value is IStartStackAutoPortRetryPayload {
+  return (
+    isRecord(value) &&
+    isNullableString(value.assignedPort) &&
+    isNullableString(value.errorMessage) &&
+    isNullableNumber(value.exitCode) &&
+    isNullableNumber(value.finalPort) &&
+    isStringArray(value.infoLines)
+  );
 }

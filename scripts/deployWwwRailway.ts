@@ -29,6 +29,9 @@ interface IServiceInstanceSettings {
   startCommand: string | null;
 }
 
+type JsonPathSegment = number | string;
+type JsonPath = JsonPathSegment[];
+
 export async function deployWwwRailway(): Promise<void> {
   changeToRepositoryRoot();
   verifyRepositoryLayout();
@@ -205,7 +208,7 @@ async function verifyLatestDeployment(): Promise<void> {
   }
 
   const fullStatusResult = runJsonCommand("railway", ["status", "--json"]);
-  const latestDeploymentPath: Array<number | string> = [
+  const latestDeploymentPath: JsonPath = [
     "environments",
     "edges",
     0,
@@ -386,6 +389,8 @@ function resolveRailwayAccessToken(): string {
 }
 
 function fetchJson(url: string, requestInit: RequestInit): unknown {
+  const authorizationHeaderValue = readRequestHeaderValue(requestInit.headers, "Authorization", "");
+  const contentTypeHeaderValue = readRequestHeaderValue(requestInit.headers, "Content-Type", "application/json");
   const responseResult = spawnSync(
     "curl",
     [
@@ -394,9 +399,9 @@ function fetchJson(url: string, requestInit: RequestInit): unknown {
       requestInit.method ?? "GET",
       url,
       "-H",
-      `Authorization: ${String(requestInit.headers instanceof Headers ? (requestInit.headers.get("Authorization") ?? "") : ((requestInit.headers as Record<string, string>).Authorization ?? ""))}`,
+      `Authorization: ${authorizationHeaderValue}`,
       "-H",
-      `Content-Type: ${String(requestInit.headers instanceof Headers ? (requestInit.headers.get("Content-Type") ?? "application/json") : ((requestInit.headers as Record<string, string>)["Content-Type"] ?? "application/json"))}`,
+      `Content-Type: ${contentTypeHeaderValue}`,
       "--data",
       typeof requestInit.body === "string" ? requestInit.body : "",
     ],
@@ -474,7 +479,7 @@ function readFirstNonNegativeIndex(...indices: number[]): number | null {
   return Math.min(...nonNegativeIndices);
 }
 
-function expectStringAtPath(value: unknown, path: Array<number | string>, label: string): string {
+function expectStringAtPath(value: unknown, path: JsonPath, label: string): string {
   const nestedValue = readPath(value, path);
 
   if (typeof nestedValue !== "string") {
@@ -484,7 +489,7 @@ function expectStringAtPath(value: unknown, path: Array<number | string>, label:
   return nestedValue;
 }
 
-function readNullableStringAtPath(value: unknown, path: Array<number | string>): string | null {
+function readNullableStringAtPath(value: unknown, path: JsonPath): string | null {
   const nestedValue = readPath(value, path);
 
   if (nestedValue === null || nestedValue === undefined) {
@@ -498,7 +503,7 @@ function readNullableStringAtPath(value: unknown, path: Array<number | string>):
   return nestedValue;
 }
 
-function readOptionalStringAtPath(value: unknown, path: Array<number | string>): string | null {
+function readOptionalStringAtPath(value: unknown, path: JsonPath): string | null {
   const nestedValue = readPath(value, path);
 
   if (nestedValue === null || nestedValue === undefined) {
@@ -512,7 +517,7 @@ function readOptionalStringAtPath(value: unknown, path: Array<number | string>):
   return nestedValue;
 }
 
-function readPath(value: unknown, path: Array<number | string>): unknown {
+function readPath(value: unknown, path: JsonPath): unknown {
   let currentValue: unknown = value;
 
   for (const segment of path) {
@@ -539,6 +544,28 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+function readRequestHeaderValue(headers: HeadersInit | undefined, name: string, fallbackValue: string): string {
+  if (headers === undefined) {
+    return fallbackValue;
+  }
+
+  if (headers instanceof Headers) {
+    return headers.get(name) ?? fallbackValue;
+  }
+
+  if (Array.isArray(headers)) {
+    const headerEntry = headers.find((entry): boolean => {
+      return entry[0].toLowerCase() === name.toLowerCase();
+    });
+
+    return headerEntry?.[1] ?? fallbackValue;
+  }
+
+  const headerValue = headers[name];
+
+  return typeof headerValue === "string" ? headerValue : fallbackValue;
+}
+
 function isRailwayConfigFile(value: unknown): value is IRailwayConfigFile {
   return isRecord(value);
 }
@@ -556,7 +583,7 @@ function isTerminalDeploymentStatus(deploymentStatus: string): boolean {
 }
 
 function waitMilliseconds(milliseconds: number): Promise<void> {
-  return new Promise((resolvePromise: () => void): void => {
+  return new Promise((resolvePromise): void => {
     setTimeout(resolvePromise, milliseconds);
   });
 }
