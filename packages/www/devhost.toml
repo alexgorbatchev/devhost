@@ -1,4 +1,4 @@
-name = "devhost-www"
+name = "www"
 
 [devtools.editor]
 enabled = true

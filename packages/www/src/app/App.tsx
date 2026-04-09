@@ -189,24 +189,7 @@ export function App(): JSX.Element {
     <main className="app-shell relative min-h-dvh bg-background text-foreground flex flex-col" data-testid="App">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 h-14 flex items-center justify-between max-w-4xl">
-          <div className="flex font-semibold text-lg items-center gap-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-primary"
-            >
-              <path d="M12 2v20" />
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-            devhost
-          </div>
+          <div className="flex font-semibold text-lg items-center gap-2">@alexgorbatchev/devhost</div>
 
           <div className="flex items-center gap-4">
             <button

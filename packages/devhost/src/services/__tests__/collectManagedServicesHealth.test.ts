@@ -126,10 +126,6 @@ describe("collectManagedServicesHealth", () => {
     await expect(collectManagedServicesHealth("hello-stack", managedServices, startedServices)).resolves.toEqual({
       services: [
         {
-          name: "hello-stack",
-          status: true,
-        },
-        {
           name: "web",
           status: true,
         },

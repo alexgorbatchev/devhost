@@ -45,12 +45,6 @@ export async function collectManagedServicesHealth(
   );
 
   return {
-    services: [
-      {
-        name: devhostServiceName,
-        status: true,
-      },
-      ...services,
-    ],
+    services,
   };
 }
