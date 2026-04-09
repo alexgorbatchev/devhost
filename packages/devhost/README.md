@@ -169,6 +169,33 @@ Copy it to `devhost.toml` in your project root and trim it down to the services 
 
 For same-host composition within one manifest, use distinct paths such as `/api/*` and `/admin/*`, or combine one root-mounted fallback service with more specific subpath services on the same hostname.
 
+### Docker-backed services
+
+`devhost` can front a Docker- or Compose-managed backend, but only when the container publishes a port onto the host and `devhost` routes to that host-visible port.
+`devhost` does not proxy to Docker-internal service names or container-network-only addresses.
+
+For example, if your Compose service publishes `4000:4000`, you can route it like this:
+
+```toml
+name = "hello-stack"
+
+[services.ui]
+primary = true
+command = ["bun", "run", "ui:dev"]
+port = 3000
+host = "hello.localhost"
+dependsOn = ["api"]
+
+[services.api]
+command = ["docker", "compose", "up", "--build", "api"]
+port = 4000
+host = "api.hello.localhost"
+health = { http = "http://127.0.0.1:4000/healthz" }
+```
+
+That works because the API is reachable from the host on `127.0.0.1:4000`.
+If the API only exists inside the Docker network, for example as `http://api:4000`, `devhost` cannot route to it directly.
+
 ## Injected environment
 
 `devhost` injects environment variables into each service child process.

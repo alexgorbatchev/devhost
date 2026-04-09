@@ -153,6 +153,12 @@ PUBLIC_API_ORIGIN = "https://api.hello.local.test"
 # A routed backend with explicit HTTP health and IPv6 loopback binding.
 # This example uses its own hostname, but it could also share `hello.local.test`
 # under a distinct path such as `path = "/api/*"`.
+#
+# Docker-backed variant:
+# - publish the container port onto the host, for example Compose `ports: ["4000:4000"]`
+# - keep `port = 4000` here because devhost routes to the host-visible port
+# - replace the command with `command = ["docker", "compose", "up", "--build", "api"]`
+# - keep HTTP health checks on `127.0.0.1`, `localhost`, or `::1`; Docker-internal names such as `api` are not valid here
 command = ["bun", "run", "api:dev"]
 cwd = "./api"
 port = 4000
