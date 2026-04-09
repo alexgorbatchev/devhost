@@ -16,8 +16,8 @@ const Default: Story = {
     const canvas = within(canvasElement);
 
     await expect(canvas.getByTestId("FeatureSection")).toBeInTheDocument();
-    await expect(canvas.getByRole("tab", { name: "Annotation handoff" })).toBeInTheDocument();
-    await expect(canvas.getByRole("tab", { name: "Routing + health" })).toBeInTheDocument();
+    await expect(canvas.getByRole("tab", { name: "Managed edge" })).toBeInTheDocument();
+    await expect(canvas.getByRole("tab", { name: "Agent handoff" })).toBeInTheDocument();
   },
 };
 

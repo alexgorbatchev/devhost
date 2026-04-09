@@ -1,6 +1,6 @@
 import { type JSX } from "react";
 
-import { SectionHeader, Surface, TerminalSnippet } from "../../components/ui";
+import { InsetList, SectionHeader, Surface, TerminalSnippet } from "../../components/ui";
 import { WorkflowStepCard } from "./WorkflowStepCard";
 
 interface IWorkflowStep {
@@ -11,53 +11,74 @@ interface IWorkflowStep {
 
 const workflowSteps: readonly IWorkflowStep[] = [
   {
-    description: "Start the managed Caddy instance once so devhost can own route registration and local TLS.",
+    description: "Point devhost at the stack by letting it discover devhost.toml or by passing --manifest explicitly.",
     stepLabel: "01",
-    title: "Boot the managed edge",
+    title: "Find the stack",
   },
   {
     description:
-      "Launch one service or a whole manifest and let devhost resolve ports, dependencies, and health checks.",
+      "Validate the manifest and resolve ports before child processes start so bad config fails early instead of leaking into the browser.",
     stepLabel: "02",
-    title: "Run the stack from a manifest",
+    title: "Lock the config first",
   },
   {
-    description: "Open the routed hostname and inspect the real page with source-aware devtools layered on top.",
+    description:
+      "Claim public hostnames and fixed bind ports before services boot so the edge contract is settled up front.",
     stepLabel: "03",
-    title: "Work on the routed host",
+    title: "Reserve the route",
   },
   {
-    description: "Annotate the page, jump to source, or spawn a terminal session without leaving the browser loop.",
+    description: "Start services in dependency order so the stack comes up like a system, not a race between terminals.",
     stepLabel: "04",
-    title: "Hand off context without rewriting it",
+    title: "Boot in the right order",
+  },
+  {
+    description:
+      "Wait for health checks, then expose the hostname only when the service is actually ready to receive traffic.",
+    stepLabel: "05",
+    title: "Go live when healthy",
   },
 ];
 
 const manifestSnippet: readonly string[] = [
-  `name = "hello-test-app"
-primaryService = "hello"
-devtoolsPosition = "top-right"
-devtoolsComponentEditor = "neovim"
+  `name = "hello-stack"
 
-[services.hello]
-command = ["bun", "dev"]
-port = 3200
-host = "hello.xcv.lol"
+[services.ui]
+primary = true
+command = ["bun", "run", "ui:dev"]
+port = 3000
+host = "foo.localhost"
+dependsOn = ["api"]
 
-[services.logs.health]
-process = true`,
+[services.api]
+command = ["bun", "run", "api:dev"]
+port = 4000
+host = "api.foo.localhost"
+health = { http = "http://127.0.0.1:4000/healthz" }`,
+  `{
+  "scripts": {
+    "dev": "devhost"
+  }
+}`,
+  "npm run dev\nopen https://foo.localhost",
+];
+
+const workflowNotes: readonly string[] = [
+  "Mount multiple services under one hostname by giving each service a distinct path.",
+  "Front Docker-backed services when they publish a port back onto the host.",
+  "Use port = \"auto\" for convenience, but treat it as best-effort rather than a global allocator.",
 ];
 
 export function WorkflowSection(): JSX.Element {
   return (
     <section className="grid gap-4" aria-labelledby="workflow-section-title" data-testid="WorkflowSection">
       <SectionHeader
-        description="This is where devhost earns its keep: boot the edge, resolve the stack, route the host, then keep the debugging workflow close enough to the page that context does not leak away."
-        title="Give the stack a disciplined path from boot to inspection."
+        description="devhost turns a messy local boot sequence into a reliable product flow: discover the stack, lock the route, start in order, and make the hostname real only after health passes."
+        title="From dev command to real local stack."
         titleId="workflow-section-title"
       />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.85fr)]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.92fr)]">
         <div className="grid gap-3">
           {workflowSteps.map((workflowStep: IWorkflowStep) => {
             return (
@@ -71,23 +92,22 @@ export function WorkflowSection(): JSX.Element {
           })}
         </div>
 
-        <Surface element="aside" className="p-4 sm:p-5" aria-labelledby="manifest-card-title">
+        <Surface element="aside" className="grid gap-4 p-4 sm:p-5" aria-labelledby="manifest-card-title">
           <div className="grid gap-3">
             <h2
               id="manifest-card-title"
               className="max-w-[18ch] text-balance text-2xl font-medium leading-tight tracking-[-0.05em] text-card-foreground sm:text-3xl"
             >
-              The demo app now reads like product evidence.
+              A small manifest buys a lot.
             </h2>
             <p className="text-sm leading-7 text-muted-foreground">
-              The sample manifest is still the fastest way to explain what devhost owns: stack identity, primary
-              routing, devtools placement, editor preference, and service-level process contracts.
+              A couple of services, one dependency edge, one health check, and suddenly the browser sees a proper local
+              entrypoint instead of another pile of ports.
             </p>
           </div>
 
-          <div className="mt-4">
-            <TerminalSnippet snippets={manifestSnippet} />
-          </div>
+          <TerminalSnippet snippets={manifestSnippet} />
+          <InsetList items={workflowNotes} />
         </Surface>
       </div>
     </section>

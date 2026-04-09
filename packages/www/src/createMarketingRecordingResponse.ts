@@ -2,10 +2,6 @@ import path from "node:path";
 
 const marketingRecordingRelativePaths: Record<string, string> = {
   "/recordings/marketing/annotation.json": "recordings/marketing/annotation.json",
-  "/recordings/marketing/overlay.json": "recordings/marketing/overlay.json",
-  "/recordings/marketing/routing-health.json": "recordings/marketing/routing-health.json",
-  "/recordings/marketing/sessions.json": "recordings/marketing/sessions.json",
-  "/recordings/marketing/source-jumps.json": "recordings/marketing/source-jumps.json",
 };
 
 export async function createMarketingRecordingResponse(

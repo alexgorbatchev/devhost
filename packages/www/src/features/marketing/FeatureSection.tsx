@@ -1,8 +1,18 @@
 import { useRef, useState, type JSX, type KeyboardEvent } from "react";
 
-import { SectionHeader, Surface } from "../../components/ui";
+import { InsetList, SectionHeader, Surface, TerminalSnippet } from "../../components/ui";
 import { FeatureHighlightPanel } from "./FeatureHighlightPanel";
 import { featureHighlights, type FeatureHighlightId, type IFeatureHighlight } from "./featureHighlights";
+
+const bindInputSnippet: readonly string[] = [
+  "DEVHOST_BIND_HOST\nPORT\n\nDEVHOST_HOST\nDEVHOST_PATH\nDEVHOST_SERVICE_NAME\nDEVHOST_MANIFEST_PATH",
+];
+
+const bindInputNotes: readonly string[] = [
+  "Bind sockets with DEVHOST_BIND_HOST and PORT.",
+  "Use DEVHOST_HOST and DEVHOST_PATH as public routing context.",
+  "Keep manifest metadata available without confusing it for bind configuration.",
+];
 
 const initialFeatureHighlight: IFeatureHighlight = readInitialFeatureHighlight();
 
@@ -64,19 +74,14 @@ export function FeatureSection(): JSX.Element {
   return (
     <section className="grid gap-4" aria-labelledby="feature-section-title" data-testid="FeatureSection">
       <SectionHeader
-        description="The point is not to proxy everything. The point is to expose the right host, keep the stack honest, and put the debugging workflow where the page already lives."
-        title="A routed development surface, not another localhost wrapper."
+        description="Routing is only the beginning. devhost also owns the stack lifecycle, runtime context, browser tooling, and agent handoff that make the routed page genuinely useful to work on."
+        title="The route is just the start."
         titleId="feature-section-title"
       />
 
       <div className="grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)_280px]">
         <Surface className="p-2">
-          <div
-            className="grid gap-2"
-            role="tablist"
-            aria-label="Devhost product highlights"
-            aria-orientation="vertical"
-          >
+          <div className="grid gap-2" role="tablist" aria-label="Devhost capability highlights" aria-orientation="vertical">
             {featureHighlights.map((featureHighlight: IFeatureHighlight, index: number) => {
               const isActive: boolean = featureHighlight.id === activeFeature.id;
 
@@ -118,19 +123,22 @@ export function FeatureSection(): JSX.Element {
           <FeatureHighlightPanel {...activeFeature} />
         </Surface>
 
-        <Surface element="aside" className="p-5" tone="subtle" aria-labelledby="feature-proof-card-title">
+        <Surface element="aside" className="grid gap-4 p-5" tone="subtle" aria-labelledby="feature-proof-card-title">
           <div className="grid gap-3">
             <h3
               id="feature-proof-card-title"
               className="text-2xl font-medium leading-tight tracking-[-0.05em] text-card-foreground"
             >
-              Local HTTPS is a first-class workflow
+              Runtime context without guesswork
             </h3>
             <p className="text-sm leading-7 text-muted-foreground">
-              Managed Caddy trust and lifecycle commands are exposed directly because local TLS setup is part of the
-              product, not a side quest.
+              devhost passes both bind inputs and routed metadata into the process. The important part is that the
+              contract stays explicit, so your app knows what to listen on and what public context it is serving.
             </p>
           </div>
+
+          <TerminalSnippet snippets={bindInputSnippet} />
+          <InsetList items={bindInputNotes} />
         </Surface>
       </div>
     </section>

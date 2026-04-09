@@ -19,9 +19,7 @@ const Default: Story = {
     const canvas = within(canvasElement);
 
     await expect(canvas.getByTestId("HeroSection")).toBeInTheDocument();
-    await expect(
-      canvas.getByRole("heading", { name: "devhost is the storefront for routed local stacks." }),
-    ).toBeInTheDocument();
+    await expect(canvas.getByRole("heading", { name: "Give every local app a real front door." })).toBeInTheDocument();
     await expect(canvas.getByRole("button", { name: "Theme control" })).toBeInTheDocument();
   },
 };

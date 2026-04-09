@@ -16,10 +16,8 @@ const Default: Story = {
     const canvas = within(canvasElement);
 
     await expect(canvas.getByTestId("WorkflowSection")).toBeInTheDocument();
-    await expect(
-      canvas.getByRole("heading", { name: "Give the stack a disciplined path from boot to inspection." }),
-    ).toBeInTheDocument();
-    await expect(canvas.getByText("The demo app now reads like product evidence.")).toBeInTheDocument();
+    await expect(canvas.getByRole("heading", { name: "From dev command to real local stack." })).toBeInTheDocument();
+    await expect(canvas.getByText("A small manifest buys a lot.")).toBeInTheDocument();
   },
 };
 

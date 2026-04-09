@@ -16,12 +16,8 @@ const Default: Story = {
     const canvas = within(canvasElement);
 
     await expect(canvas.getByTestId("ProofSection")).toBeInTheDocument();
-    await expect(
-      canvas.getByRole("heading", { name: "The page now sells the real constraints, not decorative abstractions." }),
-    ).toBeInTheDocument();
-    await expect(
-      canvas.getByRole("heading", { level: 3, name: "Devtools stay off the noisy traffic" }),
-    ).toBeInTheDocument();
+    await expect(canvas.getByRole("heading", { name: "Serious local infrastructure, with honest boundaries." })).toBeInTheDocument();
+    await expect(canvas.getByRole("heading", { level: 3, name: "Requirements" })).toBeInTheDocument();
   },
 };
 

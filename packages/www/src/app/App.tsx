@@ -135,10 +135,10 @@ export function App(): JSX.Element {
             </label>
           }
         />
+        <WorkflowSection />
         <Surface className="px-4 py-5 sm:px-5 sm:py-6" tone="subtle">
           <FeatureSection />
         </Surface>
-        <WorkflowSection />
         <Surface className="px-4 py-5 sm:px-5 sm:py-6" tone="subtle">
           <ProofSection />
         </Surface>

@@ -16,9 +16,9 @@ type Story = StoryObj<typeof meta>;
 const Default: Story = {
   args: {
     demoRecordingUrl: missingRecordingUrl,
-    featureId: "annotation",
-    kicker: "Annotation handoff",
-    title: "Send annotated page state straight into Pi",
+    featureId: "agent-handoff",
+    kicker: "AI annotations",
+    title: "Turn a page annotation into a live coding session",
   },
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
