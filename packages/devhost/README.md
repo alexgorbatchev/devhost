@@ -1,8 +1,15 @@
 # @alexgorbatchev/devhost
 
-`devhost` is a CLI utility for local development that lets you open your local apps on HTTPS domains instead of raw `localhost:port` URLs.
+`devhost` gives your local app a proper front door: real hostnames, local HTTPS, and one command to start and route your dev services.
 
-It also injects a devtools layer into routed pages: AI annotations, Alt-right-click source jumping, and even Neovim in the browser.
+Use it when `localhost:3000` stops being good enough — auth callbacks, cookie/domain behavior, multi-service stacks, or just wanting `app.localhost` and `api.app.localhost` to behave more like a real app.
+
+What it does well:
+
+- routes local services onto HTTPS hostnames through managed Caddy
+- starts one service or a full stack from `devhost.toml`
+- waits for health checks before exposing routes
+- optionally injects browser devtools for logs, service status, annotations, source jumping, and browser-hosted Neovim
 
 ## Quick start
 
@@ -12,7 +19,7 @@ It also injects a devtools layer into routed pages: AI annotations, Alt-right-cl
 npm install -g @alexgorbatchev/devhost
 ```
 
-### Setup
+### Minimal example
 
 Configure your stack in `devhost.toml`, then run it through `devhost`.
 
