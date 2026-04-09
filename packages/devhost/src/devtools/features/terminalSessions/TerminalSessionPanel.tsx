@@ -223,6 +223,17 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
     const resizeObserver = new ResizeObserver((): void => {
       scheduleTerminalResize();
     });
+    const oscListener = terminal.parser.registerOscHandler(1337, (data: string): boolean => {
+      if (data === "SetAgentStatus=working") {
+        setStatusText("Working…");
+        return true;
+      }
+      if (data === "SetAgentStatus=finished") {
+        setStatusText("Finished");
+        return true;
+      }
+      return false;
+    });
     const dataListener = terminal.onData((data: string): void => {
       sendClientMessage(websocket, {
         data,
@@ -231,7 +242,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
     });
     const handleOpen = (): void => {
       setErrorMessage(null);
-      setStatusText("Running…");
+      setStatusText("Working…");
       scheduleTerminalResize();
 
       if (isExpandedReference.current) {
@@ -281,6 +292,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
     return () => {
       resizeObserver.disconnect();
       dataListener.dispose();
+      oscListener.dispose();
       websocket.removeEventListener("open", handleOpen);
       websocket.removeEventListener("close", handleClose);
       websocket.removeEventListener("error", handleError);
