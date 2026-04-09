@@ -1,31 +1,99 @@
-import { useEffect, useRef, useState, type ChangeEvent, type JSX } from "react";
+import { useEffect, useRef, useState, type JSX } from "react";
 
-import { Surface } from "../components/ui";
-import { FeatureSection, HeroSection, ProofSection, WorkflowSection } from "../features/marketing";
 import {
   createRrwebDemoRecording,
   exportRrwebDemoRecording,
+  FeatureReplayPanel,
+  loadRrwebDemoRecording,
   RrwebDemoPanel,
   type IRrwebDemoRecording,
   type IRrwebDemoRecordingController,
 } from "../features/rrweb";
 
-type ThemePreference = "system" | "light" | "dark";
-
-interface IThemeOption {
-  label: string;
-  value: ThemePreference;
-}
-
 type RecordingPhase = "arming" | "idle" | "preview" | "recording";
+
+type ThemePreference = "light" | "dark";
 
 const isDevelopmentMode: boolean = process.env.NODE_ENV === "development";
 const themeStorageKey: string = "devhost-test-theme";
-const themeOptions: IThemeOption[] = [
-  { label: "System", value: "system" },
-  { label: "Light", value: "light" },
-  { label: "Dark", value: "dark" },
+
+type MarketingReplayStatus = "error" | "loading" | "missing" | "ready";
+
+interface IMarketingDemoTab {
+  id: string;
+  label: string;
+  recordingUrl: string;
+}
+
+const marketingDemoTabs: readonly IMarketingDemoTab[] = [
+  { id: "managed-edge", label: "Managed edge", recordingUrl: "/recordings/marketing/managed-edge.json" },
+  { id: "stack-lifecycle", label: "Stack lifecycle", recordingUrl: "/recordings/marketing/stack-lifecycle.json" },
+  { id: "runtime-context", label: "Runtime context", recordingUrl: "/recordings/marketing/runtime-context.json" },
+  { id: "devtools", label: "Devtools overlay", recordingUrl: "/recordings/marketing/devtools.json" },
+  { id: "agent-handoff", label: "Agent handoff", recordingUrl: "/recordings/marketing/annotation.json" },
 ];
+
+function MarketingDemoReplay(): JSX.Element {
+  const activeTabIdRef = useRef<string>(marketingDemoTabs[0]?.id ?? "");
+  const [activeTabId, setActiveTabId] = useState<string>(activeTabIdRef.current);
+  const [recording, setRecording] = useState<IRrwebDemoRecording | null>(null);
+  const [status, setStatus] = useState<MarketingReplayStatus>("loading");
+
+  const activeTab = marketingDemoTabs.find((tab) => tab.id === activeTabId) ?? marketingDemoTabs[0]!;
+
+  useEffect(() => {
+    let isCancelled = false;
+    setStatus("loading");
+    setRecording(null);
+
+    loadRrwebDemoRecording(activeTab.recordingUrl)
+      .then((nextRecording) => {
+        if (isCancelled) return;
+        setRecording(nextRecording);
+        setStatus(nextRecording === null ? "missing" : "ready");
+      })
+      .catch((error) => {
+        if (isCancelled) return;
+        console.error(error);
+        setRecording(null);
+        setStatus("error");
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [activeTab.recordingUrl]);
+
+  let emptyMessage = "Loading recording...";
+  if (status === "error") emptyMessage = "Failed to load recording.";
+  if (status === "missing") emptyMessage = "Recording not found.";
+
+  return (
+    <div className="my-8 grid gap-4" aria-label="Feature demonstration recording">
+      <div className="flex flex-wrap gap-2 border-b border-border-subtle pb-4">
+        {marketingDemoTabs.map((tab) => {
+          const isActive = tab.id === activeTabId;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTabId(tab.id)}
+              className={
+                isActive
+                  ? "rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-sm"
+                  : "rounded-md bg-transparent px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface-subtle hover:text-foreground"
+              }
+              aria-selected={isActive}
+              role="tab"
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+      <FeatureReplayPanel emptyMessage={emptyMessage} recording={recording} />
+    </div>
+  );
+}
 
 export function App(): JSX.Element {
   const activeRecordingControllerRef = useRef<IRrwebDemoRecordingController | null>(null);
@@ -109,60 +177,599 @@ export function App(): JSX.Element {
     window.localStorage.setItem(themeStorageKey, themePreference);
   }, [themePreference]);
 
+  useEffect((): void => {
+    // @ts-ignore
+    if (window.hljs) {
+      // @ts-ignore
+      window.hljs.highlightAll();
+    }
+  }, []);
+
   return (
-    <main className="app-shell relative min-h-dvh bg-background text-foreground" data-testid="App">
-      <div className="app-frame mx-auto flex w-full max-w-[1180px] flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
-        <HeroSection
-          themeControl={
-            <label className="grid gap-2" htmlFor="theme-preference">
-              <span className="text-[0.72rem] uppercase tracking-[0.28em] text-muted-foreground">Theme</span>
-              <select
-                id="theme-preference"
-                className="h-10 rounded-md border border-border-strong bg-card px-3 text-sm shadow-[var(--shadow-soft)] outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
-                value={themePreference}
-                onChange={(event: ChangeEvent<HTMLSelectElement>): void => {
-                  setThemePreference(parseThemePreference(event.currentTarget.value));
-                }}
+    <main className="app-shell relative min-h-dvh bg-background text-foreground flex flex-col" data-testid="App">
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 h-14 flex items-center justify-between max-w-4xl">
+          <div className="flex font-semibold text-lg items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-primary"
+            >
+              <path d="M12 2v20" />
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+            devhost
+          </div>
+
+          <div className="flex items-center gap-4">
+            <button
+              onClick={(): void => {
+                setThemePreference(themePreference === "dark" ? "light" : "dark");
+              }}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border-strong bg-card text-muted-foreground shadow-[var(--shadow-soft)] transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Toggle theme"
+            >
+              {themePreference === "dark" ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M12 2v2" />
+                  <path d="M12 20v2" />
+                  <path d="m4.93 4.93 1.41 1.41" />
+                  <path d="m17.66 17.66 1.41 1.41" />
+                  <path d="M2 12h2" />
+                  <path d="M20 12h2" />
+                  <path d="m6.34 17.66-1.41 1.41" />
+                  <path d="m19.07 4.93-1.41 1.41" />
+                </svg>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="flex-1 container mx-auto px-4 py-12 max-w-4xl app-frame">
+        <div className="space-y-6 pb-12 border-b border-border">
+          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">@alexgorbatchev/devhost</h1>
+          <p className="text-xl text-muted-foreground leading-relaxed">
+            <code>devhost</code> gives your local app a proper front door: real hostnames, local HTTPS, and one command
+            to start and route your dev services.
+          </p>
+
+          <div className="flex gap-4 pt-4">
+            <a
+              href="#quick-start"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+            >
+              Get Started
+            </a>
+            <a
+              href="https://github.com/alexgorbatchev/devhost"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="mr-2"
               >
-                {themeOptions.map((themeOption: IThemeOption) => {
-                  return (
-                    <option key={themeOption.value} value={themeOption.value}>
-                      {themeOption.label}
-                    </option>
-                  );
-                })}
-              </select>
-            </label>
-          }
-        />
-        <WorkflowSection />
-        <Surface className="px-4 py-5 sm:px-5 sm:py-6" tone="subtle">
-          <FeatureSection />
-        </Surface>
-        <Surface className="px-4 py-5 sm:px-5 sm:py-6" tone="subtle">
-          <ProofSection />
-        </Surface>
+                <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+                <path d="M9 18c-4.51 2-5-2-7-2" />
+              </svg>
+              GitHub
+            </a>
+          </div>
+        </div>
+
+        <div className="prose mt-12 max-w-none">
+          <p>
+            Use it when <code>localhost:3000</code> stops being good enough — auth callbacks, cookie/domain behavior,
+            multi-service stacks, or just wanting <code>app.localhost</code> and <code>api.app.localhost</code> to
+            behave more like a real app.
+          </p>
+
+          <MarketingDemoReplay />
+
+          {isDevelopmentMode ? (
+            <RrwebDemoPanel
+              isDevelopmentMode={isDevelopmentMode}
+              isRecording={isRecordingRrwebDemo}
+              onExportRecording={handleExportRrwebRecording}
+              onStartRecording={handleStartRrwebRecording}
+              onStopRecording={handleStopRrwebRecording}
+              recording={rrwebDemoRecording}
+            />
+          ) : null}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-8">
+            <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-primary/10 rounded-full text-primary">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-lg !mt-0 !mb-0">Secure Routing</h3>
+              </div>
+              <p className="text-sm text-muted-foreground !mb-0">
+                Routes local services onto HTTPS hostnames through a managed Caddy instance, handling certificates
+                automatically.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-primary/10 rounded-full text-primary">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z" />
+                    <path d="m3 9 2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9" />
+                    <path d="M12 3v6" />
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-lg !mt-0 !mb-0">Stack Management</h3>
+              </div>
+              <p className="text-sm text-muted-foreground !mb-0">
+                Starts one service or a full stack from a declarative <code>devhost.toml</code> file, in proper
+                dependency order.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-primary/10 rounded-full text-primary">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-lg !mt-0 !mb-0">Health Checks</h3>
+              </div>
+              <p className="text-sm text-muted-foreground !mb-0">
+                Waits for configurable health checks to pass before exposing routes, ensuring your stack is truly ready.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-primary/10 rounded-full text-primary">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 Z" />
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-lg !mt-0 !mb-0">Injected Devtools</h3>
+              </div>
+              <p className="text-sm text-muted-foreground !mb-0">
+                Optionally injects browser devtools for logs, service status, AI annotations, source jumping, and
+                Neovim.
+              </p>
+            </div>
+          </div>
+
+          <h2 id="quick-start">Quick start</h2>
+
+          <h3>Installation</h3>
+          <pre>
+            <code className="language-bash">npm install -g @alexgorbatchev/devhost</code>
+          </pre>
+
+          <h3>Minimal example</h3>
+          <p>
+            Configure your stack in <code>devhost.toml</code>, then run it through <code>devhost</code>.
+          </p>
+
+          <pre>
+            <code className="language-toml">{`name = "hello-stack"
+
+[services.ui]
+primary = true
+command = ["bun", "run", "ui:dev"]
+port = 3000
+host = "foo.localhost"
+dependsOn = ["api"]
+
+[services.api]
+command = ["bun", "run", "api:dev"]
+port = 4000
+host = "api.foo.localhost"
+health = { http = "http://127.0.0.1:4000/healthz" }`}</code>
+          </pre>
+
+          <p>
+            Most projects should wrap <code>devhost</code> in the package's <code>package.json</code> so you can run it
+            through the usual dev script from the manifest directory:
+          </p>
+
+          <pre>
+            <code className="language-json">{`{
+  "scripts": {
+    "dev": "devhost"
+  }
+}`}</code>
+          </pre>
+
+          <p>Then run your usual package-manager dev command from that package directory:</p>
+
+          <pre>
+            <code className="language-bash">{`$ npm run dev
+$ open https://foo.localhost`}</code>
+          </pre>
+
+          <p>
+            (<code>pnpm dev</code>, <code>yarn dev</code>, and <code>bun run dev</code> work the same way when they
+            invoke the same script.)
+          </p>
+
+          <div className="callout bg-secondary border-l-4 border-primary p-4 rounded-r-md my-6">
+            <div className="font-semibold mb-2 text-foreground">Important</div>
+            <p className="!mt-0">
+              <code>devhost</code> manages HTTPS routing through Caddy, not DNS. Your chosen hostnames must already
+              resolve to this machine or the browser will never reach the local proxy.
+            </p>
+            <p>
+              For custom domains, that means loopback resolution, such as exact <code>A</code> / <code>AAAA</code>{" "}
+              records to <code>127.0.0.1</code> / <code>::1</code>, wildcard DNS records on your domain, or local host
+              entries for exact names. <code>/etc/hosts</code> can be used, however it only handles <em>exact</em>{" "}
+              hostnames.
+            </p>
+            <p className="!mb-0">
+              Good out-of-the-box choices are <code>localhost</code> and subdomains under <code>*.localhost</code>, such
+              as <code>foo.localhost</code> and <code>api.foo.localhost</code>, because they work without additional DNS
+              configuration.
+            </p>
+          </div>
+
+          <h2>What it does</h2>
+          <p>
+            <code>devhost</code>:
+          </p>
+          <ul className="list-disc pl-6 mb-6">
+            <li className="mb-2">routes local apps onto HTTPS hostnames through one shared managed Caddy instance</li>
+            <li className="mb-2">
+              starts local child processes from <code>devhost.toml</code>
+            </li>
+            <li className="mb-2">
+              injects runtime context such as <code>PORT</code> and <code>DEVHOST_*</code> environment variables
+            </li>
+            <li className="mb-2">
+              validates manifests, reserves public hosts, reserves fixed bind ports, and waits for health checks before
+              routing traffic
+            </li>
+            <li className="mb-2">
+              allocates <code>port = "auto"</code> best-effort and retries on clear bind-collision startup failures
+            </li>
+            <li className="mb-2">
+              optionally injects a devtools UI for annotations, source navigation, and browser-hosted Neovim
+            </li>
+          </ul>
+
+          <h2>Requirements</h2>
+          <ul className="list-disc pl-6 mb-6">
+            <li className="mb-2">
+              <code>bun</code>
+            </li>
+            <li className="mb-2">
+              either:
+              <ul className="list-disc pl-6 mt-2 mb-2">
+                <li className="mb-2">
+                  a global <code>caddy</code> on your <code>PATH</code>, or
+                </li>
+                <li className="mb-2">
+                  a managed Caddy binary downloaded with <code>devhost caddy download</code>
+                </li>
+              </ul>
+            </li>
+            <li className="mb-2">
+              <code>nvim</code> when <code>[devtools.editor].ide = "neovim"</code>
+            </li>
+          </ul>
+
+          <h2>Managed Caddy</h2>
+          <p>
+            Download the managed Caddy binary if you do not already have <code>caddy</code> on your <code>PATH</code>:
+          </p>
+
+          <pre>
+            <code className="language-bash">devhost caddy download</code>
+          </pre>
+
+          <p>
+            <code>devhost</code> uses that downloaded binary when present. Otherwise it falls back to the global{" "}
+            <code>caddy</code> executable from your <code>PATH</code>. It does <strong>not</strong> auto-download Caddy
+            during <code>devhost caddy start</code> or stack startup.
+          </p>
+
+          <div className="callout bg-secondary border-l-4 border-primary p-4 rounded-r-md my-6">
+            <div className="font-semibold mb-2 text-foreground">Important</div>
+            <p className="!mt-0">
+              To get HTTPS working, Caddy uses a self-signed certificate, which obviously isn't trusted by default.
+            </p>
+            <p className="!mb-0">
+              The <code>devhost caddy trust</code> will prompt for your password and install Caddy's CA into the system
+              trust store.
+            </p>
+          </div>
+
+          <p>Start the shared managed Caddy instance before running one or more stacks:</p>
+          <pre>
+            <code className="language-bash">devhost caddy start</code>
+          </pre>
+
+          <p>Stop it when you are done with all stacks:</p>
+          <pre>
+            <code className="language-bash">devhost caddy stop</code>
+          </pre>
+
+          <p>The generated Caddy config uses these defaults:</p>
+          <ul className="list-disc pl-6 mb-6">
+            <li className="mb-2">
+              state dir: <code>DEVHOST_STATE_DIR</code>, else <code>XDG_STATE_HOME/devhost</code>, else{" "}
+              <code>~/.local/state/devhost</code>
+            </li>
+            <li className="mb-2">
+              admin API: <code>127.0.0.1:20193</code> unless <code>DEVHOST_CADDY_ADMIN_ADDRESS</code> is set
+            </li>
+            <li className="mb-2">
+              listener binding on macOS: wildcard listeners, because macOS denies rootless loopback-specific binds on{" "}
+              <code>:443</code>
+            </li>
+            <li className="mb-2">
+              listener binding on non-macOS: loopback only via Caddy <code>default_bind 127.0.0.1 [::1]</code>
+            </li>
+            <li className="mb-2">
+              unmatched hostnames: a generated 404 page listing the currently active devhost hostnames as HTTPS links
+            </li>
+          </ul>
+
+          <p>
+            Managed Caddy lifecycle is shared and manual. <code>devhost</code> stack startup requires the managed Caddy
+            admin API to already be available.
+          </p>
+
+          <h3>Shared multi-stack behavior</h3>
+          <p>Multiple projects can run against the same managed Caddy instance at the same time.</p>
+          <p>The routing contract is strict:</p>
+          <ul className="list-disc pl-6 mb-6">
+            <li className="mb-2">hostname ownership is exclusive across projects</li>
+            <li className="mb-2">
+              one project cannot claim a hostname that is already owned by another live devhost process
+            </li>
+            <li className="mb-2">one manifest may mount multiple services under the same hostname on distinct paths</li>
+            <li className="mb-2">
+              fixed numeric bind ports are claimed globally across devhost processes before service spawn
+            </li>
+            <li className="mb-2">
+              <code>port = "auto"</code> remains best-effort in v1; devhost retries on clear bind collisions, but it
+              does not provide a cross-process global auto-port allocator
+            </li>
+          </ul>
+
+          <h2>Stack lifecycle</h2>
+          <p>
+            When you run <code>devhost</code>, it:
+          </p>
+          <ol className="list-decimal pl-6 mb-6 space-y-2">
+            <li>
+              discovers <code>devhost.toml</code> upward from the current directory, unless <code>--manifest</code> is
+              provided
+            </li>
+            <li>parses TOML and validates schema and semantics</li>
+            <li>
+              resolves <code>port = "auto"</code> before spawning children
+            </li>
+            <li>requires the managed Caddy admin API to already be available</li>
+            <li>reserves fixed numeric bind ports before starting any service that uses them</li>
+            <li>reserves every public hostname before starting any service</li>
+            <li>starts services in dependency order</li>
+            <li>waits for each service health check before routing it</li>
+            <li>removes routes and reservations on shutdown or startup failure</li>
+          </ol>
+          <p>
+            <code>devhost</code>-owned logs use the manifest <code>name</code> when available and fall back to{" "}
+            <code>[devhost]</code>. Child service logs remain prefixed with <code>[service-name]</code>.
+          </p>
+
+          <h2>Docker-backed services</h2>
+          <p>
+            <code>devhost</code> can front a Docker- or Compose-managed backend, but only when the container publishes a
+            port onto the host and <code>devhost</code> routes to that host-visible port. <code>devhost</code> does not
+            proxy to Docker-internal service names or container-network-only addresses.
+          </p>
+
+          <p>
+            For example, if your Compose service publishes <code>4000:4000</code>, you can route it like this:
+          </p>
+
+          <pre>
+            <code className="language-toml">{`name = "hello-stack"
+
+[services.ui]
+primary = true
+command = ["bun", "run", "ui:dev"]
+port = 3000
+host = "hello.localhost"
+dependsOn = ["api"]
+
+[services.api]
+command = ["docker", "compose", "up", "--build", "api"]
+port = 4000
+host = "api.hello.localhost"
+health = { http = "http://127.0.0.1:4000/healthz" }`}</code>
+          </pre>
+
+          <h2>Injected environment</h2>
+          <p>
+            <code>devhost</code> injects environment variables into each service child process. Only{" "}
+            <code>DEVHOST_BIND_HOST</code> and <code>PORT</code> are operational bind inputs. The remaining variables
+            are context metadata and must not be used as socket bind targets.
+          </p>
+
+          <h3>Operational bind inputs</h3>
+          <ul className="list-disc pl-6 mb-6">
+            <li className="mb-2">
+              <code>DEVHOST_BIND_HOST</code>: the actual interface the child process is expected to listen on. Use this
+              for binding sockets.
+            </li>
+            <li className="mb-2">
+              <code>PORT</code>: the listening port selected by <code>devhost</code>. Injected when the service defines{" "}
+              <code>port</code>.
+            </li>
+          </ul>
+
+          <h3>Routed-service context</h3>
+          <ul className="list-disc pl-6 mb-6">
+            <li className="mb-2">
+              <code>DEVHOST_HOST</code>: the public routed hostname from the service <code>host</code> field.
+            </li>
+            <li className="mb-2">
+              <code>DEVHOST_PATH</code>: the public routed subpath from the service <code>path</code> field.
+            </li>
+          </ul>
+
+          <h2>Devtools</h2>
+          <p>
+            When <code>devtools</code> are enabled, routed traffic is split like this:
+          </p>
+          <ul className="list-disc pl-6 mb-6">
+            <li className="mb-2">
+              <code>/__devhost__/*</code> → <code>devtools</code> control server
+            </li>
+            <li className="mb-2">
+              <code>Sec-Fetch-Dest: document</code> requests → document injector server
+            </li>
+            <li className="mb-2">everything else → app directly</li>
+          </ul>
+
+          <h3>AI annotations</h3>
+          <ul className="list-disc pl-6 mb-6">
+            <li className="mb-2">
+              hold <code>Alt</code> (<code>Option</code> on macOS) to enter annotation selection mode
+            </li>
+            <li className="mb-2">
+              click one or more page elements while holding <code>Alt</code> to place numbered markers
+            </li>
+            <li className="mb-2">
+              release <code>Alt</code> to leave selection mode while keeping the current draft open
+            </li>
+            <li className="mb-2">
+              write a comment that references markers like <code>#1</code> and <code>#2</code>
+            </li>
+            <li className="mb-2">
+              click <code>Submit</code> or press <code>⌘ ↵</code> / <code>Ctrl + Enter</code> to start an agent session
+              seeded with the draft
+            </li>
+          </ul>
+
+          <p>
+            When the host page is a React development build that exposes component source metadata, each marker also
+            captures the nearest available component source location.
+          </p>
+
+          <h3>Open source in IDE</h3>
+          <p>
+            <code>Alt</code> + <code>right-click</code> component-source navigation uses the configured{" "}
+            <code>[devtools.editor].ide</code> value. When <code>[devtools.editor].ide = "neovim"</code>, devhost
+            launches Neovim inside the injected xterm terminal.
+          </p>
+        </div>
       </div>
-      {isDevelopmentMode ? (
-        <RrwebDemoPanel
-          isDevelopmentMode={isDevelopmentMode}
-          isRecording={isRecordingRrwebDemo}
-          onExportRecording={handleExportRrwebRecording}
-          onStartRecording={handleStartRrwebRecording}
-          onStopRecording={handleStopRrwebRecording}
-          recording={rrwebDemoRecording}
-        />
-      ) : null}
+
+      <footer className="border-t border-border mt-auto py-8">
+        <div className="container mx-auto px-4 text-center text-muted-foreground text-sm">
+          <p>devhost by Alex Gorbatchev</p>
+        </div>
+      </footer>
     </main>
   );
 }
 
 function parseThemePreference(value: string | null): ThemePreference {
-  if (value === "system" || value === "light" || value === "dark") {
+  if (value === "light" || value === "dark") {
     return value;
   }
 
-  return "system";
+  if (typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    return "dark";
+  }
+
+  return "light";
 }
 
 function readStoredThemePreference(storage: Pick<Storage, "getItem">): ThemePreference {

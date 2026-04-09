@@ -54,8 +54,8 @@ export function RrwebDemoPanel(props: IRrwebDemoPanelProps): JSX.Element {
   return (
     <div className="contents" data-testid="RrwebDemoPanel">
       {isDevelopmentMode && shouldShowPreview ? (
-        <div className="fixed inset-0 z-40 bg-background" data-testid="RrwebDemoPanel--preview">
-          <FeatureReplayPanel emptyMessage="Preview unavailable." isFullscreen recording={recording} />
+        <div className="my-8" data-testid="RrwebDemoPanel--preview">
+          <FeatureReplayPanel emptyMessage="Preview unavailable." recording={recording} />
         </div>
       ) : null}
 
