@@ -22,6 +22,7 @@ Local React demo app for exercising `@alexgorbatchev/devhost` behavior and Story
 
 ## Boundaries
 
+- Always: after updating the main `devhost` README, sync the core prose, API documentation, and layout to `packages/www/src/app/App.tsx`. The marketing website is essentially an interactive clone of the README.
 - Ask first: changing the demo app package name or turning it into a published package.
 - Never: replace the workspace dependency with `file:` or registry versions while both packages live in this repo.
 

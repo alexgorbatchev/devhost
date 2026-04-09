@@ -16,6 +16,7 @@ Local rules for the published `@alexgorbatchev/devhost` workspace in `packages/d
   - limitations, caveats, or failure modes
 - If the manifest contract changes, also update `devhost.example.toml`.
 - If devtools-specific contributor rules change, also update `src/devtools/AGENTS.md`.
+- **CRITICAL:** The `devhost` README is heavily mirrored in the demo application's frontend. After editing the `devhost` README, you **must** update the `packages/www/src/app/App.tsx` file in the demo app workspace to keep the marketing website content in sync.
 - Do not leave README or AGENTS examples/rules stale after changing implementation details.
 - Repo-root `README.md` is a symlink to this workspace README; update `README.md` here, not the root symlink.
 
