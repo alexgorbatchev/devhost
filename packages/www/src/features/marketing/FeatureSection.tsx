@@ -69,7 +69,12 @@ export function FeatureSection(): JSX.Element {
 
       <div className="grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)_280px]">
         <Surface className="p-2">
-          <div className="grid gap-2" role="tablist" aria-label="Devhost product highlights" aria-orientation="vertical">
+          <div
+            className="grid gap-2"
+            role="tablist"
+            aria-label="Devhost product highlights"
+            aria-orientation="vertical"
+          >
             {featureHighlights.map((featureHighlight: IFeatureHighlight, index: number) => {
               const isActive: boolean = featureHighlight.id === activeFeature.id;
 

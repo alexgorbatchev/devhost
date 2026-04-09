@@ -157,11 +157,15 @@ function ensureRequiredServiceSettings(): void {
   }
 
   if (updatedServiceInstanceSettings.buildCommand !== expectedBuildCommand) {
-    throw new Error(`Railway service buildCommand is still ${String(updatedServiceInstanceSettings.buildCommand)} after attempted update.`);
+    throw new Error(
+      `Railway service buildCommand is still ${String(updatedServiceInstanceSettings.buildCommand)} after attempted update.`,
+    );
   }
 
   if (updatedServiceInstanceSettings.startCommand !== expectedStartCommand) {
-    throw new Error(`Railway service startCommand is still ${String(updatedServiceInstanceSettings.startCommand)} after attempted update.`);
+    throw new Error(
+      `Railway service startCommand is still ${String(updatedServiceInstanceSettings.startCommand)} after attempted update.`,
+    );
   }
 }
 
@@ -176,12 +180,7 @@ function ensureRequiredServiceVariable(): void {
   }
 
   logStep(`Setting DEVHOST_BIND_HOST=${expectedBindHost}`);
-  runInheritedCommand("railway", [
-    "variable",
-    "set",
-    `DEVHOST_BIND_HOST=${expectedBindHost}`,
-    "--skip-deploys",
-  ]);
+  runInheritedCommand("railway", ["variable", "set", `DEVHOST_BIND_HOST=${expectedBindHost}`, "--skip-deploys"]);
 }
 
 function validateWwwWorkspace(): void {
@@ -217,10 +216,13 @@ async function verifyLatestDeployment(): Promise<void> {
     "node",
     "latestDeployment",
   ];
-  const buildCommand = readNullableStringAtPath(
-    fullStatusResult,
-    [...latestDeploymentPath, "meta", "serviceManifest", "build", "buildCommand"],
-  );
+  const buildCommand = readNullableStringAtPath(fullStatusResult, [
+    ...latestDeploymentPath,
+    "meta",
+    "serviceManifest",
+    "build",
+    "buildCommand",
+  ]);
   const startCommand = expectStringAtPath(
     fullStatusResult,
     [...latestDeploymentPath, "meta", "serviceManifest", "deploy", "startCommand"],
@@ -373,7 +375,10 @@ function resolveRailwayAccessToken(): string {
     throw new Error("Unexpected Railway auth config shape in ~/.railway/config.json.");
   }
 
-  if (typeof railwayConfigFileValue.user?.accessToken !== "string" || railwayConfigFileValue.user.accessToken.length === 0) {
+  if (
+    typeof railwayConfigFileValue.user?.accessToken !== "string" ||
+    railwayConfigFileValue.user.accessToken.length === 0
+  ) {
     throw new Error("Missing Railway access token. Run `railway login` or set RAILWAY_API_TOKEN.");
   }
 
@@ -381,22 +386,26 @@ function resolveRailwayAccessToken(): string {
 }
 
 function fetchJson(url: string, requestInit: RequestInit): unknown {
-  const responseResult = spawnSync("curl", [
-    "-fsSL",
-    "-X",
-    requestInit.method ?? "GET",
-    url,
-    "-H",
-    `Authorization: ${String(requestInit.headers instanceof Headers ? requestInit.headers.get("Authorization") ?? "" : (requestInit.headers as Record<string, string>).Authorization ?? "")}`,
-    "-H",
-    `Content-Type: ${String(requestInit.headers instanceof Headers ? requestInit.headers.get("Content-Type") ?? "application/json" : (requestInit.headers as Record<string, string>)["Content-Type"] ?? "application/json")}`,
-    "--data",
-    typeof requestInit.body === "string" ? requestInit.body : "",
-  ], {
-    cwd: process.cwd(),
-    env: process.env,
-    encoding: "utf8",
-  });
+  const responseResult = spawnSync(
+    "curl",
+    [
+      "-fsSL",
+      "-X",
+      requestInit.method ?? "GET",
+      url,
+      "-H",
+      `Authorization: ${String(requestInit.headers instanceof Headers ? (requestInit.headers.get("Authorization") ?? "") : ((requestInit.headers as Record<string, string>).Authorization ?? ""))}`,
+      "-H",
+      `Content-Type: ${String(requestInit.headers instanceof Headers ? (requestInit.headers.get("Content-Type") ?? "application/json") : ((requestInit.headers as Record<string, string>)["Content-Type"] ?? "application/json"))}`,
+      "--data",
+      typeof requestInit.body === "string" ? requestInit.body : "",
+    ],
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: "utf8",
+    },
+  );
 
   throwOnCommandFailure("curl", [], responseResult);
 
@@ -425,11 +434,7 @@ function runJsonCommand(command: string, arguments_: string[]): unknown {
   return parseJsonOutput(`${result.stdout}\n${result.stderr}`);
 }
 
-function throwOnCommandFailure(
-  command: string,
-  arguments_: string[],
-  result: SpawnSyncReturns<string>,
-): void {
+function throwOnCommandFailure(command: string, arguments_: string[], result: SpawnSyncReturns<string>): void {
   if (result.status === 0) {
     return;
   }

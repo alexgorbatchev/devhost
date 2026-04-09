@@ -1,12 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type JSX } from "react";
 
 import { Surface } from "../components/ui";
-import {
-  FeatureSection,
-  HeroSection,
-  ProofSection,
-  WorkflowSection,
-} from "../features/marketing";
+import { FeatureSection, HeroSection, ProofSection, WorkflowSection } from "../features/marketing";
 import {
   createRrwebDemoRecording,
   exportRrwebDemoRecording,

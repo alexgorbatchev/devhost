@@ -1,26 +1,10 @@
 @theme inline {
   --font-sans:
-    "Maple Mono Normal NF",
-    "JetBrainsMono Nerd Font",
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Monaco,
-    Consolas,
-    "Liberation Mono",
-    "Courier New",
-    monospace;
+    "Maple Mono Normal NF", "JetBrainsMono Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
   --font-mono:
-    "Maple Mono Normal NF",
-    "JetBrainsMono Nerd Font",
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Monaco,
-    Consolas,
-    "Liberation Mono",
-    "Courier New",
-    monospace;
+    "Maple Mono Normal NF", "JetBrainsMono Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -54,16 +38,8 @@
 :root {
   color-scheme: dark;
   font-family:
-    "Maple Mono Normal NF",
-    "JetBrainsMono Nerd Font",
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Monaco,
-    Consolas,
-    "Liberation Mono",
-    "Courier New",
-    monospace;
+    "Maple Mono Normal NF", "JetBrainsMono Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
   --surface-base: #0b0f19;
   --surface-subtle: #161d2b;
   --surface-raised: #121826;

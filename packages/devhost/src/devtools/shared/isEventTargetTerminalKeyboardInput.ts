@@ -17,7 +17,9 @@ export function isEventTargetTerminalKeyboardInput(target: EventTarget | null): 
     return false;
   }
 
-  return target.tagName.toUpperCase() === textareaTagName && target.classList?.contains(xtermKeyboardInputClassName) === true;
+  return (
+    target.tagName.toUpperCase() === textareaTagName && target.classList?.contains(xtermKeyboardInputClassName) === true
+  );
 }
 
 function isEventTargetWithTagName(target: EventTarget | null): target is EventTargetWithTagName {

@@ -18,7 +18,9 @@ export function FeatureReplay(props: IFeatureReplayProps): JSX.Element {
   const replayHeadingId: string = `feature-replay-${props.featureId}`;
 
   useEffect((): (() => void) | void => {
-    const cachedRecording: IRrwebDemoRecording | null | undefined = recordingsByUrlRef.current.get(props.demoRecordingUrl);
+    const cachedRecording: IRrwebDemoRecording | null | undefined = recordingsByUrlRef.current.get(
+      props.demoRecordingUrl,
+    );
 
     if (cachedRecording !== undefined) {
       setRecording(cachedRecording);
@@ -59,7 +61,10 @@ export function FeatureReplay(props: IFeatureReplayProps): JSX.Element {
   return (
     <section className="grid gap-3 border-t border-border-subtle pt-4" aria-labelledby={replayHeadingId}>
       <div className="grid gap-2">
-        <h4 id={replayHeadingId} className="text-xl font-medium leading-tight tracking-[-0.04em] text-card-foreground sm:text-2xl">
+        <h4
+          id={replayHeadingId}
+          className="text-xl font-medium leading-tight tracking-[-0.04em] text-card-foreground sm:text-2xl"
+        >
           {props.title}
         </h4>
         <p className="max-w-[72ch] text-sm leading-7 text-muted-foreground">

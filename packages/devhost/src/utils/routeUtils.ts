@@ -84,7 +84,9 @@ export async function cleanupStaleRegistrations(registrationsDirectoryPath: stri
     }
 
     const registrationPath: string = join(registrationsDirectoryPath, registrationFileName);
-    const registration: ManagedRouteRegistration = parseManagedRouteRegistration(await readFile(registrationPath, "utf8"));
+    const registration: ManagedRouteRegistration = parseManagedRouteRegistration(
+      await readFile(registrationPath, "utf8"),
+    );
 
     if (isProcessAlive(registration.ownerPid)) {
       continue;
@@ -253,7 +255,12 @@ function getHostClaimsDirectoryPath(registrationsDirectoryPath: string): string 
   return join(getRoutesDirectoryPath(registrationsDirectoryPath), ".host-claims");
 }
 
-function getRouteRegistrationPath(serviceName: string, host: string, path: string, routesDirectoryPath: string): string {
+function getRouteRegistrationPath(
+  serviceName: string,
+  host: string,
+  path: string,
+  routesDirectoryPath: string,
+): string {
   return join(
     getRegistrationsDirectoryPath(routesDirectoryPath),
     `${encodePathSegment(host)}_${serviceName}_${encodeRoutePathSegment(normalizeRoutePath(path))}.json`,
@@ -300,7 +307,9 @@ async function assertHostIsAvailable(options: IClaimHostOptions): Promise<void> 
     }
 
     const registrationPath: string = join(options.registrationsDirectoryPath, registrationFileName);
-    const registration: ManagedRouteRegistration = parseManagedRouteRegistration(await readFile(registrationPath, "utf8"));
+    const registration: ManagedRouteRegistration = parseManagedRouteRegistration(
+      await readFile(registrationPath, "utf8"),
+    );
 
     if (registration.host !== options.host || !isProcessAlive(registration.ownerPid)) {
       continue;
@@ -370,7 +379,9 @@ async function readHostRegistrations(host: string, routesDirectoryPath: string):
     }
 
     const registrationPath: string = join(registrationsDirectoryPath, registrationFileName);
-    const registration: ManagedRouteRegistration = parseManagedRouteRegistration(await readFile(registrationPath, "utf8"));
+    const registration: ManagedRouteRegistration = parseManagedRouteRegistration(
+      await readFile(registrationPath, "utf8"),
+    );
 
     if (registration.host !== host || isLegacyRouteRegistration(registration)) {
       continue;
@@ -462,7 +473,8 @@ function isRouteRegistration(value: unknown): value is IRouteRegistration {
     typeof Reflect.get(value, "appBindHost") === "string" &&
     typeof Reflect.get(value, "appPort") === "number" &&
     typeof Reflect.get(value, "createdAt") === "string" &&
-    (Reflect.get(value, "devtoolsControlPort") === undefined || typeof Reflect.get(value, "devtoolsControlPort") === "number") &&
+    (Reflect.get(value, "devtoolsControlPort") === undefined ||
+      typeof Reflect.get(value, "devtoolsControlPort") === "number") &&
     (Reflect.get(value, "documentInjectionPort") === undefined ||
       typeof Reflect.get(value, "documentInjectionPort") === "number") &&
     typeof Reflect.get(value, "host") === "string" &&
@@ -540,15 +552,10 @@ export function renderHostRouteSnippet(registrations: IRouteRegistration[]): str
   }
 
   if (rootRegistration !== undefined) {
-    if (
-      rootRegistration.devtoolsControlPort !== undefined &&
-      rootRegistration.documentInjectionPort !== undefined
-    ) {
+    if (rootRegistration.devtoolsControlPort !== undefined && rootRegistration.documentInjectionPort !== undefined) {
       lines.push("    @devhost_document header Sec-Fetch-Dest document");
       lines.push("    handle @devhost_document {");
-      lines.push(
-        `        reverse_proxy ${formatProxyAddress("127.0.0.1", rootRegistration.documentInjectionPort)}`,
-      );
+      lines.push(`        reverse_proxy ${formatProxyAddress("127.0.0.1", rootRegistration.documentInjectionPort)}`);
       lines.push("    }");
       lines.push("");
     }
@@ -568,11 +575,7 @@ export function renderHostRouteSnippet(registrations: IRouteRegistration[]): str
 }
 
 function renderServiceHandle(registration: IRouteRegistration): string[] {
-  return [
-    `    handle ${registration.path} {`,
-    `        reverse_proxy ${readAppTarget(registration)}`,
-    "    }",
-  ];
+  return [`    handle ${registration.path} {`, `        reverse_proxy ${readAppTarget(registration)}`, "    }"];
 }
 
 function readAppTarget(registration: IRouteRegistration): string {

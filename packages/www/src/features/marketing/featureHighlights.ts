@@ -32,7 +32,8 @@ export const featureHighlights: readonly IFeatureHighlight[] = [
       "Use the inspection loop to move from page evidence into code without re-establishing context.",
     ],
     demoRecordingUrl: "/recordings/marketing/source-jumps.json",
-    description: "Alt + right-click component inspection can open the nearest React source in the editor you configured.",
+    description:
+      "Alt + right-click component inspection can open the nearest React source in the editor you configured.",
     id: "source-jumps",
     kicker: "Source navigation",
     tabLabel: "Source navigation",

@@ -16,7 +16,8 @@ const workflowSteps: readonly IWorkflowStep[] = [
     title: "Boot the managed edge",
   },
   {
-    description: "Launch one service or a whole manifest and let devhost resolve ports, dependencies, and health checks.",
+    description:
+      "Launch one service or a whole manifest and let devhost resolve ports, dependencies, and health checks.",
     stepLabel: "02",
     title: "Run the stack from a manifest",
   },

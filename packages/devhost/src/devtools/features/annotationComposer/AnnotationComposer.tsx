@@ -60,7 +60,8 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
   const selectedElementsReference = useRef<ISelectedElementDraft[]>([]);
   const viewportPadding: number = readPixelValue(theme.spacing.sm);
   const trimmedComment: string = comment.trim();
-  const hasActiveAnnotationInteraction: boolean = isSelectionMode || selectedElements.length > 0 || trimmedComment.length > 0;
+  const hasActiveAnnotationInteraction: boolean =
+    isSelectionMode || selectedElements.length > 0 || trimmedComment.length > 0;
   const hasDraft: boolean = selectedElements.length > 0 || trimmedComment.length > 0;
 
   const cancelDraft = useCallback((): void => {
@@ -383,7 +384,6 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
       window.cancelAnimationFrame(animationFrameId);
     };
   }, [comment, isSubmitting, layoutVersion, selectedElements.length, submissionErrorMessage]);
-
 
   const markerRenderModels: IMarkerRenderModel[] = useMemo((): IMarkerRenderModel[] => {
     void layoutVersion;

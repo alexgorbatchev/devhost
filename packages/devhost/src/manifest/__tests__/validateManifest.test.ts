@@ -132,7 +132,7 @@ describe("validateManifest", () => {
           },
         },
       }),
-    ).toThrow("Manifest schema is invalid:\nmanifest Unrecognized key: \"caddy\"");
+    ).toThrow('Manifest schema is invalid:\nmanifest Unrecognized key: "caddy"');
   });
 
   test("rejects a configured agent cwd that escapes the manifest directory", () => {

@@ -28,7 +28,10 @@ export async function syncManagedCaddyNotFoundSite(routesDirectoryPath: string):
 async function readActiveRouteLinks(routesDirectoryPath: string): Promise<IManagedCaddyNotFoundRouteLink[]> {
   const registrationsDirectoryPath: string = join(routesDirectoryPath, ".registrations");
   const registrationFileNames: string[] = await readdir(registrationsDirectoryPath);
-  const routeLinksByHost: Map<string, IManagedCaddyNotFoundRouteLink> = new Map<string, IManagedCaddyNotFoundRouteLink>();
+  const routeLinksByHost: Map<string, IManagedCaddyNotFoundRouteLink> = new Map<
+    string,
+    IManagedCaddyNotFoundRouteLink
+  >();
 
   for (const registrationFileName of registrationFileNames) {
     if (!registrationFileName.endsWith(".json")) {
@@ -36,7 +39,9 @@ async function readActiveRouteLinks(routesDirectoryPath: string): Promise<IManag
     }
 
     const registrationPath: string = join(registrationsDirectoryPath, registrationFileName);
-    const registration: IManagedRouteRegistration = parseManagedRouteRegistration(await readFile(registrationPath, "utf8"));
+    const registration: IManagedRouteRegistration = parseManagedRouteRegistration(
+      await readFile(registrationPath, "utf8"),
+    );
     const routeFilePath: string = await readRouteFilePath(registration.host, registrationFileName, routesDirectoryPath);
 
     if (!(await pathExists(routeFilePath))) {
@@ -135,7 +140,11 @@ function encodePathSegment(value: string): string {
   return value.replaceAll(":", "_");
 }
 
-async function readRouteFilePath(host: string, registrationFileName: string, routesDirectoryPath: string): Promise<string> {
+async function readRouteFilePath(
+  host: string,
+  registrationFileName: string,
+  routesDirectoryPath: string,
+): Promise<string> {
   const hostRoutePath: string = join(routesDirectoryPath, `${encodePathSegment(host)}.caddy`);
 
   if (await pathExists(hostRoutePath)) {

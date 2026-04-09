@@ -16,18 +16,21 @@ describe("shouldRetryAutoPortStartup", () => {
     const service: IResolvedDevhostService = createAutoPortService();
 
     expect(
-      shouldRetryAutoPortStartup(service, new Error("Service api exited before passing its health check with code 1."), [
-        "[api] Error: listen EADDRINUSE: address already in use 127.0.0.1:3000",
-      ], 0),
+      shouldRetryAutoPortStartup(
+        service,
+        new Error("Service api exited before passing its health check with code 1."),
+        ["[api] Error: listen EADDRINUSE: address already in use 127.0.0.1:3000"],
+        0,
+      ),
     ).toBe(true);
   });
 
   test("does not retry after the retry budget is exhausted", () => {
     const service: IResolvedDevhostService = createAutoPortService();
 
-    expect(
-      shouldRetryAutoPortStartup(service, new Error("listen EADDRINUSE"), ["address already in use"], 3),
-    ).toBe(false);
+    expect(shouldRetryAutoPortStartup(service, new Error("listen EADDRINUSE"), ["address already in use"], 3)).toBe(
+      false,
+    );
   });
 
   test("does not retry non-auto services", () => {

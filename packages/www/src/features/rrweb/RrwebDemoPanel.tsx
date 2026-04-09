@@ -68,7 +68,12 @@ export function RrwebDemoPanel(props: IRrwebDemoPanelProps): JSX.Element {
           data-testid="RrwebDemoPanel"
         >
           {shouldShowStartButton ? (
-            <Button aria-keyshortcuts={startShortcutLabel} size="large" variant="primary" onClick={props.onStartRecording}>
+            <Button
+              aria-keyshortcuts={startShortcutLabel}
+              size="large"
+              variant="primary"
+              onClick={props.onStartRecording}
+            >
               Start recording · {startShortcutLabel}
             </Button>
           ) : null}

@@ -107,9 +107,11 @@ export async function startStack(
       });
     }
 
-    for (const host of new Set(routedServices.flatMap((service: IResolvedDevhostService): string[] => {
-      return service.host === null ? [] : [service.host];
-    }))) {
+    for (const host of new Set(
+      routedServices.flatMap((service: IResolvedDevhostService): string[] => {
+        return service.host === null ? [] : [service.host];
+      }),
+    )) {
       await claimHost({
         host,
         manifestPath: manifest.manifestPath,
@@ -278,7 +280,9 @@ export async function startStack(
     }
 
     for (const serviceName of activeRoutes) {
-      const activeService = routedServices.find((service: IResolvedDevhostService): boolean => service.name === serviceName);
+      const activeService = routedServices.find(
+        (service: IResolvedDevhostService): boolean => service.name === serviceName,
+      );
       if (activeService?.host === null || activeService?.host === undefined) {
         continue;
       }
@@ -409,16 +413,24 @@ async function startServiceWithRetries(
     const outputPumpPromises: Promise<void>[] = [];
 
     if (options.pipeServiceOutput) {
-      const stdoutPumpPromise: Promise<void> = pipeSubprocessOutput(childProcess.stdout, `[${service.name}] `, (line: string) => {
-        appendAttemptOutputLine(attemptOutputLines, line);
-        devtoolsControlServer?.publishLogEntry(service.name, "stdout", line);
-        console.log(line);
-      });
-      const stderrPumpPromise: Promise<void> = pipeSubprocessOutput(childProcess.stderr, `[${service.name}] `, (line: string) => {
-        appendAttemptOutputLine(attemptOutputLines, line);
-        devtoolsControlServer?.publishLogEntry(service.name, "stderr", line);
-        console.error(line);
-      });
+      const stdoutPumpPromise: Promise<void> = pipeSubprocessOutput(
+        childProcess.stdout,
+        `[${service.name}] `,
+        (line: string) => {
+          appendAttemptOutputLine(attemptOutputLines, line);
+          devtoolsControlServer?.publishLogEntry(service.name, "stdout", line);
+          console.log(line);
+        },
+      );
+      const stderrPumpPromise: Promise<void> = pipeSubprocessOutput(
+        childProcess.stderr,
+        `[${service.name}] `,
+        (line: string) => {
+          appendAttemptOutputLine(attemptOutputLines, line);
+          devtoolsControlServer?.publishLogEntry(service.name, "stderr", line);
+          console.error(line);
+        },
+      );
 
       void stdoutPumpPromise.catch(() => undefined);
       void stderrPumpPromise.catch(() => undefined);

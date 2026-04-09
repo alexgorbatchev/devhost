@@ -10,10 +10,7 @@ export interface IWorkflowStepCardProps {
 
 export function WorkflowStepCard(props: IWorkflowStepCardProps): JSX.Element {
   return (
-    <Surface
-      element="article"
-      className="grid gap-4 p-4 sm:grid-cols-[72px_minmax(0,1fr)] sm:items-start sm:p-5"
-    >
+    <Surface element="article" className="grid gap-4 p-4 sm:grid-cols-[72px_minmax(0,1fr)] sm:items-start sm:p-5">
       <p className="inline-flex h-10 w-fit items-center rounded-md border border-transparent bg-primary px-3 text-sm uppercase tracking-[0.24em] text-primary-foreground shadow-[var(--shadow-soft)]">
         {props.stepLabel}
       </p>

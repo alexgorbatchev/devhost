@@ -9,7 +9,10 @@ export interface ISectionHeaderProps {
 export function SectionHeader(props: ISectionHeaderProps): JSX.Element {
   return (
     <div className="grid gap-3">
-      <h2 id={props.titleId} className="text-balance text-3xl font-medium leading-tight tracking-[-0.06em] text-foreground sm:text-4xl">
+      <h2
+        id={props.titleId}
+        className="text-balance text-3xl font-medium leading-tight tracking-[-0.06em] text-foreground sm:text-4xl"
+      >
         {props.title}
       </h2>
       {props.description ? <p className="text-sm leading-7 text-muted-foreground">{props.description}</p> : null}

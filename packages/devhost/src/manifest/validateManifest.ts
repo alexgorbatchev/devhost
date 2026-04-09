@@ -261,9 +261,7 @@ function validateService(
       const conflictingPath: string | null = readConflictingRoutePath(existingPaths, path);
 
       if (conflictingPath !== null) {
-        errors.push(
-          `services.${serviceName}.path overlaps another routed service on host ${host}: ${conflictingPath}`,
-        );
+        errors.push(`services.${serviceName}.path overlaps another routed service on host ${host}: ${conflictingPath}`);
       }
 
       existingPaths.push(path);
