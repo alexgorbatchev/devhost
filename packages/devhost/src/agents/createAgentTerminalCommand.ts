@@ -37,13 +37,19 @@ export function createAgentTerminalCommand(options: ICreateAgentTerminalCommandO
   if (options.agent.kind === "claude-code") {
     return {
       cleanup: sessionFiles.cleanup,
-      command: createClaudeCodeAgentCommand(sessionFiles.env.DEVHOST_AGENT_PROMPT_FILE),
+      command: createClaudeCodeAgentCommand(
+        sessionFiles.env.DEVHOST_AGENT_PROMPT_FILE,
+        sessionFiles.env.DEVHOST_AGENT_CLAUDE_SETTINGS_FILE,
+      ),
       cwd: options.projectRootPath,
       env: sessionFiles.env,
     };
   }
 
   if (options.agent.kind === "opencode") {
+    if (sessionFiles.env.DEVHOST_AGENT_OPENCODE_CONFIG_FILE) {
+      sessionFiles.env.OPENCODE_CONFIG = sessionFiles.env.DEVHOST_AGENT_OPENCODE_CONFIG_FILE;
+    }
     return {
       cleanup: sessionFiles.cleanup,
       command: createOpenCodeAgentCommand(sessionFiles.env.DEVHOST_AGENT_PROMPT_FILE),

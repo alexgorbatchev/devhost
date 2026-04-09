@@ -731,6 +731,60 @@ health = { http = "http://127.0.0.1:4000/healthz" }`}</code>
             <code>[devtools.editor].ide</code> value. When <code>[devtools.editor].ide = "neovim"</code>, devhost
             launches Neovim inside the injected xterm terminal.
           </p>
+
+          <h3>Annotation agents</h3>
+          <p>
+            Configure a project-local annotation launcher with a root-level <code>[agent]</code> table.
+          </p>
+
+          <p>Use built-in agent adapters for quick setup:</p>
+          <pre>
+            <code className="language-toml">{`[agent]
+adapter = "claude-code"`}</code>
+          </pre>
+
+          <p>
+            Supported adapters: <code>"pi"</code>, <code>"claude-code"</code>, and <code>"opencode"</code>. When{" "}
+            <code>[agent]</code> is omitted, <code>devhost</code> starts Pi by default.
+          </p>
+
+          <p>For custom annotation agents, provide an explicit command:</p>
+
+          <pre>
+            <code className="language-toml">{`[agent]
+displayName = "My Agent"
+command = ["bun", "./scripts/devhost-agent.ts"]
+cwd = "."
+
+[agent.env]
+DEVHOST_AGENT_MODE = "annotation"`}</code>
+          </pre>
+
+          <p>
+            <code>devhost</code> executes custom agent commands directly, not through a shell string. For configured
+            commands, <code>devhost</code> writes the annotation JSON and rendered prompt to temp files and injects them
+            via <code>DEVHOST_AGENT_*</code> environment variables.
+          </p>
+
+          <p>
+            All built-in adapters natively integrate terminal OSC sequences to reflect working and idle states during
+            embedded session execution:
+          </p>
+
+          <ul className="list-disc pl-6 mb-6">
+            <li className="mb-2">
+              <code>pi</code> leverages an injected extension to capture <code>agent_start</code> and{" "}
+              <code>agent_end</code> hooks
+            </li>
+            <li className="mb-2">
+              <code>claude-code</code> utilizes its <code>--settings</code> API mapping commands to its native session
+              and user prompt hooks
+            </li>
+            <li className="mb-2">
+              <code>opencode</code> integrates via an inline <code>--config</code> plugin listening for{" "}
+              <code>session.status</code> events
+            </li>
+          </ul>
         </div>
       </div>
 

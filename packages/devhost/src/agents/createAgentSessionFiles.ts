@@ -27,6 +27,47 @@ export function createAgentSessionFiles(options: ICreateAgentSessionFilesOptions
 
   writeFileSync(annotationFilePath, JSON.stringify(options.annotation, null, 2), "utf8");
   writeFileSync(promptFilePath, options.prompt, "utf8");
+  const claudeSettingsFilePath: string = join(sessionDirectoryPath, "claude-settings.json");
+  const opencodePluginFilePath: string = join(sessionDirectoryPath, "opencode-plugin.ts");
+  const opencodeConfigFilePath: string = join(sessionDirectoryPath, "opencode-config.jsonc");
+
+  const claudeSettings = {
+    hooks: {
+      SessionStart: [
+        { matcher: "", hooks: [{ type: "command", command: "printf '\\x1b]1337;SetAgentStatus=working\\x07'" }] },
+      ],
+      UserPromptSubmit: [
+        { matcher: "", hooks: [{ type: "command", command: "printf '\\x1b]1337;SetAgentStatus=working\\x07'" }] },
+      ],
+      Stop: [
+        { matcher: "", hooks: [{ type: "command", command: "printf '\\x1b]1337;SetAgentStatus=finished\\x07'" }] },
+      ],
+      SessionEnd: [
+        { matcher: "", hooks: [{ type: "command", command: "printf '\\x1b]1337;SetAgentStatus=finished\\x07'" }] },
+      ],
+    },
+  };
+
+  const opencodePlugin = `export default async function() {
+  return {
+    event: async ({ event }: { event: any }) => {
+      if (event.type === 'session.status' && event.properties?.status?.type === 'running') {
+        process.stdout.write('\\x1b]1337;SetAgentStatus=working\\x07');
+      }
+      if (event.type === 'session.idle' || (event.type === 'session.status' && event.properties?.status?.type === 'idle')) {
+        process.stdout.write('\\x1b]1337;SetAgentStatus=finished\\x07');
+      }
+    }
+  };
+}`;
+
+  const opencodeConfig = {
+    plugin: [opencodePluginFilePath],
+  };
+
+  writeFileSync(claudeSettingsFilePath, JSON.stringify(claudeSettings, null, 2), "utf8");
+  writeFileSync(opencodePluginFilePath, opencodePlugin, "utf8");
+  writeFileSync(opencodeConfigFilePath, JSON.stringify(opencodeConfig, null, 2), "utf8");
 
   return {
     cleanup: (): void => {
@@ -39,6 +80,8 @@ export function createAgentSessionFiles(options: ICreateAgentSessionFilesOptions
       DEVHOST_AGENT_TRANSPORT: agentTransportMode,
       DEVHOST_PROJECT_ROOT: options.projectRootPath,
       DEVHOST_STACK_NAME: options.stackName,
+      DEVHOST_AGENT_CLAUDE_SETTINGS_FILE: claudeSettingsFilePath,
+      DEVHOST_AGENT_OPENCODE_CONFIG_FILE: opencodeConfigFilePath,
     },
   };
 }

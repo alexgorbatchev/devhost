@@ -299,6 +299,12 @@ DEVHOST_AGENT_MODE = "annotation"
 `devhost` executes custom agent commands directly, not through a shell string.
 For configured commands, `devhost` writes the annotation JSON and rendered prompt to temp files and injects them via `DEVHOST_AGENT_*` environment variables. Built-in adapters receive the rendered prompt natively via command-line arguments.
 
+All built-in adapters natively integrate terminal OSC sequences to reflect working and idle states during embedded session execution:
+
+- `pi` leverages an injected extension to capture `agent_start` and `agent_end` hooks
+- `claude-code` utilizes its `--settings` API mapping commands to its native session and user prompt hooks
+- `opencode` integrates via an inline `--config` plugin listening for `session.status` events
+
 ## Contributor notes
 
 Internal development details live in:

@@ -43,7 +43,9 @@ describe("createTerminalSessionCommand", () => {
     cleanupFunctions.push(terminalSessionCommand.cleanup);
 
     expect(terminalSessionCommand.command[0]).toBe("claude");
-    expect(terminalSessionCommand.command[1]).toMatch(
+    expect(terminalSessionCommand.command[1]).toBe("--settings");
+    expect(terminalSessionCommand.command[2]).toContain("claude-settings.json");
+    expect(terminalSessionCommand.command[3]).toMatch(
       /^Please read the annotation details from .*prompt\.txt and address the requested change\.$/,
     );
     expect(terminalSessionCommand.env.DEVHOST_AGENT_PROMPT_FILE).toBeDefined();
@@ -115,6 +117,7 @@ describe("createTerminalSessionCommand", () => {
     expect(terminalSessionCommand.command[1]).toMatch(
       /^Please read the annotation details from .*prompt\.txt and address the requested change\.$/,
     );
+    expect(terminalSessionCommand.env.OPENCODE_CONFIG).toContain("opencode-config.jsonc");
     expect(terminalSessionCommand.env.DEVHOST_AGENT_PROMPT_FILE).toBeDefined();
   });
 
