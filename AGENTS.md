@@ -22,6 +22,7 @@ Monorepo root for the published `devhost` package and the local demo app.
 - Root `package.json` owns the shared TypeScript AI policy tooling and the shared `oxfmt` / `oxlint` configs. Keep workspace-local copies out unless the workspaces genuinely diverge.
 - Root `bun run check` runs shared `oxfmt` / `oxlint` enforcement first, then delegates to package-specific checks.
 - Workspace `check` scripts are package-local validation only; do not duplicate shared lint/format enforcement there unless a workspace intentionally diverges.
+- Storybook is currently out-of-band from `bun run check`; run `bun run --cwd packages/devhost storybook` or `bun run --cwd packages/www storybook` manually when Storybook coverage is in scope.
 - Keep a single root `bun.lock`. Do not add workspace-local lockfiles.
 - Root `README.md` is a symlink to `packages/devhost/README.md`. Update the package README, not the symlink.
 

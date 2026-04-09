@@ -17,6 +17,7 @@ Local React demo app for exercising `@alexgorbatchev/devhost` behavior and Story
 
 - This workspace uses the repo-root `bun.lock`. Do not add a package-local lockfile.
 - Shared `oxfmt` / `oxlint` enforcement runs from the repo root, not from this workspace `check` script.
+- `bun run check` currently runs the package TypeScript validation only. Run `bun run storybook` separately when Storybook coverage is in scope.
 - The demo app is React-based, while `packages/devhost/` devtools UI is Preact-based. Do not copy JSX/runtime assumptions across workspaces without checking the local package config.
 
 ## Boundaries
