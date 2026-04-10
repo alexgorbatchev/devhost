@@ -162,7 +162,7 @@ function createPanelStyle(theme: IDevtoolsTheme, panelSide: PanelSide, isHovered
   };
 }
 
-function createRowStyle(theme: IDevtoolsTheme, panelSide: PanelSide): CSSObject {
+function createRowStyle(theme: IDevtoolsTheme, _panelSide: PanelSide): CSSObject {
   return {
     alignItems: "center",
     display: "flex",
