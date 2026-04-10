@@ -14,8 +14,9 @@ import { resolveAnnotationTarget } from "./resolveAnnotationTarget";
 import type { IAnnotationSubmitDetail, ISelectedElementDraft } from "./types";
 
 interface IAnnotationComposerProps {
+  activeAgentSessionId?: string;
   agentDisplayName: string;
-  onSubmit: (detail: IAnnotationSubmitDetail) => Promise<ITerminalSessionStartResult>;
+  onSubmit: (detail: IAnnotationSubmitDetail, targetSessionId?: string) => Promise<ITerminalSessionStartResult>;
   stackName: string;
 }
 
@@ -49,6 +50,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
   const [hoveredElement, setHoveredElement] = useState<HTMLElement | null>(null);
   const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [sendToActiveSession, setSendToActiveSession] = useState<boolean>(true);
   const [layoutVersion, setLayoutVersion] = useState<number>(0);
   const [popupHeight, setPopupHeight] = useState<number>(220);
   const [selectedElements, setSelectedElements] = useState<ISelectedElementDraft[]>([]);
@@ -95,7 +97,10 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
     setSubmissionErrorMessage(null);
 
     try {
-      const submitResult: ITerminalSessionStartResult = await props.onSubmit(detail);
+      const submitResult: ITerminalSessionStartResult = await props.onSubmit(
+        detail,
+        sendToActiveSession ? props.activeAgentSessionId : undefined,
+      );
 
       if (submitResult.success) {
         cancelDraft();
@@ -108,7 +113,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
     } finally {
       setIsSubmitting(false);
     }
-  }, [cancelDraft, isSubmitting, props, selectedElements, trimmedComment]);
+  }, [cancelDraft, isSubmitting, props, selectedElements, trimmedComment, sendToActiveSession]);
 
   useEffect(() => {
     selectedElementsReference.current = selectedElements;
@@ -531,6 +536,18 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
               {submissionErrorMessage}
             </div>
           ) : null}
+          {props.activeAgentSessionId ? (
+            <label class={css(createCheckboxLabelStyle(theme))}>
+              <input
+                type="checkbox"
+                checked={sendToActiveSession}
+                onChange={(event: JSX.TargetedEvent<HTMLInputElement, Event>): void => {
+                  setSendToActiveSession(event.currentTarget.checked);
+                }}
+              />
+              Send to active {props.agentDisplayName} session
+            </label>
+          ) : null}
           <div class={popupActionsClassName}>
             <Button
               disabled={trimmedComment.length === 0 || isSubmitting}
@@ -757,6 +774,18 @@ function createTextareaStyle(theme: IDevtoolsTheme): CSSObject {
     color: theme.colors.foreground,
     fontFamily: theme.fontFamilies.body,
     fontSize: theme.fontSizes.sm,
+  };
+}
+
+function createCheckboxLabelStyle(theme: IDevtoolsTheme): CSSObject {
+  return {
+    display: "flex",
+    alignItems: "center",
+    gap: theme.spacing.xs,
+    fontSize: theme.fontSizes.sm,
+    color: theme.colors.foreground,
+    cursor: "pointer",
+    userSelect: "none",
   };
 }
 

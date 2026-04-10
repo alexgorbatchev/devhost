@@ -106,10 +106,11 @@ export function useTerminalSessions(): IUseTerminalSessionsResult {
   );
 
   const submitAnnotation = useCallback(
-    async (annotation: IAnnotationSubmitDetail): Promise<ITerminalSessionStartResult> => {
+    async (annotation: IAnnotationSubmitDetail, targetSessionId?: string): Promise<ITerminalSessionStartResult> => {
       return await startSession({
         annotation,
         kind: "agent",
+        targetSessionId,
       });
     },
     [startSession],
@@ -309,6 +310,11 @@ function isStartTerminalSessionRequest(value: unknown): value is StartTerminalSe
 
   if (requestKind === "agent") {
     const annotation: unknown = Reflect.get(value, "annotation");
+    const targetSessionId: unknown = Reflect.get(value, "targetSessionId");
+
+    if (targetSessionId !== undefined && typeof targetSessionId !== "string") {
+      return false;
+    }
 
     return isAnnotationSubmitDetail(annotation);
   }

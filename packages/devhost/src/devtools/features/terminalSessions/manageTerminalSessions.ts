@@ -4,14 +4,21 @@ export function appendTerminalSession(
   currentSessions: TerminalSession[],
   nextSession: TerminalSession,
 ): TerminalSession[] {
+  const existingIndex = currentSessions.findIndex((s) => s.sessionId === nextSession.sessionId);
+  let nextSessions = [...currentSessions];
+
+  if (existingIndex !== -1) {
+    nextSessions.splice(existingIndex, 1);
+  }
+
   const normalizedCurrentSessions: TerminalSession[] = nextSession.isExpanded
-    ? currentSessions.map((session: TerminalSession): TerminalSession => {
+    ? nextSessions.map((session: TerminalSession): TerminalSession => {
         return {
           ...session,
           isExpanded: false,
         };
       })
-    : currentSessions;
+    : nextSessions;
 
   return [nextSession, ...normalizedCurrentSessions];
 }
