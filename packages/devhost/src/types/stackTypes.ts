@@ -56,6 +56,9 @@ export interface IDevhostManifest {
       enabled?: boolean;
       ide?: DevtoolsComponentEditor;
     };
+    externalToolbars?: {
+      enabled?: boolean;
+    };
     minimap?: {
       enabled?: boolean;
       position?: DevtoolsMinimapPosition;
@@ -92,6 +95,9 @@ export interface IValidatedDevhostManifest {
       enabled: boolean;
       ide: DevtoolsComponentEditor;
     };
+    externalToolbars: {
+      enabled: boolean;
+    };
     minimap: {
       enabled: boolean;
       position: DevtoolsMinimapPosition;
@@ -127,6 +133,9 @@ export interface IResolvedDevhostManifest {
     editor: {
       enabled: boolean;
       ide: DevtoolsComponentEditor;
+    };
+    externalToolbars: {
+      enabled: boolean;
     };
     minimap: {
       enabled: boolean;

@@ -16,6 +16,7 @@ export interface IInjectedDevtoolsConfig {
   projectRootPath: string;
   stackName: string;
   editorEnabled: boolean;
+  externalToolbarsEnabled: boolean;
   minimapEnabled: boolean;
   statusEnabled: boolean;
 }
@@ -29,6 +30,7 @@ const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
   projectRootPath: "",
   stackName: DEVHOST_SERVICE_NAME,
   editorEnabled: true,
+  externalToolbarsEnabled: true,
   minimapEnabled: true,
   statusEnabled: true,
 };
@@ -48,6 +50,7 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
   const projectRootPath: string = readProjectRootPathValue(injectedConfig);
   const stackName: string = readStackNameValue(injectedConfig);
   const editorEnabled: boolean = readBooleanValue(injectedConfig, "editorEnabled", true);
+  const externalToolbarsEnabled: boolean = readBooleanValue(injectedConfig, "externalToolbarsEnabled", true);
   const minimapEnabled: boolean = readBooleanValue(injectedConfig, "minimapEnabled", true);
   const statusEnabled: boolean = readBooleanValue(injectedConfig, "statusEnabled", true);
 
@@ -60,6 +63,7 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
     projectRootPath,
     stackName,
     editorEnabled,
+    externalToolbarsEnabled,
     minimapEnabled,
     statusEnabled,
   };

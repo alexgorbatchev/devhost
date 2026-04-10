@@ -12,6 +12,7 @@ export function createConfiguredDevtoolsScript(
   agentDisplayName: string,
   controlToken: string,
   editorEnabled: boolean = true,
+  externalToolbarsEnabled: boolean = true,
   minimapEnabled: boolean = true,
   statusEnabled: boolean = true,
 ): string {
@@ -24,6 +25,7 @@ export function createConfiguredDevtoolsScript(
     projectRootPath,
     stackName,
     editorEnabled,
+    externalToolbarsEnabled,
     minimapEnabled,
     statusEnabled,
   });

@@ -6,6 +6,8 @@ export {
   RESTART_SERVICE_PATH,
 } from "./constants";
 export { configureDevtoolsCss, css, cx, injectGlobal } from "./devtoolsCss";
+export { HoverSlidePanel } from "./HoverSlidePanel";
+export type { PanelSide } from "./panelSide";
 export { ThemeProvider } from "./ThemeProvider";
 export { type IDevtoolsTheme } from "./devtoolsTheme";
 export { readDevtoolsAgentDisplayName } from "./readDevtoolsAgentDisplayName";

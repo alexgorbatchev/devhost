@@ -90,6 +90,11 @@ const manifestSchema = z
             ide: devtoolsComponentEditorSchema.optional(),
           })
           .optional(),
+        externalToolbars: z
+          .object({
+            enabled: z.boolean().optional(),
+          })
+          .optional(),
         minimap: z
           .object({
             enabled: z.boolean().optional(),
@@ -173,6 +178,9 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
       editor: {
         enabled: parsedManifest.devtools?.editor?.enabled ?? true,
         ide: parsedManifest.devtools?.editor?.ide ?? defaultDevtoolsComponentEditor,
+      },
+      externalToolbars: {
+        enabled: parsedManifest.devtools?.externalToolbars?.enabled ?? true,
       },
       minimap: {
         enabled: parsedManifest.devtools?.minimap?.enabled ?? true,

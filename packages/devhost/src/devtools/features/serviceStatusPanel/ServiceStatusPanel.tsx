@@ -1,17 +1,16 @@
 import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "preact";
-import { useState } from "preact/hooks";
 
 import {
   css,
   DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
+  HoverSlidePanel,
   type IDevtoolsTheme,
   readDevtoolsControlToken,
   RESTART_SERVICE_PATH,
   useDevtoolsTheme,
 } from "../../shared";
 import type { ServiceHealth } from "../../shared/types";
-import { resolveServiceStatusPanelTransform } from "./resolveServiceStatusPanelTransform";
 import type { PanelSide } from "./types";
 
 interface IServiceStatusPanelProps {
@@ -20,13 +19,10 @@ interface IServiceStatusPanelProps {
   services: ServiceHealth[];
 }
 
-const serviceStatusPanelTransition: string = "transform 160ms ease";
-
 export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element | null {
   const theme = useDevtoolsTheme();
   const visibleServices: ServiceHealth[] = props.services;
   const shouldRenderPanel: boolean = props.errorMessage !== null || visibleServices.length > 0;
-  const [isHovered, setIsHovered] = useState<boolean>(false);
 
   if (!shouldRenderPanel) {
     return null;
@@ -35,21 +31,15 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
   const errorClassName: string = css(createErrorStyle(theme, props.panelSide));
   const listClassName: string = css(createListStyle(theme));
   const nameClassName: string = css(createNameStyle(theme, props.panelSide));
-  const panelClassName: string = css(createPanelStyle(theme, props.panelSide, isHovered));
   const rowClassName: string = css(createRowStyle(theme, props.panelSide));
   const restartButtonClassName: string = css(createRestartButtonStyle(theme));
 
   return (
-    <section
-      aria-label="devhost services"
-      class={panelClassName}
-      data-testid="ServiceStatusPanel"
-      onMouseEnter={(): void => {
-        setIsHovered(true);
-      }}
-      onMouseLeave={(): void => {
-        setIsHovered(false);
-      }}
+    <HoverSlidePanel
+      ariaLabel="devhost services"
+      panelSide={props.panelSide}
+      peekWidth={theme.sizes.serviceStatusPanelPeekWidth}
+      testId="ServiceStatusPanel"
     >
       {props.errorMessage !== null ? <div class={errorClassName}>{props.errorMessage}</div> : null}
       {visibleServices.length > 0 ? (
@@ -107,7 +97,7 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
           })}
         </ul>
       ) : null}
-    </section>
+    </HoverSlidePanel>
   );
 }
 
@@ -140,25 +130,6 @@ function createNameStyle(theme: IDevtoolsTheme, panelSide: PanelSide): CSSObject
     textAlign: panelSide === "left" ? "right" : "left",
     textOverflow: "clip",
     whiteSpace: "nowrap",
-  };
-}
-
-function createPanelStyle(theme: IDevtoolsTheme, panelSide: PanelSide, isHovered: boolean): CSSObject {
-  return {
-    background: theme.colors.background,
-    border: `1px solid ${theme.colors.border}`,
-    borderRadius: theme.radii.md,
-    boxShadow: theme.shadows.floating,
-    color: theme.colors.foreground,
-    fontFamily: theme.fontFamilies.monospace,
-    fontSize: theme.fontSizes.sm,
-    overflow: "hidden",
-    padding: `${theme.spacing.xxs} ${theme.spacing.xs}`,
-    position: "relative",
-    transform: resolveServiceStatusPanelTransform(panelSide, isHovered, theme.sizes.serviceStatusPanelPeekWidth),
-    transition: serviceStatusPanelTransition,
-    willChange: "transform",
-    zIndex: Number(theme.zIndices.floating) + 2,
   };
 }
 

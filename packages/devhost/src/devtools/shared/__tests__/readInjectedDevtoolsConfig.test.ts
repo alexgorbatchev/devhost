@@ -22,6 +22,7 @@ describe("readInjectedDevtoolsConfig", () => {
       projectRootPath: "",
       stackName: "devhost",
       editorEnabled: true,
+      externalToolbarsEnabled: true,
       minimapEnabled: true,
       statusEnabled: true,
     });
@@ -47,6 +48,7 @@ describe("readInjectedDevtoolsConfig", () => {
       projectRootPath: "/tmp/project",
       stackName: "hello-stack",
       editorEnabled: true,
+      externalToolbarsEnabled: true,
       minimapEnabled: true,
       statusEnabled: true,
     });

@@ -25,6 +25,7 @@ describe("validateManifest", () => {
     });
     expect(manifest.devtools).toEqual({
       editor: { enabled: true, ide: "vscode" },
+      externalToolbars: { enabled: true },
       minimap: { enabled: true, position: "right" },
       status: { enabled: true, position: "bottom-right" },
     });
@@ -48,6 +49,7 @@ describe("validateManifest", () => {
     });
     expect(manifest.devtools).toEqual({
       editor: { enabled: true, ide: "vscode" },
+      externalToolbars: { enabled: true },
       minimap: { enabled: true, position: "right" },
       status: { enabled: true, position: "bottom-right" },
     });
@@ -90,6 +92,7 @@ describe("validateManifest", () => {
       },
       devtools: {
         editor: { enabled: true, ide: "neovim" },
+        externalToolbars: { enabled: false },
         minimap: { enabled: true, position: "left" },
         status: { enabled: true, position: "top-left" },
       },
@@ -113,6 +116,7 @@ describe("validateManifest", () => {
     });
     expect(manifest.devtools).toEqual({
       editor: { enabled: true, ide: "neovim" },
+      externalToolbars: { enabled: false },
       minimap: { enabled: true, position: "left" },
       status: { enabled: true, position: "top-left" },
     });

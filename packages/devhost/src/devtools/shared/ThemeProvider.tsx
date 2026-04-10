@@ -1,3 +1,5 @@
+/** @jsxImportSource preact */
+
 import type { ComponentChildren, JSX } from "preact";
 import { useMemo } from "preact/hooks";
 

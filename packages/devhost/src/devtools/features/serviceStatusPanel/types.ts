@@ -1,1 +1,1 @@
-export type PanelSide = "left" | "right";
+export type { PanelSide } from "../../shared/panelSide";
