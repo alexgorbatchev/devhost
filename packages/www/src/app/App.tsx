@@ -529,6 +529,11 @@ $ open https://foo.localhost`}
             <code>[devhost]</code>. Child service logs remain prefixed with <code>[service-name]</code>.
           </p>
 
+          <p>
+            Each TOML table must be declared once. Keep all fields for a service inside a single{" "}
+            <code>[services.&lt;name&gt;]</code> block instead of reopening that table later.
+          </p>
+
           <h2>Docker-backed services</h2>
           <p>
             <code>devhost</code> can front a Docker- or Compose-managed backend, but only when the container publishes a
