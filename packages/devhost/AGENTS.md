@@ -19,6 +19,7 @@ Local rules for the published `@alexgorbatchev/devhost` workspace in `packages/d
 - **CRITICAL:** The `devhost` README is heavily mirrored in the demo application's frontend. After editing the `devhost` README, you **must** update the `packages/www/src/app/App.tsx` file in the demo app workspace to keep the marketing website content in sync.
 - Do not leave README or AGENTS examples/rules stale after changing implementation details.
 - Repo-root `README.md` is a symlink to this workspace README; update `README.md` here, not the root symlink.
+- The `docs/` directory is used for conceptual architecture, complex feature flows (e.g., Mermaid diagrams), and internal technical design docs. See `docs/AGENTS.md` for specifics on what belongs in `docs/` vs `README.md`.
 
 ## Development workflow
 
@@ -80,6 +81,7 @@ The `fmt` script runs `oxfmt --write` for this workspace using the shared repo-r
 For all injected UI work under `src/devtools/`, follow:
 
 - `src/devtools/AGENTS.md`
+- `docs/AGENTS.md`
 
 Do not duplicate those rules here. Keep the devtools-specific styling and theming policy in the devtools-local AGENTS file.
 
