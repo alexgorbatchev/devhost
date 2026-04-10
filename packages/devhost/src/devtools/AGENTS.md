@@ -41,6 +41,7 @@ Its vital that when devtools are injected into the user's web application, CSS t
 - Put feature-owned components, hooks, and helpers under `features/<featureName>/`.
 - Keep cross-feature theme, config, websocket helpers, and shared types under `shared/`.
 - Do not leave feature-specific logic in the `src/devtools/` root when it belongs to a concrete feature folder.
+- See `features/AGENTS.md` for specific rules on feature encapsulation, stories, and tests.
 
 ## Annotation metadata
 
