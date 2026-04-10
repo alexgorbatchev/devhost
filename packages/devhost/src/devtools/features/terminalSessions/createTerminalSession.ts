@@ -66,16 +66,16 @@ function createAgentTerminalSummary(
   agentDisplayName: string,
 ): ITerminalSessionSummary {
   return {
-    eyebrow: "Annotation task",
-    headline: request.annotation.comment,
+    eyebrow: agentDisplayName,
+    headline: "Agent session",
     meta: [
-      `${request.annotation.markers.length} markers`,
+      `${request.annotation.markers.length} initial markers`,
       request.annotation.title,
       new URL(request.annotation.url).host,
       new Date(request.annotation.submittedAt).toLocaleString(),
     ],
     terminalTitle: agentTerminalTitle,
-    trayTooltipPrimary: request.annotation.comment,
+    trayTooltipPrimary: "Agent session",
     trayTooltipSecondary: agentDisplayName,
   };
 }

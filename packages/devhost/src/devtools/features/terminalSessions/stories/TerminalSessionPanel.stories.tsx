@@ -32,11 +32,11 @@ const agentSession: TerminalSession = {
   kind: "agent",
   sessionId: "session-1",
   summary: {
-    eyebrow: "Annotation task",
-    headline: "Fix button",
-    meta: ["0 markers"],
+    eyebrow: "Pi",
+    headline: "Agent session",
+    meta: ["0 initial markers"],
     terminalTitle: "Agent terminal",
-    trayTooltipPrimary: "Fix button",
+    trayTooltipPrimary: "Agent session",
     trayTooltipSecondary: "Pi",
   },
 };

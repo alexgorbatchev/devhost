@@ -39,11 +39,11 @@ describe("createTerminalSession", () => {
       kind: "agent",
       sessionId: "session-a",
       summary: {
-        eyebrow: "Annotation task",
-        headline: "Fix button",
-        meta: ["0 markers", "Page A", "example.test", new Date(1).toLocaleString()],
+        eyebrow: "Claude Code",
+        headline: "Agent session",
+        meta: ["0 initial markers", "Page A", "example.test", new Date(1).toLocaleString()],
         terminalTitle: "Agent terminal",
-        trayTooltipPrimary: "Fix button",
+        trayTooltipPrimary: "Agent session",
         trayTooltipSecondary: "Claude Code",
       },
     });
