@@ -215,11 +215,16 @@ export function App(): JSX.Element {
 
       <div className="flex-1 container mx-auto px-4 py-12 max-w-4xl app-frame">
         <div className="space-y-6 pb-12 border-b border-border">
-          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">@alexgorbatchev/devhost</h1>
-          <p className="text-xl text-muted-foreground leading-relaxed">
-            <code>devhost</code> gives your local app a proper front door: real hostnames, local HTTPS, and one command
-            to start and route your dev services.
-          </p>
+          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">
+            <span className="bg-foreground text-background px-3 py-0 rounded-md">devhost</span>
+          </h1>
+          <h1 className="text-2xl font-bold tracking-tight lg:text-3xl mb-4">
+            <span className="text-muted-foreground">replace </span>
+            localhost:3000
+            <span className="text-muted-foreground"> with </span>
+            https://app.localhost
+            <span className="text-muted-foreground"> and then some more</span>
+          </h1>
 
           <div className="flex gap-4 pt-4">
             <a
