@@ -1,50 +1,88 @@
-import type { IDetectedExternalDevtoolsLauncher, IExternalDevtoolsDetector } from "./types";
+import type { IExternalDevtoolsAdapter } from "./types";
 
-const tanStackRouterDevtoolsDetector: IExternalDevtoolsDetector = {
-  detect: detectTanStackRouterDevtools,
+const tanStackRouterDevtoolsAdapter: IExternalDevtoolsAdapter = {
+  close: toggleTanStackRouterDevtools,
+  hideSelectors: ["footer.TanStackRouterDevtools > button"],
   id: "tanstack-router",
+  isInstalled: isTanStackRouterDevtoolsInstalled,
+  isOpen: isTanStackRouterDevtoolsOpen,
   label: "Router",
+  open: toggleTanStackRouterDevtools,
   title: "Toggle TanStack Router devtools",
 };
 
-const tanStackQueryDevtoolsDetector: IExternalDevtoolsDetector = {
-  detect: detectTanStackQueryDevtools,
+const tanStackQueryDevtoolsAdapter: IExternalDevtoolsAdapter = {
+  close: closeTanStackQueryDevtools,
+  hideSelectors: [".tsqd-open-btn-container", ".tsqd-open-btn", ".tsqd-minimize-btn"],
   id: "tanstack-query",
+  isInstalled: isTanStackQueryDevtoolsInstalled,
+  isOpen: isTanStackQueryDevtoolsOpen,
   label: "Query",
+  open: openTanStackQueryDevtools,
   title: "Toggle TanStack Query devtools",
 };
 
-export const externalDevtoolsDetectors: readonly IExternalDevtoolsDetector[] = [
-  tanStackRouterDevtoolsDetector,
-  tanStackQueryDevtoolsDetector,
+export const externalDevtoolsDetectors: readonly IExternalDevtoolsAdapter[] = [
+  tanStackRouterDevtoolsAdapter,
+  tanStackQueryDevtoolsAdapter,
 ];
 
-function detectTanStackRouterDevtools(): IDetectedExternalDevtoolsLauncher | null {
-  const footerElement: HTMLElement | null = document.querySelector("footer.TanStackRouterDevtools");
-  const launcherElement: HTMLElement | null = footerElement?.querySelector("button") ?? null;
-
-  if (launcherElement === null) {
-    return null;
-  }
-
-  return {
-    hiddenElements: [launcherElement],
-    launcherElement,
-  };
+function isTanStackRouterDevtoolsInstalled(): boolean {
+  return (
+    readTanStackRouterDevtoolsToggleButton() !== null || document.querySelector(".TanStackRouterDevtoolsPanel") !== null
+  );
 }
 
-function detectTanStackQueryDevtools(): IDetectedExternalDevtoolsLauncher | null {
-  const openLauncherElement: HTMLElement | null = document.querySelector(".tsqd-open-btn");
-  const minimizeLauncherElement: HTMLElement | null = document.querySelector(".tsqd-minimize-btn");
-  const hiddenOpenContainerElement: HTMLElement | null = document.querySelector(".tsqd-open-btn-container");
-  const launcherElement: HTMLElement | null = openLauncherElement ?? minimizeLauncherElement;
+function isTanStackRouterDevtoolsOpen(): boolean {
+  const panelElement: HTMLElement | null = document.querySelector(".TanStackRouterDevtoolsPanel");
 
-  if (launcherElement === null) {
-    return null;
+  if (panelElement === null) {
+    return false;
   }
 
-  return {
-    hiddenElements: hiddenOpenContainerElement === null ? [] : [hiddenOpenContainerElement],
-    launcherElement,
-  };
+  return getComputedStyle(panelElement).display !== "none" && getComputedStyle(panelElement).visibility !== "hidden";
+}
+
+function toggleTanStackRouterDevtools(): void {
+  readTanStackRouterDevtoolsToggleButton()?.click();
+}
+
+function readTanStackRouterDevtoolsToggleButton(): HTMLElement | null {
+  return document.querySelector("footer.TanStackRouterDevtools > button");
+}
+
+function isTanStackQueryDevtoolsInstalled(): boolean {
+  return (
+    document.querySelector(".tsqd-open-btn") !== null ||
+    document.querySelector(".tsqd-minimize-btn") !== null ||
+    document.querySelector(".tsqd-main-panel") !== null
+  );
+}
+
+function isTanStackQueryDevtoolsOpen(): boolean {
+  return document.querySelector(".tsqd-main-panel") !== null;
+}
+
+function openTanStackQueryDevtools(): void {
+  readTanStackQueryOpenButton()?.click();
+}
+
+function closeTanStackQueryDevtools(): void {
+  readTanStackQueryCloseButton()?.click();
+}
+
+function readTanStackQueryOpenButton(): HTMLElement | null {
+  const openButton = document.querySelector<HTMLElement>(".tsqd-open-btn");
+
+  if (openButton !== null) {
+    return openButton;
+  }
+
+  return document.querySelector<HTMLElement>('.tsqd-main-panel button[aria-label="Open Tanstack query devtools"]');
+}
+
+function readTanStackQueryCloseButton(): HTMLElement | null {
+  return document.querySelector(
+    '.tsqd-minimize-btn, .tsqd-main-panel button[aria-label="Close tanstack query devtools"]',
+  );
 }

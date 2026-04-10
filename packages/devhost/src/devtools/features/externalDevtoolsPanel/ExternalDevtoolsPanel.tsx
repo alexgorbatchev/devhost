@@ -8,13 +8,13 @@ import type { IExternalDevtoolsLauncher } from "./types";
 interface IExternalDevtoolsPanelProps {
   launchers: IExternalDevtoolsLauncher[];
   panelSide: PanelSide;
-  onTriggerLauncher: (launcherId: string) => void;
+  onToggleLauncher: (launcherId: string) => void;
 }
 
 export function ExternalDevtoolsPanel({
   launchers,
   panelSide,
-  onTriggerLauncher,
+  onToggleLauncher,
 }: IExternalDevtoolsPanelProps): JSX.Element | null {
   const theme = useDevtoolsTheme();
 
@@ -37,7 +37,13 @@ export function ExternalDevtoolsPanel({
         {panelSide === "right" ? <span class={handleClassName}>Tools</span> : null}
         <div class={launcherListClassName} data-testid="ExternalDevtoolsPanel--launcher-list">
           {launchers.map((launcher) => (
-            <Button key={launcher.id} title={launcher.title} onClick={(): void => onTriggerLauncher(launcher.id)}>
+            <Button
+              key={launcher.id}
+              ariaPressed={launcher.isOpen}
+              title={launcher.title}
+              variant={launcher.isOpen ? "primary" : "secondary"}
+              onClick={(): void => onToggleLauncher(launcher.id)}
+            >
               {launcher.label}
             </Button>
           ))}
