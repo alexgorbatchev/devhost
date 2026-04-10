@@ -17,5 +17,5 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true
   },
-  "include": ["./**/*.ts", "./**/*.tsx", "./**/*.d.ts"]
+  "include": ["./src/**/*.ts", "./src/**/*.tsx", "./src/**/*.d.ts", "./scripts/**/*.ts", "vitest.storybook.config.ts"]
 }
