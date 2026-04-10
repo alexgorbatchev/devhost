@@ -68,12 +68,13 @@ Current facts:
 
 The queue is owned by the devtools control server, not by the browser UI.
 
-The implementation uses **per-session durable queues** instead of one global queue:
+The implementation uses durable queues that are **bucketed by routed service identity** (`host` + normalized `path`) instead of one global queue:
 
-- submitting with `targetSessionId` appends to that live agent session’s queue
-- submitting without `targetSessionId` creates a new queue and starts a new agent session immediately, preserving current product behavior
+- submitting with `targetSessionId` appends to that live agent session’s queue when it belongs to the same routed service
+- submitting without `targetSessionId` reuses the existing queue for the same routed service when one already exists
+- if no queue exists for that routed service yet, a new queue is created and dispatched
 - each queue drains strictly FIFO within that queue
-- multiple agent queues exist concurrently only when the user intentionally starts multiple agent sessions
+- multiple agent queues exist concurrently when a stack exposes multiple routed services
 
 The queue state is persisted to a JSON file in the devhost state directory and mirrored to the injected UI via a dedicated authenticated websocket snapshot stream.
 
@@ -89,9 +90,9 @@ Rejected alternatives:
    - rejected because it loses queued work on `devhost` restart
 
 3. **One global queue for all annotations**
-   - rejected because it removes current behavior where the user can explicitly start separate agent sessions by not targeting the active session
+   - rejected because it would mix unrelated routed services into one drain order
 
-The selected design preserves current session-creation semantics while fixing the interruption problem for targeted submissions.
+The selected design keeps queue ownership on the server while ensuring routed services do not accidentally share queue state.
 
 ## Engineering decisions
 
@@ -363,9 +364,10 @@ Runtime invariants:
 
 1. `POST /terminal-sessions` receives an agent request.
 2. The server resolves the target queue:
-   - `targetSessionId` present and bound to a live queue → use that queue
-   - `targetSessionId` present and live session exists but no queue exists yet → create a new queue bound to that session
-   - no `targetSessionId` → create a new queue with no bound session yet
+   - `targetSessionId` present and bound to a same-service live queue → use that queue
+   - routed-service bucket already exists → use that queue, even if the request did not include `targetSessionId`
+   - `targetSessionId` present and same-service live session exists but no queue exists yet → create a new queue bound to that session
+   - no matching routed-service queue exists → create a new queue with no bound session yet
 3. The submitted annotation becomes:
    - `currentEntry` when the queue is newly created
    - the last item in `pendingEntries` when the queue already exists
@@ -917,7 +919,7 @@ Implementation review must reject changes that do any of the following:
 
 - put queue ownership in the browser UI instead of the control server
 - store the queue only in memory
-- remove the ability to start a separate new agent session when `targetSessionId` is omitted
+- collapse all routed services into one shared queue bucket
 - reorder queued items
 - allow editing or deleting a live active entry
 - infer completion from idle output, shell prompts, or timers instead of the existing OSC sequence

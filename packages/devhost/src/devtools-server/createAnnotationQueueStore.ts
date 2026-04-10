@@ -19,6 +19,7 @@ import type {
   IAnnotationQueueSnapshot,
 } from "../devtools/features/annotationQueue/types";
 import type { IAnnotationMarkerPayload, IAnnotationSubmitDetail } from "../devtools/features/annotationComposer/types";
+import { resolveRoutedServiceKeyForUrl, type IRoutedServiceIdentity } from "../devtools/shared/routedServices";
 import type { IDevhostLogger } from "../utils/createLogger";
 
 export class AnnotationQueueConflictError extends Error {}
@@ -80,6 +81,7 @@ interface ICreateAnnotationQueueStoreOptions {
   manifestPath: string;
   onQueuesChanged?: OnQueuesChanged;
   readLiveAgentSession: ReadLiveAgentSession;
+  routedServices?: IRoutedServiceIdentity[];
   stackName: string;
   startAgentSession: StartAgentSession;
   stateDirectoryPath: string;
@@ -111,6 +113,7 @@ export function createAnnotationQueueStore(options: ICreateAnnotationQueueStoreO
     options.manifestPath,
   );
   const persistedState = loadPersistedAnnotationQueueState(queueFilePath, options.logger);
+  const routedServices: IRoutedServiceIdentity[] = options.routedServices ?? [];
   const runtimeQueues: Map<string, IRuntimeAnnotationQueueRecord> = new Map(
     persistedState.queues.map((queue): RuntimeQueueEntry => {
       return [
@@ -164,23 +167,28 @@ export function createAnnotationQueueStore(options: ICreateAnnotationQueueStoreO
       }
 
       return await runSerializedMutation(async (): Promise<IQueueSessionResult> => {
-        const targetQueue = targetSessionId === undefined ? null : findQueueBySessionId(runtimeQueues, targetSessionId);
+        const targetLiveSession = targetSessionId === undefined ? null : options.readLiveAgentSession(targetSessionId);
+        const annotationServiceKey: string | null = readAnnotationServiceKey(annotation, routedServices);
+        const shouldUseTargetSession: boolean = shouldUseLiveTargetSession(
+          annotationServiceKey,
+          targetLiveSession,
+          routedServices,
+        );
+        const targetQueue =
+          targetSessionId !== undefined && shouldUseTargetSession ? findQueueBySessionId(runtimeQueues, targetSessionId) : null;
 
         if (targetQueue !== null) {
-          targetQueue.pendingEntries.push(createPersistedQueueEntry(annotation, Date.now()));
-          persistRuntimeQueues(queueFilePath, runtimeQueues);
-          publishQueuesChanged(options.onQueuesChanged, runtimeQueues);
-
-          const sessionId: string | undefined = targetQueue.activeSessionId ?? targetSessionId;
-
-          if (sessionId === undefined) {
-            throw new Error(`Queue ${targetQueue.queueId} is missing an active session binding.`);
-          }
-
-          return { sessionId };
+          return await enqueueIntoExistingQueue(targetQueue, annotation, Date.now(), runtimeQueues, queueFilePath, options);
         }
 
-        const liveTargetSession = targetSessionId === undefined ? null : options.readLiveAgentSession(targetSessionId);
+        const serviceQueue =
+          annotationServiceKey === null ? null : findQueueByServiceKey(runtimeQueues, routedServices, annotationServiceKey);
+
+        if (serviceQueue !== null) {
+          return await enqueueIntoExistingQueue(serviceQueue, annotation, Date.now(), runtimeQueues, queueFilePath, options);
+        }
+
+        const liveTargetSession = shouldUseTargetSession ? targetLiveSession : null;
         const timestamp: number = Date.now();
         const queue = createRuntimeQueueForEnqueue(annotation, timestamp, liveTargetSession);
 
@@ -640,6 +648,41 @@ async function dispatchQueueHead(
   return sessionId;
 }
 
+async function enqueueIntoExistingQueue(
+  queue: IRuntimeAnnotationQueueRecord,
+  annotation: IAnnotationSubmitDetail,
+  timestamp: number,
+  runtimeQueues: Map<string, IRuntimeAnnotationQueueRecord>,
+  queueFilePath: string,
+  options: ICreateAnnotationQueueStoreOptions,
+): Promise<IQueueSessionResult> {
+  queue.pendingEntries.push(createPersistedQueueEntry(annotation, timestamp));
+  persistRuntimeQueues(queueFilePath, runtimeQueues);
+
+  if (queue.status !== "paused" && queue.activeSessionId !== null) {
+    publishQueuesChanged(options.onQueuesChanged, runtimeQueues);
+    return {
+      sessionId: queue.activeSessionId,
+    };
+  }
+
+  const previousPauseReason: PersistedAnnotationQueuePauseReason = queue.pauseReason;
+
+  try {
+    const sessionId: string = await dispatchQueueHead(queue, runtimeQueues, queueFilePath, options, null);
+
+    publishQueuesChanged(options.onQueuesChanged, runtimeQueues);
+    return { sessionId };
+  } catch (error) {
+    queue.activeSessionId = null;
+    queue.pauseReason = previousPauseReason ?? "session-exited-before-finished";
+    queue.status = "paused";
+    persistRuntimeQueues(queueFilePath, runtimeQueues);
+    publishQueuesChanged(options.onQueuesChanged, runtimeQueues);
+    throw error;
+  }
+}
+
 function readDispatchTargetSession(
   activeSessionId: string | null,
   preferredSession: ILiveAgentSessionSnapshot | null,
@@ -759,6 +802,56 @@ function findQueueBySessionId(
   }
 
   return null;
+}
+
+function findQueueByServiceKey(
+  runtimeQueues: Map<string, IRuntimeAnnotationQueueRecord>,
+  routedServices: IRoutedServiceIdentity[],
+  serviceKey: string,
+): IRuntimeAnnotationQueueRecord | null {
+  let pausedMatch: IRuntimeAnnotationQueueRecord | null = null;
+
+  for (const queue of runtimeQueues.values()) {
+    if (readQueueServiceKey(queue, routedServices) !== serviceKey) {
+      continue;
+    }
+
+    if (queue.status !== "paused") {
+      return queue;
+    }
+
+    pausedMatch ??= queue;
+  }
+
+  return pausedMatch;
+}
+
+function shouldUseLiveTargetSession(
+  annotationServiceKey: string | null,
+  targetLiveSession: ILiveAgentSessionSnapshot | null,
+  routedServices: IRoutedServiceIdentity[],
+): boolean {
+  if (annotationServiceKey === null || targetLiveSession === null) {
+    return true;
+  }
+
+  const targetServiceKey: string | null = readAnnotationServiceKey(targetLiveSession.annotation, routedServices);
+
+  return targetServiceKey === null || targetServiceKey === annotationServiceKey;
+}
+
+function readQueueServiceKey(
+  queue: IRuntimeAnnotationQueueRecord,
+  routedServices: IRoutedServiceIdentity[],
+): string | null {
+  return readAnnotationServiceKey(queue.currentEntry.annotation, routedServices);
+}
+
+function readAnnotationServiceKey(
+  annotation: IAnnotationSubmitDetail,
+  routedServices: IRoutedServiceIdentity[],
+): string | null {
+  return resolveRoutedServiceKeyForUrl(routedServices, annotation.url);
 }
 
 function locateQueueEntry(

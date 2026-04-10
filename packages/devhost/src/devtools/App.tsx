@@ -21,7 +21,9 @@ import {
   readDevtoolsMinimapPosition,
   readDevtoolsPosition,
   readDevtoolsProjectRootPath,
+  readDevtoolsRoutedServices,
   readDevtoolsStackName,
+  resolveRoutedServiceKeyForUrl,
   useDevtoolsTheme,
   useResolvedColorScheme,
 } from "./shared";
@@ -42,6 +44,7 @@ function AppContent(): JSX.Element {
   const devtoolsMinimapPosition: DevtoolsMinimapPosition = readDevtoolsMinimapPosition();
   const devtoolsPosition: DevtoolsPosition = readDevtoolsPosition();
   const projectRootPath: string = readDevtoolsProjectRootPath();
+  const routedServices = readDevtoolsRoutedServices();
   const stackName: string = readDevtoolsStackName();
   const features = readDevtoolsFeatureToggles();
   const theme = useDevtoolsTheme();
@@ -80,7 +83,16 @@ function AppContent(): JSX.Element {
     features.externalToolbarsEnabled && externalDevtoolsLaunchers.length > 0;
   const shouldRenderMinimap: boolean = features.minimapEnabled && logEntries.length > 0;
   const servicePanelSide: PanelSide = readPanelSide(devtoolsPosition);
-  const activeAgentSessionId: string | undefined = terminalSessions.find((s) => s.kind === "agent")?.sessionId;
+  const currentRoutedServiceKey: string | null = resolveRoutedServiceKeyForUrl(routedServices, window.location.href);
+  const activeAgentSessionId: string | undefined =
+    currentRoutedServiceKey === null
+      ? terminalSessions.find((session) => session.kind === "agent")?.sessionId
+      : terminalSessions.find((session) => {
+          return (
+            session.kind === "agent" &&
+            resolveRoutedServiceKeyForUrl(routedServices, session.annotation.url) === currentRoutedServiceKey
+          );
+        })?.sessionId;
   const handleResumeQueue = useCallback(
     async (queueId: string): Promise<string | null> => {
       const resumedQueue = annotationQueues.find((queue) => queue.queueId === queueId);

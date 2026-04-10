@@ -8,6 +8,7 @@ import { describe, expect, test } from "bun:test";
 
 import { AnnotationQueueConflictError, createAnnotationQueueStore } from "../createAnnotationQueueStore";
 import type { IAnnotationSubmitDetail } from "../../devtools/features/annotationComposer/types";
+import type { IRoutedServiceIdentity } from "../../devtools/shared/routedServices";
 import type { IDevhostLogger } from "../../utils/createLogger";
 
 interface ILiveSessionRecord {
@@ -33,6 +34,7 @@ interface IQueueStoreHarness {
 
 interface IQueueStoreHarnessOverrides {
   manifestPath?: string;
+  routedServices?: IRoutedServiceIdentity[];
   stateDirectoryPath?: string;
 }
 
@@ -85,6 +87,66 @@ describe("createAnnotationQueueStore", () => {
 
     expect(harness.store.getSnapshot()[0]?.status).toBe("working");
     expect(harness.startedAnnotations).toHaveLength(1);
+  });
+
+  test("untargeted annotations on the same routed service share one queue", async () => {
+    const harness = createQueueStoreHarness({ routedServices: createRoutedServices() });
+    const firstAnnotation = createAnnotationDetail("First annotation", 1, "https://app.localhost/dashboard");
+    const secondAnnotation = createAnnotationDetail("Second annotation", 2, "https://app.localhost/settings/profile");
+    const firstResult = await harness.store.enqueue(firstAnnotation);
+
+    harness.liveSessions.get(firstResult.sessionId)!.agentStatus = "working";
+    await harness.store.handleAgentStatus(firstResult.sessionId, "working");
+
+    const secondResult = await harness.store.enqueue(secondAnnotation);
+
+    expect(secondResult.sessionId).toBe(firstResult.sessionId);
+    expect(harness.startedAnnotations).toEqual([firstAnnotation]);
+    expect(harness.store.getSnapshot()).toEqual([
+      expect.objectContaining({
+        activeSessionId: firstResult.sessionId,
+        entries: [
+          expect.objectContaining({ annotation: firstAnnotation, state: "active" }),
+          expect.objectContaining({ annotation: secondAnnotation, state: "queued" }),
+        ],
+      }),
+    ]);
+  });
+
+  test("same-host annotations on different routed paths use separate queues", async () => {
+    const harness = createQueueStoreHarness({ routedServices: createRoutedServices() });
+    const webAnnotation = createAnnotationDetail("Web annotation", 1, "https://app.localhost/dashboard");
+    const apiAnnotation = createAnnotationDetail("API annotation", 2, "https://app.localhost/api/users");
+    const firstResult = await harness.store.enqueue(webAnnotation);
+    const secondResult = await harness.store.enqueue(apiAnnotation);
+
+    expect(firstResult.sessionId).toBe("session-1");
+    expect(secondResult.sessionId).toBe("session-2");
+    expect(harness.startedAnnotations).toEqual([webAnnotation, apiAnnotation]);
+    expect(harness.store.getSnapshot()).toHaveLength(2);
+  });
+
+  test("same-service submissions resume a paused queue instead of starting a new bucket", async () => {
+    const harness = createQueueStoreHarness({ routedServices: createRoutedServices() });
+    const firstAnnotation = createAnnotationDetail("First annotation", 1, "https://app.localhost/dashboard");
+    const secondAnnotation = createAnnotationDetail("Second annotation", 2, "https://app.localhost/settings/profile");
+    const firstResult = await harness.store.enqueue(firstAnnotation);
+
+    await harness.store.handleSessionExited(firstResult.sessionId);
+
+    const secondResult = await harness.store.enqueue(secondAnnotation);
+
+    expect(secondResult.sessionId).toBe("session-2");
+    expect(harness.store.getSnapshot()).toEqual([
+      expect.objectContaining({
+        activeSessionId: "session-2",
+        entries: [
+          expect.objectContaining({ annotation: firstAnnotation, state: "active" }),
+          expect.objectContaining({ annotation: secondAnnotation, state: "queued" }),
+        ],
+        status: "launching",
+      }),
+    ]);
   });
 
   test("finished status removes the head and dispatches the next queued annotation", async () => {
@@ -316,6 +378,7 @@ function createQueueStoreHarness(overrides: IQueueStoreHarnessOverrides = {}): I
     readLiveAgentSession: (sessionId: string) => {
       return liveSessions.get(sessionId) ?? null;
     },
+    routedServices: overrides.routedServices,
     stackName: "hello-stack",
     startAgentSession: (annotation: IAnnotationSubmitDetail): string => {
       const sessionId: string = `session-${nextSessionNumber}`;
@@ -352,15 +415,30 @@ function createQueueStoreHarness(overrides: IQueueStoreHarnessOverrides = {}): I
   };
 }
 
-function createAnnotationDetail(comment: string, submittedAt: number = 1): IAnnotationSubmitDetail {
+function createAnnotationDetail(comment: string, submittedAt: number = 1, url?: string): IAnnotationSubmitDetail {
   return {
     comment,
     markers: [],
     stackName: "hello-stack",
     submittedAt,
     title: "Example page",
-    url: `https://example.test/path-${submittedAt}`,
+    url: url ?? `https://example.test/path-${submittedAt}`,
   };
+}
+
+function createRoutedServices(): IRoutedServiceIdentity[] {
+  return [
+    {
+      host: "app.localhost",
+      path: "/",
+      serviceName: "web",
+    },
+    {
+      host: "app.localhost",
+      path: "/api/*",
+      serviceName: "api",
+    },
+  ];
 }
 
 function createPersistedEntry(annotation: IAnnotationSubmitDetail, timestamp: number) {

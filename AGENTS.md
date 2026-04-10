@@ -4,7 +4,7 @@ Monorepo root for the published `devhost` package and the local demo app.
 
 ## Shared commands
 
-- Install all workspaces: `bun install --frozen-lockfile`
+- Install all workspaces when `node_modules/` is missing: `bun install`
 - Check the full repo: `bun run check`
 - Apply repo-wide formatting fixes: `bun run fix`
 - Check `devhost` package-only validations: `bun run --cwd packages/devhost check`

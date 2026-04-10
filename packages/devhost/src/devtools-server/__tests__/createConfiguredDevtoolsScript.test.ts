@@ -27,7 +27,8 @@ describe("createConfiguredDevtoolsScript", () => {
       '"editorEnabled":true,' +
       '"externalToolbarsEnabled":true,' +
       '"minimapEnabled":true,' +
-      '"statusEnabled":true};\n';
+      '"statusEnabled":true,' +
+      '"routedServices":[]};\n';
 
     expect(configuredScript).toBe(expectedInjectedConfigPrefix + "console.log('hello');");
   });

@@ -636,13 +636,13 @@ health = { http = "http://127.0.0.1:4000/healthz" }`}</code>
               seeded with the draft
             </li>
             <li className="mb-2">
-              when <code>Append to active session queue</code> is enabled, the draft is added to that agent
-              session&apos;s durable FIFO queue instead of being injected immediately into a busy terminal
+              when <code>Append to active session queue</code> is enabled, the draft is added to the matching routed
+              service&apos;s active agent queue instead of being injected immediately into a busy terminal
             </li>
             <li className="mb-2">
-              queued annotations survive browser reloads and <code>devhost</code> restarts, drain automatically when the
-              agent emits <code>OSC 1337;SetAgentStatus=finished</code>, and can be edited or removed from the injected
-              queue panel while they are queued or paused
+              queued annotations are bucketed by routed service host/path, survive browser reloads and <code>devhost</code>
+              restarts, drain automatically when the agent emits <code>OSC 1337;SetAgentStatus=finished</code>, and can
+              be edited or removed from the injected queue panel while they are queued or paused
             </li>
           </ul>
 
