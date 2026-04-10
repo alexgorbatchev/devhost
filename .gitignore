@@ -1,5 +1,6 @@
 .cache/
 node_modules/
+dist
 
 caddy/routes/*.caddy
 caddy/routes/.registrations/*.json
@@ -9,4 +10,3 @@ coverage/
 storybook-static/
 .tmp
 
-/packages/www/dist/static
