@@ -208,7 +208,7 @@ export async function startDevtoolsControlServer(
                 });
 
                 targetSession.cleanupFiles.push(sessionFiles.cleanup);
-                const inputText = `Please read the annotation details from ${sessionFiles.env.DEVHOST_AGENT_PROMPT_FILE} and address the requested change.\n`;
+                const inputText = `Please read the annotation details from ${sessionFiles.env.DEVHOST_AGENT_PROMPT_FILE} and address the requested change.\r`;
                 targetSession.write(inputText);
 
                 return Response.json({
