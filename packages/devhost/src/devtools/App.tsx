@@ -1,10 +1,12 @@
 import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "preact";
-import { useState } from "preact/hooks";
+import { useCallback, useState } from "preact/hooks";
 
 import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../types/stackTypes";
 import { AnnotationComposer } from "./features/annotationComposer";
+import { AnnotationQueuePanel, useAnnotationQueues } from "./features/annotationQueue";
 import { ComponentSourceMenu, useComponentSourceNavigation } from "./features/componentSourceNavigation";
+import { ExternalDevtoolsPanel, useExternalDevtoolsLaunchers } from "./features/externalDevtoolsPanel";
 import { LogMinimap, useServiceLogs } from "./features/minimap";
 import { TerminalSessionTray, useTerminalSessions } from "./features/terminalSessions";
 import { ServiceStatusPanel, type PanelSide, useServiceHealth } from "./features/serviceStatusPanel";
@@ -45,8 +47,21 @@ function AppContent(): JSX.Element {
   const theme = useDevtoolsTheme();
   const { errorMessage, services } = useServiceHealth();
   const {
+    errorMessage: annotationQueueErrorMessage,
+    isEntryMutationPending,
+    isQueueResumePending,
+    queues: annotationQueues,
+    removeEntry,
+    resumeQueue,
+    saveEntry,
+  } = useAnnotationQueues();
+  const { launchers: externalDevtoolsLaunchers, triggerLauncher } = useExternalDevtoolsLaunchers(
+    features.externalToolbarsEnabled,
+  );
+  const {
     expandSession,
     minimizeSession,
+    registerStartedSession,
     terminalSessions,
     removeSession,
     startComponentSourceSession,
@@ -61,9 +76,28 @@ function AppContent(): JSX.Element {
     enabled: features.editorEnabled,
   });
   const shouldRenderPanel: boolean = features.statusEnabled && (errorMessage !== null || services.length > 0);
+  const shouldRenderExternalDevtoolsPanel: boolean =
+    features.externalToolbarsEnabled && externalDevtoolsLaunchers.length > 0;
   const shouldRenderMinimap: boolean = features.minimapEnabled && logEntries.length > 0;
   const servicePanelSide: PanelSide = readPanelSide(devtoolsPosition);
   const activeAgentSessionId: string | undefined = terminalSessions.find((s) => s.kind === "agent")?.sessionId;
+  const handleResumeQueue = useCallback(
+    async (queueId: string): Promise<string | null> => {
+      const resumedQueue = annotationQueues.find((queue) => queue.queueId === queueId);
+      const activeEntry = resumedQueue?.entries[0];
+      const sessionId = await resumeQueue(queueId);
+
+      if (sessionId !== null && activeEntry !== undefined) {
+        registerStartedSession(sessionId, {
+          annotation: activeEntry.annotation,
+          kind: "agent",
+        });
+      }
+
+      return sessionId;
+    },
+    [annotationQueues, registerStartedSession, resumeQueue],
+  );
   const cornerDockClassName: string = css({
     ...readVerticalPositionStyle(theme, devtoolsPosition),
     ...readHorizontalPositionStyle(theme, devtoolsMinimapPosition, devtoolsPosition, shouldRenderMinimap),
@@ -98,6 +132,23 @@ function AppContent(): JSX.Element {
       <div class={cornerDockClassName} data-testid="AppContent--corner-dock">
         {shouldRenderPanel ? (
           <ServiceStatusPanel errorMessage={errorMessage} panelSide={servicePanelSide} services={services} />
+        ) : null}
+        <AnnotationQueuePanel
+          agentDisplayName={agentDisplayName}
+          errorMessage={annotationQueueErrorMessage}
+          isEntryMutationPending={isEntryMutationPending}
+          isQueueResumePending={isQueueResumePending}
+          onRemoveEntry={removeEntry}
+          onResumeQueue={handleResumeQueue}
+          onSaveEntry={saveEntry}
+          queues={annotationQueues}
+        />
+        {shouldRenderExternalDevtoolsPanel ? (
+          <ExternalDevtoolsPanel
+            launchers={externalDevtoolsLaunchers}
+            panelSide={servicePanelSide}
+            onTriggerLauncher={triggerLauncher}
+          />
         ) : null}
       </div>
       <TerminalSessionTray

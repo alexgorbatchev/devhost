@@ -6,6 +6,7 @@ import { Button, css, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME, DEVTOOLS_ROOT_ID } from "../../shared/constants";
 import { isEventTargetTerminalKeyboardInput } from "../../shared/isEventTargetTerminalKeyboardInput";
 import type { ITerminalSessionStartResult } from "../terminalSessions/types";
+import { AnnotationMarkerList } from "./AnnotationMarkerList";
 import { collectElementSnapshot, identifyElement } from "./collectElementSnapshot";
 import { createAnnotationSubmitDetail } from "./createAnnotationSubmitDetail";
 import { getElementSourceLocation } from "./getElementSourceLocation";
@@ -456,9 +457,6 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
     hoveredElement !== null &&
     selectedElements.some((selection: ISelectedElementDraft): boolean => selection.element === hoveredElement);
   const errorClassName: string = css(createSubmissionErrorStyle(theme));
-  const markerListClassName: string = css(markerListStyle);
-  const markerListItemClassName: string = css(markerListItemStyle);
-  const markerListTextClassName: string = css(markerListTextStyle);
   const overlayClassName: string = css(overlayStyle);
   const popupActionsClassName: string = css(popupActionsStyle);
   const popupHeaderClassName: string = css(popupHeaderStyle);
@@ -503,23 +501,18 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
           <div class={popupHeaderClassName}>
             <strong>Annotation draft</strong>
             <span class={popupMetaClassName}>
-              {isSubmitting
-                ? `Starting ${props.agentDisplayName} session…`
-                : `${selectedElements.length} markers selected`}
+              {isSubmitting ? "Submitting annotation…" : `${selectedElements.length} markers selected`}
             </span>
           </div>
-          <ol class={markerListClassName} data-testid="AnnotationComposer--marker-list">
-            {selectedElements.map((selection: ISelectedElementDraft) => {
-              return (
-                <li key={selection.markerNumber} class={markerListItemClassName}>
-                  <span class={css(createMarkerPillStyle(theme))}>{selection.markerNumber}</span>
-                  <span class={markerListTextClassName}>
-                    <strong>#{selection.markerNumber}</strong> {selection.elementName}
-                  </span>
-                </li>
-              );
+          <AnnotationMarkerList
+            items={selectedElements.map((selection: ISelectedElementDraft) => {
+              return {
+                label: selection.elementName,
+                markerNumber: selection.markerNumber,
+              };
             })}
-          </ol>
+            testId="AnnotationComposer--marker-list"
+          />
           <textarea
             ref={commentTextareaReference}
             data-testid="AnnotationComposer--comment"
@@ -545,7 +538,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
                   setSendToActiveSession(event.currentTarget.checked);
                 }}
               />
-              Send to active session
+              Append to active session queue
             </label>
           ) : null}
           <div class={popupActionsClassName}>
@@ -561,7 +554,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
                 void submitDraft();
               }}
             >
-              {isSubmitting ? `Starting ${props.agentDisplayName}…` : "Submit"}
+              {isSubmitting ? "Submitting…" : "Submit"}
             </Button>
             <Button
               disabled={isSubmitting}
@@ -605,28 +598,6 @@ function createSubmissionErrorStyle(theme: IDevtoolsTheme): CSSObject {
     lineHeight: 1.4,
   };
 }
-
-const markerListStyle: CSSObject = {
-  display: "grid",
-  gap: "8px",
-  listStyle: "none",
-  margin: 0,
-  maxHeight: "160px",
-  overflow: "auto",
-  padding: 0,
-};
-
-const markerListItemStyle: CSSObject = {
-  display: "grid",
-  gridTemplateColumns: "auto 1fr",
-  gap: "8px",
-  alignItems: "center",
-};
-
-const markerListTextStyle: CSSObject = {
-  alignSelf: "center",
-  lineHeight: 1.35,
-};
 
 const popupActionsStyle: CSSObject = {
   display: "flex",
@@ -786,22 +757,6 @@ function createCheckboxLabelStyle(theme: IDevtoolsTheme): CSSObject {
     color: theme.colors.foreground,
     cursor: "pointer",
     userSelect: "none",
-  };
-}
-
-function createMarkerPillStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    minWidth: `${markerSize}px`,
-    height: `${markerSize}px`,
-    display: "grid",
-    placeItems: "center",
-    alignSelf: "start",
-    borderRadius: theme.radii.pill,
-    background: theme.colors.accentBackground,
-    color: theme.colors.accentForeground,
-    fontFamily: theme.fontFamilies.monospace,
-    fontSize: theme.fontSizes.sm,
-    fontWeight: 700,
   };
 }
 

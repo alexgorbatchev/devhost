@@ -128,7 +128,10 @@ export async function startStack(
     }
 
     const devtoolsEnabled =
-      manifest.devtools.editor.enabled || manifest.devtools.minimap.enabled || manifest.devtools.status.enabled;
+      manifest.devtools.editor.enabled ||
+      manifest.devtools.externalToolbars.enabled ||
+      manifest.devtools.minimap.enabled ||
+      manifest.devtools.status.enabled;
 
     if (devtoolsEnabled && routedServices.length > 0) {
       devtoolsControlServer = await startDevtoolsControlServer({
@@ -137,11 +140,14 @@ export async function startStack(
         devtoolsMinimapPosition: manifest.devtools.minimap.position,
         devtoolsPosition: manifest.devtools.status.position,
         editorEnabled: manifest.devtools.editor.enabled,
+        externalToolbarsEnabled: manifest.devtools.externalToolbars.enabled,
         minimapEnabled: manifest.devtools.minimap.enabled,
         statusEnabled: manifest.devtools.status.enabled,
         getHealthResponse: async () => {
           return await collectManagedServicesHealth(manifest.name, managedServices, startedServices);
         },
+        logger,
+        manifestPath: manifest.manifestPath,
         restartService: async (serviceName: string) => {
           const startedService = startedServices.find((s) => s.service.name === serviceName);
           if (startedService) {
@@ -171,6 +177,7 @@ export async function startStack(
         },
         projectRootPath: manifest.manifestDirectoryPath,
         stackName: manifest.name,
+        stateDirectoryPath: managedCaddyPaths.stateDirectoryPath,
         startTerminalSession: (request, onData) => {
           const terminalSessionCommand = createTerminalSessionCommand({
             agent: manifest.agent,
