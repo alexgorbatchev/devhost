@@ -1,14 +1,16 @@
-type TomlParseErrorCandidate = {
-  message?: unknown;
-  position?: {
-    line?: unknown;
-  };
-};
+interface ITomlParseErrorPositionCandidate {
+  line?: unknown;
+}
 
-type TomlTableDeclaration = {
+interface ITomlParseErrorCandidate {
+  message?: unknown;
+  position?: ITomlParseErrorPositionCandidate;
+}
+
+interface ITomlTableDeclaration {
   header: string;
   line: number;
-};
+}
 
 export async function readManifest(manifestPath: string): Promise<unknown> {
   const manifestText: string = await Bun.file(manifestPath).text();
@@ -27,7 +29,7 @@ function formatManifestParseError(manifestText: string, error: unknown): string 
     return duplicateTableMessage;
   }
 
-  const candidate: TomlParseErrorCandidate = getTomlParseErrorCandidate(error);
+  const candidate: ITomlParseErrorCandidate = getTomlParseErrorCandidate(error);
   if (typeof candidate.message === "string") {
     return candidate.message;
   }
@@ -60,7 +62,7 @@ function getDuplicateTableMessage(manifestText: string, error: unknown): string 
   return `TOML table ${currentTable.header} is declared more than once (lines ${originalTable.line} and ${currentTable.line}). Merge those settings into a single table instead of repeating the header.`;
 }
 
-function getTomlErrorLine(candidate: TomlParseErrorCandidate): number | undefined {
+function getTomlErrorLine(candidate: ITomlParseErrorCandidate): number | undefined {
   if (typeof candidate.position?.line === "number") {
     return candidate.position.line;
   }
@@ -68,15 +70,27 @@ function getTomlErrorLine(candidate: TomlParseErrorCandidate): number | undefine
   return undefined;
 }
 
-function getTomlParseErrorCandidate(error: unknown): TomlParseErrorCandidate {
-  if (typeof error === "object" && error !== null) {
-    return error as TomlParseErrorCandidate;
+function getTomlParseErrorCandidate(error: unknown): ITomlParseErrorCandidate {
+  if (typeof error !== "object" || error === null) {
+    return {};
   }
 
-  return {};
+  const message: unknown = Reflect.get(error, "message");
+  const positionCandidate: unknown = Reflect.get(error, "position");
+
+  if (typeof positionCandidate !== "object" || positionCandidate === null) {
+    return { message };
+  }
+
+  return {
+    message,
+    position: {
+      line: Reflect.get(positionCandidate, "line"),
+    },
+  };
 }
 
-function findNearestTableDeclaration(lines: string[], startLine: number): TomlTableDeclaration | null {
+function findNearestTableDeclaration(lines: string[], startLine: number): ITomlTableDeclaration | null {
   for (let lineNumber = Math.min(startLine, lines.length); lineNumber >= 1; lineNumber -= 1) {
     const header: string | null = parseTomlTableHeader(lines[lineNumber - 1]);
     if (header !== null) {
@@ -90,7 +104,7 @@ function findNearestTableDeclaration(lines: string[], startLine: number): TomlTa
   return null;
 }
 
-function findPreviousTableDeclaration(lines: string[], table: TomlTableDeclaration): TomlTableDeclaration | null {
+function findPreviousTableDeclaration(lines: string[], table: ITomlTableDeclaration): ITomlTableDeclaration | null {
   for (let lineNumber = table.line - 1; lineNumber >= 1; lineNumber -= 1) {
     const header: string | null = parseTomlTableHeader(lines[lineNumber - 1]);
     if (header === table.header) {
