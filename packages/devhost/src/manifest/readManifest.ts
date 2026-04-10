@@ -1,3 +1,15 @@
+type TomlParseErrorCandidate = {
+  message?: unknown;
+  position?: {
+    line?: unknown;
+  };
+};
+
+type TomlTableDeclaration = {
+  header: string;
+  line: number;
+};
+
 export async function readManifest(manifestPath: string): Promise<unknown> {
   const manifestText: string = await Bun.file(manifestPath).text();
 
@@ -15,7 +27,7 @@ function formatManifestParseError(manifestText: string, error: unknown): string 
     return duplicateTableMessage;
   }
 
-  const candidate: { message?: unknown } = getTomlParseErrorCandidate(error);
+  const candidate: TomlParseErrorCandidate = getTomlParseErrorCandidate(error);
   if (typeof candidate.message === "string") {
     return candidate.message;
   }
@@ -48,7 +60,7 @@ function getDuplicateTableMessage(manifestText: string, error: unknown): string 
   return `TOML table ${currentTable.header} is declared more than once (lines ${originalTable.line} and ${currentTable.line}). Merge those settings into a single table instead of repeating the header.`;
 }
 
-function getTomlErrorLine(candidate: { position?: { line?: unknown } }): number | undefined {
+function getTomlErrorLine(candidate: TomlParseErrorCandidate): number | undefined {
   if (typeof candidate.position?.line === "number") {
     return candidate.position.line;
   }
@@ -56,15 +68,15 @@ function getTomlErrorLine(candidate: { position?: { line?: unknown } }): number 
   return undefined;
 }
 
-function getTomlParseErrorCandidate(error: unknown): { message?: unknown; position?: { line?: unknown } } {
+function getTomlParseErrorCandidate(error: unknown): TomlParseErrorCandidate {
   if (typeof error === "object" && error !== null) {
-    return error as { message?: unknown; position?: { line?: unknown } };
+    return error as TomlParseErrorCandidate;
   }
 
   return {};
 }
 
-function findNearestTableDeclaration(lines: string[], startLine: number): { header: string; line: number } | null {
+function findNearestTableDeclaration(lines: string[], startLine: number): TomlTableDeclaration | null {
   for (let lineNumber = Math.min(startLine, lines.length); lineNumber >= 1; lineNumber -= 1) {
     const header: string | null = parseTomlTableHeader(lines[lineNumber - 1]);
     if (header !== null) {
@@ -78,10 +90,7 @@ function findNearestTableDeclaration(lines: string[], startLine: number): { head
   return null;
 }
 
-function findPreviousTableDeclaration(
-  lines: string[],
-  table: { header: string; line: number },
-): { header: string; line: number } | null {
+function findPreviousTableDeclaration(lines: string[], table: TomlTableDeclaration): TomlTableDeclaration | null {
   for (let lineNumber = table.line - 1; lineNumber >= 1; lineNumber -= 1) {
     const header: string | null = parseTomlTableHeader(lines[lineNumber - 1]);
     if (header === table.header) {
