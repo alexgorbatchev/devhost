@@ -242,7 +242,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
     });
     const handleOpen = (): void => {
       setErrorMessage(null);
-      setStatusText("Working…");
+      setStatusText("Connected");
       scheduleTerminalResize();
 
       if (isExpandedReference.current) {
