@@ -133,6 +133,11 @@ cwd = "./app"
 # - `"auto"`: allocate a best-effort free port before spawn and inject it as `PORT`.
 #   devhost retries on clear bind collisions, but v1 does not provide a cross-process global auto-port allocator.
 port = 3000
+# `injectPort` controls whether devhost exports `PORT` to the child process.
+# - `true` (default): inject `PORT` when `port` is set.
+# - `false`: keep routing and health on the configured port, but do not export `PORT`.
+#   Use this for composite commands that launch multiple child processes and should not all inherit the same port.
+# injectPort = false
 # `bindHost` sets the socket interface the child process should bind to.
 # - `"127.0.0.1"` (default): IPv4 loopback only.
 # - `"0.0.0.0"`: all IPv4 interfaces.

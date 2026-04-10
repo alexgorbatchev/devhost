@@ -74,6 +74,7 @@ const serviceSchema = z
     dependsOn: z.array(nonEmptyStringSchema).optional(),
     env: z.record(z.string(), z.string()).optional(),
     port: portSchema.optional(),
+    injectPort: z.boolean().optional(),
     host: z.string().optional(),
     path: nonEmptyStringSchema.optional(),
     health: healthSchema.optional(),
@@ -249,6 +250,7 @@ function validateService(
   const dependsOn: string[] = serviceConfig.dependsOn ?? [];
   const env: Record<string, string> = serviceConfig.env ?? {};
   const port: DevhostPortConfig | null = serviceConfig.port ?? null;
+  const injectPort: boolean = serviceConfig.injectPort ?? true;
   const host: string | null = serviceConfig.host ?? null;
   const path: string | null = host !== null ? validateRoutePath(serviceName, serviceConfig.path ?? "/", errors) : null;
   const health: DevhostHealthConfig | null = serviceConfig.health ?? null;
@@ -327,6 +329,7 @@ function validateService(
     cwd,
     dependsOn,
     env,
+    injectPort,
     name: serviceName,
     port,
     host,

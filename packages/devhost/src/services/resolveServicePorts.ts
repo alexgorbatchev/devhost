@@ -45,6 +45,7 @@ export async function resolveServicePorts(manifest: IValidatedDevhostManifest): 
       cwd: service.cwd,
       dependsOn: service.dependsOn,
       env: service.env,
+      injectPort: service.injectPort,
       name: service.name,
       port: resolvedPort,
       portSource,

@@ -34,8 +34,24 @@ describe("validateManifest", () => {
     expect(manifest.services.web.dependsOn).toEqual([]);
     expect(manifest.services.web.env).toEqual({});
     expect(manifest.services.web.host).toBe("hello.local.test");
+    expect(manifest.services.web.injectPort).toBe(true);
     expect(manifest.services.web.port).toBe(3000);
     expect(manifest.services.web.health).toBeNull();
+  });
+
+  test("accepts opting out of injected PORT on a service", () => {
+    const manifest: IValidatedDevhostManifest = validateManifest("/tmp/devhost.toml", {
+      name: "hello-stack",
+      services: {
+        web: {
+          command: ["bun", "run", "dev"],
+          injectPort: false,
+          port: 3000,
+        },
+      },
+    });
+
+    expect(manifest.services.web.injectPort).toBe(false);
   });
 
   test("accepts the documented basic stack fixture", async () => {

@@ -91,4 +91,50 @@ describe("createInjectedServiceEnvironment", () => {
       DEVHOST_SERVICE_NAME: "worker",
     });
   });
+
+  test("omits PORT when service injectPort is false", () => {
+    const manifest: IResolvedDevhostManifest = {
+      agent: createDefaultDevhostAgent(),
+      devtools: {
+        editor: { enabled: true, ide: "vscode" },
+        externalToolbars: { enabled: true },
+        minimap: { enabled: true, position: "right" },
+        status: { enabled: true, position: "bottom-right" },
+      },
+      manifestDirectoryPath: "/tmp/project",
+      manifestPath: "/tmp/project/devhost.toml",
+      name: "hello-stack",
+      primaryService: "web",
+      services: {},
+    };
+    const service: IResolvedDevhostService = {
+      bindHost: "127.0.0.1",
+      command: ["bun", "run", "dev"],
+      cwd: "/tmp/project/app",
+      dependsOn: [],
+      env: {},
+      health: {
+        host: "127.0.0.1",
+        kind: "tcp",
+        interval: 200,
+        timeout: 30000,
+        retries: 0,
+        port: 3200,
+      },
+      host: "hello.xcv.lol",
+      injectPort: false,
+      path: "/",
+      name: "web",
+      port: 3200,
+      portSource: "fixed",
+    };
+
+    expect(createInjectedServiceEnvironment(manifest, service)).toEqual({
+      DEVHOST_BIND_HOST: "127.0.0.1",
+      DEVHOST_HOST: "hello.xcv.lol",
+      DEVHOST_PATH: "/",
+      DEVHOST_MANIFEST_PATH: "/tmp/project/devhost.toml",
+      DEVHOST_SERVICE_NAME: "web",
+    });
+  });
 });

@@ -77,6 +77,7 @@ export interface IDevhostServiceConfig {
   cwd?: string;
   env?: Record<string, string>;
   port?: DevhostPortConfig;
+  injectPort?: boolean;
   bindHost?: string;
   host?: string;
   path?: string;
@@ -116,6 +117,7 @@ export interface IValidatedDevhostService {
   cwd: string;
   env: Record<string, string>;
   port: DevhostPortConfig | null;
+  injectPort?: boolean;
   bindHost: string;
   host: string | null;
   path: string | null;
@@ -155,6 +157,7 @@ export interface IResolvedDevhostService {
   cwd: string;
   env: Record<string, string>;
   port: number | null;
+  injectPort?: boolean;
   bindHost: string;
   host: string | null;
   path: string | null;

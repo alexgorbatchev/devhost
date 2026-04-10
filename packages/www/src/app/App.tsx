@@ -577,7 +577,12 @@ health = { http = "http://127.0.0.1:4000/healthz" }`}</code>
             </li>
             <li className="mb-2">
               <code>PORT</code>: the listening port selected by <code>devhost</code>. Injected when the service defines{" "}
-              <code>port</code>.
+              <code>port</code>, unless <code>injectPort = false</code>.
+            </li>
+            <li className="mb-2">
+              <code>injectPort = false</code>: service-level opt-out for <code>PORT</code> injection.{" "}
+              <code>devhost</code> still routes and health-checks the configured service port, but it does not export{" "}
+              <code>PORT</code> into the child process environment.
             </li>
           </ul>
 
@@ -752,6 +757,45 @@ curl -I http://[::1]:5173/`}</code>
           <p>
             If those responses differ, set <code>bindHost</code> explicitly instead of relying on the default.
           </p>
+          <h3>Composite services: inherited PORT can miswire child processes</h3>
+          <p>
+            Some "one command" dev scripts are really wrappers that launch multiple long-lived processes, such as a
+            frontend dev server plus an API worker.
+          </p>
+          <p>
+            By default, <code>devhost</code> injects the configured service <code>port</code> as <code>PORT</code> into
+            that top-level command. If the wrapper passes its environment through unchanged, every nested child process
+            may inherit the same <code>PORT</code>.
+          </p>
+          <p>That can produce confusing failures such as:</p>
+          <ul className="list-disc ml-6 mb-6">
+            <li className="mb-2">
+              one child binding the routed service port even though it was meant for another nested process
+            </li>
+            <li className="mb-2">
+              another child silently moving to a fallback port after seeing the inherited port already in use
+            </li>
+            <li className="mb-2">
+              the frontend still proxying <code>/api</code> to its usual target while the API actually bound somewhere
+              else
+            </li>
+            <li className="mb-2">
+              routed requests returning backend <code>404</code>s even though the main page appears to load normally
+            </li>
+          </ul>
+          <p>
+            If your manifest service launches multiple dev processes under one command, prefer splitting them into
+            separate <code>devhost</code> services. If you intentionally keep a composite wrapper, set{" "}
+            <code>injectPort = false</code> on that service and configure the underlying processes explicitly instead:
+          </p>
+          <pre>
+            <code className="language-toml">{`[services.app]
+command = ["bun", "run", "dev"]
+cwd = "."
+port = 5173
+injectPort = false
+host = "app.localhost"`}</code>
+          </pre>
         </div>
       </div>
 

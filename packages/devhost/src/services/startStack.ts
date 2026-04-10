@@ -399,7 +399,7 @@ export function createInjectedServiceEnvironment(
     DEVHOST_SERVICE_NAME: service.name,
   };
 
-  if (service.port !== null) {
+  if (service.port !== null && service.injectPort !== false) {
     environment.PORT = String(service.port);
   }
 

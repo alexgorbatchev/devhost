@@ -218,9 +218,13 @@ The remaining variables are context metadata and must not be used as socket bind
   - use this for binding sockets
 - `PORT`
   - the listening port selected by `devhost`
-  - injected when the service defines `port`, including `port = "auto"`
+  - injected when the service defines `port`, including `port = "auto"`, unless `injectPort = false`
   - for `port = "auto"`, the selected port is best-effort in v1 and may be retried if the child reports a clear bind collision during startup
   - not injected for services that do not define `port`
+- `injectPort = false`
+  - service-level opt-out for `PORT` injection
+  - keeps routing and health checks on the configured service `port`, but does not export `PORT` into the child process environment
+  - useful for wrapper commands that launch multiple dev processes under one top-level command
 
 ### Routed-service context
 
@@ -313,6 +317,32 @@ curl -I http://[::1]:5173/
 ```
 
 If those responses differ, set `bindHost` explicitly instead of relying on the default.
+
+### Composite services: inherited `PORT` can miswire child processes
+
+Some "one command" dev scripts are really wrappers that launch multiple long-lived processes, such as a frontend dev server plus an API worker.
+
+By default, `devhost` injects the configured service `port` as `PORT` into that top-level command.
+If the wrapper passes its environment through unchanged, every nested child process may inherit the same `PORT`.
+
+That can produce confusing failures such as:
+
+- one child binding the routed service port even though that port was intended for a different nested process
+- another child silently moving to a fallback port after seeing the inherited `PORT` already in use
+- the frontend still proxying `/api` to its usual target while the API actually bound somewhere else
+- routed requests returning backend `404`s even though the main page appears to load normally
+
+If your manifest service launches multiple dev processes under one command, prefer splitting them into separate `devhost` services.
+If you intentionally keep a composite wrapper, set `injectPort = false` on that service and configure the underlying processes explicitly instead:
+
+```toml
+[services.app]
+command = ["bun", "run", "dev"]
+cwd = "."
+port = 5173
+injectPort = false
+host = "app.localhost"
+```
 
 ### Annotation agents
 

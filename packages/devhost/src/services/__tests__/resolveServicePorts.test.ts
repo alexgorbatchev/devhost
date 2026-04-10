@@ -83,6 +83,7 @@ describe("resolveServicePorts", () => {
       services: {
         api: {
           command: ["bun", "run", "api:dev"],
+          injectPort: false,
           port: 4000,
           health: {
             http: "http://127.0.0.1:4000/healthz",
@@ -106,6 +107,7 @@ describe("resolveServicePorts", () => {
       status: { enabled: false, position: "top-left" },
     });
     expect(resolvedManifest.services.api.port).toBe(4000);
+    expect(resolvedManifest.services.api.injectPort).toBe(false);
     expect(resolvedManifest.services.api.portSource).toBe("fixed");
     expect(resolvedManifest.services.api.health).toEqual({
       kind: "http",
