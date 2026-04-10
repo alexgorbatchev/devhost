@@ -111,6 +111,10 @@
   font-family: var(--font-mono);
 }
 
+.callout code {
+  background-color: var(--background);
+}
+
 .prose pre {
   padding: 0;
   border-radius: var(--radius-md);
