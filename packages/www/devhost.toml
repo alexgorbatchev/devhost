@@ -4,6 +4,9 @@ name = "www"
 enabled = true
 ide = "neovim"
 
+[devtools.externalToolbars]
+enabled = true
+
 [devtools.minimap]
 enabled = true
 position = "right"
@@ -11,6 +14,11 @@ position = "right"
 [devtools.status]
 enabled = true
 position = "top-right"
+
+# [services.toolbar-test]
+# command = "bun dev"
+# cwd = "./skit"
+# host = "test.localhost"
 
 [services.devhost-www]
 primary = true

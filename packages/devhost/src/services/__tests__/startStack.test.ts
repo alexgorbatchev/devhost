@@ -10,6 +10,7 @@ describe("createInjectedServiceEnvironment", () => {
       agent: createDefaultDevhostAgent(),
       devtools: {
         editor: { enabled: true, ide: "vscode" },
+        externalToolbars: { enabled: true },
         minimap: { enabled: true, position: "right" },
         status: { enabled: true, position: "bottom-right" },
       },
@@ -55,6 +56,7 @@ describe("createInjectedServiceEnvironment", () => {
       agent: createDefaultDevhostAgent(),
       devtools: {
         editor: { enabled: false, ide: "vscode" },
+        externalToolbars: { enabled: false },
         minimap: { enabled: false, position: "right" },
         status: { enabled: false, position: "bottom-right" },
       },

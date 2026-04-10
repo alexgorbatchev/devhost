@@ -6,6 +6,7 @@
 # Top-level sections:
 # - `name` (required)
 # - `[devtools.editor]` (optional)
+# - `[devtools.externalToolbars]` (optional)
 # - `[devtools.minimap]` (optional)
 # - `[devtools.status]` (optional)
 # - `[agent]` (optional; omit it entirely to launch Pi by default)
@@ -45,6 +46,12 @@ enabled = true
 # - `"webstorm"`: open WebStorm via its browser URL handler.
 # - `"neovim"`: open Neovim inside devhost's embedded terminal UI; requires `nvim` on PATH.
 ide = "vscode"
+
+[devtools.externalToolbars]
+# `enabled` controls whether devhost aggregates detected third-party devtools launcher buttons.
+# - `true` (default): hide supported native launcher buttons and re-render them inside the devhost overlay.
+# - `false`: leave third-party launcher buttons untouched.
+enabled = true
 
 [devtools.minimap]
 # `enabled` controls whether the injected log minimap UI is shown.

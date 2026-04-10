@@ -52,6 +52,7 @@ describe("reassignAutoPort", () => {
       agent: createDefaultDevhostAgent(),
       devtools: {
         editor: { enabled: true, ide: "vscode" },
+        externalToolbars: { enabled: true },
         minimap: { enabled: true, position: "right" },
         status: { enabled: true, position: "bottom-right" },
       },

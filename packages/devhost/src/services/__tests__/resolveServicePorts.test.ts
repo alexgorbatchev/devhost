@@ -26,6 +26,7 @@ describe("resolveServicePorts", () => {
     });
     expect(resolvedManifest.devtools).toEqual({
       editor: { enabled: true, ide: "vscode" },
+      externalToolbars: { enabled: true },
       minimap: { enabled: true, position: "right" },
       status: { enabled: true, position: "bottom-right" },
     });
@@ -74,6 +75,7 @@ describe("resolveServicePorts", () => {
       },
       devtools: {
         editor: { enabled: false, ide: "webstorm" },
+        externalToolbars: { enabled: false },
         minimap: { enabled: false, position: "left" },
         status: { enabled: false, position: "top-left" },
       },
@@ -99,6 +101,7 @@ describe("resolveServicePorts", () => {
     });
     expect(resolvedManifest.devtools).toEqual({
       editor: { enabled: false, ide: "webstorm" },
+      externalToolbars: { enabled: false },
       minimap: { enabled: false, position: "left" },
       status: { enabled: false, position: "top-left" },
     });

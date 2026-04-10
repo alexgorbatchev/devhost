@@ -25,6 +25,7 @@ describe("createConfiguredDevtoolsScript", () => {
       '"projectRootPath":"/tmp/project",' +
       '"stackName":"hello-stack",' +
       '"editorEnabled":true,' +
+      '"externalToolbarsEnabled":true,' +
       '"minimapEnabled":true,' +
       '"statusEnabled":true};\n';
 
