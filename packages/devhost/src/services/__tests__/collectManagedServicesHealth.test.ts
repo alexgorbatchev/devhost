@@ -65,6 +65,7 @@ describe("collectManagedServicesHealth", () => {
           url: `http://127.0.0.1:${httpPort}/healthz`,
         },
         name: "api",
+        path: "/api/*",
         port: httpPort,
       }),
       createService({
@@ -128,10 +129,12 @@ describe("collectManagedServicesHealth", () => {
         {
           name: "web",
           status: true,
+          url: "https://hello.local.test/",
         },
         {
           name: "api",
           status: true,
+          url: "https://hello.local.test/api/",
         },
         {
           name: "worker",

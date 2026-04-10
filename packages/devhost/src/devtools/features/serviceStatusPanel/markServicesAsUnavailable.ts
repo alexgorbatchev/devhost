@@ -11,9 +11,15 @@ export function markServicesAsUnavailable(services: ServiceHealth[], fallbackSer
   }
 
   return services.map((service: ServiceHealth): ServiceHealth => {
-    return {
-      name: service.name,
-      status: false,
-    };
+    return service.url === undefined
+      ? {
+          name: service.name,
+          status: false,
+        }
+      : {
+          name: service.name,
+          status: false,
+          url: service.url,
+        };
   });
 }

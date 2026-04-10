@@ -3,6 +3,7 @@ import type { IStandardSourceShape } from "./reactSourceInspection";
 export type ServiceHealth = {
   name: string;
   status: boolean;
+  url?: string;
 };
 
 export type HealthResponse = {

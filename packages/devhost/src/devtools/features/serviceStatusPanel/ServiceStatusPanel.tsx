@@ -3,6 +3,7 @@ import type { JSX } from "preact";
 
 import {
   css,
+  cx,
   DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
   HoverSlidePanel,
   type IDevtoolsTheme,
@@ -30,6 +31,7 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
 
   const errorClassName: string = css(createErrorStyle(theme, props.panelSide));
   const listClassName: string = css(createListStyle(theme));
+  const linkClassName: string = css(createLinkStyle(theme));
   const nameClassName: string = css(createNameStyle(theme, props.panelSide));
   const rowClassName: string = css(createRowStyle(theme, props.panelSide));
   const restartButtonClassName: string = css(createRestartButtonStyle(theme));
@@ -46,6 +48,20 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
         <ul class={listClassName} data-testid="ServiceStatusPanel--service-list">
           {visibleServices.map((service: ServiceHealth) => {
             const statusDotClassName: string = css(createStatusDotStyle(theme, service.status));
+            const name =
+              service.url === undefined ? (
+                <span class={nameClassName}>{service.name}</span>
+              ) : (
+                <a
+                  class={cx(nameClassName, linkClassName)}
+                  href={service.url}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  title={`Open ${service.name} in a new window`}
+                >
+                  {service.name}
+                </a>
+              );
 
             const restartButton = (
               <button
@@ -81,7 +97,7 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
               <li key={service.name} class={rowClassName}>
                 {props.panelSide === "left" ? (
                   <>
-                    <span class={nameClassName}>{service.name}</span>
+                    {name}
                     {restartButton}
                     <span aria-hidden="true" class={statusDotClassName} />
                   </>
@@ -89,7 +105,7 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
                   <>
                     <span aria-hidden="true" class={statusDotClassName} />
                     {restartButton}
-                    <span class={nameClassName}>{service.name}</span>
+                    {name}
                   </>
                 )}
               </li>
@@ -126,10 +142,34 @@ function createNameStyle(theme: IDevtoolsTheme, panelSide: PanelSide): CSSObject
     color: theme.colors.foreground,
     flexGrow: 1,
     fontSize: theme.fontSizes.sm,
+    minWidth: 0,
     overflow: "hidden",
     textAlign: panelSide === "left" ? "right" : "left",
     textOverflow: "clip",
     whiteSpace: "nowrap",
+  };
+}
+
+function createLinkStyle(theme: IDevtoolsTheme): CSSObject {
+  return {
+    borderRadius: theme.radii.sm,
+    color: theme.colors.foreground,
+    cursor: "pointer",
+    outline: "none",
+    textDecoration: "underline",
+    textDecorationColor: theme.colors.accentBackground,
+    textUnderlineOffset: "2px",
+    transition: "background 150ms ease, color 150ms ease",
+    "&:visited": {
+      color: theme.colors.foreground,
+    },
+    "&:hover": {
+      color: theme.colors.accentBackground,
+    },
+    "&:focus-visible": {
+      background: theme.colors.selectionBackground,
+      color: theme.colors.accentBackground,
+    },
   };
 }
 

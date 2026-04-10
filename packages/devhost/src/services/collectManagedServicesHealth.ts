@@ -29,22 +29,51 @@ export async function collectManagedServicesHealth(
       const startedService: IManagedService | undefined = startedServicesByName.get(managedService.name);
 
       if (startedService === undefined || startedService.childProcess.exitCode !== null) {
-        return {
-          name: managedService.name,
-          status: false,
-        };
+        return createServiceHealth(managedService, false);
       }
 
       const status: boolean = await checkServiceHealth(managedService.health);
 
-      return {
-        name: managedService.name,
-        status,
-      };
+      return createServiceHealth(managedService, status);
     }),
   );
 
   return {
     services,
   };
+}
+
+function createServiceHealth(service: IResolvedDevhostService, status: boolean): ServiceHealth {
+  const url: string | undefined = readServiceUrl(service);
+
+  return url === undefined
+    ? {
+        name: service.name,
+        status,
+      }
+    : {
+        name: service.name,
+        status,
+        url,
+      };
+}
+
+function readServiceUrl(service: IResolvedDevhostService): string | undefined {
+  if (service.host === null || service.path === null) {
+    return undefined;
+  }
+
+  const serviceUrl: URL = new URL(`https://${service.host}`);
+
+  serviceUrl.pathname = normalizeServiceUrlPath(service.path);
+
+  return serviceUrl.toString();
+}
+
+function normalizeServiceUrlPath(path: string): string {
+  if (path === "/" || path === "/*") {
+    return "/";
+  }
+
+  return path.endsWith("/*") ? path.slice(0, -1) : path;
 }

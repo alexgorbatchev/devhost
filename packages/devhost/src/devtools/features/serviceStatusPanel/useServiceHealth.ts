@@ -95,11 +95,16 @@ function isHealthResponse(value: unknown): value is HealthResponse {
   }
 
   return services.every((service: unknown): boolean => {
+    if (typeof service !== "object" || service === null) {
+      return false;
+    }
+
+    const url: unknown = Reflect.get(service, "url");
+
     return (
-      typeof service === "object" &&
-      service !== null &&
       typeof Reflect.get(service, "name") === "string" &&
-      typeof Reflect.get(service, "status") === "boolean"
+      typeof Reflect.get(service, "status") === "boolean" &&
+      (typeof url === "string" || url === undefined)
     );
   });
 }

@@ -256,6 +256,8 @@ That keeps assets, HMR, fetches, SSE, and WebSockets off the injection path. The
 
 The injected `devtools` UI mounts inside its own Shadow DOM container so its runtime styles do not leak into the host page.
 
+Routed services in the injected status panel become links automatically, and clicking one opens that service URL in a new browser tab/window by default.
+
 When `[devtools.externalToolbars].enabled = true` (the default), devhost also detects supported third-party devtools launcher buttons on the host page, hides the native launcher buttons, and re-renders those launchers inside the injected overlay. The native panels themselves stay owned by the host tools.
 
 ### AI annotations

@@ -10,10 +10,12 @@ describe("markServicesAsUnavailable", () => {
           {
             name: "hello-stack",
             status: true,
+            url: "https://hello.localhost/",
           },
           {
             name: "api",
             status: true,
+            url: "https://hello.localhost/api/",
           },
           {
             name: "worker",
@@ -26,10 +28,12 @@ describe("markServicesAsUnavailable", () => {
       {
         name: "hello-stack",
         status: false,
+        url: "https://hello.localhost/",
       },
       {
         name: "api",
         status: false,
+        url: "https://hello.localhost/api/",
       },
       {
         name: "worker",
