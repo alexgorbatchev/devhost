@@ -310,8 +310,8 @@ export function App(): JSX.Element {
                 <h3 className="font-semibold text-lg !mt-0 !mb-0">Injected Devtools</h3>
               </div>
               <p className="text-sm text-muted-foreground !mb-0">
-                Optionally injects browser devtools for logs, service status, AI annotations, source jumping, and
-                Neovim.
+                Optionally injects browser devtools for logs, service status, AI annotations, source jumping, Neovim,
+                and aggregated third-party launcher buttons.
               </p>
             </div>
           </div>
@@ -390,7 +390,7 @@ $ open https://foo.localhost`}
           <p>
             <code>devhost</code>:
           </p>
-          <ul className="list-disc pl-6 mb-6">
+          <ul className="list-disc ml-6 mb-6">
             <li className="mb-2">routes local apps onto HTTPS hostnames through one shared managed Caddy instance</li>
             <li className="mb-2">
               starts local child processes from <code>devhost.toml</code>
@@ -411,13 +411,13 @@ $ open https://foo.localhost`}
           </ul>
 
           <h2>Requirements</h2>
-          <ul className="list-disc pl-6 mb-6">
+          <ul className="list-disc ml-6 mb-6">
             <li className="mb-2">
               <code>bun</code>
             </li>
             <li className="mb-2">
               either:
-              <ul className="list-disc pl-6 mt-2 mb-2">
+              <ul className="list-disc ml-6 mt-2 mb-2">
                 <li className="mb-2">
                   a global <code>caddy</code> on your <code>PATH</code>, or
                 </li>
@@ -461,7 +461,7 @@ $ open https://foo.localhost`}
           <CommandLine command="devhost caddy stop" />
 
           <p>The generated Caddy config uses these defaults:</p>
-          <ul className="list-disc pl-6 mb-6">
+          <ul className="list-disc ml-6 mb-6">
             <li className="mb-2">
               state dir: <code>DEVHOST_STATE_DIR</code>, else <code>XDG_STATE_HOME/devhost</code>, else{" "}
               <code>~/.local/state/devhost</code>
@@ -489,7 +489,7 @@ $ open https://foo.localhost`}
           <h3>Shared multi-stack behavior</h3>
           <p>Multiple projects can run against the same managed Caddy instance at the same time.</p>
           <p>The routing contract is strict:</p>
-          <ul className="list-disc pl-6 mb-6">
+          <ul className="list-disc ml-6 mb-6">
             <li className="mb-2">hostname ownership is exclusive across projects</li>
             <li className="mb-2">
               one project cannot claim a hostname that is already owned by another live devhost process
@@ -508,7 +508,7 @@ $ open https://foo.localhost`}
           <p>
             When you run <code>devhost</code>, it:
           </p>
-          <ol className="list-decimal pl-6 mb-6 space-y-2">
+          <ol className="list-decimal ml-6 mb-6 space-y-2">
             <li>
               discovers <code>devhost.toml</code> upward from the current directory, unless <code>--manifest</code> is
               provided
@@ -570,7 +570,7 @@ health = { http = "http://127.0.0.1:4000/healthz" }`}</code>
           </p>
 
           <h3>Operational bind inputs</h3>
-          <ul className="list-disc pl-6 mb-6">
+          <ul className="list-disc ml-6 mb-6">
             <li className="mb-2">
               <code>DEVHOST_BIND_HOST</code>: the actual interface the child process is expected to listen on. Use this
               for binding sockets.
@@ -582,7 +582,7 @@ health = { http = "http://127.0.0.1:4000/healthz" }`}</code>
           </ul>
 
           <h3>Routed-service context</h3>
-          <ul className="list-disc pl-6 mb-6">
+          <ul className="list-disc ml-6 mb-6">
             <li className="mb-2">
               <code>DEVHOST_HOST</code>: the public routed hostname from the service <code>host</code> field.
             </li>
@@ -595,7 +595,7 @@ health = { http = "http://127.0.0.1:4000/healthz" }`}</code>
           <p>
             When <code>devtools</code> are enabled, routed traffic is split like this:
           </p>
-          <ul className="list-disc pl-6 mb-6">
+          <ul className="list-disc ml-6 mb-6">
             <li className="mb-2">
               <code>/__devhost__/*</code> → <code>devtools</code> control server
             </li>
@@ -605,8 +605,14 @@ health = { http = "http://127.0.0.1:4000/healthz" }`}</code>
             <li className="mb-2">everything else → app directly</li>
           </ul>
 
+          <p>
+            When <code>[devtools.externalToolbars].enabled = true</code> (the default), devhost also detects supported
+            third-party devtools launcher buttons, hides those native launcher buttons, and re-renders them inside the
+            injected overlay. The native tool panels themselves stay untouched.
+          </p>
+
           <h3>AI annotations</h3>
-          <ul className="list-disc pl-6 mb-6">
+          <ul className="list-disc ml-6 mb-6">
             <li className="mb-2">
               hold <code>Alt</code> (<code>Option</code> on macOS) to enter annotation selection mode
             </li>
@@ -623,6 +629,15 @@ health = { http = "http://127.0.0.1:4000/healthz" }`}</code>
             <li className="mb-2">
               click <code>Submit</code> or press <code>⌘ ↵</code> / <code>Ctrl + Enter</code> to start an agent session
               seeded with the draft
+            </li>
+            <li className="mb-2">
+              when <code>Append to active session queue</code> is enabled, the draft is added to that agent
+              session&apos;s durable FIFO queue instead of being injected immediately into a busy terminal
+            </li>
+            <li className="mb-2">
+              queued annotations survive browser reloads and <code>devhost</code> restarts, drain automatically when the
+              agent emits <code>OSC 1337;SetAgentStatus=finished</code>, and can be edited or removed from the injected
+              queue panel while they are queued or paused
             </li>
           </ul>
 
@@ -674,10 +689,11 @@ DEVHOST_AGENT_MODE = "annotation"`}</code>
 
           <p>
             All built-in adapters natively integrate terminal OSC sequences to reflect working and idle states during
-            embedded session execution:
+            embedded session execution, and the durable annotation queue now depends on those same status events to know
+            when to drain queued work:
           </p>
 
-          <ul className="list-disc pl-6 mb-6">
+          <ul className="list-disc ml-6 mb-6">
             <li className="mb-2">
               <code>pi</code> leverages an injected extension to capture <code>agent_start</code> and{" "}
               <code>agent_end</code> hooks
@@ -691,6 +707,12 @@ DEVHOST_AGENT_MODE = "annotation"`}</code>
               <code>session.status</code> events
             </li>
           </ul>
+
+          <p>
+            Custom annotation agents must emit <code>OSC 1337;SetAgentStatus=working</code> when they begin handling an
+            annotation and <code>OSC 1337;SetAgentStatus=finished</code> when they are ready for the next queued item.{" "}
+            <code>devhost</code> accepts either BEL (<code>\x07</code>) or ST (<code>\x1b\\</code>) OSC terminators.
+          </p>
         </div>
       </div>
 

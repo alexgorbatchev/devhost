@@ -1,10 +1,15 @@
 import assert from "node:assert";
+import { mkdirSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import { afterEach, describe, expect, test } from "bun:test";
 
 import type { IAnnotationSubmitDetail } from "../../devtools/features/annotationComposer/types";
 import type { StartTerminalSessionRequest } from "../../devtools/features/terminalSessions/types";
 import {
+  ANNOTATION_QUEUES_PATH,
+  ANNOTATION_QUEUES_WEBSOCKET_PATH,
   HEALTH_WEBSOCKET_PATH,
   INJECTED_SCRIPT_PATH,
   LOGS_WEBSOCKET_PATH,
@@ -14,6 +19,7 @@ import {
 import type { HealthResponse } from "../../devtools/shared/types";
 import type { ILaunchedTerminalSession } from "../../agents/launchTerminalSession";
 import { startDevtoolsControlServer } from "../startDevtoolsControlServer";
+import type { IDevhostLogger } from "../../utils/createLogger";
 import type {
   TestPromiseVoid,
   TestResizeEvent,
@@ -56,8 +62,11 @@ describe("startDevtoolsControlServer", () => {
       getHealthResponse: async (): Promise<HealthResponse> => {
         return healthResponse;
       },
+      logger: createTestLogger(),
+      manifestPath: "/tmp/project/devhost.toml",
       projectRootPath: "/tmp/project",
       stackName: "hello-stack",
+      stateDirectoryPath: createTestStateDirectory(),
     });
 
     stopFunctions.push(controlServer.stop);
@@ -95,8 +104,11 @@ describe("startDevtoolsControlServer", () => {
           services: [],
         };
       },
+      logger: createTestLogger(),
+      manifestPath: "/tmp/project/devhost.toml",
       projectRootPath: "/tmp/project",
       stackName: "hello-stack",
+      stateDirectoryPath: createTestStateDirectory(),
     });
 
     stopFunctions.push(controlServer.stop);
@@ -150,8 +162,11 @@ describe("startDevtoolsControlServer", () => {
           services: [],
         };
       },
+      logger: createTestLogger(),
+      manifestPath: "/tmp/project/devhost.toml",
       projectRootPath: "/tmp/project",
       stackName: "hello-stack",
+      stateDirectoryPath: createTestStateDirectory(),
       startTerminalSession: terminalStub.start,
     });
 
@@ -211,6 +226,64 @@ describe("startDevtoolsControlServer", () => {
     expect(terminalStub.closeCount).toBe(1);
   });
 
+  test("rejects malformed terminal websocket messages without crashing the session", async () => {
+    const terminalStub: TestTerminalStub = createTerminalStub();
+    const controlServer = await startDevtoolsControlServer({
+      agentDisplayName: "Pi",
+      componentEditor: "vscode",
+      devtoolsMinimapPosition: "left",
+      devtoolsPosition: "bottom-right",
+      getHealthResponse: async (): Promise<HealthResponse> => {
+        return {
+          services: [],
+        };
+      },
+      logger: createTestLogger(),
+      manifestPath: "/tmp/project/devhost.toml",
+      projectRootPath: "/tmp/project",
+      stackName: "hello-stack",
+      stateDirectoryPath: createTestStateDirectory(),
+      startTerminalSession: terminalStub.start,
+    });
+
+    stopFunctions.push(controlServer.stop);
+
+    const controlToken: string = await readControlToken(controlServer.port);
+    const startResponse: Response = await fetch(
+      `http://127.0.0.1:${controlServer.port}${TERMINAL_SESSION_START_PATH}`,
+      {
+        body: JSON.stringify({
+          annotation: createAnnotationDetail(),
+          kind: "agent",
+        }),
+        headers: {
+          "content-type": "application/json",
+          "x-devhost-control-token": controlToken,
+        },
+        method: "POST",
+      },
+    );
+    const startResponseBody: unknown = await startResponse.json();
+
+    expect(startResponse.status).toBe(200);
+    assert(isSessionStartResponse(startResponseBody));
+
+    const websocket = createSessionWebSocket(controlServer.port, startResponseBody.sessionId, controlToken);
+
+    websockets.push(websocket);
+
+    await expect(waitForWebSocketMessage(websocket)).resolves.toBe(JSON.stringify({ data: "", type: "snapshot" }));
+
+    const errorMessagePromise: Promise<string> = waitForWebSocketMessage(websocket);
+
+    websocket.send("{bad json");
+
+    await expect(errorMessagePromise).resolves.toBe(
+      JSON.stringify({ message: "Invalid terminal message.", type: "error" }),
+    );
+    expect(websocket.readyState).toBe(WebSocket.OPEN);
+  });
+
   test("starts a terminal session for editor navigation", async () => {
     const terminalStub: TestTerminalStub = createTerminalStub();
     const controlServer = await startDevtoolsControlServer({
@@ -223,8 +296,11 @@ describe("startDevtoolsControlServer", () => {
           services: [],
         };
       },
+      logger: createTestLogger(),
+      manifestPath: "/tmp/project/devhost.toml",
       projectRootPath: "/tmp/project",
       stackName: "hello-stack",
+      stateDirectoryPath: createTestStateDirectory(),
       startTerminalSession: terminalStub.start,
     });
 
@@ -270,8 +346,11 @@ describe("startDevtoolsControlServer", () => {
           services: [],
         };
       },
+      logger: createTestLogger(),
+      manifestPath: "/tmp/project/devhost.toml",
       projectRootPath: "/tmp/project",
       stackName: "hello-stack",
+      stateDirectoryPath: createTestStateDirectory(),
       startTerminalSession: terminalStub.start,
     });
 
@@ -316,6 +395,353 @@ describe("startDevtoolsControlServer", () => {
     });
   });
 
+  test("queues targeted annotation submissions and exposes queue snapshots over http and websocket", async () => {
+    const terminalStub: TestTerminalStub = createTerminalStub();
+    const stateDirectoryPath: string = createTestStateDirectory();
+    const controlServer = await startDevtoolsControlServer({
+      agentDisplayName: "Pi",
+      componentEditor: "vscode",
+      devtoolsMinimapPosition: "left",
+      devtoolsPosition: "bottom-right",
+      getHealthResponse: async (): Promise<HealthResponse> => {
+        return {
+          services: [],
+        };
+      },
+      logger: createTestLogger(),
+      manifestPath: "/tmp/project/devhost.toml",
+      projectRootPath: "/tmp/project",
+      stackName: "hello-stack",
+      startTerminalSession: terminalStub.start,
+      stateDirectoryPath,
+    });
+
+    stopFunctions.push(controlServer.stop);
+
+    const controlToken: string = await readControlToken(controlServer.port);
+    const firstAnnotationRequest: StartTerminalSessionRequest = {
+      annotation: createAnnotationDetail(),
+      kind: "agent",
+    };
+    const firstResponse = await fetch(`http://127.0.0.1:${controlServer.port}${TERMINAL_SESSION_START_PATH}`, {
+      body: JSON.stringify(firstAnnotationRequest),
+      headers: {
+        "content-type": "application/json",
+        "x-devhost-control-token": controlToken,
+      },
+      method: "POST",
+    });
+    const firstResponseBody: unknown = await firstResponse.json();
+
+    assert(isSessionStartResponse(firstResponseBody));
+
+    const queueWebSocket = createAnnotationQueueWebSocket(controlServer.port, controlToken);
+
+    websockets.push(queueWebSocket);
+
+    const initialQueueMessage = JSON.parse(await waitForWebSocketMessage(queueWebSocket));
+
+    expect(initialQueueMessage).toEqual({
+      queues: [
+        {
+          activeSessionId: firstResponseBody.sessionId,
+          entries: [expect.objectContaining({ state: "active" })],
+          pauseReason: null,
+          queueId: expect.any(String),
+          status: "launching",
+        },
+      ],
+      type: "snapshot",
+    });
+
+    const workingQueueMessagePromise: Promise<string> = waitForWebSocketMessage(queueWebSocket);
+
+    terminalStub.emit("\u001b]1337;SetAgentStatus=working\u0007");
+
+    expect(JSON.parse(await workingQueueMessagePromise)).toEqual({
+      queues: [
+        {
+          activeSessionId: firstResponseBody.sessionId,
+          entries: [expect.objectContaining({ state: "active" })],
+          pauseReason: null,
+          queueId: expect.any(String),
+          status: "working",
+        },
+      ],
+      type: "snapshot",
+    });
+
+    const secondAnnotationRequest: StartTerminalSessionRequest = {
+      annotation: {
+        ...createAnnotationDetail(),
+        comment: "Queue the follow-up annotation.",
+      },
+      kind: "agent",
+      targetSessionId: firstResponseBody.sessionId,
+    };
+    const queueUpdatePromise: Promise<string> = waitForWebSocketMessage(queueWebSocket);
+    const secondResponse = await fetch(`http://127.0.0.1:${controlServer.port}${TERMINAL_SESSION_START_PATH}`, {
+      body: JSON.stringify(secondAnnotationRequest),
+      headers: {
+        "content-type": "application/json",
+        "x-devhost-control-token": controlToken,
+      },
+      method: "POST",
+    });
+    const secondResponseBody: unknown = await secondResponse.json();
+
+    assert(isSessionStartResponse(secondResponseBody));
+    expect(secondResponseBody.sessionId).toBe(firstResponseBody.sessionId);
+    expect(terminalStub.startedRequests).toEqual([firstAnnotationRequest]);
+    expect(terminalStub.writes).toEqual([]);
+
+    const listQueuesResponse = await fetch(`http://127.0.0.1:${controlServer.port}${ANNOTATION_QUEUES_PATH}`, {
+      headers: {
+        "x-devhost-control-token": controlToken,
+      },
+      method: "GET",
+    });
+
+    const listQueuesBody = await listQueuesResponse.json();
+
+    expect(listQueuesBody).toEqual({
+      queues: [
+        {
+          activeSessionId: firstResponseBody.sessionId,
+          entries: [
+            expect.objectContaining({ annotation: firstAnnotationRequest.annotation, state: "active" }),
+            expect.objectContaining({ annotation: secondAnnotationRequest.annotation, state: "queued" }),
+          ],
+          pauseReason: null,
+          queueId: expect.any(String),
+          status: "working",
+        },
+      ],
+    });
+
+    expect(JSON.parse(await queueUpdatePromise)).toEqual({
+      queues: [
+        {
+          activeSessionId: firstResponseBody.sessionId,
+          entries: [
+            expect.objectContaining({ annotation: firstAnnotationRequest.annotation, state: "active" }),
+            expect.objectContaining({ annotation: secondAnnotationRequest.annotation, state: "queued" }),
+          ],
+          pauseReason: null,
+          queueId: expect.any(String),
+          status: "working",
+        },
+      ],
+      type: "snapshot",
+    });
+
+    const queuedEntryId = listQueuesBody.queues[0].entries[1].entryId;
+    const patchResponse = await fetch(
+      `http://127.0.0.1:${controlServer.port}${ANNOTATION_QUEUES_PATH}/${queuedEntryId}`,
+      {
+        body: JSON.stringify({ comment: "Updated queued annotation" }),
+        headers: {
+          "content-type": "application/json",
+          "x-devhost-control-token": controlToken,
+        },
+        method: "PATCH",
+      },
+    );
+
+    expect(patchResponse.status).toBe(200);
+
+    terminalStub.emit("\u001b]1337;SetAgentStatus=finished\u0007");
+    await Bun.sleep(0);
+
+    expect(terminalStub.writes).toEqual([
+      expect.stringMatching(
+        /^Please read the annotation details from .*prompt\.txt and address the requested change\.\r$/,
+      ),
+    ]);
+  });
+
+  test("resumes paused queues through the resume endpoint", async () => {
+    const terminalStub: TestTerminalStub = createTerminalStub();
+    const controlServer = await startDevtoolsControlServer({
+      agentDisplayName: "Pi",
+      componentEditor: "vscode",
+      devtoolsMinimapPosition: "left",
+      devtoolsPosition: "bottom-right",
+      getHealthResponse: async (): Promise<HealthResponse> => {
+        return {
+          services: [],
+        };
+      },
+      logger: createTestLogger(),
+      manifestPath: "/tmp/project/devhost.toml",
+      projectRootPath: "/tmp/project",
+      stackName: "hello-stack",
+      startTerminalSession: terminalStub.start,
+      stateDirectoryPath: createTestStateDirectory(),
+    });
+
+    stopFunctions.push(controlServer.stop);
+
+    const controlToken: string = await readControlToken(controlServer.port);
+    const startResponse = await fetch(`http://127.0.0.1:${controlServer.port}${TERMINAL_SESSION_START_PATH}`, {
+      body: JSON.stringify({
+        annotation: createAnnotationDetail(),
+        kind: "agent",
+      }),
+      headers: {
+        "content-type": "application/json",
+        "x-devhost-control-token": controlToken,
+      },
+      method: "POST",
+    });
+    const startResponseBody: unknown = await startResponse.json();
+
+    assert(isSessionStartResponse(startResponseBody));
+
+    const websocket = createSessionWebSocket(controlServer.port, startResponseBody.sessionId, controlToken);
+
+    websockets.push(websocket);
+    await waitForWebSocketMessage(websocket);
+    websocket.send(JSON.stringify({ type: "close" }));
+    await waitForWebSocketClose(websocket);
+
+    const listQueuesResponse = await fetch(`http://127.0.0.1:${controlServer.port}${ANNOTATION_QUEUES_PATH}`, {
+      headers: {
+        "x-devhost-control-token": controlToken,
+      },
+      method: "GET",
+    });
+    const listQueuesBody = await listQueuesResponse.json();
+    const pausedQueueId: string = listQueuesBody.queues[0].queueId;
+
+    const resumeResponse = await fetch(
+      `http://127.0.0.1:${controlServer.port}${ANNOTATION_QUEUES_PATH}/${pausedQueueId}/resume`,
+      {
+        headers: {
+          "x-devhost-control-token": controlToken,
+        },
+        method: "POST",
+      },
+    );
+
+    expect(resumeResponse.status).toBe(200);
+    await expect(resumeResponse.json()).resolves.toEqual({
+      sessionId: expect.any(String),
+      success: true,
+    });
+    expect(terminalStub.startedRequests).toHaveLength(2);
+  });
+
+  test("reloads persisted queue state across control-server restarts", async () => {
+    const firstTerminalStub: TestTerminalStub = createTerminalStub();
+    const stateDirectoryPath: string = createTestStateDirectory();
+    const firstControlServer = await startDevtoolsControlServer({
+      agentDisplayName: "Pi",
+      componentEditor: "vscode",
+      devtoolsMinimapPosition: "left",
+      devtoolsPosition: "bottom-right",
+      getHealthResponse: async (): Promise<HealthResponse> => {
+        return {
+          services: [],
+        };
+      },
+      logger: createTestLogger(),
+      manifestPath: "/tmp/project/devhost.toml",
+      projectRootPath: "/tmp/project",
+      stackName: "hello-stack",
+      startTerminalSession: firstTerminalStub.start,
+      stateDirectoryPath,
+    });
+
+    const controlToken: string = await readControlToken(firstControlServer.port);
+    const firstResponse = await fetch(`http://127.0.0.1:${firstControlServer.port}${TERMINAL_SESSION_START_PATH}`, {
+      body: JSON.stringify({
+        annotation: createAnnotationDetail(),
+        kind: "agent",
+      }),
+      headers: {
+        "content-type": "application/json",
+        "x-devhost-control-token": controlToken,
+      },
+      method: "POST",
+    });
+    const firstResponseBody: unknown = await firstResponse.json();
+
+    assert(isSessionStartResponse(firstResponseBody));
+    firstTerminalStub.emit("\u001b]1337;SetAgentStatus=working\u0007");
+    await fetch(`http://127.0.0.1:${firstControlServer.port}${TERMINAL_SESSION_START_PATH}`, {
+      body: JSON.stringify({
+        annotation: {
+          ...createAnnotationDetail(),
+          comment: "Queue the follow-up annotation.",
+        },
+        kind: "agent",
+        targetSessionId: firstResponseBody.sessionId,
+      }),
+      headers: {
+        "content-type": "application/json",
+        "x-devhost-control-token": controlToken,
+      },
+      method: "POST",
+    });
+
+    await firstControlServer.stop();
+
+    const secondTerminalStub: TestTerminalStub = createTerminalStub();
+    const secondControlServer = await startDevtoolsControlServer({
+      agentDisplayName: "Pi",
+      componentEditor: "vscode",
+      devtoolsMinimapPosition: "left",
+      devtoolsPosition: "bottom-right",
+      getHealthResponse: async (): Promise<HealthResponse> => {
+        return {
+          services: [],
+        };
+      },
+      logger: createTestLogger(),
+      manifestPath: "/tmp/project/devhost.toml",
+      projectRootPath: "/tmp/project",
+      stackName: "hello-stack",
+      startTerminalSession: secondTerminalStub.start,
+      stateDirectoryPath,
+    });
+
+    stopFunctions.push(secondControlServer.stop);
+
+    expect(secondTerminalStub.startedRequests).toEqual([
+      {
+        annotation: createAnnotationDetail(),
+        kind: "agent",
+      },
+    ]);
+
+    const secondControlToken: string = await readControlToken(secondControlServer.port);
+    const listQueuesResponse = await fetch(`http://127.0.0.1:${secondControlServer.port}${ANNOTATION_QUEUES_PATH}`, {
+      headers: {
+        "x-devhost-control-token": secondControlToken,
+      },
+      method: "GET",
+    });
+
+    await expect(listQueuesResponse.json()).resolves.toEqual({
+      queues: [
+        {
+          activeSessionId: expect.any(String),
+          entries: [
+            expect.objectContaining({ annotation: createAnnotationDetail(), state: "active" }),
+            expect.objectContaining({
+              annotation: expect.objectContaining({ comment: "Queue the follow-up annotation." }),
+              state: "queued",
+            }),
+          ],
+          pauseReason: null,
+          queueId: expect.any(String),
+          status: "launching",
+        },
+      ],
+    });
+  });
+
   test("keeps the terminal websocket open after the process exits until the client closes it", async () => {
     const terminalStub: TestTerminalStub = createTerminalStub();
     const controlServer = await startDevtoolsControlServer({
@@ -328,8 +754,11 @@ describe("startDevtoolsControlServer", () => {
           services: [],
         };
       },
+      logger: createTestLogger(),
+      manifestPath: "/tmp/project/devhost.toml",
       projectRootPath: "/tmp/project",
       stackName: "hello-stack",
+      stateDirectoryPath: createTestStateDirectory(),
       startTerminalSession: terminalStub.start,
     });
 
@@ -510,6 +939,14 @@ function createSessionWebSocket(port: number, sessionId: string, controlToken: s
   return new WebSocket(websocketUrl);
 }
 
+function createAnnotationQueueWebSocket(port: number, controlToken: string): WebSocket {
+  const websocketUrl: URL = new URL(`ws://127.0.0.1:${port}${ANNOTATION_QUEUES_WEBSOCKET_PATH}`);
+
+  websocketUrl.searchParams.set("token", controlToken);
+
+  return new WebSocket(websocketUrl);
+}
+
 function extractControlToken(injectedScript: string): string {
   const tokenMatch: RegExpMatchArray | null = injectedScript.match(/"controlToken":"([^"]+)"/);
 
@@ -577,4 +1014,23 @@ function waitForWebSocketMessage(websocket: WebSocket): Promise<string> {
     websocket.addEventListener("error", handleError);
     websocket.addEventListener("message", handleMessage);
   });
+}
+
+function createTestLogger(): IDevhostLogger {
+  return {
+    error(): void {},
+    info(): void {},
+    withLabel(): IDevhostLogger {
+      return createTestLogger();
+    },
+  };
+}
+
+function createTestStateDirectory(): string {
+  const stateDirectoryPath: string = join(tmpdir(), `devhost-control-server-test-${crypto.randomUUID()}`);
+
+  rmSync(stateDirectoryPath, { force: true, recursive: true });
+  mkdirSync(stateDirectoryPath, { recursive: true });
+
+  return stateDirectoryPath;
 }

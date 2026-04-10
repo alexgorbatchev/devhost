@@ -5,6 +5,12 @@ import { createConfiguredDevtoolsScript } from "./createConfiguredDevtoolsScript
 import type { DevtoolsComponentEditor } from "./devtoolsComponentEditor";
 import type { IAnnotationMarkerPayload, IAnnotationSubmitDetail } from "../devtools/features/annotationComposer/types";
 import type {
+  IAnnotationQueuesSnapshotMessage,
+  IListAnnotationQueuesResponse,
+  IResumeAnnotationQueueResponse,
+  IUpdateAnnotationQueueEntryRequest,
+} from "../devtools/features/annotationQueue/types";
+import type {
   IActiveTerminalSessionSnapshot,
   IListTerminalSessionsResponse,
   StartTerminalSessionRequest,
@@ -13,6 +19,8 @@ import type {
 } from "../devtools/features/terminalSessions/types";
 import type { ISourceLocation } from "../devtools/shared/sourceLocation";
 import {
+  ANNOTATION_QUEUES_PATH,
+  ANNOTATION_QUEUES_WEBSOCKET_PATH,
   DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
   DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME,
   HEALTH_WEBSOCKET_PATH,
@@ -35,19 +43,32 @@ import type {
 } from "../devtools/shared/types";
 import type { ILaunchedTerminalSession } from "../agents/launchTerminalSession";
 import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../types/stackTypes";
+import type { IDevhostLogger } from "../utils/createLogger";
 
 import { createAgentSessionFiles } from "../agents/createAgentSessionFiles";
 import { createAnnotationAgentPrompt } from "../agents/createAnnotationAgentPrompt";
+import {
+  AnnotationQueueConflictError,
+  AnnotationQueueNotFoundError,
+  AnnotationQueueValidationError,
+  createAnnotationQueueStore,
+} from "./createAnnotationQueueStore";
+import { parseAgentStatusOsc, type AgentSessionStatus } from "./parseAgentStatusOsc";
 
 const healthTopicName: string = "devhost-health";
 const logsTopicName: string = "devhost-logs";
+const annotationQueuesTopicName: string = "devhost-annotation-queues";
 const terminalSessionTopicName: string = "devhost-terminal-session";
 const healthPollIntervalInMilliseconds: number = 1_000;
 const idleTerminalSessionTimeoutInMilliseconds: number = 10_000;
 const maximumRetainedTerminalOutputCharacters: number = 128_000;
 const xtermStylesheetFilePath: string = fileURLToPath(import.meta.resolve("@xterm/xterm/css/xterm.css"));
 
-type WebSocketTopicName = typeof healthTopicName | typeof logsTopicName | typeof terminalSessionTopicName;
+type WebSocketTopicName =
+  | typeof annotationQueuesTopicName
+  | typeof healthTopicName
+  | typeof logsTopicName
+  | typeof terminalSessionTopicName;
 
 type DevtoolsWebSocketData = {
   sessionId?: string;
@@ -67,12 +88,16 @@ interface IStartDevtoolsControlServerOptions {
   devtoolsMinimapPosition: DevtoolsMinimapPosition;
   devtoolsPosition: DevtoolsPosition;
   editorEnabled?: boolean;
+  externalToolbarsEnabled?: boolean;
   minimapEnabled?: boolean;
   statusEnabled?: boolean;
   getHealthResponse: () => Promise<HealthResponse>;
+  logger: IDevhostLogger;
+  manifestPath: string;
   projectRootPath: string;
   restartService?: (serviceName: string) => Promise<void>;
   stackName: string;
+  stateDirectoryPath: string;
   startTerminalSession?: (
     request: StartTerminalSessionRequest,
     onData: (data: Uint8Array) => void,
@@ -85,6 +110,8 @@ interface ITerminalSessionExitStatus {
 }
 
 interface ITerminalSessionState {
+  agentStatus: AgentSessionStatus | null;
+  agentStatusOscCarryover: string;
   cleanupFiles: (() => void)[];
   close: () => void;
   decoder: TextDecoder;
@@ -111,6 +138,7 @@ export async function startDevtoolsControlServer(
     options.agentDisplayName,
     controlToken,
     options.editorEnabled ?? true,
+    options.externalToolbarsEnabled ?? true,
     options.minimapEnabled ?? true,
     options.statusEnabled ?? true,
   );
@@ -120,6 +148,83 @@ export async function startDevtoolsControlServer(
   let isStopped: boolean = false;
   let lastPublishedMessage: string | null = null;
   let nextLogEntryId: number = 1;
+  const annotationQueueStore = createAnnotationQueueStore({
+    logger: options.logger,
+    manifestPath: options.manifestPath,
+    onQueuesChanged: (queues) => {
+      if (server.subscriberCount(annotationQueuesTopicName) > 0) {
+        server.publish(annotationQueuesTopicName, JSON.stringify(createAnnotationQueuesSnapshotMessage(queues)));
+      }
+    },
+    readLiveAgentSession: (sessionId) => {
+      const session: ITerminalSessionState | undefined = terminalSessions.get(sessionId);
+
+      if (session === undefined || session.exited !== null || session.request.kind !== "agent") {
+        return null;
+      }
+
+      return {
+        agentStatus: session.agentStatus,
+        annotation: session.request.annotation,
+        sessionId,
+      };
+    },
+    stackName: options.stackName,
+    startAgentSession: (annotation) => {
+      return createTerminalSession({
+        annotation,
+        kind: "agent",
+      });
+    },
+    stateDirectoryPath: options.stateDirectoryPath,
+    writeAnnotationToSession: (sessionId, annotation) => {
+      const session: ITerminalSessionState | undefined = terminalSessions.get(sessionId);
+
+      if (session === undefined || session.exited !== null || session.request.kind !== "agent") {
+        throw new Error(`Agent terminal session ${sessionId} is not available.`);
+      }
+
+      const promptText: string = createAnnotationAgentPrompt(annotation);
+      const sessionFiles = createAgentSessionFiles({
+        annotation,
+        displayName: options.agentDisplayName,
+        projectRootPath: options.projectRootPath,
+        prompt: promptText,
+        stackName: options.stackName,
+      });
+
+      session.cleanupFiles.push(sessionFiles.cleanup);
+      session.write(
+        `Please read the annotation details from ${sessionFiles.env.DEVHOST_AGENT_PROMPT_FILE} and address the requested change.\r`,
+      );
+    },
+  });
+
+  function logAnnotationQueueError(action: string, error: unknown): void {
+    const message: string = error instanceof Error ? error.message : String(error);
+
+    options.logger.error(`Failed to ${action}. ${message}`);
+  }
+
+  function handleAnnotationQueueStatus(sessionId: string, status: AgentSessionStatus): void {
+    void annotationQueueStore.handleAgentStatus(sessionId, status).catch((error: unknown): void => {
+      logAnnotationQueueError(`handle annotation queue status ${status} for session ${sessionId}`, error);
+    });
+  }
+
+  function handleAnnotationQueueSessionExit(sessionId: string): void {
+    void annotationQueueStore.handleSessionExited(sessionId).catch((error: unknown): void => {
+      logAnnotationQueueError(`pause annotation queue for exited session ${sessionId}`, error);
+    });
+  }
+
+  async function handleIdleTerminalSessionShutdown(sessionId: string): Promise<void> {
+    try {
+      await annotationQueueStore.handleSessionExited(sessionId);
+    } catch (error) {
+      logAnnotationQueueError(`pause annotation queue for idle session ${sessionId}`, error);
+    }
+  }
 
   const server = Bun.serve<DevtoolsWebSocketData>({
     hostname: "127.0.0.1",
@@ -153,17 +258,18 @@ export async function startDevtoolsControlServer(
         if (request.method.toUpperCase() === "POST") {
           const requestBody: unknown = await readRequestJson(request);
 
-          if (
-            typeof requestBody !== "object" ||
-            requestBody === null ||
-            typeof (requestBody as Record<string, unknown>).serviceName !== "string"
-          ) {
+          const serviceName: unknown =
+            typeof requestBody === "object" && requestBody !== null
+              ? Reflect.get(requestBody, "serviceName")
+              : undefined;
+
+          if (typeof serviceName !== "string") {
             return new Response("Invalid restart service payload.", { status: 400 });
           }
 
           if (options.restartService) {
             try {
-              await options.restartService((requestBody as Record<string, string>).serviceName);
+              await options.restartService(serviceName);
               return Response.json({ success: true });
             } catch (error) {
               const message: string = error instanceof Error ? error.message : String(error);
@@ -194,30 +300,10 @@ export async function startDevtoolsControlServer(
           }
 
           try {
-            if (requestBody.kind === "agent" && requestBody.targetSessionId) {
-              const targetSession = terminalSessions.get(requestBody.targetSessionId);
-
-              if (targetSession !== undefined && targetSession.exited === null) {
-                const promptText = createAnnotationAgentPrompt(requestBody.annotation);
-                const sessionFiles = createAgentSessionFiles({
-                  annotation: requestBody.annotation,
-                  displayName: options.agentDisplayName,
-                  projectRootPath: options.projectRootPath,
-                  prompt: promptText,
-                  stackName: options.stackName,
-                });
-
-                targetSession.cleanupFiles.push(sessionFiles.cleanup);
-                const inputText = `Please read the annotation details from ${sessionFiles.env.DEVHOST_AGENT_PROMPT_FILE} and address the requested change.\r`;
-                targetSession.write(inputText);
-
-                return Response.json({
-                  sessionId: requestBody.targetSessionId,
-                });
-              }
-            }
-
-            const sessionId: string = createTerminalSession(requestBody);
+            const sessionId: string =
+              requestBody.kind === "agent"
+                ? (await annotationQueueStore.enqueue(requestBody.annotation, requestBody.targetSessionId)).sessionId
+                : createTerminalSession(requestBody);
 
             return Response.json({
               sessionId,
@@ -228,6 +314,70 @@ export async function startDevtoolsControlServer(
             return new Response(message, { status: 500 });
           }
         }
+      }
+
+      if (requestUrl.pathname === ANNOTATION_QUEUES_PATH) {
+        if (!isAuthorizedControlRequest(request, controlToken)) {
+          return new Response("Forbidden", { status: 403 });
+        }
+
+        if (request.method.toUpperCase() === "GET") {
+          return Response.json(createAnnotationQueuesListResponse(annotationQueueStore.getSnapshot()));
+        }
+
+        return new Response("Method not allowed", { status: 405 });
+      }
+
+      const queueEntryId = readAnnotationQueueEntryId(requestUrl.pathname);
+      const queueIdToResume = readAnnotationQueueResumeId(requestUrl.pathname);
+
+      if (queueEntryId !== null) {
+        if (!isAuthorizedControlRequest(request, controlToken)) {
+          return new Response("Forbidden", { status: 403 });
+        }
+
+        if (request.method.toUpperCase() === "PATCH") {
+          const requestBody: unknown = await readRequestJson(request);
+
+          if (!isUpdateAnnotationQueueEntryRequest(requestBody)) {
+            return new Response("Invalid annotation queue payload.", { status: 400 });
+          }
+
+          try {
+            await annotationQueueStore.updateEntryComment(queueEntryId, requestBody.comment);
+            return Response.json(createAnnotationQueueMutationResponse());
+          } catch (error) {
+            return createAnnotationQueueMutationErrorResponse(error);
+          }
+        }
+
+        if (request.method.toUpperCase() === "DELETE") {
+          try {
+            await annotationQueueStore.deleteEntry(queueEntryId);
+            return Response.json(createAnnotationQueueMutationResponse());
+          } catch (error) {
+            return createAnnotationQueueMutationErrorResponse(error);
+          }
+        }
+
+        return new Response("Method not allowed", { status: 405 });
+      }
+
+      if (queueIdToResume !== null) {
+        if (!isAuthorizedControlRequest(request, controlToken)) {
+          return new Response("Forbidden", { status: 403 });
+        }
+
+        if (request.method.toUpperCase() === "POST") {
+          try {
+            const resumeResponse = await annotationQueueStore.resumeQueue(queueIdToResume);
+            return Response.json(createResumeAnnotationQueueResponse(resumeResponse.sessionId));
+          } catch (error) {
+            return createAnnotationQueueMutationErrorResponse(error);
+          }
+        }
+
+        return new Response("Method not allowed", { status: 405 });
       }
 
       if (requestUrl.pathname === HEALTH_WEBSOCKET_PATH) {
@@ -248,6 +398,28 @@ export async function startDevtoolsControlServer(
         const didUpgrade: boolean = bunServer.upgrade(request, {
           data: {
             topicName: logsTopicName,
+          },
+        });
+
+        if (didUpgrade) {
+          return;
+        }
+
+        return new Response("Upgrade failed", { status: 400 });
+      }
+
+      if (requestUrl.pathname === ANNOTATION_QUEUES_WEBSOCKET_PATH) {
+        const requestControlToken: string | null = requestUrl.searchParams.get(
+          DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME,
+        );
+
+        if (requestControlToken !== controlToken) {
+          return new Response("Forbidden", { status: 403 });
+        }
+
+        const didUpgrade: boolean = bunServer.upgrade(request, {
+          data: {
+            topicName: annotationQueuesTopicName,
           },
         });
 
@@ -293,7 +465,10 @@ export async function startDevtoolsControlServer(
       return new Response("Not Found", { status: 404 });
     },
     websocket: {
-      message(websocket: Bun.ServerWebSocket<DevtoolsWebSocketData>, message: WebSocketMessageData): void {
+      async message(
+        websocket: Bun.ServerWebSocket<DevtoolsWebSocketData>,
+        message: WebSocketMessageData,
+      ): Promise<void> {
         if (websocket.data.topicName !== terminalSessionTopicName) {
           return;
         }
@@ -338,6 +513,15 @@ export async function startDevtoolsControlServer(
         }
 
         if (websocket.data.sessionId !== undefined) {
+          try {
+            await annotationQueueStore.handleUserClosedSession(websocket.data.sessionId);
+          } catch (error) {
+            logAnnotationQueueError(
+              `pause annotation queue for user-closed session ${websocket.data.sessionId}`,
+              error,
+            );
+          }
+
           closeTerminalSession(websocket.data.sessionId, terminalSessions);
         }
 
@@ -360,6 +544,11 @@ export async function startDevtoolsControlServer(
 
         if (websocket.data.topicName === logsTopicName) {
           websocket.send(JSON.stringify(createServiceLogSnapshotMessage(retainedLogEntries)));
+          return;
+        }
+
+        if (websocket.data.topicName === annotationQueuesTopicName) {
+          websocket.send(JSON.stringify(createAnnotationQueuesSnapshotMessage(annotationQueueStore.getSnapshot())));
           return;
         }
 
@@ -403,7 +592,12 @@ export async function startDevtoolsControlServer(
         session.sockets.delete(websocket);
 
         if (session.sockets.size === 0 && websocket.data.sessionId !== undefined) {
-          scheduleIdleTerminalSessionShutdown(websocket.data.sessionId, session, terminalSessions);
+          scheduleIdleTerminalSessionShutdown(
+            websocket.data.sessionId,
+            session,
+            terminalSessions,
+            handleIdleTerminalSessionShutdown,
+          );
         }
       },
     },
@@ -413,6 +607,8 @@ export async function startDevtoolsControlServer(
   if (serverPort === undefined) {
     throw new Error("Failed to start devtools control server: no port was assigned.");
   }
+
+  await annotationQueueStore.resumePersistedQueues();
 
   const pollIntervalId: ReturnType<typeof setInterval> = setInterval((): void => {
     if (server.subscriberCount(healthTopicName) === 0) {
@@ -429,6 +625,7 @@ export async function startDevtoolsControlServer(
     stop: async (): Promise<void> => {
       isStopped = true;
       clearInterval(pollIntervalId);
+      await annotationQueueStore.prepareForShutdown();
 
       for (const [sessionId] of terminalSessions) {
         closeTerminalSession(sessionId, terminalSessions);
@@ -451,6 +648,17 @@ export async function startDevtoolsControlServer(
       return;
     }
 
+    if (session.request.kind === "agent") {
+      const parsedStatuses = parseAgentStatusOsc(session.agentStatusOscCarryover, outputChunk);
+
+      session.agentStatusOscCarryover = parsedStatuses.carryover;
+
+      for (const status of parsedStatuses.statuses) {
+        session.agentStatus = status;
+        handleAnnotationQueueStatus(sessionId, status);
+      }
+    }
+
     session.outputBuffer = retainTerminalBufferTail(session.outputBuffer + outputChunk);
     publishTerminalSessionMessage(session, createTerminalSessionOutputMessage(outputChunk));
   }
@@ -466,6 +674,8 @@ export async function startDevtoolsControlServer(
       appendTerminalSessionOutput(sessionId, data);
     });
     const session: ITerminalSessionState = {
+      agentStatus: null,
+      agentStatusOscCarryover: "",
       cleanupFiles: [],
       close: launchedSession.close,
       decoder: new TextDecoder(),
@@ -479,7 +689,7 @@ export async function startDevtoolsControlServer(
     };
 
     terminalSessions.set(sessionId, session);
-    scheduleIdleTerminalSessionShutdown(sessionId, session, terminalSessions);
+    scheduleIdleTerminalSessionShutdown(sessionId, session, terminalSessions, handleIdleTerminalSessionShutdown);
     void launchedSession.childProcess.exited
       .then((exitCode: number): void => {
         const activeSession: ITerminalSessionState | undefined = terminalSessions.get(sessionId);
@@ -491,6 +701,17 @@ export async function startDevtoolsControlServer(
         const trailingOutput: string = activeSession.decoder.decode();
 
         if (trailingOutput.length > 0) {
+          if (activeSession.request.kind === "agent") {
+            const parsedStatuses = parseAgentStatusOsc(activeSession.agentStatusOscCarryover, trailingOutput);
+
+            activeSession.agentStatusOscCarryover = parsedStatuses.carryover;
+
+            for (const status of parsedStatuses.statuses) {
+              activeSession.agentStatus = status;
+              handleAnnotationQueueStatus(sessionId, status);
+            }
+          }
+
           activeSession.outputBuffer = retainTerminalBufferTail(activeSession.outputBuffer + trailingOutput);
           publishTerminalSessionMessage(activeSession, createTerminalSessionOutputMessage(trailingOutput));
         }
@@ -504,8 +725,15 @@ export async function startDevtoolsControlServer(
           createTerminalSessionExitMessage(exitCode, launchedSession.childProcess.signalCode),
         );
 
+        handleAnnotationQueueSessionExit(sessionId);
+
         if (activeSession.sockets.size === 0) {
-          scheduleIdleTerminalSessionShutdown(sessionId, activeSession, terminalSessions);
+          scheduleIdleTerminalSessionShutdown(
+            sessionId,
+            activeSession,
+            terminalSessions,
+            handleIdleTerminalSessionShutdown,
+          );
         }
       })
       .finally((): void => {
@@ -617,6 +845,32 @@ function createTerminalSessionListResponse(
   return { sessions };
 }
 
+function createAnnotationQueuesListResponse(
+  queues: IListAnnotationQueuesResponse["queues"],
+): IListAnnotationQueuesResponse {
+  return { queues };
+}
+
+function createAnnotationQueueMutationResponse() {
+  return { success: true };
+}
+
+function createResumeAnnotationQueueResponse(sessionId: string): IResumeAnnotationQueueResponse {
+  return {
+    sessionId,
+    success: true,
+  };
+}
+
+function createAnnotationQueuesSnapshotMessage(
+  queues: IAnnotationQueuesSnapshotMessage["queues"],
+): IAnnotationQueuesSnapshotMessage {
+  return {
+    queues,
+    type: "snapshot",
+  };
+}
+
 function createTerminalSessionErrorMessage(message: string): TerminalSessionServerMessage {
   return {
     message,
@@ -663,25 +917,54 @@ function createServiceLogUpdateMessage(entry: ServiceLogEntry): ServiceLogUpdate
   };
 }
 
+function createAnnotationQueueMutationErrorResponse(error: unknown): Response {
+  if (error instanceof AnnotationQueueValidationError) {
+    return new Response(error.message, { status: 400 });
+  }
+
+  if (error instanceof AnnotationQueueNotFoundError) {
+    return new Response(error.message, { status: 404 });
+  }
+
+  if (error instanceof AnnotationQueueConflictError) {
+    return new Response(error.message, { status: 409 });
+  }
+
+  const message: string = error instanceof Error ? error.message : String(error);
+
+  return new Response(message, { status: 500 });
+}
+
+function readAnnotationQueueEntryId(pathname: string): string | null {
+  const match: RegExpMatchArray | null = pathname.match(/^\/__devhost__\/annotation-queues\/([^/]+)$/);
+
+  return match?.[1] ?? null;
+}
+
+function readAnnotationQueueResumeId(pathname: string): string | null {
+  const match: RegExpMatchArray | null = pathname.match(/^\/__devhost__\/annotation-queues\/([^/]+)\/resume$/);
+
+  return match?.[1] ?? null;
+}
+
 function isAnnotationMarkerPayload(value: unknown): value is IAnnotationMarkerPayload {
   if (typeof value !== "object" || value === null) {
     return false;
   }
 
-  const target = value as Record<string, unknown>;
-  const accessibility = target.accessibility;
-  const boundingBox = target.boundingBox;
-  const computedStyles = target.computedStyles;
-  const computedStylesObj = target.computedStylesObj;
-  const cssClasses = target.cssClasses;
-  const element = target.element;
-  const elementPath = target.elementPath;
-  const fullPath = target.fullPath;
-  const isFixed = target.isFixed;
-  const markerNumber = target.markerNumber;
-  const nearbyElements = target.nearbyElements;
-  const nearbyText = target.nearbyText;
-  const selectedText = target.selectedText;
+  const accessibility: unknown = Reflect.get(value, "accessibility");
+  const boundingBox: unknown = Reflect.get(value, "boundingBox");
+  const computedStyles: unknown = Reflect.get(value, "computedStyles");
+  const computedStylesObj: unknown = Reflect.get(value, "computedStylesObj");
+  const cssClasses: unknown = Reflect.get(value, "cssClasses");
+  const element: unknown = Reflect.get(value, "element");
+  const elementPath: unknown = Reflect.get(value, "elementPath");
+  const fullPath: unknown = Reflect.get(value, "fullPath");
+  const isFixed: unknown = Reflect.get(value, "isFixed");
+  const markerNumber: unknown = Reflect.get(value, "markerNumber");
+  const nearbyElements: unknown = Reflect.get(value, "nearbyElements");
+  const nearbyText: unknown = Reflect.get(value, "nearbyText");
+  const selectedText: unknown = Reflect.get(value, "selectedText");
 
   return (
     typeof accessibility === "string" &&
@@ -705,13 +988,12 @@ function isAnnotationSubmitDetail(value: unknown): value is IAnnotationSubmitDet
     return false;
   }
 
-  const target = value as Record<string, unknown>;
-  const comment = target.comment;
-  const markers = target.markers;
-  const stackName = target.stackName;
-  const submittedAt = target.submittedAt;
-  const title = target.title;
-  const url = target.url;
+  const comment: unknown = Reflect.get(value, "comment");
+  const markers: unknown = Reflect.get(value, "markers");
+  const stackName: unknown = Reflect.get(value, "stackName");
+  const submittedAt: unknown = Reflect.get(value, "submittedAt");
+  const title: unknown = Reflect.get(value, "title");
+  const url: unknown = Reflect.get(value, "url");
 
   return (
     typeof comment === "string" &&
@@ -733,11 +1015,10 @@ function isRectSnapshot(value: unknown): boolean {
     return false;
   }
 
-  const target = value as Record<string, unknown>;
-  const height = target.height;
-  const width = target.width;
-  const x = target.x;
-  const y = target.y;
+  const height: unknown = Reflect.get(value, "height");
+  const width: unknown = Reflect.get(value, "width");
+  const x: unknown = Reflect.get(value, "x");
+  const y: unknown = Reflect.get(value, "y");
 
   return typeof height === "number" && typeof width === "number" && typeof x === "number" && typeof y === "number";
 }
@@ -747,11 +1028,10 @@ function isSourceLocation(value: unknown): value is ISourceLocation {
     return false;
   }
 
-  const target = value as Record<string, unknown>;
-  const fileName = target.fileName;
-  const lineNumber = target.lineNumber;
-  const columnNumber = target.columnNumber;
-  const componentName = target.componentName;
+  const fileName: unknown = Reflect.get(value, "fileName");
+  const lineNumber: unknown = Reflect.get(value, "lineNumber");
+  const columnNumber: unknown = Reflect.get(value, "columnNumber");
+  const componentName: unknown = Reflect.get(value, "componentName");
 
   return (
     typeof fileName === "string" &&
@@ -769,13 +1049,12 @@ function isStartTerminalSessionRequest(value: unknown): value is StartTerminalSe
     return false;
   }
 
-  const target = value as Record<string, unknown>;
-  const requestKind = target.kind;
-  const launcher = target.launcher;
+  const requestKind: unknown = Reflect.get(value, "kind");
+  const launcher: unknown = Reflect.get(value, "launcher");
 
   if (requestKind === "agent") {
-    const annotation = target.annotation;
-    const targetSessionId = target.targetSessionId;
+    const annotation: unknown = Reflect.get(value, "annotation");
+    const targetSessionId: unknown = Reflect.get(value, "targetSessionId");
 
     if (targetSessionId !== undefined && typeof targetSessionId !== "string") {
       return false;
@@ -785,9 +1064,9 @@ function isStartTerminalSessionRequest(value: unknown): value is StartTerminalSe
   }
 
   if (requestKind === "editor") {
-    const componentName = target.componentName;
-    const source = target.source;
-    const sourceLabel = target.sourceLabel;
+    const componentName: unknown = Reflect.get(value, "componentName");
+    const source: unknown = Reflect.get(value, "source");
+    const sourceLabel: unknown = Reflect.get(value, "sourceLabel");
 
     return (
       launcher === "neovim" &&
@@ -800,6 +1079,10 @@ function isStartTerminalSessionRequest(value: unknown): value is StartTerminalSe
   return false;
 }
 
+function isUpdateAnnotationQueueEntryRequest(value: unknown): value is IUpdateAnnotationQueueEntryRequest {
+  return typeof value === "object" && value !== null && typeof Reflect.get(value, "comment") === "string";
+}
+
 function isStringRecord(value: unknown): value is Record<string, string> {
   if (typeof value !== "object" || value === null) {
     return false;
@@ -809,17 +1092,22 @@ function isStringRecord(value: unknown): value is Record<string, string> {
 }
 
 function parseTerminalSessionClientMessage(messageText: string): TerminalSessionClientMessage | null {
-  const parsedValue: unknown = JSON.parse(messageText);
+  let parsedValue: unknown;
+
+  try {
+    parsedValue = JSON.parse(messageText);
+  } catch {
+    return null;
+  }
 
   if (typeof parsedValue !== "object" || parsedValue === null) {
     return null;
   }
 
-  const target = parsedValue as Record<string, unknown>;
-  const messageType = target.type;
+  const messageType: unknown = Reflect.get(parsedValue, "type");
 
   if (messageType === "input") {
-    const data = target.data;
+    const data: unknown = Reflect.get(parsedValue, "data");
 
     if (typeof data !== "string") {
       return null;
@@ -832,8 +1120,8 @@ function parseTerminalSessionClientMessage(messageText: string): TerminalSession
   }
 
   if (messageType === "resize") {
-    const cols = target.cols;
-    const rows = target.rows;
+    const cols: unknown = Reflect.get(parsedValue, "cols");
+    const rows: unknown = Reflect.get(parsedValue, "rows");
 
     if (
       typeof cols !== "number" ||
@@ -901,15 +1189,30 @@ function retainTerminalBufferTail(outputBuffer: string): string {
   return outputBuffer.slice(outputBuffer.length - maximumRetainedTerminalOutputCharacters);
 }
 
+type TerminalSessionShutdownCallback = (sessionId: string) => Promise<void>;
+
 function scheduleIdleTerminalSessionShutdown(
   sessionId: string,
   session: ITerminalSessionState,
   terminalSessions: Map<string, ITerminalSessionState>,
+  beforeShutdown?: TerminalSessionShutdownCallback,
 ): void {
   cancelIdleTerminalSessionShutdown(session);
   session.idleTimeoutId = setTimeout((): void => {
-    closeTerminalSession(sessionId, terminalSessions);
+    void closeIdleTerminalSession(sessionId, terminalSessions, beforeShutdown);
   }, idleTerminalSessionTimeoutInMilliseconds);
+}
+
+async function closeIdleTerminalSession(
+  sessionId: string,
+  terminalSessions: Map<string, ITerminalSessionState>,
+  beforeShutdown?: TerminalSessionShutdownCallback,
+): Promise<void> {
+  try {
+    await beforeShutdown?.(sessionId);
+  } finally {
+    closeTerminalSession(sessionId, terminalSessions);
+  }
 }
 
 const normalClosureCode: number = 1000;

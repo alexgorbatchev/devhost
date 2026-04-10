@@ -9,7 +9,7 @@ What it does well:
 - routes local services onto HTTPS hostnames through managed Caddy
 - starts one service or a full stack from `devhost.toml`
 - waits for health checks before exposing routes
-- optionally injects browser devtools for logs, service status, annotations, source jumping, and browser-hosted Neovim
+- optionally injects browser devtools for logs, service status, annotations, source jumping, browser-hosted Neovim, and aggregated third-party launcher buttons
 
 ## Quick start
 
@@ -77,7 +77,7 @@ $ open https://foo.localhost
 - injects runtime context such as `PORT` and `DEVHOST_*` environment variables
 - validates manifests, reserves public hosts, reserves fixed bind ports, and waits for health checks before routing traffic
 - allocates `port = "auto"` best-effort and retries on clear bind-collision startup failures
-- optionally injects a devtools UI for annotations, source navigation, and browser-hosted Neovim
+- optionally injects a devtools UI for annotations, source navigation, browser-hosted Neovim, and aggregated third-party devtools launchers
 
 ## Requirements
 
@@ -173,8 +173,8 @@ Use that file as the documented source of truth for:
 - inline explanations and copy/paste examples
 
 Copy it to `devhost.toml` in your project root and trim it down to the services you actually run.
-Each TOML table must be declared once. Keep all fields for a service inside a single `[services.<name>]` block instead of reopening that table later.
 
+Each TOML table must be declared once. Keep all fields for a service inside a single `[services.<name>]` block instead of reopening that table later.
 
 For same-host composition within one manifest, use distinct paths such as `/api/*` and `/admin/*`, or combine one root-mounted fallback service with more specific subpath services on the same hostname.
 
@@ -252,6 +252,8 @@ That keeps assets, HMR, fetches, SSE, and WebSockets off the injection path. The
 
 The injected `devtools` UI mounts inside its own Shadow DOM container so its runtime styles do not leak into the host page.
 
+When `[devtools.externalToolbars].enabled = true` (the default), devhost also detects supported third-party devtools launcher buttons on the host page, hides the native launcher buttons, and re-renders those launchers inside the injected overlay. The native panels themselves stay owned by the host tools.
+
 ### AI annotations
 
 - hold `Alt` (`Option` on macOS) to enter annotation selection mode
@@ -259,6 +261,8 @@ The injected `devtools` UI mounts inside its own Shadow DOM container so its run
 - release `Alt` to leave selection mode while keeping the current draft open
 - write a comment that references markers like `#1` and `#2`
 - click `Submit` or press `⌘ ↵` / `Ctrl + Enter` to start an agent session seeded with the draft
+- when `Append to active session queue` is enabled, the draft is added to that agent session's durable FIFO queue instead of being injected immediately into a busy terminal
+- queued annotations survive browser reloads and `devhost` restarts, drain automatically when the agent emits `OSC 1337;SetAgentStatus=finished`, and can be edited or removed from the injected queue panel while they are queued or paused
 - click `Cancel` or press `Escape` to discard the draft
 
 The submitted draft includes the current stack name, page URL/title, comment text, and collected per-marker element metadata.
@@ -301,11 +305,13 @@ DEVHOST_AGENT_MODE = "annotation"
 `devhost` executes custom agent commands directly, not through a shell string.
 For configured commands, `devhost` writes the annotation JSON and rendered prompt to temp files and injects them via `DEVHOST_AGENT_*` environment variables. Built-in adapters receive the rendered prompt natively via command-line arguments.
 
-All built-in adapters natively integrate terminal OSC sequences to reflect working and idle states during embedded session execution:
+All built-in adapters natively integrate terminal OSC sequences to reflect working and idle states during embedded session execution, and the durable annotation queue now depends on those same status events to know when to drain queued work:
 
 - `pi` leverages an injected extension to capture `agent_start` and `agent_end` hooks
 - `claude-code` utilizes its `--settings` API mapping commands to its native session and user prompt hooks
 - `opencode` integrates via an inline `--config` plugin listening for `session.status` events
+
+Custom annotation agents must emit `OSC 1337;SetAgentStatus=working` when they begin handling an annotation and `OSC 1337;SetAgentStatus=finished` when they are ready for the next queued item. `devhost` accepts either BEL (`\x07`) or ST (`\x1b\\`) OSC terminators.
 
 ## Contributor notes
 

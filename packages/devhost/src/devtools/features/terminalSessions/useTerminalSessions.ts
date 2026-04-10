@@ -5,13 +5,9 @@ import { readDevtoolsAgentDisplayName } from "../../shared/readDevtoolsAgentDisp
 import { readDevtoolsControlToken } from "../../shared/readDevtoolsControlToken";
 import type { ComponentSourceMenuItem } from "../componentSourceNavigation/types";
 import type { IAnnotationSubmitDetail } from "../annotationComposer/types";
+import { appendStartedTerminalSessionIfNeeded } from "./appendStartedTerminalSessionIfNeeded";
 import { createTerminalSession } from "./createTerminalSession";
-import {
-  appendTerminalSession,
-  expandTerminalSession,
-  minimizeTerminalSession,
-  removeTerminalSession,
-} from "./manageTerminalSessions";
+import { expandTerminalSession, minimizeTerminalSession, removeTerminalSession } from "./manageTerminalSessions";
 import { restoreTerminalSessions } from "./restoreTerminalSessions";
 import type {
   IActiveTerminalSessionSnapshot,
@@ -25,10 +21,14 @@ import type {
 interface IUseTerminalSessionsResult {
   expandSession: (sessionId: string) => void;
   minimizeSession: (sessionId: string) => void;
+  registerStartedSession: (sessionId: string, request: StartTerminalSessionRequest) => void;
   terminalSessions: TerminalSession[];
   removeSession: (sessionId: string) => void;
   startComponentSourceSession: (menuItem: ComponentSourceMenuItem) => Promise<ITerminalSessionStartResult>;
-  submitAnnotation: (annotation: IAnnotationSubmitDetail) => Promise<ITerminalSessionStartResult>;
+  submitAnnotation: (
+    annotation: IAnnotationSubmitDetail,
+    targetSessionId?: string,
+  ) => Promise<ITerminalSessionStartResult>;
 }
 
 export function useTerminalSessions(): IUseTerminalSessionsResult {
@@ -56,6 +56,18 @@ export function useTerminalSessions(): IUseTerminalSessionsResult {
       return removeTerminalSession(currentSessions, sessionId);
     });
   }, []);
+
+  const registerStartedSession = useCallback(
+    (sessionId: string, request: StartTerminalSessionRequest): void => {
+      setTerminalSessions((currentSessions: TerminalSession[]): TerminalSession[] => {
+        return appendStartedTerminalSessionIfNeeded(
+          currentSessions,
+          createTerminalSession(sessionId, request, agentDisplayName),
+        );
+      });
+    },
+    [agentDisplayName],
+  );
 
   const startSession = useCallback(
     async (request: StartTerminalSessionRequest): Promise<ITerminalSessionStartResult> => {
@@ -85,12 +97,7 @@ export function useTerminalSessions(): IUseTerminalSessionsResult {
           };
         }
 
-        setTerminalSessions((currentSessions: TerminalSession[]): TerminalSession[] => {
-          return appendTerminalSession(
-            currentSessions,
-            createTerminalSession(responseBody.sessionId, request, agentDisplayName),
-          );
-        });
+        registerStartedSession(responseBody.sessionId, request);
 
         return {
           success: true,
@@ -102,7 +109,7 @@ export function useTerminalSessions(): IUseTerminalSessionsResult {
         };
       }
     },
-    [agentDisplayName],
+    [registerStartedSession],
   );
 
   const submitAnnotation = useCallback(
@@ -132,6 +139,7 @@ export function useTerminalSessions(): IUseTerminalSessionsResult {
   return {
     expandSession,
     minimizeSession,
+    registerStartedSession,
     terminalSessions,
     removeSession,
     startComponentSourceSession,
