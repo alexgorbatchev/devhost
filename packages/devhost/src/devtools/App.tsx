@@ -63,6 +63,7 @@ function AppContent(): JSX.Element {
   const shouldRenderPanel: boolean = features.statusEnabled && (errorMessage !== null || services.length > 0);
   const shouldRenderMinimap: boolean = features.minimapEnabled && logEntries.length > 0;
   const servicePanelSide: PanelSide = readPanelSide(devtoolsPosition);
+  const activeAgentSessionId: string | undefined = terminalSessions.find((s) => s.kind === "agent")?.sessionId;
   const cornerDockClassName: string = css({
     ...readVerticalPositionStyle(theme, devtoolsPosition),
     ...readHorizontalPositionStyle(theme, devtoolsMinimapPosition, devtoolsPosition, shouldRenderMinimap),
@@ -77,7 +78,12 @@ function AppContent(): JSX.Element {
 
   return (
     <div id={DEVTOOLS_ROOT_ID} data-devhost-devtools="" data-testid="AppContent">
-      <AnnotationComposer agentDisplayName={agentDisplayName} onSubmit={submitAnnotation} stackName={stackName} />
+      <AnnotationComposer
+        activeAgentSessionId={activeAgentSessionId}
+        agentDisplayName={agentDisplayName}
+        onSubmit={submitAnnotation}
+        stackName={stackName}
+      />
       {componentMenu !== null ? (
         <ComponentSourceMenu
           errorMessage={componentMenu.errorMessage}

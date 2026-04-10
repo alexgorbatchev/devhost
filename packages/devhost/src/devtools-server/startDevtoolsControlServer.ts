@@ -36,6 +36,9 @@ import type {
 import type { ILaunchedTerminalSession } from "../agents/launchTerminalSession";
 import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../types/stackTypes";
 
+import { createAgentSessionFiles } from "../agents/createAgentSessionFiles";
+import { createAnnotationAgentPrompt } from "../agents/createAnnotationAgentPrompt";
+
 const healthTopicName: string = "devhost-health";
 const logsTopicName: string = "devhost-logs";
 const terminalSessionTopicName: string = "devhost-terminal-session";
@@ -82,6 +85,7 @@ interface ITerminalSessionExitStatus {
 }
 
 interface ITerminalSessionState {
+  cleanupFiles: (() => void)[];
   close: () => void;
   decoder: TextDecoder;
   exited: ITerminalSessionExitStatus | null;
@@ -190,6 +194,29 @@ export async function startDevtoolsControlServer(
           }
 
           try {
+            if (requestBody.kind === "agent" && requestBody.targetSessionId) {
+              const targetSession = terminalSessions.get(requestBody.targetSessionId);
+
+              if (targetSession !== undefined && targetSession.exited === null) {
+                const promptText = createAnnotationAgentPrompt(requestBody.annotation);
+                const sessionFiles = createAgentSessionFiles({
+                  annotation: requestBody.annotation,
+                  displayName: options.agentDisplayName,
+                  projectRootPath: options.projectRootPath,
+                  prompt: promptText,
+                  stackName: options.stackName,
+                });
+
+                targetSession.cleanupFiles.push(sessionFiles.cleanup);
+                const inputText = `Please read the annotation details from ${sessionFiles.env.DEVHOST_AGENT_PROMPT_FILE} and address the requested change.\n`;
+                targetSession.write(inputText);
+
+                return Response.json({
+                  sessionId: requestBody.targetSessionId,
+                });
+              }
+            }
+
             const sessionId: string = createTerminalSession(requestBody);
 
             return Response.json({
@@ -439,6 +466,7 @@ export async function startDevtoolsControlServer(
       appendTerminalSessionOutput(sessionId, data);
     });
     const session: ITerminalSessionState = {
+      cleanupFiles: [],
       close: launchedSession.close,
       decoder: new TextDecoder(),
       exited: null,
@@ -559,6 +587,14 @@ function closeTerminalSession(sessionId: string, terminalSessions: Map<string, I
 
   for (const websocket of session.sockets) {
     websocket.close(normalClosureCode, "terminal session closed");
+  }
+
+  for (const cleanup of session.cleanupFiles) {
+    try {
+      cleanup();
+    } catch {
+      // Ignore cleanup errors
+    }
   }
 
   session.sockets.clear();
@@ -739,6 +775,11 @@ function isStartTerminalSessionRequest(value: unknown): value is StartTerminalSe
 
   if (requestKind === "agent") {
     const annotation = target.annotation;
+    const targetSessionId = target.targetSessionId;
+
+    if (targetSessionId !== undefined && typeof targetSessionId !== "string") {
+      return false;
+    }
 
     return isAnnotationSubmitDetail(annotation);
   }

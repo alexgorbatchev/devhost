@@ -21,6 +21,7 @@ export type EditorTerminalLauncher = "neovim";
 export interface IStartAgentTerminalSessionRequest {
   annotation: IAnnotationSubmitDetail;
   kind: "agent";
+  targetSessionId?: string;
 }
 
 export interface IStartEditorTerminalSessionRequest {
