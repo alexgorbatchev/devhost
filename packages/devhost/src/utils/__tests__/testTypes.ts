@@ -1,3 +1,6 @@
+import type { ILaunchedTerminalSession } from "../../agents/launchTerminalSession";
+import type { StartTerminalSessionRequest } from "../../devtools/features/terminalSessions/types";
+
 export type TestPromiseVoid = () => Promise<void>;
 export type TestPromiseBoolean = () => Promise<boolean>;
 
@@ -11,11 +14,8 @@ export type TestTerminalStub = {
   emit: (text: string) => void;
   exitWith: (exitCode: number, signalCode: string | null) => void;
   resizes: Array<TestResizeEvent>;
-  start: (
-    request: import("../../devtools/features/terminalSessions/types").StartTerminalSessionRequest,
-    onData: TestTerminalDataHandler,
-  ) => import("../../agents/launchTerminalSession").ILaunchedTerminalSession;
-  startedRequests: import("../../devtools/features/terminalSessions/types").StartTerminalSessionRequest[];
+  start: (request: StartTerminalSessionRequest, onData: TestTerminalDataHandler) => ILaunchedTerminalSession;
+  startedRequests: StartTerminalSessionRequest[];
   writes: string[];
 };
 
