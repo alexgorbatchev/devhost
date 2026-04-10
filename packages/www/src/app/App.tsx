@@ -7,6 +7,7 @@ import { LayersIcon } from "../components/icons/LayersIcon";
 import { MoonIcon } from "../components/icons/MoonIcon";
 import { ShieldIcon } from "../components/icons/ShieldIcon";
 import { SunIcon } from "../components/icons/SunIcon";
+import { CommandLine, Callout, InlineCallout } from "../components/ui";
 
 import {
   createRrwebDemoRecording,
@@ -318,9 +319,7 @@ export function App(): JSX.Element {
           <h2 id="quick-start">Quick start</h2>
 
           <h3>Installation</h3>
-          <pre>
-            <code className="language-bash">npm install -g @alexgorbatchev/devhost</code>
-          </pre>
+          <CommandLine command="npm install -g @alexgorbatchev/devhost" />
 
           <h3>Minimal example</h3>
           <p>
@@ -359,18 +358,17 @@ health = { http = "http://127.0.0.1:4000/healthz" }`}</code>
 
           <p>Then run your usual package-manager dev command from that package directory:</p>
 
-          <pre>
-            <code className="language-bash">{`$ npm run dev
-$ open https://foo.localhost`}</code>
-          </pre>
+          <CommandLine
+            command={`$ npm run dev
+$ open https://foo.localhost`}
+          />
 
           <p>
             (<code>pnpm dev</code>, <code>yarn dev</code>, and <code>bun run dev</code> work the same way when they
             invoke the same script.)
           </p>
 
-          <div className="callout bg-secondary border-l-4 border-primary p-4 rounded-r-md my-6">
-            <div className="font-semibold mb-2 text-foreground">Important</div>
+          <Callout title="Important">
             <p className="!mt-0">
               <code>devhost</code> manages HTTPS routing through Caddy, not DNS. Your chosen hostnames must already
               resolve to this machine or the browser will never reach the local proxy.
@@ -386,7 +384,7 @@ $ open https://foo.localhost`}</code>
               as <code>foo.localhost</code> and <code>api.foo.localhost</code>, because they work without additional DNS
               configuration.
             </p>
-          </div>
+          </Callout>
 
           <h2>What it does</h2>
           <p>
@@ -438,9 +436,7 @@ $ open https://foo.localhost`}</code>
             Download the managed Caddy binary if you do not already have <code>caddy</code> on your <code>PATH</code>:
           </p>
 
-          <pre>
-            <code className="language-bash">devhost caddy download</code>
-          </pre>
+          <CommandLine command="devhost caddy download" />
 
           <p>
             <code>devhost</code> uses that downloaded binary when present. Otherwise it falls back to the global{" "}
@@ -448,8 +444,7 @@ $ open https://foo.localhost`}</code>
             during <code>devhost caddy start</code> or stack startup.
           </p>
 
-          <div className="callout bg-secondary border-l-4 border-primary p-4 rounded-r-md my-6">
-            <div className="font-semibold mb-2 text-foreground">Important</div>
+          <Callout title="Important">
             <p className="!mt-0">
               To get HTTPS working, Caddy uses a self-signed certificate, which obviously isn't trusted by default.
             </p>
@@ -457,17 +452,13 @@ $ open https://foo.localhost`}</code>
               The <code>devhost caddy trust</code> will prompt for your password and install Caddy's CA into the system
               trust store.
             </p>
-          </div>
+          </Callout>
 
           <p>Start the shared managed Caddy instance before running one or more stacks:</p>
-          <pre>
-            <code className="language-bash">devhost caddy start</code>
-          </pre>
+          <CommandLine command="devhost caddy start" />
 
           <p>Stop it when you are done with all stacks:</p>
-          <pre>
-            <code className="language-bash">devhost caddy stop</code>
-          </pre>
+          <CommandLine command="devhost caddy stop" />
 
           <p>The generated Caddy config uses these defaults:</p>
           <ul className="list-disc pl-6 mb-6">
@@ -621,7 +612,8 @@ health = { http = "http://127.0.0.1:4000/healthz" }`}</code>
               release <code>Alt</code> to leave selection mode while keeping the current draft open
             </li>
             <li className="mb-2">
-              write a comment that references markers like <code>#1</code> and <code>#2</code>
+              write a comment that references markers like <InlineCallout hasBorder>#1</InlineCallout> and{" "}
+              <InlineCallout hasBorder>#2</InlineCallout>
             </li>
             <li className="mb-2">
               click <code>Submit</code> or press <code>⌘ ↵</code> / <code>Ctrl + Enter</code> to start an agent session
