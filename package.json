@@ -10,7 +10,7 @@
     "fix": "bun --bun oxfmt --write ."
   },
   "devDependencies": {
-    "@alexgorbatchev/typescript-ai-policy": "^1.0.7",
+    "@alexgorbatchev/typescript-ai-policy": "^3.0.0",
     "oxfmt": "^0.44.0",
     "oxlint": "^1.59.0"
   }
