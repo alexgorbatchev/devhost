@@ -1,7 +1,17 @@
+import assert from "node:assert/strict";
+
 import { describe, expect, test } from "bun:test";
 
 import type { IResolvedDevhostService } from "../../types/stackTypes";
 import { readLoopbackBindHostAmbiguityWarning } from "../readLoopbackBindHostAmbiguityWarning";
+
+interface IFetchStubResponse {
+  location: string | null;
+  status: number;
+}
+
+type HeaderEntry = [string, string];
+type FetchInput = RequestInfo | URL;
 
 describe("readLoopbackBindHostAmbiguityWarning", () => {
   test("returns a recommendation when localhost matches the opposite loopback listener", async () => {
@@ -44,20 +54,17 @@ describe("readLoopbackBindHostAmbiguityWarning", () => {
   });
 });
 
-function createFetchStub(responsesByUrl: Record<string, { location: string | null; status: number }>): typeof fetch {
-  return (async (input: RequestInfo | URL): Promise<Response> => {
+function createFetchStub(responsesByUrl: Record<string, IFetchStubResponse>): typeof fetch {
+  return (async (input: FetchInput): Promise<Response> => {
     const url = String(input);
     const response = responsesByUrl[url];
 
-    if (response === undefined) {
-      throw new Error(`Unexpected URL: ${url}`);
-    }
+    assert(response !== undefined, `Unexpected URL: ${url}`);
 
-    const headers = new Headers();
-
-    if (response.location !== null) {
-      headers.set("location", response.location);
-    }
+    const headerEntries: HeaderEntry[] = [response.location]
+      .filter((location): location is string => location !== null)
+      .map((location) => ["location", location]);
+    const headers = new Headers(headerEntries);
 
     return new Response(null, {
       headers,

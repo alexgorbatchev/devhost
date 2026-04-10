@@ -7,6 +7,14 @@ import {
 } from "../externalDevtoolsState";
 import type { IExternalDevtoolsAdapter } from "../types";
 
+interface ICreateAdapterOptions {
+  hideSelectors?: string[];
+  id: string;
+  isInstalled?: boolean;
+  isOpen?: boolean;
+  label?: string;
+}
+
 describe("externalDevtoolsState", () => {
   test("reads installed launchers with open state", () => {
     const launchers = readInstalledExternalDevtoolsLaunchers([
@@ -56,13 +64,7 @@ function createAdapter({
   isInstalled = true,
   isOpen = false,
   label = id,
-}: {
-  hideSelectors?: string[];
-  id: string;
-  isInstalled?: boolean;
-  isOpen?: boolean;
-  label?: string;
-}): IExternalDevtoolsAdapter {
+}: ICreateAdapterOptions): IExternalDevtoolsAdapter {
   return {
     close: (): void => {},
     hideSelectors,

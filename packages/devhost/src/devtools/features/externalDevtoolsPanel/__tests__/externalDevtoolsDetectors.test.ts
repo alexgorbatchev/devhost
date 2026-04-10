@@ -1,10 +1,14 @@
+import assert from "node:assert/strict";
+
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 
 import { externalDevtoolsDetectors } from "../externalDevtoolsDetectors";
 import type { IExternalDevtoolsAdapter } from "../types";
 
+type VoidFunction = () => void;
+
 interface IFakeElement {
-  click: ReturnType<typeof mock<() => void>>;
+  click: ReturnType<typeof mock<VoidFunction>>;
 }
 
 describe("externalDevtoolsDetectors", () => {
@@ -29,7 +33,7 @@ describe("externalDevtoolsDetectors", () => {
     const closeButton = createFakeElement();
 
     mockDocument({
-      ".tsqd-main-panel": { click: mock<() => void>(() => {}) },
+      ".tsqd-main-panel": { click: mock<VoidFunction>(() => {}) },
       ".tsqd-minimize-btn": closeButton,
       ".tsqd-open-btn": openButton,
     });
@@ -63,7 +67,7 @@ describe("externalDevtoolsDetectors", () => {
     const toggleButton = createFakeElement();
 
     mockDocument({
-      ".TanStackRouterDevtoolsPanel": { click: mock<() => void>(() => {}) },
+      ".TanStackRouterDevtoolsPanel": { click: mock<VoidFunction>(() => {}) },
       "footer.TanStackRouterDevtools > button": toggleButton,
     });
     globalThis.getComputedStyle = (() => ({
@@ -83,7 +87,7 @@ describe("externalDevtoolsDetectors", () => {
 
   test("router adapter reports closed when the panel is hidden", () => {
     mockDocument({
-      ".TanStackRouterDevtoolsPanel": { click: mock<() => void>(() => {}) },
+      ".TanStackRouterDevtoolsPanel": { click: mock<VoidFunction>(() => {}) },
     });
     globalThis.getComputedStyle = (() => ({
       display: "none",
@@ -98,22 +102,20 @@ describe("externalDevtoolsDetectors", () => {
 
 function createFakeElement(): IFakeElement {
   return {
-    click: mock<() => void>(() => {}),
+    click: mock<VoidFunction>(() => {}),
   };
 }
 
 function mockDocument(elementsBySelector: Record<string, IFakeElement>): void {
   globalThis.document = {
     querySelector: (selector: string): IFakeElement | null => {
-      for (const selectorPart of selector.split(",").map((part) => part.trim())) {
-        const element = elementsBySelector[selectorPart];
+      const matchedElements = selector
+        .split(",")
+        .map((part) => part.trim())
+        .map((part) => elementsBySelector[part])
+        .filter((element): element is IFakeElement => element !== undefined);
 
-        if (element !== undefined) {
-          return element;
-        }
-      }
-
-      return null;
+      return matchedElements[0] ?? null;
     },
   } as Document;
 }
@@ -121,9 +123,7 @@ function mockDocument(elementsBySelector: Record<string, IFakeElement>): void {
 function readAdapter(id: string): IExternalDevtoolsAdapter {
   const adapter = externalDevtoolsDetectors.find((candidate) => candidate.id === id);
 
-  if (adapter === undefined) {
-    throw new Error(`Missing adapter: ${id}`);
-  }
+  assert(adapter !== undefined, `Missing adapter: ${id}`);
 
   return adapter;
 }

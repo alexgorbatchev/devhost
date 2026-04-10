@@ -24,16 +24,18 @@ const Default: Story = {
     launchers: [
       {
         id: "react-devtools",
+        isOpen: false,
         label: "React DevTools",
         title: "Open React DevTools",
       },
       {
         id: "storybook",
+        isOpen: true,
         label: "Storybook",
         title: "Open Storybook toolbar",
       },
     ],
-    onTriggerLauncher: fn(),
+    onToggleLauncher: fn(),
     panelSide: "left",
   },
   play: async ({ args, canvasElement }): Promise<void> => {
@@ -43,7 +45,7 @@ const Default: Story = {
     await expect(canvas.getByTestId("ExternalDevtoolsPanel--launcher-list")).toBeInTheDocument();
 
     await userEvent.click(canvas.getByRole("button", { name: "React DevTools" }));
-    await expect(args.onTriggerLauncher).toHaveBeenCalledWith("react-devtools");
+    await expect(args.onToggleLauncher).toHaveBeenCalledWith("react-devtools");
   },
 };
 
