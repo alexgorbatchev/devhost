@@ -31,6 +31,7 @@ import type {
 } from "../types/stackTypes";
 import { waitForServiceHealth } from "./waitForServiceHealth";
 import { claimFixedPort, cleanupStaleFixedPortClaims, releaseFixedPortClaim } from "./fixedPortClaims";
+import { readLoopbackBindHostAmbiguityWarning } from "./readLoopbackBindHostAmbiguityWarning";
 import { reassignAutoPort, shouldRetryAutoPortStartup } from "./autoPortRetryUtils";
 
 const shutdownGracePeriodInMilliseconds: number = 10_000;
@@ -490,6 +491,12 @@ async function startServiceWithRetries(
         health: service.health,
         serviceName,
       });
+      const bindHostAmbiguityWarning = await readLoopbackBindHostAmbiguityWarning({ service });
+
+      if (bindHostAmbiguityWarning !== null) {
+        logger.info(bindHostAmbiguityWarning);
+      }
+
       await devtoolsControlServer?.publishHealthResponse();
       return startedService;
     } catch (error) {

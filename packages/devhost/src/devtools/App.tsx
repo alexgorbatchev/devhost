@@ -55,7 +55,7 @@ function AppContent(): JSX.Element {
     resumeQueue,
     saveEntry,
   } = useAnnotationQueues();
-  const { launchers: externalDevtoolsLaunchers, triggerLauncher } = useExternalDevtoolsLaunchers(
+  const { launchers: externalDevtoolsLaunchers, toggleLauncher } = useExternalDevtoolsLaunchers(
     features.externalToolbarsEnabled,
   );
   const {
@@ -147,7 +147,7 @@ function AppContent(): JSX.Element {
           <ExternalDevtoolsPanel
             launchers={externalDevtoolsLaunchers}
             panelSide={servicePanelSide}
-            onTriggerLauncher={triggerLauncher}
+            onToggleLauncher={toggleLauncher}
           />
         ) : null}
       </div>

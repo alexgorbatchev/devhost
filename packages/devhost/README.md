@@ -277,6 +277,43 @@ Embedded terminal sessions now normalize their terminal environment to `TERM=xte
 
 When all devtools features are disabled, devhost does not mount these control routes for that stack.
 
+## Troubleshooting
+
+### Vite: `localhost` and `127.0.0.1` can be different apps
+
+Some dev servers print a URL like `http://localhost:5173`, and it is natural to copy that port into `devhost.toml`.
+
+On some machines, though, `http://localhost:5173` and `http://127.0.0.1:5173` do not hit the same listener:
+
+- `localhost` may resolve to `::1`
+- `devhost` defaults `bindHost` to `127.0.0.1`
+- a routed hostname such as `https://app.localhost` will therefore proxy to `127.0.0.1:<port>` unless you override `bindHost`
+
+That can produce confusing behavior where the direct printed `localhost` URL works, but the routed `*.localhost` hostname lands on a different local process or response.
+
+When `devhost` detects that mismatch, it logs an explicit startup warning.
+
+For Vite-style apps that are actually listening on IPv6 loopback, set `bindHost = "::1"` explicitly:
+
+```toml
+[services.app]
+command = ["bun", "run", "dev"]
+cwd = "."
+port = 5173
+bindHost = "::1"
+host = "app.localhost"
+```
+
+If you are unsure which listener your app is using, compare these directly:
+
+```bash
+curl -I http://localhost:5173/
+curl -I http://127.0.0.1:5173/
+curl -I http://[::1]:5173/
+```
+
+If those responses differ, set `bindHost` explicitly instead of relying on the default.
+
 ### Annotation agents
 
 Configure a project-local annotation launcher with a root-level `[agent]` table.

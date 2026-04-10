@@ -713,6 +713,45 @@ DEVHOST_AGENT_MODE = "annotation"`}</code>
             annotation and <code>OSC 1337;SetAgentStatus=finished</code> when they are ready for the next queued item.{" "}
             <code>devhost</code> accepts either BEL (<code>\x07</code>) or ST (<code>\x1b\\</code>) OSC terminators.
           </p>
+
+          <h2>Troubleshooting</h2>
+          <h3>Vite: localhost and 127.0.0.1 can be different apps</h3>
+          <p>
+            Some dev servers print a URL like <code>http://localhost:5173</code>, and it is natural to copy that port
+            into <code>devhost.toml</code>.
+          </p>
+          <p>
+            On some machines, though, <code>http://localhost:5173</code> and <code>http://127.0.0.1:5173</code> do not
+            hit the same listener. <code>localhost</code> may resolve to <code>::1</code>, while <code>devhost</code>
+            defaults <code>bindHost</code> to <code>127.0.0.1</code> for routed services.
+          </p>
+          <p>
+            That can produce confusing behavior where the direct printed <code>localhost</code> URL works, but the
+            routed <code>*.localhost</code> hostname lands on a different local process or response. When{" "}
+            <code>devhost</code>
+            detects that mismatch, it logs an explicit startup warning.
+          </p>
+          <p>
+            For Vite-style apps that are actually listening on IPv6 loopback, set <code>bindHost = "::1"</code>{" "}
+            explicitly:
+          </p>
+          <pre>
+            <code className="language-toml">{`[services.app]
+command = ["bun", "run", "dev"]
+cwd = "."
+port = 5173
+bindHost = "::1"
+host = "app.localhost"`}</code>
+          </pre>
+          <p>If you are unsure which listener your app is using, compare these directly:</p>
+          <pre>
+            <code className="language-bash">{`curl -I http://localhost:5173/
+curl -I http://127.0.0.1:5173/
+curl -I http://[::1]:5173/`}</code>
+          </pre>
+          <p>
+            If those responses differ, set <code>bindHost</code> explicitly instead of relying on the default.
+          </p>
         </div>
       </div>
 
