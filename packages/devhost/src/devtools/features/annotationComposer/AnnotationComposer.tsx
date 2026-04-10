@@ -545,7 +545,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
                   setSendToActiveSession(event.currentTarget.checked);
                 }}
               />
-              Send to active {props.agentDisplayName} session
+              Send to active session
             </label>
           ) : null}
           <div class={popupActionsClassName}>
