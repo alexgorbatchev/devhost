@@ -6,6 +6,7 @@ import {
   type DevtoolsComponentEditor,
 } from "../../devtools-server/devtoolsComponentEditor";
 import { DEVHOST_SERVICE_NAME, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "./constants";
+import { normalizeRoutedServicePath, type IRoutedServiceIdentity } from "./routedServices";
 
 export interface IInjectedDevtoolsConfig {
   agentDisplayName: string;
@@ -14,6 +15,7 @@ export interface IInjectedDevtoolsConfig {
   minimapPosition: DevtoolsMinimapPosition;
   position: DevtoolsPosition;
   projectRootPath: string;
+  routedServices: IRoutedServiceIdentity[];
   stackName: string;
   editorEnabled: boolean;
   externalToolbarsEnabled: boolean;
@@ -28,6 +30,7 @@ const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
   minimapPosition: "right",
   position: "bottom-right",
   projectRootPath: "",
+  routedServices: [],
   stackName: DEVHOST_SERVICE_NAME,
   editorEnabled: true,
   externalToolbarsEnabled: true,
@@ -48,6 +51,7 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
   const position: DevtoolsPosition = readDevtoolsPositionValue(injectedConfig);
   const minimapPosition: DevtoolsMinimapPosition = readDevtoolsMinimapPositionValue(injectedConfig);
   const projectRootPath: string = readProjectRootPathValue(injectedConfig);
+  const routedServices: IRoutedServiceIdentity[] = readRoutedServicesValue(injectedConfig);
   const stackName: string = readStackNameValue(injectedConfig);
   const editorEnabled: boolean = readBooleanValue(injectedConfig, "editorEnabled", true);
   const externalToolbarsEnabled: boolean = readBooleanValue(injectedConfig, "externalToolbarsEnabled", true);
@@ -61,6 +65,7 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
     minimapPosition,
     position,
     projectRootPath,
+    routedServices,
     stackName,
     editorEnabled,
     externalToolbarsEnabled,
@@ -118,6 +123,36 @@ function readProjectRootPathValue(injectedConfig: object): string {
   const projectRootPath: unknown = Reflect.get(injectedConfig, "projectRootPath");
 
   return typeof projectRootPath === "string" ? projectRootPath : defaultInjectedDevtoolsConfig.projectRootPath;
+}
+
+function readRoutedServicesValue(injectedConfig: object): IRoutedServiceIdentity[] {
+  const routedServices: unknown = Reflect.get(injectedConfig, "routedServices");
+
+  if (!Array.isArray(routedServices)) {
+    return defaultInjectedDevtoolsConfig.routedServices;
+  }
+
+  return routedServices.flatMap((service): IRoutedServiceIdentity[] => {
+    if (typeof service !== "object" || service === null) {
+      return [];
+    }
+
+    const host: unknown = Reflect.get(service, "host");
+    const path: unknown = Reflect.get(service, "path");
+    const serviceName: unknown = Reflect.get(service, "serviceName");
+
+    if (typeof host !== "string" || typeof path !== "string" || typeof serviceName !== "string") {
+      return [];
+    }
+
+    return [
+      {
+        host,
+        path: normalizeRoutedServicePath(path),
+        serviceName,
+      },
+    ];
+  });
 }
 
 function readStackNameValue(injectedConfig: object): string {

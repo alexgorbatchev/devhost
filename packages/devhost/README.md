@@ -261,8 +261,8 @@ When `[devtools.externalToolbars].enabled = true` (the default), devhost also de
 - release `Alt` to leave selection mode while keeping the current draft open
 - write a comment that references markers like `#1` and `#2`
 - click `Submit` or press `⌘ ↵` / `Ctrl + Enter` to start an agent session seeded with the draft
-- when `Append to active session queue` is enabled, the draft is added to that agent session's durable FIFO queue instead of being injected immediately into a busy terminal
-- queued annotations survive browser reloads and `devhost` restarts, drain automatically when the agent emits `OSC 1337;SetAgentStatus=finished`, and can be edited or removed from the injected queue panel while they are queued or paused
+- when `Append to active session queue` is enabled, the draft is added to the matching routed service's active agent queue instead of being injected immediately into a busy terminal
+- queued annotations are bucketed by routed service host/path, survive browser reloads and `devhost` restarts, drain automatically when the agent emits `OSC 1337;SetAgentStatus=finished`, and can be edited or removed from the injected queue panel while they are queued or paused
 - click `Cancel` or press `Escape` to discard the draft
 
 The submitted draft includes the current stack name, page URL/title, comment text, and collected per-marker element metadata.

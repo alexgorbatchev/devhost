@@ -1,6 +1,6 @@
 # Durable Annotation Queues
 
-The annotation queue allows users to submit multiple annotations sequentially to an active agent session without interrupting the agent's current work. The queue is strictly FIFO, persisted to disk, and automatically drains based on terminal OSC status sequences.
+The annotation queue allows users to submit multiple annotations sequentially per routed service without interrupting the agent's current work. The queue is strictly FIFO, persisted to disk, and automatically drains based on terminal OSC status sequences.
 
 ## Architecture Flow
 
@@ -51,10 +51,11 @@ sequenceDiagram
 
 ### Queue Creation and Granularity
 
-The queue is owned by the `devhost` control server (`createAnnotationQueueStore.ts`) and is strictly **per-session**.
+The queue is owned by the `devhost` control server (`createAnnotationQueueStore.ts`) and is bucketed by the routed service identity (`host` + normalized `path`).
 
-- If you submit an annotation targeting an existing agent session (e.g., via the "Append to active session queue" checkbox), it appends to that specific session's queue.
-- If you start a new session, a new queue record is created just for that session.
+- If you submit an annotation targeting an existing agent session (e.g., via the "Append to active session queue" checkbox), it appends to that queue when the session belongs to the same routed service.
+- If you submit a new untargeted annotation from the same routed service, the control server reuses that routed service's existing queue when one already exists.
+- If no queue exists for that routed service yet, a new queue record is created and dispatched.
 
 ### Durability and Recovery
 

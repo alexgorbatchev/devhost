@@ -17,6 +17,7 @@ import {
 import { resolveProxyHost } from "../utils/resolveProxyHost";
 import { startDevtoolsControlServer } from "../devtools-server/startDevtoolsControlServer";
 import { startDocumentInjectionServer } from "../devtools-server/startDocumentInjectionServer";
+import type { IRoutedServiceIdentity } from "../devtools/shared/routedServices";
 import type {
   IInjectedServiceEnvironment,
   IResolvedDevhostManifest,
@@ -176,6 +177,15 @@ export async function startStack(
           });
         },
         projectRootPath: manifest.manifestDirectoryPath,
+        routedServices: routedServices.map(
+          (service: IResolvedDevhostService): IRoutedServiceIdentity => {
+            return {
+              host: service.host!,
+              path: service.path ?? "/",
+              serviceName: service.name,
+            };
+          },
+        ),
         stackName: manifest.name,
         stateDirectoryPath: managedCaddyPaths.stateDirectoryPath,
         startTerminalSession: (request, onData) => {

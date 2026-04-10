@@ -42,6 +42,7 @@ import type {
   WebSocketMessageData,
 } from "../devtools/shared/types";
 import type { ILaunchedTerminalSession } from "../agents/launchTerminalSession";
+import type { IRoutedServiceIdentity } from "../devtools/shared/routedServices";
 import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../types/stackTypes";
 import type { IDevhostLogger } from "../utils/createLogger";
 
@@ -96,6 +97,7 @@ interface IStartDevtoolsControlServerOptions {
   manifestPath: string;
   projectRootPath: string;
   restartService?: (serviceName: string) => Promise<void>;
+  routedServices?: IRoutedServiceIdentity[];
   stackName: string;
   stateDirectoryPath: string;
   startTerminalSession?: (
@@ -141,6 +143,7 @@ export async function startDevtoolsControlServer(
     options.externalToolbarsEnabled ?? true,
     options.minimapEnabled ?? true,
     options.statusEnabled ?? true,
+    options.routedServices ?? [],
   );
   const retainedLogEntries: ServiceLogEntry[] = [];
   const terminalSessions: Map<string, ITerminalSessionState> = new Map<string, ITerminalSessionState>();
@@ -169,6 +172,7 @@ export async function startDevtoolsControlServer(
         sessionId,
       };
     },
+    routedServices: options.routedServices ?? [],
     stackName: options.stackName,
     startAgentSession: (annotation) => {
       return createTerminalSession({

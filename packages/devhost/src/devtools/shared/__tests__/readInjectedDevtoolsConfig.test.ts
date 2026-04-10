@@ -20,6 +20,7 @@ describe("readInjectedDevtoolsConfig", () => {
       minimapPosition: "right",
       position: "bottom-right",
       projectRootPath: "",
+      routedServices: [],
       stackName: "devhost",
       editorEnabled: true,
       externalToolbarsEnabled: true,
@@ -36,6 +37,7 @@ describe("readInjectedDevtoolsConfig", () => {
       minimapPosition: "left",
       position: "top-left",
       projectRootPath: "/tmp/project",
+      routedServices: [{ host: "app.localhost", path: "/api/*", serviceName: "api" }],
       stackName: "hello-stack",
     });
 
@@ -46,6 +48,7 @@ describe("readInjectedDevtoolsConfig", () => {
       minimapPosition: "left",
       position: "top-left",
       projectRootPath: "/tmp/project",
+      routedServices: [{ host: "app.localhost", path: "/api/*", serviceName: "api" }],
       stackName: "hello-stack",
       editorEnabled: true,
       externalToolbarsEnabled: true,

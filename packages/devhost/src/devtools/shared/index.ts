@@ -16,6 +16,8 @@ export { readDevtoolsControlToken } from "./readDevtoolsControlToken";
 export { readDevtoolsMinimapPosition } from "./readDevtoolsMinimapPosition";
 export { readDevtoolsPosition } from "./readDevtoolsPosition";
 export { readDevtoolsProjectRootPath } from "./readDevtoolsProjectRootPath";
+export { readDevtoolsRoutedServices } from "./readDevtoolsRoutedServices";
 export { readDevtoolsStackName } from "./readDevtoolsStackName";
+export { resolveRoutedServiceKeyForUrl, type IRoutedServiceIdentity } from "./routedServices";
 export { useDevtoolsTheme } from "./useDevtoolsTheme";
 export { useResolvedColorScheme } from "./useResolvedColorScheme";
