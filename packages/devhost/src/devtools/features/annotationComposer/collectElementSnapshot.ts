@@ -601,13 +601,13 @@ function getFullElementPath(target: HTMLElement): string {
     if (currentElement.id.length > 0) {
       identifier = `${tagName}#${currentElement.id}`;
     } else if (typeof currentElement.className === "string" && currentElement.className.length > 0) {
-      const className: string | undefined = currentElement.className
+      const classNames: string[] = currentElement.className
         .split(/\s+/)
         .map((value: string): string => value.replace(/[_][a-zA-Z0-9]{5,}.*$/, ""))
-        .find((value: string): boolean => value.length > 2);
+        .filter((value: string): boolean => value.length > 0);
 
-      if (className !== undefined) {
-        identifier = `${tagName}.${className}`;
+      if (classNames.length > 0) {
+        identifier = `${tagName}.${classNames.join(".")}`;
       }
     }
 
