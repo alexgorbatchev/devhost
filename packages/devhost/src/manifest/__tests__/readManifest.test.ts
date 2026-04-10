@@ -67,4 +67,29 @@ describe("readManifest", () => {
     await expect(readManifest(manifestPath)).rejects.toThrow(`Failed to parse ${manifestPath}:`);
     await rm(temporaryDirectoryPath, { force: true, recursive: true });
   });
+
+  test("explains duplicate TOML tables instead of surfacing a misleading duplicate key", async () => {
+    const temporaryDirectoryPath: string = await mkdtemp(join(tmpdir(), "devhost-read-manifest-"));
+    const manifestPath: string = join(temporaryDirectoryPath, "devhost.toml");
+
+    await writeFile(
+      manifestPath,
+      [
+        "[services.devhost-www]",
+        'command = "bun dev"',
+        'cwd = "/tmp/react-starter-kit"',
+        'host = "test.localhost"',
+        "",
+        "[services.devhost-www]",
+        "primary = true",
+        'command = "bun dev"',
+      ].join("\n"),
+      "utf8",
+    );
+
+    await expect(readManifest(manifestPath)).rejects.toThrow(
+      `Failed to parse ${manifestPath}: TOML table [services.devhost-www] is declared more than once (lines 1 and 6). Merge those settings into a single table instead of repeating the header.`,
+    );
+    await rm(temporaryDirectoryPath, { force: true, recursive: true });
+  });
 });

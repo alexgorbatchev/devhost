@@ -173,6 +173,8 @@ Use that file as the documented source of truth for:
 - inline explanations and copy/paste examples
 
 Copy it to `devhost.toml` in your project root and trim it down to the services you actually run.
+Each TOML table must be declared once. Keep all fields for a service inside a single `[services.<name>]` block instead of reopening that table later.
+
 
 For same-host composition within one manifest, use distinct paths such as `/api/*` and `/admin/*`, or combine one root-mounted fallback service with more specific subpath services on the same hostname.
 
