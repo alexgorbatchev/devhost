@@ -4,7 +4,7 @@ import { expect, within } from "storybook/test";
 import { Main } from "../Main";
 
 const meta: Meta<typeof Main> = {
-  title: "app/Main",
+  title: "devhost-test-app/app/Main",
   component: Main,
 };
 

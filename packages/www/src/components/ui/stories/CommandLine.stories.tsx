@@ -4,7 +4,7 @@ import { expect, within } from "storybook/test";
 import { CommandLine } from "../CommandLine";
 
 const meta: Meta<typeof CommandLine> = {
-  title: "components/ui/CommandLine",
+  title: "devhost-test-app/components/ui/CommandLine",
   component: CommandLine,
 };
 

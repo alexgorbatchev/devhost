@@ -4,7 +4,7 @@ import { expect, within } from "storybook/test";
 import { SectionHeader } from "../SectionHeader";
 
 const meta: Meta<typeof SectionHeader> = {
-  title: "components/ui/SectionHeader",
+  title: "devhost-test-app/components/ui/SectionHeader",
   component: SectionHeader,
 };
 

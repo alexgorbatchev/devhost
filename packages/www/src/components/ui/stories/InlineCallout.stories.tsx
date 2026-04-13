@@ -4,7 +4,7 @@ import { expect, within } from "storybook/test";
 import { InlineCallout } from "../InlineCallout";
 
 const meta: Meta<typeof InlineCallout> = {
-  title: "components/ui/InlineCallout",
+  title: "devhost-test-app/components/ui/InlineCallout",
   component: InlineCallout,
 };
 

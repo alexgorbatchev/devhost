@@ -4,7 +4,7 @@ import { expect, within } from "storybook/test";
 import { Surface } from "../Surface";
 
 const meta: Meta<typeof Surface> = {
-  title: "components/ui/Surface",
+  title: "devhost-test-app/components/ui/Surface",
   component: Surface,
   render: () => {
     return <Surface>Surface body</Surface>;

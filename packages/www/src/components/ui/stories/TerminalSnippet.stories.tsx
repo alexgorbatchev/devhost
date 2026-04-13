@@ -4,7 +4,7 @@ import { expect, within } from "storybook/test";
 import { TerminalSnippet } from "../TerminalSnippet";
 
 const meta: Meta<typeof TerminalSnippet> = {
-  title: "components/ui/TerminalSnippet",
+  title: "devhost-test-app/components/ui/TerminalSnippet",
   component: TerminalSnippet,
 };
 

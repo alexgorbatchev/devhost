@@ -5,7 +5,7 @@ import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { AnnotationMarkerList } from "../AnnotationMarkerList";
 
 const meta: Meta<typeof AnnotationMarkerList> = {
-  title: "devtools/features/annotationComposer/AnnotationMarkerList",
+  title: "@alexgorbatchev/devhost/devtools/features/annotationComposer/AnnotationMarkerList",
   component: AnnotationMarkerList,
   render: (args) => {
     return (

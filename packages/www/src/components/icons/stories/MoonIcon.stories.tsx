@@ -6,7 +6,7 @@ type Story = StoryObj<typeof MoonIcon>;
 
 const meta: Meta<typeof MoonIcon> = {
   component: MoonIcon,
-  title: "components/icons/MoonIcon",
+  title: "devhost-test-app/components/icons/MoonIcon",
 };
 
 export default meta;

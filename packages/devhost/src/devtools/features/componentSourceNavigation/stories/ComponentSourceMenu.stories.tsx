@@ -5,7 +5,7 @@ import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { ComponentSourceMenu } from "../ComponentSourceMenu";
 
 const meta: Meta<typeof ComponentSourceMenu> = {
-  title: "devtools/features/componentSourceNavigation/ComponentSourceMenu",
+  title: "@alexgorbatchev/devhost/devtools/features/componentSourceNavigation/ComponentSourceMenu",
   component: ComponentSourceMenu,
   render: (args) => {
     return (

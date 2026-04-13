@@ -5,7 +5,7 @@ import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { ServiceStatusPanel } from "../ServiceStatusPanel";
 
 const meta: Meta<typeof ServiceStatusPanel> = {
-  title: "devtools/features/serviceStatusPanel/ServiceStatusPanel",
+  title: "@alexgorbatchev/devhost/devtools/features/serviceStatusPanel/ServiceStatusPanel",
   component: ServiceStatusPanel,
   render: (args) => {
     return (

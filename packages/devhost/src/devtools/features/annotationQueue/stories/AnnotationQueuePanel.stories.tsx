@@ -83,7 +83,7 @@ const sampleQueues: IAnnotationQueueSnapshot[] = [
 ];
 
 const meta: Meta<typeof AnnotationQueuePanel> = {
-  title: "devtools/features/annotationQueue/AnnotationQueuePanel",
+  title: "@alexgorbatchev/devhost/devtools/features/annotationQueue/AnnotationQueuePanel",
   component: AnnotationQueuePanel,
   render: (args) => {
     return (

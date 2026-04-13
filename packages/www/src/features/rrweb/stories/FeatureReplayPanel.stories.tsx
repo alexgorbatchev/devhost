@@ -4,7 +4,7 @@ import { expect, within } from "storybook/test";
 import { FeatureReplayPanel } from "../FeatureReplayPanel";
 
 const meta: Meta<typeof FeatureReplayPanel> = {
-  title: "features/rrweb/FeatureReplayPanel",
+  title: "devhost-test-app/features/rrweb/FeatureReplayPanel",
   component: FeatureReplayPanel,
 };
 

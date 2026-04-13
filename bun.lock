@@ -5,9 +5,9 @@
     "": {
       "name": "localhost-domains",
       "devDependencies": {
-        "@alexgorbatchev/typescript-ai-policy": "^5.0.0",
-        "oxfmt": "^0.45.0",
-        "oxlint": "^1.60.0",
+        "@alexgorbatchev/typescript-ai-policy": "latest",
+        "oxfmt": "latest",
+        "oxlint": "latest",
       },
     },
     "packages/devhost": {
@@ -75,7 +75,7 @@
 
     "@alexgorbatchev/devhost": ["@alexgorbatchev/devhost@workspace:packages/devhost"],
 
-    "@alexgorbatchev/typescript-ai-policy": ["@alexgorbatchev/typescript-ai-policy@5.0.0", "", { "peerDependencies": { "@typescript/native-preview": "^7.0.0-dev.20260330.1", "oxfmt": "^0.42.0", "oxlint": "^1.57.0" }, "optionalPeers": ["@typescript/native-preview"], "bin": { "typescript-ai-policy-fix-semantic": "src/semantic-fixes/runApplySemanticFixes.ts" } }, "sha512-05kDIlOpR8/LMTSoAOgdJ5got7r+uhlIpF+vz9tKmz2xnUsFAaZffYFA+CF+11D1MF1cPNJt52ckzC3zdTpYNQ=="],
+    "@alexgorbatchev/typescript-ai-policy": ["@alexgorbatchev/typescript-ai-policy@5.0.1", "", { "peerDependencies": { "@typescript/native-preview": "^7.0.0-dev.20260330.1", "oxfmt": "^0.42.0", "oxlint": "^1.57.0" }, "optionalPeers": ["@typescript/native-preview"], "bin": { "typescript-ai-policy-fix-semantic": "src/semantic-fixes/runApplySemanticFixes.ts" } }, "sha512-OJYQPAMv1DpboMmv3IkQIIbJfYKFEZvnA3hf8dIQ1ZukmcIHNGsc1LHIvGK9SpePce/FLgJGc0WtG4l5Yi0VNA=="],
 
     "@babel/code-frame": ["@babel/code-frame@7.29.0", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.28.5", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-9NhCeYjq9+3uxgdtp20LSiJXJvN0FeCtNGpJxuMFZ1Kv3cWUNb6DOhJwUvcVCzKGR66cw4njwM6hrJLqgOwbcw=="],
 

@@ -4,7 +4,7 @@ import { expect, within } from "storybook/test";
 import { ThemeProvider } from "../ThemeProvider";
 
 const meta: Meta<typeof ThemeProvider> = {
-  title: "devtools/shared/ThemeProvider",
+  title: "@alexgorbatchev/devhost/devtools/shared/ThemeProvider",
   component: ThemeProvider,
   render: (args) => {
     return <ThemeProvider {...args} />;

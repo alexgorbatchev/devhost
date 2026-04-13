@@ -4,7 +4,7 @@ import { expect, userEvent, within } from "storybook/test";
 import { App } from "../App";
 
 const meta: Meta<typeof App> = {
-  title: "app/App",
+  title: "devhost-test-app/app/App",
   component: App,
 };
 

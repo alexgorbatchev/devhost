@@ -5,7 +5,7 @@ import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { LogMinimap } from "../LogMinimap";
 
 const meta: Meta<typeof LogMinimap> = {
-  title: "devtools/features/minimap/LogMinimap",
+  title: "@alexgorbatchev/devhost/devtools/features/minimap/LogMinimap",
   component: LogMinimap,
   render: (args) => {
     return (

@@ -6,7 +6,7 @@ type Story = StoryObj<typeof GitHubIcon>;
 
 const meta: Meta<typeof GitHubIcon> = {
   component: GitHubIcon,
-  title: "components/icons/GitHubIcon",
+  title: "devhost-test-app/components/icons/GitHubIcon",
 };
 
 export default meta;

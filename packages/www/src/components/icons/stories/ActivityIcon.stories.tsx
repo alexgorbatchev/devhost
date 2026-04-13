@@ -6,7 +6,7 @@ type Story = StoryObj<typeof ActivityIcon>;
 
 const meta: Meta<typeof ActivityIcon> = {
   component: ActivityIcon,
-  title: "components/icons/ActivityIcon",
+  title: "devhost-test-app/components/icons/ActivityIcon",
 };
 
 export default meta;
