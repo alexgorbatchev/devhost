@@ -8,4 +8,4 @@ cd "$package_dir"
 
 tsgo --noEmit -p tsconfig.json
 bun test --coverage
-bun --bun vitest run -c vitest.storybook.config.ts
+bun vitest run -c vitest.storybook.config.ts

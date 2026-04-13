@@ -2,4 +2,4 @@
 set -euo pipefail
 
 tsgo --project tsconfig.json
-bun --bun vitest run -c vitest.storybook.config.ts
+bun vitest run -c vitest.storybook.config.ts
