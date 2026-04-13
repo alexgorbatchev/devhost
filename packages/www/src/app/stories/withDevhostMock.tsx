@@ -259,7 +259,9 @@ function DevhostMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Elemen
       return originalFetch.call(window, input, init);
     }) as typeof fetch;
 
-    import("@alexgorbatchev/devhost/src/devtools").then((m) => m.renderDevtools()).catch((m) => console.error("MOCK DEVTOOLS ERROR:", m));
+    import("@alexgorbatchev/devhost/src/devtools")
+      .then((m) => m.renderDevtools())
+      .catch((m) => console.error("MOCK DEVTOOLS ERROR:", m));
 
     return (): void => {
       Reflect.deleteProperty(window, "__DEVHOST_INJECTED_CONFIG__");

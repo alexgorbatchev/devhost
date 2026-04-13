@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/preact-vite";
-import { expect, fn, within } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 
 import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
@@ -31,9 +31,9 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     agentDisplayName: "Pi",
-    onSubmit: async () => {
+    onSubmit: fn(async () => {
       return { success: true };
-    },
+    }),
     stackName: "story-stack",
   },
   play: async ({ canvasElement }): Promise<void> => {
