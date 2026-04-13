@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/preact-vite";
-import { expect, within } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 
 import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
@@ -36,13 +36,22 @@ export const DefaultRight: Story = {
     entries: mockEntries,
     isHovered: false,
     minimapPosition: "right",
-    onHoveredChange: (): void => {},
+    onHoveredChange: fn(),
   },
-  play: async ({ canvasElement }): Promise<void> => {
+  play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
 
     await expect(canvas.getByTestId("LogMinimap")).toBeInTheDocument();
-    await expect(canvas.getByTestId("LogMinimap--canvas")).toBeInTheDocument();
+    
+    const minimapCanvas = canvas.getByTestId("LogMinimap--canvas");
+    await expect(minimapCanvas).toBeInTheDocument();
+    
+    // Simulate hover interactions
+    await userEvent.hover(minimapCanvas);
+    await expect(args.onHoveredChange).toHaveBeenCalledWith(true);
+    
+    await userEvent.unhover(minimapCanvas);
+    await expect(args.onHoveredChange).toHaveBeenCalledWith(false);
   },
 };
 

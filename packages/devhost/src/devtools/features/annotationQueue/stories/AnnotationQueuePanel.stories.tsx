@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/preact-vite";
-import { expect, within } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 
 import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
@@ -107,13 +107,13 @@ export const DefaultLeft: Story = {
     errorMessage: null,
     isEntryMutationPending: () => false,
     isQueueResumePending: () => false,
-    onRemoveEntry: async () => true,
-    onResumeQueue: async () => "session-2",
-    onSaveEntry: async () => true,
+    onRemoveEntry: fn(async () => true),
+    onResumeQueue: fn(async () => "session-2"),
+    onSaveEntry: fn(async () => true),
     queues: sampleQueues,
     panelSide: "left",
   },
-  play: async ({ canvasElement }): Promise<void> => {
+  play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
 
     await expect(canvas.getByTestId("AnnotationQueuePanel")).toBeInTheDocument();
@@ -122,6 +122,33 @@ export const DefaultLeft: Story = {
     await expect(
       canvas.getByText("Session exited before the annotation finished. Resume to retry."),
     ).toBeInTheDocument();
+
+    // Test text area interaction
+    const commentInputs = canvas.getAllByTestId("AnnotationQueuePanel--comment-input");
+    await expect(commentInputs.length).toBeGreaterThan(0);
+    const firstInput = commentInputs[0];
+    
+    await userEvent.type(firstInput, " edited");
+    
+    // Check save and remove buttons for the first editable item
+    const saveButtons = canvas.getAllByRole("button", { name: "Save" });
+    const removeButtons = canvas.getAllByRole("button", { name: "Remove" });
+    
+    await expect(saveButtons.length).toBeGreaterThan(0);
+    await expect(removeButtons.length).toBeGreaterThan(0);
+    
+    await userEvent.click(saveButtons[0]);
+    await expect(args.onSaveEntry).toHaveBeenCalled();
+    
+    await userEvent.click(removeButtons[0]);
+    await expect(args.onRemoveEntry).toHaveBeenCalled();
+
+    // Check resume button for paused queues
+    const resumeButton = canvas.getByRole("button", { name: "Resume" });
+    await expect(resumeButton).toBeInTheDocument();
+    
+    await userEvent.click(resumeButton);
+    await expect(args.onResumeQueue).toHaveBeenCalled();
   },
 };
 
@@ -131,9 +158,9 @@ export const DefaultRight: Story = {
     errorMessage: null,
     isEntryMutationPending: () => false,
     isQueueResumePending: () => false,
-    onRemoveEntry: async () => true,
-    onResumeQueue: async () => "session-2",
-    onSaveEntry: async () => true,
+    onRemoveEntry: fn(async () => true),
+    onResumeQueue: fn(async () => "session-2"),
+    onSaveEntry: fn(async () => true),
     queues: sampleQueues,
     panelSide: "right",
   },
@@ -151,9 +178,9 @@ export const WithError: Story = {
     errorMessage: "Connection lost while syncing queue.",
     isEntryMutationPending: () => false,
     isQueueResumePending: () => false,
-    onRemoveEntry: async () => true,
-    onResumeQueue: async () => "session-2",
-    onSaveEntry: async () => true,
+    onRemoveEntry: fn(async () => true),
+    onResumeQueue: fn(async () => "session-2"),
+    onSaveEntry: fn(async () => true),
     queues: sampleQueues,
     panelSide: "left",
   },
@@ -173,9 +200,9 @@ export const Empty: Story = {
     errorMessage: null,
     isEntryMutationPending: () => false,
     isQueueResumePending: () => false,
-    onRemoveEntry: async () => true,
-    onResumeQueue: async () => "session-2",
-    onSaveEntry: async () => true,
+    onRemoveEntry: fn(async () => true),
+    onResumeQueue: fn(async () => "session-2"),
+    onSaveEntry: fn(async () => true),
     queues: [],
     panelSide: "left",
   },

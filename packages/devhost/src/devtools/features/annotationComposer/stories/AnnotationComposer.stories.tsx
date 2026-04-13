@@ -36,12 +36,30 @@ export const Default: Story = {
     }),
     stackName: "story-stack",
   },
-  play: async ({ canvasElement }): Promise<void> => {
+  play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
 
     const targetButton = canvas.getByTestId("host-action-target");
     await expect(targetButton).toBeInTheDocument();
-    await expect(canvas.getByTestId("AnnotationComposer")).toBeInTheDocument();
+    
+    // Press Alt to enter selection mode
+    await userEvent.keyboard("{Alt>}");
+    
+    // Click the target button to select it
+    await userEvent.click(targetButton);
+    
+    // Release Alt
+    await userEvent.keyboard("{/Alt}");
+    
+    // Type a comment
+    const commentBox = await canvas.findByTestId("AnnotationComposer--comment");
+    await userEvent.type(commentBox, "Make it blue");
+    
+    // Submit the annotation
+    const submitBtn = await canvas.findByRole("button", { name: "Submit" });
+    await userEvent.click(submitBtn);
+    
+    await expect(args.onSubmit).toHaveBeenCalled();
   },
 };
 
@@ -54,12 +72,32 @@ export const WithActiveSession: Story = {
     }),
     stackName: "story-stack",
   },
-  play: async ({ canvasElement }): Promise<void> => {
+  play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
     const targetButton = canvas.getByTestId("host-action-target");
     await expect(targetButton).toBeInTheDocument();
 
-    // Triggering Alt+Click selection mode is tricky in JSDOM/Storybook, so we just verify the basic render.
-    await expect(canvas.getByTestId("AnnotationComposer")).toBeInTheDocument();
+    // Press Alt to enter selection mode
+    await userEvent.keyboard("{Alt>}");
+    
+    // Click the target button to select it
+    await userEvent.click(targetButton);
+    
+    // Release Alt
+    await userEvent.keyboard("{/Alt}");
+    
+    // Type a comment
+    const commentBox = await canvas.findByTestId("AnnotationComposer--comment");
+    await userEvent.type(commentBox, "Make it bigger");
+    
+    // Check that the checkbox for active session appears
+    const checkbox = await canvas.findByRole("checkbox", { name: "Append to active session queue" });
+    await expect(checkbox).toBeInTheDocument();
+    
+    // Submit the annotation
+    const submitBtn = await canvas.findByRole("button", { name: "Submit" });
+    await userEvent.click(submitBtn);
+    
+    await expect(args.onSubmit).toHaveBeenCalled();
   },
 };
