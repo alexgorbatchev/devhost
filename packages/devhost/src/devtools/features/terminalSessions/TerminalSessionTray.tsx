@@ -1,3 +1,5 @@
+/** @jsxImportSource preact */
+
 import type { JSX } from "preact";
 
 import { css, useDevtoolsTheme } from "../../shared";

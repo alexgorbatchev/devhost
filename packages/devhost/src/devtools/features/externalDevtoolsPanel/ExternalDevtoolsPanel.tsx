@@ -1,3 +1,5 @@
+/** @jsxImportSource preact */
+
 import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "preact";
 

@@ -2,10 +2,12 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent, within } from "storybook/test";
 
 import { App } from "../App";
+import { withDevhostMock } from "./withDevhostMock";
 
 const meta: Meta<typeof App> = {
   title: "devhost-test-app/app/App",
   component: App,
+  decorators: [withDevhostMock],
 };
 
 export default meta;
