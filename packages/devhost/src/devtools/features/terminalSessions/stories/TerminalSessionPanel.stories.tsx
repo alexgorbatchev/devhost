@@ -84,7 +84,7 @@ export const Minimized: Story = {
     onRemove: fn(),
     session: agentSession,
   },
-  play: async ({ canvasElement }): Promise<void> => {
+  play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
     const shadowHost: HTMLElement = await canvas.findByTestId(devtoolsStoryShadowRootHostTestId);
     const shadowRoot: ShadowRoot = readShadowRoot(
@@ -95,6 +95,12 @@ export const Minimized: Story = {
     await waitFor(async (): Promise<void> => {
       await expect(shadowRoot.querySelector('[data-testid="TerminalSessionPanel"]')).not.toBeNull();
     });
+
+    // Test terminal expand button exists
+    if (!args.session.behavior.isFullscreenExpanded) {
+      const expandButton = shadowRoot.querySelector('[data-testid="TerminalSessionPanel--expand"]');
+      await expect(expandButton).not.toBeNull();
+    }
   },
 };
 
@@ -112,7 +118,7 @@ export const Expanded: Story = {
       },
     },
   },
-  play: async ({ canvasElement }): Promise<void> => {
+  play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
     const shadowHost: HTMLElement = await canvas.findByTestId(devtoolsStoryShadowRootHostTestId);
     const shadowRoot: ShadowRoot = readShadowRoot(
@@ -141,7 +147,7 @@ export const FullscreenExpanded: Story = {
       },
     },
   },
-  play: async ({ canvasElement }): Promise<void> => {
+  play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
     const shadowHost: HTMLElement = await canvas.findByTestId(devtoolsStoryShadowRootHostTestId);
     const shadowRoot: ShadowRoot = readShadowRoot(
@@ -152,6 +158,12 @@ export const FullscreenExpanded: Story = {
     await waitFor(async (): Promise<void> => {
       await expect(shadowRoot.querySelector('[data-testid="TerminalSessionPanel"]')).not.toBeNull();
     });
+
+    // Test terminal expand button exists
+    if (!args.session.behavior.isFullscreenExpanded) {
+      const expandButton = shadowRoot.querySelector('[data-testid="TerminalSessionPanel--expand"]');
+      await expect(expandButton).not.toBeNull();
+    }
   },
 };
 
