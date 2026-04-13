@@ -178,15 +178,13 @@ export async function startStack(
           });
         },
         projectRootPath: manifest.manifestDirectoryPath,
-        routedServices: routedServices.map(
-          (service: IResolvedDevhostService): IRoutedServiceIdentity => {
-            return {
-              host: service.host!,
-              path: service.path ?? "/",
-              serviceName: service.name,
-            };
-          },
-        ),
+        routedServices: routedServices.map((service: IResolvedDevhostService): IRoutedServiceIdentity => {
+          return {
+            host: service.host!,
+            path: service.path ?? "/",
+            serviceName: service.name,
+          };
+        }),
         stackName: manifest.name,
         stateDirectoryPath: managedCaddyPaths.stateDirectoryPath,
         startTerminalSession: (request, onData) => {

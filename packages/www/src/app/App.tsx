@@ -645,7 +645,8 @@ health = { http = "http://127.0.0.1:4000/healthz" }`}</code>
               service&apos;s active agent queue instead of being injected immediately into a busy terminal
             </li>
             <li className="mb-2">
-              queued annotations are bucketed by routed service host/path, survive browser reloads and <code>devhost</code>
+              queued annotations are bucketed by routed service host/path, survive browser reloads and{" "}
+              <code>devhost</code>
               restarts, drain automatically when the agent emits <code>OSC 1337;SetAgentStatus=finished</code>, and can
               be edited or removed from the injected queue panel while they are queued or paused
             </li>

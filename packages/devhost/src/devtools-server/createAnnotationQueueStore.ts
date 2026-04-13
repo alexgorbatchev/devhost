@@ -175,17 +175,35 @@ export function createAnnotationQueueStore(options: ICreateAnnotationQueueStoreO
           routedServices,
         );
         const targetQueue =
-          targetSessionId !== undefined && shouldUseTargetSession ? findQueueBySessionId(runtimeQueues, targetSessionId) : null;
+          targetSessionId !== undefined && shouldUseTargetSession
+            ? findQueueBySessionId(runtimeQueues, targetSessionId)
+            : null;
 
         if (targetQueue !== null) {
-          return await enqueueIntoExistingQueue(targetQueue, annotation, Date.now(), runtimeQueues, queueFilePath, options);
+          return await enqueueIntoExistingQueue(
+            targetQueue,
+            annotation,
+            Date.now(),
+            runtimeQueues,
+            queueFilePath,
+            options,
+          );
         }
 
         const serviceQueue =
-          annotationServiceKey === null ? null : findQueueByServiceKey(runtimeQueues, routedServices, annotationServiceKey);
+          annotationServiceKey === null
+            ? null
+            : findQueueByServiceKey(runtimeQueues, routedServices, annotationServiceKey);
 
         if (serviceQueue !== null) {
-          return await enqueueIntoExistingQueue(serviceQueue, annotation, Date.now(), runtimeQueues, queueFilePath, options);
+          return await enqueueIntoExistingQueue(
+            serviceQueue,
+            annotation,
+            Date.now(),
+            runtimeQueues,
+            queueFilePath,
+            options,
+          );
         }
 
         const liveTargetSession = shouldUseTargetSession ? targetLiveSession : null;

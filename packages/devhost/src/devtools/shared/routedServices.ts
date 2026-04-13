@@ -17,7 +17,9 @@ export function normalizeRoutedServicePath(path: string | null | undefined): str
   return path;
 }
 
-export function createRoutedServiceKey(service: Pick<IRoutedServiceIdentity, "host" | "path">): string {
+export type ServiceIdentityPick = Pick<IRoutedServiceIdentity, "host" | "path">;
+
+export function createRoutedServiceKey(service: ServiceIdentityPick): string {
   return `${service.host.toLowerCase()}|${normalizeRoutedServicePath(service.path)}`;
 }
 
