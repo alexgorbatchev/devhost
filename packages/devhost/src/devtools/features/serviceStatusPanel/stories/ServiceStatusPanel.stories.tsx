@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/preact-vite";
 import { expect, within } from "storybook/test";
 
 import { ThemeProvider } from "../../../shared/ThemeProvider";
+import { StoryContainer } from "../../../shared/stories/StoryContainer";
 import { ServiceStatusPanel } from "../ServiceStatusPanel";
 
 const meta: Meta<typeof ServiceStatusPanel> = {
@@ -10,7 +11,9 @@ const meta: Meta<typeof ServiceStatusPanel> = {
   render: (args) => {
     return (
       <ThemeProvider colorScheme="dark">
-        <ServiceStatusPanel {...args} />
+        <StoryContainer align={args.panelSide}>
+          <ServiceStatusPanel {...args} />
+        </StoryContainer>
       </ThemeProvider>
     );
   },
@@ -20,7 +23,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const Default: Story = {
+export const DefaultLeft: Story = {
   args: {
     errorMessage: null,
     panelSide: "left",
@@ -31,18 +34,69 @@ const Default: Story = {
   },
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
-
     await expect(canvas.getByTestId("ServiceStatusPanel")).toBeInTheDocument();
     await expect(canvas.getByText("worker")).toBeInTheDocument();
-    // Assuming "api" is rendered as active or healthy, meaning it might actually exist in the DOM
-    // Let's modify the assertion depending on how true status is displayed or assert it differently.
-    const apiElement = canvas.queryByText("api");
-    if (apiElement) {
-      await expect(apiElement).toBeInTheDocument();
-    } else {
-      await expect(apiElement).not.toBeInTheDocument();
-    }
+    await expect(canvas.getByText("api")).toBeInTheDocument();
   },
 };
 
-export { Default as ServiceStatusPanel };
+export const RightPanel: Story = {
+  args: {
+    errorMessage: null,
+    panelSide: "right",
+    services: [
+      { name: "frontend", status: true },
+      { name: "backend", status: true },
+    ],
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByTestId("ServiceStatusPanel")).toBeInTheDocument();
+    await expect(canvas.getByText("frontend")).toBeInTheDocument();
+    await expect(canvas.getByText("backend")).toBeInTheDocument();
+  },
+};
+
+export const WithLinks: Story = {
+  args: {
+    errorMessage: null,
+    panelSide: "left",
+    services: [
+      { name: "web", status: true, url: "http://localhost:3000" },
+      { name: "docs", status: true, url: "http://localhost:3001" },
+    ],
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByTestId("ServiceStatusPanel")).toBeInTheDocument();
+    const webLink = canvas.getByRole("link", { name: "web" });
+    await expect(webLink).toBeInTheDocument();
+    await expect(webLink).toHaveAttribute("href", "http://localhost:3000");
+  },
+};
+
+export const WithErrorMessage: Story = {
+  args: {
+    errorMessage: "Connection to devhost lost",
+    panelSide: "left",
+    services: [],
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByTestId("ServiceStatusPanel")).toBeInTheDocument();
+    await expect(canvas.getByText("Connection to devhost lost")).toBeInTheDocument();
+  },
+};
+
+export const Empty: Story = {
+  args: {
+    errorMessage: null,
+    panelSide: "left",
+    services: [],
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    // Should render nothing
+    await expect(canvas.queryByTestId("ServiceStatusPanel")).not.toBeInTheDocument();
+  },
+};

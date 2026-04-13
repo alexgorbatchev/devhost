@@ -2,7 +2,7 @@ import type { CSSObject } from "@emotion/css/create-instance";
 import type { Meta, StoryObj } from "@storybook/preact-vite";
 import { render, type ComponentChildren, type JSX } from "preact";
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
-import { expect, waitFor, within } from "storybook/test";
+import { expect, waitFor, within, fn } from "storybook/test";
 
 import { configureDevtoolsCss, injectGlobal, ThemeProvider } from "../../../shared";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../../shared/constants";
@@ -40,6 +40,7 @@ const agentSession: TerminalSession = {
     trayTooltipSecondary: "Pi",
   },
 };
+
 const devtoolsStoryShadowRootGlobalStyles: CSSObject = {
   ":host": {
     color: "initial",
@@ -75,12 +76,12 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const Default: Story = {
+export const Minimized: Story = {
   args: {
     isExpanded: false,
-    onExpand: (): void => {},
-    onMinimize: (): void => {},
-    onRemove: (): void => {},
+    onExpand: fn(),
+    onMinimize: fn(),
+    onRemove: fn(),
     session: agentSession,
   },
   play: async ({ canvasElement }): Promise<void> => {
@@ -97,7 +98,62 @@ const Default: Story = {
   },
 };
 
-export { Default as TerminalSessionPanel };
+export const Expanded: Story = {
+  args: {
+    isExpanded: true,
+    onExpand: fn(),
+    onMinimize: fn(),
+    onRemove: fn(),
+    session: {
+      ...agentSession,
+      behavior: {
+        ...agentSession.behavior,
+        isFullscreenExpanded: false,
+      },
+    },
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    const shadowHost: HTMLElement = await canvas.findByTestId(devtoolsStoryShadowRootHostTestId);
+    const shadowRoot: ShadowRoot = readShadowRoot(
+      shadowHost,
+      "Expected the terminal panel story to attach a shadow root.",
+    );
+
+    await waitFor(async (): Promise<void> => {
+      await expect(shadowRoot.querySelector('[data-testid="TerminalSessionPanel"]')).not.toBeNull();
+      await expect(shadowRoot.querySelector('[data-testid="TerminalSessionPanel--content"]')).not.toBeNull();
+    });
+  },
+};
+
+export const FullscreenExpanded: Story = {
+  args: {
+    isExpanded: true,
+    onExpand: fn(),
+    onMinimize: fn(),
+    onRemove: fn(),
+    session: {
+      ...agentSession,
+      behavior: {
+        ...agentSession.behavior,
+        isFullscreenExpanded: true,
+      },
+    },
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    const shadowHost: HTMLElement = await canvas.findByTestId(devtoolsStoryShadowRootHostTestId);
+    const shadowRoot: ShadowRoot = readShadowRoot(
+      shadowHost,
+      "Expected the terminal panel story to attach a shadow root.",
+    );
+
+    await waitFor(async (): Promise<void> => {
+      await expect(shadowRoot.querySelector('[data-testid="TerminalSessionPanel"]')).not.toBeNull();
+    });
+  },
+};
 
 function renderInDevtoolsStoryShadowRoot(children: ComponentChildren): JSX.Element {
   return <DevtoolsStoryShadowRoot>{children}</DevtoolsStoryShadowRoot>;

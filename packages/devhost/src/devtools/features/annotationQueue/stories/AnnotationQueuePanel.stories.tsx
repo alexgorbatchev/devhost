@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/preact-vite";
 import { expect, within } from "storybook/test";
 
 import { ThemeProvider } from "../../../shared/ThemeProvider";
+import { StoryContainer } from "../../../shared/stories/StoryContainer";
 import { AnnotationQueuePanel } from "../AnnotationQueuePanel";
 import type { IAnnotationQueueSnapshot } from "../types";
 
@@ -88,7 +89,9 @@ const meta: Meta<typeof AnnotationQueuePanel> = {
   render: (args) => {
     return (
       <ThemeProvider colorScheme="dark">
-        <AnnotationQueuePanel {...args} />
+        <StoryContainer align={args.panelSide}>
+          <AnnotationQueuePanel {...args} />
+        </StoryContainer>
       </ThemeProvider>
     );
   },
@@ -98,7 +101,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const Default: Story = {
+export const DefaultLeft: Story = {
   args: {
     agentDisplayName: "Pi",
     errorMessage: null,
@@ -108,6 +111,7 @@ const Default: Story = {
     onResumeQueue: async () => "session-2",
     onSaveEntry: async () => true,
     queues: sampleQueues,
+    panelSide: "left",
   },
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
@@ -121,4 +125,63 @@ const Default: Story = {
   },
 };
 
-export { Default as AnnotationQueuePanel };
+export const DefaultRight: Story = {
+  args: {
+    agentDisplayName: "Pi",
+    errorMessage: null,
+    isEntryMutationPending: () => false,
+    isQueueResumePending: () => false,
+    onRemoveEntry: async () => true,
+    onResumeQueue: async () => "session-2",
+    onSaveEntry: async () => true,
+    queues: sampleQueues,
+    panelSide: "right",
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+
+    await expect(canvas.getByTestId("AnnotationQueuePanel")).toBeInTheDocument();
+    await expect(canvas.getAllByTestId("AnnotationQueuePanel--queue")).toHaveLength(2);
+  },
+};
+
+export const WithError: Story = {
+  args: {
+    agentDisplayName: "Pi",
+    errorMessage: "Connection lost while syncing queue.",
+    isEntryMutationPending: () => false,
+    isQueueResumePending: () => false,
+    onRemoveEntry: async () => true,
+    onResumeQueue: async () => "session-2",
+    onSaveEntry: async () => true,
+    queues: sampleQueues,
+    panelSide: "left",
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+
+    await expect(canvas.getByTestId("AnnotationQueuePanel")).toBeInTheDocument();
+    await expect(canvas.getByTestId("AnnotationQueuePanel--error")).toHaveTextContent(
+      "Connection lost while syncing queue.",
+    );
+  },
+};
+
+export const Empty: Story = {
+  args: {
+    agentDisplayName: "Pi",
+    errorMessage: null,
+    isEntryMutationPending: () => false,
+    isQueueResumePending: () => false,
+    onRemoveEntry: async () => true,
+    onResumeQueue: async () => "session-2",
+    onSaveEntry: async () => true,
+    queues: [],
+    panelSide: "left",
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    // Component returns null when there are no queues and no error
+    await expect(canvas.queryByTestId("AnnotationQueuePanel")).not.toBeInTheDocument();
+  },
+};

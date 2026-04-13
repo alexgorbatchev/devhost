@@ -2,12 +2,13 @@ import type { CSSObject } from "@emotion/css/create-instance";
 import type { Meta, StoryObj } from "@storybook/preact-vite";
 import { render, type ComponentChildren, type JSX } from "preact";
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
-import { expect, waitFor, within } from "storybook/test";
+import { expect, waitFor, within, fn } from "storybook/test";
 
 import { configureDevtoolsCss, injectGlobal, ThemeProvider } from "../../../shared";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../../shared/constants";
 import { TerminalSessionTray } from "../TerminalSessionTray";
 import type { TerminalSession } from "../types";
+import { StoryContainer } from "../../../shared/stories/StoryContainer";
 
 interface IDevtoolsStoryShadowRootProps {
   children: ComponentChildren;
@@ -40,6 +41,7 @@ const agentSession: TerminalSession = {
     trayTooltipSecondary: "Pi",
   },
 };
+
 const devtoolsStoryShadowRootGlobalStyles: CSSObject = {
   ":host": {
     color: "initial",
@@ -65,7 +67,9 @@ const meta: Meta<typeof TerminalSessionTray> = {
   render: (args) => {
     return renderInDevtoolsStoryShadowRoot(
       <ThemeProvider colorScheme="dark">
-        <TerminalSessionTray {...args} />
+        <StoryContainer align="center">
+          <TerminalSessionTray {...args} />
+        </StoryContainer>
       </ThemeProvider>,
     );
   },
@@ -75,11 +79,11 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const Default: Story = {
+export const Default: Story = {
   args: {
-    onExpandSession: (): void => {},
-    onMinimizeSession: (): void => {},
-    onRemoveSession: (): void => {},
+    onExpandSession: fn(),
+    onMinimizeSession: fn(),
+    onRemoveSession: fn(),
     sessions: [agentSession],
   },
   play: async ({ canvasElement }): Promise<void> => {
@@ -96,7 +100,83 @@ const Default: Story = {
   },
 };
 
-export { Default as TerminalSessionTray };
+export const WithExpandedSession: Story = {
+  args: {
+    onExpandSession: fn(),
+    onMinimizeSession: fn(),
+    onRemoveSession: fn(),
+    sessions: [
+      {
+        ...agentSession,
+        isExpanded: true,
+      },
+    ],
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    const shadowHost: HTMLElement = await canvas.findByTestId(devtoolsStoryShadowRootHostTestId);
+    const shadowRoot: ShadowRoot = readShadowRoot(
+      shadowHost,
+      "Expected the terminal tray story to attach a shadow root.",
+    );
+
+    await waitFor(async (): Promise<void> => {
+      await expect(shadowRoot.querySelector('[data-testid="TerminalSessionTray--expanded-root"]')).not.toBeNull();
+    });
+  },
+};
+
+export const MultipleMinimizedSessions: Story = {
+  args: {
+    onExpandSession: fn(),
+    onMinimizeSession: fn(),
+    onRemoveSession: fn(),
+    sessions: [
+      agentSession,
+      {
+        ...agentSession,
+        sessionId: "session-2",
+        summary: {
+          ...agentSession.summary,
+          headline: "Second agent session",
+        },
+      },
+    ],
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    const shadowHost: HTMLElement = await canvas.findByTestId(devtoolsStoryShadowRootHostTestId);
+    const shadowRoot: ShadowRoot = readShadowRoot(
+      shadowHost,
+      "Expected the terminal tray story to attach a shadow root.",
+    );
+
+    await waitFor(async (): Promise<void> => {
+      await expect(shadowRoot.querySelector('[data-testid="TerminalSessionTray--session-list"]')).not.toBeNull();
+    });
+  },
+};
+
+export const Empty: Story = {
+  args: {
+    onExpandSession: fn(),
+    onMinimizeSession: fn(),
+    onRemoveSession: fn(),
+    sessions: [],
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    const shadowHost: HTMLElement = await canvas.findByTestId(devtoolsStoryShadowRootHostTestId);
+    const shadowRoot: ShadowRoot = readShadowRoot(
+      shadowHost,
+      "Expected the terminal tray story to attach a shadow root.",
+    );
+
+    await waitFor(async (): Promise<void> => {
+      await expect(shadowRoot.querySelector('[data-testid="TerminalSessionTray"]')).toBeNull();
+    });
+  },
+};
 
 function renderInDevtoolsStoryShadowRoot(children: ComponentChildren): JSX.Element {
   return <DevtoolsStoryShadowRoot>{children}</DevtoolsStoryShadowRoot>;
