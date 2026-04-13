@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import { App } from "../App";
 import { withDevhostMock } from "./withDevhostMock";
@@ -38,6 +38,37 @@ const Default: Story = {
 
     await userEvent.click(agentHandoffTab);
     await expect(agentHandoffTab).toHaveAttribute("aria-selected", "true");
+
+    // Devhost UI Assertions:
+
+    // Wait for devhost container to exist in the DOM body
+    await waitFor(
+      () => {
+        expect(document.getElementById("devhost-devtools-host")).toBeInTheDocument();
+      },
+      { timeout: 5000 },
+    );
+    const devtoolsHost = document.getElementById("devhost-devtools-host");
+    if (!devtoolsHost || !devtoolsHost.shadowRoot) throw new Error("Missing Devhost ShadowRoot");
+
+    // Create a generic within scope for the shadow root
+    const rootNode = devtoolsHost.shadowRoot.querySelector("div");
+    if (!rootNode) throw new Error("No div in shadow root");
+    const shadowScope = within(rootNode as HTMLElement);
+
+    // 1. Multiple services (main, api subpath, worker secondary)
+    await shadowScope.findByText("app", { selector: "span" }, { timeout: 5000 });
+    await shadowScope.findByText("api", { selector: "span" });
+
+    // 2. Logs should be populated
+    await shadowScope.findByTestId("LogMinimap", undefined, { timeout: 5000 });
+
+    // 3. Annotation queue prepopulated with 3 items
+    await shadowScope.findByDisplayValue("Change the primary button color to blue.");
+    await shadowScope.findByText("3 items", { selector: "span" });
+
+    // 4. One Pi active session and one Nvim
+    await shadowScope.findAllByTestId("TerminalSessionTray", undefined, { timeout: 5000 });
   },
 };
 

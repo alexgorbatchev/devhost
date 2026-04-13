@@ -25,9 +25,6 @@ interface IDevhostMockDecoratorProps {
 type MockWebSocketUrl = string | URL;
 type FetchRequestInput = Parameters<typeof fetch>[0];
 
-interface IDevtoolsModule {
-  renderDevtools: () => void;
-}
 type FetchRequestInit = Parameters<typeof fetch>[1];
 
 export function withDevhostMock(Story: React.ComponentType): JSX.Element {
@@ -82,9 +79,9 @@ function DevhostMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Elemen
       constructor(url: MockWebSocketUrl) {
         super();
         this.url = String(url);
-        queueMicrotask((): void => {
+        setTimeout((): void => {
           this.openConnection();
-        });
+        }, 100);
       }
 
       close(code: number = 1000, reason: string = ""): void {
@@ -108,6 +105,7 @@ function DevhostMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Elemen
 
       private emitSnapshotMessages(): void {
         const requestUrl = new URL(this.url, window.location.href);
+        console.log("MOCK WS URL:", this.url, requestUrl.pathname);
 
         if (requestUrl.pathname.includes("/ws/health")) {
           this.emitMessage(
@@ -219,7 +217,7 @@ function DevhostMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Elemen
       const url: string =
         typeof input === "string" ? input : input instanceof URL ? input.toString() : (input as Request).url;
 
-      if (url.includes("/terminal-sessions") && (!init || init.method === "GET")) {
+      if (url.includes("/terminal-sessions")) {
         return new Response(
           JSON.stringify({
             sessions: [
@@ -258,12 +256,10 @@ function DevhostMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Elemen
         );
       }
 
-      return originalFetch(input, init);
+      return originalFetch.call(window, input, init);
     }) as typeof fetch;
 
-    import("@alexgorbatchev/devhost/src/devtools" as unknown as string)
-      .then((m: unknown) => (m as IDevtoolsModule).renderDevtools())
-      .catch(console.error);
+    import("@alexgorbatchev/devhost/src/devtools").then((m) => m.renderDevtools()).catch((m) => console.error("MOCK DEVTOOLS ERROR:", m));
 
     return (): void => {
       Reflect.deleteProperty(window, "__DEVHOST_INJECTED_CONFIG__");

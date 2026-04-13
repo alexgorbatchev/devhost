@@ -22,8 +22,8 @@ export function resolveLogPreviewOverlay(
   }
 
   const overlayMarks: ILogMinimapMark[] = marks.slice(startIndex, endIndex);
-  const top: number = overlayMarks[0].top;
-  const lastMark: ILogMinimapMark = overlayMarks[overlayMarks.length - 1];
+  const top: number = overlayMarks[0]!.top;
+  const lastMark: ILogMinimapMark = overlayMarks[overlayMarks.length - 1]!;
   const height: number = lastMark.top + lastMark.height - top;
 
   return {

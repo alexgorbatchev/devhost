@@ -43,7 +43,7 @@ function joinFilePaths(basePath: string, relativePath: string): string {
 
     if (segment === "..") {
       const canPopSegment: boolean =
-        joinedSegments.length > 1 || (joinedSegments.length === 1 && !isWindowsDrivePath(joinedSegments[0]));
+        joinedSegments.length > 1 || (joinedSegments.length === 1 && !isWindowsDrivePath(joinedSegments[0]!));
 
       if (canPopSegment) {
         joinedSegments.pop();

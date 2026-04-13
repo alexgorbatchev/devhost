@@ -3,7 +3,7 @@ import { isWindowsDrivePath, normalizeFilePath, resolveSourceFilePath } from "..
 import { cleanSourcePath, type ISourceLocation } from "../../shared/sourceLocation";
 
 export function formatComponentSourcePath(source: ISourceLocation, projectRootPath: string): string {
-  const displayPath: string = createDisplaySourcePath(source.fileName, projectRootPath);
+  const displayPath: string = createDisplaySourcePath(source.fileName!, projectRootPath);
   const columnSuffix: string = source.columnNumber === undefined ? "" : `:${source.columnNumber}`;
 
   return `${displayPath}:${source.lineNumber}${columnSuffix}`;
@@ -14,7 +14,7 @@ export function createComponentSourceUrl(
   editor: DevtoolsComponentEditor,
   projectRootPath: string,
 ): string {
-  const absoluteSourcePath: string = resolveSourceFilePath(source.fileName, projectRootPath);
+  const absoluteSourcePath: string = resolveSourceFilePath(source.fileName!, projectRootPath);
   const editorProtocolPath: string = toEditorProtocolPath(absoluteSourcePath);
   const encodedPath: string = encodeURI(editorProtocolPath);
   const lineNumber: number = source.lineNumber;
@@ -54,7 +54,7 @@ function inferProjectRelativePath(rawPath: string): string {
   let matchIndex: number = -1;
 
   for (let segmentIndex: number = 0; segmentIndex < pathSegments.length; segmentIndex += 1) {
-    const segment: string = pathSegments[segmentIndex];
+    const segment: string = pathSegments[segmentIndex]!;
 
     if (segment === "src" || segment === "app" || segment === "pages") {
       matchIndex = segmentIndex;

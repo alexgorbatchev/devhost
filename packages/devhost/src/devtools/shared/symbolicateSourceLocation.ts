@@ -108,7 +108,7 @@ function extractSourceMapUrl(sourceText: string, sourceUrl: string): string | un
   const sourceLines: string[] = sourceText.split(/\r?\n/);
 
   for (let lineIndex: number = sourceLines.length - 1; lineIndex >= 0; lineIndex -= 1) {
-    const sourceLine: string = sourceLines[lineIndex].trim();
+    const sourceLine: string = sourceLines[lineIndex]!.trim();
 
     if (sourceLine.length === 0) {
       continue;

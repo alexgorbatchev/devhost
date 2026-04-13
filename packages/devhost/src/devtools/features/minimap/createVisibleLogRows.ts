@@ -32,7 +32,7 @@ export function createVisibleLogRows(
   let nextTop: number = resolvedViewportHeight - markHeightInPixels;
 
   for (let entryIndex = entries.length - 1; entryIndex >= 0 && nextTop + markHeightInPixels > 0; entryIndex -= 1) {
-    const entry: ServiceLogEntry = entries[entryIndex];
+    const entry: ServiceLogEntry = entries[entryIndex]!;
     const wrappedRows: string[] = createWrappedRows(entry.line);
 
     for (
@@ -40,7 +40,7 @@ export function createVisibleLogRows(
       wrappedRowIndex >= 0 && nextTop + markHeightInPixels > 0;
       wrappedRowIndex -= 1
     ) {
-      const wrappedRowText: string = wrappedRows[wrappedRowIndex];
+      const wrappedRowText: string = wrappedRows[wrappedRowIndex]!;
 
       rowsFromBottom.push({
         entryIndex,
