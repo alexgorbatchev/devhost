@@ -4,6 +4,7 @@ import { expect, within } from "storybook/test";
 import { InsetList } from "../InsetList";
 
 const meta: Meta<typeof InsetList> = {
+  title: "components/ui/InsetList",
   component: InsetList,
 };
 

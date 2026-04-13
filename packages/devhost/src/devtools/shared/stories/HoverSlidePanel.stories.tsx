@@ -5,6 +5,7 @@ import { HoverSlidePanel } from "../HoverSlidePanel";
 import { ThemeProvider } from "../ThemeProvider";
 
 const meta: Meta<typeof HoverSlidePanel> = {
+  title: "devtools/shared/HoverSlidePanel",
   component: HoverSlidePanel,
   render: (args) => {
     return (

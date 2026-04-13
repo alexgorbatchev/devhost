@@ -11,6 +11,7 @@ const config: StorybookConfig = {
   },
   staticDirs: ["../public"],
   stories: ["../src/**/*.stories.@(ts|tsx)"],
+  addons: ["@storybook/addon-vitest"],
   async viteFinal(viteConfig: UserConfig): Promise<UserConfig> {
     const existingIncludedDependencyIds: string[] = viteConfig.optimizeDeps?.include ?? [];
 

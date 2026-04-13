@@ -65,13 +65,21 @@ function createPanelStyle(
     color: theme.colors.foreground,
     fontFamily: theme.fontFamilies.monospace,
     fontSize: theme.fontSizes.sm,
-    overflow: "hidden",
+    overflow: "visible",
     padding: `${theme.spacing.xxs} ${theme.spacing.xs}`,
     position: "relative",
     transform: resolveHoverSlidePanelTransform(panelSide, isHovered, peekWidth),
     transition: hoverSlidePanelTransition,
     willChange: "transform",
     zIndex: Number(theme.zIndices.floating) + 2,
+    "&::after": {
+      content: '""',
+      position: "absolute",
+      top: 0,
+      bottom: 0,
+      [panelSide === "left" ? "left" : "right"]: "-50px",
+      width: "50px",
+    },
     ...style,
   };
 }

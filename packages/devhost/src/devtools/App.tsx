@@ -150,6 +150,7 @@ function AppContent(): JSX.Element {
           errorMessage={annotationQueueErrorMessage}
           isEntryMutationPending={isEntryMutationPending}
           isQueueResumePending={isQueueResumePending}
+          panelSide={servicePanelSide}
           onRemoveEntry={removeEntry}
           onResumeQueue={handleResumeQueue}
           onSaveEntry={saveEntry}

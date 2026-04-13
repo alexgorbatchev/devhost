@@ -4,6 +4,7 @@ import { expect, within } from "storybook/test";
 import { RrwebDemoPanel } from "../RrwebDemoPanel";
 
 const meta: Meta<typeof RrwebDemoPanel> = {
+  title: "features/rrweb/RrwebDemoPanel",
   component: RrwebDemoPanel,
 };
 

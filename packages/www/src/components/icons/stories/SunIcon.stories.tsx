@@ -6,7 +6,7 @@ type Story = StoryObj<typeof SunIcon>;
 
 const meta: Meta<typeof SunIcon> = {
   component: SunIcon,
-  title: "Icons/SunIcon",
+  title: "components/icons/SunIcon",
 };
 
 export default meta;

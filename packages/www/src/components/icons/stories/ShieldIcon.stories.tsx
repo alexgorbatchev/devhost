@@ -6,7 +6,7 @@ type Story = StoryObj<typeof ShieldIcon>;
 
 const meta: Meta<typeof ShieldIcon> = {
   component: ShieldIcon,
-  title: "Icons/ShieldIcon",
+  title: "components/icons/ShieldIcon",
 };
 
 export default meta;

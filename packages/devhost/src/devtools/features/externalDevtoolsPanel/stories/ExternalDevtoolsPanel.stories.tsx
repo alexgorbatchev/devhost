@@ -5,6 +5,7 @@ import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { ExternalDevtoolsPanel } from "../ExternalDevtoolsPanel";
 
 const meta: Meta<typeof ExternalDevtoolsPanel> = {
+  title: "devtools/features/externalDevtoolsPanel/ExternalDevtoolsPanel",
   component: ExternalDevtoolsPanel,
   render: (args) => {
     return (

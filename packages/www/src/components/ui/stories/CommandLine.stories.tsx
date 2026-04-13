@@ -4,6 +4,7 @@ import { expect, within } from "storybook/test";
 import { CommandLine } from "../CommandLine";
 
 const meta: Meta<typeof CommandLine> = {
+  title: "components/ui/CommandLine",
   component: CommandLine,
 };
 
@@ -31,7 +32,12 @@ export const MultiLine: Story = {
     const canvas = within(canvasElement);
 
     await expect(canvas.getByTestId("CommandLine")).toBeInTheDocument();
-    await expect(canvas.getByText("npm run dev")).toBeInTheDocument();
-    await expect(canvas.getByText("open https://foo.localhost")).toBeInTheDocument();
+    
+    const codeElements = canvas.getAllByText((content, element) => {
+      if (!element) return false;
+      return element.tagName.toLowerCase() === "code" && content.includes("npm run dev") && content.includes("open https://foo.localhost");
+    });
+    
+    await expect(codeElements.length).toBeGreaterThan(0);
   },
 };

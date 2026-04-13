@@ -5,6 +5,7 @@ import { Button } from "../Button";
 import { ThemeProvider } from "../ThemeProvider";
 
 const meta: Meta<typeof Button> = {
+  title: "devtools/shared/Button",
   component: Button,
   render: (args) => {
     return (

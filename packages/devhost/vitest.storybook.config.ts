@@ -8,17 +8,10 @@ import { defineConfig } from "vitest/config";
 const dirname: string = typeof __dirname !== "undefined" ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  cacheDir: "./.cache/vite",
   test: {
     projects: [
       {
-        extends: true,
-        plugins: [
-          storybookTest({
-            configDir: path.join(dirname, ".storybook"),
-            storybookScript: "bun run storybook",
-            storybookUrl: "http://127.0.0.1:6006",
-          }),
-        ],
         test: {
           browser: {
             enabled: true,
@@ -28,6 +21,13 @@ export default defineConfig({
           },
           name: "storybook",
         },
+        plugins: [
+          storybookTest({
+            configDir: path.join(dirname, ".storybook"),
+            storybookScript: "bun run storybook",
+            storybookUrl: "http://127.0.0.1:6006",
+          }),
+        ],
       },
     ],
   },

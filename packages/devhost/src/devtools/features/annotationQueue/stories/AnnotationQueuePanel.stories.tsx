@@ -83,6 +83,7 @@ const sampleQueues: IAnnotationQueueSnapshot[] = [
 ];
 
 const meta: Meta<typeof AnnotationQueuePanel> = {
+  title: "devtools/features/annotationQueue/AnnotationQueuePanel",
   component: AnnotationQueuePanel,
   render: (args) => {
     return (
@@ -113,7 +114,7 @@ const Default: Story = {
 
     await expect(canvas.getByTestId("AnnotationQueuePanel")).toBeInTheDocument();
     await expect(canvas.getAllByTestId("AnnotationQueuePanel--queue")).toHaveLength(2);
-    await expect(canvas.getByText("Annotation queue")).toBeInTheDocument();
+    await expect(canvas.getAllByText("Annotation queue")[0]).toBeInTheDocument();
     await expect(
       canvas.getByText("Session exited before the annotation finished. Resume to retry."),
     ).toBeInTheDocument();

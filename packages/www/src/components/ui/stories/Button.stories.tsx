@@ -4,6 +4,7 @@ import { expect, fn, userEvent, within } from "storybook/test";
 import { Button } from "../Button";
 
 const meta: Meta<typeof Button> = {
+  title: "components/ui/Button",
   component: Button,
 };
 

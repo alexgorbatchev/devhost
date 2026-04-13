@@ -11,8 +11,8 @@
     "fix": "bun --bun oxfmt --write ."
   },
   "devDependencies": {
-    "@alexgorbatchev/typescript-ai-policy": "^3.0.0",
-    "oxfmt": "^0.44.0",
-    "oxlint": "^1.59.0"
+    "@alexgorbatchev/typescript-ai-policy": "^5.0.0",
+    "oxfmt": "^0.45.0",
+    "oxlint": "^1.60.0"
   }
 }

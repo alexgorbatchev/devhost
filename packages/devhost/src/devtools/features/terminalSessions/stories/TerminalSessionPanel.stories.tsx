@@ -60,6 +60,7 @@ const devtoolsStoryShadowRootGlobalStyles: CSSObject = {
 const devtoolsStoryShadowRootHostTestId: string = "DevtoolsStoryShadowRoot";
 
 const meta: Meta<typeof TerminalSessionPanel> = {
+  title: "devtools/features/terminalSessions/TerminalSessionPanel",
   component: TerminalSessionPanel,
   render: (args) => {
     return renderInDevtoolsStoryShadowRoot(

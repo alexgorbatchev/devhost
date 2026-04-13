@@ -19,6 +19,7 @@ position = "top-right"
 command = "bun dev"
 cwd = "./skit"
 port = 5173
+injectPort = false
 host = "test.localhost"
 bindHost = "::1"
 

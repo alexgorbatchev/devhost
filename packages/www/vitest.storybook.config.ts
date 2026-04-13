@@ -9,20 +9,13 @@ const dirname: string = typeof __dirname !== "undefined" ? __dirname : path.dirn
 const optimizedDependencyIds: string[] = ["@rrweb/all", "react/jsx-dev-runtime", "react/jsx-runtime"];
 
 export default defineConfig({
+  cacheDir: "./.cache/vite",
   optimizeDeps: {
     include: optimizedDependencyIds,
   },
   test: {
     projects: [
       {
-        extends: true,
-        plugins: [
-          storybookTest({
-            configDir: path.join(dirname, ".storybook"),
-            storybookScript: "bun storybook",
-            storybookUrl: "http://127.0.0.1:6007",
-          }),
-        ],
         test: {
           browser: {
             enabled: true,
@@ -32,6 +25,13 @@ export default defineConfig({
           },
           name: "storybook",
         },
+        plugins: [
+          storybookTest({
+            configDir: path.join(dirname, ".storybook"),
+            storybookScript: "bun storybook",
+            storybookUrl: "http://127.0.0.1:6007",
+          }),
+        ],
       },
     ],
   },

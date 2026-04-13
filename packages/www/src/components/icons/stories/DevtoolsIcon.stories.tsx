@@ -6,7 +6,7 @@ type Story = StoryObj<typeof DevtoolsIcon>;
 
 const meta: Meta<typeof DevtoolsIcon> = {
   component: DevtoolsIcon,
-  title: "Icons/DevtoolsIcon",
+  title: "components/icons/DevtoolsIcon",
 };
 
 export default meta;

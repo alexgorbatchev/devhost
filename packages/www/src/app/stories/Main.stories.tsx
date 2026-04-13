@@ -4,6 +4,7 @@ import { expect, within } from "storybook/test";
 import { Main } from "../Main";
 
 const meta: Meta<typeof Main> = {
+  title: "app/Main",
   component: Main,
 };
 
@@ -18,7 +19,7 @@ const Default: Story = {
     await expect(canvas.getByTestId("App")).toBeInTheDocument();
     await expect(
       canvas.getByRole("heading", {
-        name: "Give every local app a real front door.",
+        name: "replace localhost:3000 with https://app.localhost and then some more",
       }),
     ).toBeInTheDocument();
   },

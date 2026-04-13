@@ -5,6 +5,7 @@ import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { AnnotationComposer } from "../AnnotationComposer";
 
 const meta: Meta<typeof AnnotationComposer> = {
+  title: "devtools/features/annotationComposer/AnnotationComposer",
   component: AnnotationComposer,
   render: (args) => {
     return (

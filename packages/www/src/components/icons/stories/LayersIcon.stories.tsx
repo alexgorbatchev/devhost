@@ -6,7 +6,7 @@ type Story = StoryObj<typeof LayersIcon>;
 
 const meta: Meta<typeof LayersIcon> = {
   component: LayersIcon,
-  title: "Icons/LayersIcon",
+  title: "components/icons/LayersIcon",
 };
 
 export default meta;

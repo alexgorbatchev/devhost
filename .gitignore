@@ -10,3 +10,4 @@ coverage/
 storybook-static/
 .tmp
 
+/packages/www/skit
