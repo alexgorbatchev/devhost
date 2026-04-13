@@ -136,6 +136,14 @@ function restoreGlobalValue(name: string, value: unknown): void {
 const preview: Preview = {
   parameters: {
     layout: "fullscreen",
+    backgrounds: {
+      default: "darker light",
+      values: [
+        { name: "darker light", value: "#f3f4f6" },
+        { name: "dark", value: "#1f2937" },
+        { name: "light", value: "#ffffff" },
+      ],
+    },
   },
   beforeEach() {
     const originalFetch: unknown = Reflect.get(globalThis, "fetch");
