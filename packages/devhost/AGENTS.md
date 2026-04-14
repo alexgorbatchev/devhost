@@ -49,6 +49,10 @@ bun run check
 
 The `fmt` script runs `oxfmt --write` for this workspace using the shared repo-root config. The package `check` script runs the native TypeScript typecheck and the coverage test suite for this workspace only. Run `bun run storybook` separately when Storybook coverage is in scope. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
 
+## Testing
+
+- The Storybook `play` functions run in a **real headless browser** (via Playwright / Vitest browser mode). **DO NOT** use JSDOM hacks, DOM event mocking (e.g., overriding `getBoundingClientRect` or `elementsFromPoint`), or artificial `dispatchEvent` setups to simulate interactions. Use standard `@storybook/test` utilities like `userEvent` and `within`—they work correctly against the real DOM.
+
 ## Internal package layout
 
 - `bin/devhost.ts` — workspace CLI entrypoint
