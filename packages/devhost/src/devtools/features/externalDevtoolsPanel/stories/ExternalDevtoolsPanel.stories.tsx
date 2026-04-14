@@ -27,16 +27,16 @@ export const DefaultLeft: Story = {
   args: {
     launchers: [
       {
-        id: "react-devtools",
+        id: "tanstack-router",
         isOpen: false,
-        label: "React DevTools",
-        title: "Open React DevTools",
+        label: "Router",
+        title: "Toggle TanStack Router devtools",
       },
       {
-        id: "storybook",
+        id: "tanstack-query",
         isOpen: true,
-        label: "Storybook",
-        title: "Open Storybook toolbar",
+        label: "Query",
+        title: "Toggle TanStack Query devtools",
       },
     ],
     onToggleLauncher: fn(),
@@ -48,8 +48,17 @@ export const DefaultLeft: Story = {
     await expect(canvas.getByTestId("ExternalDevtoolsPanel")).toBeInTheDocument();
     await expect(canvas.getByTestId("ExternalDevtoolsPanel--launcher-list")).toBeInTheDocument();
 
-    await userEvent.click(canvas.getByRole("button", { name: "React DevTools" }));
-    await expect(args.onToggleLauncher).toHaveBeenCalledWith("react-devtools");
+    const routerButton = canvas.getByRole("button", { name: "Router" });
+    const queryButton = canvas.getByRole("button", { name: "Query" });
+
+    // Simulate DOM elements being present for detectors if needed in a real integration test
+    // For unit/storybook tests of this component we just verify the event firing.
+
+    await userEvent.click(routerButton);
+    await expect(args.onToggleLauncher).toHaveBeenCalledWith("tanstack-router");
+
+    await userEvent.click(queryButton);
+    await expect(args.onToggleLauncher).toHaveBeenCalledWith("tanstack-query");
   },
 };
 
@@ -57,10 +66,16 @@ export const DefaultRight: Story = {
   args: {
     launchers: [
       {
-        id: "vue-devtools",
+        id: "tanstack-router",
         isOpen: false,
-        label: "Vue DevTools",
-        title: "Open Vue DevTools",
+        label: "Router",
+        title: "Toggle TanStack Router devtools",
+      },
+      {
+        id: "tanstack-query",
+        isOpen: true,
+        label: "Query",
+        title: "Toggle TanStack Query devtools",
       },
     ],
     onToggleLauncher: fn(),
@@ -72,8 +87,11 @@ export const DefaultRight: Story = {
     await expect(canvas.getByTestId("ExternalDevtoolsPanel")).toBeInTheDocument();
     await expect(canvas.getByTestId("ExternalDevtoolsPanel--launcher-list")).toBeInTheDocument();
 
-    await userEvent.click(canvas.getByRole("button", { name: "Vue DevTools" }));
-    await expect(args.onToggleLauncher).toHaveBeenCalledWith("vue-devtools");
+    await userEvent.click(canvas.getByRole("button", { name: "Router" }));
+    await expect(args.onToggleLauncher).toHaveBeenCalledWith("tanstack-router");
+
+    await userEvent.click(canvas.getByRole("button", { name: "Query" }));
+    await expect(args.onToggleLauncher).toHaveBeenCalledWith("tanstack-query");
   },
 };
 
