@@ -1,38 +1,58 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools/production";
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  RouterProvider,
+} from "@tanstack/react-router";
+import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, within, waitFor } from "storybook/test";
 
 import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
 import { ExternalDevtoolsPanel } from "../ExternalDevtoolsPanel";
+import { useExternalDevtoolsLaunchers } from "../useExternalDevtoolsLaunchers";
 import type { PanelSide } from "../../serviceStatusPanel";
-import type { IExternalDevtoolsLauncher } from "../types";
+
+const queryClient = new QueryClient();
+
+const rootRoute = createRootRoute({
+  component: () => null,
+});
+
+const indexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/",
+  component: () => null,
+});
+
+const routeTree = rootRoute.addChildren([indexRoute]);
+const router = createRouter({ history: createMemoryHistory(), routeTree });
 
 interface IIntegratedPanelProps {
   panelSide: PanelSide;
 }
 
 function IntegratedPanel({ panelSide }: IIntegratedPanelProps) {
-  const launchers: IExternalDevtoolsLauncher[] = [
-    {
-      id: "router",
-      isOpen: false,
-      label: "Router",
-      title: "Router",
-    },
-    {
-      id: "query",
-      isOpen: false,
-      label: "Query",
-      title: "Query",
-    },
-  ];
+  const { launchers, toggleLauncher } = useExternalDevtoolsLaunchers(true);
 
   return (
-    <ThemeProvider colorScheme="dark">
-      <StoryContainer align={panelSide}>
-        <ExternalDevtoolsPanel launchers={launchers} onToggleLauncher={() => {}} panelSide={panelSide} />
-      </StoryContainer>
-    </ThemeProvider>
+    <>
+      <QueryClientProvider client={queryClient}>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
+      <RouterProvider router={router} />
+      <TanStackRouterDevtools router={router} initialIsOpen={false} />
+
+      <ThemeProvider colorScheme="dark">
+        <StoryContainer align={panelSide}>
+          <ExternalDevtoolsPanel launchers={launchers} onToggleLauncher={toggleLauncher} panelSide={panelSide} />
+        </StoryContainer>
+      </ThemeProvider>
+    </>
   );
 }
 
@@ -57,8 +77,16 @@ export const DefaultLeft: Story = {
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
 
-    const routerButton = await canvas.findByRole("button", { name: "Router" });
-    const queryButton = await canvas.findByRole("button", { name: "Query" });
+    // Wait a bit for devtools to inject their buttons into the body
+    await waitFor(
+      () => {
+        expect(document.querySelector(".tsqd-parent-container")).not.toBeNull();
+      },
+      { timeout: 3000 },
+    );
+
+    const routerButton = await canvas.findByRole("button", { name: "Router" }, { timeout: 3000 });
+    const queryButton = await canvas.findByRole("button", { name: "Query" }, { timeout: 3000 });
 
     await expect(routerButton).toBeInTheDocument();
     await expect(queryButton).toBeInTheDocument();
@@ -77,8 +105,16 @@ export const DefaultRight: Story = {
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
 
-    const routerButton = await canvas.findByRole("button", { name: "Router" });
-    const queryButton = await canvas.findByRole("button", { name: "Query" });
+    // Wait a bit for devtools to inject their buttons into the body
+    await waitFor(
+      () => {
+        expect(document.querySelector(".tsqd-parent-container")).not.toBeNull();
+      },
+      { timeout: 3000 },
+    );
+
+    const routerButton = await canvas.findByRole("button", { name: "Router" }, { timeout: 3000 });
+    const queryButton = await canvas.findByRole("button", { name: "Query" }, { timeout: 3000 });
 
     await expect(routerButton).toBeInTheDocument();
     await expect(queryButton).toBeInTheDocument();

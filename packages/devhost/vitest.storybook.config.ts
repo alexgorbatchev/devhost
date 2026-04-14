@@ -9,6 +9,9 @@ const dirname: string = typeof __dirname !== "undefined" ? __dirname : path.dirn
 
 export default defineConfig({
   cacheDir: "./.cache/vite",
+  optimizeDeps: {
+    include: ["@tanstack/react-query-devtools/production", "@tanstack/router-devtools"],
+  },
   test: {
     projects: [
       {
