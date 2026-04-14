@@ -24,7 +24,7 @@ export default defineConfig({
         plugins: [
           storybookTest({
             configDir: path.join(dirname, ".storybook"),
-            storybookScript: "bun run storybook",
+            storybookScript: "storybook dev --ci --port 6006",
             storybookUrl: "http://127.0.0.1:6006",
           }),
         ],

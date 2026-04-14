@@ -50,7 +50,6 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@typescript/native-preview": "^7.0.0-dev.20260408.1",
-    "@vitejs/plugin-react": "^6.0.1",
     "@vitest/browser-playwright": "4.1.4",
     "playwright": "1.59.1",
     "react": "^19.2.5",
