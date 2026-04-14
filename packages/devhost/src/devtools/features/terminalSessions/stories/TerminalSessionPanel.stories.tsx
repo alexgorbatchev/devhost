@@ -1,7 +1,7 @@
 import type { CSSObject } from "@emotion/css/create-instance";
 import type { Meta, StoryObj } from "@storybook/react";
 import { type ReactNode, type JSX } from "react";
-import { createRoot } from "react-dom/client";
+import { createPortal } from "react-dom";
 import { useLayoutEffect, useRef, useState } from "react";
 import { expect, waitFor, within, fn } from "storybook/test";
 
@@ -199,20 +199,11 @@ function DevtoolsStoryShadowRoot(props: IDevtoolsStoryShadowRootProps): JSX.Elem
     };
   }, []);
 
-  useLayoutEffect(() => {
-    if (shadowMountNode === null) {
-      return;
-    }
-
-    const root = createRoot(shadowMountNode);
-    root.render(<>{props.children}</>);
-
-    return () => {
-      root.unmount();
-    };
-  }, [props.children, shadowMountNode]);
-
-  return <div data-testid={devtoolsStoryShadowRootHostTestId} ref={hostElementReference} />;
+  return (
+    <div data-testid={devtoolsStoryShadowRootHostTestId} ref={hostElementReference}>
+      {shadowMountNode ? createPortal(props.children, shadowMountNode) : null}
+    </div>
+  );
 }
 
 function readShadowRoot(hostElement: HTMLElement, errorMessage: string): ShadowRoot {
