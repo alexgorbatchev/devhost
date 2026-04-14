@@ -12,7 +12,7 @@
     "prepare": "husky"
   },
   "nano-staged": {
-    "*": "bun --bun oxfmt --write"
+    "*": "bun --bun oxfmt --write --no-error-on-unmatched-pattern"
   },
   "devDependencies": {
     "@alexgorbatchev/typescript-ai-policy": "^5.0.1",
