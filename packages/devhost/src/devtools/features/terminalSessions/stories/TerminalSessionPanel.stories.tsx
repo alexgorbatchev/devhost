@@ -118,7 +118,7 @@ export const Expanded: Story = {
       },
     },
   },
-  play: async ({ args, canvasElement }): Promise<void> => {
+  play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
     const shadowHost: HTMLElement = await canvas.findByTestId(devtoolsStoryShadowRootHostTestId);
     const shadowRoot: ShadowRoot = readShadowRoot(

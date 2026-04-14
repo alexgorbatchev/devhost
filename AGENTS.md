@@ -30,6 +30,7 @@ Monorepo root for the published `devhost` package and the local demo app.
 
 - Always: run `bun run check` after changing workspace manifests, scripts, CI, or directory layout.
 - Always: address all lint issues before the end of the turn.
+- Never: Agents should NEVER run `bun run fix` or formatting tools directly. Formatting is handled automatically in the background via a pre-commit hook using nano-staged.
 - Ask first: adding a new workspace, changing cross-workspace dependency topology, or changing the publish/release flow.
 - Never: disable lint rules unless the user explicitly authorizes it.
 - Never: publish or pack from the repo root; publish only from `packages/devhost/`.

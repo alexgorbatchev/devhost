@@ -36,16 +36,34 @@ async function triggerAnnotationSelection(targetElement: HTMLElement): Promise<v
   targetElement.getBoundingClientRect = () =>
     ({ x: 0, y: 0, width: 100, height: 100, top: 0, right: 100, bottom: 100, left: 0, toJSON: () => {} }) as DOMRect;
 
+  targetElement.focus();
+  await new Promise((resolve) => setTimeout(resolve, 50));
+
   document.dispatchEvent(new KeyboardEvent("keydown", { key: "Alt", bubbles: true, composed: true }));
 
   await new Promise((resolve) => setTimeout(resolve, 50));
 
   document.dispatchEvent(new MouseEvent("mousemove", { clientX: 10, clientY: 10, bubbles: true, composed: true }));
-  document.dispatchEvent(new MouseEvent("mousedown", { clientX: 10, clientY: 10, bubbles: true, composed: true }));
-  document.dispatchEvent(new MouseEvent("mouseup", { clientX: 10, clientY: 10, bubbles: true, composed: true }));
-  document.dispatchEvent(new MouseEvent("click", { clientX: 10, clientY: 10, bubbles: true, composed: true }));
+  document.dispatchEvent(
+    new MouseEvent("mousedown", { clientX: 10, clientY: 10, bubbles: true, composed: true, button: 0 }),
+  );
+  document.dispatchEvent(
+    new MouseEvent("mouseup", { clientX: 10, clientY: 10, bubbles: true, composed: true, button: 0 }),
+  );
+
+  const originalGetSelection = window.getSelection;
+  window.getSelection = () => null;
+
+  document.dispatchEvent(
+    new MouseEvent("click", { clientX: 10, clientY: 10, bubbles: true, composed: true, button: 0 }),
+  );
+
+  window.getSelection = originalGetSelection;
+  await new Promise((resolve) => setTimeout(resolve, 50));
 
   document.dispatchEvent(new KeyboardEvent("keyup", { key: "Alt", bubbles: true, composed: true }));
+
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
   targetElement.getBoundingClientRect = originalGetBoundingClientRect;
   document.elementsFromPoint = originalElementsFromPoint;
@@ -59,11 +77,40 @@ export const Default: Story = {
     }),
     stackName: "story-stack",
   },
-  play: async ({ canvasElement }): Promise<void> => {
-    const canvas = within(canvasElement);
+  play: async ({ args, canvasElement }): Promise<void> => {
+    // Start fresh for each story to ensure isolated state
+    await userEvent.keyboard("{Escape}");
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
+    const canvas = within(canvasElement);
     const targetButton = canvas.getByTestId("host-action-target");
     await expect(targetButton).toBeInTheDocument();
+
+    await triggerAnnotationSelection(targetButton);
+
+    const commentInput = await canvas.findByTestId("AnnotationComposer--comment");
+    await userEvent.type(commentInput, "Fix the red button");
+
+    const submitButton = await canvas.findByRole("button", { name: /submit/i });
+    await expect(submitButton).toBeInTheDocument();
+    await userEvent.click(submitButton);
+
+    await expect(args.onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        comment: "Fix the red button",
+        stackName: "story-stack",
+        markers: expect.arrayContaining([
+          expect.objectContaining({
+            markerNumber: 1,
+          }),
+        ]),
+      }),
+      undefined,
+    );
+
+    // Reset state for next test
+    await userEvent.keyboard("{Escape}");
+    await new Promise((resolve) => setTimeout(resolve, 50));
   },
 };
 
@@ -76,9 +123,34 @@ export const WithActiveSession: Story = {
     }),
     stackName: "story-stack",
   },
-  play: async ({ canvasElement }): Promise<void> => {
+  play: async ({ args, canvasElement }): Promise<void> => {
+    // Start fresh for each story to ensure isolated state
+    await userEvent.keyboard("{Escape}");
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
     const canvas = within(canvasElement);
     const targetButton = canvas.getByTestId("host-action-target");
     await expect(targetButton).toBeInTheDocument();
+
+    await triggerAnnotationSelection(targetButton);
+
+    const commentInput = await canvas.findByTestId("AnnotationComposer--comment");
+    await userEvent.type(commentInput, "Update this component");
+
+    const submitButton = await canvas.findByRole("button", { name: /submit/i });
+    await expect(submitButton).toBeInTheDocument();
+    await userEvent.click(submitButton);
+
+    await expect(args.onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        comment: "Update this component",
+        stackName: "story-stack",
+      }),
+      "session-123",
+    );
+
+    // Reset state for next test
+    await userEvent.keyboard("{Escape}");
+    await new Promise((resolve) => setTimeout(resolve, 50));
   },
 };

@@ -8,10 +8,16 @@
     "deploy:www": "bun ./scripts/deployWwwRailway.ts",
     "dev": "bun run --cwd packages/www devhost",
     "storybook": "bun run --cwd packages/devhost storybook",
-    "fix": "bun --bun oxfmt --write ."
+    "fix": "bun --bun oxfmt --write .",
+    "prepare": "husky"
+  },
+  "nano-staged": {
+    "*": "bun --bun oxfmt --write"
   },
   "devDependencies": {
     "@alexgorbatchev/typescript-ai-policy": "^5.0.1",
+    "husky": "^9.1.7",
+    "nano-staged": "^1.0.2",
     "oxfmt": "^0.45.0",
     "oxlint": "^1.60.0"
   }
