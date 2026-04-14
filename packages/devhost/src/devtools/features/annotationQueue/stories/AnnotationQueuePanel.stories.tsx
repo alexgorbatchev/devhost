@@ -127,26 +127,26 @@ export const DefaultLeft: Story = {
     const commentInputs = canvas.getAllByTestId("AnnotationQueuePanel--comment-input");
     await expect(commentInputs.length).toBeGreaterThan(0);
     const firstInput = commentInputs[0];
-    
+
     await userEvent.type(firstInput, " edited");
-    
+
     // Check save and remove buttons for the first editable item
     const saveButtons = canvas.getAllByRole("button", { name: "Save" });
     const removeButtons = canvas.getAllByRole("button", { name: "Remove" });
-    
+
     await expect(saveButtons.length).toBeGreaterThan(0);
     await expect(removeButtons.length).toBeGreaterThan(0);
-    
+
     await userEvent.click(saveButtons[0]);
     await expect(args.onSaveEntry).toHaveBeenCalled();
-    
+
     await userEvent.click(removeButtons[0]);
     await expect(args.onRemoveEntry).toHaveBeenCalled();
 
     // Check resume button for paused queues
     const resumeButton = canvas.getByRole("button", { name: "Resume" });
     await expect(resumeButton).toBeInTheDocument();
-    
+
     await userEvent.click(resumeButton);
     await expect(args.onResumeQueue).toHaveBeenCalled();
   },

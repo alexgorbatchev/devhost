@@ -41,16 +41,17 @@ export const DefaultRight: Story = {
   play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
 
-    await expect(canvas.getByTestId("LogMinimap")).toBeInTheDocument();
-    
+    const logMinimap = canvas.getByTestId("LogMinimap");
+    await expect(logMinimap).toBeInTheDocument();
+
     const minimapCanvas = canvas.getByTestId("LogMinimap--canvas");
     await expect(minimapCanvas).toBeInTheDocument();
-    
-    // Simulate hover interactions
-    await userEvent.hover(minimapCanvas);
+
+    // Simulate hover interactions on the wrapper, not the canvas which has pointer-events: none
+    await userEvent.hover(logMinimap);
     await expect(args.onHoveredChange).toHaveBeenCalledWith(true);
-    
-    await userEvent.unhover(minimapCanvas);
+
+    await userEvent.unhover(logMinimap);
     await expect(args.onHoveredChange).toHaveBeenCalledWith(false);
   },
 };
