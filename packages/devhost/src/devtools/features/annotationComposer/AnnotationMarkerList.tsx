@@ -1,7 +1,5 @@
-/** @jsxImportSource preact */
-
 import type { CSSObject } from "@emotion/css/create-instance";
-import type { JSX } from "preact";
+import type { JSX } from "react";
 
 import { css, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
 
@@ -42,12 +40,12 @@ export function AnnotationMarkerList(props: IAnnotationMarkerListProps): JSX.Ele
   const markerPillClassName: string = dependencies.css(createMarkerPillStyle(dependencies.theme));
 
   return (
-    <ol class={listClassName} data-devhost-instance-testid={props.testId} data-testid="AnnotationMarkerList">
+    <ol className={listClassName} data-devhost-instance-testid={props.testId} data-testid="AnnotationMarkerList">
       {props.items.map((item: IAnnotationMarkerListItem) => {
         return (
-          <li key={item.markerNumber} class={itemClassName}>
-            <span class={markerPillClassName}>{item.markerNumber}</span>
-            <span class={textClassName}>
+          <li key={item.markerNumber} className={itemClassName}>
+            <span className={markerPillClassName}>{item.markerNumber}</span>
+            <span className={textClassName}>
               <strong>#{item.markerNumber}</strong> {item.label}
             </span>
           </li>

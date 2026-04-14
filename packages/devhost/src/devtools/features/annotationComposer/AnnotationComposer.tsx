@@ -1,8 +1,6 @@
-/** @jsxImportSource preact */
-
 import type { CSSObject } from "@emotion/css/create-instance";
-import type { JSX } from "preact";
-import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
+import type { JSX } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button, css, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME, DEVTOOLS_ROOT_ID } from "../../shared/constants";
@@ -466,10 +464,10 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
 
   return (
     <div data-testid="AnnotationComposer">
-      <div class={overlayClassName}>
+      <div className={overlayClassName}>
         {isSelectionMode && hoveredRectangle !== null && !isHoveredElementSelected ? (
           <div
-            class={css(createHoverHighlightStyle(theme, hoveredRectangle))}
+            className={css(createHoverHighlightStyle(theme, hoveredRectangle))}
             data-testid="AnnotationComposer--hover-highlight"
           />
         ) : null}
@@ -480,8 +478,8 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
 
           return (
             <div key={marker.markerNumber}>
-              <div class={css(createSelectionHighlightStyle(theme, marker))} />
-              <div class={css(createMarkerStyle(theme, marker))} data-testid="AnnotationComposer--marker">
+              <div className={css(createSelectionHighlightStyle(theme, marker))} />
+              <div className={css(createMarkerStyle(theme, marker))} data-testid="AnnotationComposer--marker">
                 {marker.markerNumber}
               </div>
             </div>
@@ -492,17 +490,17 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
         <div
           ref={popupReference}
           data-testid="AnnotationComposer--popup"
-          class={css(createPopupStyle(theme, popupCoordinates.left, popupCoordinates.top))}
-          onClick={(event: JSX.TargetedMouseEvent<HTMLDivElement>): void => {
+          className={css(createPopupStyle(theme, popupCoordinates.left, popupCoordinates.top))}
+          onClick={(event: React.MouseEvent<HTMLDivElement>): void => {
             event.stopPropagation();
           }}
-          onMouseDown={(event: JSX.TargetedMouseEvent<HTMLDivElement>): void => {
+          onMouseDown={(event: React.MouseEvent<HTMLDivElement>): void => {
             event.stopPropagation();
           }}
         >
-          <div class={popupHeaderClassName}>
+          <div className={popupHeaderClassName}>
             <strong>Annotation draft</strong>
-            <span class={popupMetaClassName}>
+            <span className={popupMetaClassName}>
               {isSubmitting ? "Submitting annotation…" : `${selectedElements.length} markers selected`}
             </span>
           </div>
@@ -520,30 +518,30 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
             data-testid="AnnotationComposer--comment"
             placeholder="Describe the change and refer to markers like #1, #2, #3…"
             rows={5}
-            class={css(createTextareaStyle(theme))}
+            className={css(createTextareaStyle(theme))}
             value={comment}
-            onInput={(event: JSX.TargetedEvent<HTMLTextAreaElement, Event>): void => {
+            onChange={(event: React.ChangeEvent<HTMLTextAreaElement>): void => {
               setComment(event.currentTarget.value);
             }}
           />
           {submissionErrorMessage !== null ? (
-            <div class={errorClassName} data-testid="AnnotationComposer--error">
+            <div className={errorClassName} data-testid="AnnotationComposer--error">
               {submissionErrorMessage}
             </div>
           ) : null}
           {props.activeAgentSessionId ? (
-            <label class={css(createCheckboxLabelStyle(theme))}>
+            <label className={css(createCheckboxLabelStyle(theme))}>
               <input
                 type="checkbox"
                 checked={sendToActiveSession}
-                onChange={(event: JSX.TargetedEvent<HTMLInputElement, Event>): void => {
+                onChange={(event: React.ChangeEvent<HTMLInputElement>): void => {
                   setSendToActiveSession(event.currentTarget.checked);
                 }}
               />
               Append to active session queue
             </label>
           ) : null}
-          <div class={popupActionsClassName}>
+          <div className={popupActionsClassName}>
             <Button
               disabled={trimmedComment.length === 0 || isSubmitting}
               endEnhancer="⌘ ↵"

@@ -1,4 +1,5 @@
-import { h, render } from "preact";
+import { jsx } from "react/jsx-runtime";
+import { createRoot } from "react-dom/client";
 
 import { App } from "./App";
 import { DEVTOOLS_HOST_ID, configureDevtoolsCss, injectGlobal } from "./shared";
@@ -41,7 +42,7 @@ export function renderDevtools(): void {
         font: "inherit",
       },
     });
-    render(h(App, {}), mountNode);
+    createRoot(mountNode).render(jsx(App, {}));
   };
 
   if (document.readyState === "loading") {

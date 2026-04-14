@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useState } from "react";
 
 import type { DevtoolsColorScheme } from "./devtoolsTheme";
 import { resolveDocumentColorScheme } from "./resolveDocumentColorScheme";

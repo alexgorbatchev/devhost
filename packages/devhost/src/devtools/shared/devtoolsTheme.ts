@@ -1,5 +1,3 @@
-import type { JSX } from "preact";
-
 export type DevtoolsColorScheme = "light" | "dark";
 
 export interface IDevtoolsTheme {
@@ -83,9 +81,9 @@ export interface IDevtoolsTheme {
     xxs: string;
   };
   zIndices: {
-    floating: NonNullable<JSX.CSSProperties["zIndex"]>;
-    terminalExpanded: NonNullable<JSX.CSSProperties["zIndex"]>;
-    terminalTray: NonNullable<JSX.CSSProperties["zIndex"]>;
+    floating: NonNullable<React.CSSProperties["zIndex"]>;
+    terminalExpanded: NonNullable<React.CSSProperties["zIndex"]>;
+    terminalTray: NonNullable<React.CSSProperties["zIndex"]>;
   };
 }
 

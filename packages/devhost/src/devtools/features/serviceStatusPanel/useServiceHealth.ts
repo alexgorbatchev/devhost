@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useState } from "react";
 
 import { HEALTH_WEBSOCKET_PATH } from "../../shared/constants";
 import { createDevtoolsWebSocketUrl } from "../../shared/createDevtoolsWebSocketUrl";

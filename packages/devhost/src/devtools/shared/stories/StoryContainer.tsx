@@ -1,7 +1,7 @@
-import type { ComponentChildren, JSX } from "preact";
+import type { ReactNode, JSX } from "react";
 
 interface IStoryContainerProps {
-  children: ComponentChildren;
+  children: ReactNode;
   align?: "left" | "right" | "center";
 }
 

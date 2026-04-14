@@ -1,4 +1,4 @@
-import { useContext } from "preact/hooks";
+import { useContext } from "react";
 
 import { devtoolsThemeContext } from "./devtoolsThemeContext";
 import type { IDevtoolsTheme } from "./devtoolsTheme";

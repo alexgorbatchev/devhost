@@ -1,7 +1,8 @@
 import type { CSSObject } from "@emotion/css/create-instance";
-import type { Meta, StoryObj } from "@storybook/preact-vite";
-import { render, type ComponentChildren, type JSX } from "preact";
-import { useLayoutEffect, useRef, useState } from "preact/hooks";
+import type { Meta, StoryObj } from "@storybook/react";
+import { type ReactNode, type JSX } from "react";
+import { createRoot } from "react-dom/client";
+import { useLayoutEffect, useRef, useState } from "react";
 import { expect, waitFor, within, fn } from "storybook/test";
 
 import { configureDevtoolsCss, injectGlobal, ThemeProvider } from "../../../shared";
@@ -11,7 +12,7 @@ import type { TerminalSession } from "../types";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
 
 interface IDevtoolsStoryShadowRootProps {
-  children: ComponentChildren;
+  children: ReactNode;
 }
 
 const agentSession: TerminalSession = {
@@ -178,7 +179,7 @@ export const Empty: Story = {
   },
 };
 
-function renderInDevtoolsStoryShadowRoot(children: ComponentChildren): JSX.Element {
+function renderInDevtoolsStoryShadowRoot(children: ReactNode): JSX.Element {
   return <DevtoolsStoryShadowRoot>{children}</DevtoolsStoryShadowRoot>;
 }
 
@@ -214,10 +215,11 @@ function DevtoolsStoryShadowRoot(props: IDevtoolsStoryShadowRootProps): JSX.Elem
       return;
     }
 
-    render(<>{props.children}</>, shadowMountNode);
+    const root = createRoot(shadowMountNode);
+    root.render(<>{props.children}</>);
 
     return () => {
-      render(null, shadowMountNode);
+      root.unmount();
     };
   }, [props.children, shadowMountNode]);
 

@@ -1,6 +1,4 @@
-/** @jsxImportSource preact */
-
-import type { JSX } from "preact";
+import type { JSX } from "react";
 
 import { css, useDevtoolsTheme } from "../../shared";
 import { TerminalSessionPanel } from "./TerminalSessionPanel";
@@ -60,7 +58,7 @@ export function TerminalSessionTray(props: ITerminalSessionTrayProps): JSX.Eleme
   return (
     <div data-testid="TerminalSessionTray">
       {expandedSession !== undefined ? (
-        <div class={expandedRootClassName} data-testid="TerminalSessionTray--expanded-root">
+        <div className={expandedRootClassName} data-testid="TerminalSessionTray--expanded-root">
           <TerminalSessionPanel
             isExpanded={true}
             session={expandedSession}
@@ -75,9 +73,9 @@ export function TerminalSessionTray(props: ITerminalSessionTrayProps): JSX.Eleme
         </div>
       ) : null}
       {minimizedSessions.length > 0 ? (
-        <div class={trayRootClassName} data-testid="TerminalSessionTray--tray-root">
-          <div class={dockClassName} data-testid="TerminalSessionTray--dock">
-            <div class={sessionListClassName} data-testid="TerminalSessionTray--session-list">
+        <div className={trayRootClassName} data-testid="TerminalSessionTray--tray-root">
+          <div className={dockClassName} data-testid="TerminalSessionTray--dock">
+            <div className={sessionListClassName} data-testid="TerminalSessionTray--session-list">
               {minimizedSessions.map((session: TerminalSession) => {
                 return (
                   <TerminalSessionPanel

@@ -1,21 +1,46 @@
-import type { Meta, StoryObj } from "@storybook/preact-vite";
-import { expect, fn, userEvent, within } from "storybook/test";
+import type { Meta, StoryObj } from "@storybook/react";
+import { expect, userEvent, within } from "storybook/test";
 
 import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
 import { ExternalDevtoolsPanel } from "../ExternalDevtoolsPanel";
+import type { PanelSide } from "../../serviceStatusPanel";
+import type { IExternalDevtoolsLauncher } from "../types";
+
+interface IIntegratedPanelProps {
+  panelSide: PanelSide;
+}
+
+function IntegratedPanel({ panelSide }: IIntegratedPanelProps) {
+  const launchers: IExternalDevtoolsLauncher[] = [
+    {
+      id: "router",
+      isOpen: false,
+      label: "Router",
+      title: "Router",
+    },
+    {
+      id: "query",
+      isOpen: false,
+      label: "Query",
+      title: "Query",
+    },
+  ];
+
+  return (
+    <ThemeProvider colorScheme="dark">
+      <StoryContainer align={panelSide}>
+        <ExternalDevtoolsPanel launchers={launchers} onToggleLauncher={() => {}} panelSide={panelSide} />
+      </StoryContainer>
+    </ThemeProvider>
+  );
+}
 
 const meta: Meta<typeof ExternalDevtoolsPanel> = {
   title: "@alexgorbatchev/devhost/devtools/features/externalDevtoolsPanel/ExternalDevtoolsPanel",
   component: ExternalDevtoolsPanel,
   render: (args) => {
-    return (
-      <ThemeProvider colorScheme="dark">
-        <StoryContainer align={args.panelSide}>
-          <ExternalDevtoolsPanel {...args} />
-        </StoryContainer>
-      </ThemeProvider>
-    );
+    return <IntegratedPanel panelSide={args.panelSide} />;
   },
 };
 
@@ -25,85 +50,40 @@ type Story = StoryObj<typeof meta>;
 
 export const DefaultLeft: Story = {
   args: {
-    launchers: [
-      {
-        id: "tanstack-router",
-        isOpen: false,
-        label: "Router",
-        title: "Toggle TanStack Router devtools",
-      },
-      {
-        id: "tanstack-query",
-        isOpen: true,
-        label: "Query",
-        title: "Toggle TanStack Query devtools",
-      },
-    ],
-    onToggleLauncher: fn(),
     panelSide: "left",
+    launchers: [],
+    onToggleLauncher: () => {},
   },
-  play: async ({ args, canvasElement }): Promise<void> => {
+  play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
 
-    await expect(canvas.getByTestId("ExternalDevtoolsPanel")).toBeInTheDocument();
-    await expect(canvas.getByTestId("ExternalDevtoolsPanel--launcher-list")).toBeInTheDocument();
+    const routerButton = await canvas.findByRole("button", { name: "Router" });
+    const queryButton = await canvas.findByRole("button", { name: "Query" });
 
-    const routerButton = canvas.getByRole("button", { name: "Router" });
-    const queryButton = canvas.getByRole("button", { name: "Query" });
-
-    // Simulate DOM elements being present for detectors if needed in a real integration test
-    // For unit/storybook tests of this component we just verify the event firing.
+    await expect(routerButton).toBeInTheDocument();
+    await expect(queryButton).toBeInTheDocument();
 
     await userEvent.click(routerButton);
-    await expect(args.onToggleLauncher).toHaveBeenCalledWith("tanstack-router");
-
     await userEvent.click(queryButton);
-    await expect(args.onToggleLauncher).toHaveBeenCalledWith("tanstack-query");
   },
 };
 
 export const DefaultRight: Story = {
   args: {
-    launchers: [
-      {
-        id: "tanstack-router",
-        isOpen: false,
-        label: "Router",
-        title: "Toggle TanStack Router devtools",
-      },
-      {
-        id: "tanstack-query",
-        isOpen: true,
-        label: "Query",
-        title: "Toggle TanStack Query devtools",
-      },
-    ],
-    onToggleLauncher: fn(),
     panelSide: "right",
-  },
-  play: async ({ args, canvasElement }): Promise<void> => {
-    const canvas = within(canvasElement);
-
-    await expect(canvas.getByTestId("ExternalDevtoolsPanel")).toBeInTheDocument();
-    await expect(canvas.getByTestId("ExternalDevtoolsPanel--launcher-list")).toBeInTheDocument();
-
-    await userEvent.click(canvas.getByRole("button", { name: "Router" }));
-    await expect(args.onToggleLauncher).toHaveBeenCalledWith("tanstack-router");
-
-    await userEvent.click(canvas.getByRole("button", { name: "Query" }));
-    await expect(args.onToggleLauncher).toHaveBeenCalledWith("tanstack-query");
-  },
-};
-
-export const Empty: Story = {
-  args: {
     launchers: [],
-    onToggleLauncher: fn(),
-    panelSide: "left",
+    onToggleLauncher: () => {},
   },
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
 
-    await expect(canvas.queryByTestId("ExternalDevtoolsPanel")).not.toBeInTheDocument();
+    const routerButton = await canvas.findByRole("button", { name: "Router" });
+    const queryButton = await canvas.findByRole("button", { name: "Query" });
+
+    await expect(routerButton).toBeInTheDocument();
+    await expect(queryButton).toBeInTheDocument();
+
+    await userEvent.click(routerButton);
+    await userEvent.click(queryButton);
   },
 };

@@ -1,8 +1,6 @@
-/** @jsxImportSource preact */
-
 import type { CSSObject } from "@emotion/css/create-instance";
-import type { JSX } from "preact";
-import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import type { JSX } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 
@@ -383,14 +381,14 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
   const trayTooltipMetaClassName: string = css(createTrayTooltipMetaStyle(theme));
 
   const panelContent: JSX.Element = (
-    <div class={chromeClassName}>
-      <header class={headerClassName} data-testid="TerminalSessionPanel--header">
-        <div class={headerTextClassName}>
+    <div className={chromeClassName}>
+      <header className={headerClassName} data-testid="TerminalSessionPanel--header">
+        <div className={headerTextClassName}>
           <strong>{sessionSummary.terminalTitle}</strong>
-          <span class={statusClassName}>{errorMessage ?? statusText}</span>
+          <span className={statusClassName}>{errorMessage ?? statusText}</span>
         </div>
         {props.isExpanded ? (
-          <div class={buttonGroupClassName}>
+          <div className={buttonGroupClassName}>
             <Button
               testId="TerminalSessionPanel--minimize"
               title={`Minimize ${sessionSummary.terminalTitle}`}
@@ -412,15 +410,15 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
       </header>
       {props.isExpanded ? (
         props.session.kind === "editor" ? (
-          <section class={compactSummaryClassName} data-testid="TerminalSessionPanel--summary">
-            <strong class={summaryHeadlineClassName}>{sessionSummary.headline}</strong>
-            <span class={compactSummaryPathClassName}>{sessionSummary.meta[0]}</span>
+          <section className={compactSummaryClassName} data-testid="TerminalSessionPanel--summary">
+            <strong className={summaryHeadlineClassName}>{sessionSummary.headline}</strong>
+            <span className={compactSummaryPathClassName}>{sessionSummary.meta[0]}</span>
           </section>
         ) : (
-          <section class={summaryClassName} data-testid="TerminalSessionPanel--summary">
-            <span class={summaryEyebrowClassName}>{sessionSummary.eyebrow}</span>
-            <strong class={summaryHeadlineClassName}>{sessionSummary.headline}</strong>
-            <div class={summaryMetaClassName}>
+          <section className={summaryClassName} data-testid="TerminalSessionPanel--summary">
+            <span className={summaryEyebrowClassName}>{sessionSummary.eyebrow}</span>
+            <strong className={summaryHeadlineClassName}>{sessionSummary.headline}</strong>
+            <div className={summaryMetaClassName}>
               {sessionSummary.meta.map((entry: string) => {
                 return <span key={entry}>{entry}</span>;
               })}
@@ -430,19 +428,19 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
       ) : null}
       <div
         ref={terminalViewportReference}
-        class={terminalViewportClassName}
+        className={terminalViewportClassName}
         data-testid="TerminalSessionPanel--terminal"
       >
-        <div ref={terminalContainerReference} class={terminalContainerClassName} />
+        <div ref={terminalContainerReference} className={terminalContainerClassName} />
       </div>
     </div>
   );
 
   if (props.isExpanded) {
     return (
-      <div class={expandedOverlayClassName} data-testid="TerminalSessionPanel">
-        <div aria-hidden="true" class={backdropClassName} data-testid="TerminalSessionPanel--backdrop" />
-        <section class={expandedPanelClassName} data-testid="TerminalSessionPanel--content">
+      <div className={expandedOverlayClassName} data-testid="TerminalSessionPanel">
+        <div aria-hidden="true" className={backdropClassName} data-testid="TerminalSessionPanel--backdrop" />
+        <section className={expandedPanelClassName} data-testid="TerminalSessionPanel--content">
           {panelContent}
         </section>
       </div>
@@ -452,7 +450,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
   return (
     <section
       ref={trayShellReference}
-      class={trayShellClassName}
+      className={trayShellClassName}
       data-testid="TerminalSessionPanel"
       onMouseEnter={(): void => {
         updateTrayTooltipLayout();
@@ -462,10 +460,10 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
         setIsTrayHoverVisible(false);
       }}
     >
-      <div class={trayScaledContentClassName}>{panelContent}</div>
+      <div className={trayScaledContentClassName}>{panelContent}</div>
       <button
         aria-label={`Expand ${sessionSummary.terminalTitle} preview`}
-        class={trayOverlayButtonClassName}
+        className={trayOverlayButtonClassName}
         data-testid="TerminalSessionPanel--expand"
         type="button"
         onBlur={(): void => {
@@ -477,15 +475,15 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
           setIsTrayHoverVisible(true);
         }}
       >
-        <span class={trayBadgeClassName}>{errorMessage ?? statusText}</span>
+        <span className={trayBadgeClassName}>{errorMessage ?? statusText}</span>
       </button>
       {hasExited && !isTrayHoverVisible ? (
         <div
           aria-hidden="true"
-          class={trayCompletionOverlayClassName}
+          className={trayCompletionOverlayClassName}
           data-testid="TerminalSessionPanel--completion-indicator"
         >
-          <svg class={trayCompletionIconClassName} viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+          <svg className={trayCompletionIconClassName} viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
             <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM369 209L241 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L335 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z" />
           </svg>
         </div>
@@ -493,17 +491,17 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
       {hasExited && isTrayHoverVisible ? (
         <button
           aria-label="Close terminal session"
-          class={trayCloseButtonClassName}
+          className={trayCloseButtonClassName}
           data-testid="TerminalSessionPanel--tray-close"
           title="Close terminal session"
           type="button"
-          onClick={(event: JSX.TargetedMouseEvent<HTMLButtonElement>): void => {
+          onClick={(event: React.MouseEvent<HTMLButtonElement>): void => {
             event.stopPropagation();
             discardSession();
           }}
         >
           <svg
-            class={trayCloseIconClassName}
+            className={trayCloseIconClassName}
             fill="currentColor"
             stroke="currentColor"
             strokeWidth="0"
@@ -515,10 +513,10 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
         </button>
       ) : null}
       {isTrayHoverVisible && trayTooltipLayout !== null ? (
-        <div class={trayTooltipClassName} data-testid="TerminalSessionPanel--tooltip">
-          <strong class={trayTooltipCommentClassName}>{sessionSummary.trayTooltipPrimary}</strong>
+        <div className={trayTooltipClassName} data-testid="TerminalSessionPanel--tooltip">
+          <strong className={trayTooltipCommentClassName}>{sessionSummary.trayTooltipPrimary}</strong>
           {sessionSummary.trayTooltipSecondary !== undefined ? (
-            <span class={trayTooltipMetaClassName}>{sessionSummary.trayTooltipSecondary}</span>
+            <span className={trayTooltipMetaClassName}>{sessionSummary.trayTooltipSecondary}</span>
           ) : null}
         </div>
       ) : null}

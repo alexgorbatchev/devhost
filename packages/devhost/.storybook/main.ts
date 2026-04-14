@@ -1,8 +1,8 @@
-import type { StorybookConfig } from "@storybook/preact-vite";
+import type { StorybookConfig } from "@storybook/react-vite";
 
 const config: StorybookConfig = {
   framework: {
-    name: "@storybook/preact-vite",
+    name: "@storybook/react-vite",
     options: {
       builder: {
         viteConfigPath: "vite.config.ts",

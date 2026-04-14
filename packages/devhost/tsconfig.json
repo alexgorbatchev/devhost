@@ -7,7 +7,7 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "jsx": "react-jsx",
-    "jsxImportSource": "preact",
+    "jsxImportSource": "react",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "types": ["bun", "node"],
     "strict": true,

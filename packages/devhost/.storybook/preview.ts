@@ -1,4 +1,4 @@
-import type { Preview } from "@storybook/preact-vite";
+import type { Preview } from "@storybook/react";
 
 import {
   DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME,

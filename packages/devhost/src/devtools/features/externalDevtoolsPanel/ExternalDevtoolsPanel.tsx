@@ -1,7 +1,5 @@
-/** @jsxImportSource preact */
-
 import type { CSSObject } from "@emotion/css/create-instance";
-import type { JSX } from "preact";
+import type { JSX } from "react";
 
 import { Button, css, HoverSlidePanel, useDevtoolsTheme } from "../../shared";
 import type { PanelSide } from "../serviceStatusPanel";
@@ -35,9 +33,9 @@ export function ExternalDevtoolsPanel({
       peekWidth={theme.sizes.serviceStatusPanelPeekWidth}
       testId="ExternalDevtoolsPanel"
     >
-      <div class={contentClassName}>
-        {panelSide === "right" ? <span class={handleClassName}>Tools</span> : null}
-        <div class={launcherListClassName} data-testid="ExternalDevtoolsPanel--launcher-list">
+      <div className={contentClassName}>
+        {panelSide === "right" ? <span className={handleClassName}>Tools</span> : null}
+        <div className={launcherListClassName} data-testid="ExternalDevtoolsPanel--launcher-list">
           {launchers.map((launcher) => (
             <Button
               key={launcher.id}
@@ -50,7 +48,7 @@ export function ExternalDevtoolsPanel({
             </Button>
           ))}
         </div>
-        {panelSide === "left" ? <span class={handleClassName}>Tools</span> : null}
+        {panelSide === "left" ? <span className={handleClassName}>Tools</span> : null}
       </div>
     </HoverSlidePanel>
   );

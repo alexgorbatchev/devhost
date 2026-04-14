@@ -1,8 +1,6 @@
-/** @jsxImportSource preact */
-
 import type { CSSObject } from "@emotion/css/create-instance";
-import type { ComponentChildren, JSX } from "preact";
-import { useState } from "preact/hooks";
+import type { ReactNode, JSX } from "react";
+import { useState } from "react";
 
 import { css } from "./devtoolsCss";
 import type { IDevtoolsTheme } from "./devtoolsTheme";
@@ -12,7 +10,7 @@ import { useDevtoolsTheme } from "./useDevtoolsTheme";
 
 interface IHoverSlidePanelProps {
   ariaLabel: string;
-  children: ComponentChildren;
+  children: ReactNode;
   panelSide: PanelSide;
   peekWidth: string;
   style?: CSSObject;
@@ -36,7 +34,7 @@ export function HoverSlidePanel({
   return (
     <section
       aria-label={ariaLabel}
-      class={panelClassName}
+      className={panelClassName}
       data-testid={testId !== undefined ? testId : "HoverSlidePanel"}
       onMouseEnter={(): void => {
         setIsHovered(true);

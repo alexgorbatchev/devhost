@@ -1,8 +1,6 @@
-/** @jsxImportSource preact */
-
 import type { CSSObject } from "@emotion/css/create-instance";
-import type { JSX } from "preact";
-import { useMemo, useState } from "preact/hooks";
+import type { JSX } from "react";
+import { useMemo, useState } from "react";
 
 import { css, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
 import type { ComponentSourceMenuItem } from "./types";
@@ -60,16 +58,16 @@ export function ComponentSourceMenu({
   }
 
   return (
-    <div class={menuClassName} data-component-source-menu="" data-testid="ComponentSourceMenu">
-      <header class={headerClassName}>
-        <strong class={titleClassName}>{title}</strong>
+    <div className={menuClassName} data-component-source-menu="" data-testid="ComponentSourceMenu">
+      <header className={headerClassName}>
+        <strong className={titleClassName}>{title}</strong>
         {errorMessage !== undefined ? (
-          <div class={errorClassName} role="alert">
+          <div className={errorClassName} role="alert">
             {errorMessage}
           </div>
         ) : null}
       </header>
-      <div class={listClassName}>
+      <div className={listClassName}>
         {items.map((item: ComponentSourceMenuItem, index: number) => {
           const itemClassName: string = css(createItemStyle(theme, hoveredItemIndex === index));
           const propsClassName: string = css(propsRowStyle);
@@ -78,7 +76,7 @@ export function ComponentSourceMenu({
           return (
             <button
               key={item.key}
-              class={itemClassName}
+              className={itemClassName}
               data-testid="ComponentSourceMenu--item"
               type="button"
               onClick={(): void => {
@@ -103,19 +101,19 @@ export function ComponentSourceMenu({
             >
               <strong>{`<${item.displayName}>`}</strong>
               {item.props.length > 0 ? (
-                <div class={propsClassName}>
+                <div className={propsClassName}>
                   {item.props.map((prop) => {
                     const propClassName: string = css(createPropPillStyle(theme));
 
                     return (
-                      <span key={`${item.key}-${prop.name}`} class={propClassName} title={prop.title}>
+                      <span key={`${item.key}-${prop.name}`} className={propClassName} title={prop.title}>
                         {prop.name}
                       </span>
                     );
                   })}
                 </div>
               ) : null}
-              <span class={sourceClassName} title={item.sourceLabel}>
+              <span className={sourceClassName} title={item.sourceLabel}>
                 {item.sourceLabel}
               </span>
             </button>

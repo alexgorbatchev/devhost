@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "react";
 
 import { LOGS_WEBSOCKET_PATH, maximumRetainedLogEntries } from "../../shared/constants";
 import { createDevtoolsWebSocketUrl } from "../../shared/createDevtoolsWebSocketUrl";

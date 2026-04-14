@@ -1,8 +1,6 @@
-/** @jsxImportSource preact */
-
 import type { CSSObject } from "@emotion/css/create-instance";
-import type { JSX } from "preact";
-import { useEffect, useState } from "preact/hooks";
+import type { JSX } from "react";
+import { useEffect, useState } from "react";
 
 import { Button, css, HoverSlidePanel, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
 import type { PanelSide } from "../serviceStatusPanel";
@@ -54,16 +52,16 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
       peekWidth={theme.sizes.serviceStatusPanelPeekWidth}
       testId="AnnotationQueuePanel"
     >
-      <div class={panelClassName}>
-        <div class={css(createHeaderStyle(theme))}>
+      <div className={panelClassName}>
+        <div className={css(createHeaderStyle(theme))}>
           <strong>Annotation queues</strong>
           {props.errorMessage !== null ? (
-            <div class={css(createErrorStyle(theme))} data-testid="AnnotationQueuePanel--error">
+            <div className={css(createErrorStyle(theme))} data-testid="AnnotationQueuePanel--error">
               {props.errorMessage}
             </div>
           ) : null}
         </div>
-        <div class={css(createQueueListStyle(theme))} data-testid="AnnotationQueuePanel--queue-list">
+        <div className={css(createQueueListStyle(theme))} data-testid="AnnotationQueuePanel--queue-list">
           {props.queues.map((queue: IAnnotationQueueSnapshot) => {
             const queueIsPaused: boolean = queue.status === "paused";
             const queueResumePending: boolean = props.isQueueResumePending(queue.queueId);
@@ -71,16 +69,16 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
 
             return (
               <article
-                class={css(createQueueCardStyle(theme))}
+                className={css(createQueueCardStyle(theme))}
                 data-testid="AnnotationQueuePanel--queue"
                 key={queue.queueId}
               >
-                <header class={css(createQueueCardHeaderStyle(theme))}>
-                  <div class={css(createQueueCardHeaderTextStyle(theme))}>
+                <header className={css(createQueueCardHeaderStyle(theme))}>
+                  <div className={css(createQueueCardHeaderTextStyle(theme))}>
                     <strong>Annotation queue</strong>
-                    <div class={css(createQueueMetaStyle(theme))}>
+                    <div className={css(createQueueMetaStyle(theme))}>
                       <span>{props.agentDisplayName}</span>
-                      <span class={css(createStatusBadgeStyle(theme, queue.status))}>
+                      <span className={css(createStatusBadgeStyle(theme, queue.status))}>
                         {readStatusLabel(queue.status)}
                       </span>
                       <span>{itemCountLabel}</span>
@@ -100,11 +98,11 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
                   ) : null}
                 </header>
                 {queueIsPaused && queue.pauseReason !== null ? (
-                  <p class={css(createPauseReasonStyle(theme))} data-testid="AnnotationQueuePanel--pause-reason">
+                  <p className={css(createPauseReasonStyle(theme))} data-testid="AnnotationQueuePanel--pause-reason">
                     {readAnnotationQueuePauseMessage(queue.pauseReason)}
                   </p>
                 ) : null}
-                <ol class={css(createEntryListStyle(theme))}>
+                <ol className={css(createEntryListStyle(theme))}>
                   {queue.entries.map((entry: IAnnotationQueueEntrySnapshot) => {
                     const isEditable: boolean = isAnnotationQueueEntryEditable(entry);
                     const isPending: boolean = props.isEntryMutationPending(entry.entryId);
@@ -113,12 +111,12 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
 
                     return (
                       <li
-                        class={css(createEntryCardStyle(theme))}
+                        className={css(createEntryCardStyle(theme))}
                         data-testid="AnnotationQueuePanel--entry"
                         key={entry.entryId}
                       >
-                        <div class={css(createEntryMetaBlockStyle(theme))}>
-                          <span class={css(createEntryStateBadgeStyle(theme, entry.state))}>
+                        <div className={css(createEntryMetaBlockStyle(theme))}>
+                          <span className={css(createEntryStateBadgeStyle(theme, entry.state))}>
                             {readEntryStateLabel(entry)}
                           </span>
                           <span>{`${entry.annotation.markers.length} marker${entry.annotation.markers.length === 1 ? "" : "s"}`}</span>
@@ -139,30 +137,27 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
 
                         {isEditable ? (
                           <textarea
-                            class={css(createTextareaStyle(theme))}
+                            className={css(createTextareaStyle(theme))}
                             data-testid="AnnotationQueuePanel--comment-input"
                             rows={4}
                             value={draftComment}
-                            onInput={(event: JSX.TargetedEvent<HTMLTextAreaElement, Event>): void => {
+                            onChange={(event: React.ChangeEvent<HTMLTextAreaElement>): void => {
+                              const value = event.currentTarget.value;
                               setDrafts((currentDrafts: IAnnotationQueueDraft[]): IAnnotationQueueDraft[] => {
-                                return upsertAnnotationQueueDraft(
-                                  currentDrafts,
-                                  entry.entryId,
-                                  event.currentTarget.value,
-                                );
+                                return upsertAnnotationQueueDraft(currentDrafts, entry.entryId, value);
                               });
                             }}
                           />
                         ) : (
                           <div
-                            class={css(createReadOnlyCommentStyle(theme))}
+                            className={css(createReadOnlyCommentStyle(theme))}
                             data-testid="AnnotationQueuePanel--comment"
                           >
                             {entry.annotation.comment}
                           </div>
                         )}
                         {isEditable ? (
-                          <div class={css(createEntryActionsStyle(theme))}>
+                          <div className={css(createEntryActionsStyle(theme))}>
                             <Button
                               disabled={isSaveDisabled}
                               testId="AnnotationQueuePanel--save"

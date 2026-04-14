@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "preact/hooks";
+import { useCallback, useEffect, useState } from "react";
 
 import { DEVTOOLS_CONTROL_TOKEN_HEADER_NAME, TERMINAL_SESSION_START_PATH } from "../../shared/constants";
 import { readDevtoolsAgentDisplayName } from "../../shared/readDevtoolsAgentDisplayName";

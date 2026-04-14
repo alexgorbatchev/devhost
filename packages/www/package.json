@@ -7,8 +7,8 @@
     "@alexgorbatchev/devhost": "workspace:*",
     "@rrweb/all": "^2.0.0-alpha.20",
     "@rrweb/types": "^2.0.0-alpha.20",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
   },
   "devDependencies": {
     "@storybook/addon-vitest": "10.3.5",

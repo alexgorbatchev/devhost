@@ -1,7 +1,7 @@
 import assert from "node:assert";
 
 import { beforeEach, describe, expect, mock, test } from "bun:test";
-import type { ComponentChild, VNode } from "preact";
+import type { ReactNode, ReactElement } from "react";
 
 import { getDevtoolsTheme } from "../../../shared/devtoolsTheme";
 import { AnnotationMarkerList, type IAnnotationMarkerListItem } from "../AnnotationMarkerList";
@@ -83,15 +83,20 @@ interface IRenderedMarkerListItem {
   strongText: string;
 }
 
-function isVNode(value: ComponentChild): value is VNode {
+function isVNode(value: ReactNode): value is ReactElement {
   return typeof value === "object" && value !== null && "props" in value && "type" in value;
 }
 
-function readChildren(vnode: VNode): ComponentChild[] {
-  return new Array<ComponentChild>().concat(vnode.props.children ?? []);
+interface IWithChildrenProps {
+  children?: ReactNode | ReactNode[];
 }
 
-function readMarkerListItem(listItem: VNode): IRenderedMarkerListItem {
+function readChildren(vnode: ReactElement): ReactNode[] {
+  const props = vnode.props as IWithChildrenProps;
+  return new Array<ReactNode>().concat(props.children ?? []);
+}
+
+function readMarkerListItem(listItem: ReactElement): IRenderedMarkerListItem {
   const listItemChildren = readChildren(listItem);
   const markerPill = listItemChildren[0];
   const markerText = listItemChildren[1];
@@ -107,17 +112,19 @@ function readMarkerListItem(listItem: VNode): IRenderedMarkerListItem {
 
   assert(markerStrong !== undefined);
   assert(isVNode(markerStrong));
-  assert(typeof markerPill.props.children === "number");
+  const markerPillProps = markerPill.props as IWithChildrenProps;
+  const markerStrongProps = markerStrong.props as IWithChildrenProps;
+  assert(typeof markerPillProps.children === "number");
 
   return {
     labelText: markerLabelText,
-    markerNumber: markerPill.props.children,
-    strongText: readTextValue(markerStrong.props.children),
+    markerNumber: markerPillProps.children,
+    strongText: readTextValue(markerStrongProps.children),
   };
 }
 
-type ComponentChildCollection = ComponentChild | ComponentChild[];
+type ComponentChildCollection = ReactNode | ReactNode[];
 
 function readTextValue(value: ComponentChildCollection): string {
-  return new Array<ComponentChild>().concat(value ?? []).join("");
+  return new Array<ReactNode>().concat(value ?? []).join("");
 }

@@ -1,7 +1,5 @@
-/** @jsxImportSource preact */
-
 import type { CSSObject } from "@emotion/css/create-instance";
-import type { JSX } from "preact";
+import type { JSX } from "react";
 
 import {
   css,
@@ -45,17 +43,17 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
       peekWidth={theme.sizes.serviceStatusPanelPeekWidth}
       testId="ServiceStatusPanel"
     >
-      {props.errorMessage !== null ? <div class={errorClassName}>{props.errorMessage}</div> : null}
+      {props.errorMessage !== null ? <div className={errorClassName}>{props.errorMessage}</div> : null}
       {visibleServices.length > 0 ? (
-        <ul class={listClassName} data-testid="ServiceStatusPanel--service-list">
+        <ul className={listClassName} data-testid="ServiceStatusPanel--service-list">
           {visibleServices.map((service: ServiceHealth) => {
             const statusDotClassName: string = css(createStatusDotStyle(theme, service.status));
             const name =
               service.url === undefined ? (
-                <span class={nameClassName}>{service.name}</span>
+                <span className={nameClassName}>{service.name}</span>
               ) : (
                 <a
-                  class={cx(nameClassName, linkClassName)}
+                  className={cx(nameClassName, linkClassName)}
                   href={service.url}
                   rel="noopener noreferrer"
                   target="_blank"
@@ -68,7 +66,7 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
             const restartButton = (
               <button
                 aria-label={`Restart ${service.name}`}
-                class={restartButtonClassName}
+                className={restartButtonClassName}
                 onClick={async (): Promise<void> => {
                   try {
                     await fetch(RESTART_SERVICE_PATH, {
@@ -96,16 +94,16 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
             );
 
             return (
-              <li key={service.name} class={rowClassName}>
+              <li key={service.name} className={rowClassName}>
                 {props.panelSide === "left" ? (
                   <>
                     {name}
                     {restartButton}
-                    <span aria-hidden="true" class={statusDotClassName} />
+                    <span aria-hidden="true" className={statusDotClassName} />
                   </>
                 ) : (
                   <>
-                    <span aria-hidden="true" class={statusDotClassName} />
+                    <span aria-hidden="true" className={statusDotClassName} />
                     {restartButton}
                     {name}
                   </>

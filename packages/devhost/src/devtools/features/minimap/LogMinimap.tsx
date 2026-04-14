@@ -1,8 +1,6 @@
-/** @jsxImportSource preact */
-
 import type { CSSObject } from "@emotion/css/create-instance";
-import type { JSX } from "preact";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import type { JSX } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { DevtoolsMinimapPosition } from "../../../types/stackTypes";
 import { css, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
@@ -149,7 +147,7 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
   return (
     <aside
       aria-hidden="true"
-      class={minimapClassName}
+      className={minimapClassName}
       data-testid="LogMinimap"
       onMouseEnter={(): void => {
         props.onHoveredChange(true);
@@ -158,26 +156,26 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
         props.onHoveredChange(false);
         setHoveredRowIndex(null);
       }}
-      onMouseMove={(event: JSX.TargetedMouseEvent<HTMLElement>): void => {
+      onMouseMove={(event: React.MouseEvent<HTMLElement>): void => {
         const currentTargetRectangle: DOMRect = event.currentTarget.getBoundingClientRect();
         const mouseOffsetY: number = event.clientY - currentTargetRectangle.top;
 
         setHoveredRowIndex(resolveHoveredLogRowIndex(marksReference.current, mouseOffsetY));
       }}
     >
-      <canvas ref={canvasReference} class={canvasClassName} data-testid="LogMinimap--canvas" />
+      <canvas ref={canvasReference} className={canvasClassName} data-testid="LogMinimap--canvas" />
       {props.isHovered && previewOverlay !== null ? (
         <div
-          class={css(createOverlayStyle(theme, previewOverlay.top, previewOverlay.height))}
+          className={css(createOverlayStyle(theme, previewOverlay.top, previewOverlay.height))}
           data-testid="LogMinimap--preview-overlay"
         />
       ) : null}
       {props.isHovered && previewLayout !== null && hoveredRowIndex !== null && previewRows.length > 0 ? (
-        <div class={previewClassName} data-testid="LogMinimap--preview">
-          <ol class={previewListClassName}>
+        <div className={previewClassName} data-testid="LogMinimap--preview">
+          <ol className={previewListClassName}>
             {previewRows.map((row: IVisibleLogRow) => {
               return (
-                <li key={`${row.id}-${row.top}`} class={css(readPreviewLineStyle(theme, row.stream))}>
+                <li key={`${row.id}-${row.top}`} className={css(readPreviewLineStyle(theme, row.stream))}>
                   {row.text}
                 </li>
               );

@@ -1,13 +1,11 @@
-/** @jsxImportSource preact */
-
-import type { ComponentChildren, JSX } from "preact";
-import { useMemo } from "preact/hooks";
+import type { ReactNode, JSX } from "react";
+import { useMemo } from "react";
 
 import { devtoolsThemeContext } from "./devtoolsThemeContext";
 import { getDevtoolsTheme, type DevtoolsColorScheme, type IDevtoolsTheme } from "./devtoolsTheme";
 
 interface IThemeProviderProps {
-  children: ComponentChildren;
+  children: ReactNode;
   colorScheme: DevtoolsColorScheme;
 }
 

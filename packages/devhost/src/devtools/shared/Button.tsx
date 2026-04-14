@@ -1,7 +1,5 @@
-/** @jsxImportSource preact */
-
 import type { CSSObject } from "@emotion/css/create-instance";
-import type { ComponentChildren, JSX } from "preact";
+import type { ReactNode, JSX } from "react";
 
 import { css } from "./devtoolsCss";
 import type { IDevtoolsTheme } from "./devtoolsTheme";
@@ -11,12 +9,12 @@ export type ButtonVariant = "danger" | "primary" | "secondary";
 
 interface IButtonProps {
   ariaPressed?: boolean;
-  children: ComponentChildren;
+  children: ReactNode;
   disabled?: boolean;
-  endEnhancer?: ComponentChildren;
+  endEnhancer?: ReactNode;
   endEnhancerStyle?: CSSObject;
   endEnhancerStyleHover?: CSSObject;
-  onClick?: JSX.MouseEventHandler<HTMLButtonElement>;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
   style?: CSSObject;
   styleHover?: CSSObject;
   testId?: string;
@@ -83,7 +81,7 @@ export function Button({
   return (
     <button
       aria-pressed={ariaPressed}
-      class={buttonClassName}
+      className={buttonClassName}
       data-devhost-instance-testid={testId}
       data-testid="Button"
       disabled={disabled}
@@ -93,7 +91,7 @@ export function Button({
     >
       {children}
       {endEnhancer !== undefined ? (
-        <span class={endEnhancerClassName} data-devhost-button-end-enhancer="">
+        <span className={endEnhancerClassName} data-devhost-button-end-enhancer="">
           {endEnhancer}
         </span>
       ) : null}

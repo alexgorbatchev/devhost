@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { externalDevtoolsDetectors } from "./externalDevtoolsDetectors";
 import {

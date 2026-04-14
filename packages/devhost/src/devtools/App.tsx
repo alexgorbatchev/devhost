@@ -1,8 +1,6 @@
-/** @jsxImportSource preact */
-
 import type { CSSObject } from "@emotion/css/create-instance";
-import type { JSX } from "preact";
-import { useCallback, useState } from "preact/hooks";
+import type { JSX } from "react";
+import { useCallback, useState } from "react";
 
 import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../types/stackTypes";
 import { AnnotationComposer } from "./features/annotationComposer";
@@ -143,7 +141,7 @@ function AppContent(): JSX.Element {
           }}
         />
       ) : null}
-      <div class={cornerDockClassName} data-testid="AppContent--corner-dock">
+      <div className={cornerDockClassName} data-testid="AppContent--corner-dock">
         {shouldRenderPanel ? (
           <ServiceStatusPanel errorMessage={errorMessage} panelSide={servicePanelSide} services={services} />
         ) : null}

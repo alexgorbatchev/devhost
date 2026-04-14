@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/preact-vite";
+import type { Meta, StoryObj } from "@storybook/react";
 import { expect, within } from "storybook/test";
 
 import { App } from "../App";
