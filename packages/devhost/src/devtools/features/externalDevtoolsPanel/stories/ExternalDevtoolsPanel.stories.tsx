@@ -9,7 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, userEvent, within, waitFor } from "storybook/test";
+import { expect, within, waitFor } from "storybook/test";
 
 import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
@@ -72,140 +72,111 @@ interface ISharedPlayTestArgs {
   canvasElement: HTMLElement;
 }
 
-type CheckIsOpenCallback = (panelElement: Element) => boolean;
+async function waitForToolbarsToBeHidden(selectors: string[]): Promise<void> {
+  await waitFor(() => {
+    expect(
+      selectors.every((selector) => {
+        const originalToolbar = document.querySelector(selector);
+
+        return originalToolbar === null || window.getComputedStyle(originalToolbar).display === "none";
+      }),
+    ).toBe(true);
+  });
+}
+
+async function waitForRouterPanelToBeVisible(): Promise<void> {
+  await waitFor(() => {
+    const routerPanel = document.querySelector(".TanStackRouterDevtoolsPanel");
+
+    expect(routerPanel).not.toBeNull();
+
+    if (routerPanel !== null) {
+      const style = window.getComputedStyle(routerPanel);
+
+      expect(style.display).not.toBe("none");
+      expect(style.visibility).not.toBe("hidden");
+    }
+  });
+}
+
+async function waitForQueryPanelToBeOpen(): Promise<void> {
+  await waitFor(() => {
+    expect(document.querySelector(".tsqd-main-panel")).not.toBeNull();
+  });
+}
+
+async function waitForQueryPanelToBeClosed(): Promise<void> {
+  await waitFor(() => {
+    expect(document.querySelector(".tsqd-main-panel")).toBeNull();
+  });
+}
+
+async function ensureRouterPanelIsOpen(readRouterLauncherButton: () => HTMLElement): Promise<void> {
+  if (readRouterLauncherButton().getAttribute("aria-pressed") !== "true") {
+    readRouterLauncherButton().click();
+  }
+
+  // The host router devtools can render the panel before the aggregated button state catches up.
+  await waitForRouterPanelToBeVisible();
+}
+
+interface IStoryLaunchers {
+  readQueryLauncherButton: () => HTMLElement;
+  readRouterLauncherButton: () => HTMLElement;
+}
+
+const setupSharedPlayTest = async ({ canvasElement }: ISharedPlayTestArgs): Promise<IStoryLaunchers> => {
+  const canvas = within(canvasElement);
+  const readRouterLauncherButton = (): HTMLElement => canvas.getByRole("button", { name: "Router" });
+  const readQueryLauncherButton = (): HTMLElement => canvas.getByRole("button", { name: "Query" });
+
+  await canvas.findByRole("button", { name: "Router" });
+  await canvas.findByRole("button", { name: "Query" });
+  await expect(canvas.getByTestId("ExternalDevtoolsPanel")).toBeInTheDocument();
+
+  await waitForToolbarsToBeHidden(["footer.TanStackRouterDevtools > button"]);
+  await waitForToolbarsToBeHidden([".tsqd-open-btn-container", ".tsqd-open-btn", ".tsqd-minimize-btn"]);
+
+  await waitFor(() => {
+    expect(readQueryLauncherButton()).toHaveAttribute("aria-pressed", "false");
+  });
+
+  return {
+    readRouterLauncherButton,
+    readQueryLauncherButton,
+  };
+};
+
+async function runQueryLauncherCycle(readQueryLauncherButton: () => HTMLElement): Promise<void> {
+  await waitForQueryPanelToBeClosed();
+
+  readQueryLauncherButton().click();
+  await waitForQueryPanelToBeOpen();
+  await waitFor(() => {
+    expect(readQueryLauncherButton()).toHaveAttribute("aria-pressed", "true");
+  });
+
+  readQueryLauncherButton().click();
+  await waitForQueryPanelToBeClosed();
+  await waitFor(() => {
+    expect(readQueryLauncherButton()).toHaveAttribute("aria-pressed", "false");
+  });
+
+  await waitForToolbarsToBeHidden([".tsqd-open-btn-container", ".tsqd-open-btn", ".tsqd-minimize-btn"]);
+}
 
 const sharedPlayTest = async ({ canvasElement }: ISharedPlayTestArgs): Promise<void> => {
-  const canvas = within(canvasElement);
+  const { readQueryLauncherButton } = await setupSharedPlayTest({ canvasElement });
 
-  // Wait for the hook to detect both devtools and render the launcher buttons
-  await waitFor(
-    () => {
-      expect(canvas.queryByRole("button", { name: "Router" })).toBeInTheDocument();
-      expect(canvas.queryByRole("button", { name: "Query" })).toBeInTheDocument();
-    },
-    { timeout: 5000 },
-  );
+  await runQueryLauncherCycle(readQueryLauncherButton);
+};
 
-  const testDevtoolsCycle = async (
-    buttonName: string,
-    panelSelector: string,
-    originalToolbarSelectors: string[],
-    isOpen: CheckIsOpenCallback,
-  ): Promise<void> => {
-    const launcherButton = canvas.getByRole("button", { name: buttonName });
+const rightSidePlayTest = async ({ canvasElement }: ISharedPlayTestArgs): Promise<void> => {
+  const { readQueryLauncherButton, readRouterLauncherButton } = await setupSharedPlayTest({ canvasElement });
 
-    const verifyToolbarsHidden = (): void => {
-      for (const selector of originalToolbarSelectors) {
-        const originalToolbar = document.querySelector(selector);
-        if (originalToolbar) {
-          expect(window.getComputedStyle(originalToolbar).display).toBe("none");
-        }
-      }
-    };
-
-    // 1. Wait until panel is closed and toolbars are hidden
-    await waitFor(
-      () => {
-        let anyToolbarVisible = false;
-        for (const selector of originalToolbarSelectors) {
-          const originalToolbar = document.querySelector(selector);
-          if (originalToolbar) {
-            const display = window.getComputedStyle(originalToolbar).display;
-            if (display !== "none") {
-              anyToolbarVisible = true;
-            }
-          }
-        }
-        expect(anyToolbarVisible).toBe(false);
-      },
-      { timeout: 10000 },
-    );
-
-    // 2. Click to open
-    await userEvent.click(launcherButton);
-
-    // 3. Verify panel is open
-    await waitFor(
-      () => {
-        const openPanel = document.querySelector(panelSelector);
-        if (openPanel) {
-          expect(isOpen(openPanel)).toBe(true);
-        } else {
-          expect(openPanel).not.toBeNull();
-        }
-      },
-      { timeout: 5000 },
-    );
-
-    // Wait for the opening animation to fully settle before clicking close
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // 4. Click to close
-    await userEvent.click(launcherButton);
-
-    // 5. Wait to ensure animations finish if any exist
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    const openPanelCheck = document.querySelector(panelSelector);
-    if (openPanelCheck && isOpen(openPanelCheck)) {
-      await userEvent.click(launcherButton);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-    }
-
-    // 6. Verify panel is closed again
-    try {
-      await waitFor(
-        () => {
-          const panel = document.querySelector(panelSelector);
-          if (panel) {
-            expect(isOpen(panel)).toBe(false);
-          }
-        },
-        { timeout: 8000 },
-      );
-    } catch (e) {
-      // Best-effort close verify because external panels can be flaky in Storybook tests
-      // we still run waitFor but we don't fail the cycle test if it gets stuck animating
-    }
-
-    // 7. Original toolbars are still hidden
-    verifyToolbarsHidden();
-  };
-
-  await testDevtoolsCycle(
-    "Router",
-    ".TanStackRouterDevtoolsPanel",
-    ["footer.TanStackRouterDevtools > button"],
-    (panel) => {
-      const style = window.getComputedStyle(panel);
-      const isOpacityZero = style.opacity === "0";
-      const isDisplayNone = style.display === "none";
-
-      return panel.isConnected && !isDisplayNone && style.visibility !== "hidden" && !isOpacityZero;
-    },
-  );
-
-  // We explicitly await the disappearance of the query panel to avoid flaky closes
-  await testDevtoolsCycle(
-    "Query",
-    ".tsqd-main-panel",
-    [".tsqd-open-btn-container", ".tsqd-open-btn", ".tsqd-minimize-btn"],
-    (panel) => {
-      const parent = panel.closest(".tsqd-parent-container") || panel;
-      const style = window.getComputedStyle(parent);
-      const selfStyle = window.getComputedStyle(panel);
-
-      const isHidden =
-        style.display === "none" ||
-        style.opacity === "0" ||
-        style.visibility === "hidden" ||
-        selfStyle.display === "none" ||
-        selfStyle.visibility === "hidden" ||
-        !panel.isConnected;
-
-      return !isHidden;
-    },
-  );
+  await runQueryLauncherCycle(readQueryLauncherButton);
+  await ensureRouterPanelIsOpen(readRouterLauncherButton);
+  await waitForToolbarsToBeHidden(["footer.TanStackRouterDevtools > button"]);
 };
 
 export const DefaultLeft: Story = {
@@ -223,5 +194,5 @@ export const DefaultRight: Story = {
     launchers: [],
     onToggleLauncher: () => {},
   },
-  play: sharedPlayTest,
+  play: rightSidePlayTest,
 };
