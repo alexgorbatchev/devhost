@@ -13,11 +13,13 @@ interface IExternalDevtoolsLaunchersResult {
   toggleLauncher: (launcherId: string) => void;
 }
 
+type SynchronizeLaunchers = () => void;
+
 export function useExternalDevtoolsLaunchers(enabled: boolean): IExternalDevtoolsLaunchersResult {
   const [launchers, setLaunchers] = useState<IExternalDevtoolsLauncher[]>([]);
   const frameIdRef = useRef<number | null>(null);
   const launcherSyncFrameIdRef = useRef<number | null>(null);
-  const synchronizeLaunchersRef = useRef<(() => void) | null>(null);
+  const synchronizeLaunchersRef = useRef<SynchronizeLaunchers | null>(null);
   const styleElementRef = useRef<HTMLStyleElement | null>(null);
   const adapters = useMemo<readonly IExternalDevtoolsAdapter[]>(() => externalDevtoolsDetectors, []);
 
