@@ -282,6 +282,7 @@ function DevhostMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Elemen
         <Story />
         <RouterProvider router={router} />
         <ReactQueryDevtools initialIsOpen={false} />
+        {/* @ts-expect-error router type mismatch between core and devtools versions */}
         <TanStackRouterDevtools router={router} />
       </>
     </QueryClientProvider>

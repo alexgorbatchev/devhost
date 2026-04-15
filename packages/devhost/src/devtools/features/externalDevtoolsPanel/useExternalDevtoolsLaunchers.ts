@@ -65,6 +65,8 @@ export function useExternalDevtoolsLaunchers(enabled: boolean): IExternalDevtool
     observer.observe(document.body, {
       childList: true,
       subtree: true,
+      attributes: true,
+      attributeFilter: ["class", "style", "data-state", "hidden"],
     });
 
     return (): void => {
