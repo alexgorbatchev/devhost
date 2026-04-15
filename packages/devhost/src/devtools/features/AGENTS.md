@@ -23,6 +23,11 @@ This directory contains isolated, feature-specific modules for the injected devt
 - **Never:** Place generic hooks, shared layout wrappers, or transport utilities (websockets, tokens) inside a feature folder.
 - **Never:** Reparent, restyle wholesale, or otherwise take ownership of third-party host panels from a feature module. Feature-owned integrations should proxy or observe them, not absorb them.
 
+## Done policy
+
+- **Done:** Feature work is complete only when the root/workspace done policy is satisfied and any required feature-local stories, tests, and design notes are updated with the change.
+- **Done:** If shared-code extraction, docs, stories, or tests are still pending or blocked, report the work as incomplete instead of done.
+
 ## Internal references
 
 - `../shared/` — Global styling theme, primitive UI components, and websocket clients.

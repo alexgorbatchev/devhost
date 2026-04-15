@@ -6,6 +6,7 @@ Local rules for the published `@alexgorbatchev/devhost` workspace in `packages/d
 
 - `README.md` must be kept up to date after behavior changes.
 - `AGENTS.md` files must be kept up to date after workflow, policy, or contributor-expectation changes.
+- `RELEASE.md` must be kept up to date after tag, packaging, npm publish, or GitHub release workflow changes.
 - Update `README.md` whenever you change:
   - CLI usage
   - manifest behavior
@@ -16,6 +17,7 @@ Local rules for the published `@alexgorbatchev/devhost` workspace in `packages/d
   - limitations, caveats, or failure modes
 - If the manifest contract changes, also update `devhost.example.toml`.
 - If devtools-specific contributor rules change, also update `src/devtools/AGENTS.md`.
+- If the tag-driven npm release flow changes, also update `RELEASE.md` and the relevant shared guidance in the repo-root `AGENTS.md`.
 - **CRITICAL:** The `devhost` README is heavily mirrored in the demo application's frontend. After editing the `devhost` README, you **must** update the `packages/www/src/app/App.tsx` file in the demo app workspace to keep the marketing website content in sync.
 - Do not leave README or AGENTS examples/rules stale after changing implementation details.
 - Repo-root `README.md` is a symlink to this workspace README; update `README.md` here, not the root symlink.
@@ -47,7 +49,19 @@ Run the package check suite:
 bun run check
 ```
 
-The `fmt` script runs `oxfmt --write` for this workspace using the shared repo-root config. The package `check` script runs the native TypeScript typecheck and the coverage test suite for this workspace only. Run `bun run storybook` separately when Storybook coverage is in scope. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
+The `fmt` script runs `oxfmt --write` for this workspace using the shared repo-root config. The package `check` script runs `tsgo --noEmit -p tsconfig.json`, `bun test --coverage`, and `bun vitest run -c vitest.storybook.config.ts`. Use `bun run storybook` only when you need the interactive Storybook dev server for manual inspection. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
+
+## Release workflow
+
+- Follow `RELEASE.md`; it is the authoritative runbook for the tag-driven npm publish flow.
+- Release trigger: push a `v*` tag whose version matches `package.json`.
+- Do not run manual `npm publish` unless the user explicitly asks to step outside the documented tag-driven workflow.
+
+## Done policy
+
+- Done means the required package docs are updated (`README.md`, relevant `AGENTS.md`, `RELEASE.md`, and `devhost.example.toml` when applicable), required validation for the affected scope has passed, and any temporary local processes started for validation are stopped.
+- If `bun test`, `bun run check`, packaging checks, or required documentation updates were skipped, failed, or are blocked, report the package work as incomplete and call out the exact blocker.
+- Release work is not done until the tag exists remotely, the publish workflow has reached its expected result, npm serves the tagged version (or explicitly reports it already existed), and the matching GitHub Release state is confirmed.
 
 ## Testing
 

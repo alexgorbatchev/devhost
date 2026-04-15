@@ -55,3 +55,8 @@ Its vital that when devtools are injected into the user's web application, CSS t
 - Keep the theme small and explicit.
 - Prefer stable semantic names over raw color names.
 - Treat the injected UI like a self-contained widget system, not like page-local markup.
+
+## Done policy
+
+- Done: devtools work is complete only when the root/workspace done policy is satisfied and any required devtools docs, stories, tests, or design notes stay in sync.
+- Done: if styling-isolation changes, source-location behavior, or feature rules still need follow-up docs/tests, report the work as incomplete instead of done.

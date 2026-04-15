@@ -9,8 +9,16 @@ Monorepo root for the published `devhost` package and the local demo app.
 - Apply repo-wide formatting fixes: `bun run fix`
 - Check `devhost` package-only validations: `bun run --cwd packages/devhost check`
 - Check demo app package-only validations: `bun run --cwd packages/www check`
+- Deploy demo app to Railway: `bun run deploy:www`
 - Run `devhost` help: `bun run --cwd packages/devhost dev --help`
 - Run demo app: `bun run dev`
+
+## Documentation policy
+
+- `AGENTS.md`, deploy/release runbooks, and other contributor-facing docs must be kept up to date after workflow, policy, validation, or behavior changes.
+- When shared validation commands, deploy steps, release steps, or contributor expectations change, update the affected docs in the same change, including `packages/www/DEPLOY.md` and `packages/devhost/RELEASE.md` when applicable.
+- Root `README.md` is a symlink to `packages/devhost/README.md`. Update the package README, not the symlink.
+- Repository-local skills live under `.agents/skills/`. Put new local skills at `.agents/skills/<skill-name>/SKILL.md`.
 
 ## Workspace map
 
@@ -22,14 +30,23 @@ Monorepo root for the published `devhost` package and the local demo app.
 - Root `package.json` owns the shared TypeScript AI policy tooling and the shared `oxfmt` / `oxlint` configs. Keep workspace-local copies out unless the workspaces genuinely diverge.
 - Root `bun run check` runs shared `oxfmt` / `oxlint` enforcement first, then delegates to package-specific checks.
 - Workspace `check` scripts are package-local validation only; do not duplicate shared lint/format enforcement there unless a workspace intentionally diverges.
-- Storybook is currently out-of-band from `bun run check`; run `bun run --cwd packages/devhost storybook` or `bun run --cwd packages/www storybook` manually when Storybook coverage is in scope.
+- `packages/devhost` `bun run check` runs the package TypeScript check, `bun test --coverage`, and `bun vitest run -c vitest.storybook.config.ts`.
+- `packages/www` `bun run check` runs the package TypeScript check and `bun vitest run -c vitest.storybook.config.ts`.
+- `bun run --cwd packages/devhost storybook` and `bun run --cwd packages/www storybook` start interactive Storybook dev servers for manual inspection; they do not replace the automated coverage already included in each workspace `check` script.
 - Keep a single root `bun.lock`. Do not add workspace-local lockfiles.
-- Root `README.md` is a symlink to `packages/devhost/README.md`. Update the package README, not the symlink.
+
+## Shipping
+
+- Demo app deploy entrypoint: `bun run deploy:www`. `packages/www/DEPLOY.md` is the authoritative Railway procedure.
+- CLI release entrypoint: push a tag like `v0.0.2`. `packages/devhost/RELEASE.md` and `.github/workflows/publish.yml` are the authoritative npm release procedure.
 
 ## Shared boundaries
 
 - Always: run `bun run check` after changing workspace manifests, scripts, CI, or directory layout.
 - Always: address all lint issues before the end of the turn.
+- Always: when changing shared commands, validation flow, deploy flow, release flow, or contributor policy, update the affected `AGENTS.md` files and user/contributor docs in the same change.
+- Done: only claim completion after required docs are updated, required checks for the affected scope pass, and any temporary servers or processes started for validation are stopped.
+- Done: if a required step was skipped, a check failed, or a blocker remains, report the work as incomplete and name the exact gap.
 - Never: Agents should NEVER run `bun run fix` or formatting tools directly. Formatting is handled automatically in the background via a pre-commit hook using nano-staged.
 - Ask first: adding a new workspace, changing cross-workspace dependency topology, or changing the publish/release flow.
 - Never: disable lint rules unless the user explicitly authorizes it.
@@ -40,7 +57,10 @@ Monorepo root for the published `devhost` package and the local demo app.
 ## References
 
 - `packages/devhost/AGENTS.md`
+- `packages/devhost/RELEASE.md`
 - `packages/www/AGENTS.md`
+- `packages/www/DEPLOY.md`
+- `.agents/skills/`
 - `oxfmt.config.ts`
 - `oxlint.config.ts`
 - `.github/workflows/ci.yml`

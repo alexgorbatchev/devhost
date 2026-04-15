@@ -9,14 +9,14 @@ Summary: Bun monorepo shipping the `devhost` CLI and a Railway-hosted demo app; 
 
 ## Action checklist
 
-- [ ] Update `AGENTS.md` so its repo-wide validation guidance matches the actual scripts, including that workspace `check` already runs Storybook/Vitest browser coverage.
-- [ ] Add mandatory documentation-maintenance rules in the root and `packages/www` AGENTS files requiring updates to repo-wide validation docs, `packages/www/DEPLOY.md`, and other user-facing or contributor-facing contracts when workflows or behavior change.
-- [ ] Update the AGENTS test-running instructions so they describe the real root and workspace validation paths, including that workspace `check` scripts already run Storybook/Vitest browser tests.
-- [ ] Add concrete AGENTS shipping instructions for the Railway deploy and the tag-driven npm release, or explicitly inherit `packages/www/DEPLOY.md` and `.github/workflows/publish.yml` as the authoritative procedures.
-- [ ] Add explicit done policy to the AGENTS files stating when agents may claim completion and when they must report incomplete work, failed checks, missing required updates, skipped required steps, or blockers instead.
-- [ ] Add the repository-local skills folder path to the root AGENTS file, or state the exact path to use when local skills are added.
-- [ ] Correct stale AGENTS statements about Storybook coverage being outside `bun run check`, `packages/www` check being TypeScript-only, and `packages/devhost` devtools being Preact-based.
-- [ ] Add checked-in release documentation for the CLI's tag-driven npm publish flow, or expand existing docs so both the Railway deploy and npm release procedures are fully documented end to end.
+- [x] Update `AGENTS.md` so its repo-wide validation guidance matches the actual scripts, including that workspace `check` already runs Storybook/Vitest browser coverage.
+- [x] Add mandatory documentation-maintenance rules in the root and `packages/www` AGENTS files requiring updates to repo-wide validation docs, `packages/www/DEPLOY.md`, and other user-facing or contributor-facing contracts when workflows or behavior change.
+- [x] Update the AGENTS test-running instructions so they describe the real root and workspace validation paths, including that workspace `check` scripts already run Storybook/Vitest browser tests.
+- [x] Add concrete AGENTS shipping instructions for the Railway deploy and the tag-driven npm release, or explicitly inherit `packages/www/DEPLOY.md` and `.github/workflows/publish.yml` as the authoritative procedures.
+- [x] Add explicit done policy to the AGENTS files stating when agents may claim completion and when they must report incomplete work, failed checks, missing required updates, skipped required steps, or blockers instead.
+- [x] Add the repository-local skills folder path to the root AGENTS file, or state the exact path to use when local skills are added.
+- [x] Correct stale AGENTS statements about Storybook coverage being outside `bun run check`, `packages/www` check being TypeScript-only, and `packages/devhost` devtools being Preact-based.
+- [x] Add checked-in release documentation for the CLI's tag-driven npm publish flow, or expand existing docs so both the Railway deploy and npm release procedures are fully documented end to end.
 
 ## Automated tests exist
 
