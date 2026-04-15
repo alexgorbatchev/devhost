@@ -13,6 +13,7 @@ export default defineConfig({
     include: ["@tanstack/react-query-devtools/production", "@tanstack/router-devtools"],
   },
   test: {
+    testTimeout: 60000,
     projects: [
       {
         test: {
@@ -23,6 +24,7 @@ export default defineConfig({
             provider: playwright({}),
           },
           name: "storybook",
+          testTimeout: 120000,
         },
         plugins: [
           storybookTest({

@@ -1,0 +1,11 @@
+import { GlobalWindow } from "happy-dom";
+const window = new GlobalWindow();
+globalThis.window = window;
+globalThis.document = window.document;
+globalThis.navigator = window.navigator;
+globalThis.HTMLElement = window.HTMLElement;
+globalThis.Element = window.Element;
+globalThis.Node = window.Node;
+globalThis.getComputedStyle = window.getComputedStyle.bind(window);
+globalThis.matchMedia = () => ({ matches: false, addListener: () => {}, removeListener: () => {} });
+globalThis.requestAnimationFrame = (cb) => setTimeout(cb, 0);

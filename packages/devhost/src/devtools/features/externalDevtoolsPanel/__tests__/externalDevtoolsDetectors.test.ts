@@ -2,13 +2,15 @@ import assert from "node:assert/strict";
 
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 
+globalThis.MouseEvent = class MouseEvent {} as unknown as typeof MouseEvent;
+
 import { externalDevtoolsDetectors } from "../externalDevtoolsDetectors";
 import type { IExternalDevtoolsAdapter } from "../types";
 
-type VoidFunction = () => void;
+type DispatchEventFn = (event: Event) => boolean;
 
 interface IFakeElement {
-  click: ReturnType<typeof mock<VoidFunction>>;
+  dispatchEvent: ReturnType<typeof mock<DispatchEventFn>>;
 }
 
 describe("externalDevtoolsDetectors", () => {
@@ -33,7 +35,7 @@ describe("externalDevtoolsDetectors", () => {
     const closeButton = createFakeElement();
 
     mockDocument({
-      ".tsqd-main-panel": { click: mock<VoidFunction>(() => {}) },
+      ".tsqd-main-panel": { dispatchEvent: mock<DispatchEventFn>(() => true) },
       ".tsqd-minimize-btn": closeButton,
       ".tsqd-open-btn": openButton,
     });
@@ -44,8 +46,8 @@ describe("externalDevtoolsDetectors", () => {
     expect(adapter.isOpen()).toBe(true);
     adapter.open();
     adapter.close();
-    expect(openButton.click).toHaveBeenCalledTimes(1);
-    expect(closeButton.click).toHaveBeenCalledTimes(1);
+    expect(openButton.dispatchEvent).toHaveBeenCalledTimes(1);
+    expect(closeButton.dispatchEvent).toHaveBeenCalledTimes(1);
     expect(adapter.hideSelectors).toEqual([".tsqd-open-btn-container", ".tsqd-open-btn", ".tsqd-minimize-btn"]);
   });
 
@@ -60,14 +62,14 @@ describe("externalDevtoolsDetectors", () => {
 
     expect(adapter.isInstalled()).toBe(false);
     adapter.open();
-    expect(panelOpenButton.click).toHaveBeenCalledTimes(1);
+    expect(panelOpenButton.dispatchEvent).toHaveBeenCalledTimes(1);
   });
 
   test("router adapter toggles the footer button and reads panel visibility", () => {
     const toggleButton = createFakeElement();
 
     mockDocument({
-      ".TanStackRouterDevtoolsPanel": { click: mock<VoidFunction>(() => {}) },
+      ".TanStackRouterDevtoolsPanel": { dispatchEvent: mock<DispatchEventFn>(() => true) },
       "footer.TanStackRouterDevtools > button": toggleButton,
     });
     globalThis.getComputedStyle = (() => ({
@@ -81,13 +83,13 @@ describe("externalDevtoolsDetectors", () => {
     expect(adapter.isOpen()).toBe(true);
     adapter.open();
     adapter.close();
-    expect(toggleButton.click).toHaveBeenCalledTimes(2);
+    expect(toggleButton.dispatchEvent).toHaveBeenCalledTimes(2);
     expect(adapter.hideSelectors).toEqual(["footer.TanStackRouterDevtools > button"]);
   });
 
   test("router adapter reports closed when the panel is hidden", () => {
     mockDocument({
-      ".TanStackRouterDevtoolsPanel": { click: mock<VoidFunction>(() => {}) },
+      ".TanStackRouterDevtoolsPanel": { dispatchEvent: mock<DispatchEventFn>(() => true) },
     });
     globalThis.getComputedStyle = (() => ({
       display: "none",
@@ -102,7 +104,7 @@ describe("externalDevtoolsDetectors", () => {
 
 function createFakeElement(): IFakeElement {
   return {
-    click: mock<VoidFunction>(() => {}),
+    dispatchEvent: mock<DispatchEventFn>(() => true),
   };
 }
 

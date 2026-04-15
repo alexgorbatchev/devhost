@@ -44,7 +44,7 @@ function isTanStackRouterDevtoolsOpen(): boolean {
 }
 
 function toggleTanStackRouterDevtools(): void {
-  readTanStackRouterDevtoolsToggleButton()?.click();
+  readTanStackRouterDevtoolsToggleButton()?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
 }
 
 function readTanStackRouterDevtoolsToggleButton(): HTMLElement | null {
@@ -64,11 +64,11 @@ function isTanStackQueryDevtoolsOpen(): boolean {
 }
 
 function openTanStackQueryDevtools(): void {
-  readTanStackQueryOpenButton()?.click();
+  readTanStackQueryOpenButton()?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
 }
 
 function closeTanStackQueryDevtools(): void {
-  readTanStackQueryCloseButton()?.click();
+  readTanStackQueryCloseButton()?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
 }
 
 function readTanStackQueryOpenButton(): HTMLElement | null {
