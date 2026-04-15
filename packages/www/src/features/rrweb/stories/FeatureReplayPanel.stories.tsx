@@ -2,27 +2,36 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { type JSX } from "react";
 import { expect, within } from "storybook/test";
 
-import { FeatureReplayPanel } from "../FeatureReplayPanel";
+import {
+  FeatureReplayPanel as FeatureReplayPanelComponent,
+  type IFeatureReplayPanelProps,
+} from "../FeatureReplayPanel";
 import { useStoryRecording } from "./storyRecording";
 
-const meta: Meta<typeof FeatureReplayPanel> = {
+const meta: Meta<typeof FeatureReplayPanelComponent> = {
   title: "devhost-test-app/features/rrweb/FeatureReplayPanel",
-  component: FeatureReplayPanel,
+  component: FeatureReplayPanelComponent,
 };
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-function StoryRecordingFeatureReplayPanel(props: { emptyMessage: string; isFullscreen?: boolean }): JSX.Element {
+type StoryRecordingFeatureReplayPanelProps = Omit<IFeatureReplayPanelProps, "recording">;
+
+function StoryRecordingFeatureReplayPanel(props: StoryRecordingFeatureReplayPanelProps): JSX.Element {
   const recording = useStoryRecording();
 
   return (
-    <FeatureReplayPanel emptyMessage={props.emptyMessage} isFullscreen={props.isFullscreen} recording={recording} />
+    <FeatureReplayPanelComponent
+      emptyMessage={props.emptyMessage}
+      isFullscreen={props.isFullscreen}
+      recording={recording}
+    />
   );
 }
 
-const Default: Story = {
+export const FeatureReplayPanel: Story = {
   args: {
     emptyMessage: "Preview unavailable.",
     recording: null,
@@ -68,5 +77,3 @@ export const FullscreenReplay: Story = {
     await expect(canvas.getByTestId("FeatureReplayPanel--controls")).toBeInTheDocument();
   },
 };
-
-export { Default as FeatureReplayPanel };

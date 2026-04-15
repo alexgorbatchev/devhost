@@ -1,18 +1,18 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
 
-import { Button } from "../Button";
+import { Button as ButtonComponent } from "../Button";
 
-const meta: Meta<typeof Button> = {
+const meta: Meta<typeof ButtonComponent> = {
   title: "devhost-test-app/components/ui/Button",
-  component: Button,
+  component: ButtonComponent,
 };
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const Default: Story = {
+export const Button: Story = {
   args: {
     children: "Click me",
     onClick: fn(),
@@ -55,5 +55,3 @@ export const Large: Story = {
     await expect(button).toHaveClass("h-11");
   },
 };
-
-export { Default as Button };

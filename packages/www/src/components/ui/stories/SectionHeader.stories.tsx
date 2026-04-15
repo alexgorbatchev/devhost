@@ -1,18 +1,18 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, within } from "storybook/test";
 
-import { SectionHeader } from "../SectionHeader";
+import { SectionHeader as SectionHeaderComponent } from "../SectionHeader";
 
-const meta: Meta<typeof SectionHeader> = {
+const meta: Meta<typeof SectionHeaderComponent> = {
   title: "devhost-test-app/components/ui/SectionHeader",
-  component: SectionHeader,
+  component: SectionHeaderComponent,
 };
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const Default: Story = {
+export const SectionHeader: Story = {
   args: {
     description: "Keep the routed debugging loop close to the page.",
     title: "A routed development surface, not another localhost wrapper.",
@@ -41,5 +41,3 @@ export const TitleOnly: Story = {
     await expect(canvas.queryByText(/routed debugging loop/i)).not.toBeInTheDocument();
   },
 };
-
-export { Default as SectionHeader };

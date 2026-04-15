@@ -2,31 +2,27 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { type JSX } from "react";
 import { expect, fn, userEvent, within } from "storybook/test";
 
-import { RrwebDemoPanel } from "../RrwebDemoPanel";
+import { RrwebDemoPanel as RrwebDemoPanelComponent, type IRrwebDemoPanelProps } from "../RrwebDemoPanel";
 import { useStoryRecording } from "./storyRecording";
 
-const meta: Meta<typeof RrwebDemoPanel> = {
+const meta: Meta<typeof RrwebDemoPanelComponent> = {
   title: "devhost-test-app/features/rrweb/RrwebDemoPanel",
-  component: RrwebDemoPanel,
+  component: RrwebDemoPanelComponent,
 };
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-function StoryRecordingRrwebDemoPanel(props: {
-  isDevelopmentMode: boolean;
-  isRecording: boolean;
-  onExportRecording: () => void;
-  onStartRecording: () => void;
-  onStopRecording: () => void;
-}): JSX.Element {
+type StoryRecordingRrwebDemoPanelProps = Omit<IRrwebDemoPanelProps, "recording">;
+
+function StoryRecordingRrwebDemoPanel(props: StoryRecordingRrwebDemoPanelProps): JSX.Element {
   const recording = useStoryRecording();
 
-  return <RrwebDemoPanel {...props} recording={recording} />;
+  return <RrwebDemoPanelComponent {...props} recording={recording} />;
 }
 
-const Default: Story = {
+export const RrwebDemoPanel: Story = {
   args: {
     isDevelopmentMode: true,
     isRecording: false,
@@ -110,5 +106,3 @@ export const ProductionMode: Story = {
     await expect(canvas.queryByTestId("RrwebDemoPanel--controls")).not.toBeInTheDocument();
   },
 };
-
-export { Default as RrwebDemoPanel };

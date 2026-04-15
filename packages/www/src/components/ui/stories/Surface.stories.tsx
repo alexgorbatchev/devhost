@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, within } from "storybook/test";
 
-import { Surface } from "../Surface";
+import { Surface as SurfaceComponent } from "../Surface";
 
-const meta: Meta<typeof Surface> = {
+const meta: Meta<typeof SurfaceComponent> = {
   title: "devhost-test-app/components/ui/Surface",
-  component: Surface,
+  component: SurfaceComponent,
   render: (args) => {
-    return <Surface {...args} data-testid="Surface" />;
+    return <SurfaceComponent {...args} data-testid="Surface" />;
   },
 };
 
@@ -15,7 +15,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const Default: Story = {
+export const Surface: Story = {
   args: {
     children: "Surface body",
   },
@@ -100,5 +100,3 @@ export const SectionElement: Story = {
     await expect(canvas.getByTestId("Surface").tagName).toBe("SECTION");
   },
 };
-
-export { Default as Surface };
