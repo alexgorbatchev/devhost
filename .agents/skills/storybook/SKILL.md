@@ -1,11 +1,13 @@
 ---
 name: storybook
-description: Use whenever any Storybook stories file in this repository is touched in any way, including opening, creating, reviewing, editing, or rewriting `*.stories.*` files.
+description: Use when creating or changing Storybook stories in this repository, especially `*.stories.*` files. Applies to story coverage, `play` tests, and shared Storybook setup. Use `storybook-review` for review-only tasks.
 ---
 
 # Storybook
 
 Use `packages/devhost/src/devtools/features/externalDevtoolsPanel/stories/ExternalDevtoolsPanel.stories.tsx` as the reference model for shared setup helpers and behavior-focused `play` tests.
+
+For Storybook review-only tasks, use `.agents/skills/storybook-review/SKILL.md`.
 
 ## Coverage
 
