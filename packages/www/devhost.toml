@@ -15,14 +15,6 @@ position = "right"
 enabled = true
 position = "top-right"
 
-[services.toolbar-test]
-command = "bun dev"
-cwd = "./skit"
-port = 5173
-injectPort = false
-host = "test.localhost"
-bindHost = "::1"
-
 [services.devhost-www]
 primary = true
 command = "bun dev"
