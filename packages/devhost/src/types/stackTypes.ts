@@ -15,8 +15,8 @@ export type DevhostHealthConfig =
 
 export type DevhostPortConfig = number | "auto";
 
-export type DevtoolsPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
-export type DevtoolsMinimapPosition = "left" | "right";
+export type DevtoolsPosition = "top-right" | "bottom-right";
+export type DevtoolsMinimapPosition = "right";
 
 export type BuiltInDevhostAgentAdapter = "pi" | "claude-code" | "opencode";
 

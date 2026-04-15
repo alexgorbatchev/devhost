@@ -22,8 +22,8 @@ import type {
 } from "../types/stackTypes";
 
 const devtoolsComponentEditorSchema = z.enum(supportedDevtoolsComponentEditors);
-const devtoolsMinimapPositionSchema = z.enum(["left", "right"]);
-const devtoolsPositionSchema = z.enum(["top-left", "top-right", "bottom-left", "bottom-right"]);
+const devtoolsMinimapPositionSchema = z.literal("right");
+const devtoolsPositionSchema = z.enum(["top-right", "bottom-right"]);
 
 const nonEmptyStringSchema = z.string().refine((value: string): boolean => value.trim().length > 0, {
   message: "Expected a non-empty string.",

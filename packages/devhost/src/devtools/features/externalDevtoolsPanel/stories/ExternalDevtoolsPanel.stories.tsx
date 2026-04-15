@@ -15,7 +15,6 @@ import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
 import { ExternalDevtoolsPanel } from "../ExternalDevtoolsPanel";
 import { useExternalDevtoolsLaunchers } from "../useExternalDevtoolsLaunchers";
-import type { PanelSide } from "../../serviceStatusPanel";
 
 const queryClient = new QueryClient();
 
@@ -32,18 +31,14 @@ const indexRoute = createRoute({
 const routeTree = rootRoute.addChildren([indexRoute]);
 const router = createRouter({ history: createMemoryHistory(), routeTree });
 
-interface IIntegratedPanelProps {
-  panelSide: PanelSide;
-}
-
-function IntegratedPanel({ panelSide }: IIntegratedPanelProps) {
+function IntegratedPanel() {
   const { launchers, toggleLauncher } = useExternalDevtoolsLaunchers(true);
 
   return (
     <>
       <ThemeProvider colorScheme="dark">
-        <StoryContainer align={panelSide}>
-          <ExternalDevtoolsPanel launchers={launchers} onToggleLauncher={toggleLauncher} panelSide={panelSide} />
+        <StoryContainer align="right">
+          <ExternalDevtoolsPanel launchers={launchers} onToggleLauncher={toggleLauncher} />
         </StoryContainer>
       </ThemeProvider>
 
@@ -59,8 +54,8 @@ function IntegratedPanel({ panelSide }: IIntegratedPanelProps) {
 const meta: Meta<typeof ExternalDevtoolsPanel> = {
   title: "@alexgorbatchev/devhost/devtools/features/externalDevtoolsPanel/ExternalDevtoolsPanel",
   component: ExternalDevtoolsPanel,
-  render: (args) => {
-    return <IntegratedPanel panelSide={args.panelSide} />;
+  render: () => {
+    return <IntegratedPanel />;
   },
 };
 
@@ -71,6 +66,8 @@ type Story = StoryObj<typeof meta>;
 interface ISharedPlayTestArgs {
   canvasElement: HTMLElement;
 }
+
+type LauncherButtonReader = () => HTMLElement;
 
 async function waitForToolbarsToBeHidden(selectors: string[]): Promise<void> {
   await waitFor(() => {
@@ -126,8 +123,8 @@ async function waitForQueryPanelToBeClosed(): Promise<void> {
 }
 
 interface IStoryLaunchers {
-  readQueryLauncherButton: () => HTMLElement;
-  readRouterLauncherButton: () => HTMLElement;
+  readQueryLauncherButton: LauncherButtonReader;
+  readRouterLauncherButton: LauncherButtonReader;
   storyContainerElement: HTMLElement;
 }
 
@@ -156,7 +153,7 @@ const setupSharedPlayTest = async ({ canvasElement }: ISharedPlayTestArgs): Prom
 
 async function waitForLaunchersToStayInsideStoryContainer(
   storyContainerElement: HTMLElement,
-  readLauncherButtons: Array<() => HTMLElement>,
+  readLauncherButtons: LauncherButtonReader[],
 ): Promise<void> {
   await waitFor(() => {
     const storyRect = storyContainerElement.getBoundingClientRect();
@@ -170,7 +167,7 @@ async function waitForLaunchersToStayInsideStoryContainer(
   });
 }
 
-async function runQueryLauncherCycle(readQueryLauncherButton: () => HTMLElement): Promise<void> {
+async function runQueryLauncherCycle(readQueryLauncherButton: LauncherButtonReader): Promise<void> {
   await waitForQueryPanelToBeClosed();
 
   readQueryLauncherButton().click();
@@ -189,8 +186,8 @@ async function runQueryLauncherCycle(readQueryLauncherButton: () => HTMLElement)
 }
 
 async function runRouterLauncherCycle(
-  readRouterLauncherButton: () => HTMLElement,
-  readQueryLauncherButton: () => HTMLElement,
+  readRouterLauncherButton: LauncherButtonReader,
+  readQueryLauncherButton: LauncherButtonReader,
   storyContainerElement: HTMLElement,
 ): Promise<void> {
   readRouterLauncherButton().click();
@@ -214,20 +211,8 @@ const sharedPlayTest = async ({ canvasElement }: ISharedPlayTestArgs): Promise<v
   await waitForToolbarsToBeHidden(["footer.TanStackRouterDevtools > button"]);
 };
 
-export const DefaultLeft: Story = {
-  args: {
-    panelSide: "left",
-    launchers: [],
-    onToggleLauncher: () => {},
-  },
+const Default: Story = {
   play: sharedPlayTest,
 };
 
-export const DefaultRight: Story = {
-  args: {
-    panelSide: "right",
-    launchers: [],
-    onToggleLauncher: () => {},
-  },
-  play: sharedPlayTest,
-};
+export { Default as ExternalDevtoolsPanel };

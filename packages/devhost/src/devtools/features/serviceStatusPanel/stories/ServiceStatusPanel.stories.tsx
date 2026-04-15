@@ -16,7 +16,7 @@ const meta: Meta<typeof ServiceStatusPanel> = {
   render: (args) => {
     return (
       <ThemeProvider colorScheme="dark">
-        <StoryContainer align={args.panelSide}>
+        <StoryContainer align="right">
           <ServiceStatusPanel {...args} />
         </StoryContainer>
       </ThemeProvider>
@@ -28,10 +28,9 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const DefaultLeft: Story = {
+export const Default: Story = {
   args: {
     errorMessage: null,
-    panelSide: "left",
     services: [
       { name: "api", status: true },
       { name: "worker", status: false },
@@ -71,10 +70,9 @@ export const DefaultLeft: Story = {
   },
 };
 
-export const RightPanel: Story = {
+export const HealthyServices: Story = {
   args: {
     errorMessage: null,
-    panelSide: "right",
     services: [
       { name: "frontend", status: true },
       { name: "backend", status: true },
@@ -91,7 +89,6 @@ export const RightPanel: Story = {
 export const WithLinks: Story = {
   args: {
     errorMessage: null,
-    panelSide: "left",
     services: [
       { name: "web", status: true, url: "http://localhost:3000" },
       { name: "docs", status: true, url: "http://localhost:3001" },
@@ -109,7 +106,6 @@ export const WithLinks: Story = {
 export const WithErrorMessage: Story = {
   args: {
     errorMessage: "Connection to devhost lost",
-    panelSide: "left",
     services: [],
   },
   play: async ({ canvasElement }): Promise<void> => {
@@ -122,7 +118,6 @@ export const WithErrorMessage: Story = {
 export const Empty: Story = {
   args: {
     errorMessage: null,
-    panelSide: "left",
     services: [],
   },
   play: async ({ canvasElement }): Promise<void> => {

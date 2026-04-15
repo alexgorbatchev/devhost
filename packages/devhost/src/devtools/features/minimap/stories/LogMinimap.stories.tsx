@@ -19,7 +19,7 @@ const meta: Meta<typeof LogMinimap> = {
   render: (args) => {
     return (
       <ThemeProvider colorScheme="dark">
-        <StoryContainer align={args.minimapPosition === "left" ? "left" : "right"}>
+        <StoryContainer align="right">
           <LogMinimap {...args} />
         </StoryContainer>
       </ThemeProvider>
@@ -44,11 +44,10 @@ async function assertHoveredPreview(canvas: ReturnType<typeof within>): Promise<
   await expect(canvas.getByTestId("LogMinimap--preview").querySelectorAll("li").length).toBeGreaterThan(0);
 }
 
-export const DefaultRight: Story = {
+export const Default: Story = {
   args: {
     entries: mockEntries,
     isHovered: false,
-    minimapPosition: "right",
     onHoveredChange: fn(),
   },
   play: async ({ args, canvasElement }): Promise<void> => {
@@ -69,11 +68,10 @@ export const DefaultRight: Story = {
   },
 };
 
-export const HoveredRight: Story = {
+export const Hovered: Story = {
   args: {
     entries: mockEntries,
     isHovered: true,
-    minimapPosition: "right",
     onHoveredChange: (): void => {},
   },
   play: async ({ canvasElement }): Promise<void> => {
@@ -82,21 +80,6 @@ export const HoveredRight: Story = {
     await expect(canvas.getByTestId("LogMinimap")).toBeInTheDocument();
     await expect(canvas.getByTestId("LogMinimap--canvas")).toBeInTheDocument();
     await assertHoveredPreview(canvas);
-  },
-};
-
-export const DefaultLeft: Story = {
-  args: {
-    entries: mockEntries,
-    isHovered: false,
-    minimapPosition: "left",
-    onHoveredChange: (): void => {},
-  },
-  play: async ({ canvasElement }): Promise<void> => {
-    const canvas = within(canvasElement);
-
-    await expect(canvas.getByTestId("LogMinimap")).toBeInTheDocument();
-    await expect(canvas.getByTestId("LogMinimap--canvas")).toBeInTheDocument();
   },
 };
 
@@ -104,28 +87,11 @@ export const Empty: Story = {
   args: {
     entries: [],
     isHovered: false,
-    minimapPosition: "right",
     onHoveredChange: (): void => {},
   },
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
 
     await expect(canvas.queryByTestId("LogMinimap")).not.toBeInTheDocument();
-  },
-};
-
-export const HoveredLeft: Story = {
-  args: {
-    entries: mockEntries,
-    isHovered: true,
-    minimapPosition: "left",
-    onHoveredChange: (): void => {},
-  },
-  play: async ({ canvasElement }): Promise<void> => {
-    const canvas = within(canvasElement);
-
-    await expect(canvas.getByTestId("LogMinimap")).toBeInTheDocument();
-    await expect(canvas.getByTestId("LogMinimap--canvas")).toBeInTheDocument();
-    await assertHoveredPreview(canvas);
   },
 };

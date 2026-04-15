@@ -12,11 +12,9 @@ import {
   useDevtoolsTheme,
 } from "../../shared";
 import type { ServiceHealth } from "../../shared/types";
-import type { PanelSide } from "./types";
 
 interface IServiceStatusPanelProps {
   errorMessage: string | null;
-  panelSide: PanelSide;
   services: ServiceHealth[];
 }
 
@@ -29,17 +27,16 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
     return null;
   }
 
-  const errorClassName: string = css(createErrorStyle(theme, props.panelSide));
+  const errorClassName: string = css(createErrorStyle(theme));
   const listClassName: string = css(createListStyle(theme));
   const linkClassName: string = css(createLinkStyle(theme));
-  const nameClassName: string = css(createNameStyle(theme, props.panelSide));
-  const rowClassName: string = css(createRowStyle(theme, props.panelSide));
+  const nameClassName: string = css(createNameStyle(theme));
+  const rowClassName: string = css(createRowStyle(theme));
   const restartButtonClassName: string = css(createRestartButtonStyle(theme));
 
   return (
     <HoverSlidePanel
       ariaLabel="devhost services"
-      panelSide={props.panelSide}
       peekWidth={theme.sizes.serviceStatusPanelPeekWidth}
       testId="ServiceStatusPanel"
     >
@@ -95,19 +92,9 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
 
             return (
               <li key={service.name} className={rowClassName}>
-                {props.panelSide === "left" ? (
-                  <>
-                    {name}
-                    {restartButton}
-                    <span aria-hidden="true" className={statusDotClassName} />
-                  </>
-                ) : (
-                  <>
-                    <span aria-hidden="true" className={statusDotClassName} />
-                    {restartButton}
-                    {name}
-                  </>
-                )}
+                <span aria-hidden="true" className={statusDotClassName} />
+                {restartButton}
+                {name}
               </li>
             );
           })}
@@ -117,12 +104,12 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
   );
 }
 
-function createErrorStyle(theme: IDevtoolsTheme, panelSide: PanelSide): CSSObject {
+function createErrorStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     color: theme.colors.dangerForeground,
     fontSize: theme.fontSizes.sm,
     marginBottom: theme.spacing.xs,
-    textAlign: panelSide,
+    textAlign: "right",
     whiteSpace: "nowrap",
   };
 }
@@ -137,14 +124,14 @@ function createListStyle(theme: IDevtoolsTheme): CSSObject {
   };
 }
 
-function createNameStyle(theme: IDevtoolsTheme, panelSide: PanelSide): CSSObject {
+function createNameStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     color: theme.colors.foreground,
     flexGrow: 1,
     fontSize: theme.fontSizes.sm,
     minWidth: 0,
     overflow: "hidden",
-    textAlign: panelSide === "left" ? "right" : "left",
+    textAlign: "left",
     textOverflow: "clip",
     whiteSpace: "nowrap",
   };
@@ -173,7 +160,7 @@ function createLinkStyle(theme: IDevtoolsTheme): CSSObject {
   };
 }
 
-function createRowStyle(theme: IDevtoolsTheme, _panelSide: PanelSide): CSSObject {
+function createRowStyle(theme: IDevtoolsTheme): CSSObject {
   return {
     alignItems: "center",
     display: "flex",

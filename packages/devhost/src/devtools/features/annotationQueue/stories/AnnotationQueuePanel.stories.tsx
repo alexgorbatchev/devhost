@@ -98,7 +98,7 @@ const meta: Meta<typeof AnnotationQueuePanel> = {
   render: (args) => {
     return (
       <ThemeProvider colorScheme="dark">
-        <StoryContainer align={args.panelSide}>
+        <StoryContainer align="right">
           <AnnotationQueuePanel {...args} />
         </StoryContainer>
       </ThemeProvider>
@@ -110,7 +110,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const DefaultLeft: Story = {
+export const Default: Story = {
   args: {
     agentDisplayName: "Pi",
     errorMessage: null,
@@ -120,7 +120,6 @@ export const DefaultLeft: Story = {
     onResumeQueue: fn(async () => "session-2"),
     onSaveEntry: fn(async () => true),
     queues: sampleQueues,
-    panelSide: "left",
   },
   play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
@@ -179,7 +178,7 @@ export const DefaultLeft: Story = {
   },
 };
 
-export const DefaultRight: Story = {
+export const Collapsed: Story = {
   args: {
     agentDisplayName: "Pi",
     errorMessage: null,
@@ -189,7 +188,6 @@ export const DefaultRight: Story = {
     onResumeQueue: fn(async () => "session-2"),
     onSaveEntry: fn(async () => true),
     queues: sampleQueues,
-    panelSide: "right",
   },
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
@@ -210,7 +208,6 @@ export const WithError: Story = {
     onResumeQueue: fn(async () => "session-2"),
     onSaveEntry: fn(async () => true),
     queues: sampleQueues,
-    panelSide: "left",
   },
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
@@ -232,7 +229,6 @@ export const Launching: Story = {
     onResumeQueue: fn(async () => "session-2"),
     onSaveEntry: fn(async () => true),
     queues: [launchingQueue],
-    panelSide: "left",
   },
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
@@ -253,7 +249,6 @@ export const ResumePending: Story = {
     onResumeQueue: fn(async () => "session-2"),
     onSaveEntry: fn(async () => true),
     queues: [pausedQueue],
-    panelSide: "left",
   },
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
@@ -277,7 +272,6 @@ export const EntryMutationPending: Story = {
     onResumeQueue: fn(async () => "session-2"),
     onSaveEntry: fn(async () => true),
     queues: [workingQueue],
-    panelSide: "left",
   },
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
@@ -304,7 +298,6 @@ export const Empty: Story = {
     onResumeQueue: fn(async () => "session-2"),
     onSaveEntry: fn(async () => true),
     queues: [],
-    panelSide: "left",
   },
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);

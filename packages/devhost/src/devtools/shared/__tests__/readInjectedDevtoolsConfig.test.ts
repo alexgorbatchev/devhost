@@ -34,8 +34,8 @@ describe("readInjectedDevtoolsConfig", () => {
       agentDisplayName: "Claude Code",
       componentEditor: "neovim",
       controlToken: "control-token",
-      minimapPosition: "left",
-      position: "top-left",
+      minimapPosition: "right",
+      position: "top-right",
       projectRootPath: "/tmp/project",
       routedServices: [{ host: "app.localhost", path: "/api/*", serviceName: "api" }],
       stackName: "hello-stack",
@@ -45,11 +45,33 @@ describe("readInjectedDevtoolsConfig", () => {
       agentDisplayName: "Claude Code",
       componentEditor: "neovim",
       controlToken: "control-token",
-      minimapPosition: "left",
-      position: "top-left",
+      minimapPosition: "right",
+      position: "top-right",
       projectRootPath: "/tmp/project",
       routedServices: [{ host: "app.localhost", path: "/api/*", serviceName: "api" }],
       stackName: "hello-stack",
+      editorEnabled: true,
+      externalToolbarsEnabled: true,
+      minimapEnabled: true,
+      statusEnabled: true,
+    });
+  });
+
+  test("normalizes removed left-side positions onto the right edge", () => {
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
+      minimapPosition: "left",
+      position: "top-left",
+    });
+
+    expect(readInjectedDevtoolsConfig()).toEqual({
+      agentDisplayName: "Pi",
+      componentEditor: "vscode",
+      controlToken: "",
+      minimapPosition: "right",
+      position: "top-right",
+      projectRootPath: "",
+      routedServices: [],
+      stackName: "devhost",
       editorEnabled: true,
       externalToolbarsEnabled: true,
       minimapEnabled: true,

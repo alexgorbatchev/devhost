@@ -2,18 +2,15 @@ import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "react";
 
 import { Button, css, HoverSlidePanel, useDevtoolsTheme } from "../../shared";
-import type { PanelSide } from "../serviceStatusPanel";
 import type { IExternalDevtoolsLauncher } from "./types";
 
 interface IExternalDevtoolsPanelProps {
   launchers: IExternalDevtoolsLauncher[];
-  panelSide: PanelSide;
   onToggleLauncher: (launcherId: string) => void;
 }
 
 export function ExternalDevtoolsPanel({
   launchers,
-  panelSide,
   onToggleLauncher,
 }: IExternalDevtoolsPanelProps): JSX.Element | null {
   const theme = useDevtoolsTheme();
@@ -23,20 +20,19 @@ export function ExternalDevtoolsPanel({
   }
 
   const hasOpenLauncher: boolean = launchers.some((launcher) => launcher.isOpen);
-  const contentClassName: string = css(createContentStyle(theme, panelSide));
+  const contentClassName: string = css(createContentStyle(theme));
   const handleClassName: string = css(createHandleStyle(theme));
-  const launcherListClassName: string = css(createLauncherListStyle(theme, panelSide));
+  const launcherListClassName: string = css(createLauncherListStyle(theme));
 
   return (
     <HoverSlidePanel
       ariaLabel="external devtools"
       isPinned={hasOpenLauncher}
-      panelSide={panelSide}
       peekWidth={theme.sizes.serviceStatusPanelPeekWidth}
       testId="ExternalDevtoolsPanel"
     >
       <div className={contentClassName}>
-        {panelSide === "right" ? <span className={handleClassName}>Tools</span> : null}
+        <span className={handleClassName}>Tools</span>
         <div className={launcherListClassName} data-testid="ExternalDevtoolsPanel--launcher-list">
           {launchers.map((launcher) => (
             <Button
@@ -50,17 +46,16 @@ export function ExternalDevtoolsPanel({
             </Button>
           ))}
         </div>
-        {panelSide === "left" ? <span className={handleClassName}>Tools</span> : null}
       </div>
     </HoverSlidePanel>
   );
 }
 
-function createContentStyle(theme: ReturnType<typeof useDevtoolsTheme>, panelSide: PanelSide): CSSObject {
+function createContentStyle(theme: ReturnType<typeof useDevtoolsTheme>): CSSObject {
   return {
     alignItems: "center",
     display: "flex",
-    flexDirection: panelSide === "left" ? "row" : "row-reverse",
+    flexDirection: "row-reverse",
     gap: theme.spacing.xs,
   };
 }
@@ -74,12 +69,12 @@ function createHandleStyle(theme: ReturnType<typeof useDevtoolsTheme>): CSSObjec
   };
 }
 
-function createLauncherListStyle(theme: ReturnType<typeof useDevtoolsTheme>, panelSide: PanelSide): CSSObject {
+function createLauncherListStyle(theme: ReturnType<typeof useDevtoolsTheme>): CSSObject {
   return {
     display: "flex",
-    flexDirection: panelSide === "left" ? "row-reverse" : "row",
+    flexDirection: "row",
     flexWrap: "wrap",
     gap: theme.spacing.xxs,
-    justifyContent: panelSide === "left" ? "flex-end" : "flex-start",
+    justifyContent: "flex-start",
   };
 }

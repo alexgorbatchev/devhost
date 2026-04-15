@@ -58,7 +58,7 @@ describe("startDevtoolsControlServer", () => {
       agentDisplayName: "Pi",
       componentEditor: "vscode",
       devtoolsMinimapPosition: "right",
-      devtoolsPosition: "top-left",
+      devtoolsPosition: "top-right",
       getHealthResponse: async (): Promise<HealthResponse> => {
         return healthResponse;
       },
@@ -97,7 +97,7 @@ describe("startDevtoolsControlServer", () => {
     const controlServer = await startDevtoolsControlServer({
       agentDisplayName: "Pi",
       componentEditor: "vscode",
-      devtoolsMinimapPosition: "left",
+      devtoolsMinimapPosition: "right",
       devtoolsPosition: "bottom-right",
       getHealthResponse: async (): Promise<HealthResponse> => {
         return {
@@ -155,7 +155,7 @@ describe("startDevtoolsControlServer", () => {
     const controlServer = await startDevtoolsControlServer({
       agentDisplayName: "Pi",
       componentEditor: "vscode",
-      devtoolsMinimapPosition: "left",
+      devtoolsMinimapPosition: "right",
       devtoolsPosition: "bottom-right",
       getHealthResponse: async (): Promise<HealthResponse> => {
         return {
@@ -231,7 +231,7 @@ describe("startDevtoolsControlServer", () => {
     const controlServer = await startDevtoolsControlServer({
       agentDisplayName: "Pi",
       componentEditor: "vscode",
-      devtoolsMinimapPosition: "left",
+      devtoolsMinimapPosition: "right",
       devtoolsPosition: "bottom-right",
       getHealthResponse: async (): Promise<HealthResponse> => {
         return {
@@ -289,7 +289,7 @@ describe("startDevtoolsControlServer", () => {
     const controlServer = await startDevtoolsControlServer({
       agentDisplayName: "Pi",
       componentEditor: "neovim",
-      devtoolsMinimapPosition: "left",
+      devtoolsMinimapPosition: "right",
       devtoolsPosition: "bottom-right",
       getHealthResponse: async (): Promise<HealthResponse> => {
         return {
@@ -339,7 +339,7 @@ describe("startDevtoolsControlServer", () => {
     const controlServer = await startDevtoolsControlServer({
       agentDisplayName: "Pi",
       componentEditor: "neovim",
-      devtoolsMinimapPosition: "left",
+      devtoolsMinimapPosition: "right",
       devtoolsPosition: "bottom-right",
       getHealthResponse: async (): Promise<HealthResponse> => {
         return {
@@ -401,7 +401,7 @@ describe("startDevtoolsControlServer", () => {
     const controlServer = await startDevtoolsControlServer({
       agentDisplayName: "Pi",
       componentEditor: "vscode",
-      devtoolsMinimapPosition: "left",
+      devtoolsMinimapPosition: "right",
       devtoolsPosition: "bottom-right",
       getHealthResponse: async (): Promise<HealthResponse> => {
         return {
@@ -565,7 +565,7 @@ describe("startDevtoolsControlServer", () => {
     const controlServer = await startDevtoolsControlServer({
       agentDisplayName: "Pi",
       componentEditor: "vscode",
-      devtoolsMinimapPosition: "left",
+      devtoolsMinimapPosition: "right",
       devtoolsPosition: "bottom-right",
       getHealthResponse: async (): Promise<HealthResponse> => {
         return {
@@ -638,7 +638,7 @@ describe("startDevtoolsControlServer", () => {
     const firstControlServer = await startDevtoolsControlServer({
       agentDisplayName: "Pi",
       componentEditor: "vscode",
-      devtoolsMinimapPosition: "left",
+      devtoolsMinimapPosition: "right",
       devtoolsPosition: "bottom-right",
       getHealthResponse: async (): Promise<HealthResponse> => {
         return {
@@ -691,7 +691,7 @@ describe("startDevtoolsControlServer", () => {
     const secondControlServer = await startDevtoolsControlServer({
       agentDisplayName: "Pi",
       componentEditor: "vscode",
-      devtoolsMinimapPosition: "left",
+      devtoolsMinimapPosition: "right",
       devtoolsPosition: "bottom-right",
       getHealthResponse: async (): Promise<HealthResponse> => {
         return {
@@ -747,7 +747,7 @@ describe("startDevtoolsControlServer", () => {
     const controlServer = await startDevtoolsControlServer({
       agentDisplayName: "Pi",
       componentEditor: "vscode",
-      devtoolsMinimapPosition: "left",
+      devtoolsMinimapPosition: "right",
       devtoolsPosition: "bottom-right",
       getHealthResponse: async (): Promise<HealthResponse> => {
         return {

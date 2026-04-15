@@ -6,8 +6,8 @@ describe("createConfiguredDevtoolsScript", () => {
   test("prepends the injected devtools position config", () => {
     const configuredScript: string = createConfiguredDevtoolsScript(
       "console.log('hello');",
-      "top-left",
-      "left",
+      "top-right",
+      "right",
       "cursor",
       "/tmp/project",
       "hello-stack",
@@ -20,8 +20,8 @@ describe("createConfiguredDevtoolsScript", () => {
       '"agentDisplayName":"Claude Code",' +
       '"componentEditor":"cursor",' +
       '"controlToken":"control-token",' +
-      '"minimapPosition":"left",' +
-      '"position":"top-left",' +
+      '"minimapPosition":"right",' +
+      '"position":"top-right",' +
       '"projectRootPath":"/tmp/project",' +
       '"stackName":"hello-stack",' +
       '"editorEnabled":true,' +

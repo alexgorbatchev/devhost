@@ -2,7 +2,6 @@ import type { CSSObject } from "@emotion/css/create-instance";
 import { useEffect, useState, type ChangeEvent, type JSX } from "react";
 
 import { Button, css, HoverSlidePanel, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
-import type { PanelSide } from "../serviceStatusPanel";
 import {
   isAnnotationQueueEntryEditable,
   isAnnotationQueueEntrySaveDisabled,
@@ -20,7 +19,6 @@ interface IAnnotationQueuePanelProps {
   errorMessage: string | null;
   isEntryMutationPending: (entryId: string) => boolean;
   isQueueResumePending: (queueId: string) => boolean;
-  panelSide: PanelSide;
   onRemoveEntry: (entryId: string) => Promise<boolean>;
   onResumeQueue: (queueId: string) => Promise<string | null>;
   onSaveEntry: (entryId: string, comment: string) => Promise<boolean>;
@@ -57,7 +55,6 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
   return (
     <HoverSlidePanel
       ariaLabel="Annotation queues"
-      panelSide={props.panelSide}
       peekWidth={theme.sizes.serviceStatusPanelPeekWidth}
       testId="AnnotationQueuePanel"
     >

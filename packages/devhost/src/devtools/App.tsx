@@ -2,14 +2,14 @@ import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "react";
 import { useCallback, useState } from "react";
 
-import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../types/stackTypes";
+import type { DevtoolsPosition } from "../types/stackTypes";
 import { AnnotationComposer } from "./features/annotationComposer";
 import { AnnotationQueuePanel, useAnnotationQueues } from "./features/annotationQueue";
 import { ComponentSourceMenu, useComponentSourceNavigation } from "./features/componentSourceNavigation";
 import { ExternalDevtoolsPanel, useExternalDevtoolsLaunchers } from "./features/externalDevtoolsPanel";
 import { LogMinimap, useServiceLogs } from "./features/minimap";
 import { TerminalSessionTray, useTerminalSessions } from "./features/terminalSessions";
-import { ServiceStatusPanel, type PanelSide, useServiceHealth } from "./features/serviceStatusPanel";
+import { ServiceStatusPanel, useServiceHealth } from "./features/serviceStatusPanel";
 import { readDevtoolsFeatureToggles } from "./shared/readDevtoolsFeatureToggles";
 import {
   css,
@@ -18,7 +18,6 @@ import {
   type IDevtoolsTheme,
   readDevtoolsAgentDisplayName,
   readDevtoolsComponentEditor,
-  readDevtoolsMinimapPosition,
   readDevtoolsPosition,
   readDevtoolsProjectRootPath,
   readDevtoolsRoutedServices,
@@ -41,7 +40,6 @@ export function App(): JSX.Element {
 function AppContent(): JSX.Element {
   const agentDisplayName: string = readDevtoolsAgentDisplayName();
   const componentEditor = readDevtoolsComponentEditor();
-  const devtoolsMinimapPosition: DevtoolsMinimapPosition = readDevtoolsMinimapPosition();
   const devtoolsPosition: DevtoolsPosition = readDevtoolsPosition();
   const projectRootPath: string = readDevtoolsProjectRootPath();
   const routedServices = readDevtoolsRoutedServices();
@@ -82,7 +80,6 @@ function AppContent(): JSX.Element {
   const shouldRenderExternalDevtoolsPanel: boolean =
     features.externalToolbarsEnabled && externalDevtoolsLaunchers.length > 0;
   const shouldRenderMinimap: boolean = features.minimapEnabled && logEntries.length > 0;
-  const servicePanelSide: PanelSide = readPanelSide(devtoolsPosition);
   const currentRoutedServiceKey: string | null = resolveRoutedServiceKeyForUrl(routedServices, window.location.href);
   const activeAgentSessionId: string | undefined =
     currentRoutedServiceKey === null
@@ -112,7 +109,7 @@ function AppContent(): JSX.Element {
   );
   const cornerDockClassName: string = css({
     ...readVerticalPositionStyle(theme, devtoolsPosition),
-    ...readHorizontalPositionStyle(theme, devtoolsMinimapPosition, devtoolsPosition, shouldRenderMinimap),
+    ...readHorizontalPositionStyle(theme, shouldRenderMinimap),
     display: "grid",
     gap: theme.spacing.xxs,
     maxWidth: readCornerDockMaxWidth(theme),
@@ -142,26 +139,19 @@ function AppContent(): JSX.Element {
         />
       ) : null}
       <div className={cornerDockClassName} data-testid="AppContent--corner-dock">
-        {shouldRenderPanel ? (
-          <ServiceStatusPanel errorMessage={errorMessage} panelSide={servicePanelSide} services={services} />
-        ) : null}
+        {shouldRenderPanel ? <ServiceStatusPanel errorMessage={errorMessage} services={services} /> : null}
         <AnnotationQueuePanel
           agentDisplayName={agentDisplayName}
           errorMessage={annotationQueueErrorMessage}
           isEntryMutationPending={isEntryMutationPending}
           isQueueResumePending={isQueueResumePending}
-          panelSide={servicePanelSide}
           onRemoveEntry={removeEntry}
           onResumeQueue={handleResumeQueue}
           onSaveEntry={saveEntry}
           queues={annotationQueues}
         />
         {shouldRenderExternalDevtoolsPanel ? (
-          <ExternalDevtoolsPanel
-            launchers={externalDevtoolsLaunchers}
-            panelSide={servicePanelSide}
-            onToggleLauncher={toggleLauncher}
-          />
+          <ExternalDevtoolsPanel launchers={externalDevtoolsLaunchers} onToggleLauncher={toggleLauncher} />
         ) : null}
       </div>
       <TerminalSessionTray
@@ -171,12 +161,7 @@ function AppContent(): JSX.Element {
         onRemoveSession={removeSession}
       />
       {shouldRenderMinimap ? (
-        <LogMinimap
-          entries={logEntries}
-          isHovered={isMinimapHovered}
-          minimapPosition={devtoolsMinimapPosition}
-          onHoveredChange={setIsMinimapHovered}
-        />
+        <LogMinimap entries={logEntries} isHovered={isMinimapHovered} onHoveredChange={setIsMinimapHovered} />
       ) : null}
     </div>
   );
@@ -186,31 +171,18 @@ function readCornerDockMaxWidth(theme: IDevtoolsTheme): string {
   return `calc(100vw - 20px - ${theme.spacing.xxs})`;
 }
 
-function readHorizontalPositionStyle(
-  theme: IDevtoolsTheme,
-  devtoolsMinimapPosition: DevtoolsMinimapPosition,
-  devtoolsPosition: DevtoolsPosition,
-  hasVisibleMinimap: boolean,
-): CSSObject {
-  const panelSide: DevtoolsMinimapPosition =
-    devtoolsPosition === "top-left" || devtoolsPosition === "bottom-left" ? "left" : "right";
+function readHorizontalPositionStyle(theme: IDevtoolsTheme, hasVisibleMinimap: boolean): CSSObject {
   const baseOffset: string = theme.spacing.sm;
 
-  if (!hasVisibleMinimap || panelSide !== devtoolsMinimapPosition) {
-    return panelSide === "left" ? { left: baseOffset } : { right: baseOffset };
+  if (!hasVisibleMinimap) {
+    return { right: baseOffset };
   }
 
   const overlaidOffset: string = `calc(${baseOffset} + ${theme.spacing.xxs})`;
 
-  return panelSide === "left" ? { left: overlaidOffset } : { right: overlaidOffset };
+  return { right: overlaidOffset };
 }
 
 function readVerticalPositionStyle(theme: IDevtoolsTheme, devtoolsPosition: DevtoolsPosition): CSSObject {
-  return devtoolsPosition === "top-left" || devtoolsPosition === "top-right"
-    ? { top: theme.spacing.sm }
-    : { bottom: theme.spacing.sm };
-}
-
-function readPanelSide(devtoolsPosition: DevtoolsPosition): PanelSide {
-  return devtoolsPosition === "top-left" || devtoolsPosition === "bottom-left" ? "left" : "right";
+  return devtoolsPosition === "top-right" ? { top: theme.spacing.sm } : { bottom: theme.spacing.sm };
 }

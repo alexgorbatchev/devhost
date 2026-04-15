@@ -2,7 +2,6 @@ import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import type { DevtoolsMinimapPosition } from "../../../types/stackTypes";
 import { css, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
 import type { ServiceLogEntry } from "../../shared/types";
 import { createLogMinimapMarksFromVisibleRows, type ILogMinimapMark } from "./createLogMinimapMarks";
@@ -16,7 +15,6 @@ import type { IRenderCanvasFunction } from "./types";
 interface ILogMinimapProps {
   entries: ServiceLogEntry[];
   isHovered: boolean;
-  minimapPosition: DevtoolsMinimapPosition;
   onHoveredChange: (isHovered: boolean) => void;
 }
 
@@ -139,9 +137,8 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
   }
 
   const canvasClassName: string = css(canvasStyle);
-  const minimapClassName: string = css(createMinimapStyle(theme, props.minimapPosition, props.isHovered));
-  const previewClassName: string =
-    previewLayout === null ? "" : css(createPreviewStyle(theme, props.minimapPosition, previewLayout.top));
+  const minimapClassName: string = css(createMinimapStyle(theme, props.isHovered));
+  const previewClassName: string = previewLayout === null ? "" : css(createPreviewStyle(theme, previewLayout.top));
   const previewListClassName: string = css(createPreviewListStyle());
 
   return (
@@ -222,25 +219,11 @@ function createPreviewListStyle(): CSSObject {
   };
 }
 
-function createMinimapStyle(
-  theme: IDevtoolsTheme,
-  minimapPosition: DevtoolsMinimapPosition,
-  isHovered: boolean,
-): CSSObject {
-  const edgeStyle: CSSObject =
-    minimapPosition === "left"
-      ? {
-          borderRight: `1px solid ${theme.colors.border}`,
-          left: 0,
-        }
-      : {
-          borderLeft: `1px solid ${theme.colors.border}`,
-          right: 0,
-        };
-
+function createMinimapStyle(theme: IDevtoolsTheme, isHovered: boolean): CSSObject {
   return {
-    ...edgeStyle,
+    borderLeft: `1px solid ${theme.colors.border}`,
     position: "fixed",
+    right: 0,
     top: 0,
     bottom: 0,
     width: theme.sizes.logMinimapWidth,
@@ -249,7 +232,7 @@ function createMinimapStyle(
     background: theme.colors.logMinimapBackground,
     opacity: isHovered ? theme.opacities.logMinimapActive : theme.opacities.logMinimapResting,
     pointerEvents: "auto",
-    transform: resolveMinimapTransform(theme, minimapPosition, isHovered),
+    transform: resolveMinimapTransform(theme, isHovered),
     transition: minimapTransitionStyle,
     zIndex: theme.zIndices.floating,
   };
@@ -268,19 +251,10 @@ function createOverlayStyle(theme: IDevtoolsTheme, top: number, height: number):
   };
 }
 
-function createPreviewStyle(theme: IDevtoolsTheme, minimapPosition: DevtoolsMinimapPosition, top: number): CSSObject {
-  const horizontalPositionStyle: CSSObject =
-    minimapPosition === "left"
-      ? {
-          left: `calc(100% + ${theme.spacing.xs})`,
-        }
-      : {
-          right: `calc(100% + ${theme.spacing.xs})`,
-        };
-
+function createPreviewStyle(theme: IDevtoolsTheme, top: number): CSSObject {
   return {
-    ...horizontalPositionStyle,
     position: "absolute",
+    right: `calc(100% + ${theme.spacing.xs})`,
     top,
     width: `min(${theme.sizes.logPreviewWidth}, calc(100vw - ${theme.sizes.logMinimapWidth} - ${theme.spacing.xl}))`,
     display: "grid",
@@ -305,16 +279,12 @@ function readPixelValue(value: string): number {
   return Number.isFinite(parsedValue) ? parsedValue : 0;
 }
 
-function resolveMinimapTransform(
-  theme: IDevtoolsTheme,
-  minimapPosition: DevtoolsMinimapPosition,
-  isHovered: boolean,
-): string {
+function resolveMinimapTransform(theme: IDevtoolsTheme, isHovered: boolean): string {
   if (isHovered) {
     return "translateX(0)";
   }
 
   const hiddenDistance: string = `calc(${theme.sizes.logMinimapWidth} - ${theme.sizes.logMinimapPeekWidth})`;
 
-  return minimapPosition === "left" ? `translateX(calc(-1 * ${hiddenDistance}))` : `translateX(${hiddenDistance})`;
+  return `translateX(${hiddenDistance})`;
 }

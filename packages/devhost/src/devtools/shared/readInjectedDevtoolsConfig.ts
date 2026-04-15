@@ -97,13 +97,12 @@ function readControlTokenValue(injectedConfig: object): string {
 function readDevtoolsPositionValue(injectedConfig: object): DevtoolsPosition {
   const position: unknown = Reflect.get(injectedConfig, "position");
 
-  if (
-    position === "top-left" ||
-    position === "top-right" ||
-    position === "bottom-left" ||
-    position === "bottom-right"
-  ) {
-    return position;
+  if (position === "top-left" || position === "top-right") {
+    return "top-right";
+  }
+
+  if (position === "bottom-left" || position === "bottom-right") {
+    return "bottom-right";
   }
 
   return defaultInjectedDevtoolsConfig.position;
@@ -113,7 +112,7 @@ function readDevtoolsMinimapPositionValue(injectedConfig: object): DevtoolsMinim
   const minimapPosition: unknown = Reflect.get(injectedConfig, "minimapPosition");
 
   if (minimapPosition === "left" || minimapPosition === "right") {
-    return minimapPosition;
+    return "right";
   }
 
   return defaultInjectedDevtoolsConfig.minimapPosition;

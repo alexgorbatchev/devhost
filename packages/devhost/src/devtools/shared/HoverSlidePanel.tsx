@@ -4,7 +4,6 @@ import { useState } from "react";
 
 import { css } from "./devtoolsCss";
 import type { IDevtoolsTheme } from "./devtoolsTheme";
-import type { PanelSide } from "./panelSide";
 import { resolveHoverSlidePanelTransform } from "./resolveHoverSlidePanelTransform";
 import { useDevtoolsTheme } from "./useDevtoolsTheme";
 
@@ -12,7 +11,6 @@ interface IHoverSlidePanelProps {
   ariaLabel: string;
   children: ReactNode;
   isPinned?: boolean;
-  panelSide: PanelSide;
   peekWidth: string;
   style?: CSSObject;
   testId?: string;
@@ -24,14 +22,13 @@ export function HoverSlidePanel({
   ariaLabel,
   children,
   isPinned = false,
-  panelSide,
   peekWidth,
   style,
   testId,
 }: IHoverSlidePanelProps): JSX.Element {
   const theme = useDevtoolsTheme();
   const [isHovered, setIsHovered] = useState<boolean>(false);
-  const panelClassName: string = css(createPanelStyle(theme, panelSide, isHovered || isPinned, peekWidth, style));
+  const panelClassName: string = css(createPanelStyle(theme, isHovered || isPinned, peekWidth, style));
 
   return (
     <section
@@ -52,7 +49,6 @@ export function HoverSlidePanel({
 
 function createPanelStyle(
   theme: IDevtoolsTheme,
-  panelSide: PanelSide,
   isHovered: boolean,
   peekWidth: string,
   style: CSSObject | undefined,
@@ -68,7 +64,7 @@ function createPanelStyle(
     overflow: "visible",
     padding: `${theme.spacing.xxs} ${theme.spacing.xs}`,
     position: "relative",
-    transform: resolveHoverSlidePanelTransform(panelSide, isHovered, peekWidth),
+    transform: resolveHoverSlidePanelTransform(isHovered, peekWidth),
     transition: hoverSlidePanelTransition,
     willChange: "transform",
     zIndex: Number(theme.zIndices.floating) + 2,
@@ -77,7 +73,7 @@ function createPanelStyle(
       position: "absolute",
       top: 0,
       bottom: 0,
-      [panelSide === "left" ? "left" : "right"]: "-50px",
+      right: "-50px",
       width: "50px",
     },
     ...style,

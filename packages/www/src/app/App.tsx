@@ -621,6 +621,12 @@ health = { http = "http://127.0.0.1:4000/healthz" }`}</code>
             injected overlay. The native tool panels themselves stay untouched.
           </p>
 
+          <p>
+            The injected overlay is always docked on the right edge of the browser. Use{" "}
+            <code>[devtools.status].position</code> to switch between <code>top-right</code> and{" "}
+            <code>bottom-right</code>; the log minimap stays pinned to the right side.
+          </p>
+
           <h3>AI annotations</h3>
           <ul className="list-disc ml-6 mb-6">
             <li className="mb-2">

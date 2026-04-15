@@ -109,8 +109,8 @@ describe("validateManifest", () => {
       devtools: {
         editor: { enabled: true, ide: "neovim" },
         externalToolbars: { enabled: false },
-        minimap: { enabled: true, position: "left" },
-        status: { enabled: true, position: "top-left" },
+        minimap: { enabled: true, position: "right" },
+        status: { enabled: true, position: "top-right" },
       },
       name: "hello-stack",
       services: {
@@ -133,9 +133,43 @@ describe("validateManifest", () => {
     expect(manifest.devtools).toEqual({
       editor: { enabled: true, ide: "neovim" },
       externalToolbars: { enabled: false },
-      minimap: { enabled: true, position: "left" },
-      status: { enabled: true, position: "top-left" },
+      minimap: { enabled: true, position: "right" },
+      status: { enabled: true, position: "top-right" },
     });
+  });
+
+  test("rejects removed left-docked minimap positions", () => {
+    expect(() =>
+      validateManifest("/tmp/devhost.toml", {
+        devtools: {
+          minimap: { enabled: true, position: "left" },
+        },
+        name: "hello-stack",
+        services: {
+          web: {
+            command: ["bun", "run", "dev"],
+            port: 3000,
+          },
+        },
+      }),
+    ).toThrow("devtools.minimap.position");
+  });
+
+  test("rejects removed left-docked status positions", () => {
+    expect(() =>
+      validateManifest("/tmp/devhost.toml", {
+        devtools: {
+          status: { enabled: true, position: "top-left" },
+        },
+        name: "hello-stack",
+        services: {
+          web: {
+            command: ["bun", "run", "dev"],
+            port: 3000,
+          },
+        },
+      }),
+    ).toThrow("devtools.status.position");
   });
 
   test("rejects manifests that still configure the removed caddy section", () => {

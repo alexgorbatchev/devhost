@@ -260,6 +260,8 @@ Routed services in the injected status panel become links automatically, and cli
 
 When `[devtools.externalToolbars].enabled = true` (the default), devhost also detects supported third-party devtools launcher buttons on the host page, hides the native launcher buttons, and re-renders those launchers inside the injected overlay. The native panels themselves stay owned by the host tools.
 
+The injected overlay is always docked on the right edge of the browser. Use `[devtools.status].position` to switch between `top-right` and `bottom-right`; the log minimap stays pinned to the right side.
+
 ### AI annotations
 
 - hold `Alt` (`Option` on macOS) to enter annotation selection mode

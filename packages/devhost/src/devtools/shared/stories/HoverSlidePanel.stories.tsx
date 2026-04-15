@@ -11,7 +11,7 @@ const meta: Meta<typeof HoverSlidePanel> = {
   render: (args) => {
     return (
       <ThemeProvider colorScheme="dark">
-        <StoryContainer align={args.panelSide}>
+        <StoryContainer align="right">
           <HoverSlidePanel {...args} />
         </StoryContainer>
       </ThemeProvider>
@@ -23,22 +23,21 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const LeftPanel: Story = {
+export const Default: Story = {
   args: {
-    ariaLabel: "Left hover panel",
-    children: <div>Left Panel Content</div>,
-    panelSide: "left",
+    ariaLabel: "Hover panel",
+    children: <div>Hover Panel Content</div>,
     peekWidth: "32px",
     style: {
       width: "160px",
     },
-    testId: "hover-slide-panel-left",
+    testId: "hover-slide-panel",
   },
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
-    const panel = await canvas.findByTestId("hover-slide-panel-left");
+    const panel = await canvas.findByTestId("hover-slide-panel");
     await expect(panel).toBeInTheDocument();
-    await expect(canvas.getByText("Left Panel Content")).toBeInTheDocument();
+    await expect(canvas.getByText("Hover Panel Content")).toBeInTheDocument();
 
     // Test hover interaction
     const beforeHoverTransform = window.getComputedStyle(panel).transform;
@@ -50,39 +49,11 @@ export const LeftPanel: Story = {
   },
 };
 
-export const RightPanel: Story = {
-  args: {
-    ariaLabel: "Right hover panel",
-    children: <div>Right Panel Content</div>,
-    panelSide: "right",
-    peekWidth: "32px",
-    style: {
-      width: "160px",
-    },
-    testId: "hover-slide-panel-right",
-  },
-  play: async ({ canvasElement }): Promise<void> => {
-    const canvas = within(canvasElement);
-    const panel = await canvas.findByTestId("hover-slide-panel-right");
-    await expect(panel).toBeInTheDocument();
-    await expect(canvas.getByText("Right Panel Content")).toBeInTheDocument();
-
-    // Test hover interaction
-    const beforeHoverTransform = window.getComputedStyle(panel).transform;
-    await userEvent.hover(panel);
-    await waitFor(() => {
-      expect(window.getComputedStyle(panel).transform).not.toEqual(beforeHoverTransform);
-    });
-    await userEvent.unhover(panel);
-  },
-};
-
-export const PinnedLeftPanel: Story = {
+export const Pinned: Story = {
   args: {
     ariaLabel: "Pinned hover panel",
     children: <div>Pinned Panel Content</div>,
     isPinned: true,
-    panelSide: "left",
     peekWidth: "32px",
     style: {
       width: "160px",
