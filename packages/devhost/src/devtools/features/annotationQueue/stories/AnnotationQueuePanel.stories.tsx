@@ -83,6 +83,15 @@ const sampleQueues: IAnnotationQueueSnapshot[] = [
   },
 ];
 
+const workingQueue: IAnnotationQueueSnapshot = sampleQueues[0]!;
+const pausedQueue: IAnnotationQueueSnapshot = sampleQueues[1]!;
+const launchingQueue: IAnnotationQueueSnapshot = {
+  ...workingQueue,
+  activeSessionId: null,
+  queueId: "queue-launching",
+  status: "launching",
+};
+
 const meta: Meta<typeof AnnotationQueuePanel> = {
   title: "@alexgorbatchev/devhost/devtools/features/annotationQueue/AnnotationQueuePanel",
   component: AnnotationQueuePanel,
@@ -115,37 +124,55 @@ export const DefaultLeft: Story = {
   },
   play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
+    const panel = await canvas.findByTestId("AnnotationQueuePanel");
 
-    await expect(canvas.getByTestId("AnnotationQueuePanel")).toBeInTheDocument();
+    await userEvent.hover(panel);
+
+    await expect(panel).toBeInTheDocument();
     await expect(canvas.getAllByTestId("AnnotationQueuePanel--queue")).toHaveLength(2);
-    await expect(canvas.getAllByText("Annotation queue")[0]).toBeInTheDocument();
-    await expect(
-      canvas.getByText("Session exited before the annotation finished. Resume to retry."),
-    ).toBeInTheDocument();
+    await expect(canvas.getAllByTestId("AnnotationQueuePanel--queue-progress")).toHaveLength(2);
+    await expect(canvas.getByText("example.test/products")).toBeInTheDocument();
+    await expect(canvas.queryByTestId("AnnotationQueuePanel--comment-input")).not.toBeInTheDocument();
 
-    // Test text area interaction
-    const commentInputs = canvas.getAllByTestId("AnnotationQueuePanel--comment-input");
-    await expect(commentInputs.length).toBeGreaterThan(0);
-    const firstInput = commentInputs[0];
+    const firstQueue = canvas.getAllByTestId("AnnotationQueuePanel--queue")[0]!;
+    const firstQueueScope = within(firstQueue);
+
+    await expect(firstQueueScope.getByText("1 of 2")).toBeInTheDocument();
+    await userEvent.click(firstQueueScope.getByRole("button", { name: "Show details" }));
+    await expect(firstQueueScope.getAllByTestId("AnnotationQueuePanel--entry")).toHaveLength(2);
+
+    const firstEntry = firstQueueScope.getAllByTestId("AnnotationQueuePanel--entry")[1]!;
+    const firstEntryScope = within(firstEntry);
+
+    await expect(firstEntryScope.getByTestId("AnnotationQueuePanel--comment")).toHaveTextContent(
+      "Then tighten the spacing around #1.",
+    );
+    await expect(firstEntryScope.queryByRole("button", { name: "Show annotation" })).not.toBeInTheDocument();
+    await userEvent.click(firstEntryScope.getByRole("button", { name: "Edit" }));
+
+    const firstInput = firstEntryScope.getByTestId("AnnotationQueuePanel--comment-input");
+    const saveButton = firstEntryScope.getByRole("button", { name: "Save" });
+
+    await expect(saveButton).toBeDisabled();
 
     await userEvent.type(firstInput, " edited");
+    await expect(saveButton).toBeEnabled();
 
-    // Check save and remove buttons for the first editable item
-    const saveButtons = canvas.getAllByRole("button", { name: "Save" });
-    const removeButtons = canvas.getAllByRole("button", { name: "Remove" });
-
-    await expect(saveButtons.length).toBeGreaterThan(0);
-    await expect(removeButtons.length).toBeGreaterThan(0);
-
-    await userEvent.click(saveButtons[0]);
+    await userEvent.click(saveButton);
     await expect(args.onSaveEntry).toHaveBeenCalled();
 
-    await userEvent.click(removeButtons[0]);
+    await userEvent.click(await firstEntryScope.findByRole("button", { name: "Delete" }));
+    await expect(firstEntryScope.getByTestId("AnnotationQueuePanel--delete-confirmation")).toBeInTheDocument();
+    await userEvent.click(firstEntryScope.getByRole("button", { name: "Confirm delete" }));
     await expect(args.onRemoveEntry).toHaveBeenCalled();
 
-    // Check resume button for paused queues
-    const resumeButton = canvas.getByRole("button", { name: "Resume" });
+    const secondQueue = canvas.getAllByTestId("AnnotationQueuePanel--queue")[1]!;
+    const secondQueueScope = within(secondQueue);
+    const resumeButton = secondQueueScope.getByRole("button", { name: "Resume" });
+
     await expect(resumeButton).toBeInTheDocument();
+    await userEvent.click(secondQueueScope.getByRole("button", { name: "Show details" }));
+    await expect(secondQueueScope.getByTestId("AnnotationQueuePanel--pause-reason")).toBeInTheDocument();
 
     await userEvent.click(resumeButton);
     await expect(args.onResumeQueue).toHaveBeenCalled();
@@ -169,6 +196,7 @@ export const DefaultRight: Story = {
 
     await expect(canvas.getByTestId("AnnotationQueuePanel")).toBeInTheDocument();
     await expect(canvas.getAllByTestId("AnnotationQueuePanel--queue")).toHaveLength(2);
+    await expect(canvas.queryByTestId("AnnotationQueuePanel--entry")).not.toBeInTheDocument();
   },
 };
 
@@ -191,6 +219,78 @@ export const WithError: Story = {
     await expect(canvas.getByTestId("AnnotationQueuePanel--error")).toHaveTextContent(
       "Connection lost while syncing queue.",
     );
+  },
+};
+
+export const Launching: Story = {
+  args: {
+    agentDisplayName: "Pi",
+    errorMessage: null,
+    isEntryMutationPending: () => false,
+    isQueueResumePending: () => false,
+    onRemoveEntry: fn(async () => true),
+    onResumeQueue: fn(async () => "session-2"),
+    onSaveEntry: fn(async () => true),
+    queues: [launchingQueue],
+    panelSide: "left",
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+
+    await expect(canvas.getByText("Launching")).toBeInTheDocument();
+    await expect(canvas.queryByRole("button", { name: "Resume" })).not.toBeInTheDocument();
+    await expect(canvas.getByText("1 of 2")).toBeInTheDocument();
+  },
+};
+
+export const ResumePending: Story = {
+  args: {
+    agentDisplayName: "Pi",
+    errorMessage: null,
+    isEntryMutationPending: () => false,
+    isQueueResumePending: (queueId: string) => queueId === pausedQueue.queueId,
+    onRemoveEntry: fn(async () => true),
+    onResumeQueue: fn(async () => "session-2"),
+    onSaveEntry: fn(async () => true),
+    queues: [pausedQueue],
+    panelSide: "left",
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    const queue = canvas.getByTestId("AnnotationQueuePanel--queue");
+    const queueScope = within(queue);
+    const resumeButton = queueScope.getByRole("button", { name: "Resume" });
+
+    await expect(resumeButton).toBeDisabled();
+    await userEvent.click(queueScope.getByRole("button", { name: "Show details" }));
+    await expect(queueScope.getByTestId("AnnotationQueuePanel--pause-reason")).toBeInTheDocument();
+  },
+};
+
+export const EntryMutationPending: Story = {
+  args: {
+    agentDisplayName: "Pi",
+    errorMessage: null,
+    isEntryMutationPending: (entryId: string) => entryId === "entry-queued",
+    isQueueResumePending: () => false,
+    onRemoveEntry: fn(async () => true),
+    onResumeQueue: fn(async () => "session-2"),
+    onSaveEntry: fn(async () => true),
+    queues: [workingQueue],
+    panelSide: "left",
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    const queue = canvas.getByTestId("AnnotationQueuePanel--queue");
+    const queueScope = within(queue);
+
+    await userEvent.click(queueScope.getByRole("button", { name: "Show details" }));
+
+    const queuedEntry = queueScope.getAllByTestId("AnnotationQueuePanel--entry")[1]!;
+    const queuedEntryScope = within(queuedEntry);
+
+    await expect(queuedEntryScope.getByRole("button", { name: "Edit" })).toBeDisabled();
+    await expect(queuedEntryScope.getByRole("button", { name: "Delete" })).toBeDisabled();
   },
 };
 
