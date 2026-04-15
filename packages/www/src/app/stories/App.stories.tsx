@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import { App } from "../App";
 
@@ -26,7 +26,18 @@ const Default: Story = {
       }),
     ).toBeInTheDocument();
 
+    await waitFor(() => {
+      expect(["dark", "light"]).toContain(document.documentElement.dataset.theme);
+    });
+
+    const initialTheme = document.documentElement.dataset.theme;
     await userEvent.click(themeSelect);
+
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).not.toBe(initialTheme);
+    });
+
+    await expect(window.localStorage.getItem("devhost-test-theme")).toBe(document.documentElement.dataset.theme);
 
     await userEvent.click(managedEdgeTab);
     await expect(managedEdgeTab).toHaveAttribute("aria-selected", "true");

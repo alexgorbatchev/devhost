@@ -31,8 +31,10 @@ export const WithBorder: Story = {
   },
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
+    const callout = canvas.getByTestId("InlineCallout");
 
-    await expect(canvas.getByTestId("InlineCallout")).toBeInTheDocument();
+    await expect(callout).toBeInTheDocument();
     await expect(canvas.getByText("#2")).toBeInTheDocument();
+    await expect(callout).toHaveClass("border-l-4", "border-border", "pl-2");
   },
 };

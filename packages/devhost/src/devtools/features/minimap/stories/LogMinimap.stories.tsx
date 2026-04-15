@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 
 import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
@@ -30,6 +30,19 @@ const meta: Meta<typeof LogMinimap> = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+async function assertHoveredPreview(canvas: ReturnType<typeof within>): Promise<void> {
+  const logMinimap = canvas.getByTestId("LogMinimap");
+
+  await userEvent.hover(logMinimap);
+
+  await waitFor(() => {
+    expect(canvas.getByTestId("LogMinimap--preview-overlay")).toBeInTheDocument();
+    expect(canvas.getByTestId("LogMinimap--preview")).toBeInTheDocument();
+  });
+
+  await expect(canvas.getByTestId("LogMinimap--preview").querySelectorAll("li").length).toBeGreaterThan(0);
+}
 
 export const DefaultRight: Story = {
   args: {
@@ -68,6 +81,7 @@ export const HoveredRight: Story = {
 
     await expect(canvas.getByTestId("LogMinimap")).toBeInTheDocument();
     await expect(canvas.getByTestId("LogMinimap--canvas")).toBeInTheDocument();
+    await assertHoveredPreview(canvas);
   },
 };
 
@@ -86,6 +100,20 @@ export const DefaultLeft: Story = {
   },
 };
 
+export const Empty: Story = {
+  args: {
+    entries: [],
+    isHovered: false,
+    minimapPosition: "right",
+    onHoveredChange: (): void => {},
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+
+    await expect(canvas.queryByTestId("LogMinimap")).not.toBeInTheDocument();
+  },
+};
+
 export const HoveredLeft: Story = {
   args: {
     entries: mockEntries,
@@ -98,5 +126,6 @@ export const HoveredLeft: Story = {
 
     await expect(canvas.getByTestId("LogMinimap")).toBeInTheDocument();
     await expect(canvas.getByTestId("LogMinimap--canvas")).toBeInTheDocument();
+    await assertHoveredPreview(canvas);
   },
 };

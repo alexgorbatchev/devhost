@@ -76,3 +76,34 @@ export const RightPanel: Story = {
     await userEvent.unhover(panel);
   },
 };
+
+export const PinnedLeftPanel: Story = {
+  args: {
+    ariaLabel: "Pinned hover panel",
+    children: <div>Pinned Panel Content</div>,
+    isPinned: true,
+    panelSide: "left",
+    peekWidth: "32px",
+    style: {
+      width: "160px",
+    },
+    testId: "hover-slide-panel-pinned",
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    const panel = await canvas.findByTestId("hover-slide-panel-pinned");
+    const pinnedTransform = window.getComputedStyle(panel).transform;
+
+    await expect(canvas.getByText("Pinned Panel Content")).toBeInTheDocument();
+
+    await userEvent.hover(panel);
+    await waitFor(() => {
+      expect(window.getComputedStyle(panel).transform).toEqual(pinnedTransform);
+    });
+
+    await userEvent.unhover(panel);
+    await waitFor(() => {
+      expect(window.getComputedStyle(panel).transform).toEqual(pinnedTransform);
+    });
+  },
+};

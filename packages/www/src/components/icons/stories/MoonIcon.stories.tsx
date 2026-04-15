@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { expect, within } from "storybook/test";
 
 import { MoonIcon } from "../MoonIcon";
 
@@ -12,7 +13,11 @@ const meta: Meta<typeof MoonIcon> = {
 export default meta;
 
 const Default: Story = {
-  play: async (): Promise<void> => {},
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+
+    await expect(canvas.getByTestId("MoonIcon")).toBeInTheDocument();
+  },
 };
 
 export { Default as MoonIcon };

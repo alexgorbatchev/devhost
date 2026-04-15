@@ -4,6 +4,7 @@ import {
   DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME,
   HEALTH_WEBSOCKET_PATH,
   LOGS_WEBSOCKET_PATH,
+  TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME,
   TERMINAL_SESSION_START_PATH,
   TERMINAL_SESSION_WEBSOCKET_PATH,
   XTERM_STYLESHEET_PATH,
@@ -88,6 +89,12 @@ class MockStorybookWebSocket extends EventTarget {
 
     if (requestUrl.pathname === TERMINAL_SESSION_WEBSOCKET_PATH) {
       this.emitMessage(JSON.stringify({ data: "$ echo ready\r\nready\r\n", type: "snapshot" }));
+
+      if (requestUrl.searchParams.get(TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME) === "session-finished") {
+        queueMicrotask((): void => {
+          this.emitMessage(JSON.stringify({ exitCode: 0, signalCode: null, type: "exit" }));
+        });
+      }
     }
   }
 

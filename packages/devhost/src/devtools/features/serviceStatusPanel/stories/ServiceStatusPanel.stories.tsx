@@ -1,7 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, within } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 
-import { ThemeProvider } from "../../../shared/ThemeProvider";
+import {
+  DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
+  readDevtoolsControlToken,
+  RESTART_SERVICE_PATH,
+  ThemeProvider,
+} from "../../../shared";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
 import { ServiceStatusPanel } from "../ServiceStatusPanel";
 
@@ -34,9 +39,35 @@ export const DefaultLeft: Story = {
   },
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByTestId("ServiceStatusPanel")).toBeInTheDocument();
+    const panel = await canvas.findByTestId("ServiceStatusPanel");
+
+    await expect(panel).toBeInTheDocument();
     await expect(canvas.getByText("worker")).toBeInTheDocument();
     await expect(canvas.getByText("api")).toBeInTheDocument();
+
+    const restartFetch = fn(async () => new Response(null, { status: 204 }));
+    const originalFetch = globalThis.fetch;
+
+    Reflect.set(globalThis, "fetch", restartFetch as unknown as typeof fetch);
+
+    try {
+      await userEvent.hover(panel);
+      await userEvent.click(canvas.getByRole("button", { name: "Restart api" }));
+
+      await expect(restartFetch).toHaveBeenCalledWith(
+        RESTART_SERVICE_PATH,
+        expect.objectContaining({
+          body: JSON.stringify({ serviceName: "api" }),
+          headers: expect.objectContaining({
+            [DEVTOOLS_CONTROL_TOKEN_HEADER_NAME]: readDevtoolsControlToken(),
+            "content-type": "application/json",
+          }),
+          method: "POST",
+        }),
+      );
+    } finally {
+      Reflect.set(globalThis, "fetch", originalFetch);
+    }
   },
 };
 

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 
 import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
@@ -28,45 +28,31 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-async function triggerAnnotationSelection(targetElement: HTMLElement): Promise<void> {
-  const originalElementsFromPoint = document.elementsFromPoint.bind(document);
-  document.elementsFromPoint = (x, y) => [targetElement, ...originalElementsFromPoint(x, y)];
+async function createAnnotationDraft(canvas: ReturnType<typeof within>): Promise<void> {
+  const targetButton = canvas.getByTestId("host-action-target");
 
-  const originalGetBoundingClientRect = targetElement.getBoundingClientRect.bind(targetElement);
-  targetElement.getBoundingClientRect = () =>
-    ({ x: 0, y: 0, width: 100, height: 100, top: 0, right: 100, bottom: 100, left: 0, toJSON: () => {} }) as DOMRect;
+  await userEvent.keyboard("{Alt>}");
+  await userEvent.hover(targetButton);
 
-  targetElement.focus();
-  await new Promise((resolve) => setTimeout(resolve, 50));
+  await waitFor(() => {
+    expect(canvas.getByTestId("AnnotationComposer--hover-highlight")).toBeInTheDocument();
+  });
 
-  document.dispatchEvent(new KeyboardEvent("keydown", { key: "Alt", bubbles: true, composed: true }));
+  await userEvent.click(targetButton);
 
-  await new Promise((resolve) => setTimeout(resolve, 50));
+  await waitFor(() => {
+    expect(canvas.getByTestId("AnnotationComposer--popup")).toBeInTheDocument();
+    expect(canvas.getAllByTestId("AnnotationComposer--marker")).toHaveLength(1);
+  });
 
-  document.dispatchEvent(new MouseEvent("mousemove", { clientX: 10, clientY: 10, bubbles: true, composed: true }));
-  document.dispatchEvent(
-    new MouseEvent("mousedown", { clientX: 10, clientY: 10, bubbles: true, composed: true, button: 0 }),
-  );
-  document.dispatchEvent(
-    new MouseEvent("mouseup", { clientX: 10, clientY: 10, bubbles: true, composed: true, button: 0 }),
-  );
+  await userEvent.keyboard("{/Alt}");
+}
 
-  const originalGetSelection = window.getSelection;
-  window.getSelection = () => null;
-
-  document.dispatchEvent(
-    new MouseEvent("click", { clientX: 10, clientY: 10, bubbles: true, composed: true, button: 0 }),
-  );
-
-  window.getSelection = originalGetSelection;
-  await new Promise((resolve) => setTimeout(resolve, 50));
-
-  document.dispatchEvent(new KeyboardEvent("keyup", { key: "Alt", bubbles: true, composed: true }));
-
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
-  targetElement.getBoundingClientRect = originalGetBoundingClientRect;
-  document.elementsFromPoint = originalElementsFromPoint;
+async function expectDraftToReset(canvas: ReturnType<typeof within>): Promise<void> {
+  await waitFor(() => {
+    expect(canvas.queryByTestId("AnnotationComposer--popup")).not.toBeInTheDocument();
+    expect(canvas.queryAllByTestId("AnnotationComposer--marker")).toHaveLength(0);
+  });
 }
 
 export const Default: Story = {
@@ -78,39 +64,31 @@ export const Default: Story = {
     stackName: "story-stack",
   },
   play: async ({ args, canvasElement }): Promise<void> => {
-    // Start fresh for each story to ensure isolated state
-    await userEvent.keyboard("{Escape}");
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
     const canvas = within(canvasElement);
-    const targetButton = canvas.getByTestId("host-action-target");
-    await expect(targetButton).toBeInTheDocument();
-
-    await triggerAnnotationSelection(targetButton);
+    await createAnnotationDraft(canvas);
 
     const commentInput = await canvas.findByTestId("AnnotationComposer--comment");
     await userEvent.type(commentInput, "Fix the red button");
 
-    const submitButton = await canvas.findByRole("button", { name: /submit/i });
-    await expect(submitButton).toBeInTheDocument();
+    const submitButton = canvas.getByRole("button", { name: /submit/i });
     await userEvent.click(submitButton);
 
-    await expect(args.onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        comment: "Fix the red button",
-        stackName: "story-stack",
-        markers: expect.arrayContaining([
-          expect.objectContaining({
-            markerNumber: 1,
-          }),
-        ]),
-      }),
-      undefined,
-    );
+    await waitFor(() => {
+      expect(args.onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          comment: "Fix the red button",
+          stackName: "story-stack",
+          markers: expect.arrayContaining([
+            expect.objectContaining({
+              markerNumber: 1,
+            }),
+          ]),
+        }),
+        undefined,
+      );
+    });
 
-    // Reset state for next test
-    await userEvent.keyboard("{Escape}");
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await expectDraftToReset(canvas);
   },
 };
 
@@ -124,33 +102,54 @@ export const WithActiveSession: Story = {
     stackName: "story-stack",
   },
   play: async ({ args, canvasElement }): Promise<void> => {
-    // Start fresh for each story to ensure isolated state
-    await userEvent.keyboard("{Escape}");
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
     const canvas = within(canvasElement);
-    const targetButton = canvas.getByTestId("host-action-target");
-    await expect(targetButton).toBeInTheDocument();
-
-    await triggerAnnotationSelection(targetButton);
+    await createAnnotationDraft(canvas);
 
     const commentInput = await canvas.findByTestId("AnnotationComposer--comment");
     await userEvent.type(commentInput, "Update this component");
 
-    const submitButton = await canvas.findByRole("button", { name: /submit/i });
-    await expect(submitButton).toBeInTheDocument();
+    await expect(canvas.getByLabelText("Append to active session queue")).toBeChecked();
+
+    const submitButton = canvas.getByRole("button", { name: /submit/i });
     await userEvent.click(submitButton);
 
-    await expect(args.onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        comment: "Update this component",
-        stackName: "story-stack",
-      }),
-      "session-123",
-    );
+    await waitFor(() => {
+      expect(args.onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          comment: "Update this component",
+          stackName: "story-stack",
+        }),
+        "session-123",
+      );
+    });
 
-    // Reset state for next test
+    await expectDraftToReset(canvas);
+  },
+};
+
+export const WithSubmitError: Story = {
+  args: {
+    agentDisplayName: "Pi",
+    onSubmit: fn(async () => {
+      return {
+        errorMessage: "Failed to start the Pi session.",
+        success: false,
+      };
+    }),
+    stackName: "story-stack",
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    await createAnnotationDraft(canvas);
+
+    await userEvent.type(await canvas.findByTestId("AnnotationComposer--comment"), "Retry the submit flow");
+    await userEvent.click(canvas.getByRole("button", { name: /submit/i }));
+
+    await waitFor(() => {
+      expect(canvas.getByTestId("AnnotationComposer--error")).toHaveTextContent("Failed to start the Pi session.");
+    });
+
     await userEvent.keyboard("{Escape}");
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await expectDraftToReset(canvas);
   },
 };

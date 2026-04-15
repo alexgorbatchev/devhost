@@ -1,18 +1,14 @@
-import type { CSSObject } from "@emotion/css/create-instance";
 import type { Meta, StoryObj } from "@storybook/react";
-import { type ReactNode, type JSX } from "react";
-import { createPortal } from "react-dom";
-import { useLayoutEffect, useRef, useState } from "react";
-import { expect, waitFor, within, fn } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 
-import { configureDevtoolsCss, injectGlobal, ThemeProvider } from "../../../shared";
-import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../../shared/constants";
+import { ThemeProvider } from "../../../shared";
+import {
+  devtoolsStoryShadowRootHostTestId,
+  readShadowRoot,
+  renderInDevtoolsStoryShadowRoot,
+} from "../../../shared/stories/DevtoolsStoryShadowRoot";
 import { TerminalSessionPanel } from "../TerminalSessionPanel";
 import type { TerminalSession } from "../types";
-
-interface IDevtoolsStoryShadowRootProps {
-  children: ReactNode;
-}
 
 const agentSession: TerminalSession = {
   annotation: {
@@ -42,24 +38,32 @@ const agentSession: TerminalSession = {
   },
 };
 
-const devtoolsStoryShadowRootGlobalStyles: CSSObject = {
-  ":host": {
-    color: "initial",
+const editorSession: TerminalSession = {
+  behavior: {
+    defaultIsExpanded: true,
+    isFullscreenExpanded: false,
+    shouldAutoRemoveOnExit: true,
   },
-  "*, *::before, *::after": {
-    boxSizing: "border-box",
-  },
-  button: {
-    font: "inherit",
-  },
-  input: {
-    font: "inherit",
-  },
-  textarea: {
-    font: "inherit",
+  componentName: "PrimaryButton",
+  isExpanded: true,
+  kind: "editor",
+  launcher: "neovim",
+  sessionId: "editor-session-1",
+  sourceLabel: "src/components/PrimaryButton.tsx:12",
+  summary: {
+    eyebrow: "Editor",
+    headline: "PrimaryButton",
+    meta: ["src/components/PrimaryButton.tsx:12"],
+    terminalTitle: "Neovim",
+    trayTooltipPrimary: "<PrimaryButton>",
+    trayTooltipSecondary: "src/components/PrimaryButton.tsx:12",
   },
 };
-const devtoolsStoryShadowRootHostTestId: string = "DevtoolsStoryShadowRoot";
+
+const finishedAgentSession: TerminalSession = {
+  ...agentSession,
+  sessionId: "session-finished",
+};
 
 const meta: Meta<typeof TerminalSessionPanel> = {
   title: "@alexgorbatchev/devhost/devtools/features/terminalSessions/TerminalSessionPanel",
@@ -86,22 +90,17 @@ export const Minimized: Story = {
     session: agentSession,
   },
   play: async ({ args, canvasElement }): Promise<void> => {
-    const canvas = within(canvasElement);
-    const shadowHost: HTMLElement = await canvas.findByTestId(devtoolsStoryShadowRootHostTestId);
-    const shadowRoot: ShadowRoot = readShadowRoot(
-      shadowHost,
-      "Expected the terminal panel story to attach a shadow root.",
-    );
+    const shadowCanvas = await readStoryShadowCanvas(canvasElement);
 
-    await waitFor(async (): Promise<void> => {
-      await expect(shadowRoot.querySelector('[data-testid="TerminalSessionPanel"]')).not.toBeNull();
-    });
+    const panel = shadowCanvas.getByTestId("TerminalSessionPanel");
+    const expandButton = shadowCanvas.getByTestId("TerminalSessionPanel--expand");
 
-    // Test terminal expand button exists
-    if (!args.session.behavior.isFullscreenExpanded) {
-      const expandButton = shadowRoot.querySelector('[data-testid="TerminalSessionPanel--expand"]');
-      await expect(expandButton).not.toBeNull();
-    }
+    await userEvent.hover(panel);
+    await expect(shadowCanvas.getByTestId("TerminalSessionPanel--tooltip")).toHaveTextContent("Agent session");
+    await expect(shadowCanvas.getByText("Pi")).toBeInTheDocument();
+
+    await userEvent.click(expandButton);
+    await expect(args.onExpand).toHaveBeenCalledTimes(1);
   },
 };
 
@@ -119,18 +118,17 @@ export const Expanded: Story = {
       },
     },
   },
-  play: async ({ canvasElement }): Promise<void> => {
-    const canvas = within(canvasElement);
-    const shadowHost: HTMLElement = await canvas.findByTestId(devtoolsStoryShadowRootHostTestId);
-    const shadowRoot: ShadowRoot = readShadowRoot(
-      shadowHost,
-      "Expected the terminal panel story to attach a shadow root.",
-    );
+  play: async ({ args, canvasElement }): Promise<void> => {
+    const shadowCanvas = await readStoryShadowCanvas(canvasElement);
 
-    await waitFor(async (): Promise<void> => {
-      await expect(shadowRoot.querySelector('[data-testid="TerminalSessionPanel"]')).not.toBeNull();
-      await expect(shadowRoot.querySelector('[data-testid="TerminalSessionPanel--content"]')).not.toBeNull();
-    });
+    await expect(shadowCanvas.getByTestId("TerminalSessionPanel--content")).toBeInTheDocument();
+    await expect(shadowCanvas.getByTestId("TerminalSessionPanel--summary")).toHaveTextContent("Agent session");
+
+    await userEvent.click(shadowCanvas.getByRole("button", { name: "Minimize" }));
+    await expect(args.onMinimize).toHaveBeenCalledTimes(1);
+
+    await userEvent.click(shadowCanvas.getByRole("button", { name: "Terminate" }));
+    await expect(args.onRemove).toHaveBeenCalledTimes(1);
   },
 };
 
@@ -148,70 +146,61 @@ export const FullscreenExpanded: Story = {
       },
     },
   },
-  play: async ({ args, canvasElement }): Promise<void> => {
-    const canvas = within(canvasElement);
-    const shadowHost: HTMLElement = await canvas.findByTestId(devtoolsStoryShadowRootHostTestId);
-    const shadowRoot: ShadowRoot = readShadowRoot(
-      shadowHost,
-      "Expected the terminal panel story to attach a shadow root.",
-    );
+  play: async ({ canvasElement }): Promise<void> => {
+    const shadowCanvas = await readStoryShadowCanvas(canvasElement);
 
-    await waitFor(async (): Promise<void> => {
-      await expect(shadowRoot.querySelector('[data-testid="TerminalSessionPanel"]')).not.toBeNull();
-    });
-
-    // Test terminal expand button exists
-    if (!args.session.behavior.isFullscreenExpanded) {
-      const expandButton = shadowRoot.querySelector('[data-testid="TerminalSessionPanel--expand"]');
-      await expect(expandButton).not.toBeNull();
-    }
+    await expect(shadowCanvas.getByTestId("TerminalSessionPanel--backdrop")).toBeInTheDocument();
+    await expect(shadowCanvas.getByTestId("TerminalSessionPanel--content")).toBeInTheDocument();
+    await expect(shadowCanvas.getByText("Agent terminal")).toBeInTheDocument();
   },
 };
 
-function renderInDevtoolsStoryShadowRoot(children: ReactNode): JSX.Element {
-  return <DevtoolsStoryShadowRoot>{children}</DevtoolsStoryShadowRoot>;
-}
+export const EditorExpanded: Story = {
+  args: {
+    isExpanded: true,
+    onExpand: fn(),
+    onMinimize: fn(),
+    onRemove: fn(),
+    session: editorSession,
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const shadowCanvas = await readStoryShadowCanvas(canvasElement);
 
-function DevtoolsStoryShadowRoot(props: IDevtoolsStoryShadowRootProps): JSX.Element {
-  const hostElementReference = useRef<HTMLDivElement | null>(null);
-  const [shadowMountNode, setShadowMountNode] = useState<HTMLDivElement | null>(null);
+    await expect(shadowCanvas.getByText("Neovim")).toBeInTheDocument();
+    await expect(shadowCanvas.getByTestId("TerminalSessionPanel--summary")).toHaveTextContent("PrimaryButton");
+    await expect(shadowCanvas.getByText("src/components/PrimaryButton.tsx:12")).toBeInTheDocument();
+  },
+};
 
-  useLayoutEffect(() => {
-    const hostElement: HTMLDivElement | null = hostElementReference.current;
+export const FinishedMinimized: Story = {
+  args: {
+    isExpanded: false,
+    onExpand: fn(),
+    onMinimize: fn(),
+    onRemove: fn(),
+    session: finishedAgentSession,
+  },
+  play: async ({ args, canvasElement }): Promise<void> => {
+    const shadowCanvas = await readStoryShadowCanvas(canvasElement);
 
-    if (hostElement === null) {
-      return;
-    }
+    await expect(await shadowCanvas.findByTestId("TerminalSessionPanel--completion-indicator")).toBeInTheDocument();
 
-    const shadowRoot: ShadowRoot = hostElement.shadowRoot ?? hostElement.attachShadow({ mode: "open" });
-    const mountNode: HTMLDivElement = document.createElement("div");
+    await userEvent.hover(shadowCanvas.getByTestId("TerminalSessionPanel"));
+    await userEvent.click(await shadowCanvas.findByTestId("TerminalSessionPanel--tray-close"));
+    await expect(args.onRemove).toHaveBeenCalledTimes(1);
+  },
+};
 
-    mountNode.setAttribute(DEVTOOLS_ROOT_ATTRIBUTE_NAME, "");
-    shadowRoot.append(mountNode);
-
-    configureDevtoolsCss(shadowRoot);
-    injectGlobal(devtoolsStoryShadowRootGlobalStyles);
-    setShadowMountNode(mountNode);
-
-    return () => {
-      setShadowMountNode(null);
-      mountNode.remove();
-    };
-  }, []);
-
-  return (
-    <div data-testid={devtoolsStoryShadowRootHostTestId} ref={hostElementReference}>
-      {shadowMountNode ? createPortal(props.children, shadowMountNode) : null}
-    </div>
+async function readStoryShadowCanvas(canvasElement: HTMLElement): Promise<ReturnType<typeof within>> {
+  const canvas = within(canvasElement);
+  const shadowHost: HTMLElement = await canvas.findByTestId(devtoolsStoryShadowRootHostTestId);
+  const shadowRoot: ShadowRoot = readShadowRoot(
+    shadowHost,
+    "Expected the terminal panel story to attach a shadow root.",
   );
-}
+  const typedShadowCanvas = within(shadowRoot as unknown as HTMLElement);
 
-function readShadowRoot(hostElement: HTMLElement, errorMessage: string): ShadowRoot {
-  const shadowRoot: ShadowRoot | null = hostElement.shadowRoot;
+  await typedShadowCanvas.findByTestId("TerminalSessionPanel");
 
-  if (shadowRoot === null) {
-    throw new Error(errorMessage);
-  }
-
-  return shadowRoot;
+  return typedShadowCanvas;
 }

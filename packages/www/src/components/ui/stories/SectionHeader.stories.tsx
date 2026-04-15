@@ -25,6 +25,20 @@ const Default: Story = {
     await expect(
       canvas.getByRole("heading", { name: "A routed development surface, not another localhost wrapper." }),
     ).toBeInTheDocument();
+    await expect(canvas.getByText("Keep the routed debugging loop close to the page.")).toBeInTheDocument();
+  },
+};
+
+export const TitleOnly: Story = {
+  args: {
+    title: "Title-only section",
+    titleId: "section-header-story-title-only",
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+
+    await expect(canvas.getByRole("heading", { name: "Title-only section" })).toBeInTheDocument();
+    await expect(canvas.queryByText(/routed debugging loop/i)).not.toBeInTheDocument();
   },
 };
 

@@ -26,4 +26,34 @@ const Default: Story = {
   },
 };
 
+export const Primary: Story = {
+  args: {
+    children: "Primary action",
+    onClick: fn(),
+    variant: "primary",
+  },
+  play: async ({ args, canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    const button = canvas.getByRole("button", { name: "Primary action" });
+
+    await expect(button).toHaveClass("bg-primary");
+    await userEvent.click(button);
+    await expect(args.onClick).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const Large: Story = {
+  args: {
+    children: "Large action",
+    onClick: fn(),
+    size: "large",
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    const button = canvas.getByRole("button", { name: "Large action" });
+
+    await expect(button).toHaveClass("h-11");
+  },
+};
+
 export { Default as Button };
