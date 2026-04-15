@@ -41,17 +41,17 @@ function IntegratedPanel({ panelSide }: IIntegratedPanelProps) {
 
   return (
     <>
-      <QueryClientProvider client={queryClient}>
-        <ReactQueryDevtools initialIsOpen={false} />
-      </QueryClientProvider>
-      <RouterProvider router={router} />
-      <TanStackRouterDevtools router={router} initialIsOpen={false} />
-
       <ThemeProvider colorScheme="dark">
         <StoryContainer align={panelSide}>
           <ExternalDevtoolsPanel launchers={launchers} onToggleLauncher={toggleLauncher} panelSide={panelSide} />
         </StoryContainer>
       </ThemeProvider>
+
+      <QueryClientProvider client={queryClient}>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
+      <RouterProvider router={router} />
+      <TanStackRouterDevtools router={router} initialIsOpen={false} />
     </>
   );
 }
@@ -99,6 +99,20 @@ async function waitForRouterPanelToBeVisible(): Promise<void> {
   });
 }
 
+async function waitForRouterPanelToBeClosed(): Promise<void> {
+  await waitFor(() => {
+    const routerPanel = document.querySelector(".TanStackRouterDevtoolsPanel");
+
+    if (routerPanel === null) {
+      return;
+    }
+
+    const style = window.getComputedStyle(routerPanel);
+
+    expect(style.display === "none" || style.visibility === "hidden").toBe(true);
+  });
+}
+
 async function waitForQueryPanelToBeOpen(): Promise<void> {
   await waitFor(() => {
     expect(document.querySelector(".tsqd-main-panel")).not.toBeNull();
@@ -111,18 +125,10 @@ async function waitForQueryPanelToBeClosed(): Promise<void> {
   });
 }
 
-async function ensureRouterPanelIsOpen(readRouterLauncherButton: () => HTMLElement): Promise<void> {
-  if (readRouterLauncherButton().getAttribute("aria-pressed") !== "true") {
-    readRouterLauncherButton().click();
-  }
-
-  // The host router devtools can render the panel before the aggregated button state catches up.
-  await waitForRouterPanelToBeVisible();
-}
-
 interface IStoryLaunchers {
   readQueryLauncherButton: () => HTMLElement;
   readRouterLauncherButton: () => HTMLElement;
+  storyContainerElement: HTMLElement;
 }
 
 const setupSharedPlayTest = async ({ canvasElement }: ISharedPlayTestArgs): Promise<IStoryLaunchers> => {
@@ -144,8 +150,25 @@ const setupSharedPlayTest = async ({ canvasElement }: ISharedPlayTestArgs): Prom
   return {
     readRouterLauncherButton,
     readQueryLauncherButton,
+    storyContainerElement: canvas.getByTestId("StoryContainer"),
   };
 };
+
+async function waitForLaunchersToStayInsideStoryContainer(
+  storyContainerElement: HTMLElement,
+  readLauncherButtons: Array<() => HTMLElement>,
+): Promise<void> {
+  await waitFor(() => {
+    const storyRect = storyContainerElement.getBoundingClientRect();
+
+    for (const readLauncherButton of readLauncherButtons) {
+      const buttonRect = readLauncherButton().getBoundingClientRect();
+
+      expect(buttonRect.left).toBeGreaterThanOrEqual(storyRect.left);
+      expect(buttonRect.right).toBeLessThanOrEqual(storyRect.right);
+    }
+  });
+}
 
 async function runQueryLauncherCycle(readQueryLauncherButton: () => HTMLElement): Promise<void> {
   await waitForQueryPanelToBeClosed();
@@ -165,17 +188,29 @@ async function runQueryLauncherCycle(readQueryLauncherButton: () => HTMLElement)
   await waitForToolbarsToBeHidden([".tsqd-open-btn-container", ".tsqd-open-btn", ".tsqd-minimize-btn"]);
 }
 
+async function runRouterLauncherCycle(
+  readRouterLauncherButton: () => HTMLElement,
+  readQueryLauncherButton: () => HTMLElement,
+  storyContainerElement: HTMLElement,
+): Promise<void> {
+  readRouterLauncherButton().click();
+  await waitForRouterPanelToBeVisible();
+  await waitForLaunchersToStayInsideStoryContainer(storyContainerElement, [
+    readRouterLauncherButton,
+    readQueryLauncherButton,
+  ]);
+
+  readRouterLauncherButton().click();
+  await waitForRouterPanelToBeClosed();
+}
+
 const sharedPlayTest = async ({ canvasElement }: ISharedPlayTestArgs): Promise<void> => {
-  const { readQueryLauncherButton } = await setupSharedPlayTest({ canvasElement });
+  const { readQueryLauncherButton, readRouterLauncherButton, storyContainerElement } = await setupSharedPlayTest({
+    canvasElement,
+  });
 
   await runQueryLauncherCycle(readQueryLauncherButton);
-};
-
-const rightSidePlayTest = async ({ canvasElement }: ISharedPlayTestArgs): Promise<void> => {
-  const { readQueryLauncherButton, readRouterLauncherButton } = await setupSharedPlayTest({ canvasElement });
-
-  await runQueryLauncherCycle(readQueryLauncherButton);
-  await ensureRouterPanelIsOpen(readRouterLauncherButton);
+  await runRouterLauncherCycle(readRouterLauncherButton, readQueryLauncherButton, storyContainerElement);
   await waitForToolbarsToBeHidden(["footer.TanStackRouterDevtools > button"]);
 };
 
@@ -194,5 +229,5 @@ export const DefaultRight: Story = {
     launchers: [],
     onToggleLauncher: () => {},
   },
-  play: rightSidePlayTest,
+  play: sharedPlayTest,
 };

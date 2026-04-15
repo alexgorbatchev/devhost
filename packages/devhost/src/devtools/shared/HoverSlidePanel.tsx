@@ -11,6 +11,7 @@ import { useDevtoolsTheme } from "./useDevtoolsTheme";
 interface IHoverSlidePanelProps {
   ariaLabel: string;
   children: ReactNode;
+  isPinned?: boolean;
   panelSide: PanelSide;
   peekWidth: string;
   style?: CSSObject;
@@ -22,6 +23,7 @@ const hoverSlidePanelTransition: string = "transform 160ms ease";
 export function HoverSlidePanel({
   ariaLabel,
   children,
+  isPinned = false,
   panelSide,
   peekWidth,
   style,
@@ -29,7 +31,7 @@ export function HoverSlidePanel({
 }: IHoverSlidePanelProps): JSX.Element {
   const theme = useDevtoolsTheme();
   const [isHovered, setIsHovered] = useState<boolean>(false);
-  const panelClassName: string = css(createPanelStyle(theme, panelSide, isHovered, peekWidth, style));
+  const panelClassName: string = css(createPanelStyle(theme, panelSide, isHovered || isPinned, peekWidth, style));
 
   return (
     <section

@@ -1,7 +1,7 @@
 import type { IExternalDevtoolsAdapter } from "./types";
 
 const tanStackRouterDevtoolsAdapter: IExternalDevtoolsAdapter = {
-  close: toggleTanStackRouterDevtools,
+  close: closeTanStackRouterDevtools,
   hideSelectors: ["footer.TanStackRouterDevtools > button"],
   id: "tanstack-router",
   isInstalled: isTanStackRouterDevtoolsInstalled,
@@ -47,8 +47,16 @@ function toggleTanStackRouterDevtools(): void {
   readTanStackRouterDevtoolsToggleButton()?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
 }
 
+function closeTanStackRouterDevtools(): void {
+  readTanStackRouterDevtoolsCloseButton()?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+}
+
 function readTanStackRouterDevtoolsToggleButton(): HTMLElement | null {
   return document.querySelector("footer.TanStackRouterDevtools > button");
+}
+
+function readTanStackRouterDevtoolsCloseButton(): HTMLElement | null {
+  return document.querySelector(".TanStackRouterDevtoolsPanel > button");
 }
 
 function isTanStackQueryDevtoolsInstalled(): boolean {

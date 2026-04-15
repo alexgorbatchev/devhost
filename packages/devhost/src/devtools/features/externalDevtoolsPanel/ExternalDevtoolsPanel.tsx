@@ -22,6 +22,7 @@ export function ExternalDevtoolsPanel({
     return null;
   }
 
+  const hasOpenLauncher: boolean = launchers.some((launcher) => launcher.isOpen);
   const contentClassName: string = css(createContentStyle(theme, panelSide));
   const handleClassName: string = css(createHandleStyle(theme));
   const launcherListClassName: string = css(createLauncherListStyle(theme, panelSide));
@@ -29,6 +30,7 @@ export function ExternalDevtoolsPanel({
   return (
     <HoverSlidePanel
       ariaLabel="external devtools"
+      isPinned={hasOpenLauncher}
       panelSide={panelSide}
       peekWidth={theme.sizes.serviceStatusPanelPeekWidth}
       testId="ExternalDevtoolsPanel"

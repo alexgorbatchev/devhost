@@ -16,6 +16,8 @@ interface IExternalDevtoolsLaunchersResult {
 export function useExternalDevtoolsLaunchers(enabled: boolean): IExternalDevtoolsLaunchersResult {
   const [launchers, setLaunchers] = useState<IExternalDevtoolsLauncher[]>([]);
   const frameIdRef = useRef<number | null>(null);
+  const launcherSyncFrameIdRef = useRef<number | null>(null);
+  const synchronizeLaunchersRef = useRef<(() => void) | null>(null);
   const styleElementRef = useRef<HTMLStyleElement | null>(null);
   const adapters = useMemo<readonly IExternalDevtoolsAdapter[]>(() => externalDevtoolsDetectors, []);
 
@@ -40,6 +42,8 @@ export function useExternalDevtoolsLaunchers(enabled: boolean): IExternalDevtool
       );
       synchronizeHiddenLauncherStyle(styleElement, installedAdapters);
     };
+
+    synchronizeLaunchersRef.current = synchronizeLaunchers;
 
     const scheduleSynchronizeLaunchers = (): void => {
       if (frameIdRef.current !== null) {
@@ -77,8 +81,14 @@ export function useExternalDevtoolsLaunchers(enabled: boolean): IExternalDevtool
         frameIdRef.current = null;
       }
 
+      if (launcherSyncFrameIdRef.current !== null) {
+        cancelAnimationFrame(launcherSyncFrameIdRef.current);
+        launcherSyncFrameIdRef.current = null;
+      }
+
       styleElement.remove();
       styleElementRef.current = null;
+      synchronizeLaunchersRef.current = null;
     };
   }, [enabled, adapters]);
 
@@ -89,12 +99,38 @@ export function useExternalDevtoolsLaunchers(enabled: boolean): IExternalDevtool
       return;
     }
 
-    if (adapter.isOpen()) {
+    const expectedIsOpen = !adapter.isOpen();
+
+    if (!expectedIsOpen) {
       adapter.close();
-      return;
+    } else {
+      adapter.open();
     }
 
-    adapter.open();
+    synchronizeLaunchersUntilStateMatches(adapter, expectedIsOpen);
+  }
+
+  function synchronizeLaunchersUntilStateMatches(adapter: IExternalDevtoolsAdapter, expectedIsOpen: boolean): void {
+    if (launcherSyncFrameIdRef.current !== null) {
+      cancelAnimationFrame(launcherSyncFrameIdRef.current);
+      launcherSyncFrameIdRef.current = null;
+    }
+
+    let remainingFrames = 60;
+
+    const poll = (): void => {
+      synchronizeLaunchersRef.current?.();
+
+      if (adapter.isOpen() === expectedIsOpen || remainingFrames <= 0) {
+        launcherSyncFrameIdRef.current = null;
+        return;
+      }
+
+      remainingFrames -= 1;
+      launcherSyncFrameIdRef.current = requestAnimationFrame(poll);
+    };
+
+    poll();
   }
 
   return {

@@ -65,11 +65,13 @@ describe("externalDevtoolsDetectors", () => {
     expect(panelOpenButton.dispatchEvent).toHaveBeenCalledTimes(1);
   });
 
-  test("router adapter toggles the footer button and reads panel visibility", () => {
+  test("router adapter opens with the footer button and closes with the panel collapse button", () => {
     const toggleButton = createFakeElement();
+    const closeButton = createFakeElement();
 
     mockDocument({
       ".TanStackRouterDevtoolsPanel": { dispatchEvent: mock<DispatchEventFn>(() => true) },
+      ".TanStackRouterDevtoolsPanel > button": closeButton,
       "footer.TanStackRouterDevtools > button": toggleButton,
     });
     globalThis.getComputedStyle = (() => ({
@@ -83,7 +85,8 @@ describe("externalDevtoolsDetectors", () => {
     expect(adapter.isOpen()).toBe(true);
     adapter.open();
     adapter.close();
-    expect(toggleButton.dispatchEvent).toHaveBeenCalledTimes(2);
+    expect(toggleButton.dispatchEvent).toHaveBeenCalledTimes(1);
+    expect(closeButton.dispatchEvent).toHaveBeenCalledTimes(1);
     expect(adapter.hideSelectors).toEqual(["footer.TanStackRouterDevtools > button"]);
   });
 
