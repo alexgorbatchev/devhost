@@ -1,6 +1,6 @@
 ---
 name: storybook-review
-description: Use when asked to review Storybook stories or Storybook testing coverage in this repository, especially `*.stories.*` files. Apply `.agents/skills/storybook/SKILL.md` as the rubric and write the review to `.reviews/storybook.md`.
+description: Use when asked to review Storybook stories or Storybook testing coverage in this repository, especially `*.stories.*` files. Apply `.agents/skills/storybook/SKILL.md` as the rubric and write the review to `.review/storybook.md`.
 ---
 
 # Storybook Review
@@ -9,7 +9,7 @@ Read `storybook/SKILL.md` first. Treat every rule in that skill as the review ru
 
 Do not modify the reviewed Storybook files while reviewing unless the user explicitly asks for fixes.
 
-Write the final review to `.reviews/storybook.md`. Create `.reviews/` if it does not exist. Overwrite the file on each fresh review so it only contains the current result.
+Write the final review to `.review/storybook.md`. Create `.review/` if it does not exist. Overwrite the file on each fresh review so it only contains the current result.
 
 Capture the current git SHA before the review begins and preserve that exact SHA in the report.
 
