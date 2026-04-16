@@ -12,6 +12,7 @@ import {
   marketingRecordingScenarios,
   readMarketingRecordingScenario,
   type IMarketingRecordingScenario,
+  type IMarketingRecordingViewport,
   type MarketingRecordingScenarioId,
 } from "../src/features/marketingRecording/marketingRecordingScenarios";
 
@@ -29,8 +30,19 @@ interface IPoint {
   y: number;
 }
 
+const afterLeftClickPauseMs: number = 320;
+const afterRightClickPauseMs: number = 420;
+const beforeClickPauseMs: number = 140;
 const capturePathname: string = "/__capture__";
+const clickHoldDurationMs: number = 90;
+const cursorFrameIntervalMs: number = 18;
+const cursorPathBaseDurationMs: number = 220;
+const cursorPathDurationPerPixelMs: number = 1.05;
+const cursorPositionsByPage = new WeakMap<Page, IPoint>();
+const maximumCursorPathDurationMs: number = 1_250;
+const minimumCursorPathDurationMs: number = 320;
 const serverStartupTimeoutMs: number = 20_000;
+const viewportEdgeInsetPx: number = 4;
 const workspaceRootPath: string = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const recordingsRootPath: string = path.join(workspaceRootPath, "public", "recordings", "marketing");
 
@@ -258,16 +270,18 @@ async function runRoutingHealthScenario(page: Page): Promise<void> {
 async function clickLocator(page: Page, locator: Locator, button: MouseButton = "left"): Promise<void> {
   const target = await readLocatorCenter(locator);
 
-  await page.mouse.move(target.x, target.y, { steps: 18 });
-  await page.waitForTimeout(180);
-  await page.mouse.click(target.x, target.y, { button });
-  await page.waitForTimeout(220);
+  await moveCursorHumanLike(page, target);
+  await page.waitForTimeout(beforeClickPauseMs);
+  await page.mouse.down({ button });
+  await page.waitForTimeout(clickHoldDurationMs);
+  await page.mouse.up({ button });
+  await page.waitForTimeout(button === "left" ? afterLeftClickPauseMs : afterRightClickPauseMs);
 }
 
 async function moveCursorToLocator(page: Page, locator: Locator, pauseMs: number): Promise<void> {
   const target = await readLocatorCenter(locator);
 
-  await page.mouse.move(target.x, target.y, { steps: 18 });
+  await moveCursorHumanLike(page, target);
   await page.waitForTimeout(pauseMs);
 }
 
@@ -284,6 +298,168 @@ async function readLocatorCenter(locator: Locator): Promise<IPoint> {
     x: boundingBox.x + boundingBox.width / 2,
     y: boundingBox.y + boundingBox.height / 2,
   };
+}
+
+async function moveCursorHumanLike(page: Page, target: IPoint): Promise<void> {
+  const viewport: IMarketingRecordingViewport = readViewport(page);
+  const clampedTarget: IPoint = clampPointToViewport(target, viewport);
+  const start: IPoint = cursorPositionsByPage.get(page) ?? createInitialCursorPosition(viewport);
+  const pathPoints: ReadonlyArray<IPoint> = createCursorPathPoints(start, clampedTarget, viewport);
+
+  for (const point of pathPoints) {
+    await page.mouse.move(point.x, point.y);
+    await page.waitForTimeout(cursorFrameIntervalMs);
+  }
+
+  cursorPositionsByPage.set(page, clampedTarget);
+}
+
+function clampNumber(value: number, minimumValue: number, maximumValue: number): number {
+  return Math.min(Math.max(value, minimumValue), maximumValue);
+}
+
+function clampPointToViewport(point: IPoint, viewport: IMarketingRecordingViewport): IPoint {
+  return {
+    x: clampNumber(point.x, viewportEdgeInsetPx, viewport.width - viewportEdgeInsetPx),
+    y: clampNumber(point.y, viewportEdgeInsetPx, viewport.height - viewportEdgeInsetPx),
+  };
+}
+
+function createCursorPathPoints(
+  start: IPoint,
+  end: IPoint,
+  viewport: IMarketingRecordingViewport,
+): ReadonlyArray<IPoint> {
+  const distance: number = readPointDistance(start, end);
+
+  if (distance < 1) {
+    return [end];
+  }
+
+  const durationMs: number = clampNumber(
+    cursorPathBaseDurationMs + distance * cursorPathDurationPerPixelMs,
+    minimumCursorPathDurationMs,
+    maximumCursorPathDurationMs,
+  );
+  const stepCount: number = Math.max(16, Math.round(durationMs / cursorFrameIntervalMs));
+  const direction: IPoint = readUnitVector(start, end);
+  const perpendicular: IPoint = { x: -direction.y, y: direction.x };
+  const lineVector: IPoint = { x: end.x - start.x, y: end.y - start.y };
+  const arcDirection: number = readArcDirection(start, end);
+  const primaryArcOffsetPx: number = clampNumber(distance * 0.14, 18, 76) * arcDirection;
+  const secondaryArcOffsetPx: number = primaryArcOffsetPx * 0.42;
+  const wobbleAmplitudePx: number = clampNumber(distance * 0.008, 0.6, 3.6);
+  const wobblePhase: number = readWobblePhase(start, end);
+  const controlPointOne: IPoint = clampPointToViewport(
+    {
+      x: start.x + lineVector.x * 0.28 + perpendicular.x * primaryArcOffsetPx,
+      y: start.y + lineVector.y * 0.28 + perpendicular.y * primaryArcOffsetPx,
+    },
+    viewport,
+  );
+  const controlPointTwo: IPoint = clampPointToViewport(
+    {
+      x: start.x + lineVector.x * 0.74 + perpendicular.x * secondaryArcOffsetPx,
+      y: start.y + lineVector.y * 0.74 + perpendicular.y * secondaryArcOffsetPx,
+    },
+    viewport,
+  );
+  const pathPoints: IPoint[] = [];
+
+  for (let stepIndex = 1; stepIndex <= stepCount; stepIndex += 1) {
+    const progress: number = stepIndex / stepCount;
+    const easedProgress: number = easeInOutSine(progress);
+    const curvePoint: IPoint = readCubicBezierPoint(start, controlPointOne, controlPointTwo, end, easedProgress);
+    const wobbleOffsetPx: number =
+      Math.sin(Math.PI * progress) * Math.sin(progress * Math.PI * 2.5 + wobblePhase) * wobbleAmplitudePx;
+
+    pathPoints.push(
+      clampPointToViewport(
+        {
+          x: curvePoint.x + perpendicular.x * wobbleOffsetPx,
+          y: curvePoint.y + perpendicular.y * wobbleOffsetPx,
+        },
+        viewport,
+      ),
+    );
+  }
+
+  pathPoints[pathPoints.length - 1] = end;
+  return pathPoints;
+}
+
+function createInitialCursorPosition(viewport: IMarketingRecordingViewport): IPoint {
+  return {
+    x: viewport.width * 0.22,
+    y: viewport.height * 0.76,
+  };
+}
+
+function easeInOutSine(progress: number): number {
+  return 0.5 - Math.cos(Math.PI * progress) / 2;
+}
+
+function readArcDirection(start: IPoint, end: IPoint): number {
+  const signature: number = Math.round(start.x * 17 + start.y * 29 + end.x * 31 + end.y * 43);
+
+  return signature % 2 === 0 ? 1 : -1;
+}
+
+function readCubicBezierPoint(
+  start: IPoint,
+  controlPointOne: IPoint,
+  controlPointTwo: IPoint,
+  end: IPoint,
+  progress: number,
+): IPoint {
+  const inverseProgress: number = 1 - progress;
+  const inverseProgressSquared: number = inverseProgress * inverseProgress;
+  const progressSquared: number = progress * progress;
+
+  return {
+    x:
+      inverseProgressSquared * inverseProgress * start.x +
+      3 * inverseProgressSquared * progress * controlPointOne.x +
+      3 * inverseProgress * progressSquared * controlPointTwo.x +
+      progressSquared * progress * end.x,
+    y:
+      inverseProgressSquared * inverseProgress * start.y +
+      3 * inverseProgressSquared * progress * controlPointOne.y +
+      3 * inverseProgress * progressSquared * controlPointTwo.y +
+      progressSquared * progress * end.y,
+  };
+}
+
+function readPointDistance(start: IPoint, end: IPoint): number {
+  return Math.hypot(end.x - start.x, end.y - start.y);
+}
+
+function readUnitVector(start: IPoint, end: IPoint): IPoint {
+  const distance: number = readPointDistance(start, end);
+
+  if (distance === 0) {
+    return { x: 1, y: 0 };
+  }
+
+  return {
+    x: (end.x - start.x) / distance,
+    y: (end.y - start.y) / distance,
+  };
+}
+
+function readViewport(page: Page): IMarketingRecordingViewport {
+  return (
+    page.viewportSize() ?? {
+      height: 960,
+      width: 1440,
+    }
+  );
+}
+
+function readWobblePhase(start: IPoint, end: IPoint): number {
+  const signature: number = Math.round(start.x * 7 + start.y * 11 + end.x * 13 + end.y * 19);
+
+  return (signature % 360) * (Math.PI / 180);
 }
 
 async function startCapture(page: Page): Promise<void> {
