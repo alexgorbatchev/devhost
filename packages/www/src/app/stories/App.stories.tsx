@@ -16,9 +16,9 @@ const Default: Story = {
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
     const themeSelect = canvas.getByLabelText("Toggle theme");
-    const managedEdgeTab = canvas.getByRole("tab", { name: "Managed edge" });
-    const runtimeContextTab = canvas.getByRole("tab", { name: "Runtime context" });
-    const agentHandoffTab = canvas.getByRole("tab", { name: "Agent handoff" });
+    const sourceNavigationTab = canvas.getByRole("tab", { name: "Source navigation" });
+    const terminalSessionsTab = canvas.getByRole("tab", { name: "Terminal sessions" });
+    const routingAndHealthTab = canvas.getByRole("tab", { name: "Routing + health" });
 
     await expect(
       canvas.getByRole("heading", {
@@ -39,14 +39,14 @@ const Default: Story = {
 
     await expect(window.localStorage.getItem("devhost-test-theme")).toBe(document.documentElement.dataset.theme);
 
-    await userEvent.click(managedEdgeTab);
-    await expect(managedEdgeTab).toHaveAttribute("aria-selected", "true");
+    await userEvent.click(sourceNavigationTab);
+    await expect(sourceNavigationTab).toHaveAttribute("aria-selected", "true");
 
-    await userEvent.click(runtimeContextTab);
-    await expect(runtimeContextTab).toHaveAttribute("aria-selected", "true");
+    await userEvent.click(terminalSessionsTab);
+    await expect(terminalSessionsTab).toHaveAttribute("aria-selected", "true");
 
-    await userEvent.click(agentHandoffTab);
-    await expect(agentHandoffTab).toHaveAttribute("aria-selected", "true");
+    await userEvent.click(routingAndHealthTab);
+    await expect(routingAndHealthTab).toHaveAttribute("aria-selected", "true");
   },
 };
 

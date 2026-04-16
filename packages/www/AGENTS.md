@@ -12,6 +12,8 @@ Local React demo app for exercising `@alexgorbatchev/devhost` behavior and Story
 
 - Dev server: `bun run dev`
 - Check package-local validations: `bun run check`
+- Record marketing replays: `bun run record:marketing`
+- Install Playwright Chromium for the recorder: `bun run record:marketing:install-browser`
 - Storybook: `bun run storybook`
 - Preferred Railway deploy entrypoint from the repo root: `bun run deploy:www`
 
@@ -26,6 +28,7 @@ Local React demo app for exercising `@alexgorbatchev/devhost` behavior and Story
 - Shared `oxfmt` / `oxlint` enforcement runs from the repo root, not from this workspace `check` script.
 - `bun run check` runs the package TypeScript validation and Storybook/Vitest browser coverage for this workspace.
 - The demo app and `packages/devhost/` devtools UI both use React, but their runtime and build constraints still differ. Check the local package config before copying assumptions across workspaces.
+- `bun run record:marketing` starts a temporary local dev server, opens the dev-only `marketing-capture.html` route, and rewrites `public/recordings/marketing/*.json` from deterministic rrweb captures.
 
 ## Boundaries
 
@@ -39,7 +42,9 @@ Local React demo app for exercising `@alexgorbatchev/devhost` behavior and Story
 ## References
 
 - `package.json`
+- `marketing-capture.html`
 - `scripts/check.sh`
+- `scripts/recordMarketingDemos.ts`
 - `.storybook/`
 - `src/server.ts`
 - `DEPLOY.md`

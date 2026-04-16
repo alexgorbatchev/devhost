@@ -1,20 +1,30 @@
 import path from "node:path";
 
-const marketingRecordingRelativePaths: Record<string, string> = {
-  "/recordings/marketing/annotation.json": "recordings/marketing/annotation.json",
-};
+const marketingRecordingRequestPathPrefix: string = "/recordings/marketing/";
+const marketingRecordingRootRelativePath: string = "recordings/marketing";
 
 export async function createMarketingRecordingResponse(
   requestPathname: string,
   publicRootPath: string,
 ): Promise<Response | null> {
-  const relativeRecordingPath: string | undefined = marketingRecordingRelativePaths[requestPathname];
-
-  if (relativeRecordingPath === undefined) {
+  if (!requestPathname.startsWith(marketingRecordingRequestPathPrefix) || !requestPathname.endsWith(".json")) {
     return null;
   }
 
-  const recordingFile = Bun.file(path.join(publicRootPath, relativeRecordingPath));
+  const relativeRecordingFileName: string = requestPathname.slice(marketingRecordingRequestPathPrefix.length);
+
+  if (!isSingleFileName(relativeRecordingFileName)) {
+    return new Response("Not Found", { status: 404 });
+  }
+
+  const marketingRecordingRootPath: string = path.resolve(publicRootPath, marketingRecordingRootRelativePath);
+  const recordingFilePath: string = path.resolve(marketingRecordingRootPath, relativeRecordingFileName);
+
+  if (!isPathInsideDirectory(recordingFilePath, marketingRecordingRootPath)) {
+    return new Response("Not Found", { status: 404 });
+  }
+
+  const recordingFile = Bun.file(recordingFilePath);
 
   if (!(await recordingFile.exists())) {
     return new Response("Not Found", { status: 404 });
@@ -25,4 +35,12 @@ export async function createMarketingRecordingResponse(
       "content-type": "application/json; charset=utf-8",
     },
   });
+}
+
+function isPathInsideDirectory(filePath: string, directoryPath: string): boolean {
+  return filePath === directoryPath || filePath.startsWith(`${directoryPath}${path.sep}`);
+}
+
+function isSingleFileName(fileName: string): boolean {
+  return fileName.length > 0 && !fileName.includes("/") && !fileName.includes("\\");
 }

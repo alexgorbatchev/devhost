@@ -3,6 +3,7 @@
 @source "./";
 @source "../components";
 @source "../features";
+@source "../marketingCapture";
 
 @layer base {
   * {

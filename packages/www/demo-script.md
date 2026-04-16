@@ -2,6 +2,25 @@
 
 This file is the recording runbook for the marketing feature replays.
 
+## Automated capture
+
+The marketing replays are now generated artifacts.
+
+1. Install Chromium once if needed: `bun run record:marketing:install-browser`
+2. Regenerate every replay JSON: `bun run record:marketing`
+3. Regenerate one replay JSON: `bun run record:marketing <scenario-id>`
+4. Reload `www` and confirm the matching replay tab now plays the new capture.
+
+Available scenario ids:
+
+- `annotation`
+- `source-jumps`
+- `sessions`
+- `overlay`
+- `routing-health`
+
+The recorder starts a temporary local dev server, opens the dev-only capture route, drives the page with Playwright at a fixed viewport, and writes directly into `packages/www/public/recordings/marketing/*.json`.
+
 ## Recording targets
 
 - `packages/www/public/recordings/marketing/annotation.json`
@@ -12,13 +31,11 @@ This file is the recording runbook for the marketing feature replays.
 
 ## Global setup for every take
 
-1. Start from a clean browser profile or clear site storage for the routed host.
-2. Use one fixed desktop viewport for every recording.
-3. Pick one theme and keep it constant across all five takes.
-4. Close unrelated overlays, notifications, and extra tabs.
-5. Rehearse the flow once before recording so the cursor path looks intentional.
-6. Keep each recording short. If the feature needs narration, put that in the page copy, not in extra idle time.
-7. Use the recording authoring panel at the bottom of the page only to export takes; start and stop from anywhere with `Alt+Shift+A` and `Alt+Shift+S`.
+1. Keep the automated recorder's fixed desktop viewport for every capture.
+2. Keep the theme constant across all five takes.
+3. Treat the capture route fixtures as the source of truth; change those fixtures instead of hand-editing the exported JSON.
+4. Keep each recording short. If the feature needs narration, put that in the page copy, not in extra idle time.
+5. When the devtools UI changes, rerun the recorder instead of manually re-performing each flow.
 
 ## 1. Annotation handoff
 
@@ -107,9 +124,8 @@ This file is the recording runbook for the marketing feature replays.
 
 ## Replacement workflow
 
-After each real take:
+After each automated take:
 
-1. Export the rrweb JSON.
-2. Replace the matching file in `packages/www/public/recordings/marketing/`.
-3. Reload the page and confirm the correct feature tab now plays the new recording.
-4. Repeat until all five feature recordings are replaced.
+1. The recorder writes the rrweb JSON directly into `packages/www/public/recordings/marketing/`.
+2. Reload the page and confirm the correct feature tab now plays the new recording.
+3. Rerun one scenario or all scenarios until the five feature recordings match the current UI.

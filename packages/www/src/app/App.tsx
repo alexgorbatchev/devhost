@@ -18,6 +18,10 @@ import {
   type IRrwebDemoRecording,
   type IRrwebDemoRecordingController,
 } from "../features/rrweb";
+import {
+  marketingRecordingScenarios,
+  readMarketingRecordingUrl,
+} from "../features/marketingRecording/marketingRecordingScenarios";
 
 type RecordingPhase = "arming" | "idle" | "preview" | "recording";
 
@@ -34,13 +38,13 @@ interface IMarketingDemoTab {
   recordingUrl: string;
 }
 
-const marketingDemoTabs: readonly IMarketingDemoTab[] = [
-  { id: "managed-edge", label: "Managed edge", recordingUrl: "/recordings/marketing/managed-edge.json" },
-  { id: "stack-lifecycle", label: "Stack lifecycle", recordingUrl: "/recordings/marketing/stack-lifecycle.json" },
-  { id: "runtime-context", label: "Runtime context", recordingUrl: "/recordings/marketing/runtime-context.json" },
-  { id: "devtools", label: "Devtools overlay", recordingUrl: "/recordings/marketing/devtools.json" },
-  { id: "agent-handoff", label: "Agent handoff", recordingUrl: "/recordings/marketing/annotation.json" },
-];
+const marketingDemoTabs: readonly IMarketingDemoTab[] = marketingRecordingScenarios.map((scenario) => {
+  return {
+    id: scenario.id,
+    label: scenario.label,
+    recordingUrl: readMarketingRecordingUrl(scenario.recordingFileName),
+  };
+});
 
 function MarketingDemoReplay(): JSX.Element {
   const activeTabIdRef = useRef<string>(marketingDemoTabs[0]?.id ?? "");
