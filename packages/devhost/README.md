@@ -97,6 +97,14 @@ devhost caddy download
 
 `devhost` uses that downloaded binary when present. Otherwise it falls back to the global `caddy` executable from your `PATH`. It does **not** auto-download Caddy during `devhost caddy start` or stack startup.
 
+On Linux, set up low-port binding for the managed Caddy binary once before the first HTTPS start:
+
+```bash
+devhost caddy privileged-ports
+```
+
+That command downloads the managed Caddy binary first when needed, then runs `sudo setcap 'cap_net_bind_service=+ep'` against that managed binary so later `devhost caddy start` runs can stay unprivileged.
+
 > [!IMPORTANT]
 > To get HTTPS working, Caddy uses a self-signed certificate, which obviously isn't trusted by default.
 >
@@ -120,6 +128,7 @@ The generated Caddy config uses these defaults:
 - admin API: `127.0.0.1:20193` unless `DEVHOST_CADDY_ADMIN_ADDRESS` is set
 - listener binding on macOS: wildcard listeners, because macOS denies rootless loopback-specific binds on `:443`
 - listener binding on non-macOS: loopback only via Caddy `default_bind 127.0.0.1 [::1]`
+- plain HTTP on `:80`: disabled by default; any active stack with `caddy.global.http = true` enables the same routed hosts and shared fallback page on HTTP for all active stacks
 - unmatched hostnames: a generated 404 page listing the currently active devhost hostnames as HTTPS links
 
 Managed Caddy lifecycle is shared and manual. `devhost` stack startup requires the managed Caddy admin API to already be available.
@@ -143,7 +152,9 @@ That fixes startup, but it also means the managed Caddy instance is not loopback
 If you need strict loopback-only HTTPS on privileged ports, the correct solution is a privileged launcher such as `launchd` socket activation, not pretending wildcard binding is equivalent.
 
 On non-macOS platforms, opening HTTPS on `:443` still requires privileged-port setup outside `devhost`.
-`devhost` does not configure `sudo`, `setcap`, `authbind`, or firewall redirection for you.
+Enabling `caddy.global.http = true` adds the same requirement for `:80`.
+On Linux, `devhost caddy privileged-ports` configures the managed Caddy binary for this with `setcap`.
+`devhost` does not configure `authbind` or firewall redirection for you.
 
 ## Stack lifecycle
 
@@ -175,6 +186,15 @@ Use that file as the documented source of truth for:
 Copy it to `devhost.toml` in your project root and trim it down to the services you actually run.
 
 Each TOML table must be declared once. Keep all fields for a service inside a single `[services.<name>]` block instead of reopening that table later.
+
+To also serve the same routed hosts through plain HTTP on port 80, add this top-level setting:
+
+```toml
+[caddy.global]
+http = true
+```
+
+This is a global managed-Caddy toggle, not an isolated per-stack listener. If any active stack enables `caddy.global.http = true`, the shared Caddy instance serves HTTP for all active stacks until the last opting-in stack stops.
 
 For same-host composition within one manifest, use distinct paths such as `/api/*` and `/admin/*`, or combine one root-mounted fallback service with more specific subpath services on the same hostname.
 

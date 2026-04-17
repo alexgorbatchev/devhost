@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { managedCaddyPaths } from "../caddyPaths";
+import { createManagedCaddyExecutablePath } from "../runManagedCaddyCommand";
 import { createLogger } from "../../utils/createLogger";
 import {
   createManagedCaddyStartErrorMessage,
@@ -112,8 +113,71 @@ describe("runManagedCaddyLifecycleCommand", () => {
       "Caddy start failed.\nlisten tcp 127.0.0.1:443: bind: permission denied\nmacOS allows rootless binds on :443 only with wildcard listeners, not loopback-specific ones.",
     );
     expect(createManagedCaddyStartErrorMessage(failingCommandResult, "linux")).toBe(
-      "Caddy start failed.\nlisten tcp 127.0.0.1:443: bind: permission denied\nOpening HTTPS on :443 requires privileged-port setup on this platform.",
+      "Caddy start failed.\nlisten tcp 127.0.0.1:443: bind: permission denied\nOpening HTTPS on :443 requires privileged-port setup on this platform. Run 'devhost caddy privileged-ports' to configure the managed Caddy binary.",
     );
+  });
+
+  test("configures Linux low-port binding for the managed caddy binary", async () => {
+    const infoMessages: string[] = [];
+    const privilegedPortSetupCalls: ICaddyCommandCall[] = [];
+    const logger = createLogger({
+      errorSink: (): void => undefined,
+      infoSink: (message: string): void => {
+        infoMessages.push(message);
+      },
+    });
+    let downloaded = false;
+
+    await expect(
+      runManagedCaddyLifecycleCommand("privileged-ports", logger, {
+        downloadManagedCaddy: async (): Promise<void> => {
+          downloaded = true;
+        },
+        ensureManagedCaddyConfig: (async (): Promise<void> => undefined) as TestPromiseVoid,
+        hasManagedCaddyBinary: (async (): Promise<boolean> => false) as TestPromiseBoolean,
+        isRootUser: (): boolean => false,
+        platform: "linux",
+        runPrivilegedPortSetupCommand: (arguments_: string[], options): ICaddyCommandResult => {
+          privilegedPortSetupCalls.push({
+            arguments_,
+            stdioMode: options?.stdioMode,
+          });
+          return successfulCommandResult;
+        },
+      }),
+    ).resolves.toBe(0);
+
+    expect(downloaded).toBe(true);
+    expect(privilegedPortSetupCalls).toEqual([
+      {
+        arguments_: ["sudo", "setcap", "cap_net_bind_service=+ep", createManagedCaddyExecutablePath("linux")],
+        stdioMode: "inherit",
+      },
+    ]);
+    expect(infoMessages).toEqual([
+      `[devhost] managed caddy binary not found at ${createManagedCaddyExecutablePath("linux")}. Downloading it first.`,
+      "[devhost] managed caddy privileged-port setup may prompt for your password because granting low-port bind capability is privileged.",
+      `[devhost] managed caddy low-port binding enabled for ${createManagedCaddyExecutablePath("linux")}`,
+    ]);
+  });
+
+  test("skips privileged-port setup on macOS", async () => {
+    const infoMessages: string[] = [];
+    const logger = createLogger({
+      errorSink: (): void => undefined,
+      infoSink: (message: string): void => {
+        infoMessages.push(message);
+      },
+    });
+
+    await expect(
+      runManagedCaddyLifecycleCommand("privileged-ports", logger, {
+        ensureManagedCaddyConfig: (async (): Promise<void> => undefined) as TestPromiseVoid,
+        platform: "darwin",
+      }),
+    ).resolves.toBe(0);
+
+    expect(infoMessages).toEqual(["[devhost] managed caddy does not need privileged-port setup on macOS."]);
   });
 
   test("downloads caddy when the download action is requested", async () => {

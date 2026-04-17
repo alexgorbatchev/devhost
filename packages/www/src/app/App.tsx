@@ -448,6 +448,15 @@ $ open https://foo.localhost`}
             during <code>devhost caddy start</code> or stack startup.
           </p>
 
+          <p>On Linux, set up low-port binding for the managed Caddy binary once before the first HTTPS start:</p>
+
+          <CommandLine command="devhost caddy privileged-ports" />
+
+          <p>
+            That command downloads the managed Caddy binary first when needed, then runs <code>sudo setcap</code>{" "}
+            against that managed binary so later <code>devhost caddy start</code> runs can stay unprivileged.
+          </p>
+
           <Callout title="Important">
             <p className="!mt-0">
               To get HTTPS working, Caddy uses a self-signed certificate, which obviously isn't trusted by default.
@@ -481,6 +490,11 @@ $ open https://foo.localhost`}
               listener binding on non-macOS: loopback only via Caddy <code>default_bind 127.0.0.1 [::1]</code>
             </li>
             <li className="mb-2">
+              plain HTTP on <code>:80</code>: disabled by default; any active stack with{" "}
+              <code>caddy.global.http = true</code> enables the same routed hosts and shared fallback page on HTTP for
+              all active stacks
+            </li>
+            <li className="mb-2">
               unmatched hostnames: a generated 404 page listing the currently active devhost hostnames as HTTPS links
             </li>
           </ul>
@@ -507,6 +521,21 @@ $ open https://foo.localhost`}
               does not provide a cross-process global auto-port allocator
             </li>
           </ul>
+
+          <h3>Platform caveats</h3>
+          <p>
+            On macOS, managed Caddy starts rootlessly by avoiding loopback-specific listener binding. That fixes
+            startup, but it also means the managed Caddy instance is not loopback-only on that platform.
+          </p>
+          <p>
+            On non-macOS platforms, opening HTTPS on <code>:443</code> still requires privileged-port setup. Enabling{" "}
+            <code>caddy.global.http = true</code> adds the same requirement for <code>:80</code>.
+          </p>
+          <p>
+            On Linux, <code>devhost caddy privileged-ports</code> configures the managed Caddy binary for this with{" "}
+            <code>setcap</code>. <code>devhost</code> does not configure <code>authbind</code> or firewall redirection
+            for you.
+          </p>
 
           <h2>Stack lifecycle</h2>
           <p>
@@ -536,6 +565,19 @@ $ open https://foo.localhost`}
           <p>
             Each TOML table must be declared once. Keep all fields for a service inside a single{" "}
             <code>[services.&lt;name&gt;]</code> block instead of reopening that table later.
+          </p>
+
+          <p>To also serve the same routed hosts through plain HTTP on port 80, add this top-level setting:</p>
+
+          <pre>
+            <code className="language-toml">{`[caddy.global]
+http = true`}</code>
+          </pre>
+
+          <p>
+            This is a global managed-Caddy toggle, not an isolated per-stack listener. If any active stack enables{" "}
+            <code>caddy.global.http = true</code>, the shared Caddy instance serves HTTP for all active stacks until the
+            last opting-in stack stops.
           </p>
 
           <h2>Docker-backed services</h2>

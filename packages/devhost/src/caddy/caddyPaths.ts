@@ -1,5 +1,5 @@
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 const defaultAdminAddress: string = "127.0.0.1:20193";
 const defaultStateDirectorySegments: string[] = [".local", "state", "devhost"];
@@ -15,6 +15,13 @@ export interface IManagedCaddyPaths {
   routesDirectoryPath: string;
   stateDirectoryPath: string;
   storageDirectoryPath: string;
+}
+
+export function createManagedCaddyPathsForRoutesDirectory(routesDirectoryPath: string): IManagedCaddyPaths {
+  const caddyDirectoryPath: string = dirname(routesDirectoryPath);
+  const stateDirectoryPath: string = dirname(caddyDirectoryPath);
+
+  return createManagedCaddyPaths(stateDirectoryPath);
 }
 
 export function resolveManagedCaddyAdminAddress(environment: NodeJS.ProcessEnv = process.env): string {

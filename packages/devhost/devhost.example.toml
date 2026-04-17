@@ -5,6 +5,8 @@
 #
 # Top-level sections:
 # - `name` (required)
+# - `[caddy.global]` (optional)
+# - `[devtools]` (optional)
 # - `[devtools.editor]` (optional)
 # - `[devtools.externalToolbars]` (optional)
 # - `[devtools.minimap]` (optional)
@@ -33,6 +35,16 @@ name = "hello-stack"
 # The `devtools.*` sections control the browser-side devhost overlay injected into
 # routed HTML document navigations. If all devtools features are disabled, routed
 # services proxy directly to the app without the overlay.
+
+[caddy.global]
+# `http` also serves the same routed hosts and the shared fallback page on plain HTTP port 80.
+# - `false` (default): serve through HTTPS only.
+# - `true`: also serve the same routes through HTTP on port 80.
+#
+# Important: this is a shared managed-Caddy setting, not an isolated per-stack listener.
+# If any active stack enables `caddy.global.http = true`, the shared Caddy instance serves
+# HTTP for all active stacks until the last opting-in stack stops.
+http = false
 
 [devtools.editor]
 # `enabled` controls whether editor integration is available in the injected overlay.

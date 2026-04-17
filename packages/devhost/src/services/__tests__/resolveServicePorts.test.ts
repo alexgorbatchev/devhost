@@ -24,6 +24,9 @@ describe("resolveServicePorts", () => {
       displayName: "Pi",
       kind: "pi",
     });
+    expect(resolvedManifest.caddy).toEqual({
+      global: { http: false },
+    });
     expect(resolvedManifest.devtools).toEqual({
       editor: { enabled: true, ide: "vscode" },
       externalToolbars: { enabled: true },
@@ -73,6 +76,11 @@ describe("resolveServicePorts", () => {
         command: ["bun", "./scripts/devhost-agent.ts"],
         displayName: "Claude Code",
       },
+      caddy: {
+        global: {
+          http: true,
+        },
+      },
       devtools: {
         editor: { enabled: false, ide: "webstorm" },
         externalToolbars: { enabled: false },
@@ -99,6 +107,9 @@ describe("resolveServicePorts", () => {
       displayName: "Claude Code",
       env: {},
       kind: "configured",
+    });
+    expect(resolvedManifest.caddy).toEqual({
+      global: { http: true },
     });
     expect(resolvedManifest.devtools).toEqual({
       editor: { enabled: false, ide: "webstorm" },

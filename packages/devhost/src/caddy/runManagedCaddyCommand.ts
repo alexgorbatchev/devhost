@@ -23,14 +23,19 @@ export function createManagedCaddyCommandArguments(arguments_: string[]): string
   return [...arguments_, "--config", managedCaddyPaths.caddyfilePath, "--adapter", "caddyfile"];
 }
 
+export function createManagedCaddyExecutablePath(osOverride: string = process.platform): string {
+  const extension = osOverride === "win32" ? ".exe" : "";
+
+  return join(managedCaddyPaths.caddyDirectoryPath, `caddy${extension}`);
+}
+
 export type ExistsSyncImplementation = (path: string) => boolean;
 
 export function resolveCaddyExecutablePath(
   existsSyncImplementation: ExistsSyncImplementation = existsSync,
   osOverride: string = process.platform,
 ): string {
-  const extension = osOverride === "win32" ? ".exe" : "";
-  const isolatedPath = join(managedCaddyPaths.caddyDirectoryPath, `caddy${extension}`);
+  const isolatedPath = createManagedCaddyExecutablePath(osOverride);
 
   if (existsSyncImplementation(isolatedPath)) {
     return isolatedPath;
