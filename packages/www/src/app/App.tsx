@@ -487,7 +487,9 @@ $ open https://foo.localhost`}
               <code>:443</code>
             </li>
             <li className="mb-2">
-              listener binding on non-macOS: loopback only via Caddy <code>default_bind 127.0.0.1 [::1]</code>
+              listener binding on non-macOS: loopback only by default via{" "}
+              <code>caddy.global.bindHost = "127.0.0.1"</code>, rendered as Caddy{" "}
+              <code>default_bind 127.0.0.1 [::1]</code>
             </li>
             <li className="mb-2">
               plain HTTP on <code>:80</code>: disabled by default; any active stack with{" "}
@@ -536,6 +538,10 @@ $ open https://foo.localhost`}
             <code>setcap</code>. <code>devhost</code> does not configure <code>authbind</code> or firewall redirection
             for you.
           </p>
+          <p>
+            <code>caddy.global.bindHost</code> only changes the public HTTP/HTTPS listener bind. The managed Caddy admin
+            API stays on <code>127.0.0.1</code>.
+          </p>
 
           <h2>Stack lifecycle</h2>
           <p>
@@ -578,6 +584,22 @@ http = true`}</code>
             This is a global managed-Caddy toggle, not an isolated per-stack listener. If any active stack enables{" "}
             <code>caddy.global.http = true</code>, the shared Caddy instance serves HTTP for all active stacks until the
             last opting-in stack stops.
+          </p>
+
+          <p>To expose the managed Caddy front door beyond loopback, set a shared listener bind host:</p>
+
+          <pre>
+            <code className="language-toml">{`[caddy.global]
+bindHost = "0.0.0.0"`}</code>
+          </pre>
+
+          <p>
+            That widens only the managed Caddy HTTP/HTTPS listeners. The admin API stays on <code>127.0.0.1</code>, and
+            routed backends can keep their own <code>services.&lt;name&gt;.bindHost</code> on loopback behind Caddy.
+          </p>
+          <p>
+            Active stacks must agree on any non-default <code>caddy.global.bindHost</code> value because they share one
+            managed Caddy instance.
           </p>
 
           <h2>Docker-backed services</h2>

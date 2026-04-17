@@ -40,10 +40,17 @@ name = "hello-stack"
 # `http` also serves the same routed hosts and the shared fallback page on plain HTTP port 80.
 # - `false` (default): serve through HTTPS only.
 # - `true`: also serve the same routes through HTTP on port 80.
+# `bindHost` controls which interfaces the managed Caddy HTTP/HTTPS listeners bind.
+# - `"127.0.0.1"` (default): loopback only.
+# - `"0.0.0.0"`: expose the managed Caddy front door on all IPv4/IPv6 interfaces.
+# - `"::1"`: IPv6 loopback only.
+# - `"::"`: expose the managed Caddy front door on all IPv6 interfaces.
 #
 # Important: this is a shared managed-Caddy setting, not an isolated per-stack listener.
 # If any active stack enables `caddy.global.http = true`, the shared Caddy instance serves
 # HTTP for all active stacks until the last opting-in stack stops.
+# Active stacks must also agree on any non-default `bindHost` value.
+bindHost = "127.0.0.1"
 http = false
 
 [devtools.editor]

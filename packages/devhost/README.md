@@ -127,7 +127,7 @@ The generated Caddy config uses these defaults:
 - state dir: `DEVHOST_STATE_DIR`, else `XDG_STATE_HOME/devhost`, else `~/.local/state/devhost`
 - admin API: `127.0.0.1:20193` unless `DEVHOST_CADDY_ADMIN_ADDRESS` is set
 - listener binding on macOS: wildcard listeners, because macOS denies rootless loopback-specific binds on `:443`
-- listener binding on non-macOS: loopback only via Caddy `default_bind 127.0.0.1 [::1]`
+- listener binding on non-macOS: loopback only by default via `caddy.global.bindHost = "127.0.0.1"`, rendered as Caddy `default_bind 127.0.0.1 [::1]`
 - plain HTTP on `:80`: disabled by default; any active stack with `caddy.global.http = true` enables the same routed hosts and shared fallback page on HTTP for all active stacks
 - unmatched hostnames: a generated 404 page listing the currently active devhost hostnames as HTTPS links
 
@@ -155,6 +155,7 @@ On non-macOS platforms, opening HTTPS on `:443` still requires privileged-port s
 Enabling `caddy.global.http = true` adds the same requirement for `:80`.
 On Linux, `devhost caddy privileged-ports` configures the managed Caddy binary for this with `setcap`.
 `devhost` does not configure `authbind` or firewall redirection for you.
+`caddy.global.bindHost` only changes the public HTTP/HTTPS listener bind. The managed Caddy admin API stays on `127.0.0.1`.
 
 ## Stack lifecycle
 
@@ -195,6 +196,16 @@ http = true
 ```
 
 This is a global managed-Caddy toggle, not an isolated per-stack listener. If any active stack enables `caddy.global.http = true`, the shared Caddy instance serves HTTP for all active stacks until the last opting-in stack stops.
+
+To expose the managed Caddy front door beyond loopback, set a shared listener bind host:
+
+```toml
+[caddy.global]
+bindHost = "0.0.0.0"
+```
+
+That widens only the managed Caddy HTTP/HTTPS listeners. The admin API stays on `127.0.0.1`, and routed backends can keep their own `services.<name>.bindHost` on loopback behind Caddy.
+Active stacks must agree on any non-default `caddy.global.bindHost` value because they share one managed Caddy instance.
 
 For same-host composition within one manifest, use distinct paths such as `/api/*` and `/admin/*`, or combine one root-mounted fallback service with more specific subpath services on the same hostname.
 
