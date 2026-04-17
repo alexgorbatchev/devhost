@@ -6,22 +6,33 @@ import { ensureManagedCaddyConfig } from "./ensureManagedCaddyConfig";
 import { resolveManagedCaddyBindDirective } from "./resolveManagedCaddyBindDirective";
 import { ensureCaddyAdminAvailable } from "../utils/routeUtils";
 import {
+  createManagedCaddyExecutablePath,
   createManagedCaddyCommandErrorMessage,
   runManagedCaddyCommand,
   type ICaddyCommandResult,
+  type IRunManagedCaddyCommandOptions,
   type ManagedCaddyCommandRunner,
+  type StdioMode,
 } from "./runManagedCaddyCommand";
 import type { AsyncBooleanFunction, AsyncVoidFunction } from "../types/types";
 
-export type ManagedCaddyLifecycleAction = "start" | "stop" | "trust" | "download";
+export type ManagedCaddyLifecycleAction = "start" | "stop" | "trust" | "download" | "privileged-ports";
+
+type SyncBooleanFunction = () => boolean;
+type DownloadManagedCaddyFunction = (logger: IDevhostLogger) => Promise<void>;
 
 interface IRunManagedCaddyLifecycleCommandDependencies {
+  downloadManagedCaddy?: DownloadManagedCaddyFunction;
   ensureManagedCaddyConfig?: AsyncVoidFunction;
+  hasManagedCaddyBinary?: AsyncBooleanFunction;
   hasManagedPidFile?: AsyncBooleanFunction;
   hasManagedRootCertificate?: AsyncBooleanFunction;
+  isRootUser?: SyncBooleanFunction;
   isManagedCaddyAvailable?: AsyncBooleanFunction;
+  platform?: NodeJS.Platform;
   removeManagedPidFile?: AsyncVoidFunction;
   runManagedCaddyCommand?: ManagedCaddyCommandRunner;
+  runPrivilegedPortSetupCommand?: ManagedCaddyCommandRunner;
 }
 
 export async function runManagedCaddyLifecycleCommand(
@@ -31,14 +42,21 @@ export async function runManagedCaddyLifecycleCommand(
 ): Promise<number> {
   const ensureManagedCaddyConfigImplementation: AsyncVoidFunction =
     dependencies.ensureManagedCaddyConfig ?? ensureManagedCaddyConfig;
+  const downloadManagedCaddy = dependencies.downloadManagedCaddy ?? defaultDownloadManagedCaddy;
+  const hasManagedCaddyBinary: AsyncBooleanFunction =
+    dependencies.hasManagedCaddyBinary ?? defaultHasManagedCaddyBinary;
   const hasManagedPidFile: AsyncBooleanFunction = dependencies.hasManagedPidFile ?? defaultHasManagedPidFile;
   const hasManagedRootCertificate: AsyncBooleanFunction =
     dependencies.hasManagedRootCertificate ?? defaultHasManagedRootCertificate;
+  const isRootUser: SyncBooleanFunction = dependencies.isRootUser ?? defaultIsRootUser;
   const isManagedCaddyAvailable: AsyncBooleanFunction =
     dependencies.isManagedCaddyAvailable ?? defaultIsManagedCaddyAvailable;
+  const platform: NodeJS.Platform = dependencies.platform ?? process.platform;
   const removeManagedPidFile: AsyncVoidFunction = dependencies.removeManagedPidFile ?? defaultRemoveManagedPidFile;
   const runManagedCaddyCommandImplementation: ManagedCaddyCommandRunner =
     dependencies.runManagedCaddyCommand ?? runManagedCaddyCommand;
+  const runPrivilegedPortSetupCommandImplementation: ManagedCaddyCommandRunner =
+    dependencies.runPrivilegedPortSetupCommand ?? defaultRunPrivilegedPortSetupCommand;
 
   await ensureManagedCaddyConfigImplementation();
 
@@ -64,9 +82,19 @@ export async function runManagedCaddyLifecycleCommand(
   }
 
   if (action === "download") {
-    const { downloadCaddy } = await import("./downloadCaddy");
-    await downloadCaddy(logger);
+    await downloadManagedCaddy(logger);
     return 0;
+  }
+
+  if (action === "privileged-ports") {
+    return await configureManagedCaddyPrivilegedPorts(
+      logger,
+      downloadManagedCaddy,
+      hasManagedCaddyBinary,
+      isRootUser,
+      platform,
+      runPrivilegedPortSetupCommandImplementation,
+    );
   }
 
   logger.info(
@@ -104,7 +132,7 @@ async function startManagedCaddy(
   );
 
   if (!result.success) {
-    throw new Error(createManagedCaddyCommandErrorMessage("start", result));
+    throw new Error(createManagedCaddyStartErrorMessage(result));
   }
 
   logger.info(`managed caddy started with ${managedCaddyPaths.caddyfilePath}`);
@@ -175,9 +203,64 @@ async function trustManagedCaddy(
   return 0;
 }
 
+async function configureManagedCaddyPrivilegedPorts(
+  logger: IDevhostLogger,
+  downloadManagedCaddy: DownloadManagedCaddyFunction,
+  hasManagedCaddyBinary: AsyncBooleanFunction,
+  isRootUser: SyncBooleanFunction,
+  platform: NodeJS.Platform,
+  runPrivilegedPortSetupCommandImplementation: ManagedCaddyCommandRunner,
+): Promise<number> {
+  if (platform === "darwin") {
+    logger.info("managed caddy does not need privileged-port setup on macOS.");
+    return 0;
+  }
+
+  if (platform !== "linux") {
+    throw new Error("Managed Caddy privileged-port setup is currently supported on Linux only.");
+  }
+
+  if (!(await hasManagedCaddyBinary())) {
+    logger.info(
+      `managed caddy binary not found at ${createManagedCaddyExecutablePath(platform)}. Downloading it first.`,
+    );
+    await downloadManagedCaddy(logger);
+  }
+
+  logger.info(
+    "managed caddy privileged-port setup may prompt for your password because granting low-port bind capability is privileged.",
+  );
+
+  const executablePath: string = createManagedCaddyExecutablePath(platform);
+  const commandArguments: string[] = isRootUser()
+    ? ["setcap", "cap_net_bind_service=+ep", executablePath]
+    : ["sudo", "setcap", "cap_net_bind_service=+ep", executablePath];
+  const result: ICaddyCommandResult = runPrivilegedPortSetupCommandImplementation(commandArguments, {
+    stdioMode: "inherit",
+  });
+
+  if (!result.success) {
+    throw new Error(
+      "Managed Caddy privileged-port setup failed. Check that `sudo` and `setcap` are available, then try again.",
+    );
+  }
+
+  logger.info(`managed caddy low-port binding enabled for ${executablePath}`);
+  return 0;
+}
+
 async function defaultHasManagedPidFile(): Promise<boolean> {
   try {
     await access(managedCaddyPaths.pidFilePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function defaultHasManagedCaddyBinary(): Promise<boolean> {
+  try {
+    await access(createManagedCaddyExecutablePath());
     return true;
   } catch {
     return false;
@@ -204,6 +287,42 @@ async function defaultHasManagedRootCertificate(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+async function defaultDownloadManagedCaddy(logger: IDevhostLogger): Promise<void> {
+  const { downloadCaddy } = await import("./downloadCaddy");
+
+  await downloadCaddy(logger);
+}
+
+function defaultRunPrivilegedPortSetupCommand(
+  arguments_: string[],
+  options: IRunManagedCaddyCommandOptions = {},
+): ICaddyCommandResult {
+  const resolvedStdioMode: StdioMode = options.stdioMode ?? "pipe";
+  const result = Bun.spawnSync(arguments_, {
+    stderr: resolvedStdioMode,
+    stdin: resolvedStdioMode === "inherit" ? "inherit" : undefined,
+    stdout: resolvedStdioMode,
+  });
+
+  if (resolvedStdioMode === "inherit") {
+    return {
+      stderr: new Uint8Array(),
+      stdout: new Uint8Array(),
+      success: result.success,
+    };
+  }
+
+  return {
+    stderr: result.stderr ?? new Uint8Array(),
+    stdout: result.stdout ?? new Uint8Array(),
+    success: result.success,
+  };
+}
+
+function defaultIsRootUser(): boolean {
+  return process.getuid?.() === 0;
 }
 
 async function warnAboutAutomaticTrustInstall(
@@ -239,7 +358,10 @@ export function createManagedCaddyStartErrorMessage(
     return `${baseMessage}\nmacOS allows rootless binds on :443 only with wildcard listeners, not loopback-specific ones.`;
   }
 
-  return `${baseMessage}\nOpening HTTPS on :443 requires privileged-port setup on this platform.`;
+  return (
+    `${baseMessage}\nOpening HTTPS on :443 requires privileged-port setup on this platform. ` +
+    `Run 'devhost caddy privileged-ports' to configure the managed Caddy binary.`
+  );
 }
 
 function decodeManagedCaddyCommandOutput(output: Uint8Array): string {

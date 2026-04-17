@@ -23,6 +23,9 @@ describe("validateManifest", () => {
       displayName: "Pi",
       kind: "pi",
     });
+    expect(manifest.caddy).toEqual({
+      global: { http: false },
+    });
     expect(manifest.devtools).toEqual({
       editor: { enabled: true, ide: "vscode" },
       externalToolbars: { enabled: true },
@@ -62,6 +65,9 @@ describe("validateManifest", () => {
     expect(manifest.agent).toEqual({
       displayName: "Pi",
       kind: "pi",
+    });
+    expect(manifest.caddy).toEqual({
+      global: { http: false },
     });
     expect(manifest.devtools).toEqual({
       editor: { enabled: true, ide: "vscode" },
@@ -106,6 +112,11 @@ describe("validateManifest", () => {
           DEVHOST_AGENT_MODE: "annotation",
         },
       },
+      caddy: {
+        global: {
+          http: true,
+        },
+      },
       devtools: {
         editor: { enabled: true, ide: "neovim" },
         externalToolbars: { enabled: false },
@@ -129,6 +140,9 @@ describe("validateManifest", () => {
         DEVHOST_AGENT_MODE: "annotation",
       },
       kind: "configured",
+    });
+    expect(manifest.caddy).toEqual({
+      global: { http: true },
     });
     expect(manifest.devtools).toEqual({
       editor: { enabled: true, ide: "neovim" },
@@ -172,7 +186,7 @@ describe("validateManifest", () => {
     ).toThrow("devtools.status.position");
   });
 
-  test("rejects manifests that still configure the removed caddy section", () => {
+  test("rejects unsupported keys inside the caddy section", () => {
     expect(() =>
       validateManifest("/tmp/devhost.toml", {
         caddy: {
@@ -186,7 +200,7 @@ describe("validateManifest", () => {
           },
         },
       }),
-    ).toThrow('Manifest schema is invalid:\nmanifest Unrecognized key: "caddy"');
+    ).toThrow('Manifest schema is invalid:\ncaddy Unrecognized key: "autostop"');
   });
 
   test("rejects a configured agent cwd that escapes the manifest directory", () => {

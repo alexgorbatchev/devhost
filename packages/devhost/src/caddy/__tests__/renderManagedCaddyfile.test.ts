@@ -84,4 +84,10 @@ describe("renderManagedCaddyfile", () => {
       ].join("\n"),
     );
   });
+
+  test("renders an HTTP fallback site when managed HTTP is enabled", () => {
+    const paths = createManagedCaddyPaths("/tmp/devhost state");
+
+    expect(renderManagedCaddyfile(paths, "linux", true)).toContain("http:// {");
+  });
 });

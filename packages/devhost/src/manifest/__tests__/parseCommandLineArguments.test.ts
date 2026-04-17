@@ -20,6 +20,10 @@ describe("parseCommandLineArguments", () => {
       action: "download",
       kind: "caddy",
     });
+    expect(parseCommandLineArguments(["caddy", "privileged-ports"])).toEqual({
+      action: "privileged-ports",
+      kind: "caddy",
+    });
   });
 
   test("parses implicit manifest mode", () => {
@@ -38,7 +42,7 @@ describe("parseCommandLineArguments", () => {
 
   test("rejects invalid caddy commands", () => {
     expect(() => parseCommandLineArguments(["caddy"])).toThrow(
-      "Expected a caddy action: start, stop, trust, or download.",
+      "Expected a caddy action: start, stop, trust, download, or privileged-ports.",
     );
     expect(() => parseCommandLineArguments(["caddy", "restart"])).toThrow("Unsupported caddy action: restart");
     expect(() => parseCommandLineArguments(["caddy", "start", "now"])).toThrow(

@@ -50,6 +50,11 @@ export type ValidatedDevhostAgent = IDefaultDevhostAgent | IConfiguredDevhostAge
 
 export interface IDevhostManifest {
   agent?: DevhostAgentConfig;
+  caddy?: {
+    global?: {
+      http?: boolean;
+    };
+  };
   name: string;
   devtools?: {
     editor?: {
@@ -91,6 +96,11 @@ export interface IValidatedDevhostManifest {
   primaryService: string; // resolved internally
   manifestPath: string;
   manifestDirectoryPath: string;
+  caddy: {
+    global: {
+      http: boolean;
+    };
+  };
   devtools: {
     editor: {
       enabled: boolean;
@@ -131,6 +141,11 @@ export interface IResolvedDevhostManifest {
   primaryService: string;
   manifestPath: string;
   manifestDirectoryPath: string;
+  caddy: {
+    global: {
+      http: boolean;
+    };
+  };
   devtools: {
     editor: {
       enabled: boolean;
