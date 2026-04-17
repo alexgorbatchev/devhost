@@ -11,4 +11,8 @@ describe("resolveManagedCaddyBindDirective", () => {
     expect(resolveManagedCaddyBindDirective("linux")).toBe("    default_bind 127.0.0.1 [::1]");
     expect(resolveManagedCaddyBindDirective("win32")).toBe("    default_bind 127.0.0.1 [::1]");
   });
+
+  test("supports all-interface binding on non-macOS platforms", () => {
+    expect(resolveManagedCaddyBindDirective("linux", "0.0.0.0")).toBe("    default_bind 0.0.0.0 [::]");
+  });
 });

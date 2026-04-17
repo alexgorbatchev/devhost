@@ -1,15 +1,16 @@
 import type { IManagedCaddyPaths } from "./caddyPaths";
 import { managedCaddyAdminAddress } from "./caddyPaths";
 import { createManagedCaddyNotFoundSitePaths } from "./createManagedCaddyNotFoundSitePaths";
-import { resolveManagedCaddyBindDirective } from "./resolveManagedCaddyBindDirective";
+import { defaultManagedCaddyBindHost, resolveManagedCaddyBindDirective } from "./resolveManagedCaddyBindDirective";
 
 export function renderManagedCaddyfile(
   paths: IManagedCaddyPaths,
   platform: NodeJS.Platform = process.platform,
   enableHttp: boolean = false,
+  bindHost: string = defaultManagedCaddyBindHost,
 ): string {
   const routesGlobPath: string = `${paths.routesDirectoryPath}/*.caddy`;
-  const bindDirective: string | null = resolveManagedCaddyBindDirective(platform);
+  const bindDirective: string | null = resolveManagedCaddyBindDirective(platform, bindHost);
   const notFoundSitePaths = createManagedCaddyNotFoundSitePaths(paths.caddyDirectoryPath);
 
   return [

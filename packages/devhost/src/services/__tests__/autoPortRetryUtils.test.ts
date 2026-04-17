@@ -51,7 +51,7 @@ describe("reassignAutoPort", () => {
     const manifest: IResolvedDevhostManifest = {
       agent: createDefaultDevhostAgent(),
       caddy: {
-        global: { http: false },
+        global: { bindHost: "127.0.0.1", http: false },
       },
       devtools: {
         editor: { enabled: true, ide: "vscode" },

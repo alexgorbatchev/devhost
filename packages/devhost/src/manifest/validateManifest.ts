@@ -2,6 +2,7 @@ import { dirname, isAbsolute, relative, resolve } from "node:path";
 
 import { z } from "zod";
 
+import { defaultManagedCaddyBindHost } from "../caddy/resolveManagedCaddyBindDirective";
 import { defaultBindHost } from "../utils/constants";
 import { createDefaultDevhostAgent } from "../agents/createDefaultDevhostAgent";
 import {
@@ -87,6 +88,7 @@ const manifestSchema = z
       .object({
         global: z
           .object({
+            bindHost: z.enum(["127.0.0.1", "0.0.0.0", "::1", "::"]).optional(),
             http: z.boolean().optional(),
           })
           .strict()
@@ -188,6 +190,7 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
     agent: validatedAgent,
     caddy: {
       global: {
+        bindHost: parsedManifest.caddy?.global?.bindHost ?? defaultManagedCaddyBindHost,
         http: parsedManifest.caddy?.global?.http ?? false,
       },
     },

@@ -2,6 +2,7 @@ import { readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { caddyAdminApiUrl, createManagedCaddyPathsForRoutesDirectory } from "../caddy/caddyPaths";
+import { defaultManagedCaddyBindHost } from "../caddy/resolveManagedCaddyBindDirective";
 import { createManagedCaddyCommandErrorMessage, runManagedCaddyCommand } from "../caddy/runManagedCaddyCommand";
 import { renderManagedCaddyfile } from "../caddy/renderManagedCaddyfile";
 import { syncManagedCaddyNotFoundSite } from "../caddy/syncManagedCaddyNotFoundSite";
@@ -18,6 +19,7 @@ interface IHostClaim {
 interface IRouteRegistration {
   appBindHost: string;
   appPort: number;
+  caddyBindHost?: string;
   createdAt: string;
   devtoolsControlPort?: number;
   documentInjectionPort?: number;
@@ -42,6 +44,7 @@ type ManagedRouteRegistration = IRouteRegistration | ILegacyRouteRegistration;
 export interface IActivateRouteOptions {
   appBindHost: string;
   appPort: number;
+  caddyBindHost?: string;
   devtoolsControlPort?: number;
   documentInjectionPort?: number;
   host: string;
@@ -57,6 +60,11 @@ export interface IClaimHostOptions {
 }
 
 type FetchImplementation = (input: string, init?: RequestInit) => Promise<Response>;
+
+interface IManagedCaddyGlobalSettings {
+  bindHost: string;
+  httpEnabled: boolean;
+}
 
 export async function ensureCaddyAdminAvailable(fetchImplementation: FetchImplementation = fetch): Promise<void> {
   try {
@@ -80,7 +88,8 @@ export async function cleanupStaleRegistrations(registrationsDirectoryPath: stri
   const registrationFileNames: string[] = await readdir(registrationsDirectoryPath);
   const routesDirectoryPath: string = getRoutesDirectoryPath(registrationsDirectoryPath);
   const affectedHosts: Set<string> = new Set<string>();
-  const wasHttpEnabled: boolean = await isManagedHttpEnabled(registrationsDirectoryPath);
+  const previousSettings: IManagedCaddyGlobalSettings =
+    await readManagedCaddyGlobalSettings(registrationsDirectoryPath);
 
   for (const registrationFileName of registrationFileNames) {
     if (!registrationFileName.endsWith(".json")) {
@@ -110,10 +119,10 @@ export async function cleanupStaleRegistrations(registrationsDirectoryPath: stri
     await syncHostRoute(host, routesDirectoryPath);
   }
 
-  const isHttpEnabled: boolean = await isManagedHttpEnabled(registrationsDirectoryPath);
+  const nextSettings: IManagedCaddyGlobalSettings = await readManagedCaddyGlobalSettings(registrationsDirectoryPath);
 
-  if (wasHttpEnabled !== isHttpEnabled) {
-    await syncManagedHttpState(routesDirectoryPath, isHttpEnabled);
+  if (didManagedCaddyGlobalSettingsChange(previousSettings, nextSettings)) {
+    await syncManagedCaddyGlobalState(routesDirectoryPath, nextSettings);
   }
 
   if (affectedHosts.size > 0) {
@@ -190,16 +199,17 @@ export async function activateRoute(
     routesDirectoryPath,
   );
   const registrationsDirectoryPath: string = getRegistrationsDirectoryPath(routesDirectoryPath);
-  const wasHttpEnabled: boolean = await isManagedHttpEnabled(registrationsDirectoryPath);
+  const previousSettings: IManagedCaddyGlobalSettings =
+    await readManagedCaddyGlobalSettings(registrationsDirectoryPath);
 
   try {
     await writeFile(routeRegistrationPath, createRouteRegistrationText(options, manifestPath), "utf8");
-    const isHttpEnabled: boolean = await isManagedHttpEnabled(registrationsDirectoryPath);
+    const nextSettings: IManagedCaddyGlobalSettings = await readManagedCaddyGlobalSettings(registrationsDirectoryPath);
 
-    if (wasHttpEnabled !== isHttpEnabled) {
-      await syncManagedHttpState(routesDirectoryPath, isHttpEnabled);
+    if (didManagedCaddyGlobalSettingsChange(previousSettings, nextSettings)) {
+      await syncManagedCaddyGlobalState(routesDirectoryPath, nextSettings);
     } else {
-      await syncHostRoute(options.host, routesDirectoryPath, isHttpEnabled);
+      await syncHostRoute(options.host, routesDirectoryPath, nextSettings.httpEnabled);
     }
 
     await syncManagedCaddyNotFoundSite(routesDirectoryPath);
@@ -226,7 +236,8 @@ export async function unregisterRoute(
     getRoutesDirectoryPath(registrationsDirectoryPath),
   );
   const routesDirectoryPath: string = getRoutesDirectoryPath(registrationsDirectoryPath);
-  const wasHttpEnabled: boolean = await isManagedHttpEnabled(registrationsDirectoryPath);
+  const previousSettings: IManagedCaddyGlobalSettings =
+    await readManagedCaddyGlobalSettings(registrationsDirectoryPath);
 
   try {
     const registration: IRouteRegistration = parseRouteRegistration(await readFile(registrationPath, "utf8"));
@@ -239,12 +250,12 @@ export async function unregisterRoute(
   }
 
   await rm(registrationPath, { force: true });
-  const isHttpEnabled: boolean = await isManagedHttpEnabled(registrationsDirectoryPath);
+  const nextSettings: IManagedCaddyGlobalSettings = await readManagedCaddyGlobalSettings(registrationsDirectoryPath);
 
-  if (wasHttpEnabled !== isHttpEnabled) {
-    await syncManagedHttpState(routesDirectoryPath, isHttpEnabled);
+  if (didManagedCaddyGlobalSettingsChange(previousSettings, nextSettings)) {
+    await syncManagedCaddyGlobalState(routesDirectoryPath, nextSettings);
   } else {
-    await syncHostRoute(host, routesDirectoryPath, isHttpEnabled);
+    await syncHostRoute(host, routesDirectoryPath, nextSettings.httpEnabled);
   }
 
   await syncManagedCaddyNotFoundSite(routesDirectoryPath);
@@ -273,6 +284,10 @@ export function createRouteRegistrationText(options: IActivateRouteOptions, mani
 
   if (options.httpEnabled) {
     registration.httpEnabled = true;
+  }
+
+  if (options.caddyBindHost !== undefined && options.caddyBindHost !== defaultManagedCaddyBindHost) {
+    registration.caddyBindHost = options.caddyBindHost;
   }
 
   return JSON.stringify(registration, null, 2);
@@ -400,7 +415,8 @@ async function syncHostRoute(host: string, routesDirectoryPath: string, httpEnab
     hostRoutePath,
     renderHostRouteSnippet(
       registrations,
-      httpEnabled ?? (await isManagedHttpEnabled(getRegistrationsDirectoryPath(routesDirectoryPath))),
+      httpEnabled ??
+        (await readManagedCaddyGlobalSettings(getRegistrationsDirectoryPath(routesDirectoryPath))).httpEnabled,
     ),
     "utf8",
   );
@@ -516,6 +532,7 @@ function isRouteRegistration(value: unknown): value is IRouteRegistration {
     (Reflect.get(value, "documentInjectionPort") === undefined ||
       typeof Reflect.get(value, "documentInjectionPort") === "number") &&
     typeof Reflect.get(value, "host") === "string" &&
+    (Reflect.get(value, "caddyBindHost") === undefined || typeof Reflect.get(value, "caddyBindHost") === "string") &&
     (Reflect.get(value, "httpEnabled") === undefined || Reflect.get(value, "httpEnabled") === true) &&
     typeof Reflect.get(value, "manifestPath") === "string" &&
     typeof Reflect.get(value, "ownerPid") === "number" &&
@@ -636,8 +653,12 @@ function renderHostRouteSiteBlock(
   return lines;
 }
 
-async function isManagedHttpEnabled(registrationsDirectoryPath: string): Promise<boolean> {
+async function readManagedCaddyGlobalSettings(
+  registrationsDirectoryPath: string,
+): Promise<IManagedCaddyGlobalSettings> {
   const registrationFileNames: string[] = await readdir(registrationsDirectoryPath);
+  let httpEnabled: boolean = false;
+  const optedInBindHosts: Set<string> = new Set<string>();
 
   for (const registrationFileName of registrationFileNames) {
     if (!registrationFileName.endsWith(".json")) {
@@ -654,14 +675,39 @@ async function isManagedHttpEnabled(registrationsDirectoryPath: string): Promise
     }
 
     if (registration.httpEnabled === true) {
-      return true;
+      httpEnabled = true;
+    }
+
+    if (registration.caddyBindHost !== undefined) {
+      optedInBindHosts.add(registration.caddyBindHost);
     }
   }
 
-  return false;
+  if (optedInBindHosts.size > 1) {
+    throw new Error(
+      `Managed Caddy bind host is inconsistent across active stacks: ${Array.from(optedInBindHosts).sort().join(", ")}.`,
+    );
+  }
+
+  return {
+    bindHost: optedInBindHosts.values().next().value ?? defaultManagedCaddyBindHost,
+    httpEnabled,
+  };
 }
 
-async function syncManagedHttpState(routesDirectoryPath: string, httpEnabled: boolean): Promise<void> {
+function didManagedCaddyGlobalSettingsChange(
+  previousSettings: IManagedCaddyGlobalSettings,
+  nextSettings: IManagedCaddyGlobalSettings,
+): boolean {
+  return (
+    previousSettings.bindHost !== nextSettings.bindHost || previousSettings.httpEnabled !== nextSettings.httpEnabled
+  );
+}
+
+async function syncManagedCaddyGlobalState(
+  routesDirectoryPath: string,
+  settings: IManagedCaddyGlobalSettings,
+): Promise<void> {
   const registrationsDirectoryPath: string = getRegistrationsDirectoryPath(routesDirectoryPath);
   const registrationFileNames: string[] = await readdir(registrationsDirectoryPath);
   const hosts: Set<string> = new Set<string>();
@@ -686,12 +732,12 @@ async function syncManagedHttpState(routesDirectoryPath: string, httpEnabled: bo
   const managedCaddyPaths = createManagedCaddyPathsForRoutesDirectory(routesDirectoryPath);
   await writeFile(
     managedCaddyPaths.caddyfilePath,
-    renderManagedCaddyfile(managedCaddyPaths, process.platform, httpEnabled),
+    renderManagedCaddyfile(managedCaddyPaths, process.platform, settings.httpEnabled, settings.bindHost),
     "utf8",
   );
 
   for (const host of hosts) {
-    await syncHostRoute(host, routesDirectoryPath, httpEnabled);
+    await syncHostRoute(host, routesDirectoryPath, settings.httpEnabled);
   }
 }
 

@@ -90,4 +90,11 @@ describe("renderManagedCaddyfile", () => {
 
     expect(renderManagedCaddyfile(paths, "linux", true)).toContain("http:// {");
   });
+
+  test("renders a custom listener bind host without changing the admin bind", () => {
+    const paths = createManagedCaddyPaths("/tmp/devhost state");
+
+    expect(renderManagedCaddyfile(paths, "linux", false, "0.0.0.0")).toContain("    admin 127.0.0.1:20193");
+    expect(renderManagedCaddyfile(paths, "linux", false, "0.0.0.0")).toContain("    default_bind 0.0.0.0 [::]");
+  });
 });

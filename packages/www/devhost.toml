@@ -1,6 +1,7 @@
 name = "www"
 
 [caddy.global]
+bindHost = "0.0.0.0"
 http = true
 
 [devtools.editor]
