@@ -24,7 +24,7 @@ describe("validateManifest", () => {
       kind: "pi",
     });
     expect(manifest.caddy).toEqual({
-      global: { http: false },
+      global: { bindHost: "127.0.0.1", http: false },
     });
     expect(manifest.devtools).toEqual({
       editor: { enabled: true, ide: "vscode" },
@@ -67,7 +67,7 @@ describe("validateManifest", () => {
       kind: "pi",
     });
     expect(manifest.caddy).toEqual({
-      global: { http: false },
+      global: { bindHost: "127.0.0.1", http: false },
     });
     expect(manifest.devtools).toEqual({
       editor: { enabled: true, ide: "vscode" },
@@ -114,6 +114,7 @@ describe("validateManifest", () => {
       },
       caddy: {
         global: {
+          bindHost: "0.0.0.0",
           http: true,
         },
       },
@@ -142,7 +143,7 @@ describe("validateManifest", () => {
       kind: "configured",
     });
     expect(manifest.caddy).toEqual({
-      global: { http: true },
+      global: { bindHost: "0.0.0.0", http: true },
     });
     expect(manifest.devtools).toEqual({
       editor: { enabled: true, ide: "neovim" },
@@ -150,6 +151,25 @@ describe("validateManifest", () => {
       minimap: { enabled: true, position: "right" },
       status: { enabled: true, position: "top-right" },
     });
+  });
+
+  test("rejects unsupported caddy.global.bindHost values", () => {
+    expect(() =>
+      validateManifest("/tmp/devhost.toml", {
+        caddy: {
+          global: {
+            bindHost: "192.168.1.10",
+          },
+        },
+        name: "hello-stack",
+        services: {
+          web: {
+            command: ["bun", "run", "dev"],
+            port: 3000,
+          },
+        },
+      }),
+    ).toThrow("caddy.global.bindHost");
   });
 
   test("rejects removed left-docked minimap positions", () => {

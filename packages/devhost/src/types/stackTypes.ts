@@ -52,6 +52,7 @@ export interface IDevhostManifest {
   agent?: DevhostAgentConfig;
   caddy?: {
     global?: {
+      bindHost?: string;
       http?: boolean;
     };
   };
@@ -98,6 +99,7 @@ export interface IValidatedDevhostManifest {
   manifestDirectoryPath: string;
   caddy: {
     global: {
+      bindHost: string;
       http: boolean;
     };
   };
@@ -143,6 +145,7 @@ export interface IResolvedDevhostManifest {
   manifestDirectoryPath: string;
   caddy: {
     global: {
+      bindHost: string;
       http: boolean;
     };
   };
