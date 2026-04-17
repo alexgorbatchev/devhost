@@ -50,6 +50,9 @@ describe("reassignAutoPort", () => {
   test("picks a replacement port and updates the service health check", async () => {
     const manifest: IResolvedDevhostManifest = {
       agent: createDefaultDevhostAgent(),
+      caddy: {
+        global: { http: false },
+      },
       devtools: {
         editor: { enabled: true, ide: "vscode" },
         externalToolbars: { enabled: true },

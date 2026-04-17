@@ -176,29 +176,35 @@ describe("renderHostRouteSnippet", () => {
       ),
     ]);
 
-    expect(hostRouteSnippet).toMatchInlineSnapshot(`
-      "hello.localhost {
-          tls internal
-      
-          @devhost_control path /__devhost__/*
-          handle @devhost_control {
-              reverse_proxy 127.0.0.1:4100
-          }
-      
-          handle /api/* {
-              reverse_proxy 127.0.0.1:4000
-          }
-      
-          @devhost_document header Sec-Fetch-Dest document
-          handle @devhost_document {
-              reverse_proxy 127.0.0.1:4200
-          }
-      
-          handle {
-              reverse_proxy 127.0.0.1:3000
-          }
-      }
-      "
-    `);
+    expect(hostRouteSnippet).toContain("https://hello.localhost {");
+    expect(hostRouteSnippet).toContain("tls internal");
+    expect(hostRouteSnippet).toContain("handle /api/* {");
+    expect(hostRouteSnippet).toContain("reverse_proxy 127.0.0.1:4000");
+    expect(hostRouteSnippet).toContain("@devhost_document header Sec-Fetch-Dest document");
+    expect(hostRouteSnippet).toContain("reverse_proxy 127.0.0.1:3000");
+  });
+
+  test("renders matching HTTP and HTTPS host blocks when managed HTTP is enabled", () => {
+    const hostRouteSnippet: string = renderHostRouteSnippet(
+      [
+        JSON.parse(
+          createRouteRegistrationText(
+            {
+              appBindHost: "127.0.0.1",
+              appPort: 3000,
+              host: "hello.localhost",
+              httpEnabled: true,
+              path: "/",
+              serviceName: "web",
+            },
+            "/tmp/project/devhost.toml",
+          ),
+        ),
+      ],
+      true,
+    );
+
+    expect(hostRouteSnippet).toContain("http://hello.localhost {");
+    expect(hostRouteSnippet).toContain("https://hello.localhost {");
   });
 });

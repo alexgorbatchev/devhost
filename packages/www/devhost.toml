@@ -1,5 +1,8 @@
 name = "www"
 
+[caddy.global]
+http = true
+
 [devtools.editor]
 enabled = true
 ide = "neovim"
@@ -20,6 +23,7 @@ primary = true
 command = "bun dev"
 cwd = "."
 port = 3200
+# host = "devhost.localhost"
 host = "devhost.localhost"
 
 [services.logs]

@@ -1,8 +1,9 @@
 import { readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { caddyAdminApiUrl } from "../caddy/caddyPaths";
+import { caddyAdminApiUrl, createManagedCaddyPathsForRoutesDirectory } from "../caddy/caddyPaths";
 import { createManagedCaddyCommandErrorMessage, runManagedCaddyCommand } from "../caddy/runManagedCaddyCommand";
+import { renderManagedCaddyfile } from "../caddy/renderManagedCaddyfile";
 import { syncManagedCaddyNotFoundSite } from "../caddy/syncManagedCaddyNotFoundSite";
 import { caddyAdminTimeoutInMilliseconds } from "./constants";
 import { formatProxyAddress, resolveProxyHost } from "./resolveProxyHost";
@@ -21,6 +22,7 @@ interface IRouteRegistration {
   devtoolsControlPort?: number;
   documentInjectionPort?: number;
   host: string;
+  httpEnabled?: boolean;
   manifestPath: string;
   ownerPid: number;
   path: string;
@@ -43,6 +45,7 @@ export interface IActivateRouteOptions {
   devtoolsControlPort?: number;
   documentInjectionPort?: number;
   host: string;
+  httpEnabled?: boolean;
   path: string;
   serviceName: string;
 }
@@ -77,6 +80,7 @@ export async function cleanupStaleRegistrations(registrationsDirectoryPath: stri
   const registrationFileNames: string[] = await readdir(registrationsDirectoryPath);
   const routesDirectoryPath: string = getRoutesDirectoryPath(registrationsDirectoryPath);
   const affectedHosts: Set<string> = new Set<string>();
+  const wasHttpEnabled: boolean = await isManagedHttpEnabled(registrationsDirectoryPath);
 
   for (const registrationFileName of registrationFileNames) {
     if (!registrationFileName.endsWith(".json")) {
@@ -104,6 +108,12 @@ export async function cleanupStaleRegistrations(registrationsDirectoryPath: stri
 
   for (const host of affectedHosts) {
     await syncHostRoute(host, routesDirectoryPath);
+  }
+
+  const isHttpEnabled: boolean = await isManagedHttpEnabled(registrationsDirectoryPath);
+
+  if (wasHttpEnabled !== isHttpEnabled) {
+    await syncManagedHttpState(routesDirectoryPath, isHttpEnabled);
   }
 
   if (affectedHosts.size > 0) {
@@ -179,10 +189,19 @@ export async function activateRoute(
     options.path,
     routesDirectoryPath,
   );
+  const registrationsDirectoryPath: string = getRegistrationsDirectoryPath(routesDirectoryPath);
+  const wasHttpEnabled: boolean = await isManagedHttpEnabled(registrationsDirectoryPath);
 
   try {
     await writeFile(routeRegistrationPath, createRouteRegistrationText(options, manifestPath), "utf8");
-    await syncHostRoute(options.host, routesDirectoryPath);
+    const isHttpEnabled: boolean = await isManagedHttpEnabled(registrationsDirectoryPath);
+
+    if (wasHttpEnabled !== isHttpEnabled) {
+      await syncManagedHttpState(routesDirectoryPath, isHttpEnabled);
+    } else {
+      await syncHostRoute(options.host, routesDirectoryPath, isHttpEnabled);
+    }
+
     await syncManagedCaddyNotFoundSite(routesDirectoryPath);
     reloadCaddy();
   } catch (error) {
@@ -207,6 +226,7 @@ export async function unregisterRoute(
     getRoutesDirectoryPath(registrationsDirectoryPath),
   );
   const routesDirectoryPath: string = getRoutesDirectoryPath(registrationsDirectoryPath);
+  const wasHttpEnabled: boolean = await isManagedHttpEnabled(registrationsDirectoryPath);
 
   try {
     const registration: IRouteRegistration = parseRouteRegistration(await readFile(registrationPath, "utf8"));
@@ -219,7 +239,14 @@ export async function unregisterRoute(
   }
 
   await rm(registrationPath, { force: true });
-  await syncHostRoute(host, routesDirectoryPath);
+  const isHttpEnabled: boolean = await isManagedHttpEnabled(registrationsDirectoryPath);
+
+  if (wasHttpEnabled !== isHttpEnabled) {
+    await syncManagedHttpState(routesDirectoryPath, isHttpEnabled);
+  } else {
+    await syncHostRoute(host, routesDirectoryPath, isHttpEnabled);
+  }
+
   await syncManagedCaddyNotFoundSite(routesDirectoryPath);
   reloadCaddy();
 }
@@ -242,6 +269,10 @@ export function createRouteRegistrationText(options: IActivateRouteOptions, mani
 
   if (options.documentInjectionPort !== undefined) {
     registration.documentInjectionPort = options.documentInjectionPort;
+  }
+
+  if (options.httpEnabled) {
+    registration.httpEnabled = true;
   }
 
   return JSON.stringify(registration, null, 2);
@@ -356,7 +387,7 @@ function isHostClaimStale(claim: IHostClaim): boolean {
   return !isProcessAlive(claim.ownerPid);
 }
 
-async function syncHostRoute(host: string, routesDirectoryPath: string): Promise<void> {
+async function syncHostRoute(host: string, routesDirectoryPath: string, httpEnabled?: boolean): Promise<void> {
   const registrations: IRouteRegistration[] = await readHostRegistrations(host, routesDirectoryPath);
   const hostRoutePath: string = getHostRoutePath(host, routesDirectoryPath);
 
@@ -365,7 +396,14 @@ async function syncHostRoute(host: string, routesDirectoryPath: string): Promise
     return;
   }
 
-  await writeFile(hostRoutePath, renderHostRouteSnippet(registrations), "utf8");
+  await writeFile(
+    hostRoutePath,
+    renderHostRouteSnippet(
+      registrations,
+      httpEnabled ?? (await isManagedHttpEnabled(getRegistrationsDirectoryPath(routesDirectoryPath))),
+    ),
+    "utf8",
+  );
 }
 
 async function readHostRegistrations(host: string, routesDirectoryPath: string): Promise<IRouteRegistration[]> {
@@ -478,6 +516,7 @@ function isRouteRegistration(value: unknown): value is IRouteRegistration {
     (Reflect.get(value, "documentInjectionPort") === undefined ||
       typeof Reflect.get(value, "documentInjectionPort") === "number") &&
     typeof Reflect.get(value, "host") === "string" &&
+    (Reflect.get(value, "httpEnabled") === undefined || Reflect.get(value, "httpEnabled") === true) &&
     typeof Reflect.get(value, "manifestPath") === "string" &&
     typeof Reflect.get(value, "ownerPid") === "number" &&
     typeof Reflect.get(value, "path") === "string" &&
@@ -528,7 +567,7 @@ function reloadCaddy(): void {
   }
 }
 
-export function renderHostRouteSnippet(registrations: IRouteRegistration[]): string {
+export function renderHostRouteSnippet(registrations: IRouteRegistration[], httpEnabled: boolean = false): string {
   const host: string = registrations[0].host;
   const rootRegistration: IRouteRegistration | undefined = registrations.find(
     (registration: IRouteRegistration): boolean => registration.path === "/",
@@ -536,7 +575,30 @@ export function renderHostRouteSnippet(registrations: IRouteRegistration[]): str
   const nonRootRegistrations: IRouteRegistration[] = registrations.filter(
     (registration: IRouteRegistration): boolean => registration.path !== "/",
   );
-  const lines: string[] = [`${host} {`, "    tls internal", ""];
+  const lines: string[] = [];
+
+  if (httpEnabled) {
+    lines.push(...renderHostRouteSiteBlock(`http://${host}`, rootRegistration, nonRootRegistrations));
+  }
+
+  lines.push(...renderHostRouteSiteBlock(`https://${host}`, rootRegistration, nonRootRegistrations, true));
+
+  return lines.join("\n");
+}
+
+function renderHostRouteSiteBlock(
+  siteAddress: string,
+  rootRegistration: IRouteRegistration | undefined,
+  nonRootRegistrations: IRouteRegistration[],
+  useInternalTls: boolean = false,
+): string[] {
+  const lines: string[] = [`${siteAddress} {`];
+
+  if (useInternalTls) {
+    lines.push("    tls internal");
+  }
+
+  lines.push("");
 
   if (rootRegistration?.devtoolsControlPort !== undefined) {
     lines.push("    @devhost_control path /__devhost__/*");
@@ -571,7 +633,66 @@ export function renderHostRouteSnippet(registrations: IRouteRegistration[]): str
 
   lines.push("}\n");
 
-  return lines.join("\n");
+  return lines;
+}
+
+async function isManagedHttpEnabled(registrationsDirectoryPath: string): Promise<boolean> {
+  const registrationFileNames: string[] = await readdir(registrationsDirectoryPath);
+
+  for (const registrationFileName of registrationFileNames) {
+    if (!registrationFileName.endsWith(".json")) {
+      continue;
+    }
+
+    const registrationPath: string = join(registrationsDirectoryPath, registrationFileName);
+    const registration: ManagedRouteRegistration = parseManagedRouteRegistration(
+      await readFile(registrationPath, "utf8"),
+    );
+
+    if (isLegacyRouteRegistration(registration)) {
+      continue;
+    }
+
+    if (registration.httpEnabled === true) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+async function syncManagedHttpState(routesDirectoryPath: string, httpEnabled: boolean): Promise<void> {
+  const registrationsDirectoryPath: string = getRegistrationsDirectoryPath(routesDirectoryPath);
+  const registrationFileNames: string[] = await readdir(registrationsDirectoryPath);
+  const hosts: Set<string> = new Set<string>();
+
+  for (const registrationFileName of registrationFileNames) {
+    if (!registrationFileName.endsWith(".json")) {
+      continue;
+    }
+
+    const registrationPath: string = join(registrationsDirectoryPath, registrationFileName);
+    const registration: ManagedRouteRegistration = parseManagedRouteRegistration(
+      await readFile(registrationPath, "utf8"),
+    );
+
+    if (isLegacyRouteRegistration(registration)) {
+      continue;
+    }
+
+    hosts.add(registration.host);
+  }
+
+  const managedCaddyPaths = createManagedCaddyPathsForRoutesDirectory(routesDirectoryPath);
+  await writeFile(
+    managedCaddyPaths.caddyfilePath,
+    renderManagedCaddyfile(managedCaddyPaths, process.platform, httpEnabled),
+    "utf8",
+  );
+
+  for (const host of hosts) {
+    await syncHostRoute(host, routesDirectoryPath, httpEnabled);
+  }
 }
 
 function renderServiceHandle(registration: IRouteRegistration): string[] {

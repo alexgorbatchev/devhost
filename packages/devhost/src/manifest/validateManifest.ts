@@ -83,6 +83,17 @@ const serviceSchema = z
 const manifestSchema = z
   .object({
     agent: agentSchema.optional(),
+    caddy: z
+      .object({
+        global: z
+          .object({
+            http: z.boolean().optional(),
+          })
+          .strict()
+          .optional(),
+      })
+      .strict()
+      .optional(),
     devtools: z
       .object({
         editor: z
@@ -175,6 +186,11 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
 
   return {
     agent: validatedAgent,
+    caddy: {
+      global: {
+        http: parsedManifest.caddy?.global?.http ?? false,
+      },
+    },
     devtools: {
       editor: {
         enabled: parsedManifest.devtools?.editor?.enabled ?? true,

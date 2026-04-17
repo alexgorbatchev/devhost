@@ -6,6 +6,7 @@ import { resolveManagedCaddyBindDirective } from "./resolveManagedCaddyBindDirec
 export function renderManagedCaddyfile(
   paths: IManagedCaddyPaths,
   platform: NodeJS.Platform = process.platform,
+  enableHttp: boolean = false,
 ): string {
   const routesGlobPath: string = `${paths.routesDirectoryPath}/*.caddy`;
   const bindDirective: string | null = resolveManagedCaddyBindDirective(platform);
@@ -22,6 +23,7 @@ export function renderManagedCaddyfile(
     "",
     `import ${quoteCaddyToken(routesGlobPath)}`,
     "",
+    ...(enableHttp ? renderFallbackSiteBlock("http://", notFoundSitePaths.directoryPath) : []),
     "https:// {",
     "    tls internal {",
     "        on_demand",
@@ -47,6 +49,29 @@ export function renderManagedCaddyfile(
   ]
     .filter((line): line is string => line !== null)
     .join("\n");
+}
+
+function renderFallbackSiteBlock(siteAddress: string, directoryPath: string): string[] {
+  return [
+    `${siteAddress} {`,
+    `    root * ${quoteCaddyToken(directoryPath)}`,
+    "",
+    "    @devhost_route_not_found_asset file {path}",
+    "    handle @devhost_route_not_found_asset {",
+    "        file_server",
+    "    }",
+    "",
+    "    handle {",
+    "        error 404",
+    "    }",
+    "",
+    "    handle_errors 404 {",
+    "        rewrite /index.html",
+    "        file_server",
+    "    }",
+    "}",
+    "",
+  ];
 }
 
 function quoteCaddyToken(value: string): string {
