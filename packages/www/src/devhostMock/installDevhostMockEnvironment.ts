@@ -1,6 +1,6 @@
 import type { IInjectedDevtoolsConfig } from "@alexgorbatchev/devhost/src/devtools/shared/readInjectedDevtoolsConfig";
 
-import type { MarketingRecordingScenarioId } from "../features/marketingRecording/marketingRecordingScenarios";
+import type { MarketingRecordingScenarioId } from "../marketing/replays/marketingReplayScenarios";
 
 const mockProjectRootPath: string = "/Users/alex/development/projects/devhost/packages/www";
 const mockStackName: string = "www-marketing-capture";

@@ -29,6 +29,7 @@ Local React demo app for exercising `@alexgorbatchev/devhost` behavior and Story
 - `bun run check` runs the package TypeScript validation and Storybook/Vitest browser coverage for this workspace.
 - The demo app and `packages/devhost/` devtools UI both use React, but their runtime and build constraints still differ. Check the local package config before copying assumptions across workspaces.
 - `bun run record:marketing` starts a temporary local dev server, opens the dev-only `marketing-capture.html` route, and rewrites `public/recordings/marketing/*.json` from deterministic rrweb captures.
+- `src/marketing/` has replay-specific fixture and choreography rules; follow `src/marketing/AGENTS.md` before changing replay metadata, capture targets, timing, or generated replay inputs.
 
 ## Boundaries
 
@@ -47,4 +48,5 @@ Local React demo app for exercising `@alexgorbatchev/devhost` behavior and Story
 - `scripts/recordMarketingDemos.ts`
 - `.storybook/`
 - `src/server.ts`
+- `src/marketing/AGENTS.md`
 - `DEPLOY.md`

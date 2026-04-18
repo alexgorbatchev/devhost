@@ -1,7 +1,7 @@
 import { type JSX } from "react";
 import { createRoot } from "react-dom/client";
 
-import "../app/App.css";
+import "../../app/App.css";
 import { MarketingCapturePage } from "./MarketingCapturePage";
 
 export function Main(): JSX.Element {
