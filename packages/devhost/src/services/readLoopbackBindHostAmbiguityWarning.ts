@@ -1,3 +1,4 @@
+import { createManagedCaddyUrl, defaultManagedCaddyHttpsPort } from "../caddy/managedCaddyPorts";
 import type { IResolvedDevhostService } from "../types/stackTypes";
 import { formatProxyAddress, resolveProxyHost } from "../utils/resolveProxyHost";
 
@@ -8,6 +9,7 @@ interface IHttpResponseProbe {
 
 interface IReadLoopbackBindHostAmbiguityWarningOptions {
   fetchImpl?: typeof fetch;
+  httpsPort?: number;
   service: IResolvedDevhostService;
 }
 
@@ -15,6 +17,7 @@ const probeTimeoutInMilliseconds: number = 750;
 
 export async function readLoopbackBindHostAmbiguityWarning({
   fetchImpl = fetch,
+  httpsPort = defaultManagedCaddyHttpsPort,
   service,
 }: IReadLoopbackBindHostAmbiguityWarningOptions): Promise<string | null> {
   if (service.host === null || service.port === null) {
@@ -45,7 +48,7 @@ export async function readLoopbackBindHostAmbiguityWarning({
     `services.${service.name}.port = ${service.port} is ambiguous: ` +
     `http://localhost:${service.port}/ responded differently than ` +
     `http://${formatProxyAddress(proxyHost, service.port)}/. ` +
-    `devhost routes https://${service.host} through ${service.bindHost}:${service.port}, ` +
+    `devhost routes ${createManagedCaddyUrl("https", service.host, httpsPort, "/").replace(/\/$/, "")} through ${service.bindHost}:${service.port}, ` +
     `so a localhost URL may hit a different loopback listener on this machine.` +
     recommendation
   );

@@ -151,6 +151,26 @@ describe("collectManagedServicesHealth", () => {
       ],
     });
   });
+
+  test("includes a custom HTTPS port in routed service URLs", async () => {
+    const managedServices: IResolvedDevhostService[] = [createService({ name: "web" })];
+    const startedServices: IManagedService[] = [
+      {
+        childProcess: createRunningChildProcess(),
+        service: managedServices[0],
+      },
+    ];
+
+    await expect(collectManagedServicesHealth("hello-stack", managedServices, startedServices, 4443)).resolves.toEqual({
+      services: [
+        {
+          name: "web",
+          status: false,
+          url: "https://hello.local.test:4443/",
+        },
+      ],
+    });
+  });
 });
 
 function createRunningChildProcess(): IManagedSubprocess {

@@ -1,4 +1,5 @@
 import { managedCaddyPaths } from "../caddy/caddyPaths";
+import { createManagedCaddyUrl } from "../caddy/managedCaddyPorts";
 import { signalExitCodes, supportedSignals } from "../utils/constants";
 import { collectManagedServicesHealth } from "./collectManagedServicesHealth";
 import { createTerminalSessionCommand } from "../agents/createTerminalSessionCommand";
@@ -146,7 +147,12 @@ export async function startStack(
         minimapEnabled: manifest.devtools.minimap.enabled,
         statusEnabled: manifest.devtools.status.enabled,
         getHealthResponse: async () => {
-          return await collectManagedServicesHealth(manifest.name, managedServices, startedServices);
+          return await collectManagedServicesHealth(
+            manifest.name,
+            managedServices,
+            startedServices,
+            manifest.caddy.global.httpsPort,
+          );
         },
         logger,
         manifestPath: manifest.manifestPath,
@@ -267,6 +273,8 @@ export async function startStack(
               devtoolsControlPort: devtoolsControlServer?.port,
               documentInjectionPort: documentInjectionServer.port,
               caddyBindHost: manifest.caddy.global.bindHost,
+              caddyHttpPort: manifest.caddy.global.httpPort,
+              caddyHttpsPort: manifest.caddy.global.httpsPort,
               host: service.host,
               httpEnabled: manifest.caddy.global.http,
               path: service.path ?? "/",
@@ -281,6 +289,8 @@ export async function startStack(
               appBindHost: service.bindHost,
               appPort: service.port,
               caddyBindHost: manifest.caddy.global.bindHost,
+              caddyHttpPort: manifest.caddy.global.httpPort,
+              caddyHttpsPort: manifest.caddy.global.httpsPort,
               host: service.host,
               httpEnabled: manifest.caddy.global.http,
               path: service.path ?? "/",
@@ -503,7 +513,10 @@ async function startServiceWithRetries(
         health: service.health,
         serviceName,
       });
-      const bindHostAmbiguityWarning = await readLoopbackBindHostAmbiguityWarning({ service });
+      const bindHostAmbiguityWarning = await readLoopbackBindHostAmbiguityWarning({
+        httpsPort: manifest.caddy.global.httpsPort,
+        service,
+      });
 
       if (bindHostAmbiguityWarning !== null) {
         logger.info(bindHostAmbiguityWarning);
@@ -615,7 +628,9 @@ function logPrimaryService(manifest: IResolvedDevhostManifest, logger: IDevhostL
   const primaryService: IResolvedDevhostService = manifest.services[manifest.primaryService];
 
   if (primaryService.host !== null) {
-    logger.info(`primary https://${primaryService.host}`);
+    logger.info(
+      `primary ${createManagedCaddyUrl("https", primaryService.host, manifest.caddy.global.httpsPort, "/").replace(/\/$/, "")}`,
+    );
     return;
   }
 

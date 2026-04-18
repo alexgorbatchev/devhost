@@ -126,9 +126,11 @@ The generated Caddy config uses these defaults:
 
 - state dir: `DEVHOST_STATE_DIR`, else `XDG_STATE_HOME/devhost`, else `~/.local/state/devhost`
 - admin API: `127.0.0.1:20193` unless `DEVHOST_CADDY_ADMIN_ADDRESS` is set
-- listener binding on macOS: wildcard listeners, because macOS denies rootless loopback-specific binds on `:443`
+- HTTPS listener port: `443` by default via `caddy.global.httpsPort = 443`
+- listener binding on macOS: wildcard listeners, because macOS denies rootless loopback-specific binds on the default privileged HTTPS port
 - listener binding on non-macOS: loopback only by default via `caddy.global.bindHost = "127.0.0.1"`, rendered as Caddy `default_bind 127.0.0.1 [::1]`
-- plain HTTP on `:80`: disabled by default; any active stack with `caddy.global.http = true` enables the same routed hosts and shared fallback page on HTTP for all active stacks
+- plain HTTP: disabled by default; any active stack with `caddy.global.http = true` enables the same routed hosts and shared fallback page on HTTP for all active stacks
+- HTTP listener port: `80` by default via `caddy.global.httpPort = 80`
 - unmatched hostnames: a generated 404 page listing the currently active devhost hostnames as HTTPS links
 
 Managed Caddy lifecycle is shared and manual. `devhost` stack startup requires the managed Caddy admin API to already be available.
@@ -151,11 +153,11 @@ On macOS, this now starts rootlessly by avoiding loopback-specific listener bind
 That fixes startup, but it also means the managed Caddy instance is not loopback-only on that platform.
 If you need strict loopback-only HTTPS on privileged ports, the correct solution is a privileged launcher such as `launchd` socket activation, not pretending wildcard binding is equivalent.
 
-On non-macOS platforms, opening HTTPS on `:443` still requires privileged-port setup outside `devhost`.
-Enabling `caddy.global.http = true` adds the same requirement for `:80`.
+On non-macOS platforms, opening HTTPS on the configured `caddy.global.httpsPort` still requires privileged-port setup outside `devhost` when that port is privileged.
+Enabling `caddy.global.http = true` adds the same requirement for `caddy.global.httpPort` when that port is privileged.
 On Linux, `devhost caddy privileged-ports` configures the managed Caddy binary for this with `setcap`.
 `devhost` does not configure `authbind` or firewall redirection for you.
-`caddy.global.bindHost` only changes the public HTTP/HTTPS listener bind. The managed Caddy admin API stays on `127.0.0.1`.
+`caddy.global.bindHost`, `caddy.global.httpPort`, and `caddy.global.httpsPort` only change the public HTTP/HTTPS listeners. The managed Caddy admin API stays on `127.0.0.1`.
 
 ## Stack lifecycle
 
@@ -188,7 +190,7 @@ Copy it to `devhost.toml` in your project root and trim it down to the services 
 
 Each TOML table must be declared once. Keep all fields for a service inside a single `[services.<name>]` block instead of reopening that table later.
 
-To also serve the same routed hosts through plain HTTP on port 80, add this top-level setting:
+To also serve the same routed hosts through plain HTTP, add this top-level setting:
 
 ```toml
 [caddy.global]
@@ -196,6 +198,16 @@ http = true
 ```
 
 This is a global managed-Caddy toggle, not an isolated per-stack listener. If any active stack enables `caddy.global.http = true`, the shared Caddy instance serves HTTP for all active stacks until the last opting-in stack stops.
+
+To move the shared managed Caddy listeners off the default privileged ports, set one or both listener ports:
+
+```toml
+[caddy.global]
+httpPort = 8080
+httpsPort = 4443
+```
+
+Those are shared managed-Caddy settings too. Active stacks must agree on any non-default `caddy.global.httpPort` and `caddy.global.httpsPort` values because they all route through the same Caddy instance.
 
 To expose the managed Caddy front door beyond loopback, set a shared listener bind host:
 

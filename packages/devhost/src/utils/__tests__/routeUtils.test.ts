@@ -207,4 +207,32 @@ describe("renderHostRouteSnippet", () => {
     expect(hostRouteSnippet).toContain("http://hello.localhost {");
     expect(hostRouteSnippet).toContain("https://hello.localhost {");
   });
+
+  test("renders custom HTTP and HTTPS host ports", () => {
+    const hostRouteSnippet: string = renderHostRouteSnippet(
+      [
+        JSON.parse(
+          createRouteRegistrationText(
+            {
+              appBindHost: "127.0.0.1",
+              appPort: 3000,
+              caddyHttpPort: 8080,
+              caddyHttpsPort: 4443,
+              host: "hello.localhost",
+              httpEnabled: true,
+              path: "/",
+              serviceName: "web",
+            },
+            "/tmp/project/devhost.toml",
+          ),
+        ),
+      ],
+      true,
+      8080,
+      4443,
+    );
+
+    expect(hostRouteSnippet).toContain("http://hello.localhost:8080 {");
+    expect(hostRouteSnippet).toContain("https://hello.localhost:4443 {");
+  });
 });

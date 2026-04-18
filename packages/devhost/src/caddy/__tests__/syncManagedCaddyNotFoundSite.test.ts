@@ -114,4 +114,35 @@ describe("syncManagedCaddyNotFoundSite", () => {
 
     expect(pageText).toContain("No devhost hostnames are active right now.");
   });
+
+  test("renders custom HTTPS ports in route links", async () => {
+    const temporaryDirectoryPath: string = await mkdtemp(join(tmpdir(), "devhost-not-found-port-"));
+    const paths = createManagedCaddyPaths(temporaryDirectoryPath);
+    const sitePaths = createManagedCaddyNotFoundSitePaths(paths.caddyDirectoryPath);
+
+    await mkdir(paths.routesDirectoryPath, { recursive: true });
+    await mkdir(paths.registrationsDirectoryPath, { recursive: true });
+    await writeFile(
+      join(paths.registrationsDirectoryPath, "hello.localhost_web.json"),
+      createRouteRegistrationText(
+        {
+          appBindHost: "127.0.0.1",
+          appPort: 3000,
+          caddyHttpsPort: 4443,
+          host: "hello.localhost",
+          path: "/",
+          serviceName: "web",
+        },
+        "/tmp/hello/devhost.toml",
+      ),
+      "utf8",
+    );
+    await writeFile(join(paths.routesDirectoryPath, "hello.localhost.caddy"), "hello route", "utf8");
+
+    await syncManagedCaddyNotFoundSite(paths.routesDirectoryPath, 4443);
+
+    const pageText: string = await readFile(sitePaths.pagePath, "utf8");
+
+    expect(pageText).toContain('href="https://hello.localhost:4443/"');
+  });
 });

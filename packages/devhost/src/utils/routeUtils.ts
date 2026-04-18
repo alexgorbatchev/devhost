@@ -2,6 +2,11 @@ import { readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { caddyAdminApiUrl, createManagedCaddyPathsForRoutesDirectory } from "../caddy/caddyPaths";
+import {
+  defaultManagedCaddyHttpPort,
+  defaultManagedCaddyHttpsPort,
+  formatManagedCaddySiteAddress,
+} from "../caddy/managedCaddyPorts";
 import { defaultManagedCaddyBindHost } from "../caddy/resolveManagedCaddyBindDirective";
 import { createManagedCaddyCommandErrorMessage, runManagedCaddyCommand } from "../caddy/runManagedCaddyCommand";
 import { renderManagedCaddyfile } from "../caddy/renderManagedCaddyfile";
@@ -20,6 +25,8 @@ interface IRouteRegistration {
   appBindHost: string;
   appPort: number;
   caddyBindHost?: string;
+  caddyHttpPort?: number;
+  caddyHttpsPort?: number;
   createdAt: string;
   devtoolsControlPort?: number;
   documentInjectionPort?: number;
@@ -45,6 +52,8 @@ export interface IActivateRouteOptions {
   appBindHost: string;
   appPort: number;
   caddyBindHost?: string;
+  caddyHttpPort?: number;
+  caddyHttpsPort?: number;
   devtoolsControlPort?: number;
   documentInjectionPort?: number;
   host: string;
@@ -63,7 +72,9 @@ type FetchImplementation = (input: string, init?: RequestInit) => Promise<Respon
 
 interface IManagedCaddyGlobalSettings {
   bindHost: string;
+  httpPort: number;
   httpEnabled: boolean;
+  httpsPort: number;
 }
 
 export async function ensureCaddyAdminAvailable(fetchImplementation: FetchImplementation = fetch): Promise<void> {
@@ -126,7 +137,7 @@ export async function cleanupStaleRegistrations(registrationsDirectoryPath: stri
   }
 
   if (affectedHosts.size > 0) {
-    await syncManagedCaddyNotFoundSite(routesDirectoryPath);
+    await syncManagedCaddyNotFoundSite(routesDirectoryPath, nextSettings.httpsPort);
   }
 }
 
@@ -209,15 +220,17 @@ export async function activateRoute(
     if (didManagedCaddyGlobalSettingsChange(previousSettings, nextSettings)) {
       await syncManagedCaddyGlobalState(routesDirectoryPath, nextSettings);
     } else {
-      await syncHostRoute(options.host, routesDirectoryPath, nextSettings.httpEnabled);
+      await syncHostRoute(options.host, routesDirectoryPath, nextSettings);
     }
 
-    await syncManagedCaddyNotFoundSite(routesDirectoryPath);
+    await syncManagedCaddyNotFoundSite(routesDirectoryPath, nextSettings.httpsPort);
     reloadCaddy();
   } catch (error) {
     await rm(routeRegistrationPath, { force: true });
-    await syncHostRoute(options.host, routesDirectoryPath);
-    await syncManagedCaddyNotFoundSite(routesDirectoryPath);
+    const nextSettings: IManagedCaddyGlobalSettings = await readManagedCaddyGlobalSettings(registrationsDirectoryPath);
+
+    await syncHostRoute(options.host, routesDirectoryPath, nextSettings);
+    await syncManagedCaddyNotFoundSite(routesDirectoryPath, nextSettings.httpsPort);
     throw error;
   }
 }
@@ -255,10 +268,10 @@ export async function unregisterRoute(
   if (didManagedCaddyGlobalSettingsChange(previousSettings, nextSettings)) {
     await syncManagedCaddyGlobalState(routesDirectoryPath, nextSettings);
   } else {
-    await syncHostRoute(host, routesDirectoryPath, nextSettings.httpEnabled);
+    await syncHostRoute(host, routesDirectoryPath, nextSettings);
   }
 
-  await syncManagedCaddyNotFoundSite(routesDirectoryPath);
+  await syncManagedCaddyNotFoundSite(routesDirectoryPath, nextSettings.httpsPort);
   reloadCaddy();
 }
 
@@ -288,6 +301,14 @@ export function createRouteRegistrationText(options: IActivateRouteOptions, mani
 
   if (options.caddyBindHost !== undefined && options.caddyBindHost !== defaultManagedCaddyBindHost) {
     registration.caddyBindHost = options.caddyBindHost;
+  }
+
+  if (options.caddyHttpPort !== undefined && options.caddyHttpPort !== defaultManagedCaddyHttpPort) {
+    registration.caddyHttpPort = options.caddyHttpPort;
+  }
+
+  if (options.caddyHttpsPort !== undefined && options.caddyHttpsPort !== defaultManagedCaddyHttpsPort) {
+    registration.caddyHttpsPort = options.caddyHttpsPort;
   }
 
   return JSON.stringify(registration, null, 2);
@@ -402,7 +423,11 @@ function isHostClaimStale(claim: IHostClaim): boolean {
   return !isProcessAlive(claim.ownerPid);
 }
 
-async function syncHostRoute(host: string, routesDirectoryPath: string, httpEnabled?: boolean): Promise<void> {
+async function syncHostRoute(
+  host: string,
+  routesDirectoryPath: string,
+  settings?: IManagedCaddyGlobalSettings,
+): Promise<void> {
   const registrations: IRouteRegistration[] = await readHostRegistrations(host, routesDirectoryPath);
   const hostRoutePath: string = getHostRoutePath(host, routesDirectoryPath);
 
@@ -411,12 +436,16 @@ async function syncHostRoute(host: string, routesDirectoryPath: string, httpEnab
     return;
   }
 
+  const effectiveSettings: IManagedCaddyGlobalSettings =
+    settings ?? (await readManagedCaddyGlobalSettings(getRegistrationsDirectoryPath(routesDirectoryPath)));
+
   await writeFile(
     hostRoutePath,
     renderHostRouteSnippet(
       registrations,
-      httpEnabled ??
-        (await readManagedCaddyGlobalSettings(getRegistrationsDirectoryPath(routesDirectoryPath))).httpEnabled,
+      effectiveSettings.httpEnabled,
+      effectiveSettings.httpPort,
+      effectiveSettings.httpsPort,
     ),
     "utf8",
   );
@@ -533,6 +562,8 @@ function isRouteRegistration(value: unknown): value is IRouteRegistration {
       typeof Reflect.get(value, "documentInjectionPort") === "number") &&
     typeof Reflect.get(value, "host") === "string" &&
     (Reflect.get(value, "caddyBindHost") === undefined || typeof Reflect.get(value, "caddyBindHost") === "string") &&
+    (Reflect.get(value, "caddyHttpPort") === undefined || typeof Reflect.get(value, "caddyHttpPort") === "number") &&
+    (Reflect.get(value, "caddyHttpsPort") === undefined || typeof Reflect.get(value, "caddyHttpsPort") === "number") &&
     (Reflect.get(value, "httpEnabled") === undefined || Reflect.get(value, "httpEnabled") === true) &&
     typeof Reflect.get(value, "manifestPath") === "string" &&
     typeof Reflect.get(value, "ownerPid") === "number" &&
@@ -584,7 +615,12 @@ function reloadCaddy(): void {
   }
 }
 
-export function renderHostRouteSnippet(registrations: IRouteRegistration[], httpEnabled: boolean = false): string {
+export function renderHostRouteSnippet(
+  registrations: IRouteRegistration[],
+  httpEnabled: boolean = false,
+  httpPort: number = defaultManagedCaddyHttpPort,
+  httpsPort: number = defaultManagedCaddyHttpsPort,
+): string {
   const host: string = registrations[0].host;
   const rootRegistration: IRouteRegistration | undefined = registrations.find(
     (registration: IRouteRegistration): boolean => registration.path === "/",
@@ -595,10 +631,23 @@ export function renderHostRouteSnippet(registrations: IRouteRegistration[], http
   const lines: string[] = [];
 
   if (httpEnabled) {
-    lines.push(...renderHostRouteSiteBlock(`http://${host}`, rootRegistration, nonRootRegistrations));
+    lines.push(
+      ...renderHostRouteSiteBlock(
+        formatManagedCaddySiteAddress("http", httpPort, host),
+        rootRegistration,
+        nonRootRegistrations,
+      ),
+    );
   }
 
-  lines.push(...renderHostRouteSiteBlock(`https://${host}`, rootRegistration, nonRootRegistrations, true));
+  lines.push(
+    ...renderHostRouteSiteBlock(
+      formatManagedCaddySiteAddress("https", httpsPort, host),
+      rootRegistration,
+      nonRootRegistrations,
+      true,
+    ),
+  );
 
   return lines.join("\n");
 }
@@ -659,6 +708,8 @@ async function readManagedCaddyGlobalSettings(
   const registrationFileNames: string[] = await readdir(registrationsDirectoryPath);
   let httpEnabled: boolean = false;
   const optedInBindHosts: Set<string> = new Set<string>();
+  const optedInHttpPorts: Set<number> = new Set<number>();
+  const optedInHttpsPorts: Set<number> = new Set<number>();
 
   for (const registrationFileName of registrationFileNames) {
     if (!registrationFileName.endsWith(".json")) {
@@ -681,6 +732,14 @@ async function readManagedCaddyGlobalSettings(
     if (registration.caddyBindHost !== undefined) {
       optedInBindHosts.add(registration.caddyBindHost);
     }
+
+    if (registration.caddyHttpPort !== undefined) {
+      optedInHttpPorts.add(registration.caddyHttpPort);
+    }
+
+    if (registration.caddyHttpsPort !== undefined) {
+      optedInHttpsPorts.add(registration.caddyHttpsPort);
+    }
   }
 
   if (optedInBindHosts.size > 1) {
@@ -689,9 +748,27 @@ async function readManagedCaddyGlobalSettings(
     );
   }
 
+  if (optedInHttpPorts.size > 1) {
+    throw new Error(
+      `Managed Caddy HTTP port is inconsistent across active stacks: ${Array.from(optedInHttpPorts)
+        .sort((left, right) => left - right)
+        .join(", ")}.`,
+    );
+  }
+
+  if (optedInHttpsPorts.size > 1) {
+    throw new Error(
+      `Managed Caddy HTTPS port is inconsistent across active stacks: ${Array.from(optedInHttpsPorts)
+        .sort((left, right) => left - right)
+        .join(", ")}.`,
+    );
+  }
+
   return {
     bindHost: optedInBindHosts.values().next().value ?? defaultManagedCaddyBindHost,
+    httpPort: optedInHttpPorts.values().next().value ?? defaultManagedCaddyHttpPort,
     httpEnabled,
+    httpsPort: optedInHttpsPorts.values().next().value ?? defaultManagedCaddyHttpsPort,
   };
 }
 
@@ -700,7 +777,10 @@ function didManagedCaddyGlobalSettingsChange(
   nextSettings: IManagedCaddyGlobalSettings,
 ): boolean {
   return (
-    previousSettings.bindHost !== nextSettings.bindHost || previousSettings.httpEnabled !== nextSettings.httpEnabled
+    previousSettings.bindHost !== nextSettings.bindHost ||
+    previousSettings.httpEnabled !== nextSettings.httpEnabled ||
+    previousSettings.httpPort !== nextSettings.httpPort ||
+    previousSettings.httpsPort !== nextSettings.httpsPort
   );
 }
 
@@ -732,12 +812,19 @@ async function syncManagedCaddyGlobalState(
   const managedCaddyPaths = createManagedCaddyPathsForRoutesDirectory(routesDirectoryPath);
   await writeFile(
     managedCaddyPaths.caddyfilePath,
-    renderManagedCaddyfile(managedCaddyPaths, process.platform, settings.httpEnabled, settings.bindHost),
+    renderManagedCaddyfile({
+      bindHost: settings.bindHost,
+      enableHttp: settings.httpEnabled,
+      httpPort: settings.httpPort,
+      httpsPort: settings.httpsPort,
+      paths: managedCaddyPaths,
+      platform: process.platform,
+    }),
     "utf8",
   );
 
   for (const host of hosts) {
-    await syncHostRoute(host, routesDirectoryPath, settings.httpEnabled);
+    await syncHostRoute(host, routesDirectoryPath, settings);
   }
 }
 

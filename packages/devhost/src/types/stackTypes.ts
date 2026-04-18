@@ -53,7 +53,9 @@ export interface IDevhostManifest {
   caddy?: {
     global?: {
       bindHost?: string;
+      httpPort?: number;
       http?: boolean;
+      httpsPort?: number;
     };
   };
   name: string;
@@ -100,7 +102,9 @@ export interface IValidatedDevhostManifest {
   caddy: {
     global: {
       bindHost: string;
+      httpPort: number;
       http: boolean;
+      httpsPort: number;
     };
   };
   devtools: {
@@ -146,7 +150,9 @@ export interface IResolvedDevhostManifest {
   caddy: {
     global: {
       bindHost: string;
+      httpPort: number;
       http: boolean;
+      httpsPort: number;
     };
   };
   devtools: {

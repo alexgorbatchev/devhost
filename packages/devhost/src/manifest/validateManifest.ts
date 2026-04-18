@@ -2,6 +2,7 @@ import { dirname, isAbsolute, relative, resolve } from "node:path";
 
 import { z } from "zod";
 
+import { defaultManagedCaddyHttpPort, defaultManagedCaddyHttpsPort } from "../caddy/managedCaddyPorts";
 import { defaultManagedCaddyBindHost } from "../caddy/resolveManagedCaddyBindDirective";
 import { defaultBindHost } from "../utils/constants";
 import { createDefaultDevhostAgent } from "../agents/createDefaultDevhostAgent";
@@ -29,6 +30,7 @@ const devtoolsPositionSchema = z.enum(["top-right", "bottom-right"]);
 const nonEmptyStringSchema = z.string().refine((value: string): boolean => value.trim().length > 0, {
   message: "Expected a non-empty string.",
 });
+const listenerPortSchema = z.number().int().min(1).max(65_535);
 const portSchema = z.union([z.number().int().min(1).max(65_535), z.literal("auto")]);
 const healthBaseSchema = z.object({
   interval: z.number().int().min(1).optional(),
@@ -89,7 +91,9 @@ const manifestSchema = z
         global: z
           .object({
             bindHost: z.enum(["127.0.0.1", "0.0.0.0", "::1", "::"]).optional(),
+            httpPort: listenerPortSchema.optional(),
             http: z.boolean().optional(),
+            httpsPort: listenerPortSchema.optional(),
           })
           .strict()
           .optional(),
@@ -191,7 +195,9 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
     caddy: {
       global: {
         bindHost: parsedManifest.caddy?.global?.bindHost ?? defaultManagedCaddyBindHost,
+        httpPort: parsedManifest.caddy?.global?.httpPort ?? defaultManagedCaddyHttpPort,
         http: parsedManifest.caddy?.global?.http ?? false,
+        httpsPort: parsedManifest.caddy?.global?.httpsPort ?? defaultManagedCaddyHttpsPort,
       },
     },
     devtools: {
