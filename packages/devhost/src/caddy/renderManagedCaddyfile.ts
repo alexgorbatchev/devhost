@@ -1,3 +1,5 @@
+import { dedentTemplate } from "@alexgorbatchev/dedent-string";
+
 import type { IManagedCaddyPaths } from "./caddyPaths";
 import {
   defaultManagedCaddyHttpPort,
@@ -28,69 +30,96 @@ export function renderManagedCaddyfile({
   const routesGlobPath: string = `${paths.routesDirectoryPath}/*.caddy`;
   const bindDirective: string | null = resolveManagedCaddyBindDirective(platform, bindHost);
   const notFoundSitePaths = createManagedCaddyNotFoundSitePaths(paths.caddyDirectoryPath);
+  const bindDirectiveSection: string = bindDirective === null ? "" : `\n${bindDirective}`;
+  const globalOptionsBlock: string = dedentTemplate(
+    `
+      {
+          admin {managedCaddyAdminAddress}
+          auto_https disable_redirects{bindDirectiveSection}
+          persist_config off
+          storage file_system {storageDirectoryPath}
+      }
+    `,
+    {
+      bindDirectiveSection,
+      managedCaddyAdminAddress,
+      storageDirectoryPath: quoteCaddyToken(paths.storageDirectoryPath),
+    },
+  );
+  const httpFallbackSiteBlock: string = enableHttp
+    ? dedentTemplate(
+        `
+          {siteAddress} {
+              root * {directoryPath}
 
-  return [
-    "{",
-    `    admin ${managedCaddyAdminAddress}`,
-    "    auto_https disable_redirects",
-    bindDirective,
-    "    persist_config off",
-    `    storage file_system ${quoteCaddyToken(paths.storageDirectoryPath)}`,
-    "}",
-    "",
-    `import ${quoteCaddyToken(routesGlobPath)}`,
-    "",
-    ...(enableHttp
-      ? renderFallbackSiteBlock(formatManagedCaddySiteAddress("http", httpPort), notFoundSitePaths.directoryPath)
-      : []),
-    `${formatManagedCaddySiteAddress("https", httpsPort)} {`,
-    "    tls internal {",
-    "        on_demand",
-    "    }",
-    "",
-    `    root * ${quoteCaddyToken(notFoundSitePaths.directoryPath)}`,
-    "",
-    "    @devhost_route_not_found_asset file {path}",
-    "    handle @devhost_route_not_found_asset {",
-    "        file_server",
-    "    }",
-    "",
-    "    handle {",
-    "        error 404",
-    "    }",
-    "",
-    "    handle_errors 404 {",
-    "        rewrite /index.html",
-    "        file_server",
-    "    }",
-    "}",
-    "",
-  ]
-    .filter((line): line is string => line !== null)
-    .join("\n");
-}
+              @devhost_route_not_found_asset file {path}
+              handle @devhost_route_not_found_asset {
+                  file_server
+              }
 
-function renderFallbackSiteBlock(siteAddress: string, directoryPath: string): string[] {
-  return [
-    `${siteAddress} {`,
-    `    root * ${quoteCaddyToken(directoryPath)}`,
-    "",
-    "    @devhost_route_not_found_asset file {path}",
-    "    handle @devhost_route_not_found_asset {",
-    "        file_server",
-    "    }",
-    "",
-    "    handle {",
-    "        error 404",
-    "    }",
-    "",
-    "    handle_errors 404 {",
-    "        rewrite /index.html",
-    "        file_server",
-    "    }",
-    "}",
-    "",
-  ];
+              handle {
+                  error 404
+              }
+
+              handle_errors 404 {
+                  rewrite /index.html
+                  file_server
+              }
+          }
+        `,
+        {
+          directoryPath: quoteCaddyToken(notFoundSitePaths.directoryPath),
+          siteAddress: formatManagedCaddySiteAddress("http", httpPort),
+        },
+      )
+    : "";
+  const httpsFallbackSiteBlock: string = dedentTemplate(
+    `
+      {siteAddress} {
+          tls internal {
+              on_demand
+          }
+
+          root * {directoryPath}
+
+          @devhost_route_not_found_asset file {path}
+          handle @devhost_route_not_found_asset {
+              file_server
+          }
+
+          handle {
+              error 404
+          }
+
+          handle_errors 404 {
+              rewrite /index.html
+              file_server
+          }
+      }
+    `,
+    {
+      directoryPath: quoteCaddyToken(notFoundSitePaths.directoryPath),
+      siteAddress: formatManagedCaddySiteAddress("https", httpsPort),
+    },
+  );
+  const fallbackSiteBlocks: string = enableHttp
+    ? `${httpFallbackSiteBlock}\n\n${httpsFallbackSiteBlock}`
+    : httpsFallbackSiteBlock;
+
+  return `${dedentTemplate(
+    `
+      {globalOptionsBlock}
+
+      import {routesGlobPath}
+
+      {fallbackSiteBlocks}
+    `,
+    {
+      fallbackSiteBlocks,
+      globalOptionsBlock,
+      routesGlobPath: quoteCaddyToken(routesGlobPath),
+    },
+  )}\n`;
 }
 
 function quoteCaddyToken(value: string): string {

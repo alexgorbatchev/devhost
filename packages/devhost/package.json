@@ -31,6 +31,7 @@
     "storybook": "storybook dev --ci --port 6006"
   },
   "dependencies": {
+    "@alexgorbatchev/dedent-string": "1.0.1",
     "@emotion/css": "^11.13.5",
     "@jridgewell/trace-mapping": "^0.3.31",
     "@xterm/addon-fit": "^0.11.0",

@@ -1,6 +1,8 @@
 import { readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
+import { dedentString } from "@alexgorbatchev/dedent-string";
+
 import { caddyAdminApiUrl, createManagedCaddyPathsForRoutesDirectory } from "../caddy/caddyPaths";
 import {
   defaultManagedCaddyHttpPort,
@@ -667,10 +669,13 @@ function renderHostRouteSiteBlock(
   lines.push("");
 
   if (rootRegistration?.devtoolsControlPort !== undefined) {
-    lines.push("    @devhost_control path /__devhost__/*");
-    lines.push("    handle @devhost_control {");
-    lines.push(`        reverse_proxy ${formatProxyAddress("127.0.0.1", rootRegistration.devtoolsControlPort)}`);
-    lines.push("    }");
+    lines.push(
+      ...renderNamedProxyHandleLines(
+        "@devhost_control path /__devhost__/*",
+        "@devhost_control",
+        rootRegistration.devtoolsControlPort,
+      ),
+    );
     lines.push("");
   }
 
@@ -681,25 +686,49 @@ function renderHostRouteSiteBlock(
 
   if (rootRegistration !== undefined) {
     if (rootRegistration.devtoolsControlPort !== undefined && rootRegistration.documentInjectionPort !== undefined) {
-      lines.push("    @devhost_document header Sec-Fetch-Dest document");
-      lines.push("    handle @devhost_document {");
-      lines.push(`        reverse_proxy ${formatProxyAddress("127.0.0.1", rootRegistration.documentInjectionPort)}`);
-      lines.push("    }");
+      lines.push(
+        ...renderNamedProxyHandleLines(
+          "@devhost_document header Sec-Fetch-Dest document",
+          "@devhost_document",
+          rootRegistration.documentInjectionPort,
+        ),
+      );
       lines.push("");
     }
 
-    lines.push("    handle {");
-    lines.push(`        reverse_proxy ${readAppTarget(rootRegistration)}`);
-    lines.push("    }");
+    lines.push(...renderRootProxyHandleLines(readAppTarget(rootRegistration)));
   } else {
-    lines.push("    handle {");
-    lines.push("        error 404");
-    lines.push("    }");
+    lines.push(...renderRootErrorHandleLines(404));
   }
 
   lines.push("}\n");
 
   return lines;
+}
+
+function renderNamedProxyHandleLines(matcher: string, handleName: string, port: number): string[] {
+  return dedentString(`
+    ${matcher}
+    handle ${handleName} {
+        reverse_proxy ${formatProxyAddress("127.0.0.1", port)}
+    }
+  `).split("\n");
+}
+
+function renderRootProxyHandleLines(target: string): string[] {
+  return dedentString(`
+    handle {
+        reverse_proxy ${target}
+    }
+  `).split("\n");
+}
+
+function renderRootErrorHandleLines(statusCode: number): string[] {
+  return dedentString(`
+    handle {
+        error ${statusCode}
+    }
+  `).split("\n");
 }
 
 async function readManagedCaddyGlobalSettings(
