@@ -1,14 +1,14 @@
 {
-  "durationMs": 8458.40000000596,
+  "durationMs": 9654.100000023842,
   "events": [
     {
       "type": 4,
       "data": {
-        "href": "http://127.0.0.1:54345/__capture__?scenario=overlay",
+        "href": "http://127.0.0.1:43727/__capture__?scenario=overlay",
         "width": 1440,
         "height": 960
       },
-      "timestamp": 1776316860804
+      "timestamp": 1776544399153
     },
     {
       "type": 2,
@@ -120,7 +120,7 @@
                       "attributes": {
                         "type": "module",
                         "crossorigin": "",
-                        "src": "http://127.0.0.1:54345/chunk-9rbzbks4.js"
+                        "src": "http://127.0.0.1:43727/chunk-wd5crn4v.js"
                       },
                       "childNodes": [],
                       "id": 16
@@ -129,7 +129,7 @@
                       "type": 2,
                       "tagName": "script",
                       "attributes": {
-                        "src": "http://127.0.0.1:54345/__capture__/devtools.js",
+                        "src": "http://127.0.0.1:43727/__capture__/devtools.js",
                         "type": "module",
                         "data-devhost-capture-script": ""
                       },
@@ -761,7 +761,7 @@
                                                       "childNodes": [
                                                         {
                                                           "type": 3,
-                                                          "textContent": "src/marketingCapture/MarketingCapturePage.tsx",
+                                                          "textContent": "src/marketing/capture/MarketingCapturePage.tsx",
                                                           "id": 96
                                                         }
                                                       ],
@@ -2077,6 +2077,215 @@
                                         }
                                       ],
                                       "id": 225
+                                    },
+                                    {
+                                      "type": 2,
+                                      "tagName": "section",
+                                      "attributes": {
+                                        "aria-label": "Annotation queues",
+                                        "class": "devhost-vj04f",
+                                        "data-testid": "AnnotationQueuePanel"
+                                      },
+                                      "childNodes": [
+                                        {
+                                          "type": 2,
+                                          "tagName": "div",
+                                          "attributes": {
+                                            "class": "devhost-12y925o"
+                                          },
+                                          "childNodes": [
+                                            {
+                                              "type": 2,
+                                              "tagName": "div",
+                                              "attributes": {
+                                                "class": "devhost-1tctc4"
+                                              },
+                                              "childNodes": [
+                                                {
+                                                  "type": 2,
+                                                  "tagName": "strong",
+                                                  "attributes": {},
+                                                  "childNodes": [
+                                                    {
+                                                      "type": 3,
+                                                      "textContent": "Annotation queues",
+                                                      "id": 252
+                                                    }
+                                                  ],
+                                                  "id": 251
+                                                }
+                                              ],
+                                              "id": 250
+                                            },
+                                            {
+                                              "type": 2,
+                                              "tagName": "div",
+                                              "attributes": {
+                                                "class": "devhost-taqjlb",
+                                                "data-testid": "AnnotationQueuePanel--queue-list"
+                                              },
+                                              "childNodes": [
+                                                {
+                                                  "type": 2,
+                                                  "tagName": "article",
+                                                  "attributes": {
+                                                    "class": "devhost-oz949z",
+                                                    "data-testid": "AnnotationQueuePanel--queue"
+                                                  },
+                                                  "childNodes": [
+                                                    {
+                                                      "type": 2,
+                                                      "tagName": "header",
+                                                      "attributes": {
+                                                        "class": "devhost-30n7z8"
+                                                      },
+                                                      "childNodes": [
+                                                        {
+                                                          "type": 2,
+                                                          "tagName": "div",
+                                                          "attributes": {
+                                                            "class": "devhost-18bx7zt"
+                                                          },
+                                                          "childNodes": [
+                                                            {
+                                                              "type": 2,
+                                                              "tagName": "div",
+                                                              "attributes": {
+                                                                "class": "devhost-8knhcs"
+                                                              },
+                                                              "childNodes": [
+                                                                {
+                                                                  "type": 2,
+                                                                  "tagName": "strong",
+                                                                  "attributes": {
+                                                                    "class": "devhost-1wv04w",
+                                                                    "title": "app.localhost/dashboard"
+                                                                  },
+                                                                  "childNodes": [
+                                                                    {
+                                                                      "type": 3,
+                                                                      "textContent": "app.localhost/dashboard",
+                                                                      "id": 259
+                                                                    }
+                                                                  ],
+                                                                  "id": 258
+                                                                },
+                                                                {
+                                                                  "type": 2,
+                                                                  "tagName": "span",
+                                                                  "attributes": {
+                                                                    "class": "devhost-yr9uer"
+                                                                  },
+                                                                  "childNodes": [
+                                                                    {
+                                                                      "type": 3,
+                                                                      "textContent": "Paused",
+                                                                      "id": 261
+                                                                    }
+                                                                  ],
+                                                                  "id": 260
+                                                                }
+                                                              ],
+                                                              "id": 257
+                                                            },
+                                                            {
+                                                              "type": 2,
+                                                              "tagName": "div",
+                                                              "attributes": {
+                                                                "class": "devhost-vgj5n9"
+                                                              },
+                                                              "childNodes": [
+                                                                {
+                                                                  "type": 3,
+                                                                  "textContent": "1 of 2",
+                                                                  "id": 263
+                                                                }
+                                                              ],
+                                                              "id": 262
+                                                            },
+                                                            {
+                                                              "type": 2,
+                                                              "tagName": "div",
+                                                              "attributes": {
+                                                                "class": "devhost-18en7re"
+                                                              },
+                                                              "childNodes": [
+                                                                {
+                                                                  "type": 2,
+                                                                  "tagName": "div",
+                                                                  "attributes": {
+                                                                    "class": "devhost-1e0ol3m",
+                                                                    "data-testid": "AnnotationQueuePanel--queue-progress"
+                                                                  },
+                                                                  "childNodes": [],
+                                                                  "id": 265
+                                                                }
+                                                              ],
+                                                              "id": 264
+                                                            }
+                                                          ],
+                                                          "id": 256
+                                                        },
+                                                        {
+                                                          "type": 2,
+                                                          "tagName": "div",
+                                                          "attributes": {
+                                                            "class": "devhost-1dnpdpe"
+                                                          },
+                                                          "childNodes": [
+                                                            {
+                                                              "type": 2,
+                                                              "tagName": "button",
+                                                              "attributes": {
+                                                                "class": "devhost-p4wubb",
+                                                                "data-devhost-instance-testid": "AnnotationQueuePanel--resume",
+                                                                "data-testid": "Button",
+                                                                "type": "button"
+                                                              },
+                                                              "childNodes": [
+                                                                {
+                                                                  "type": 3,
+                                                                  "textContent": "Resume",
+                                                                  "id": 268
+                                                                }
+                                                              ],
+                                                              "id": 267
+                                                            },
+                                                            {
+                                                              "type": 2,
+                                                              "tagName": "button",
+                                                              "attributes": {
+                                                                "class": "devhost-1yifc3j",
+                                                                "data-devhost-instance-testid": "AnnotationQueuePanel--queue-toggle",
+                                                                "data-testid": "Button",
+                                                                "type": "button"
+                                                              },
+                                                              "childNodes": [
+                                                                {
+                                                                  "type": 3,
+                                                                  "textContent": "Show details",
+                                                                  "id": 270
+                                                                }
+                                                              ],
+                                                              "id": 269
+                                                            }
+                                                          ],
+                                                          "id": 266
+                                                        }
+                                                      ],
+                                                      "id": 255
+                                                    }
+                                                  ],
+                                                  "id": 254
+                                                }
+                                              ],
+                                              "id": 253
+                                            }
+                                          ],
+                                          "id": 249
+                                        }
+                                      ],
+                                      "id": 248
                                     }
                                   ],
                                   "id": 224
@@ -2100,15 +2309,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 249
+                              "id": 272
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 250
+                              "id": 273
                             }
                           ],
-                          "id": 248,
+                          "id": 271,
                           "isShadow": true
                         },
                         {
@@ -2123,15 +2332,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 252
+                              "id": 275
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 253
+                              "id": 276
                             }
                           ],
-                          "id": 251,
+                          "id": 274,
                           "isShadow": true
                         },
                         {
@@ -2146,15 +2355,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 255
+                              "id": 278
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 256
+                              "id": 279
                             }
                           ],
-                          "id": 254,
+                          "id": 277,
                           "isShadow": true
                         },
                         {
@@ -2169,15 +2378,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 258
+                              "id": 281
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 259
+                              "id": 282
                             }
                           ],
-                          "id": 257,
+                          "id": 280,
                           "isShadow": true
                         },
                         {
@@ -2192,15 +2401,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 261
+                              "id": 284
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 262
+                              "id": 285
                             }
                           ],
-                          "id": 260,
+                          "id": 283,
                           "isShadow": true
                         },
                         {
@@ -2215,15 +2424,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 264
+                              "id": 287
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 265
+                              "id": 288
                             }
                           ],
-                          "id": 263,
+                          "id": 286,
                           "isShadow": true
                         },
                         {
@@ -2238,15 +2447,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 267
+                              "id": 290
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 268
+                              "id": 291
                             }
                           ],
-                          "id": 266,
+                          "id": 289,
                           "isShadow": true
                         },
                         {
@@ -2261,15 +2470,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 270
+                              "id": 293
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 271
+                              "id": 294
                             }
                           ],
-                          "id": 269,
+                          "id": 292,
                           "isShadow": true
                         },
                         {
@@ -2284,15 +2493,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 273
+                              "id": 296
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 274
+                              "id": 297
                             }
                           ],
-                          "id": 272,
+                          "id": 295,
                           "isShadow": true
                         },
                         {
@@ -2307,15 +2516,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 276
+                              "id": 299
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 277
+                              "id": 300
                             }
                           ],
-                          "id": 275,
+                          "id": 298,
                           "isShadow": true
                         },
                         {
@@ -2330,15 +2539,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 279
+                              "id": 302
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 280
+                              "id": 303
                             }
                           ],
-                          "id": 278,
+                          "id": 301,
                           "isShadow": true
                         },
                         {
@@ -2353,15 +2562,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 282
+                              "id": 305
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 283
+                              "id": 306
                             }
                           ],
-                          "id": 281,
+                          "id": 304,
                           "isShadow": true
                         },
                         {
@@ -2376,15 +2585,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 285
+                              "id": 308
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 286
+                              "id": 309
                             }
                           ],
-                          "id": 284,
+                          "id": 307,
                           "isShadow": true
                         },
                         {
@@ -2399,15 +2608,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 288
+                              "id": 311
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 289
+                              "id": 312
                             }
                           ],
-                          "id": 287,
+                          "id": 310,
                           "isShadow": true
                         },
                         {
@@ -2422,15 +2631,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 291
+                              "id": 314
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 292
+                              "id": 315
                             }
                           ],
-                          "id": 290,
+                          "id": 313,
                           "isShadow": true
                         },
                         {
@@ -2445,15 +2654,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 294
+                              "id": 317
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 295
+                              "id": 318
                             }
                           ],
-                          "id": 293,
+                          "id": 316,
                           "isShadow": true
                         },
                         {
@@ -2468,15 +2677,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 297
+                              "id": 320
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 298
+                              "id": 321
                             }
                           ],
-                          "id": 296,
+                          "id": 319,
                           "isShadow": true
                         },
                         {
@@ -2491,15 +2700,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 300
+                              "id": 323
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 301
+                              "id": 324
                             }
                           ],
-                          "id": 299,
+                          "id": 322,
                           "isShadow": true
                         },
                         {
@@ -2514,15 +2723,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 303
+                              "id": 326
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 304
+                              "id": 327
                             }
                           ],
-                          "id": 302,
+                          "id": 325,
                           "isShadow": true
                         },
                         {
@@ -2537,15 +2746,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 306
+                              "id": 329
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 307
+                              "id": 330
                             }
                           ],
-                          "id": 305,
+                          "id": 328,
                           "isShadow": true
                         },
                         {
@@ -2560,15 +2769,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 309
+                              "id": 332
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 310
+                              "id": 333
                             }
                           ],
-                          "id": 308,
+                          "id": 331,
                           "isShadow": true
                         },
                         {
@@ -2583,15 +2792,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 312
+                              "id": 335
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 313
+                              "id": 336
                             }
                           ],
-                          "id": 311,
+                          "id": 334,
                           "isShadow": true
                         },
                         {
@@ -2606,15 +2815,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 315
+                              "id": 338
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 316
+                              "id": 339
                             }
                           ],
-                          "id": 314,
+                          "id": 337,
                           "isShadow": true
                         },
                         {
@@ -2629,15 +2838,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 318
+                              "id": 341
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 319
+                              "id": 342
                             }
                           ],
-                          "id": 317,
+                          "id": 340,
                           "isShadow": true
                         },
                         {
@@ -2652,15 +2861,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 321
+                              "id": 344
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 322
+                              "id": 345
                             }
                           ],
-                          "id": 320,
+                          "id": 343,
                           "isShadow": true
                         },
                         {
@@ -2675,15 +2884,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 324
+                              "id": 347
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 325
+                              "id": 348
                             }
                           ],
-                          "id": 323,
+                          "id": 346,
                           "isShadow": true
                         },
                         {
@@ -2698,15 +2907,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 327
+                              "id": 350
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 328
+                              "id": 351
                             }
                           ],
-                          "id": 326,
+                          "id": 349,
                           "isShadow": true
                         },
                         {
@@ -2721,15 +2930,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 330
+                              "id": 353
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 331
+                              "id": 354
                             }
                           ],
-                          "id": 329,
+                          "id": 352,
                           "isShadow": true
                         },
                         {
@@ -2744,15 +2953,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 333
+                              "id": 356
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 334
+                              "id": 357
                             }
                           ],
-                          "id": 332,
+                          "id": 355,
                           "isShadow": true
                         },
                         {
@@ -2767,15 +2976,360 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 336
+                              "id": 359
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 337
+                              "id": 360
                             }
                           ],
-                          "id": 335,
+                          "id": 358,
+                          "isShadow": true
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "style",
+                          "attributes": {
+                            "data-emotion": "devhost",
+                            "data-s": "",
+                            "_cssText": ".devhost-12y925o { display: grid; gap: 8px; width: min(640px, -24px + 100vw); }"
+                          },
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 362
+                            },
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 363
+                            }
+                          ],
+                          "id": 361,
+                          "isShadow": true
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "style",
+                          "attributes": {
+                            "data-emotion": "devhost",
+                            "data-s": "",
+                            "_cssText": ".devhost-taqjlb { display: grid; gap: 8px; }"
+                          },
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 365
+                            },
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 366
+                            }
+                          ],
+                          "id": 364,
+                          "isShadow": true
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "style",
+                          "attributes": {
+                            "data-emotion": "devhost",
+                            "data-s": "",
+                            "_cssText": ".devhost-oz949z { border-radius: 8px; display: grid; gap: 8px; }"
+                          },
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 368
+                            },
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 369
+                            }
+                          ],
+                          "id": 367,
+                          "isShadow": true
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "style",
+                          "attributes": {
+                            "data-emotion": "devhost",
+                            "data-s": "",
+                            "_cssText": ".devhost-30n7z8 { -webkit-box-align: center; align-items: center; display: flex; flex-wrap: wrap; gap: 8px; -webkit-box-pack: justify; justify-content: space-between; }"
+                          },
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 371
+                            },
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 372
+                            }
+                          ],
+                          "id": 370,
+                          "isShadow": true
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "style",
+                          "attributes": {
+                            "data-emotion": "devhost",
+                            "data-s": "",
+                            "_cssText": ".devhost-18bx7zt { display: grid; flex: 1 1 240px; gap: 4px; min-width: 0px; }"
+                          },
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 374
+                            },
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 375
+                            }
+                          ],
+                          "id": 373,
+                          "isShadow": true
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "style",
+                          "attributes": {
+                            "data-emotion": "devhost",
+                            "data-s": "",
+                            "_cssText": ".devhost-8knhcs { -webkit-box-align: center; align-items: center; display: flex; flex-wrap: wrap; gap: 8px; min-width: 0px; }"
+                          },
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 377
+                            },
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 378
+                            }
+                          ],
+                          "id": 376,
+                          "isShadow": true
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "style",
+                          "attributes": {
+                            "data-emotion": "devhost",
+                            "data-s": "",
+                            "_cssText": ".devhost-1wv04w { color: rgb(192, 202, 245); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }"
+                          },
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 380
+                            },
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 381
+                            }
+                          ],
+                          "id": 379,
+                          "isShadow": true
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "style",
+                          "attributes": {
+                            "data-emotion": "devhost",
+                            "data-s": "",
+                            "_cssText": ".devhost-yr9uer { background: rgb(247, 118, 142); border-radius: 999px; color: rgb(17, 18, 26); padding: 2px 8px; }"
+                          },
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 383
+                            },
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 384
+                            }
+                          ],
+                          "id": 382,
+                          "isShadow": true
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "style",
+                          "attributes": {
+                            "data-emotion": "devhost",
+                            "data-s": "",
+                            "_cssText": ".devhost-vgj5n9 { color: rgb(169, 177, 214); font-size: 12px; }"
+                          },
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 386
+                            },
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 387
+                            }
+                          ],
+                          "id": 385,
+                          "isShadow": true
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "style",
+                          "attributes": {
+                            "data-emotion": "devhost",
+                            "data-s": "",
+                            "_cssText": ".devhost-18en7re { background: rgb(31, 35, 53); border-radius: 999px; height: 6px; overflow: hidden; }"
+                          },
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 389
+                            },
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 390
+                            }
+                          ],
+                          "id": 388,
+                          "isShadow": true
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "style",
+                          "attributes": {
+                            "data-emotion": "devhost",
+                            "data-s": "",
+                            "_cssText": ".devhost-1e0ol3m { background: rgb(247, 118, 142); border-radius: 999px; height: 100%; min-width: 8px; width: 50%; }"
+                          },
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 392
+                            },
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 393
+                            }
+                          ],
+                          "id": 391,
+                          "isShadow": true
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "style",
+                          "attributes": {
+                            "data-emotion": "devhost",
+                            "data-s": "",
+                            "_cssText": ".devhost-1dnpdpe { display: flex; flex-wrap: wrap; gap: 8px; -webkit-box-pack: end; justify-content: flex-end; }"
+                          },
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 395
+                            },
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 396
+                            }
+                          ],
+                          "id": 394,
+                          "isShadow": true
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "style",
+                          "attributes": {
+                            "data-emotion": "devhost",
+                            "data-s": "",
+                            "_cssText": ".devhost-p4wubb { background: rgb(122, 162, 247); border: 1px solid rgb(122, 162, 247); color: rgb(17, 18, 26); -webkit-box-align: center; align-items: center; border-radius: 4px; box-shadow: rgba(15, 23, 42, 0.14) 0px 10px 24px; cursor: pointer; display: inline-flex; font-family: \"Maple Mono Normal NF\", \"JetBrainsMono Nerd Font\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace; font-size: 12px; gap: 8px; -webkit-box-pack: center; justify-content: center; opacity: 1; padding: 4px 8px; transition: opacity 120ms; }"
+                          },
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 398
+                            },
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 399
+                            }
+                          ],
+                          "id": 397,
+                          "isShadow": true
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "style",
+                          "attributes": {
+                            "data-emotion": "devhost",
+                            "data-s": "",
+                            "_cssText": ".devhost-10rha4y { display: inline-grid; place-items: center; white-space: nowrap; }"
+                          },
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 401
+                            },
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 402
+                            }
+                          ],
+                          "id": 400,
+                          "isShadow": true
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "style",
+                          "attributes": {
+                            "data-emotion": "devhost",
+                            "data-s": "",
+                            "_cssText": ".devhost-1yifc3j { background: rgb(36, 40, 59); border: 1px solid rgb(86, 95, 137); color: rgb(192, 202, 245); -webkit-box-align: center; align-items: center; border-radius: 4px; box-shadow: rgba(15, 23, 42, 0.14) 0px 10px 24px; cursor: pointer; display: inline-flex; font-family: \"Maple Mono Normal NF\", \"JetBrainsMono Nerd Font\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace; font-size: 12px; gap: 8px; -webkit-box-pack: center; justify-content: center; opacity: 1; padding: 4px 8px; transition: opacity 120ms; }"
+                          },
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 404
+                            },
+                            {
+                              "type": 3,
+                              "textContent": "",
+                              "id": 405
+                            }
+                          ],
+                          "id": 403,
                           "isShadow": true
                         }
                       ],
@@ -2796,814 +3350,7 @@
           "top": 0
         }
       },
-      "timestamp": 1776316860812
-    },
-    {
-      "type": 3,
-      "data": {
-        "source": 0,
-        "texts": [],
-        "attributes": [],
-        "removes": [],
-        "adds": [
-          {
-            "parentId": 219,
-            "nextId": null,
-            "node": {
-              "type": 2,
-              "tagName": "style",
-              "attributes": {
-                "data-emotion": "devhost",
-                "data-s": "",
-                "_cssText": ".devhost-1yifc3j { background: rgb(36, 40, 59); border: 1px solid rgb(86, 95, 137); color: rgb(192, 202, 245); -webkit-box-align: center; align-items: center; border-radius: 4px; box-shadow: rgba(15, 23, 42, 0.14) 0px 10px 24px; cursor: pointer; display: inline-flex; font-family: \"Maple Mono Normal NF\", \"JetBrainsMono Nerd Font\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace; font-size: 12px; gap: 8px; -webkit-box-pack: center; justify-content: center; opacity: 1; padding: 4px 8px; transition: opacity 120ms; }"
-              },
-              "childNodes": [],
-              "id": 338,
-              "isShadow": true
-            }
-          },
-          {
-            "parentId": 338,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 339
-            }
-          },
-          {
-            "parentId": 224,
-            "nextId": null,
-            "node": {
-              "type": 2,
-              "tagName": "section",
-              "attributes": {
-                "aria-label": "Annotation queues",
-                "class": "devhost-vj04f",
-                "data-testid": "AnnotationQueuePanel"
-              },
-              "childNodes": [],
-              "id": 340
-            }
-          },
-          {
-            "parentId": 340,
-            "nextId": null,
-            "node": {
-              "type": 2,
-              "tagName": "div",
-              "attributes": {
-                "class": "devhost-12y925o"
-              },
-              "childNodes": [],
-              "id": 341
-            }
-          },
-          {
-            "parentId": 341,
-            "nextId": null,
-            "node": {
-              "type": 2,
-              "tagName": "div",
-              "attributes": {
-                "class": "devhost-taqjlb",
-                "data-testid": "AnnotationQueuePanel--queue-list"
-              },
-              "childNodes": [],
-              "id": 342
-            }
-          },
-          {
-            "parentId": 342,
-            "nextId": null,
-            "node": {
-              "type": 2,
-              "tagName": "article",
-              "attributes": {
-                "class": "devhost-oz949z",
-                "data-testid": "AnnotationQueuePanel--queue"
-              },
-              "childNodes": [],
-              "id": 343
-            }
-          },
-          {
-            "parentId": 343,
-            "nextId": null,
-            "node": {
-              "type": 2,
-              "tagName": "header",
-              "attributes": {
-                "class": "devhost-30n7z8"
-              },
-              "childNodes": [],
-              "id": 344
-            }
-          },
-          {
-            "parentId": 344,
-            "nextId": null,
-            "node": {
-              "type": 2,
-              "tagName": "div",
-              "attributes": {
-                "class": "devhost-1dnpdpe"
-              },
-              "childNodes": [],
-              "id": 345
-            }
-          },
-          {
-            "parentId": 345,
-            "nextId": null,
-            "node": {
-              "type": 2,
-              "tagName": "button",
-              "attributes": {
-                "class": "devhost-1yifc3j",
-                "data-devhost-instance-testid": "AnnotationQueuePanel--queue-toggle",
-                "data-testid": "Button",
-                "type": "button"
-              },
-              "childNodes": [],
-              "id": 346
-            }
-          },
-          {
-            "parentId": 346,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "Show details",
-              "id": 347
-            }
-          },
-          {
-            "parentId": 219,
-            "nextId": 338,
-            "node": {
-              "type": 2,
-              "tagName": "style",
-              "attributes": {
-                "data-emotion": "devhost",
-                "data-s": "",
-                "_cssText": ".devhost-10rha4y { display: inline-grid; place-items: center; white-space: nowrap; }"
-              },
-              "childNodes": [],
-              "id": 348,
-              "isShadow": true
-            }
-          },
-          {
-            "parentId": 219,
-            "nextId": 348,
-            "node": {
-              "type": 2,
-              "tagName": "style",
-              "attributes": {
-                "data-emotion": "devhost",
-                "data-s": "",
-                "_cssText": ".devhost-p4wubb { background: rgb(122, 162, 247); border: 1px solid rgb(122, 162, 247); color: rgb(17, 18, 26); -webkit-box-align: center; align-items: center; border-radius: 4px; box-shadow: rgba(15, 23, 42, 0.14) 0px 10px 24px; cursor: pointer; display: inline-flex; font-family: \"Maple Mono Normal NF\", \"JetBrainsMono Nerd Font\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace; font-size: 12px; gap: 8px; -webkit-box-pack: center; justify-content: center; opacity: 1; padding: 4px 8px; transition: opacity 120ms; }"
-              },
-              "childNodes": [],
-              "id": 349,
-              "isShadow": true
-            }
-          },
-          {
-            "parentId": 219,
-            "nextId": 349,
-            "node": {
-              "type": 2,
-              "tagName": "style",
-              "attributes": {
-                "data-emotion": "devhost",
-                "data-s": "",
-                "_cssText": ".devhost-1dnpdpe { display: flex; flex-wrap: wrap; gap: 8px; -webkit-box-pack: end; justify-content: flex-end; }"
-              },
-              "childNodes": [],
-              "id": 350,
-              "isShadow": true
-            }
-          },
-          {
-            "parentId": 219,
-            "nextId": 350,
-            "node": {
-              "type": 2,
-              "tagName": "style",
-              "attributes": {
-                "data-emotion": "devhost",
-                "data-s": "",
-                "_cssText": ".devhost-1e0ol3m { background: rgb(247, 118, 142); border-radius: 999px; height: 100%; min-width: 8px; width: 50%; }"
-              },
-              "childNodes": [],
-              "id": 351,
-              "isShadow": true
-            }
-          },
-          {
-            "parentId": 219,
-            "nextId": 351,
-            "node": {
-              "type": 2,
-              "tagName": "style",
-              "attributes": {
-                "data-emotion": "devhost",
-                "data-s": "",
-                "_cssText": ".devhost-18en7re { background: rgb(31, 35, 53); border-radius: 999px; height: 6px; overflow: hidden; }"
-              },
-              "childNodes": [],
-              "id": 352,
-              "isShadow": true
-            }
-          },
-          {
-            "parentId": 219,
-            "nextId": 352,
-            "node": {
-              "type": 2,
-              "tagName": "style",
-              "attributes": {
-                "data-emotion": "devhost",
-                "data-s": "",
-                "_cssText": ".devhost-vgj5n9 { color: rgb(169, 177, 214); font-size: 12px; }"
-              },
-              "childNodes": [],
-              "id": 353,
-              "isShadow": true
-            }
-          },
-          {
-            "parentId": 219,
-            "nextId": 353,
-            "node": {
-              "type": 2,
-              "tagName": "style",
-              "attributes": {
-                "data-emotion": "devhost",
-                "data-s": "",
-                "_cssText": ".devhost-yr9uer { background: rgb(247, 118, 142); border-radius: 999px; color: rgb(17, 18, 26); padding: 2px 8px; }"
-              },
-              "childNodes": [],
-              "id": 354,
-              "isShadow": true
-            }
-          },
-          {
-            "parentId": 219,
-            "nextId": 354,
-            "node": {
-              "type": 2,
-              "tagName": "style",
-              "attributes": {
-                "data-emotion": "devhost",
-                "data-s": "",
-                "_cssText": ".devhost-1wv04w { color: rgb(192, 202, 245); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }"
-              },
-              "childNodes": [],
-              "id": 355,
-              "isShadow": true
-            }
-          },
-          {
-            "parentId": 219,
-            "nextId": 355,
-            "node": {
-              "type": 2,
-              "tagName": "style",
-              "attributes": {
-                "data-emotion": "devhost",
-                "data-s": "",
-                "_cssText": ".devhost-8knhcs { -webkit-box-align: center; align-items: center; display: flex; flex-wrap: wrap; gap: 8px; min-width: 0px; }"
-              },
-              "childNodes": [],
-              "id": 356,
-              "isShadow": true
-            }
-          },
-          {
-            "parentId": 219,
-            "nextId": 356,
-            "node": {
-              "type": 2,
-              "tagName": "style",
-              "attributes": {
-                "data-emotion": "devhost",
-                "data-s": "",
-                "_cssText": ".devhost-18bx7zt { display: grid; flex: 1 1 240px; gap: 4px; min-width: 0px; }"
-              },
-              "childNodes": [],
-              "id": 357,
-              "isShadow": true
-            }
-          },
-          {
-            "parentId": 219,
-            "nextId": 357,
-            "node": {
-              "type": 2,
-              "tagName": "style",
-              "attributes": {
-                "data-emotion": "devhost",
-                "data-s": "",
-                "_cssText": ".devhost-30n7z8 { -webkit-box-align: center; align-items: center; display: flex; flex-wrap: wrap; gap: 8px; -webkit-box-pack: justify; justify-content: space-between; }"
-              },
-              "childNodes": [],
-              "id": 358,
-              "isShadow": true
-            }
-          },
-          {
-            "parentId": 219,
-            "nextId": 358,
-            "node": {
-              "type": 2,
-              "tagName": "style",
-              "attributes": {
-                "data-emotion": "devhost",
-                "data-s": "",
-                "_cssText": ".devhost-oz949z { border-radius: 8px; display: grid; gap: 8px; }"
-              },
-              "childNodes": [],
-              "id": 359,
-              "isShadow": true
-            }
-          },
-          {
-            "parentId": 219,
-            "nextId": 359,
-            "node": {
-              "type": 2,
-              "tagName": "style",
-              "attributes": {
-                "data-emotion": "devhost",
-                "data-s": "",
-                "_cssText": ".devhost-taqjlb { display: grid; gap: 8px; }"
-              },
-              "childNodes": [],
-              "id": 360,
-              "isShadow": true
-            }
-          },
-          {
-            "parentId": 219,
-            "nextId": 360,
-            "node": {
-              "type": 2,
-              "tagName": "style",
-              "attributes": {
-                "data-emotion": "devhost",
-                "data-s": "",
-                "_cssText": ".devhost-12y925o { display: grid; gap: 8px; width: min(640px, -24px + 100vw); }"
-              },
-              "childNodes": [],
-              "id": 361,
-              "isShadow": true
-            }
-          },
-          {
-            "parentId": 361,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 362
-            }
-          },
-          {
-            "parentId": 361,
-            "nextId": 362,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 363
-            }
-          },
-          {
-            "parentId": 360,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 364
-            }
-          },
-          {
-            "parentId": 360,
-            "nextId": 364,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 365
-            }
-          },
-          {
-            "parentId": 359,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 366
-            }
-          },
-          {
-            "parentId": 359,
-            "nextId": 366,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 367
-            }
-          },
-          {
-            "parentId": 358,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 368
-            }
-          },
-          {
-            "parentId": 358,
-            "nextId": 368,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 369
-            }
-          },
-          {
-            "parentId": 357,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 370
-            }
-          },
-          {
-            "parentId": 357,
-            "nextId": 370,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 371
-            }
-          },
-          {
-            "parentId": 356,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 372
-            }
-          },
-          {
-            "parentId": 356,
-            "nextId": 372,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 373
-            }
-          },
-          {
-            "parentId": 355,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 374
-            }
-          },
-          {
-            "parentId": 355,
-            "nextId": 374,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 375
-            }
-          },
-          {
-            "parentId": 354,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 376
-            }
-          },
-          {
-            "parentId": 354,
-            "nextId": 376,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 377
-            }
-          },
-          {
-            "parentId": 353,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 378
-            }
-          },
-          {
-            "parentId": 353,
-            "nextId": 378,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 379
-            }
-          },
-          {
-            "parentId": 352,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 380
-            }
-          },
-          {
-            "parentId": 352,
-            "nextId": 380,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 381
-            }
-          },
-          {
-            "parentId": 351,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 382
-            }
-          },
-          {
-            "parentId": 351,
-            "nextId": 382,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 383
-            }
-          },
-          {
-            "parentId": 350,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 384
-            }
-          },
-          {
-            "parentId": 350,
-            "nextId": 384,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 385
-            }
-          },
-          {
-            "parentId": 349,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 386
-            }
-          },
-          {
-            "parentId": 349,
-            "nextId": 386,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 387
-            }
-          },
-          {
-            "parentId": 348,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 388
-            }
-          },
-          {
-            "parentId": 348,
-            "nextId": 388,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 389
-            }
-          },
-          {
-            "parentId": 338,
-            "nextId": 339,
-            "node": {
-              "type": 3,
-              "textContent": "",
-              "id": 390
-            }
-          },
-          {
-            "parentId": 341,
-            "nextId": 342,
-            "node": {
-              "type": 2,
-              "tagName": "div",
-              "attributes": {
-                "class": "devhost-1tctc4"
-              },
-              "childNodes": [],
-              "id": 391
-            }
-          },
-          {
-            "parentId": 391,
-            "nextId": null,
-            "node": {
-              "type": 2,
-              "tagName": "strong",
-              "attributes": {},
-              "childNodes": [],
-              "id": 392
-            }
-          },
-          {
-            "parentId": 392,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "Annotation queues",
-              "id": 393
-            }
-          },
-          {
-            "parentId": 344,
-            "nextId": 345,
-            "node": {
-              "type": 2,
-              "tagName": "div",
-              "attributes": {
-                "class": "devhost-18bx7zt"
-              },
-              "childNodes": [],
-              "id": 394
-            }
-          },
-          {
-            "parentId": 394,
-            "nextId": null,
-            "node": {
-              "type": 2,
-              "tagName": "div",
-              "attributes": {
-                "class": "devhost-18en7re"
-              },
-              "childNodes": [],
-              "id": 395
-            }
-          },
-          {
-            "parentId": 394,
-            "nextId": 395,
-            "node": {
-              "type": 2,
-              "tagName": "div",
-              "attributes": {
-                "class": "devhost-vgj5n9"
-              },
-              "childNodes": [],
-              "id": 396
-            }
-          },
-          {
-            "parentId": 394,
-            "nextId": 396,
-            "node": {
-              "type": 2,
-              "tagName": "div",
-              "attributes": {
-                "class": "devhost-8knhcs"
-              },
-              "childNodes": [],
-              "id": 397
-            }
-          },
-          {
-            "parentId": 397,
-            "nextId": null,
-            "node": {
-              "type": 2,
-              "tagName": "span",
-              "attributes": {
-                "class": "devhost-yr9uer"
-              },
-              "childNodes": [],
-              "id": 398
-            }
-          },
-          {
-            "parentId": 397,
-            "nextId": 398,
-            "node": {
-              "type": 2,
-              "tagName": "strong",
-              "attributes": {
-                "class": "devhost-1wv04w",
-                "title": "app.localhost/dashboard"
-              },
-              "childNodes": [],
-              "id": 399
-            }
-          },
-          {
-            "parentId": 399,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "app.localhost/dashboard",
-              "id": 400
-            }
-          },
-          {
-            "parentId": 398,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "Paused",
-              "id": 401
-            }
-          },
-          {
-            "parentId": 396,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "1 of 2",
-              "id": 402
-            }
-          },
-          {
-            "parentId": 395,
-            "nextId": null,
-            "node": {
-              "type": 2,
-              "tagName": "div",
-              "attributes": {
-                "class": "devhost-1e0ol3m",
-                "data-testid": "AnnotationQueuePanel--queue-progress"
-              },
-              "childNodes": [],
-              "id": 403
-            }
-          },
-          {
-            "parentId": 345,
-            "nextId": 346,
-            "node": {
-              "type": 2,
-              "tagName": "button",
-              "attributes": {
-                "class": "devhost-p4wubb",
-                "data-devhost-instance-testid": "AnnotationQueuePanel--resume",
-                "data-testid": "Button",
-                "type": "button"
-              },
-              "childNodes": [],
-              "id": 404
-            }
-          },
-          {
-            "parentId": 404,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "Resume",
-              "id": 405
-            }
-          }
-        ]
-      },
-      "timestamp": 1776316860817
+      "timestamp": 1776544399166
     },
     {
       "type": 3,
@@ -3787,7 +3534,7 @@
           }
         ]
       },
-      "timestamp": 1776316860826
+      "timestamp": 1776544399172
     },
     {
       "type": 3,
@@ -3806,7 +3553,7 @@
         "removes": [],
         "adds": []
       },
-      "timestamp": 1776316860827
+      "timestamp": 1776544399174
     },
     {
       "type": 3,
@@ -4797,7 +4544,7 @@
           }
         ]
       },
-      "timestamp": 1776316860830
+      "timestamp": 1776544399181
     },
     {
       "type": 3,
@@ -5298,7 +5045,7 @@
           }
         ]
       },
-      "timestamp": 1776316860831
+      "timestamp": 1776544399210
     },
     {
       "type": 3,
@@ -5313,7 +5060,7 @@
           }
         ]
       },
-      "timestamp": 1776316861073
+      "timestamp": 1776544399430
     },
     {
       "type": 3,
@@ -5324,47 +5071,47 @@
             "x": 321,
             "y": 727,
             "id": 102,
-            "timeOffset": -451
+            "timeOffset": -434
           },
           {
-            "x": 336,
-            "y": 721,
+            "x": 330,
+            "y": 723,
             "id": 102,
-            "timeOffset": -376
+            "timeOffset": -368
+          },
+          {
+            "x": 343,
+            "y": 718,
+            "id": 102,
+            "timeOffset": -301
           },
           {
             "x": 360,
             "y": 712,
             "id": 102,
-            "timeOffset": -301
+            "timeOffset": -234
           },
           {
             "x": 382,
             "y": 703,
             "id": 102,
-            "timeOffset": -251
+            "timeOffset": -168
           },
           {
             "x": 409,
             "y": 692,
             "id": 99,
-            "timeOffset": -201
+            "timeOffset": -101
           },
           {
-            "x": 457,
-            "y": 671,
+            "x": 440,
+            "y": 679,
             "id": 100,
-            "timeOffset": -126
-          },
-          {
-            "x": 514,
-            "y": 645,
-            "id": 98,
-            "timeOffset": -51
+            "timeOffset": -34
           }
         ]
       },
-      "timestamp": 1776316861574
+      "timestamp": 1776544399930
     },
     {
       "type": 3,
@@ -5372,62 +5119,107 @@
         "source": 1,
         "positions": [
           {
-            "x": 579,
-            "y": 612,
+            "x": 475,
+            "y": 663,
+            "id": 100,
+            "timeOffset": -469
+          },
+          {
+            "x": 514,
+            "y": 645,
+            "id": 98,
+            "timeOffset": -402
+          },
+          {
+            "x": 557,
+            "y": 624,
             "id": 25,
-            "timeOffset": -476
+            "timeOffset": -335
+          },
+          {
+            "x": 603,
+            "y": 600,
+            "id": 80,
+            "timeOffset": -268
           },
           {
             "x": 652,
             "y": 573,
             "id": 85,
-            "timeOffset": -402
+            "timeOffset": -202
           },
           {
             "x": 703,
             "y": 545,
             "id": 85,
-            "timeOffset": -352
+            "timeOffset": -135
           },
           {
             "x": 756,
             "y": 513,
             "id": 83,
-            "timeOffset": -301
+            "timeOffset": -69
           },
           {
-            "x": 838,
-            "y": 463,
-            "id": 81,
-            "timeOffset": -227
-          },
-          {
-            "x": 893,
-            "y": 428,
+            "x": 811,
+            "y": 480,
             "id": 80,
-            "timeOffset": -177
-          },
-          {
-            "x": 948,
-            "y": 392,
-            "id": 63,
-            "timeOffset": -127
-          },
-          {
-            "x": 1001,
-            "y": 356,
-            "id": 70,
-            "timeOffset": -76
-          },
-          {
-            "x": 1053,
-            "y": 320,
-            "id": 63,
-            "timeOffset": 0
+            "timeOffset": -2
           }
         ]
       },
-      "timestamp": 1776316862074
+      "timestamp": 1776544400431
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 1,
+        "positions": [
+          {
+            "x": 866,
+            "y": 446,
+            "id": 81,
+            "timeOffset": -435
+          },
+          {
+            "x": 920,
+            "y": 410,
+            "id": 25,
+            "timeOffset": -369
+          },
+          {
+            "x": 975,
+            "y": 374,
+            "id": 63,
+            "timeOffset": -302
+          },
+          {
+            "x": 1027,
+            "y": 338,
+            "id": 70,
+            "timeOffset": -235
+          },
+          {
+            "x": 1078,
+            "y": 302,
+            "id": 68,
+            "timeOffset": -169
+          },
+          {
+            "x": 1127,
+            "y": 268,
+            "id": 68,
+            "timeOffset": -102
+          },
+          {
+            "x": 1172,
+            "y": 235,
+            "id": 63,
+            "timeOffset": -35
+          }
+        ]
+      },
+      "timestamp": 1776544400931
     },
     {
       "type": 3,
@@ -5514,7 +5306,7 @@
           }
         ]
       },
-      "timestamp": 1776316862558
+      "timestamp": 1776544401364
     },
     {
       "type": 3,
@@ -5522,62 +5314,56 @@
         "source": 1,
         "positions": [
           {
-            "x": 1127,
-            "y": 268,
-            "id": 68,
-            "timeOffset": -422
-          },
-          {
-            "x": 1172,
-            "y": 235,
-            "id": 63,
-            "timeOffset": -369
-          },
-          {
             "x": 1215,
             "y": 205,
             "id": 66,
-            "timeOffset": -319
+            "timeOffset": -469
           },
           {
             "x": 1253,
             "y": 177,
             "id": 64,
-            "timeOffset": -269
+            "timeOffset": -402
           },
           {
             "x": 1289,
             "y": 151,
             "id": 224,
-            "timeOffset": -219
+            "timeOffset": -335
           },
           {
             "x": 1320,
             "y": 128,
             "id": 224,
-            "timeOffset": -169
+            "timeOffset": -269
           },
           {
             "x": 1348,
             "y": 108,
             "id": 224,
-            "timeOffset": -119
+            "timeOffset": -202
           },
           {
             "x": 1371,
             "y": 91,
             "id": 224,
-            "timeOffset": -69
+            "timeOffset": -135
           },
           {
             "x": 1391,
             "y": 77,
             "id": 225,
-            "timeOffset": -18
+            "timeOffset": -68
+          },
+          {
+            "x": 1407,
+            "y": 65,
+            "id": 246,
+            "timeOffset": -2
           }
         ]
       },
-      "timestamp": 1776316862575
+      "timestamp": 1776544401431
     },
     {
       "type": 3,
@@ -5585,32 +5371,32 @@
         "source": 1,
         "positions": [
           {
-            "x": 1407,
-            "y": 65,
-            "id": 246,
-            "timeOffset": -470
+            "x": 1420,
+            "y": 56,
+            "id": 226,
+            "timeOffset": -435
           },
           {
-            "x": 1425,
-            "y": 53,
-            "id": 239,
-            "timeOffset": -395
-          },
-          {
-            "x": 1432,
-            "y": 48,
+            "x": 1428,
+            "y": 50,
             "id": 225,
-            "timeOffset": -345
+            "timeOffset": -369
+          },
+          {
+            "x": 1434,
+            "y": 47,
+            "id": 225,
+            "timeOffset": -302
           },
           {
             "x": 1436,
             "y": 46,
             "id": 225,
-            "timeOffset": -271
+            "timeOffset": -235
           }
         ]
       },
-      "timestamp": 1776316863077
+      "timestamp": 1776544401931
     },
     {
       "type": 3,
@@ -5621,17 +5407,11 @@
             "x": 1435,
             "y": 46,
             "id": 225,
-            "timeOffset": -89
-          },
-          {
-            "x": 1433,
-            "y": 51,
-            "id": 225,
-            "timeOffset": -39
+            "timeOffset": -52
           }
         ]
       },
-      "timestamp": 1776316863578
+      "timestamp": 1776544402431
     },
     {
       "type": 3,
@@ -5646,7 +5426,7 @@
             }
           },
           {
-            "id": 340,
+            "id": 248,
             "attributes": {
               "class": "devhost-13le6cy"
             }
@@ -5655,7 +5435,7 @@
         "removes": [],
         "adds": []
       },
-      "timestamp": 1776316863666
+      "timestamp": 1776544402613
     },
     {
       "type": 3,
@@ -5664,7 +5444,7 @@
         "texts": [],
         "attributes": [
           {
-            "id": 340,
+            "id": 248,
             "attributes": {
               "class": "devhost-vj04f"
             }
@@ -5673,7 +5453,7 @@
         "removes": [],
         "adds": []
       },
-      "timestamp": 1776316863842
+      "timestamp": 1776544402846
     },
     {
       "type": 3,
@@ -5681,62 +5461,56 @@
         "source": 1,
         "positions": [
           {
+            "x": 1433,
+            "y": 51,
+            "id": 225,
+            "timeOffset": -485
+          },
+          {
             "x": 1430,
             "y": 61,
             "id": 225,
-            "timeOffset": -490
+            "timeOffset": -419
           },
           {
             "x": 1424,
             "y": 77,
             "id": 225,
-            "timeOffset": -440
+            "timeOffset": -352
           },
           {
             "x": 1418,
             "y": 97,
-            "id": 392,
-            "timeOffset": -389
+            "id": 251,
+            "timeOffset": -285
           },
           {
-            "x": 1409,
-            "y": 138,
-            "id": 404,
-            "timeOffset": -315
-          },
-          {
-            "x": 1404,
-            "y": 171,
-            "id": 340,
-            "timeOffset": -263
-          },
-          {
-            "x": 1401,
-            "y": 208,
-            "id": 63,
-            "timeOffset": -213
-          },
-          {
-            "x": 1400,
-            "y": 266,
-            "id": 63,
-            "timeOffset": -140
-          },
-          {
-            "x": 1403,
-            "y": 305,
-            "id": 63,
-            "timeOffset": -90
+            "x": 1412,
+            "y": 123,
+            "id": 257,
+            "timeOffset": -219
           },
           {
             "x": 1407,
-            "y": 342,
-            "id": 25,
-            "timeOffset": -40
+            "y": 154,
+            "id": 269,
+            "timeOffset": -152
+          },
+          {
+            "x": 1403,
+            "y": 189,
+            "id": 63,
+            "timeOffset": -85
+          },
+          {
+            "x": 1400,
+            "y": 227,
+            "id": 63,
+            "timeOffset": -19
           }
         ]
       },
-      "timestamp": 1776316864079
+      "timestamp": 1776544402931
     },
     {
       "type": 3,
@@ -6428,7 +6202,7 @@
           }
         ]
       },
-      "timestamp": 1776316864143
+      "timestamp": 1776544403251
     },
     {
       "type": 3,
@@ -6436,50 +6210,83 @@
         "source": 1,
         "positions": [
           {
+            "x": 1400,
+            "y": 266,
+            "id": 63,
+            "timeOffset": -452
+          },
+          {
+            "x": 1403,
+            "y": 305,
+            "id": 63,
+            "timeOffset": -385
+          },
+          {
+            "x": 1407,
+            "y": 342,
+            "id": 25,
+            "timeOffset": -319
+          },
+          {
             "x": 1413,
             "y": 376,
             "id": 25,
-            "timeOffset": -491
+            "timeOffset": -252
           },
           {
             "x": 1419,
             "y": 406,
             "id": 408,
-            "timeOffset": -441
+            "timeOffset": -185
           },
           {
-            "x": 1425,
-            "y": 431,
+            "x": 1422,
+            "y": 419,
             "id": 408,
-            "timeOffset": -387
+            "timeOffset": -132
           },
           {
-            "x": 1430,
-            "y": 450,
+            "x": 1427,
+            "y": 441,
             "id": 408,
-            "timeOffset": -322
-          },
-          {
-            "x": 1433,
-            "y": 465,
-            "id": 408,
-            "timeOffset": -257
-          },
-          {
-            "x": 1435,
-            "y": 474,
-            "id": 408,
-            "timeOffset": -177
-          },
-          {
-            "x": 1436,
-            "y": 479,
-            "id": 408,
-            "timeOffset": -124
+            "timeOffset": -65
           }
         ]
       },
-      "timestamp": 1776316864580
+      "timestamp": 1776544403431
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 1,
+        "positions": [
+          {
+            "x": 1432,
+            "y": 458,
+            "id": 408,
+            "timeOffset": -496
+          },
+          {
+            "x": 1434,
+            "y": 470,
+            "id": 408,
+            "timeOffset": -435
+          },
+          {
+            "x": 1436,
+            "y": 477,
+            "id": 408,
+            "timeOffset": -369
+          },
+          {
+            "x": 1436,
+            "y": 480,
+            "id": 408,
+            "timeOffset": -302
+          }
+        ]
+      },
+      "timestamp": 1776544403931
     },
     {
       "type": 3,
@@ -6489,7 +6296,7 @@
         "x": 0,
         "y": 760
       },
-      "timestamp": 1776316865332
+      "timestamp": 1776544404479
     },
     {
       "type": 3,
@@ -6504,7 +6311,58 @@
           }
         ]
       },
-      "timestamp": 1776316866218
+      "timestamp": 1776544405379
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 1,
+        "positions": [
+          {
+            "x": 1434,
+            "y": 474,
+            "id": 408,
+            "timeOffset": -433
+          },
+          {
+            "x": 1433,
+            "y": 464,
+            "id": 408,
+            "timeOffset": -367
+          },
+          {
+            "x": 1431,
+            "y": 449,
+            "id": 408,
+            "timeOffset": -300
+          },
+          {
+            "x": 1427,
+            "y": 429,
+            "id": 408,
+            "timeOffset": -233
+          },
+          {
+            "x": 1420,
+            "y": 404,
+            "id": 408,
+            "timeOffset": -167
+          },
+          {
+            "x": 1411,
+            "y": 376,
+            "id": 408,
+            "timeOffset": -100
+          },
+          {
+            "x": 1398,
+            "y": 345,
+            "id": 408,
+            "timeOffset": -34
+          }
+        ]
+      },
+      "timestamp": 1776544405879
     },
     {
       "type": 3,
@@ -6531,7 +6389,7 @@
         ],
         "adds": []
       },
-      "timestamp": 1776316866716
+      "timestamp": 1776544406048
     },
     {
       "type": 3,
@@ -6539,113 +6397,56 @@
         "source": 1,
         "positions": [
           {
-            "x": 1434,
-            "y": 474,
+            "x": 1381,
+            "y": 312,
             "id": 408,
-            "timeOffset": -450
+            "timeOffset": -467
           },
           {
-            "x": 1432,
-            "y": 457,
+            "x": 1361,
+            "y": 277,
             "id": 408,
-            "timeOffset": -375
+            "timeOffset": -400
           },
           {
-            "x": 1429,
-            "y": 439,
-            "id": 408,
-            "timeOffset": -325
+            "x": 1337,
+            "y": 242,
+            "id": 161,
+            "timeOffset": -333
           },
-          {
-            "x": 1424,
-            "y": 417,
-            "id": 408,
-            "timeOffset": -275
-          },
-          {
-            "x": 1416,
-            "y": 391,
-            "id": 408,
-            "timeOffset": -225
-          },
-          {
-            "x": 1398,
-            "y": 345,
-            "id": 408,
-            "timeOffset": -154
-          },
-          {
-            "x": 1371,
-            "y": 295,
-            "id": 408,
-            "timeOffset": -80
-          },
-          {
-            "x": 1349,
-            "y": 260,
-            "id": 408,
-            "timeOffset": -30
-          }
-        ]
-      },
-      "timestamp": 1776316866719
-    },
-    {
-      "type": 3,
-      "data": {
-        "source": 1,
-        "positions": [
           {
             "x": 1325,
             "y": 225,
             "id": 150,
-            "timeOffset": -472
+            "timeOffset": -275
           },
           {
-            "x": 1285,
-            "y": 174,
+            "x": 1299,
+            "y": 190,
+            "id": 159,
+            "timeOffset": -199
+          },
+          {
+            "x": 1272,
+            "y": 158,
             "id": 224,
-            "timeOffset": -384
+            "timeOffset": -134
           },
           {
             "x": 1246,
             "y": 127,
             "id": 224,
-            "timeOffset": -313
+            "timeOffset": -67
           },
           {
             "x": 1222,
             "y": 100,
             "id": 224,
-            "timeOffset": -263
-          },
-          {
-            "x": 1200,
-            "y": 76,
-            "id": 224,
-            "timeOffset": -213
-          },
-          {
-            "x": 1182,
-            "y": 55,
-            "id": 224,
-            "timeOffset": -162
-          },
-          {
-            "x": 1160,
-            "y": 30,
-            "id": 224,
-            "timeOffset": -89
-          },
-          {
-            "x": 1149,
-            "y": 18,
-            "id": 224,
-            "timeOffset": -38
+            "timeOffset": 0
           }
         ]
       },
-      "timestamp": 1776316867219
+      "timestamp": 1776544406379
     },
     {
       "type": 3,
@@ -6653,20 +6454,50 @@
         "source": 1,
         "positions": [
           {
-            "x": 1142,
-            "y": 10,
+            "x": 1200,
+            "y": 76,
             "id": 224,
-            "timeOffset": -488
+            "timeOffset": -435
+          },
+          {
+            "x": 1182,
+            "y": 55,
+            "id": 224,
+            "timeOffset": -368
+          },
+          {
+            "x": 1166,
+            "y": 37,
+            "id": 224,
+            "timeOffset": -301
+          },
+          {
+            "x": 1154,
+            "y": 24,
+            "id": 224,
+            "timeOffset": -234
+          },
+          {
+            "x": 1145,
+            "y": 14,
+            "id": 224,
+            "timeOffset": -168
+          },
+          {
+            "x": 1139,
+            "y": 7,
+            "id": 142,
+            "timeOffset": -101
           },
           {
             "x": 1136,
             "y": 4,
             "id": 142,
-            "timeOffset": -413
+            "timeOffset": -35
           }
         ]
       },
-      "timestamp": 1776316867719
+      "timestamp": 1776544406880
     }
   ]
 }

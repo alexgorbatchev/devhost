@@ -4,7 +4,7 @@ import type { JSX } from "react";
 import { MarketingCapturePage } from "../MarketingCapturePage";
 
 const meta: Meta<typeof MarketingCapturePage> = {
-  title: "devhost-test-app/marketingCapture/MarketingCapturePage",
+  title: "devhost-test-app/marketing/capture/MarketingCapturePage",
   component: MarketingCapturePage,
   render: (): JSX.Element => {
     return <div data-testid="MarketingCapturePageStory">Marketing capture story placeholder.</div>;

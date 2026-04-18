@@ -31,10 +31,7 @@ import type {
   ServiceLogStream,
 } from "@alexgorbatchev/devhost/src/devtools/shared/types";
 
-import {
-  readMarketingRecordingScenario,
-  type MarketingRecordingScenarioId,
-} from "../features/marketingRecording/marketingRecordingScenarios";
+import { readMarketingRecordingScenario, type MarketingRecordingScenarioId } from "../replays/marketingReplayScenarios";
 
 type CaptureChannel = "annotation-queues" | "health" | "logs" | "terminal";
 type CaptureControlMessage = string | Buffer | ArrayBuffer | Uint8Array;
@@ -718,7 +715,7 @@ function createSourceLocation(
   return {
     columnNumber,
     componentName,
-    fileName: `${mockProjectRootPath}/src/marketingCapture/MarketingCapturePage.tsx`,
+    fileName: `${mockProjectRootPath}/src/marketing/capture/MarketingCapturePage.tsx`,
     lineNumber,
   };
 }

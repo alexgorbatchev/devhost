@@ -14,7 +14,7 @@ import {
   type IMarketingRecordingScenario,
   type IMarketingRecordingViewport,
   type MarketingRecordingScenarioId,
-} from "../src/features/marketingRecording/marketingRecordingScenarios";
+} from "../src/marketing/replays/marketingReplayScenarios";
 
 interface IProcessLogs {
   stderr: string[];
@@ -32,6 +32,8 @@ interface IPoint {
 
 const afterLeftClickPauseMs: number = 320;
 const afterRightClickPauseMs: number = 420;
+const annotationHighlightPauseMs: number = 1_000;
+const annotationHighlightWiggleOffsetPx: number = 6;
 const beforeClickPauseMs: number = 140;
 const capturePathname: string = "/__capture__";
 const clickHoldDurationMs: number = 90;
@@ -167,8 +169,12 @@ async function runAnnotationScenario(page: Page): Promise<void> {
   const primaryTarget = page.getByTestId("MarketingCapturePage--annotation-target-primary");
   const secondaryTarget = page.getByTestId("MarketingCapturePage--annotation-target-secondary");
 
+  await moveCursorToLocator(page, primaryTarget, 0);
   await page.keyboard.down("Alt");
+  await wiggleCursorAtLocator(page, primaryTarget);
+  await page.waitForTimeout(annotationHighlightPauseMs);
   await clickLocator(page, primaryTarget);
+  await moveCursorToLocator(page, secondaryTarget, annotationHighlightPauseMs);
   await clickLocator(page, secondaryTarget);
   await page.keyboard.up("Alt");
 
@@ -283,6 +289,15 @@ async function moveCursorToLocator(page: Page, locator: Locator, pauseMs: number
 
   await moveCursorHumanLike(page, target);
   await page.waitForTimeout(pauseMs);
+}
+
+async function wiggleCursorAtLocator(page: Page, locator: Locator): Promise<void> {
+  const target = await readLocatorCenter(locator);
+
+  await page.mouse.move(target.x + annotationHighlightWiggleOffsetPx, target.y);
+  await page.waitForTimeout(cursorFrameIntervalMs * 2);
+  await page.mouse.move(target.x, target.y);
+  cursorPositionsByPage.set(page, target);
 }
 
 async function readLocatorCenter(locator: Locator): Promise<IPoint> {

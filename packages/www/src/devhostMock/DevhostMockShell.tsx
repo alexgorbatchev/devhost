@@ -1,6 +1,6 @@
 import { useEffect, useRef, type JSX, type ReactNode } from "react";
 
-import type { MarketingRecordingScenarioId } from "../features/marketingRecording/marketingRecordingScenarios";
+import type { MarketingRecordingScenarioId } from "../marketing/replays/marketingReplayScenarios";
 import { installDevhostMockEnvironment } from "./installDevhostMockEnvironment";
 
 interface IDevhostMockShellProps {

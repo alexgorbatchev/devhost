@@ -10,7 +10,7 @@ import { createMarketingRecordingResponse } from "./createMarketingRecordingResp
 import {
   createCaptureControlPlane,
   type ICaptureControlWebSocketData,
-} from "./marketingCapture/createCaptureControlPlane";
+} from "./marketing/capture/createCaptureControlPlane";
 
 const captureDevtoolsScriptPath: string = "/__capture__/devtools.js";
 let cachedCaptureDevtoolsScriptPromise: Promise<string> | null = null;
