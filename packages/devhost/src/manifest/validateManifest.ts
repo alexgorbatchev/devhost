@@ -2,6 +2,7 @@ import { dirname, isAbsolute, relative, resolve } from "node:path";
 
 import { z } from "zod";
 
+import { defaultManagedCaddyAdminAddress } from "../caddy/caddyPaths";
 import { defaultManagedCaddyHttpPort, defaultManagedCaddyHttpsPort } from "../caddy/managedCaddyPorts";
 import { defaultManagedCaddyBindHost } from "../caddy/resolveManagedCaddyBindDirective";
 import { defaultBindHost } from "../utils/constants";
@@ -90,6 +91,7 @@ const manifestSchema = z
       .object({
         global: z
           .object({
+            adminAddress: nonEmptyStringSchema.optional(),
             bindHost: z.enum(["127.0.0.1", "0.0.0.0", "::1", "::"]).optional(),
             httpPort: listenerPortSchema.optional(),
             http: z.boolean().optional(),
@@ -194,6 +196,7 @@ export function validateManifest(manifestPath: string, manifestValue: unknown): 
     agent: validatedAgent,
     caddy: {
       global: {
+        adminAddress: parsedManifest.caddy?.global?.adminAddress ?? defaultManagedCaddyAdminAddress,
         bindHost: parsedManifest.caddy?.global?.bindHost ?? defaultManagedCaddyBindHost,
         httpPort: parsedManifest.caddy?.global?.httpPort ?? defaultManagedCaddyHttpPort,
         http: parsedManifest.caddy?.global?.http ?? false,

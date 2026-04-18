@@ -1,6 +1,6 @@
 import { access, rm } from "node:fs/promises";
 
-import { managedCaddyPaths } from "./caddyPaths";
+import { createCaddyAdminApiUrl, managedCaddyPaths, resolveManagedCaddyAdminAddress } from "./caddyPaths";
 import type { IDevhostLogger } from "../utils/createLogger";
 import { ensureManagedCaddyConfig } from "./ensureManagedCaddyConfig";
 import { resolveManagedCaddyBindDirective } from "./resolveManagedCaddyBindDirective";
@@ -22,6 +22,7 @@ type SyncBooleanFunction = () => boolean;
 type DownloadManagedCaddyFunction = (logger: IDevhostLogger) => Promise<void>;
 
 interface IRunManagedCaddyLifecycleCommandDependencies {
+  adminAddress?: string;
   downloadManagedCaddy?: DownloadManagedCaddyFunction;
   ensureManagedCaddyConfig?: AsyncVoidFunction;
   hasManagedCaddyBinary?: AsyncBooleanFunction;
@@ -40,8 +41,11 @@ export async function runManagedCaddyLifecycleCommand(
   logger: IDevhostLogger,
   dependencies: IRunManagedCaddyLifecycleCommandDependencies = {},
 ): Promise<number> {
+  const managedCaddyAdminAddress: string = resolveManagedCaddyAdminAddress(dependencies.adminAddress);
   const ensureManagedCaddyConfigImplementation: AsyncVoidFunction =
-    dependencies.ensureManagedCaddyConfig ?? ensureManagedCaddyConfig;
+    dependencies.ensureManagedCaddyConfig ??
+    (async (): Promise<void> =>
+      ensureManagedCaddyConfig(managedCaddyPaths, { adminAddress: managedCaddyAdminAddress }));
   const downloadManagedCaddy = dependencies.downloadManagedCaddy ?? defaultDownloadManagedCaddy;
   const hasManagedCaddyBinary: AsyncBooleanFunction =
     dependencies.hasManagedCaddyBinary ?? defaultHasManagedCaddyBinary;
@@ -50,7 +54,8 @@ export async function runManagedCaddyLifecycleCommand(
     dependencies.hasManagedRootCertificate ?? defaultHasManagedRootCertificate;
   const isRootUser: SyncBooleanFunction = dependencies.isRootUser ?? defaultIsRootUser;
   const isManagedCaddyAvailable: AsyncBooleanFunction =
-    dependencies.isManagedCaddyAvailable ?? defaultIsManagedCaddyAvailable;
+    dependencies.isManagedCaddyAvailable ??
+    (async (): Promise<boolean> => defaultIsManagedCaddyAvailable(managedCaddyAdminAddress));
   const platform: NodeJS.Platform = dependencies.platform ?? process.platform;
   const removeManagedPidFile: AsyncVoidFunction = dependencies.removeManagedPidFile ?? defaultRemoveManagedPidFile;
   const runManagedCaddyCommandImplementation: ManagedCaddyCommandRunner =
@@ -67,6 +72,7 @@ export async function runManagedCaddyLifecycleCommand(
       logger,
       hasManagedPidFile,
       isManagedCaddyAvailable,
+      managedCaddyAdminAddress,
       runManagedCaddyCommandImplementation,
     );
   }
@@ -76,6 +82,7 @@ export async function runManagedCaddyLifecycleCommand(
       logger,
       hasManagedPidFile,
       isManagedCaddyAvailable,
+      managedCaddyAdminAddress,
       removeManagedPidFile,
       runManagedCaddyCommandImplementation,
     );
@@ -105,6 +112,7 @@ export async function runManagedCaddyLifecycleCommand(
     logger,
     hasManagedPidFile,
     isManagedCaddyAvailable,
+    managedCaddyAdminAddress,
     runManagedCaddyCommandImplementation,
   );
 }
@@ -113,6 +121,7 @@ async function startManagedCaddy(
   logger: IDevhostLogger,
   hasManagedPidFile: AsyncBooleanFunction,
   isManagedCaddyAvailable: AsyncBooleanFunction,
+  adminAddress: string,
   runManagedCaddyCommandImplementation: ManagedCaddyCommandRunner,
 ): Promise<number> {
   if (await isManagedCaddyAvailable()) {
@@ -143,6 +152,7 @@ async function stopManagedCaddy(
   logger: IDevhostLogger,
   hasManagedPidFile: AsyncBooleanFunction,
   isManagedCaddyAvailable: AsyncBooleanFunction,
+  adminAddress: string,
   removeManagedPidFile: AsyncVoidFunction,
   runManagedCaddyCommandImplementation: ManagedCaddyCommandRunner,
 ): Promise<number> {
@@ -166,7 +176,7 @@ async function stopManagedCaddy(
     );
   }
 
-  const result: ICaddyCommandResult = runManagedCaddyCommandImplementation(["stop"]);
+  const result: ICaddyCommandResult = runManagedCaddyCommandImplementation(["stop"], { adminAddress });
 
   if (!result.success) {
     throw new Error(createManagedCaddyCommandErrorMessage("stop", result));
@@ -181,6 +191,7 @@ async function trustManagedCaddy(
   logger: IDevhostLogger,
   hasManagedPidFile: AsyncBooleanFunction,
   isManagedCaddyAvailable: AsyncBooleanFunction,
+  adminAddress: string,
   runManagedCaddyCommandImplementation: ManagedCaddyCommandRunner,
 ): Promise<number> {
   if (!(await isManagedCaddyAvailable())) {
@@ -193,7 +204,10 @@ async function trustManagedCaddy(
     );
   }
 
-  const result: ICaddyCommandResult = runManagedCaddyCommandImplementation(["trust"], { stdioMode: "inherit" });
+  const result: ICaddyCommandResult = runManagedCaddyCommandImplementation(["trust"], {
+    adminAddress,
+    stdioMode: "inherit",
+  });
 
   if (!result.success) {
     throw new Error(createManagedCaddyCommandErrorMessage("trust", result));
@@ -267,9 +281,9 @@ async function defaultHasManagedCaddyBinary(): Promise<boolean> {
   }
 }
 
-async function defaultIsManagedCaddyAvailable(): Promise<boolean> {
+async function defaultIsManagedCaddyAvailable(adminAddress: string): Promise<boolean> {
   try {
-    await ensureCaddyAdminAvailable();
+    await ensureCaddyAdminAvailable(createCaddyAdminApiUrl(adminAddress));
     return true;
   } catch {
     return false;

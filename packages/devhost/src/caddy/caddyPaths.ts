@@ -1,7 +1,7 @@
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
-const defaultAdminAddress: string = "127.0.0.1:20197";
+export const defaultManagedCaddyAdminAddress: string = "127.0.0.1:20197";
 const defaultStateDirectorySegments: string[] = [".local", "state", "devhost"];
 
 export interface IManagedCaddyPaths {
@@ -24,20 +24,12 @@ export function createManagedCaddyPathsForRoutesDirectory(routesDirectoryPath: s
   return createManagedCaddyPaths(stateDirectoryPath);
 }
 
-export function resolveManagedCaddyAdminAddress(environment: NodeJS.ProcessEnv = process.env): string {
-  const configuredAddress: string | undefined = environment.DEVHOST_CADDY_ADMIN_ADDRESS;
+export function createCaddyAdminApiUrl(adminAddress: string): string {
+  return `http://${adminAddress}/config/`;
+}
 
-  if (configuredAddress === undefined) {
-    return defaultAdminAddress;
-  }
-
-  const trimmedAddress: string = configuredAddress.trim();
-
-  if (trimmedAddress.length === 0) {
-    return defaultAdminAddress;
-  }
-
-  return trimmedAddress;
+export function resolveManagedCaddyAdminAddress(manifestAdminAddress?: string): string {
+  return manifestAdminAddress?.trim().length ? manifestAdminAddress.trim() : defaultManagedCaddyAdminAddress;
 }
 
 export function resolveDevhostStateDirectoryPath(environment: NodeJS.ProcessEnv = process.env): string {
@@ -92,4 +84,4 @@ export function createManagedCaddyPaths(
 
 export const managedCaddyAdminAddress: string = resolveManagedCaddyAdminAddress();
 export const managedCaddyPaths: IManagedCaddyPaths = createManagedCaddyPaths();
-export const caddyAdminApiUrl: string = `http://${managedCaddyAdminAddress}/config/`;
+export const caddyAdminApiUrl: string = createCaddyAdminApiUrl(managedCaddyAdminAddress);

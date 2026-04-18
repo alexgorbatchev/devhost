@@ -3,7 +3,11 @@ import { join } from "node:path";
 
 import { dedentString } from "@alexgorbatchev/dedent-string";
 
-import { caddyAdminApiUrl, createManagedCaddyPathsForRoutesDirectory } from "../caddy/caddyPaths";
+import {
+  caddyAdminApiUrl,
+  createManagedCaddyPathsForRoutesDirectory,
+  defaultManagedCaddyAdminAddress,
+} from "../caddy/caddyPaths";
 import {
   defaultManagedCaddyHttpPort,
   defaultManagedCaddyHttpsPort,
@@ -26,6 +30,7 @@ interface IHostClaim {
 interface IRouteRegistration {
   appBindHost: string;
   appPort: number;
+  caddyAdminAddress?: string;
   caddyBindHost?: string;
   caddyHttpPort?: number;
   caddyHttpsPort?: number;
@@ -53,6 +58,7 @@ type ManagedRouteRegistration = IRouteRegistration | ILegacyRouteRegistration;
 export interface IActivateRouteOptions {
   appBindHost: string;
   appPort: number;
+  caddyAdminAddress?: string;
   caddyBindHost?: string;
   caddyHttpPort?: number;
   caddyHttpsPort?: number;
@@ -73,15 +79,19 @@ export interface IClaimHostOptions {
 type FetchImplementation = (input: string, init?: RequestInit) => Promise<Response>;
 
 interface IManagedCaddyGlobalSettings {
+  adminAddress: string;
   bindHost: string;
   httpPort: number;
   httpEnabled: boolean;
   httpsPort: number;
 }
 
-export async function ensureCaddyAdminAvailable(fetchImplementation: FetchImplementation = fetch): Promise<void> {
+export async function ensureCaddyAdminAvailable(
+  adminApiUrl: string = caddyAdminApiUrl,
+  fetchImplementation: FetchImplementation = fetch,
+): Promise<void> {
   try {
-    const response: Response = await fetchImplementation(caddyAdminApiUrl, {
+    const response: Response = await fetchImplementation(adminApiUrl, {
       method: "GET",
       redirect: "manual",
       signal: AbortSignal.timeout(caddyAdminTimeoutInMilliseconds),
@@ -226,7 +236,7 @@ export async function activateRoute(
     }
 
     await syncManagedCaddyNotFoundSite(routesDirectoryPath, nextSettings.httpsPort);
-    reloadCaddy();
+    reloadCaddy(nextSettings.adminAddress);
   } catch (error) {
     await rm(routeRegistrationPath, { force: true });
     const nextSettings: IManagedCaddyGlobalSettings = await readManagedCaddyGlobalSettings(registrationsDirectoryPath);
@@ -274,7 +284,7 @@ export async function unregisterRoute(
   }
 
   await syncManagedCaddyNotFoundSite(routesDirectoryPath, nextSettings.httpsPort);
-  reloadCaddy();
+  reloadCaddy(nextSettings.adminAddress);
 }
 
 export function createRouteRegistrationText(options: IActivateRouteOptions, manifestPath: string): string {
@@ -299,6 +309,10 @@ export function createRouteRegistrationText(options: IActivateRouteOptions, mani
 
   if (options.httpEnabled) {
     registration.httpEnabled = true;
+  }
+
+  if (options.caddyAdminAddress !== undefined && options.caddyAdminAddress !== defaultManagedCaddyAdminAddress) {
+    registration.caddyAdminAddress = options.caddyAdminAddress;
   }
 
   if (options.caddyBindHost !== undefined && options.caddyBindHost !== defaultManagedCaddyBindHost) {
@@ -563,6 +577,8 @@ function isRouteRegistration(value: unknown): value is IRouteRegistration {
     (Reflect.get(value, "documentInjectionPort") === undefined ||
       typeof Reflect.get(value, "documentInjectionPort") === "number") &&
     typeof Reflect.get(value, "host") === "string" &&
+    (Reflect.get(value, "caddyAdminAddress") === undefined ||
+      typeof Reflect.get(value, "caddyAdminAddress") === "string") &&
     (Reflect.get(value, "caddyBindHost") === undefined || typeof Reflect.get(value, "caddyBindHost") === "string") &&
     (Reflect.get(value, "caddyHttpPort") === undefined || typeof Reflect.get(value, "caddyHttpPort") === "number") &&
     (Reflect.get(value, "caddyHttpsPort") === undefined || typeof Reflect.get(value, "caddyHttpsPort") === "number") &&
@@ -609,8 +625,8 @@ function isErrorWithCode(error: unknown): error is ErrorWithCode {
   return error instanceof Error && typeof Reflect.get(error, "code") === "string";
 }
 
-function reloadCaddy(): void {
-  const result = runManagedCaddyCommand(["reload"]);
+function reloadCaddy(adminAddress: string): void {
+  const result = runManagedCaddyCommand(["reload"], { adminAddress });
 
   if (!result.success) {
     throw new Error(createCaddyReloadErrorMessage(result.stdout, result.stderr));
@@ -736,6 +752,7 @@ async function readManagedCaddyGlobalSettings(
 ): Promise<IManagedCaddyGlobalSettings> {
   const registrationFileNames: string[] = await readdir(registrationsDirectoryPath);
   let httpEnabled: boolean = false;
+  const optedInAdminAddresses: Set<string> = new Set<string>();
   const optedInBindHosts: Set<string> = new Set<string>();
   const optedInHttpPorts: Set<number> = new Set<number>();
   const optedInHttpsPorts: Set<number> = new Set<number>();
@@ -758,6 +775,10 @@ async function readManagedCaddyGlobalSettings(
       httpEnabled = true;
     }
 
+    if (registration.caddyAdminAddress !== undefined) {
+      optedInAdminAddresses.add(registration.caddyAdminAddress);
+    }
+
     if (registration.caddyBindHost !== undefined) {
       optedInBindHosts.add(registration.caddyBindHost);
     }
@@ -769,6 +790,14 @@ async function readManagedCaddyGlobalSettings(
     if (registration.caddyHttpsPort !== undefined) {
       optedInHttpsPorts.add(registration.caddyHttpsPort);
     }
+  }
+
+  if (optedInAdminAddresses.size > 1) {
+    throw new Error(
+      `Managed Caddy admin address is inconsistent across active stacks: ${Array.from(optedInAdminAddresses)
+        .sort()
+        .join(", ")}.`,
+    );
   }
 
   if (optedInBindHosts.size > 1) {
@@ -794,6 +823,7 @@ async function readManagedCaddyGlobalSettings(
   }
 
   return {
+    adminAddress: optedInAdminAddresses.values().next().value ?? defaultManagedCaddyAdminAddress,
     bindHost: optedInBindHosts.values().next().value ?? defaultManagedCaddyBindHost,
     httpPort: optedInHttpPorts.values().next().value ?? defaultManagedCaddyHttpPort,
     httpEnabled,
@@ -806,6 +836,7 @@ function didManagedCaddyGlobalSettingsChange(
   nextSettings: IManagedCaddyGlobalSettings,
 ): boolean {
   return (
+    previousSettings.adminAddress !== nextSettings.adminAddress ||
     previousSettings.bindHost !== nextSettings.bindHost ||
     previousSettings.httpEnabled !== nextSettings.httpEnabled ||
     previousSettings.httpPort !== nextSettings.httpPort ||
@@ -842,6 +873,7 @@ async function syncManagedCaddyGlobalState(
   await writeFile(
     managedCaddyPaths.caddyfilePath,
     renderManagedCaddyfile({
+      adminAddress: settings.adminAddress,
       bindHost: settings.bindHost,
       enableHttp: settings.httpEnabled,
       httpPort: settings.httpPort,

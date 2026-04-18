@@ -7,22 +7,35 @@ describe("parseCommandLineArguments", () => {
     expect(parseCommandLineArguments(["caddy", "start"])).toEqual({
       action: "start",
       kind: "caddy",
+      manifestPath: null,
     });
     expect(parseCommandLineArguments(["caddy", "stop"])).toEqual({
       action: "stop",
       kind: "caddy",
+      manifestPath: null,
     });
     expect(parseCommandLineArguments(["caddy", "trust"])).toEqual({
       action: "trust",
       kind: "caddy",
+      manifestPath: null,
     });
     expect(parseCommandLineArguments(["caddy", "download"])).toEqual({
       action: "download",
       kind: "caddy",
+      manifestPath: null,
     });
     expect(parseCommandLineArguments(["caddy", "privileged-ports"])).toEqual({
       action: "privileged-ports",
       kind: "caddy",
+      manifestPath: null,
+    });
+  });
+
+  test("parses caddy lifecycle commands with an explicit manifest", () => {
+    expect(parseCommandLineArguments(["--manifest", "./devhost.toml", "caddy", "start"])).toEqual({
+      action: "start",
+      kind: "caddy",
+      manifestPath: "./devhost.toml",
     });
   });
 
@@ -47,6 +60,9 @@ describe("parseCommandLineArguments", () => {
     expect(() => parseCommandLineArguments(["caddy", "restart"])).toThrow("Unsupported caddy action: restart");
     expect(() => parseCommandLineArguments(["caddy", "start", "now"])).toThrow(
       "Caddy commands do not accept additional arguments.",
+    );
+    expect(() => parseCommandLineArguments(["--manifest", "./other.toml", "caddy", "start"])).toThrow(
+      "--manifest must point to a file named devhost.toml",
     );
   });
 

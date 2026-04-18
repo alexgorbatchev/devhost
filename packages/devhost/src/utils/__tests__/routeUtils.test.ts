@@ -43,7 +43,7 @@ describe("createCaddyAdminUnavailableErrorMessage", () => {
 describe("ensureCaddyAdminAvailable", () => {
   test("accepts a successful admin response", async () => {
     await expect(
-      ensureCaddyAdminAvailable(async (): Promise<Response> => {
+      ensureCaddyAdminAvailable(undefined, async (): Promise<Response> => {
         return new Response("{}", {
           status: 200,
         });
@@ -53,7 +53,7 @@ describe("ensureCaddyAdminAvailable", () => {
 
   test("wraps failed admin responses", async () => {
     await expect(
-      ensureCaddyAdminAvailable(async (): Promise<Response> => {
+      ensureCaddyAdminAvailable(undefined, async (): Promise<Response> => {
         return new Response("nope", {
           status: 503,
           statusText: "Service Unavailable",
@@ -66,7 +66,7 @@ describe("ensureCaddyAdminAvailable", () => {
 
   test("wraps thrown fetch errors", async () => {
     await expect(
-      ensureCaddyAdminAvailable(async (): Promise<Response> => {
+      ensureCaddyAdminAvailable(undefined, async (): Promise<Response> => {
         return await Promise.reject(new Error("Unable to connect. Is the computer able to access the url?"));
       }),
     ).rejects.toThrow("Caddy admin API is not available. Run 'devhost caddy start' first.\ndetail: Unable to connect.");
