@@ -5,6 +5,7 @@ Monorepo root for the published `devhost` package and the local demo app.
 ## Shared commands
 
 - Install all workspaces when `node_modules/` is missing: `bun install`
+- Ensure Playwright Chromium is available for Storybook and recorder workflows: `bun run install-browser`
 - Check the full repo: `bun run check`
 - Apply repo-wide formatting fixes: `bun run fix`
 - Check `devhost` package-only validations: `bun run --cwd packages/devhost check`
@@ -33,6 +34,7 @@ Monorepo root for the published `devhost` package and the local demo app.
 - `packages/devhost` `bun run check` runs the package TypeScript check, `bun test --coverage`, and `bun vitest run -c vitest.storybook.config.ts`.
 - `packages/www` `bun run check` runs the package TypeScript check and `bun vitest run -c vitest.storybook.config.ts`.
 - `bun run --cwd packages/devhost storybook` and `bun run --cwd packages/www storybook` start interactive Storybook dev servers for manual inspection; they do not replace the automated coverage already included in each workspace `check` script.
+- Root `postinstall` runs `bun run install-browser`, which uses `playwright install chromium` without `--force` so existing Chromium binaries are reused instead of being re-downloaded on every `bun install`.
 - Keep a single root `bun.lock`. Do not add workspace-local lockfiles.
 
 ## Shipping

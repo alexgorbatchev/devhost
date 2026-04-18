@@ -28,7 +28,6 @@
     "check": "./scripts/check.sh",
     "dev": "bun run src/main.ts",
     "fmt": "bun --bun oxfmt --write .",
-    "storybook:install-browser": "bun x playwright install chromium",
     "storybook": "storybook dev --ci --port 6006"
   },
   "dependencies": {

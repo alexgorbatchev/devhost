@@ -13,7 +13,7 @@ Local React demo app for exercising `@alexgorbatchev/devhost` behavior and Story
 - Dev server: `bun run dev`
 - Check package-local validations: `bun run check`
 - Record marketing replays: `bun run record:marketing`
-- Install Playwright Chromium for the recorder: `bun run record:marketing:install-browser`
+- Ensure Playwright Chromium is installed before recorder or Storybook runs: `bun run install-browser`
 - Storybook: `bun run storybook`
 - Preferred Railway deploy entrypoint from the repo root: `bun run deploy:www`
 

@@ -37,7 +37,6 @@
     "dev": "bun src/server.ts",
     "log-demo": "bun scripts/emitDemoLogs.ts",
     "record:marketing": "bun scripts/recordMarketingDemos.ts",
-    "record:marketing:install-browser": "bun x playwright install chromium",
     "start": "NODE_ENV=production bun ./dist/server.js",
     "storybook": "storybook dev --ci --port 6007"
   }
