@@ -1,7 +1,9 @@
 import { helpText } from "./utils/constants";
 import type { IDevhostLogger } from "./utils/createLogger";
 import { parseCommandLineArguments } from "./manifest/parseCommandLineArguments";
+import { printManagedCaddyRootCertificate } from "./caddy/printManagedCaddyRootCertificate";
 import { runManagedCaddyLifecycleCommand } from "./caddy/runManagedCaddyLifecycleCommand";
+import { trustManagedCaddyRemoteCertificate } from "./caddy/trustManagedCaddyRemoteCertificate";
 import { readManifest } from "./manifest/readManifest";
 import { resolveManifestPath } from "./manifest/resolveManifestPath";
 import { resolveServiceOrder } from "./services/resolveServiceOrder";
@@ -20,7 +22,15 @@ export async function runDevhost(rawArguments: string[], logger: IDevhostLogger)
 
     const commandLineArguments = parseCommandLineArguments(rawArguments);
 
-    if (commandLineArguments.kind === "caddy") {
+    if (commandLineArguments.kind === "caddy-print-root-cert") {
+      return await printManagedCaddyRootCertificate();
+    }
+
+    if (commandLineArguments.kind === "caddy-trust-remote") {
+      return await trustManagedCaddyRemoteCertificate(commandLineArguments.sshTarget, logger);
+    }
+
+    if (commandLineArguments.kind === "caddy-lifecycle") {
       if (commandLineArguments.manifestPath === null) {
         return await runManagedCaddyLifecycleCommand(commandLineArguments.action, logger);
       }
