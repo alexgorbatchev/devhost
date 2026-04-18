@@ -4,12 +4,9 @@ import {
   createRrwebDemoRecording,
   type IRrwebDemoRecording,
   type IRrwebDemoRecordingController,
-} from "../features/rrweb";
-import {
-  readMarketingRecordingScenario,
-  type IMarketingRecordingScenario,
-} from "../features/marketingRecording/marketingRecordingScenarios";
-import { DevhostMockShell } from "../devhostMock/DevhostMockShell";
+} from "../../features/rrweb";
+import { readMarketingRecordingScenario, type IMarketingRecordingScenario } from "../replays/marketingReplayScenarios";
+import { DevhostMockShell } from "../../devhostMock/DevhostMockShell";
 
 declare global {
   interface Window {
@@ -35,25 +32,6 @@ interface ICaptureSectionProps {
   eyebrow: string;
   testId?: string;
   title: string;
-}
-
-interface ICaptureBrowserChromeProps {
-  isRouteLive: boolean;
-  scenario: IMarketingRecordingScenario;
-}
-
-interface ICaptureCopyCard {
-  description: string;
-  title: string;
-}
-
-interface ILabeledValueProps {
-  label: string;
-  value: string;
-}
-
-interface ICaptureSourceCardSurfaceProps {
-  __source: ICaptureSourceHint;
 }
 
 interface ICaptureBrowserChromeProps {
@@ -196,8 +174,8 @@ export function MarketingCapturePage(): JSX.Element {
               This marketing capture scenario does not exist.
             </h1>
             <p className="mt-4 text-sm leading-7 text-muted-foreground">
-              Use one of the scenario ids from <code>marketingRecordingScenarios.ts</code> when opening the dev-only
-              capture route.
+              Use one of the scenario ids from <code>marketing/replays/marketingReplayScenarios.ts</code> when opening
+              the dev-only capture route.
             </p>
           </div>
         </main>
@@ -469,7 +447,7 @@ function CaptureSourceCard(): JSX.Element {
   const sourceCardProps: ICaptureSourceCardSurfaceProps = {
     __source: {
       columnNumber: 5,
-      fileName: "/Users/alex/development/projects/devhost/packages/www/src/marketingCapture/MarketingCapturePage.tsx",
+      fileName: "/Users/alex/development/projects/devhost/packages/www/src/marketing/capture/MarketingCapturePage.tsx",
       lineNumber: 306,
     },
   };
@@ -489,7 +467,7 @@ function CaptureSourceCardSurface({ __source }: ICaptureSourceCardSurfaceProps):
           Alt + right-click this card to open the nearest React source location in the mocked Neovim session.
         </p>
         <code className="rounded-xl border border-border-subtle bg-background/80 px-3 py-2 text-left text-xs text-muted-foreground">
-          src/marketingCapture/MarketingCapturePage.tsx
+          src/marketing/capture/MarketingCapturePage.tsx
         </code>
       </button>
     </div>

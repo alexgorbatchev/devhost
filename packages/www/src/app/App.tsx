@@ -18,10 +18,7 @@ import {
   type IRrwebDemoRecording,
   type IRrwebDemoRecordingController,
 } from "../features/rrweb";
-import {
-  marketingRecordingScenarios,
-  readMarketingRecordingUrl,
-} from "../features/marketingRecording/marketingRecordingScenarios";
+import { marketingRecordingScenarios, readMarketingRecordingUrl } from "../marketing/replays/marketingReplayScenarios";
 
 type RecordingPhase = "arming" | "idle" | "preview" | "recording";
 

@@ -1,14 +1,14 @@
 {
-  "durationMs": 7791.70000000298,
+  "durationMs": 8782.899999976158,
   "events": [
     {
       "type": 4,
       "data": {
-        "href": "http://127.0.0.1:54345/__capture__?scenario=routing-health",
+        "href": "http://127.0.0.1:43727/__capture__?scenario=routing-health",
         "width": 1440,
         "height": 960
       },
-      "timestamp": 1776316869495
+      "timestamp": 1776544409058
     },
     {
       "type": 2,
@@ -120,7 +120,7 @@
                       "attributes": {
                         "type": "module",
                         "crossorigin": "",
-                        "src": "http://127.0.0.1:54345/chunk-9rbzbks4.js"
+                        "src": "http://127.0.0.1:43727/chunk-wd5crn4v.js"
                       },
                       "childNodes": [],
                       "id": 16
@@ -129,7 +129,7 @@
                       "type": 2,
                       "tagName": "script",
                       "attributes": {
-                        "src": "http://127.0.0.1:54345/__capture__/devtools.js",
+                        "src": "http://127.0.0.1:43727/__capture__/devtools.js",
                         "type": "module",
                         "data-devhost-capture-script": ""
                       },
@@ -1075,215 +1075,6 @@
                                         }
                                       ],
                                       "id": 102
-                                    },
-                                    {
-                                      "type": 2,
-                                      "tagName": "section",
-                                      "attributes": {
-                                        "aria-label": "Annotation queues",
-                                        "class": "devhost-vj04f",
-                                        "data-testid": "AnnotationQueuePanel"
-                                      },
-                                      "childNodes": [
-                                        {
-                                          "type": 2,
-                                          "tagName": "div",
-                                          "attributes": {
-                                            "class": "devhost-12y925o"
-                                          },
-                                          "childNodes": [
-                                            {
-                                              "type": 2,
-                                              "tagName": "div",
-                                              "attributes": {
-                                                "class": "devhost-1tctc4"
-                                              },
-                                              "childNodes": [
-                                                {
-                                                  "type": 2,
-                                                  "tagName": "strong",
-                                                  "attributes": {},
-                                                  "childNodes": [
-                                                    {
-                                                      "type": 3,
-                                                      "textContent": "Annotation queues",
-                                                      "id": 129
-                                                    }
-                                                  ],
-                                                  "id": 128
-                                                }
-                                              ],
-                                              "id": 127
-                                            },
-                                            {
-                                              "type": 2,
-                                              "tagName": "div",
-                                              "attributes": {
-                                                "class": "devhost-taqjlb",
-                                                "data-testid": "AnnotationQueuePanel--queue-list"
-                                              },
-                                              "childNodes": [
-                                                {
-                                                  "type": 2,
-                                                  "tagName": "article",
-                                                  "attributes": {
-                                                    "class": "devhost-oz949z",
-                                                    "data-testid": "AnnotationQueuePanel--queue"
-                                                  },
-                                                  "childNodes": [
-                                                    {
-                                                      "type": 2,
-                                                      "tagName": "header",
-                                                      "attributes": {
-                                                        "class": "devhost-30n7z8"
-                                                      },
-                                                      "childNodes": [
-                                                        {
-                                                          "type": 2,
-                                                          "tagName": "div",
-                                                          "attributes": {
-                                                            "class": "devhost-18bx7zt"
-                                                          },
-                                                          "childNodes": [
-                                                            {
-                                                              "type": 2,
-                                                              "tagName": "div",
-                                                              "attributes": {
-                                                                "class": "devhost-8knhcs"
-                                                              },
-                                                              "childNodes": [
-                                                                {
-                                                                  "type": 2,
-                                                                  "tagName": "strong",
-                                                                  "attributes": {
-                                                                    "class": "devhost-1wv04w",
-                                                                    "title": "app.localhost/dashboard"
-                                                                  },
-                                                                  "childNodes": [
-                                                                    {
-                                                                      "type": 3,
-                                                                      "textContent": "app.localhost/dashboard",
-                                                                      "id": 136
-                                                                    }
-                                                                  ],
-                                                                  "id": 135
-                                                                },
-                                                                {
-                                                                  "type": 2,
-                                                                  "tagName": "span",
-                                                                  "attributes": {
-                                                                    "class": "devhost-yr9uer"
-                                                                  },
-                                                                  "childNodes": [
-                                                                    {
-                                                                      "type": 3,
-                                                                      "textContent": "Paused",
-                                                                      "id": 138
-                                                                    }
-                                                                  ],
-                                                                  "id": 137
-                                                                }
-                                                              ],
-                                                              "id": 134
-                                                            },
-                                                            {
-                                                              "type": 2,
-                                                              "tagName": "div",
-                                                              "attributes": {
-                                                                "class": "devhost-vgj5n9"
-                                                              },
-                                                              "childNodes": [
-                                                                {
-                                                                  "type": 3,
-                                                                  "textContent": "1 of 2",
-                                                                  "id": 140
-                                                                }
-                                                              ],
-                                                              "id": 139
-                                                            },
-                                                            {
-                                                              "type": 2,
-                                                              "tagName": "div",
-                                                              "attributes": {
-                                                                "class": "devhost-18en7re"
-                                                              },
-                                                              "childNodes": [
-                                                                {
-                                                                  "type": 2,
-                                                                  "tagName": "div",
-                                                                  "attributes": {
-                                                                    "class": "devhost-1e0ol3m",
-                                                                    "data-testid": "AnnotationQueuePanel--queue-progress"
-                                                                  },
-                                                                  "childNodes": [],
-                                                                  "id": 142
-                                                                }
-                                                              ],
-                                                              "id": 141
-                                                            }
-                                                          ],
-                                                          "id": 133
-                                                        },
-                                                        {
-                                                          "type": 2,
-                                                          "tagName": "div",
-                                                          "attributes": {
-                                                            "class": "devhost-1dnpdpe"
-                                                          },
-                                                          "childNodes": [
-                                                            {
-                                                              "type": 2,
-                                                              "tagName": "button",
-                                                              "attributes": {
-                                                                "class": "devhost-p4wubb",
-                                                                "data-devhost-instance-testid": "AnnotationQueuePanel--resume",
-                                                                "data-testid": "Button",
-                                                                "type": "button"
-                                                              },
-                                                              "childNodes": [
-                                                                {
-                                                                  "type": 3,
-                                                                  "textContent": "Resume",
-                                                                  "id": 145
-                                                                }
-                                                              ],
-                                                              "id": 144
-                                                            },
-                                                            {
-                                                              "type": 2,
-                                                              "tagName": "button",
-                                                              "attributes": {
-                                                                "class": "devhost-1yifc3j",
-                                                                "data-devhost-instance-testid": "AnnotationQueuePanel--queue-toggle",
-                                                                "data-testid": "Button",
-                                                                "type": "button"
-                                                              },
-                                                              "childNodes": [
-                                                                {
-                                                                  "type": 3,
-                                                                  "textContent": "Show details",
-                                                                  "id": 147
-                                                                }
-                                                              ],
-                                                              "id": 146
-                                                            }
-                                                          ],
-                                                          "id": 143
-                                                        }
-                                                      ],
-                                                      "id": 132
-                                                    }
-                                                  ],
-                                                  "id": 131
-                                                }
-                                              ],
-                                              "id": 130
-                                            }
-                                          ],
-                                          "id": 126
-                                        }
-                                      ],
-                                      "id": 125
                                     }
                                   ],
                                   "id": 101
@@ -1307,15 +1098,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 149
+                              "id": 126
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 150
+                              "id": 127
                             }
                           ],
-                          "id": 148,
+                          "id": 125,
                           "isShadow": true
                         },
                         {
@@ -1330,15 +1121,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 152
+                              "id": 129
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 153
+                              "id": 130
                             }
                           ],
-                          "id": 151,
+                          "id": 128,
                           "isShadow": true
                         },
                         {
@@ -1353,15 +1144,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 155
+                              "id": 132
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 156
+                              "id": 133
                             }
                           ],
-                          "id": 154,
+                          "id": 131,
                           "isShadow": true
                         },
                         {
@@ -1376,15 +1167,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 158
+                              "id": 135
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 159
+                              "id": 136
                             }
                           ],
-                          "id": 157,
+                          "id": 134,
                           "isShadow": true
                         },
                         {
@@ -1399,15 +1190,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 161
+                              "id": 138
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 162
+                              "id": 139
                             }
                           ],
-                          "id": 160,
+                          "id": 137,
                           "isShadow": true
                         },
                         {
@@ -1422,15 +1213,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 164
+                              "id": 141
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 165
+                              "id": 142
                             }
                           ],
-                          "id": 163,
+                          "id": 140,
                           "isShadow": true
                         },
                         {
@@ -1445,15 +1236,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 167
+                              "id": 144
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 168
+                              "id": 145
                             }
                           ],
-                          "id": 166,
+                          "id": 143,
                           "isShadow": true
                         },
                         {
@@ -1468,15 +1259,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 170
+                              "id": 147
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 171
+                              "id": 148
                             }
                           ],
-                          "id": 169,
+                          "id": 146,
                           "isShadow": true
                         },
                         {
@@ -1491,15 +1282,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 173
+                              "id": 150
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 174
+                              "id": 151
                             }
                           ],
-                          "id": 172,
+                          "id": 149,
                           "isShadow": true
                         },
                         {
@@ -1514,15 +1305,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 176
+                              "id": 153
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 177
+                              "id": 154
                             }
                           ],
-                          "id": 175,
+                          "id": 152,
                           "isShadow": true
                         },
                         {
@@ -1537,15 +1328,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 179
+                              "id": 156
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 180
+                              "id": 157
                             }
                           ],
-                          "id": 178,
+                          "id": 155,
                           "isShadow": true
                         },
                         {
@@ -1560,15 +1351,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 182
+                              "id": 159
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 183
+                              "id": 160
                             }
                           ],
-                          "id": 181,
+                          "id": 158,
                           "isShadow": true
                         },
                         {
@@ -1583,15 +1374,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 185
+                              "id": 162
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 186
+                              "id": 163
                             }
                           ],
-                          "id": 184,
+                          "id": 161,
                           "isShadow": true
                         },
                         {
@@ -1606,15 +1397,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 188
+                              "id": 165
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 189
+                              "id": 166
                             }
                           ],
-                          "id": 187,
+                          "id": 164,
                           "isShadow": true
                         },
                         {
@@ -1629,15 +1420,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 191
+                              "id": 168
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 192
+                              "id": 169
                             }
                           ],
-                          "id": 190,
+                          "id": 167,
                           "isShadow": true
                         },
                         {
@@ -1652,15 +1443,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 194
+                              "id": 171
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 195
+                              "id": 172
                             }
                           ],
-                          "id": 193,
+                          "id": 170,
                           "isShadow": true
                         },
                         {
@@ -1675,15 +1466,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 197
+                              "id": 174
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 198
+                              "id": 175
                             }
                           ],
-                          "id": 196,
+                          "id": 173,
                           "isShadow": true
                         },
                         {
@@ -1698,15 +1489,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 200
+                              "id": 177
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 201
+                              "id": 178
                             }
                           ],
-                          "id": 199,
+                          "id": 176,
                           "isShadow": true
                         },
                         {
@@ -1721,15 +1512,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 203
+                              "id": 180
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 204
+                              "id": 181
                             }
                           ],
-                          "id": 202,
+                          "id": 179,
                           "isShadow": true
                         },
                         {
@@ -1744,15 +1535,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 206
+                              "id": 183
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 207
+                              "id": 184
                             }
                           ],
-                          "id": 205,
+                          "id": 182,
                           "isShadow": true
                         },
                         {
@@ -1767,15 +1558,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 209
+                              "id": 186
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 210
+                              "id": 187
                             }
                           ],
-                          "id": 208,
+                          "id": 185,
                           "isShadow": true
                         },
                         {
@@ -1790,15 +1581,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 212
+                              "id": 189
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 213
+                              "id": 190
                             }
                           ],
-                          "id": 211,
+                          "id": 188,
                           "isShadow": true
                         },
                         {
@@ -1813,15 +1604,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 215
+                              "id": 192
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 216
+                              "id": 193
                             }
                           ],
-                          "id": 214,
+                          "id": 191,
                           "isShadow": true
                         },
                         {
@@ -1836,15 +1627,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 218
+                              "id": 195
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 219
+                              "id": 196
                             }
                           ],
-                          "id": 217,
+                          "id": 194,
                           "isShadow": true
                         },
                         {
@@ -1859,15 +1650,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 221
+                              "id": 198
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 222
+                              "id": 199
                             }
                           ],
-                          "id": 220,
+                          "id": 197,
                           "isShadow": true
                         },
                         {
@@ -1882,15 +1673,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 224
+                              "id": 201
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 225
+                              "id": 202
                             }
                           ],
-                          "id": 223,
+                          "id": 200,
                           "isShadow": true
                         },
                         {
@@ -1905,15 +1696,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 227
+                              "id": 204
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 228
+                              "id": 205
                             }
                           ],
-                          "id": 226,
+                          "id": 203,
                           "isShadow": true
                         },
                         {
@@ -1928,15 +1719,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 230
+                              "id": 207
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 231
+                              "id": 208
                             }
                           ],
-                          "id": 229,
+                          "id": 206,
                           "isShadow": true
                         },
                         {
@@ -1951,15 +1742,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 233
+                              "id": 210
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 234
+                              "id": 211
                             }
                           ],
-                          "id": 232,
+                          "id": 209,
                           "isShadow": true
                         },
                         {
@@ -1974,15 +1765,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 236
+                              "id": 213
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 237
+                              "id": 214
                             }
                           ],
-                          "id": 235,
+                          "id": 212,
                           "isShadow": true
                         },
                         {
@@ -1997,360 +1788,15 @@
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 239
+                              "id": 216
                             },
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 240
+                              "id": 217
                             }
                           ],
-                          "id": 238,
-                          "isShadow": true
-                        },
-                        {
-                          "type": 2,
-                          "tagName": "style",
-                          "attributes": {
-                            "data-emotion": "devhost",
-                            "data-s": "",
-                            "_cssText": ".devhost-12y925o { display: grid; gap: 8px; width: min(640px, -24px + 100vw); }"
-                          },
-                          "childNodes": [
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 242
-                            },
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 243
-                            }
-                          ],
-                          "id": 241,
-                          "isShadow": true
-                        },
-                        {
-                          "type": 2,
-                          "tagName": "style",
-                          "attributes": {
-                            "data-emotion": "devhost",
-                            "data-s": "",
-                            "_cssText": ".devhost-taqjlb { display: grid; gap: 8px; }"
-                          },
-                          "childNodes": [
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 245
-                            },
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 246
-                            }
-                          ],
-                          "id": 244,
-                          "isShadow": true
-                        },
-                        {
-                          "type": 2,
-                          "tagName": "style",
-                          "attributes": {
-                            "data-emotion": "devhost",
-                            "data-s": "",
-                            "_cssText": ".devhost-oz949z { border-radius: 8px; display: grid; gap: 8px; }"
-                          },
-                          "childNodes": [
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 248
-                            },
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 249
-                            }
-                          ],
-                          "id": 247,
-                          "isShadow": true
-                        },
-                        {
-                          "type": 2,
-                          "tagName": "style",
-                          "attributes": {
-                            "data-emotion": "devhost",
-                            "data-s": "",
-                            "_cssText": ".devhost-30n7z8 { -webkit-box-align: center; align-items: center; display: flex; flex-wrap: wrap; gap: 8px; -webkit-box-pack: justify; justify-content: space-between; }"
-                          },
-                          "childNodes": [
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 251
-                            },
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 252
-                            }
-                          ],
-                          "id": 250,
-                          "isShadow": true
-                        },
-                        {
-                          "type": 2,
-                          "tagName": "style",
-                          "attributes": {
-                            "data-emotion": "devhost",
-                            "data-s": "",
-                            "_cssText": ".devhost-18bx7zt { display: grid; flex: 1 1 240px; gap: 4px; min-width: 0px; }"
-                          },
-                          "childNodes": [
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 254
-                            },
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 255
-                            }
-                          ],
-                          "id": 253,
-                          "isShadow": true
-                        },
-                        {
-                          "type": 2,
-                          "tagName": "style",
-                          "attributes": {
-                            "data-emotion": "devhost",
-                            "data-s": "",
-                            "_cssText": ".devhost-8knhcs { -webkit-box-align: center; align-items: center; display: flex; flex-wrap: wrap; gap: 8px; min-width: 0px; }"
-                          },
-                          "childNodes": [
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 257
-                            },
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 258
-                            }
-                          ],
-                          "id": 256,
-                          "isShadow": true
-                        },
-                        {
-                          "type": 2,
-                          "tagName": "style",
-                          "attributes": {
-                            "data-emotion": "devhost",
-                            "data-s": "",
-                            "_cssText": ".devhost-1wv04w { color: rgb(192, 202, 245); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }"
-                          },
-                          "childNodes": [
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 260
-                            },
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 261
-                            }
-                          ],
-                          "id": 259,
-                          "isShadow": true
-                        },
-                        {
-                          "type": 2,
-                          "tagName": "style",
-                          "attributes": {
-                            "data-emotion": "devhost",
-                            "data-s": "",
-                            "_cssText": ".devhost-yr9uer { background: rgb(247, 118, 142); border-radius: 999px; color: rgb(17, 18, 26); padding: 2px 8px; }"
-                          },
-                          "childNodes": [
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 263
-                            },
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 264
-                            }
-                          ],
-                          "id": 262,
-                          "isShadow": true
-                        },
-                        {
-                          "type": 2,
-                          "tagName": "style",
-                          "attributes": {
-                            "data-emotion": "devhost",
-                            "data-s": "",
-                            "_cssText": ".devhost-vgj5n9 { color: rgb(169, 177, 214); font-size: 12px; }"
-                          },
-                          "childNodes": [
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 266
-                            },
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 267
-                            }
-                          ],
-                          "id": 265,
-                          "isShadow": true
-                        },
-                        {
-                          "type": 2,
-                          "tagName": "style",
-                          "attributes": {
-                            "data-emotion": "devhost",
-                            "data-s": "",
-                            "_cssText": ".devhost-18en7re { background: rgb(31, 35, 53); border-radius: 999px; height: 6px; overflow: hidden; }"
-                          },
-                          "childNodes": [
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 269
-                            },
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 270
-                            }
-                          ],
-                          "id": 268,
-                          "isShadow": true
-                        },
-                        {
-                          "type": 2,
-                          "tagName": "style",
-                          "attributes": {
-                            "data-emotion": "devhost",
-                            "data-s": "",
-                            "_cssText": ".devhost-1e0ol3m { background: rgb(247, 118, 142); border-radius: 999px; height: 100%; min-width: 8px; width: 50%; }"
-                          },
-                          "childNodes": [
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 272
-                            },
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 273
-                            }
-                          ],
-                          "id": 271,
-                          "isShadow": true
-                        },
-                        {
-                          "type": 2,
-                          "tagName": "style",
-                          "attributes": {
-                            "data-emotion": "devhost",
-                            "data-s": "",
-                            "_cssText": ".devhost-1dnpdpe { display: flex; flex-wrap: wrap; gap: 8px; -webkit-box-pack: end; justify-content: flex-end; }"
-                          },
-                          "childNodes": [
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 275
-                            },
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 276
-                            }
-                          ],
-                          "id": 274,
-                          "isShadow": true
-                        },
-                        {
-                          "type": 2,
-                          "tagName": "style",
-                          "attributes": {
-                            "data-emotion": "devhost",
-                            "data-s": "",
-                            "_cssText": ".devhost-p4wubb { background: rgb(122, 162, 247); border: 1px solid rgb(122, 162, 247); color: rgb(17, 18, 26); -webkit-box-align: center; align-items: center; border-radius: 4px; box-shadow: rgba(15, 23, 42, 0.14) 0px 10px 24px; cursor: pointer; display: inline-flex; font-family: \"Maple Mono Normal NF\", \"JetBrainsMono Nerd Font\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace; font-size: 12px; gap: 8px; -webkit-box-pack: center; justify-content: center; opacity: 1; padding: 4px 8px; transition: opacity 120ms; }"
-                          },
-                          "childNodes": [
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 278
-                            },
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 279
-                            }
-                          ],
-                          "id": 277,
-                          "isShadow": true
-                        },
-                        {
-                          "type": 2,
-                          "tagName": "style",
-                          "attributes": {
-                            "data-emotion": "devhost",
-                            "data-s": "",
-                            "_cssText": ".devhost-10rha4y { display: inline-grid; place-items: center; white-space: nowrap; }"
-                          },
-                          "childNodes": [
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 281
-                            },
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 282
-                            }
-                          ],
-                          "id": 280,
-                          "isShadow": true
-                        },
-                        {
-                          "type": 2,
-                          "tagName": "style",
-                          "attributes": {
-                            "data-emotion": "devhost",
-                            "data-s": "",
-                            "_cssText": ".devhost-1yifc3j { background: rgb(36, 40, 59); border: 1px solid rgb(86, 95, 137); color: rgb(192, 202, 245); -webkit-box-align: center; align-items: center; border-radius: 4px; box-shadow: rgba(15, 23, 42, 0.14) 0px 10px 24px; cursor: pointer; display: inline-flex; font-family: \"Maple Mono Normal NF\", \"JetBrainsMono Nerd Font\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace; font-size: 12px; gap: 8px; -webkit-box-pack: center; justify-content: center; opacity: 1; padding: 4px 8px; transition: opacity 120ms; }"
-                          },
-                          "childNodes": [
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 284
-                            },
-                            {
-                              "type": 3,
-                              "textContent": "",
-                              "id": 285
-                            }
-                          ],
-                          "id": 283,
+                          "id": 215,
                           "isShadow": true
                         }
                       ],
@@ -2371,7 +1817,814 @@
           "top": 0
         }
       },
-      "timestamp": 1776316869505
+      "timestamp": 1776544409068
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 0,
+        "texts": [],
+        "attributes": [],
+        "removes": [],
+        "adds": [
+          {
+            "parentId": 96,
+            "nextId": null,
+            "node": {
+              "type": 2,
+              "tagName": "style",
+              "attributes": {
+                "data-emotion": "devhost",
+                "data-s": "",
+                "_cssText": ".devhost-1yifc3j { background: rgb(36, 40, 59); border: 1px solid rgb(86, 95, 137); color: rgb(192, 202, 245); -webkit-box-align: center; align-items: center; border-radius: 4px; box-shadow: rgba(15, 23, 42, 0.14) 0px 10px 24px; cursor: pointer; display: inline-flex; font-family: \"Maple Mono Normal NF\", \"JetBrainsMono Nerd Font\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace; font-size: 12px; gap: 8px; -webkit-box-pack: center; justify-content: center; opacity: 1; padding: 4px 8px; transition: opacity 120ms; }"
+              },
+              "childNodes": [],
+              "id": 218,
+              "isShadow": true
+            }
+          },
+          {
+            "parentId": 218,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 219
+            }
+          },
+          {
+            "parentId": 101,
+            "nextId": null,
+            "node": {
+              "type": 2,
+              "tagName": "section",
+              "attributes": {
+                "aria-label": "Annotation queues",
+                "class": "devhost-vj04f",
+                "data-testid": "AnnotationQueuePanel"
+              },
+              "childNodes": [],
+              "id": 220
+            }
+          },
+          {
+            "parentId": 220,
+            "nextId": null,
+            "node": {
+              "type": 2,
+              "tagName": "div",
+              "attributes": {
+                "class": "devhost-12y925o"
+              },
+              "childNodes": [],
+              "id": 221
+            }
+          },
+          {
+            "parentId": 221,
+            "nextId": null,
+            "node": {
+              "type": 2,
+              "tagName": "div",
+              "attributes": {
+                "class": "devhost-taqjlb",
+                "data-testid": "AnnotationQueuePanel--queue-list"
+              },
+              "childNodes": [],
+              "id": 222
+            }
+          },
+          {
+            "parentId": 222,
+            "nextId": null,
+            "node": {
+              "type": 2,
+              "tagName": "article",
+              "attributes": {
+                "class": "devhost-oz949z",
+                "data-testid": "AnnotationQueuePanel--queue"
+              },
+              "childNodes": [],
+              "id": 223
+            }
+          },
+          {
+            "parentId": 223,
+            "nextId": null,
+            "node": {
+              "type": 2,
+              "tagName": "header",
+              "attributes": {
+                "class": "devhost-30n7z8"
+              },
+              "childNodes": [],
+              "id": 224
+            }
+          },
+          {
+            "parentId": 224,
+            "nextId": null,
+            "node": {
+              "type": 2,
+              "tagName": "div",
+              "attributes": {
+                "class": "devhost-1dnpdpe"
+              },
+              "childNodes": [],
+              "id": 225
+            }
+          },
+          {
+            "parentId": 225,
+            "nextId": null,
+            "node": {
+              "type": 2,
+              "tagName": "button",
+              "attributes": {
+                "class": "devhost-1yifc3j",
+                "data-devhost-instance-testid": "AnnotationQueuePanel--queue-toggle",
+                "data-testid": "Button",
+                "type": "button"
+              },
+              "childNodes": [],
+              "id": 226
+            }
+          },
+          {
+            "parentId": 226,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "Show details",
+              "id": 227
+            }
+          },
+          {
+            "parentId": 96,
+            "nextId": 218,
+            "node": {
+              "type": 2,
+              "tagName": "style",
+              "attributes": {
+                "data-emotion": "devhost",
+                "data-s": "",
+                "_cssText": ".devhost-10rha4y { display: inline-grid; place-items: center; white-space: nowrap; }"
+              },
+              "childNodes": [],
+              "id": 228,
+              "isShadow": true
+            }
+          },
+          {
+            "parentId": 96,
+            "nextId": 228,
+            "node": {
+              "type": 2,
+              "tagName": "style",
+              "attributes": {
+                "data-emotion": "devhost",
+                "data-s": "",
+                "_cssText": ".devhost-p4wubb { background: rgb(122, 162, 247); border: 1px solid rgb(122, 162, 247); color: rgb(17, 18, 26); -webkit-box-align: center; align-items: center; border-radius: 4px; box-shadow: rgba(15, 23, 42, 0.14) 0px 10px 24px; cursor: pointer; display: inline-flex; font-family: \"Maple Mono Normal NF\", \"JetBrainsMono Nerd Font\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace; font-size: 12px; gap: 8px; -webkit-box-pack: center; justify-content: center; opacity: 1; padding: 4px 8px; transition: opacity 120ms; }"
+              },
+              "childNodes": [],
+              "id": 229,
+              "isShadow": true
+            }
+          },
+          {
+            "parentId": 96,
+            "nextId": 229,
+            "node": {
+              "type": 2,
+              "tagName": "style",
+              "attributes": {
+                "data-emotion": "devhost",
+                "data-s": "",
+                "_cssText": ".devhost-1dnpdpe { display: flex; flex-wrap: wrap; gap: 8px; -webkit-box-pack: end; justify-content: flex-end; }"
+              },
+              "childNodes": [],
+              "id": 230,
+              "isShadow": true
+            }
+          },
+          {
+            "parentId": 96,
+            "nextId": 230,
+            "node": {
+              "type": 2,
+              "tagName": "style",
+              "attributes": {
+                "data-emotion": "devhost",
+                "data-s": "",
+                "_cssText": ".devhost-1e0ol3m { background: rgb(247, 118, 142); border-radius: 999px; height: 100%; min-width: 8px; width: 50%; }"
+              },
+              "childNodes": [],
+              "id": 231,
+              "isShadow": true
+            }
+          },
+          {
+            "parentId": 96,
+            "nextId": 231,
+            "node": {
+              "type": 2,
+              "tagName": "style",
+              "attributes": {
+                "data-emotion": "devhost",
+                "data-s": "",
+                "_cssText": ".devhost-18en7re { background: rgb(31, 35, 53); border-radius: 999px; height: 6px; overflow: hidden; }"
+              },
+              "childNodes": [],
+              "id": 232,
+              "isShadow": true
+            }
+          },
+          {
+            "parentId": 96,
+            "nextId": 232,
+            "node": {
+              "type": 2,
+              "tagName": "style",
+              "attributes": {
+                "data-emotion": "devhost",
+                "data-s": "",
+                "_cssText": ".devhost-vgj5n9 { color: rgb(169, 177, 214); font-size: 12px; }"
+              },
+              "childNodes": [],
+              "id": 233,
+              "isShadow": true
+            }
+          },
+          {
+            "parentId": 96,
+            "nextId": 233,
+            "node": {
+              "type": 2,
+              "tagName": "style",
+              "attributes": {
+                "data-emotion": "devhost",
+                "data-s": "",
+                "_cssText": ".devhost-yr9uer { background: rgb(247, 118, 142); border-radius: 999px; color: rgb(17, 18, 26); padding: 2px 8px; }"
+              },
+              "childNodes": [],
+              "id": 234,
+              "isShadow": true
+            }
+          },
+          {
+            "parentId": 96,
+            "nextId": 234,
+            "node": {
+              "type": 2,
+              "tagName": "style",
+              "attributes": {
+                "data-emotion": "devhost",
+                "data-s": "",
+                "_cssText": ".devhost-1wv04w { color: rgb(192, 202, 245); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }"
+              },
+              "childNodes": [],
+              "id": 235,
+              "isShadow": true
+            }
+          },
+          {
+            "parentId": 96,
+            "nextId": 235,
+            "node": {
+              "type": 2,
+              "tagName": "style",
+              "attributes": {
+                "data-emotion": "devhost",
+                "data-s": "",
+                "_cssText": ".devhost-8knhcs { -webkit-box-align: center; align-items: center; display: flex; flex-wrap: wrap; gap: 8px; min-width: 0px; }"
+              },
+              "childNodes": [],
+              "id": 236,
+              "isShadow": true
+            }
+          },
+          {
+            "parentId": 96,
+            "nextId": 236,
+            "node": {
+              "type": 2,
+              "tagName": "style",
+              "attributes": {
+                "data-emotion": "devhost",
+                "data-s": "",
+                "_cssText": ".devhost-18bx7zt { display: grid; flex: 1 1 240px; gap: 4px; min-width: 0px; }"
+              },
+              "childNodes": [],
+              "id": 237,
+              "isShadow": true
+            }
+          },
+          {
+            "parentId": 96,
+            "nextId": 237,
+            "node": {
+              "type": 2,
+              "tagName": "style",
+              "attributes": {
+                "data-emotion": "devhost",
+                "data-s": "",
+                "_cssText": ".devhost-30n7z8 { -webkit-box-align: center; align-items: center; display: flex; flex-wrap: wrap; gap: 8px; -webkit-box-pack: justify; justify-content: space-between; }"
+              },
+              "childNodes": [],
+              "id": 238,
+              "isShadow": true
+            }
+          },
+          {
+            "parentId": 96,
+            "nextId": 238,
+            "node": {
+              "type": 2,
+              "tagName": "style",
+              "attributes": {
+                "data-emotion": "devhost",
+                "data-s": "",
+                "_cssText": ".devhost-oz949z { border-radius: 8px; display: grid; gap: 8px; }"
+              },
+              "childNodes": [],
+              "id": 239,
+              "isShadow": true
+            }
+          },
+          {
+            "parentId": 96,
+            "nextId": 239,
+            "node": {
+              "type": 2,
+              "tagName": "style",
+              "attributes": {
+                "data-emotion": "devhost",
+                "data-s": "",
+                "_cssText": ".devhost-taqjlb { display: grid; gap: 8px; }"
+              },
+              "childNodes": [],
+              "id": 240,
+              "isShadow": true
+            }
+          },
+          {
+            "parentId": 96,
+            "nextId": 240,
+            "node": {
+              "type": 2,
+              "tagName": "style",
+              "attributes": {
+                "data-emotion": "devhost",
+                "data-s": "",
+                "_cssText": ".devhost-12y925o { display: grid; gap: 8px; width: min(640px, -24px + 100vw); }"
+              },
+              "childNodes": [],
+              "id": 241,
+              "isShadow": true
+            }
+          },
+          {
+            "parentId": 241,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 242
+            }
+          },
+          {
+            "parentId": 241,
+            "nextId": 242,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 243
+            }
+          },
+          {
+            "parentId": 240,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 244
+            }
+          },
+          {
+            "parentId": 240,
+            "nextId": 244,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 245
+            }
+          },
+          {
+            "parentId": 239,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 246
+            }
+          },
+          {
+            "parentId": 239,
+            "nextId": 246,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 247
+            }
+          },
+          {
+            "parentId": 238,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 248
+            }
+          },
+          {
+            "parentId": 238,
+            "nextId": 248,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 249
+            }
+          },
+          {
+            "parentId": 237,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 250
+            }
+          },
+          {
+            "parentId": 237,
+            "nextId": 250,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 251
+            }
+          },
+          {
+            "parentId": 236,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 252
+            }
+          },
+          {
+            "parentId": 236,
+            "nextId": 252,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 253
+            }
+          },
+          {
+            "parentId": 235,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 254
+            }
+          },
+          {
+            "parentId": 235,
+            "nextId": 254,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 255
+            }
+          },
+          {
+            "parentId": 234,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 256
+            }
+          },
+          {
+            "parentId": 234,
+            "nextId": 256,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 257
+            }
+          },
+          {
+            "parentId": 233,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 258
+            }
+          },
+          {
+            "parentId": 233,
+            "nextId": 258,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 259
+            }
+          },
+          {
+            "parentId": 232,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 260
+            }
+          },
+          {
+            "parentId": 232,
+            "nextId": 260,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 261
+            }
+          },
+          {
+            "parentId": 231,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 262
+            }
+          },
+          {
+            "parentId": 231,
+            "nextId": 262,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 263
+            }
+          },
+          {
+            "parentId": 230,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 264
+            }
+          },
+          {
+            "parentId": 230,
+            "nextId": 264,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 265
+            }
+          },
+          {
+            "parentId": 229,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 266
+            }
+          },
+          {
+            "parentId": 229,
+            "nextId": 266,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 267
+            }
+          },
+          {
+            "parentId": 228,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 268
+            }
+          },
+          {
+            "parentId": 228,
+            "nextId": 268,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 269
+            }
+          },
+          {
+            "parentId": 218,
+            "nextId": 219,
+            "node": {
+              "type": 3,
+              "textContent": "",
+              "id": 270
+            }
+          },
+          {
+            "parentId": 221,
+            "nextId": 222,
+            "node": {
+              "type": 2,
+              "tagName": "div",
+              "attributes": {
+                "class": "devhost-1tctc4"
+              },
+              "childNodes": [],
+              "id": 271
+            }
+          },
+          {
+            "parentId": 271,
+            "nextId": null,
+            "node": {
+              "type": 2,
+              "tagName": "strong",
+              "attributes": {},
+              "childNodes": [],
+              "id": 272
+            }
+          },
+          {
+            "parentId": 272,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "Annotation queues",
+              "id": 273
+            }
+          },
+          {
+            "parentId": 224,
+            "nextId": 225,
+            "node": {
+              "type": 2,
+              "tagName": "div",
+              "attributes": {
+                "class": "devhost-18bx7zt"
+              },
+              "childNodes": [],
+              "id": 274
+            }
+          },
+          {
+            "parentId": 274,
+            "nextId": null,
+            "node": {
+              "type": 2,
+              "tagName": "div",
+              "attributes": {
+                "class": "devhost-18en7re"
+              },
+              "childNodes": [],
+              "id": 275
+            }
+          },
+          {
+            "parentId": 274,
+            "nextId": 275,
+            "node": {
+              "type": 2,
+              "tagName": "div",
+              "attributes": {
+                "class": "devhost-vgj5n9"
+              },
+              "childNodes": [],
+              "id": 276
+            }
+          },
+          {
+            "parentId": 274,
+            "nextId": 276,
+            "node": {
+              "type": 2,
+              "tagName": "div",
+              "attributes": {
+                "class": "devhost-8knhcs"
+              },
+              "childNodes": [],
+              "id": 277
+            }
+          },
+          {
+            "parentId": 277,
+            "nextId": null,
+            "node": {
+              "type": 2,
+              "tagName": "span",
+              "attributes": {
+                "class": "devhost-yr9uer"
+              },
+              "childNodes": [],
+              "id": 278
+            }
+          },
+          {
+            "parentId": 277,
+            "nextId": 278,
+            "node": {
+              "type": 2,
+              "tagName": "strong",
+              "attributes": {
+                "class": "devhost-1wv04w",
+                "title": "app.localhost/dashboard"
+              },
+              "childNodes": [],
+              "id": 279
+            }
+          },
+          {
+            "parentId": 279,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "app.localhost/dashboard",
+              "id": 280
+            }
+          },
+          {
+            "parentId": 278,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "Paused",
+              "id": 281
+            }
+          },
+          {
+            "parentId": 276,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "1 of 2",
+              "id": 282
+            }
+          },
+          {
+            "parentId": 275,
+            "nextId": null,
+            "node": {
+              "type": 2,
+              "tagName": "div",
+              "attributes": {
+                "class": "devhost-1e0ol3m",
+                "data-testid": "AnnotationQueuePanel--queue-progress"
+              },
+              "childNodes": [],
+              "id": 283
+            }
+          },
+          {
+            "parentId": 225,
+            "nextId": 226,
+            "node": {
+              "type": 2,
+              "tagName": "button",
+              "attributes": {
+                "class": "devhost-p4wubb",
+                "data-devhost-instance-testid": "AnnotationQueuePanel--resume",
+                "data-testid": "Button",
+                "type": "button"
+              },
+              "childNodes": [],
+              "id": 284
+            }
+          },
+          {
+            "parentId": 284,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "Resume",
+              "id": 285
+            }
+          }
+        ]
+      },
+      "timestamp": 1776544409074
     },
     {
       "type": 3,
@@ -2555,7 +2808,7 @@
           }
         ]
       },
-      "timestamp": 1776316869511
+      "timestamp": 1776544409082
     },
     {
       "type": 3,
@@ -2574,7 +2827,7 @@
         "removes": [],
         "adds": []
       },
-      "timestamp": 1776316869513
+      "timestamp": 1776544409084
     },
     {
       "type": 3,
@@ -3583,7 +3836,7 @@
           }
         ]
       },
-      "timestamp": 1776316869516
+      "timestamp": 1776544409095
     },
     {
       "type": 3,
@@ -4093,7 +4346,7 @@
           }
         ]
       },
-      "timestamp": 1776316869532
+      "timestamp": 1776544409120
     },
     {
       "type": 3,
@@ -4108,7 +4361,7 @@
           }
         ]
       },
-      "timestamp": 1776316869769
+      "timestamp": 1776544409330
     },
     {
       "type": 3,
@@ -4116,119 +4369,107 @@
         "source": 1,
         "positions": [
           {
-            "x": 322,
-            "y": 724,
+            "x": 319,
+            "y": 726,
             "id": 25,
-            "timeOffset": -426
+            "timeOffset": -435
+          },
+          {
+            "x": 325,
+            "y": 722,
+            "id": 72,
+            "timeOffset": -368
           },
           {
             "x": 333,
             "y": 714,
             "id": 72,
-            "timeOffset": -352
+            "timeOffset": -301
           },
           {
             "x": 343,
             "y": 704,
             "id": 72,
-            "timeOffset": -301
+            "timeOffset": -235
           },
           {
-            "x": 365,
-            "y": 685,
-            "id": 83,
-            "timeOffset": -226
+            "x": 357,
+            "y": 692,
+            "id": 80,
+            "timeOffset": -168
           },
           {
-            "x": 383,
-            "y": 670,
+            "x": 374,
+            "y": 678,
             "id": 83,
-            "timeOffset": -176
+            "timeOffset": -101
           },
+          {
+            "x": 394,
+            "y": 661,
+            "id": 80,
+            "timeOffset": -34
+          }
+        ]
+      },
+      "timestamp": 1776544409830
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 1,
+        "positions": [
           {
             "x": 417,
             "y": 643,
             "id": 80,
-            "timeOffset": -102
+            "timeOffset": -468
           },
           {
             "x": 443,
             "y": 622,
             "id": 72,
-            "timeOffset": -52
+            "timeOffset": -401
           },
           {
             "x": 472,
             "y": 600,
             "id": 72,
-            "timeOffset": -2
-          }
-        ]
-      },
-      "timestamp": 1776316870270
-    },
-    {
-      "type": 3,
-      "data": {
-        "source": 1,
-        "positions": [
+            "timeOffset": -335
+          },
           {
             "x": 504,
             "y": 578,
             "id": 72,
-            "timeOffset": -453
+            "timeOffset": -268
           },
           {
             "x": 539,
             "y": 554,
             "id": 72,
-            "timeOffset": -403
+            "timeOffset": -201
           },
           {
             "x": 577,
             "y": 530,
             "id": 72,
-            "timeOffset": -353
+            "timeOffset": -135
           },
           {
             "x": 616,
             "y": 505,
             "id": 75,
-            "timeOffset": -303
+            "timeOffset": -68
           },
           {
             "x": 657,
             "y": 481,
             "id": 75,
-            "timeOffset": -252
-          },
-          {
-            "x": 721,
-            "y": 446,
-            "id": 73,
-            "timeOffset": -178
-          },
-          {
-            "x": 764,
-            "y": 423,
-            "id": 72,
-            "timeOffset": -128
-          },
-          {
-            "x": 806,
-            "y": 402,
-            "id": 25,
-            "timeOffset": -78
-          },
-          {
-            "x": 848,
-            "y": 382,
-            "id": 39,
-            "timeOffset": -28
+            "timeOffset": -1
           }
         ]
       },
-      "timestamp": 1776316870771
+      "timestamp": 1776544410330
     },
     {
       "type": 3,
@@ -4236,83 +4477,107 @@
         "source": 1,
         "positions": [
           {
-            "x": 887,
-            "y": 364,
+            "x": 700,
+            "y": 457,
+            "id": 73,
+            "timeOffset": -434
+          },
+          {
+            "x": 742,
+            "y": 434,
+            "id": 72,
+            "timeOffset": -368
+          },
+          {
+            "x": 785,
+            "y": 412,
+            "id": 25,
+            "timeOffset": -301
+          },
+          {
+            "x": 827,
+            "y": 392,
+            "id": 40,
+            "timeOffset": -235
+          },
+          {
+            "x": 868,
+            "y": 373,
             "id": 63,
-            "timeOffset": -479
+            "timeOffset": -168
           },
           {
-            "x": 925,
-            "y": 347,
+            "x": 907,
+            "y": 355,
             "id": 70,
-            "timeOffset": -429
+            "timeOffset": -101
           },
           {
-            "x": 960,
-            "y": 331,
+            "x": 943,
+            "y": 339,
             "id": 70,
-            "timeOffset": -379
+            "timeOffset": -35
+          }
+        ]
+      },
+      "timestamp": 1776544410830
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 1,
+        "positions": [
+          {
+            "x": 977,
+            "y": 324,
+            "id": 70,
+            "timeOffset": -468
           },
           {
-            "x": 993,
-            "y": 318,
+            "x": 1008,
+            "y": 311,
             "id": 63,
-            "timeOffset": -328
+            "timeOffset": -401
           },
           {
-            "x": 1022,
-            "y": 305,
+            "x": 1036,
+            "y": 300,
             "id": 68,
-            "timeOffset": -278
+            "timeOffset": -335
           },
           {
             "x": 1060,
             "y": 290,
             "id": 68,
-            "timeOffset": -203
+            "timeOffset": -268
           },
           {
-            "x": 1090,
-            "y": 277,
+            "x": 1081,
+            "y": 281,
             "id": 68,
-            "timeOffset": -128
+            "timeOffset": -201
           },
           {
-            "x": 1105,
-            "y": 271,
+            "x": 1098,
+            "y": 274,
             "id": 68,
-            "timeOffset": -78
+            "timeOffset": -135
+          },
+          {
+            "x": 1112,
+            "y": 268,
+            "id": 68,
+            "timeOffset": -68
           },
           {
             "x": 1123,
             "y": 263,
             "id": 68,
-            "timeOffset": -3
+            "timeOffset": -1
           }
         ]
       },
-      "timestamp": 1776316871272
-    },
-    {
-      "type": 3,
-      "data": {
-        "source": 1,
-        "positions": [
-          {
-            "x": 1133,
-            "y": 259,
-            "id": 68,
-            "timeOffset": -432
-          },
-          {
-            "x": 1136,
-            "y": 257,
-            "id": 68,
-            "timeOffset": -358
-          }
-        ]
-      },
-      "timestamp": 1776316871772
+      "timestamp": 1776544411330
     },
     {
       "type": 3,
@@ -4713,7 +4978,7 @@
             "nextId": null,
             "node": {
               "type": 3,
-              "textContent": "src/marketingCapture/MarketingCapturePage.tsx",
+              "textContent": "src/marketing/capture/MarketingCapturePage.tsx",
               "id": 330
             }
           },
@@ -6037,7 +6302,7 @@
           }
         ]
       },
-      "timestamp": 1776316871827
+      "timestamp": 1776544411384
     },
     {
       "type": 3,
@@ -6055,7 +6320,7 @@
         "removes": [],
         "adds": []
       },
-      "timestamp": 1776316871829
+      "timestamp": 1776544411389
     },
     {
       "type": 3,
@@ -7091,7 +7356,34 @@
           }
         ]
       },
-      "timestamp": 1776316871870
+      "timestamp": 1776544411396
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 1,
+        "positions": [
+          {
+            "x": 1130,
+            "y": 260,
+            "id": 68,
+            "timeOffset": -436
+          },
+          {
+            "x": 1135,
+            "y": 258,
+            "id": 68,
+            "timeOffset": -369
+          },
+          {
+            "x": 1136,
+            "y": 257,
+            "id": 68,
+            "timeOffset": -302
+          }
+        ]
+      },
+      "timestamp": 1776544411831
     },
     {
       "type": 3,
@@ -7106,7 +7398,7 @@
           }
         ]
       },
-      "timestamp": 1776316873044
+      "timestamp": 1776544413162
     },
     {
       "type": 3,
@@ -7114,50 +7406,50 @@
         "source": 1,
         "positions": [
           {
-            "x": 1130,
-            "y": 266,
+            "x": 1132,
+            "y": 262,
             "id": 68,
-            "timeOffset": -427
-          },
-          {
-            "x": 1127,
-            "y": 277,
-            "id": 68,
-            "timeOffset": -377
-          },
-          {
-            "x": 1126,
-            "y": 291,
-            "id": 68,
-            "timeOffset": -327
+            "timeOffset": -433
           },
           {
             "x": 1128,
-            "y": 307,
+            "y": 271,
             "id": 68,
-            "timeOffset": -277
+            "timeOffset": -367
+          },
+          {
+            "x": 1126,
+            "y": 284,
+            "id": 68,
+            "timeOffset": -300
+          },
+          {
+            "x": 1127,
+            "y": 299,
+            "id": 68,
+            "timeOffset": -233
+          },
+          {
+            "x": 1129,
+            "y": 315,
+            "id": 63,
+            "timeOffset": -167
           },
           {
             "x": 1132,
             "y": 327,
             "id": 70,
-            "timeOffset": -202
+            "timeOffset": -100
           },
           {
-            "x": 1135,
-            "y": 339,
+            "x": 1134,
+            "y": 336,
             "id": 70,
-            "timeOffset": -127
-          },
-          {
-            "x": 1136,
-            "y": 341,
-            "id": 70,
-            "timeOffset": -77
+            "timeOffset": -33
           }
         ]
       },
-      "timestamp": 1776316873546
+      "timestamp": 1776544413662
     },
     {
       "type": 3,
@@ -7168,7 +7460,7 @@
         "x": 1136.3984375,
         "y": 341.078125
       },
-      "timestamp": 1776316873632
+      "timestamp": 1776544413890
     },
     {
       "type": 3,
@@ -7177,7 +7469,7 @@
         "type": 5,
         "id": 70
       },
-      "timestamp": 1776316873632
+      "timestamp": 1776544413891
     },
     {
       "type": 3,
@@ -7188,7 +7480,7 @@
         "x": 1136.3984375,
         "y": 341.078125
       },
-      "timestamp": 1776316873725
+      "timestamp": 1776544413983
     },
     {
       "type": 3,
@@ -7200,7 +7492,7 @@
         "y": 341,
         "pointerType": 0
       },
-      "timestamp": 1776316873725
+      "timestamp": 1776544413983
     },
     {
       "type": 3,
@@ -7211,11 +7503,11 @@
             "x": 1136,
             "y": 340,
             "id": 70,
-            "timeOffset": 0
+            "timeOffset": -467
           }
         ]
       },
-      "timestamp": 1776316874056
+      "timestamp": 1776544414162
     },
     {
       "type": 3,
@@ -7223,62 +7515,44 @@
         "source": 1,
         "positions": [
           {
+            "x": 1136,
+            "y": 340,
+            "id": 70,
+            "timeOffset": -350
+          },
+          {
             "x": 1142,
             "y": 338,
             "id": 70,
-            "timeOffset": -450
+            "timeOffset": -284
           },
           {
             "x": 1152,
             "y": 334,
             "id": 70,
-            "timeOffset": -400
+            "timeOffset": -217
           },
           {
-            "x": 1178,
-            "y": 324,
+            "x": 1168,
+            "y": 328,
             "id": 70,
-            "timeOffset": -325
+            "timeOffset": -150
           },
           {
-            "x": 1200,
-            "y": 312,
+            "x": 1188,
+            "y": 318,
             "id": 63,
-            "timeOffset": -275
+            "timeOffset": -83
           },
           {
-            "x": 1225,
-            "y": 296,
+            "x": 1212,
+            "y": 304,
             "id": 68,
-            "timeOffset": -225
-          },
-          {
-            "x": 1251,
-            "y": 275,
-            "id": 68,
-            "timeOffset": -175
-          },
-          {
-            "x": 1278,
-            "y": 250,
-            "id": 68,
-            "timeOffset": -125
-          },
-          {
-            "x": 1305,
-            "y": 222,
-            "id": 66,
-            "timeOffset": -75
-          },
-          {
-            "x": 1330,
-            "y": 192,
-            "id": 63,
-            "timeOffset": -25
+            "timeOffset": -17
           }
         ]
       },
-      "timestamp": 1776316874556
+      "timestamp": 1776544414662
     },
     {
       "type": 3,
@@ -7287,7 +7561,7 @@
         "texts": [],
         "attributes": [
           {
-            "id": 125,
+            "id": 220,
             "attributes": {
               "class": "devhost-13le6cy"
             }
@@ -7365,7 +7639,58 @@
           }
         ]
       },
-      "timestamp": 1776316874682
+      "timestamp": 1776544415147
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 1,
+        "positions": [
+          {
+            "x": 1238,
+            "y": 286,
+            "id": 68,
+            "timeOffset": -451
+          },
+          {
+            "x": 1265,
+            "y": 263,
+            "id": 68,
+            "timeOffset": -385
+          },
+          {
+            "x": 1292,
+            "y": 236,
+            "id": 63,
+            "timeOffset": -318
+          },
+          {
+            "x": 1317,
+            "y": 207,
+            "id": 66,
+            "timeOffset": -251
+          },
+          {
+            "x": 1341,
+            "y": 176,
+            "id": 64,
+            "timeOffset": -184
+          },
+          {
+            "x": 1363,
+            "y": 147,
+            "id": 101,
+            "timeOffset": -118
+          },
+          {
+            "x": 1382,
+            "y": 120,
+            "id": 101,
+            "timeOffset": -51
+          }
+        ]
+      },
+      "timestamp": 1776544415163
     },
     {
       "type": 3,
@@ -7380,7 +7705,7 @@
             }
           },
           {
-            "id": 125,
+            "id": 220,
             "attributes": {
               "class": "devhost-vj04f"
             }
@@ -7389,7 +7714,7 @@
         "removes": [],
         "adds": []
       },
-      "timestamp": 1776316874757
+      "timestamp": 1776544415246
     },
     {
       "type": 3,
@@ -7397,50 +7722,44 @@
         "source": 1,
         "positions": [
           {
-            "x": 1352,
-            "y": 161,
-            "id": 101,
-            "timeOffset": -476
+            "x": 1399,
+            "y": 97,
+            "id": 272,
+            "timeOffset": -484
           },
           {
-            "x": 1373,
-            "y": 133,
-            "id": 101,
-            "timeOffset": -426
-          },
-          {
-            "x": 1391,
-            "y": 108,
-            "id": 125,
-            "timeOffset": -376
-          },
-          {
-            "x": 1406,
-            "y": 86,
-            "id": 125,
-            "timeOffset": -325
+            "x": 1412,
+            "y": 78,
+            "id": 102,
+            "timeOffset": -418
           },
           {
             "x": 1422,
             "y": 63,
             "id": 123,
-            "timeOffset": -252
+            "timeOffset": -351
           },
           {
             "x": 1430,
             "y": 53,
             "id": 116,
-            "timeOffset": -202
+            "timeOffset": -284
           },
           {
             "x": 1434,
             "y": 48,
             "id": 102,
-            "timeOffset": -149
+            "timeOffset": -218
+          },
+          {
+            "x": 1436,
+            "y": 46,
+            "id": 102,
+            "timeOffset": -151
           }
         ]
       },
-      "timestamp": 1776316875057
+      "timestamp": 1776544415663
     }
   ]
 }

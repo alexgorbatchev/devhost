@@ -1,14 +1,14 @@
 {
-  "durationMs": 5294.399999991059,
+  "durationMs": 5955.699999988079,
   "events": [
     {
       "type": 4,
       "data": {
-        "href": "http://127.0.0.1:54345/__capture__?scenario=source-jumps",
+        "href": "http://127.0.0.1:43727/__capture__?scenario=source-jumps",
         "width": 1440,
         "height": 960
       },
-      "timestamp": 1776316842092
+      "timestamp": 1776544377690
     },
     {
       "type": 2,
@@ -120,7 +120,7 @@
                       "attributes": {
                         "type": "module",
                         "crossorigin": "",
-                        "src": "http://127.0.0.1:54345/chunk-9rbzbks4.js"
+                        "src": "http://127.0.0.1:43727/chunk-wd5crn4v.js"
                       },
                       "childNodes": [],
                       "id": 16
@@ -129,7 +129,7 @@
                       "type": 2,
                       "tagName": "script",
                       "attributes": {
-                        "src": "http://127.0.0.1:54345/__capture__/devtools.js",
+                        "src": "http://127.0.0.1:43727/__capture__/devtools.js",
                         "type": "module",
                         "data-devhost-capture-script": ""
                       },
@@ -761,7 +761,7 @@
                                                       "childNodes": [
                                                         {
                                                           "type": 3,
-                                                          "textContent": "src/marketingCapture/MarketingCapturePage.tsx",
+                                                          "textContent": "src/marketing/capture/MarketingCapturePage.tsx",
                                                           "id": 96
                                                         }
                                                       ],
@@ -3350,7 +3350,7 @@
           "top": 0
         }
       },
-      "timestamp": 1776316842102
+      "timestamp": 1776544377700
     },
     {
       "type": 3,
@@ -3534,7 +3534,7 @@
           }
         ]
       },
-      "timestamp": 1776316842108
+      "timestamp": 1776544377706
     },
     {
       "type": 3,
@@ -3553,7 +3553,7 @@
         "removes": [],
         "adds": []
       },
-      "timestamp": 1776316842109
+      "timestamp": 1776544377708
     },
     {
       "type": 3,
@@ -4544,7 +4544,7 @@
           }
         ]
       },
-      "timestamp": 1776316842128
+      "timestamp": 1776544377713
     },
     {
       "type": 3,
@@ -5045,7 +5045,7 @@
           }
         ]
       },
-      "timestamp": 1776316842129
+      "timestamp": 1776544377745
     },
     {
       "type": 3,
@@ -5080,7 +5080,7 @@
           }
         ]
       },
-      "timestamp": 1776316842357
+      "timestamp": 1776544377955
     },
     {
       "type": 3,
@@ -5095,7 +5095,7 @@
           }
         ]
       },
-      "timestamp": 1776316842365
+      "timestamp": 1776544377964
     },
     {
       "type": 3,
@@ -5155,7 +5155,7 @@
           }
         ]
       },
-      "timestamp": 1776316842366
+      "timestamp": 1776544377965
     },
     {
       "type": 3,
@@ -5208,7 +5208,7 @@
           }
         ]
       },
-      "timestamp": 1776316842690
+      "timestamp": 1776544378364
     },
     {
       "type": 3,
@@ -5219,59 +5219,47 @@
             "x": 321,
             "y": 730,
             "id": 99,
-            "timeOffset": -426
+            "timeOffset": -434
           },
           {
             "x": 328,
             "y": 730,
             "id": 99,
-            "timeOffset": -376
+            "timeOffset": -367
           },
           {
             "x": 340,
             "y": 730,
             "id": 99,
-            "timeOffset": -326
+            "timeOffset": -301
           },
           {
             "x": 355,
             "y": 730,
             "id": 99,
-            "timeOffset": -275
+            "timeOffset": -234
           },
           {
-            "x": 385,
-            "y": 729,
+            "x": 374,
+            "y": 730,
             "id": 99,
-            "timeOffset": -201
+            "timeOffset": -168
           },
           {
-            "x": 409,
-            "y": 727,
-            "id": 102,
-            "timeOffset": -151
-          },
-          {
-            "x": 438,
-            "y": 724,
-            "id": 102,
+            "x": 397,
+            "y": 728,
+            "id": 99,
             "timeOffset": -101
           },
           {
-            "x": 470,
-            "y": 720,
+            "x": 423,
+            "y": 726,
             "id": 102,
-            "timeOffset": -51
-          },
-          {
-            "x": 505,
-            "y": 715,
-            "id": 102,
-            "timeOffset": -1
+            "timeOffset": -34
           }
         ]
       },
-      "timestamp": 1776316842865
+      "timestamp": 1776544378464
     },
     {
       "type": 3,
@@ -5289,7 +5277,7 @@
         "removes": [],
         "adds": []
       },
-      "timestamp": 1776316843016
+      "timestamp": 1776544378798
     },
     {
       "type": 3,
@@ -5342,7 +5330,64 @@
           }
         ]
       },
-      "timestamp": 1776316843040
+      "timestamp": 1776544378831
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 1,
+        "positions": [
+          {
+            "x": 453,
+            "y": 722,
+            "id": 102,
+            "timeOffset": -469
+          },
+          {
+            "x": 487,
+            "y": 718,
+            "id": 102,
+            "timeOffset": -402
+          },
+          {
+            "x": 524,
+            "y": 712,
+            "id": 102,
+            "timeOffset": -335
+          },
+          {
+            "x": 564,
+            "y": 704,
+            "id": 102,
+            "timeOffset": -269
+          },
+          {
+            "x": 606,
+            "y": 696,
+            "id": 102,
+            "timeOffset": -202
+          },
+          {
+            "x": 650,
+            "y": 686,
+            "id": 100,
+            "timeOffset": -135
+          },
+          {
+            "x": 696,
+            "y": 675,
+            "id": 100,
+            "timeOffset": -69
+          },
+          {
+            "x": 742,
+            "y": 663,
+            "id": 100,
+            "timeOffset": -2
+          }
+        ]
+      },
+      "timestamp": 1776544378965
     },
     {
       "type": 3,
@@ -5395,7 +5440,7 @@
           }
         ]
       },
-      "timestamp": 1776316843165
+      "timestamp": 1776544378997
     },
     {
       "type": 3,
@@ -5448,7 +5493,7 @@
           }
         ]
       },
-      "timestamp": 1776316843190
+      "timestamp": 1776544379031
     },
     {
       "type": 3,
@@ -5501,7 +5546,7 @@
           }
         ]
       },
-      "timestamp": 1776316843215
+      "timestamp": 1776544379064
     },
     {
       "type": 3,
@@ -5554,70 +5599,7 @@
           }
         ]
       },
-      "timestamp": 1776316843265
-    },
-    {
-      "type": 3,
-      "data": {
-        "source": 1,
-        "positions": [
-          {
-            "x": 543,
-            "y": 708,
-            "id": 102,
-            "timeOffset": -452
-          },
-          {
-            "x": 585,
-            "y": 700,
-            "id": 102,
-            "timeOffset": -401
-          },
-          {
-            "x": 628,
-            "y": 691,
-            "id": 99,
-            "timeOffset": -351
-          },
-          {
-            "x": 696,
-            "y": 675,
-            "id": 100,
-            "timeOffset": -277
-          },
-          {
-            "x": 742,
-            "y": 663,
-            "id": 100,
-            "timeOffset": -227
-          },
-          {
-            "x": 788,
-            "y": 651,
-            "id": 97,
-            "timeOffset": -177
-          },
-          {
-            "x": 834,
-            "y": 638,
-            "id": 142,
-            "timeOffset": -127
-          },
-          {
-            "x": 878,
-            "y": 625,
-            "id": 25,
-            "timeOffset": -71
-          },
-          {
-            "x": 921,
-            "y": 611,
-            "id": 25,
-            "timeOffset": -18
-          }
-        ]
-      },
-      "timestamp": 1776316843366
+      "timestamp": 1776544379131
     },
     {
       "type": 3,
@@ -5670,7 +5652,7 @@
           }
         ]
       },
-      "timestamp": 1776316843373
+      "timestamp": 1776544379281
     },
     {
       "type": 3,
@@ -5723,7 +5705,7 @@
           }
         ]
       },
-      "timestamp": 1776316843402
+      "timestamp": 1776544379330
     },
     {
       "type": 3,
@@ -5734,7 +5716,7 @@
           {
             "id": 424,
             "attributes": {
-              "class": "devhost-hyh3rn"
+              "class": "devhost-70dyrq"
             }
           }
         ],
@@ -5749,7 +5731,7 @@
               "attributes": {
                 "data-emotion": "devhost",
                 "data-s": "",
-                "_cssText": ".devhost-hyh3rn { position: fixed; top: 559.623px; left: 973.078px; width: 419.156px; height: 30px; box-sizing: border-box; border: 2px solid rgb(122, 162, 247); border-radius: 4px; pointer-events: none; z-index: 2147483500; }"
+                "_cssText": ".devhost-70dyrq { position: fixed; top: 559.46px; left: 973.078px; width: 419.156px; height: 30px; box-sizing: border-box; border: 2px solid rgb(122, 162, 247); border-radius: 4px; pointer-events: none; z-index: 2147483500; }"
               },
               "childNodes": [],
               "id": 450,
@@ -5776,7 +5758,58 @@
           }
         ]
       },
-      "timestamp": 1776316843457
+      "timestamp": 1776544379398
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 1,
+        "positions": [
+          {
+            "x": 788,
+            "y": 651,
+            "id": 97,
+            "timeOffset": -435
+          },
+          {
+            "x": 834,
+            "y": 638,
+            "id": 142,
+            "timeOffset": -369
+          },
+          {
+            "x": 878,
+            "y": 625,
+            "id": 25,
+            "timeOffset": -284
+          },
+          {
+            "x": 921,
+            "y": 611,
+            "id": 25,
+            "timeOffset": -218
+          },
+          {
+            "x": 961,
+            "y": 598,
+            "id": 88,
+            "timeOffset": -137
+          },
+          {
+            "x": 998,
+            "y": 586,
+            "id": 95,
+            "timeOffset": -68
+          },
+          {
+            "x": 1032,
+            "y": 574,
+            "id": 95,
+            "timeOffset": -2
+          }
+        ]
+      },
+      "timestamp": 1776544379465
     },
     {
       "type": 3,
@@ -5787,7 +5820,7 @@
           {
             "id": 424,
             "attributes": {
-              "class": "devhost-ekr3h6"
+              "class": "devhost-1pp572d"
             }
           }
         ],
@@ -5802,7 +5835,7 @@
               "attributes": {
                 "data-emotion": "devhost",
                 "data-s": "",
-                "_cssText": ".devhost-ekr3h6 { position: fixed; top: 418.834px; left: 955.828px; width: 453.656px; height: 187px; box-sizing: border-box; border: 2px solid rgb(122, 162, 247); border-radius: 4px; pointer-events: none; z-index: 2147483500; }"
+                "_cssText": ".devhost-1pp572d { position: fixed; top: 418.828px; left: 955.828px; width: 453.656px; height: 187px; box-sizing: border-box; border: 2px solid rgb(122, 162, 247); border-radius: 4px; pointer-events: none; z-index: 2147483500; }"
               },
               "childNodes": [],
               "id": 453,
@@ -5829,7 +5862,7 @@
           }
         ]
       },
-      "timestamp": 1776316843582
+      "timestamp": 1776544379564
     },
     {
       "type": 3,
@@ -5882,7 +5915,7 @@
           }
         ]
       },
-      "timestamp": 1776316843632
+      "timestamp": 1776544379631
     },
     {
       "type": 3,
@@ -5890,62 +5923,50 @@
         "source": 1,
         "positions": [
           {
-            "x": 961,
-            "y": 598,
-            "id": 88,
-            "timeOffset": -465
-          },
-          {
-            "x": 998,
-            "y": 586,
-            "id": 95,
-            "timeOffset": -410
-          },
-          {
-            "x": 1032,
-            "y": 574,
-            "id": 95,
-            "timeOffset": -360
-          },
-          {
             "x": 1063,
             "y": 562,
             "id": 95,
-            "timeOffset": -310
+            "timeOffset": -435
           },
           {
-            "x": 1103,
-            "y": 547,
+            "x": 1090,
+            "y": 552,
+            "id": 88,
+            "timeOffset": -369
+          },
+          {
+            "x": 1114,
+            "y": 543,
+            "id": 93,
+            "timeOffset": -302
+          },
+          {
+            "x": 1134,
+            "y": 534,
             "id": 93,
             "timeOffset": -235
           },
           {
-            "x": 1124,
-            "y": 538,
+            "x": 1150,
+            "y": 527,
             "id": 93,
-            "timeOffset": -185
+            "timeOffset": -168
           },
           {
-            "x": 1142,
-            "y": 531,
+            "x": 1163,
+            "y": 522,
             "id": 93,
-            "timeOffset": -135
+            "timeOffset": -102
           },
           {
-            "x": 1157,
-            "y": 525,
+            "x": 1172,
+            "y": 518,
             "id": 93,
-            "timeOffset": -85
-          },
-          {
-            "x": 1168,
-            "y": 520,
-            "id": 93,
-            "timeOffset": -34
+            "timeOffset": -35
           }
         ]
       },
-      "timestamp": 1776316843866
+      "timestamp": 1776544379965
     },
     {
       "type": 3,
@@ -5956,7 +5977,7 @@
         "x": 1182.65625,
         "y": 513.953125
       },
-      "timestamp": 1776316844144
+      "timestamp": 1776544380258
     },
     {
       "type": 3,
@@ -6042,7 +6063,7 @@
               "tagName": "span",
               "attributes": {
                 "class": "devhost-gspegl",
-                "title": "src/marketingCapture/MarketingCapturePage.tsx:306:5"
+                "title": "src/marketing/capture/MarketingCapturePage.tsx:306:5"
               },
               "childNodes": [],
               "id": 464
@@ -6053,7 +6074,7 @@
             "nextId": null,
             "node": {
               "type": 3,
-              "textContent": "src/marketingCapture/MarketingCapturePage.tsx:306:5",
+              "textContent": "src/marketing/capture/MarketingCapturePage.tsx:306:5",
               "id": 465
             }
           },
@@ -6420,7 +6441,7 @@
           }
         ]
       },
-      "timestamp": 1776316844148
+      "timestamp": 1776544380262
     },
     {
       "type": 3,
@@ -6432,7 +6453,7 @@
         "y": 513,
         "pointerType": 0
       },
-      "timestamp": 1776316844148
+      "timestamp": 1776544380262
     },
     {
       "type": 3,
@@ -6443,7 +6464,7 @@
         "x": 1182.65625,
         "y": 513.953125
       },
-      "timestamp": 1776316844241
+      "timestamp": 1776544380355
     },
     {
       "type": 3,
@@ -6454,17 +6475,17 @@
             "x": 1179,
             "y": 515,
             "id": 93,
-            "timeOffset": -460
+            "timeOffset": -470
           },
           {
             "x": 1182,
             "y": 514,
             "id": 93,
-            "timeOffset": -410
+            "timeOffset": -403
           }
         ]
       },
-      "timestamp": 1776316844366
+      "timestamp": 1776544380466
     },
     {
       "type": 3,
@@ -6480,7 +6501,7 @@
         ],
         "adds": []
       },
-      "timestamp": 1776316844664
+      "timestamp": 1776544380779
     },
     {
       "type": 3,
@@ -6496,7 +6517,34 @@
         ],
         "adds": []
       },
-      "timestamp": 1776316844664
+      "timestamp": 1776544380779
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 1,
+        "positions": [
+          {
+            "x": 1182,
+            "y": 514,
+            "id": 461,
+            "timeOffset": -169
+          },
+          {
+            "x": 1181,
+            "y": 519,
+            "id": 461,
+            "timeOffset": -103
+          },
+          {
+            "x": 1181,
+            "y": 528,
+            "id": 489,
+            "timeOffset": -36
+          }
+        ]
+      },
+      "timestamp": 1776544380966
     },
     {
       "type": 3,
@@ -6583,7 +6631,7 @@
           }
         ]
       },
-      "timestamp": 1776316844849
+      "timestamp": 1776544381031
     },
     {
       "type": 3,
@@ -6591,32 +6639,44 @@
         "source": 1,
         "positions": [
           {
-            "x": 1182,
-            "y": 514,
+            "x": 1183,
+            "y": 541,
             "id": 461,
-            "timeOffset": -194
+            "timeOffset": -469
           },
           {
-            "x": 1181,
-            "y": 519,
-            "id": 461,
-            "timeOffset": -144
+            "x": 1189,
+            "y": 555,
+            "id": 492,
+            "timeOffset": -403
           },
           {
-            "x": 1181,
-            "y": 528,
-            "id": 489,
-            "timeOffset": -93
+            "x": 1197,
+            "y": 568,
+            "id": 492,
+            "timeOffset": -336
           },
           {
-            "x": 1185,
-            "y": 548,
+            "x": 1205,
+            "y": 578,
             "id": 463,
-            "timeOffset": -18
+            "timeOffset": -269
+          },
+          {
+            "x": 1211,
+            "y": 585,
+            "id": 491,
+            "timeOffset": -203
+          },
+          {
+            "x": 1213,
+            "y": 588,
+            "id": 491,
+            "timeOffset": -136
           }
         ]
       },
-      "timestamp": 1776316844866
+      "timestamp": 1776544381466
     },
     {
       "type": 3,
@@ -6627,7 +6687,7 @@
         "x": 1214,
         "y": 588.75
       },
-      "timestamp": 1776316845261
+      "timestamp": 1776544381523
     },
     {
       "type": 3,
@@ -6636,7 +6696,7 @@
         "type": 5,
         "id": 463
       },
-      "timestamp": 1776316845261
+      "timestamp": 1776544381523
     },
     {
       "type": 3,
@@ -6647,7 +6707,7 @@
         "x": 1214,
         "y": 588.75
       },
-      "timestamp": 1776316845354
+      "timestamp": 1776544381616
     },
     {
       "type": 3,
@@ -6659,7 +6719,7 @@
         "y": 588,
         "pointerType": 0
       },
-      "timestamp": 1776316845354
+      "timestamp": 1776544381616
     },
     {
       "type": 3,
@@ -6668,7 +6728,7 @@
         "type": 6,
         "id": 463
       },
-      "timestamp": 1776316845362
+      "timestamp": 1776544381636
     },
     {
       "type": 3,
@@ -8171,13 +8231,13 @@
             "nextId": null,
             "node": {
               "type": 3,
-              "textContent": "/Users/alex/development/projects/devhost/packages/www/src/marketingCapture/MarketingCapturePage.tsx:306:5",
+              "textContent": "/Users/alex/development/projects/devhost/packages/www/src/marketing/capture/MarketingCapturePage.tsx:306:5",
               "id": 632
             }
           }
         ]
       },
-      "timestamp": 1776316845365
+      "timestamp": 1776544381639
     },
     {
       "type": 3,
@@ -8186,7 +8246,7 @@
         "type": 5,
         "id": -1
       },
-      "timestamp": 1776316845379
+      "timestamp": 1776544381654
     },
     {
       "type": 3,
@@ -8205,7 +8265,7 @@
               "attributes": {
                 "id": "devhost-xterm-stylesheet",
                 "rel": "stylesheet",
-                "href": "http://127.0.0.1:54345/__devhost__/xterm.css"
+                "href": "http://127.0.0.1:43727/__devhost__/xterm.css"
               },
               "childNodes": [],
               "id": 633,
@@ -8233,7 +8293,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "class": "xterm-scrollable-element  mac",
+                "class": "xterm-scrollable-element ",
                 "role": "presentation",
                 "style": "position: relative; background-color: rgb(36, 40, 59);"
               },
@@ -8308,7 +8368,7 @@
               "tagName": "div",
               "attributes": {
                 "class": "xterm-screen",
-                "style": "width: 1008px; height: 1440px;"
+                "style": "width: 1011px; height: 1280px;"
               },
               "childNodes": [],
               "id": 640
@@ -8363,7 +8423,7 @@
               "attributes": {
                 "class": "xterm-rows xterm-focus",
                 "aria-hidden": "true",
-                "style": "line-height: normal; letter-spacing: -0.00625px;"
+                "style": "line-height: normal; letter-spacing: -0.0125px;"
               },
               "childNodes": [],
               "id": 644
@@ -8545,7 +8605,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 658
@@ -8558,7 +8618,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 659
@@ -8571,7 +8631,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 660
@@ -8584,7 +8644,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 661
@@ -8597,7 +8657,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 662
@@ -8610,7 +8670,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 663
@@ -8623,7 +8683,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 664
@@ -8636,7 +8696,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 665
@@ -8649,7 +8709,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 666
@@ -8662,7 +8722,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 667
@@ -8675,7 +8735,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 668
@@ -8688,7 +8748,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 669
@@ -8701,7 +8761,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 670
@@ -8714,7 +8774,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 671
@@ -8727,7 +8787,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 672
@@ -8740,7 +8800,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 673
@@ -8753,7 +8813,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 674
@@ -8766,7 +8826,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 675
@@ -8779,7 +8839,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 676
@@ -8792,7 +8852,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 677
@@ -8805,7 +8865,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 678
@@ -8818,7 +8878,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 679
@@ -8831,7 +8891,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 680
@@ -8844,7 +8904,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 681
@@ -8857,7 +8917,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 682
@@ -8870,7 +8930,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 683
@@ -8883,7 +8943,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 684
@@ -8896,7 +8956,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 685
@@ -8909,7 +8969,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 686
@@ -8922,7 +8982,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 687
@@ -8935,7 +8995,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 688
@@ -8948,7 +9008,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 689
@@ -8961,7 +9021,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 690
@@ -8974,7 +9034,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 691
@@ -8987,7 +9047,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 692
@@ -9000,7 +9060,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 693
@@ -9013,7 +9073,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 694
@@ -9026,7 +9086,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 695
@@ -9039,7 +9099,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 696
@@ -9052,7 +9112,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 697
@@ -9065,7 +9125,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 698
@@ -9078,7 +9138,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 699
@@ -9091,7 +9151,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 700
@@ -9104,7 +9164,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 701
@@ -9117,7 +9177,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 702
@@ -9130,7 +9190,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 703
@@ -9143,7 +9203,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 704
@@ -9156,7 +9216,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 705
@@ -9169,7 +9229,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 706
@@ -9182,7 +9242,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 707
@@ -9195,7 +9255,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 708
@@ -9208,7 +9268,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 709
@@ -9221,7 +9281,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 710
@@ -9234,7 +9294,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 711
@@ -9247,7 +9307,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 712
@@ -9260,7 +9320,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 713
@@ -9273,7 +9333,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 714
@@ -9286,7 +9346,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 715
@@ -9299,7 +9359,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 716
@@ -9312,7 +9372,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 717
@@ -9325,7 +9385,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 718
@@ -9338,7 +9398,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 719
@@ -9351,7 +9411,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 720
@@ -9364,7 +9424,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 721
@@ -9377,7 +9437,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 722
@@ -9390,7 +9450,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 723
@@ -9403,7 +9463,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 724
@@ -9416,7 +9476,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 725
@@ -9429,7 +9489,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 726
@@ -9442,7 +9502,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 727
@@ -9455,7 +9515,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 728
@@ -9468,7 +9528,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 729
@@ -9481,7 +9541,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 730
@@ -9494,7 +9554,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 731
@@ -9507,7 +9567,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 732
@@ -9520,7 +9580,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 733
@@ -9533,7 +9593,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 734
@@ -9546,7 +9606,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 735
@@ -9559,7 +9619,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 736
@@ -9572,7 +9632,7 @@
               "type": 2,
               "tagName": "div",
               "attributes": {
-                "style": "width: 1008px; height: 18px; line-height: 18px; overflow: hidden;"
+                "style": "width: 1011px; height: 16px; line-height: 16px; overflow: hidden;"
               },
               "childNodes": [],
               "id": 737
@@ -9625,7 +9685,7 @@
           }
         ]
       },
-      "timestamp": 1776316845385
+      "timestamp": 1776544381661
     },
     {
       "type": 3,
@@ -9649,74 +9709,7 @@
         "removes": [],
         "adds": []
       },
-      "timestamp": 1776316845386
-    },
-    {
-      "type": 3,
-      "data": {
-        "source": 1,
-        "positions": [
-          {
-            "x": 1197,
-            "y": 568,
-            "id": 492,
-            "timeOffset": -465
-          },
-          {
-            "x": 1205,
-            "y": 578,
-            "id": 463,
-            "timeOffset": -415
-          },
-          {
-            "x": 1211,
-            "y": 585,
-            "id": 491,
-            "timeOffset": -365
-          },
-          {
-            "x": 1213,
-            "y": 588,
-            "id": 491,
-            "timeOffset": -314
-          }
-        ]
-      },
-      "timestamp": 1776316845387
-    },
-    {
-      "type": 3,
-      "data": {
-        "source": 0,
-        "texts": [
-          {
-            "id": 624,
-            "value": "Connected"
-          }
-        ],
-        "attributes": [],
-        "removes": [],
-        "adds": []
-      },
-      "timestamp": 1776316845388
-    },
-    {
-      "type": 3,
-      "data": {
-        "source": 0,
-        "texts": [],
-        "attributes": [
-          {
-            "id": 650,
-            "attributes": {
-              "style": "left: 0px; top: 36px; width: 8.4px; height: 18px; line-height: 18px; z-index: -5;"
-            }
-          }
-        ],
-        "removes": [],
-        "adds": []
-      },
-      "timestamp": 1776316845389
+      "timestamp": 1776544381661
     },
     {
       "type": 3,
@@ -9726,68 +9719,13 @@
         "attributes": [],
         "removes": [
           {
-            "parentId": 654,
-            "id": 655
-          },
-          {
             "parentId": 737,
             "id": 738
           }
         ],
         "adds": [
           {
-            "parentId": 654,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "id": 742
-            }
-          },
-          {
             "parentId": 737,
-            "nextId": null,
-            "node": {
-              "type": 2,
-              "tagName": "span",
-              "attributes": {
-                "class": "xterm-fg-4"
-              },
-              "childNodes": [],
-              "id": 743
-            }
-          },
-          {
-            "parentId": 743,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "Neovim is running...",
-              "id": 744
-            }
-          },
-          {
-            "parentId": 736,
-            "nextId": null,
-            "node": {
-              "type": 2,
-              "tagName": "span",
-              "attributes": {},
-              "childNodes": [],
-              "id": 745
-            }
-          },
-          {
-            "parentId": 745,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": ":set relativenumber",
-              "id": 746
-            }
-          },
-          {
-            "parentId": 735,
             "nextId": null,
             "node": {
               "type": 2,
@@ -9796,43 +9734,21 @@
                 "class": "xterm-cursor xterm-cursor-blink xterm-cursor-block"
               },
               "childNodes": [],
-              "id": 747
+              "id": 742
             }
           },
           {
-            "parentId": 747,
+            "parentId": 742,
             "nextId": null,
             "node": {
               "type": 3,
               "textContent": " ",
-              "id": 748
-            }
-          },
-          {
-            "parentId": 737,
-            "nextId": 743,
-            "node": {
-              "type": 2,
-              "tagName": "span",
-              "attributes": {
-                "class": "xterm-fg-2"
-              },
-              "childNodes": [],
-              "id": 749
-            }
-          },
-          {
-            "parentId": 749,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "~ ",
-              "id": 750
+              "id": 743
             }
           }
         ]
       },
-      "timestamp": 1776316845393
+      "timestamp": 1776544381663
     },
     {
       "type": 3,
@@ -9844,7 +9760,7 @@
             "id": 737,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -9852,7 +9768,7 @@
             "id": 736,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -9860,7 +9776,7 @@
             "id": 735,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -9868,7 +9784,7 @@
             "id": 734,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -9876,7 +9792,7 @@
             "id": 733,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -9884,7 +9800,7 @@
             "id": 732,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -9892,7 +9808,7 @@
             "id": 731,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -9900,7 +9816,7 @@
             "id": 730,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -9908,7 +9824,7 @@
             "id": 729,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -9916,7 +9832,7 @@
             "id": 728,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -9924,7 +9840,7 @@
             "id": 727,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -9932,7 +9848,7 @@
             "id": 726,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -9940,7 +9856,7 @@
             "id": 725,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -9948,7 +9864,7 @@
             "id": 724,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -9956,7 +9872,7 @@
             "id": 723,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -9964,7 +9880,7 @@
             "id": 722,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -9972,7 +9888,7 @@
             "id": 721,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -9980,7 +9896,7 @@
             "id": 720,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -9988,7 +9904,7 @@
             "id": 719,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -9996,7 +9912,7 @@
             "id": 718,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10004,7 +9920,7 @@
             "id": 717,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10012,7 +9928,7 @@
             "id": 716,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10020,7 +9936,7 @@
             "id": 715,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10028,7 +9944,7 @@
             "id": 714,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10036,7 +9952,7 @@
             "id": 713,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10044,7 +9960,7 @@
             "id": 712,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10052,7 +9968,7 @@
             "id": 711,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10060,7 +9976,7 @@
             "id": 710,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10068,7 +9984,7 @@
             "id": 709,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10076,7 +9992,7 @@
             "id": 708,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10084,7 +10000,7 @@
             "id": 707,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10092,7 +10008,7 @@
             "id": 706,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10100,7 +10016,7 @@
             "id": 705,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10108,7 +10024,7 @@
             "id": 704,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10116,7 +10032,7 @@
             "id": 703,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10124,7 +10040,7 @@
             "id": 702,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10132,7 +10048,7 @@
             "id": 701,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10140,7 +10056,7 @@
             "id": 700,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10148,7 +10064,7 @@
             "id": 699,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10156,7 +10072,7 @@
             "id": 698,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10164,7 +10080,7 @@
             "id": 697,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10172,7 +10088,7 @@
             "id": 696,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10180,7 +10096,7 @@
             "id": 695,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10188,7 +10104,7 @@
             "id": 694,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10196,7 +10112,7 @@
             "id": 693,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
               }
             }
           },
@@ -10204,33 +10120,69 @@
             "id": 692,
             "attributes": {
               "style": {
-                "width": "1403px"
+                "width": "1399px"
+              }
+            }
+          },
+          {
+            "id": 691,
+            "attributes": {
+              "style": {
+                "width": "1399px"
+              }
+            }
+          },
+          {
+            "id": 690,
+            "attributes": {
+              "style": {
+                "width": "1399px"
+              }
+            }
+          },
+          {
+            "id": 689,
+            "attributes": {
+              "style": {
+                "width": "1399px"
+              }
+            }
+          },
+          {
+            "id": 688,
+            "attributes": {
+              "style": {
+                "width": "1399px"
+              }
+            }
+          },
+          {
+            "id": 687,
+            "attributes": {
+              "style": {
+                "width": "1399px"
+              }
+            }
+          },
+          {
+            "id": 686,
+            "attributes": {
+              "style": {
+                "width": "1399px"
               }
             }
           },
           {
             "id": 640,
             "attributes": {
-              "style": "width: 1403px; height: 828px;"
+              "style": "width: 1399px; height: 832px;"
             }
           }
         ],
         "removes": [
           {
             "parentId": 737,
-            "id": 749
-          },
-          {
-            "parentId": 737,
-            "id": 743
-          },
-          {
-            "parentId": 736,
-            "id": 745
-          },
-          {
-            "parentId": 735,
-            "id": 747
+            "id": 742
           },
           {
             "parentId": 644,
@@ -10345,30 +10297,6 @@
             "id": 685
           },
           {
-            "parentId": 644,
-            "id": 686
-          },
-          {
-            "parentId": 644,
-            "id": 687
-          },
-          {
-            "parentId": 644,
-            "id": 688
-          },
-          {
-            "parentId": 644,
-            "id": 689
-          },
-          {
-            "parentId": 644,
-            "id": 690
-          },
-          {
-            "parentId": 644,
-            "id": 691
-          },
-          {
             "parentId": 646,
             "id": 656
           }
@@ -10380,7 +10308,7 @@
             "node": {
               "type": 3,
               "textContent": ".xterm-dom-renderer-owner-1 .xterm-rows span { display: inline-block; height: 100%; vertical-align: top;}",
-              "id": 751
+              "id": 744
             }
           },
           {
@@ -10390,19 +10318,203 @@
               "type": 2,
               "tagName": "span",
               "attributes": {
-                "class": "xterm-fg-4",
-                "style": "letter-spacing: -0.0050524px;"
+                "class": "xterm-cursor xterm-cursor-blink xterm-cursor-block",
+                "style": "letter-spacing: -0.00978916px;"
               },
               "childNodes": [],
-              "id": 752
+              "id": 745
             }
           },
           {
-            "parentId": 752,
+            "parentId": 745,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": " ",
+              "id": 746
+            }
+          }
+        ]
+      },
+      "timestamp": 1776544381667
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 0,
+        "texts": [],
+        "attributes": [
+          {
+            "id": 637,
+            "attributes": {
+              "style": {
+                "height": "832px"
+              }
+            }
+          },
+          {
+            "id": 636,
+            "attributes": {
+              "style": {
+                "height": "832px"
+              }
+            }
+          }
+        ],
+        "removes": [
+          {
+            "parentId": 737,
+            "id": 745
+          }
+        ],
+        "adds": [
+          {
+            "parentId": 737,
+            "nextId": null,
+            "node": {
+              "type": 2,
+              "tagName": "span",
+              "attributes": {
+                "class": "xterm-cursor xterm-cursor-blink xterm-cursor-block",
+                "style": "letter-spacing: -0.00978916px;"
+              },
+              "childNodes": [],
+              "id": 747
+            }
+          },
+          {
+            "parentId": 747,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": " ",
+              "id": 748
+            }
+          }
+        ]
+      },
+      "timestamp": 1776544381669
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 0,
+        "texts": [],
+        "attributes": [],
+        "removes": [
+          {
+            "parentId": 737,
+            "id": 747
+          }
+        ],
+        "adds": [
+          {
+            "parentId": 737,
+            "nextId": null,
+            "node": {
+              "type": 2,
+              "tagName": "span",
+              "attributes": {
+                "class": "xterm-cursor xterm-cursor-blink xterm-cursor-block",
+                "style": "letter-spacing: -0.00978916px;"
+              },
+              "childNodes": [],
+              "id": 749
+            }
+          },
+          {
+            "parentId": 749,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": " ",
+              "id": 750
+            }
+          }
+        ]
+      },
+      "timestamp": 1776544381669
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 0,
+        "texts": [
+          {
+            "id": 624,
+            "value": "Connected"
+          }
+        ],
+        "attributes": [],
+        "removes": [],
+        "adds": []
+      },
+      "timestamp": 1776544381671
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 0,
+        "texts": [],
+        "attributes": [
+          {
+            "id": 650,
+            "attributes": {
+              "style": "left: 0px; top: 32px; width: 8.42771px; height: 16px; line-height: 16px; z-index: -5;"
+            }
+          }
+        ],
+        "removes": [],
+        "adds": []
+      },
+      "timestamp": 1776544381672
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 0,
+        "texts": [],
+        "attributes": [],
+        "removes": [
+          {
+            "parentId": 654,
+            "id": 655
+          },
+          {
+            "parentId": 737,
+            "id": 749
+          }
+        ],
+        "adds": [
+          {
+            "parentId": 737,
+            "nextId": null,
+            "node": {
+              "type": 2,
+              "tagName": "span",
+              "attributes": {
+                "class": "xterm-fg-4",
+                "style": "letter-spacing: -0.00978916px;"
+              },
+              "childNodes": [],
+              "id": 751
+            }
+          },
+          {
+            "parentId": 751,
             "nextId": null,
             "node": {
               "type": 3,
               "textContent": "Neovim is running...",
+              "id": 752
+            }
+          },
+          {
+            "parentId": 654,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
               "id": 753
             }
           },
@@ -10413,7 +10525,7 @@
               "type": 2,
               "tagName": "span",
               "attributes": {
-                "style": "letter-spacing: -0.0050524px;"
+                "style": "letter-spacing: -0.00978916px;"
               },
               "childNodes": [],
               "id": 754
@@ -10436,7 +10548,7 @@
               "tagName": "span",
               "attributes": {
                 "class": "xterm-cursor xterm-cursor-blink xterm-cursor-block",
-                "style": "letter-spacing: -0.0050524px;"
+                "style": "letter-spacing: -0.00978916px;"
               },
               "childNodes": [],
               "id": 756
@@ -10453,13 +10565,13 @@
           },
           {
             "parentId": 737,
-            "nextId": 752,
+            "nextId": 751,
             "node": {
               "type": 2,
               "tagName": "span",
               "attributes": {
                 "class": "xterm-fg-2",
-                "style": "letter-spacing: -0.0050524px;"
+                "style": "letter-spacing: -0.00978916px;"
               },
               "childNodes": [],
               "id": 758
@@ -10476,264 +10588,7 @@
           }
         ]
       },
-      "timestamp": 1776316845397
-    },
-    {
-      "type": 3,
-      "data": {
-        "source": 0,
-        "texts": [],
-        "attributes": [
-          {
-            "id": 637,
-            "attributes": {
-              "style": {
-                "height": "828px"
-              }
-            }
-          },
-          {
-            "id": 636,
-            "attributes": {
-              "style": {
-                "height": "828px"
-              }
-            }
-          }
-        ],
-        "removes": [
-          {
-            "parentId": 737,
-            "id": 758
-          },
-          {
-            "parentId": 737,
-            "id": 752
-          },
-          {
-            "parentId": 736,
-            "id": 754
-          },
-          {
-            "parentId": 735,
-            "id": 756
-          }
-        ],
-        "adds": [
-          {
-            "parentId": 737,
-            "nextId": null,
-            "node": {
-              "type": 2,
-              "tagName": "span",
-              "attributes": {
-                "class": "xterm-fg-4",
-                "style": "letter-spacing: -0.0050524px;"
-              },
-              "childNodes": [],
-              "id": 760
-            }
-          },
-          {
-            "parentId": 760,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "Neovim is running...",
-              "id": 761
-            }
-          },
-          {
-            "parentId": 736,
-            "nextId": null,
-            "node": {
-              "type": 2,
-              "tagName": "span",
-              "attributes": {
-                "style": "letter-spacing: -0.0050524px;"
-              },
-              "childNodes": [],
-              "id": 762
-            }
-          },
-          {
-            "parentId": 762,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": ":set relativenumber",
-              "id": 763
-            }
-          },
-          {
-            "parentId": 735,
-            "nextId": null,
-            "node": {
-              "type": 2,
-              "tagName": "span",
-              "attributes": {
-                "class": "xterm-cursor xterm-cursor-blink xterm-cursor-block",
-                "style": "letter-spacing: -0.0050524px;"
-              },
-              "childNodes": [],
-              "id": 764
-            }
-          },
-          {
-            "parentId": 764,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": " ",
-              "id": 765
-            }
-          },
-          {
-            "parentId": 737,
-            "nextId": 760,
-            "node": {
-              "type": 2,
-              "tagName": "span",
-              "attributes": {
-                "class": "xterm-fg-2",
-                "style": "letter-spacing: -0.0050524px;"
-              },
-              "childNodes": [],
-              "id": 766
-            }
-          },
-          {
-            "parentId": 766,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "~ ",
-              "id": 767
-            }
-          }
-        ]
-      },
-      "timestamp": 1776316845399
-    },
-    {
-      "type": 3,
-      "data": {
-        "source": 0,
-        "texts": [],
-        "attributes": [],
-        "removes": [
-          {
-            "parentId": 737,
-            "id": 766
-          },
-          {
-            "parentId": 737,
-            "id": 760
-          },
-          {
-            "parentId": 736,
-            "id": 762
-          },
-          {
-            "parentId": 735,
-            "id": 764
-          }
-        ],
-        "adds": [
-          {
-            "parentId": 737,
-            "nextId": null,
-            "node": {
-              "type": 2,
-              "tagName": "span",
-              "attributes": {
-                "class": "xterm-fg-4",
-                "style": "letter-spacing: -0.0050524px;"
-              },
-              "childNodes": [],
-              "id": 768
-            }
-          },
-          {
-            "parentId": 768,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "Neovim is running...",
-              "id": 769
-            }
-          },
-          {
-            "parentId": 736,
-            "nextId": null,
-            "node": {
-              "type": 2,
-              "tagName": "span",
-              "attributes": {
-                "style": "letter-spacing: -0.0050524px;"
-              },
-              "childNodes": [],
-              "id": 770
-            }
-          },
-          {
-            "parentId": 770,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": ":set relativenumber",
-              "id": 771
-            }
-          },
-          {
-            "parentId": 735,
-            "nextId": null,
-            "node": {
-              "type": 2,
-              "tagName": "span",
-              "attributes": {
-                "class": "xterm-cursor xterm-cursor-blink xterm-cursor-block",
-                "style": "letter-spacing: -0.0050524px;"
-              },
-              "childNodes": [],
-              "id": 772
-            }
-          },
-          {
-            "parentId": 772,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": " ",
-              "id": 773
-            }
-          },
-          {
-            "parentId": 737,
-            "nextId": 768,
-            "node": {
-              "type": 2,
-              "tagName": "span",
-              "attributes": {
-                "class": "xterm-fg-2",
-                "style": "letter-spacing: -0.0050524px;"
-              },
-              "childNodes": [],
-              "id": 774
-            }
-          },
-          {
-            "parentId": 774,
-            "nextId": null,
-            "node": {
-              "type": 3,
-              "textContent": "~ ",
-              "id": 775
-            }
-          }
-        ]
-      },
-      "timestamp": 1776316845399
+      "timestamp": 1776544381702
     }
   ]
 }

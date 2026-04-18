@@ -37,6 +37,13 @@ The recorder starts a temporary local dev server, opens the dev-only capture rou
 4. Keep each recording short. If the feature needs narration, put that in the page copy, not in extra idle time.
 5. When the devtools UI changes, rerun the recorder instead of manually re-performing each flow.
 
+## Recorder authoring notes
+
+- Treat the recorder as cinematic choreography, not just a functional test. Modifier-key timing, hover timing, and pauses change what the replay communicates.
+- Do not hold modifier keys during approach movement unless the replay is supposed to show that state the whole time.
+- For annotation demos, show the highlight state before selection instead of during travel.
+- After changing recorder choreography, rerun the affected scenario and visually inspect the replay tab in `www`, not just the automated checks.
+
 ## 1. Annotation handoff
 
 **Target file:** `packages/www/public/recordings/marketing/annotation.json`
@@ -46,15 +53,22 @@ The recorder starts a temporary local dev server, opens the dev-only capture rou
 ### Steps
 
 1. Open the routed page in its steady state.
-2. Hold `Alt` so the annotation affordances become visible.
-3. Hover two meaningful page elements to show that multiple targets can be selected intentionally.
-4. Select the first element.
-5. Select the second element.
-6. Open the annotation draft UI.
-7. Type a short, concrete note that references the selected elements.
-8. Show that the draft includes page context and selected targets.
-9. Submit the handoff into Pi.
-10. Leave the final state visible for a beat so the completed handoff is obvious.
+2. Move to the first meaningful page element before entering annotation mode.
+3. Hold `Alt` so the annotation affordances become visible.
+4. Wiggle slightly on the first element and pause so the highlight state is obvious.
+5. Select the first element.
+6. Move to the second element with `Alt` still held, pause briefly, then select it.
+7. Open the annotation draft UI.
+8. Type a short, concrete note that references the selected elements.
+9. Show that the draft includes page context and selected targets.
+10. Submit the handoff into Pi.
+11. Leave the final state visible for a beat so the completed handoff is obvious.
+
+### Timing notes
+
+- The cursor should reach the first target before `Alt` goes down.
+- Keep roughly a one-second pause after the first highlight wiggle and another roughly one-second pause on the second target before selecting it.
+- Release `Alt` after the second selection and before typing into the annotation draft.
 
 ## 2. Source navigation
 
