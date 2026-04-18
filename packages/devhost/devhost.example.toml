@@ -37,9 +37,15 @@ name = "hello-stack"
 # services proxy directly to the app without the overlay.
 
 [caddy.global]
-# `http` also serves the same routed hosts and the shared fallback page on plain HTTP port 80.
+# `http` also serves the same routed hosts and the shared fallback page on plain HTTP.
 # - `false` (default): serve through HTTPS only.
-# - `true`: also serve the same routes through HTTP on port 80.
+# - `true`: also serve the same routes through HTTP on `httpPort`.
+# `httpPort` selects the managed Caddy HTTP listener port.
+# - `80` (default): standard privileged HTTP.
+# - any other integer from `1` to `65535`: alternate HTTP listener port.
+# `httpsPort` selects the managed Caddy HTTPS listener port.
+# - `443` (default): standard privileged HTTPS.
+# - any other integer from `1` to `65535`: alternate HTTPS listener port.
 # `bindHost` controls which interfaces the managed Caddy HTTP/HTTPS listeners bind.
 # - `"127.0.0.1"` (default): loopback only.
 # - `"0.0.0.0"`: expose the managed Caddy front door on all IPv4/IPv6 interfaces.
@@ -49,9 +55,11 @@ name = "hello-stack"
 # Important: this is a shared managed-Caddy setting, not an isolated per-stack listener.
 # If any active stack enables `caddy.global.http = true`, the shared Caddy instance serves
 # HTTP for all active stacks until the last opting-in stack stops.
-# Active stacks must also agree on any non-default `bindHost` value.
+# Active stacks must also agree on any non-default `bindHost`, `httpPort`, and `httpsPort` values.
 bindHost = "127.0.0.1"
+httpPort = 80
 http = false
+httpsPort = 443
 
 [devtools.editor]
 # `enabled` controls whether editor integration is available in the injected overlay.
