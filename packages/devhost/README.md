@@ -110,6 +110,14 @@ That command downloads the managed Caddy binary first when needed, then runs `su
 >
 > The `devhost caddy trust` will prompt for your password and install Caddy's CA into the system trust store.
 
+If you want to trust that same managed Caddy CA from another macOS machine without exposing the Caddy admin API, run this from the client machine:
+
+```bash
+devhost caddy trust-remote devbox
+```
+
+That command SSHes to `devbox`, runs `devhost caddy print-root-cert` remotely, prints the fetched root certificate SHA-256 fingerprint, and installs it into the local macOS System keychain. It requires `ssh` locally, `devhost` on the remote host's `PATH`, and a root certificate that has already been generated on the remote host by `devhost caddy start`.
+
 Start the shared managed Caddy instance before running one or more stacks:
 
 ```bash

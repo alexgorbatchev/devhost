@@ -24,6 +24,8 @@ export const helpText: string = dedentString(`
     bun run devhost caddy trust
     bun run devhost caddy download
     bun run devhost caddy privileged-ports
+    bun run devhost caddy print-root-cert
+    bun run devhost caddy trust-remote <ssh-target>
 
   Options:
     --manifest  Explicit path to devhost.toml.
@@ -33,6 +35,7 @@ export const helpText: string = dedentString(`
     - routed services get devtools injection unless manifest devtools = false
     - \`devhost caddy start\` generates a managed Caddyfile under DEVHOST_STATE_DIR or ~/.local/state/devhost
     - managed Caddy may prompt for your password when installing its local CA into the system trust store
+    - \`devhost caddy trust-remote\` SSHes to another host, reads that host's managed Caddy root certificate, and installs it into the local macOS system keychain
     - on Linux, \`devhost caddy privileged-ports\` grants the managed Caddy binary permission to bind :443 and :80
     - on macOS, managed Caddy uses wildcard listeners so it can open :443 without root
     - hostnames must still resolve to this machine; devhost manages Caddy, not DNS
