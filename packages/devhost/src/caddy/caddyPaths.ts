@@ -1,7 +1,7 @@
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
-const defaultAdminAddress: string = "127.0.0.1:20193";
+const defaultAdminAddress: string = "127.0.0.1:20197";
 const defaultStateDirectorySegments: string[] = [".local", "state", "devhost"];
 
 export interface IManagedCaddyPaths {
