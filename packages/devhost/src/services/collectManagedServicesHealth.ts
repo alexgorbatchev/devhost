@@ -1,4 +1,5 @@
 import type { HealthResponse, ServiceHealth } from "../devtools/shared/types";
+import { createManagedCaddyUrl, defaultManagedCaddyHttpsPort } from "../caddy/managedCaddyPorts";
 import type { IResolvedDevhostService } from "../types/stackTypes";
 import { checkServiceHealth } from "./waitForServiceHealth";
 
@@ -18,6 +19,7 @@ export async function collectManagedServicesHealth(
   devhostServiceName: string,
   managedServices: IResolvedDevhostService[],
   startedServices: IManagedService[],
+  httpsPort: number = defaultManagedCaddyHttpsPort,
 ): Promise<HealthResponse> {
   const startedServicesByName: Map<string, IManagedService> = new Map(
     startedServices.map((startedService: IManagedService): ManagedServiceEntry => {
@@ -29,12 +31,12 @@ export async function collectManagedServicesHealth(
       const startedService: IManagedService | undefined = startedServicesByName.get(managedService.name);
 
       if (startedService === undefined || startedService.childProcess.exitCode !== null) {
-        return createServiceHealth(managedService, false);
+        return createServiceHealth(managedService, false, httpsPort);
       }
 
       const status: boolean = await checkServiceHealth(managedService.health);
 
-      return createServiceHealth(managedService, status);
+      return createServiceHealth(managedService, status, httpsPort);
     }),
   );
 
@@ -43,8 +45,8 @@ export async function collectManagedServicesHealth(
   };
 }
 
-function createServiceHealth(service: IResolvedDevhostService, status: boolean): ServiceHealth {
-  const url: string | undefined = readServiceUrl(service);
+function createServiceHealth(service: IResolvedDevhostService, status: boolean, httpsPort: number): ServiceHealth {
+  const url: string | undefined = readServiceUrl(service, httpsPort);
 
   return url === undefined
     ? {
@@ -58,16 +60,12 @@ function createServiceHealth(service: IResolvedDevhostService, status: boolean):
       };
 }
 
-function readServiceUrl(service: IResolvedDevhostService): string | undefined {
+function readServiceUrl(service: IResolvedDevhostService, httpsPort: number): string | undefined {
   if (service.host === null || service.path === null) {
     return undefined;
   }
 
-  const serviceUrl: URL = new URL(`https://${service.host}`);
-
-  serviceUrl.pathname = normalizeServiceUrlPath(service.path);
-
-  return serviceUrl.toString();
+  return createManagedCaddyUrl("https", service.host, httpsPort, normalizeServiceUrlPath(service.path));
 }
 
 function normalizeServiceUrlPath(path: string): string {

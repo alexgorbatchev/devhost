@@ -7,7 +7,7 @@ describe("renderManagedCaddyfile", () => {
   test("renders the macOS rootless caddyfile without a loopback bind directive", () => {
     const paths = createManagedCaddyPaths("/tmp/devhost state");
 
-    expect(renderManagedCaddyfile(paths, "darwin")).toBe(
+    expect(renderManagedCaddyfile({ paths, platform: "darwin" })).toBe(
       [
         "{",
         "    admin 127.0.0.1:20193",
@@ -47,7 +47,7 @@ describe("renderManagedCaddyfile", () => {
   test("renders the non-macOS caddyfile with loopback-only binding", () => {
     const paths = createManagedCaddyPaths("/tmp/devhost state");
 
-    expect(renderManagedCaddyfile(paths, "linux")).toBe(
+    expect(renderManagedCaddyfile({ paths, platform: "linux" })).toBe(
       [
         "{",
         "    admin 127.0.0.1:20193",
@@ -88,13 +88,33 @@ describe("renderManagedCaddyfile", () => {
   test("renders an HTTP fallback site when managed HTTP is enabled", () => {
     const paths = createManagedCaddyPaths("/tmp/devhost state");
 
-    expect(renderManagedCaddyfile(paths, "linux", true)).toContain("http:// {");
+    expect(renderManagedCaddyfile({ enableHttp: true, paths, platform: "linux" })).toContain("http:// {");
+  });
+
+  test("renders custom HTTP and HTTPS listener ports", () => {
+    const paths = createManagedCaddyPaths("/tmp/devhost state");
+
+    const caddyfile = renderManagedCaddyfile({
+      bindHost: "127.0.0.1",
+      enableHttp: true,
+      httpPort: 8080,
+      httpsPort: 4443,
+      paths,
+      platform: "linux",
+    });
+
+    expect(caddyfile).toContain("http://:8080 {");
+    expect(caddyfile).toContain("https://:4443 {");
   });
 
   test("renders a custom listener bind host without changing the admin bind", () => {
     const paths = createManagedCaddyPaths("/tmp/devhost state");
 
-    expect(renderManagedCaddyfile(paths, "linux", false, "0.0.0.0")).toContain("    admin 127.0.0.1:20193");
-    expect(renderManagedCaddyfile(paths, "linux", false, "0.0.0.0")).toContain("    default_bind 0.0.0.0 [::]");
+    expect(renderManagedCaddyfile({ bindHost: "0.0.0.0", paths, platform: "linux" })).toContain(
+      "    admin 127.0.0.1:20193",
+    );
+    expect(renderManagedCaddyfile({ bindHost: "0.0.0.0", paths, platform: "linux" })).toContain(
+      "    default_bind 0.0.0.0 [::]",
+    );
   });
 });

@@ -2,10 +2,12 @@ import { access, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { createManagedCaddyNotFoundSitePaths } from "./createManagedCaddyNotFoundSitePaths";
+import { createManagedCaddyUrl, defaultManagedCaddyHttpsPort } from "./managedCaddyPorts";
 import { managedCaddyNotFoundPageCss } from "./managedCaddyNotFoundPageCss";
 import { renderManagedCaddyNotFoundPage, type IManagedCaddyNotFoundRouteLink } from "./renderManagedCaddyNotFoundPage";
 
 interface IManagedRouteRegistration {
+  caddyHttpsPort?: number;
   host: string;
   path: string;
 }
@@ -15,17 +17,23 @@ interface ILegacyManagedRouteRegistration {
   path?: string;
 }
 
-export async function syncManagedCaddyNotFoundSite(routesDirectoryPath: string): Promise<void> {
+export async function syncManagedCaddyNotFoundSite(
+  routesDirectoryPath: string,
+  httpsPort: number = defaultManagedCaddyHttpsPort,
+): Promise<void> {
   const caddyDirectoryPath: string = join(routesDirectoryPath, "..");
   const sitePaths = createManagedCaddyNotFoundSitePaths(caddyDirectoryPath);
-  const routeLinks: IManagedCaddyNotFoundRouteLink[] = await readActiveRouteLinks(routesDirectoryPath);
+  const routeLinks: IManagedCaddyNotFoundRouteLink[] = await readActiveRouteLinks(routesDirectoryPath, httpsPort);
 
   await mkdir(sitePaths.directoryPath, { recursive: true });
   await writeFile(sitePaths.pagePath, renderManagedCaddyNotFoundPage(routeLinks), "utf8");
   await writeFile(sitePaths.stylesheetPath, managedCaddyNotFoundPageCss, "utf8");
 }
 
-async function readActiveRouteLinks(routesDirectoryPath: string): Promise<IManagedCaddyNotFoundRouteLink[]> {
+async function readActiveRouteLinks(
+  routesDirectoryPath: string,
+  httpsPort: number,
+): Promise<IManagedCaddyNotFoundRouteLink[]> {
   const registrationsDirectoryPath: string = join(routesDirectoryPath, ".registrations");
   const registrationFileNames: string[] = await readdir(registrationsDirectoryPath);
   const routeLinksByHost: Map<string, IManagedCaddyNotFoundRouteLink> = new Map<
@@ -52,7 +60,7 @@ async function readActiveRouteLinks(routesDirectoryPath: string): Promise<IManag
     const candidateLink: IManagedCaddyNotFoundRouteLink = {
       host: registration.host,
       path: registration.path,
-      url: createRouteUrl(registration.host, registration.path),
+      url: createRouteUrl(registration.host, registration.path, httpsPort),
     };
 
     if (existingLink === undefined || compareRouteLinks(candidateLink, existingLink) < 0) {
@@ -96,6 +104,7 @@ function isManagedRouteRegistration(value: unknown): value is IManagedRouteRegis
   return (
     typeof value === "object" &&
     value !== null &&
+    (Reflect.get(value, "caddyHttpsPort") === undefined || typeof Reflect.get(value, "caddyHttpsPort") === "number") &&
     typeof Reflect.get(value, "host") === "string" &&
     typeof Reflect.get(value, "path") === "string"
   );
@@ -118,12 +127,8 @@ function normalizeRoutePath(path: string): string {
   return path;
 }
 
-function createRouteUrl(host: string, path: string): string {
-  const routeUrl = new URL(`https://${host}`);
-
-  routeUrl.pathname = normalizeRoutePath(path);
-
-  return routeUrl.toString();
+function createRouteUrl(host: string, path: string, httpsPort: number): string {
+  return createManagedCaddyUrl("https", host, httpsPort, normalizeRoutePath(path));
 }
 
 function compareRouteLinks(left: IManagedCaddyNotFoundRouteLink, right: IManagedCaddyNotFoundRouteLink): number {

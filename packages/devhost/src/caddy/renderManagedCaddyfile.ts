@@ -1,14 +1,30 @@
 import type { IManagedCaddyPaths } from "./caddyPaths";
+import {
+  defaultManagedCaddyHttpPort,
+  defaultManagedCaddyHttpsPort,
+  formatManagedCaddySiteAddress,
+} from "./managedCaddyPorts";
 import { managedCaddyAdminAddress } from "./caddyPaths";
 import { createManagedCaddyNotFoundSitePaths } from "./createManagedCaddyNotFoundSitePaths";
 import { defaultManagedCaddyBindHost, resolveManagedCaddyBindDirective } from "./resolveManagedCaddyBindDirective";
 
-export function renderManagedCaddyfile(
-  paths: IManagedCaddyPaths,
-  platform: NodeJS.Platform = process.platform,
-  enableHttp: boolean = false,
-  bindHost: string = defaultManagedCaddyBindHost,
-): string {
+export interface IRenderManagedCaddyfileOptions {
+  bindHost?: string;
+  enableHttp?: boolean;
+  httpPort?: number;
+  httpsPort?: number;
+  paths: IManagedCaddyPaths;
+  platform?: NodeJS.Platform;
+}
+
+export function renderManagedCaddyfile({
+  bindHost = defaultManagedCaddyBindHost,
+  enableHttp = false,
+  httpPort = defaultManagedCaddyHttpPort,
+  httpsPort = defaultManagedCaddyHttpsPort,
+  paths,
+  platform = process.platform,
+}: IRenderManagedCaddyfileOptions): string {
   const routesGlobPath: string = `${paths.routesDirectoryPath}/*.caddy`;
   const bindDirective: string | null = resolveManagedCaddyBindDirective(platform, bindHost);
   const notFoundSitePaths = createManagedCaddyNotFoundSitePaths(paths.caddyDirectoryPath);
@@ -24,8 +40,10 @@ export function renderManagedCaddyfile(
     "",
     `import ${quoteCaddyToken(routesGlobPath)}`,
     "",
-    ...(enableHttp ? renderFallbackSiteBlock("http://", notFoundSitePaths.directoryPath) : []),
-    "https:// {",
+    ...(enableHttp
+      ? renderFallbackSiteBlock(formatManagedCaddySiteAddress("http", httpPort), notFoundSitePaths.directoryPath)
+      : []),
+    `${formatManagedCaddySiteAddress("https", httpsPort)} {`,
     "    tls internal {",
     "        on_demand",
     "    }",
