@@ -480,7 +480,7 @@ $ open https://foo.localhost`}
               <code>~/.local/state/devhost</code>
             </li>
             <li className="mb-2">
-              admin API: <code>127.0.0.1:20193</code> unless <code>DEVHOST_CADDY_ADMIN_ADDRESS</code> is set
+              admin API: <code>127.0.0.1:20197</code> unless <code>DEVHOST_CADDY_ADMIN_ADDRESS</code> is set
             </li>
             <li className="mb-2">
               HTTPS listener port: <code>443</code> by default via <code>caddy.global.httpsPort = 443</code>

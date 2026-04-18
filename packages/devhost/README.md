@@ -125,7 +125,7 @@ devhost caddy stop
 The generated Caddy config uses these defaults:
 
 - state dir: `DEVHOST_STATE_DIR`, else `XDG_STATE_HOME/devhost`, else `~/.local/state/devhost`
-- admin API: `127.0.0.1:20193` unless `DEVHOST_CADDY_ADMIN_ADDRESS` is set
+- admin API: `127.0.0.1:20197` unless `DEVHOST_CADDY_ADMIN_ADDRESS` is set
 - HTTPS listener port: `443` by default via `caddy.global.httpsPort = 443`
 - listener binding on macOS: wildcard listeners, because macOS denies rootless loopback-specific binds on the default privileged HTTPS port
 - listener binding on non-macOS: loopback only by default via `caddy.global.bindHost = "127.0.0.1"`, rendered as Caddy `default_bind 127.0.0.1 [::1]`
