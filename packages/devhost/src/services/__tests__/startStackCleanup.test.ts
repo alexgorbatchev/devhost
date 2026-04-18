@@ -66,7 +66,7 @@ describe("startStack cleanup", () => {
         `    {`,
         `      agent: createDefaultDevhostAgent(),`,
         `      caddy: {`,
-        `        global: { bindHost: "127.0.0.1", http: false, httpPort: 80, httpsPort: 443 },`,
+        `        global: { adminAddress: "127.0.0.1:${adminPort}", bindHost: "127.0.0.1", http: false, httpPort: 80, httpsPort: 443 },`,
         `      },`,
         `      devtools: {`,
         `        editor: { enabled: false, ide: "vscode" },`,
@@ -114,7 +114,6 @@ describe("startStack cleanup", () => {
       cwd: packageRootPath,
       env: {
         ...process.env,
-        DEVHOST_CADDY_ADMIN_ADDRESS: `127.0.0.1:${adminPort}`,
         DEVHOST_STATE_DIR: temporaryDirectoryPath,
       },
       stderr: "pipe",
@@ -205,7 +204,7 @@ describe("startStack cleanup", () => {
         `const manifest = {`,
         `  agent: createDefaultDevhostAgent(),`,
         `  caddy: {`,
-        `    global: { bindHost: "127.0.0.1", http: false, httpPort: 80, httpsPort: 443 },`,
+        `    global: { adminAddress: "127.0.0.1:${adminPort}", bindHost: "127.0.0.1", http: false, httpPort: 80, httpsPort: 443 },`,
         `  },`,
         `  devtools: {`,
         `    editor: { enabled: false, ide: "vscode" },`,
@@ -251,7 +250,6 @@ describe("startStack cleanup", () => {
       cwd: packageRootPath,
       env: {
         ...process.env,
-        DEVHOST_CADDY_ADMIN_ADDRESS: `127.0.0.1:${adminPort}`,
         DEVHOST_STATE_DIR: temporaryDirectoryPath,
         INITIAL_PORT: String(initialPort),
         PORT_TRACE_PATH: tracePath,

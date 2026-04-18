@@ -470,6 +470,11 @@ $ open https://foo.localhost`}
           <p>Start the shared managed Caddy instance before running one or more stacks:</p>
           <CommandLine command="devhost caddy start" />
 
+          <p>
+            If you want a Caddy subcommand to honor a manifest-defined admin API address, pass the manifest explicitly:
+          </p>
+          <CommandLine command="devhost --manifest ./devhost.toml caddy start" />
+
           <p>Stop it when you are done with all stacks:</p>
           <CommandLine command="devhost caddy stop" />
 
@@ -480,7 +485,7 @@ $ open https://foo.localhost`}
               <code>~/.local/state/devhost</code>
             </li>
             <li className="mb-2">
-              admin API: <code>127.0.0.1:20197</code> unless <code>DEVHOST_CADDY_ADMIN_ADDRESS</code> is set
+              admin API: <code>127.0.0.1:20197</code> by default via <code>caddy.global.adminAddress</code>
             </li>
             <li className="mb-2">
               HTTPS listener port: <code>443</code> by default via <code>caddy.global.httpsPort = 443</code>
@@ -546,8 +551,9 @@ $ open https://foo.localhost`}
           </p>
           <p>
             <code>caddy.global.bindHost</code>, <code>caddy.global.httpPort</code>, and{" "}
-            <code>caddy.global.httpsPort</code> only change the public HTTP/HTTPS listeners. The managed Caddy admin API
-            stays on <code>127.0.0.1</code>.
+            <code>caddy.global.httpsPort</code> only change the public HTTP/HTTPS listeners.{" "}
+            <code>caddy.global.adminAddress</code>
+            configures the separate managed Caddy admin API endpoint.
           </p>
 
           <h2>Stack lifecycle</h2>
@@ -623,6 +629,18 @@ bindHost = "0.0.0.0"`}</code>
             managed Caddy instance.
           </p>
 
+          <p>To move the managed Caddy admin API off the default endpoint, set:</p>
+
+          <pre>
+            <code className="language-toml">{`[caddy.global]
+adminAddress = "127.0.0.1:22000"`}</code>
+          </pre>
+
+          <p>
+            Active stacks must agree on any non-default <code>caddy.global.adminAddress</code> value because they share
+            one managed Caddy instance.
+          </p>
+
           <h2>Docker-backed services</h2>
           <p>
             <code>devhost</code> can front a Docker- or Compose-managed backend, but only when the container publishes a
@@ -682,6 +700,16 @@ health = { http = "http://127.0.0.1:4000/healthz" }`}</code>
             </li>
             <li className="mb-2">
               <code>DEVHOST_PATH</code>: the public routed subpath from the service <code>path</code> field.
+            </li>
+          </ul>
+
+          <h3>Manifest metadata</h3>
+          <ul className="list-disc ml-6 mb-6">
+            <li className="mb-2">
+              <code>DEVHOST_SERVICE_NAME</code>: the manifest service key for the current child process.
+            </li>
+            <li className="mb-2">
+              <code>DEVHOST_MANIFEST_PATH</code>: the absolute path to the resolved <code>devhost.toml</code>.
             </li>
           </ul>
 

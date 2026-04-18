@@ -51,11 +51,15 @@ name = "hello-stack"
 # - `"0.0.0.0"`: expose the managed Caddy front door on all IPv4/IPv6 interfaces.
 # - `"::1"`: IPv6 loopback only.
 # - `"::"`: expose the managed Caddy front door on all IPv6 interfaces.
+# `adminAddress` controls which loopback address/port the managed Caddy admin API listens on.
+# - `"127.0.0.1:20197"` (default): the default devhost-managed admin endpoint.
+# - any other host:port string Caddy accepts: alternate admin endpoint.
 #
 # Important: this is a shared managed-Caddy setting, not an isolated per-stack listener.
 # If any active stack enables `caddy.global.http = true`, the shared Caddy instance serves
 # HTTP for all active stacks until the last opting-in stack stops.
-# Active stacks must also agree on any non-default `bindHost`, `httpPort`, and `httpsPort` values.
+# Active stacks must also agree on any non-default `adminAddress`, `bindHost`, `httpPort`, and `httpsPort` values.
+adminAddress = "127.0.0.1:20197"
 bindHost = "127.0.0.1"
 httpPort = 80
 http = false

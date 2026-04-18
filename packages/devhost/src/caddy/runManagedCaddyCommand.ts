@@ -11,6 +11,7 @@ export interface ICaddyCommandResult {
 }
 
 export interface IRunManagedCaddyCommandOptions {
+  adminAddress?: string;
   stdioMode?: StdioMode;
 }
 
@@ -19,8 +20,19 @@ export type ManagedCaddyCommandRunner = (
   options?: IRunManagedCaddyCommandOptions,
 ) => ICaddyCommandResult;
 
-export function createManagedCaddyCommandArguments(arguments_: string[]): string[] {
-  return [...arguments_, "--config", managedCaddyPaths.caddyfilePath, "--adapter", "caddyfile"];
+export function createManagedCaddyCommandArguments(
+  arguments_: string[],
+  options: IRunManagedCaddyCommandOptions = {},
+): string[] {
+  const commandArguments: string[] = [...arguments_];
+
+  if (options.adminAddress !== undefined) {
+    commandArguments.push("--address", options.adminAddress);
+  }
+
+  commandArguments.push("--config", managedCaddyPaths.caddyfilePath, "--adapter", "caddyfile");
+
+  return commandArguments;
 }
 
 export function createManagedCaddyExecutablePath(osOverride: string = process.platform): string {
@@ -55,7 +67,7 @@ export function runManagedCaddyCommand(
 ): ICaddyCommandResult {
   const resolvedStdioMode: StdioMode = options.stdioMode ?? "pipe";
   const executable: string = resolveCaddyExecutablePath(dependencies.existsSync);
-  const result = Bun.spawnSync([executable, ...createManagedCaddyCommandArguments(arguments_)], {
+  const result = Bun.spawnSync([executable, ...createManagedCaddyCommandArguments(arguments_, options)], {
     cwd: managedCaddyPaths.caddyDirectoryPath,
     stderr: resolvedStdioMode,
     stdin: resolvedStdioMode === "inherit" ? "inherit" : undefined,

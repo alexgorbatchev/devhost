@@ -5,6 +5,7 @@ export type CommandLineArguments = ICaddyCommandLineArguments | IManifestCommand
 export interface ICaddyCommandLineArguments {
   kind: "caddy";
   action: "start" | "stop" | "trust" | "download" | "privileged-ports";
+  manifestPath: string | null;
 }
 
 export interface IManifestCommandLineArguments {
@@ -37,6 +38,10 @@ export function parseCommandLineArguments(rawArguments: string[]): CommandLineAr
   const isCaddyCommand = positionals[0] === "caddy";
 
   if (isCaddyCommand) {
+    if (values.manifest && !values.manifest.endsWith("devhost.toml")) {
+      throw new Error(`--manifest must point to a file named devhost.toml, received: ${values.manifest}`);
+    }
+
     if (positionals.length === 1) {
       throw new Error("Expected a caddy action: start, stop, trust, download, or privileged-ports.");
     }
@@ -60,6 +65,7 @@ export function parseCommandLineArguments(rawArguments: string[]): CommandLineAr
     return {
       kind: "caddy",
       action: action as ICaddyCommandLineArguments["action"],
+      manifestPath: values.manifest ?? null,
     };
   }
 

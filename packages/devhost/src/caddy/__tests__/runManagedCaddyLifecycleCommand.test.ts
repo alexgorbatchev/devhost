@@ -11,6 +11,7 @@ import type { ICaddyCommandResult } from "../runManagedCaddyCommand";
 import type { TestPromiseBoolean, TestPromiseVoid } from "../../utils/__tests__/testTypes";
 
 interface ICaddyCommandCall {
+  adminAddress: string | undefined;
   arguments_: string[];
   stdioMode: string | undefined;
 }
@@ -40,6 +41,7 @@ describe("runManagedCaddyLifecycleCommand", () => {
         isManagedCaddyAvailable: (async (): Promise<boolean> => false) as TestPromiseBoolean,
         runManagedCaddyCommand: (arguments_: string[], options): ICaddyCommandResult => {
           caddyCommandCalls.push({
+            adminAddress: options?.adminAddress,
             arguments_,
             stdioMode: options?.stdioMode,
           });
@@ -50,6 +52,7 @@ describe("runManagedCaddyLifecycleCommand", () => {
 
     expect(caddyCommandCalls).toEqual([
       {
+        adminAddress: undefined,
         arguments_: ["start", "--pidfile", managedCaddyPaths.pidFilePath],
         stdioMode: "inherit",
       },
@@ -139,6 +142,7 @@ describe("runManagedCaddyLifecycleCommand", () => {
         platform: "linux",
         runPrivilegedPortSetupCommand: (arguments_: string[], options): ICaddyCommandResult => {
           privilegedPortSetupCalls.push({
+            adminAddress: options?.adminAddress,
             arguments_,
             stdioMode: options?.stdioMode,
           });
@@ -150,6 +154,7 @@ describe("runManagedCaddyLifecycleCommand", () => {
     expect(downloaded).toBe(true);
     expect(privilegedPortSetupCalls).toEqual([
       {
+        adminAddress: undefined,
         arguments_: ["sudo", "setcap", "cap_net_bind_service=+ep", createManagedCaddyExecutablePath("linux")],
         stdioMode: "inherit",
       },

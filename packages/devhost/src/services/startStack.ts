@@ -1,4 +1,4 @@
-import { managedCaddyPaths } from "../caddy/caddyPaths";
+import { createCaddyAdminApiUrl, managedCaddyPaths, resolveManagedCaddyAdminAddress } from "../caddy/caddyPaths";
 import { createManagedCaddyUrl } from "../caddy/managedCaddyPorts";
 import { signalExitCodes, supportedSignals } from "../utils/constants";
 import { collectManagedServicesHealth } from "./collectManagedServicesHealth";
@@ -79,6 +79,7 @@ export async function startStack(
   const routedServices: IResolvedDevhostService[] = Object.values(manifest.services).filter(
     (service: IResolvedDevhostService): boolean => service.host !== null,
   );
+  const managedCaddyAdminAddress: string = resolveManagedCaddyAdminAddress(manifest.caddy.global.adminAddress);
   let devtoolsControlServer: Awaited<ReturnType<typeof startDevtoolsControlServer>> | null = null;
   let receivedSignal: SupportedSignal | null = null;
   let cleanupError: unknown = null;
@@ -95,10 +96,10 @@ export async function startStack(
   });
 
   try {
-    await ensureManagedCaddyConfig();
+    await ensureManagedCaddyConfig(managedCaddyPaths, { adminAddress: managedCaddyAdminAddress });
     await cleanupStaleRegistrations(managedCaddyPaths.registrationsDirectoryPath);
     await cleanupStaleFixedPortClaims(managedCaddyPaths.portClaimsDirectoryPath);
-    await ensureCaddyAdminAvailable();
+    await ensureCaddyAdminAvailable(createCaddyAdminApiUrl(managedCaddyAdminAddress));
 
     for (const service of Object.values(manifest.services)) {
       if (service.portSource !== "fixed" || service.port === null) {
@@ -270,6 +271,7 @@ export async function startStack(
               serviceName: service.name,
               appBindHost: service.bindHost,
               appPort: service.port,
+              caddyAdminAddress: managedCaddyAdminAddress,
               devtoolsControlPort: devtoolsControlServer?.port,
               documentInjectionPort: documentInjectionServer.port,
               caddyBindHost: manifest.caddy.global.bindHost,
@@ -288,6 +290,7 @@ export async function startStack(
               serviceName: service.name,
               appBindHost: service.bindHost,
               appPort: service.port,
+              caddyAdminAddress: managedCaddyAdminAddress,
               caddyBindHost: manifest.caddy.global.bindHost,
               caddyHttpPort: manifest.caddy.global.httpPort,
               caddyHttpsPort: manifest.caddy.global.httpsPort,

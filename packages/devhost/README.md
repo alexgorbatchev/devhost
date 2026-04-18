@@ -116,6 +116,12 @@ Start the shared managed Caddy instance before running one or more stacks:
 devhost caddy start
 ```
 
+If you want a Caddy subcommand to honor a manifest-defined admin API address, pass the manifest explicitly:
+
+```bash
+devhost --manifest ./devhost.toml caddy start
+```
+
 Stop it when you are done with all stacks:
 
 ```bash
@@ -125,7 +131,7 @@ devhost caddy stop
 The generated Caddy config uses these defaults:
 
 - state dir: `DEVHOST_STATE_DIR`, else `XDG_STATE_HOME/devhost`, else `~/.local/state/devhost`
-- admin API: `127.0.0.1:20197` unless `DEVHOST_CADDY_ADMIN_ADDRESS` is set
+- admin API: `127.0.0.1:20197` by default via `caddy.global.adminAddress`
 - HTTPS listener port: `443` by default via `caddy.global.httpsPort = 443`
 - listener binding on macOS: wildcard listeners, because macOS denies rootless loopback-specific binds on the default privileged HTTPS port
 - listener binding on non-macOS: loopback only by default via `caddy.global.bindHost = "127.0.0.1"`, rendered as Caddy `default_bind 127.0.0.1 [::1]`
@@ -157,7 +163,7 @@ On non-macOS platforms, opening HTTPS on the configured `caddy.global.httpsPort`
 Enabling `caddy.global.http = true` adds the same requirement for `caddy.global.httpPort` when that port is privileged.
 On Linux, `devhost caddy privileged-ports` configures the managed Caddy binary for this with `setcap`.
 `devhost` does not configure `authbind` or firewall redirection for you.
-`caddy.global.bindHost`, `caddy.global.httpPort`, and `caddy.global.httpsPort` only change the public HTTP/HTTPS listeners. The managed Caddy admin API stays on `127.0.0.1`.
+`caddy.global.bindHost`, `caddy.global.httpPort`, and `caddy.global.httpsPort` only change the public HTTP/HTTPS listeners. `caddy.global.adminAddress` configures the separate managed Caddy admin API endpoint.
 
 ## Stack lifecycle
 
@@ -218,6 +224,15 @@ bindHost = "0.0.0.0"
 
 That widens only the managed Caddy HTTP/HTTPS listeners. The admin API stays on `127.0.0.1`, and routed backends can keep their own `services.<name>.bindHost` on loopback behind Caddy.
 Active stacks must agree on any non-default `caddy.global.bindHost` value because they share one managed Caddy instance.
+
+To move the managed Caddy admin API off the default endpoint, set:
+
+```toml
+[caddy.global]
+adminAddress = "127.0.0.1:22000"
+```
+
+Active stacks must agree on any non-default `caddy.global.adminAddress` value because they share one managed Caddy instance.
 
 For same-host composition within one manifest, use distinct paths such as `/api/*` and `/admin/*`, or combine one root-mounted fallback service with more specific subpath services on the same hostname.
 
