@@ -21,7 +21,16 @@ export async function runDevhost(rawArguments: string[], logger: IDevhostLogger)
     const commandLineArguments = parseCommandLineArguments(rawArguments);
 
     if (commandLineArguments.kind === "caddy") {
-      return await runManagedCaddyLifecycleCommand(commandLineArguments.action, logger);
+      if (commandLineArguments.manifestPath === null) {
+        return await runManagedCaddyLifecycleCommand(commandLineArguments.action, logger);
+      }
+
+      const manifestValue: unknown = await readManifest(commandLineArguments.manifestPath);
+      const validatedManifest = validateManifest(commandLineArguments.manifestPath, manifestValue);
+
+      return await runManagedCaddyLifecycleCommand(commandLineArguments.action, logger, {
+        adminAddress: validatedManifest.caddy.global.adminAddress,
+      });
     }
 
     const manifestPath: string = commandLineArguments.manifestPath ?? (await resolveManifestPath(process.cwd()));

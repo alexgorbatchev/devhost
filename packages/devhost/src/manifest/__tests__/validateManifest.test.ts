@@ -24,7 +24,7 @@ describe("validateManifest", () => {
       kind: "pi",
     });
     expect(manifest.caddy).toEqual({
-      global: { bindHost: "127.0.0.1", http: false, httpPort: 80, httpsPort: 443 },
+      global: { adminAddress: "127.0.0.1:20197", bindHost: "127.0.0.1", http: false, httpPort: 80, httpsPort: 443 },
     });
     expect(manifest.devtools).toEqual({
       editor: { enabled: true, ide: "vscode" },
@@ -67,7 +67,7 @@ describe("validateManifest", () => {
       kind: "pi",
     });
     expect(manifest.caddy).toEqual({
-      global: { bindHost: "127.0.0.1", http: false, httpPort: 80, httpsPort: 443 },
+      global: { adminAddress: "127.0.0.1:20197", bindHost: "127.0.0.1", http: false, httpPort: 80, httpsPort: 443 },
     });
     expect(manifest.devtools).toEqual({
       editor: { enabled: true, ide: "vscode" },
@@ -114,6 +114,7 @@ describe("validateManifest", () => {
       },
       caddy: {
         global: {
+          adminAddress: "127.0.0.1:22000",
           bindHost: "0.0.0.0",
           httpPort: 8080,
           http: true,
@@ -145,7 +146,7 @@ describe("validateManifest", () => {
       kind: "configured",
     });
     expect(manifest.caddy).toEqual({
-      global: { bindHost: "0.0.0.0", http: true, httpPort: 8080, httpsPort: 4443 },
+      global: { adminAddress: "127.0.0.1:22000", bindHost: "0.0.0.0", http: true, httpPort: 8080, httpsPort: 4443 },
     });
     expect(manifest.devtools).toEqual({
       editor: { enabled: true, ide: "neovim" },

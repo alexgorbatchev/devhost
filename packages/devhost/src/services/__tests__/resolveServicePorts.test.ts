@@ -25,7 +25,7 @@ describe("resolveServicePorts", () => {
       kind: "pi",
     });
     expect(resolvedManifest.caddy).toEqual({
-      global: { bindHost: "127.0.0.1", http: false, httpPort: 80, httpsPort: 443 },
+      global: { adminAddress: "127.0.0.1:20197", bindHost: "127.0.0.1", http: false, httpPort: 80, httpsPort: 443 },
     });
     expect(resolvedManifest.devtools).toEqual({
       editor: { enabled: true, ide: "vscode" },
@@ -78,6 +78,7 @@ describe("resolveServicePorts", () => {
       },
       caddy: {
         global: {
+          adminAddress: "127.0.0.1:22000",
           bindHost: "0.0.0.0",
           httpPort: 8080,
           http: true,
@@ -112,7 +113,7 @@ describe("resolveServicePorts", () => {
       kind: "configured",
     });
     expect(resolvedManifest.caddy).toEqual({
-      global: { bindHost: "0.0.0.0", http: true, httpPort: 8080, httpsPort: 4443 },
+      global: { adminAddress: "127.0.0.1:22000", bindHost: "0.0.0.0", http: true, httpPort: 8080, httpsPort: 4443 },
     });
     expect(resolvedManifest.devtools).toEqual({
       editor: { enabled: false, ide: "webstorm" },

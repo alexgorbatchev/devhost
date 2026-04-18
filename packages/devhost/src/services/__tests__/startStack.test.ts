@@ -9,7 +9,7 @@ describe("createInjectedServiceEnvironment", () => {
     const manifest: IResolvedDevhostManifest = {
       agent: createDefaultDevhostAgent(),
       caddy: {
-        global: { bindHost: "127.0.0.1", http: false, httpPort: 80, httpsPort: 443 },
+        global: { adminAddress: "127.0.0.1:20197", bindHost: "127.0.0.1", http: false, httpPort: 80, httpsPort: 443 },
       },
       devtools: {
         editor: { enabled: true, ide: "vscode" },
@@ -58,7 +58,7 @@ describe("createInjectedServiceEnvironment", () => {
     const manifest: IResolvedDevhostManifest = {
       agent: createDefaultDevhostAgent(),
       caddy: {
-        global: { bindHost: "127.0.0.1", http: false, httpPort: 80, httpsPort: 443 },
+        global: { adminAddress: "127.0.0.1:20197", bindHost: "127.0.0.1", http: false, httpPort: 80, httpsPort: 443 },
       },
       devtools: {
         editor: { enabled: false, ide: "vscode" },
@@ -102,7 +102,7 @@ describe("createInjectedServiceEnvironment", () => {
     const manifest: IResolvedDevhostManifest = {
       agent: createDefaultDevhostAgent(),
       caddy: {
-        global: { bindHost: "127.0.0.1", http: false, httpPort: 80, httpsPort: 443 },
+        global: { adminAddress: "127.0.0.1:20197", bindHost: "127.0.0.1", http: false, httpPort: 80, httpsPort: 443 },
       },
       devtools: {
         editor: { enabled: true, ide: "vscode" },

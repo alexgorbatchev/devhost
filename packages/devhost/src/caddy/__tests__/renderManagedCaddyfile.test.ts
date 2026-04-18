@@ -117,4 +117,15 @@ describe("renderManagedCaddyfile", () => {
       "    default_bind 0.0.0.0 [::]",
     );
   });
+
+  test("renders a custom admin address without changing listener bind behavior", () => {
+    const paths = createManagedCaddyPaths("/tmp/devhost state");
+
+    expect(renderManagedCaddyfile({ adminAddress: "127.0.0.1:22000", paths, platform: "linux" })).toContain(
+      "    admin 127.0.0.1:22000",
+    );
+    expect(renderManagedCaddyfile({ adminAddress: "127.0.0.1:22000", paths, platform: "linux" })).toContain(
+      "    default_bind 127.0.0.1 [::1]",
+    );
+  });
 });

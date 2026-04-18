@@ -1,33 +1,38 @@
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 
 import type { IManagedCaddyPaths } from "./caddyPaths";
-import { managedCaddyPaths } from "./caddyPaths";
+import { defaultManagedCaddyAdminAddress, managedCaddyPaths } from "./caddyPaths";
 import { defaultManagedCaddyHttpPort, defaultManagedCaddyHttpsPort } from "./managedCaddyPorts";
 import { defaultManagedCaddyBindHost } from "./resolveManagedCaddyBindDirective";
 import { renderManagedCaddyfile } from "./renderManagedCaddyfile";
 import { syncManagedCaddyNotFoundSite } from "./syncManagedCaddyNotFoundSite";
 
 interface IManagedCaddyGlobalSettings {
+  adminAddress: string;
   bindHost: string;
   httpPort: number;
   httpEnabled: boolean;
   httpsPort: number;
 }
 
-export async function ensureManagedCaddyConfig(paths: IManagedCaddyPaths = managedCaddyPaths): Promise<void> {
+export async function ensureManagedCaddyConfig(
+  paths: IManagedCaddyPaths = managedCaddyPaths,
+  fallbackSettings: Partial<IManagedCaddyGlobalSettings> = {},
+): Promise<void> {
   await mkdir(paths.caddyDirectoryPath, { recursive: true });
   await mkdir(paths.routesDirectoryPath, { recursive: true });
   await mkdir(paths.hostClaimsDirectoryPath, { recursive: true });
   await mkdir(paths.portClaimsDirectoryPath, { recursive: true });
   await mkdir(paths.registrationsDirectoryPath, { recursive: true });
   await mkdir(paths.storageDirectoryPath, { recursive: true });
-  const globalSettings: IManagedCaddyGlobalSettings = await readManagedCaddyGlobalSettings(paths);
+  const globalSettings: IManagedCaddyGlobalSettings = await readManagedCaddyGlobalSettings(paths, fallbackSettings);
 
   await syncManagedCaddyNotFoundSite(paths.routesDirectoryPath, globalSettings.httpsPort);
 
   await writeFile(
     paths.caddyfilePath,
     renderManagedCaddyfile({
+      adminAddress: globalSettings.adminAddress,
       bindHost: globalSettings.bindHost,
       enableHttp: globalSettings.httpEnabled,
       httpPort: globalSettings.httpPort,
@@ -39,9 +44,13 @@ export async function ensureManagedCaddyConfig(paths: IManagedCaddyPaths = manag
   );
 }
 
-async function readManagedCaddyGlobalSettings(paths: IManagedCaddyPaths): Promise<IManagedCaddyGlobalSettings> {
+async function readManagedCaddyGlobalSettings(
+  paths: IManagedCaddyPaths,
+  fallbackSettings: Partial<IManagedCaddyGlobalSettings>,
+): Promise<IManagedCaddyGlobalSettings> {
   const registrationFileNames: string[] = await readdir(paths.registrationsDirectoryPath);
   let httpEnabled: boolean = false;
+  const optedInAdminAddresses: Set<string> = new Set<string>();
   const optedInBindHosts: Set<string> = new Set<string>();
   const optedInHttpPorts: Set<number> = new Set<number>();
   const optedInHttpsPorts: Set<number> = new Set<number>();
@@ -67,8 +76,13 @@ async function readManagedCaddyGlobalSettings(paths: IManagedCaddyPaths): Promis
     }
 
     const caddyBindHost: unknown = Reflect.get(registrationValue, "caddyBindHost");
+    const caddyAdminAddress: unknown = Reflect.get(registrationValue, "caddyAdminAddress");
     const caddyHttpPort: unknown = Reflect.get(registrationValue, "caddyHttpPort");
     const caddyHttpsPort: unknown = Reflect.get(registrationValue, "caddyHttpsPort");
+
+    if (typeof caddyAdminAddress === "string") {
+      optedInAdminAddresses.add(caddyAdminAddress);
+    }
 
     if (typeof caddyBindHost === "string") {
       optedInBindHosts.add(caddyBindHost);
@@ -81,6 +95,12 @@ async function readManagedCaddyGlobalSettings(paths: IManagedCaddyPaths): Promis
     if (typeof caddyHttpsPort === "number") {
       optedInHttpsPorts.add(caddyHttpsPort);
     }
+  }
+
+  if (optedInAdminAddresses.size > 1) {
+    throw new Error(
+      `Managed Caddy admin address is inconsistent across active stacks: ${Array.from(optedInAdminAddresses).sort().join(", ")}.`,
+    );
   }
 
   if (optedInBindHosts.size > 1) {
@@ -106,6 +126,8 @@ async function readManagedCaddyGlobalSettings(paths: IManagedCaddyPaths): Promis
   }
 
   return {
+    adminAddress:
+      optedInAdminAddresses.values().next().value ?? fallbackSettings.adminAddress ?? defaultManagedCaddyAdminAddress,
     bindHost: optedInBindHosts.values().next().value ?? defaultManagedCaddyBindHost,
     httpPort: optedInHttpPorts.values().next().value ?? defaultManagedCaddyHttpPort,
     httpEnabled,

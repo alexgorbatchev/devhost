@@ -1,16 +1,17 @@
 import { dedentTemplate } from "@alexgorbatchev/dedent-string";
 
 import type { IManagedCaddyPaths } from "./caddyPaths";
+import { defaultManagedCaddyAdminAddress } from "./caddyPaths";
 import {
   defaultManagedCaddyHttpPort,
   defaultManagedCaddyHttpsPort,
   formatManagedCaddySiteAddress,
 } from "./managedCaddyPorts";
-import { managedCaddyAdminAddress } from "./caddyPaths";
 import { createManagedCaddyNotFoundSitePaths } from "./createManagedCaddyNotFoundSitePaths";
 import { defaultManagedCaddyBindHost, resolveManagedCaddyBindDirective } from "./resolveManagedCaddyBindDirective";
 
 export interface IRenderManagedCaddyfileOptions {
+  adminAddress?: string;
   bindHost?: string;
   enableHttp?: boolean;
   httpPort?: number;
@@ -20,6 +21,7 @@ export interface IRenderManagedCaddyfileOptions {
 }
 
 export function renderManagedCaddyfile({
+  adminAddress = defaultManagedCaddyAdminAddress,
   bindHost = defaultManagedCaddyBindHost,
   enableHttp = false,
   httpPort = defaultManagedCaddyHttpPort,
@@ -42,7 +44,7 @@ export function renderManagedCaddyfile({
     `,
     {
       bindDirectiveSection,
-      managedCaddyAdminAddress,
+      managedCaddyAdminAddress: adminAddress,
       storageDirectoryPath: quoteCaddyToken(paths.storageDirectoryPath),
     },
   );
