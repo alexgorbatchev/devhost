@@ -468,6 +468,20 @@ $ open https://foo.localhost`}
           <CommandLine command="devhost caddy start" />
 
           <p>
+            If you want to trust that same managed Caddy CA from another macOS machine without exposing the Caddy admin
+            API, run this from the client machine:
+          </p>
+
+          <CommandLine command="devhost caddy trust-remote devbox" />
+
+          <p>
+            That command SSHes to <code>devbox</code>, runs <code>devhost caddy print-root-cert</code> remotely, prints
+            the fetched root certificate SHA-256 fingerprint, and installs it into the local macOS System keychain. It
+            requires <code>ssh</code> locally, <code>devhost</code> on the remote host&apos;s <code>PATH</code>, and a
+            root certificate that has already been generated on the remote host by <code>devhost caddy start</code>.
+          </p>
+
+          <p>
             If you want a Caddy subcommand to honor a manifest-defined admin API address, pass the manifest explicitly:
           </p>
           <CommandLine command="devhost --manifest ./devhost.toml caddy start" />
