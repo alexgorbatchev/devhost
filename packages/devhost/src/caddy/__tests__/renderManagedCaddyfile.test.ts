@@ -10,7 +10,7 @@ describe("renderManagedCaddyfile", () => {
     expect(renderManagedCaddyfile({ paths, platform: "darwin" })).toBe(
       [
         "{",
-        "    admin 127.0.0.1:20193",
+        "    admin 127.0.0.1:20197",
         "    auto_https disable_redirects",
         "    persist_config off",
         '    storage file_system "/tmp/devhost state/caddy/storage"',
@@ -50,7 +50,7 @@ describe("renderManagedCaddyfile", () => {
     expect(renderManagedCaddyfile({ paths, platform: "linux" })).toBe(
       [
         "{",
-        "    admin 127.0.0.1:20193",
+        "    admin 127.0.0.1:20197",
         "    auto_https disable_redirects",
         "    default_bind 127.0.0.1 [::1]",
         "    persist_config off",
@@ -111,7 +111,7 @@ describe("renderManagedCaddyfile", () => {
     const paths = createManagedCaddyPaths("/tmp/devhost state");
 
     expect(renderManagedCaddyfile({ bindHost: "0.0.0.0", paths, platform: "linux" })).toContain(
-      "    admin 127.0.0.1:20193",
+      "    admin 127.0.0.1:20197",
     );
     expect(renderManagedCaddyfile({ bindHost: "0.0.0.0", paths, platform: "linux" })).toContain(
       "    default_bind 0.0.0.0 [::]",
