@@ -19,6 +19,7 @@
         "devhost": "./bin/devhost.ts",
       },
       "dependencies": {
+        "@alexgorbatchev/dedent-string": "1.0.1",
         "@emotion/css": "^11.13.5",
         "@jridgewell/trace-mapping": "^0.3.31",
         "@xterm/addon-fit": "^0.11.0",
@@ -85,6 +86,8 @@
   },
   "packages": {
     "@adobe/css-tools": ["@adobe/css-tools@4.4.4", "", {}, "sha512-Elp+iwUx5rN5+Y8xLt5/GRoG20WGoDCQ/1Fb+1LiGtvwbDavuSk0jhD/eZdckHAuzcDzccnkv+rEjyWfRx18gg=="],
+
+    "@alexgorbatchev/dedent-string": ["@alexgorbatchev/dedent-string@1.0.1", "", {}, "sha512-B683zusFTrqzk7XhEr/zy6vDBH+kslFtQBuSl1miOglUG1dS3Xwoc7CBfmG1ygyuBFxOU+YM0XNdkhz2PWw6mQ=="],
 
     "@alexgorbatchev/devhost": ["@alexgorbatchev/devhost@workspace:packages/devhost"],
 
