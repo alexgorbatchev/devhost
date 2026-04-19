@@ -5301,2622 +5301,1473 @@
         "commands": [
           {
             "property": "clearRect",
-            "args": [
-              0,
-              0,
-              91,
-              952
-            ]
+            "args": [0, 0, 91, 952]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              791,
-              81,
-              2
-            ]
+            "args": [0, 791, 81, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              794,
-              46,
-              2
-            ]
+            "args": [0, 794, 46, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              797,
-              56,
-              2
-            ]
+            "args": [0, 797, 56, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              800,
-              48,
-              2
-            ]
+            "args": [0, 800, 48, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              803,
-              55,
-              2
-            ]
+            "args": [0, 803, 55, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              806,
-              34,
-              2
-            ]
+            "args": [0, 806, 34, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              809,
-              52,
-              2
-            ]
+            "args": [0, 809, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(247, 118, 142, 0.9)"
-            ],
+            "args": ["rgba(247, 118, 142, 0.9)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              812,
-              59,
-              2
-            ]
+            "args": [0, 812, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              815,
-              52,
-              2
-            ]
+            "args": [0, 815, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              818,
-              59,
-              2
-            ]
+            "args": [0, 818, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              821,
-              52,
-              2
-            ]
+            "args": [0, 821, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              824,
-              59,
-              2
-            ]
+            "args": [0, 824, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              827,
-              52,
-              2
-            ]
+            "args": [0, 827, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              830,
-              59,
-              2
-            ]
+            "args": [0, 830, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              833,
-              52,
-              2
-            ]
+            "args": [0, 833, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(247, 118, 142, 0.9)"
-            ],
+            "args": ["rgba(247, 118, 142, 0.9)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              836,
-              59,
-              2
-            ]
+            "args": [0, 836, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              839,
-              52,
-              2
-            ]
+            "args": [0, 839, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              842,
-              59,
-              2
-            ]
+            "args": [0, 842, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              845,
-              52,
-              2
-            ]
+            "args": [0, 845, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              848,
-              59,
-              2
-            ]
+            "args": [0, 848, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              851,
-              52,
-              2
-            ]
+            "args": [0, 851, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              854,
-              59,
-              2
-            ]
+            "args": [0, 854, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              857,
-              52,
-              2
-            ]
+            "args": [0, 857, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(247, 118, 142, 0.9)"
-            ],
+            "args": ["rgba(247, 118, 142, 0.9)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              860,
-              59,
-              2
-            ]
+            "args": [0, 860, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              863,
-              53,
-              2
-            ]
+            "args": [0, 863, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              866,
-              60,
-              2
-            ]
+            "args": [0, 866, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              869,
-              53,
-              2
-            ]
+            "args": [0, 869, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              872,
-              60,
-              2
-            ]
+            "args": [0, 872, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              875,
-              53,
-              2
-            ]
+            "args": [0, 875, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              878,
-              60,
-              2
-            ]
+            "args": [0, 878, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              881,
-              53,
-              2
-            ]
+            "args": [0, 881, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(247, 118, 142, 0.9)"
-            ],
+            "args": ["rgba(247, 118, 142, 0.9)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              884,
-              60,
-              2
-            ]
+            "args": [0, 884, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              887,
-              53,
-              2
-            ]
+            "args": [0, 887, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              890,
-              60,
-              2
-            ]
+            "args": [0, 890, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              893,
-              53,
-              2
-            ]
+            "args": [0, 893, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              896,
-              60,
-              2
-            ]
+            "args": [0, 896, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              899,
-              53,
-              2
-            ]
+            "args": [0, 899, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              902,
-              60,
-              2
-            ]
+            "args": [0, 902, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              905,
-              53,
-              2
-            ]
+            "args": [0, 905, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(247, 118, 142, 0.9)"
-            ],
+            "args": ["rgba(247, 118, 142, 0.9)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              908,
-              60,
-              2
-            ]
+            "args": [0, 908, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              911,
-              53,
-              2
-            ]
+            "args": [0, 911, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              914,
-              60,
-              2
-            ]
+            "args": [0, 914, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              917,
-              53,
-              2
-            ]
+            "args": [0, 917, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              920,
-              60,
-              2
-            ]
+            "args": [0, 920, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              923,
-              53,
-              2
-            ]
+            "args": [0, 923, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              926,
-              60,
-              2
-            ]
+            "args": [0, 926, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              929,
-              53,
-              2
-            ]
+            "args": [0, 929, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(247, 118, 142, 0.9)"
-            ],
+            "args": ["rgba(247, 118, 142, 0.9)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              932,
-              60,
-              2
-            ]
+            "args": [0, 932, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              935,
-              53,
-              2
-            ]
+            "args": [0, 935, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              938,
-              60,
-              2
-            ]
+            "args": [0, 938, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              941,
-              53,
-              2
-            ]
+            "args": [0, 941, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              944,
-              60,
-              2
-            ]
+            "args": [0, 944, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              947,
-              53,
-              2
-            ]
+            "args": [0, 947, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              950,
-              60,
-              2
-            ]
+            "args": [0, 950, 60, 2]
           },
           {
             "property": "clearRect",
-            "args": [
-              0,
-              0,
-              91,
-              952
-            ]
+            "args": [0, 0, 91, 952]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              791,
-              81,
-              2
-            ]
+            "args": [0, 791, 81, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              794,
-              46,
-              2
-            ]
+            "args": [0, 794, 46, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              797,
-              56,
-              2
-            ]
+            "args": [0, 797, 56, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              800,
-              48,
-              2
-            ]
+            "args": [0, 800, 48, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              803,
-              55,
-              2
-            ]
+            "args": [0, 803, 55, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              806,
-              34,
-              2
-            ]
+            "args": [0, 806, 34, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              809,
-              52,
-              2
-            ]
+            "args": [0, 809, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(247, 118, 142, 0.9)"
-            ],
+            "args": ["rgba(247, 118, 142, 0.9)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              812,
-              59,
-              2
-            ]
+            "args": [0, 812, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              815,
-              52,
-              2
-            ]
+            "args": [0, 815, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              818,
-              59,
-              2
-            ]
+            "args": [0, 818, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              821,
-              52,
-              2
-            ]
+            "args": [0, 821, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              824,
-              59,
-              2
-            ]
+            "args": [0, 824, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              827,
-              52,
-              2
-            ]
+            "args": [0, 827, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              830,
-              59,
-              2
-            ]
+            "args": [0, 830, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              833,
-              52,
-              2
-            ]
+            "args": [0, 833, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(247, 118, 142, 0.9)"
-            ],
+            "args": ["rgba(247, 118, 142, 0.9)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              836,
-              59,
-              2
-            ]
+            "args": [0, 836, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              839,
-              52,
-              2
-            ]
+            "args": [0, 839, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              842,
-              59,
-              2
-            ]
+            "args": [0, 842, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              845,
-              52,
-              2
-            ]
+            "args": [0, 845, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              848,
-              59,
-              2
-            ]
+            "args": [0, 848, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              851,
-              52,
-              2
-            ]
+            "args": [0, 851, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              854,
-              59,
-              2
-            ]
+            "args": [0, 854, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              857,
-              52,
-              2
-            ]
+            "args": [0, 857, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(247, 118, 142, 0.9)"
-            ],
+            "args": ["rgba(247, 118, 142, 0.9)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              860,
-              59,
-              2
-            ]
+            "args": [0, 860, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              863,
-              53,
-              2
-            ]
+            "args": [0, 863, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              866,
-              60,
-              2
-            ]
+            "args": [0, 866, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              869,
-              53,
-              2
-            ]
+            "args": [0, 869, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              872,
-              60,
-              2
-            ]
+            "args": [0, 872, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              875,
-              53,
-              2
-            ]
+            "args": [0, 875, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              878,
-              60,
-              2
-            ]
+            "args": [0, 878, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              881,
-              53,
-              2
-            ]
+            "args": [0, 881, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(247, 118, 142, 0.9)"
-            ],
+            "args": ["rgba(247, 118, 142, 0.9)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              884,
-              60,
-              2
-            ]
+            "args": [0, 884, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              887,
-              53,
-              2
-            ]
+            "args": [0, 887, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              890,
-              60,
-              2
-            ]
+            "args": [0, 890, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              893,
-              53,
-              2
-            ]
+            "args": [0, 893, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              896,
-              60,
-              2
-            ]
+            "args": [0, 896, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              899,
-              53,
-              2
-            ]
+            "args": [0, 899, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              902,
-              60,
-              2
-            ]
+            "args": [0, 902, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              905,
-              53,
-              2
-            ]
+            "args": [0, 905, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(247, 118, 142, 0.9)"
-            ],
+            "args": ["rgba(247, 118, 142, 0.9)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              908,
-              60,
-              2
-            ]
+            "args": [0, 908, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              911,
-              53,
-              2
-            ]
+            "args": [0, 911, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              914,
-              60,
-              2
-            ]
+            "args": [0, 914, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              917,
-              53,
-              2
-            ]
+            "args": [0, 917, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              920,
-              60,
-              2
-            ]
+            "args": [0, 920, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              923,
-              53,
-              2
-            ]
+            "args": [0, 923, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              926,
-              60,
-              2
-            ]
+            "args": [0, 926, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              929,
-              53,
-              2
-            ]
+            "args": [0, 929, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(247, 118, 142, 0.9)"
-            ],
+            "args": ["rgba(247, 118, 142, 0.9)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              932,
-              60,
-              2
-            ]
+            "args": [0, 932, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              935,
-              53,
-              2
-            ]
+            "args": [0, 935, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              938,
-              60,
-              2
-            ]
+            "args": [0, 938, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              941,
-              53,
-              2
-            ]
+            "args": [0, 941, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              944,
-              60,
-              2
-            ]
+            "args": [0, 944, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              947,
-              53,
-              2
-            ]
+            "args": [0, 947, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              950,
-              60,
-              2
-            ]
+            "args": [0, 950, 60, 2]
           },
           {
             "property": "clearRect",
-            "args": [
-              0,
-              0,
-              91,
-              952
-            ]
+            "args": [0, 0, 91, 952]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              791,
-              81,
-              2
-            ]
+            "args": [0, 791, 81, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              794,
-              46,
-              2
-            ]
+            "args": [0, 794, 46, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              797,
-              56,
-              2
-            ]
+            "args": [0, 797, 56, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              800,
-              48,
-              2
-            ]
+            "args": [0, 800, 48, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              803,
-              55,
-              2
-            ]
+            "args": [0, 803, 55, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              806,
-              34,
-              2
-            ]
+            "args": [0, 806, 34, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              809,
-              52,
-              2
-            ]
+            "args": [0, 809, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(247, 118, 142, 0.9)"
-            ],
+            "args": ["rgba(247, 118, 142, 0.9)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              812,
-              59,
-              2
-            ]
+            "args": [0, 812, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              815,
-              52,
-              2
-            ]
+            "args": [0, 815, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              818,
-              59,
-              2
-            ]
+            "args": [0, 818, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              821,
-              52,
-              2
-            ]
+            "args": [0, 821, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              824,
-              59,
-              2
-            ]
+            "args": [0, 824, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              827,
-              52,
-              2
-            ]
+            "args": [0, 827, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              830,
-              59,
-              2
-            ]
+            "args": [0, 830, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              833,
-              52,
-              2
-            ]
+            "args": [0, 833, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(247, 118, 142, 0.9)"
-            ],
+            "args": ["rgba(247, 118, 142, 0.9)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              836,
-              59,
-              2
-            ]
+            "args": [0, 836, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              839,
-              52,
-              2
-            ]
+            "args": [0, 839, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              842,
-              59,
-              2
-            ]
+            "args": [0, 842, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              845,
-              52,
-              2
-            ]
+            "args": [0, 845, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              848,
-              59,
-              2
-            ]
+            "args": [0, 848, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              851,
-              52,
-              2
-            ]
+            "args": [0, 851, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              854,
-              59,
-              2
-            ]
+            "args": [0, 854, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              857,
-              52,
-              2
-            ]
+            "args": [0, 857, 52, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(247, 118, 142, 0.9)"
-            ],
+            "args": ["rgba(247, 118, 142, 0.9)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              860,
-              59,
-              2
-            ]
+            "args": [0, 860, 59, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              863,
-              53,
-              2
-            ]
+            "args": [0, 863, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              866,
-              60,
-              2
-            ]
+            "args": [0, 866, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              869,
-              53,
-              2
-            ]
+            "args": [0, 869, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              872,
-              60,
-              2
-            ]
+            "args": [0, 872, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              875,
-              53,
-              2
-            ]
+            "args": [0, 875, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              878,
-              60,
-              2
-            ]
+            "args": [0, 878, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              881,
-              53,
-              2
-            ]
+            "args": [0, 881, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(247, 118, 142, 0.9)"
-            ],
+            "args": ["rgba(247, 118, 142, 0.9)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              884,
-              60,
-              2
-            ]
+            "args": [0, 884, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              887,
-              53,
-              2
-            ]
+            "args": [0, 887, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              890,
-              60,
-              2
-            ]
+            "args": [0, 890, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              893,
-              53,
-              2
-            ]
+            "args": [0, 893, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              896,
-              60,
-              2
-            ]
+            "args": [0, 896, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              899,
-              53,
-              2
-            ]
+            "args": [0, 899, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              902,
-              60,
-              2
-            ]
+            "args": [0, 902, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              905,
-              53,
-              2
-            ]
+            "args": [0, 905, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(247, 118, 142, 0.9)"
-            ],
+            "args": ["rgba(247, 118, 142, 0.9)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              908,
-              60,
-              2
-            ]
+            "args": [0, 908, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              911,
-              53,
-              2
-            ]
+            "args": [0, 911, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              914,
-              60,
-              2
-            ]
+            "args": [0, 914, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              917,
-              53,
-              2
-            ]
+            "args": [0, 917, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              920,
-              60,
-              2
-            ]
+            "args": [0, 920, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              923,
-              53,
-              2
-            ]
+            "args": [0, 923, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              926,
-              60,
-              2
-            ]
+            "args": [0, 926, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              929,
-              53,
-              2
-            ]
+            "args": [0, 929, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(247, 118, 142, 0.9)"
-            ],
+            "args": ["rgba(247, 118, 142, 0.9)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              932,
-              60,
-              2
-            ]
+            "args": [0, 932, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              935,
-              53,
-              2
-            ]
+            "args": [0, 935, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              938,
-              60,
-              2
-            ]
+            "args": [0, 938, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              941,
-              53,
-              2
-            ]
+            "args": [0, 941, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              944,
-              60,
-              2
-            ]
+            "args": [0, 944, 60, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              947,
-              53,
-              2
-            ]
+            "args": [0, 947, 53, 2]
           },
           {
             "property": "fillStyle",
-            "args": [
-              "rgba(192, 202, 245, 0.14)"
-            ],
+            "args": ["rgba(192, 202, 245, 0.14)"],
             "setter": true
           },
           {
             "property": "fillRect",
-            "args": [
-              0,
-              950,
-              60,
-              2
-            ]
+            "args": [0, 950, 60, 2]
           }
         ]
       },
