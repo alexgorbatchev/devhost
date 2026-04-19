@@ -38,7 +38,7 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [ ] `devhost caddy start` still behaves as a managed Caddy lifecycle command.
 - [ ] `devhost caddy stop` still behaves as a managed Caddy lifecycle command.
 - [ ] `devhost caddy trust` still behaves as a managed Caddy lifecycle command.
-- [ ] `devhost caddy download` still behaves as a managed Caddy lifecycle command.
+- [x] `devhost caddy download` still behaves as a managed Caddy lifecycle command.
 - [ ] `devhost caddy privileged-ports` still behaves as a managed Caddy lifecycle command.
 - [ ] `devhost caddy print-root-cert` still prints the managed root certificate.
 - [ ] `devhost caddy trust-remote <ssh-target>` still performs remote certificate trust behavior.
@@ -97,23 +97,23 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 
 ## Managed Caddy State And Lifecycle
 
-- [ ] State directory resolution still uses `DEVHOST_STATE_DIR`, else `XDG_STATE_HOME/devhost`, else `~/.local/state/devhost`.
-- [ ] Managed Caddy state still lives under `<state>/caddy/`.
-- [ ] `Caddyfile`, storage, route registration, host-claim, port-claim, pidfile, and root-cert paths remain compatible with the current runtime.
+- [x] State directory resolution still uses `DEVHOST_STATE_DIR`, else `XDG_STATE_HOME/devhost`, else `~/.local/state/devhost`.
+- [x] Managed Caddy state still lives under `<state>/caddy/`.
+- [x] `Caddyfile`, storage, route registration, host-claim, port-claim, pidfile, and root-cert paths remain compatible with the current runtime.
 - [ ] Managed Caddy configuration is still ensured before lifecycle operations that require it.
 - [ ] `caddy start` still returns success when the managed admin API is already reachable and the managed pidfile proves ownership.
 - [ ] `caddy start` still fails when the managed admin API is reachable but the pidfile does not prove devhost ownership.
 - [ ] `caddy stop` still stops only a devhost-owned managed Caddy instance.
 - [ ] `caddy stop` still cleans stale pidfiles when the server is gone.
 - [ ] `caddy trust` still requires a reachable admin API and managed pidfile.
-- [ ] `caddy print-root-cert` still prints only the PEM certificate content needed by callers.
+- [x] `caddy print-root-cert` still prints only the PEM certificate content needed by callers.
 - [ ] `caddy trust-remote` still shells through SSH to `devhost caddy print-root-cert` on the remote side.
 - [ ] `caddy trust-remote` still prints the certificate fingerprint before trust installation.
 - [ ] `caddy trust-remote` remains macOS-only.
 - [ ] `caddy privileged-ports` remains a no-op on macOS.
 - [ ] `caddy privileged-ports` still uses Linux capability elevation semantics on Linux.
 - [ ] `caddy privileged-ports` still rejects unsupported non-Linux, non-macOS platforms.
-- [ ] Managed Caddy download still supports the current OS and architecture matrix.
+- [x] Managed Caddy download still supports the current OS and architecture matrix.
 - [ ] The current admin-unavailable error message remains unchanged where relied upon by tests or UX.
 - [ ] The current Caddy reload failure message remains unchanged where relied upon by tests or UX.
 
