@@ -13,6 +13,7 @@ type Manifest struct {
 	ManifestPath          string
 	Name                  string
 	PrimaryService        string
+	ServiceOrder          []string
 	Services              map[string]ValidatedService
 }
 

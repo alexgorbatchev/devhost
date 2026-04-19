@@ -26,12 +26,19 @@
 - The Go Caddy command logs now include the `[devhost]` prefix, matching the current TypeScript foreground logging style for this slice.
 - Managed Caddy bind resolution, listener-port helpers, not-found page sync, Caddyfile rendering, config ensure, admin availability probing, and `caddy start|stop|trust` lifecycle behavior are now implemented and covered by Go tests.
 - The Go CLI now wires `devhost caddy start|stop|trust` through the managed Caddy lifecycle path, including manifest-derived admin-address fallback when `--manifest` is provided.
+- Fixed-port claims, host claims, route registration filenames and JSON shape, host-route snippet rendering and ordering, proxy-host normalization, stale cleanup, activate/unregister flows, and the exact Caddy reload failure message are now implemented inside `internal/caddy` and covered by Go tests.
+- The route mutation tests also lock the current rollback order, including deleting the failed registration and resyncing disk state without doing an extra reload on activate failure.
+- Service dependency ordering, cycle detection, and runtime port/default-health resolution are now implemented inside `internal/services` and covered by Go tests.
+- Manifest mode now resolves service order and runtime ports before hitting the current Go rewrite boundary, so ordering and effective-health failures surface before the remaining manifest-mode stub.
+- Non-2xx managed Caddy admin availability errors now render TS-compatible HTTP detail text.
+- Service health waiting now covers `process`, `tcp`, and `http` modes with TS-compatible timeout and retry behavior, and is covered by Go tests.
+- Auto-port retry utilities and the loopback bind-host ambiguity warning helper are now implemented inside `internal/services` and covered by Go tests.
 
 ## Known Remaining Gaps
 
 - Manifest mode orchestration is not yet ported.
-- Managed route registration writing, host claims, fixed port claims, reload flows, and route-file rendering are not yet ported.
-- Service startup/shutdown orchestration, health checks, terminal sessions, WebSockets, annotation queues, and injected devtools contracts are not yet ported.
+- Manifest mode still does not call the new Go route-state helpers because manifest startup and shutdown orchestration are not yet ported.
+- Service startup/shutdown orchestration, terminal sessions, WebSockets, annotation queues, and injected devtools contracts are not yet ported.
 - Release, packaging, and CI still point at the Bun/TypeScript runtime.
 
 ## Due Diligence

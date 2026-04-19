@@ -71,6 +71,10 @@ func ensureManagedCaddyConfig(paths Paths, fallback ManagedCaddyConfigFallback) 
 	return nil
 }
 
+func EnsureManagedCaddyConfig(paths Paths, fallback ManagedCaddyConfigFallback) error {
+	return ensureManagedCaddyConfig(paths, fallback)
+}
+
 func readManagedCaddyGlobalSettings(paths Paths, fallback ManagedCaddyConfigFallback) (managedCaddyGlobalSettings, error) {
 	entries, error := os.ReadDir(paths.RegistrationsDirectoryPath)
 	if error != nil {

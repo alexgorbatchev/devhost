@@ -36,7 +36,7 @@ func EnsureManagedCaddyAdminAvailable(adminAPIURL string, dependencies AdminAvai
 	defer response.Body.Close()
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		detail := strings.TrimSpace(fmt.Sprintf("HTTP %d %s", response.StatusCode, response.Status))
+		detail := strings.TrimSpace(fmt.Sprintf("HTTP %s", response.Status))
 		return errors.New(CreateManagedCaddyAdminUnavailableErrorMessage(detail))
 	}
 

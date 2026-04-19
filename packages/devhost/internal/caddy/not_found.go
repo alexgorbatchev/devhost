@@ -10,11 +10,6 @@ import (
 	"strings"
 )
 
-type managedRouteRegistration struct {
-	Host string
-	Path string
-}
-
 type managedCaddyNotFoundSitePaths struct {
 	DirectoryPath  string
 	PagePath       string
@@ -302,7 +297,7 @@ func readActiveRouteLinks(routesDirectoryPath string, httpsPort int) ([]managedC
 			return nil, fmt.Errorf("read managed route registration %s: %w", registrationPath, error)
 		}
 
-		registration, error := parseManagedRouteRegistration(registrationText)
+		registration, error := parseManagedRouteLinkRegistration(registrationText)
 		if error != nil {
 			return nil, fmt.Errorf("parse managed route registration %s: %w", registrationPath, error)
 		}
@@ -318,7 +313,7 @@ func readActiveRouteLinks(routesDirectoryPath string, httpsPort int) ([]managedC
 		candidateLink := managedCaddyNotFoundRouteLink{
 			Host: registration.Host,
 			Path: registration.Path,
-			URL:  CreateManagedCaddyURL("https", registration.Host, httpsPort, normalizeManagedRoutePath(registration.Path)),
+			URL:  CreateManagedCaddyURL("https", registration.Host, httpsPort, normalizeRoutePath(registration.Path)),
 		}
 
 		existingLink, ok := routeLinksByHost[registration.Host]
@@ -401,15 +396,15 @@ func renderManagedRouteList(routeLinks []managedCaddyNotFoundRouteLink) string {
 	}, "\n")
 }
 
-func parseManagedRouteRegistration(registrationText []byte) (managedRouteRegistration, error) {
+func parseManagedRouteLinkRegistration(registrationText []byte) (managedRouteRecord, error) {
 	var value map[string]any
 	if error := json.Unmarshal(registrationText, &value); error != nil {
-		return managedRouteRegistration{}, error
+		return managedRouteRecord{}, error
 	}
 
 	host, ok := value["host"].(string)
 	if !ok {
-		return managedRouteRegistration{}, fmt.Errorf("Managed route registration is malformed.")
+		return managedRouteRecord{}, fmt.Errorf("Managed route registration is malformed.")
 	}
 
 	path, hasPath := value["path"].(string)
@@ -417,15 +412,7 @@ func parseManagedRouteRegistration(registrationText []byte) (managedRouteRegistr
 		path = "/"
 	}
 
-	return managedRouteRegistration{Host: host, Path: normalizeManagedRoutePath(path)}, nil
-}
-
-func normalizeManagedRoutePath(path string) string {
-	if path == "/" || path == "/*" {
-		return "/"
-	}
-
-	return path
+	return managedRouteRecord{Host: host, Path: normalizeRoutePath(path)}, nil
 }
 
 func compareManagedRouteLinks(left managedCaddyNotFoundRouteLink, right managedCaddyNotFoundRouteLink) int {
@@ -437,16 +424,12 @@ func compareManagedRouteLinks(left managedCaddyNotFoundRouteLink, right managedC
 }
 
 func readRouteFilePath(host string, registrationFileName string, routesDirectoryPath string) (string, error) {
-	hostRoutePath := filepath.Join(routesDirectoryPath, fmt.Sprintf("%s.caddy", encodeManagedPathSegment(host)))
+	hostRoutePath := filepath.Join(routesDirectoryPath, fmt.Sprintf("%s.caddy", encodePathSegment(host)))
 	if pathExists(hostRoutePath) {
 		return hostRoutePath, nil
 	}
 
 	return filepath.Join(routesDirectoryPath, strings.TrimSuffix(registrationFileName, ".json")+".caddy"), nil
-}
-
-func encodeManagedPathSegment(value string) string {
-	return strings.ReplaceAll(value, ":", "_")
 }
 
 func pathExists(path string) bool {
