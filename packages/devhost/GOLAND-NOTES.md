@@ -21,15 +21,17 @@
 
 - `go test ./...` passes for the current Go module.
 - `go vet ./...` passes for the current Go module.
-- `docs/GOLANG.md` now checks only the Phase 1 CLI and manifest parity items proven by code plus tests.
+- `docs/GOLANG.md` now checks only the rewrite parity items proven by code plus tests.
 - Managed Caddy state-path compatibility, `caddy download`, raw `caddy print-root-cert`, `caddy trust-remote`, and `caddy privileged-ports` behavior are now implemented and covered by Go tests.
 - The Go Caddy command logs now include the `[devhost]` prefix, matching the current TypeScript foreground logging style for this slice.
+- Managed Caddy bind resolution, listener-port helpers, not-found page sync, Caddyfile rendering, config ensure, admin availability probing, and `caddy start|stop|trust` lifecycle behavior are now implemented and covered by Go tests.
+- The Go CLI now wires `devhost caddy start|stop|trust` through the managed Caddy lifecycle path, including manifest-derived admin-address fallback when `--manifest` is provided.
 
 ## Known Remaining Gaps
 
 - Manifest mode orchestration is not yet ported.
-- Managed Caddy `start`, `stop`, and `trust` are not yet ported.
-- Route registration, services, health checks, terminal sessions, WebSockets, annotation queues, and injected devtools contracts are not yet ported.
+- Managed route registration writing, host claims, fixed port claims, reload flows, and route-file rendering are not yet ported.
+- Service startup/shutdown orchestration, health checks, terminal sessions, WebSockets, annotation queues, and injected devtools contracts are not yet ported.
 - Release, packaging, and CI still point at the Bun/TypeScript runtime.
 
 ## Due Diligence
