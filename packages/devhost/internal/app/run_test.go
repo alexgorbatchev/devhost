@@ -69,3 +69,33 @@ func TestRunExplicitManifestBypassesUpwardDiscovery(t *testing.T) {
 		t.Fatalf("Run(...) stderr = %q, want %q", stderr.String(), wantStderr)
 	}
 }
+
+func TestRunPrintRootCertificateWritesRawCertificate(t *testing.T) {
+	temporaryDirectoryPath := t.TempDir()
+	t.Setenv("DEVHOST_STATE_DIR", temporaryDirectoryPath)
+	rootCertificatePath := filepath.Join(temporaryDirectoryPath, "caddy", "storage", "pki", "authorities", "local", "root.crt")
+	if error := os.MkdirAll(filepath.Dir(rootCertificatePath), 0o755); error != nil {
+		t.Fatalf("MkdirAll(...) error = %v", error)
+	}
+
+	certificate := "-----BEGIN CERTIFICATE-----\nhello\n"
+	if error := os.WriteFile(rootCertificatePath, []byte(certificate), 0o644); error != nil {
+		t.Fatalf("WriteFile(...) error = %v", error)
+	}
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	exitCode := Run([]string{"caddy", "print-root-cert"}, temporaryDirectoryPath, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("Run(...) exit code = %d, want 0", exitCode)
+	}
+
+	if stdout.String() != certificate {
+		t.Fatalf("Run(...) stdout = %q, want %q", stdout.String(), certificate)
+	}
+
+	if stderr.String() != "" {
+		t.Fatalf("Run(...) stderr = %q, want empty", stderr.String())
+	}
+}
