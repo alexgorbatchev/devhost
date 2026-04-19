@@ -9,6 +9,7 @@ Monorepo root for the published `devhost` package and the local demo app.
 - Check the full repo: `bun run check`
 - Apply repo-wide formatting fixes: `bun run fix`
 - Check `devhost` package-only validations: `bun run --cwd packages/devhost check`
+- Build `devhost` release tarballs: `bun run --cwd packages/devhost build:release-artifacts`
 - Check demo app package-only validations: `bun run --cwd packages/www check`
 - Deploy demo app to Railway: `bun run deploy:www`
 - Run `devhost` help: `bun run --cwd packages/devhost dev --help`
@@ -40,7 +41,7 @@ Monorepo root for the published `devhost` package and the local demo app.
 ## Shipping
 
 - Demo app deploy entrypoint: `bun run deploy:www`. `packages/www/DEPLOY.md` is the authoritative Railway procedure.
-- CLI release entrypoint: push a tag like `v0.0.2`. `packages/devhost/RELEASE.md` and `.github/workflows/publish.yml` are the authoritative npm release procedure.
+- CLI release entrypoint: push a tag like `v0.0.2`. `packages/devhost/RELEASE.md` and `.github/workflows/publish.yml` are the authoritative npm plus GitHub Release binary procedure.
 
 ## Shared boundaries
 

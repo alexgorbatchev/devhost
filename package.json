@@ -3,6 +3,7 @@
   "workspaces": [
     "packages/*"
   ],
+  "type": "module",
   "scripts": {
     "check": "bun --bun oxfmt --check . && bun --bun oxlint . && bun run --cwd packages/devhost check && bun run --cwd packages/www check",
     "deploy:www": "bun ./scripts/deployWwwRailway.ts",
