@@ -2,7 +2,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { createTerminalSessionCommand } from "@alexgorbatchev/devhost/src/agents/createTerminalSessionCommand";
-import { launchTerminalSession, type ILaunchedTerminalSession } from "@alexgorbatchev/devhost/src/agents/launchTerminalSession";
+import {
+  launchTerminalSession,
+  type ILaunchedTerminalSession,
+} from "@alexgorbatchev/devhost/src/agents/launchTerminalSession";
 import type { IAnnotationQueueSnapshot } from "@alexgorbatchev/devhost/src/devtools/features/annotationQueue/types";
 import type {
   IAnnotationMarkerPayload,
@@ -969,11 +972,7 @@ function createTerminalEcho(input: string, request: StartTerminalSessionRequest)
     : `${normalizedInput}Mocked agent queue accepted the follow-up note.\r\n`;
 }
 
-function removeTerminalSession(
-  scenarioState: ICaptureScenarioState,
-  sessionId: string,
-  shouldClose: boolean,
-): void {
+function removeTerminalSession(scenarioState: ICaptureScenarioState, sessionId: string, shouldClose: boolean): void {
   const session: ICaptureTerminalSessionState | undefined = scenarioState.terminalSessions.get(sessionId);
 
   if (session === undefined) {
