@@ -10,6 +10,7 @@ import (
 	"github.com/alexgorbatchev/devhost/packages/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/packages/devhost/internal/cli"
 	"github.com/alexgorbatchev/devhost/packages/devhost/internal/manifest"
+	"github.com/alexgorbatchev/devhost/packages/devhost/internal/services"
 )
 
 func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) int {
@@ -42,8 +43,19 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			return 1
 		}
 
-		if _, validateError := manifest.ValidateManifest(*manifestPath, rawManifest); validateError != nil {
+		validatedManifest, validateError := manifest.ValidateManifest(*manifestPath, rawManifest)
+		if validateError != nil {
 			_, _ = fmt.Fprintf(stderr, "failed: %s\n", validateError.Error())
+			return 1
+		}
+
+		if _, orderError := services.ResolveServiceOrder(validatedManifest); orderError != nil {
+			_, _ = fmt.Fprintf(stderr, "failed: %s\n", orderError.Error())
+			return 1
+		}
+
+		if _, resolveError := services.ResolveServicePorts(validatedManifest); resolveError != nil {
+			_, _ = fmt.Fprintf(stderr, "failed: %s\n", resolveError.Error())
 			return 1
 		}
 

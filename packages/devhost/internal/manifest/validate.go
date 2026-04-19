@@ -67,6 +67,7 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 		ManifestPath:          manifestPath,
 		Name:                  name,
 		PrimaryService:        primaryService,
+		ServiceOrder:          append([]string{}, rawManifest.serviceOrder...),
 		Services:              validatedServices,
 	}, nil
 }
