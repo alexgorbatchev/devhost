@@ -52,7 +52,7 @@ func DownloadCaddy(logWriter io.Writer, runtimeOS string, runtimeArch string, pa
 	}
 
 	url := fmt.Sprintf("https://caddyserver.com/api/download?os=%s&arch=%s", targetOS, targetArch)
-	if _, error := fmt.Fprintf(logWriter, "Downloading Caddy for %s-%s from %s...\n", targetOS, targetArch, url); error != nil {
+	if error := logInfo(logWriter, fmt.Sprintf("Downloading Caddy for %s-%s from %s...", targetOS, targetArch, url)); error != nil {
 		return fmt.Errorf("log caddy download start: %w", error)
 	}
 
@@ -85,7 +85,7 @@ func DownloadCaddy(logWriter io.Writer, runtimeOS string, runtimeArch string, pa
 		}
 	}
 
-	if _, error := fmt.Fprintf(logWriter, "Caddy downloaded to %s\n", destinationPath); error != nil {
+	if error := logInfo(logWriter, fmt.Sprintf("Caddy downloaded to %s", destinationPath)); error != nil {
 		return fmt.Errorf("log caddy download success: %w", error)
 	}
 

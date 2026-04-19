@@ -79,11 +79,32 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			return 0
 		}
 
+		if arguments.Action == cli.CaddyPrivilegedPorts {
+			paths, error := caddy.CreateManagedCaddyPathsFromEnvironment(readEnvironment())
+			if error != nil {
+				_, _ = fmt.Fprintf(stderr, "failed: %s\n", error.Error())
+				return 1
+			}
+
+			exitCode, error := caddy.ConfigureManagedCaddyPrivilegedPorts(stderr, runtime.GOOS, runtime.GOARCH, paths, caddy.PrivilegedPortsDependencies{})
+			if error != nil {
+				_, _ = fmt.Fprintf(stderr, "failed: %s\n", error.Error())
+				return 1
+			}
+
+			return exitCode
+		}
+
 		_, _ = fmt.Fprintf(stderr, "failed: %s is not implemented yet in the Go rewrite.\n", strings.ReplaceAll(string(arguments.Kind), "-", " "))
 		return 1
 	case cli.KindCaddyTrustRemote:
-		_, _ = fmt.Fprintf(stderr, "failed: %s is not implemented yet in the Go rewrite.\n", strings.ReplaceAll(string(arguments.Kind), "-", " "))
-		return 1
+		exitCode, error := caddy.TrustManagedCaddyRemoteCertificate(arguments.SSHTarget, stderr, runtime.GOOS, caddy.TrustRemoteDependencies{})
+		if error != nil {
+			_, _ = fmt.Fprintf(stderr, "failed: %s\n", error.Error())
+			return 1
+		}
+
+		return exitCode
 	default:
 		_, _ = fmt.Fprintf(stderr, "failed: unsupported command kind: %s\n", arguments.Kind)
 		return 1
