@@ -107,12 +107,12 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [ ] `caddy stop` still cleans stale pidfiles when the server is gone.
 - [ ] `caddy trust` still requires a reachable admin API and managed pidfile.
 - [x] `caddy print-root-cert` still prints only the PEM certificate content needed by callers.
-- [ ] `caddy trust-remote` still shells through SSH to `devhost caddy print-root-cert` on the remote side.
-- [ ] `caddy trust-remote` still prints the certificate fingerprint before trust installation.
-- [ ] `caddy trust-remote` remains macOS-only.
-- [ ] `caddy privileged-ports` remains a no-op on macOS.
-- [ ] `caddy privileged-ports` still uses Linux capability elevation semantics on Linux.
-- [ ] `caddy privileged-ports` still rejects unsupported non-Linux, non-macOS platforms.
+- [x] `caddy trust-remote` still shells through SSH to `devhost caddy print-root-cert` on the remote side.
+- [x] `caddy trust-remote` still prints the certificate fingerprint before trust installation.
+- [x] `caddy trust-remote` remains macOS-only.
+- [x] `caddy privileged-ports` remains a no-op on macOS.
+- [x] `caddy privileged-ports` still uses Linux capability elevation semantics on Linux.
+- [x] `caddy privileged-ports` still rejects unsupported non-Linux, non-macOS platforms.
 - [x] Managed Caddy download still supports the current OS and architecture matrix.
 - [ ] The current admin-unavailable error message remains unchanged where relied upon by tests or UX.
 - [ ] The current Caddy reload failure message remains unchanged where relied upon by tests or UX.

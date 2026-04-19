@@ -99,3 +99,19 @@ func TestRunPrintRootCertificateWritesRawCertificate(t *testing.T) {
 		t.Fatalf("Run(...) stderr = %q, want empty", stderr.String())
 	}
 }
+
+func TestRunTrustRemoteRejectsUnsupportedPlatform(t *testing.T) {
+	t.Parallel()
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	exitCode := Run([]string{"caddy", "trust-remote", "devbox"}, "/tmp", &stdout, &stderr)
+	if exitCode != 1 {
+		t.Fatalf("Run(...) exit code = %d, want 1", exitCode)
+	}
+
+	if stdout.String() != "" {
+		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
+	}
+}
