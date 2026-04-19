@@ -2,9 +2,14 @@ import type { IInjectedDevtoolsConfig } from "@alexgorbatchev/devhost/src/devtoo
 
 import type { MarketingRecordingScenarioId } from "../marketing/replays/marketingReplayScenarios";
 
-const mockProjectRootPath: string = "/Users/alex/development/projects/devhost/packages/www";
 const mockStackName: string = "www-marketing-capture";
 type TeardownFunction = () => void;
+
+declare global {
+  interface Window {
+    __DEVHOST_CAPTURE_PROJECT_ROOT__?: string;
+  }
+}
 
 export function installDevhostMockEnvironment(scenarioId: MarketingRecordingScenarioId): TeardownFunction {
   const hadInjectedConfig: boolean = Reflect.has(window, "__DEVHOST_INJECTED_CONFIG__");
@@ -40,7 +45,7 @@ function createInjectedConfig(location: Location, scenarioId: MarketingRecording
     minimapEnabled: true,
     minimapPosition: "right",
     position: "top-right",
-    projectRootPath: mockProjectRootPath,
+    projectRootPath: readCaptureProjectRootPath(),
     routedServices: [
       { host: location.hostname, path: "/", serviceName: "app" },
       { host: location.hostname, path: "/api", serviceName: "api" },
@@ -49,4 +54,8 @@ function createInjectedConfig(location: Location, scenarioId: MarketingRecording
     stackName: mockStackName,
     statusEnabled: true,
   };
+}
+
+function readCaptureProjectRootPath(): string {
+  return typeof window.__DEVHOST_CAPTURE_PROJECT_ROOT__ === "string" ? window.__DEVHOST_CAPTURE_PROJECT_ROOT__ : "";
 }

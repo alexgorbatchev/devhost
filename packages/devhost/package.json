@@ -25,7 +25,10 @@
     "devhost.example.toml"
   ],
   "scripts": {
+    "build:devtools-bundle": "bun run ./scripts/buildDevtoolsBundle.ts",
+    "build:release-artifacts": "bun run ./scripts/buildReleaseArtifacts.ts",
     "check": "./scripts/check.sh",
+    "compile": "bun run build:devtools-bundle && bun build --compile --minify ./bin/devhost.ts --outfile ./dist/devhost",
     "dev": "bun run src/main.ts",
     "fmt": "bun --bun oxfmt --write .",
     "storybook": "storybook dev --ci --port 6006"

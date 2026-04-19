@@ -39,16 +39,17 @@ The recorder starts a temporary local dev server, opens the dev-only capture rou
 
 ## Recorder authoring notes
 
-- Treat the recorder as cinematic choreography, not just a functional test. Modifier-key timing, hover timing, and pauses change what the replay communicates.
+- Treat the recorder as cinematic choreography, not just a functional test. Modifier-key timing, hover timing, pauses, and tray state changes all change what the replay communicates.
 - Do not hold modifier keys during approach movement unless the replay is supposed to show that state the whole time.
 - For annotation demos, show the highlight state before selection instead of during travel.
+- The annotation take now uses a live agent CLI session plus a real Neovim source jump. Expect some terminal timing drift and visually verify the finished replay instead of assuming the PTY output stayed photogenic.
 - After changing recorder choreography, rerun the affected scenario and visually inspect the replay tab in `www`, not just the automated checks.
 
 ## 1. Annotation handoff
 
 **Target file:** `packages/www/public/recordings/marketing/annotation.json`
 
-**Goal:** prove that page evidence can be tagged and handed into Pi without rewriting the bug report elsewhere.
+**Goal:** prove that page evidence can be tagged, handed into Pi, expanded back into a real terminal session, and then carried straight into source navigation without leaving the browser workflow.
 
 ### Steps
 
@@ -61,14 +62,25 @@ The recorder starts a temporary local dev server, opens the dev-only capture rou
 7. Open the annotation draft UI.
 8. Type a short, concrete note that references the selected elements.
 9. Show that the draft includes page context and selected targets.
-10. Submit the handoff into Pi.
-11. Leave the final state visible for a beat so the completed handoff is obvious.
+10. Submit the handoff into Pi and wait for the minimized terminal tray to appear.
+11. Expand the Pi terminal preview, hold on the live terminal for about five seconds, then minimize it again.
+12. Hold on the minimized tray for about five more seconds so the recovery path is obvious.
+13. Move to the source-jump target card and wiggle on it for about one second.
+14. Hold `Alt`, right-click the source-jump target, and wait about one second for the source menu.
+15. Move to the first source menu item, wiggle for about one second, then click to open Neovim.
+16. Keep the editor visible, wiggle on the Neovim terminal, then scroll down slowly for about two seconds.
+17. Scroll back up slowly for about two seconds.
+18. Move to the minimize control, wait about one second, then minimize the editor session into the tray.
+19. Leave the tray state visible for a beat so the combined browser-to-terminal-to-source loop reads cleanly.
 
 ### Timing notes
 
 - The cursor should reach the first target before `Alt` goes down.
 - Keep roughly a one-second pause after the first highlight wiggle and another roughly one-second pause on the second target before selecting it.
 - Release `Alt` after the second selection and before typing into the annotation draft.
+- After the Pi session opens, hold the expanded panel for roughly five seconds before minimizing and hold the minimized tray for roughly five more seconds before starting the source-jump portion.
+- For the source jump, wiggle the page target, the source menu item, and the Neovim terminal for roughly one second each.
+- Keep the Neovim scroll deliberate enough that the replay clearly shows down-then-up movement instead of a single jump.
 
 ## 2. Source navigation
 

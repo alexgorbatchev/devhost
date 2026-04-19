@@ -30,10 +30,16 @@ interface IPoint {
   y: number;
 }
 
+interface ILocatorClickTarget {
+  x: number;
+  y: number;
+}
+
 const afterLeftClickPauseMs: number = 320;
 const afterRightClickPauseMs: number = 420;
 const annotationHighlightPauseMs: number = 1_000;
 const annotationHighlightWiggleOffsetPx: number = 6;
+const annotationTerminalPreviewPauseMs: number = 5_000;
 const beforeClickPauseMs: number = 140;
 const capturePathname: string = "/__capture__";
 const clickHoldDurationMs: number = 90;
@@ -41,9 +47,14 @@ const cursorFrameIntervalMs: number = 18;
 const cursorPathBaseDurationMs: number = 220;
 const cursorPathDurationPerPixelMs: number = 1.05;
 const cursorPositionsByPage = new WeakMap<Page, IPoint>();
+const cursorWigglePauseMs: number = 90;
+const cursorWiggleShowcaseDurationMs: number = 1_000;
 const maximumCursorPathDurationMs: number = 1_250;
 const minimumCursorPathDurationMs: number = 320;
 const serverStartupTimeoutMs: number = 20_000;
+const sourceMenuPauseMs: number = 1_000;
+const terminalScrollDurationMs: number = 2_000;
+const terminalScrollDistancePx: number = 1_000;
 const viewportEdgeInsetPx: number = 4;
 const workspaceRootPath: string = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const recordingsRootPath: string = path.join(workspaceRootPath, "public", "recordings", "marketing");
@@ -168,6 +179,7 @@ async function runScenario(page: Page, scenarioId: MarketingRecordingScenarioId)
 async function runAnnotationScenario(page: Page): Promise<void> {
   const primaryTarget = page.getByTestId("MarketingCapturePage--annotation-target-primary");
   const secondaryTarget = page.getByTestId("MarketingCapturePage--annotation-target-secondary");
+  const sourceCard = page.getByTestId("CaptureSourceCardSurface--source-card");
 
   await moveCursorToLocator(page, primaryTarget, 0);
   await page.keyboard.down("Alt");
@@ -187,7 +199,45 @@ async function runAnnotationScenario(page: Page): Promise<void> {
     "Pin #1 under the health badge and align #2 with the launch command rail before the next capture.",
   );
   await clickLocator(page, submitButton);
-  await page.getByTestId("TerminalSessionTray--tray-root").waitFor({ state: "visible" });
+
+  const sessionTray = page.getByTestId("TerminalSessionTray--tray-root");
+  const agentSessionExpandButton = page.getByTestId("TerminalSessionPanel--expand");
+
+  await sessionTray.waitFor({ state: "visible" });
+  await clickLocator(page, agentSessionExpandButton, "left", { x: 0.78, y: 0.78 });
+
+  const terminalPanel = page.getByTestId("TerminalSessionPanel--content");
+  const terminalViewport = terminalPanel.getByTestId("TerminalSessionPanel--terminal");
+  const minimizeButton = page.locator('[data-devhost-instance-testid="TerminalSessionPanel--minimize"]');
+
+  await terminalPanel.waitFor({ state: "visible" });
+  await page.waitForTimeout(annotationTerminalPreviewPauseMs);
+  await moveCursorToLocator(page, minimizeButton, annotationHighlightPauseMs);
+  await clickLocator(page, minimizeButton);
+  await sessionTray.waitFor({ state: "visible" });
+  await page.waitForTimeout(annotationTerminalPreviewPauseMs);
+
+  await moveCursorToLocator(page, sourceCard, 0);
+  await wiggleCursorAtLocator(page, sourceCard, cursorWiggleShowcaseDurationMs);
+  await page.keyboard.down("Alt");
+  await clickLocator(page, sourceCard, "right");
+  await page.keyboard.up("Alt");
+
+  const firstMenuItem = page.getByTestId("ComponentSourceMenu--item").first();
+
+  await firstMenuItem.waitFor({ state: "visible" });
+  await page.waitForTimeout(sourceMenuPauseMs);
+  await moveCursorToLocator(page, firstMenuItem, 0);
+  await wiggleCursorAtLocator(page, firstMenuItem, cursorWiggleShowcaseDurationMs);
+  await clickLocator(page, firstMenuItem);
+  await terminalPanel.waitFor({ state: "visible" });
+  await moveCursorToLocator(page, terminalViewport, 0);
+  await wiggleCursorAtLocator(page, terminalViewport, cursorWiggleShowcaseDurationMs);
+  await scrollLocatorSlowly(page, terminalViewport, terminalScrollDistancePx, terminalScrollDurationMs);
+  await scrollLocatorSlowly(page, terminalViewport, -terminalScrollDistancePx, terminalScrollDurationMs);
+  await moveCursorToLocator(page, minimizeButton, annotationHighlightPauseMs);
+  await clickLocator(page, minimizeButton);
+  await sessionTray.waitFor({ state: "visible" });
   await page.waitForTimeout(900);
 }
 
@@ -273,10 +323,15 @@ async function runRoutingHealthScenario(page: Page): Promise<void> {
   await page.waitForTimeout(900);
 }
 
-async function clickLocator(page: Page, locator: Locator, button: MouseButton = "left"): Promise<void> {
-  const target = await readLocatorCenter(locator);
+async function clickLocator(
+  page: Page,
+  locator: Locator,
+  button: MouseButton = "left",
+  target: ILocatorClickTarget = { x: 0.5, y: 0.5 },
+): Promise<void> {
+  const targetPoint = await readLocatorPoint(locator, target);
 
-  await moveCursorHumanLike(page, target);
+  await moveCursorHumanLike(page, targetPoint);
   await page.waitForTimeout(beforeClickPauseMs);
   await page.mouse.down({ button });
   await page.waitForTimeout(clickHoldDurationMs);
@@ -285,22 +340,43 @@ async function clickLocator(page: Page, locator: Locator, button: MouseButton = 
 }
 
 async function moveCursorToLocator(page: Page, locator: Locator, pauseMs: number): Promise<void> {
-  const target = await readLocatorCenter(locator);
+  const target = await readLocatorPoint(locator);
 
   await moveCursorHumanLike(page, target);
   await page.waitForTimeout(pauseMs);
 }
 
-async function wiggleCursorAtLocator(page: Page, locator: Locator): Promise<void> {
-  const target = await readLocatorCenter(locator);
+async function wiggleCursorAtLocator(page: Page, locator: Locator, durationMs: number = cursorFrameIntervalMs * 2): Promise<void> {
+  const target = await readLocatorPoint(locator);
 
-  await page.mouse.move(target.x + annotationHighlightWiggleOffsetPx, target.y);
-  await page.waitForTimeout(cursorFrameIntervalMs * 2);
+  const stepCount: number = Math.max(1, Math.floor(durationMs / cursorWigglePauseMs));
+
+  for (let stepIndex = 0; stepIndex < stepCount; stepIndex += 1) {
+    const offset: number = stepIndex % 2 === 0 ? annotationHighlightWiggleOffsetPx : -annotationHighlightWiggleOffsetPx;
+
+    await page.mouse.move(target.x + offset, target.y);
+    await page.waitForTimeout(cursorWigglePauseMs);
+  }
+
   await page.mouse.move(target.x, target.y);
   cursorPositionsByPage.set(page, target);
 }
 
-async function readLocatorCenter(locator: Locator): Promise<IPoint> {
+async function scrollLocatorSlowly(page: Page, locator: Locator, deltaY: number, durationMs: number): Promise<void> {
+  const target = await readLocatorPoint(locator);
+  const stepCount: number = 20;
+  const stepDelayMs: number = Math.max(1, Math.round(durationMs / stepCount));
+  const stepDeltaY: number = Math.round(deltaY / stepCount);
+
+  await moveCursorHumanLike(page, target);
+
+  for (let stepIndex = 0; stepIndex < stepCount; stepIndex += 1) {
+    await page.mouse.wheel(0, stepDeltaY);
+    await page.waitForTimeout(stepDelayMs);
+  }
+}
+
+async function readLocatorPoint(locator: Locator, target: ILocatorClickTarget = { x: 0.5, y: 0.5 }): Promise<IPoint> {
   await locator.waitFor({ state: "visible" });
 
   const boundingBox = await locator.boundingBox();
@@ -310,8 +386,8 @@ async function readLocatorCenter(locator: Locator): Promise<IPoint> {
   }
 
   return {
-    x: boundingBox.x + boundingBox.width / 2,
-    y: boundingBox.y + boundingBox.height / 2,
+    x: boundingBox.x + boundingBox.width * target.x,
+    y: boundingBox.y + boundingBox.height * target.y,
   };
 }
 

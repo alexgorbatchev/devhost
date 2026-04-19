@@ -201,7 +201,8 @@ export function MarketingCapturePage(): JSX.Element {
                 <h1 className="text-4xl font-semibold tracking-tight text-foreground">{scenario.label}</h1>
                 <p className="max-w-[58ch] text-sm leading-7 text-muted-foreground">
                   This dev-only route exists solely to regenerate the marketing replay JSONs from a fixed viewport,
-                  stable fixtures, and the live devhost devtools UI.
+                  stable host fixtures, and the live devhost devtools UI, with real terminal sessions available for the
+                  takes that need authentic terminal output.
                 </p>
                 <div className="grid gap-4 md:grid-cols-3">
                   <CaptureFact label="Viewport" value={`${scenario.viewport.width} × ${scenario.viewport.height}`} />
@@ -447,7 +448,7 @@ function CaptureSourceCard(): JSX.Element {
   const sourceCardProps: ICaptureSourceCardSurfaceProps = {
     __source: {
       columnNumber: 5,
-      fileName: "/Users/alex/development/projects/devhost/packages/www/src/marketing/capture/MarketingCapturePage.tsx",
+      fileName: "src/marketing/capture/MarketingCapturePage.tsx",
       lineNumber: 306,
     },
   };
@@ -464,7 +465,7 @@ function CaptureSourceCardSurface({ __source }: ICaptureSourceCardSurfaceProps):
         <p className={statusPillClassName}>Source jump target</p>
         <strong className="text-lg font-semibold">Capture source card</strong>
         <p className="text-sm leading-7 text-muted-foreground">
-          Alt + right-click this card to open the nearest React source location in the mocked Neovim session.
+          Alt + right-click this card to open the nearest React source location in the Neovim session.
         </p>
         <code className="rounded-xl border border-border-subtle bg-background/80 px-3 py-2 text-left text-xs text-muted-foreground">
           src/marketing/capture/MarketingCapturePage.tsx

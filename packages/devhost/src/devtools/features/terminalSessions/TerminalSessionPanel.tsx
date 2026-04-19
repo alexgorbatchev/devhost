@@ -825,6 +825,7 @@ function createTrayTooltipStyle(theme: IDevtoolsTheme, trayTooltipLayout: ITrayT
     display: "grid",
     gap: theme.spacing.xxs,
     padding: theme.spacing.sm,
+    pointerEvents: "none",
     border: `1px solid ${theme.colors.border}`,
     borderRadius: theme.radii.md,
     background: theme.colors.background,

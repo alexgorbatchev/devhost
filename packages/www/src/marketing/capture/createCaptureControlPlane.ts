@@ -1,5 +1,8 @@
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { createTerminalSessionCommand } from "@alexgorbatchev/devhost/src/agents/createTerminalSessionCommand";
+import { launchTerminalSession, type ILaunchedTerminalSession } from "@alexgorbatchev/devhost/src/agents/launchTerminalSession";
 import type { IAnnotationQueueSnapshot } from "@alexgorbatchev/devhost/src/devtools/features/annotationQueue/types";
 import type {
   IAnnotationMarkerPayload,
@@ -30,6 +33,7 @@ import type {
   ServiceLogEntry,
   ServiceLogStream,
 } from "@alexgorbatchev/devhost/src/devtools/shared/types";
+import type { ValidatedDevhostAgent } from "@alexgorbatchev/devhost/src/types/stackTypes";
 
 import { readMarketingRecordingScenario, type MarketingRecordingScenarioId } from "../replays/marketingReplayScenarios";
 
@@ -63,9 +67,22 @@ interface ICaptureScenarioState {
 }
 
 interface ICaptureTerminalSessionState {
+  cleanupReleased: boolean;
+  cleanup: () => void;
+  close: () => void;
+  decoder: TextDecoder;
+  exited: ICaptureTerminalSessionExit | null;
+  isLive: boolean;
   request: StartTerminalSessionRequest;
+  resize: (cols: number, rows: number) => void;
   sessionId: string;
   snapshotData: string;
+  write: (data: string) => void;
+}
+
+interface ICaptureTerminalSessionExit {
+  exitCode: number | null;
+  signalCode: string | null;
 }
 
 export interface ICaptureControlWebSocketData {
@@ -76,7 +93,12 @@ export interface ICaptureControlWebSocketData {
 
 const captureResetPathname: string = "/__capture__/reset";
 const scenarioCookieName: string = "devhost-capture-scenario";
-const mockProjectRootPath: string = "/Users/alex/development/projects/devhost/packages/www";
+const captureProjectRootPath: string = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
+const captureSourceFilePath: string = "src/marketing/capture/MarketingCapturePage.tsx";
+const captureTerminalAgent: ValidatedDevhostAgent = {
+  displayName: "Pi",
+  kind: "opencode",
+};
 const mockRouteOrigin: string = "https://app.localhost";
 const mockStackName: string = "www-marketing-capture";
 const terminalEchoDelayMs: number = 120;
@@ -202,6 +224,10 @@ export function createCaptureControlPlane() {
         terminalSockets.add(websocket);
         scenarioState.terminalSocketsBySessionId.set(sessionId, terminalSockets);
         websocket.send(JSON.stringify({ data: session.snapshotData, type: "snapshot" }));
+
+        if (session.exited !== null) {
+          websocket.send(JSON.stringify({ ...session.exited, type: "exit" }));
+        }
       }
     }
   }
@@ -314,11 +340,19 @@ export function createCaptureControlPlane() {
     const nextSessionId: string = `${requestBody.kind}-session-${scenarioState.nextSessionNumber}`;
 
     scenarioState.nextSessionNumber += 1;
-    scenarioState.terminalSessions.set(nextSessionId, {
-      request: requestBody,
-      sessionId: nextSessionId,
-      snapshotData: createTerminalSnapshotData(requestBody),
-    });
+
+    try {
+      scenarioState.terminalSessions.set(
+        nextSessionId,
+        shouldUseLiveTerminalSessions(scenarioId)
+          ? createLiveTerminalSession(scenarioState, nextSessionId, requestBody)
+          : createMockTerminalSessionState(nextSessionId, requestBody),
+      );
+    } catch (error) {
+      const errorMessage: string = error instanceof Error ? error.message : String(error);
+
+      return new Response(errorMessage, { status: 500 });
+    }
 
     return Response.json({ sessionId: nextSessionId });
   }
@@ -359,6 +393,10 @@ export function createCaptureControlPlane() {
       clearTimeout(timer);
     }
 
+    for (const [sessionId] of scenarioState.terminalSessions) {
+      removeTerminalSession(scenarioState, sessionId, true);
+    }
+
     const sockets = new Set<Bun.ServerWebSocket<ICaptureControlWebSocketData>>([
       ...scenarioState.annotationQueueSockets,
       ...scenarioState.healthSockets,
@@ -393,18 +431,23 @@ export function createCaptureControlPlane() {
     }
 
     if (message.type === "resize") {
+      terminalSession.resize(message.cols, message.rows);
       return;
     }
 
     if (message.type === "close") {
-      const terminalSockets = scenarioState.terminalSocketsBySessionId.get(sessionId);
-
-      if (terminalSockets !== undefined) {
-        for (const websocket of terminalSockets) {
-          websocket.send(JSON.stringify({ exitCode: 0, signalCode: null, type: "exit" }));
-        }
+      if (terminalSession.isLive) {
+        terminalSession.close();
+      } else {
+        terminalSession.exited = { exitCode: 0, signalCode: null };
+        broadcastTerminalSessionExit(scenarioState, sessionId, terminalSession.exited);
       }
 
+      return;
+    }
+
+    if (terminalSession.isLive) {
+      terminalSession.write(message.data);
       return;
     }
 
@@ -514,6 +557,118 @@ export function createCaptureControlPlane() {
   }
 }
 
+function appendLiveTerminalSessionOutput(
+  scenarioState: ICaptureScenarioState,
+  sessionId: string,
+  data: Uint8Array,
+): void {
+  const session: ICaptureTerminalSessionState | undefined = scenarioState.terminalSessions.get(sessionId);
+
+  if (session === undefined) {
+    return;
+  }
+
+  const outputChunk: string = session.decoder.decode(data, { stream: true });
+
+  if (outputChunk.length === 0) {
+    return;
+  }
+
+  session.snapshotData = `${session.snapshotData}${outputChunk}`;
+
+  for (const websocket of scenarioState.terminalSocketsBySessionId.get(sessionId) ?? []) {
+    websocket.send(JSON.stringify({ data: outputChunk, type: "output" }));
+  }
+}
+
+function broadcastTerminalSessionExit(
+  scenarioState: ICaptureScenarioState,
+  sessionId: string,
+  exit: ICaptureTerminalSessionExit,
+): void {
+  for (const websocket of scenarioState.terminalSocketsBySessionId.get(sessionId) ?? []) {
+    websocket.send(JSON.stringify({ ...exit, type: "exit" }));
+  }
+}
+
+function createLiveTerminalSession(
+  scenarioState: ICaptureScenarioState,
+  sessionId: string,
+  request: StartTerminalSessionRequest,
+): ICaptureTerminalSessionState {
+  const terminalSessionCommand = createTerminalSessionCommand({
+    agent: captureTerminalAgent,
+    componentEditor: "neovim",
+    projectRootPath: captureProjectRootPath,
+    request,
+    stackName: mockStackName,
+  });
+  let launchedSession: ILaunchedTerminalSession;
+
+  try {
+    launchedSession = launchTerminalSession({
+      cleanup: terminalSessionCommand.cleanup,
+      cols: 120,
+      command: terminalSessionCommand.command,
+      cwd: terminalSessionCommand.cwd,
+      env: terminalSessionCommand.env,
+      onData: (data: Uint8Array): void => {
+        appendLiveTerminalSessionOutput(scenarioState, sessionId, data);
+      },
+      rows: 80,
+    });
+  } catch (error) {
+    terminalSessionCommand.cleanup();
+    throw error;
+  }
+
+  const session: ICaptureTerminalSessionState = {
+    cleanupReleased: false,
+    cleanup: terminalSessionCommand.cleanup,
+    close: launchedSession.close,
+    decoder: new TextDecoder(),
+    exited: null,
+    isLive: true,
+    request,
+    resize: launchedSession.resize,
+    sessionId,
+    snapshotData: "",
+    write: launchedSession.write,
+  };
+
+  void launchedSession.childProcess.exited.then((exitCode: number): void => {
+    finalizeLiveTerminalSession(
+      scenarioState,
+      sessionId,
+      session,
+      exitCode,
+      launchedSession.childProcess.signalCode,
+      terminalSessionCommand.cleanup,
+    );
+  });
+
+  return session;
+}
+
+function createMockTerminalSessionState(
+  sessionId: string,
+  request: StartTerminalSessionRequest,
+): ICaptureTerminalSessionState {
+  return {
+    cleanupReleased: false,
+    cleanup: (): void => {},
+    close: (): void => {},
+    decoder: new TextDecoder(),
+    exited: null,
+    isLive: false,
+    request,
+    resize: (): void => {},
+    sessionId,
+    snapshotData: createTerminalSnapshotData(request),
+    write: (): void => {},
+  };
+}
+
 function createScenarioState(scenarioId: MarketingRecordingScenarioId): ICaptureScenarioState {
   const initialTerminalSessions: IActiveTerminalSessionSnapshot[] =
     scenarioId === "sessions"
@@ -543,11 +698,7 @@ function createScenarioState(scenarioId: MarketingRecordingScenarioId): ICapture
       initialTerminalSessions.map(
         (session): CaptureSessionEntry => [
           session.sessionId,
-          {
-            request: session.request,
-            sessionId: session.sessionId,
-            snapshotData: createTerminalSnapshotData(session.request),
-          },
+          createMockTerminalSessionState(session.sessionId, session.request),
         ],
       ),
     ),
@@ -715,9 +866,39 @@ function createSourceLocation(
   return {
     columnNumber,
     componentName,
-    fileName: `${mockProjectRootPath}/src/marketing/capture/MarketingCapturePage.tsx`,
+    fileName: captureSourceFilePath,
     lineNumber,
   };
+}
+
+function finalizeLiveTerminalSession(
+  scenarioState: ICaptureScenarioState,
+  sessionId: string,
+  session: ICaptureTerminalSessionState,
+  exitCode: number,
+  signalCode: string | null,
+  cleanup: () => void,
+): void {
+  const trailingOutput: string = session.decoder.decode();
+
+  if (trailingOutput.length > 0) {
+    session.snapshotData = `${session.snapshotData}${trailingOutput}`;
+
+    for (const websocket of scenarioState.terminalSocketsBySessionId.get(sessionId) ?? []) {
+      websocket.send(JSON.stringify({ data: trailingOutput, type: "output" }));
+    }
+  }
+
+  session.exited = {
+    exitCode,
+    signalCode,
+  };
+
+  if (scenarioState.terminalSessions.get(sessionId) === session) {
+    broadcastTerminalSessionExit(scenarioState, sessionId, session.exited);
+  }
+
+  releaseTerminalSessionCleanup(session, cleanup);
 }
 
 function createLogEntriesForScenario(scenarioId: MarketingRecordingScenarioId): ServiceLogEntry[] {
@@ -786,6 +967,46 @@ function createTerminalEcho(input: string, request: StartTerminalSessionRequest)
   return request.kind === "editor"
     ? `${normalizedInput}Mocked file change staged in the Neovim session.\r\n`
     : `${normalizedInput}Mocked agent queue accepted the follow-up note.\r\n`;
+}
+
+function removeTerminalSession(
+  scenarioState: ICaptureScenarioState,
+  sessionId: string,
+  shouldClose: boolean,
+): void {
+  const session: ICaptureTerminalSessionState | undefined = scenarioState.terminalSessions.get(sessionId);
+
+  if (session === undefined) {
+    return;
+  }
+
+  scenarioState.terminalSessions.delete(sessionId);
+  scenarioState.terminalSocketsBySessionId.delete(sessionId);
+
+  if (shouldClose && session.exited === null) {
+    try {
+      session.close();
+    } catch {
+      return;
+    }
+  }
+
+  if (!session.isLive || session.exited !== null) {
+    releaseTerminalSessionCleanup(session, session.cleanup);
+  }
+}
+
+function releaseTerminalSessionCleanup(session: ICaptureTerminalSessionState, cleanup: () => void): void {
+  if (session.cleanupReleased) {
+    return;
+  }
+
+  session.cleanupReleased = true;
+  cleanup();
+}
+
+function shouldUseLiveTerminalSessions(scenarioId: MarketingRecordingScenarioId): boolean {
+  return scenarioId === "annotation";
 }
 
 function isAnnotationSubmitDetail(value: unknown): value is IAnnotationSubmitDetail {

@@ -12,7 +12,7 @@ Capture route fixtures, replay metadata, and stories for regenerating determinis
 ## Local conventions
 
 - `capture/MarketingCapturePage.tsx` owns the visible capture targets and the `data-testid` hooks that the recorder follows. Keep those IDs stable unless the recorder and affected fixtures are updated in the same change.
-- `capture/createCaptureControlPlane.ts` is the source of truth for mocked websocket, health, annotation queue, and terminal-session behavior during capture runs. Update those fixtures instead of patching generated rrweb JSON.
+- `capture/createCaptureControlPlane.ts` is the source of truth for websocket, health, annotation queue, and scenario-specific terminal-session behavior during capture runs. Most scenarios stay fixture-driven there, but the annotation replay intentionally launches real PTY-backed agent and Neovim sessions.
 - `replays/marketingReplayScenarios.ts` is shared metadata for both the public marketing replay tabs and the capture flow. Keep scenario ids, labels, and recording filenames aligned with both surfaces.
 - The generated replay files under `packages/www/public/recordings/marketing/` are outputs, not editable source files.
 - Story files in `capture/stories/` are placeholder coverage for this dev-only surface. Validate replay behavior through the capture route and recorder, not by expanding Storybook-only placeholders.
@@ -20,6 +20,7 @@ Capture route fixtures, replay metadata, and stories for regenerating determinis
 ## Local gotchas
 
 - Annotation replay timing is part of the product story. For the handoff demo, move to the first target before pressing `Alt`, wiggle slightly to reveal the highlight, pause for about one second, click the first target, move to the second target with `Alt` still held, pause again, click, then release `Alt` before typing.
+- The annotation replay no longer uses mocked terminal text. It expands a live agent CLI, minimizes it, then performs a real Neovim source jump in the same take, so visual verification matters more than ever.
 - Recorder changes are only trustworthy after re-recording the affected scenario and visually checking the replay in the app. Passing tests alone will not catch awkward choreography.
 
 ## Boundaries

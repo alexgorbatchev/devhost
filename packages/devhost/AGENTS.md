@@ -31,6 +31,18 @@ Run the package directly:
 bun run dev --help
 ```
 
+Build a standalone executable for the current platform:
+
+```bash
+bun run compile
+```
+
+Build the versioned cross-platform release tarballs:
+
+```bash
+bun run build:release-artifacts
+```
+
 Run the full test suite:
 
 ```bash
@@ -51,11 +63,18 @@ bun run check
 
 The `fmt` script runs `oxfmt --write` for this workspace using the shared repo-root config. The package `check` script runs `tsgo --noEmit -p tsconfig.json`, `bun test --coverage`, and `bun vitest run -c vitest.storybook.config.ts`. Use `bun run storybook` only when you need the interactive Storybook dev server for manual inspection. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
 
+The `build:devtools-bundle` script refreshes the prebuilt injected devtools bundle used by standalone executables.
+
+The `build:release-artifacts` script refreshes that bundle, cross-compiles the supported release targets, and writes versioned `.tar.gz` archives to `packages/devhost/dist/release/`.
+
+The `compile` script refreshes that bundle, then runs `bun build --compile --minify` against `bin/devhost.ts` and writes the current-platform executable to `packages/devhost/dist/devhost`.
+
 ## Release workflow
 
 - Follow `RELEASE.md`; it is the authoritative runbook for the tag-driven npm publish flow.
 - Release trigger: push a `v*` tag whose version matches `package.json`.
 - Do not run manual `npm publish` unless the user explicitly asks to step outside the documented tag-driven workflow.
+- The publish workflow attaches versioned `.tar.gz` binaries for `darwin-arm64`, `linux-x64`, `linux-arm64`, `linux-x64-musl`, and `linux-arm64-musl` to the matching GitHub Release.
 
 ## Done policy
 
