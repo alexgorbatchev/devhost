@@ -19,9 +19,9 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 ## Source-Of-Truth Audit
 
 - [ ] The rewrite was checked against `packages/devhost/README.md` for user-facing behavior parity.
-- [ ] The rewrite was checked against `packages/devhost/devhost.example.toml` for manifest examples and defaults.
-- [ ] The rewrite was checked against `packages/devhost/src/runDevhost.ts` for top-level CLI behavior parity.
-- [ ] The rewrite was checked against `packages/devhost/src/manifest/` for manifest discovery, parsing, validation, and defaults.
+- [x] The rewrite was checked against `packages/devhost/devhost.example.toml` for manifest examples and defaults.
+- [x] The rewrite was checked against `packages/devhost/src/runDevhost.ts` for top-level CLI behavior parity.
+- [x] The rewrite was checked against `packages/devhost/src/manifest/` for manifest discovery, parsing, validation, and defaults.
 - [ ] The rewrite was checked against `packages/devhost/src/caddy/` for managed Caddy lifecycle and state behavior.
 - [ ] The rewrite was checked against `packages/devhost/src/services/` for orchestration, health, ports, shutdown, and cleanup behavior.
 - [ ] The rewrite was checked against `packages/devhost/src/utils/routeUtils.ts` for route-registration, host-claim, and route-ordering behavior.
@@ -33,8 +33,8 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 
 - [ ] `devhost` with no subcommand still starts manifest mode.
 - [ ] `devhost --manifest ./devhost.toml` still starts manifest mode with an explicit manifest path.
-- [ ] `devhost --help` still prints help and exits successfully.
-- [ ] `devhost -h` still prints help and exits successfully.
+- [x] `devhost --help` still prints help and exits successfully.
+- [x] `devhost -h` still prints help and exits successfully.
 - [ ] `devhost caddy start` still behaves as a managed Caddy lifecycle command.
 - [ ] `devhost caddy stop` still behaves as a managed Caddy lifecycle command.
 - [ ] `devhost caddy trust` still behaves as a managed Caddy lifecycle command.
@@ -42,58 +42,58 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [ ] `devhost caddy privileged-ports` still behaves as a managed Caddy lifecycle command.
 - [ ] `devhost caddy print-root-cert` still prints the managed root certificate.
 - [ ] `devhost caddy trust-remote <ssh-target>` still performs remote certificate trust behavior.
-- [ ] No public `--version` flag was added during parity rewrite.
-- [ ] Manifest mode still rejects positional child commands.
-- [ ] `--manifest` still rejects paths that do not end in `devhost.toml`.
-- [ ] `print-root-cert` still rejects `--manifest`.
-- [ ] `print-root-cert` still rejects extra arguments.
-- [ ] `trust-remote` still rejects `--manifest`.
-- [ ] `trust-remote` still requires exactly one SSH target.
-- [ ] `trust-remote` still rejects extra arguments.
+- [x] No public `--version` flag was added during parity rewrite.
+- [x] Manifest mode still rejects positional child commands.
+- [x] `--manifest` still rejects paths that do not end in `devhost.toml`.
+- [x] `print-root-cert` still rejects `--manifest`.
+- [x] `print-root-cert` still rejects extra arguments.
+- [x] `trust-remote` still rejects `--manifest`.
+- [x] `trust-remote` still requires exactly one SSH target.
+- [x] `trust-remote` still rejects extra arguments.
 - [ ] Top-level success paths still return exit code `0`.
 - [ ] Top-level uncaught operational failures still return exit code `1`.
 - [ ] Signal exits still preserve the current `SIGINT`, `SIGTERM`, and `SIGHUP` exit codes.
 
 ## Manifest Discovery, Parsing, And Validation
 
-- [ ] Manifest discovery still walks upward from the current working directory until `.git` or filesystem root.
-- [ ] Explicit `--manifest` still bypasses upward discovery.
-- [ ] Duplicate TOML table failures still surface as `table declared more than once`.
-- [ ] The manifest still requires at least one service.
-- [ ] Service names still match `^[a-z][a-z0-9-]*$`.
-- [ ] No more than one service can set `primary = true`.
-- [ ] When no service sets `primary = true`, the same service becomes primary as in the current runtime.
-- [ ] Service `cwd` still must remain within the manifest directory.
-- [ ] Custom-agent `cwd` still must remain within the manifest directory.
-- [ ] Every `dependsOn` entry still must reference an existing service.
-- [ ] Routed services still require `port`.
-- [ ] Routed services still reject `health.process`.
-- [ ] `port = "auto"` still rejects explicit `health`.
-- [ ] Each service still must define either `port` or `health`.
-- [ ] `health.http` still requires an absolute URL.
-- [ ] `health.http` still only permits hostnames `127.0.0.1`, `localhost`, or `::1`.
-- [ ] Route paths still must start with `/`.
-- [ ] Route paths still only allow `/`, exact paths, or trailing `/*` wildcard paths.
-- [ ] Same-host overlapping routed paths are still rejected except for `/` acting as fallback.
-- [ ] Fixed numeric port conflicts still collapse IPv4 loopback and wildcard scope together.
-- [ ] Fixed numeric port conflicts still collapse IPv6 loopback and wildcard scope together.
-- [ ] String `command` values still use whitespace splitting semantics rather than shell parsing semantics.
+- [x] Manifest discovery still walks upward from the current working directory until `.git` or filesystem root.
+- [x] Explicit `--manifest` still bypasses upward discovery.
+- [x] Duplicate TOML table failures still surface as `table declared more than once`.
+- [x] The manifest still requires at least one service.
+- [x] Service names still match `^[a-z][a-z0-9-]*$`.
+- [x] No more than one service can set `primary = true`.
+- [x] When no service sets `primary = true`, the same service becomes primary as in the current runtime.
+- [x] Service `cwd` still must remain within the manifest directory.
+- [x] Custom-agent `cwd` still must remain within the manifest directory.
+- [x] Every `dependsOn` entry still must reference an existing service.
+- [x] Routed services still require `port`.
+- [x] Routed services still reject `health.process`.
+- [x] `port = "auto"` still rejects explicit `health`.
+- [x] Each service still must define either `port` or `health`.
+- [x] `health.http` still requires an absolute URL.
+- [x] `health.http` still only permits hostnames `127.0.0.1`, `localhost`, or `::1`.
+- [x] Route paths still must start with `/`.
+- [x] Route paths still only allow `/`, exact paths, or trailing `/*` wildcard paths.
+- [x] Same-host overlapping routed paths are still rejected except for `/` acting as fallback.
+- [x] Fixed numeric port conflicts still collapse IPv4 loopback and wildcard scope together.
+- [x] Fixed numeric port conflicts still collapse IPv6 loopback and wildcard scope together.
+- [x] String `command` values still use whitespace splitting semantics rather than shell parsing semantics.
 
 ## Defaults
 
-- [ ] Default Caddy admin address remains `127.0.0.1:20197`.
-- [ ] Default Caddy bind host remains `127.0.0.1`.
-- [ ] Default Caddy `http` remains `false`.
-- [ ] Default Caddy `httpPort` remains `80`.
-- [ ] Default Caddy `httpsPort` remains `443`.
-- [ ] Devtools editor remains enabled by default.
-- [ ] Default editor remains `vscode`.
-- [ ] External toolbars remain enabled by default.
-- [ ] Minimap remains enabled by default.
-- [ ] Default minimap position remains `right`.
-- [ ] Status remains enabled by default.
-- [ ] Default status position remains `bottom-right`.
-- [ ] Default agent remains Pi.
+- [x] Default Caddy admin address remains `127.0.0.1:20197`.
+- [x] Default Caddy bind host remains `127.0.0.1`.
+- [x] Default Caddy `http` remains `false`.
+- [x] Default Caddy `httpPort` remains `80`.
+- [x] Default Caddy `httpsPort` remains `443`.
+- [x] Devtools editor remains enabled by default.
+- [x] Default editor remains `vscode`.
+- [x] External toolbars remain enabled by default.
+- [x] Minimap remains enabled by default.
+- [x] Default minimap position remains `right`.
+- [x] Status remains enabled by default.
+- [x] Default status position remains `bottom-right`.
+- [x] Default agent remains Pi.
 
 ## Managed Caddy State And Lifecycle
 
@@ -341,9 +341,9 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 
 ## Test And Validation Coverage
 
-- [ ] CLI parsing parity is covered by automated tests.
-- [ ] Manifest discovery and duplicate-table handling parity is covered by automated tests.
-- [ ] Manifest validation parity is covered by automated tests.
+- [x] CLI parsing parity is covered by automated tests.
+- [x] Manifest discovery and duplicate-table handling parity is covered by automated tests.
+- [x] Manifest validation parity is covered by automated tests.
 - [ ] Caddy lifecycle parity is covered by automated tests.
 - [ ] Caddyfile and route rendering parity is covered by automated tests.
 - [ ] Service ordering, port resolution, health, and cleanup parity is covered by automated tests.
