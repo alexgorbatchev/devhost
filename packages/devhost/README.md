@@ -19,6 +19,19 @@ What it does well:
 npm install -g @alexgorbatchev/devhost
 ```
 
+### Standalone executable
+
+If you are working from this repository and want a current-platform single-file binary instead of a global install:
+
+```bash
+bun run --cwd packages/devhost compile
+./packages/devhost/dist/devhost --help
+```
+
+That build refreshes the embedded injected devtools bundle first, then runs Bun's standalone build with `--minify` so the compiled executable can still serve the browser devtools UI.
+
+Published GitHub Releases also include versioned `.tar.gz` archives for `darwin-arm64`, `linux-x64`, `linux-arm64`, `linux-x64-musl`, and `linux-arm64-musl`.
+
 ### Minimal example
 
 Configure your stack in `devhost.toml`, then run it through `devhost`.
