@@ -24,7 +24,7 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [x] The rewrite was checked against `packages/devhost/src/manifest/` for manifest discovery, parsing, validation, and defaults.
 - [x] The rewrite was checked against `packages/devhost/src/caddy/` for managed Caddy lifecycle and state behavior.
 - [ ] The rewrite was checked against `packages/devhost/src/services/` for orchestration, health, ports, shutdown, and cleanup behavior.
-- [ ] The rewrite was checked against `packages/devhost/src/utils/routeUtils.ts` for route-registration, host-claim, and route-ordering behavior.
+- [x] The rewrite was checked against `packages/devhost/src/utils/routeUtils.ts` for route-registration, host-claim, and route-ordering behavior.
 - [ ] The rewrite was checked against `packages/devhost/src/devtools-server/` for control-server, injection, terminal-session, and annotation-queue behavior.
 - [ ] The rewrite was checked against `packages/devhost/src/agents/` for built-in adapter behavior and OSC integration.
 - [ ] The rewrite was checked against the current test suite to confirm that every behavior presently covered still has equivalent coverage.
@@ -115,19 +115,19 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [x] `caddy privileged-ports` still rejects unsupported non-Linux, non-macOS platforms.
 - [x] Managed Caddy download still supports the current OS and architecture matrix.
 - [x] The current admin-unavailable error message remains unchanged where relied upon by tests or UX.
-- [ ] The current Caddy reload failure message remains unchanged where relied upon by tests or UX.
+- [x] The current Caddy reload failure message remains unchanged where relied upon by tests or UX.
 
 ## Shared State Compatibility
 
-- [ ] Route registration filenames remain compatible with the current `<host>_<serviceName>_<hexEncodedNormalizedPath>.json` convention.
-- [ ] Host claim filenames remain compatible with the current `<host-with-colons-replaced>.json` convention.
-- [ ] Fixed port claim filenames remain compatible with the current `<scope>_<port>.json` convention.
-- [ ] Route registration JSON written by the Go runtime matches the current shape.
-- [ ] Legacy route registration JSON remains readable and cleanable.
-- [ ] Host claim JSON written by the Go runtime matches the current shape.
-- [ ] Fixed port claim JSON written by the Go runtime matches the current shape.
-- [ ] Ownership checks still key off live PID plus manifest path semantics where the current runtime does.
-- [ ] Stale claim cleanup still removes dead-owner files and allows recovery.
+- [x] Route registration filenames remain compatible with the current `<host>_<serviceName>_<hexEncodedNormalizedPath>.json` convention.
+- [x] Host claim filenames remain compatible with the current `<host-with-colons-replaced>.json` convention.
+- [x] Fixed port claim filenames remain compatible with the current `<scope>_<port>.json` convention.
+- [x] Route registration JSON written by the Go runtime matches the current shape.
+- [x] Legacy route registration JSON remains readable and cleanable.
+- [x] Host claim JSON written by the Go runtime matches the current shape.
+- [x] Fixed port claim JSON written by the Go runtime matches the current shape.
+- [x] Ownership checks still key off live PID plus manifest path semantics where the current runtime does.
+- [x] Stale claim cleanup still removes dead-owner files and allows recovery.
 - [ ] Idempotent same-PID same-manifest behavior remains compatible with the current runtime.
 
 ## Managed Caddy Global Merge Rules
@@ -141,7 +141,7 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 
 ## Service Ordering, Ports, And Startup
 
-- [ ] Dependency ordering remains topological and cycle-detecting.
+- [x] Dependency ordering remains topological and cycle-detecting.
 - [ ] Fixed numeric ports are still claimed before any managed service starts.
 - [ ] Routed hosts are still claimed before any managed service starts.
 - [ ] Managed Caddy admin reachability is still verified before service startup begins.
@@ -155,28 +155,28 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 
 ## Health Checks And Auto-Port Behavior
 
-- [ ] `process` health still succeeds immediately when the child has not already exited.
-- [ ] `tcp` health still polls TCP readiness.
-- [ ] `http` health still polls the configured URL.
-- [ ] Default health for a service with a resolved port and no explicit health remains TCP against the resolved bind host and port.
-- [ ] `retries = 0` still means keep polling until timeout.
-- [ ] Positive `retries` values still trigger early failure after consecutive failures.
-- [ ] Auto-port retries still apply only to services that started with `port = "auto"`.
-- [ ] Auto-port retries still happen only on recognized bind-collision failures.
-- [ ] Auto-port retry count remains `3`.
-- [ ] Derived TCP health targets still update when an auto-assigned port changes after retry.
-- [ ] The current loopback bind-host ambiguity warning still appears in the same situations.
+- [x] `process` health still succeeds immediately when the child has not already exited.
+- [x] `tcp` health still polls TCP readiness.
+- [x] `http` health still polls the configured URL.
+- [x] Default health for a service with a resolved port and no explicit health remains TCP against the resolved bind host and port.
+- [x] `retries = 0` still means keep polling until timeout.
+- [x] Positive `retries` values still trigger early failure after consecutive failures.
+- [x] Auto-port retries still apply only to services that started with `port = "auto"`.
+- [x] Auto-port retries still happen only on recognized bind-collision failures.
+- [x] Auto-port retry count remains `3`.
+- [x] Derived TCP health targets still update when an auto-assigned port changes after retry.
+- [x] The current loopback bind-host ambiguity warning still appears in the same situations.
 
 ## Routing Behavior
 
-- [ ] Host route rendering remains compatible with current HTTP and HTTPS site-block behavior.
-- [ ] HTTPS routing still uses internal TLS in the same cases as today.
-- [ ] Optional HTTP routing still appears only in the same cases as today.
-- [ ] Route priority ordering remains compatible with the current base-path length, exact-vs-wildcard, and service-name tie-break semantics.
-- [ ] `/` and `/*` normalization remains compatible with current registration behavior.
-- [ ] One manifest can still mount multiple services under the same host on non-overlapping paths.
-- [ ] Exclusive hostname ownership across projects remains enforced.
-- [ ] Missing root registrations still produce the same root fallback behavior.
+- [x] Host route rendering remains compatible with current HTTP and HTTPS site-block behavior.
+- [x] HTTPS routing still uses internal TLS in the same cases as today.
+- [x] Optional HTTP routing still appears only in the same cases as today.
+- [x] Route priority ordering remains compatible with the current base-path length, exact-vs-wildcard, and service-name tie-break semantics.
+- [x] `/` and `/*` normalization remains compatible with current registration behavior.
+- [x] One manifest can still mount multiple services under the same host on non-overlapping paths.
+- [x] Exclusive hostname ownership across projects remains enforced.
+- [x] Missing root registrations still produce the same root fallback behavior.
 - [x] Fallback not-found site synchronization remains compatible with the current runtime.
 
 ## Logging And Injected Environment
