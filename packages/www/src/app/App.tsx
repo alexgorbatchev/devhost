@@ -322,6 +322,27 @@ export function App(): JSX.Element {
           <h3>Installation</h3>
           <CommandLine command="npm install -g @alexgorbatchev/devhost" />
 
+          <h3>Standalone executable</h3>
+          <p>
+            If you are working from this repository and want a current-platform single-file binary instead of a global
+            install:
+          </p>
+
+          <CommandLine
+            command={`bun run --cwd packages/devhost compile
+./packages/devhost/dist/devhost --help`}
+          />
+
+          <p>
+            That build refreshes the embedded injected devtools bundle first, then runs Bun&apos;s standalone build with
+            <code> --minify</code> so the compiled executable can still serve the browser devtools UI.
+          </p>
+
+          <p>
+            Published GitHub Releases also include versioned <code>.tar.gz</code> archives for the supported
+            darwin-arm64, linux-x64, linux-arm64, linux-x64-musl, and linux-arm64-musl targets.
+          </p>
+
           <h3>Minimal example</h3>
           <p>
             Configure your stack in <code>devhost.toml</code>, then run it through <code>devhost</code>.

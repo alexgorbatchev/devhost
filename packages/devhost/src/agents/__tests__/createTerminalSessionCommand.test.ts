@@ -114,7 +114,8 @@ describe("createTerminalSessionCommand", () => {
     cleanupFunctions.push(terminalSessionCommand.cleanup);
 
     expect(terminalSessionCommand.command[0]).toBe("opencode");
-    expect(terminalSessionCommand.command[1]).toMatch(
+    expect(terminalSessionCommand.command[1]).toBe("run");
+    expect(terminalSessionCommand.command[2]).toMatch(
       /^Please read the annotation details from .*prompt\.txt and address the requested change\.$/,
     );
     expect(terminalSessionCommand.env.OPENCODE_CONFIG).toContain("opencode-config.jsonc");

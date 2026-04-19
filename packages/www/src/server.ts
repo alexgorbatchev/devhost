@@ -13,10 +13,12 @@ import {
 } from "./marketing/capture/createCaptureControlPlane";
 
 const captureDevtoolsScriptPath: string = "/__capture__/devtools.js";
+const captureProjectRootPathname: string = "/__capture__/project-root";
 let cachedCaptureDevtoolsScriptPromise: Promise<string> | null = null;
 const captureControlPlane = createCaptureControlPlane();
 
 const bindHost: string = process.env.DEVHOST_BIND_HOST ?? "127.0.0.1";
+const captureProjectRootPath: string = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const host: string = process.env.DEVHOST_HOST ?? "devhost.localhost";
 const isDevelopmentMode: boolean = process.env.NODE_ENV !== "production";
 const portText: string = process.env.PORT ?? "3200";
@@ -36,8 +38,8 @@ const server = Bun.serve<ICaptureControlWebSocketData>({
       }
     : false,
   routes: {
-    "/__capture__": marketingCaptureHtml,
     "/": indexHtml,
+    "/__capture__": marketingCaptureHtml,
   },
   async fetch(request: Request, bunServer: Bun.Server<ICaptureControlWebSocketData>): Promise<Response | undefined> {
     const requestUrl = new URL(request.url);
@@ -59,6 +61,10 @@ const server = Bun.serve<ICaptureControlWebSocketData>({
 
     if (captureControlResponse !== null) {
       return captureControlResponse;
+    }
+
+    if (requestUrl.pathname === captureProjectRootPathname) {
+      return createMarketingCaptureProjectRootResponse();
     }
 
     const captureDevtoolsScriptResponse = await createCaptureDevtoolsScriptResponse(requestUrl.pathname);
@@ -89,6 +95,15 @@ const server = Bun.serve<ICaptureControlWebSocketData>({
 });
 
 console.log(`Listening on http://${bindHost}:${server.port} for ${host}`);
+
+function createMarketingCaptureProjectRootResponse(): Response {
+  return new Response(captureProjectRootPath, {
+    headers: {
+      "cache-control": "no-store",
+      "content-type": "text/plain; charset=utf-8",
+    },
+  });
+}
 
 async function createCaptureDevtoolsScriptResponse(requestPathname: string): Promise<Response | null> {
   if (requestPathname !== captureDevtoolsScriptPath) {

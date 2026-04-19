@@ -1,5 +1,8 @@
 name = "www"
 
+[agent]
+adapter = "opencode"
+
 [caddy.global]
 bindHost = "0.0.0.0"
 http = true
@@ -25,7 +28,7 @@ command = "bun dev"
 cwd = "."
 port = 3200
 # host = "devhost.localhost"
-host = "devhost-devbox.cvb.lol"
+host = "devhost.test"
 
 [services.logs]
 command = "bun log-demo"
