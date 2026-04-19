@@ -22,7 +22,7 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [x] The rewrite was checked against `packages/devhost/devhost.example.toml` for manifest examples and defaults.
 - [x] The rewrite was checked against `packages/devhost/src/runDevhost.ts` for top-level CLI behavior parity.
 - [x] The rewrite was checked against `packages/devhost/src/manifest/` for manifest discovery, parsing, validation, and defaults.
-- [ ] The rewrite was checked against `packages/devhost/src/caddy/` for managed Caddy lifecycle and state behavior.
+- [x] The rewrite was checked against `packages/devhost/src/caddy/` for managed Caddy lifecycle and state behavior.
 - [ ] The rewrite was checked against `packages/devhost/src/services/` for orchestration, health, ports, shutdown, and cleanup behavior.
 - [ ] The rewrite was checked against `packages/devhost/src/utils/routeUtils.ts` for route-registration, host-claim, and route-ordering behavior.
 - [ ] The rewrite was checked against `packages/devhost/src/devtools-server/` for control-server, injection, terminal-session, and annotation-queue behavior.
@@ -35,9 +35,9 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [ ] `devhost --manifest ./devhost.toml` still starts manifest mode with an explicit manifest path.
 - [x] `devhost --help` still prints help and exits successfully.
 - [x] `devhost -h` still prints help and exits successfully.
-- [ ] `devhost caddy start` still behaves as a managed Caddy lifecycle command.
-- [ ] `devhost caddy stop` still behaves as a managed Caddy lifecycle command.
-- [ ] `devhost caddy trust` still behaves as a managed Caddy lifecycle command.
+- [x] `devhost caddy start` still behaves as a managed Caddy lifecycle command.
+- [x] `devhost caddy stop` still behaves as a managed Caddy lifecycle command.
+- [x] `devhost caddy trust` still behaves as a managed Caddy lifecycle command.
 - [x] `devhost caddy download` still behaves as a managed Caddy lifecycle command.
 - [ ] `devhost caddy privileged-ports` still behaves as a managed Caddy lifecycle command.
 - [ ] `devhost caddy print-root-cert` still prints the managed root certificate.
@@ -100,12 +100,12 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [x] State directory resolution still uses `DEVHOST_STATE_DIR`, else `XDG_STATE_HOME/devhost`, else `~/.local/state/devhost`.
 - [x] Managed Caddy state still lives under `<state>/caddy/`.
 - [x] `Caddyfile`, storage, route registration, host-claim, port-claim, pidfile, and root-cert paths remain compatible with the current runtime.
-- [ ] Managed Caddy configuration is still ensured before lifecycle operations that require it.
-- [ ] `caddy start` still returns success when the managed admin API is already reachable and the managed pidfile proves ownership.
-- [ ] `caddy start` still fails when the managed admin API is reachable but the pidfile does not prove devhost ownership.
-- [ ] `caddy stop` still stops only a devhost-owned managed Caddy instance.
-- [ ] `caddy stop` still cleans stale pidfiles when the server is gone.
-- [ ] `caddy trust` still requires a reachable admin API and managed pidfile.
+- [x] Managed Caddy configuration is still ensured before lifecycle operations that require it.
+- [x] `caddy start` still returns success when the managed admin API is already reachable and the managed pidfile proves ownership.
+- [x] `caddy start` still fails when the managed admin API is reachable but the pidfile does not prove devhost ownership.
+- [x] `caddy stop` still stops only a devhost-owned managed Caddy instance.
+- [x] `caddy stop` still cleans stale pidfiles when the server is gone.
+- [x] `caddy trust` still requires a reachable admin API and managed pidfile.
 - [x] `caddy print-root-cert` still prints only the PEM certificate content needed by callers.
 - [x] `caddy trust-remote` still shells through SSH to `devhost caddy print-root-cert` on the remote side.
 - [x] `caddy trust-remote` still prints the certificate fingerprint before trust installation.
@@ -114,7 +114,7 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [x] `caddy privileged-ports` still uses Linux capability elevation semantics on Linux.
 - [x] `caddy privileged-ports` still rejects unsupported non-Linux, non-macOS platforms.
 - [x] Managed Caddy download still supports the current OS and architecture matrix.
-- [ ] The current admin-unavailable error message remains unchanged where relied upon by tests or UX.
+- [x] The current admin-unavailable error message remains unchanged where relied upon by tests or UX.
 - [ ] The current Caddy reload failure message remains unchanged where relied upon by tests or UX.
 
 ## Shared State Compatibility
@@ -132,12 +132,12 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 
 ## Managed Caddy Global Merge Rules
 
-- [ ] Managed global settings are still recomputed from live registrations rather than one manifest in isolation.
-- [ ] `httpEnabled` is still effectively OR'd across live registrations.
-- [ ] Opted-in non-default `adminAddress` values still must agree across live stacks.
-- [ ] Opted-in non-default `bindHost` values still must agree across live stacks.
-- [ ] Opted-in non-default `httpPort` values still must agree across live stacks.
-- [ ] Opted-in non-default `httpsPort` values still must agree across live stacks.
+- [x] Managed global settings are still recomputed from live registrations rather than one manifest in isolation.
+- [x] `httpEnabled` is still effectively OR'd across live registrations.
+- [x] Opted-in non-default `adminAddress` values still must agree across live stacks.
+- [x] Opted-in non-default `bindHost` values still must agree across live stacks.
+- [x] Opted-in non-default `httpPort` values still must agree across live stacks.
+- [x] Opted-in non-default `httpsPort` values still must agree across live stacks.
 
 ## Service Ordering, Ports, And Startup
 
@@ -177,7 +177,7 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [ ] One manifest can still mount multiple services under the same host on non-overlapping paths.
 - [ ] Exclusive hostname ownership across projects remains enforced.
 - [ ] Missing root registrations still produce the same root fallback behavior.
-- [ ] Fallback not-found site synchronization remains compatible with the current runtime.
+- [x] Fallback not-found site synchronization remains compatible with the current runtime.
 
 ## Logging And Injected Environment
 
