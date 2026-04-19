@@ -346,7 +346,11 @@ async function moveCursorToLocator(page: Page, locator: Locator, pauseMs: number
   await page.waitForTimeout(pauseMs);
 }
 
-async function wiggleCursorAtLocator(page: Page, locator: Locator, durationMs: number = cursorFrameIntervalMs * 2): Promise<void> {
+async function wiggleCursorAtLocator(
+  page: Page,
+  locator: Locator,
+  durationMs: number = cursorFrameIntervalMs * 2,
+): Promise<void> {
   const target = await readLocatorPoint(locator);
 
   const stepCount: number = Math.max(1, Math.floor(durationMs / cursorWigglePauseMs));
