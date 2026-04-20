@@ -1,4 +1,5 @@
 import assert from "node:assert";
+import { createServer } from "node:net";
 
 import { afterEach, describe, expect, test } from "bun:test";
 
@@ -153,7 +154,21 @@ describe("collectManagedServicesHealth", () => {
   });
 
   test("includes a custom HTTPS port in routed service URLs", async () => {
-    const managedServices: IResolvedDevhostService[] = [createService({ name: "web" })];
+    const unusedPort: number = await reserveUnusedPort();
+    const managedServices: IResolvedDevhostService[] = [
+      createService({
+        health: {
+          host: "127.0.0.1",
+          kind: "tcp",
+          interval: 200,
+          timeout: 30000,
+          retries: 0,
+          port: unusedPort,
+        },
+        name: "web",
+        port: unusedPort,
+      }),
+    ];
     const startedServices: IManagedService[] = [
       {
         childProcess: createRunningChildProcess(),
@@ -209,4 +224,35 @@ function createService(overrides: Partial<IResolvedDevhostService>): IResolvedDe
     portSource: "fixed",
     ...overrides,
   };
+}
+
+async function reserveUnusedPort(): Promise<number> {
+  const server = createServer();
+
+  await new Promise<void>((resolve, reject): void => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", (): void => {
+      server.off("error", reject);
+      resolve();
+    });
+  });
+
+  const address = server.address();
+
+  assert(address !== null && typeof address !== "string");
+
+  const resolvedPort: number = address.port;
+
+  await new Promise<void>((resolve, reject): void => {
+    server.close((error?: Error | null): void => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve();
+    });
+  });
+
+  return resolvedPort;
 }

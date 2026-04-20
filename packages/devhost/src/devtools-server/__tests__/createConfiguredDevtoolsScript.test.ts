@@ -18,6 +18,8 @@ describe("createConfiguredDevtoolsScript", () => {
     const expectedInjectedConfigPrefix: string =
       "globalThis.__DEVHOST_INJECTED_CONFIG__={" +
       '"agentDisplayName":"Claude Code",' +
+      '"annotationEnabled":true,' +
+      '"annotationQueueEnabled":true,' +
       '"componentEditor":"cursor",' +
       '"controlToken":"control-token",' +
       '"minimapPosition":"right",' +
@@ -28,6 +30,7 @@ describe("createConfiguredDevtoolsScript", () => {
       '"externalToolbarsEnabled":true,' +
       '"minimapEnabled":true,' +
       '"statusEnabled":true,' +
+      '"terminalEnabled":true,' +
       '"routedServices":[]};\n';
 
     expect(configuredScript).toBe(expectedInjectedConfigPrefix + "console.log('hello');");

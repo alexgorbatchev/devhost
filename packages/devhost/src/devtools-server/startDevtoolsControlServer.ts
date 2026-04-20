@@ -143,6 +143,9 @@ export async function startDevtoolsControlServer(
     options.externalToolbarsEnabled ?? true,
     options.minimapEnabled ?? true,
     options.statusEnabled ?? true,
+    true,
+    true,
+    true,
     options.routedServices ?? [],
   );
   const retainedLogEntries: ServiceLogEntry[] = [];
