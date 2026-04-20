@@ -814,12 +814,21 @@ health = { http = "http://127.0.0.1:4000/healthz" }`}</code>
             captures the nearest available component source location.
           </p>
 
-          <h3>Open source in Neovim</h3>
+          <h3>Open component source</h3>
           <p>
-            The shipped Go runtime currently supports <code>Alt</code> + <code>right-click</code> component-source
-            navigation only when <code>[devtools.editor].ide = "neovim"</code>. In that mode, devhost launches Neovim
-            inside the injected xterm terminal.
+            The shipped Go runtime supports <code>Alt</code> + <code>right-click</code> component-source navigation
+            whenever <code>[devtools.editor].enabled = true</code>.
           </p>
+          <ul className="list-disc ml-6 mb-6">
+            <li className="mb-2">
+              When <code>[devtools.editor].ide = "neovim"</code>, devhost launches Neovim inside the injected xterm
+              terminal.
+            </li>
+            <li className="mb-2">
+              Other supported editors continue to use their direct external-editor URL launch path instead of the
+              embedded terminal.
+            </li>
+          </ul>
 
           <h3>Annotation agents</h3>
           <p>
