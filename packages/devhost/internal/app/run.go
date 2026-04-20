@@ -49,18 +49,30 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			return 1
 		}
 
-		if _, orderError := services.ResolveServiceOrder(validatedManifest); orderError != nil {
+		serviceOrder, orderError := services.ResolveServiceOrder(validatedManifest)
+		if orderError != nil {
 			_, _ = fmt.Fprintf(stderr, "failed: %s\n", orderError.Error())
 			return 1
 		}
 
-		if _, resolveError := services.ResolveServicePorts(validatedManifest); resolveError != nil {
+		resolvedManifest, resolveError := services.ResolveServicePorts(validatedManifest)
+		if resolveError != nil {
 			_, _ = fmt.Fprintf(stderr, "failed: %s\n", resolveError.Error())
 			return 1
 		}
 
-		_, _ = fmt.Fprintln(stderr, "failed: manifest mode is not implemented yet in the Go rewrite.")
-		return 1
+		exitCode, startError := services.StartStack(&resolvedManifest, serviceOrder, services.StartStackOptions{
+			Environment:         readEnvironment(),
+			LogWriter:           stdout,
+			ServiceStdoutWriter: stdout,
+			ServiceStderrWriter: stderr,
+		})
+		if startError != nil {
+			_, _ = fmt.Fprintf(stderr, "failed: %s\n", startError.Error())
+			return 1
+		}
+
+		return exitCode
 	case cli.KindCaddyPrintRootCert:
 		paths, error := caddy.CreateManagedCaddyPathsFromEnvironment(readEnvironment())
 		if error != nil {

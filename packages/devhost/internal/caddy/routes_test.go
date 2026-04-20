@@ -512,6 +512,37 @@ func TestActivateRouteRollbackOnReloadFailure(t *testing.T) {
 	}
 }
 
+func TestActivateRouteSuppressesSuccessfulReloadOutput(t *testing.T) {
+	withRouteMutationTestHooks(t, routeMutationTestHooks{
+		now:       time.Date(2026, time.April, 19, 12, 34, 56, 0, time.UTC),
+		processID: 4321,
+	})
+
+	paths := newManagedCaddyPaths(t)
+	routeMutationRunManagedCaddyCommand = func(paths Paths, arguments []string, options ManagedCaddyCommandOptions) CommandResult {
+		return CommandResult{Stderr: []byte("noisy stderr\n"), Stdout: []byte("noisy stdout\n"), Success: true}
+	}
+	t.Cleanup(func() {
+		routeMutationRunManagedCaddyCommand = func(paths Paths, arguments []string, options ManagedCaddyCommandOptions) CommandResult {
+			return RunManagedCaddyCommand(paths, arguments, options, ManagedCaddyCommandDependencies{})
+		}
+	})
+
+	if error := ActivateRoute(ActivateRouteOptions{
+		AppBindHost: "127.0.0.1",
+		AppPort:     3000,
+		Host:        "quiet.localhost",
+		Path:        "/",
+		ServiceName: "web",
+	}, "/tmp/project/devhost.toml", paths.RoutesDirectoryPath); error != nil {
+		t.Fatalf("ActivateRoute(...) unexpected error = %v", error)
+	}
+
+	if _, error := os.Stat(filepath.Join(paths.RegistrationsDirectoryPath, "quiet.localhost_web_2f.json")); error != nil {
+		t.Fatalf("stat registration error = %v", error)
+	}
+}
+
 func TestUnregisterRoute(t *testing.T) {
 	withRouteMutationTestHooks(t, routeMutationTestHooks{
 		now:       time.Date(2026, time.April, 19, 12, 34, 56, 0, time.UTC),

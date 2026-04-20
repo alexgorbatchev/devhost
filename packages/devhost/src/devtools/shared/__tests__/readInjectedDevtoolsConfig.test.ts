@@ -22,10 +22,13 @@ describe("readInjectedDevtoolsConfig", () => {
       projectRootPath: "",
       routedServices: [],
       stackName: "devhost",
+      annotationEnabled: true,
+      annotationQueueEnabled: true,
       editorEnabled: true,
       externalToolbarsEnabled: true,
       minimapEnabled: true,
       statusEnabled: true,
+      terminalEnabled: true,
     });
   });
 
@@ -50,10 +53,13 @@ describe("readInjectedDevtoolsConfig", () => {
       projectRootPath: "/tmp/project",
       routedServices: [{ host: "app.localhost", path: "/api/*", serviceName: "api" }],
       stackName: "hello-stack",
+      annotationEnabled: true,
+      annotationQueueEnabled: true,
       editorEnabled: true,
       externalToolbarsEnabled: true,
       minimapEnabled: true,
       statusEnabled: true,
+      terminalEnabled: true,
     });
   });
 
@@ -72,10 +78,39 @@ describe("readInjectedDevtoolsConfig", () => {
       projectRootPath: "",
       routedServices: [],
       stackName: "devhost",
+      annotationEnabled: true,
+      annotationQueueEnabled: true,
       editorEnabled: true,
       externalToolbarsEnabled: true,
       minimapEnabled: true,
       statusEnabled: true,
+      terminalEnabled: true,
+    });
+  });
+
+  test("reads capability gates from the injected config", () => {
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
+      annotationEnabled: false,
+      annotationQueueEnabled: false,
+      terminalEnabled: false,
+    });
+
+    expect(readInjectedDevtoolsConfig()).toEqual({
+      agentDisplayName: "Pi",
+      componentEditor: "vscode",
+      controlToken: "",
+      minimapPosition: "right",
+      position: "bottom-right",
+      projectRootPath: "",
+      routedServices: [],
+      stackName: "devhost",
+      annotationEnabled: false,
+      annotationQueueEnabled: false,
+      editorEnabled: true,
+      externalToolbarsEnabled: true,
+      minimapEnabled: true,
+      statusEnabled: true,
+      terminalEnabled: false,
     });
   });
 });

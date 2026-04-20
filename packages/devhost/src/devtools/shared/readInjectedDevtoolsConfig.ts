@@ -17,10 +17,13 @@ export interface IInjectedDevtoolsConfig {
   projectRootPath: string;
   routedServices: IRoutedServiceIdentity[];
   stackName: string;
+  annotationEnabled: boolean;
+  annotationQueueEnabled: boolean;
   editorEnabled: boolean;
   externalToolbarsEnabled: boolean;
   minimapEnabled: boolean;
   statusEnabled: boolean;
+  terminalEnabled: boolean;
 }
 
 const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
@@ -32,10 +35,13 @@ const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
   projectRootPath: "",
   routedServices: [],
   stackName: DEVHOST_SERVICE_NAME,
+  annotationEnabled: true,
+  annotationQueueEnabled: true,
   editorEnabled: true,
   externalToolbarsEnabled: true,
   minimapEnabled: true,
   statusEnabled: true,
+  terminalEnabled: true,
 };
 
 export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
@@ -53,13 +59,18 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
   const projectRootPath: string = readProjectRootPathValue(injectedConfig);
   const routedServices: IRoutedServiceIdentity[] = readRoutedServicesValue(injectedConfig);
   const stackName: string = readStackNameValue(injectedConfig);
+  const annotationEnabled: boolean = readBooleanValue(injectedConfig, "annotationEnabled", true);
+  const annotationQueueEnabled: boolean = readBooleanValue(injectedConfig, "annotationQueueEnabled", true);
   const editorEnabled: boolean = readBooleanValue(injectedConfig, "editorEnabled", true);
   const externalToolbarsEnabled: boolean = readBooleanValue(injectedConfig, "externalToolbarsEnabled", true);
   const minimapEnabled: boolean = readBooleanValue(injectedConfig, "minimapEnabled", true);
   const statusEnabled: boolean = readBooleanValue(injectedConfig, "statusEnabled", true);
+  const terminalEnabled: boolean = readBooleanValue(injectedConfig, "terminalEnabled", true);
 
   return {
     agentDisplayName,
+    annotationEnabled,
+    annotationQueueEnabled,
     componentEditor,
     controlToken,
     minimapPosition,
@@ -71,6 +82,7 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
     externalToolbarsEnabled,
     minimapEnabled,
     statusEnabled,
+    terminalEnabled,
   };
 }
 

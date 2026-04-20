@@ -23,16 +23,16 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [x] The rewrite was checked against `packages/devhost/src/runDevhost.ts` for top-level CLI behavior parity.
 - [x] The rewrite was checked against `packages/devhost/src/manifest/` for manifest discovery, parsing, validation, and defaults.
 - [x] The rewrite was checked against `packages/devhost/src/caddy/` for managed Caddy lifecycle and state behavior.
-- [ ] The rewrite was checked against `packages/devhost/src/services/` for orchestration, health, ports, shutdown, and cleanup behavior.
+- [x] The rewrite was checked against `packages/devhost/src/services/` for orchestration, health, ports, shutdown, and cleanup behavior.
 - [x] The rewrite was checked against `packages/devhost/src/utils/routeUtils.ts` for route-registration, host-claim, and route-ordering behavior.
-- [ ] The rewrite was checked against `packages/devhost/src/devtools-server/` for control-server, injection, terminal-session, and annotation-queue behavior.
-- [ ] The rewrite was checked against `packages/devhost/src/agents/` for built-in adapter behavior and OSC integration.
+- [x] The rewrite was checked against `packages/devhost/src/devtools-server/` for control-server, injection, terminal-session, and annotation-queue behavior.
+- [x] The rewrite was checked against `packages/devhost/src/agents/` for built-in adapter behavior and OSC integration.
 - [ ] The rewrite was checked against the current test suite to confirm that every behavior presently covered still has equivalent coverage.
 
 ## CLI Surface
 
-- [ ] `devhost` with no subcommand still starts manifest mode.
-- [ ] `devhost --manifest ./devhost.toml` still starts manifest mode with an explicit manifest path.
+- [x] `devhost` with no subcommand still starts manifest mode.
+- [x] `devhost --manifest ./devhost.toml` still starts manifest mode with an explicit manifest path.
 - [x] `devhost --help` still prints help and exits successfully.
 - [x] `devhost -h` still prints help and exits successfully.
 - [x] `devhost caddy start` still behaves as a managed Caddy lifecycle command.
@@ -142,16 +142,16 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 ## Service Ordering, Ports, And Startup
 
 - [x] Dependency ordering remains topological and cycle-detecting.
-- [ ] Fixed numeric ports are still claimed before any managed service starts.
-- [ ] Routed hosts are still claimed before any managed service starts.
-- [ ] Managed Caddy admin reachability is still verified before service startup begins.
-- [ ] Services still start in dependency order.
-- [ ] Routes still activate only after the target service is healthy.
-- [ ] The same primary-service URL is logged as today for routed and non-routed primaries.
-- [ ] Any managed child exit still ends the stack unless the current runtime explicitly suppresses that path for restart flow.
-- [ ] Reverse-order shutdown remains intact.
-- [ ] Shutdown still escalates from graceful termination to force kill after the same timeout.
-- [ ] Startup failure cleanup still runs even when startup only partially succeeded.
+- [x] Fixed numeric ports are still claimed before any managed service starts.
+- [x] Routed hosts are still claimed before any managed service starts.
+- [x] Managed Caddy admin reachability is still verified before service startup begins.
+- [x] Services still start in dependency order.
+- [x] Routes still activate only after the target service is healthy.
+- [x] The same primary-service URL is logged as today for routed and non-routed primaries.
+- [x] Any managed child exit still ends the stack unless the current runtime explicitly suppresses that path for restart flow.
+- [x] Reverse-order shutdown remains intact.
+- [x] Shutdown still escalates from graceful termination to force kill after the same timeout.
+- [x] Startup failure cleanup still runs even when startup only partially succeeded.
 
 ## Health Checks And Auto-Port Behavior
 
@@ -181,179 +181,179 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 
 ## Logging And Injected Environment
 
-- [ ] Devhost-owned logs still use the same logger prefix behavior.
-- [ ] Manifest-scoped logs still use the manifest `name` as label.
-- [ ] Pre-manifest logs still fall back to the `devhost` label.
-- [ ] Child process log lines still remain prefixed with `[service-name]`.
-- [ ] Caddy success chatter still remains suppressed.
-- [ ] Caddy output still surfaces on failure paths.
-- [ ] `DEVHOST_BIND_HOST` is still injected for managed services.
-- [ ] `DEVHOST_MANIFEST_PATH` is still injected for managed services.
-- [ ] `DEVHOST_SERVICE_NAME` is still injected for managed services.
-- [ ] `PORT` is still injected only when the service has a resolved port and `injectPort !== false`.
-- [ ] `DEVHOST_HOST` is still injected for routed services.
-- [ ] `DEVHOST_PATH` is still injected only when the service path is present.
-- [ ] `injectPort = false` still suppresses only `PORT` and not the other devhost metadata variables.
+- [x] Devhost-owned logs still use the same logger prefix behavior.
+- [x] Manifest-scoped logs still use the manifest `name` as label.
+- [x] Pre-manifest logs still fall back to the `devhost` label.
+- [x] Child process log lines still remain prefixed with `[service-name]`.
+- [x] Caddy success chatter still remains suppressed.
+- [x] Caddy output still surfaces on failure paths.
+- [x] `DEVHOST_BIND_HOST` is still injected for managed services.
+- [x] `DEVHOST_MANIFEST_PATH` is still injected for managed services.
+- [x] `DEVHOST_SERVICE_NAME` is still injected for managed services.
+- [x] `PORT` is still injected only when the service has a resolved port and `injectPort !== false`.
+- [x] `DEVHOST_HOST` is still injected for routed services.
+- [x] `DEVHOST_PATH` is still injected only when the service path is present.
+- [x] `injectPort = false` still suppresses only `PORT` and not the other devhost metadata variables.
 
 ## Devtools Control Surface
 
-- [ ] The control path prefix remains `/__devhost__`.
-- [ ] `GET /__devhost__/inject.js` still returns the injected script with no-store caching semantics.
-- [ ] `GET /__devhost__/xterm.css` still returns the xterm stylesheet with no-store caching semantics.
-- [ ] `POST /__devhost__/restart-service` still exists and preserves current auth and response semantics.
-- [ ] `GET /__devhost__/terminal-sessions` still exists and preserves current auth and response semantics.
-- [ ] `POST /__devhost__/terminal-sessions` still exists and preserves current auth and response semantics.
-- [ ] `GET /__devhost__/annotation-queues` still exists and preserves current auth and response semantics.
-- [ ] `PATCH /__devhost__/annotation-queues/:entryId` still exists and preserves current auth and response semantics.
-- [ ] `DELETE /__devhost__/annotation-queues/:entryId` still exists and preserves current auth and response semantics.
-- [ ] `POST /__devhost__/annotation-queues/:queueId/resume` still exists and preserves current auth and response semantics.
-- [ ] `GET /__devhost__/ws/health` still exists.
-- [ ] `GET /__devhost__/ws/logs` still exists.
-- [ ] `GET /__devhost__/ws/annotation-queues` still exists.
-- [ ] `GET /__devhost__/ws/terminal` still exists.
-- [ ] Header-based and query-parameter auth rules remain compatible with the current asymmetry across endpoints.
-- [ ] Restart-service remains unsupported in the same cases where the current runtime returns `501`.
+- [x] The control path prefix remains `/__devhost__`.
+- [x] `GET /__devhost__/inject.js` still returns the injected script with no-store caching semantics.
+- [x] `GET /__devhost__/xterm.css` still returns the xterm stylesheet with no-store caching semantics.
+- [x] `POST /__devhost__/restart-service` still exists and preserves current auth and response semantics.
+- [x] `GET /__devhost__/terminal-sessions` still exists and preserves current auth and response semantics.
+- [x] `POST /__devhost__/terminal-sessions` still exists and preserves current auth and response semantics.
+- [x] `GET /__devhost__/annotation-queues` still exists and preserves current auth and response semantics.
+- [x] `PATCH /__devhost__/annotation-queues/:entryId` still exists and preserves current auth and response semantics.
+- [x] `DELETE /__devhost__/annotation-queues/:entryId` still exists and preserves current auth and response semantics.
+- [x] `POST /__devhost__/annotation-queues/:queueId/resume` still exists and preserves current auth and response semantics.
+- [x] `GET /__devhost__/ws/health` still exists.
+- [x] `GET /__devhost__/ws/logs` still exists.
+- [x] `GET /__devhost__/ws/annotation-queues` still exists.
+- [x] `GET /__devhost__/ws/terminal` still exists.
+- [x] Header-based and query-parameter auth rules remain compatible with the current asymmetry across endpoints.
+- [x] Restart-service remains unsupported in the same cases where the current runtime returns `501`.
 
 ## Document Injection
 
-- [ ] Document injection still runs only for routed services mounted at root-compatible paths.
-- [ ] Non-root routed services still proxy directly without document injection.
-- [ ] The document injection server still binds locally on an ephemeral port.
-- [ ] The upstream request still targets the backend bind host and backend port.
-- [ ] The outgoing `Host` header is still removed before proxying upstream.
-- [ ] `x-devhost-injected: true` is still added.
-- [ ] `x-forwarded-host` still preserves the original request host.
-- [ ] `x-forwarded-proto: https` is still added.
-- [ ] Only `text/html` responses are still rewritten.
-- [ ] HTML rewriting still appends `<script type="module" src="/__devhost__/inject.js"></script>` to the document body.
-- [ ] Transformed responses still strip `content-security-policy`.
-- [ ] Transformed responses still strip `content-security-policy-report-only`.
-- [ ] Transformed responses still strip `content-length`.
+- [x] Document injection still runs only for routed services mounted at root-compatible paths.
+- [x] Non-root routed services still proxy directly without document injection.
+- [x] The document injection server still binds locally on an ephemeral port.
+- [x] The upstream request still targets the backend bind host and backend port.
+- [x] The outgoing `Host` header is still removed before proxying upstream.
+- [x] `x-devhost-injected: true` is still added.
+- [x] `x-forwarded-host` still preserves the original request host.
+- [x] `x-forwarded-proto: https` is still added.
+- [x] Only `text/html` responses are still rewritten.
+- [x] HTML rewriting still appends `<script type="module" src="/__devhost__/inject.js"></script>` to the document body.
+- [x] Transformed responses still strip `content-security-policy`.
+- [x] Transformed responses still strip `content-security-policy-report-only`.
+- [x] Transformed responses still strip `content-length`.
 
 ## Devtools Browser Experience
 
-- [ ] The injected UI still mounts in a Shadow DOM host.
-- [ ] Service status remains available in the browser devtools UI.
-- [ ] Log replay remains available in the browser devtools UI.
-- [ ] Annotation composition remains available in the browser devtools UI.
-- [ ] Annotation queue visibility and controls remain available in the browser devtools UI.
-- [ ] Terminal session visibility and controls remain available in the browser devtools UI.
+- [x] The injected UI still mounts in a Shadow DOM host.
+- [x] Service status remains available in the browser devtools UI.
+- [x] Log replay remains available in the browser devtools UI.
+- [x] Annotation composition remains available in the browser devtools UI.
+- [x] Annotation queue visibility and controls remain available in the browser devtools UI.
+- [x] Terminal session visibility and controls remain available in the browser devtools UI.
 - [ ] Component-source navigation remains available in the browser devtools UI.
-- [ ] External devtools launcher aggregation remains available in the browser devtools UI.
-- [ ] When all devtools features are disabled, devtools control routes still stay unmounted.
+- [x] External devtools launcher aggregation remains available in the browser devtools UI.
+- [x] When all devtools features are disabled, devtools control routes still stay unmounted.
 
 ## Health And Log WebSockets
 
-- [ ] Health WebSocket auth behavior remains unchanged.
-- [ ] Logs WebSocket auth behavior remains unchanged.
-- [ ] Annotation-queue WebSocket auth behavior remains unchanged.
-- [ ] Terminal WebSocket auth behavior remains unchanged.
-- [ ] Health WebSocket still sends the latest snapshot immediately when available.
-- [ ] Health WebSocket still suppresses duplicate payloads.
-- [ ] Logs WebSocket still sends a snapshot first.
-- [ ] Logs WebSocket still sends incremental entry events after the snapshot.
-- [ ] Annotation-queue WebSocket still sends snapshot payloads compatible with the current UI contract.
-- [ ] Terminal WebSocket still sends a snapshot first.
-- [ ] Terminal WebSocket still sends output, exit, and error messages compatible with the current UI contract.
+- [x] Health WebSocket auth behavior remains unchanged.
+- [x] Logs WebSocket auth behavior remains unchanged.
+- [x] Annotation-queue WebSocket auth behavior remains unchanged.
+- [x] Terminal WebSocket auth behavior remains unchanged.
+- [x] Health WebSocket still sends the latest snapshot immediately when available.
+- [x] Health WebSocket still suppresses duplicate payloads.
+- [x] Logs WebSocket still sends a snapshot first.
+- [x] Logs WebSocket still sends incremental entry events after the snapshot.
+- [x] Annotation-queue WebSocket still sends snapshot payloads compatible with the current UI contract.
+- [x] Terminal WebSocket still sends a snapshot first.
+- [x] Terminal WebSocket still sends output, exit, and error messages compatible with the current UI contract.
 
 ## Terminal Sessions
 
-- [ ] Terminal sessions remain PTY-backed.
-- [ ] Terminal-session start request shapes remain compatible for both `agent` and `editor` kinds.
-- [ ] The editor launcher set remains compatible with the current runtime.
-- [ ] Terminal-session list response shape remains compatible.
-- [ ] Terminal WebSocket client message shapes remain compatible.
-- [ ] Terminal WebSocket server message shapes remain compatible.
-- [ ] Terminal output replay to late subscribers remains available.
-- [ ] Terminal output retention remains capped compatibly with the current runtime.
-- [ ] Idle session cleanup still occurs after the current no-socket timeout.
-- [ ] Invalid client frames still surface an error message instead of silently corrupting the session.
-- [ ] UI-driven session close still terminates the session immediately.
-- [ ] PTY environment still includes `TERM=xterm-256color`.
-- [ ] PTY environment still includes `COLORTERM=truecolor`.
-- [ ] PTY environment still includes `TERM_PROGRAM=devhost`.
+- [x] Terminal sessions remain PTY-backed.
+- [x] Terminal-session start request shapes remain compatible for both `agent` and `editor` kinds.
+- [x] The editor launcher set remains compatible with the current runtime.
+- [x] Terminal-session list response shape remains compatible.
+- [x] Terminal WebSocket client message shapes remain compatible.
+- [x] Terminal WebSocket server message shapes remain compatible.
+- [x] Terminal output replay to late subscribers remains available.
+- [x] Terminal output retention remains capped compatibly with the current runtime.
+- [x] Idle session cleanup still occurs after the current no-socket timeout.
+- [x] Invalid client frames still surface an error message instead of silently corrupting the session.
+- [x] UI-driven session close still terminates the session immediately.
+- [x] PTY environment still includes `TERM=xterm-256color`.
+- [x] PTY environment still includes `COLORTERM=truecolor`.
+- [x] PTY environment still includes `TERM_PROGRAM=devhost`.
 
 ## Annotation Queues
 
-- [ ] Queue identity remains based on routed service rather than stack-global identity.
-- [ ] Different routed paths on the same host still use different queues.
-- [ ] A new annotation still joins a live target session only when the target session is live and matches the routed-service key.
-- [ ] Queue status values remain `launching`, `working`, and `paused`.
-- [ ] Queue entry states remain `active`, `paused-active`, and `queued`.
-- [ ] UI pause reasons remain `session-exited-before-finished` and `user-terminated`.
-- [ ] Persisted pause reasons remain compatible with the current runtime.
-- [ ] Persisted queue file naming remains compatible with sanitized stack name plus manifest-path hash behavior.
-- [ ] Persisted queue file contents remain compatible with the current versioned JSON format.
-- [ ] Queue persistence still uses durable write semantics compatible with the current runtime.
-- [ ] Empty runtime queue state still removes the persisted queue file.
-- [ ] Corrupt queue files are still renamed aside and reset to empty state.
-- [ ] Blank comment edits still fail.
-- [ ] Active queue entries still cannot be edited.
-- [ ] Active queue entries still cannot be deleted.
-- [ ] Queue resume still works only from paused state.
-- [ ] `shutdown` pause state still auto-resumes on next startup.
-- [ ] `user-terminated` pause state still does not auto-resume on next startup.
-- [ ] Queue draining on `finished` OSC status remains FIFO-compatible with the current runtime.
-- [ ] Queue status transitions on `working` OSC status remain compatible with the current runtime.
+- [x] Queue identity remains based on routed service rather than stack-global identity.
+- [x] Different routed paths on the same host still use different queues.
+- [x] A new annotation still joins a live target session only when the target session is live and matches the routed-service key.
+- [x] Queue status values remain `launching`, `working`, and `paused`.
+- [x] Queue entry states remain `active`, `paused-active`, and `queued`.
+- [x] UI pause reasons remain `session-exited-before-finished` and `user-terminated`.
+- [x] Persisted pause reasons remain compatible with the current runtime.
+- [x] Persisted queue file naming remains compatible with sanitized stack name plus manifest-path hash behavior.
+- [x] Persisted queue file contents remain compatible with the current versioned JSON format.
+- [x] Queue persistence still uses durable write semantics compatible with the current runtime.
+- [x] Empty runtime queue state still removes the persisted queue file.
+- [x] Corrupt queue files are still renamed aside and reset to empty state.
+- [x] Blank comment edits still fail.
+- [x] Active queue entries still cannot be edited.
+- [x] Active queue entries still cannot be deleted.
+- [x] Queue resume still works only from paused state.
+- [x] `shutdown` pause state still auto-resumes on next startup.
+- [x] `user-terminated` pause state still does not auto-resume on next startup.
+- [x] Queue draining on `finished` OSC status remains FIFO-compatible with the current runtime.
+- [x] Queue status transitions on `working` OSC status remain compatible with the current runtime.
 
 ## Agents And OSC Status
 
-- [ ] Built-in Pi adapter behavior remains compatible with the current user-visible workflow.
-- [ ] Built-in Claude Code adapter behavior remains compatible with the current user-visible workflow.
-- [ ] Built-in OpenCode adapter behavior remains compatible with the current user-visible workflow.
-- [ ] Custom agent command behavior remains compatible with the current file-based prompt transport contract.
-- [ ] Per-session agent temp files remain sufficient to support the current adapter set.
-- [ ] `DEVHOST_AGENT_ANNOTATION_FILE` remains available where expected.
-- [ ] `DEVHOST_AGENT_DISPLAY_NAME` remains available where expected.
-- [ ] `DEVHOST_AGENT_PROMPT_FILE` remains available where expected.
-- [ ] `DEVHOST_AGENT_TRANSPORT=files` remains available where expected.
-- [ ] `DEVHOST_PROJECT_ROOT` remains available where expected.
-- [ ] `DEVHOST_STACK_NAME` remains available where expected.
-- [ ] `DEVHOST_AGENT_CLAUDE_SETTINGS_FILE` remains available where expected.
-- [ ] `DEVHOST_AGENT_OPENCODE_CONFIG_FILE` remains available where expected.
-- [ ] OSC parsing still recognizes `working` status.
-- [ ] OSC parsing still recognizes `finished` status.
-- [ ] OSC parsing still supports BEL terminators.
-- [ ] OSC parsing still supports ST terminators.
-- [ ] OSC parsing still handles split chunks without losing status transitions.
+- [x] Built-in Pi adapter behavior remains compatible with the current user-visible workflow.
+- [x] Built-in Claude Code adapter behavior remains compatible with the current user-visible workflow.
+- [x] Built-in OpenCode adapter behavior remains compatible with the current user-visible workflow.
+- [x] Custom agent command behavior remains compatible with the current file-based prompt transport contract.
+- [x] Per-session agent temp files remain sufficient to support the current adapter set.
+- [x] `DEVHOST_AGENT_ANNOTATION_FILE` remains available where expected.
+- [x] `DEVHOST_AGENT_DISPLAY_NAME` remains available where expected.
+- [x] `DEVHOST_AGENT_PROMPT_FILE` remains available where expected.
+- [x] `DEVHOST_AGENT_TRANSPORT=files` remains available where expected.
+- [x] `DEVHOST_PROJECT_ROOT` remains available where expected.
+- [x] `DEVHOST_STACK_NAME` remains available where expected.
+- [x] `DEVHOST_AGENT_CLAUDE_SETTINGS_FILE` remains available where expected.
+- [x] `DEVHOST_AGENT_OPENCODE_CONFIG_FILE` remains available where expected.
+- [x] OSC parsing still recognizes `working` status.
+- [x] OSC parsing still recognizes `finished` status.
+- [x] OSC parsing still supports BEL terminators.
+- [x] OSC parsing still supports ST terminators.
+- [x] OSC parsing still handles split chunks without losing status transitions.
 
 ## Cross-Platform Behavior
 
-- [ ] macOS behavior remains compatible for managed Caddy trust flows.
-- [ ] macOS behavior remains compatible for privileged port setup behavior.
-- [ ] macOS behavior remains compatible for managed Caddy bind-directive behavior.
-- [ ] Linux behavior remains compatible for privileged port setup behavior.
-- [ ] Windows behavior remains compatible for managed Caddy binary naming and download behavior.
+- [x] macOS behavior remains compatible for managed Caddy trust flows.
+- [x] macOS behavior remains compatible for privileged port setup behavior.
+- [x] macOS behavior remains compatible for managed Caddy bind-directive behavior.
+- [x] Linux behavior remains compatible for privileged port setup behavior.
+- [x] Windows behavior remains compatible for managed Caddy binary naming and download behavior.
 - [ ] Platform-specific path handling and temp-file behavior remain compatible with the current user-visible workflows.
 
 ## Cleanup And Recovery
 
 - [ ] Signal handlers still unregister cleanly during shutdown.
-- [ ] Started services still stop in reverse order.
-- [ ] Document injection servers still stop during cleanup.
-- [ ] Devtools control server still stops during cleanup.
-- [ ] Active routes still unregister during cleanup.
-- [ ] Host claims still release during cleanup.
-- [ ] Fixed port claims still release during cleanup.
-- [ ] Recovery from stale route registrations still works.
-- [ ] Recovery from stale host claims still works.
-- [ ] Recovery from stale fixed port claims still works.
+- [x] Started services still stop in reverse order.
+- [x] Document injection servers still stop during cleanup.
+- [x] Devtools control server still stops during cleanup.
+- [x] Active routes still unregister during cleanup.
+- [x] Host claims still release during cleanup.
+- [x] Fixed port claims still release during cleanup.
+- [x] Recovery from stale route registrations still works.
+- [x] Recovery from stale host claims still works.
+- [x] Recovery from stale fixed port claims still works.
 
 ## Test And Validation Coverage
 
 - [x] CLI parsing parity is covered by automated tests.
 - [x] Manifest discovery and duplicate-table handling parity is covered by automated tests.
 - [x] Manifest validation parity is covered by automated tests.
-- [ ] Caddy lifecycle parity is covered by automated tests.
-- [ ] Caddyfile and route rendering parity is covered by automated tests.
-- [ ] Service ordering, port resolution, health, and cleanup parity is covered by automated tests.
-- [ ] Shared-state compatibility and stale-file cleanup parity is covered by automated tests.
-- [ ] Devtools control-server API parity is covered by automated tests.
-- [ ] Document injection parity is covered by automated tests.
-- [ ] Terminal-session parity is covered by automated tests.
-- [ ] Annotation-queue parity is covered by automated tests.
-- [ ] OSC parsing parity is covered by automated tests.
-- [ ] Browser-facing devtools behavior parity is covered by browser-based tests where the current repo relies on browser behavior.
+- [x] Caddy lifecycle parity is covered by automated tests.
+- [x] Caddyfile and route rendering parity is covered by automated tests.
+- [x] Service ordering, port resolution, health, and cleanup parity is covered by automated tests.
+- [x] Shared-state compatibility and stale-file cleanup parity is covered by automated tests.
+- [x] Devtools control-server API parity is covered by automated tests.
+- [x] Document injection parity is covered by automated tests.
+- [x] Terminal-session parity is covered by automated tests.
+- [x] Annotation-queue parity is covered by automated tests.
+- [x] OSC parsing parity is covered by automated tests.
+- [x] Browser-facing devtools behavior parity is covered by browser-based tests where the current repo relies on browser behavior.
 - [ ] Manual validation was performed for at least one real stack that exercises routing, health gating, devtools injection, terminal sessions, and annotation queues.
 
 ## Documentation, CI, And Release Readiness

@@ -2,6 +2,7 @@ package app
 
 import (
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -32,20 +33,14 @@ func TestRunHelpShortCircuitsInvalidArguments(t *testing.T) {
 }
 
 func TestRunExplicitManifestBypassesUpwardDiscovery(t *testing.T) {
-	t.Parallel()
+	stateDirectoryPath := t.TempDir()
+	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
+
+	adminAddress, stopAdminServer := startTestAdminServer(t)
+	defer stopAdminServer()
 
 	manifestDirectoryPath := t.TempDir()
-	manifestPath := filepath.Join(manifestDirectoryPath, "devhost.toml")
-	manifestText := strings.Join([]string{
-		`name = "hello-stack"`,
-		"",
-		"[services.web]",
-		`command = "bun run dev"`,
-		"port = 3000",
-	}, "\n")
-	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
-	}
+	manifestPath := writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath, adminAddress)
 
 	cwd := filepath.Join(t.TempDir(), "nested", "workspace")
 	if error := os.MkdirAll(cwd, 0o755); error != nil {
@@ -57,17 +52,70 @@ func TestRunExplicitManifestBypassesUpwardDiscovery(t *testing.T) {
 
 	exitCode := Run([]string{"--manifest", manifestPath}, cwd, &stdout, &stderr)
 
-	if exitCode != 1 {
-		t.Fatalf("Run(...) exit code = %d, want 1", exitCode)
+	if exitCode != 0 {
+		t.Fatalf("Run(...) exit code = %d, want 0 with stderr %q", exitCode, stderr.String())
 	}
 
 	if stdout.String() != "" {
 		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
 	}
 
-	wantStderr := "failed: manifest mode is not implemented yet in the Go rewrite.\n"
-	if stderr.String() != wantStderr {
-		t.Fatalf("Run(...) stderr = %q, want %q", stderr.String(), wantStderr)
+	if stderr.String() != "" {
+		t.Fatalf("Run(...) stderr = %q, want empty", stderr.String())
+	}
+}
+
+func TestRunManifestModeStartsStackWhenDevtoolsDisabled(t *testing.T) {
+	stateDirectoryPath := t.TempDir()
+	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
+
+	adminAddress, stopAdminServer := startTestAdminServer(t)
+	defer stopAdminServer()
+
+	manifestDirectoryPath := t.TempDir()
+	manifestPath := writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath, adminAddress)
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	exitCode := Run([]string{"--manifest", manifestPath}, manifestDirectoryPath, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("Run(...) exit code = %d, want 0 with stderr %q", exitCode, stderr.String())
+	}
+
+	if stdout.String() != "" {
+		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
+	}
+
+	if stderr.String() != "" {
+		t.Fatalf("Run(...) stderr = %q, want empty", stderr.String())
+	}
+}
+
+func TestRunManifestModeStartsStackWithoutExplicitManifestPath(t *testing.T) {
+	stateDirectoryPath := t.TempDir()
+	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
+
+	adminAddress, stopAdminServer := startTestAdminServer(t)
+	defer stopAdminServer()
+
+	manifestDirectoryPath := t.TempDir()
+	_ = writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath, adminAddress)
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	exitCode := Run([]string{}, manifestDirectoryPath, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("Run(...) exit code = %d, want 0 with stderr %q", exitCode, stderr.String())
+	}
+
+	if stdout.String() != "" {
+		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
+	}
+
+	if stderr.String() != "" {
+		t.Fatalf("Run(...) stderr = %q, want empty", stderr.String())
 	}
 }
 
@@ -238,6 +286,41 @@ func writeManifestWithAdminAddress(t *testing.T, directoryPath string, adminAddr
 	return manifestPath
 }
 
+func writeDevtoolsDisabledProcessManifest(t *testing.T, directoryPath string, adminAddress string) string {
+	t.Helper()
+
+	manifestPath := filepath.Join(directoryPath, "devhost.toml")
+	manifestText := strings.Join([]string{
+		`name = "hello-stack"`,
+		"",
+		"[caddy.global]",
+		`adminAddress = "` + adminAddress + `"`,
+		"",
+		"[devtools.editor]",
+		"enabled = false",
+		"",
+		"[devtools.externalToolbars]",
+		"enabled = false",
+		"",
+		"[devtools.minimap]",
+		"enabled = false",
+		"",
+		"[devtools.status]",
+		"enabled = false",
+		"",
+		"[services.worker]",
+		`command = "/bin/sh -c exit 0"`,
+		"",
+		"[services.worker.health]",
+		"process = true",
+	}, "\n")
+	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
+		t.Fatalf("WriteFile(...) error = %v", error)
+	}
+
+	return manifestPath
+}
+
 func reserveUnusedAdminAddress(t *testing.T) string {
 	t.Helper()
 	listener, error := net.Listen("tcp", "127.0.0.1:0")
@@ -250,4 +333,26 @@ func reserveUnusedAdminAddress(t *testing.T) string {
 	}
 
 	return address
+}
+
+func startTestAdminServer(t *testing.T) (string, func()) {
+	t.Helper()
+
+	listener, error := net.Listen("tcp", "127.0.0.1:0")
+	if error != nil {
+		t.Fatalf("Listen(...) error = %v", error)
+	}
+
+	server := &http.Server{Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.WriteHeader(http.StatusOK)
+		_, _ = writer.Write([]byte("{}"))
+	})}
+	go func() {
+		_ = server.Serve(listener)
+	}()
+
+	return listener.Addr().String(), func() {
+		_ = server.Close()
+		_ = listener.Close()
+	}
 }
