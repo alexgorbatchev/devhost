@@ -4,9 +4,6 @@
   "description": "devhost is a CLI utility for local development that lets you open your local apps on HTTPS domains instead of raw localhost:port URLs, and can inject useful devtools directly into routed pages.",
   "type": "module",
   "private": false,
-  "bin": {
-    "devhost": "./bin/devhost.ts"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/alexgorbatchev/devhost.git"
@@ -14,9 +11,6 @@
   "homepage": "https://github.com/alexgorbatchev/devhost#readme",
   "author": "Alex Gorbatchev",
   "license": "MIT",
-  "publishConfig": {
-    "access": "public"
-  },
   "files": [
     "bin",
     "src",
@@ -28,8 +22,8 @@
     "build:devtools-bundle": "bun run ./scripts/buildDevtoolsBundle.ts",
     "build:release-artifacts": "bun run ./scripts/buildReleaseArtifacts.ts",
     "check": "./scripts/check.sh",
-    "compile": "bun run build:devtools-bundle && bun build --compile --minify ./bin/devhost.ts --outfile ./dist/devhost",
-    "dev": "bun run src/main.ts",
+    "compile": "mkdir -p ./dist && bun run build:devtools-bundle && go build -trimpath -o ./dist/devhost ./cmd/devhost",
+    "dev": "go run ./cmd/devhost",
     "fmt": "bun --bun oxfmt --write .",
     "storybook": "storybook dev --ci --port 6006"
   },

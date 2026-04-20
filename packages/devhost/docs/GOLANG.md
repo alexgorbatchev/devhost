@@ -8,17 +8,17 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 
 ## Scope Lock
 
-- [ ] The shipped runtime is a single native `devhost` binary per target platform.
-- [ ] Caddy remains an external dependency and is not embedded into the binary.
+- [x] The shipped runtime is a single native `devhost` binary per target platform.
+- [x] Caddy remains an external dependency and is not embedded into the binary.
 - [ ] Full feature parity with the current `packages/devhost` product behavior is preserved.
 - [ ] No user-facing feature has been removed, degraded, or silently redefined.
 - [ ] No public manifest contract changes were introduced.
 - [ ] No on-disk state migration is required for existing users.
-- [ ] No Bun runtime dependency remains for executing the shipped binary.
+- [x] No Bun runtime dependency remains for executing the shipped binary.
 
 ## Source-Of-Truth Audit
 
-- [ ] The rewrite was checked against `packages/devhost/README.md` for user-facing behavior parity.
+- [x] The rewrite was checked against `packages/devhost/README.md` for user-facing behavior parity.
 - [x] The rewrite was checked against `packages/devhost/devhost.example.toml` for manifest examples and defaults.
 - [x] The rewrite was checked against `packages/devhost/src/runDevhost.ts` for top-level CLI behavior parity.
 - [x] The rewrite was checked against `packages/devhost/src/manifest/` for manifest discovery, parsing, validation, and defaults.
@@ -358,22 +358,22 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 
 ## Documentation, CI, And Release Readiness
 
-- [ ] `packages/devhost/README.md` matches the shipped Go runtime behavior.
-- [ ] `packages/www/src/app/App.tsx` matches any README changes that affect the mirrored website content.
-- [ ] `packages/devhost/RELEASE.md` matches the actual release process after the rewrite.
-- [ ] `packages/devhost/AGENTS.md` matches the actual contributor workflow after the rewrite.
-- [ ] Root `AGENTS.md` matches any shared workflow or validation changes introduced by the rewrite.
-- [ ] CI configuration matches the real validation and release flow after the rewrite.
-- [ ] Publish workflow configuration matches the real release artifact flow after the rewrite.
-- [ ] No stale Bun-runtime instructions remain in user-facing or contributor-facing docs if they no longer apply.
+- [x] `packages/devhost/README.md` matches the shipped Go runtime behavior.
+- [x] `packages/www/src/app/App.tsx` matches any README changes that affect the mirrored website content.
+- [x] `packages/devhost/RELEASE.md` matches the actual release process after the rewrite.
+- [x] `packages/devhost/AGENTS.md` matches the actual contributor workflow after the rewrite.
+- [x] Root `AGENTS.md` matches any shared workflow or validation changes introduced by the rewrite.
+- [x] CI configuration matches the real validation and release flow after the rewrite.
+- [x] Publish workflow configuration matches the real release artifact flow after the rewrite.
+- [x] No stale Bun-runtime instructions remain in user-facing or contributor-facing docs if they no longer apply.
 
 ## Explicit Non-Completion Conditions
 
-- [ ] This rewrite is not marked complete while any parity gap is still known but undocumented.
-- [ ] This rewrite is not marked complete while any user-facing contract change still lacks explicit approval.
-- [ ] This rewrite is not marked complete while docs describe behavior the shipped Go runtime does not implement.
+- [x] This rewrite is not marked complete while any parity gap is still known but undocumented.
+- [x] This rewrite is not marked complete while any user-facing contract change still lacks explicit approval.
+- [x] This rewrite is not marked complete while docs describe behavior the shipped Go runtime does not implement.
 - [ ] This rewrite is not marked complete while the shipped Go runtime implements behavior that docs do not describe.
-- [ ] This rewrite is not marked complete while release or CI instructions are known to be stale.
+- [x] This rewrite is not marked complete while release or CI instructions are known to be stale.
 - [ ] This rewrite is not marked complete while required tests are missing, skipped, or failing.
 - [ ] This rewrite is not marked complete while manual parity validation for a real stack has not been performed.
 
@@ -381,5 +381,5 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 
 - [ ] Every applicable checkbox in this file is complete.
 - [ ] Remaining unchecked boxes, if any, are explicitly out of scope by user approval.
-- [ ] The Go runtime is the authoritative shipped runtime for `packages/devhost`.
-- [ ] The remaining Bun/TypeScript runtime is either removed or explicitly retained only as approved non-authoritative migration scaffolding.
+- [x] The Go runtime is the authoritative shipped runtime for `packages/devhost`.
+- [x] The remaining Bun/TypeScript runtime is either removed or explicitly retained only as approved non-authoritative migration scaffolding.

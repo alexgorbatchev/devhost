@@ -43,6 +43,7 @@ import { readMarketingRecordingScenario, type MarketingRecordingScenarioId } fro
 type CaptureChannel = "annotation-queues" | "health" | "logs" | "terminal";
 type CaptureControlMessage = string | Buffer | ArrayBuffer | Uint8Array;
 type CaptureSessionEntry = [string, ICaptureTerminalSessionState];
+type CleanupCallback = () => void;
 type TimerCallback = () => void;
 
 interface ILogLine {
@@ -71,8 +72,8 @@ interface ICaptureScenarioState {
 
 interface ICaptureTerminalSessionState {
   cleanupReleased: boolean;
-  cleanup: () => void;
-  close: () => void;
+  cleanup: CleanupCallback;
+  close: CleanupCallback;
   decoder: TextDecoder;
   exited: ICaptureTerminalSessionExit | null;
   isLive: boolean;
@@ -880,7 +881,7 @@ function finalizeLiveTerminalSession(
   session: ICaptureTerminalSessionState,
   exitCode: number,
   signalCode: string | null,
-  cleanup: () => void,
+  cleanup: CleanupCallback,
 ): void {
   const trailingOutput: string = session.decoder.decode();
 
@@ -995,7 +996,7 @@ function removeTerminalSession(scenarioState: ICaptureScenarioState, sessionId: 
   }
 }
 
-function releaseTerminalSessionCleanup(session: ICaptureTerminalSessionState, cleanup: () => void): void {
+function releaseTerminalSessionCleanup(session: ICaptureTerminalSessionState, cleanup: CleanupCallback): void {
   if (session.cleanupReleased) {
     return;
   }

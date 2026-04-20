@@ -229,10 +229,10 @@ function createService(overrides: Partial<IResolvedDevhostService>): IResolvedDe
 async function reserveUnusedPort(): Promise<number> {
   const server = createServer();
 
-  await new Promise<void>((resolve, reject): void => {
-    server.once("error", reject);
+  await new Promise<void>((resolve, _reject): void => {
+    server.once("error", _reject);
     server.listen(0, "127.0.0.1", (): void => {
-      server.off("error", reject);
+      server.off("error", _reject);
       resolve();
     });
   });
@@ -245,11 +245,7 @@ async function reserveUnusedPort(): Promise<number> {
 
   await new Promise<void>((resolve, reject): void => {
     server.close((error?: Error | null): void => {
-      if (error) {
-        reject(error);
-        return;
-      }
-
+      assert(error === null || error === undefined);
       resolve();
     });
   });

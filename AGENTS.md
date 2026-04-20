@@ -10,9 +10,9 @@ Monorepo root for the published `devhost` package and the local demo app.
 - Apply repo-wide formatting fixes: `bun run fix`
 - Check `devhost` package-only validations: `bun run --cwd packages/devhost check`
 - Build `devhost` release tarballs: `bun run --cwd packages/devhost build:release-artifacts`
+- Build the current-platform `devhost` binary: `bun run --cwd packages/devhost compile`
 - Check demo app package-only validations: `bun run --cwd packages/www check`
 - Deploy demo app to Railway: `bun run deploy:www`
-- Run `devhost` help: `bun run --cwd packages/devhost dev --help`
 - Run demo app: `bun run dev`
 
 ## Documentation policy
@@ -32,7 +32,7 @@ Monorepo root for the published `devhost` package and the local demo app.
 - Root `package.json` owns the shared TypeScript AI policy tooling and the shared `oxfmt` / `oxlint` configs. Keep workspace-local copies out unless the workspaces genuinely diverge.
 - Root `bun run check` runs shared `oxfmt` / `oxlint` enforcement first, then delegates to package-specific checks.
 - Workspace `check` scripts are package-local validation only; do not duplicate shared lint/format enforcement there unless a workspace intentionally diverges.
-- `packages/devhost` `bun run check` runs the package TypeScript check, `bun test --coverage`, and `bun vitest run -c vitest.storybook.config.ts`.
+- `packages/devhost` `bun run check` runs `go vet ./...`, `go test ./...`, the package TypeScript check, `bun test --coverage`, and `bun vitest run -c vitest.storybook.config.ts`.
 - `packages/www` `bun run check` runs the package TypeScript check and `bun vitest run -c vitest.storybook.config.ts`.
 - `bun run --cwd packages/devhost storybook` and `bun run --cwd packages/www storybook` start interactive Storybook dev servers for manual inspection; they do not replace the automated coverage already included in each workspace `check` script.
 - Root `postinstall` runs `bun run install-browser`, which uses `playwright install chromium` without `--force` so existing Chromium binaries are reused instead of being re-downloaded on every `bun install`.
@@ -41,7 +41,7 @@ Monorepo root for the published `devhost` package and the local demo app.
 ## Shipping
 
 - Demo app deploy entrypoint: `bun run deploy:www`. `packages/www/DEPLOY.md` is the authoritative Railway procedure.
-- CLI release entrypoint: push a tag like `v0.0.2`. `packages/devhost/RELEASE.md` and `.github/workflows/publish.yml` are the authoritative npm plus GitHub Release binary procedure.
+- CLI release entrypoint: push a tag like `v0.0.2`. `packages/devhost/RELEASE.md` and `.github/workflows/publish.yml` are the authoritative GitHub Release binary procedure.
 
 ## Shared boundaries
 
@@ -53,7 +53,7 @@ Monorepo root for the published `devhost` package and the local demo app.
 - Never: Agents should NEVER run `bun run fix` or formatting tools directly. Formatting is handled automatically in the background via a pre-commit hook using nano-staged.
 - Ask first: adding a new workspace, changing cross-workspace dependency topology, or changing the publish/release flow.
 - Never: disable lint rules unless the user explicitly authorizes it.
-- Never: publish or pack from the repo root; publish only from `packages/devhost/`.
+- Never: build or release `devhost` from the repo root using ad-hoc Go commands; use the documented `packages/devhost` scripts and runbook.
 - Never: start the demo dev server proactively; the user will start it when needed.
 - Testing exception: agents may start the demo dev server temporarily for validation, but must shut it down before the end of the turn.
 

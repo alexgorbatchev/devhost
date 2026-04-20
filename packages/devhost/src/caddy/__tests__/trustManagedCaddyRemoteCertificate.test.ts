@@ -10,6 +10,11 @@ import {
 } from "../trustManagedCaddyRemoteCertificate";
 import type { ICaddyCommandResult } from "../runManagedCaddyCommand";
 
+type CommandCall = {
+  arguments_: string[];
+  stdioMode: string | undefined;
+};
+
 const successfulCommandResult: ICaddyCommandResult = {
   stderr: new Uint8Array(),
   stdout: new Uint8Array(),
@@ -69,9 +74,7 @@ describe("trustManagedCaddyRemoteCertificate", () => {
     await expect(
       trustManagedCaddyRemoteCertificate("devbox", logger, {
         createTemporaryCertificateFile: async (): Promise<string> => "/tmp/devhost-remote-root.crt",
-        installTrustedCertificate: async (): Promise<void> => {
-          throw new Error("install failed");
-        },
+        installTrustedCertificate: async (): Promise<void> => Promise.reject(new Error("install failed")),
         platform: "darwin",
         readRemoteRootCertificate: async (): Promise<Uint8Array> => new TextEncoder().encode("cert"),
         removeTemporaryCertificateFile: async (certificatePath: string): Promise<void> => {
@@ -132,7 +135,7 @@ describe("readRemoteManagedCaddyRootCertificate", () => {
 
 describe("installTrustedMacOsCertificate", () => {
   test("uses sudo when the current process is not root", async () => {
-    const commandCalls: Array<{ arguments_: string[]; stdioMode: string | undefined }> = [];
+    const commandCalls: CommandCall[] = [];
 
     await expect(
       installTrustedMacOsCertificate("/tmp/root.crt", {

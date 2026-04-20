@@ -311,8 +311,8 @@ export function App(): JSX.Element {
                 <h3 className="font-semibold text-lg !mt-0 !mb-0">Injected Devtools</h3>
               </div>
               <p className="text-sm text-muted-foreground !mb-0">
-                Optionally injects browser devtools for logs, service status, AI annotations, source jumping, Neovim,
-                and aggregated third-party launcher buttons.
+                Optionally injects browser devtools for logs, service status, AI annotations, browser-hosted Neovim, and
+                aggregated third-party launcher buttons.
               </p>
             </div>
           </div>
@@ -320,12 +320,14 @@ export function App(): JSX.Element {
           <h2 id="quick-start">Quick start</h2>
 
           <h3>Installation</h3>
-          <CommandLine command="npm install -g @alexgorbatchev/devhost" />
-
-          <h3>Standalone executable</h3>
+          <p>Download the archive for your platform from the GitHub Releases page.</p>
           <p>
-            If you are working from this repository and want a current-platform single-file binary instead of a global
-            install:
+            Extract it and place <code>devhost</code> on your <code>PATH</code>.
+          </p>
+
+          <h3>Build from source</h3>
+          <p>
+            If you are working from this repository and want a current-platform binary instead of a release download:
           </p>
 
           <CommandLine
@@ -334,8 +336,9 @@ export function App(): JSX.Element {
           />
 
           <p>
-            That build refreshes the embedded injected devtools bundle first, then runs Bun&apos;s standalone build with
-            <code> --minify</code> so the compiled executable can still serve the browser devtools UI.
+            That build refreshes the embedded injected devtools bundle with Bun, then compiles the Go CLI to{" "}
+            <code>./packages/devhost/dist/devhost</code>. Bun is only needed for source builds inside this repository;
+            the shipped <code>devhost</code> binary does not require Bun.
           </p>
 
           <p>
@@ -428,15 +431,13 @@ $ open https://foo.localhost`}
               allocates <code>port = "auto"</code> best-effort and retries on clear bind-collision startup failures
             </li>
             <li className="mb-2">
-              optionally injects a devtools UI for annotations, source navigation, and browser-hosted Neovim
+              optionally injects a devtools UI for annotations, browser-hosted Neovim sessions, and aggregated
+              third-party devtools launchers
             </li>
           </ul>
 
           <h2>Requirements</h2>
           <ul className="list-disc ml-6 mb-6">
-            <li className="mb-2">
-              <code>bun</code>
-            </li>
             <li className="mb-2">
               either:
               <ul className="list-disc ml-6 mt-2 mb-2">
@@ -813,11 +814,11 @@ health = { http = "http://127.0.0.1:4000/healthz" }`}</code>
             captures the nearest available component source location.
           </p>
 
-          <h3>Open source in IDE</h3>
+          <h3>Open source in Neovim</h3>
           <p>
-            <code>Alt</code> + <code>right-click</code> component-source navigation uses the configured{" "}
-            <code>[devtools.editor].ide</code> value. When <code>[devtools.editor].ide = "neovim"</code>, devhost
-            launches Neovim inside the injected xterm terminal.
+            The shipped Go runtime currently supports <code>Alt</code> + <code>right-click</code> component-source
+            navigation only when <code>[devtools.editor].ide = "neovim"</code>. In that mode, devhost launches Neovim
+            inside the injected xterm terminal.
           </p>
 
           <h3>Annotation agents</h3>

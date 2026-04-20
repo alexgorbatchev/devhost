@@ -21,6 +21,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: packages/devhost/go.mod
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -30,7 +35,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Install Playwright Browsers
-        run: bun run --cwd packages/devhost storybook:install-browser
+        run: bun run install-browser
 
       - name: Run checks
         run: bun run check

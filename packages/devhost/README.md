@@ -9,26 +9,24 @@ What it does well:
 - routes local services onto HTTPS hostnames through managed Caddy
 - starts one service or a full stack from `devhost.toml`
 - waits for health checks before exposing routes
-- optionally injects browser devtools for logs, service status, annotations, source jumping, browser-hosted Neovim, and aggregated third-party launcher buttons
+- optionally injects browser devtools for logs, service status, annotations, browser-hosted Neovim sessions, and aggregated third-party launcher buttons
 
 ## Quick start
 
 ### Installation
 
-```bash
-npm install -g @alexgorbatchev/devhost
-```
+Download the archive for your platform from [GitHub Releases](https://github.com/alexgorbatchev/devhost/releases), extract it, and place the `devhost` binary on your `PATH`.
 
-### Standalone executable
+### Build from source
 
-If you are working from this repository and want a current-platform single-file binary instead of a global install:
+If you are working from this repository and want a current-platform binary instead of a release download:
 
 ```bash
 bun run --cwd packages/devhost compile
 ./packages/devhost/dist/devhost --help
 ```
 
-That build refreshes the embedded injected devtools bundle first, then runs Bun's standalone build with `--minify` so the compiled executable can still serve the browser devtools UI.
+That build refreshes the embedded injected devtools bundle with Bun, then compiles the Go CLI to `packages/devhost/dist/devhost`. Bun is only needed for source builds inside this repository; the shipped `devhost` binary does not require Bun.
 
 Published GitHub Releases also include versioned `.tar.gz` archives for `darwin-arm64`, `linux-x64`, `linux-arm64`, `linux-x64-musl`, and `linux-arm64-musl`.
 
@@ -90,11 +88,10 @@ $ open https://foo.localhost
 - injects runtime context such as `PORT` and `DEVHOST_*` environment variables
 - validates manifests, reserves public hosts, reserves fixed bind ports, and waits for health checks before routing traffic
 - allocates `port = "auto"` best-effort and retries on clear bind-collision startup failures
-- optionally injects a devtools UI for annotations, source navigation, browser-hosted Neovim, and aggregated third-party devtools launchers
+- optionally injects a devtools UI for annotations, browser-hosted Neovim sessions, and aggregated third-party devtools launchers
 
 ## Requirements
 
-- `bun`
 - either:
   - a global `caddy` on your `PATH`, or
   - a managed Caddy binary downloaded with `devhost caddy download`
@@ -356,9 +353,9 @@ The submitted draft includes the current stack name, page URL/title, comment tex
 
 When the host page is a React development build that exposes component source metadata, each marker also captures the nearest available component source location (file path, line, column, and component name when available). When the host app serves fetchable source maps, devhost also attempts to symbolicate generated bundle locations back to original source files before storing the annotation.
 
-### Open source in IDE
+### Open source in Neovim
 
-`Alt` + `right-click` component-source navigation uses the configured `[devtools.editor].ide` value. The popup title names that configured editor directly, so the action stays aligned with the actual target. Protocol-based editors such as VS Code, VS Code Insiders, Cursor, and WebStorm open via their browser URL handlers. When `[devtools.editor].ide = "neovim"`, devhost launches Neovim inside the injected xterm terminal instead, so `nvim` must be available on the machine running `devhost`.
+The shipped Go runtime currently supports `Alt` + `right-click` component-source navigation only when `[devtools.editor].ide = "neovim"`. In that mode, devhost launches Neovim inside the injected xterm terminal, so `nvim` must be available on the machine running `devhost`.
 
 Embedded terminal sessions now normalize their terminal environment to `TERM=xterm-256color` and `COLORTERM=truecolor` so terminal UIs like Neovim render against the actual xterm.js emulator instead of inheriting incompatible host-terminal identities. Neovim component-source sessions also expand to fill the available viewport when opened as a modal.
 

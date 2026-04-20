@@ -17,15 +17,15 @@ export const defaultBindHost: string = "127.0.0.1";
 export const caddyAdminTimeoutInMilliseconds: number = 1_000;
 export const helpText: string = dedentString(`
   Usage:
-    bun run devhost
-    bun run devhost --manifest ./devhost.toml
-    bun run devhost caddy start
-    bun run devhost caddy stop
-    bun run devhost caddy trust
-    bun run devhost caddy download
-    bun run devhost caddy privileged-ports
-    bun run devhost caddy print-root-cert
-    bun run devhost caddy trust-remote <ssh-target>
+    devhost
+    devhost --manifest ./devhost.toml
+    devhost caddy start
+    devhost caddy stop
+    devhost caddy trust
+    devhost caddy download
+    devhost caddy privileged-ports
+    devhost caddy print-root-cert
+    devhost caddy trust-remote <ssh-target>
 
   Options:
     --manifest  Explicit path to devhost.toml.
