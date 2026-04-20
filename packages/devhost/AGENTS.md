@@ -88,7 +88,7 @@ The `compile` script refreshes that bundle, then runs `go build -trimpath -o ./d
 ## Internal package layout
 
 - `cmd/devhost/main.go` — shipped CLI entrypoint
-- `bin/devhost.ts` — legacy Bun shim retained only to fail fast when invoked directly
+- `bin/devhost.ts` — local Bun shim that launches the Go runtime for workspace scripts and source-checkout use
 - `src/main.ts` — legacy Bun runtime entrypoint kept outside the shipped release path
 - `src/index.ts` — public barrel re-exports
 - `src/runDevhost.ts` — top-level orchestration and mode selection
