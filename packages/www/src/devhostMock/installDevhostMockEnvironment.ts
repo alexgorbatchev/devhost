@@ -38,6 +38,8 @@ export function installDevhostMockEnvironment(scenarioId: MarketingRecordingScen
 function createInjectedConfig(location: Location, scenarioId: MarketingRecordingScenarioId): IInjectedDevtoolsConfig {
   return {
     agentDisplayName: "Pi",
+    annotationEnabled: true,
+    annotationQueueEnabled: true,
     componentEditor: "neovim",
     controlToken: scenarioId,
     editorEnabled: true,
@@ -53,6 +55,7 @@ function createInjectedConfig(location: Location, scenarioId: MarketingRecording
     ],
     stackName: mockStackName,
     statusEnabled: true,
+    terminalEnabled: true,
   };
 }
 

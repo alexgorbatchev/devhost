@@ -2,7 +2,7 @@
 
 ## Working Decisions
 
-- The shipped runtime is still Bun/TypeScript today. The Go work is landing incrementally under `packages/devhost/` without claiming full rewrite completion early.
+- The shipped runtime is now the Go `cmd/devhost` binary. Bun/TypeScript remains only for build-time devtools asset generation plus browser-facing test coverage.
 - External libraries are preferred where practical. The Phase 1 foundation uses `github.com/BurntSushi/toml` for TOML parsing instead of a custom parser.
 - CLI parsing stays small and explicit because the current `devhost` behavior has parity traps that are awkward to express with a framework:
   - any `-h` or `--help` anywhere short-circuits to global help
@@ -58,8 +58,8 @@
 
 - Component-source navigation through the Go runtime is now limited to the Neovim terminal path; other editor integrations still rely on the Bun/TypeScript runtime behavior.
 - Runtime parity is still incomplete for browser-exercised component-source navigation, top-level signal-exit behavior, restart-flow semantics, and some manifest-orchestration edge cases that have not been proven end-to-end yet.
-- Release, packaging, and CI still point at the Bun/TypeScript runtime.
+- Browser-exercised component-source navigation outside the Neovim path still relies on the older Bun/TypeScript runtime behavior and is not part of the authoritative shipped binary flow.
 
 ## Due Diligence
 
-- `.github/workflows/ci.yml` still appears stale: it calls `bun run --cwd packages/devhost storybook:install-browser`, but `packages/devhost/package.json` has no such script.
+- The shipped runtime handoff is honest only if user-facing docs keep calling out the current Neovim-only source-navigation limitation; broad protocol-editor claims would be stale against the Go release path.
