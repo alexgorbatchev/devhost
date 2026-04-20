@@ -113,17 +113,11 @@ Hold `Alt`, select one or more elements on the page, write a comment, and send t
 
 The submitted context includes page metadata, element details, marker references, selected text, computed styles, and available source-location data. That makes UI feedback much more actionable than a screenshot and a vague bug report.
 
-### 9. Jump from the page to source
+### 9. Jump from the page to Neovim
 
 For React development builds, `devhost` can capture component source metadata and, when source maps are available, symbolicate generated locations back to original files.
 
-From there, component-source navigation can open your configured editor, including:
-
-- VS Code
-- VS Code Insiders
-- Cursor
-- WebStorm
-- Neovim
+From there, the authoritative shipped Go runtime currently supports component-source navigation through the Neovim path.
 
 ### 10. Embedded terminal workflows for debugging and editing
 
@@ -230,7 +224,7 @@ No. Your chosen hostnames still need to resolve to your machine. `devhost` manag
 
 ### Can I use it with my editor and agent workflow?
 
-Yes. `devhost` supports configurable component-source navigation and agent-backed annotation sessions, including the default Pi workflow or a custom configured agent command.
+Yes. `devhost` supports agent-backed annotation sessions and Neovim-backed component-source navigation in the authoritative shipped runtime, including the default Pi workflow or a custom configured agent command.
 
 ---
 

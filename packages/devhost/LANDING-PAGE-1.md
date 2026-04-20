@@ -3,7 +3,7 @@
   <p><b>The ultimate local development host runner for modern stacks.</b></p>
 </div>
 
-**devhost** is an open-source, Bun-based local host runner that orchestrates your development processes behind an automated, managed Caddy proxy. Get production-like custom domains, seamless local HTTPS, and powerful injected devtools—all with zero manual configuration.
+**devhost** is an open-source local host runner that ships as a native Go binary and orchestrates your development processes behind an automated, managed Caddy proxy. Get production-like custom domains, seamless local HTTPS, and powerful injected devtools—all with zero manual configuration.
 
 Whether you're booting up a single frontend or orchestrating a complex, multi-service backend, `devhost` ensures your local environment is fast, reliable, and deeply integrated with your editor and AI workflows.
 
@@ -39,11 +39,9 @@ Spot a bug or want to request a change? Hold `Alt` (`Option` on macOS) to enter 
 3. Instantly launch an interactive **Pi Agent Session** seeded with your draft.
    Behind the scenes, `devhost` captures comprehensive payload metadata: computed CSS, bounding boxes, accessibility tree state, nearby text context, and React component fiber source maps.
 
-### Click-to-Editor & Embedded Terminal
+### Neovim Terminal Sessions
 
-Jump straight from the browser UI to the exact line of code. Alt + right-click any component to instantly open its source file in your configured editor (VS Code, Cursor, WebStorm).
-
-Prefer the terminal? Set your editor to `neovim`. `devhost` embeds a fully-featured, truecolor `xterm.js` emulator in the browser overlay, mapping native process streams over WebSockets directly into your Neovim session.
+The authoritative shipped runtime currently supports in-browser component-source jumps only through the Neovim path. Set your editor to `neovim` and `devhost` embeds a fully-featured, truecolor `xterm.js` emulator in the browser overlay, mapping native process streams over WebSockets directly into your Neovim session.
 
 ### Smart Environment Injection
 
@@ -57,7 +55,7 @@ No more hardcoded ports. `devhost` automatically injects `PORT`, `DEVHOST_HOST`,
 Working on a full stack? Just run:
 
 ```bash
-bun run dev
+devhost
 ```
 
 `devhost` will automatically find your `devhost.toml`, validate it, reserve public hosts, boot your services in order, and gracefully tear down processes and routes on exit.
@@ -66,4 +64,4 @@ bun run dev
 
 ## Start Building Better
 
-`devhost` requires `bun` plus either a global `caddy` on your `PATH` or a managed Caddy binary downloaded with `bun run devhost caddy download`. Experience the fastest, most integrated local development workflow today.
+Download the archive for your platform from GitHub Releases, then run `devhost`. `devhost` requires either a global `caddy` on your `PATH` or a managed Caddy binary downloaded with `devhost caddy download`. Experience the fastest, most integrated local development workflow today.

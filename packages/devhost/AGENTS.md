@@ -6,7 +6,7 @@ Local rules for the published `@alexgorbatchev/devhost` workspace in `packages/d
 
 - `README.md` must be kept up to date after behavior changes.
 - `AGENTS.md` files must be kept up to date after workflow, policy, or contributor-expectation changes.
-- `RELEASE.md` must be kept up to date after tag, packaging, npm publish, or GitHub release workflow changes.
+- `RELEASE.md` must be kept up to date after tag, packaging, or GitHub release workflow changes.
 - Update `README.md` whenever you change:
   - CLI usage
   - manifest behavior
@@ -17,7 +17,7 @@ Local rules for the published `@alexgorbatchev/devhost` workspace in `packages/d
   - limitations, caveats, or failure modes
 - If the manifest contract changes, also update `devhost.example.toml`.
 - If devtools-specific contributor rules change, also update `src/devtools/AGENTS.md`.
-- If the tag-driven npm release flow changes, also update `RELEASE.md` and the relevant shared guidance in the repo-root `AGENTS.md`.
+- If the tag-driven binary release flow changes, also update `RELEASE.md` and the relevant shared guidance in the repo-root `AGENTS.md`.
 - **CRITICAL:** The `devhost` README is heavily mirrored in the demo application's frontend. After editing the `devhost` README, you **must** update the `packages/www/src/app/App.tsx` file in the demo app workspace to keep the marketing website content in sync.
 - Do not leave README or AGENTS examples/rules stale after changing implementation details.
 - Repo-root `README.md` is a symlink to this workspace README; update `README.md` here, not the root symlink.
@@ -28,7 +28,7 @@ Local rules for the published `@alexgorbatchev/devhost` workspace in `packages/d
 Run the package directly:
 
 ```bash
-bun run dev --help
+go run ./cmd/devhost --help
 ```
 
 Build a standalone executable for the current platform:
@@ -61,26 +61,25 @@ Run the package check suite:
 bun run check
 ```
 
-The `fmt` script runs `oxfmt --write` for this workspace using the shared repo-root config. The package `check` script runs `tsgo --noEmit -p tsconfig.json`, `bun test --coverage`, and `bun vitest run -c vitest.storybook.config.ts`. Use `bun run storybook` only when you need the interactive Storybook dev server for manual inspection. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
+The `fmt` script runs `oxfmt --write` for this workspace using the shared repo-root config. The package `check` script runs `go vet ./...`, `go test ./...`, `tsgo --noEmit -p tsconfig.json`, `bun test --coverage`, and `bun vitest run -c vitest.storybook.config.ts`. Use `bun run storybook` only when you need the interactive Storybook dev server for manual inspection. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
 
 The `build:devtools-bundle` script refreshes the prebuilt injected devtools bundle used by standalone executables.
 
-The `build:release-artifacts` script refreshes that bundle, cross-compiles the supported release targets, and writes versioned `.tar.gz` archives to `packages/devhost/dist/release/`.
+The `build:release-artifacts` script refreshes that bundle, cross-compiles the supported Go release targets, and writes versioned `.tar.gz` archives to `packages/devhost/dist/release/`.
 
-The `compile` script refreshes that bundle, then runs `bun build --compile --minify` against `bin/devhost.ts` and writes the current-platform executable to `packages/devhost/dist/devhost`.
+The `compile` script refreshes that bundle, then runs `go build -trimpath -o ./dist/devhost ./cmd/devhost` and writes the current-platform executable to `packages/devhost/dist/devhost`.
 
 ## Release workflow
 
-- Follow `RELEASE.md`; it is the authoritative runbook for the tag-driven npm publish flow.
+- Follow `RELEASE.md`; it is the authoritative runbook for the tag-driven GitHub Release binary flow.
 - Release trigger: push a `v*` tag whose version matches `package.json`.
-- Do not run manual `npm publish` unless the user explicitly asks to step outside the documented tag-driven workflow.
 - The publish workflow attaches versioned `.tar.gz` binaries for `darwin-arm64`, `linux-x64`, `linux-arm64`, `linux-x64-musl`, and `linux-arm64-musl` to the matching GitHub Release.
 
 ## Done policy
 
 - Done means the required package docs are updated (`README.md`, relevant `AGENTS.md`, `RELEASE.md`, and `devhost.example.toml` when applicable), required validation for the affected scope has passed, and any temporary local processes started for validation are stopped.
 - If `bun test`, `bun run check`, packaging checks, or required documentation updates were skipped, failed, or are blocked, report the package work as incomplete and call out the exact blocker.
-- Release work is not done until the tag exists remotely, the publish workflow has reached its expected result, npm serves the tagged version (or explicitly reports it already existed), and the matching GitHub Release state is confirmed.
+- Release work is not done until the tag exists remotely, the publish workflow has reached its expected result, and the matching GitHub Release state is confirmed.
 
 ## Testing
 
@@ -88,8 +87,9 @@ The `compile` script refreshes that bundle, then runs `bun build --compile --min
 
 ## Internal package layout
 
-- `bin/devhost.ts` — workspace CLI entrypoint
-- `src/main.ts` — runtime entrypoint
+- `cmd/devhost/main.go` — shipped CLI entrypoint
+- `bin/devhost.ts` — legacy Bun shim retained only to fail fast when invoked directly
+- `src/main.ts` — legacy Bun runtime entrypoint kept outside the shipped release path
 - `src/index.ts` — public barrel re-exports
 - `src/runDevhost.ts` — top-level orchestration and mode selection
 - `src/agents/` — agent adapters and terminal commands

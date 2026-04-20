@@ -4,13 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { buildDevtoolsBundle } from "./buildDevtoolsBundle";
 
-const releaseTargets = [
-  "bun-darwin-arm64",
-  "bun-linux-x64",
-  "bun-linux-arm64",
-  "bun-linux-x64-musl",
-  "bun-linux-arm64-musl",
-] as const;
+const releaseTargets = ["darwin-arm64", "linux-x64", "linux-arm64", "linux-x64-musl", "linux-arm64-musl"] as const;
 
 type ReleaseTarget = (typeof releaseTargets)[number];
 
@@ -23,19 +17,31 @@ interface IBuildReleaseArtifactsOptions {
   targets: ReleaseTarget[];
 }
 
-const targetPlatformNames: Readonly<Record<ReleaseTarget, string>> = {
-  "bun-darwin-arm64": "darwin-arm64",
-  "bun-linux-arm64": "linux-arm64",
-  "bun-linux-arm64-musl": "linux-arm64-musl",
-  "bun-linux-x64": "linux-x64",
-  "bun-linux-x64-musl": "linux-x64-musl",
+interface IBuildReleaseArtifactOptions {
+  artifactName: string;
+  target: ReleaseTarget;
+  version: string;
+}
+
+interface IReleaseTargetDetails {
+  archivePlatformName: string;
+  goArch: string;
+  goOS: string;
+}
+
+const targetPlatformNames: Readonly<Record<ReleaseTarget, IReleaseTargetDetails>> = {
+  "darwin-arm64": { archivePlatformName: "darwin-arm64", goArch: "arm64", goOS: "darwin" },
+  "linux-arm64": { archivePlatformName: "linux-arm64", goArch: "arm64", goOS: "linux" },
+  "linux-arm64-musl": { archivePlatformName: "linux-arm64-musl", goArch: "arm64", goOS: "linux" },
+  "linux-x64": { archivePlatformName: "linux-x64", goArch: "amd64", goOS: "linux" },
+  "linux-x64-musl": { archivePlatformName: "linux-x64-musl", goArch: "amd64", goOS: "linux" },
 };
 const releaseTargetNames: ReadonlySet<string> = new Set(releaseTargets);
 
 const packageDirectoryPath: string = fileURLToPath(new URL("..", import.meta.url));
 const artifactOutputDirectoryPath: string = join(packageDirectoryPath, "dist", "release");
 const packageManifestPath: string = join(packageDirectoryPath, "package.json");
-const cliEntrypointPath: string = join(packageDirectoryPath, "bin", "devhost.ts");
+const cliEntrypointPath: string = "./cmd/devhost";
 const readmeFilePath: string = join(packageDirectoryPath, "README.md");
 const licenseFilePath: string = join(packageDirectoryPath, "LICENSE");
 
@@ -54,33 +60,31 @@ export async function buildReleaseArtifacts(
   }
 }
 
-async function buildReleaseArtifact(options: {
-  artifactName: string;
-  target: ReleaseTarget;
-  version: string;
-}): Promise<void> {
-  const platformName: string = targetPlatformNames[options.target];
-  const artifactBaseName: string = `${options.artifactName}-v${options.version}-${platformName}`;
+async function buildReleaseArtifact(options: IBuildReleaseArtifactOptions): Promise<void> {
+  const platformName: IReleaseTargetDetails = targetPlatformNames[options.target];
+  const artifactBaseName: string = `${options.artifactName}-v${options.version}-${platformName.archivePlatformName}`;
   const stagingDirectoryPath: string = join(artifactOutputDirectoryPath, artifactBaseName);
   const archiveFilePath: string = join(artifactOutputDirectoryPath, `${artifactBaseName}.tar.gz`);
   const executableFilePath: string = join(stagingDirectoryPath, options.artifactName);
 
   await mkdir(stagingDirectoryPath, { recursive: true });
 
-  const buildResult = await Bun.build({
-    compile: {
-      outfile: executableFilePath,
-      target: options.target,
+  const buildProcess = Bun.spawn(["go", "build", "-trimpath", "-o", executableFilePath, cliEntrypointPath], {
+    cwd: packageDirectoryPath,
+    env: {
+      ...process.env,
+      CGO_ENABLED: "0",
+      GOARCH: platformName.goArch,
+      GOOS: platformName.goOS,
     },
-    entrypoints: [cliEntrypointPath],
-    minify: true,
-    throw: false,
+    stderr: "inherit",
+    stdout: "inherit",
   });
 
-  if (!buildResult.success) {
-    const logMessages: string = buildResult.logs.map((log) => log.message).join("\n");
+  const exitCode: number = await buildProcess.exited;
 
-    throw new Error(`Failed to build ${options.target}:\n${logMessages}`);
+  if (exitCode !== 0) {
+    throw new Error(`go build exited with code ${exitCode} while building ${options.target}.`);
   }
 
   await cp(readmeFilePath, join(stagingDirectoryPath, "README.md"));
@@ -146,7 +150,7 @@ function isReleaseTarget(value: string): value is ReleaseTarget {
 }
 
 function printHelp(): void {
-  console.log(`Usage: bun run build:release-artifacts [--targets=<comma-separated bun targets>]`);
+  console.log(`Usage: bun run build:release-artifacts [--targets=<comma-separated targets>]`);
   console.log(`Default targets: ${releaseTargets.join(", ")}`);
 }
 
