@@ -40,10 +40,13 @@ function DevhostMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Elemen
       position: "bottom-right",
       projectRootPath: "/storybook-workspace",
       stackName: "storybook-stack",
+      annotationEnabled: true,
+      annotationQueueEnabled: true,
       editorEnabled: true,
       externalToolbarsEnabled: true,
       minimapEnabled: true,
       statusEnabled: true,
+      terminalEnabled: true,
       routedServices: [
         { host: window.location.hostname, path: "/", serviceName: "app" },
         { host: window.location.hostname, path: "/api", serviceName: "api" },

@@ -31,13 +31,18 @@ interface IUseTerminalSessionsResult {
   ) => Promise<ITerminalSessionStartResult>;
 }
 
-export function useTerminalSessions(): IUseTerminalSessionsResult {
+export function useTerminalSessions(enabled: boolean = true): IUseTerminalSessionsResult {
   const [terminalSessions, setTerminalSessions] = useState<TerminalSession[]>([]);
   const agentDisplayName: string = readDevtoolsAgentDisplayName();
 
   useEffect((): void => {
+    if (!enabled) {
+      setTerminalSessions([]);
+      return;
+    }
+
     void restoreActiveTerminalSessions(setTerminalSessions, agentDisplayName);
-  }, [agentDisplayName]);
+  }, [agentDisplayName, enabled]);
 
   const expandSession = useCallback((sessionId: string): void => {
     setTerminalSessions((currentSessions: TerminalSession[]): TerminalSession[] => {
@@ -71,6 +76,13 @@ export function useTerminalSessions(): IUseTerminalSessionsResult {
 
   const startSession = useCallback(
     async (request: StartTerminalSessionRequest): Promise<ITerminalSessionStartResult> => {
+      if (!enabled) {
+        return {
+          errorMessage: "Terminal sessions are not supported by this runtime.",
+          success: false,
+        };
+      }
+
       try {
         const response = await fetch(TERMINAL_SESSION_START_PATH, {
           body: JSON.stringify(request),
@@ -109,7 +121,7 @@ export function useTerminalSessions(): IUseTerminalSessionsResult {
         };
       }
     },
-    [registerStartedSession],
+    [enabled, registerStartedSession],
   );
 
   const submitAnnotation = useCallback(

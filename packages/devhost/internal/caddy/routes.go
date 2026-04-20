@@ -469,6 +469,14 @@ func UnregisterRoute(
 	return reloadManagedCaddy(nextSettings.AdminAddress, routesDirectoryPath)
 }
 
+func SyncManagedHostRoute(host string, adminAddress string, routesDirectoryPath string) error {
+	if error := syncHostRoute(host, routesDirectoryPath, nil); error != nil {
+		return error
+	}
+
+	return reloadManagedCaddy(adminAddress, routesDirectoryPath)
+}
+
 func ResolveProxyHost(bindHost string) (string, error) {
 	switch bindHost {
 	case "127.0.0.1", "0.0.0.0":

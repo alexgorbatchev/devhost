@@ -16,10 +16,15 @@ export function createConfiguredDevtoolsScript(
   externalToolbarsEnabled: boolean = true,
   minimapEnabled: boolean = true,
   statusEnabled: boolean = true,
+  annotationEnabled: boolean = true,
+  annotationQueueEnabled: boolean = true,
+  terminalEnabled: boolean = true,
   routedServices: IRoutedServiceIdentity[] = [],
 ): string {
   const injectedConfig: string = JSON.stringify({
     agentDisplayName,
+    annotationEnabled,
+    annotationQueueEnabled,
     componentEditor,
     controlToken,
     minimapPosition: devtoolsMinimapPosition,
@@ -30,6 +35,7 @@ export function createConfiguredDevtoolsScript(
     externalToolbarsEnabled,
     minimapEnabled,
     statusEnabled,
+    terminalEnabled,
     routedServices,
   });
 
