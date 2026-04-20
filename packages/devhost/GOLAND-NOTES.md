@@ -51,6 +51,7 @@
 - Browser proof now explicitly covers the injected Shadow DOM mount, visible service-status and log-minimap surfaces, annotation UI visibility, terminal-session affordances, and the runtime gate that leaves devtools route ports unmounted when every devtools feature is disabled.
 - Passing browser-based Storybook coverage now also proves annotation queue controls and external devtools launcher aggregation, while the Go Caddy unit tests explicitly cover macOS trust and bind behavior, macOS/Linux privileged-port behavior, and Windows managed-binary download naming.
 - The Go stack-runner tests now also prove signal-handler registration/unregistration around stack lifetime and preserved signal-exit code mapping inside the runner, while existing app tests continue to prove top-level `0` and `1` exit-code behavior.
+- App and route-state tests now also explicitly prove the managed `privileged-ports`, `print-root-cert`, and `trust-remote` CLI paths plus same-PID same-manifest host-claim idempotence.
 - The Go runtime now loads the injected devtools bundle and xterm stylesheet from a generated Go source asset file instead of reading repo-local files at runtime, removing that standalone-binary blocker.
 
 ## Known Remaining Gaps

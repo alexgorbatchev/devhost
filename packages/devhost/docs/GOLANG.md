@@ -39,9 +39,9 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [x] `devhost caddy stop` still behaves as a managed Caddy lifecycle command.
 - [x] `devhost caddy trust` still behaves as a managed Caddy lifecycle command.
 - [x] `devhost caddy download` still behaves as a managed Caddy lifecycle command.
-- [ ] `devhost caddy privileged-ports` still behaves as a managed Caddy lifecycle command.
-- [ ] `devhost caddy print-root-cert` still prints the managed root certificate.
-- [ ] `devhost caddy trust-remote <ssh-target>` still performs remote certificate trust behavior.
+- [x] `devhost caddy privileged-ports` still behaves as a managed Caddy lifecycle command.
+- [x] `devhost caddy print-root-cert` still prints the managed root certificate.
+- [x] `devhost caddy trust-remote <ssh-target>` still performs remote certificate trust behavior.
 - [x] No public `--version` flag was added during parity rewrite.
 - [x] Manifest mode still rejects positional child commands.
 - [x] `--manifest` still rejects paths that do not end in `devhost.toml`.

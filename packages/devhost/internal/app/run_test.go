@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -162,6 +163,53 @@ func TestRunTrustRemoteRejectsUnsupportedPlatform(t *testing.T) {
 
 	if stdout.String() != "" {
 		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
+	}
+}
+
+func TestRunCaddyPrivilegedPortsUsesLifecyclePath(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("linux-specific privileged-ports behavior")
+	}
+
+	stateDirectoryPath := t.TempDir()
+	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
+	managedCaddyPath := filepath.Join(stateDirectoryPath, "caddy", "caddy")
+	if error := os.MkdirAll(filepath.Dir(managedCaddyPath), 0o755); error != nil {
+		t.Fatalf("MkdirAll(...) error = %v", error)
+	}
+	if error := os.WriteFile(managedCaddyPath, []byte("#!/bin/sh\nexit 0\n"), 0o755); error != nil {
+		t.Fatalf("WriteFile(...) error = %v", error)
+	}
+
+	binDirectoryPath := t.TempDir()
+	argumentsPath := filepath.Join(t.TempDir(), "sudo-args.txt")
+	t.Setenv("DEVHOST_TEST_ARGS_FILE", argumentsPath)
+	t.Setenv("PATH", binDirectoryPath+string(os.PathListSeparator)+os.Getenv("PATH"))
+	writeExecutable(t, filepath.Join(binDirectoryPath, "sudo"), strings.Join([]string{
+		"#!/bin/sh",
+		"printf '%s\\n' \"$@\" > \"$DEVHOST_TEST_ARGS_FILE\"",
+		"exit 0",
+	}, "\n"))
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+	exitCode := Run([]string{"caddy", "privileged-ports"}, stateDirectoryPath, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("Run(...) exit code = %d, want 0 with stderr %q", exitCode, stderr.String())
+	}
+	if stdout.String() != "" {
+		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "[devhost] managed caddy low-port binding enabled for "+managedCaddyPath) {
+		t.Fatalf("Run(...) stderr = %q, want privileged-port success log", stderr.String())
+	}
+
+	arguments, error := os.ReadFile(argumentsPath)
+	if error != nil {
+		t.Fatalf("ReadFile(...) error = %v", error)
+	}
+	if string(arguments) != strings.Join([]string{"setcap", "cap_net_bind_service=+ep", managedCaddyPath, ""}, "\n") {
+		t.Fatalf("sudo arguments = %q", string(arguments))
 	}
 }
 
