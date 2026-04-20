@@ -762,6 +762,111 @@ func TestStartStackStopsDevtoolsServersDuringCleanup(t *testing.T) {
 	}
 }
 
+func TestStartStackReturnsSignalExitCodeAndUnregistersHandlers(t *testing.T) {
+	tests := []struct {
+		name         string
+		signal       syscall.Signal
+		wantExitCode int
+	}{
+		{name: "sigint", signal: syscall.SIGINT, wantExitCode: 130},
+		{name: "sighup", signal: syscall.SIGHUP, wantExitCode: 129},
+		{name: "sigterm", signal: syscall.SIGTERM, wantExitCode: 143},
+	}
+
+	for _, tt := range tests {
+		tc := tt
+		t.Run(tc.name, func(t *testing.T) {
+			stateDirectoryPath := t.TempDir()
+			paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
+			adminAddress, stopAdmin := startTestAdminServer(t)
+			defer stopAdmin()
+
+			originalRegisterProcessSignals := registerProcessSignals
+			originalUnregisterProcessSignals := unregisterProcessSignals
+			originalServiceSignalSender := serviceSignalSender
+			defer func() {
+				registerProcessSignals = originalRegisterProcessSignals
+				unregisterProcessSignals = originalUnregisterProcessSignals
+				serviceSignalSender = originalServiceSignalSender
+			}()
+
+			var signalChannel chan<- os.Signal
+			var stoppedSignalChannel chan<- os.Signal
+			registerProcessSignals = func(ch chan<- os.Signal) {
+				signalChannel = ch
+			}
+			unregisterProcessSignals = func(ch chan<- os.Signal) {
+				stoppedSignalChannel = ch
+			}
+			serviceSignalSender = func(command *exec.Cmd, receivedSignal os.Signal) {
+				if receivedSignal == syscall.SIGTERM {
+					sendSignal(command, receivedSignal)
+				}
+			}
+
+			startTracePath := filepath.Join(t.TempDir(), "signal-start.txt")
+			stopTracePath := filepath.Join(t.TempDir(), "signal-stop.txt")
+			manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
+			manifestValue.Name = "signal-stack"
+			manifestValue.PrimaryService = "web"
+			manifestValue.Services["web"] = ResolvedService{
+				BindHost:  "127.0.0.1",
+				Command:   helperCommand(),
+				Cwd:       t.TempDir(),
+				DependsOn: []string{},
+				Env: map[string]string{
+					"GO_WANT_HELPER_PROCESS": "1",
+					"DEVHOST_HELPER_MODE":    "record-start-and-wait",
+					"START_TRACE_PATH":       startTracePath,
+					"START_TRACE_VALUE":      "web-start",
+					"STOP_TRACE_PATH":        stopTracePath,
+					"STOP_TRACE_VALUE":       "web-stop",
+				},
+				Health:     ResolvedHealthConfig{Kind: "process"},
+				InjectPort: true,
+				Name:       "web",
+			}
+
+			resultChannel := make(chan struct {
+				exitCode int
+				error    error
+			}, 1)
+			go func() {
+				exitCode, startError := StartStack(&manifestValue, []string{"web"}, StartStackOptions{
+					CaddyPaths:          paths,
+					Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
+					LogWriter:           ioDiscard{},
+					ServiceStdoutWriter: ioDiscard{},
+					ServiceStderrWriter: ioDiscard{},
+					ShutdownGracePeriod: 100 * time.Millisecond,
+				})
+				resultChannel <- struct {
+					exitCode int
+					error    error
+				}{exitCode: exitCode, error: startError}
+			}()
+
+			waitForCondition(t, 5*time.Second, func() bool {
+				_, error := os.Stat(startTracePath)
+				return error == nil && signalChannel != nil
+			})
+
+			signalChannel <- tc.signal
+
+			result := <-resultChannel
+			if result.error != nil {
+				t.Fatalf("StartStack(...) error = %v", result.error)
+			}
+			if result.exitCode != tc.wantExitCode {
+				t.Fatalf("StartStack(...) exit code = %d, want %d", result.exitCode, tc.wantExitCode)
+			}
+			if stoppedSignalChannel != signalChannel {
+				t.Fatalf("unregisterProcessSignals(...) channel = %p, want %p", stoppedSignalChannel, signalChannel)
+			}
+		})
+	}
+}
+
 func TestStartStackActivatesRoutesOnlyAfterHealthPasses(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)

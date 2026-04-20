@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/signal"
 	"runtime"
 	"sort"
 	"strings"
@@ -27,6 +28,18 @@ const (
 var serviceSignalSender = sendSignal
 var startDevtoolsControlServer = devtools.StartControlServer
 var startDocumentInjectionServer = devtools.StartDocumentInjectionServer
+var registerProcessSignals = func(ch chan<- os.Signal) {
+	signal.Notify(ch, supportedSignals...)
+}
+var unregisterProcessSignals = signal.Stop
+
+var supportedSignals = []os.Signal{syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM}
+
+var signalExitCodes = map[syscall.Signal]int{
+	syscall.SIGINT:  130,
+	syscall.SIGHUP:  129,
+	syscall.SIGTERM: 143,
+}
 
 type StartStackOptions struct {
 	CaddyPaths          caddy.Paths
@@ -107,11 +120,14 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	claimedHosts := []string{}
 	activeRoutes := []activeRoute{}
 	serviceExits := make(chan serviceExitResult, 1)
+	signalExits := make(chan os.Signal, 1)
 	documentInjectionServers := map[string]*devtools.DocumentInjectionServer{}
 	var devtoolsControlServer *devtools.ControlServer
 	var cleanupError error
 
 	managedCaddyAdminAddress := caddy.ResolveManagedCaddyAdminAddress(manifest.Caddy.Global.AdminAddress)
+	registerProcessSignals(signalExits)
+	defer unregisterProcessSignals(signalExits)
 
 	defer func() {
 		startedServicesMu.Lock()
@@ -340,8 +356,16 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 
 	LogPrimaryService(*manifest, options.LogWriter)
 
-	result := <-serviceExits
-	return result.exitCode, nil
+	select {
+	case result := <-serviceExits:
+		return result.exitCode, nil
+	case receivedSignal := <-signalExits:
+		startedServicesMu.Lock()
+		startedServicesSnapshot := append([]*startedService{}, startedServices...)
+		startedServicesMu.Unlock()
+		forwardStartedServicesSignal(startedServicesSnapshot, receivedSignal)
+		return readSignalExitCode(receivedSignal), nil
+	}
 }
 
 func CreateInjectedServiceEnvironment(manifest ResolvedManifest, service ResolvedService) map[string]string {
@@ -566,6 +590,16 @@ func stopStartedServices(startedServices []*startedService, gracePeriod time.Dur
 	}
 }
 
+func forwardStartedServicesSignal(startedServices []*startedService, receivedSignal os.Signal) {
+	for _, startedService := range startedServices {
+		if startedService == nil || startedService.ReadExitCode() != nil {
+			continue
+		}
+
+		serviceSignalSender(startedService.cmd, receivedSignal)
+	}
+}
+
 func waitForExitWithinGracePeriod(startedService *startedService, gracePeriod time.Duration) bool {
 	if startedService == nil {
 		return true
@@ -643,6 +677,20 @@ func resolveGracePeriod(gracePeriod time.Duration) time.Duration {
 	}
 
 	return shutdownGracePeriod
+}
+
+func readSignalExitCode(receivedSignal os.Signal) int {
+	signalValue, ok := receivedSignal.(syscall.Signal)
+	if !ok {
+		return 1
+	}
+
+	exitCode, ok := signalExitCodes[signalValue]
+	if !ok {
+		return 1
+	}
+
+	return exitCode
 }
 
 func collectClaimedHosts(services map[string]ResolvedService) []string {

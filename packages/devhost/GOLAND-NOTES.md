@@ -50,12 +50,13 @@
 - The Go tests now also explicitly prove durable queue-write helper ordering (`file sync -> rename -> directory sync` and `remove -> directory sync`) plus cleanup-time shutdown of the document-injection and devtools control servers.
 - Browser proof now explicitly covers the injected Shadow DOM mount, visible service-status and log-minimap surfaces, annotation UI visibility, terminal-session affordances, and the runtime gate that leaves devtools route ports unmounted when every devtools feature is disabled.
 - Passing browser-based Storybook coverage now also proves annotation queue controls and external devtools launcher aggregation, while the Go Caddy unit tests explicitly cover macOS trust and bind behavior, macOS/Linux privileged-port behavior, and Windows managed-binary download naming.
+- The Go stack-runner tests now also prove signal-handler registration/unregistration around stack lifetime and preserved signal-exit code mapping inside the runner, while existing app tests continue to prove top-level `0` and `1` exit-code behavior.
 
 ## Known Remaining Gaps
 
 - Component-source navigation through the Go runtime is now limited to the Neovim terminal path; other editor integrations still rely on the Bun/TypeScript runtime behavior.
 - The Go devtools asset loading is still repo-local today: it reads the checked-in generated browser bundle plus the installed `@xterm/xterm` stylesheet from the workspace instead of shipping self-contained Go-embedded assets.
-- Runtime parity is still incomplete for browser-exercised devtools UI behavior, signal-exit behavior, restart-flow semantics, and some manifest-orchestration edge cases that have not been proven end-to-end yet.
+- Runtime parity is still incomplete for browser-exercised component-source navigation, top-level signal-exit behavior, restart-flow semantics, and some manifest-orchestration edge cases that have not been proven end-to-end yet.
 - Release, packaging, and CI still point at the Bun/TypeScript runtime.
 
 ## Due Diligence

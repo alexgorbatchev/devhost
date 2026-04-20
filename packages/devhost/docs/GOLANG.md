@@ -50,8 +50,8 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [x] `trust-remote` still rejects `--manifest`.
 - [x] `trust-remote` still requires exactly one SSH target.
 - [x] `trust-remote` still rejects extra arguments.
-- [ ] Top-level success paths still return exit code `0`.
-- [ ] Top-level uncaught operational failures still return exit code `1`.
+- [x] Top-level success paths still return exit code `0`.
+- [x] Top-level uncaught operational failures still return exit code `1`.
 - [ ] Signal exits still preserve the current `SIGINT`, `SIGTERM`, and `SIGHUP` exit codes.
 
 ## Manifest Discovery, Parsing, And Validation
@@ -128,7 +128,7 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [x] Fixed port claim JSON written by the Go runtime matches the current shape.
 - [x] Ownership checks still key off live PID plus manifest path semantics where the current runtime does.
 - [x] Stale claim cleanup still removes dead-owner files and allows recovery.
-- [ ] Idempotent same-PID same-manifest behavior remains compatible with the current runtime.
+- [x] Idempotent same-PID same-manifest behavior remains compatible with the current runtime.
 
 ## Managed Caddy Global Merge Rules
 
@@ -328,7 +328,7 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 
 ## Cleanup And Recovery
 
-- [ ] Signal handlers still unregister cleanly during shutdown.
+- [x] Signal handlers still unregister cleanly during shutdown.
 - [x] Started services still stop in reverse order.
 - [x] Document injection servers still stop during cleanup.
 - [x] Devtools control server still stops during cleanup.
