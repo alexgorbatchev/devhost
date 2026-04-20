@@ -4,10 +4,14 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 	"testing"
+	"time"
 
 	"github.com/alexgorbatchev/devhost/packages/devhost/internal/cli"
 )
@@ -307,6 +311,88 @@ func TestRunCaddyTrustRequiresRunningManagedCaddy(t *testing.T) {
 	}
 }
 
+func TestRunPreservesSignalExitCodes(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("signal exit parity is only exercised on POSIX platforms")
+	}
+
+	tests := []struct {
+		name         string
+		signal       syscall.Signal
+		wantExitCode int
+	}{
+		{name: "sigint", signal: syscall.SIGINT, wantExitCode: 130},
+		{name: "sighup", signal: syscall.SIGHUP, wantExitCode: 129},
+		{name: "sigterm", signal: syscall.SIGTERM, wantExitCode: 143},
+	}
+
+	for _, tt := range tests {
+		tc := tt
+		t.Run(tc.name, func(t *testing.T) {
+			stateDirectoryPath := t.TempDir()
+			adminAddress, stopAdminServer := startTestAdminServer(t)
+			defer stopAdminServer()
+
+			manifestDirectoryPath := t.TempDir()
+			startTracePath := filepath.Join(t.TempDir(), "signal-start.txt")
+			stopTracePath := filepath.Join(t.TempDir(), "signal-stop.txt")
+			manifestPath := writeSignalProcessManifest(t, manifestDirectoryPath, adminAddress, startTracePath, stopTracePath)
+
+			command := exec.Command(os.Args[0], "-test.run=TestRunSignalProcessHelper", "--")
+			command.Env = append(os.Environ(),
+				"GO_WANT_RUN_SIGNAL_HELPER=1",
+				"DEVHOST_RUN_HELPER_MANIFEST="+manifestPath,
+				"DEVHOST_RUN_HELPER_CWD="+manifestDirectoryPath,
+				"DEVHOST_STATE_DIR="+stateDirectoryPath,
+			)
+			if error := command.Start(); error != nil {
+				t.Fatalf("Start(...) error = %v", error)
+			}
+
+			waitForFile(t, startTracePath)
+
+			if error := command.Process.Signal(tc.signal); error != nil {
+				t.Fatalf("Signal(...) error = %v", error)
+			}
+
+			error := command.Wait()
+			exitError, ok := error.(*exec.ExitError)
+			if !ok {
+				t.Fatalf("Wait(...) error = %v, want exit error", error)
+			}
+			if exitError.ExitCode() != tc.wantExitCode {
+				t.Fatalf("ExitCode() = %d, want %d", exitError.ExitCode(), tc.wantExitCode)
+			}
+
+			waitForFile(t, stopTracePath)
+		})
+	}
+}
+
+func TestRunSignalProcessHelper(t *testing.T) {
+	if os.Getenv("GO_WANT_RUN_SIGNAL_HELPER") != "1" {
+		return
+	}
+
+	manifestPath := os.Getenv("DEVHOST_RUN_HELPER_MANIFEST")
+	cwd := os.Getenv("DEVHOST_RUN_HELPER_CWD")
+	exitCode := Run([]string{"--manifest", manifestPath}, cwd, os.Stdout, os.Stderr)
+	os.Exit(exitCode)
+}
+
+func TestRunSignalServiceHelperProcess(t *testing.T) {
+	if os.Getenv("GO_WANT_RUN_SIGNAL_SERVICE_HELPER") != "1" {
+		return
+	}
+
+	appendRunHelperTrace(os.Getenv("DEVHOST_SIGNAL_START_TRACE_PATH"), "worker-started")
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM)
+	<-signals
+	appendRunHelperTrace(os.Getenv("DEVHOST_SIGNAL_STOP_TRACE_PATH"), "worker-stopped")
+	os.Exit(0)
+}
+
 func writeExecutable(t *testing.T, path string, text string) {
 	t.Helper()
 	if error := os.WriteFile(path, []byte(text), 0o755); error != nil {
@@ -326,6 +412,57 @@ func writeManifestWithAdminAddress(t *testing.T, directoryPath string, adminAddr
 		"[services.web]",
 		`command = "bun run dev"`,
 		"port = 3000",
+	}, "\n")
+	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
+		t.Fatalf("WriteFile(...) error = %v", error)
+	}
+
+	return manifestPath
+}
+
+func writeSignalProcessManifest(
+	t *testing.T,
+	directoryPath string,
+	adminAddress string,
+	startTracePath string,
+	stopTracePath string,
+) string {
+	t.Helper()
+
+	manifestPath := filepath.Join(directoryPath, "devhost.toml")
+	commandText := strings.Join([]string{
+		os.Args[0],
+		"-test.run=TestRunSignalServiceHelperProcess",
+		"--",
+	}, " ")
+	manifestText := strings.Join([]string{
+		`name = "hello-stack"`,
+		"",
+		"[caddy.global]",
+		`adminAddress = "` + adminAddress + `"`,
+		"",
+		"[devtools.editor]",
+		"enabled = false",
+		"",
+		"[devtools.externalToolbars]",
+		"enabled = false",
+		"",
+		"[devtools.minimap]",
+		"enabled = false",
+		"",
+		"[devtools.status]",
+		"enabled = false",
+		"",
+		"[services.worker]",
+		`command = "` + commandText + `"`,
+		"",
+		"[services.worker.env]",
+		`GO_WANT_RUN_SIGNAL_SERVICE_HELPER = "1"`,
+		`DEVHOST_SIGNAL_START_TRACE_PATH = "` + startTracePath + `"`,
+		`DEVHOST_SIGNAL_STOP_TRACE_PATH = "` + stopTracePath + `"`,
+		"",
+		"[services.worker.health]",
+		"process = true",
 	}, "\n")
 	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
 		t.Fatalf("WriteFile(...) error = %v", error)
@@ -402,5 +539,29 @@ func startTestAdminServer(t *testing.T) (string, func()) {
 	return listener.Addr().String(), func() {
 		_ = server.Close()
 		_ = listener.Close()
+	}
+}
+
+func waitForFile(t *testing.T, filePath string) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		if _, error := os.Stat(filePath); error == nil {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	t.Fatalf("file %q was not created before timeout", filePath)
+}
+
+func appendRunHelperTrace(filePath string, value string) {
+	file, error := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	if error != nil {
+		panic(error)
+	}
+	defer file.Close()
+	if _, error := file.WriteString(value + "\n"); error != nil {
+		panic(error)
 	}
 }

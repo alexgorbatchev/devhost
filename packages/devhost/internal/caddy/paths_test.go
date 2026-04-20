@@ -21,6 +21,11 @@ func TestResolveDevhostStateDirectoryPath(t *testing.T) {
 			want:        "/tmp/devhost-state",
 		},
 		{
+			name:        "preserves relative devhost state dir",
+			environment: map[string]string{"DEVHOST_STATE_DIR": " .tmp/devhost-state "},
+			want:        ".tmp/devhost-state",
+		},
+		{
 			name:        "falls back to xdg state home",
 			environment: map[string]string{"XDG_STATE_HOME": " /tmp/xdg-state "},
 			want:        filepath.Join("/tmp/xdg-state", "devhost"),

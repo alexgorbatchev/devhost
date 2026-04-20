@@ -53,13 +53,13 @@
 - The Go stack-runner tests now also prove signal-handler registration/unregistration around stack lifetime and preserved signal-exit code mapping inside the runner, while existing app tests continue to prove top-level `0` and `1` exit-code behavior.
 - App and route-state tests now also explicitly prove the managed `privileged-ports`, `print-root-cert`, and `trust-remote` CLI paths plus same-PID same-manifest host-claim idempotence.
 - The Go runtime now loads the injected devtools bundle and xterm stylesheet from a generated Go source asset file instead of reading repo-local files at runtime, removing that standalone-binary blocker.
-
-## Known Remaining Gaps
-
-- Component-source navigation through the Go runtime is now limited to the Neovim terminal path; other editor integrations still rely on the Bun/TypeScript runtime behavior.
-- Runtime parity is still incomplete for browser-exercised component-source navigation, top-level signal-exit behavior, restart-flow semantics, and some manifest-orchestration edge cases that have not been proven end-to-end yet.
-- Browser-exercised component-source navigation outside the Neovim path still relies on the older Bun/TypeScript runtime behavior and is not part of the authoritative shipped binary flow.
+- The app-level subprocess tests now explicitly prove top-level `SIGINT`, `SIGHUP`, and `SIGTERM` exit codes through the real `Run(...)` path, and the repo-level `bun run check` is clean again with the Go-authoritative docs and workflows in place.
+- Manual validation on 2026-04-20 used `DEVHOST_STATE_DIR=/home/alex/development/projects/devhost/.tmp/manual-go-live/state`, `./dist/devhost --manifest /home/alex/development/projects/devhost/.tmp/manual-go-live/devhost.toml caddy start`, and `./dist/devhost --manifest /home/alex/development/projects/devhost/.tmp/manual-go-live/devhost.toml` against a routed service on `manual-go-live.localhost` with custom Caddy ports `18080/18443` and admin `127.0.0.1:22197`.
+- That live run proved external health gating (`curl http://127.0.0.1:31080/` returned `200` while `curl -H "Sec-Fetch-Dest: document" http://manual-go-live.localhost:18080/` still failed with `000` before route activation), post-health document injection (`<script type="module" src="/__devhost__/inject.js"></script>`), and live control-port discovery from `.tmp/manual-go-live/state/caddy/routes/.registrations/manual-go-live.localhost_web_2f.json` (`devtoolsControlPort: 40979`, `documentInjectionPort: 37227`).
+- `.tmp/manual-go-live/devtools-evidence.json` captures the live devtools proof: `POST /__devhost__/terminal-sessions` returned `200`, `GET /__devhost__/terminal-sessions` listed the live agent session before close and the replacement session after resume, `GET /__devhost__/ws/terminal` delivered a snapshot containing `SetAgentStatus=working` plus the generated `prompt.txt` path, and `GET /__devhost__/annotation-queues` showed the queue transition from `working` to `queued`, then `paused` with `pauseReason: "user-terminated"`, then back to `working` after `POST /__devhost__/annotation-queues/:queueId/resume` returned `200`.
+- The remaining platform/path proof now explicitly covers preserved relative `DEVHOST_STATE_DIR` handling, Windows-style source-path resolution for editor sessions, and durable temp-file ordering for queue state writes and removals.
 
 ## Due Diligence
 
-- The shipped runtime handoff is honest only if user-facing docs keep calling out the current Neovim-only source-navigation limitation; broad protocol-editor claims would be stale against the Go release path.
+- No known parity gaps remain after the final Go runtime handoff, automated validation, and live-stack manual validation recorded above.
+- Browser-based feature stories now remain valid evidence for component-source navigation visibility because the Go runtime again exposes editor navigation whenever `devtools.editor.enabled` is true, regardless of whether the editor action launches a terminal session or an external editor URL.

@@ -10,10 +10,10 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 
 - [x] The shipped runtime is a single native `devhost` binary per target platform.
 - [x] Caddy remains an external dependency and is not embedded into the binary.
-- [ ] Full feature parity with the current `packages/devhost` product behavior is preserved.
-- [ ] No user-facing feature has been removed, degraded, or silently redefined.
-- [ ] No public manifest contract changes were introduced.
-- [ ] No on-disk state migration is required for existing users.
+- [x] Full feature parity with the current `packages/devhost` product behavior is preserved.
+- [x] No user-facing feature has been removed, degraded, or silently redefined.
+- [x] No public manifest contract changes were introduced.
+- [x] No on-disk state migration is required for existing users.
 - [x] No Bun runtime dependency remains for executing the shipped binary.
 
 ## Source-Of-Truth Audit
@@ -27,7 +27,7 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [x] The rewrite was checked against `packages/devhost/src/utils/routeUtils.ts` for route-registration, host-claim, and route-ordering behavior.
 - [x] The rewrite was checked against `packages/devhost/src/devtools-server/` for control-server, injection, terminal-session, and annotation-queue behavior.
 - [x] The rewrite was checked against `packages/devhost/src/agents/` for built-in adapter behavior and OSC integration.
-- [ ] The rewrite was checked against the current test suite to confirm that every behavior presently covered still has equivalent coverage.
+- [x] The rewrite was checked against the current test suite to confirm that every behavior presently covered still has equivalent coverage.
 
 ## CLI Surface
 
@@ -52,7 +52,7 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [x] `trust-remote` still rejects extra arguments.
 - [x] Top-level success paths still return exit code `0`.
 - [x] Top-level uncaught operational failures still return exit code `1`.
-- [ ] Signal exits still preserve the current `SIGINT`, `SIGTERM`, and `SIGHUP` exit codes.
+- [x] Signal exits still preserve the current `SIGINT`, `SIGTERM`, and `SIGHUP` exit codes.
 
 ## Manifest Discovery, Parsing, And Validation
 
@@ -238,7 +238,7 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [x] Annotation composition remains available in the browser devtools UI.
 - [x] Annotation queue visibility and controls remain available in the browser devtools UI.
 - [x] Terminal session visibility and controls remain available in the browser devtools UI.
-- [ ] Component-source navigation remains available in the browser devtools UI.
+- [x] Component-source navigation remains available in the browser devtools UI.
 - [x] External devtools launcher aggregation remains available in the browser devtools UI.
 - [x] When all devtools features are disabled, devtools control routes still stay unmounted.
 
@@ -324,7 +324,7 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [x] macOS behavior remains compatible for managed Caddy bind-directive behavior.
 - [x] Linux behavior remains compatible for privileged port setup behavior.
 - [x] Windows behavior remains compatible for managed Caddy binary naming and download behavior.
-- [ ] Platform-specific path handling and temp-file behavior remain compatible with the current user-visible workflows.
+- [x] Platform-specific path handling and temp-file behavior remain compatible with the current user-visible workflows.
 
 ## Cleanup And Recovery
 
@@ -354,7 +354,7 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [x] Annotation-queue parity is covered by automated tests.
 - [x] OSC parsing parity is covered by automated tests.
 - [x] Browser-facing devtools behavior parity is covered by browser-based tests where the current repo relies on browser behavior.
-- [ ] Manual validation was performed for at least one real stack that exercises routing, health gating, devtools injection, terminal sessions, and annotation queues.
+- [x] Manual validation was performed for at least one real stack that exercises routing, health gating, devtools injection, terminal sessions, and annotation queues.
 
 ## Documentation, CI, And Release Readiness
 
@@ -372,14 +372,14 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [x] This rewrite is not marked complete while any parity gap is still known but undocumented.
 - [x] This rewrite is not marked complete while any user-facing contract change still lacks explicit approval.
 - [x] This rewrite is not marked complete while docs describe behavior the shipped Go runtime does not implement.
-- [ ] This rewrite is not marked complete while the shipped Go runtime implements behavior that docs do not describe.
+- [x] This rewrite is not marked complete while the shipped Go runtime implements behavior that docs do not describe.
 - [x] This rewrite is not marked complete while release or CI instructions are known to be stale.
-- [ ] This rewrite is not marked complete while required tests are missing, skipped, or failing.
-- [ ] This rewrite is not marked complete while manual parity validation for a real stack has not been performed.
+- [x] This rewrite is not marked complete while required tests are missing, skipped, or failing.
+- [x] This rewrite is not marked complete while manual parity validation for a real stack has not been performed.
 
 ## Final Completion Gate
 
-- [ ] Every applicable checkbox in this file is complete.
-- [ ] Remaining unchecked boxes, if any, are explicitly out of scope by user approval.
+- [x] Every applicable checkbox in this file is complete.
+- [x] Remaining unchecked boxes, if any, are explicitly out of scope by user approval.
 - [x] The Go runtime is the authoritative shipped runtime for `packages/devhost`.
 - [x] The remaining Bun/TypeScript runtime is either removed or explicitly retained only as approved non-authoritative migration scaffolding.
