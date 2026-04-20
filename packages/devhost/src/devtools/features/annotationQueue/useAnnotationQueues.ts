@@ -22,13 +22,19 @@ interface IUseAnnotationQueuesResult {
   saveEntry: (entryId: string, comment: string) => Promise<boolean>;
 }
 
-export function useAnnotationQueues(): IUseAnnotationQueuesResult {
+export function useAnnotationQueues(enabled: boolean = true): IUseAnnotationQueuesResult {
   const [entryMutationIds, setEntryMutationIds] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [queueResumeIds, setQueueResumeIds] = useState<string[]>([]);
   const [queues, setQueues] = useState<IAnnotationQueueSnapshot[]>([]);
 
   useEffect(() => {
+    if (!enabled) {
+      setQueues([]);
+      setErrorMessage(null);
+      return;
+    }
+
     let isDisposed: boolean = false;
     const websocket = new WebSocket(createAnnotationQueuesWebSocketUrl(window.location, readDevtoolsControlToken()));
 
@@ -67,37 +73,58 @@ export function useAnnotationQueues(): IUseAnnotationQueuesResult {
       isDisposed = true;
       websocket.close(normalClosureCode, "devtools unmounted");
     };
-  }, []);
+  }, [enabled]);
 
-  const saveEntry = useCallback(async (entryId: string, comment: string): Promise<boolean> => {
-    return await runEntryMutation(entryId, setEntryMutationIds, setErrorMessage, async (): Promise<boolean> => {
-      await updateAnnotationQueueEntry(entryId, comment, fetch, readDevtoolsControlToken());
-      return true;
-    });
-  }, []);
+  const saveEntry = useCallback(
+    async (entryId: string, comment: string): Promise<boolean> => {
+      if (!enabled) {
+        return false;
+      }
 
-  const removeEntry = useCallback(async (entryId: string): Promise<boolean> => {
-    return await runEntryMutation(entryId, setEntryMutationIds, setErrorMessage, async (): Promise<boolean> => {
-      await deleteAnnotationQueueEntry(entryId, fetch, readDevtoolsControlToken());
-      return true;
-    });
-  }, []);
+      return await runEntryMutation(entryId, setEntryMutationIds, setErrorMessage, async (): Promise<boolean> => {
+        await updateAnnotationQueueEntry(entryId, comment, fetch, readDevtoolsControlToken());
+        return true;
+      });
+    },
+    [enabled],
+  );
 
-  const resumeQueue = useCallback(async (queueId: string): Promise<string | null> => {
-    setQueueResumeIds((currentIds: string[]): string[] => appendPendingId(currentIds, queueId));
+  const removeEntry = useCallback(
+    async (entryId: string): Promise<boolean> => {
+      if (!enabled) {
+        return false;
+      }
 
-    try {
-      const response = await resumeAnnotationQueue(queueId, fetch, readDevtoolsControlToken());
+      return await runEntryMutation(entryId, setEntryMutationIds, setErrorMessage, async (): Promise<boolean> => {
+        await deleteAnnotationQueueEntry(entryId, fetch, readDevtoolsControlToken());
+        return true;
+      });
+    },
+    [enabled],
+  );
 
-      setErrorMessage(null);
-      return response.sessionId;
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : String(error));
-      return null;
-    } finally {
-      setQueueResumeIds((currentIds: string[]): string[] => removePendingId(currentIds, queueId));
-    }
-  }, []);
+  const resumeQueue = useCallback(
+    async (queueId: string): Promise<string | null> => {
+      if (!enabled) {
+        return null;
+      }
+
+      setQueueResumeIds((currentIds: string[]): string[] => appendPendingId(currentIds, queueId));
+
+      try {
+        const response = await resumeAnnotationQueue(queueId, fetch, readDevtoolsControlToken());
+
+        setErrorMessage(null);
+        return response.sessionId;
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : String(error));
+        return null;
+      } finally {
+        setQueueResumeIds((currentIds: string[]): string[] => removePendingId(currentIds, queueId));
+      }
+    },
+    [enabled],
+  );
 
   return {
     errorMessage,

@@ -14,18 +14,24 @@ import (
 	"time"
 
 	"github.com/alexgorbatchev/devhost/packages/devhost/internal/caddy"
+	"github.com/alexgorbatchev/devhost/packages/devhost/internal/devtools"
+	"github.com/alexgorbatchev/devhost/packages/devhost/internal/manifest"
 )
 
 const (
-	defaultLogLabel        = "devhost"
-	maxAttemptOutputLines  = 50
-	shutdownGracePeriod    = 10 * time.Second
+	defaultLogLabel       = "devhost"
+	maxAttemptOutputLines = 50
+	shutdownGracePeriod   = 10 * time.Second
 )
 
+var serviceSignalSender = sendSignal
+var startDevtoolsControlServer = devtools.StartControlServer
+var startDocumentInjectionServer = devtools.StartDocumentInjectionServer
+
 type StartStackOptions struct {
-	CaddyPaths         caddy.Paths
-	Environment        map[string]string
-	LogWriter          io.Writer
+	CaddyPaths          caddy.Paths
+	Environment         map[string]string
+	LogWriter           io.Writer
 	ServiceStdoutWriter io.Writer
 	ServiceStderrWriter io.Writer
 	ShutdownGracePeriod time.Duration
@@ -37,9 +43,11 @@ type startedService struct {
 	exited   chan struct{}
 	outputWG sync.WaitGroup
 
-	exitMu    sync.Mutex
-	exitCode  int
-	hasExited bool
+	restartMu    sync.Mutex
+	isRestarting bool
+	exitMu       sync.Mutex
+	exitCode     int
+	hasExited    bool
 }
 
 type claimedFixedPort struct {
@@ -61,11 +69,13 @@ type serviceExitResult struct {
 type processStartOptions struct {
 	attemptOutputLines *[]string
 	environment        map[string]string
+	onStderrLine       func(string)
+	onStdoutLine       func(string)
 	stderrWriter       io.Writer
 	stdoutWriter       io.Writer
 }
 
-func StartStack(manifest *ResolvedManifest, serviceOrder []string, options StartStackOptions) (int, error) {
+func StartStack(manifest *ResolvedManifest, serviceOrder []string, options StartStackOptions) (exitCode int, returnedError error) {
 	if manifest == nil {
 		return 0, fmt.Errorf("manifest is required")
 	}
@@ -74,18 +84,14 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		return 0, fmt.Errorf("service order is required")
 	}
 
-	if hasEnabledDevtools(manifest.Devtools) {
-		return 0, fmt.Errorf("manifest mode with devtools enabled is not implemented yet in the Go rewrite")
-	}
-
 	environment := copyEnvironment(options.Environment)
 	if len(environment) == 0 {
 		environment = readCurrentEnvironment()
 	}
 
-	paths, error := resolveStartStackPaths(options.CaddyPaths, environment)
-	if error != nil {
-		return 0, error
+	paths, err := resolveStartStackPaths(options.CaddyPaths, environment)
+	if err != nil {
+		return 0, err
 	}
 
 	gracePeriod := options.ShutdownGracePeriod
@@ -93,20 +99,37 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		gracePeriod = shutdownGracePeriod
 	}
 
+	runtimeDevtoolsFeatures := resolveSupportedDevtoolsFeatures(manifest.Devtools)
+	devtoolsEnabled := hasEnabledDevtools(manifest.Devtools) && hasEnabledRuntimeDevtools(runtimeDevtoolsFeatures)
 	startedServices := []*startedService{}
+	var startedServicesMu sync.Mutex
 	claimedFixedPorts := []claimedFixedPort{}
 	claimedHosts := []string{}
 	activeRoutes := []activeRoute{}
-	serviceExits := make(chan serviceExitResult, len(serviceOrder))
+	serviceExits := make(chan serviceExitResult, 1)
+	documentInjectionServers := map[string]*devtools.DocumentInjectionServer{}
+	var devtoolsControlServer *devtools.ControlServer
 	var cleanupError error
 
 	managedCaddyAdminAddress := caddy.ResolveManagedCaddyAdminAddress(manifest.Caddy.Global.AdminAddress)
 
 	defer func() {
-		stopStartedServices(startedServices, gracePeriod)
+		startedServicesMu.Lock()
+		startedServicesSnapshot := append([]*startedService{}, startedServices...)
+		startedServicesMu.Unlock()
+		stopStartedServices(startedServicesSnapshot, gracePeriod)
 
-		for _, route := range activeRoutes {
-			if error := caddy.UnregisterRoute(route.serviceName, route.host, route.path, manifest.ManifestPath, paths.RegistrationsDirectoryPath); error != nil && cleanupError == nil {
+		for _, documentInjectionServer := range documentInjectionServers {
+			if documentInjectionServer == nil {
+				continue
+			}
+			if error := documentInjectionServer.Stop(); error != nil && cleanupError == nil {
+				cleanupError = error
+			}
+		}
+
+		if devtoolsControlServer != nil {
+			if error := devtoolsControlServer.Stop(); error != nil && cleanupError == nil {
 				cleanupError = error
 			}
 		}
@@ -121,6 +144,18 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			}
 		}
 
+		for _, route := range activeRoutes {
+			if error := caddy.UnregisterRoute(route.serviceName, route.host, route.path, manifest.ManifestPath, paths.RegistrationsDirectoryPath); error != nil && cleanupError == nil {
+				cleanupError = error
+			}
+		}
+
+		for _, host := range claimedHosts {
+			if error := caddy.SyncManagedHostRoute(host, managedCaddyAdminAddress, paths.RoutesDirectoryPath); error != nil && cleanupError == nil {
+				cleanupError = error
+			}
+		}
+
 		for _, claim := range claimedFixedPorts {
 			if error := caddy.ReleaseFixedPortClaim(caddy.ClaimFixedPortOptions{
 				BindHost:                claim.bindHost,
@@ -130,6 +165,10 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			}); error != nil && cleanupError == nil {
 				cleanupError = error
 			}
+		}
+
+		if cleanupError != nil {
+			returnedError = joinCleanupError(returnedError, cleanupError)
 		}
 	}()
 
@@ -187,15 +226,70 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		claimedHosts = append(claimedHosts, host)
 	}
 
-	for _, serviceName := range serviceOrder {
-		startedService, error := startServiceWithRetries(manifest, serviceName, serviceExits, options, environment)
+	routedServices := collectRoutedServiceIdentities(manifest.Services)
+	if devtoolsEnabled && len(routedServices) > 0 {
+		controlServer, error := startDevtoolsControlServer(devtools.StartControlServerOptions{
+			Agent:            manifest.Agent,
+			AgentDisplayName: manifest.Agent.DisplayName,
+			ComponentEditor:  manifest.Devtools.Editor.IDE,
+			FeatureToggles:   runtimeDevtoolsFeatures,
+			GetHealthResponse: func() (devtools.HealthResponse, error) {
+				startedServicesMu.Lock()
+				startedServicesSnapshot := append([]*startedService{}, startedServices...)
+				startedServicesMu.Unlock()
+				return collectManagedServicesHealth(*manifest, startedServicesSnapshot), nil
+			},
+			ManifestPath:    manifest.ManifestPath,
+			MinimapPosition: manifest.Devtools.Minimap.Position,
+			Position:        manifest.Devtools.Status.Position,
+			ProjectRootPath: manifest.ManifestDirectoryPath,
+			RestartService: func(serviceName string) error {
+				startedServicesMu.Lock()
+				targetStartedService := findStartedService(startedServices, serviceName)
+				if targetStartedService != nil {
+					targetStartedService.setRestarting(true)
+				}
+				startedServicesMu.Unlock()
+
+				if targetStartedService != nil {
+					stopStartedService(targetStartedService, gracePeriod)
+					startedServicesMu.Lock()
+					startedServices = removeStartedService(startedServices, targetStartedService)
+					startedServicesMu.Unlock()
+				}
+
+				restartedService, restartError := startServiceWithRetries(manifest, serviceName, serviceExits, options, environment, devtoolsControlServer)
+				if restartError != nil {
+					return restartError
+				}
+
+				startedServicesMu.Lock()
+				startedServices = append(startedServices, restartedService)
+				startedServicesMu.Unlock()
+				return nil
+			},
+			RoutedServices:     routedServices,
+			StateDirectoryPath: paths.StateDirectoryPath,
+			StackName:          manifest.Name,
+		})
 		if error != nil {
 			return 0, joinCleanupError(error, cleanupError)
 		}
 
-		startedServices = append(startedServices, startedService)
+		devtoolsControlServer = controlServer
+	}
 
-		service := startedService.service
+	for _, serviceName := range serviceOrder {
+		started, err := startServiceWithRetries(manifest, serviceName, serviceExits, options, environment, devtoolsControlServer)
+		if err != nil {
+			return 0, joinCleanupError(err, cleanupError)
+		}
+
+		startedServicesMu.Lock()
+		startedServices = append(startedServices, started)
+		startedServicesMu.Unlock()
+
+		service := started.service
 		if service.Host == nil || service.Port == nil {
 			continue
 		}
@@ -205,7 +299,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			path = *service.Path
 		}
 
-		if error := caddy.ActivateRoute(caddy.ActivateRouteOptions{
+		activateRouteOptions := caddy.ActivateRouteOptions{
 			AppBindHost:       service.BindHost,
 			AppPort:           *service.Port,
 			CaddyAdminAddress: managedCaddyAdminAddress,
@@ -216,7 +310,28 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			HTTPEnabled:       manifest.Caddy.Global.HTTP,
 			Path:              path,
 			ServiceName:       service.Name,
-		}, manifest.ManifestPath, paths.RoutesDirectoryPath); error != nil {
+		}
+
+		if devtoolsControlServer != nil && isRootCompatibleServicePath(service.Path) {
+			proxyHost, error := caddy.ResolveProxyHost(service.BindHost)
+			if error != nil {
+				return 0, joinCleanupError(error, cleanupError)
+			}
+
+			documentInjectionServer, error := startDocumentInjectionServer(devtools.StartDocumentInjectionServerOptions{
+				BackendHost: proxyHost,
+				BackendPort: *service.Port,
+			})
+			if error != nil {
+				return 0, joinCleanupError(error, cleanupError)
+			}
+
+			documentInjectionServers[service.Name] = documentInjectionServer
+			activateRouteOptions.DevtoolsControlPort = devtoolsControlServer.Port()
+			activateRouteOptions.DocumentInjectionPort = documentInjectionServer.Port()
+		}
+
+		if error := caddy.ActivateRoute(activateRouteOptions, manifest.ManifestPath, paths.RoutesDirectoryPath); error != nil {
 			return 0, joinCleanupError(error, cleanupError)
 		}
 
@@ -226,10 +341,6 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	LogPrimaryService(*manifest, options.LogWriter)
 
 	result := <-serviceExits
-	if cleanupError != nil {
-		return 0, joinCleanupError(fmt.Errorf("service %s exited with code %d", result.serviceName, result.exitCode), cleanupError)
-	}
-
 	return result.exitCode, nil
 }
 
@@ -287,6 +398,7 @@ func startServiceWithRetries(
 	serviceExits chan<- serviceExitResult,
 	options StartStackOptions,
 	environment map[string]string,
+	devtoolsControlServer *devtools.ControlServer,
 ) (*startedService, error) {
 	retryCount := 0
 
@@ -297,38 +409,63 @@ func startServiceWithRetries(
 		}
 
 		attemptOutputLines := []string{}
-		startedService, error := startServiceProcess(*manifest, service, processStartOptions{
+		started, err := startServiceProcess(*manifest, service, processStartOptions{
 			attemptOutputLines: &attemptOutputLines,
 			environment:        environment,
-			stderrWriter:       options.ServiceStderrWriter,
-			stdoutWriter:       options.ServiceStdoutWriter,
+			onStderrLine: func(line string) {
+				if devtoolsControlServer != nil {
+					devtoolsControlServer.PublishLogEntry(service.Name, devtools.ServiceLogStreamStderr, line)
+				}
+			},
+			onStdoutLine: func(line string) {
+				if devtoolsControlServer != nil {
+					devtoolsControlServer.PublishLogEntry(service.Name, devtools.ServiceLogStreamStdout, line)
+				}
+			},
+			stderrWriter: options.ServiceStderrWriter,
+			stdoutWriter: options.ServiceStdoutWriter,
 		})
-		if error != nil {
-			return nil, error
+		if err != nil {
+			return nil, err
 		}
 
-		error = WaitForServiceHealth(WaitForServiceHealthOptions{
-			Health:      service.Health,
-			ReadExitCode: startedService.ReadExitCode,
-			ServiceName: service.Name,
+		err = WaitForServiceHealth(WaitForServiceHealthOptions{
+			Health:       service.Health,
+			ReadExitCode: started.ReadExitCode,
+			ServiceName:  service.Name,
 		})
-		if error == nil {
+		if err == nil {
 			if warning := ReadLoopbackBindHostAmbiguityWarning(service, manifest.Caddy.Global.HTTPSPort); warning != "" {
 				writeLogLine(options.LogWriter, manifest.Name, warning)
 			}
 
-			go func(started *startedService) {
-				<-started.exited
-				serviceExits <- serviceExitResult{exitCode: started.exitCodeValue(), serviceName: started.service.Name}
-			}(startedService)
+			go func(startedService *startedService) {
+				<-startedService.exited
+				if devtoolsControlServer != nil {
+					_ = devtoolsControlServer.PublishHealthResponse()
+				}
+				if startedService.isRestartingValue() {
+					return
+				}
+				select {
+				case serviceExits <- serviceExitResult{exitCode: startedService.exitCodeValue(), serviceName: startedService.service.Name}:
+				default:
+				}
+			}(started)
+			if devtoolsControlServer != nil {
+				_ = devtoolsControlServer.PublishHealthResponse()
+			}
 
-			return startedService, nil
+			return started, nil
 		}
 
-		stopStartedService(startedService, resolveGracePeriod(options.ShutdownGracePeriod))
+		stopStartedService(started, resolveGracePeriod(options.ShutdownGracePeriod))
+		if devtoolsControlServer != nil {
+			_ = devtoolsControlServer.PublishHealthResponse()
+		}
 
-		if !ShouldRetryAutoPortStartup(service, error, attemptOutputLines, retryCount) {
-			return nil, error
+		if !ShouldRetryAutoPortStartup(service, err, attemptOutputLines, retryCount) {
+			return nil, err
 		}
 
 		retryCount += 1
@@ -373,8 +510,8 @@ func startServiceProcess(manifest ResolvedManifest, service ResolvedService, opt
 	}
 
 	startedService.outputWG.Add(2)
-	go pipeProcessOutput(stdoutPipe, fmt.Sprintf("[%s] ", service.Name), resolveStdoutWriter(options.stdoutWriter), options.attemptOutputLines, &startedService.outputWG)
-	go pipeProcessOutput(stderrPipe, fmt.Sprintf("[%s] ", service.Name), resolveStderrWriter(options.stderrWriter), options.attemptOutputLines, &startedService.outputWG)
+	go pipeProcessOutput(stdoutPipe, fmt.Sprintf("[%s] ", service.Name), resolveStdoutWriter(options.stdoutWriter), options.attemptOutputLines, options.onStdoutLine, &startedService.outputWG)
+	go pipeProcessOutput(stderrPipe, fmt.Sprintf("[%s] ", service.Name), resolveStderrWriter(options.stderrWriter), options.attemptOutputLines, options.onStderrLine, &startedService.outputWG)
 	go startedService.waitForExit()
 
 	return startedService, nil
@@ -390,13 +527,13 @@ func stopStartedService(startedService *startedService, gracePeriod time.Duratio
 		return
 	}
 
-	sendSignal(startedService.cmd, syscall.Signal(15))
+	serviceSignalSender(startedService.cmd, syscall.Signal(15))
 	if waitForExitWithinGracePeriod(startedService, gracePeriod) {
 		startedService.wait()
 		return
 	}
 
-	sendSignal(startedService.cmd, syscall.Signal(9))
+	serviceSignalSender(startedService.cmd, syscall.Signal(9))
 	startedService.wait()
 }
 
@@ -407,7 +544,7 @@ func stopStartedServices(startedServices []*startedService, gracePeriod time.Dur
 			continue
 		}
 
-		sendSignal(startedService.cmd, syscall.Signal(15))
+		serviceSignalSender(startedService.cmd, syscall.Signal(15))
 	}
 
 	for index := len(startedServices) - 1; index >= 0; index-- {
@@ -422,7 +559,7 @@ func stopStartedServices(startedServices []*startedService, gracePeriod time.Dur
 		}
 
 		if !waitForExitWithinGracePeriod(startedService, gracePeriod) {
-			sendSignal(startedService.cmd, syscall.Signal(9))
+			serviceSignalSender(startedService.cmd, syscall.Signal(9))
 		}
 
 		startedService.wait()
@@ -445,7 +582,7 @@ func waitForExitWithinGracePeriod(startedService *startedService, gracePeriod ti
 	}
 }
 
-func pipeProcessOutput(reader io.Reader, prefix string, writer io.Writer, attemptOutputLines *[]string, wg *sync.WaitGroup) {
+func pipeProcessOutput(reader io.Reader, prefix string, writer io.Writer, attemptOutputLines *[]string, onLine func(string), wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	scanner := bufio.NewScanner(reader)
@@ -455,6 +592,9 @@ func pipeProcessOutput(reader io.Reader, prefix string, writer io.Writer, attemp
 		line := prefix + scanner.Text()
 		appendAttemptOutputLine(attemptOutputLines, line)
 		_, _ = fmt.Fprintln(writer, line)
+		if onLine != nil {
+			onLine(line)
+		}
 	}
 
 	if error := scanner.Err(); error != nil {
@@ -526,8 +666,151 @@ func collectClaimedHosts(services map[string]ResolvedService) []string {
 	return hosts
 }
 
-func hasEnabledDevtools(config interface{ Editor struct{ Enabled bool }; ExternalToolbars struct{ Enabled bool }; Minimap struct{ Enabled bool }; Status struct{ Enabled bool } }) bool {
+func hasEnabledDevtools(config manifest.DevtoolsConfig) bool {
 	return config.Editor.Enabled || config.ExternalToolbars.Enabled || config.Minimap.Enabled || config.Status.Enabled
+}
+
+func resolveSupportedDevtoolsFeatures(config manifest.DevtoolsConfig) devtools.FeatureToggles {
+	devtoolsEnabled := hasEnabledDevtools(config)
+	editorTerminalSupported := config.Editor.Enabled && config.Editor.IDE == "neovim"
+
+	return devtools.FeatureToggles{
+		AnnotationEnabled:       devtoolsEnabled,
+		AnnotationQueueEnabled:  devtoolsEnabled,
+		EditorEnabled:           editorTerminalSupported,
+		ExternalToolbarsEnabled: config.ExternalToolbars.Enabled,
+		MinimapEnabled:          config.Minimap.Enabled,
+		StatusEnabled:           config.Status.Enabled,
+		TerminalEnabled:         devtoolsEnabled,
+	}
+}
+
+func hasEnabledRuntimeDevtools(features devtools.FeatureToggles) bool {
+	return features.AnnotationEnabled ||
+		features.AnnotationQueueEnabled ||
+		features.EditorEnabled ||
+		features.ExternalToolbarsEnabled ||
+		features.MinimapEnabled ||
+		features.StatusEnabled ||
+		features.TerminalEnabled
+}
+
+func collectRoutedServiceIdentities(services map[string]ResolvedService) []devtools.RoutedServiceIdentity {
+	routedServices := []devtools.RoutedServiceIdentity{}
+	for _, service := range services {
+		if service.Host == nil {
+			continue
+		}
+
+		path := "/"
+		if service.Path != nil {
+			path = *service.Path
+		}
+
+		routedServices = append(routedServices, devtools.RoutedServiceIdentity{
+			Host:        *service.Host,
+			Path:        path,
+			ServiceName: service.Name,
+		})
+	}
+
+	sort.Slice(routedServices, func(left int, right int) bool {
+		if routedServices[left].Host != routedServices[right].Host {
+			return routedServices[left].Host < routedServices[right].Host
+		}
+		if routedServices[left].Path != routedServices[right].Path {
+			return routedServices[left].Path < routedServices[right].Path
+		}
+		return routedServices[left].ServiceName < routedServices[right].ServiceName
+	})
+	return routedServices
+}
+
+func isRootCompatibleServicePath(path *string) bool {
+	return path == nil || *path == "/" || *path == "/*"
+}
+
+func collectManagedServicesHealth(manifest ResolvedManifest, startedServices []*startedService) devtools.HealthResponse {
+	startedServicesByName := map[string]*startedService{}
+	for _, startedService := range startedServices {
+		if startedService == nil {
+			continue
+		}
+		startedServicesByName[startedService.service.Name] = startedService
+	}
+
+	serviceNames := append([]string{}, manifest.ServiceOrder...)
+	if len(serviceNames) == 0 {
+		for serviceName := range manifest.Services {
+			serviceNames = append(serviceNames, serviceName)
+		}
+		sort.Strings(serviceNames)
+	}
+
+	services := make([]devtools.ServiceHealth, 0, len(serviceNames))
+	for _, serviceName := range serviceNames {
+		service, ok := manifest.Services[serviceName]
+		if !ok {
+			continue
+		}
+
+		status := false
+		startedService := startedServicesByName[service.Name]
+		if startedService != nil && startedService.ReadExitCode() == nil {
+			status = CheckServiceHealth(service.Health)
+		}
+
+		services = append(services, devtools.ServiceHealth{
+			Name:   service.Name,
+			Status: status,
+			URL:    readManagedServiceURL(service, manifest.Caddy.Global.HTTPSPort),
+		})
+	}
+
+	return devtools.HealthResponse{Services: services}
+}
+
+func readManagedServiceURL(service ResolvedService, httpsPort int) *string {
+	if service.Host == nil || service.Path == nil {
+		return nil
+	}
+
+	url := caddy.CreateManagedCaddyURL("https", *service.Host, httpsPort, normalizeManagedServiceURLPath(*service.Path))
+	return &url
+}
+
+func normalizeManagedServiceURLPath(path string) string {
+	if path == "/" || path == "/*" {
+		return "/"
+	}
+
+	if strings.HasSuffix(path, "/*") {
+		return strings.TrimSuffix(path, "*")
+	}
+
+	return path
+}
+
+func findStartedService(startedServices []*startedService, serviceName string) *startedService {
+	for _, startedService := range startedServices {
+		if startedService != nil && startedService.service.Name == serviceName {
+			return startedService
+		}
+	}
+
+	return nil
+}
+
+func removeStartedService(startedServices []*startedService, target *startedService) []*startedService {
+	for index, startedService := range startedServices {
+		if startedService != target {
+			continue
+		}
+
+		return append(startedServices[:index], startedServices[index+1:]...)
+	}
+
+	return startedServices
 }
 
 func readCurrentEnvironment() map[string]string {
@@ -645,4 +928,16 @@ func (s *startedService) ReadExitCode() *int {
 
 	exitCode := s.exitCode
 	return &exitCode
+}
+
+func (s *startedService) setRestarting(value bool) {
+	s.restartMu.Lock()
+	defer s.restartMu.Unlock()
+	s.isRestarting = value
+}
+
+func (s *startedService) isRestartingValue() bool {
+	s.restartMu.Lock()
+	defer s.restartMu.Unlock()
+	return s.isRestarting
 }

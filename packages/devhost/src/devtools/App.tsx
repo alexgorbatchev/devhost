@@ -55,7 +55,7 @@ function AppContent(): JSX.Element {
     removeEntry,
     resumeQueue,
     saveEntry,
-  } = useAnnotationQueues();
+  } = useAnnotationQueues(features.annotationQueueEnabled);
   const { launchers: externalDevtoolsLaunchers, toggleLauncher } = useExternalDevtoolsLaunchers(
     features.externalToolbarsEnabled,
   );
@@ -67,14 +67,14 @@ function AppContent(): JSX.Element {
     removeSession,
     startComponentSourceSession,
     submitAnnotation,
-  } = useTerminalSessions();
+  } = useTerminalSessions(features.terminalEnabled);
   const [isMinimapHovered, setIsMinimapHovered] = useState<boolean>(false);
   const logEntries = useServiceLogs(isMinimapHovered);
   const { componentMenu, openComponentSource } = useComponentSourceNavigation({
     componentEditor,
     projectRootPath,
     startComponentSourceSession,
-    enabled: features.editorEnabled,
+    enabled: features.editorEnabled && features.terminalEnabled,
   });
   const shouldRenderPanel: boolean = features.statusEnabled && (errorMessage !== null || services.length > 0);
   const shouldRenderExternalDevtoolsPanel: boolean =
@@ -121,12 +121,14 @@ function AppContent(): JSX.Element {
 
   return (
     <div id={DEVTOOLS_ROOT_ID} data-devhost-devtools="" data-testid="AppContent">
-      <AnnotationComposer
-        activeAgentSessionId={activeAgentSessionId}
-        agentDisplayName={agentDisplayName}
-        onSubmit={submitAnnotation}
-        stackName={stackName}
-      />
+      {features.annotationEnabled ? (
+        <AnnotationComposer
+          activeAgentSessionId={activeAgentSessionId}
+          agentDisplayName={agentDisplayName}
+          onSubmit={submitAnnotation}
+          stackName={stackName}
+        />
+      ) : null}
       {componentMenu !== null ? (
         <ComponentSourceMenu
           errorMessage={componentMenu.errorMessage}
@@ -140,26 +142,30 @@ function AppContent(): JSX.Element {
       ) : null}
       <div className={cornerDockClassName} data-testid="AppContent--corner-dock">
         {shouldRenderPanel ? <ServiceStatusPanel errorMessage={errorMessage} services={services} /> : null}
-        <AnnotationQueuePanel
-          agentDisplayName={agentDisplayName}
-          errorMessage={annotationQueueErrorMessage}
-          isEntryMutationPending={isEntryMutationPending}
-          isQueueResumePending={isQueueResumePending}
-          onRemoveEntry={removeEntry}
-          onResumeQueue={handleResumeQueue}
-          onSaveEntry={saveEntry}
-          queues={annotationQueues}
-        />
+        {features.annotationQueueEnabled ? (
+          <AnnotationQueuePanel
+            agentDisplayName={agentDisplayName}
+            errorMessage={annotationQueueErrorMessage}
+            isEntryMutationPending={isEntryMutationPending}
+            isQueueResumePending={isQueueResumePending}
+            onRemoveEntry={removeEntry}
+            onResumeQueue={handleResumeQueue}
+            onSaveEntry={saveEntry}
+            queues={annotationQueues}
+          />
+        ) : null}
         {shouldRenderExternalDevtoolsPanel ? (
           <ExternalDevtoolsPanel launchers={externalDevtoolsLaunchers} onToggleLauncher={toggleLauncher} />
         ) : null}
       </div>
-      <TerminalSessionTray
-        sessions={terminalSessions}
-        onExpandSession={expandSession}
-        onMinimizeSession={minimizeSession}
-        onRemoveSession={removeSession}
-      />
+      {features.terminalEnabled ? (
+        <TerminalSessionTray
+          sessions={terminalSessions}
+          onExpandSession={expandSession}
+          onMinimizeSession={minimizeSession}
+          onRemoveSession={removeSession}
+        />
+      ) : null}
       {shouldRenderMinimap ? (
         <LogMinimap entries={logEntries} isHovered={isMinimapHovered} onHoveredChange={setIsMinimapHovered} />
       ) : null}
