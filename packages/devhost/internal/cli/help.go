@@ -1,10 +1,10 @@
 package cli
 
 const HelpText = `Usage:
-  bun run devhost
-  bun run devhost --manifest ./devhost.toml
-  bun run devhost caddy start|stop|trust|download|privileged-ports|print-root-cert
-  bun run devhost caddy trust-remote <ssh-target>
+  devhost
+  devhost --manifest ./devhost.toml
+  devhost caddy start|stop|trust|download|privileged-ports|print-root-cert
+  devhost caddy trust-remote <ssh-target>
 
 Options:
   --manifest  Explicit path to devhost.toml.

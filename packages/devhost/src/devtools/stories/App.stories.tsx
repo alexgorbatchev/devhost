@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { expect, waitFor, within } from "storybook/test";
 import { useEffect } from "react";
 
-import { App } from "../App";
+import { App as DevtoolsApp } from "../App";
 import { renderDevtools } from "../renderDevtools";
 import { DEVTOOLS_HOST_ID } from "../shared";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../shared/constants";
@@ -14,9 +14,9 @@ import {
 import { StoryContainer } from "../shared/stories/StoryContainer";
 import { withDevhostMock } from "./withDevhostMock";
 
-const meta: Meta<typeof App> = {
+const meta: Meta<typeof DevtoolsApp> = {
   title: "@alexgorbatchev/devhost/devtools/App",
-  component: App,
+  component: DevtoolsApp,
   decorators: [withDevhostMock],
 };
 
@@ -24,11 +24,11 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const Default: Story = {
+export const App: Story = {
   render: () =>
     renderInDevtoolsStoryShadowRoot(
       <StoryContainer>
-        <App />
+        <DevtoolsApp />
       </StoryContainer>,
     ),
   play: async ({ canvasElement }): Promise<void> => {
@@ -52,7 +52,7 @@ const Default: Story = {
   },
 };
 
-const InjectedMount: Story = {
+export const InjectedMount: Story = {
   render: () => <InjectedMountStory />,
   play: async (): Promise<void> => {
     await waitFor(() => {
@@ -86,5 +86,3 @@ async function readStoryShadowRoot(canvasElement: HTMLElement): Promise<ShadowRo
 
   return shadowRoot;
 }
-
-export { Default as App, InjectedMount };

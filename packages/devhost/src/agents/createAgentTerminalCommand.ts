@@ -26,33 +26,46 @@ export function createAgentTerminalCommand(options: ICreateAgentTerminalCommandO
   });
 
   if (options.agent.kind === "pi") {
+    const promptFilePath: string = readRequiredSessionFilePath(
+      sessionFiles.env.DEVHOST_AGENT_PROMPT_FILE,
+      "DEVHOST_AGENT_PROMPT_FILE",
+    );
     return {
       cleanup: sessionFiles.cleanup,
-      command: createPiAgentCommand(sessionFiles.env.DEVHOST_AGENT_PROMPT_FILE),
+      command: createPiAgentCommand(promptFilePath),
       cwd: options.projectRootPath,
       env: sessionFiles.env,
     };
   }
 
   if (options.agent.kind === "claude-code") {
+    const promptFilePath: string = readRequiredSessionFilePath(
+      sessionFiles.env.DEVHOST_AGENT_PROMPT_FILE,
+      "DEVHOST_AGENT_PROMPT_FILE",
+    );
+    const settingsFilePath: string = readRequiredSessionFilePath(
+      sessionFiles.env.DEVHOST_AGENT_CLAUDE_SETTINGS_FILE,
+      "DEVHOST_AGENT_CLAUDE_SETTINGS_FILE",
+    );
     return {
       cleanup: sessionFiles.cleanup,
-      command: createClaudeCodeAgentCommand(
-        sessionFiles.env.DEVHOST_AGENT_PROMPT_FILE,
-        sessionFiles.env.DEVHOST_AGENT_CLAUDE_SETTINGS_FILE,
-      ),
+      command: createClaudeCodeAgentCommand(promptFilePath, settingsFilePath),
       cwd: options.projectRootPath,
       env: sessionFiles.env,
     };
   }
 
   if (options.agent.kind === "opencode") {
+    const promptFilePath: string = readRequiredSessionFilePath(
+      sessionFiles.env.DEVHOST_AGENT_PROMPT_FILE,
+      "DEVHOST_AGENT_PROMPT_FILE",
+    );
     if (sessionFiles.env.DEVHOST_AGENT_OPENCODE_CONFIG_FILE) {
       sessionFiles.env.OPENCODE_CONFIG = sessionFiles.env.DEVHOST_AGENT_OPENCODE_CONFIG_FILE;
     }
     return {
       cleanup: sessionFiles.cleanup,
-      command: createOpenCodeAgentCommand(sessionFiles.env.DEVHOST_AGENT_PROMPT_FILE),
+      command: createOpenCodeAgentCommand(promptFilePath),
       cwd: options.projectRootPath,
       env: sessionFiles.env,
     };
@@ -72,4 +85,12 @@ export function createAgentTerminalCommand(options: ICreateAgentTerminalCommandO
       ...sessionFiles.env,
     },
   };
+}
+
+function readRequiredSessionFilePath(filePath: string | undefined, variableName: string): string {
+  if (filePath === undefined) {
+    throw new Error(`Expected ${variableName} to be populated for the selected agent session.`);
+  }
+
+  return filePath;
 }

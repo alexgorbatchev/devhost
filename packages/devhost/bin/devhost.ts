@@ -1,3 +1,6 @@
 #!/usr/bin/env bun
 
-import "../src/main.ts";
+console.error(
+  "bin/devhost.ts is no longer a supported runtime entrypoint. Use go run ./cmd/devhost or the built ./dist/devhost binary.",
+);
+process.exit(1);
