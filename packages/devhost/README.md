@@ -353,9 +353,12 @@ The submitted draft includes the current stack name, page URL/title, comment tex
 
 When the host page is a React development build that exposes component source metadata, each marker also captures the nearest available component source location (file path, line, column, and component name when available). When the host app serves fetchable source maps, devhost also attempts to symbolicate generated bundle locations back to original source files before storing the annotation.
 
-### Open source in Neovim
+### Open component source
 
-The shipped Go runtime currently supports `Alt` + `right-click` component-source navigation only when `[devtools.editor].ide = "neovim"`. In that mode, devhost launches Neovim inside the injected xterm terminal, so `nvim` must be available on the machine running `devhost`.
+The shipped Go runtime supports `Alt` + `right-click` component-source navigation whenever `[devtools.editor].enabled = true`.
+
+- When `[devtools.editor].ide = "neovim"`, devhost launches Neovim inside the injected xterm terminal, so `nvim` must be available on the machine running `devhost`.
+- Other supported editors continue to use their direct external-editor URL launch path instead of the embedded terminal.
 
 Embedded terminal sessions now normalize their terminal environment to `TERM=xterm-256color` and `COLORTERM=truecolor` so terminal UIs like Neovim render against the actual xterm.js emulator instead of inheriting incompatible host-terminal identities. Neovim component-source sessions also expand to fill the available viewport when opened as a modal.
 

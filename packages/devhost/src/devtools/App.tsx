@@ -74,7 +74,7 @@ function AppContent(): JSX.Element {
     componentEditor,
     projectRootPath,
     startComponentSourceSession,
-    enabled: features.editorEnabled && features.terminalEnabled,
+    enabled: features.editorEnabled,
   });
   const shouldRenderPanel: boolean = features.statusEnabled && (errorMessage !== null || services.length > 0);
   const shouldRenderExternalDevtoolsPanel: boolean =

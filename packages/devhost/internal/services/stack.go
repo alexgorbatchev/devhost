@@ -720,12 +720,11 @@ func hasEnabledDevtools(config manifest.DevtoolsConfig) bool {
 
 func resolveSupportedDevtoolsFeatures(config manifest.DevtoolsConfig) devtools.FeatureToggles {
 	devtoolsEnabled := hasEnabledDevtools(config)
-	editorTerminalSupported := config.Editor.Enabled && config.Editor.IDE == "neovim"
 
 	return devtools.FeatureToggles{
 		AnnotationEnabled:       devtoolsEnabled,
 		AnnotationQueueEnabled:  devtoolsEnabled,
-		EditorEnabled:           editorTerminalSupported,
+		EditorEnabled:           config.Editor.Enabled,
 		ExternalToolbarsEnabled: config.ExternalToolbars.Enabled,
 		MinimapEnabled:          config.Minimap.Enabled,
 		StatusEnabled:           config.Status.Enabled,
