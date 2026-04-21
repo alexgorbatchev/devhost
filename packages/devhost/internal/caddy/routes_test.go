@@ -122,12 +122,15 @@ func TestFixedPortClaims(t *testing.T) {
 	if error := ClaimFixedPort(claimOptions); error != nil {
 		t.Fatalf("ClaimFixedPort(...) after stale cleanup unexpected error = %v", error)
 	}
+	if error := ClaimFixedPort(claimOptions); error == nil || !strings.Contains(error.Error(), "127.0.0.1:3000 is already in use by `bun dev` via /tmp/project/devhost.toml.") {
+		t.Fatalf("ClaimFixedPort(...) same-manifest error = %v", error)
+	}
 	if error := ClaimFixedPort(ClaimFixedPortOptions{
 		BindHost:                "0.0.0.0",
 		ManifestPath:            "/tmp/other/devhost.toml",
 		Port:                    3000,
 		PortClaimsDirectoryPath: paths.PortClaimsDirectoryPath,
-	}); error == nil || !strings.Contains(error.Error(), "Fixed bind port 0.0.0.0:3000 is already claimed by PID 4321 from /tmp/project/devhost.toml.") {
+	}); error == nil || !strings.Contains(error.Error(), "0.0.0.0:3000 is already in use by `bun dev` via /tmp/project/devhost.toml.") {
 		t.Fatalf("ClaimFixedPort(...) overlapping error = %v", error)
 	}
 
@@ -148,6 +151,28 @@ func TestFixedPortClaims(t *testing.T) {
 	}
 	if _, error := os.Stat(claimPath); !errors.Is(error, os.ErrNotExist) {
 		t.Fatalf("stat released fixed port claim error = %v, want not-exist", error)
+	}
+}
+
+func TestNormalizeProcessArgs(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "empty", input: "", want: ""},
+		{name: "plain command", input: "bun dev", want: "bun dev"},
+		{name: "absolute executable path", input: "/home/alex/.dotfiles/.generated/binaries/bun/current/bun src/server.ts", want: "bun src/server.ts"},
+		{name: "relative executable path", input: "./node_modules/.bin/next dev", want: "next dev"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := normalizeProcessArgs(tt.input)
+			if got != tt.want {
+				t.Fatalf("normalizeProcessArgs(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
 	}
 }
 
@@ -669,9 +694,10 @@ func TestCleanupStaleRegistrations(t *testing.T) {
 }
 
 type routeMutationTestHooks struct {
-	now          time.Time
-	processAlive func(int) bool
-	processID    int
+	listeningProcessLabel func(int) string
+	now                   time.Time
+	processAlive          func(int) bool
+	processID             int
 }
 
 func withRouteMutationTestHooks(t *testing.T, hooks routeMutationTestHooks) {
@@ -679,6 +705,7 @@ func withRouteMutationTestHooks(t *testing.T, hooks routeMutationTestHooks) {
 	originalNow := routeMutationNow
 	originalProcessID := routeMutationProcessID
 	originalProcessAlive := routeMutationIsProcessAlive
+	originalListeningProcessLabel := routeMutationReadListeningProcessLabel
 	routeMutationNow = func() time.Time {
 		return hooks.now
 	}
@@ -692,10 +719,21 @@ func withRouteMutationTestHooks(t *testing.T, hooks routeMutationTestHooks) {
 	} else {
 		routeMutationIsProcessAlive = hooks.processAlive
 	}
+	if hooks.listeningProcessLabel == nil {
+		routeMutationReadListeningProcessLabel = func(port int) string {
+			if port == 3000 {
+				return "`bun dev`"
+			}
+			return ""
+		}
+	} else {
+		routeMutationReadListeningProcessLabel = hooks.listeningProcessLabel
+	}
 	t.Cleanup(func() {
 		routeMutationNow = originalNow
 		routeMutationProcessID = originalProcessID
 		routeMutationIsProcessAlive = originalProcessAlive
+		routeMutationReadListeningProcessLabel = originalListeningProcessLabel
 	})
 }
 
