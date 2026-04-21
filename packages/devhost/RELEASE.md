@@ -2,7 +2,6 @@
 
 ## Target
 
-- Package name: `@alexgorbatchev/devhost`
 - Workflow: `.github/workflows/publish.yml`
 - Release trigger: push a Git tag matching `v*`
 
