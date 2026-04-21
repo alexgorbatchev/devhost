@@ -40,7 +40,7 @@ Current facts:
 - No status leaves the browser UI.
 - Reloading the page loses the current working/finished knowledge until another OSC sequence arrives.
 
-### `packages/devhost/src/devtools-server/startDevtoolsControlServer.ts`
+### `packages/devhost/internal/devtools/server.go`
 
 Current facts:
 
@@ -57,7 +57,7 @@ Current facts:
 
 - `packages/devhost/src/devtools/features/annotationComposer/AnnotationComposer.tsx` shows a `Send to active session` checkbox whenever an agent terminal session exists.
 - `packages/devhost/src/devtools/features/terminalSessions/useTerminalSessions.ts` always appends/replaces a local terminal session when `POST /terminal-sessions` returns a `sessionId`, even when that `sessionId` already exists.
-- `packages/devhost/src/agents/createAgentSessionFiles.ts` already configures built-in adapters to emit:
+- `packages/devhost/internal/devtools/agent_terminal.go` already configures built-in adapters to emit:
   - `SetAgentStatus=working`
   - `SetAgentStatus=finished`
 - No annotation state is persisted to disk today.
@@ -141,7 +141,7 @@ This design chooses durability over exactly-once replay.
 
 #### Server
 
-- `packages/devhost/src/devtools-server/createAnnotationQueueStore.ts`
+- `packages/devhost/internal/devtools/annotation_queue.go`
   - owns runtime queue state
   - loads and persists durable queue state
   - serializes mutations
@@ -149,15 +149,15 @@ This design chooses durability over exactly-once replay.
   - dispatches queued annotations into existing sessions or newly started sessions
   - exposes snapshot, enqueue, edit, delete, resume, session-exit, and agent-status handlers
 
-- `packages/devhost/src/devtools-server/parseAgentStatusOsc.ts`
+- `packages/devhost/internal/devtools/agent_status_osc.go`
   - incremental parser for `OSC 1337;SetAgentStatus=...`
   - supports BEL (`\x07`) and ST (`\x1b\\`) terminators
   - handles split terminal chunks without dropping or double-processing status events
 
-- `packages/devhost/src/devtools-server/__tests__/createAnnotationQueueStore.test.ts`
+- `packages/devhost/internal/devtools/annotation_queue_test.go`
   - unit coverage for queue state transitions, persistence, recovery, and editing rules
 
-- `packages/devhost/src/devtools-server/__tests__/parseAgentStatusOsc.test.ts`
+- `packages/devhost/internal/devtools/agent_status_osc_test.go`
   - unit coverage for split-chunk OSC parsing and accepted terminators
 
 #### Devtools UI
@@ -187,12 +187,12 @@ This design chooses durability over exactly-once replay.
 
 ### Modified files
 
-- `packages/devhost/src/services/startStack.ts`
+- `packages/devhost/internal/services/stack.go`
   - pass `manifest.manifestPath`
   - pass `managedCaddyPaths.stateDirectoryPath`
   - pass the package logger into `startDevtoolsControlServer`
 
-- `packages/devhost/src/devtools-server/startDevtoolsControlServer.ts`
+- `packages/devhost/internal/devtools/server.go`
   - create and own `AnnotationQueueStore`
   - add queue HTTP routes and websocket topic
   - route agent submissions through the queue store
@@ -214,7 +214,7 @@ This design chooses durability over exactly-once replay.
 - `packages/devhost/src/devtools/features/terminalSessions/useTerminalSessions.ts`
   - do not replace an existing local terminal session when the server returns an already-known `sessionId`
 
-- `packages/devhost/src/devtools-server/__tests__/startDevtoolsControlServer.test.ts`
+- `packages/devhost/internal/devtools/server_test.go`
   - integration coverage for queue endpoints, websocket snapshots, and automatic draining
 
 - `packages/devhost/src/devtools/features/terminalSessions/__tests__/useTerminalSessions.test.ts`
