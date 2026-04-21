@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
 
 import { getElementSourceLocation } from "../getElementSourceLocation";
-import type { TestFetchInput } from "../../../../utils/__tests__/testTypes";
+
+type TestFetchInput = Parameters<typeof fetch>[0];
 
 type ReactFiberTestNode = {
   __source?: {

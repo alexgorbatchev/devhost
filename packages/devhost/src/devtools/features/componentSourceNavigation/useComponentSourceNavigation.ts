@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
-import {
-  readDevtoolsComponentEditorLabel,
-  type DevtoolsComponentEditor,
-} from "../../../devtools-server/devtoolsComponentEditor";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../shared/constants";
+import { readDevtoolsComponentEditorLabel, type DevtoolsComponentEditor } from "../../shared";
 import { isEventTargetTerminalKeyboardInput } from "../../shared/isEventTargetTerminalKeyboardInput";
 import { resolveAnnotationTarget } from "../annotationComposer/resolveAnnotationTarget";
 import type { ITerminalSessionStartResult } from "../terminalSessions/types";

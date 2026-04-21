@@ -1,9 +1,0 @@
-name = "bad-auto"
-
-[services.db]
-primary = true
-command = ["bun", "run", "db:dev"]
-port = "auto"
-
-[services.db.health]
-tcp = 5432

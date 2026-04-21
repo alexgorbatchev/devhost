@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { readDevtoolsComponentEditorLabel } from "../devtoolsComponentEditor";
+import { readDevtoolsComponentEditorLabel } from "../devtoolsConfig";
 
 describe("readDevtoolsComponentEditorLabel", () => {
   test("returns the human-readable editor names used by devtools UI", () => {

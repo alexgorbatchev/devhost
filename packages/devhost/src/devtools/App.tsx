@@ -2,7 +2,7 @@ import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "react";
 import { useCallback, useState } from "react";
 
-import type { DevtoolsPosition } from "../types/stackTypes";
+import type { DevtoolsPosition } from "./shared/devtoolsConfig";
 import { AnnotationComposer } from "./features/annotationComposer";
 import { AnnotationQueuePanel, useAnnotationQueues } from "./features/annotationQueue";
 import { ComponentSourceMenu, useComponentSourceNavigation } from "./features/componentSourceNavigation";
