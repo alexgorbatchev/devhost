@@ -2,9 +2,6 @@ import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 const devtoolsEntrypointPath: string = fileURLToPath(new URL("../src/devtools/main.ts", import.meta.url));
-const outputFilePath: string = fileURLToPath(
-  new URL("../src/devtools-server/devtoolsScript.generated.txt", import.meta.url),
-);
 const goAssetOutputPath: string = fileURLToPath(new URL("../internal/devtools/assets_generated.go", import.meta.url));
 const tsconfigPath: string = fileURLToPath(new URL("../tsconfig.json", import.meta.url));
 const xtermStylesheetPath: string = fileURLToPath(
@@ -37,7 +34,6 @@ export async function buildDevtoolsBundle(): Promise<void> {
   const scriptText: string = await scriptOutput.text();
   const xtermStylesheetText: string = await readFile(xtermStylesheetPath, "utf8");
 
-  await Bun.write(outputFilePath, scriptText);
   await writeFile(goAssetOutputPath, createGoAssetSource(scriptText, xtermStylesheetText));
 }
 

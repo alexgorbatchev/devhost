@@ -1,7 +1,0 @@
-name = "bad-host"
-
-[services.web]
-primary = true
-command = ["bun", "run", "web:dev"]
-port = 3000
-host = "hello_example"
