@@ -1,6 +1,6 @@
 # localhost-domains
 
-Monorepo root for the published `devhost` package and the local demo app.
+Monorepo root for the `devhost` CLI workspace and the local demo app.
 
 ## Shared commands
 
@@ -24,7 +24,7 @@ Monorepo root for the published `devhost` package and the local demo app.
 
 ## Workspace map
 
-- `packages/devhost/` — published CLI package; follow `packages/devhost/AGENTS.md`
+- `packages/devhost/` — CLI workspace; follow `packages/devhost/AGENTS.md`
 - `packages/www/` — local demo app; follow `packages/www/AGENTS.md`
 
 ## Shared gotchas

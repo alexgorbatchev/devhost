@@ -35,6 +35,7 @@
     "build": "bun scripts/buildProduction.ts",
     "check": "./scripts/check.sh",
     "dev": "bun src/server.ts",
+    "devhost": "../devhost/bin/devhost --manifest ./devhost.toml",
     "log-demo": "bun scripts/emitDemoLogs.ts",
     "record:marketing": "bun scripts/recordMarketingDemos.ts",
     "start": "NODE_ENV=production bun ./dist/server.js",

@@ -1,4 +1,4 @@
-# @alexgorbatchev/devhost
+# devhost
 
 `devhost` gives your local app a proper front door: real hostnames, local HTTPS, and one command to start and route your dev services.
 
