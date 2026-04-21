@@ -1,6 +1,6 @@
 # devhost package contributor notes
 
-Local rules for the published `@alexgorbatchev/devhost` workspace in `packages/devhost/`.
+Local rules for the `devhost` workspace in `packages/devhost/`.
 
 ## Documentation policy
 
@@ -88,7 +88,7 @@ The `compile` script refreshes that bundle, then runs `go build -trimpath -o ./d
 ## Internal package layout
 
 - `cmd/devhost/main.go` — shipped CLI entrypoint
-- `bin/devhost.ts` — local Bun shim that launches the Go runtime for workspace scripts and source-checkout use
+- `bin/devhost` — local shell shim that launches the Go runtime for workspace scripts and source-checkout use
 - `src/main.ts` — legacy Bun runtime entrypoint kept outside the shipped release path
 - `src/index.ts` — public barrel re-exports
 - `src/runDevhost.ts` — top-level orchestration and mode selection

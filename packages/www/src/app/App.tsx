@@ -199,7 +199,7 @@ export function App(): JSX.Element {
     <main className="app-shell relative min-h-dvh bg-background text-foreground flex flex-col" data-testid="App">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 h-14 flex items-center justify-between max-w-4xl">
-          <div className="flex font-semibold text-lg items-center gap-2">@alexgorbatchev/devhost</div>
+          <div className="flex font-semibold text-lg items-center gap-2">devhost</div>
 
           <div className="flex items-center gap-4">
             <button

@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+script_path="${BASH_SOURCE[0]}"
+script_directory_path="$(cd "$(dirname "$script_path")" && pwd)"
+package_root_path="$(cd "$script_directory_path/.." && pwd)"
+compiled_binary_path="$package_root_path/dist/devhost"
+source_entrypoint_path="$package_root_path/cmd/devhost"
+original_working_directory_path="$(pwd)"
+
+if [[ -x "$compiled_binary_path" ]]; then
+  exec "$compiled_binary_path" "$@"
+fi
+
+cd "$package_root_path"
+exec env DEVHOST_SHIM_CWD="$original_working_directory_path" go run "$source_entrypoint_path" "$@"
