@@ -116,6 +116,12 @@ The recorder starts a temporary local dev server, opens the dev-only capture rou
 7. Return attention to the page without dismissing the session.
 8. Show that the session remains attached and recoverable from the browser workflow.
 
+### Troubleshooting
+
+- If the replay shows a blank or placeholder-looking terminal surface, assume `packages/www/public/recordings/marketing/sessions.json` may be stale before assuming the UI work is unfinished.
+- Rerun `bun run record:marketing sessions` and reload the app before debugging the capture surface or replay UI.
+- After regeneration, visually confirm the replay shows terminal text plus the minimize and restore flow.
+
 ## 4. Devtools overlay
 
 **Target file:** `packages/www/public/recordings/marketing/overlay.json`
