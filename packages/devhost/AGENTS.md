@@ -78,6 +78,7 @@ The `compile` script refreshes that bundle, then runs `go build -trimpath -o ./d
 ## Done policy
 
 - Done means the required package docs are updated (`README.md`, relevant `AGENTS.md`, `RELEASE.md`, and `devhost.example.toml` when applicable), required validation for the affected scope has passed, and any temporary local processes started for validation are stopped.
+- When changes affect the shipped `devhost` executable or its user-visible behavior, run `bun run compile` successfully before yielding to the user.
 - If `bun test`, `bun run check`, packaging checks, or required documentation updates were skipped, failed, or are blocked, report the package work as incomplete and call out the exact blocker.
 - Release work is not done until the tag exists remotely, the publish workflow has reached its expected result, and the matching GitHub Release state is confirmed.
 
@@ -89,16 +90,12 @@ The `compile` script refreshes that bundle, then runs `go build -trimpath -o ./d
 
 - `cmd/devhost/main.go` — shipped CLI entrypoint
 - `bin/devhost` — local shell shim that launches the Go runtime for workspace scripts and source-checkout use
-- `src/main.ts` — legacy Bun runtime entrypoint kept outside the shipped release path
-- `src/index.ts` — public barrel re-exports
-- `src/runDevhost.ts` — top-level orchestration and mode selection
-- `src/agents/` — agent adapters and terminal commands
-- `src/caddy/` — managed Caddy lifecycle, paths, and binding directives
-- `src/devtools-server/` — injected browser UI injector and control servers
-- `src/manifest/` — Zod v4 schema + semantic validation, and TOML loading
-- `src/services/` — child process, dependency ordering, port resolution, and health check logic
-- `src/utils/` — route utils, logging, and networking helpers
-- `src/types/` — core stack types
+- `internal/app/` — top-level Go CLI dispatch
+- `internal/cli/` — command parsing and help text
+- `internal/manifest/` — manifest discovery, parsing, validation, and defaults
+- `internal/services/` — child process orchestration, health checks, port resolution, and cleanup
+- `internal/caddy/` — managed Caddy lifecycle, paths, config, and routing
+- `internal/devtools/` — Go devtools control servers plus embedded browser assets
 - `src/devtools/` — injected browser UI code
   - `src/devtools/features/` — feature-owned UI modules such as `minimap/` and `serviceStatusPanel/`
   - `src/devtools/shared/` — cross-feature theme, config, transport, and shared types
