@@ -1,10 +1,11 @@
-import type { DevtoolsMinimapPosition, DevtoolsPosition } from "../../types/stackTypes";
-import { createDefaultDevhostAgent } from "../../agents/createDefaultDevhostAgent";
 import {
+  defaultDevhostAgentDisplayName,
   defaultDevtoolsComponentEditor,
   readDevtoolsComponentEditorValue,
   type DevtoolsComponentEditor,
-} from "../../devtools-server/devtoolsComponentEditor";
+  type DevtoolsMinimapPosition,
+  type DevtoolsPosition,
+} from "./devtoolsConfig";
 import { DEVHOST_SERVICE_NAME, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "./constants";
 import { normalizeRoutedServicePath, type IRoutedServiceIdentity } from "./routedServices";
 
@@ -27,7 +28,7 @@ export interface IInjectedDevtoolsConfig {
 }
 
 const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
-  agentDisplayName: createDefaultDevhostAgent().displayName,
+  agentDisplayName: defaultDevhostAgentDisplayName,
   componentEditor: defaultDevtoolsComponentEditor,
   controlToken: "",
   minimapPosition: "right",

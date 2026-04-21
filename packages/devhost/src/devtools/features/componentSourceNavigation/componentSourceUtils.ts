@@ -1,6 +1,6 @@
-import type { DevtoolsComponentEditor } from "../../../devtools-server/devtoolsComponentEditor";
-import { isWindowsDrivePath, normalizeFilePath, resolveSourceFilePath } from "../../../utils/resolveSourceFilePath";
 import { cleanSourcePath, type ISourceLocation } from "../../shared/sourceLocation";
+import type { DevtoolsComponentEditor } from "../../shared/devtoolsConfig";
+import { isWindowsDrivePath, normalizeFilePath, resolveSourceFilePath } from "./sourcePathUtils";
 
 export function formatComponentSourcePath(source: ISourceLocation, projectRootPath: string): string {
   const displayPath: string = createDisplaySourcePath(source.fileName!, projectRootPath);

@@ -1,4 +1,4 @@
-import { cleanSourcePath } from "../devtools/shared/sourceLocation";
+import { cleanSourcePath } from "../../shared/sourceLocation";
 
 export function resolveSourceFilePath(rawFileName: string, projectRootPath: string): string {
   const normalizedSourcePath: string = normalizeFilePath(cleanSourcePath(rawFileName));
