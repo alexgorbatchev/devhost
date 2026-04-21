@@ -168,7 +168,7 @@ The routing contract is strict:
 - hostname ownership is exclusive across projects
 - one project cannot claim a hostname that is already owned by another live devhost process
 - one manifest may mount multiple services under the same hostname on distinct paths
-- fixed numeric bind ports are claimed globally across devhost processes before service spawn
+- fixed numeric bind ports are claimed globally across devhost processes before service spawn, and claim failures report a quoted normalized listening command line plus manifest path when devhost can discover the active socket listener
 - `port = "auto"` remains best-effort in v1; devhost retries on clear bind collisions, but it does not provide a cross-process global auto-port allocator
 
 ### Platform caveats

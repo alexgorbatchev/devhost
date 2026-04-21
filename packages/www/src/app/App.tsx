@@ -559,7 +559,9 @@ $ open https://foo.localhost`}
             </li>
             <li className="mb-2">one manifest may mount multiple services under the same hostname on distinct paths</li>
             <li className="mb-2">
-              fixed numeric bind ports are claimed globally across devhost processes before service spawn
+              fixed numeric bind ports are claimed globally across devhost processes before service spawn, and claim
+              failures report a quoted normalized listening command line plus manifest path when devhost can discover
+              the active socket listener
             </li>
             <li className="mb-2">
               <code>port = "auto"</code> remains best-effort in v1; devhost retries on clear bind collisions, but it

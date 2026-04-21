@@ -1,12 +1,14 @@
 package caddy
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -148,6 +150,7 @@ type fixedPortClaimJSON struct {
 var routeMutationNow = time.Now
 var routeMutationProcessID = os.Getpid
 var routeMutationIsProcessAlive = isManagedProcessAlive
+var routeMutationReadListeningProcessLabel = readListeningProcessLabel
 var routeMutationRunManagedCaddyCommand = func(paths Paths, arguments []string, options ManagedCaddyCommandOptions) CommandResult {
 	return RunManagedCaddyCommand(paths, arguments, options, ManagedCaddyCommandDependencies{})
 }
@@ -171,7 +174,7 @@ func ClaimFixedPort(options ClaimFixedPortOptions) error {
 		return error
 	}
 	if !isFixedPortClaimStale(existingClaim) {
-		return fmt.Errorf("Fixed bind port %s:%d is already claimed by PID %d from %s.", options.BindHost, options.Port, existingClaim.OwnerPID, existingClaim.ManifestPath)
+		return errors.New(formatFixedPortClaimConflict(options, existingClaim))
 	}
 
 	if error := removeIfExists(claimPath); error != nil {
@@ -968,6 +971,140 @@ func getHostClaimPath(host string, registrationsDirectoryPath string) string {
 
 func getFixedPortClaimPath(bindHost string, port int, portClaimsDirectoryPath string) string {
 	return filepath.Join(portClaimsDirectoryPath, fmt.Sprintf("%s_%d.json", readFixedPortClaimScope(bindHost), port))
+}
+
+func formatFixedPortClaimConflict(options ClaimFixedPortOptions, claim fixedPortClaim) string {
+	listenerProcessLabel := routeMutationReadListeningProcessLabel(options.Port)
+	if listenerProcessLabel == "" {
+		return fmt.Sprintf("%s:%d is already claimed via %s.", options.BindHost, options.Port, claim.ManifestPath)
+	}
+
+	return fmt.Sprintf("%s:%d is already in use by %s via %s.", options.BindHost, options.Port, listenerProcessLabel, claim.ManifestPath)
+}
+
+func readListeningProcessLabel(port int) string {
+	if _, error := exec.LookPath("lsof"); error != nil {
+		return ""
+	}
+
+	result, error := exec.Command("lsof", "-nP", fmt.Sprintf("-iTCP:%d", port), "-sTCP:LISTEN", "-Fpc").Output()
+	if error != nil {
+		return ""
+	}
+
+	processCommandName := ""
+	processID := ""
+	for _, line := range strings.Split(string(result), "\n") {
+		if len(line) <= 1 {
+			continue
+		}
+		switch line[0] {
+		case 'c':
+			processCommandName = line[1:]
+		case 'p':
+			processID = line[1:]
+		}
+	}
+
+	if processID != "" {
+		if processLabel := readProcessLabel(processID); processLabel != "" {
+			return quoteProcessLabel(processLabel)
+		}
+	}
+
+	if processCommandName == "" {
+		return ""
+	}
+
+	return quoteProcessLabel(processCommandName)
+}
+
+func readProcessLabel(processID string) string {
+	if processArgs := readProcessCommandLine(processID); len(processArgs) > 0 {
+		return formatProcessCommandLine(processArgs)
+	}
+
+	if processArgs := readProcessArgs(processID); processArgs != "" {
+		return normalizeProcessArgs(processArgs)
+	}
+
+	return ""
+}
+
+func readProcessCommandLine(processID string) []string {
+	result, error := os.ReadFile(filepath.Join("/proc", processID, "cmdline"))
+	if error != nil || len(result) == 0 {
+		return nil
+	}
+
+	parts := bytes.Split(result, []byte{0})
+	arguments := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if len(part) == 0 {
+			continue
+		}
+		arguments = append(arguments, string(part))
+	}
+
+	if len(arguments) == 0 {
+		return nil
+	}
+
+	return arguments
+}
+
+func readProcessArgs(processID string) string {
+	if _, error := exec.LookPath("ps"); error != nil {
+		return ""
+	}
+
+	result, error := exec.Command("ps", "-o", "args=", "-p", processID).Output()
+	if error != nil {
+		return ""
+	}
+
+	return strings.TrimSpace(string(result))
+}
+
+func formatProcessCommandLine(arguments []string) string {
+	if len(arguments) == 0 {
+		return ""
+	}
+
+	normalizedArguments := append([]string(nil), arguments...)
+	normalizedArguments[0] = normalizeProcessExecutable(arguments[0])
+	return strings.Join(normalizedArguments, " ")
+}
+
+func normalizeProcessArgs(value string) string {
+	trimmedValue := strings.TrimSpace(value)
+	if trimmedValue == "" {
+		return ""
+	}
+
+	executablePath, remainder, found := strings.Cut(trimmedValue, " ")
+	normalizedExecutable := normalizeProcessExecutable(executablePath)
+	if !found {
+		return normalizedExecutable
+	}
+
+	return normalizedExecutable + " " + remainder
+}
+
+func normalizeProcessExecutable(value string) string {
+	if value == "" {
+		return ""
+	}
+
+	if strings.ContainsRune(value, filepath.Separator) {
+		return filepath.Base(value)
+	}
+
+	return value
+}
+
+func quoteProcessLabel(value string) string {
+	return "`" + strings.ReplaceAll(value, "`", "'") + "`"
 }
 
 func readFixedPortClaimScope(bindHost string) string {
