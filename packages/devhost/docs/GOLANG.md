@@ -20,13 +20,12 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 
 - [x] The rewrite was checked against `packages/devhost/README.md` for user-facing behavior parity.
 - [x] The rewrite was checked against `packages/devhost/devhost.example.toml` for manifest examples and defaults.
-- [x] The rewrite was checked against `packages/devhost/src/runDevhost.ts` for top-level CLI behavior parity.
-- [x] The rewrite was checked against `packages/devhost/src/manifest/` for manifest discovery, parsing, validation, and defaults.
-- [x] The rewrite was checked against `packages/devhost/src/caddy/` for managed Caddy lifecycle and state behavior.
-- [x] The rewrite was checked against `packages/devhost/src/services/` for orchestration, health, ports, shutdown, and cleanup behavior.
-- [x] The rewrite was checked against `packages/devhost/src/utils/routeUtils.ts` for route-registration, host-claim, and route-ordering behavior.
-- [x] The rewrite was checked against `packages/devhost/src/devtools-server/` for control-server, injection, terminal-session, and annotation-queue behavior.
-- [x] The rewrite was checked against `packages/devhost/src/agents/` for built-in adapter behavior and OSC integration.
+- [x] The rewrite was checked against the pre-cleanup TypeScript runtime before the legacy CLI implementation was removed.
+- [x] The authoritative CLI implementation now lives under `packages/devhost/internal/app/` and `packages/devhost/internal/cli/`.
+- [x] The authoritative manifest implementation now lives under `packages/devhost/internal/manifest/`.
+- [x] The authoritative managed Caddy implementation now lives under `packages/devhost/internal/caddy/`.
+- [x] The authoritative orchestration, health, and port-resolution implementation now lives under `packages/devhost/internal/services/`.
+- [x] The authoritative devtools control-server and OSC integration implementation now lives under `packages/devhost/internal/devtools/`.
 - [x] The rewrite was checked against the current test suite to confirm that every behavior presently covered still has equivalent coverage.
 
 ## CLI Surface
@@ -382,4 +381,4 @@ It is intentionally a guard checklist, not an implementation plan. Another agent
 - [x] Every applicable checkbox in this file is complete.
 - [x] Remaining unchecked boxes, if any, are explicitly out of scope by user approval.
 - [x] The Go runtime is the authoritative shipped runtime for `packages/devhost`.
-- [x] The remaining Bun/TypeScript runtime is either removed or explicitly retained only as approved non-authoritative migration scaffolding.
+- [x] Remaining TypeScript is limited to browser-side devtools assets, their build pipeline, and browser-facing test coverage.

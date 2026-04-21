@@ -51,7 +51,7 @@ sequenceDiagram
 
 ### Queue Creation and Granularity
 
-The queue is owned by the `devhost` control server (`createAnnotationQueueStore.ts`) and is bucketed by the routed service identity (`host` + normalized `path`).
+The queue is owned by the `devhost` control server (`internal/devtools/annotation_queue.go`) and is bucketed by the routed service identity (`host` + normalized `path`).
 
 - If you submit an annotation targeting an existing agent session (e.g., via the "Append to active session queue" checkbox), it appends to that queue when the session belongs to the same routed service.
 - If you submit a new untargeted annotation from the same routed service, the control server reuses that routed service's existing queue when one already exists.
@@ -65,7 +65,7 @@ If you close your browser or completely restart `devhost`, the server automatica
 ### Automatic Draining via OSC Hooks
 
 The core requirement is to avoid interrupting an agent while it is thinking.
-The server actively parses the raw output stream of the pseudo-terminal (PTY) using an incremental parser (`parseAgentStatusOsc.ts`). It specifically listens for the terminal escape sequences:
+The server actively parses the raw output stream of the pseudo-terminal (PTY) using an incremental parser (`internal/devtools/agent_status_osc.go`). It specifically listens for the terminal escape sequences:
 
 - `OSC 1337;SetAgentStatus=working`
 - `OSC 1337;SetAgentStatus=finished`
