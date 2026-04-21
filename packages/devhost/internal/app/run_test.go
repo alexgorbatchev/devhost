@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alexgorbatchev/devhost/packages/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/packages/devhost/internal/cli"
 )
 
@@ -121,6 +122,43 @@ func TestRunManifestModeStartsStackWithoutExplicitManifestPath(t *testing.T) {
 
 	if stderr.String() != "" {
 		t.Fatalf("Run(...) stderr = %q, want empty", stderr.String())
+	}
+}
+
+func TestRunManifestModeReportsExistingSameManifestFixedPortClaim(t *testing.T) {
+	stateDirectoryPath := t.TempDir()
+	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
+
+	adminAddress, stopAdminServer := startTestAdminServer(t)
+	defer stopAdminServer()
+
+	manifestDirectoryPath := t.TempDir()
+	manifestPath := writeManifestWithAdminAddress(t, manifestDirectoryPath, adminAddress)
+	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
+	if error := caddy.EnsureManagedCaddyConfig(paths, caddy.ManagedCaddyConfigFallback{AdminAddress: adminAddress}); error != nil {
+		t.Fatalf("EnsureManagedCaddyConfig(...) error = %v", error)
+	}
+	if error := caddy.ClaimFixedPort(caddy.ClaimFixedPortOptions{
+		BindHost:                "127.0.0.1",
+		ManifestPath:            manifestPath,
+		Port:                    3000,
+		PortClaimsDirectoryPath: paths.PortClaimsDirectoryPath,
+	}); error != nil {
+		t.Fatalf("ClaimFixedPort(...) error = %v", error)
+	}
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	exitCode := Run([]string{"--manifest", manifestPath}, manifestDirectoryPath, &stdout, &stderr)
+	if exitCode != 1 {
+		t.Fatalf("Run(...) exit code = %d, want 1", exitCode)
+	}
+	if stdout.String() != "" {
+		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "127.0.0.1:3000 is already") || !strings.Contains(stderr.String(), "via "+manifestPath) {
+		t.Fatalf("Run(...) stderr = %q, want same-directory fixed-port claim message", stderr.String())
 	}
 }
 
