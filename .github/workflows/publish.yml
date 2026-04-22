@@ -25,7 +25,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version-file: packages/devhost/go.mod
+          go-version-file: apps/devhost/go.mod
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -45,9 +45,9 @@ jobs:
       - name: Validate package version matches the release tag
         run: |
           set -euo pipefail
-          package_version="$(bun -e 'const packageJson = await Bun.file("packages/devhost/package.json").json(); console.log(packageJson.version);')"
+          package_version="$(bun -e 'const metadata = await Bun.file("apps/devhost/metadata.json").json(); console.log(metadata.version);')"
           if [[ "$package_version" != "$RELEASE_VERSION" ]]; then
-            echo "package.json version ($package_version) must match release tag version ($RELEASE_VERSION)." >&2
+            echo "apps/devhost/metadata.json version ($package_version) must match release tag version ($RELEASE_VERSION)." >&2
             exit 1
           fi
 
@@ -63,7 +63,7 @@ jobs:
         run: bun run check
 
       - name: Build release artifacts
-        run: bun run --cwd packages/devhost build:release-artifacts
+        run: bun run build:release-artifacts:devhost
 
       - name: Create GitHub Release
         env:
@@ -85,4 +85,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh release upload "$GITHUB_REF_NAME" packages/devhost/dist/release/*.tar.gz --clobber
+          gh release upload "$GITHUB_REF_NAME" apps/devhost/dist/release/*.tar.gz --clobber

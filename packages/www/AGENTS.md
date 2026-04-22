@@ -1,6 +1,6 @@
 # devhost demo app
 
-Local React demo app for exercising `@alexgorbatchev/devhost` behavior and Storybook coverage.
+Local React demo app for exercising `devhost` behavior and Storybook coverage.
 
 ## Documentation policy
 
@@ -19,15 +19,15 @@ Local React demo app for exercising `@alexgorbatchev/devhost` behavior and Story
 
 ## Local conventions
 
-- Keep the `@alexgorbatchev/devhost` dependency on `workspace:*`; both packages now live under the same Bun workspace.
-- Keep package-owned tests, stories, and demo scripts inside this workspace; do not reach back into `packages/devhost/` for local config files.
+- Keep the `@alexgorbatchev/devhost-ui` dependency on `workspace:*`; both TypeScript packages live under the same Bun workspace.
+- Keep package-owned tests, stories, and demo scripts inside this workspace; do not reach back into `packages/devhost-ui/` or `apps/devhost/` for local config files.
 
 ## Local gotchas
 
 - This workspace uses the repo-root `bun.lock`. Do not add a package-local lockfile.
 - Shared `oxfmt` / `oxlint` enforcement runs from the repo root, not from this workspace `check` script.
 - `bun run check` runs the package TypeScript validation and Storybook/Vitest browser coverage for this workspace.
-- The demo app and `packages/devhost/` devtools UI both use React, but their runtime and build constraints still differ. Check the local package config before copying assumptions across workspaces.
+- The demo app and `packages/devhost-ui/` injected devtools UI both use React, but their runtime and build constraints still differ. Check the local package config before copying assumptions across workspaces.
 - `bun run record:marketing` starts a temporary local dev server, opens the dev-only `marketing-capture.html` route, and rewrites `public/recordings/marketing/*.json` from deterministic rrweb captures.
 - `src/marketing/` has replay-specific fixture and choreography rules; follow `src/marketing/AGENTS.md` before changing replay metadata, capture targets, timing, or generated replay inputs.
 
