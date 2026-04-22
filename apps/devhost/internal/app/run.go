@@ -11,6 +11,7 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cli"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/services"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/skill"
 )
 
 func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) int {
@@ -73,6 +74,15 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 		}
 
 		return exitCode
+	case cli.KindSkill:
+		skillMarkdown, error := skill.ReadMarkdown()
+		if error != nil {
+			_, _ = fmt.Fprintf(stderr, "failed: %s\n", error.Error())
+			return 1
+		}
+
+		_, _ = io.WriteString(stdout, skillMarkdown)
+		return 0
 	case cli.KindCaddyPrintRootCert:
 		paths, error := caddy.CreateManagedCaddyPathsFromEnvironment(readEnvironment())
 		if error != nil {
