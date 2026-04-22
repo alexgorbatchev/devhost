@@ -27,6 +27,21 @@ interface ICreateCaptureTerminalSessionCommandOptions {
   stackName: string;
 }
 
+interface ICreateCaptureAgentSessionFilesOptions {
+  annotation: IAnnotationSubmitDetail;
+  displayName: string;
+  projectRootPath: string;
+  prompt: string;
+  stackName: string;
+}
+
+interface ICaptureAgentSessionFiles {
+  cleanup: () => void;
+  env: Record<string, string>;
+  opencodeConfigFilePath: string;
+  promptFilePath: string;
+}
+
 const sessionDirectoryPrefix: string = "devhost-agent-session-";
 
 export function createCaptureTerminalSessionCommand(
@@ -61,18 +76,7 @@ export function createCaptureTerminalSessionCommand(
   };
 }
 
-function createCaptureAgentSessionFiles(options: {
-  annotation: IAnnotationSubmitDetail;
-  displayName: string;
-  projectRootPath: string;
-  prompt: string;
-  stackName: string;
-}): {
-  cleanup: () => void;
-  env: Record<string, string>;
-  opencodeConfigFilePath: string;
-  promptFilePath: string;
-} {
+function createCaptureAgentSessionFiles(options: ICreateCaptureAgentSessionFilesOptions): ICaptureAgentSessionFiles {
   const temporaryRootPath: string = path.join(options.projectRootPath, ".tmp");
   mkdirSync(temporaryRootPath, { recursive: true });
 
