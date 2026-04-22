@@ -71,6 +71,40 @@ func TestRunExplicitManifestBypassesUpwardDiscovery(t *testing.T) {
 	}
 }
 
+func TestRunManifestFromEnvironmentBypassesUpwardDiscovery(t *testing.T) {
+	stateDirectoryPath := t.TempDir()
+	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
+
+	adminAddress, stopAdminServer := startTestAdminServer(t)
+	defer stopAdminServer()
+
+	manifestDirectoryPath := t.TempDir()
+	manifestPath := writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath, adminAddress)
+	t.Setenv("DEVHOST_MANIFEST", manifestPath)
+
+	cwd := filepath.Join(t.TempDir(), "nested", "workspace")
+	if error := os.MkdirAll(cwd, 0o755); error != nil {
+		t.Fatalf("MkdirAll(...) error = %v", error)
+	}
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	exitCode := Run([]string{}, cwd, &stdout, &stderr)
+
+	if exitCode != 0 {
+		t.Fatalf("Run(...) exit code = %d, want 0 with stderr %q", exitCode, stderr.String())
+	}
+
+	if stdout.String() != "" {
+		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
+	}
+
+	if stderr.String() != "" {
+		t.Fatalf("Run(...) stderr = %q, want empty", stderr.String())
+	}
+}
+
 func TestRunManifestModeStartsStackWhenDevtoolsDisabled(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)

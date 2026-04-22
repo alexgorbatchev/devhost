@@ -7,7 +7,10 @@ const HelpText = `Usage:
   devhost caddy trust-remote <ssh-target>
 
 Options:
-  --manifest  Explicit path to devhost.toml.
+  --manifest  Explicit path to devhost.toml. Can also be set with DEVHOST_MANIFEST.
+
+Environment:
+  DEVHOST_MANIFEST  Behaves like --manifest.
 
 Behavior:
   - If --manifest is omitted, devhost searches for devhost.toml from the current directory upward.
