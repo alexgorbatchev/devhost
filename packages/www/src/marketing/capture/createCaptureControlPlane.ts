@@ -1,23 +1,20 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { createTerminalSessionCommand } from "@alexgorbatchev/devhost/src/agents/createTerminalSessionCommand";
-import {
-  launchTerminalSession,
-  type ILaunchedTerminalSession,
-} from "@alexgorbatchev/devhost/src/agents/launchTerminalSession";
-import type { IAnnotationQueueSnapshot } from "@alexgorbatchev/devhost/src/devtools/features/annotationQueue/types";
 import type {
+  HealthResponse,
+  IActiveTerminalSessionSnapshot,
   IAnnotationMarkerPayload,
+  IAnnotationQueueSnapshot,
   IAnnotationSourceLocation,
   IAnnotationSubmitDetail,
-} from "@alexgorbatchev/devhost/src/devtools/features/annotationComposer/types";
-import type {
-  IActiveTerminalSessionSnapshot,
   IStartEditorTerminalSessionRequest,
+  ServiceHealth,
+  ServiceLogEntry,
+  ServiceLogStream,
   StartTerminalSessionRequest,
   TerminalSessionClientMessage,
-} from "@alexgorbatchev/devhost/src/devtools/features/terminalSessions/types";
+} from "../../devtoolsContracts/types";
 import {
   ANNOTATION_QUEUES_WEBSOCKET_PATH,
   DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
@@ -29,14 +26,10 @@ import {
   TERMINAL_SESSION_START_PATH,
   TERMINAL_SESSION_WEBSOCKET_PATH,
   XTERM_STYLESHEET_PATH,
-} from "@alexgorbatchev/devhost/src/devtools/shared/constants";
-import type {
-  HealthResponse,
-  ServiceHealth,
-  ServiceLogEntry,
-  ServiceLogStream,
-} from "@alexgorbatchev/devhost/src/devtools/shared/types";
-import type { ValidatedDevhostAgent } from "@alexgorbatchev/devhost/src/types/stackTypes";
+} from "../../devtoolsContracts/constants";
+
+import { createCaptureTerminalSessionCommand, type ICaptureTerminalAgent } from "./createCaptureTerminalSessionCommand";
+import { launchTerminalSession, type ILaunchedTerminalSession } from "./launchTerminalSession";
 
 import { readMarketingRecordingScenario, type MarketingRecordingScenarioId } from "../replays/marketingReplayScenarios";
 
@@ -99,7 +92,7 @@ const captureResetPathname: string = "/__capture__/reset";
 const scenarioCookieName: string = "devhost-capture-scenario";
 const captureProjectRootPath: string = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const captureSourceFilePath: string = "src/marketing/capture/MarketingCapturePage.tsx";
-const captureTerminalAgent: ValidatedDevhostAgent = {
+const captureTerminalAgent: ICaptureTerminalAgent = {
   displayName: "Pi",
   kind: "opencode",
 };
@@ -600,9 +593,8 @@ function createLiveTerminalSession(
   sessionId: string,
   request: StartTerminalSessionRequest,
 ): ICaptureTerminalSessionState {
-  const terminalSessionCommand = createTerminalSessionCommand({
+  const terminalSessionCommand = createCaptureTerminalSessionCommand({
     agent: captureTerminalAgent,
-    componentEditor: "neovim",
     projectRootPath: captureProjectRootPath,
     request,
     stackName: mockStackName,
