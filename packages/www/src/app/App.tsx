@@ -346,6 +346,10 @@ export function App(): JSX.Element {
             darwin-arm64, linux-x64, linux-arm64, linux-x64-musl, and linux-arm64-musl targets.
           </p>
 
+          <p>To print the bundled bootstrap skill for manifest-authoring workflows:</p>
+
+          <CommandLine command="devhost skill" />
+
           <h3>Minimal example</h3>
           <p>
             Configure your stack in <code>devhost.toml</code>, then run it through <code>devhost</code>.

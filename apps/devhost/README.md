@@ -30,6 +30,12 @@ That build refreshes the embedded injected devtools bundle with Bun, then compil
 
 Published GitHub Releases also include versioned `.tar.gz` archives for `darwin-arm64`, `linux-x64`, `linux-arm64`, `linux-x64-musl`, and `linux-arm64-musl`.
 
+To print the bundled bootstrap skill for manifest-authoring workflows:
+
+```bash
+devhost skill
+```
+
 ### Minimal example
 
 Configure your stack in `devhost.toml`, then run it through `devhost`.

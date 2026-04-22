@@ -16,6 +16,13 @@ func TestParseCommandLineArguments(t *testing.T) {
 		comparePath bool
 	}{
 		{
+			name:    "parses skill",
+			rawArgs: []string{"skill"},
+			want: CommandLineArguments{
+				Kind: KindSkill,
+			},
+		},
+		{
 			name:    "parses caddy start",
 			rawArgs: []string{"caddy", "start"},
 			want: CommandLineArguments{
@@ -109,6 +116,11 @@ func TestParseCommandLineArguments(t *testing.T) {
 				ManifestPath: pointerToString("./cli-devhost.toml"),
 			},
 			comparePath: true,
+		},
+		{
+			name:      "rejects extra skill arguments",
+			rawArgs:   []string{"skill", "extra"},
+			wantError: "unknown command \"extra\" for \"devhost skill\"",
 		},
 		{
 			name:      "rejects missing caddy action",
