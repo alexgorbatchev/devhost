@@ -13,6 +13,7 @@ type Kind string
 const (
 	KindManifest           Kind = "manifest"
 	KindSkill              Kind = "skill"
+	KindVersion            Kind = "version"
 	KindCaddyLifecycle     Kind = "caddy-lifecycle"
 	KindCaddyPrintRootCert Kind = "caddy-print-root-cert"
 	KindCaddyTrustRemote   Kind = "caddy-trust-remote"
@@ -38,6 +39,10 @@ type CommandLineArguments struct {
 const caddyActionListText = "start, stop, trust, download, privileged-ports, print-root-cert, or trust-remote"
 
 func ParseCommandLineArguments(rawArguments []string) (CommandLineArguments, error) {
+	if HasVersionFlag(rawArguments) {
+		return CommandLineArguments{Kind: KindVersion}, nil
+	}
+
 	result := CommandLineArguments{}
 	error := createRootCommand(&result).RunArgsE(rawArguments)
 	if error != nil {
