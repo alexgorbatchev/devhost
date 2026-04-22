@@ -3,6 +3,9 @@ package cli
 import (
 	"fmt"
 	"strings"
+
+	"github.com/GiGurra/boa/pkg/boa"
+	"github.com/spf13/cobra"
 )
 
 type Kind string
@@ -105,44 +108,31 @@ func ParseCommandLineArguments(rawArguments []string) (CommandLineArguments, err
 	return CommandLineArguments{Kind: KindManifest}, nil
 }
 
+type parseArgumentsOptions struct {
+	ManifestPath *string `descr:"Explicit path to devhost.toml." env:"DEVHOST_MANIFEST" name:"manifest"`
+}
+
 func parseArguments(rawArguments []string) (*string, []string, error) {
-	var manifestPath *string
-	positionals := make([]string, 0, len(rawArguments))
-	parsingOptions := true
-
-	for index := 0; index < len(rawArguments); index += 1 {
-		rawArgument := rawArguments[index]
-
-		if parsingOptions && rawArgument == "--" {
-			parsingOptions = false
-			continue
-		}
-
-		if parsingOptions && rawArgument == "--manifest" {
-			if index+1 >= len(rawArguments) {
-				return nil, nil, fmt.Errorf("option requires argument: --manifest")
-			}
-
-			value := rawArguments[index+1]
-			manifestPath = &value
-			index += 1
-			continue
-		}
-
-		if parsingOptions && strings.HasPrefix(rawArgument, "--manifest=") {
-			value := strings.TrimPrefix(rawArgument, "--manifest=")
-			manifestPath = &value
-			continue
-		}
-
-		if parsingOptions && strings.HasPrefix(rawArgument, "-") {
-			return nil, nil, fmt.Errorf("unknown option: %s", rawArgument)
-		}
-
-		positionals = append(positionals, rawArgument)
+	type parseArgumentsResult struct {
+		manifestPath *string
+		positionals  []string
 	}
 
-	return manifestPath, positionals, nil
+	result := parseArgumentsResult{}
+	error := boa.CmdT[parseArgumentsOptions]{
+		Use:  "devhost",
+		Args: cobra.ArbitraryArgs,
+		RunFuncE: func(options *parseArgumentsOptions, _ *cobra.Command, args []string) error {
+			result.manifestPath = options.ManifestPath
+			result.positionals = append([]string{}, args...)
+			return nil
+		},
+	}.RunArgsE(rawArguments)
+	if error != nil {
+		return nil, nil, normalizeParseError(error)
+	}
+
+	return result.manifestPath, result.positionals, nil
 }
 
 func parseLifecycleAction(rawAction string) (CaddyLifecycleAction, bool) {
@@ -160,4 +150,17 @@ func parseLifecycleAction(rawAction string) (CaddyLifecycleAction, bool) {
 	default:
 		return "", false
 	}
+}
+
+func normalizeParseError(error error) error {
+	message := error.Error()
+	if strings.HasPrefix(message, "unknown flag: ") {
+		return fmt.Errorf("unknown option: %s", strings.TrimPrefix(message, "unknown flag: "))
+	}
+
+	if strings.HasPrefix(message, "flag needs an argument: ") {
+		return fmt.Errorf("option requires argument: %s", strings.TrimPrefix(message, "flag needs an argument: "))
+	}
+
+	return error
 }
