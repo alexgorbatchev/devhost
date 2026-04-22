@@ -50,6 +50,7 @@ type RoutedServiceIdentity struct {
 }
 
 type ServiceHealth struct {
+	Managed bool    `json:"managed"`
 	Name   string  `json:"name"`
 	Status bool    `json:"status"`
 	URL    *string `json:"url,omitempty"`

@@ -102,6 +102,7 @@ function isHealthResponse(value: unknown): value is HealthResponse {
     const url: unknown = Reflect.get(service, "url");
 
     return (
+      typeof Reflect.get(service, "managed") === "boolean" &&
       typeof Reflect.get(service, "name") === "string" &&
       typeof Reflect.get(service, "status") === "boolean" &&
       (typeof url === "string" || url === undefined)

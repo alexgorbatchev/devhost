@@ -103,9 +103,9 @@ function DevhostMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Elemen
           this.emitMessage(
             JSON.stringify({
               services: [
-                { name: "app", status: true },
-                { name: "api", status: true },
-                { name: "worker", status: false },
+                { managed: true, name: "app", status: true },
+                { managed: true, name: "api", status: true },
+                { managed: false, name: "worker", status: false },
               ],
             }),
           );

@@ -30,7 +30,7 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 			TerminalEnabled:         false,
 		},
 		GetHealthResponse: func() (HealthResponse, error) {
-			return HealthResponse{Services: []ServiceHealth{{Name: "web", Status: true}}}, nil
+			return HealthResponse{Services: []ServiceHealth{{Managed: true, Name: "web", Status: true}}}, nil
 		},
 		Position:        "bottom-right",
 		ProjectRootPath: "/tmp/project",
@@ -159,7 +159,7 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 func TestControlServerHealthAndLogsWebsockets(t *testing.T) {
 	t.Parallel()
 
-	healthResponse := HealthResponse{Services: []ServiceHealth{{Name: "web", Status: true}}}
+	healthResponse := HealthResponse{Services: []ServiceHealth{{Managed: true, Name: "web", Status: true}}}
 	controlServer, err := StartControlServer(StartControlServerOptions{
 		AgentDisplayName: "Pi",
 		ComponentEditor:  "vscode",
@@ -180,14 +180,14 @@ func TestControlServerHealthAndLogsWebsockets(t *testing.T) {
 
 	healthSocket := mustDialWebsocket(t, websocketURL(controlServer.Port(), healthWebsocketPath))
 	defer healthSocket.Close()
-	if message := readWebsocketText(t, healthSocket); message != `{"services":[{"name":"web","status":true}]}` {
+	if message := readWebsocketText(t, healthSocket); message != `{"services":[{"managed":true,"name":"web","status":true}]}` {
 		t.Fatalf("health snapshot = %q", message)
 	}
-	healthResponse = HealthResponse{Services: []ServiceHealth{{Name: "web", Status: false}}}
+	healthResponse = HealthResponse{Services: []ServiceHealth{{Managed: false, Name: "web", Status: false}}}
 	if err := controlServer.PublishHealthResponse(); err != nil {
 		t.Fatalf("PublishHealthResponse(next) error = %v", err)
 	}
-	if message := readWebsocketText(t, healthSocket); message != `{"services":[{"name":"web","status":false}]}` {
+	if message := readWebsocketText(t, healthSocket); message != `{"services":[{"managed":false,"name":"web","status":false}]}` {
 		t.Fatalf("updated health snapshot = %q", message)
 	}
 	if err := controlServer.PublishHealthResponse(); err != nil {
