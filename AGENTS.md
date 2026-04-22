@@ -7,13 +7,13 @@ Monorepo root for the `devhost` CLI workspace and the local demo app.
 - Install all workspaces when `node_modules/` is missing: `bun install`
 - Ensure Playwright Chromium is available for Storybook and recorder workflows: `bun run install-browser`
 - Check the full repo: `bun run check`
-- Apply repo-wide formatting fixes: `bun run fix`
+- Human-only repo-wide formatting command when manual cleanup is explicitly needed: `bun run fix`
 - Check `devhost` package-only validations: `bun run --cwd packages/devhost check`
 - Build `devhost` release tarballs: `bun run --cwd packages/devhost build:release-artifacts`
 - Build the current-platform `devhost` binary: `bun run --cwd packages/devhost compile`
 - Check demo app package-only validations: `bun run --cwd packages/www check`
 - Deploy demo app to Railway: `bun run deploy:www`
-- Run demo app: `bun run dev`
+- Run the demo app through the local `devhost` manifest: `bun run dev`
 
 ## Documentation policy
 
@@ -50,7 +50,7 @@ Monorepo root for the `devhost` CLI workspace and the local demo app.
 - Always: when changing shared commands, validation flow, deploy flow, release flow, or contributor policy, update the affected `AGENTS.md` files and user/contributor docs in the same change.
 - Done: only claim completion after required docs are updated, required checks for the affected scope pass, and any temporary servers or processes started for validation are stopped.
 - Done: if a required step was skipped, a check failed, or a blocker remains, report the work as incomplete and name the exact gap.
-- Never: Agents should NEVER run `bun run fix` or formatting tools directly. Formatting is handled automatically in the background via a pre-commit hook using nano-staged.
+- Never: Agents should NEVER run `bun run fix` or formatting tools directly, even though the human-facing command is listed above. Formatting is handled automatically in the background via a pre-commit hook using nano-staged.
 - Ask first: adding a new workspace, changing cross-workspace dependency topology, or changing the publish/release flow.
 - Never: disable lint rules unless the user explicitly authorizes it.
 - Never: build or release `devhost` from the repo root using ad-hoc Go commands; use the documented `packages/devhost` scripts and runbook.
