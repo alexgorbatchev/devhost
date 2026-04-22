@@ -1,4 +1,4 @@
-import type { IInjectedDevtoolsConfig } from "@alexgorbatchev/devhost/src/devtools/shared/readInjectedDevtoolsConfig";
+import type { IInjectedDevtoolsConfig } from "../devtoolsContracts/types";
 
 import type { MarketingRecordingScenarioId } from "../marketing/replays/marketingReplayScenarios";
 
