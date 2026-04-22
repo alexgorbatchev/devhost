@@ -81,7 +81,6 @@ type StartControlServerOptions struct {
 	GetHealthResponse          func() (HealthResponse, error)
 	IdleTerminalSessionTimeout time.Duration
 	ManifestPath               string
-	MinimapPosition            string
 	Position                   string
 	ProjectRootPath            string
 	RestartService             func(string) error
@@ -133,7 +132,6 @@ type injectedConfig struct {
 	AgentDisplayName        string                  `json:"agentDisplayName"`
 	ComponentEditor         string                  `json:"componentEditor"`
 	ControlToken            string                  `json:"controlToken"`
-	MinimapPosition         string                  `json:"minimapPosition"`
 	Position                string                  `json:"position"`
 	ProjectRootPath         string                  `json:"projectRootPath"`
 	StackName               string                  `json:"stackName"`
@@ -201,7 +199,6 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		EditorEnabled:           options.FeatureToggles.EditorEnabled,
 		ExternalToolbarsEnabled: options.FeatureToggles.ExternalToolbarsEnabled,
 		MinimapEnabled:          options.FeatureToggles.MinimapEnabled,
-		MinimapPosition:         options.MinimapPosition,
 		Position:                options.Position,
 		ProjectRootPath:         options.ProjectRootPath,
 		RoutedServices:          append([]RoutedServiceIdentity{}, options.RoutedServices...),

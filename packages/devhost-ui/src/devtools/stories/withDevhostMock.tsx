@@ -36,7 +36,6 @@ function DevhostMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Elemen
       agentDisplayName: "Pi",
       componentEditor: "vscode",
       controlToken: "mock-token",
-      minimapPosition: "right",
       position: "bottom-right",
       projectRootPath: "/storybook-workspace",
       stackName: "storybook-stack",

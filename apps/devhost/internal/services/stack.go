@@ -256,7 +256,6 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 				return collectManagedServicesHealth(*manifest, startedServicesSnapshot), nil
 			},
 			ManifestPath:    manifest.ManifestPath,
-			MinimapPosition: manifest.Devtools.Minimap.Position,
 			Position:        manifest.Devtools.Status.Position,
 			ProjectRootPath: manifest.ManifestDirectoryPath,
 			RestartService: func(serviceName string) error {

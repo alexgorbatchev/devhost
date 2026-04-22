@@ -40,8 +40,8 @@ func TestValidateManifestReturnsNormalizedDefaults(t *testing.T) {
 		t.Fatalf("manifest.Devtools.ExternalToolbars = %#v, want enabled", manifest.Devtools.ExternalToolbars)
 	}
 
-	if !manifest.Devtools.Minimap.Enabled || manifest.Devtools.Minimap.Position != defaultDevtoolsMinimapPosition {
-		t.Fatalf("manifest.Devtools.Minimap = %#v, want enabled %q", manifest.Devtools.Minimap, defaultDevtoolsMinimapPosition)
+	if !manifest.Devtools.Minimap.Enabled {
+		t.Fatalf("manifest.Devtools.Minimap = %#v, want enabled", manifest.Devtools.Minimap)
 	}
 
 	if !manifest.Devtools.Status.Enabled || manifest.Devtools.Status.Position != defaultDevtoolsStatusPosition {
@@ -138,11 +138,11 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 			wantError: "caddy.global.httpPort",
 		},
 		{
-			name: "rejects removed minimap position",
+			name: "rejects unsupported minimap position key",
 			manifest: rawManifestWithServices(map[string]any{
 				"devtools": map[string]any{"minimap": map[string]any{"enabled": true, "position": "left"}},
 			}),
-			wantError: "devtools.minimap.position",
+			wantError: `devtools.minimap Unrecognized key: "position"`,
 		},
 		{
 			name: "rejects removed status position",

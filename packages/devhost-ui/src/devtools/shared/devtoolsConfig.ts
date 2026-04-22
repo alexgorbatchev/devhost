@@ -1,7 +1,6 @@
 export const defaultDevhostAgentDisplayName = "Pi";
 
 export type DevtoolsPosition = "top-right" | "bottom-right";
-export type DevtoolsMinimapPosition = "right";
 
 export const supportedDevtoolsComponentEditors = ["cursor", "neovim", "vscode", "vscode-insiders", "webstorm"] as const;
 
