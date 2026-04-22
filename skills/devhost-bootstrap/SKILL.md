@@ -5,11 +5,6 @@ description: Create an initial `devhost.toml` manifest for an existing repositor
 
 # Devhost Manifest Init
 
-Use the checked-in devhost docs as the source of truth:
-
-- `packages/devhost/README.md`
-- `packages/devhost/devhost.example.toml`
-
 ## Workflow
 
 1. Discover the repository before proposing any manifest shape.
@@ -56,7 +51,7 @@ After the user answers:
 
 ## Authoring Rules
 
-Build the first manifest from `packages/devhost/devhost.example.toml`, then trim it down aggressively.
+Build the first manifest from `apps/devhost/devhost.example.toml`, then trim it down aggressively.
 
 - Keep `name` and at least one `[services.<name>]` block.
 - Prefer string-array `command` values.

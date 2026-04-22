@@ -1,1 +1,1 @@
-packages/devhost/README.md
+apps/devhost/README.md

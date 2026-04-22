@@ -1,8 +1,6 @@
 import { fileURLToPath } from "node:url";
 
-const devtoolsEntrypointPath: string = fileURLToPath(
-  import.meta.resolve("@alexgorbatchev/devhost/src/devtools/main.ts"),
-);
+const devtoolsEntrypointPath: string = fileURLToPath(import.meta.resolve("@alexgorbatchev/devhost-ui/main"));
 
 export async function buildDevtoolsScript(): Promise<string> {
   const buildResult = await Bun.build({

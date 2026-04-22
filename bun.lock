@@ -12,14 +12,16 @@
         "oxlint": "^1.60.0",
       },
     },
-    "packages/devhost": {
-      "name": "@alexgorbatchev/devhost",
-      "version": "0.0.2",
+    "packages/devhost-ui": {
+      "name": "@alexgorbatchev/devhost-ui",
+      "version": "0.0.0",
       "dependencies": {
         "@emotion/css": "^11.13.5",
         "@jridgewell/trace-mapping": "^0.3.31",
         "@xterm/addon-fit": "^0.11.0",
         "@xterm/xterm": "^6.0.0",
+        "react": "^19.2.5",
+        "react-dom": "^19.2.5",
       },
       "devDependencies": {
         "@storybook/addon-vitest": "10.3.5",
@@ -38,8 +40,6 @@
         "@typescript/native-preview": "^7.0.0-dev.20260408.1",
         "@vitest/browser-playwright": "4.1.4",
         "playwright": "1.59.1",
-        "react": "^19.2.5",
-        "react-dom": "^19.2.5",
         "storybook": "10.3.5",
         "vite": "7.3.1",
         "vitest": "4.1.4",
@@ -49,7 +49,7 @@
       "name": "devhost-test-app",
       "version": "0.0.0",
       "dependencies": {
-        "@alexgorbatchev/devhost": "workspace:*",
+        "@alexgorbatchev/devhost-ui": "workspace:*",
         "@rrweb/all": "^2.0.0-alpha.20",
         "@rrweb/types": "^2.0.0-alpha.20",
         "@xterm/xterm": "^6.0.0",
@@ -81,7 +81,7 @@
   "packages": {
     "@adobe/css-tools": ["@adobe/css-tools@4.4.4", "", {}, "sha512-Elp+iwUx5rN5+Y8xLt5/GRoG20WGoDCQ/1Fb+1LiGtvwbDavuSk0jhD/eZdckHAuzcDzccnkv+rEjyWfRx18gg=="],
 
-    "@alexgorbatchev/devhost": ["@alexgorbatchev/devhost@workspace:packages/devhost"],
+    "@alexgorbatchev/devhost-ui": ["@alexgorbatchev/devhost-ui@workspace:packages/devhost-ui"],
 
     "@alexgorbatchev/typescript-ai-policy": ["@alexgorbatchev/typescript-ai-policy@5.0.2", "", { "peerDependencies": { "@typescript/native-preview": "^7.0.0-dev.20260330.1", "oxfmt": "^0.42.0", "oxlint": "^1.57.0", "typescript": "^6" }, "optionalPeers": ["@typescript/native-preview", "typescript"], "bin": { "typescript-ai-policy-fix-semantic": "dist/bin/typescript-ai-policy-fix-semantic.js" } }, "sha512-kT5p2zauas5CeFYll53+8o4gZFOVsMOXkhYkWaffJL9QF37l7hVYrEq/clb15rrvSj96A59je1ovw4fugwG8ig=="],
 
