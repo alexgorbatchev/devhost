@@ -56,7 +56,7 @@ export const LoadedReplay: Story = {
 
     await expect(await canvas.findByTestId("FeatureReplayPanel--player-root")).toBeInTheDocument();
     await expect(canvas.getByTestId("FeatureReplayPanel--controls")).toBeInTheDocument();
-    await expect(canvas.getByRole("button", { name: "Play replay" })).toBeInTheDocument();
+    await expect(canvas.getByRole("button", { name: "Pause replay" })).toBeInTheDocument();
     await expect(canvas.getByRole("slider", { name: "Replay timeline" })).toBeInTheDocument();
   },
 };
