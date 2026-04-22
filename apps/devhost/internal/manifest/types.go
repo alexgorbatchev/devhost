@@ -71,6 +71,7 @@ type ValidatedService struct {
 	Health     *HealthConfig
 	Host       *string
 	InjectPort bool
+	Managed    bool
 	Name       string
 	Path       *string
 	Port       *PortConfig

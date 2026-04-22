@@ -32,8 +32,8 @@ export const Default: Story = {
   args: {
     errorMessage: null,
     services: [
-      { name: "api", status: true },
-      { name: "worker", status: false },
+      { managed: true, name: "api", status: true },
+      { managed: false, name: "worker", status: false },
     ],
   },
   play: async ({ canvasElement }): Promise<void> => {
@@ -52,6 +52,9 @@ export const Default: Story = {
     try {
       await userEvent.hover(panel);
       await userEvent.click(canvas.getByRole("button", { name: "Restart api" }));
+      await expect(canvas.queryByRole("button", { name: "Restart worker" })).not.toBeInTheDocument();
+      await expect(canvas.getByText("managed")).toBeInTheDocument();
+      await expect(canvas.getByText("external")).toBeInTheDocument();
 
       await expect(restartFetch).toHaveBeenCalledWith(
         RESTART_SERVICE_PATH,
@@ -74,8 +77,8 @@ export const HealthyServices: Story = {
   args: {
     errorMessage: null,
     services: [
-      { name: "frontend", status: true },
-      { name: "backend", status: true },
+      { managed: true, name: "frontend", status: true },
+      { managed: true, name: "backend", status: true },
     ],
   },
   play: async ({ canvasElement }): Promise<void> => {
@@ -90,8 +93,8 @@ export const WithLinks: Story = {
   args: {
     errorMessage: null,
     services: [
-      { name: "web", status: true, url: "http://localhost:3000" },
-      { name: "docs", status: true, url: "http://localhost:3001" },
+      { managed: true, name: "web", status: true, url: "http://localhost:3000" },
+      { managed: false, name: "docs", status: true, url: "http://localhost:3001" },
     ],
   },
   play: async ({ canvasElement }): Promise<void> => {
@@ -100,6 +103,7 @@ export const WithLinks: Story = {
     const webLink = canvas.getByRole("link", { name: "web" });
     await expect(webLink).toBeInTheDocument();
     await expect(webLink).toHaveAttribute("href", "http://localhost:3000");
+    await expect(canvas.queryByRole("button", { name: "Restart docs" })).not.toBeInTheDocument();
   },
 };
 

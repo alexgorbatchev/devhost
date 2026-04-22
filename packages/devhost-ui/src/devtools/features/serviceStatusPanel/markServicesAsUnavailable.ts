@@ -4,6 +4,7 @@ export function markServicesAsUnavailable(services: ServiceHealth[], fallbackSer
   if (services.length === 0) {
     return [
       {
+        managed: false,
         name: fallbackServiceName,
         status: false,
       },
@@ -13,10 +14,12 @@ export function markServicesAsUnavailable(services: ServiceHealth[], fallbackSer
   return services.map((service: ServiceHealth): ServiceHealth => {
     return service.url === undefined
       ? {
+          managed: service.managed,
           name: service.name,
           status: false,
         }
       : {
+          managed: service.managed,
           name: service.name,
           status: false,
           url: service.url,

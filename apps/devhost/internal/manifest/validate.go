@@ -348,11 +348,31 @@ func validateService(
 	schemaIssues *[]string,
 	validationIssues *[]string,
 ) (ValidatedService, bool) {
-	allowKeys(value, []string{"bindHost", "command", "cwd", "dependsOn", "env", "health", "host", "injectPort", "path", "port", "primary"}, fmt.Sprintf("services.%s", serviceName), schemaIssues)
+	allowKeys(value, []string{"bindHost", "command", "cwd", "dependsOn", "env", "health", "host", "injectPort", "managed", "path", "port", "primary"}, fmt.Sprintf("services.%s", serviceName), schemaIssues)
 
-	command, ok := readRequiredCommand(value, "command", schemaIssues)
-	if !ok {
-		command = []string{}
+	managed, hasManaged := readOptionalBool(value, "managed", schemaIssues)
+	if !hasManaged {
+		managed = true
+	}
+
+	command := []string{}
+	hasCommand := false
+	if managed {
+		var ok bool
+		command, ok = readRequiredCommand(value, "command", schemaIssues)
+		hasCommand = ok
+		if !ok {
+			command = []string{}
+		}
+	} else {
+		command, hasCommand = readOptionalCommand(value, "command", schemaIssues)
+		if !hasCommand {
+			command = []string{}
+		}
+	}
+
+	if !managed && hasCommand {
+		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must omit command when managed = false.", serviceName))
 	}
 
 	primary, _ := readOptionalBool(value, "primary", schemaIssues)
@@ -387,7 +407,14 @@ func validateService(
 	port, hasPort := readOptionalServicePort(value, "port", schemaIssues)
 	injectPort, hasInjectPort := readOptionalBool(value, "injectPort", schemaIssues)
 	if !hasInjectPort {
+		if !managed {
+			injectPort = false
+		} else {
 		injectPort = true
+		}
+	}
+	if !managed && hasInjectPort {
+		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must omit injectPort when managed = false.", serviceName))
 	}
 
 	host, hasHost := readOptionalString(value, "host", schemaIssues)
@@ -423,9 +450,15 @@ func validateService(
 	if hasHealth && health.Process && hasHost {
 		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must not use health.process on a routed service.", serviceName))
 	}
+	if hasHealth && health.Process && !managed {
+		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must not use health.process when managed = false.", serviceName))
+	}
 
 	if hasPort && port != nil && port.Auto && hasHealth {
 		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must omit health when port = \"auto\" in v1.", serviceName))
+	}
+	if hasPort && port != nil && port.Auto && !managed {
+		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must not use port = \"auto\" when managed = false.", serviceName))
 	}
 
 	if !hasPort && !hasHealth {
@@ -455,6 +488,7 @@ func validateService(
 		Health:     health,
 		Host:       normalizedHost,
 		InjectPort: injectPort,
+		Managed:    managed,
 		Name:       serviceName,
 		Path:       normalizedPath,
 		Port:       port,
@@ -791,6 +825,29 @@ func readRequiredCommand(value map[string]any, key string, schemaIssues *[]strin
 	rawValue, ok := value[key]
 	if !ok {
 		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must be a non-empty string or string array.", key))
+		return nil, false
+	}
+
+	if stringValue, ok := rawValue.(string); ok {
+		command := strings.Fields(stringValue)
+		if len(command) == 0 {
+			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s Expected a non-empty string.", key))
+			return nil, false
+		}
+		return command, true
+	}
+
+	command, ok := readOptionalStringArray(value, key, schemaIssues)
+	if !ok {
+		return nil, false
+	}
+
+	return command, true
+}
+
+func readOptionalCommand(value map[string]any, key string, schemaIssues *[]string) ([]string, bool) {
+	rawValue, ok := value[key]
+	if !ok {
 		return nil, false
 	}
 
