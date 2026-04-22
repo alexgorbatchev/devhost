@@ -2,6 +2,7 @@ package cli
 
 const HelpText = `Usage:
   devhost [--manifest ./devhost.toml]
+  devhost --version
   devhost skill
   devhost caddy start|stop|trust [--manifest ./devhost.toml]
   devhost caddy download|privileged-ports|print-root-cert
@@ -9,6 +10,7 @@ const HelpText = `Usage:
 
 Options:
   --manifest  Explicit path to devhost.toml. Available on devhost and on devhost caddy start|stop|trust.
+  --version   Print the build version. Source-checkout go run usage may report the local placeholder.
 
 Environment:
   DEVHOST_MANIFEST  Behaves like the per-command --manifest flag.
@@ -33,4 +35,8 @@ func HasHelpFlag(rawArguments []string) bool {
 	}
 
 	return false
+}
+
+func HasVersionFlag(rawArguments []string) bool {
+	return len(rawArguments) == 1 && rawArguments[0] == "--version"
 }

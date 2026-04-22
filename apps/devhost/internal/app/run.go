@@ -12,6 +12,7 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/services"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/skill"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/version"
 )
 
 func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) int {
@@ -27,6 +28,9 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 	}
 
 	switch arguments.Kind {
+	case cli.KindVersion:
+		_, _ = fmt.Fprintf(stdout, "%s\n", version.String())
+		return 0
 	case cli.KindManifest:
 		manifestPath := arguments.ManifestPath
 		if manifestPath == nil {

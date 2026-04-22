@@ -66,6 +66,13 @@ func TestParseCommandLineArguments(t *testing.T) {
 			},
 		},
 		{
+			name:    "parses version flag",
+			rawArgs: []string{"--version"},
+			want: CommandLineArguments{
+				Kind: KindVersion,
+			},
+		},
+		{
 			name:    "parses implicit manifest mode",
 			rawArgs: []string{},
 			want: CommandLineArguments{
@@ -161,11 +168,6 @@ func TestParseCommandLineArguments(t *testing.T) {
 			name:      "rejects invalid manifest suffix",
 			rawArgs:   []string{"--manifest", "./other.toml"},
 			wantError: "--manifest must point to a file named devhost.toml, received: ./other.toml",
-		},
-		{
-			name:      "rejects version flag",
-			rawArgs:   []string{"--version"},
-			wantError: "unknown option: --version",
 		},
 		{
 			name:      "rejects manifest mode child command",

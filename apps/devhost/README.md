@@ -23,10 +23,10 @@ If you are working from this repository and want a current-platform binary inste
 
 ```bash
 bun run compile:devhost
-./apps/devhost/dist/devhost --help
+./apps/devhost/dist/devhost --version
 ```
 
-That build refreshes the embedded injected devtools bundle with Bun, then compiles the Go CLI to `apps/devhost/dist/devhost`. Bun is only needed for source builds inside this repository; the shipped `devhost` binary does not require Bun.
+That build refreshes the embedded injected devtools bundle with Bun, then compiles the Go CLI to `apps/devhost/dist/devhost` with the current `apps/devhost/metadata.json` version embedded into `devhost --version`. Running `go run ./cmd/devhost --version` from a source checkout can still report the local placeholder until you build the binary. Bun is only needed for source builds inside this repository; the shipped `devhost` binary does not require Bun.
 
 Published GitHub Releases also include versioned `.tar.gz` archives for `darwin-arm64`, `linux-x64`, `linux-arm64`, `linux-x64-musl`, and `linux-arm64-musl`.
 
@@ -34,6 +34,12 @@ To print the bundled bootstrap skill for manifest-authoring workflows:
 
 ```bash
 devhost skill
+```
+
+To print the CLI build version:
+
+```bash
+devhost --version
 ```
 
 ### Minimal example

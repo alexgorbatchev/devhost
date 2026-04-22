@@ -40,6 +40,7 @@ const releaseTargetNames: ReadonlySet<string> = new Set(releaseTargets);
 
 const packageDirectoryPath: string = fileURLToPath(new URL("..", import.meta.url));
 const artifactOutputDirectoryPath: string = join(packageDirectoryPath, "dist", "release");
+const buildVersionVariablePath: string = "github.com/alexgorbatchev/devhost/apps/devhost/internal/version.buildVersion";
 const packageManifestPath: string = join(packageDirectoryPath, "metadata.json");
 const cliEntrypointPath: string = "./cmd/devhost";
 const readmeFilePath: string = join(packageDirectoryPath, "README.md");
@@ -66,20 +67,24 @@ async function buildReleaseArtifact(options: IBuildReleaseArtifactOptions): Prom
   const stagingDirectoryPath: string = join(artifactOutputDirectoryPath, artifactBaseName);
   const archiveFilePath: string = join(artifactOutputDirectoryPath, `${artifactBaseName}.tar.gz`);
   const executableFilePath: string = join(stagingDirectoryPath, options.artifactName);
+  const ldflags: string = `-X ${buildVersionVariablePath}=${options.version}`;
 
   await mkdir(stagingDirectoryPath, { recursive: true });
 
-  const buildProcess = Bun.spawn(["go", "build", "-trimpath", "-o", executableFilePath, cliEntrypointPath], {
-    cwd: packageDirectoryPath,
-    env: {
-      ...process.env,
-      CGO_ENABLED: "0",
-      GOARCH: platformName.goArch,
-      GOOS: platformName.goOS,
+  const buildProcess = Bun.spawn(
+    ["go", "build", "-trimpath", "-ldflags", ldflags, "-o", executableFilePath, cliEntrypointPath],
+    {
+      cwd: packageDirectoryPath,
+      env: {
+        ...process.env,
+        CGO_ENABLED: "0",
+        GOARCH: platformName.goArch,
+        GOOS: platformName.goOS,
+      },
+      stderr: "inherit",
+      stdout: "inherit",
     },
-    stderr: "inherit",
-    stdout: "inherit",
-  });
+  );
 
   const exitCode: number = await buildProcess.exited;
 
