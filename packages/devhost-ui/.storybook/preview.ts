@@ -21,7 +21,6 @@ const storybookInjectedConfig: IInjectedDevtoolsConfig = {
   agentDisplayName: "Pi",
   componentEditor: "vscode",
   controlToken: "storybook-token",
-  minimapPosition: "right",
   position: "bottom-right",
   projectRootPath: "storybook-workspace",
   stackName: "storybook-stack",

@@ -1079,7 +1079,7 @@ func newResolvedManifest(manifestDirectoryPath string, adminAddress string) Reso
 		Devtools: manifest.DevtoolsConfig{
 			Editor:           manifest.DevtoolsEditorConfig{Enabled: false, IDE: "vscode"},
 			ExternalToolbars: manifest.DevtoolsToggleConfig{Enabled: false},
-			Minimap:          manifest.DevtoolsMinimapConfig{Enabled: false, Position: "right"},
+			Minimap:          manifest.DevtoolsMinimapConfig{Enabled: false},
 			Status:           manifest.DevtoolsStatusConfig{Enabled: false, Position: "bottom-right"},
 		},
 		ManifestDirectoryPath: manifestDirectoryPath,

@@ -129,8 +129,7 @@ export interface IRoutedServiceIdentity {
 }
 
 export type DevtoolsComponentEditor = "neovim";
-export type DevtoolsMinimapPosition = "left" | "right";
-export type DevtoolsPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+export type DevtoolsPosition = "top-right" | "bottom-right";
 
 export interface IInjectedDevtoolsConfig {
   agentDisplayName: string;
@@ -141,7 +140,6 @@ export interface IInjectedDevtoolsConfig {
   editorEnabled: boolean;
   externalToolbarsEnabled: boolean;
   minimapEnabled: boolean;
-  minimapPosition: DevtoolsMinimapPosition;
   position: DevtoolsPosition;
   projectRootPath: string;
   routedServices: IRoutedServiceIdentity[];

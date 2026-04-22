@@ -15,7 +15,6 @@ const (
 	defaultManagedCaddyHTTPPort     = 80
 	defaultManagedCaddyHTTPSPort    = 443
 	defaultDevtoolsEditor           = "vscode"
-	defaultDevtoolsMinimapPosition  = "right"
 	defaultDevtoolsStatusPosition   = "bottom-right"
 	defaultAgentDisplayName         = "Pi"
 	defaultAgentKind                = "pi"
@@ -195,7 +194,7 @@ func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 	result := DevtoolsConfig{
 		Editor:           DevtoolsEditorConfig{Enabled: true, IDE: defaultDevtoolsEditor},
 		ExternalToolbars: DevtoolsToggleConfig{Enabled: true},
-		Minimap:          DevtoolsMinimapConfig{Enabled: true, Position: defaultDevtoolsMinimapPosition},
+		Minimap:          DevtoolsMinimapConfig{Enabled: true},
 		Status:           DevtoolsStatusConfig{Enabled: true, Position: defaultDevtoolsStatusPosition},
 	}
 
@@ -240,16 +239,9 @@ func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 	if rawMinimap := value["minimap"]; rawMinimap != nil {
 		minimapValue, ok := readMap(rawMinimap, "devtools.minimap", schemaIssues)
 		if ok {
-			allowKeys(minimapValue, []string{"enabled", "position"}, "devtools.minimap", schemaIssues)
+			allowKeys(minimapValue, []string{"enabled"}, "devtools.minimap", schemaIssues)
 			if enabled, ok := readOptionalBool(minimapValue, "enabled", schemaIssues); ok {
 				result.Minimap.Enabled = enabled
-			}
-			if position, ok := readOptionalString(minimapValue, "position", schemaIssues); ok {
-				if position == "right" {
-					result.Minimap.Position = position
-				} else {
-					*schemaIssues = append(*schemaIssues, "devtools.minimap.position must be right.")
-				}
 			}
 		}
 	}

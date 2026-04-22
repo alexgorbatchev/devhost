@@ -46,8 +46,7 @@ type DevtoolsToggleConfig struct {
 }
 
 type DevtoolsMinimapConfig struct {
-	Enabled  bool
-	Position string
+	Enabled bool
 }
 
 type DevtoolsStatusConfig struct {

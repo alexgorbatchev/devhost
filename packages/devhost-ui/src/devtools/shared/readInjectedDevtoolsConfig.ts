@@ -3,7 +3,6 @@ import {
   defaultDevtoolsComponentEditor,
   readDevtoolsComponentEditorValue,
   type DevtoolsComponentEditor,
-  type DevtoolsMinimapPosition,
   type DevtoolsPosition,
 } from "./devtoolsConfig";
 import { DEVHOST_SERVICE_NAME, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "./constants";
@@ -13,7 +12,6 @@ export interface IInjectedDevtoolsConfig {
   agentDisplayName: string;
   componentEditor: DevtoolsComponentEditor;
   controlToken: string;
-  minimapPosition: DevtoolsMinimapPosition;
   position: DevtoolsPosition;
   projectRootPath: string;
   routedServices: IRoutedServiceIdentity[];
@@ -31,7 +29,6 @@ const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
   agentDisplayName: defaultDevhostAgentDisplayName,
   componentEditor: defaultDevtoolsComponentEditor,
   controlToken: "",
-  minimapPosition: "right",
   position: "bottom-right",
   projectRootPath: "",
   routedServices: [],
@@ -56,7 +53,6 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
   const componentEditor: DevtoolsComponentEditor = readComponentEditorValue(injectedConfig);
   const controlToken: string = readControlTokenValue(injectedConfig);
   const position: DevtoolsPosition = readDevtoolsPositionValue(injectedConfig);
-  const minimapPosition: DevtoolsMinimapPosition = readDevtoolsMinimapPositionValue(injectedConfig);
   const projectRootPath: string = readProjectRootPathValue(injectedConfig);
   const routedServices: IRoutedServiceIdentity[] = readRoutedServicesValue(injectedConfig);
   const stackName: string = readStackNameValue(injectedConfig);
@@ -74,7 +70,6 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
     annotationQueueEnabled,
     componentEditor,
     controlToken,
-    minimapPosition,
     position,
     projectRootPath,
     routedServices,
@@ -110,25 +105,15 @@ function readControlTokenValue(injectedConfig: object): string {
 function readDevtoolsPositionValue(injectedConfig: object): DevtoolsPosition {
   const position: unknown = Reflect.get(injectedConfig, "position");
 
-  if (position === "top-left" || position === "top-right") {
+  if (position === "top-right") {
     return "top-right";
   }
 
-  if (position === "bottom-left" || position === "bottom-right") {
+  if (position === "bottom-right") {
     return "bottom-right";
   }
 
   return defaultInjectedDevtoolsConfig.position;
-}
-
-function readDevtoolsMinimapPositionValue(injectedConfig: object): DevtoolsMinimapPosition {
-  const minimapPosition: unknown = Reflect.get(injectedConfig, "minimapPosition");
-
-  if (minimapPosition === "left" || minimapPosition === "right") {
-    return "right";
-  }
-
-  return defaultInjectedDevtoolsConfig.minimapPosition;
 }
 
 function readProjectRootPathValue(injectedConfig: object): string {

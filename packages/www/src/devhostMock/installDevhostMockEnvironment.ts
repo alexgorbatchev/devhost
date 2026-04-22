@@ -45,7 +45,6 @@ function createInjectedConfig(location: Location, scenarioId: MarketingRecording
     editorEnabled: true,
     externalToolbarsEnabled: false,
     minimapEnabled: true,
-    minimapPosition: "right",
     position: "top-right",
     projectRootPath: readCaptureProjectRootPath(),
     routedServices: [

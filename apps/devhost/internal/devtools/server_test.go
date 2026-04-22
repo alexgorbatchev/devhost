@@ -32,7 +32,6 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 		GetHealthResponse: func() (HealthResponse, error) {
 			return HealthResponse{Services: []ServiceHealth{{Name: "web", Status: true}}}, nil
 		},
-		MinimapPosition: "right",
 		Position:        "bottom-right",
 		ProjectRootPath: "/tmp/project",
 		RestartService: func(serviceName string) error {
@@ -129,7 +128,6 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 		GetHealthResponse: func() (HealthResponse, error) {
 			return HealthResponse{Services: []ServiceHealth{}}, nil
 		},
-		MinimapPosition: "right",
 		Position:        "bottom-right",
 		ProjectRootPath: "/tmp/project",
 		StackName:       "hello-stack",
@@ -169,7 +167,6 @@ func TestControlServerHealthAndLogsWebsockets(t *testing.T) {
 		GetHealthResponse: func() (HealthResponse, error) {
 			return healthResponse, nil
 		},
-		MinimapPosition: "right",
 		Position:        "bottom-right",
 		ProjectRootPath: "/tmp/project",
 		StackName:       "hello-stack",
@@ -229,7 +226,6 @@ func TestControlServerTerminalSessionsEditorOnlyLifecycle(t *testing.T) {
 		GetHealthResponse: func() (HealthResponse, error) {
 			return HealthResponse{Services: []ServiceHealth{}}, nil
 		},
-		MinimapPosition:      "right",
 		Position:             "bottom-right",
 		ProjectRootPath:      "/tmp/project",
 		StackName:            "hello-stack",
@@ -438,7 +434,6 @@ func TestControlServerAgentAnnotationQueuesLifecycle(t *testing.T) {
 			return HealthResponse{Services: []ServiceHealth{}}, nil
 		},
 		ManifestPath:         "/tmp/project/devhost.toml",
-		MinimapPosition:      "right",
 		Position:             "bottom-right",
 		ProjectRootPath:      "/tmp/project",
 		StackName:            "hello-stack",
@@ -608,7 +603,6 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 			return HealthResponse{Services: []ServiceHealth{}}, nil
 		},
 		ManifestPath:         "/tmp/project/devhost.toml",
-		MinimapPosition:      "right",
 		Position:             "bottom-right",
 		ProjectRootPath:      "/tmp/project",
 		StackName:            "hello-stack",
@@ -666,7 +660,6 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 			return HealthResponse{Services: []ServiceHealth{}}, nil
 		},
 		ManifestPath:         "/tmp/project/devhost.toml",
-		MinimapPosition:      "right",
 		Position:             "bottom-right",
 		ProjectRootPath:      "/tmp/project",
 		StackName:            "hello-stack",
@@ -725,7 +718,6 @@ func TestControlServerTerminalSessionsRetainTailAndIdleCleanup(t *testing.T) {
 			return HealthResponse{Services: []ServiceHealth{}}, nil
 		},
 		IdleTerminalSessionTimeout: 25 * time.Millisecond,
-		MinimapPosition:            "right",
 		Position:                   "bottom-right",
 		ProjectRootPath:            "/tmp/project",
 		StackName:                  "hello-stack",

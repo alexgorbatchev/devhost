@@ -89,9 +89,6 @@ enabled = true
 # - `true` (default): show the log minimap in the overlay.
 # - `false`: hide the log minimap.
 enabled = true
-# `position` is fixed to the right side of the browser.
-# - `"right"` (default): pin the minimap to the right side.
-position = "right"
 
 [devtools.status]
 # `enabled` controls whether the injected service-status panel is shown.
