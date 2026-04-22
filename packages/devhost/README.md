@@ -140,6 +140,8 @@ If you want a Caddy subcommand to honor a manifest-defined admin API address, pa
 devhost --manifest ./devhost.toml caddy start
 ```
 
+You can also set `DEVHOST_MANIFEST=./devhost.toml` as the environment-backed equivalent of `--manifest`. If both are set, the CLI flag wins.
+
 Stop it when you are done with all stacks:
 
 ```bash
@@ -187,7 +189,7 @@ On Linux, `devhost caddy privileged-ports` configures the managed Caddy binary f
 
 When you run `devhost`, it:
 
-1. discovers `devhost.toml` upward from the current directory, unless `--manifest` is provided
+1. discovers `devhost.toml` upward from the current directory, unless `--manifest` or `DEVHOST_MANIFEST` is provided
 2. parses TOML and validates schema and semantics
 3. resolves `port = "auto"` before spawning children
 4. requires the managed Caddy admin API to already be available

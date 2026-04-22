@@ -508,6 +508,11 @@ $ open https://foo.localhost`}
           </p>
           <CommandLine command="devhost --manifest ./devhost.toml caddy start" />
 
+          <p>
+            You can also set <code>DEVHOST_MANIFEST=./devhost.toml</code> as the environment-backed equivalent of{" "}
+            <code>--manifest</code>. If both are set, the CLI flag wins.
+          </p>
+
           <p>Stop it when you are done with all stacks:</p>
           <CommandLine command="devhost caddy stop" />
 
@@ -597,8 +602,8 @@ $ open https://foo.localhost`}
           </p>
           <ol className="list-decimal ml-6 mb-6 space-y-2">
             <li>
-              discovers <code>devhost.toml</code> upward from the current directory, unless <code>--manifest</code> is
-              provided
+              discovers <code>devhost.toml</code> upward from the current directory, unless <code>--manifest</code> or{" "}
+              <code>DEVHOST_MANIFEST</code> is provided
             </li>
             <li>parses TOML and validates schema and semantics</li>
             <li>

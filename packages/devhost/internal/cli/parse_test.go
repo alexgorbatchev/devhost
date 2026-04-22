@@ -5,13 +5,12 @@ import (
 )
 
 func TestParseCommandLineArguments(t *testing.T) {
-	t.Parallel()
-
 	manifestPath := "./devhost.toml"
 
 	tests := []struct {
 		name        string
 		rawArgs     []string
+		env         map[string]string
 		want        CommandLineArguments
 		wantError   string
 		comparePath bool
@@ -62,6 +61,29 @@ func TestParseCommandLineArguments(t *testing.T) {
 			want: CommandLineArguments{
 				Kind:         KindManifest,
 				ManifestPath: &manifestPath,
+			},
+			comparePath: true,
+		},
+		{
+			name: "parses manifest from environment",
+			env: map[string]string{
+				"DEVHOST_MANIFEST": manifestPath,
+			},
+			want: CommandLineArguments{
+				Kind:         KindManifest,
+				ManifestPath: &manifestPath,
+			},
+			comparePath: true,
+		},
+		{
+			name:    "cli manifest overrides environment",
+			rawArgs: []string{"--manifest", "./cli-devhost.toml"},
+			env: map[string]string{
+				"DEVHOST_MANIFEST": manifestPath,
+			},
+			want: CommandLineArguments{
+				Kind:         KindManifest,
+				ManifestPath: pointerToString("./cli-devhost.toml"),
 			},
 			comparePath: true,
 		},
@@ -137,7 +159,13 @@ func TestParseCommandLineArguments(t *testing.T) {
 	for _, tt := range tests {
 		tc := tt
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
+			if len(tc.env) == 0 {
+				t.Parallel()
+			}
+
+			for key, value := range tc.env {
+				t.Setenv(key, value)
+			}
 
 			got, error := ParseCommandLineArguments(tc.rawArgs)
 			if tc.wantError != "" {
@@ -176,4 +204,8 @@ func TestParseCommandLineArguments(t *testing.T) {
 			}
 		})
 	}
+}
+
+func pointerToString(value string) *string {
+	return &value
 }
