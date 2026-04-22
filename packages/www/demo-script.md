@@ -6,7 +6,7 @@ This file is the recording runbook for the marketing feature replays.
 
 The marketing replays are now generated artifacts.
 
-1. Install Chromium once if needed: `bun run record:marketing:install-browser`
+1. Install Chromium once if needed from the repo root: `bun run install-browser`
 2. Regenerate every replay JSON: `bun run record:marketing`
 3. Regenerate one replay JSON: `bun run record:marketing <scenario-id>`
 4. Reload `www` and confirm the matching replay tab now plays the new capture.

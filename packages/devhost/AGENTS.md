@@ -43,13 +43,13 @@ Build the versioned cross-platform release tarballs:
 bun run build:release-artifacts
 ```
 
-Run the full test suite:
+Run the package-local Bun test suite:
 
 ```bash
 bun test
 ```
 
-Run the package format step:
+Human-only package format step when manual cleanup is explicitly needed:
 
 ```bash
 bun run fmt
@@ -61,7 +61,7 @@ Run the package check suite:
 bun run check
 ```
 
-The `fmt` script runs `oxfmt --write` for this workspace using the shared repo-root config. The package `check` script runs `go vet ./...`, `go test ./...`, `tsgo --noEmit -p tsconfig.json`, `bun test --coverage`, and `bun vitest run -c vitest.storybook.config.ts`. Use `bun run storybook` only when you need the interactive Storybook dev server for manual inspection. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
+The human-only `fmt` script runs `oxfmt --write` for this workspace using the shared repo-root config. Agents should not run it directly; formatting is handled automatically by the repo's git hooks. `bun test` covers only the package's Bun-owned tests. The package `check` script is the full package validation entrypoint and runs `go vet ./...`, `go test ./...`, `tsgo --noEmit -p tsconfig.json`, `bun test --coverage`, and `bun vitest run -c vitest.storybook.config.ts`. Use `bun run storybook` only when you need the interactive Storybook dev server for manual inspection. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
 
 The `build:devtools-bundle` script refreshes the prebuilt injected devtools bundle used by standalone executables.
 
