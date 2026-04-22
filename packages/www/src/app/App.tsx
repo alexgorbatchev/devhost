@@ -333,13 +333,15 @@ export function App(): JSX.Element {
 
           <CommandLine
             command={`bun run compile:devhost
-./apps/devhost/dist/devhost --help`}
+./apps/devhost/dist/devhost --version`}
           />
 
           <p>
             That build refreshes the embedded injected devtools bundle with Bun, then compiles the Go CLI to{" "}
-            <code>./apps/devhost/dist/devhost</code>. Bun is only needed for source builds inside this repository; the
-            shipped <code>devhost</code> binary does not require Bun.
+            <code>./apps/devhost/dist/devhost</code> with the current <code>apps/devhost/metadata.json</code> version
+            embedded into <code>devhost --version</code>. Running <code>go run ./cmd/devhost --version</code> from a
+            source checkout can still report the local placeholder until you build the binary. Bun is only needed for
+            source builds inside this repository; the shipped <code>devhost</code> binary does not require Bun.
           </p>
 
           <p>
@@ -350,6 +352,10 @@ export function App(): JSX.Element {
           <p>To print the bundled bootstrap skill for manifest-authoring workflows:</p>
 
           <CommandLine command="devhost skill" />
+
+          <p>To print the CLI build version:</p>
+
+          <CommandLine command="devhost --version" />
 
           <h3>Minimal example</h3>
           <p>

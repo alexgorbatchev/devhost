@@ -16,6 +16,7 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cli"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/skill"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/version"
 )
 
 func TestRunHelpShortCircuitsInvalidArguments(t *testing.T) {
@@ -58,6 +59,27 @@ func TestRunSkillPrintsEmbeddedMarkdown(t *testing.T) {
 
 	if stdout.String() != expectedMarkdown {
 		t.Fatalf("Run(...) stdout = %q, want %q", stdout.String(), expectedMarkdown)
+	}
+
+	if stderr.String() != "" {
+		t.Fatalf("Run(...) stderr = %q, want empty", stderr.String())
+	}
+}
+
+func TestRunVersionPrintsBuildVersion(t *testing.T) {
+	t.Parallel()
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	exitCode := Run([]string{"--version"}, "/tmp", &stdout, &stderr)
+
+	if exitCode != 0 {
+		t.Fatalf("Run(...) exit code = %d, want 0", exitCode)
+	}
+
+	if stdout.String() != version.String()+"\n" {
+		t.Fatalf("Run(...) stdout = %q, want %q", stdout.String(), version.String()+"\n")
 	}
 
 	if stderr.String() != "" {

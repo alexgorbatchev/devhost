@@ -59,9 +59,9 @@ The human-only `fmt` script runs `oxfmt --write` for the repo using the shared r
 
 `scripts/buildDevtoolsBundle.ts` refreshes the prebuilt injected devtools bundle used by standalone executables.
 
-`bun run build:release-artifacts:devhost` refreshes that bundle, cross-compiles the supported Go release targets, and writes versioned `.tar.gz` archives to `apps/devhost/dist/release/`.
+`bun run build:release-artifacts:devhost` refreshes that bundle, cross-compiles the supported Go release targets, embeds the current `metadata.json` version into `devhost --version`, and writes versioned `.tar.gz` archives to `apps/devhost/dist/release/`.
 
-`bun run compile:devhost` refreshes that bundle, then runs `go build -trimpath -o ./dist/devhost ./cmd/devhost` and writes the current-platform executable to `apps/devhost/dist/devhost`.
+`bun run compile:devhost` refreshes that bundle, embeds the current `metadata.json` version into `devhost --version`, then writes the current-platform executable to `apps/devhost/dist/devhost`.
 
 ## Release workflow
 

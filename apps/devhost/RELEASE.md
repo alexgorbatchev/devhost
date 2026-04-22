@@ -30,10 +30,10 @@ To build a native executable for the current platform:
 
 ```sh
 bun run compile:devhost
-./apps/devhost/dist/devhost --help
+./apps/devhost/dist/devhost --version
 ```
 
-This first refreshes the embedded injected devtools bundle, then runs `go build -trimpath -o ./dist/devhost ./cmd/devhost`.
+This first refreshes the embedded injected devtools bundle, then runs `go build` with linker flags that embed the current `apps/devhost/metadata.json` version into `devhost --version`.
 The generated binary is the same Go runtime that ships in the release archives.
 
 ## Local release artifacts
@@ -55,6 +55,7 @@ That writes these archives to `apps/devhost/dist/release/`:
 Replace `0.0.2` with the real package version.
 
 The release builder cross-compiles with `CGO_ENABLED=0`. The `linux-*-musl` archives therefore ship the same static Linux binaries as the matching non-musl Linux targets, packaged under distinct archive names for download clarity.
+Each archived `devhost` binary also reports that same metadata version through `devhost --version`.
 
 ## Release
 
