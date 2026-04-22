@@ -140,6 +140,7 @@ func TestStartStackCleanupReleasesClaimsAfterStartupFailure(t *testing.T) {
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
 	adminAddress, stopAdmin := startTestAdminServer(t)
 	defer stopAdmin()
+	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
 	servicePort := mustReservePort(t)
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
