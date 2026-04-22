@@ -67,7 +67,7 @@ function verifyRepositoryLayout(): void {
   const requiredPaths: string[] = [
     "package.json",
     "bun.lock",
-    "packages/devhost",
+    "apps/devhost",
     "packages/www/package.json",
     "packages/www/src/server.ts",
   ];

@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "dependencies": {
-    "@alexgorbatchev/devhost": "workspace:*",
+    "@alexgorbatchev/devhost-ui": "workspace:*",
     "@rrweb/all": "^2.0.0-alpha.20",
     "@rrweb/types": "^2.0.0-alpha.20",
     "@xterm/xterm": "^6.0.0",
@@ -35,7 +35,7 @@
     "build": "bun scripts/buildProduction.ts",
     "check": "./scripts/check.sh",
     "dev": "bun src/server.ts",
-    "devhost": "../devhost/bin/devhost --manifest ./devhost.toml",
+    "devhost": "../../apps/devhost/bin/devhost --manifest ./devhost.toml",
     "log-demo": "bun scripts/emitDemoLogs.ts",
     "record:marketing": "bun scripts/recordMarketingDemos.ts",
     "start": "NODE_ENV=production bun ./dist/server.js",

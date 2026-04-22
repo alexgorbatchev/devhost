@@ -331,14 +331,14 @@ export function App(): JSX.Element {
           </p>
 
           <CommandLine
-            command={`bun run --cwd packages/devhost compile
-./packages/devhost/dist/devhost --help`}
+            command={`bun run compile:devhost
+./apps/devhost/dist/devhost --help`}
           />
 
           <p>
             That build refreshes the embedded injected devtools bundle with Bun, then compiles the Go CLI to{" "}
-            <code>./packages/devhost/dist/devhost</code>. Bun is only needed for source builds inside this repository;
-            the shipped <code>devhost</code> binary does not require Bun.
+            <code>./apps/devhost/dist/devhost</code>. Bun is only needed for source builds inside this repository; the
+            shipped <code>devhost</code> binary does not require Bun.
           </p>
 
           <p>
@@ -504,13 +504,15 @@ $ open https://foo.localhost`}
           </p>
 
           <p>
-            If you want a Caddy subcommand to honor a manifest-defined admin API address, pass the manifest explicitly:
+            If you want <code>devhost caddy start</code>, <code>stop</code>, or <code>trust</code> to honor a
+            manifest-defined admin API address, pass the manifest explicitly on that subcommand:
           </p>
-          <CommandLine command="devhost --manifest ./devhost.toml caddy start" />
+          <CommandLine command="devhost caddy start --manifest ./devhost.toml" />
 
           <p>
             You can also set <code>DEVHOST_MANIFEST=./devhost.toml</code> as the environment-backed equivalent of{" "}
-            <code>--manifest</code>. If both are set, the CLI flag wins.
+            <code>--manifest</code> for <code>devhost</code> and for <code>devhost caddy start|stop|trust</code>. If
+            both are set for the same command, the CLI flag wins.
           </p>
 
           <p>Stop it when you are done with all stacks:</p>
