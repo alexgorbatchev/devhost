@@ -253,12 +253,20 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 				startedServicesMu.Lock()
 				startedServicesSnapshot := append([]*startedService{}, startedServices...)
 				startedServicesMu.Unlock()
-				return collectManagedServicesHealth(*manifest, startedServicesSnapshot), nil
+				return collectServicesHealth(*manifest, startedServicesSnapshot), nil
 			},
 			ManifestPath:    manifest.ManifestPath,
 			Position:        manifest.Devtools.Status.Position,
 			ProjectRootPath: manifest.ManifestDirectoryPath,
 			RestartService: func(serviceName string) error {
+				service, ok := manifest.Services[serviceName]
+				if !ok {
+					return fmt.Errorf("unknown service: %s", serviceName)
+				}
+				if !isManagedService(service) {
+					return fmt.Errorf("service %s is unmanaged and cannot be restarted by devhost", serviceName)
+				}
+
 				startedServicesMu.Lock()
 				targetStartedService := findStartedService(startedServices, serviceName)
 				if targetStartedService != nil {
@@ -295,18 +303,30 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	}
 
 	for _, serviceName := range serviceOrder {
-		started, err := startServiceWithRetries(manifest, serviceName, serviceExits, options, environment, devtoolsControlServer)
-		if err != nil {
-			return 0, joinCleanupError(err, cleanupError)
+		service, ok := manifest.Services[serviceName]
+		if !ok {
+			return 0, joinCleanupError(fmt.Errorf("unknown service: %s", serviceName), cleanupError)
 		}
 
-		startedServicesMu.Lock()
-		startedServices = append(startedServices, started)
-		startedServicesMu.Unlock()
+		if isManagedService(service) {
+			started, err := startServiceWithRetries(manifest, serviceName, serviceExits, options, environment, devtoolsControlServer)
+			if err != nil {
+				return 0, joinCleanupError(err, cleanupError)
+			}
 
-		service := started.service
+			startedServicesMu.Lock()
+			startedServices = append(startedServices, started)
+			startedServicesMu.Unlock()
+
+			service = started.service
+		}
+
 		if service.Host == nil || service.Port == nil {
 			continue
+		}
+
+		if warning := ReadLoopbackBindHostAmbiguityWarning(service, manifest.Caddy.Global.HTTPSPort); warning != "" {
+			writeLogLine(options.LogWriter, manifest.Name, warning)
 		}
 
 		path := "/"
@@ -776,7 +796,7 @@ func isRootCompatibleServicePath(path *string) bool {
 	return path == nil || *path == "/" || *path == "/*"
 }
 
-func collectManagedServicesHealth(manifest ResolvedManifest, startedServices []*startedService) devtools.HealthResponse {
+func collectServicesHealth(manifest ResolvedManifest, startedServices []*startedService) devtools.HealthResponse {
 	startedServicesByName := map[string]*startedService{}
 	for _, startedService := range startedServices {
 		if startedService == nil {
@@ -802,11 +822,15 @@ func collectManagedServicesHealth(manifest ResolvedManifest, startedServices []*
 
 		status := false
 		startedService := startedServicesByName[service.Name]
-		if startedService != nil && startedService.ReadExitCode() == nil {
+		managed := isManagedService(service)
+		if !managed {
+			status = CheckServiceHealth(service.Health)
+		} else if startedService != nil && startedService.ReadExitCode() == nil {
 			status = CheckServiceHealth(service.Health)
 		}
 
 		services = append(services, devtools.ServiceHealth{
+			Managed: managed,
 			Name:   service.Name,
 			Status: status,
 			URL:    readManagedServiceURL(service, manifest.Caddy.Global.HTTPSPort),
@@ -814,6 +838,10 @@ func collectManagedServicesHealth(manifest ResolvedManifest, startedServices []*
 	}
 
 	return devtools.HealthResponse{Services: services}
+}
+
+func isManagedService(service ResolvedService) bool {
+	return service.Managed || len(service.Command) > 0
 }
 
 func readManagedServiceURL(service ResolvedService, httpsPort int) *string {

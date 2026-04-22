@@ -135,6 +135,54 @@ func TestWriteLogLinePrefixBehavior(t *testing.T) {
 	})
 }
 
+func TestCollectServicesHealthIncludesUnmanagedServices(t *testing.T) {
+	t.Parallel()
+
+	listener, error := net.Listen("tcp", "127.0.0.1:0")
+	if error != nil {
+		t.Fatalf("Listen(...) error = %v", error)
+	}
+	defer listener.Close()
+
+	tcpAddress, ok := listener.Addr().(*net.TCPAddr)
+	if !ok {
+		t.Fatalf("listener.Addr() = %T, want *net.TCPAddr", listener.Addr())
+	}
+
+	port := tcpAddress.Port
+	manifestValue := ResolvedManifest{
+		Caddy:        manifest.CaddyConfig{Global: manifest.CaddyGlobalConfig{HTTPSPort: 443}},
+		ServiceOrder: []string{"managed", "external"},
+		Services: map[string]ResolvedService{
+			"managed": {
+				BindHost: "127.0.0.1",
+				Health:   ResolvedHealthConfig{Host: stringPointer("127.0.0.1"), Kind: "tcp", Port: intPointer(port), Timeout: 500},
+				Managed:  true,
+				Name:     "managed",
+				Port:     intPointer(port),
+			},
+			"external": {
+				BindHost: "127.0.0.1",
+				Health:   ResolvedHealthConfig{Host: stringPointer("127.0.0.1"), Kind: "tcp", Port: intPointer(port), Timeout: 500},
+				Managed:  false,
+				Name:     "external",
+				Port:     intPointer(port),
+			},
+		},
+	}
+
+	health := collectServicesHealth(manifestValue, nil)
+	if len(health.Services) != 2 {
+		t.Fatalf("health.Services length = %d, want 2", len(health.Services))
+	}
+	if health.Services[0].Managed != true || health.Services[0].Name != "managed" || health.Services[0].Status {
+		t.Fatalf("managed service health = %#v, want managed unhealthy without started process", health.Services[0])
+	}
+	if health.Services[1].Managed != false || health.Services[1].Name != "external" || !health.Services[1].Status {
+		t.Fatalf("external service health = %#v, want unmanaged healthy tcp status", health.Services[1])
+	}
+}
+
 func TestStartStackCleanupReleasesClaimsAfterStartupFailure(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)

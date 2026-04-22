@@ -77,6 +77,10 @@ func TestValidateManifestReturnsNormalizedDefaults(t *testing.T) {
 		t.Fatalf("service.InjectPort = %t, want true", service.InjectPort)
 	}
 
+	if !service.Managed {
+		t.Fatalf("service.Managed = %t, want true", service.Managed)
+	}
+
 	if service.Port == nil || service.Port.Auto || service.Port.Number != 3000 {
 		t.Fatalf("service.Port = %#v, want fixed port 3000", service.Port)
 	}
@@ -190,6 +194,51 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 				},
 			}),
 			wantError: "services.db must omit health when port = \"auto\" in v1.",
+		},
+		{
+			name: "accepts unmanaged routed service without command",
+			manifest: rawManifestWithServices(map[string]any{
+				"services": map[string]any{
+					"web": map[string]any{"managed": false, "host": "hello.local.test", "port": int64(3000)},
+				},
+			}),
+			wantError: "",
+		},
+		{
+			name: "rejects unmanaged service command",
+			manifest: rawManifestWithServices(map[string]any{
+				"services": map[string]any{
+					"web": map[string]any{"managed": false, "command": []any{"bun", "run", "dev"}, "port": int64(3000)},
+				},
+			}),
+			wantError: "services.web must omit command when managed = false.",
+		},
+		{
+			name: "rejects unmanaged service inject port",
+			manifest: rawManifestWithServices(map[string]any{
+				"services": map[string]any{
+					"web": map[string]any{"managed": false, "injectPort": false, "port": int64(3000)},
+				},
+			}),
+			wantError: "services.web must omit injectPort when managed = false.",
+		},
+		{
+			name: "rejects unmanaged service auto port",
+			manifest: rawManifestWithServices(map[string]any{
+				"services": map[string]any{
+					"web": map[string]any{"managed": false, "port": "auto"},
+				},
+			}),
+			wantError: "services.web must not use port = \"auto\" when managed = false.",
+		},
+		{
+			name: "rejects unmanaged service process health",
+			manifest: rawManifestWithServices(map[string]any{
+				"services": map[string]any{
+					"web": map[string]any{"managed": false, "health": map[string]any{"process": true}},
+				},
+			}),
+			wantError: "services.web must not use health.process when managed = false.",
 		},
 		{
 			name: "rejects routed service without port",

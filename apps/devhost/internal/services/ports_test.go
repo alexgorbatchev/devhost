@@ -63,7 +63,7 @@ func TestResolveServicePorts(t *testing.T) {
 		}
 	})
 
-	t.Run("preserves explicit health checks fixed ports and configured agents", func(t *testing.T) {
+		t.Run("preserves explicit health checks fixed ports and configured agents", func(t *testing.T) {
 		t.Parallel()
 
 		apiPort := &manifest.PortConfig{Number: 4000}
@@ -89,6 +89,9 @@ func TestResolveServicePorts(t *testing.T) {
 		if resolvedService.InjectPort {
 			t.Fatalf("resolved api injectPort = %t, want false", resolvedService.InjectPort)
 		}
+		if !resolvedService.Managed {
+			t.Fatalf("resolved api managed = %t, want true", resolvedService.Managed)
+		}
 		if resolvedService.PortSource != "fixed" {
 			t.Fatalf("resolved api port source = %q, want fixed", resolvedService.PortSource)
 		}
@@ -97,6 +100,31 @@ func TestResolveServicePorts(t *testing.T) {
 		}
 		if resolvedManifest.Agent.DisplayName != "Claude Code" || resolvedManifest.Agent.Kind != "configured" {
 			t.Fatalf("resolved agent = %#v", resolvedManifest.Agent)
+		}
+	})
+
+	t.Run("preserves unmanaged services without injecting process state", func(t *testing.T) {
+		t.Parallel()
+
+		webPort := &manifest.PortConfig{Number: 3000}
+		value := manifest.Manifest{Services: map[string]manifest.ValidatedService{
+			"web": {Name: "web", BindHost: "127.0.0.1", Managed: false, Port: webPort},
+		}}
+
+		resolvedManifest, error := ResolveServicePorts(value)
+		if error != nil {
+			t.Fatalf("ResolveServicePorts(...) unexpected error = %v", error)
+		}
+
+		resolvedService := resolvedManifest.Services["web"]
+		if resolvedService.Managed {
+			t.Fatalf("resolved web managed = %t, want false", resolvedService.Managed)
+		}
+		if resolvedService.Port == nil || *resolvedService.Port != 3000 {
+			t.Fatalf("resolved web port = %#v, want 3000", resolvedService.Port)
+		}
+		if resolvedService.Health.Kind != "tcp" {
+			t.Fatalf("resolved web health kind = %q, want tcp", resolvedService.Health.Kind)
 		}
 	})
 

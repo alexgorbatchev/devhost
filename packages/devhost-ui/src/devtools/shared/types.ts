@@ -1,6 +1,7 @@
 import type { IStandardSourceShape } from "./reactSourceInspection";
 
 export type ServiceHealth = {
+  managed: boolean;
   name: string;
   status: boolean;
   url?: string;

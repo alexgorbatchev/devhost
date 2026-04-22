@@ -286,8 +286,8 @@ export function App(): JSX.Element {
                 <h3 className="font-semibold text-lg !mt-0 !mb-0">Stack Management</h3>
               </div>
               <p className="text-sm text-muted-foreground !mb-0">
-                Starts one service or a full stack from a declarative <code>devhost.toml</code> file, in proper
-                dependency order.
+                Starts a managed stack or fronts already-running services from a declarative <code>devhost.toml</code>
+                file, in proper dependency order.
               </p>
             </div>
 
@@ -299,7 +299,8 @@ export function App(): JSX.Element {
                 <h3 className="font-semibold text-lg !mt-0 !mb-0">Health Checks</h3>
               </div>
               <p className="text-sm text-muted-foreground !mb-0">
-                Waits for configurable health checks to pass before exposing routes, ensuring your stack is truly ready.
+                Waits for managed-service health checks before exposing routes, while external fixed-port services can
+                be claimed immediately.
               </p>
             </div>
 
@@ -422,14 +423,16 @@ $ open https://foo.localhost`}
           <ul className="list-disc ml-6 mb-6">
             <li className="mb-2">routes local apps onto HTTPS hostnames through one shared managed Caddy instance</li>
             <li className="mb-2">
-              starts local child processes from <code>devhost.toml</code>
+              starts managed local child processes and can also route already-running services from{" "}
+              <code>devhost.toml</code>
             </li>
             <li className="mb-2">
-              injects runtime context such as <code>PORT</code> and <code>DEVHOST_*</code> environment variables
+              injects runtime context such as <code>PORT</code> and <code>DEVHOST_*</code> environment variables into
+              managed child processes
             </li>
             <li className="mb-2">
-              validates manifests, reserves public hosts, reserves fixed bind ports, and waits for health checks before
-              routing traffic
+              validates manifests, reserves public hosts, reserves fixed bind ports, and waits for managed-service
+              health checks before routing traffic
             </li>
             <li className="mb-2">
               allocates <code>port = "auto"</code> best-effort and retries on clear bind-collision startup failures
@@ -618,8 +621,13 @@ $ open https://foo.localhost`}
             <li>requires the managed Caddy admin API to already be available</li>
             <li>reserves fixed numeric bind ports before starting any service that uses them</li>
             <li>reserves every public hostname before starting any service</li>
-            <li>starts services in dependency order</li>
-            <li>waits for each service health check before routing it</li>
+            <li>
+              starts managed services in dependency order and evaluates unmanaged services in the same dependency graph
+            </li>
+            <li>
+              waits for each managed service health check before routing it, while unmanaged routed services claim their
+              routes immediately once dependencies are satisfied
+            </li>
             <li>removes routes and reservations on shutdown or startup failure</li>
           </ol>
           <p>
@@ -695,6 +703,12 @@ adminAddress = "127.0.0.1:22000"`}</code>
           </p>
 
           <p>
+            If another process or tool already owns the backend lifecycle, declare that service with{" "}
+            <code>managed = false</code>
+            so devhost claims the hostname and fixed port without trying to spawn or restart it.
+          </p>
+
+          <p>
             For example, if your Compose service publishes <code>4000:4000</code>, you can route it like this:
           </p>
 
@@ -715,9 +729,34 @@ host = "api.hello.localhost"
 health = { http = "http://127.0.0.1:4000/healthz" }`}</code>
           </pre>
 
+          <p>
+            For a backend that is started separately and only becomes reachable later, use an unmanaged service instead:
+          </p>
+
+          <pre>
+            <code className="language-toml">{`name = "hello-stack"
+
+[services.dev]
+command = ["bun", "run", "dev:infra"]
+health = { process = true }
+
+[services.preview]
+managed = false
+dependsOn = ["dev"]
+port = 4100
+host = "preview.hello.localhost"`}</code>
+          </pre>
+
+          <p>
+            Unmanaged services must omit <code>command</code>, <code>injectPort</code>, and <code>port = "auto"</code>.
+            They can still use fixed-port routing and explicit TCP or HTTP health checks, but{" "}
+            <code>health.process</code>
+            is invalid because devhost does not own a child process for them.
+          </p>
+
           <h2>Injected environment</h2>
           <p>
-            <code>devhost</code> injects environment variables into each service child process. Only{" "}
+            <code>devhost</code> injects environment variables into each managed service child process. Only{" "}
             <code>DEVHOST_BIND_HOST</code> and <code>PORT</code> are operational bind inputs. The remaining variables
             are context metadata and must not be used as socket bind targets.
           </p>
@@ -730,7 +769,7 @@ health = { http = "http://127.0.0.1:4000/healthz" }`}</code>
             </li>
             <li className="mb-2">
               <code>PORT</code>: the listening port selected by <code>devhost</code>. Injected when the service defines{" "}
-              <code>port</code>, unless <code>injectPort = false</code>.
+              <code>port</code>, unless <code>injectPort = false</code>. It is not injected for unmanaged services.
             </li>
             <li className="mb-2">
               <code>injectPort = false</code>: service-level opt-out for <code>PORT</code> injection.{" "}
@@ -776,6 +815,11 @@ health = { http = "http://127.0.0.1:4000/healthz" }`}</code>
           <p>
             Routed services in the injected status panel become links automatically, and clicking one opens that service
             URL in a new browser tab/window by default.
+          </p>
+
+          <p>
+            The panel labels devhost-owned services as <code>managed</code> and externally owned services as{" "}
+            <code>external</code>. Only managed services expose restart controls.
           </p>
 
           <p>
