@@ -35,6 +35,10 @@ interface ILocatorClickTarget {
   y: number;
 }
 
+interface ICursorMotionOptions {
+  speedMultiplier?: number;
+}
+
 const afterLeftClickPauseMs: number = 320;
 const afterRightClickPauseMs: number = 420;
 const annotationHighlightPauseMs: number = 1_000;
@@ -352,18 +356,11 @@ async function wiggleCursorAtLocator(
   durationMs: number = cursorFrameIntervalMs * 2,
 ): Promise<void> {
   const target = await readLocatorPoint(locator);
+  const wiggleTargets: ReadonlyArray<IPoint> = createCursorWiggleTargets(target, durationMs);
 
-  const stepCount: number = Math.max(1, Math.floor(durationMs / cursorWigglePauseMs));
-
-  for (let stepIndex = 0; stepIndex < stepCount; stepIndex += 1) {
-    const offset: number = stepIndex % 2 === 0 ? annotationHighlightWiggleOffsetPx : -annotationHighlightWiggleOffsetPx;
-
-    await page.mouse.move(target.x + offset, target.y);
-    await page.waitForTimeout(cursorWigglePauseMs);
-  }
-
-  await page.mouse.move(target.x, target.y);
-  cursorPositionsByPage.set(page, target);
+  await moveCursorHumanLike(page, target, { speedMultiplier: 1.6 });
+  await moveCursorThroughPoints(page, wiggleTargets, { speedMultiplier: 3.8 });
+  await moveCursorHumanLike(page, target, { speedMultiplier: 2.4 });
 }
 
 async function scrollLocatorSlowly(page: Page, locator: Locator, deltaY: number, durationMs: number): Promise<void> {
@@ -395,18 +392,31 @@ async function readLocatorPoint(locator: Locator, target: ILocatorClickTarget = 
   };
 }
 
-async function moveCursorHumanLike(page: Page, target: IPoint): Promise<void> {
-  const viewport: IMarketingRecordingViewport = readViewport(page);
-  const clampedTarget: IPoint = clampPointToViewport(target, viewport);
-  const start: IPoint = cursorPositionsByPage.get(page) ?? createInitialCursorPosition(viewport);
-  const pathPoints: ReadonlyArray<IPoint> = createCursorPathPoints(start, clampedTarget, viewport);
+async function moveCursorHumanLike(page: Page, target: IPoint, options: ICursorMotionOptions = {}): Promise<void> {
+  await moveCursorThroughPoints(page, [target], options);
+}
 
-  for (const point of pathPoints) {
-    await page.mouse.move(point.x, point.y);
-    await page.waitForTimeout(cursorFrameIntervalMs);
+async function moveCursorThroughPoints(
+  page: Page,
+  targets: ReadonlyArray<IPoint>,
+  options: ICursorMotionOptions = {},
+): Promise<void> {
+  const viewport: IMarketingRecordingViewport = readViewport(page);
+  let currentPoint: IPoint = cursorPositionsByPage.get(page) ?? createInitialCursorPosition(viewport);
+
+  for (const target of targets) {
+    const clampedTarget: IPoint = clampPointToViewport(target, viewport);
+    const pathPoints: ReadonlyArray<IPoint> = createCursorPathPoints(currentPoint, clampedTarget, viewport, options);
+
+    for (const point of pathPoints) {
+      await page.mouse.move(point.x, point.y);
+      await page.waitForTimeout(cursorFrameIntervalMs);
+    }
+
+    currentPoint = clampedTarget;
   }
 
-  cursorPositionsByPage.set(page, clampedTarget);
+  cursorPositionsByPage.set(page, currentPoint);
 }
 
 function clampNumber(value: number, minimumValue: number, maximumValue: number): number {
@@ -424,6 +434,7 @@ function createCursorPathPoints(
   start: IPoint,
   end: IPoint,
   viewport: IMarketingRecordingViewport,
+  options: ICursorMotionOptions = {},
 ): ReadonlyArray<IPoint> {
   const distance: number = readPointDistance(start, end);
 
@@ -431,31 +442,36 @@ function createCursorPathPoints(
     return [end];
   }
 
+  const speedMultiplier: number = clampNumber(options.speedMultiplier ?? 1, 0.4, 6);
   const durationMs: number = clampNumber(
-    cursorPathBaseDurationMs + distance * cursorPathDurationPerPixelMs,
-    minimumCursorPathDurationMs,
-    maximumCursorPathDurationMs,
+    ((cursorPathBaseDurationMs + distance * cursorPathDurationPerPixelMs) * readRandomNumber(0.94, 1.08)) /
+      speedMultiplier,
+    minimumCursorPathDurationMs / speedMultiplier,
+    maximumCursorPathDurationMs / speedMultiplier,
   );
-  const stepCount: number = Math.max(16, Math.round(durationMs / cursorFrameIntervalMs));
+  const minimumStepCount: number = distance < 24 ? 4 : 16;
+  const stepCount: number = Math.max(minimumStepCount, Math.round(durationMs / cursorFrameIntervalMs));
   const direction: IPoint = readUnitVector(start, end);
   const perpendicular: IPoint = { x: -direction.y, y: direction.x };
   const lineVector: IPoint = { x: end.x - start.x, y: end.y - start.y };
-  const arcDirection: number = readArcDirection(start, end);
-  const primaryArcOffsetPx: number = clampNumber(distance * 0.14, 18, 76) * arcDirection;
-  const secondaryArcOffsetPx: number = primaryArcOffsetPx * 0.42;
-  const wobbleAmplitudePx: number = clampNumber(distance * 0.008, 0.6, 3.6);
-  const wobblePhase: number = readWobblePhase(start, end);
+  const primaryArcOffsetPx: number = clampNumber(distance * readRandomNumber(0.12, 0.16), 18, 76) * readRandomSign();
+  const secondaryArcOffsetPx: number = primaryArcOffsetPx * readRandomNumber(0.34, 0.5);
+  const wobbleAmplitudePx: number = clampNumber(distance * readRandomNumber(0.006, 0.01), 0.6, 3.8);
+  const wobbleFrequency: number = readRandomNumber(2.25, 3.1);
+  const wobblePhase: number = readRandomNumber(0, Math.PI * 2);
+  const controlPointOneProgress: number = readRandomNumber(0.24, 0.33);
+  const controlPointTwoProgress: number = readRandomNumber(0.7, 0.8);
   const controlPointOne: IPoint = clampPointToViewport(
     {
-      x: start.x + lineVector.x * 0.28 + perpendicular.x * primaryArcOffsetPx,
-      y: start.y + lineVector.y * 0.28 + perpendicular.y * primaryArcOffsetPx,
+      x: start.x + lineVector.x * controlPointOneProgress + perpendicular.x * primaryArcOffsetPx,
+      y: start.y + lineVector.y * controlPointOneProgress + perpendicular.y * primaryArcOffsetPx,
     },
     viewport,
   );
   const controlPointTwo: IPoint = clampPointToViewport(
     {
-      x: start.x + lineVector.x * 0.74 + perpendicular.x * secondaryArcOffsetPx,
-      y: start.y + lineVector.y * 0.74 + perpendicular.y * secondaryArcOffsetPx,
+      x: start.x + lineVector.x * controlPointTwoProgress + perpendicular.x * secondaryArcOffsetPx,
+      y: start.y + lineVector.y * controlPointTwoProgress + perpendicular.y * secondaryArcOffsetPx,
     },
     viewport,
   );
@@ -466,7 +482,7 @@ function createCursorPathPoints(
     const easedProgress: number = easeInOutSine(progress);
     const curvePoint: IPoint = readCubicBezierPoint(start, controlPointOne, controlPointTwo, end, easedProgress);
     const wobbleOffsetPx: number =
-      Math.sin(Math.PI * progress) * Math.sin(progress * Math.PI * 2.5 + wobblePhase) * wobbleAmplitudePx;
+      Math.sin(Math.PI * progress) * Math.sin(progress * Math.PI * wobbleFrequency + wobblePhase) * wobbleAmplitudePx;
 
     pathPoints.push(
       clampPointToViewport(
@@ -483,6 +499,28 @@ function createCursorPathPoints(
   return pathPoints;
 }
 
+function createCursorWiggleTargets(target: IPoint, durationMs: number): ReadonlyArray<IPoint> {
+  const stepCount: number = Math.max(2, Math.floor(durationMs / cursorWigglePauseMs));
+  const wiggleTargets: IPoint[] = [];
+  let angle: number = readRandomNumber(0, Math.PI * 2);
+
+  for (let stepIndex = 0; stepIndex < stepCount; stepIndex += 1) {
+    angle += Math.PI * readRandomNumber(0.6, 1.05) * readRandomSign();
+
+    const radius: number = readRandomNumber(
+      annotationHighlightWiggleOffsetPx * 0.45,
+      annotationHighlightWiggleOffsetPx * 1.2,
+    );
+
+    wiggleTargets.push({
+      x: target.x + Math.cos(angle) * radius,
+      y: target.y + Math.sin(angle) * radius,
+    });
+  }
+
+  return wiggleTargets;
+}
+
 function createInitialCursorPosition(viewport: IMarketingRecordingViewport): IPoint {
   return {
     x: viewport.width * 0.22,
@@ -492,12 +530,6 @@ function createInitialCursorPosition(viewport: IMarketingRecordingViewport): IPo
 
 function easeInOutSine(progress: number): number {
   return 0.5 - Math.cos(Math.PI * progress) / 2;
-}
-
-function readArcDirection(start: IPoint, end: IPoint): number {
-  const signature: number = Math.round(start.x * 17 + start.y * 29 + end.x * 31 + end.y * 43);
-
-  return signature % 2 === 0 ? 1 : -1;
 }
 
 function readCubicBezierPoint(
@@ -551,10 +583,12 @@ function readViewport(page: Page): IMarketingRecordingViewport {
   );
 }
 
-function readWobblePhase(start: IPoint, end: IPoint): number {
-  const signature: number = Math.round(start.x * 7 + start.y * 11 + end.x * 13 + end.y * 19);
+function readRandomNumber(minimumValue: number, maximumValue: number): number {
+  return minimumValue + Math.random() * (maximumValue - minimumValue);
+}
 
-  return (signature % 360) * (Math.PI / 180);
+function readRandomSign(): number {
+  return Math.random() < 0.5 ? -1 : 1;
 }
 
 async function startCapture(page: Page): Promise<void> {
