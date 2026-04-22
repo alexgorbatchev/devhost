@@ -1,7 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { buildDevtoolsScript } from "@alexgorbatchev/devhost/src/devtools-server/buildDevtoolsScript";
+import { buildDevtoolsScript } from "./buildDevtoolsScript";
 
 import indexHtml from "../index.html";
 import marketingCaptureHtml from "../marketing-capture.html";
