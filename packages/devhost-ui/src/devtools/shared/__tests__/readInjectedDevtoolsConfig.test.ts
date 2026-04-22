@@ -17,7 +17,6 @@ describe("readInjectedDevtoolsConfig", () => {
       agentDisplayName: "Pi",
       componentEditor: "vscode",
       controlToken: "",
-      minimapPosition: "right",
       position: "bottom-right",
       projectRootPath: "",
       routedServices: [],
@@ -37,7 +36,6 @@ describe("readInjectedDevtoolsConfig", () => {
       agentDisplayName: "Claude Code",
       componentEditor: "neovim",
       controlToken: "control-token",
-      minimapPosition: "right",
       position: "top-right",
       projectRootPath: "/tmp/project",
       routedServices: [{ host: "app.localhost", path: "/api/*", serviceName: "api" }],
@@ -48,7 +46,6 @@ describe("readInjectedDevtoolsConfig", () => {
       agentDisplayName: "Claude Code",
       componentEditor: "neovim",
       controlToken: "control-token",
-      minimapPosition: "right",
       position: "top-right",
       projectRootPath: "/tmp/project",
       routedServices: [{ host: "app.localhost", path: "/api/*", serviceName: "api" }],
@@ -63,9 +60,8 @@ describe("readInjectedDevtoolsConfig", () => {
     });
   });
 
-  test("normalizes removed left-side positions onto the right edge", () => {
+  test("falls back to the default status position for removed left-side values", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
-      minimapPosition: "left",
       position: "top-left",
     });
 
@@ -73,8 +69,7 @@ describe("readInjectedDevtoolsConfig", () => {
       agentDisplayName: "Pi",
       componentEditor: "vscode",
       controlToken: "",
-      minimapPosition: "right",
-      position: "top-right",
+      position: "bottom-right",
       projectRootPath: "",
       routedServices: [],
       stackName: "devhost",
@@ -99,7 +94,6 @@ describe("readInjectedDevtoolsConfig", () => {
       agentDisplayName: "Pi",
       componentEditor: "vscode",
       controlToken: "",
-      minimapPosition: "right",
       position: "bottom-right",
       projectRootPath: "",
       routedServices: [],

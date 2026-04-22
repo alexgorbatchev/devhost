@@ -9,7 +9,6 @@ export { configureDevtoolsCss, css, cx, injectGlobal } from "./devtoolsCss";
 export {
   readDevtoolsComponentEditorLabel,
   type DevtoolsComponentEditor,
-  type DevtoolsMinimapPosition,
   type DevtoolsPosition,
 } from "./devtoolsConfig";
 export { HoverSlidePanel } from "./HoverSlidePanel";

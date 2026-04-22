@@ -18,7 +18,7 @@ func TestResolveServicePorts(t *testing.T) {
 		value := manifest.Manifest{
 			Agent:          manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"},
 			Caddy:          manifest.CaddyConfig{Global: manifest.CaddyGlobalConfig{AdminAddress: "127.0.0.1:20197", BindHost: "127.0.0.1", HTTPPort: 80, HTTPSPort: 443}},
-			Devtools:       manifest.DevtoolsConfig{Editor: manifest.DevtoolsEditorConfig{Enabled: true, IDE: "vscode"}, ExternalToolbars: manifest.DevtoolsToggleConfig{Enabled: true}, Minimap: manifest.DevtoolsMinimapConfig{Enabled: true, Position: "right"}, Status: manifest.DevtoolsStatusConfig{Enabled: true, Position: "bottom-right"}},
+			Devtools:       manifest.DevtoolsConfig{Editor: manifest.DevtoolsEditorConfig{Enabled: true, IDE: "vscode"}, ExternalToolbars: manifest.DevtoolsToggleConfig{Enabled: true}, Minimap: manifest.DevtoolsMinimapConfig{Enabled: true}, Status: manifest.DevtoolsStatusConfig{Enabled: true, Position: "bottom-right"}},
 			ManifestPath:   "/tmp/devhost.toml",
 			PrimaryService: "web",
 			Services: map[string]manifest.ValidatedService{
@@ -71,7 +71,7 @@ func TestResolveServicePorts(t *testing.T) {
 		value := manifest.Manifest{
 			Agent:    manifest.ValidatedAgent{Command: []string{"bun", "./scripts/devhost-agent.ts"}, Cwd: "/tmp", DisplayName: "Claude Code", Env: map[string]string{}, Kind: "configured"},
 			Caddy:    manifest.CaddyConfig{Global: manifest.CaddyGlobalConfig{AdminAddress: "127.0.0.1:22000", BindHost: "0.0.0.0", HTTP: true, HTTPPort: 8080, HTTPSPort: 4443}},
-			Devtools: manifest.DevtoolsConfig{Editor: manifest.DevtoolsEditorConfig{Enabled: false, IDE: "webstorm"}, ExternalToolbars: manifest.DevtoolsToggleConfig{Enabled: false}, Minimap: manifest.DevtoolsMinimapConfig{Enabled: false, Position: "right"}, Status: manifest.DevtoolsStatusConfig{Enabled: false, Position: "top-right"}},
+			Devtools: manifest.DevtoolsConfig{Editor: manifest.DevtoolsEditorConfig{Enabled: false, IDE: "webstorm"}, ExternalToolbars: manifest.DevtoolsToggleConfig{Enabled: false}, Minimap: manifest.DevtoolsMinimapConfig{Enabled: false}, Status: manifest.DevtoolsStatusConfig{Enabled: false, Position: "top-right"}},
 			Services: map[string]manifest.ValidatedService{
 				"api": {Name: "api", BindHost: "127.0.0.1", Command: []string{"bun", "run", "api:dev"}, Health: &manifest.HealthConfig{HTTP: &healthURL}, InjectPort: false, Port: apiPort},
 			},

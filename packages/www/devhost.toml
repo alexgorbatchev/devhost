@@ -16,7 +16,6 @@ enabled = true
 
 [devtools.minimap]
 enabled = true
-position = "right"
 
 [devtools.status]
 enabled = true
