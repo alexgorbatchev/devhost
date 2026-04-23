@@ -326,24 +326,6 @@ export function App(): JSX.Element {
             Extract it and place <code>devhost</code> on your <code>PATH</code>.
           </p>
 
-          <h3>Build from source</h3>
-          <p>
-            If you are working from this repository and want a current-platform binary instead of a release download:
-          </p>
-
-          <CommandLine
-            command={`bun run compile:devhost
-./apps/devhost/dist/devhost --version`}
-          />
-
-          <p>
-            That build refreshes the embedded injected devtools bundle with Bun, then compiles the Go CLI to{" "}
-            <code>./apps/devhost/dist/devhost</code> with the current <code>apps/devhost/metadata.json</code> version
-            embedded into <code>devhost --version</code>. Running <code>go run ./cmd/devhost --version</code> from a
-            source checkout can still report the local placeholder until you build the binary. Bun is only needed for
-            source builds inside this repository; the shipped <code>devhost</code> binary does not require Bun.
-          </p>
-
           <p>
             Published GitHub Releases also include versioned <code>.tar.gz</code> archives for the supported
             darwin-arm64, linux-x64, linux-arm64, linux-x64-musl, and linux-arm64-musl targets.
@@ -491,7 +473,7 @@ $ open https://foo.localhost`}
 
           <Callout title="Important">
             <p className="!mt-0">
-              To get HTTPS working, Caddy uses a self-signed certificate, which obviously isn't trusted by default.
+              To get HTTPS working, Caddy uses a self-signed certificate that is not trusted by default.
             </p>
             <p className="!mb-0">
               The <code>devhost caddy trust</code> will prompt for your password and install Caddy's CA into the system
@@ -560,7 +542,7 @@ $ open https://foo.localhost`}
               HTTP listener port: <code>80</code> by default via <code>caddy.global.httpPort = 80</code>
             </li>
             <li className="mb-2">
-              unmatched hostnames: a generated 404 page listing the currently active devhost hostnames as HTTPS links
+              unmatched hostnames: a generated 404 page listing the active devhost hostnames as HTTPS links
             </li>
           </ul>
 
@@ -584,15 +566,15 @@ $ open https://foo.localhost`}
               the active socket listener
             </li>
             <li className="mb-2">
-              <code>port = "auto"</code> remains best-effort in v1; devhost retries on clear bind collisions, but it
+              <code>port = "auto"</code> is best-effort; <code>devhost</code> retries on clear bind collisions, but it
               does not provide a cross-process global auto-port allocator
             </li>
           </ul>
 
           <h3>Platform caveats</h3>
           <p>
-            On macOS, managed Caddy starts rootlessly by avoiding loopback-specific listener binding. That fixes
-            startup, but it also means the managed Caddy instance is not loopback-only on that platform.
+            On macOS, managed Caddy starts rootlessly by avoiding loopback-specific listener binding. That keeps startup
+            unprivileged, but it also means the managed Caddy instance is not loopback-only on that platform.
           </p>
           <p>
             On non-macOS platforms, opening HTTPS on the configured <code>caddy.global.httpsPort</code> still requires
@@ -873,9 +855,15 @@ host = "preview.hello.localhost"`}</code>
           </ul>
 
           <p>
-            Annotation selection is pluggable. <code>devhost</code> installs a runtime selector-plugin registry into the
-            host page so non-DOM inspection surfaces can participate in the same annotation draft, queue, and submission
-            flow.
+            Annotation selection runs through a selector plugin. The built-in DOM picker is one plugin in that registry,
+            so custom host pages can replace it with a higher-priority selector when the selectable surface is not plain
+            DOM.
+          </p>
+
+          <p>
+            <code>devhost</code> exposes that registry through the host page at runtime so mirrored previews,
+            canvas-based UIs, terminal surfaces, and other non-DOM inspection targets can participate in the same
+            annotation draft, queue, and submission flow.
           </p>
 
           <p>The exact runtime contract is:</p>
@@ -947,13 +935,13 @@ interface IAnnotationSelectionPluginRegistry {
           </pre>
 
           <p>
-            <code>devhost</code> installs <code>globalThis.__DEVHOST__</code> as an{" "}
+            At runtime, <code>devhost</code> installs <code>globalThis.__DEVHOST__</code> as an{" "}
             <code>IAnnotationSelectionPluginRegistry</code>, drains any plugins preloaded into{" "}
             <code>globalThis.__DEVHOST_PLUGINS__</code>, and dispatches <code>window</code> event{" "}
             <code>devhost:annotation-selection-ready</code> after the registry is ready.
           </p>
 
-          <p>Selection semantics are exact too:</p>
+          <p>Selection semantics:</p>
 
           <ul className="list-disc ml-6 mb-6">
             <li className="mb-2">
@@ -981,7 +969,7 @@ interface IAnnotationSelectionPluginRegistry {
             </li>
           </ul>
 
-          <p>To register a plugin from the host page:</p>
+          <p>Register a host-page plugin directly against the runtime registry:</p>
 
           <pre>
             <code className="language-js">{`const plugin = {
@@ -1033,8 +1021,10 @@ if (registry) {
           </pre>
 
           <p>
-            When the host page is a React development build that exposes component source metadata, each marker also
-            captures the nearest available component source location.
+            When the host page is a React development build that exposes component source metadata, each marker captures
+            the nearest available component source location. When the host app serves fetchable source maps,{" "}
+            <code>devhost</code> attempts to symbolicate generated bundle locations back to original source files before
+            storing the annotation.
           </p>
 
           <h3>Open component source</h3>
@@ -1048,8 +1038,7 @@ if (registry) {
               terminal.
             </li>
             <li className="mb-2">
-              Other supported editors continue to use their direct external-editor URL launch path instead of the
-              embedded terminal.
+              Other supported editors use their direct external-editor URL launch path instead of the embedded terminal.
             </li>
           </ul>
 
@@ -1088,9 +1077,9 @@ DEVHOST_AGENT_MODE = "annotation"`}</code>
           </p>
 
           <p>
-            All built-in adapters natively integrate terminal OSC sequences to reflect working and idle states during
-            embedded session execution, and the durable annotation queue now depends on those same status events to know
-            when to drain queued work:
+            All built-in adapters integrate terminal OSC sequences to reflect working and idle states during embedded
+            session execution, and the durable annotation queue uses those same status events to decide when to drain
+            queued work:
           </p>
 
           <ul className="list-disc ml-6 mb-6">
@@ -1117,8 +1106,8 @@ DEVHOST_AGENT_MODE = "annotation"`}</code>
           <h2>Troubleshooting</h2>
           <h3>Vite: localhost and 127.0.0.1 can be different apps</h3>
           <p>
-            Some dev servers print a URL like <code>http://localhost:5173</code>, and it is natural to copy that port
-            into <code>devhost.toml</code>.
+            Some dev servers print a URL like <code>http://localhost:5173</code>, and many projects copy that port
+            directly into <code>devhost.toml</code>.
           </p>
           <p>
             On some machines, though, <code>http://localhost:5173</code> and <code>http://127.0.0.1:5173</code> do not
@@ -1171,8 +1160,7 @@ curl -I http://[::1]:5173/`}</code>
               another child silently moving to a fallback port after seeing the inherited port already in use
             </li>
             <li className="mb-2">
-              the frontend still proxying <code>/api</code> to its usual target while the API actually bound somewhere
-              else
+              the frontend proxying <code>/api</code> to its usual target while the API actually bound somewhere else
             </li>
             <li className="mb-2">
               routed requests returning backend <code>404</code>s even though the main page appears to load normally
@@ -1191,6 +1179,26 @@ port = 5173
 injectPort = false
 host = "app.localhost"`}</code>
           </pre>
+
+          <h2>Development</h2>
+          <h3>Build from source</h3>
+          <p>
+            If you are working from this repository and want a current-platform binary instead of a release download:
+          </p>
+
+          <CommandLine
+            command={`bun run compile:devhost
+./apps/devhost/dist/devhost --version`}
+          />
+
+          <p>
+            That build refreshes the embedded injected devtools bundle with Bun and writes the CLI binary to{" "}
+            <code>./apps/devhost/dist/devhost</code> with the version from <code>apps/devhost/metadata.json</code>{" "}
+            embedded into <code>devhost --version</code>. Source-checkout runs such as{" "}
+            <code>go run ./cmd/devhost --version</code> use the local placeholder version instead of the packaged
+            release metadata. Bun is only required for source builds inside this repository; the shipped{" "}
+            <code>devhost</code> binary does not require Bun.
+          </p>
         </div>
       </div>
 

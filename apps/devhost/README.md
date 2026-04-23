@@ -17,17 +17,6 @@ What it does well:
 
 Download the archive for your platform from [GitHub Releases](https://github.com/alexgorbatchev/devhost/releases), extract it, and place the `devhost` binary on your `PATH`.
 
-### Build from source
-
-If you are working from this repository and want a current-platform binary instead of a release download:
-
-```bash
-bun run compile:devhost
-./apps/devhost/dist/devhost --version
-```
-
-That build refreshes the embedded injected devtools bundle with Bun, then compiles the Go CLI to `apps/devhost/dist/devhost` with the current `apps/devhost/metadata.json` version embedded into `devhost --version`. Running `go run ./cmd/devhost --version` from a source checkout can still report the local placeholder until you build the binary. Bun is only needed for source builds inside this repository; the shipped `devhost` binary does not require Bun.
-
 Published GitHub Releases also include versioned `.tar.gz` archives for `darwin-arm64`, `linux-x64`, `linux-arm64`, `linux-x64-musl`, and `linux-arm64-musl`.
 
 To print the bundled bootstrap skill for manifest-authoring workflows:
@@ -128,7 +117,7 @@ devhost caddy privileged-ports
 That command downloads the managed Caddy binary first when needed, then runs `sudo setcap 'cap_net_bind_service=+ep'` against that managed binary so later `devhost caddy start` runs can stay unprivileged.
 
 > [!IMPORTANT]
-> To get HTTPS working, Caddy uses a self-signed certificate, which obviously isn't trusted by default.
+> To get HTTPS working, Caddy uses a self-signed certificate that is not trusted by default.
 >
 > The `devhost caddy trust` will prompt for your password and install Caddy's CA into the system trust store.
 
@@ -169,7 +158,7 @@ The generated Caddy config uses these defaults:
 - listener binding on non-macOS: loopback only by default via `caddy.global.bindHost = "127.0.0.1"`, rendered as Caddy `default_bind 127.0.0.1 [::1]`
 - plain HTTP: disabled by default; any active stack with `caddy.global.http = true` enables the same routed hosts and shared fallback page on HTTP for all active stacks
 - HTTP listener port: `80` by default via `caddy.global.httpPort = 80`
-- unmatched hostnames: a generated 404 page listing the currently active devhost hostnames as HTTPS links
+- unmatched hostnames: a generated 404 page listing the active devhost hostnames as HTTPS links
 
 Managed Caddy lifecycle is shared and manual. `devhost` stack startup requires the managed Caddy admin API to already be available.
 
@@ -183,12 +172,12 @@ The routing contract is strict:
 - one project cannot claim a hostname that is already owned by another live devhost process
 - one manifest may mount multiple services under the same hostname on distinct paths
 - fixed numeric bind ports are claimed globally across devhost processes before service spawn, and claim failures report a quoted normalized listening command line plus manifest path when devhost can discover the active socket listener
-- `port = "auto"` remains best-effort in v1; devhost retries on clear bind collisions, but it does not provide a cross-process global auto-port allocator
+- `port = "auto"` is best-effort; `devhost` retries on clear bind collisions, but it does not provide a cross-process global auto-port allocator
 
 ### Platform caveats
 
-On macOS, this now starts rootlessly by avoiding loopback-specific listener binding.
-That fixes startup, but it also means the managed Caddy instance is not loopback-only on that platform.
+On macOS, the managed Caddy instance starts rootlessly by avoiding loopback-specific listener binding.
+That keeps startup unprivileged, but it also means the managed Caddy instance is not loopback-only on that platform.
 If you need strict loopback-only HTTPS on privileged ports, the correct solution is a privileged launcher such as `launchd` socket activation, not pretending wildcard binding is equivalent.
 
 On non-macOS platforms, opening HTTPS on the configured `caddy.global.httpsPort` still requires privileged-port setup outside `devhost` when that port is privileged.
@@ -330,7 +319,7 @@ The remaining variables are context metadata and must not be used as socket bind
 - `PORT`
   - the listening port selected by `devhost`
   - injected when the service defines `port`, including `port = "auto"`, unless `injectPort = false`
-  - for `port = "auto"`, the selected port is best-effort in v1 and may be retried if the child reports a clear bind collision during startup
+  - for `port = "auto"`, the selected port is best-effort and may be retried if the child reports a clear bind collision during startup
   - not injected for services that do not define `port` or for unmanaged services
 - `injectPort = false`
   - service-level opt-out for `PORT` injection
@@ -385,7 +374,9 @@ The injected overlay is always docked on the right edge of the browser. Use `[de
 - queued annotations are bucketed by routed service host/path, survive browser reloads and `devhost` restarts, drain automatically when the agent emits `OSC 1337;SetAgentStatus=finished`, and stay collapsed into a compact progress summary until you expand the queue to edit or delete queued or paused items
 - click `Cancel` or press `Escape` to discard the draft
 
-Annotation selection is pluggable. `devhost` installs a runtime selector-plugin registry into the host page so non-DOM inspection surfaces can participate in the same annotation draft, queue, and submission flow.
+Annotation selection runs through a selector plugin. The built-in DOM picker is one plugin in that registry, so custom host pages can replace it with a higher-priority selector when the selectable surface is not plain DOM.
+
+`devhost` exposes that registry through the host page at runtime so mirrored previews, canvas-based UIs, terminal surfaces, and other non-DOM inspection targets can participate in the same annotation draft, queue, and submission flow.
 
 The exact runtime contract is:
 
@@ -455,9 +446,9 @@ interface IAnnotationSelectionPluginRegistry {
 }
 ```
 
-`devhost` installs `globalThis.__DEVHOST__` as an `IAnnotationSelectionPluginRegistry`, drains any plugins preloaded into `globalThis.__DEVHOST_PLUGINS__`, and dispatches `window` event `devhost:annotation-selection-ready` after the registry is ready.
+At runtime, `devhost` installs `globalThis.__DEVHOST__` as an `IAnnotationSelectionPluginRegistry`, drains any plugins preloaded into `globalThis.__DEVHOST_PLUGINS__`, and dispatches `window` event `devhost:annotation-selection-ready` after the registry is ready.
 
-Selection semantics are exact too:
+Selection semantics:
 
 - the built-in DOM selector plugin is always registered with id `dom-elements`
 - `matches()` defaults to `true` when omitted
@@ -468,7 +459,7 @@ Selection semantics are exact too:
 - `readRect()` controls the draft highlight box; return `null` when there is nothing to highlight
 - `getCursorStyleText()` returns raw CSS text that `devhost` injects only while annotation selection mode is active; return `null` or omit it for no cursor override
 
-To register a plugin from the host page:
+Register a host-page plugin directly against the runtime registry:
 
 ```js
 const plugin = {
@@ -521,16 +512,16 @@ if (registry) {
 
 The submitted draft includes the current stack name, page URL/title, comment text, and collected per-marker element metadata.
 
-When the host page is a React development build that exposes component source metadata, each marker also captures the nearest available component source location (file path, line, column, and component name when available). When the host app serves fetchable source maps, devhost also attempts to symbolicate generated bundle locations back to original source files before storing the annotation.
+When the host page is a React development build that exposes component source metadata, each marker captures the nearest available component source location (file path, line, column, and component name when available). When the host app serves fetchable source maps, `devhost` attempts to symbolicate generated bundle locations back to original source files before storing the annotation.
 
 ### Open component source
 
 The shipped Go runtime supports `Alt` + `right-click` component-source navigation whenever `[devtools.editor].enabled = true`.
 
 - When `[devtools.editor].ide = "neovim"`, devhost launches Neovim inside the injected xterm terminal, so `nvim` must be available on the machine running `devhost`.
-- Other supported editors continue to use their direct external-editor URL launch path instead of the embedded terminal.
+- Other supported editors use their direct external-editor URL launch path instead of the embedded terminal.
 
-Embedded terminal sessions now normalize their terminal environment to `TERM=xterm-256color` and `COLORTERM=truecolor` so terminal UIs like Neovim render against the actual xterm.js emulator instead of inheriting incompatible host-terminal identities. Neovim component-source sessions also expand to fill the available viewport when opened as a modal.
+Embedded terminal sessions normalize their terminal environment to `TERM=xterm-256color` and `COLORTERM=truecolor` so terminal UIs like Neovim render against the xterm.js emulator instead of inheriting incompatible host-terminal identities. Neovim component-source sessions expand to fill the available viewport when opened as a modal.
 
 When all devtools features are disabled, devhost does not mount these control routes for that stack.
 
@@ -538,7 +529,7 @@ When all devtools features are disabled, devhost does not mount these control ro
 
 ### Vite: `localhost` and `127.0.0.1` can be different apps
 
-Some dev servers print a URL like `http://localhost:5173`, and it is natural to copy that port into `devhost.toml`.
+Some dev servers print a URL like `http://localhost:5173`, and many projects copy that port directly into `devhost.toml`.
 
 On some machines, though, `http://localhost:5173` and `http://127.0.0.1:5173` do not hit the same listener:
 
@@ -582,7 +573,7 @@ That can produce confusing failures such as:
 
 - one child binding the routed service port even though that port was intended for a different nested process
 - another child silently moving to a fallback port after seeing the inherited `PORT` already in use
-- the frontend still proxying `/api` to its usual target while the API actually bound somewhere else
+- the frontend proxying `/api` to its usual target while the API actually bound somewhere else
 - routed requests returning backend `404`s even though the main page appears to load normally
 
 If your manifest service launches multiple dev processes under one command, prefer splitting them into separate `devhost` services.
@@ -625,13 +616,26 @@ DEVHOST_AGENT_MODE = "annotation"
 `devhost` executes custom agent commands directly, not through a shell string.
 For configured commands, `devhost` writes the annotation JSON and rendered prompt to temp files and injects them via `DEVHOST_AGENT_*` environment variables. Built-in adapters receive the rendered prompt natively via command-line arguments.
 
-All built-in adapters natively integrate terminal OSC sequences to reflect working and idle states during embedded session execution, and the durable annotation queue now depends on those same status events to know when to drain queued work:
+All built-in adapters integrate terminal OSC sequences to reflect working and idle states during embedded session execution, and the durable annotation queue uses those same status events to decide when to drain queued work:
 
 - `pi` leverages an injected extension to capture `agent_start` and `agent_end` hooks
 - `claude-code` utilizes its `--settings` API mapping commands to its native session and user prompt hooks
 - `opencode` integrates via an inline `--config` plugin listening for `session.status` events
 
 Custom annotation agents must emit `OSC 1337;SetAgentStatus=working` when they begin handling an annotation and `OSC 1337;SetAgentStatus=finished` when they are ready for the next queued item. `devhost` accepts either BEL (`\x07`) or ST (`\x1b\\`) OSC terminators.
+
+## Development
+
+### Build from source
+
+If you are working from this repository and want a current-platform binary instead of a release download:
+
+```bash
+bun run compile:devhost
+./apps/devhost/dist/devhost --version
+```
+
+That build refreshes the embedded injected devtools bundle with Bun and writes the CLI binary to `apps/devhost/dist/devhost` with the version from `apps/devhost/metadata.json` embedded into `devhost --version`. Source-checkout runs such as `go run ./cmd/devhost --version` use the local placeholder version instead of the packaged release metadata. Bun is only required for source builds inside this repository; the shipped `devhost` binary does not require Bun.
 
 ## Contributor notes
 
