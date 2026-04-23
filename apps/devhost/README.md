@@ -1,4 +1,4 @@
-# devhost
+# `devhost`
 
 `devhost` gives your local app a proper front door: real hostnames, local HTTPS, and one command to start and route your dev services.
 
@@ -384,6 +384,140 @@ The injected overlay is always docked on the right edge of the browser. Use `[de
 - when `Append to active session queue` is enabled, the draft is added to the matching routed service's active agent queue instead of being injected immediately into a busy terminal
 - queued annotations are bucketed by routed service host/path, survive browser reloads and `devhost` restarts, drain automatically when the agent emits `OSC 1337;SetAgentStatus=finished`, and stay collapsed into a compact progress summary until you expand the queue to edit or delete queued or paused items
 - click `Cancel` or press `Escape` to discard the draft
+
+Annotation selection is pluggable. `devhost` installs a runtime selector-plugin registry into the host page so non-DOM inspection surfaces can participate in the same annotation draft, queue, and submission flow.
+
+The exact runtime contract is:
+
+```ts
+type AnnotationSelectionIntent = "hover" | "select";
+
+interface IRectSnapshot {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface IAnnotationSourceLocation {
+  columnNumber?: number;
+  componentName?: string;
+  fileName: string;
+  lineNumber: number;
+}
+
+interface IAnnotationMarkerPayload {
+  accessibility: string;
+  boundingBox: IRectSnapshot;
+  computedStyles: string;
+  computedStylesObj: Record<string, string>;
+  cssClasses: string;
+  element: string;
+  elementPath: string;
+  fullPath: string;
+  isFixed: boolean;
+  markerNumber: number;
+  nearbyElements: string;
+  nearbyText: string;
+  selectedText?: string;
+  sourceLocation?: IAnnotationSourceLocation;
+}
+
+interface IAnnotationSelectionCandidate {
+  id: string;
+  label: string;
+  readRect(): IRectSnapshot | null;
+  buildMarkerPayload(markerNumber: number): Promise<IAnnotationMarkerPayload>;
+}
+
+interface IAnnotationSelectionPluginContext {
+  isDevtoolsEventTarget(target: EventTarget | null): boolean;
+}
+
+interface IAnnotationSelectionPlugin {
+  id: string;
+  label: string;
+  priority?: number;
+  matches?(): boolean;
+  getCursorStyleText?(): string | null;
+  resolveCandidate(
+    event: MouseEvent,
+    intent: AnnotationSelectionIntent,
+    context: IAnnotationSelectionPluginContext,
+  ): IAnnotationSelectionCandidate | Promise<IAnnotationSelectionCandidate | null> | null;
+}
+
+interface IAnnotationSelectionPluginRegistry {
+  listPlugins(): IAnnotationSelectionPlugin[];
+  registerPlugin(plugin: IAnnotationSelectionPlugin): () => void;
+  subscribe(listener: () => void): () => void;
+  unregisterPlugin(pluginId: string): void;
+}
+```
+
+`devhost` installs `globalThis.__DEVHOST__` as an `IAnnotationSelectionPluginRegistry`, drains any plugins preloaded into `globalThis.__DEVHOST_PLUGINS__`, and dispatches `window` event `devhost:annotation-selection-ready` after the registry is ready.
+
+Selection semantics are exact too:
+
+- the built-in DOM selector plugin is always registered with id `dom-elements`
+- `matches()` defaults to `true` when omitted
+- `priority` defaults to `0` when omitted
+- the active selector is the highest-priority matching plugin
+- when priorities tie, the earlier-registered matching plugin stays active
+- returning `null` from `resolveCandidate(...)` means that event does not produce a candidate
+- `readRect()` controls the draft highlight box; return `null` when there is nothing to highlight
+- `getCursorStyleText()` returns raw CSS text that `devhost` injects only while annotation selection mode is active; return `null` or omit it for no cursor override
+
+To register a plugin from the host page:
+
+```js
+const plugin = {
+  id: "custom-surface",
+  label: "Custom surface",
+  priority: 10,
+  matches() {
+    return true;
+  },
+  resolveCandidate(event, intent, context) {
+    if (context.isDevtoolsEventTarget(event.target)) {
+      return null;
+    }
+
+    return {
+      id: "target-1",
+      label: "Target 1",
+      readRect() {
+        return { x: 0, y: 0, width: 100, height: 40 };
+      },
+      async buildMarkerPayload(markerNumber) {
+        return {
+          accessibility: "",
+          boundingBox: { x: 0, y: 0, width: 100, height: 40 },
+          computedStyles: "",
+          computedStylesObj: {},
+          cssClasses: "",
+          element: "Target 1",
+          elementPath: "Target 1",
+          fullPath: "Target 1",
+          isFixed: false,
+          markerNumber,
+          nearbyElements: "",
+          nearbyText: "",
+        };
+      },
+    };
+  },
+};
+
+const registry = globalThis.__DEVHOST__;
+
+if (registry) {
+  registry.registerPlugin(plugin);
+} else {
+  globalThis.__DEVHOST_PLUGINS__ ??= [];
+  globalThis.__DEVHOST_PLUGINS__.push(plugin);
+}
+```
 
 The submitted draft includes the current stack name, page URL/title, comment text, and collected per-marker element metadata.
 

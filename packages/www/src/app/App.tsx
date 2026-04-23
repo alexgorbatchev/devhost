@@ -873,6 +873,166 @@ host = "preview.hello.localhost"`}</code>
           </ul>
 
           <p>
+            Annotation selection is pluggable. <code>devhost</code> installs a runtime selector-plugin registry into the
+            host page so non-DOM inspection surfaces can participate in the same annotation draft, queue, and submission
+            flow.
+          </p>
+
+          <p>The exact runtime contract is:</p>
+
+          <pre>
+            <code className="language-ts">{`type AnnotationSelectionIntent = "hover" | "select";
+
+interface IRectSnapshot {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface IAnnotationSourceLocation {
+  columnNumber?: number;
+  componentName?: string;
+  fileName: string;
+  lineNumber: number;
+}
+
+interface IAnnotationMarkerPayload {
+  accessibility: string;
+  boundingBox: IRectSnapshot;
+  computedStyles: string;
+  computedStylesObj: Record<string, string>;
+  cssClasses: string;
+  element: string;
+  elementPath: string;
+  fullPath: string;
+  isFixed: boolean;
+  markerNumber: number;
+  nearbyElements: string;
+  nearbyText: string;
+  selectedText?: string;
+  sourceLocation?: IAnnotationSourceLocation;
+}
+
+interface IAnnotationSelectionCandidate {
+  id: string;
+  label: string;
+  readRect(): IRectSnapshot | null;
+  buildMarkerPayload(markerNumber: number): Promise<IAnnotationMarkerPayload>;
+}
+
+interface IAnnotationSelectionPluginContext {
+  isDevtoolsEventTarget(target: EventTarget | null): boolean;
+}
+
+interface IAnnotationSelectionPlugin {
+  id: string;
+  label: string;
+  priority?: number;
+  matches?(): boolean;
+  getCursorStyleText?(): string | null;
+  resolveCandidate(
+    event: MouseEvent,
+    intent: AnnotationSelectionIntent,
+    context: IAnnotationSelectionPluginContext,
+  ): IAnnotationSelectionCandidate | Promise<IAnnotationSelectionCandidate | null> | null;
+}
+
+interface IAnnotationSelectionPluginRegistry {
+  listPlugins(): IAnnotationSelectionPlugin[];
+  registerPlugin(plugin: IAnnotationSelectionPlugin): () => void;
+  subscribe(listener: () => void): () => void;
+  unregisterPlugin(pluginId: string): void;
+}`}</code>
+          </pre>
+
+          <p>
+            <code>devhost</code> installs <code>globalThis.__DEVHOST__</code> as an{" "}
+            <code>IAnnotationSelectionPluginRegistry</code>, drains any plugins preloaded into{" "}
+            <code>globalThis.__DEVHOST_PLUGINS__</code>, and dispatches <code>window</code> event{" "}
+            <code>devhost:annotation-selection-ready</code> after the registry is ready.
+          </p>
+
+          <p>Selection semantics are exact too:</p>
+
+          <ul className="list-disc ml-6 mb-6">
+            <li className="mb-2">
+              the built-in DOM selector plugin is always registered with id <code>dom-elements</code>
+            </li>
+            <li className="mb-2">
+              <code>matches()</code> defaults to <code>true</code> when omitted
+            </li>
+            <li className="mb-2">
+              <code>priority</code> defaults to <code>0</code> when omitted
+            </li>
+            <li className="mb-2">the active selector is the highest-priority matching plugin</li>
+            <li className="mb-2">when priorities tie, the earlier-registered matching plugin stays active</li>
+            <li className="mb-2">
+              returning <code>null</code> from <code>resolveCandidate(...)</code> means that event does not produce a
+              candidate
+            </li>
+            <li className="mb-2">
+              <code>readRect()</code> controls the draft highlight box; return <code>null</code> when there is nothing
+              to highlight
+            </li>
+            <li className="mb-2">
+              <code>getCursorStyleText()</code> returns raw CSS text that <code>devhost</code> injects only while
+              annotation selection mode is active; return <code>null</code> or omit it for no cursor override
+            </li>
+          </ul>
+
+          <p>To register a plugin from the host page:</p>
+
+          <pre>
+            <code className="language-js">{`const plugin = {
+  id: "custom-surface",
+  label: "Custom surface",
+  priority: 10,
+  matches() {
+    return true;
+  },
+  resolveCandidate(event, intent, context) {
+    if (context.isDevtoolsEventTarget(event.target)) {
+      return null;
+    }
+
+    return {
+      id: "target-1",
+      label: "Target 1",
+      readRect() {
+        return { x: 0, y: 0, width: 100, height: 40 };
+      },
+      async buildMarkerPayload(markerNumber) {
+        return {
+          accessibility: "",
+          boundingBox: { x: 0, y: 0, width: 100, height: 40 },
+          computedStyles: "",
+          computedStylesObj: {},
+          cssClasses: "",
+          element: "Target 1",
+          elementPath: "Target 1",
+          fullPath: "Target 1",
+          isFixed: false,
+          markerNumber,
+          nearbyElements: "",
+          nearbyText: "",
+        };
+      },
+    };
+  },
+};
+
+const registry = globalThis.__DEVHOST__;
+
+if (registry) {
+  registry.registerPlugin(plugin);
+} else {
+  globalThis.__DEVHOST_PLUGINS__ ??= [];
+  globalThis.__DEVHOST_PLUGINS__.push(plugin);
+}`}</code>
+          </pre>
+
+          <p>
             When the host page is a React development build that exposes component source metadata, each marker also
             captures the nearest available component source location.
           </p>
