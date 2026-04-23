@@ -7,12 +7,14 @@ import { DEVTOOLS_ROOT_ATTRIBUTE_NAME, DEVTOOLS_ROOT_ID } from "../../shared/con
 import { isEventTargetTerminalKeyboardInput } from "../../shared/isEventTargetTerminalKeyboardInput";
 import type { ITerminalSessionStartResult } from "../terminalSessions/types";
 import { AnnotationMarkerList } from "./AnnotationMarkerList";
-import { collectElementSnapshot, identifyElement } from "./collectElementSnapshot";
+import {
+  readActiveAnnotationSelectionPlugin,
+  subscribeToAnnotationSelectionPlugins,
+} from "./annotationSelectionPluginRegistry";
+import type { AnnotationSelectionIntent, IAnnotationSelectionCandidate } from "./annotationSelectionPluginTypes";
 import { createAnnotationSubmitDetail } from "./createAnnotationSubmitDetail";
-import { getElementSourceLocation } from "./getElementSourceLocation";
 import { resolvePopupCoordinates } from "./resolvePopupCoordinates";
-import { resolveAnnotationTarget } from "./resolveAnnotationTarget";
-import type { IAnnotationSubmitDetail, ISelectedElementDraft } from "./types";
+import type { IAnnotationSubmitDetail, IRectSnapshot } from "./types";
 
 interface IAnnotationComposerProps {
   activeAgentSessionId?: string;
@@ -39,6 +41,11 @@ interface ISelectionHighlightFrame {
   width: number;
 }
 
+interface ISelectedAnnotationTarget {
+  candidate: IAnnotationSelectionCandidate;
+  markerNumber: number;
+}
+
 const markerSize: number = 24;
 const popupWidth: number = 320;
 const selectionCursorStyleId: string = "devhost-annotation-cursor-style";
@@ -47,44 +54,51 @@ const selectionHighlightVerticalPadding: number = 1;
 
 export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element {
   const theme = useDevtoolsTheme();
+  const [annotationSelectionPluginVersion, setAnnotationSelectionPluginVersion] = useState<number>(0);
   const [comment, setComment] = useState<string>("");
-  const [hoveredElement, setHoveredElement] = useState<HTMLElement | null>(null);
+  const [hoveredCandidate, setHoveredCandidate] = useState<IAnnotationSelectionCandidate | null>(null);
   const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [sendToActiveSession, setSendToActiveSession] = useState<boolean>(true);
   const [layoutVersion, setLayoutVersion] = useState<number>(0);
   const [popupHeight, setPopupHeight] = useState<number>(220);
-  const [selectedElements, setSelectedElements] = useState<ISelectedElementDraft[]>([]);
+  const [selectedTargets, setSelectedTargets] = useState<ISelectedAnnotationTarget[]>([]);
   const [submissionErrorMessage, setSubmissionErrorMessage] = useState<string | null>(null);
   const commentTextareaReference = useRef<HTMLTextAreaElement | null>(null);
-  const hoveredElementReference = useRef<HTMLElement | null>(null);
+  const hoveredCandidateReference = useRef<IAnnotationSelectionCandidate | null>(null);
   const popupReference = useRef<HTMLDivElement | null>(null);
+  const selectionResolutionSequenceReference = useRef<number>(0);
   const scheduledFrameReference = useRef<number | null>(null);
-  const selectedElementsReference = useRef<ISelectedElementDraft[]>([]);
+  const selectedTargetsReference = useRef<ISelectedAnnotationTarget[]>([]);
   const viewportPadding: number = readPixelValue(theme.spacing.sm);
+  const annotationSelectionPlugin = useMemo(readActiveAnnotationSelectionPlugin, [annotationSelectionPluginVersion]);
   const trimmedComment: string = comment.trim();
   const hasActiveAnnotationInteraction: boolean =
-    isSelectionMode || selectedElements.length > 0 || trimmedComment.length > 0;
-  const hasDraft: boolean = selectedElements.length > 0 || trimmedComment.length > 0;
+    isSelectionMode || selectedTargets.length > 0 || trimmedComment.length > 0;
+  const hasDraft: boolean = selectedTargets.length > 0 || trimmedComment.length > 0;
 
   const cancelDraft = useCallback((): void => {
     setComment("");
-    setHoveredElement(null);
-    hoveredElementReference.current = null;
+    setHoveredCandidate(null);
+    hoveredCandidateReference.current = null;
     setIsSelectionMode(false);
     setIsSubmitting(false);
-    selectedElementsReference.current = [];
-    setSelectedElements([]);
+    selectedTargetsReference.current = [];
+    setSelectedTargets([]);
     setSubmissionErrorMessage(null);
     setLayoutVersion((currentVersion: number): number => currentVersion + 1);
   }, []);
 
   const submitDraft = useCallback(async (): Promise<void> => {
-    if (trimmedComment.length === 0 || selectedElements.length === 0 || isSubmitting) {
+    if (trimmedComment.length === 0 || selectedTargets.length === 0 || isSubmitting) {
       return;
     }
 
-    const markers = selectedElements.map(collectElementSnapshot);
+    const markers = await Promise.all(
+      selectedTargets.map((selectedTarget: ISelectedAnnotationTarget) => {
+        return selectedTarget.candidate.buildMarkerPayload(selectedTarget.markerNumber);
+      }),
+    );
     const detail: IAnnotationSubmitDetail = createAnnotationSubmitDetail({
       comment: trimmedComment,
       markers,
@@ -114,11 +128,17 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
     } finally {
       setIsSubmitting(false);
     }
-  }, [cancelDraft, isSubmitting, props, selectedElements, trimmedComment, sendToActiveSession]);
+  }, [cancelDraft, isSubmitting, props, selectedTargets, trimmedComment, sendToActiveSession]);
 
   useEffect(() => {
-    selectedElementsReference.current = selectedElements;
-  }, [selectedElements]);
+    selectedTargetsReference.current = selectedTargets;
+  }, [selectedTargets]);
+
+  useEffect(() => {
+    return subscribeToAnnotationSelectionPlugins((): void => {
+      setAnnotationSelectionPluginVersion((currentVersion: number): number => currentVersion + 1);
+    });
+  }, []);
 
   useEffect(() => {
     if (!hasActiveAnnotationInteraction) {
@@ -152,29 +172,45 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
 
   useEffect(() => {
     if (!isSelectionMode) {
-      setHoveredElement(null);
-      hoveredElementReference.current = null;
+      selectionResolutionSequenceReference.current += 1;
+      setHoveredCandidate(null);
+      hoveredCandidateReference.current = null;
       return;
     }
 
     const handleMouseMove = (event: MouseEvent): void => {
-      const interactionTarget: HTMLElement | null = resolveInteractionTarget(event);
+      const resolutionSequence: number = ++selectionResolutionSequenceReference.current;
 
-      if (interactionTarget === hoveredElementReference.current) {
-        return;
-      }
+      const updateHoveredCandidate = async (): Promise<void> => {
+        const nextCandidate: IAnnotationSelectionCandidate | null = await resolveAnnotationSelectionCandidate(
+          annotationSelectionPlugin,
+          event,
+          "hover",
+        );
 
-      hoveredElementReference.current = interactionTarget;
-      setHoveredElement(interactionTarget);
+        if (selectionResolutionSequenceReference.current !== resolutionSequence) {
+          return;
+        }
+
+        if (nextCandidate?.id === hoveredCandidateReference.current?.id) {
+          return;
+        }
+
+        hoveredCandidateReference.current = nextCandidate;
+        setHoveredCandidate(nextCandidate);
+      };
+
+      void updateHoveredCandidate();
     };
 
     document.addEventListener("mousemove", handleMouseMove, true);
 
     return () => {
       document.removeEventListener("mousemove", handleMouseMove, true);
-      hoveredElementReference.current = null;
+      selectionResolutionSequenceReference.current += 1;
+      hoveredCandidateReference.current = null;
     };
-  }, [isSelectionMode]);
+  }, [annotationSelectionPlugin, isSelectionMode]);
 
   useEffect(() => {
     if (!isSelectionMode) {
@@ -195,49 +231,46 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
         return;
       }
 
-      const interactionTarget: HTMLElement | null = resolveInteractionTarget(event);
-
-      if (interactionTarget === null) {
-        return;
-      }
-
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
 
-      const currentSelections: ISelectedElementDraft[] = selectedElementsReference.current;
+      const selectionCandidate = await resolveAnnotationSelectionCandidate(annotationSelectionPlugin, event, "select");
+
+      if (selectionCandidate === null) {
+        return;
+      }
+
+      const currentSelections: ISelectedAnnotationTarget[] = selectedTargetsReference.current;
 
       if (
-        currentSelections.some((selection: ISelectedElementDraft): boolean => selection.element === interactionTarget)
+        currentSelections.some((selection: ISelectedAnnotationTarget): boolean => {
+          return selection.candidate.id === selectionCandidate.id;
+        })
       ) {
         return;
       }
 
-      const identifiedElement = identifyElement(interactionTarget);
-      const selectedText: string | undefined = readSelectedText();
-      const sourceLocation = await getElementSourceLocation(interactionTarget);
-      const latestSelections: ISelectedElementDraft[] = selectedElementsReference.current;
+      const latestSelections: ISelectedAnnotationTarget[] = selectedTargetsReference.current;
 
       if (
-        latestSelections.some((selection: ISelectedElementDraft): boolean => selection.element === interactionTarget)
+        latestSelections.some((selection: ISelectedAnnotationTarget): boolean => {
+          return selection.candidate.id === selectionCandidate.id;
+        })
       ) {
         return;
       }
 
-      const nextSelection: ISelectedElementDraft = {
-        element: interactionTarget,
-        elementName: identifiedElement.name,
-        elementPath: identifiedElement.path,
+      const nextSelection: ISelectedAnnotationTarget = {
+        candidate: selectionCandidate,
         markerNumber: latestSelections.length + 1,
-        selectedText,
-        sourceLocation,
       };
-      const nextSelections: ISelectedElementDraft[] = [...latestSelections, nextSelection];
+      const nextSelections: ISelectedAnnotationTarget[] = [...latestSelections, nextSelection];
 
-      selectedElementsReference.current = nextSelections;
-      setSelectedElements(nextSelections);
-      hoveredElementReference.current = interactionTarget;
-      setHoveredElement(interactionTarget);
+      selectedTargetsReference.current = nextSelections;
+      setSelectedTargets(nextSelections);
+      hoveredCandidateReference.current = selectionCandidate;
+      setHoveredCandidate(selectionCandidate);
       setLayoutVersion((currentVersion: number): number => currentVersion + 1);
     };
 
@@ -248,7 +281,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
       document.removeEventListener("mousedown", handleMouseDown, true);
       document.removeEventListener("click", handleDocumentClick, true);
     };
-  }, [isSelectionMode]);
+  }, [annotationSelectionPlugin, isSelectionMode]);
 
   useEffect(() => {
     const handleAltKeyDown = (event: KeyboardEvent): void => {
@@ -347,18 +380,25 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
       return;
     }
 
+    const cursorStyleText: string | null = annotationSelectionPlugin.getCursorStyleText?.() ?? null;
+
+    if (cursorStyleText === null) {
+      removeSelectionCursorStyle();
+      return;
+    }
+
     const styleElement: HTMLStyleElement = document.createElement("style");
     styleElement.id = selectionCursorStyleId;
-    styleElement.textContent = createSelectionCursorStyleText();
+    styleElement.textContent = cursorStyleText;
     document.head.append(styleElement);
 
     return () => {
       removeSelectionCursorStyle();
     };
-  }, [isSelectionMode]);
+  }, [annotationSelectionPlugin, isSelectionMode]);
 
   useEffect(() => {
-    if (selectedElements.length !== 1) {
+    if (selectedTargets.length !== 1) {
       return;
     }
 
@@ -369,12 +409,12 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
     return () => {
       window.cancelAnimationFrame(animationFrameId);
     };
-  }, [selectedElements.length]);
+  }, [selectedTargets.length]);
 
   useEffect(() => {
     const popupElement: HTMLDivElement | null = popupReference.current;
 
-    if (popupElement === null || selectedElements.length === 0) {
+    if (popupElement === null || selectedTargets.length === 0) {
       return;
     }
 
@@ -389,48 +429,55 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
     return () => {
       window.cancelAnimationFrame(animationFrameId);
     };
-  }, [comment, isSubmitting, layoutVersion, selectedElements.length, submissionErrorMessage]);
+  }, [comment, isSubmitting, layoutVersion, selectedTargets.length, submissionErrorMessage]);
 
   const markerRenderModels: IMarkerRenderModel[] = useMemo((): IMarkerRenderModel[] => {
     void layoutVersion;
 
-    return selectedElements.map((selection: ISelectedElementDraft): IMarkerRenderModel => {
-      const elementRectangle: DOMRect = selection.element.getBoundingClientRect();
+    return selectedTargets.flatMap((selection: ISelectedAnnotationTarget): IMarkerRenderModel[] => {
+      const elementRectangle: IRectSnapshot | null = selection.candidate.readRect();
+
+      if (elementRectangle === null) {
+        return [];
+      }
+
       const markerTop: number = clamp(
-        elementRectangle.top - markerSize / 2,
+        elementRectangle.y - markerSize / 2,
         viewportPadding,
         window.innerHeight - markerSize - viewportPadding,
       );
       const markerLeft: number = clamp(
-        elementRectangle.left - markerSize / 2,
+        elementRectangle.x - markerSize / 2,
         viewportPadding,
         window.innerWidth - markerSize - viewportPadding,
       );
       const isVisible: boolean =
         elementRectangle.width > 0 &&
         elementRectangle.height > 0 &&
-        elementRectangle.bottom >= 0 &&
-        elementRectangle.right >= 0 &&
-        elementRectangle.top <= window.innerHeight &&
-        elementRectangle.left <= window.innerWidth;
+        elementRectangle.y + elementRectangle.height >= 0 &&
+        elementRectangle.x + elementRectangle.width >= 0 &&
+        elementRectangle.y <= window.innerHeight &&
+        elementRectangle.x <= window.innerWidth;
 
-      return {
-        elementHeight: elementRectangle.height,
-        elementLeft: elementRectangle.left,
-        elementTop: elementRectangle.top,
-        elementWidth: elementRectangle.width,
-        isVisible,
-        markerLeft,
-        markerNumber: selection.markerNumber,
-        markerTop,
-      };
+      return [
+        {
+          elementHeight: elementRectangle.height,
+          elementLeft: elementRectangle.x,
+          elementTop: elementRectangle.y,
+          elementWidth: elementRectangle.width,
+          isVisible,
+          markerLeft,
+          markerNumber: selection.markerNumber,
+          markerTop,
+        },
+      ];
     });
-  }, [layoutVersion, selectedElements, viewportPadding]);
-  const anchorSelection: ISelectedElementDraft | undefined = selectedElements[0];
-  const anchorRectangle: DOMRect | null = useMemo((): DOMRect | null => {
+  }, [layoutVersion, selectedTargets, viewportPadding]);
+  const anchorSelection: ISelectedAnnotationTarget | undefined = selectedTargets[0];
+  const anchorRectangle: IRectSnapshot | null = useMemo((): IRectSnapshot | null => {
     void layoutVersion;
 
-    return anchorSelection?.element.getBoundingClientRect() ?? null;
+    return anchorSelection?.candidate.readRect() ?? null;
   }, [anchorSelection, layoutVersion]);
   const popupCoordinates = useMemo(() => {
     if (anchorRectangle === null) {
@@ -438,9 +485,9 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
     }
 
     return resolvePopupCoordinates({
-      anchorBottom: anchorRectangle.bottom,
-      anchorLeft: anchorRectangle.left,
-      anchorTop: anchorRectangle.top,
+      anchorBottom: anchorRectangle.y + anchorRectangle.height,
+      anchorLeft: anchorRectangle.x,
+      anchorTop: anchorRectangle.y,
       popupHeight,
       popupWidth,
       viewportHeight: window.innerHeight,
@@ -448,14 +495,16 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
       viewportWidth: window.innerWidth,
     });
   }, [anchorRectangle, popupHeight, viewportPadding]);
-  const hoveredRectangle: DOMRect | null = useMemo((): DOMRect | null => {
+  const hoveredRectangle: IRectSnapshot | null = useMemo((): IRectSnapshot | null => {
     void layoutVersion;
 
-    return hoveredElement?.getBoundingClientRect() ?? null;
-  }, [hoveredElement, layoutVersion]);
+    return hoveredCandidate?.readRect() ?? null;
+  }, [hoveredCandidate, layoutVersion]);
   const isHoveredElementSelected: boolean =
-    hoveredElement !== null &&
-    selectedElements.some((selection: ISelectedElementDraft): boolean => selection.element === hoveredElement);
+    hoveredCandidate !== null &&
+    selectedTargets.some((selection: ISelectedAnnotationTarget): boolean => {
+      return selection.candidate.id === hoveredCandidate.id;
+    });
   const errorClassName: string = css(createSubmissionErrorStyle(theme));
   const overlayClassName: string = css(overlayStyle);
   const popupActionsClassName: string = css(popupActionsStyle);
@@ -486,7 +535,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
           );
         })}
       </div>
-      {selectedElements.length > 0 && popupCoordinates !== null ? (
+      {selectedTargets.length > 0 && popupCoordinates !== null ? (
         <div
           ref={popupReference}
           data-testid="AnnotationComposer--popup"
@@ -501,13 +550,13 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
           <div className={popupHeaderClassName}>
             <strong>Annotation draft</strong>
             <span className={popupMetaClassName}>
-              {isSubmitting ? "Submitting annotation…" : `${selectedElements.length} markers selected`}
+              {isSubmitting ? "Submitting annotation…" : `${selectedTargets.length} markers selected`}
             </span>
           </div>
           <AnnotationMarkerList
-            items={selectedElements.map((selection: ISelectedElementDraft) => {
+            items={selectedTargets.map((selection: ISelectedAnnotationTarget) => {
               return {
-                label: selection.elementName,
+                label: selection.candidate.label,
                 markerNumber: selection.markerNumber,
               };
             })}
@@ -654,11 +703,11 @@ function createSubmitButtonStyle(theme: IDevtoolsTheme): CSSObject {
   };
 }
 
-function createHoverHighlightStyle(theme: IDevtoolsTheme, hoveredRectangle: DOMRect): CSSObject {
+function createHoverHighlightStyle(theme: IDevtoolsTheme, hoveredRectangle: IRectSnapshot): CSSObject {
   return createSelectionHighlightFrameStyle(theme, {
     height: hoveredRectangle.height,
-    left: hoveredRectangle.left,
-    top: hoveredRectangle.top,
+    left: hoveredRectangle.x,
+    top: hoveredRectangle.y,
     width: hoveredRectangle.width,
   });
 }
@@ -760,23 +809,20 @@ function createCheckboxLabelStyle(theme: IDevtoolsTheme): CSSObject {
   };
 }
 
-function resolveInteractionTarget(event: MouseEvent): HTMLElement | null {
-  if (isInteractionInsideDevtools(event.target)) {
+async function resolveAnnotationSelectionCandidate(
+  plugin: ReturnType<typeof readActiveAnnotationSelectionPlugin>,
+  event: MouseEvent,
+  intent: AnnotationSelectionIntent,
+): Promise<IAnnotationSelectionCandidate | null> {
+  try {
+    const candidate = await plugin.resolveCandidate(event, intent, {
+      isDevtoolsEventTarget: isInteractionInsideDevtools,
+    });
+
+    return candidate ?? null;
+  } catch {
     return null;
   }
-
-  return resolveAnnotationTarget(event.clientX, event.clientY);
-}
-
-function readSelectedText(): string | undefined {
-  const selection: Selection | null = window.getSelection();
-  const selectedText: string = selection?.toString().trim() ?? "";
-
-  if (selectedText.length === 0) {
-    return undefined;
-  }
-
-  return selectedText.slice(0, 500);
 }
 
 function isInteractionInsideDevtools(target: EventTarget | null): boolean {
@@ -798,29 +844,6 @@ function doesEventTargetAcceptTextInput(target: EventTarget | null): boolean {
     target instanceof HTMLTextAreaElement ||
     target.isContentEditable
   );
-}
-
-function createSelectionCursorStyleText(): string {
-  // Intentionally document-scoped: selection mode targets host-page elements outside the devtools shadow root,
-  // so the cursor affordance must temporarily apply beyond the injected UI boundary.
-  return `
-    body * {
-      cursor: crosshair !important;
-    }
-    [${DEVTOOLS_ROOT_ATTRIBUTE_NAME}], [${DEVTOOLS_ROOT_ATTRIBUTE_NAME}] * {
-      cursor: default !important;
-    }
-    [${DEVTOOLS_ROOT_ATTRIBUTE_NAME}] button,
-    [${DEVTOOLS_ROOT_ATTRIBUTE_NAME}] button *,
-    [${DEVTOOLS_ROOT_ATTRIBUTE_NAME}] [role="button"],
-    [${DEVTOOLS_ROOT_ATTRIBUTE_NAME}] [role="button"] * {
-      cursor: pointer !important;
-    }
-    [${DEVTOOLS_ROOT_ATTRIBUTE_NAME}] textarea,
-    [${DEVTOOLS_ROOT_ATTRIBUTE_NAME}] input[type="text"] {
-      cursor: text !important;
-    }
-  `;
 }
 
 function removeSelectionCursorStyle(): void {
