@@ -1,13 +1,19 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 const devtoolsEntrypointPath: string = fileURLToPath(
   new URL("../../../packages/devhost-ui/src/devtools/main.ts", import.meta.url),
 );
-const goAssetOutputPath: string = fileURLToPath(new URL("../internal/devtools/assets_generated.go", import.meta.url));
+const assetOutputDirectoryPath: string = fileURLToPath(new URL("../internal/devtools/dist/", import.meta.url));
+const devtoolsScriptOutputPath: string = fileURLToPath(
+  new URL("../internal/devtools/dist/devtools.js", import.meta.url),
+);
 const tsconfigPath: string = fileURLToPath(new URL("../../../packages/devhost-ui/tsconfig.json", import.meta.url));
 const xtermStylesheetPath: string = fileURLToPath(
   new URL("../../../packages/devhost-ui/node_modules/@xterm/xterm/css/xterm.css", import.meta.url),
+);
+const xtermStylesheetOutputPath: string = fileURLToPath(
+  new URL("../internal/devtools/dist/xterm.css", import.meta.url),
 );
 
 export async function buildDevtoolsBundle(): Promise<void> {
@@ -36,18 +42,9 @@ export async function buildDevtoolsBundle(): Promise<void> {
   const scriptText: string = await scriptOutput.text();
   const xtermStylesheetText: string = await readFile(xtermStylesheetPath, "utf8");
 
-  await writeFile(goAssetOutputPath, createGoAssetSource(scriptText, xtermStylesheetText));
-}
-
-function createGoAssetSource(scriptText: string, xtermStylesheetText: string): string {
-  return [
-    "package devtools",
-    "",
-    `const bundledDevtoolsScript = ${JSON.stringify(scriptText)}`,
-    "",
-    `const bundledXtermStylesheet = ${JSON.stringify(xtermStylesheetText)}`,
-    "",
-  ].join("\n");
+  await mkdir(assetOutputDirectoryPath, { recursive: true });
+  await writeFile(devtoolsScriptOutputPath, scriptText);
+  await writeFile(xtermStylesheetOutputPath, xtermStylesheetText);
 }
 
 if (import.meta.main) {
