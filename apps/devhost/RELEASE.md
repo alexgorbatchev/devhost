@@ -33,7 +33,7 @@ bun run compile:devhost
 ./apps/devhost/dist/devhost --version
 ```
 
-This first refreshes the embedded injected devtools bundle, then runs `go build` with linker flags that embed the current `apps/devhost/metadata.json` version into `devhost --version`.
+This first refreshes the embedded injected devtools assets under `internal/devtools/dist/`, then runs `go build` with linker flags that embed the current `apps/devhost/metadata.json` version into `devhost --version`.
 The generated binary is the same Go runtime that ships in the release archives.
 
 ## Local release artifacts

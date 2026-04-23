@@ -57,7 +57,7 @@ bun run check:devhost
 
 The human-only `fmt` script runs `oxfmt --write` for the repo using the shared root config. Agents should not run it directly; formatting is handled automatically by the repo's git hooks. `bun run check:devhost` runs `go vet ./...` and `go test ./...` from this app. The injected UI checks and Storybook coverage now live in `packages/devhost-ui/`. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
 
-`scripts/buildDevtoolsBundle.ts` refreshes the prebuilt injected devtools bundle used by standalone executables.
+`scripts/buildDevtoolsBundle.ts` refreshes the prebuilt injected devtools assets under `internal/devtools/dist/` used by standalone executables.
 
 `bun run build:release-artifacts:devhost` refreshes that bundle, cross-compiles the supported Go release targets, embeds the current `metadata.json` version into `devhost --version`, and writes versioned `.tar.gz` archives to `apps/devhost/dist/release/`.
 
@@ -86,7 +86,7 @@ The human-only `fmt` script runs `oxfmt --write` for the repo using the shared r
 - `internal/services/` — child process orchestration, health checks, port resolution, and cleanup
 - `internal/caddy/` — managed Caddy lifecycle, paths, config, and routing
 - `internal/devtools/` — Go devtools control servers plus embedded browser assets
-- `scripts/buildDevtoolsBundle.ts` — bundles `@alexgorbatchev/devhost-ui/main` into `internal/devtools/assets_generated.go`
+- `scripts/buildDevtoolsBundle.ts` — bundles `@alexgorbatchev/devhost-ui/main` into `internal/devtools/dist/devtools.js` and copies `@xterm/xterm/css/xterm.css` to `internal/devtools/dist/xterm.css` for `go:embed`
 
 ## Logging rules
 
