@@ -13,6 +13,16 @@ interface IDomAnnotationSelectionCandidateOptions {
   sourceLocation?: IAnnotationSourceLocation;
 }
 
+const selectionCursorSvgMarkup: string = [
+  '<svg height="32" viewBox="0 0 32 32" width="32" xmlns="http://www.w3.org/2000/svg">',
+  '<g fill="none" fill-rule="evenodd" transform="translate(10 7)">',
+  '<path d="m6.148 18.473 1.863-1.003 1.615-.839-2.568-4.816h4.332l-11.379-11.408v16.015l3.316-3.221z" fill="#fff"/>',
+  '<path d="m6.431 17 1.765-.941-2.775-5.202h3.604l-8.025-8.043v11.188l2.53-2.442z" fill="#000"/>',
+  "</g>",
+  "</svg>",
+].join("");
+const selectionCursorDataUri: string = `data:image/svg+xml,${encodeURIComponent(selectionCursorSvgMarkup)}`;
+
 export const defaultDomAnnotationSelectionPlugin: IAnnotationSelectionPlugin = {
   getCursorStyleText: createSelectionCursorStyleText,
   id: "dom-elements",
@@ -90,7 +100,7 @@ function createSelectionCursorStyleText(): string {
   // so the cursor affordance must temporarily apply beyond the injected UI boundary.
   return `
     body * {
-      cursor: crosshair !important;
+      cursor: url("${selectionCursorDataUri}") 10 7, default !important;
     }
     [${DEVTOOLS_ROOT_ATTRIBUTE_NAME}], [${DEVTOOLS_ROOT_ATTRIBUTE_NAME}] * {
       cursor: default !important;
