@@ -1,6 +1,6 @@
 # localhost-domains
 
-Monorepo root for the `devhost` Go app, the injected devtools UI package, and the local demo app.
+Monorepo root for the `devhost` Go app, the injected devtools UI package, and the public Astro docs site.
 
 ## Shared commands
 
@@ -12,14 +12,14 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Build `devhost` release tarballs: `bun run build:release-artifacts:devhost`
 - Build the current-platform `devhost` binary: `bun run compile:devhost`
 - Check the injected devtools UI package: `bun run --cwd packages/devhost-ui check`
-- Check demo app package-only validations: `bun run --cwd packages/www check`
-- Deploy demo app to Railway: `bun run deploy:www`
-- Run the demo app through the local `devhost` manifest: `bun run dev`
+- Check the docs package-only validations: `bun run --cwd packages/docs check`
+- Record docs demos: `bun run --cwd packages/docs record:marketing [scenario-id ...]`
+- Start the docs site locally: `bun run dev`
 
 ## Documentation policy
 
 - `AGENTS.md`, deploy/release runbooks, and other contributor-facing docs must be kept up to date after workflow, policy, validation, or behavior changes.
-- When shared validation commands, deploy steps, release steps, or contributor expectations change, update the affected docs in the same change, including `packages/www/DEPLOY.md` and `apps/devhost/RELEASE.md` when applicable.
+- When shared validation commands, publish steps, release steps, or contributor expectations change, update the affected docs in the same change, including `packages/docs/AGENTS.md` and `apps/devhost/RELEASE.md` when applicable.
 - Root `README.md` is a symlink to `apps/devhost/README.md`. Update the app README, not the symlink.
 - Repository-local skills live under `.agents/skills/`. Put new local skills at `.agents/skills/<skill-name>/SKILL.md`.
 
@@ -27,7 +27,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 
 - `apps/devhost/` — Go CLI app; follow `apps/devhost/AGENTS.md`
 - `packages/devhost-ui/` — injected browser UI package; follow `packages/devhost-ui/AGENTS.md`
-- `packages/www/` — local demo app; follow `packages/www/AGENTS.md`
+- `packages/docs/` — public Astro docs site; follow `packages/docs/AGENTS.md`
 
 ## Shared gotchas
 
@@ -36,14 +36,17 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Workspace `check` scripts are package-local validation only; do not duplicate shared lint/format enforcement there unless a workspace intentionally diverges.
 - `bun run check:devhost` runs `go vet ./...` and `go test ./...` in `apps/devhost/`.
 - `packages/devhost-ui` `bun run check` runs the package TypeScript check, `bun test --coverage`, and `bun vitest run -c vitest.storybook.config.ts`.
-- `packages/www` `bun run check` runs the package TypeScript check and `bun vitest run -c vitest.storybook.config.ts`.
-- `bun run --cwd packages/devhost-ui storybook` and `bun run --cwd packages/www storybook` start interactive Storybook dev servers for manual inspection; they do not replace the automated coverage already included in each workspace `check` script.
+- `packages/docs` `bun run check` runs `bun test`, the content sync, `astro check`, and `astro build`.
+- `packages/docs` `bun run dev`, `bun run start`, and `bun run preview` bind Astro to `0.0.0.0` so the docs site can be reached from outside the current environment.
+- `packages/docs` allows all dev/preview hosts in `astro.config.mjs`, so the docs server should be treated as broadly reachable while it is running.
+- `bun run --cwd packages/docs record:marketing` builds the docs site, starts a temporary Astro preview server, and records rrweb JSON artifacts under `packages/docs/public/recordings/marketing/`.
+- `bun run --cwd packages/devhost-ui storybook` starts the interactive Storybook dev server for manual inspection; it does not replace the automated coverage already included in the workspace `check` script.
 - Root `postinstall` runs `bun run install-browser`, which uses `playwright install chromium` without `--force` so existing Chromium binaries are reused instead of being re-downloaded on every `bun install`.
 - Keep a single root `bun.lock`. Do not add workspace-local lockfiles.
 
 ## Shipping
 
-- Demo app deploy entrypoint: `bun run deploy:www`. `packages/www/DEPLOY.md` is the authoritative Railway procedure.
+- Docs deploy entrypoint: push docs changes to `main` so `.github/workflows/docs.yml` publishes `packages/docs` to GitHub Pages.
 - CLI release entrypoint: push a tag like `v0.0.2`. `apps/devhost/RELEASE.md` and `.github/workflows/publish.yml` are the authoritative GitHub Release binary procedure.
 
 ## Shared boundaries
@@ -57,16 +60,16 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Ask first: adding a new workspace, changing cross-workspace dependency topology, or changing the publish/release flow.
 - Never: disable lint rules unless the user explicitly authorizes it.
 - Never: build or release `devhost` from the repo root using ad-hoc Go commands; use the documented `apps/devhost` scripts, root package scripts, and runbook.
-- Never: start the demo dev server proactively; the user will start it when needed.
-- Testing exception: agents may start the demo dev server temporarily for validation, but must shut it down before the end of the turn.
+- Never: start local docs, Storybook, or capture/recording dev servers proactively; the user will start them when needed.
+- Testing exception: agents may start temporary local servers for validation or recording workflows, but must shut them down before the end of the turn.
 
 ## References
 
 - `apps/devhost/AGENTS.md`
 - `apps/devhost/RELEASE.md`
 - `packages/devhost-ui/AGENTS.md`
-- `packages/www/AGENTS.md`
-- `packages/www/DEPLOY.md`
+- `packages/docs/AGENTS.md`
+- `.github/workflows/docs.yml`
 - `.agents/skills/`
 - `oxfmt.config.ts`
 - `oxlint.config.ts`

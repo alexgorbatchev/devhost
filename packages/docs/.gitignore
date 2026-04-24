@@ -1,0 +1,12 @@
+# build output
+dist/
+
+# generated types
+.astro/
+
+# generated docs content
+src/content/docs/*
+!src/content/docs/.gitkeep
+
+# dependencies
+node_modules/
