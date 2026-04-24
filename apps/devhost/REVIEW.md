@@ -17,8 +17,7 @@ reviewed_at: 2026-04-04T16:00:00Z
   - `bun run --cwd packages/devhost storybook:install-browser`
 - Test commands:
   - `bun run check`
-  - `bun test --cwd packages/devhost`
-  - `bun run --cwd packages/www check`
+  - Historical note: this review predates the docs-site migration; current workspace-local validation lives in `apps/devhost/`, `packages/devhost-ui/`, and `packages/docs/`.
 - Coverage commands:
   - `bun test --cwd packages/devhost --coverage`
 - Build/typecheck/lint commands:
@@ -26,7 +25,7 @@ reviewed_at: 2026-04-04T16:00:00Z
 - Required env/services/fixtures:
   - Managed Caddy may prompt for a password on first startup to install the local CA.
 - Monorepo/package working-directory notes:
-  - Root directory runs validation and orchestration across the `packages/devhost` and `packages/www` workspaces.
+  - This review snapshot used an older workspace layout. The current root directory orchestrates validation across `apps/devhost/`, `packages/devhost-ui/`, and `packages/docs/`.
 
 # Findings by Category
 
