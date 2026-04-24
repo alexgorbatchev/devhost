@@ -56,10 +56,12 @@ describe("docsFontTheme", () => {
 }
 
 :root {
-  --sl-font: \"JetBrainsMono Nerd Font\", \"JetBrains Mono\", ui-monospace, \"SFMono-Regular\",
-    \"Cascadia Mono\", \"Cascadia Code\", \"Roboto Mono\", Menlo, Consolas, \"Liberation Mono\", monospace;
-  --sl-font-mono: \"JetBrainsMono Nerd Font\", \"JetBrains Mono\", ui-monospace, \"SFMono-Regular\",
-    \"Cascadia Mono\", \"Cascadia Code\", \"Roboto Mono\", Menlo, Consolas, \"Liberation Mono\", monospace;
+  --sl-font:
+    \"JetBrainsMono Nerd Font\", \"JetBrains Mono\", ui-monospace, \"SFMono-Regular\", \"Cascadia Mono\", \"Cascadia Code\",
+    \"Roboto Mono\", Menlo, Consolas, \"Liberation Mono\", monospace;
+  --sl-font-mono:
+    \"JetBrainsMono Nerd Font\", \"JetBrains Mono\", ui-monospace, \"SFMono-Regular\", \"Cascadia Mono\", \"Cascadia Code\",
+    \"Roboto Mono\", Menlo, Consolas, \"Liberation Mono\", monospace;
 }
 "
 `);
