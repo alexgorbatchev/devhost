@@ -26,6 +26,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: apps/devhost/go.mod
+          cache-dependency-path: apps/devhost/go.sum
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
