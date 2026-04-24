@@ -33,6 +33,7 @@ const resolvedRecordingUrl: string = readResolvedRecordingUrl(import.meta.env.BA
 <script>
   import rrwebPlayer from "rrweb-player";
   import type { eventWithTime } from "@rrweb/types";
+  import { registerMarketingRecordingPlayerLifecycle } from "./registerMarketingRecordingPlayerLifecycle";
 
   const playerHorizontalPaddingPx = 32;
   const fallbackControllerHeightPx = 80;
@@ -170,8 +171,11 @@ const resolvedRecordingUrl: string = readResolvedRecordingUrl(import.meta.env.BA
       resizeObserver.observe(elements.surfaceElement);
       mutationObserver.observe(elements.stageElement, { childList: true, subtree: true });
 
-      player.addEventListener("finish", (): void => {
-        player.play();
+      registerMarketingRecordingPlayerLifecycle({
+        player,
+        scheduleResponsivePlayerLayout(): void {
+          scheduleResponsivePlayerLayout(playerRoot);
+        },
       });
 
       scheduleResponsivePlayerLayout(playerRoot);
