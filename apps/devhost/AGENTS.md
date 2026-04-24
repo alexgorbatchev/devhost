@@ -18,10 +18,10 @@ Local rules for the `devhost` Go app in `apps/devhost/`.
 - If the manifest contract changes, also update `devhost.example.toml`.
 - If devtools-specific contributor rules change, also update `packages/devhost-ui/AGENTS.md` and the nested files under `packages/devhost-ui/src/devtools/`.
 - If the tag-driven binary release flow changes, also update `RELEASE.md` and the relevant shared guidance in the repo-root `AGENTS.md`.
-- **CRITICAL:** The `devhost` README is heavily mirrored in the demo application's frontend. After editing the `devhost` README, you **must** update the `packages/www/src/app/App.tsx` file in the demo app workspace to keep the marketing website content in sync.
+- **CRITICAL:** `packages/docs/sync.ts` mirrors `README.md`, `devhost.example.toml`, and `docs/**/*.md` into the public docs site. After editing those sources, you **must** validate `packages/docs` so the GitHub Pages content stays in sync.
 - Do not leave README or AGENTS examples/rules stale after changing implementation details.
 - Repo-root `README.md` is a symlink to this workspace README; update `README.md` here, not the root symlink.
-- The `docs/` directory is used for conceptual architecture, complex feature flows (e.g., Mermaid diagrams), and internal technical design docs. See `docs/AGENTS.md` for specifics on what belongs in `docs/` vs `README.md`.
+- The `docs/` directory is used for conceptual architecture, complex feature flows (e.g., Mermaid diagrams), and technical design docs that can be mirrored into the public docs site. See `docs/AGENTS.md` for specifics on what belongs in `docs/` vs `README.md`.
 
 ## Development workflow
 

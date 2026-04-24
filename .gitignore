@@ -12,5 +12,3 @@ caddy/routes/.registrations/*.json
 coverage/
 storybook-static/
 .tmp
-
-/packages/www/skit
