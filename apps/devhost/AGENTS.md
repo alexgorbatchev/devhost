@@ -101,8 +101,9 @@ The human-only `fmt` script runs `oxfmt --write` for the repo using the shared r
 - Manifest logs must use the manifest `name` as the prefix label.
 - Pre-manifest logs must fall back to the `devhost` label.
 - Child process logs must remain prefixed with `[service-name]`.
-- Do not print successful Caddy reload chatter.
-- Surface Caddy output only on failure.
+- Generated managed Caddyfiles must discard the default Caddy runtime logger so background Caddy stderr never leaks into default stack output.
+- Do not print successful Caddy reload chatter during default `devhost` stack runs; only print it for `devhost --verbose` or explicit `devhost caddy ...` commands.
+- Surface Caddy output on failure, and surface successful reload output only for `devhost --verbose` or explicit `devhost caddy ...` commands.
 
 ## Devtools UI boundary
 

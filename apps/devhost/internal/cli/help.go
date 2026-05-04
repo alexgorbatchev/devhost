@@ -1,7 +1,7 @@
 package cli
 
 const HelpText = `Usage:
-  devhost [--manifest ./devhost.toml]
+  devhost [--manifest ./devhost.toml] [--verbose]
   devhost --version
   devhost caddy start|stop|trust [--manifest ./devhost.toml]
   devhost caddy download|privileged-ports|print-root-cert
@@ -9,6 +9,7 @@ const HelpText = `Usage:
 
 Options:
   --manifest  Explicit path to devhost.toml. Available on devhost and on devhost caddy start|stop|trust.
+  --verbose   Print managed Caddy command output while running a stack.
   --version   Print the build version. Source-checkout go run usage may report the local placeholder.
 
 Environment:

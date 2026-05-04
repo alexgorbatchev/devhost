@@ -48,6 +48,9 @@ func renderManagedCaddyfile(options renderManagedCaddyfileOptions) (string, erro
 		globalLines = append(globalLines, bindDirective)
 	}
 	globalLines = append(globalLines,
+		"    log {",
+		"        output discard",
+		"    }",
 		"    persist_config off",
 		fmt.Sprintf("    storage file_system %s", filepathQuote(options.Paths.StorageDirectoryPath)),
 		"}",
