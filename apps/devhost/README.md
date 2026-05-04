@@ -19,11 +19,13 @@ Download the archive for your platform from [GitHub Releases](https://github.com
 
 Published GitHub Releases also include versioned `.tar.gz` archives for `darwin-arm64`, `linux-x64`, `linux-arm64`, `linux-x64-musl`, and `linux-arm64-musl`.
 
-To print the bundled bootstrap skill for manifest-authoring workflows:
+To install the manifest-authoring bootstrap skill from this repository:
 
 ```bash
-devhost skill
+npx skills add https://github.com/alexgorbatchev/devhost --skill devhost-bootstrap -y
 ```
+
+Omit `-y` to choose target agents interactively.
 
 To print the CLI build version:
 
