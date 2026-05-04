@@ -5,6 +5,14 @@ import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
 import { AnnotationComposer } from "../AnnotationComposer";
 
+const agentAction = { displayName: "Pi", id: "agent", kind: "agent" as const, queueEnabled: true };
+const ticketAction = {
+  displayName: "Create Ticket",
+  id: "create-ticket",
+  kind: "command" as const,
+  queueEnabled: false,
+};
+
 const meta: Meta<typeof AnnotationComposer> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/annotationComposer/AnnotationComposer",
   component: AnnotationComposer,
@@ -57,10 +65,12 @@ async function expectDraftToReset(canvas: ReturnType<typeof within>): Promise<vo
 
 export const Default: Story = {
   args: {
-    agentDisplayName: "Pi",
+    annotationActions: [agentAction],
     onSubmit: fn(async () => {
       return { success: true };
     }),
+    onSelectedActionIdChange: fn(),
+    selectedActionId: "agent",
     stackName: "story-stack",
   },
   play: async ({ args, canvasElement }): Promise<void> => {
@@ -70,7 +80,7 @@ export const Default: Story = {
     const commentInput = await canvas.findByTestId("AnnotationComposer--comment");
     await userEvent.type(commentInput, "Fix the red button");
 
-    const submitButton = canvas.getByRole("button", { name: /submit/i });
+    const submitButton = canvas.getByRole("button", { name: /Run Pi/ });
     await userEvent.click(submitButton);
 
     await waitFor(() => {
@@ -84,6 +94,7 @@ export const Default: Story = {
             }),
           ]),
         }),
+        agentAction,
         undefined,
       );
     });
@@ -95,10 +106,12 @@ export const Default: Story = {
 export const WithActiveSession: Story = {
   args: {
     activeAgentSessionId: "session-123",
-    agentDisplayName: "Pi",
+    annotationActions: [agentAction],
     onSubmit: fn(async () => {
       return { success: true };
     }),
+    onSelectedActionIdChange: fn(),
+    selectedActionId: "agent",
     stackName: "story-stack",
   },
   play: async ({ args, canvasElement }): Promise<void> => {
@@ -108,9 +121,9 @@ export const WithActiveSession: Story = {
     const commentInput = await canvas.findByTestId("AnnotationComposer--comment");
     await userEvent.type(commentInput, "Update this component");
 
-    await expect(canvas.getByLabelText("Append to active session queue")).toBeChecked();
+    await expect(canvas.getByLabelText("Append to active Pi queue")).toBeChecked();
 
-    const submitButton = canvas.getByRole("button", { name: /submit/i });
+    const submitButton = canvas.getByRole("button", { name: /Run Pi/ });
     await userEvent.click(submitButton);
 
     await waitFor(() => {
@@ -119,6 +132,7 @@ export const WithActiveSession: Story = {
           comment: "Update this component",
           stackName: "story-stack",
         }),
+        agentAction,
         "session-123",
       );
     });
@@ -129,13 +143,15 @@ export const WithActiveSession: Story = {
 
 export const WithSubmitError: Story = {
   args: {
-    agentDisplayName: "Pi",
+    annotationActions: [agentAction],
     onSubmit: fn(async () => {
       return {
         errorMessage: "Failed to start the Pi session.",
         success: false,
       };
     }),
+    onSelectedActionIdChange: fn(),
+    selectedActionId: "agent",
     stackName: "story-stack",
   },
   play: async ({ canvasElement }): Promise<void> => {
@@ -143,13 +159,45 @@ export const WithSubmitError: Story = {
     await createAnnotationDraft(canvas);
 
     await userEvent.type(await canvas.findByTestId("AnnotationComposer--comment"), "Retry the submit flow");
-    await userEvent.click(canvas.getByRole("button", { name: /submit/i }));
+    await userEvent.click(canvas.getByRole("button", { name: /Run Pi/ }));
 
     await waitFor(() => {
       expect(canvas.getByTestId("AnnotationComposer--error")).toHaveTextContent("Failed to start the Pi session.");
     });
 
     await userEvent.keyboard("{Escape}");
+    await expectDraftToReset(canvas);
+  },
+};
+
+export const WithMultipleActions: Story = {
+  args: {
+    annotationActions: [agentAction, ticketAction],
+    onSubmit: fn(async () => {
+      return { success: true };
+    }),
+    onSelectedActionIdChange: fn(),
+    selectedActionId: "create-ticket",
+    stackName: "story-stack",
+  },
+  play: async ({ args, canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    await createAnnotationDraft(canvas);
+
+    await expect(canvas.getByTestId("AnnotationComposer--action-select")).toHaveValue("create-ticket");
+    await expect(canvas.queryByLabelText("Append to active Create Ticket queue")).not.toBeInTheDocument();
+
+    await userEvent.type(await canvas.findByTestId("AnnotationComposer--comment"), "Open a ticket for this state");
+    await userEvent.click(canvas.getByRole("button", { name: /Run Create Ticket/ }));
+
+    await waitFor(() => {
+      expect(args.onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({ comment: "Open a ticket for this state" }),
+        ticketAction,
+        undefined,
+      );
+    });
+
     await expectDraftToReset(canvas);
   },
 };

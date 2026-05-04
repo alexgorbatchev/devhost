@@ -11,6 +11,7 @@ const sampleQueues: IAnnotationQueueSnapshot[] = [
     activeSessionId: "session-1",
     entries: [
       {
+        actionId: "agent",
         annotation: {
           comment: "Replace #1 with the new CTA.",
           markers: [
@@ -41,6 +42,7 @@ const sampleQueues: IAnnotationQueueSnapshot[] = [
         updatedAt: 1_743_362_700_000,
       },
       {
+        actionId: "agent",
         annotation: {
           comment: "Then tighten the spacing around #1.",
           markers: [],
@@ -63,6 +65,7 @@ const sampleQueues: IAnnotationQueueSnapshot[] = [
     activeSessionId: null,
     entries: [
       {
+        actionId: "agent",
         annotation: {
           comment: "Retry the header cleanup.",
           markers: [],

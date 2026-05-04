@@ -153,7 +153,8 @@ func TestCreateAgentTerminalCommandMatchesBuiltInAdapters(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			command, err := createTerminalSessionCommand(tc.agent, "vscode", "/tmp/project", terminalSessionRequest{
+			command, err := createTerminalSessionCommand([]manifest.ValidatedAnnotationAction{{Agent: tc.agent, DisplayName: tc.agent.DisplayName, ID: defaultAnnotationActionID, Kind: "agent"}}, "vscode", "/tmp/project", terminalSessionRequest{
+				ActionID:   defaultAnnotationActionID,
 				Annotation: &annotation,
 				Kind:       terminalSessionRequestKindAgent,
 			}, "hello-stack")
@@ -161,7 +162,7 @@ func TestCreateAgentTerminalCommandMatchesBuiltInAdapters(t *testing.T) {
 				t.Fatalf("createTerminalSessionCommand(...) error = %v", err)
 			}
 			defer command.cleanup()
-			if command.env["DEVHOST_AGENT_ANNOTATION_FILE"] == "" || command.env["DEVHOST_AGENT_PROMPT_FILE"] == "" || command.env["DEVHOST_AGENT_TRANSPORT"] != "files" || command.env["DEVHOST_PROJECT_ROOT"] != "/tmp/project" || command.env["DEVHOST_STACK_NAME"] != "hello-stack" {
+			if command.env["DEVHOST_AGENT_ANNOTATION_FILE"] == "" || command.env["DEVHOST_AGENT_PROMPT_FILE"] == "" || command.env["DEVHOST_AGENT_TRANSPORT"] != "files" || command.env["DEVHOST_ANNOTATION_FILE"] == "" || command.env["DEVHOST_ANNOTATION_PROMPT_FILE"] == "" || command.env["DEVHOST_ANNOTATION_ACTION_ID"] != defaultAnnotationActionID || command.env["DEVHOST_ANNOTATION_ACTION_KIND"] != "agent" || command.env["DEVHOST_ANNOTATION_ACTION_LABEL"] != tc.agent.DisplayName || command.env["DEVHOST_PROJECT_ROOT"] != "/tmp/project" || command.env["DEVHOST_STACK_NAME"] != "hello-stack" {
 				t.Fatalf("agent env = %#v", command.env)
 			}
 			annotationPayload, err := os.ReadFile(command.env["DEVHOST_AGENT_ANNOTATION_FILE"])
@@ -180,10 +181,60 @@ func TestCreateAgentTerminalCommandMatchesBuiltInAdapters(t *testing.T) {
 	}
 }
 
+func TestCreateCommandAnnotationTerminalCommand(t *testing.T) {
+	t.Parallel()
+
+	action := manifest.ValidatedAnnotationAction{
+		Command:     []string{"bun", "run", "lint"},
+		Cwd:         "/tmp/project/tools",
+		DisplayName: "Run lint",
+		Env:         map[string]string{"CI": "1"},
+		ID:          "lint",
+		Kind:        "command",
+	}
+	annotation := annotationSubmitDetail{
+		Comment:     "Check lint.",
+		Markers:     []annotationMarkerPayload{},
+		StackName:   "hello-stack",
+		SubmittedAt: 1717171717000,
+		Title:       "Buttons",
+		URL:         "https://hello.test/buttons",
+	}
+
+	command, err := createTerminalSessionCommand([]manifest.ValidatedAnnotationAction{action}, "vscode", "/tmp/project", terminalSessionRequest{
+		ActionID:   "lint",
+		Annotation: &annotation,
+		Kind:       terminalSessionRequestKindCommand,
+	}, "hello-stack")
+	if err != nil {
+		t.Fatalf("createTerminalSessionCommand(...) error = %v", err)
+	}
+	defer command.cleanup()
+
+	if got, want := strings.Join(command.command, "\x00"), strings.Join([]string{"bun", "run", "lint"}, "\x00"); got != want {
+		t.Fatalf("command = %#v, want %#v", command.command, action.Command)
+	}
+	if command.cwd != "/tmp/project/tools" || command.env["CI"] != "1" || command.env["DEVHOST_ANNOTATION_FILE"] == "" || command.env["DEVHOST_ANNOTATION_PROMPT_FILE"] == "" || command.env["DEVHOST_ANNOTATION_ACTION_ID"] != "lint" || command.env["DEVHOST_ANNOTATION_ACTION_KIND"] != "command" || command.env["DEVHOST_ANNOTATION_ACTION_LABEL"] != "Run lint" || command.env["DEVHOST_PROJECT_ROOT"] != "/tmp/project" || command.env["DEVHOST_STACK_NAME"] != "hello-stack" {
+		t.Fatalf("command cwd/env = %q %#v", command.cwd, command.env)
+	}
+
+	annotationPayload, err := os.ReadFile(command.env["DEVHOST_ANNOTATION_FILE"])
+	if err != nil {
+		t.Fatalf("ReadFile(annotation) error = %v", err)
+	}
+	var decoded annotationSubmitDetail
+	if err := json.Unmarshal(annotationPayload, &decoded); err != nil {
+		t.Fatalf("Unmarshal(annotation) error = %v", err)
+	}
+	if decoded.Comment != annotation.Comment {
+		t.Fatalf("decoded annotation = %#v", decoded)
+	}
+}
+
 func TestCreateAgentTerminalCommandRejectsUnsupportedEditorSession(t *testing.T) {
 	t.Parallel()
 
-	if _, err := createTerminalSessionCommand(manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"}, "cursor", "/tmp/project", terminalSessionRequest{
+	if _, err := createTerminalSessionCommand([]manifest.ValidatedAnnotationAction{{Agent: manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"}, DisplayName: "Pi", ID: defaultAnnotationActionID, Kind: "agent"}}, "cursor", "/tmp/project", terminalSessionRequest{
 		ComponentName: "PrimaryButton",
 		Kind:          terminalSessionRequestKindEditor,
 		Launcher:      terminalSessionLauncherNeovim,
@@ -207,13 +258,20 @@ func TestCreateAgentSessionFilesWritesExpectedSupportFiles(t *testing.T) {
 		SubmittedAt: 1,
 		Title:       "Example",
 		URL:         "https://example.test/page",
-	}, "Pi", "/tmp/project", "Prompt text", "hello-stack")
+	}, defaultAnnotationActionID, "Ask Pi", "Pi", "/tmp/project", "Prompt text", "hello-stack")
 	if err != nil {
 		t.Fatalf("createAgentSessionFiles(...) error = %v", err)
 	}
 	defer files.cleanup()
 
 	for _, key := range []string{
+		"DEVHOST_ANNOTATION_ACTION_ID",
+		"DEVHOST_ANNOTATION_ACTION_KIND",
+		"DEVHOST_ANNOTATION_ACTION_LABEL",
+		"DEVHOST_ANNOTATION_DISPLAY_NAME",
+		"DEVHOST_ANNOTATION_FILE",
+		"DEVHOST_ANNOTATION_PROMPT_FILE",
+		"DEVHOST_ANNOTATION_TRANSPORT",
 		"DEVHOST_AGENT_ANNOTATION_FILE",
 		"DEVHOST_AGENT_CLAUDE_SETTINGS_FILE",
 		"DEVHOST_AGENT_DISPLAY_NAME",

@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { DEVTOOLS_CONTROL_TOKEN_HEADER_NAME, TERMINAL_SESSION_START_PATH } from "../../shared/constants";
-import { readDevtoolsAgentDisplayName } from "../../shared/readDevtoolsAgentDisplayName";
 import { readDevtoolsControlToken } from "../../shared/readDevtoolsControlToken";
-import type { ComponentSourceMenuItem } from "../componentSourceNavigation/types";
+import type { IAnnotationAction } from "../../shared/devtoolsConfig";
 import type { IAnnotationSubmitDetail } from "../annotationComposer/types";
+import type { ComponentSourceMenuItem } from "../componentSourceNavigation/types";
 import { appendStartedTerminalSessionIfNeeded } from "./appendStartedTerminalSessionIfNeeded";
 import { createTerminalSession } from "./createTerminalSession";
 import { expandTerminalSession, minimizeTerminalSession, removeTerminalSession } from "./manageTerminalSessions";
@@ -27,13 +27,13 @@ interface IUseTerminalSessionsResult {
   startComponentSourceSession: (menuItem: ComponentSourceMenuItem) => Promise<ITerminalSessionStartResult>;
   submitAnnotation: (
     annotation: IAnnotationSubmitDetail,
+    action: IAnnotationAction,
     targetSessionId?: string,
   ) => Promise<ITerminalSessionStartResult>;
 }
 
 export function useTerminalSessions(enabled: boolean = true): IUseTerminalSessionsResult {
   const [terminalSessions, setTerminalSessions] = useState<TerminalSession[]>([]);
-  const agentDisplayName: string = readDevtoolsAgentDisplayName();
 
   useEffect((): void => {
     if (!enabled) {
@@ -41,8 +41,8 @@ export function useTerminalSessions(enabled: boolean = true): IUseTerminalSessio
       return;
     }
 
-    void restoreActiveTerminalSessions(setTerminalSessions, agentDisplayName);
-  }, [agentDisplayName, enabled]);
+    void restoreActiveTerminalSessions(setTerminalSessions);
+  }, [enabled]);
 
   const expandSession = useCallback((sessionId: string): void => {
     setTerminalSessions((currentSessions: TerminalSession[]): TerminalSession[] => {
@@ -62,17 +62,11 @@ export function useTerminalSessions(enabled: boolean = true): IUseTerminalSessio
     });
   }, []);
 
-  const registerStartedSession = useCallback(
-    (sessionId: string, request: StartTerminalSessionRequest): void => {
-      setTerminalSessions((currentSessions: TerminalSession[]): TerminalSession[] => {
-        return appendStartedTerminalSessionIfNeeded(
-          currentSessions,
-          createTerminalSession(sessionId, request, agentDisplayName),
-        );
-      });
-    },
-    [agentDisplayName],
-  );
+  const registerStartedSession = useCallback((sessionId: string, request: StartTerminalSessionRequest): void => {
+    setTerminalSessions((currentSessions: TerminalSession[]): TerminalSession[] => {
+      return appendStartedTerminalSessionIfNeeded(currentSessions, createTerminalSession(sessionId, request));
+    });
+  }, []);
 
   const startSession = useCallback(
     async (request: StartTerminalSessionRequest): Promise<ITerminalSessionStartResult> => {
@@ -125,11 +119,26 @@ export function useTerminalSessions(enabled: boolean = true): IUseTerminalSessio
   );
 
   const submitAnnotation = useCallback(
-    async (annotation: IAnnotationSubmitDetail, targetSessionId?: string): Promise<ITerminalSessionStartResult> => {
+    async (
+      annotation: IAnnotationSubmitDetail,
+      action: IAnnotationAction,
+      targetSessionId?: string,
+    ): Promise<ITerminalSessionStartResult> => {
+      if (action.kind === "agent") {
+        return await startSession({
+          actionId: action.id,
+          annotation,
+          displayName: action.displayName,
+          kind: "agent",
+          targetSessionId,
+        });
+      }
+
       return await startSession({
+        actionId: action.id,
         annotation,
-        kind: "agent",
-        targetSessionId,
+        displayName: action.displayName,
+        kind: "command",
       });
     },
     [startSession],
@@ -161,10 +170,7 @@ export function useTerminalSessions(enabled: boolean = true): IUseTerminalSessio
 
 type SetTerminalSessionsCallback = (value: (currentSessions: TerminalSession[]) => TerminalSession[]) => void;
 
-async function restoreActiveTerminalSessions(
-  setTerminalSessions: SetTerminalSessionsCallback,
-  agentDisplayName: string,
-): Promise<void> {
+async function restoreActiveTerminalSessions(setTerminalSessions: SetTerminalSessionsCallback): Promise<void> {
   try {
     const response = await fetch(TERMINAL_SESSION_START_PATH, {
       headers: {
@@ -184,7 +190,7 @@ async function restoreActiveTerminalSessions(
     }
 
     setTerminalSessions((currentSessions: TerminalSession[]): TerminalSession[] => {
-      return restoreTerminalSessions(currentSessions, responseBody.sessions, agentDisplayName);
+      return restoreTerminalSessions(currentSessions, responseBody.sessions);
     });
   } catch {
     return;
@@ -329,14 +335,24 @@ function isStartTerminalSessionRequest(value: unknown): value is StartTerminalSe
   const launcher: unknown = Reflect.get(value, "launcher");
 
   if (requestKind === "agent") {
+    const actionId: unknown = Reflect.get(value, "actionId");
     const annotation: unknown = Reflect.get(value, "annotation");
+    const displayName: unknown = Reflect.get(value, "displayName");
     const targetSessionId: unknown = Reflect.get(value, "targetSessionId");
 
     if (targetSessionId !== undefined && typeof targetSessionId !== "string") {
       return false;
     }
 
-    return isAnnotationSubmitDetail(annotation);
+    return typeof actionId === "string" && typeof displayName === "string" && isAnnotationSubmitDetail(annotation);
+  }
+
+  if (requestKind === "command") {
+    const actionId: unknown = Reflect.get(value, "actionId");
+    const annotation: unknown = Reflect.get(value, "annotation");
+    const displayName: unknown = Reflect.get(value, "displayName");
+
+    return typeof actionId === "string" && typeof displayName === "string" && isAnnotationSubmitDetail(annotation);
   }
 
   if (requestKind === "editor") {

@@ -20,8 +20,17 @@ export type EditorTerminalLauncher = "neovim";
 
 export interface IStartAgentTerminalSessionRequest {
   annotation: IAnnotationSubmitDetail;
+  actionId: string;
+  displayName: string;
   kind: "agent";
   targetSessionId?: string;
+}
+
+export interface IStartCommandTerminalSessionRequest {
+  annotation: IAnnotationSubmitDetail;
+  actionId: string;
+  displayName: string;
+  kind: "command";
 }
 
 export interface IStartEditorTerminalSessionRequest {
@@ -32,7 +41,10 @@ export interface IStartEditorTerminalSessionRequest {
   sourceLabel: string;
 }
 
-export type StartTerminalSessionRequest = IStartAgentTerminalSessionRequest | IStartEditorTerminalSessionRequest;
+export type StartTerminalSessionRequest =
+  | IStartAgentTerminalSessionRequest
+  | IStartCommandTerminalSessionRequest
+  | IStartEditorTerminalSessionRequest;
 
 export interface IStartTerminalSessionResponse {
   sessionId: string;
@@ -60,9 +72,17 @@ interface ITerminalSessionBase {
 }
 
 export interface IAgentTerminalSession extends ITerminalSessionBase {
+  actionId: string;
   annotation: IAnnotationSubmitDetail;
   displayName: string;
   kind: "agent";
+}
+
+export interface ICommandTerminalSession extends ITerminalSessionBase {
+  actionId: string;
+  annotation: IAnnotationSubmitDetail;
+  displayName: string;
+  kind: "command";
 }
 
 export interface IEditorTerminalSession extends ITerminalSessionBase {
@@ -72,7 +92,7 @@ export interface IEditorTerminalSession extends ITerminalSessionBase {
   sourceLabel: string;
 }
 
-export type TerminalSession = IAgentTerminalSession | IEditorTerminalSession;
+export type TerminalSession = IAgentTerminalSession | ICommandTerminalSession | IEditorTerminalSession;
 
 export interface ITerminalSessionInputMessage {
   data: string;

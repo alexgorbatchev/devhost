@@ -2,7 +2,7 @@ import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "react";
 import { useCallback, useState } from "react";
 
-import type { DevtoolsPosition } from "./shared/devtoolsConfig";
+import type { DevtoolsPosition, IAnnotationAction } from "./shared/devtoolsConfig";
 import { AnnotationComposer } from "./features/annotationComposer";
 import { AnnotationQueuePanel, useAnnotationQueues } from "./features/annotationQueue";
 import { ComponentSourceMenu, useComponentSourceNavigation } from "./features/componentSourceNavigation";
@@ -14,9 +14,12 @@ import { readDevtoolsFeatureToggles } from "./shared/readDevtoolsFeatureToggles"
 import {
   css,
   DEVTOOLS_ROOT_ID,
+  defaultAnnotationActionId,
   ThemeProvider,
   type IDevtoolsTheme,
   readDevtoolsAgentDisplayName,
+  readDevtoolsAnnotationActions,
+  readDevtoolsAnnotationDefaultActionId,
   readDevtoolsComponentEditor,
   readDevtoolsPosition,
   readDevtoolsProjectRootPath,
@@ -39,6 +42,8 @@ export function App(): JSX.Element {
 
 function AppContent(): JSX.Element {
   const agentDisplayName: string = readDevtoolsAgentDisplayName();
+  const annotationActions: IAnnotationAction[] = readDevtoolsAnnotationActions();
+  const annotationDefaultActionId: string = readDevtoolsAnnotationDefaultActionId();
   const componentEditor = readDevtoolsComponentEditor();
   const devtoolsPosition: DevtoolsPosition = readDevtoolsPosition();
   const projectRootPath: string = readDevtoolsProjectRootPath();
@@ -69,6 +74,7 @@ function AppContent(): JSX.Element {
     submitAnnotation,
   } = useTerminalSessions(features.terminalEnabled);
   const [isMinimapHovered, setIsMinimapHovered] = useState<boolean>(false);
+  const [selectedAnnotationActionId, setSelectedAnnotationActionId] = useState<string>(annotationDefaultActionId);
   const logEntries = useServiceLogs(isMinimapHovered);
   const { componentMenu, openComponentSource } = useComponentSourceNavigation({
     componentEditor,
@@ -81,31 +87,38 @@ function AppContent(): JSX.Element {
     features.externalToolbarsEnabled && externalDevtoolsLaunchers.length > 0;
   const shouldRenderMinimap: boolean = features.minimapEnabled && logEntries.length > 0;
   const currentRoutedServiceKey: string | null = resolveRoutedServiceKeyForUrl(routedServices, window.location.href);
-  const activeAgentSessionId: string | undefined =
-    currentRoutedServiceKey === null
-      ? terminalSessions.find((session) => session.kind === "agent")?.sessionId
-      : terminalSessions.find((session) => {
-          return (
-            session.kind === "agent" &&
-            resolveRoutedServiceKeyForUrl(routedServices, session.annotation.url) === currentRoutedServiceKey
-          );
-        })?.sessionId;
+  const selectedAnnotationAction: IAnnotationAction = resolveSelectedAnnotationAction(
+    annotationActions,
+    selectedAnnotationActionId,
+    agentDisplayName,
+  );
+  const activeAgentSessionId: string | undefined = findActiveAgentSessionId(
+    selectedAnnotationAction,
+    terminalSessions,
+    routedServices,
+    currentRoutedServiceKey,
+  );
   const handleResumeQueue = useCallback(
     async (queueId: string): Promise<string | null> => {
       const resumedQueue = annotationQueues.find((queue) => queue.queueId === queueId);
       const activeEntry = resumedQueue?.entries[0];
       const sessionId = await resumeQueue(queueId);
+      const activeAction = annotationActions.find((action: IAnnotationAction): boolean => {
+        return action.id === activeEntry?.actionId;
+      });
 
-      if (sessionId !== null && activeEntry !== undefined) {
+      if (sessionId !== null && activeEntry !== undefined && activeAction !== undefined) {
         registerStartedSession(sessionId, {
+          actionId: activeAction.id,
           annotation: activeEntry.annotation,
+          displayName: activeAction.displayName,
           kind: "agent",
         });
       }
 
       return sessionId;
     },
-    [annotationQueues, registerStartedSession, resumeQueue],
+    [annotationActions, annotationQueues, registerStartedSession, resumeQueue],
   );
   const cornerDockClassName: string = css({
     ...readVerticalPositionStyle(theme, devtoolsPosition),
@@ -124,8 +137,10 @@ function AppContent(): JSX.Element {
       {features.annotationEnabled ? (
         <AnnotationComposer
           activeAgentSessionId={activeAgentSessionId}
-          agentDisplayName={agentDisplayName}
+          annotationActions={annotationActions}
+          selectedActionId={selectedAnnotationAction.id}
           onSubmit={submitAnnotation}
+          onSelectedActionIdChange={setSelectedAnnotationActionId}
           stackName={stackName}
         />
       ) : null}
@@ -175,6 +190,45 @@ function AppContent(): JSX.Element {
 
 function readCornerDockMaxWidth(theme: IDevtoolsTheme): string {
   return `calc(100vw - 20px - ${theme.spacing.xxs})`;
+}
+
+function resolveSelectedAnnotationAction(
+  annotationActions: IAnnotationAction[],
+  selectedAnnotationActionId: string,
+  agentDisplayName: string,
+): IAnnotationAction {
+  return (
+    annotationActions.find((action: IAnnotationAction): boolean => action.id === selectedAnnotationActionId) ??
+    annotationActions[0] ?? {
+      displayName: agentDisplayName,
+      id: defaultAnnotationActionId,
+      kind: "agent",
+      queueEnabled: true,
+    }
+  );
+}
+
+function findActiveAgentSessionId(
+  selectedAnnotationAction: IAnnotationAction,
+  terminalSessions: ReturnType<typeof useTerminalSessions>["terminalSessions"],
+  routedServices: ReturnType<typeof readDevtoolsRoutedServices>,
+  currentRoutedServiceKey: string | null,
+): string | undefined {
+  if (selectedAnnotationAction.kind !== "agent" || !selectedAnnotationAction.queueEnabled) {
+    return undefined;
+  }
+
+  return terminalSessions.find((session) => {
+    if (session.kind !== "agent" || session.actionId !== selectedAnnotationAction.id) {
+      return false;
+    }
+
+    if (currentRoutedServiceKey === null) {
+      return true;
+    }
+
+    return resolveRoutedServiceKeyForUrl(routedServices, session.annotation.url) === currentRoutedServiceKey;
+  })?.sessionId;
 }
 
 function readHorizontalPositionStyle(theme: IDevtoolsTheme, hasVisibleMinimap: boolean): CSSObject {
