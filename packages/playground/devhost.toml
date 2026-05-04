@@ -1,0 +1,34 @@
+name = "playground"
+
+[devtools.status]
+position = "bottom-right"
+
+[annotation]
+defaultAction = "ask-pi"
+
+[[annotation.actions]]
+id = "ask-pi"
+label = "Ask Pi"
+kind = "agent"
+
+[annotation.actions.agent]
+adapter = "pi"
+
+[[annotation.actions]]
+id = "build"
+label = "Build Playground"
+kind = "command"
+
+[annotation.actions.command]
+command = ["bun", "run", "build"]
+cwd = "."
+
+[services.web]
+primary = true
+command = ["bun", "run", "server"]
+cwd = "."
+port = 3000
+host = "devhost.localhost"
+
+[services.web.env]
+NODE_ENV = "development"
