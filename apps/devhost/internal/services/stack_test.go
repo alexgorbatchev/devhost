@@ -1016,6 +1016,60 @@ func TestStopStartedServicesStopsRunningServicesGracefully(t *testing.T) {
 	}
 }
 
+func TestStopStartedServiceStopsDescendantProcesses(t *testing.T) {
+	servicePort := mustReservePort(t)
+	childPidPath := filepath.Join(t.TempDir(), "child.pid")
+	t.Cleanup(func() {
+		childPidText, error := os.ReadFile(childPidPath)
+		if error != nil {
+			return
+		}
+		childPid, error := strconv.Atoi(strings.TrimSpace(string(childPidText)))
+		if error != nil {
+			return
+		}
+		_ = syscall.Kill(childPid, syscall.SIGKILL)
+	})
+
+	startedService, error := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+		BindHost: "127.0.0.1",
+		Command:  helperCommand(),
+		Cwd:      t.TempDir(),
+		Env: map[string]string{
+			"GO_WANT_HELPER_PROCESS": "1",
+			"DEVHOST_HELPER_MODE":    "spawn-child-server-and-wait",
+			"CHILD_PID_PATH":         childPidPath,
+			"PORT":                   strconv.Itoa(servicePort),
+		},
+		Health:     ResolvedHealthConfig{Kind: "process"},
+		InjectPort: true,
+		Name:       "web",
+	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
+	if error != nil {
+		t.Fatalf("startServiceProcess(...) error = %v", error)
+	}
+
+	waitForCondition(t, 5*time.Second, func() bool {
+		conn, error := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
+		if error != nil {
+			return false
+		}
+		_ = conn.Close()
+		return true
+	})
+
+	stopStartedService(startedService, 100*time.Millisecond)
+
+	waitForCondition(t, 5*time.Second, func() bool {
+		conn, error := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
+		if error != nil {
+			return true
+		}
+		_ = conn.Close()
+		return false
+	})
+}
+
 func TestStopStartedServicesSignalsInReverseOrder(t *testing.T) {
 	t.Parallel()
 
@@ -1105,6 +1159,10 @@ func TestServiceHelperProcess(t *testing.T) {
 		runRecordStartAndWaitHelper()
 	case "route-aware-http-server":
 		runRouteAwareHTTPServerHelper()
+	case "spawn-child-server-and-wait":
+		runSpawnChildServerAndWaitHelper()
+	case "child-http-server":
+		runChildHTTPServerHelper()
 	case "graceful-signal-waiter":
 		runGracefulSignalWaiterHelper()
 	case "ignore-term":
@@ -1395,6 +1453,35 @@ func runRouteAwareHTTPServerHelper() {
 	time.Sleep(200 * time.Millisecond)
 	_ = server.Close()
 	os.Exit(0)
+}
+
+func runSpawnChildServerAndWaitHelper() {
+	command := exec.Command(os.Args[0], "-test.run=TestServiceHelperProcess", "--")
+	command.Env = append(os.Environ(),
+		"GO_WANT_HELPER_PROCESS=1",
+		"DEVHOST_HELPER_MODE=child-http-server",
+		"CHILD_PID_PATH="+os.Getenv("CHILD_PID_PATH"),
+		"PORT="+os.Getenv("PORT"),
+	)
+	if error := command.Start(); error != nil {
+		panic(error)
+	}
+
+	select {}
+}
+
+func runChildHTTPServerHelper() {
+	port, _ := strconv.Atoi(os.Getenv("PORT"))
+	if error := os.WriteFile(os.Getenv("CHILD_PID_PATH"), []byte(strconv.Itoa(os.Getpid())), 0o644); error != nil {
+		panic(error)
+	}
+
+	server := &http.Server{Addr: fmt.Sprintf("127.0.0.1:%d", port), Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		_, _ = writer.Write([]byte("ok"))
+	})}
+	if error := server.ListenAndServe(); error != nil && error != http.ErrServerClosed {
+		panic(error)
+	}
 }
 
 func runGracefulSignalWaiterHelper() {
