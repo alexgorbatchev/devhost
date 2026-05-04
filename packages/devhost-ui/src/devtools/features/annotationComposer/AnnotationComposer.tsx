@@ -13,6 +13,7 @@ import {
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME, DEVTOOLS_ROOT_ID } from "../../shared/constants";
 import { isEventTargetTerminalKeyboardInput } from "../../shared/isEventTargetTerminalKeyboardInput";
 import type { ITerminalSessionStartResult } from "../terminalSessions/types";
+import { AnnotationActionSplitButton } from "./AnnotationActionSplitButton";
 import { AnnotationMarkerList } from "./AnnotationMarkerList";
 import {
   readActiveAnnotationSelectionPlugin,
@@ -180,14 +181,6 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
     trimmedComment,
     sendToActiveSession,
   ]);
-
-  useEffect(() => {
-    if (canAppendToActiveAgentSession) {
-      return;
-    }
-
-    setSendToActiveSession(false);
-  }, [canAppendToActiveAgentSession]);
 
   useEffect(() => {
     selectedTargetsReference.current = selectedTargets;
@@ -612,27 +605,6 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
               {isSubmitting ? "Submitting annotation…" : `${selectedTargets.length} markers selected`}
             </span>
           </div>
-          {props.annotationActions.length > 1 ? (
-            <label className={css(createActionSelectorLabelStyle(theme))}>
-              Action
-              <select
-                data-testid="AnnotationComposer--action-select"
-                className={css(createActionSelectStyle(theme))}
-                value={selectedAction.id}
-                onChange={(event: React.ChangeEvent<HTMLSelectElement>): void => {
-                  props.onSelectedActionIdChange(event.currentTarget.value);
-                }}
-              >
-                {props.annotationActions.map((action: IAnnotationAction) => {
-                  return (
-                    <option key={action.id} value={action.id}>
-                      {action.displayName}
-                    </option>
-                  );
-                })}
-              </select>
-            </label>
-          ) : null}
           <AnnotationMarkerList
             items={selectedTargets.map((selection: ISelectedAnnotationTarget) => {
               return {
@@ -671,20 +643,33 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
             </label>
           ) : null}
           <div className={popupActionsClassName}>
-            <Button
-              disabled={trimmedComment.length === 0 || isSubmitting}
-              endEnhancer="⌘ ↵"
-              endEnhancerStyle={createShortcutBadgeStyle(theme)}
-              endEnhancerStyleHover={shortcutBadgeHoverStyle}
-              style={createSubmitButtonStyle(theme)}
-              styleHover={createActionButtonHoverStyle(theme)}
-              variant="primary"
-              onClick={(): void => {
-                void submitDraft();
-              }}
-            >
-              {isSubmitting ? "Submitting…" : `Run ${selectedAction.displayName}`}
-            </Button>
+            {props.annotationActions.length > 1 ? (
+              <AnnotationActionSplitButton
+                actions={props.annotationActions}
+                isActionMenuDisabled={isSubmitting}
+                isRunDisabled={trimmedComment.length === 0 || isSubmitting}
+                selectedAction={selectedAction}
+                onActionSelect={props.onSelectedActionIdChange}
+                onRun={(): void => {
+                  void submitDraft();
+                }}
+              />
+            ) : (
+              <Button
+                disabled={trimmedComment.length === 0 || isSubmitting}
+                endEnhancer="⌘ ↵"
+                endEnhancerStyle={createShortcutBadgeStyle(theme)}
+                endEnhancerStyleHover={shortcutBadgeHoverStyle}
+                style={createSubmitButtonStyle(theme)}
+                styleHover={createActionButtonHoverStyle(theme)}
+                variant="primary"
+                onClick={(): void => {
+                  void submitDraft();
+                }}
+              >
+                {isSubmitting ? "Submitting…" : `Run ${selectedAction.displayName}`}
+              </Button>
+            )}
             <Button
               disabled={isSubmitting}
               endEnhancer="Esc"
@@ -733,29 +718,6 @@ const popupActionsStyle: CSSObject = {
   justifyContent: "flex-start",
   gap: "8px",
 };
-
-function createActionSelectorLabelStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    display: "grid",
-    gap: theme.spacing.xxs,
-    color: theme.colors.foreground,
-    fontSize: theme.fontSizes.sm,
-  };
-}
-
-function createActionSelectStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    width: "100%",
-    boxSizing: "border-box",
-    padding: theme.spacing.xs,
-    border: `1px solid ${theme.colors.border}`,
-    borderRadius: theme.radii.sm,
-    background: theme.colors.background,
-    color: theme.colors.foreground,
-    fontFamily: theme.fontFamilies.body,
-    fontSize: theme.fontSizes.sm,
-  };
-}
 
 const shortcutBadgeHoverStyle: CSSObject = {
   color: "rgba(255, 255, 255, 1)",
