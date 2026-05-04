@@ -42,6 +42,7 @@ var signalExitCodes = map[syscall.Signal]int{
 }
 
 type StartStackOptions struct {
+	CaddyOutputWriters caddy.RouteCommandOutputWriters
 	CaddyPaths          caddy.Paths
 	Environment         map[string]string
 	LogWriter           io.Writer
@@ -161,13 +162,13 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		}
 
 		for _, route := range activeRoutes {
-			if error := caddy.UnregisterRoute(route.serviceName, route.host, route.path, manifest.ManifestPath, paths.RegistrationsDirectoryPath); error != nil && cleanupError == nil {
+			if error := caddy.UnregisterRoute(route.serviceName, route.host, route.path, manifest.ManifestPath, paths.RegistrationsDirectoryPath, options.CaddyOutputWriters); error != nil && cleanupError == nil {
 				cleanupError = error
 			}
 		}
 
 		for _, host := range claimedHosts {
-			if error := caddy.SyncManagedHostRoute(host, managedCaddyAdminAddress, paths.RoutesDirectoryPath); error != nil && cleanupError == nil {
+			if error := caddy.SyncManagedHostRoute(host, managedCaddyAdminAddress, paths.RoutesDirectoryPath, options.CaddyOutputWriters); error != nil && cleanupError == nil {
 				cleanupError = error
 			}
 		}
@@ -337,16 +338,17 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		}
 
 		activateRouteOptions := caddy.ActivateRouteOptions{
-			AppBindHost:       service.BindHost,
-			AppPort:           *service.Port,
-			CaddyAdminAddress: managedCaddyAdminAddress,
-			CaddyBindHost:     manifest.Caddy.Global.BindHost,
-			CaddyHTTPPort:     manifest.Caddy.Global.HTTPPort,
-			CaddyHTTPSPort:    manifest.Caddy.Global.HTTPSPort,
-			Host:              *service.Host,
-			HTTPEnabled:       manifest.Caddy.Global.HTTP,
-			Path:              path,
-			ServiceName:       service.Name,
+			AppBindHost:        service.BindHost,
+			AppPort:            *service.Port,
+			CaddyAdminAddress:  managedCaddyAdminAddress,
+			CaddyBindHost:      manifest.Caddy.Global.BindHost,
+			CaddyOutputWriters: options.CaddyOutputWriters,
+			CaddyHTTPPort:      manifest.Caddy.Global.HTTPPort,
+			CaddyHTTPSPort:     manifest.Caddy.Global.HTTPSPort,
+			Host:               *service.Host,
+			HTTPEnabled:        manifest.Caddy.Global.HTTP,
+			Path:               path,
+			ServiceName:        service.Name,
 		}
 
 		if devtoolsControlServer != nil && isRootCompatibleServicePath(service.Path) {

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -35,6 +36,7 @@ type ActivateRouteOptions struct {
 	AppPort               int
 	CaddyAdminAddress     string
 	CaddyBindHost         string
+	CaddyOutputWriters    RouteCommandOutputWriters
 	CaddyHTTPPort         int
 	CaddyHTTPSPort        int
 	DevtoolsControlPort   int
@@ -43,6 +45,11 @@ type ActivateRouteOptions struct {
 	HTTPEnabled           bool
 	Path                  string
 	ServiceName           string
+}
+
+type RouteCommandOutputWriters struct {
+	StderrWriter io.Writer
+	StdoutWriter io.Writer
 }
 
 type hostClaim struct {
@@ -415,7 +422,7 @@ func ActivateRoute(options ActivateRouteOptions, manifestPath string, routesDire
 	if error := syncManagedCaddyNotFoundSite(routesDirectoryPath, nextSettings.HTTPSPort); error != nil {
 		return rollback(error)
 	}
-	if error := reloadManagedCaddy(nextSettings.AdminAddress, routesDirectoryPath); error != nil {
+	if error := reloadManagedCaddy(nextSettings.AdminAddress, routesDirectoryPath, options.CaddyOutputWriters); error != nil {
 		return rollback(error)
 	}
 
@@ -428,6 +435,7 @@ func UnregisterRoute(
 	path string,
 	manifestPath string,
 	registrationsDirectoryPath string,
+	outputWriters RouteCommandOutputWriters,
 ) error {
 	routesDirectoryPath := filepath.Clean(filepath.Join(registrationsDirectoryPath, ".."))
 	paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
@@ -469,15 +477,15 @@ func UnregisterRoute(
 		return error
 	}
 
-	return reloadManagedCaddy(nextSettings.AdminAddress, routesDirectoryPath)
+	return reloadManagedCaddy(nextSettings.AdminAddress, routesDirectoryPath, outputWriters)
 }
 
-func SyncManagedHostRoute(host string, adminAddress string, routesDirectoryPath string) error {
+func SyncManagedHostRoute(host string, adminAddress string, routesDirectoryPath string, outputWriters RouteCommandOutputWriters) error {
 	if error := syncHostRoute(host, routesDirectoryPath, nil); error != nil {
 		return error
 	}
 
-	return reloadManagedCaddy(adminAddress, routesDirectoryPath)
+	return reloadManagedCaddy(adminAddress, routesDirectoryPath, outputWriters)
 }
 
 func ResolveProxyHost(bindHost string) (string, error) {
@@ -1277,14 +1285,30 @@ func syncManagedCaddyGlobalState(routesDirectoryPath string, settings managedCad
 	return nil
 }
 
-func reloadManagedCaddy(adminAddress string, routesDirectoryPath string) error {
+func reloadManagedCaddy(adminAddress string, routesDirectoryPath string, outputWriters RouteCommandOutputWriters) error {
 	paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
 	result := routeMutationRunManagedCaddyCommand(paths, []string{"reload"}, ManagedCaddyCommandOptions{AdminAddress: adminAddress})
 	if result.Success {
+		if error := writeSuccessfulCommandOutput(outputWriters.StderrWriter, result.Stderr); error != nil {
+			return fmt.Errorf("write caddy reload stderr: %w", error)
+		}
+		if error := writeSuccessfulCommandOutput(outputWriters.StdoutWriter, result.Stdout); error != nil {
+			return fmt.Errorf("write caddy reload stdout: %w", error)
+		}
+
 		return nil
 	}
 
 	return errors.New(CreateManagedCaddyReloadErrorMessage(result.Stdout, result.Stderr))
+}
+
+func writeSuccessfulCommandOutput(writer io.Writer, output []byte) error {
+	if writer == nil || len(output) == 0 {
+		return nil
+	}
+
+	_, error := writer.Write(output)
+	return error
 }
 
 func formatRouteMutationTimestamp(value time.Time) string {

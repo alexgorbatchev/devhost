@@ -65,12 +65,20 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			return 1
 		}
 
-		exitCode, startError := services.StartStack(&resolvedManifest, serviceOrder, services.StartStackOptions{
+		startOptions := services.StartStackOptions{
 			Environment:         readEnvironment(),
 			LogWriter:           stdout,
 			ServiceStdoutWriter: stdout,
 			ServiceStderrWriter: stderr,
-		})
+		}
+		if arguments.Verbose {
+			startOptions.CaddyOutputWriters = caddy.RouteCommandOutputWriters{
+				StdoutWriter: stdout,
+				StderrWriter: stderr,
+			}
+		}
+
+		exitCode, startError := services.StartStack(&resolvedManifest, serviceOrder, startOptions)
 		if startError != nil {
 			_, _ = fmt.Fprintf(stderr, "failed: %s\n", startError.Error())
 			return 1
