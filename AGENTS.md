@@ -15,7 +15,8 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Check the injected devtools UI package: `bun run --cwd packages/devhost-ui check`
 - Check the docs package-only validations: `bun run --cwd packages/docs check`
 - Record docs demos: `bun run --cwd packages/docs record:marketing [scenario-id ...]`
-- Start the docs site locally: `bun run dev`
+- Start the playground dev stack locally: `bun run dev`
+- Start the docs site locally: `bun run docs`
 
 ## Documentation policy
 
@@ -33,7 +34,8 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 ## Shared gotchas
 
 - Root `package.json` owns the shared TypeScript AI policy tooling and the shared `oxfmt` / `oxlint` configs. Keep workspace-local copies out unless the workspaces genuinely diverge.
-- Root `bun run check` runs shared `oxfmt` / `oxlint` enforcement first, then delegates to package-specific checks.
+- Root `bun run check` runs shared `oxfmt` / `oxlint` enforcement first, excluding `packages/playground/**`, then delegates to package-specific checks.
+- `packages/playground/**` is a local dev harness and is intentionally excluded from shared root lint/format enforcement.
 - Workspace `check` scripts are package-local validation only; do not duplicate shared lint/format enforcement there unless a workspace intentionally diverges.
 - `bun run check:devhost` refreshes the generated embedded devtools bundle, then runs `go vet ./...` and `go test ./...` in `apps/devhost/`.
 - `packages/devhost-ui` `bun run check` runs the package TypeScript check, `bun test --coverage`, and `bun vitest run -c vitest.storybook.config.ts`.
