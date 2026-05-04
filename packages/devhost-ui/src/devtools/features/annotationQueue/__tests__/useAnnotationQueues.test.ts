@@ -22,6 +22,7 @@ describe("useAnnotationQueues", () => {
               activeSessionId: "session-1",
               entries: [
                 {
+                  actionId: "agent",
                   annotation: {
                     comment: "Queued change",
                     markers: [],
@@ -50,6 +51,7 @@ describe("useAnnotationQueues", () => {
           activeSessionId: "session-1",
           entries: [
             {
+              actionId: "agent",
               annotation: {
                 comment: "Queued change",
                 markers: [],

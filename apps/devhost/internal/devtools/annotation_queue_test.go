@@ -18,7 +18,7 @@ func TestAnnotationQueueStoreEnqueueAndDrain(t *testing.T) {
 	first := testAnnotationDetail("First annotation", 1, "https://app.localhost/dashboard")
 	second := testAnnotationDetail("Second annotation", 2, "https://app.localhost/settings/profile")
 
-	result, err := harness.store.enqueue(first, nil)
+	result, err := harness.store.enqueue(defaultAnnotationActionID, first, nil)
 	if err != nil {
 		t.Fatalf("enqueue(first) error = %v", err)
 	}
@@ -30,7 +30,7 @@ func TestAnnotationQueueStoreEnqueueAndDrain(t *testing.T) {
 		t.Fatalf("handleAgentStatus(working) error = %v", err)
 	}
 
-	result, err = harness.store.enqueue(second, &result.SessionID)
+	result, err = harness.store.enqueue(defaultAnnotationActionID, second, &result.SessionID)
 	if err != nil {
 		t.Fatalf("enqueue(second) error = %v", err)
 	}
@@ -59,7 +59,7 @@ func TestAnnotationQueueStorePauseResumeAndPersistence(t *testing.T) {
 
 	harness := newAnnotationQueueHarness(t, nil)
 	annotation := testAnnotationDetail("First annotation", 1, "https://app.localhost/dashboard")
-	result, err := harness.store.enqueue(annotation, nil)
+	result, err := harness.store.enqueue(defaultAnnotationActionID, annotation, nil)
 	if err != nil {
 		t.Fatalf("enqueue(...) error = %v", err)
 	}
@@ -110,9 +110,9 @@ func TestAnnotationQueueStoreRepairsCorruptPersistedQueues(t *testing.T) {
 		manifestPath:             manifestPath,
 		readLiveAgentSession:     func(string) *liveAgentSessionSnapshot { return nil },
 		stackName:                "hello-stack",
-		startAgentSession:        func(annotation annotationSubmitDetail) (string, error) { return "session-1", nil },
+		startAgentSession:        func(string, annotationSubmitDetail) (string, error) { return "session-1", nil },
 		stateDirectoryPath:       stateDirectoryPath,
-		writeAnnotationToSession: func(string, annotationSubmitDetail) error { return nil },
+		writeAnnotationToSession: func(string, string, annotationSubmitDetail) error { return nil },
 	})
 
 	snapshot := store.getSnapshot()
@@ -125,7 +125,7 @@ func TestAnnotationQueueStoreValidatesMutationConflicts(t *testing.T) {
 	t.Parallel()
 
 	harness := newAnnotationQueueHarness(t, nil)
-	result, err := harness.store.enqueue(testAnnotationDetail("First annotation", 1, "https://example.test/path"), nil)
+	result, err := harness.store.enqueue(defaultAnnotationActionID, testAnnotationDetail("First annotation", 1, "https://example.test/path"), nil)
 	if err != nil {
 		t.Fatalf("enqueue(...) error = %v", err)
 	}
@@ -153,11 +153,11 @@ func TestAnnotationQueueStoreBucketsQueuesByRoutedService(t *testing.T) {
 
 	routedServices := []RoutedServiceIdentity{{Host: "app.localhost", Path: "/", ServiceName: "web"}, {Host: "app.localhost", Path: "/api/*", ServiceName: "api"}}
 	harness := newAnnotationQueueHarness(t, routedServices)
-	first, err := harness.store.enqueue(testAnnotationDetail("Web annotation", 1, "https://app.localhost/dashboard"), nil)
+	first, err := harness.store.enqueue(defaultAnnotationActionID, testAnnotationDetail("Web annotation", 1, "https://app.localhost/dashboard"), nil)
 	if err != nil {
 		t.Fatalf("enqueue(web) error = %v", err)
 	}
-	second, err := harness.store.enqueue(testAnnotationDetail("API annotation", 2, "https://app.localhost/api/users"), nil)
+	second, err := harness.store.enqueue(defaultAnnotationActionID, testAnnotationDetail("API annotation", 2, "https://app.localhost/api/users"), nil)
 	if err != nil {
 		t.Fatalf("enqueue(api) error = %v", err)
 	}
@@ -171,16 +171,73 @@ func TestAnnotationQueueStoreRejectsMismatchedTargetSessionQueueReuse(t *testing
 
 	routedServices := []RoutedServiceIdentity{{Host: "app.localhost", Path: "/", ServiceName: "web"}, {Host: "app.localhost", Path: "/api/*", ServiceName: "api"}}
 	harness := newAnnotationQueueHarness(t, routedServices)
-	first, err := harness.store.enqueue(testAnnotationDetail("Web annotation", 1, "https://app.localhost/dashboard"), nil)
+	first, err := harness.store.enqueue(defaultAnnotationActionID, testAnnotationDetail("Web annotation", 1, "https://app.localhost/dashboard"), nil)
 	if err != nil {
 		t.Fatalf("enqueue(web) error = %v", err)
 	}
-	second, err := harness.store.enqueue(testAnnotationDetail("API annotation", 2, "https://app.localhost/api/users"), &first.SessionID)
+	second, err := harness.store.enqueue(defaultAnnotationActionID, testAnnotationDetail("API annotation", 2, "https://app.localhost/api/users"), &first.SessionID)
 	if err != nil {
 		t.Fatalf("enqueue(api,target) error = %v", err)
 	}
 	if second.SessionID == first.SessionID {
 		t.Fatalf("targeted API session reused web queue session %q", second.SessionID)
+	}
+}
+
+func TestAnnotationQueueStorePersistsActionIDAndSeparatesQueues(t *testing.T) {
+	t.Parallel()
+
+	harness := newAnnotationQueueHarness(t, nil)
+	first, err := harness.store.enqueue("fix", testAnnotationDetail("Fix annotation", 1, "https://app.localhost/dashboard"), nil)
+	if err != nil {
+		t.Fatalf("enqueue(fix) error = %v", err)
+	}
+	second, err := harness.store.enqueue("review", testAnnotationDetail("Review annotation", 2, "https://app.localhost/dashboard"), &first.SessionID)
+	if err != nil {
+		t.Fatalf("enqueue(review) error = %v", err)
+	}
+	if second.SessionID == first.SessionID {
+		t.Fatalf("different action reused target session %q", first.SessionID)
+	}
+
+	snapshot := harness.store.getSnapshot()
+	if len(snapshot) != 2 || snapshot[0].Entries[0].ActionID != "fix" || snapshot[1].Entries[0].ActionID != "review" {
+		t.Fatalf("snapshot = %#v, want separate action queues", snapshot)
+	}
+	persistedPayload, err := os.ReadFile(harness.queueFilePath)
+	if err != nil {
+		t.Fatalf("ReadFile(queue) error = %v", err)
+	}
+	if !strings.Contains(string(persistedPayload), `"actionId": "fix"`) || !strings.Contains(string(persistedPayload), `"actionId": "review"`) {
+		t.Fatalf("persisted queue missing action IDs: %s", string(persistedPayload))
+	}
+}
+
+func TestAnnotationQueueStoreRepairsLegacyEntriesWithDefaultActionID(t *testing.T) {
+	t.Parallel()
+
+	stateDirectoryPath := t.TempDir()
+	manifestPath := "/tmp/project/devhost.toml"
+	queueFilePath := createAnnotationQueueFilePath(stateDirectoryPath, "hello-stack", manifestPath)
+	if err := os.MkdirAll(filepath.Dir(queueFilePath), 0o755); err != nil {
+		t.Fatalf("MkdirAll(...) error = %v", err)
+	}
+	if err := os.WriteFile(queueFilePath, []byte(`{"queues":[{"currentEntry":{"annotation":{"comment":"Legacy","markers":[],"stackName":"hello-stack","submittedAt":1,"title":"Example","url":"https://example.test/path"},"createdAt":1,"entryId":"entry-1","updatedAt":1},"pendingEntries":[],"queueId":"queue-1"}],"version":1}`), 0o600); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
+	}
+
+	store := newAnnotationQueueStore(annotationQueueStoreOptions{
+		manifestPath:             manifestPath,
+		readLiveAgentSession:     func(string) *liveAgentSessionSnapshot { return nil },
+		stackName:                "hello-stack",
+		startAgentSession:        func(string, annotationSubmitDetail) (string, error) { return "session-1", nil },
+		stateDirectoryPath:       stateDirectoryPath,
+		writeAnnotationToSession: func(string, string, annotationSubmitDetail) error { return nil },
+	})
+
+	snapshot := store.getSnapshot()
+	if len(snapshot) != 1 || snapshot[0].Entries[0].ActionID != defaultAnnotationActionID {
+		t.Fatalf("snapshot = %#v, want default action ID", snapshot)
 	}
 }
 
@@ -205,11 +262,11 @@ func TestAnnotationQueueStoreResumePersistedQueuesSkipsUserTerminated(t *testing
 		},
 		stackName:          "hello-stack",
 		stateDirectoryPath: stateDirectoryPath,
-		startAgentSession: func(annotation annotationSubmitDetail) (string, error) {
+		startAgentSession: func(actionID string, annotation annotationSubmitDetail) (string, error) {
 			harness.startedAnnotations = append(harness.startedAnnotations, annotation)
 			return fmt.Sprintf("session-%d", len(harness.startedAnnotations)), nil
 		},
-		writeAnnotationToSession: func(string, annotationSubmitDetail) error { return nil },
+		writeAnnotationToSession: func(string, string, annotationSubmitDetail) error { return nil },
 	})
 
 	if err := harness.store.resumePersistedQueues(); err != nil {
@@ -228,7 +285,7 @@ func TestAnnotationQueueStoreRemovesEmptyPersistedStateAfterFinish(t *testing.T)
 	t.Parallel()
 
 	harness := newAnnotationQueueHarness(t, nil)
-	result, err := harness.store.enqueue(testAnnotationDetail("Done annotation", 1, "https://example.test/path"), nil)
+	result, err := harness.store.enqueue(defaultAnnotationActionID, testAnnotationDetail("Done annotation", 1, "https://example.test/path"), nil)
 	if err != nil {
 		t.Fatalf("enqueue(...) error = %v", err)
 	}
@@ -257,9 +314,9 @@ func TestAnnotationQueueStoreRenamesCorruptQueueFilesAside(t *testing.T) {
 		manifestPath:             manifestPath,
 		readLiveAgentSession:     func(string) *liveAgentSessionSnapshot { return nil },
 		stackName:                "hello-stack",
-		startAgentSession:        func(annotation annotationSubmitDetail) (string, error) { return "session-1", nil },
+		startAgentSession:        func(string, annotationSubmitDetail) (string, error) { return "session-1", nil },
 		stateDirectoryPath:       stateDirectoryPath,
-		writeAnnotationToSession: func(string, annotationSubmitDetail) error { return nil },
+		writeAnnotationToSession: func(string, string, annotationSubmitDetail) error { return nil },
 	})
 
 	if snapshot := store.getSnapshot(); len(snapshot) != 0 {
@@ -426,18 +483,19 @@ func newAnnotationQueueHarness(t *testing.T, routedServices []RoutedServiceIdent
 		routedServices:     routedServices,
 		stackName:          "hello-stack",
 		stateDirectoryPath: stateDirectoryPath,
-		startAgentSession: func(annotation annotationSubmitDetail) (string, error) {
+		startAgentSession: func(actionID string, annotation annotationSubmitDetail) (string, error) {
 			sessionID := fmt.Sprintf("session-%d", harness.nextSessionSequence)
 			harness.nextSessionSequence += 1
 			harness.startedAnnotations = append(harness.startedAnnotations, annotation)
-			harness.liveSessions[sessionID] = &liveAgentSessionSnapshot{annotation: annotation, sessionID: sessionID}
+			harness.liveSessions[sessionID] = &liveAgentSessionSnapshot{actionID: actionID, annotation: annotation, sessionID: sessionID}
 			return sessionID, nil
 		},
-		writeAnnotationToSession: func(sessionID string, annotation annotationSubmitDetail) error {
+		writeAnnotationToSession: func(actionID string, sessionID string, annotation annotationSubmitDetail) error {
 			liveSession := harness.liveSessions[sessionID]
 			if liveSession == nil {
 				return errors.New("missing live session")
 			}
+			liveSession.actionID = actionID
 			liveSession.annotation = annotation
 			liveSession.agentStatus = nil
 			harness.writtenAnnotations = append(harness.writtenAnnotations, writtenAnnotationRecord{annotation: annotation, sessionID: sessionID})

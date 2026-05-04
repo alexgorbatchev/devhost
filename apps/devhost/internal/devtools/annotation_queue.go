@@ -16,7 +16,7 @@ import (
 
 const (
 	annotationQueuesDirectoryName = "annotation-queues"
-	annotationQueuesVersion       = 1
+	annotationQueuesVersion       = 2
 )
 
 var (
@@ -70,6 +70,7 @@ const (
 )
 
 type annotationQueueEntrySnapshot struct {
+	ActionID   string                    `json:"actionId"`
 	Annotation annotationSubmitDetail    `json:"annotation"`
 	CreatedAt  int64                     `json:"createdAt"`
 	EntryID    string                    `json:"entryId"`
@@ -104,6 +105,7 @@ type queueSessionResult struct {
 }
 
 type persistedAnnotationQueueEntry struct {
+	ActionID   string                 `json:"actionId,omitempty"`
 	Annotation annotationSubmitDetail `json:"annotation"`
 	CreatedAt  int64                  `json:"createdAt"`
 	EntryID    string                 `json:"entryId"`
@@ -132,6 +134,7 @@ type runtimeAnnotationQueueRecord struct {
 }
 
 type liveAgentSessionSnapshot struct {
+	actionID    string
 	agentStatus *agentSessionStatus
 	annotation  annotationSubmitDetail
 	sessionID   string
@@ -143,9 +146,9 @@ type annotationQueueStoreOptions struct {
 	readLiveAgentSession     func(string) *liveAgentSessionSnapshot
 	routedServices           []RoutedServiceIdentity
 	stackName                string
-	startAgentSession        func(annotationSubmitDetail) (string, error)
+	startAgentSession        func(string, annotationSubmitDetail) (string, error)
 	stateDirectoryPath       string
-	writeAnnotationToSession func(string, annotationSubmitDetail) error
+	writeAnnotationToSession func(string, string, annotationSubmitDetail) error
 }
 
 type annotationQueueStore struct {
@@ -156,8 +159,8 @@ type annotationQueueStore struct {
 	onQueuesChanged          func([]annotationQueueSnapshot)
 	readLiveAgentSession     func(string) *liveAgentSessionSnapshot
 	routedServices           []RoutedServiceIdentity
-	startAgentSession        func(annotationSubmitDetail) (string, error)
-	writeAnnotationToSession func(string, annotationSubmitDetail) error
+	startAgentSession        func(string, annotationSubmitDetail) (string, error)
+	writeAnnotationToSession func(string, string, annotationSubmitDetail) error
 }
 
 func newAnnotationQueueStore(options annotationQueueStoreOptions) *annotationQueueStore {
@@ -196,7 +199,10 @@ func (s *annotationQueueStore) getSnapshot() []annotationQueueSnapshot {
 	return s.createSnapshotsLocked()
 }
 
-func (s *annotationQueueStore) enqueue(annotation annotationSubmitDetail, targetSessionID *string) (queueSessionResult, error) {
+func (s *annotationQueueStore) enqueue(actionID string, annotation annotationSubmitDetail, targetSessionID *string) (queueSessionResult, error) {
+	if actionID == "" {
+		actionID = defaultAnnotationActionID
+	}
 	if !isAnnotationSubmitDetail(annotation) {
 		return queueSessionResult{}, &queueMutationError{kind: errAnnotationQueueValidation, msg: "Invalid annotation payload."}
 	}
@@ -209,22 +215,22 @@ func (s *annotationQueueStore) enqueue(annotation annotationSubmitDetail, target
 		targetLiveSession = s.readLiveAgentSession(*targetSessionID)
 	}
 	annotationServiceKey := resolveRoutedServiceKeyForAnnotation(s.routedServices, annotation)
-	shouldUseTargetSession := shouldUseLiveTargetSession(annotationServiceKey, targetLiveSession, s.routedServices)
+	shouldUseTargetSession := shouldUseLiveTargetSession(actionID, annotationServiceKey, targetLiveSession, s.routedServices)
 
 	var targetQueue *runtimeAnnotationQueueRecord
 	if targetSessionID != nil && shouldUseTargetSession {
 		targetQueue = s.findQueueBySessionIDLocked(*targetSessionID)
 	}
 	if targetQueue != nil {
-		return s.enqueueIntoExistingQueueLocked(targetQueue, annotation, time.Now().UnixMilli())
+		return s.enqueueIntoExistingQueueLocked(targetQueue, actionID, annotation, time.Now().UnixMilli())
 	}
 
 	var serviceQueue *runtimeAnnotationQueueRecord
 	if annotationServiceKey != nil {
-		serviceQueue = s.findQueueByServiceKeyLocked(annotationServiceKey)
+		serviceQueue = s.findQueueByServiceKeyLocked(actionID, annotationServiceKey)
 	}
 	if serviceQueue != nil {
-		return s.enqueueIntoExistingQueueLocked(serviceQueue, annotation, time.Now().UnixMilli())
+		return s.enqueueIntoExistingQueueLocked(serviceQueue, actionID, annotation, time.Now().UnixMilli())
 	}
 
 	var liveTarget *liveAgentSessionSnapshot
@@ -232,7 +238,7 @@ func (s *annotationQueueStore) enqueue(annotation annotationSubmitDetail, target
 		liveTarget = targetLiveSession
 	}
 	timestamp := time.Now().UnixMilli()
-	queue := createRuntimeQueueForEnqueue(annotation, timestamp, liveTarget)
+	queue := createRuntimeQueueForEnqueue(actionID, annotation, timestamp, liveTarget)
 	s.queues[queue.queueID] = queue
 	s.queueOrder = append(s.queueOrder, queue.queueID)
 	if err := s.persistLocked(); err != nil {
@@ -479,8 +485,8 @@ func (s *annotationQueueStore) deleteEntry(entryID string) error {
 	return nil
 }
 
-func (s *annotationQueueStore) enqueueIntoExistingQueueLocked(queue *runtimeAnnotationQueueRecord, annotation annotationSubmitDetail, timestamp int64) (queueSessionResult, error) {
-	queue.pendingEntries = append(queue.pendingEntries, createPersistedQueueEntry(annotation, timestamp))
+func (s *annotationQueueStore) enqueueIntoExistingQueueLocked(queue *runtimeAnnotationQueueRecord, actionID string, annotation annotationSubmitDetail, timestamp int64) (queueSessionResult, error) {
+	queue.pendingEntries = append(queue.pendingEntries, createPersistedQueueEntry(actionID, annotation, timestamp))
 	if err := s.persistLocked(); err != nil {
 		return queueSessionResult{}, err
 	}
@@ -519,14 +525,14 @@ func (s *annotationQueueStore) dispatchQueueHeadLocked(queue *runtimeAnnotationQ
 
 	activeSession := readDispatchTargetSession(queue.activeSessionID, preferredSession, s.readLiveAgentSession)
 	if activeSession != nil {
-		if err := s.writeAnnotationToSession(activeSession.sessionID, queue.currentEntry.Annotation); err != nil {
+		if err := s.writeAnnotationToSession(queue.currentEntry.ActionID, activeSession.sessionID, queue.currentEntry.Annotation); err != nil {
 			return "", err
 		}
 		queue.activeSessionID = stringPointer(activeSession.sessionID)
 		return activeSession.sessionID, nil
 	}
 
-	sessionID, err := s.startAgentSession(queue.currentEntry.Annotation)
+	sessionID, err := s.startAgentSession(queue.currentEntry.ActionID, queue.currentEntry.Annotation)
 	if err != nil {
 		return "", err
 	}
@@ -560,6 +566,7 @@ func (s *annotationQueueStore) createSnapshotsLocked() []annotationQueueSnapshot
 			continue
 		}
 		entries := []annotationQueueEntrySnapshot{{
+			ActionID:   queue.currentEntry.ActionID,
 			Annotation: queue.currentEntry.Annotation,
 			CreatedAt:  queue.currentEntry.CreatedAt,
 			EntryID:    queue.currentEntry.EntryID,
@@ -568,6 +575,7 @@ func (s *annotationQueueStore) createSnapshotsLocked() []annotationQueueSnapshot
 		}}
 		for _, entry := range queue.pendingEntries {
 			entries = append(entries, annotationQueueEntrySnapshot{
+				ActionID:   entry.ActionID,
 				Annotation: entry.Annotation,
 				CreatedAt:  entry.CreatedAt,
 				EntryID:    entry.EntryID,
@@ -655,11 +663,11 @@ func (s *annotationQueueStore) findQueueBySessionIDLocked(sessionID string) *run
 	return nil
 }
 
-func (s *annotationQueueStore) findQueueByServiceKeyLocked(serviceKey *string) *runtimeAnnotationQueueRecord {
+func (s *annotationQueueStore) findQueueByServiceKeyLocked(actionID string, serviceKey *string) *runtimeAnnotationQueueRecord {
 	var pausedMatch *runtimeAnnotationQueueRecord
 	for _, queueID := range s.queueOrder {
 		queue := s.queues[queueID]
-		if queue == nil || !sameOptionalString(resolveRoutedServiceKeyForAnnotation(s.routedServices, queue.currentEntry.Annotation), serviceKey) {
+		if queue == nil || queue.currentEntry.ActionID != actionID || !sameOptionalString(resolveRoutedServiceKeyForAnnotation(s.routedServices, queue.currentEntry.Annotation), serviceKey) {
 			continue
 		}
 		if queue.status != annotationQueueStatusPaused {
@@ -682,12 +690,12 @@ func (s *annotationQueueStore) deleteQueueLocked(queueID string) {
 	}
 }
 
-func createRuntimeQueueForEnqueue(annotation annotationSubmitDetail, timestamp int64, liveTargetSession *liveAgentSessionSnapshot) *runtimeAnnotationQueueRecord {
+func createRuntimeQueueForEnqueue(actionID string, annotation annotationSubmitDetail, timestamp int64, liveTargetSession *liveAgentSessionSnapshot) *runtimeAnnotationQueueRecord {
 	if liveTargetSession == nil {
-		return createRuntimeQueueRecord(createPersistedQueueEntry(annotation, timestamp))
+		return createRuntimeQueueRecord(createPersistedQueueEntry(actionID, annotation, timestamp))
 	}
 	if liveTargetSession.agentStatus != nil && *liveTargetSession.agentStatus == agentSessionStatusFinished {
-		queue := createRuntimeQueueRecord(createPersistedQueueEntry(annotation, timestamp))
+		queue := createRuntimeQueueRecord(createPersistedQueueEntry(actionID, annotation, timestamp))
 		queue.activeSessionID = stringPointer(liveTargetSession.sessionID)
 		queue.status = annotationQueueStatusLaunching
 		return queue
@@ -700,8 +708,8 @@ func createRuntimeQueueForEnqueue(annotation annotationSubmitDetail, timestamp i
 
 	return &runtimeAnnotationQueueRecord{
 		activeSessionID: stringPointer(liveTargetSession.sessionID),
-		currentEntry:    createPersistedQueueEntry(liveTargetSession.annotation, liveTargetSession.annotation.SubmittedAt),
-		pendingEntries:  []persistedAnnotationQueueEntry{createPersistedQueueEntry(annotation, timestamp)},
+		currentEntry:    createPersistedQueueEntry(liveTargetSession.actionID, liveTargetSession.annotation, liveTargetSession.annotation.SubmittedAt),
+		pendingEntries:  []persistedAnnotationQueueEntry{createPersistedQueueEntry(actionID, annotation, timestamp)},
 		queueID:         mustCreateID(),
 		status:          status,
 	}
@@ -716,8 +724,12 @@ func createRuntimeQueueRecord(currentEntry persistedAnnotationQueueEntry) *runti
 	}
 }
 
-func createPersistedQueueEntry(annotation annotationSubmitDetail, timestamp int64) persistedAnnotationQueueEntry {
+func createPersistedQueueEntry(actionID string, annotation annotationSubmitDetail, timestamp int64) persistedAnnotationQueueEntry {
+	if actionID == "" {
+		actionID = defaultAnnotationActionID
+	}
 	return persistedAnnotationQueueEntry{
+		ActionID:   actionID,
 		Annotation: annotation,
 		CreatedAt:  timestamp,
 		EntryID:    mustCreateID(),
@@ -782,7 +794,7 @@ func loadPersistedAnnotationQueueState(queueFilePath string) persistedAnnotation
 		Queues  []json.RawMessage `json:"queues"`
 		Version int               `json:"version"`
 	}
-	if err := json.Unmarshal(payload, &raw); err != nil || raw.Version != annotationQueuesVersion {
+	if err := json.Unmarshal(payload, &raw); err != nil || (raw.Version != 1 && raw.Version != annotationQueuesVersion) {
 		moveCorruptQueueFile(queueFilePath)
 		return persistedAnnotationQueueState{Queues: []persistedAnnotationQueueRecord{}, Version: annotationQueuesVersion}
 	}
@@ -845,6 +857,9 @@ func repairPersistedQueueEntry(payload []byte) *persistedAnnotationQueueEntry {
 	var entry persistedAnnotationQueueEntry
 	if err := json.Unmarshal(payload, &entry); err != nil || entry.EntryID == "" || !isAnnotationSubmitDetail(entry.Annotation) {
 		return nil
+	}
+	if entry.ActionID == "" {
+		entry.ActionID = defaultAnnotationActionID
 	}
 	return &entry
 }
@@ -911,7 +926,10 @@ func readDispatchTargetSession(activeSessionID *string, preferredSession *liveAg
 	return readLiveAgentSession(*activeSessionID)
 }
 
-func shouldUseLiveTargetSession(annotationServiceKey *string, targetLiveSession *liveAgentSessionSnapshot, routedServices []RoutedServiceIdentity) bool {
+func shouldUseLiveTargetSession(actionID string, annotationServiceKey *string, targetLiveSession *liveAgentSessionSnapshot, routedServices []RoutedServiceIdentity) bool {
+	if targetLiveSession != nil && targetLiveSession.actionID != actionID {
+		return false
+	}
 	if annotationServiceKey == nil || targetLiveSession == nil {
 		return true
 	}

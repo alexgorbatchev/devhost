@@ -1,8 +1,10 @@
 import type {
   EditorTerminalLauncher,
   IAgentTerminalSession,
+  ICommandTerminalSession,
   IEditorTerminalSession,
   IStartAgentTerminalSessionRequest,
+  IStartCommandTerminalSessionRequest,
   IStartEditorTerminalSessionRequest,
   StartTerminalSessionRequest,
   TerminalSession,
@@ -16,6 +18,12 @@ const agentTerminalBehavior: ITerminalSessionBehavior = {
   shouldAutoRemoveOnExit: false,
 };
 
+const commandTerminalBehavior: ITerminalSessionBehavior = {
+  defaultIsExpanded: true,
+  isFullscreenExpanded: true,
+  shouldAutoRemoveOnExit: true,
+};
+
 const terminalBehaviorByEditorLauncher: Record<EditorTerminalLauncher, ITerminalSessionBehavior> = {
   neovim: {
     defaultIsExpanded: true,
@@ -25,26 +33,37 @@ const terminalBehaviorByEditorLauncher: Record<EditorTerminalLauncher, ITerminal
 };
 
 const agentTerminalTitle: string = "Agent terminal";
+const commandTerminalTitle: string = "Annotation command";
 
 const terminalTitleByEditorLauncher: Record<EditorTerminalLauncher, string> = {
   neovim: "Neovim",
 };
 
-export function createTerminalSession(
-  sessionId: string,
-  request: StartTerminalSessionRequest,
-  agentDisplayName: string,
-): TerminalSession {
+export function createTerminalSession(sessionId: string, request: StartTerminalSessionRequest): TerminalSession {
   if (request.kind === "agent") {
     return {
+      actionId: request.actionId,
       annotation: request.annotation,
       behavior: agentTerminalBehavior,
-      displayName: agentDisplayName,
+      displayName: request.displayName,
       isExpanded: agentTerminalBehavior.defaultIsExpanded,
       kind: "agent",
       sessionId,
-      summary: createAgentTerminalSummary(request, agentDisplayName),
+      summary: createAgentTerminalSummary(request),
     } satisfies IAgentTerminalSession;
+  }
+
+  if (request.kind === "command") {
+    return {
+      actionId: request.actionId,
+      annotation: request.annotation,
+      behavior: commandTerminalBehavior,
+      displayName: request.displayName,
+      isExpanded: commandTerminalBehavior.defaultIsExpanded,
+      kind: "command",
+      sessionId,
+      summary: createCommandTerminalSummary(request),
+    } satisfies ICommandTerminalSession;
   }
 
   const behavior: ITerminalSessionBehavior = terminalBehaviorByEditorLauncher[request.launcher];
@@ -61,12 +80,9 @@ export function createTerminalSession(
   } satisfies IEditorTerminalSession;
 }
 
-function createAgentTerminalSummary(
-  request: IStartAgentTerminalSessionRequest,
-  agentDisplayName: string,
-): ITerminalSessionSummary {
+function createAgentTerminalSummary(request: IStartAgentTerminalSessionRequest): ITerminalSessionSummary {
   return {
-    eyebrow: agentDisplayName,
+    eyebrow: request.displayName,
     headline: "Agent session",
     meta: [
       `${request.annotation.markers.length} initial markers`,
@@ -76,7 +92,23 @@ function createAgentTerminalSummary(
     ],
     terminalTitle: agentTerminalTitle,
     trayTooltipPrimary: "Agent session",
-    trayTooltipSecondary: agentDisplayName,
+    trayTooltipSecondary: request.displayName,
+  };
+}
+
+function createCommandTerminalSummary(request: IStartCommandTerminalSessionRequest): ITerminalSessionSummary {
+  return {
+    eyebrow: request.displayName,
+    headline: "Annotation command",
+    meta: [
+      `${request.annotation.markers.length} initial markers`,
+      request.annotation.title,
+      new URL(request.annotation.url).host,
+      new Date(request.annotation.submittedAt).toLocaleString(),
+    ],
+    terminalTitle: commandTerminalTitle,
+    trayTooltipPrimary: "Annotation command",
+    trayTooltipSecondary: request.displayName,
   };
 }
 

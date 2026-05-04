@@ -10,6 +10,7 @@ import {
 import type { IAnnotationQueueEntrySnapshot, IAnnotationQueueSnapshot } from "../types";
 
 const queuedEntry: IAnnotationQueueEntrySnapshot = {
+  actionId: "agent",
   annotation: {
     comment: "Queued change",
     markers: [],

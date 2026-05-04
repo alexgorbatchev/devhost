@@ -1,5 +1,16 @@
 export const defaultDevhostAgentDisplayName = "Pi";
 
+export const defaultAnnotationActionId = "agent";
+
+export type AnnotationActionKind = "agent" | "command";
+
+export interface IAnnotationAction {
+  displayName: string;
+  id: string;
+  kind: AnnotationActionKind;
+  queueEnabled: boolean;
+}
+
 export type DevtoolsPosition = "top-right" | "bottom-right";
 
 export const supportedDevtoolsComponentEditors = ["cursor", "neovim", "vscode", "vscode-insiders", "webstorm"] as const;

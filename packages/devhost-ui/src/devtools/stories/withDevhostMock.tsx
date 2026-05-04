@@ -34,6 +34,8 @@ function DevhostMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Elemen
 
     window.__DEVHOST_INJECTED_CONFIG__ = {
       agentDisplayName: "Pi",
+      annotationActions: [{ displayName: "Pi", id: "agent", kind: "agent", queueEnabled: true }],
+      annotationDefaultActionId: "agent",
       componentEditor: "vscode",
       controlToken: "mock-token",
       position: "bottom-right",
@@ -133,6 +135,7 @@ function DevhostMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Elemen
                   pauseReason: "session-exited-before-finished",
                   entries: [
                     {
+                      actionId: "agent",
                       entryId: "e1",
                       state: "paused-active",
                       createdAt: Date.now() - 50000,
@@ -147,6 +150,7 @@ function DevhostMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Elemen
                       },
                     },
                     {
+                      actionId: "agent",
                       entryId: "e2",
                       state: "queued",
                       createdAt: Date.now() - 40000,
@@ -161,6 +165,7 @@ function DevhostMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Elemen
                       },
                     },
                     {
+                      actionId: "agent",
                       entryId: "e3",
                       state: "queued",
                       createdAt: Date.now() - 30000,
@@ -219,6 +224,8 @@ function DevhostMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Elemen
               {
                 sessionId: "pi-session",
                 request: {
+                  actionId: "agent",
+                  displayName: "Pi",
                   kind: "agent",
                   annotation: {
                     comment: "Update the header title",

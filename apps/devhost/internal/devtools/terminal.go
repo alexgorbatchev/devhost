@@ -24,11 +24,14 @@ const (
 	terminalSessionEnvironmentProgram    = "devhost"
 	terminalSessionEnvironmentTerm       = "xterm-256color"
 	terminalSessionRequestKindAgent      = "agent"
+	terminalSessionRequestKindCommand    = "command"
 	terminalSessionLauncherNeovim        = "neovim"
 	terminalSessionRequestKindEditor     = "editor"
 	terminalSessionWebsocketQuerySession = "sessionId"
 	terminalSessionWebsocketQueryToken   = "token"
 )
+
+const defaultAnnotationActionID = "agent"
 
 var parenthesizedSourcePathPrefix = regexp.MustCompile(`^\([^)]+\)/\./`)
 
@@ -73,6 +76,7 @@ type annotationSubmitDetail struct {
 }
 
 type terminalSessionRequest struct {
+	ActionID      string                  `json:"actionId,omitempty"`
 	Annotation    *annotationSubmitDetail `json:"annotation,omitempty"`
 	ComponentName string                  `json:"componentName,omitempty"`
 	Kind          string                  `json:"kind"`
@@ -152,6 +156,7 @@ type launchedTerminalSession struct {
 }
 
 type terminalSessionRequestPayload struct {
+	ActionID      *string                 `json:"actionId"`
 	Annotation    *annotationSubmitDetail `json:"annotation"`
 	ComponentName *string                 `json:"componentName"`
 	Kind          *string                 `json:"kind"`
@@ -178,10 +183,24 @@ func parseTerminalSessionRequest(payload terminalSessionRequestPayload) (termina
 		if payload.Annotation == nil {
 			return terminalSessionRequest{}, nil, false
 		}
+		actionID := defaultAnnotationActionID
+		if payload.ActionID != nil {
+			actionID = *payload.ActionID
+		}
 		return terminalSessionRequest{
+			ActionID:   actionID,
 			Annotation: payload.Annotation,
 			Kind:       terminalSessionRequestKindAgent,
 		}, payload.TargetSession, isAnnotationSubmitDetail(*payload.Annotation)
+	case terminalSessionRequestKindCommand:
+		if payload.Annotation == nil || payload.ActionID == nil || *payload.ActionID == "" || payload.TargetSession != nil {
+			return terminalSessionRequest{}, nil, false
+		}
+		return terminalSessionRequest{
+			ActionID:   *payload.ActionID,
+			Annotation: payload.Annotation,
+			Kind:       terminalSessionRequestKindCommand,
+		}, nil, isAnnotationSubmitDetail(*payload.Annotation)
 	case terminalSessionRequestKindEditor:
 		if payload.Launcher == nil || *payload.Launcher != terminalSessionLauncherNeovim {
 			return terminalSessionRequest{}, nil, false

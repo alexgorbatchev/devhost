@@ -15,6 +15,9 @@ import (
 const (
 	agentTransportMode              = "files"
 	agentSessionDirectoryPrefix     = "devhost-agent-session-"
+	annotationActionDirectoryPrefix = "devhost-annotation-action-"
+	annotationActionFileName        = "annotation.json"
+	annotationActionPromptFileName  = "prompt.txt"
 	claudeSettingsFileName          = "claude-settings.json"
 	opencodeConfigFileName          = "opencode-config.jsonc"
 	opencodePluginFileName          = "opencode-plugin.ts"
@@ -31,12 +34,22 @@ type terminalSessionCommand struct {
 	env     map[string]string
 }
 
-func createTerminalSessionCommand(agent manifest.ValidatedAgent, componentEditor string, projectRootPath string, request terminalSessionRequest, stackName string) (*terminalSessionCommand, error) {
-	if request.Kind == terminalSessionRequestKindAgent {
+func createTerminalSessionCommand(actions []manifest.ValidatedAnnotationAction, componentEditor string, projectRootPath string, request terminalSessionRequest, stackName string) (*terminalSessionCommand, error) {
+	if request.Kind == terminalSessionRequestKindAgent || request.Kind == terminalSessionRequestKindCommand {
 		if request.Annotation == nil {
-			return nil, fmt.Errorf("agent terminal annotation is required")
+			return nil, fmt.Errorf("annotation terminal payload is required")
 		}
-		return createAgentTerminalCommand(agent, projectRootPath, *request.Annotation, stackName)
+		action, ok := findAnnotationAction(actions, request.ActionID)
+		if !ok {
+			return nil, fmt.Errorf("Unsupported annotation action: %s", request.ActionID)
+		}
+		if action.Kind != request.Kind {
+			return nil, fmt.Errorf("Annotation action %s cannot start %s terminal sessions.", action.ID, request.Kind)
+		}
+		if request.Kind == terminalSessionRequestKindAgent {
+			return createAgentTerminalCommand(action, projectRootPath, *request.Annotation, stackName)
+		}
+		return createCommandAnnotationTerminalCommand(action, projectRootPath, *request.Annotation, stackName)
 	}
 
 	command, err := createEditorTerminalCommand(componentEditor, request, projectRootPath)
@@ -52,9 +65,22 @@ func createTerminalSessionCommand(agent manifest.ValidatedAgent, componentEditor
 	}, nil
 }
 
-func createAgentTerminalCommand(agent manifest.ValidatedAgent, projectRootPath string, annotation annotationSubmitDetail, stackName string) (*terminalSessionCommand, error) {
+func findAnnotationAction(actions []manifest.ValidatedAnnotationAction, actionID string) (manifest.ValidatedAnnotationAction, bool) {
+	if actionID == "" {
+		actionID = defaultAnnotationActionID
+	}
+	for _, action := range actions {
+		if action.ID == actionID {
+			return action, true
+		}
+	}
+	return manifest.ValidatedAnnotationAction{}, false
+}
+
+func createAgentTerminalCommand(action manifest.ValidatedAnnotationAction, projectRootPath string, annotation annotationSubmitDetail, stackName string) (*terminalSessionCommand, error) {
+	agent := action.Agent
 	prompt := createAnnotationAgentPrompt(annotation)
-	sessionFiles, err := createAgentSessionFiles(annotation, agent.DisplayName, projectRootPath, prompt, stackName)
+	sessionFiles, err := createAgentSessionFiles(annotation, action.ID, action.DisplayName, agent.DisplayName, projectRootPath, prompt, stackName)
 	if err != nil {
 		return nil, err
 	}
@@ -99,13 +125,77 @@ func createAgentTerminalCommand(agent manifest.ValidatedAgent, projectRootPath s
 	}, nil
 }
 
+func createCommandAnnotationTerminalCommand(action manifest.ValidatedAnnotationAction, projectRootPath string, annotation annotationSubmitDetail, stackName string) (*terminalSessionCommand, error) {
+	prompt := createAnnotationAgentPrompt(annotation)
+	sessionFiles, err := createAnnotationActionSessionFiles(annotation, action.ID, action.Kind, action.DisplayName, projectRootPath, prompt, stackName)
+	if err != nil {
+		return nil, err
+	}
+	env := copyStringMap(sessionFiles.env)
+	for key, value := range action.Env {
+		env[key] = value
+	}
+	return &terminalSessionCommand{
+		cleanup: sessionFiles.cleanup,
+		command: append([]string{}, action.Command...),
+		cwd:     action.Cwd,
+		env:     env,
+	}, nil
+}
+
+type annotationActionSessionFiles struct {
+	cleanup func()
+	env     map[string]string
+}
+
+func createAnnotationActionSessionFiles(annotation annotationSubmitDetail, actionID string, actionKind string, actionLabel string, projectRootPath string, prompt string, stackName string) (*annotationActionSessionFiles, error) {
+	sessionDirectoryPath, err := os.MkdirTemp("", annotationActionDirectoryPrefix)
+	if err != nil {
+		return nil, fmt.Errorf("create annotation action session directory: %w", err)
+	}
+	cleanup := func() {
+		_ = os.RemoveAll(sessionDirectoryPath)
+	}
+
+	annotationFilePath := filepath.Join(sessionDirectoryPath, annotationActionFileName)
+	promptFilePath := filepath.Join(sessionDirectoryPath, annotationActionPromptFileName)
+	annotationJSON, err := json.MarshalIndent(annotation, "", "  ")
+	if err != nil {
+		cleanup()
+		return nil, fmt.Errorf("marshal annotation action file: %w", err)
+	}
+	if err := os.WriteFile(annotationFilePath, annotationJSON, 0o600); err != nil {
+		cleanup()
+		return nil, fmt.Errorf("write annotation action file: %w", err)
+	}
+	if err := os.WriteFile(promptFilePath, []byte(prompt), 0o600); err != nil {
+		cleanup()
+		return nil, fmt.Errorf("write annotation action prompt file: %w", err)
+	}
+
+	return &annotationActionSessionFiles{
+		cleanup: cleanup,
+		env: map[string]string{
+			"DEVHOST_ANNOTATION_ACTION_ID":    actionID,
+			"DEVHOST_ANNOTATION_ACTION_KIND":  actionKind,
+			"DEVHOST_ANNOTATION_ACTION_LABEL": actionLabel,
+			"DEVHOST_ANNOTATION_DISPLAY_NAME": actionLabel,
+			"DEVHOST_ANNOTATION_FILE":         annotationFilePath,
+			"DEVHOST_ANNOTATION_PROMPT_FILE":  promptFilePath,
+			"DEVHOST_ANNOTATION_TRANSPORT":    agentTransportMode,
+			"DEVHOST_PROJECT_ROOT":            projectRootPath,
+			"DEVHOST_STACK_NAME":              stackName,
+		},
+	}, nil
+}
+
 type agentSessionFiles struct {
 	cleanup             func()
 	env                 map[string]string
 	piExtensionFilePath string
 }
 
-func createAgentSessionFiles(annotation annotationSubmitDetail, displayName string, projectRootPath string, prompt string, stackName string) (*agentSessionFiles, error) {
+func createAgentSessionFiles(annotation annotationSubmitDetail, actionID string, actionLabel string, agentDisplayName string, projectRootPath string, prompt string, stackName string) (*agentSessionFiles, error) {
 	sessionDirectoryPath, err := os.MkdirTemp("", agentSessionDirectoryPrefix)
 	if err != nil {
 		return nil, fmt.Errorf("create agent session directory: %w", err)
@@ -196,9 +286,16 @@ func createAgentSessionFiles(annotation annotationSubmitDetail, displayName stri
 	return &agentSessionFiles{
 		cleanup: cleanup,
 		env: map[string]string{
+			"DEVHOST_ANNOTATION_ACTION_ID":       actionID,
+			"DEVHOST_ANNOTATION_ACTION_KIND":     terminalSessionRequestKindAgent,
+			"DEVHOST_ANNOTATION_ACTION_LABEL":    actionLabel,
+			"DEVHOST_ANNOTATION_DISPLAY_NAME":    actionLabel,
+			"DEVHOST_ANNOTATION_FILE":            annotationFilePath,
+			"DEVHOST_ANNOTATION_PROMPT_FILE":     promptFilePath,
+			"DEVHOST_ANNOTATION_TRANSPORT":       agentTransportMode,
 			"DEVHOST_AGENT_ANNOTATION_FILE":      annotationFilePath,
 			"DEVHOST_AGENT_CLAUDE_SETTINGS_FILE": claudeSettingsFilePath,
-			"DEVHOST_AGENT_DISPLAY_NAME":         displayName,
+			"DEVHOST_AGENT_DISPLAY_NAME":         agentDisplayName,
 			"DEVHOST_AGENT_OPENCODE_CONFIG_FILE": opencodeConfigFilePath,
 			"DEVHOST_AGENT_PROMPT_FILE":          promptFilePath,
 			"DEVHOST_AGENT_TRANSPORT":            agentTransportMode,

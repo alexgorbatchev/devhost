@@ -11,6 +11,7 @@ import { TerminalSessionPanel } from "../TerminalSessionPanel";
 import type { TerminalSession } from "../types";
 
 const agentSession: TerminalSession = {
+  actionId: "agent",
   annotation: {
     comment: "Fix button",
     markers: [],
@@ -63,6 +64,28 @@ const editorSession: TerminalSession = {
 const finishedAgentSession: TerminalSession = {
   ...agentSession,
   sessionId: "session-finished",
+};
+
+const commandSession: TerminalSession = {
+  actionId: "create-ticket",
+  annotation: agentSession.annotation,
+  behavior: {
+    defaultIsExpanded: true,
+    isFullscreenExpanded: true,
+    shouldAutoRemoveOnExit: true,
+  },
+  displayName: "Create Ticket",
+  isExpanded: true,
+  kind: "command",
+  sessionId: "command-session-1",
+  summary: {
+    eyebrow: "Create Ticket",
+    headline: "Annotation command",
+    meta: ["0 initial markers"],
+    terminalTitle: "Annotation command",
+    trayTooltipPrimary: "Annotation command",
+    trayTooltipSecondary: "Create Ticket",
+  },
 };
 
 const meta: Meta<typeof TerminalSessionPanel> = {
@@ -169,6 +192,21 @@ export const EditorExpanded: Story = {
     await expect(shadowCanvas.getByText("Neovim")).toBeInTheDocument();
     await expect(shadowCanvas.getByTestId("TerminalSessionPanel--summary")).toHaveTextContent("PrimaryButton");
     await expect(shadowCanvas.getByText("src/components/PrimaryButton.tsx:12")).toBeInTheDocument();
+  },
+};
+
+export const CommandExpanded: Story = {
+  args: {
+    isExpanded: true,
+    onExpand: fn(),
+    onMinimize: fn(),
+    onRemove: fn(),
+    session: commandSession,
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const shadowCanvas = await readStoryShadowCanvas(canvasElement);
+
+    await expect(shadowCanvas.getByTestId("TerminalSessionPanel--summary")).toHaveTextContent("Create Ticket");
   },
 };
 

@@ -12,6 +12,7 @@ import type { TerminalSession } from "../types";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
 
 const agentSession: TerminalSession = {
+  actionId: "agent",
   annotation: {
     comment: "Fix button",
     markers: [],

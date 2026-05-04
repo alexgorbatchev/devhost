@@ -9,57 +9,49 @@ import {
 } from "../manageTerminalSessions";
 import type { TerminalSession } from "../types";
 
-const FIRST_SESSION: TerminalSession = createTerminalSession(
-  "session-a",
-  {
-    annotation: {
-      comment: "First annotation",
-      markers: [],
-      stackName: "stack-a",
-      submittedAt: 1,
-      title: "Page A",
-      url: "https://example.test/a",
-    },
-    kind: "agent",
+const FIRST_SESSION: TerminalSession = createTerminalSession("session-a", {
+  actionId: "agent",
+  annotation: {
+    comment: "First annotation",
+    markers: [],
+    stackName: "stack-a",
+    submittedAt: 1,
+    title: "Page A",
+    url: "https://example.test/a",
   },
-  "Claude Code",
-);
+  displayName: "Claude Code",
+  kind: "agent",
+});
 
 const SECOND_SESSION: TerminalSession = {
-  ...createTerminalSession(
-    "session-b",
-    {
-      annotation: {
-        comment: "Second annotation",
-        markers: [],
-        stackName: "stack-b",
-        submittedAt: 2,
-        title: "Page B",
-        url: "https://example.test/b",
-      },
-      kind: "agent",
+  ...createTerminalSession("session-b", {
+    actionId: "agent",
+    annotation: {
+      comment: "Second annotation",
+      markers: [],
+      stackName: "stack-b",
+      submittedAt: 2,
+      title: "Page B",
+      url: "https://example.test/b",
     },
-    "Claude Code",
-  ),
+    displayName: "Claude Code",
+    kind: "agent",
+  }),
   isExpanded: true,
 };
 
 const THIRD_SESSION: TerminalSession = {
-  ...createTerminalSession(
-    "session-c",
-    {
-      componentName: "PrimaryButton",
-      kind: "editor",
-      launcher: "neovim",
-      source: {
-        columnNumber: 8,
-        fileName: "src/components/PrimaryButton.tsx",
-        lineNumber: 42,
-      },
-      sourceLabel: "src/components/PrimaryButton.tsx:42:8",
+  ...createTerminalSession("session-c", {
+    componentName: "PrimaryButton",
+    kind: "editor",
+    launcher: "neovim",
+    source: {
+      columnNumber: 8,
+      fileName: "src/components/PrimaryButton.tsx",
+      lineNumber: 42,
     },
-    "Claude Code",
-  ),
+    sourceLabel: "src/components/PrimaryButton.tsx:42:8",
+  }),
   isExpanded: false,
 };
 

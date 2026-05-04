@@ -7,6 +7,7 @@ type RawManifest struct {
 
 type Manifest struct {
 	Agent                 ValidatedAgent
+	Annotation            ValidatedAnnotation
 	Caddy                 CaddyConfig
 	Devtools              DevtoolsConfig
 	ManifestDirectoryPath string
@@ -15,6 +16,21 @@ type Manifest struct {
 	PrimaryService        string
 	ServiceOrder          []string
 	Services              map[string]ValidatedService
+}
+
+type ValidatedAnnotation struct {
+	Actions         []ValidatedAnnotationAction
+	DefaultActionID string
+}
+
+type ValidatedAnnotationAction struct {
+	Agent       ValidatedAgent
+	Command     []string
+	Cwd         string
+	DisplayName string
+	Env         map[string]string
+	ID          string
+	Kind        string
 }
 
 type CaddyConfig struct {

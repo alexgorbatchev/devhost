@@ -15,6 +15,8 @@ describe("readInjectedDevtoolsConfig", () => {
 
     expect(readInjectedDevtoolsConfig()).toEqual({
       agentDisplayName: "Pi",
+      annotationActions: [{ displayName: "Pi", id: "agent", kind: "agent", queueEnabled: true }],
+      annotationDefaultActionId: "agent",
       componentEditor: "vscode",
       controlToken: "",
       position: "bottom-right",
@@ -34,6 +36,8 @@ describe("readInjectedDevtoolsConfig", () => {
   test("reads the injected editor and project-root config", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
       agentDisplayName: "Claude Code",
+      annotationActions: [{ displayName: "Claude Code", id: "agent", kind: "agent", queueEnabled: true }],
+      annotationDefaultActionId: "agent",
       componentEditor: "neovim",
       controlToken: "control-token",
       position: "top-right",
@@ -44,6 +48,8 @@ describe("readInjectedDevtoolsConfig", () => {
 
     expect(readInjectedDevtoolsConfig()).toEqual({
       agentDisplayName: "Claude Code",
+      annotationActions: [{ displayName: "Claude Code", id: "agent", kind: "agent", queueEnabled: true }],
+      annotationDefaultActionId: "agent",
       componentEditor: "neovim",
       controlToken: "control-token",
       position: "top-right",
@@ -67,6 +73,8 @@ describe("readInjectedDevtoolsConfig", () => {
 
     expect(readInjectedDevtoolsConfig()).toEqual({
       agentDisplayName: "Pi",
+      annotationActions: [{ displayName: "Pi", id: "agent", kind: "agent", queueEnabled: true }],
+      annotationDefaultActionId: "agent",
       componentEditor: "vscode",
       controlToken: "",
       position: "bottom-right",
@@ -92,6 +100,8 @@ describe("readInjectedDevtoolsConfig", () => {
 
     expect(readInjectedDevtoolsConfig()).toEqual({
       agentDisplayName: "Pi",
+      annotationActions: [{ displayName: "Pi", id: "agent", kind: "agent", queueEnabled: true }],
+      annotationDefaultActionId: "agent",
       componentEditor: "vscode",
       controlToken: "",
       position: "bottom-right",
@@ -105,6 +115,38 @@ describe("readInjectedDevtoolsConfig", () => {
       minimapEnabled: true,
       statusEnabled: true,
       terminalEnabled: false,
+    });
+  });
+
+  test("reads annotation actions from the injected config", () => {
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
+      annotationActions: [
+        { displayName: "Ask Agent", id: "ask-agent", kind: "agent", queueEnabled: true },
+        { displayName: "Create Ticket", id: "create-ticket", kind: "command", queueEnabled: false },
+      ],
+      annotationDefaultActionId: "create-ticket",
+    });
+
+    expect(readInjectedDevtoolsConfig()).toEqual({
+      agentDisplayName: "Pi",
+      annotationActions: [
+        { displayName: "Ask Agent", id: "ask-agent", kind: "agent", queueEnabled: true },
+        { displayName: "Create Ticket", id: "create-ticket", kind: "command", queueEnabled: false },
+      ],
+      annotationDefaultActionId: "create-ticket",
+      componentEditor: "vscode",
+      controlToken: "",
+      position: "bottom-right",
+      projectRootPath: "",
+      routedServices: [],
+      stackName: "devhost",
+      annotationEnabled: true,
+      annotationQueueEnabled: true,
+      editorEnabled: true,
+      externalToolbarsEnabled: true,
+      minimapEnabled: true,
+      statusEnabled: true,
+      terminalEnabled: true,
     });
   });
 });

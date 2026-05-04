@@ -2,7 +2,14 @@ import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { Button, css, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
+import {
+  Button,
+  css,
+  defaultAnnotationActionId,
+  type IAnnotationAction,
+  type IDevtoolsTheme,
+  useDevtoolsTheme,
+} from "../../shared";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME, DEVTOOLS_ROOT_ID } from "../../shared/constants";
 import { isEventTargetTerminalKeyboardInput } from "../../shared/isEventTargetTerminalKeyboardInput";
 import type { ITerminalSessionStartResult } from "../terminalSessions/types";
@@ -18,8 +25,14 @@ import type { IAnnotationSubmitDetail, IRectSnapshot } from "./types";
 
 interface IAnnotationComposerProps {
   activeAgentSessionId?: string;
-  agentDisplayName: string;
-  onSubmit: (detail: IAnnotationSubmitDetail, targetSessionId?: string) => Promise<ITerminalSessionStartResult>;
+  annotationActions: IAnnotationAction[];
+  selectedActionId: string;
+  onSelectedActionIdChange: (actionId: string) => void;
+  onSubmit: (
+    detail: IAnnotationSubmitDetail,
+    action: IAnnotationAction,
+    targetSessionId?: string,
+  ) => Promise<ITerminalSessionStartResult>;
   stackName: string;
 }
 
@@ -52,6 +65,26 @@ const selectionCursorStyleId: string = "devhost-annotation-cursor-style";
 const selectionHighlightHorizontalPadding: number = 2;
 const selectionHighlightVerticalPadding: number = 1;
 
+function createFallbackAnnotationAction(): IAnnotationAction {
+  return {
+    displayName: "Pi",
+    id: defaultAnnotationActionId,
+    kind: "agent",
+    queueEnabled: true,
+  };
+}
+
+function resolveSelectedAnnotationAction(
+  annotationActions: IAnnotationAction[],
+  selectedActionId: string,
+): IAnnotationAction {
+  return (
+    annotationActions.find((action: IAnnotationAction): boolean => action.id === selectedActionId) ??
+    annotationActions[0] ??
+    createFallbackAnnotationAction()
+  );
+}
+
 export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element {
   const theme = useDevtoolsTheme();
   const [annotationSelectionPluginVersion, setAnnotationSelectionPluginVersion] = useState<number>(0);
@@ -76,6 +109,12 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
   const hasActiveAnnotationInteraction: boolean =
     isSelectionMode || selectedTargets.length > 0 || trimmedComment.length > 0;
   const hasDraft: boolean = selectedTargets.length > 0 || trimmedComment.length > 0;
+  const selectedAction: IAnnotationAction = resolveSelectedAnnotationAction(
+    props.annotationActions,
+    props.selectedActionId,
+  );
+  const canAppendToActiveAgentSession: boolean =
+    selectedAction.kind === "agent" && selectedAction.queueEnabled && props.activeAgentSessionId !== undefined;
 
   const cancelDraft = useCallback((): void => {
     setComment("");
@@ -114,7 +153,8 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
     try {
       const submitResult: ITerminalSessionStartResult = await props.onSubmit(
         detail,
-        sendToActiveSession ? props.activeAgentSessionId : undefined,
+        selectedAction,
+        canAppendToActiveAgentSession && sendToActiveSession ? props.activeAgentSessionId : undefined,
       );
 
       if (submitResult.success) {
@@ -122,13 +162,32 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
         return;
       }
 
-      setSubmissionErrorMessage(submitResult.errorMessage ?? `Failed to start the ${props.agentDisplayName} session.`);
+      setSubmissionErrorMessage(
+        submitResult.errorMessage ?? `Failed to start the ${selectedAction.displayName} action.`,
+      );
     } catch (error) {
       setSubmissionErrorMessage(error instanceof Error ? error.message : String(error));
     } finally {
       setIsSubmitting(false);
     }
-  }, [cancelDraft, isSubmitting, props, selectedTargets, trimmedComment, sendToActiveSession]);
+  }, [
+    cancelDraft,
+    canAppendToActiveAgentSession,
+    isSubmitting,
+    props,
+    selectedAction,
+    selectedTargets,
+    trimmedComment,
+    sendToActiveSession,
+  ]);
+
+  useEffect(() => {
+    if (canAppendToActiveAgentSession) {
+      return;
+    }
+
+    setSendToActiveSession(false);
+  }, [canAppendToActiveAgentSession]);
 
   useEffect(() => {
     selectedTargetsReference.current = selectedTargets;
@@ -553,6 +612,27 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
               {isSubmitting ? "Submitting annotation…" : `${selectedTargets.length} markers selected`}
             </span>
           </div>
+          {props.annotationActions.length > 1 ? (
+            <label className={css(createActionSelectorLabelStyle(theme))}>
+              Action
+              <select
+                data-testid="AnnotationComposer--action-select"
+                className={css(createActionSelectStyle(theme))}
+                value={selectedAction.id}
+                onChange={(event: React.ChangeEvent<HTMLSelectElement>): void => {
+                  props.onSelectedActionIdChange(event.currentTarget.value);
+                }}
+              >
+                {props.annotationActions.map((action: IAnnotationAction) => {
+                  return (
+                    <option key={action.id} value={action.id}>
+                      {action.displayName}
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+          ) : null}
           <AnnotationMarkerList
             items={selectedTargets.map((selection: ISelectedAnnotationTarget) => {
               return {
@@ -578,7 +658,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
               {submissionErrorMessage}
             </div>
           ) : null}
-          {props.activeAgentSessionId ? (
+          {canAppendToActiveAgentSession ? (
             <label className={css(createCheckboxLabelStyle(theme))}>
               <input
                 type="checkbox"
@@ -587,7 +667,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
                   setSendToActiveSession(event.currentTarget.checked);
                 }}
               />
-              Append to active session queue
+              Append to active {selectedAction.displayName} queue
             </label>
           ) : null}
           <div className={popupActionsClassName}>
@@ -603,7 +683,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
                 void submitDraft();
               }}
             >
-              {isSubmitting ? "Submitting…" : "Submit"}
+              {isSubmitting ? "Submitting…" : `Run ${selectedAction.displayName}`}
             </Button>
             <Button
               disabled={isSubmitting}
@@ -653,6 +733,29 @@ const popupActionsStyle: CSSObject = {
   justifyContent: "flex-start",
   gap: "8px",
 };
+
+function createActionSelectorLabelStyle(theme: IDevtoolsTheme): CSSObject {
+  return {
+    display: "grid",
+    gap: theme.spacing.xxs,
+    color: theme.colors.foreground,
+    fontSize: theme.fontSizes.sm,
+  };
+}
+
+function createActionSelectStyle(theme: IDevtoolsTheme): CSSObject {
+  return {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: theme.spacing.xs,
+    border: `1px solid ${theme.colors.border}`,
+    borderRadius: theme.radii.sm,
+    background: theme.colors.background,
+    color: theme.colors.foreground,
+    fontFamily: theme.fontFamilies.body,
+    fontSize: theme.fontSizes.sm,
+  };
+}
 
 const shortcutBadgeHoverStyle: CSSObject = {
   color: "rgba(255, 255, 255, 1)",

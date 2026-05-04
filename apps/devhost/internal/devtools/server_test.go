@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/gorilla/websocket"
 )
 
@@ -19,6 +20,10 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 	restartedServices := []string{}
 	controlServer, err := StartControlServer(StartControlServerOptions{
 		AgentDisplayName: "Pi",
+		AnnotationActions: []manifest.ValidatedAnnotationAction{
+			{Agent: manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"}, DisplayName: "Pi", ID: defaultAnnotationActionID, Kind: "agent"},
+			{Command: []string{"bun", "run", "lint"}, Cwd: "/tmp/project", DisplayName: "Run lint", ID: "lint", Kind: "command"},
+		},
 		ComponentEditor:  "vscode",
 		FeatureToggles: FeatureToggles{
 			AnnotationEnabled:       false,
@@ -64,6 +69,9 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 	}
 	if !strings.Contains(injectedScriptText, `"terminalEnabled":false`) {
 		t.Fatalf("inject.js missing terminal capability gate: %q", injectedScriptText)
+	}
+	if !strings.Contains(injectedScriptText, `"agentDisplayName":"Pi"`) || !strings.Contains(injectedScriptText, `"annotationDefaultActionId":"agent"`) || !strings.Contains(injectedScriptText, `"annotationActions":[{"id":"agent","displayName":"Pi","kind":"agent","queueEnabled":true},{"id":"lint","displayName":"Run lint","kind":"command","queueEnabled":false}]`) {
+		t.Fatalf("inject.js missing UI-safe annotation actions: %q", injectedScriptText)
 	}
 
 	xtermResponse, err := http.Get(serverURL(controlServer.Port(), xtermStylesheetPath))
@@ -217,6 +225,10 @@ func TestControlServerTerminalSessionsEditorOnlyLifecycle(t *testing.T) {
 	starter := newTestTerminalStarter()
 	controlServer, err := StartControlServer(StartControlServerOptions{
 		AgentDisplayName: "Pi",
+		AnnotationActions: []manifest.ValidatedAnnotationAction{
+			{Agent: manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"}, DisplayName: "Pi", ID: defaultAnnotationActionID, Kind: "agent"},
+			{Command: []string{"bun", "run", "lint"}, Cwd: "/tmp/project", DisplayName: "Run lint", ID: "lint", Kind: "command"},
+		},
 		ComponentEditor:  "neovim",
 		FeatureToggles: FeatureToggles{
 			EditorEnabled:   true,
@@ -263,6 +275,29 @@ func TestControlServerTerminalSessionsEditorOnlyLifecycle(t *testing.T) {
 		t.Fatalf("agent terminal status = %d, want 400", invalidResponse.StatusCode)
 	}
 
+	commandRequest, err := http.NewRequest(http.MethodPost, serverURL(controlServer.Port(), terminalSessionsPath), strings.NewReader(`{"annotation":{"comment":"Lint this","markers":[],"stackName":"hello-stack","submittedAt":1,"title":"Example","url":"https://app.localhost/dashboard"},"actionId":"lint","kind":"command"}`))
+	if err != nil {
+		t.Fatalf("NewRequest(command terminal) error = %v", err)
+	}
+	commandRequest.Header.Set(controlTokenHeaderName, controlToken)
+	commandRequest.Header.Set("content-type", "application/json")
+	commandResponse, err := http.DefaultClient.Do(commandRequest)
+	if err != nil {
+		t.Fatalf("Do(command terminal) error = %v", err)
+	}
+	defer commandResponse.Body.Close()
+	if commandResponse.StatusCode != http.StatusOK {
+		t.Fatalf("command terminal status = %d, want 200", commandResponse.StatusCode)
+	}
+	var commandCreated startTerminalSessionResponse
+	if err := json.NewDecoder(commandResponse.Body).Decode(&commandCreated); err != nil {
+		t.Fatalf("Decode(command terminal response) error = %v", err)
+	}
+	if len(starter.startedRequests) != 1 || starter.startedRequests[0].Kind != terminalSessionRequestKindCommand || starter.startedRequests[0].ActionID != "lint" {
+		t.Fatalf("started requests after command = %#v", starter.startedRequests)
+	}
+	controlServer.closeTerminalSession(commandCreated.SessionID)
+
 	createRequestBody := `{"componentName":"SaveButton","kind":"editor","launcher":"neovim","source":{"columnNumber":8,"fileName":"src/components/SaveButton.tsx","lineNumber":42},"sourceLabel":"src/components/SaveButton.tsx:42:8"}`
 	createRequest, err := http.NewRequest(http.MethodPost, serverURL(controlServer.Port(), terminalSessionsPath), strings.NewReader(createRequestBody))
 	if err != nil {
@@ -286,8 +321,8 @@ func TestControlServerTerminalSessionsEditorOnlyLifecycle(t *testing.T) {
 	if created.SessionID == "" {
 		t.Fatal("start terminal response missing sessionId")
 	}
-	if len(starter.sessions) != 1 {
-		t.Fatalf("started sessions = %d, want 1", len(starter.sessions))
+	if len(starter.sessions) != 2 {
+		t.Fatalf("started sessions = %d, want 2", len(starter.sessions))
 	}
 	if _, response, err := websocket.DefaultDialer.Dial(websocketURL(controlServer.Port(), terminalWebsocketPath)+"?sessionId="+created.SessionID, nil); err == nil || response == nil || response.StatusCode != http.StatusForbidden {
 		if response != nil {
@@ -329,7 +364,7 @@ func TestControlServerTerminalSessionsEditorOnlyLifecycle(t *testing.T) {
 		t.Fatalf("terminal snapshot = %q", message)
 	}
 
-	starter.sessions[0].emit("hello from nvim\n")
+	starter.sessions[1].emit("hello from nvim\n")
 	if message := readWebsocketText(t, terminalSocket); message != `{"data":"hello from nvim\n","type":"output"}` {
 		t.Fatalf("terminal output = %q", message)
 	}
@@ -355,22 +390,22 @@ func TestControlServerTerminalSessionsEditorOnlyLifecycle(t *testing.T) {
 		t.Fatalf("WriteJSON(resize) error = %v", err)
 	}
 	waitForCondition(t, time.Second, func() bool {
-		got := starter.sessions[0].writesSnapshot()
+		got := starter.sessions[1].writesSnapshot()
 		return len(got) == 1 && got[0] == "fix it\n"
 	})
-	if got := starter.sessions[0].writesSnapshot(); len(got) != 1 || got[0] != "fix it\n" {
+	if got := starter.sessions[1].writesSnapshot(); len(got) != 1 || got[0] != "fix it\n" {
 		t.Fatalf("writes = %#v, want [fix it\\n]", got)
 	}
 	waitForCondition(t, time.Second, func() bool {
-		got := starter.sessions[0].resizesSnapshot()
+		got := starter.sessions[1].resizesSnapshot()
 		return len(got) == 1 && got[0] == (testTerminalResize{cols: 100, rows: 30})
 	})
-	if got := starter.sessions[0].resizesSnapshot(); len(got) != 1 || got[0] != (testTerminalResize{cols: 100, rows: 30}) {
+	if got := starter.sessions[1].resizesSnapshot(); len(got) != 1 || got[0] != (testTerminalResize{cols: 100, rows: 30}) {
 		t.Fatalf("resizes = %#v, want [{100 30}]", got)
 	}
 
 	exitCode := 0
-	starter.sessions[0].exit(&exitCode, nil)
+	starter.sessions[1].exit(&exitCode, nil)
 	if message := readWebsocketText(t, terminalSocket); message != `{"exitCode":0,"signalCode":null,"type":"exit"}` {
 		t.Fatalf("exit message = %q", message)
 	}
@@ -409,9 +444,9 @@ func TestControlServerTerminalSessionsEditorOnlyLifecycle(t *testing.T) {
 		t.Fatalf("listed sessions after close = %#v, want []", listed.Sessions)
 	}
 	waitForCondition(t, time.Second, func() bool {
-		return starter.sessions[0].closeCountValue() == 1
+		return starter.sessions[1].closeCountValue() == 1
 	})
-	if closeCount := starter.sessions[0].closeCountValue(); closeCount != 1 {
+	if closeCount := starter.sessions[1].closeCountValue(); closeCount != 1 {
 		t.Fatalf("close count = %d, want 1", closeCount)
 	}
 }

@@ -136,6 +136,7 @@ function isAnnotationQueueEntrySnapshot(value: unknown): boolean {
   return (
     typeof value === "object" &&
     value !== null &&
+    typeof Reflect.get(value, "actionId") === "string" &&
     typeof Reflect.get(value, "createdAt") === "number" &&
     typeof Reflect.get(value, "entryId") === "string" &&
     isAnnotationSubmitDetail(Reflect.get(value, "annotation")) &&
