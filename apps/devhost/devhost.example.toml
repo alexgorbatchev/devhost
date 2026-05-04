@@ -11,6 +11,7 @@
 # - `[devtools.externalToolbars]` (optional)
 # - `[devtools.minimap]` (optional)
 # - `[devtools.status]` (optional)
+# - `[annotation]` and `[[annotation.actions]]` (optional; multi-action annotation manifest)
 # - `[agent]` (optional; omit it entirely to launch Pi by default)
 # - `[services.<name>]` (required; at least one service)
 #
@@ -27,6 +28,7 @@
 # - `command` is best written as a string array; string form is supported but split on whitespace
 # - fixed numeric bind ports are reserved across live devhost processes before spawn
 # - hostname ownership is exclusive across projects, but one manifest may mount multiple services under the same host on distinct paths
+# - annotation action ids must match `^[a-z][a-z0-9-]*$` and be unique
 
 # `name` identifies the stack in logs, state, and injected metadata.
 name = "hello-stack"
@@ -104,8 +106,9 @@ enabled = true
 position = "bottom-right"
 
 [agent]
-# `[agent]` configures the annotation agent launched from the injected annotation UI.
-# If you omit this table entirely, devhost launches Pi by default.
+# `[agent]` is the legacy single-agent annotation configuration.
+# If you omit `[agent]` and `[annotation]` entirely, devhost launches Pi by default.
+# If `[annotation]` is omitted, devhost exposes one default agent action backed by this table.
 #
 # `adapter` selects a built-in annotation-agent integration.
 # - `"pi"`: launch Pi.
@@ -127,6 +130,51 @@ adapter = "pi"
 # - `command` must be a string array.
 # - `cwd` defaults to the manifest directory.
 # - `env` defaults to `{}`.
+
+# Multi-action annotation configuration. Uncomment this section when you want
+# multiple annotation actions or a generic command action in the injected UI.
+# If `[annotation]` is present, `[[annotation.actions]]` must contain at least one action.
+# Define either `[annotation]` or `[agent]`, not both.
+#
+# [annotation]
+# defaultAction = "fix"
+#
+# [[annotation.actions]]
+# id = "fix"
+# label = "Ask Claude"
+# kind = "agent"
+#
+# [annotation.actions.agent]
+# adapter = "claude-code"
+#
+# Agent actions support the same built-in adapters as `[agent]`: `"pi"`, `"claude-code"`, and `"opencode"`.
+# Custom agent actions omit `adapter` and use `displayName`, `command`, optional `cwd`, and optional `env`
+# inside `[annotation.actions.agent]`, just like legacy `[agent]` custom commands.
+#
+# [[annotation.actions]]
+# id = "lint"
+# label = "Run lint"
+# kind = "command"
+#
+# [annotation.actions.command]
+# command = ["bun", "run", "lint"]
+# cwd = "."
+#
+# [annotation.actions.command.env]
+# CI = "1"
+#
+# Command actions run directly in a devhost terminal with annotation context files exposed via:
+# - `DEVHOST_ANNOTATION_ACTION_ID`
+# - `DEVHOST_ANNOTATION_ACTION_KIND`
+# - `DEVHOST_ANNOTATION_ACTION_LABEL`
+# - `DEVHOST_ANNOTATION_DISPLAY_NAME`
+# - `DEVHOST_ANNOTATION_FILE`
+# - `DEVHOST_ANNOTATION_PROMPT_FILE`
+# - `DEVHOST_ANNOTATION_TRANSPORT=files`
+# - `DEVHOST_PROJECT_ROOT`
+# - `DEVHOST_STACK_NAME`
+#
+# Durable annotation queues are supported for agent actions only.
 
 # -----------------------------------------------------------------------------
 # services

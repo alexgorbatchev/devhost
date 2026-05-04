@@ -371,7 +371,7 @@ The injected overlay is always docked on the right edge of the browser. Use `[de
 - click one or more page elements while holding `Alt` to place numbered markers
 - release `Alt` to leave selection mode while keeping the current draft open
 - write a comment that references markers like `#1` and `#2`
-- click `Submit` or press `⌘ ↵` / `Ctrl + Enter` to start an agent session seeded with the draft
+- click `Submit` or press `⌘ ↵` / `Ctrl + Enter` to start the selected annotation action with the draft
 - when `Append to active session queue` is enabled, the draft is added to the matching routed service's active agent queue instead of being injected immediately into a busy terminal
 - queued annotations are bucketed by routed service host/path, survive browser reloads and `devhost` restarts, drain automatically when the agent emits `OSC 1337;SetAgentStatus=finished`, and stay collapsed into a compact progress summary until you expand the queue to edit or delete queued or paused items
 - click `Cancel` or press `Escape` to discard the draft
@@ -590,7 +590,64 @@ injectPort = false
 host = "app.localhost"
 ```
 
-### Annotation agents
+### Annotation actions
+
+Configure annotation launchers with a root-level `[annotation]` table and one or more `[[annotation.actions]]` entries.
+Each action declares a stable `id`, a UI `label`, and a `kind`. Set `defaultAction` when the UI should preselect an action other than the first one.
+
+Agent actions use the existing built-in integrations:
+
+```toml
+[annotation]
+defaultAction = "fix"
+
+[[annotation.actions]]
+id = "fix"
+label = "Ask Claude"
+kind = "agent"
+
+[annotation.actions.agent]
+adapter = "claude-code"
+```
+
+Supported agent adapters are `"pi"`, `"claude-code"`, and `"opencode"`.
+For a custom agent action, omit `adapter` and set `command` plus `displayName` inside `[annotation.actions.agent]`; the parent `label` is the action label shown in the composer, and `displayName` remains the agent display name used by the legacy agent environment contract.
+
+Generic command actions run directly in a devhost terminal and receive the annotation through context files:
+
+```toml
+[annotation]
+
+[[annotation.actions]]
+id = "lint"
+label = "Run lint"
+kind = "command"
+
+[annotation.actions.command]
+command = ["bun", "run", "lint"]
+cwd = "."
+
+[annotation.actions.command.env]
+CI = "1"
+```
+
+`devhost` executes command actions directly, not through a shell string. Command actions receive:
+
+- `DEVHOST_ANNOTATION_ACTION_ID`
+- `DEVHOST_ANNOTATION_ACTION_KIND`
+- `DEVHOST_ANNOTATION_ACTION_LABEL`
+- `DEVHOST_ANNOTATION_DISPLAY_NAME`
+- `DEVHOST_ANNOTATION_FILE`
+- `DEVHOST_ANNOTATION_PROMPT_FILE`
+- `DEVHOST_ANNOTATION_TRANSPORT=files`
+- `DEVHOST_PROJECT_ROOT`
+- `DEVHOST_STACK_NAME`
+
+Agent actions continue to support durable annotation queues. Command actions start standalone terminal sessions and are not queued.
+
+The injected config includes UI-safe action metadata as `annotationActions`, with each action exposing `id`, `displayName`, `kind`, and `queueEnabled`, plus `annotationDefaultActionId` for the selected default. The legacy `agentDisplayName` field remains present for compatibility.
+
+### Legacy annotation agents
 
 Configure a project-local annotation launcher with a root-level `[agent]` table.
 
@@ -601,7 +658,8 @@ Use built-in agent adapters for quick setup:
 adapter = "claude-code"
 ```
 
-Supported adapters: `"pi"`, `"claude-code"`, and `"opencode"`. When `[agent]` is omitted, `devhost` starts Pi by default.
+Supported adapters: `"pi"`, `"claude-code"`, and `"opencode"`. When both `[agent]` and `[annotation]` are omitted, `devhost` starts Pi by default. When `[annotation]` is omitted but `[agent]` is present, devhost exposes one default annotation action backed by `[agent]`.
+Define either `[annotation]` or `[agent]`, not both, in the same manifest.
 
 For custom annotation agents, provide an explicit command:
 
@@ -616,7 +674,7 @@ DEVHOST_AGENT_MODE = "annotation"
 ```
 
 `devhost` executes custom agent commands directly, not through a shell string.
-For configured commands, `devhost` writes the annotation JSON and rendered prompt to temp files and injects them via `DEVHOST_AGENT_*` environment variables. Built-in adapters receive the rendered prompt natively via command-line arguments.
+For configured commands, `devhost` writes the annotation JSON and rendered prompt to temp files and injects them via `DEVHOST_AGENT_*` and neutral `DEVHOST_ANNOTATION_*` environment variables. Built-in adapters receive the rendered prompt natively via command-line arguments.
 
 All built-in adapters integrate terminal OSC sequences to reflect working and idle states during embedded session execution, and the durable annotation queue uses those same status events to decide when to drain queued work:
 

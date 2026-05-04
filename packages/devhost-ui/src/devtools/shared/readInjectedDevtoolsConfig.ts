@@ -1,15 +1,20 @@
 import {
+  defaultAnnotationActionId,
   defaultDevhostAgentDisplayName,
   defaultDevtoolsComponentEditor,
   readDevtoolsComponentEditorValue,
+  type AnnotationActionKind,
   type DevtoolsComponentEditor,
   type DevtoolsPosition,
+  type IAnnotationAction,
 } from "./devtoolsConfig";
 import { DEVHOST_SERVICE_NAME, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "./constants";
 import { normalizeRoutedServicePath, type IRoutedServiceIdentity } from "./routedServices";
 
 export interface IInjectedDevtoolsConfig {
   agentDisplayName: string;
+  annotationActions: IAnnotationAction[];
+  annotationDefaultActionId: string;
   componentEditor: DevtoolsComponentEditor;
   controlToken: string;
   position: DevtoolsPosition;
@@ -27,6 +32,15 @@ export interface IInjectedDevtoolsConfig {
 
 const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
   agentDisplayName: defaultDevhostAgentDisplayName,
+  annotationActions: [
+    {
+      displayName: defaultDevhostAgentDisplayName,
+      id: defaultAnnotationActionId,
+      kind: "agent",
+      queueEnabled: true,
+    },
+  ],
+  annotationDefaultActionId: defaultAnnotationActionId,
   componentEditor: defaultDevtoolsComponentEditor,
   controlToken: "",
   position: "bottom-right",
@@ -50,6 +64,8 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
   }
 
   const agentDisplayName: string = readAgentDisplayNameValue(injectedConfig);
+  const annotationActions: IAnnotationAction[] = readAnnotationActionsValue(injectedConfig, agentDisplayName);
+  const annotationDefaultActionId: string = readAnnotationDefaultActionIdValue(injectedConfig, annotationActions);
   const componentEditor: DevtoolsComponentEditor = readComponentEditorValue(injectedConfig);
   const controlToken: string = readControlTokenValue(injectedConfig);
   const position: DevtoolsPosition = readDevtoolsPositionValue(injectedConfig);
@@ -66,7 +82,9 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
 
   return {
     agentDisplayName,
+    annotationActions,
     annotationEnabled,
+    annotationDefaultActionId,
     annotationQueueEnabled,
     componentEditor,
     controlToken,
@@ -80,6 +98,79 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
     statusEnabled,
     terminalEnabled,
   };
+}
+
+function readAnnotationActionsValue(injectedConfig: object, agentDisplayName: string): IAnnotationAction[] {
+  const annotationActions: unknown = Reflect.get(injectedConfig, "annotationActions");
+
+  if (!Array.isArray(annotationActions)) {
+    return createLegacyAnnotationActions(agentDisplayName);
+  }
+
+  const uniqueActionIds = new Set<string>();
+  const parsedActions: IAnnotationAction[] = annotationActions.flatMap((action: unknown): IAnnotationAction[] => {
+    if (typeof action !== "object" || action === null) {
+      return [];
+    }
+
+    const id: unknown = Reflect.get(action, "id");
+    const displayName: unknown = Reflect.get(action, "displayName");
+    const kind: unknown = Reflect.get(action, "kind");
+    const queueEnabled: unknown = Reflect.get(action, "queueEnabled");
+
+    if (
+      typeof id !== "string" ||
+      id.length === 0 ||
+      uniqueActionIds.has(id) ||
+      typeof displayName !== "string" ||
+      displayName.trim().length === 0 ||
+      !isAnnotationActionKind(kind) ||
+      typeof queueEnabled !== "boolean"
+    ) {
+      return [];
+    }
+
+    uniqueActionIds.add(id);
+
+    return [
+      {
+        displayName,
+        id,
+        kind,
+        queueEnabled,
+      },
+    ];
+  });
+
+  return parsedActions.length > 0 ? parsedActions : createLegacyAnnotationActions(agentDisplayName);
+}
+
+function readAnnotationDefaultActionIdValue(injectedConfig: object, annotationActions: IAnnotationAction[]): string {
+  const annotationDefaultActionId: unknown = Reflect.get(injectedConfig, "annotationDefaultActionId");
+
+  if (
+    typeof annotationDefaultActionId === "string" &&
+    annotationActions.some((action: IAnnotationAction): boolean => action.id === annotationDefaultActionId)
+  ) {
+    return annotationDefaultActionId;
+  }
+
+  return annotationActions[0]?.id ?? defaultInjectedDevtoolsConfig.annotationDefaultActionId;
+}
+
+function createLegacyAnnotationActions(agentDisplayName: string): IAnnotationAction[] {
+  return [
+    {
+      displayName: agentDisplayName,
+      id: defaultAnnotationActionId,
+      kind: "agent",
+      queueEnabled: true,
+    },
+  ];
+}
+
+function isAnnotationActionKind(value: unknown): value is AnnotationActionKind {
+  return value === "agent" || value === "command";
 }
 
 function readAgentDisplayNameValue(injectedConfig: object): string {

@@ -28,6 +28,10 @@ func TestValidateManifestReturnsNormalizedDefaults(t *testing.T) {
 		t.Fatalf("manifest.Agent = %#v, want Pi default", manifest.Agent)
 	}
 
+	if manifest.Annotation.DefaultActionID != "agent" || len(manifest.Annotation.Actions) != 1 || manifest.Annotation.Actions[0].ID != "agent" || manifest.Annotation.Actions[0].Kind != "agent" || manifest.Annotation.Actions[0].DisplayName != "Pi" || manifest.Annotation.Actions[0].Agent.Kind != "pi" {
+		t.Fatalf("manifest.Annotation.Actions = %#v, want default Pi agent action", manifest.Annotation.Actions)
+	}
+
 	if manifest.Caddy.Global.AdminAddress != defaultManagedCaddyAdminAddress || manifest.Caddy.Global.BindHost != defaultManagedCaddyBindHost || manifest.Caddy.Global.HTTP || manifest.Caddy.Global.HTTPPort != defaultManagedCaddyHTTPPort || manifest.Caddy.Global.HTTPSPort != defaultManagedCaddyHTTPSPort {
 		t.Fatalf("manifest.Caddy.Global = %#v, want default caddy config", manifest.Caddy.Global)
 	}
@@ -87,6 +91,47 @@ func TestValidateManifestReturnsNormalizedDefaults(t *testing.T) {
 
 	if service.Health != nil {
 		t.Fatalf("service.Health = %#v, want nil", service.Health)
+	}
+}
+
+func TestValidateManifestAcceptsAnnotationActions(t *testing.T) {
+	t.Parallel()
+
+	manifest, error := ValidateManifest(filepath.Join(string(filepath.Separator), "tmp", "project", "devhost.toml"), rawManifestWithServices(map[string]any{
+		"annotation": map[string]any{
+			"defaultAction": "lint",
+			"actions": []any{
+				map[string]any{"agent": map[string]any{"adapter": "claude-code"}, "id": "fix", "kind": "agent", "label": "Ask Claude"},
+				map[string]any{
+					"command": map[string]any{
+						"command": []any{"bun", "run", "lint"},
+						"cwd":     "tools",
+						"env":     map[string]any{"CI": "1"},
+					},
+					"id":    "lint",
+					"kind":  "command",
+					"label": "Run lint",
+				},
+			},
+		},
+	}))
+	if error != nil {
+		t.Fatalf("ValidateManifest(...) unexpected error = %v", error)
+	}
+
+	if len(manifest.Annotation.Actions) != 2 {
+		t.Fatalf("manifest.Annotation.Actions = %#v, want 2 actions", manifest.Annotation.Actions)
+	}
+	if manifest.Annotation.DefaultActionID != "lint" {
+		t.Fatalf("manifest.Annotation.DefaultActionID = %q, want lint", manifest.Annotation.DefaultActionID)
+	}
+	agentAction := manifest.Annotation.Actions[0]
+	if agentAction.ID != "fix" || agentAction.Kind != "agent" || agentAction.DisplayName != "Ask Claude" || agentAction.Agent.DisplayName != "Claude Code" || agentAction.Agent.Kind != "claude-code" {
+		t.Fatalf("agent action = %#v", agentAction)
+	}
+	commandAction := manifest.Annotation.Actions[1]
+	if commandAction.ID != "lint" || commandAction.Kind != "command" || commandAction.DisplayName != "Run lint" || strings.Join(commandAction.Command, " ") != "bun run lint" || commandAction.Cwd != filepath.Join(string(filepath.Separator), "tmp", "project", "tools") || commandAction.Env["CI"] != "1" {
+		t.Fatalf("command action = %#v", commandAction)
 	}
 }
 
@@ -161,6 +206,53 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 				"caddy": map[string]any{"autostop": true},
 			}),
 			wantError: "Manifest schema is invalid:\ncaddy Unrecognized key: \"autostop\"",
+		},
+		{
+			name: "rejects duplicate annotation action ids",
+			manifest: rawManifestWithServices(map[string]any{
+				"annotation": map[string]any{"actions": []any{
+					map[string]any{"agent": map[string]any{"adapter": "pi"}, "id": "fix", "kind": "agent", "label": "Fix"},
+					map[string]any{"command": map[string]any{"command": []any{"bun", "test"}}, "id": "fix", "kind": "command", "label": "Test"},
+				}},
+			}),
+			wantError: "annotation.actions id must be unique: fix",
+		},
+		{
+			name: "rejects annotation command action without command",
+			manifest: rawManifestWithServices(map[string]any{
+				"annotation": map[string]any{"actions": []any{
+					map[string]any{"command": map[string]any{}, "id": "test", "kind": "command", "label": "Test"},
+				}},
+			}),
+			wantError: "annotation.actions.test.command must define command.",
+		},
+		{
+			name: "rejects invalid annotation action kind",
+			manifest: rawManifestWithServices(map[string]any{
+				"annotation": map[string]any{"actions": []any{
+					map[string]any{"id": "deploy", "kind": "deploy", "label": "Deploy"},
+				}},
+			}),
+			wantError: "annotation.actions.deploy.kind must be one of agent or command.",
+		},
+		{
+			name: "rejects legacy agent with annotation",
+			manifest: rawManifestWithServices(map[string]any{
+				"agent": map[string]any{"adapter": "pi"},
+				"annotation": map[string]any{"actions": []any{
+					map[string]any{"agent": map[string]any{"adapter": "opencode"}, "id": "ask", "kind": "agent", "label": "Ask"},
+				}},
+			}),
+			wantError: "manifest must define either annotation or legacy agent, not both.",
+		},
+		{
+			name: "rejects unknown annotation default action",
+			manifest: rawManifestWithServices(map[string]any{
+				"annotation": map[string]any{"defaultAction": "missing", "actions": []any{
+					map[string]any{"agent": map[string]any{"adapter": "pi"}, "id": "ask", "kind": "agent", "label": "Ask"},
+				}},
+			}),
+			wantError: "annotation.defaultAction must reference an annotation action id: missing",
 		},
 		{
 			name: "rejects agent cwd escape",

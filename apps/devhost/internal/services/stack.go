@@ -245,10 +245,12 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	routedServices := collectRoutedServiceIdentities(manifest.Services)
 	if devtoolsEnabled && len(routedServices) > 0 {
 		controlServer, error := startDevtoolsControlServer(devtools.StartControlServerOptions{
-			Agent:            manifest.Agent,
-			AgentDisplayName: manifest.Agent.DisplayName,
-			ComponentEditor:  manifest.Devtools.Editor.IDE,
-			FeatureToggles:   runtimeDevtoolsFeatures,
+			Agent:                     manifest.Agent,
+			AgentDisplayName:          manifest.Agent.DisplayName,
+			AnnotationActions:         manifest.Annotation.Actions,
+			AnnotationDefaultActionID: manifest.Annotation.DefaultActionID,
+			ComponentEditor:           manifest.Devtools.Editor.IDE,
+			FeatureToggles:            runtimeDevtoolsFeatures,
 			GetHealthResponse: func() (devtools.HealthResponse, error) {
 				startedServicesMu.Lock()
 				startedServicesSnapshot := append([]*startedService{}, startedServices...)

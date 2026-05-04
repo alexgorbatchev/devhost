@@ -7,6 +7,7 @@ export type AnnotationQueueEntryState = "active" | "paused-active" | "queued";
 export type AnnotationQueuePauseReason = "session-exited-before-finished" | "user-terminated";
 
 export interface IAnnotationQueueEntrySnapshot {
+  actionId: string;
   annotation: IAnnotationSubmitDetail;
   createdAt: number;
   entryId: string;

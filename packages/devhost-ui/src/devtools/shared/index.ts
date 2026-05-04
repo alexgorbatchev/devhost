@@ -7,14 +7,19 @@ export {
 } from "./constants";
 export { configureDevtoolsCss, css, cx, injectGlobal } from "./devtoolsCss";
 export {
+  defaultAnnotationActionId,
   readDevtoolsComponentEditorLabel,
+  type AnnotationActionKind,
   type DevtoolsComponentEditor,
   type DevtoolsPosition,
+  type IAnnotationAction,
 } from "./devtoolsConfig";
 export { HoverSlidePanel } from "./HoverSlidePanel";
 export { ThemeProvider } from "./ThemeProvider";
 export { type IDevtoolsTheme } from "./devtoolsTheme";
 export { readDevtoolsAgentDisplayName } from "./readDevtoolsAgentDisplayName";
+export { readDevtoolsAnnotationActions } from "./readDevtoolsAnnotationActions";
+export { readDevtoolsAnnotationDefaultActionId } from "./readDevtoolsAnnotationDefaultActionId";
 export { readDevtoolsComponentEditor } from "./readDevtoolsComponentEditor";
 export { readDevtoolsControlToken } from "./readDevtoolsControlToken";
 export { readDevtoolsPosition } from "./readDevtoolsPosition";

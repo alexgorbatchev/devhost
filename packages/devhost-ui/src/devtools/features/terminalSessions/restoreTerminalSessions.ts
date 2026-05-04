@@ -5,7 +5,6 @@ import type { IActiveTerminalSessionSnapshot, TerminalSession } from "./types";
 export function restoreTerminalSessions(
   currentSessions: TerminalSession[],
   restoredSessionSnapshots: IActiveTerminalSessionSnapshot[],
-  agentDisplayName: string,
 ): TerminalSession[] {
   const currentSessionIds = new Set<string>(
     currentSessions.map((terminalSession: TerminalSession): string => terminalSession.sessionId),
@@ -21,7 +20,7 @@ export function restoreTerminalSessions(
 
       return appendTerminalSession(
         restoredTerminalSessions,
-        createTerminalSession(restoredSessionSnapshot.sessionId, restoredSessionSnapshot.request, agentDisplayName),
+        createTerminalSession(restoredSessionSnapshot.sessionId, restoredSessionSnapshot.request),
       );
     },
     [],

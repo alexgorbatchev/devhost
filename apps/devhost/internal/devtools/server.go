@@ -76,6 +76,8 @@ type ServiceLogEntry struct {
 
 type StartControlServerOptions struct {
 	AgentDisplayName           string
+	AnnotationDefaultActionID  string
+	AnnotationActions          []manifest.ValidatedAnnotationAction
 	ComponentEditor            string
 	Agent                      manifest.ValidatedAgent
 	FeatureToggles             FeatureToggles
@@ -104,6 +106,7 @@ type ControlServer struct {
 	restartService             func(string) error
 	getHealth                  func() (HealthResponse, error)
 	agent                      manifest.ValidatedAgent
+	annotationActions          []manifest.ValidatedAnnotationAction
 	projectRootPath            string
 	stackName                  string
 	startTerminalSession       terminalSessionStarter
@@ -131,6 +134,8 @@ type websocketClient struct {
 
 type injectedConfig struct {
 	AgentDisplayName        string                  `json:"agentDisplayName"`
+	AnnotationDefaultActionID string                  `json:"annotationDefaultActionId"`
+	AnnotationActions       []injectedAnnotationAction `json:"annotationActions"`
 	ComponentEditor         string                  `json:"componentEditor"`
 	ControlToken            string                  `json:"controlToken"`
 	Position                string                  `json:"position"`
@@ -144,6 +149,13 @@ type injectedConfig struct {
 	AnnotationQueueEnabled  bool                    `json:"annotationQueueEnabled"`
 	TerminalEnabled         bool                    `json:"terminalEnabled"`
 	RoutedServices          []RoutedServiceIdentity `json:"routedServices"`
+}
+
+type injectedAnnotationAction struct {
+	ID           string `json:"id"`
+	DisplayName  string `json:"displayName"`
+	Kind         string `json:"kind"`
+	QueueEnabled bool   `json:"queueEnabled"`
 }
 
 type restartServiceRequest struct {
@@ -191,8 +203,12 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		return nil, err
 	}
 
+	annotationActions := normalizeAnnotationActions(options.AnnotationActions, options.Agent)
+	annotationDefaultActionID := normalizeAnnotationDefaultActionID(options.AnnotationDefaultActionID, annotationActions)
 	config := injectedConfig{
 		AgentDisplayName:        options.AgentDisplayName,
+		AnnotationDefaultActionID: annotationDefaultActionID,
+		AnnotationActions:       createInjectedAnnotationActions(annotationActions),
 		AnnotationEnabled:       options.FeatureToggles.AnnotationEnabled,
 		AnnotationQueueEnabled:  options.FeatureToggles.AnnotationQueueEnabled,
 		ComponentEditor:         options.ComponentEditor,
@@ -215,6 +231,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 
 	controlServer := &ControlServer{
 		agent:                      options.Agent,
+		annotationActions:          annotationActions,
 		componentEditor:            options.ComponentEditor,
 		controlToken:               controlToken,
 		devtoolsScript:             fmt.Sprintf("globalThis.__DEVHOST_INJECTED_CONFIG__=%s;\n%s", string(configJSON), devtoolsScript),
@@ -257,6 +274,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 				}
 
 				return &liveAgentSessionSnapshot{
+					actionID:    session.request.ActionID,
 					agentStatus: session.agentStatus,
 					annotation:  *session.request.Annotation,
 					sessionID:   sessionID,
@@ -265,13 +283,17 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 			routedServices:     options.RoutedServices,
 			stackName:          options.StackName,
 			stateDirectoryPath: options.StateDirectoryPath,
-			startAgentSession: func(annotation annotationSubmitDetail) (string, error) {
-				return controlServer.createTerminalSession(terminalSessionRequest{Annotation: &annotation, Kind: terminalSessionRequestKindAgent})
+			startAgentSession: func(actionID string, annotation annotationSubmitDetail) (string, error) {
+				return controlServer.createTerminalSession(terminalSessionRequest{ActionID: actionID, Annotation: &annotation, Kind: terminalSessionRequestKindAgent})
 			},
-			writeAnnotationToSession: func(sessionID string, annotation annotationSubmitDetail) error {
+			writeAnnotationToSession: func(actionID string, sessionID string, annotation annotationSubmitDetail) error {
+				action, ok := findAnnotationAction(annotationActions, actionID)
+				if !ok || action.Kind != terminalSessionRequestKindAgent {
+					return fmt.Errorf("Annotation action %s is not available.", actionID)
+				}
 				controlServer.mu.Lock()
 				session := controlServer.terminalSessions[sessionID]
-				if session == nil || session.closed || session.exited != nil || session.request.Kind != terminalSessionRequestKindAgent {
+				if session == nil || session.closed || session.exited != nil || session.request.Kind != terminalSessionRequestKindAgent || session.request.ActionID != actionID {
 					controlServer.mu.Unlock()
 					return fmt.Errorf("Agent terminal session %s is not available.", sessionID)
 				}
@@ -279,7 +301,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 				write := session.write
 				controlServer.mu.Unlock()
 
-				sessionFiles, err := createAgentSessionFiles(annotation, options.AgentDisplayName, options.ProjectRootPath, createAnnotationAgentPrompt(annotation), options.StackName)
+				sessionFiles, err := createAgentSessionFiles(annotation, action.ID, action.DisplayName, action.Agent.DisplayName, options.ProjectRootPath, createAnnotationAgentPrompt(annotation), options.StackName)
 				if err != nil {
 					return err
 				}
@@ -339,6 +361,38 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	}()
 
 	return controlServer, nil
+}
+
+func normalizeAnnotationActions(actions []manifest.ValidatedAnnotationAction, agent manifest.ValidatedAgent) []manifest.ValidatedAnnotationAction {
+	if len(actions) > 0 {
+		return append([]manifest.ValidatedAnnotationAction{}, actions...)
+	}
+	return []manifest.ValidatedAnnotationAction{{Agent: agent, DisplayName: agent.DisplayName, ID: defaultAnnotationActionID, Kind: terminalSessionRequestKindAgent}}
+}
+
+func normalizeAnnotationDefaultActionID(actionID string, actions []manifest.ValidatedAnnotationAction) string {
+	for _, action := range actions {
+		if action.ID == actionID {
+			return actionID
+		}
+	}
+	if len(actions) > 0 {
+		return actions[0].ID
+	}
+	return defaultAnnotationActionID
+}
+
+func createInjectedAnnotationActions(actions []manifest.ValidatedAnnotationAction) []injectedAnnotationAction {
+	result := make([]injectedAnnotationAction, 0, len(actions))
+	for _, action := range actions {
+		result = append(result, injectedAnnotationAction{
+			ID:           action.ID,
+			DisplayName:  action.DisplayName,
+			Kind:         action.Kind,
+			QueueEnabled: action.Kind == terminalSessionRequestKindAgent,
+		})
+	}
+	return result
 }
 
 func (s *ControlServer) Port() int {
