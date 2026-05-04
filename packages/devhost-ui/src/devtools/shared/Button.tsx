@@ -8,6 +8,10 @@ import { useDevtoolsTheme } from "./useDevtoolsTheme";
 export type ButtonVariant = "danger" | "primary" | "secondary";
 
 interface IButtonProps {
+  ariaControls?: string;
+  ariaExpanded?: boolean;
+  ariaHaspopup?: boolean | "dialog" | "grid" | "listbox" | "menu" | "tree";
+  ariaLabel?: string;
   ariaPressed?: boolean;
   children: ReactNode;
   disabled?: boolean;
@@ -32,6 +36,10 @@ const endEnhancerBaseStyle: CSSObject = {
 };
 
 export function Button({
+  ariaControls,
+  ariaExpanded,
+  ariaHaspopup,
+  ariaLabel,
   ariaPressed,
   children,
   disabled = false,
@@ -80,6 +88,10 @@ export function Button({
 
   return (
     <button
+      aria-controls={ariaControls}
+      aria-expanded={ariaExpanded}
+      aria-haspopup={ariaHaspopup}
+      aria-label={ariaLabel}
       aria-pressed={ariaPressed}
       className={buttonClassName}
       data-devhost-instance-testid={testId}

@@ -1,11 +1,17 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { useState, type ComponentProps, type JSX, type ReactNode } from "react";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 
 import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
 import { AnnotationComposer } from "../AnnotationComposer";
 
-const agentAction = { displayName: "Pi", id: "agent", kind: "agent" as const, queueEnabled: true };
+const agentAction = {
+  displayName: "Pi",
+  id: "agent",
+  kind: "agent" as const,
+  queueEnabled: true,
+};
 const ticketAction = {
   displayName: "Create Ticket",
   id: "create-ticket",
@@ -13,21 +19,48 @@ const ticketAction = {
   queueEnabled: false,
 };
 
+interface IAnnotationComposerStoryFrameProps {
+  children: ReactNode;
+}
+
+function AnnotationComposerStoryFrame({ children }: IAnnotationComposerStoryFrameProps): JSX.Element {
+  return (
+    <StoryContainer align="center">
+      <button type="button" data-testid="host-action-target" style={{ padding: "20px", background: "red" }}>
+        Host action target
+      </button>
+      <div data-devhost-devtools="">
+        <ThemeProvider colorScheme="dark">{children}</ThemeProvider>
+      </div>
+    </StoryContainer>
+  );
+}
+
+function ControlledMultipleActionsAnnotationComposer(args: ComponentProps<typeof AnnotationComposer>): JSX.Element {
+  const [selectedActionId, setSelectedActionId] = useState<string>(args.selectedActionId);
+
+  return (
+    <AnnotationComposerStoryFrame>
+      <AnnotationComposer
+        {...args}
+        selectedActionId={selectedActionId}
+        onSelectedActionIdChange={(actionId: string): void => {
+          setSelectedActionId(actionId);
+          args.onSelectedActionIdChange(actionId);
+        }}
+      />
+    </AnnotationComposerStoryFrame>
+  );
+}
+
 const meta: Meta<typeof AnnotationComposer> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/annotationComposer/AnnotationComposer",
   component: AnnotationComposer,
   render: (args) => {
     return (
-      <StoryContainer align="center">
-        <button type="button" data-testid="host-action-target" style={{ padding: "20px", background: "red" }}>
-          Host action target
-        </button>
-        <div data-devhost-devtools="">
-          <ThemeProvider colorScheme="dark">
-            <AnnotationComposer {...args} />
-          </ThemeProvider>
-        </div>
-      </StoryContainer>
+      <AnnotationComposerStoryFrame>
+        <AnnotationComposer {...args} />
+      </AnnotationComposerStoryFrame>
     );
   },
 };
@@ -172,6 +205,7 @@ export const WithSubmitError: Story = {
 
 export const WithMultipleActions: Story = {
   args: {
+    activeAgentSessionId: "session-123",
     annotationActions: [agentAction, ticketAction],
     onSubmit: fn(async () => {
       return { success: true };
@@ -180,21 +214,37 @@ export const WithMultipleActions: Story = {
     selectedActionId: "create-ticket",
     stackName: "story-stack",
   },
+  render: (args) => {
+    return <ControlledMultipleActionsAnnotationComposer {...args} />;
+  },
   play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
     await createAnnotationDraft(canvas);
 
-    await expect(canvas.getByTestId("AnnotationComposer--action-select")).toHaveValue("create-ticket");
+    await expect(canvas.queryByRole("combobox")).not.toBeInTheDocument();
     await expect(canvas.queryByLabelText("Append to active Create Ticket queue")).not.toBeInTheDocument();
+    await expect(canvas.getByRole("button", { name: /Run Create Ticket/ })).toBeDisabled();
+
+    await userEvent.click(canvas.getByRole("button", { name: /Select annotation action/ }));
+    await expect(canvas.getByRole("menu", { name: "Annotation actions" })).toBeInTheDocument();
+
+    await userEvent.click(canvas.getByRole("menuitemradio", { name: "Pi" }));
+
+    await waitFor(() => {
+      expect(args.onSelectedActionIdChange).toHaveBeenCalledWith("agent");
+      expect(canvas.getByRole("button", { name: /Run Pi/ })).toBeInTheDocument();
+    });
+
+    await expect(canvas.getByLabelText("Append to active Pi queue")).toBeChecked();
 
     await userEvent.type(await canvas.findByTestId("AnnotationComposer--comment"), "Open a ticket for this state");
-    await userEvent.click(canvas.getByRole("button", { name: /Run Create Ticket/ }));
+    await userEvent.click(canvas.getByRole("button", { name: /Run Pi/ }));
 
     await waitFor(() => {
       expect(args.onSubmit).toHaveBeenCalledWith(
         expect.objectContaining({ comment: "Open a ticket for this state" }),
-        ticketAction,
-        undefined,
+        agentAction,
+        "session-123",
       );
     });
 
