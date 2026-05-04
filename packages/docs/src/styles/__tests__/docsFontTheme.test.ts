@@ -15,7 +15,7 @@ describe("docsFontTheme", () => {
 
     assert(customCssMatch);
 
-    expect(customCssMatch[0]).toMatchInlineSnapshot('"customCss: [\"./src/styles/docsFontTheme.css\"]"');
+    expect(customCssMatch[0]).toMatchInlineSnapshot('"customCss: ["./src/styles/docsFontTheme.css"]"');
   });
 
   it("defines JetBrains Nerd Font as the global Starlight text and code font without late layout shift", () => {
@@ -23,47 +23,47 @@ describe("docsFontTheme", () => {
     const docsFontThemeText = readFileSync(docsFontThemePath, "utf8");
 
     expect(docsFontThemeText).toMatchInlineSnapshot(`
-"@font-face {
-  font-family: \"JetBrainsMono Nerd Font\";
-  font-style: normal;
-  font-weight: 400;
-  font-display: optional;
-  src: url(\"../assets/fonts/jetbrains-mono-nerd/JetBrainsMonoNerdFont-Regular.ttf\") format(\"truetype\");
-}
+      "@font-face {
+        font-family: "JetBrainsMono Nerd Font";
+        font-style: normal;
+        font-weight: 400;
+        font-display: optional;
+        src: url("../assets/fonts/jetbrains-mono-nerd/JetBrainsMonoNerdFont-Regular.ttf") format("truetype");
+      }
 
-@font-face {
-  font-family: \"JetBrainsMono Nerd Font\";
-  font-style: italic;
-  font-weight: 400;
-  font-display: optional;
-  src: url(\"../assets/fonts/jetbrains-mono-nerd/JetBrainsMonoNerdFont-Italic.ttf\") format(\"truetype\");
-}
+      @font-face {
+        font-family: "JetBrainsMono Nerd Font";
+        font-style: italic;
+        font-weight: 400;
+        font-display: optional;
+        src: url("../assets/fonts/jetbrains-mono-nerd/JetBrainsMonoNerdFont-Italic.ttf") format("truetype");
+      }
 
-@font-face {
-  font-family: \"JetBrainsMono Nerd Font\";
-  font-style: normal;
-  font-weight: 700;
-  font-display: optional;
-  src: url(\"../assets/fonts/jetbrains-mono-nerd/JetBrainsMonoNerdFont-Bold.ttf\") format(\"truetype\");
-}
+      @font-face {
+        font-family: "JetBrainsMono Nerd Font";
+        font-style: normal;
+        font-weight: 700;
+        font-display: optional;
+        src: url("../assets/fonts/jetbrains-mono-nerd/JetBrainsMonoNerdFont-Bold.ttf") format("truetype");
+      }
 
-@font-face {
-  font-family: \"JetBrainsMono Nerd Font\";
-  font-style: italic;
-  font-weight: 700;
-  font-display: optional;
-  src: url(\"../assets/fonts/jetbrains-mono-nerd/JetBrainsMonoNerdFont-BoldItalic.ttf\") format(\"truetype\");
-}
+      @font-face {
+        font-family: "JetBrainsMono Nerd Font";
+        font-style: italic;
+        font-weight: 700;
+        font-display: optional;
+        src: url("../assets/fonts/jetbrains-mono-nerd/JetBrainsMonoNerdFont-BoldItalic.ttf") format("truetype");
+      }
 
-:root {
-  --sl-font:
-    \"JetBrainsMono Nerd Font\", \"JetBrains Mono\", ui-monospace, \"SFMono-Regular\", \"Cascadia Mono\", \"Cascadia Code\",
-    \"Roboto Mono\", Menlo, Consolas, \"Liberation Mono\", monospace;
-  --sl-font-mono:
-    \"JetBrainsMono Nerd Font\", \"JetBrains Mono\", ui-monospace, \"SFMono-Regular\", \"Cascadia Mono\", \"Cascadia Code\",
-    \"Roboto Mono\", Menlo, Consolas, \"Liberation Mono\", monospace;
-}
-"
-`);
+      :root {
+        --sl-font:
+          "JetBrainsMono Nerd Font", "JetBrains Mono", ui-monospace, "SFMono-Regular", "Cascadia Mono", "Cascadia Code",
+          "Roboto Mono", Menlo, Consolas, "Liberation Mono", monospace;
+        --sl-font-mono:
+          "JetBrainsMono Nerd Font", "JetBrains Mono", ui-monospace, "SFMono-Regular", "Cascadia Mono", "Cascadia Code",
+          "Roboto Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      }
+      "
+    `);
   });
 });

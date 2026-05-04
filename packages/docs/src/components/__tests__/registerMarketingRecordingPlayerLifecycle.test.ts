@@ -3,8 +3,10 @@ import { describe, expect, it } from "bun:test";
 
 import { registerMarketingRecordingPlayerLifecycle } from "../registerMarketingRecordingPlayerLifecycle";
 
+type RecordingPlayerListener = () => void;
+
 interface IRecordingPlayerListenerRegistry {
-  [event: string]: () => void;
+  [event: string]: RecordingPlayerListener;
 }
 
 describe("registerMarketingRecordingPlayerLifecycle", () => {
@@ -15,7 +17,7 @@ describe("registerMarketingRecordingPlayerLifecycle", () => {
 
     registerMarketingRecordingPlayerLifecycle({
       player: {
-        addEventListener(event: string, handler: () => void): void {
+        addEventListener(event: string, handler: RecordingPlayerListener): void {
           listeners[event] = handler;
         },
         play(): void {
@@ -41,7 +43,7 @@ describe("registerMarketingRecordingPlayerLifecycle", () => {
 
     registerMarketingRecordingPlayerLifecycle({
       player: {
-        addEventListener(event: string, handler: () => void): void {
+        addEventListener(event: string, handler: RecordingPlayerListener): void {
           listeners[event] = handler;
         },
         play(): void {},
