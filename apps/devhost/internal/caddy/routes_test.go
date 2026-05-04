@@ -537,7 +537,7 @@ func TestActivateRouteRollbackOnReloadFailure(t *testing.T) {
 	}
 }
 
-func TestActivateRouteSuppressesSuccessfulReloadOutput(t *testing.T) {
+func TestActivateRouteSuccessfulReloadOutput(t *testing.T) {
 	withRouteMutationTestHooks(t, routeMutationTestHooks{
 		now:       time.Date(2026, time.April, 19, 12, 34, 56, 0, time.UTC),
 		processID: 4321,
@@ -553,18 +553,49 @@ func TestActivateRouteSuppressesSuccessfulReloadOutput(t *testing.T) {
 		}
 	})
 
-	if error := ActivateRoute(ActivateRouteOptions{
-		AppBindHost: "127.0.0.1",
-		AppPort:     3000,
-		Host:        "quiet.localhost",
-		Path:        "/",
-		ServiceName: "web",
-	}, "/tmp/project/devhost.toml", paths.RoutesDirectoryPath); error != nil {
-		t.Fatalf("ActivateRoute(...) unexpected error = %v", error)
-	}
+	t.Run("suppresses output without writers", func(t *testing.T) {
+		if error := ActivateRoute(ActivateRouteOptions{
+			AppBindHost: "127.0.0.1",
+			AppPort:     3000,
+			Host:        "quiet.localhost",
+			Path:        "/",
+			ServiceName: "web",
+		}, "/tmp/project/devhost.toml", paths.RoutesDirectoryPath); error != nil {
+			t.Fatalf("ActivateRoute(...) unexpected error = %v", error)
+		}
 
-	if _, error := os.Stat(filepath.Join(paths.RegistrationsDirectoryPath, "quiet.localhost_web_2f.json")); error != nil {
-		t.Fatalf("stat registration error = %v", error)
+		if _, error := os.Stat(filepath.Join(paths.RegistrationsDirectoryPath, "quiet.localhost_web_2f.json")); error != nil {
+			t.Fatalf("stat registration error = %v", error)
+		}
+	})
+
+	t.Run("prints output with verbose writers", func(t *testing.T) {
+		var stdout strings.Builder
+		var stderr strings.Builder
+		if error := ActivateRoute(ActivateRouteOptions{
+			AppBindHost: "127.0.0.1",
+			AppPort:     3000,
+			Host:        "verbose.localhost",
+			Path:        "/",
+			ServiceName: "web",
+			CaddyOutputWriters: RouteCommandOutputWriters{
+				StdoutWriter: &stdout,
+				StderrWriter: &stderr,
+			},
+		}, "/tmp/project/devhost.toml", paths.RoutesDirectoryPath); error != nil {
+			t.Fatalf("ActivateRoute(...) unexpected error = %v", error)
+		}
+
+		if stdout.String() != "noisy stdout\n" {
+			t.Fatalf("ActivateRoute(...) stdout = %q, want caddy stdout", stdout.String())
+		}
+		if stderr.String() != "noisy stderr\n" {
+			t.Fatalf("ActivateRoute(...) stderr = %q, want caddy stderr", stderr.String())
+		}
+	})
+
+	if _, error := os.Stat(filepath.Join(paths.RegistrationsDirectoryPath, "verbose.localhost_web_2f.json")); error != nil {
+		t.Fatalf("stat verbose registration error = %v", error)
 	}
 }
 
@@ -597,14 +628,14 @@ func TestUnregisterRoute(t *testing.T) {
 		}
 	})
 
-	if error := UnregisterRoute("web", "hello.localhost", "/", "/tmp/other/devhost.toml", paths.RegistrationsDirectoryPath); error != nil {
+	if error := UnregisterRoute("web", "hello.localhost", "/", "/tmp/other/devhost.toml", paths.RegistrationsDirectoryPath, RouteCommandOutputWriters{}); error != nil {
 		t.Fatalf("UnregisterRoute(...) wrong manifest unexpected error = %v", error)
 	}
 	if reloadCalls != 0 {
 		t.Fatalf("reload calls after ignored unregister = %d, want 0", reloadCalls)
 	}
 
-	if error := UnregisterRoute("web", "hello.localhost", "/", "/tmp/project/devhost.toml", paths.RegistrationsDirectoryPath); error != nil {
+	if error := UnregisterRoute("web", "hello.localhost", "/", "/tmp/project/devhost.toml", paths.RegistrationsDirectoryPath, RouteCommandOutputWriters{}); error != nil {
 		t.Fatalf("UnregisterRoute(...) unexpected error = %v", error)
 	}
 	if reloadCalls != 1 {

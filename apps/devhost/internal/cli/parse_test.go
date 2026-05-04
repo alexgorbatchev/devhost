@@ -82,6 +82,14 @@ func TestParseCommandLineArguments(t *testing.T) {
 			comparePath: true,
 		},
 		{
+			name:    "parses verbose manifest mode",
+			rawArgs: []string{"--verbose"},
+			want: CommandLineArguments{
+				Kind:    KindManifest,
+				Verbose: true,
+			},
+		},
+		{
 			name: "parses manifest from environment",
 			env: map[string]string{
 				"DEVHOST_MANIFEST": manifestPath,
@@ -202,7 +210,7 @@ func TestParseCommandLineArguments(t *testing.T) {
 				t.Fatalf("ParseCommandLineArguments(%q) unexpected error = %v", tc.rawArgs, error)
 			}
 
-			if got.Kind != tc.want.Kind || got.Action != tc.want.Action || got.SSHTarget != tc.want.SSHTarget {
+			if got.Kind != tc.want.Kind || got.Action != tc.want.Action || got.SSHTarget != tc.want.SSHTarget || got.Verbose != tc.want.Verbose {
 				t.Fatalf("ParseCommandLineArguments(%q) = %#v, want %#v", tc.rawArgs, got, tc.want)
 			}
 

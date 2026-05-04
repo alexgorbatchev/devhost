@@ -33,6 +33,7 @@ type CommandLineArguments struct {
 	ManifestPath *string
 	Action       CaddyLifecycleAction
 	SSHTarget    string
+	Verbose      bool
 }
 
 const caddyActionListText = "start, stop, trust, download, privileged-ports, print-root-cert, or trust-remote"
@@ -53,6 +54,7 @@ func ParseCommandLineArguments(rawArguments []string) (CommandLineArguments, err
 
 type manifestOptions struct {
 	ManifestPath *string `descr:"Explicit path to devhost.toml." env:"DEVHOST_MANIFEST" name:"manifest"`
+	Verbose      bool    `descr:"Print managed Caddy command output while running a stack." name:"verbose"`
 }
 
 type trustRemoteOptions struct {
@@ -69,7 +71,7 @@ func createRootCommand(result *CommandLineArguments) boa.CmdT[manifestOptions] {
 				return error
 			}
 
-			*result = CommandLineArguments{Kind: KindManifest, ManifestPath: options.ManifestPath}
+			*result = CommandLineArguments{Kind: KindManifest, ManifestPath: options.ManifestPath, Verbose: options.Verbose}
 			return nil
 		},
 		SubCmds: boa.SubCmds(
@@ -112,6 +114,7 @@ func createCaddyLifecycleCommand(result *CommandLineArguments, action CaddyLifec
 				Kind:         KindCaddyLifecycle,
 				Action:       action,
 				ManifestPath: options.ManifestPath,
+				Verbose:      options.Verbose,
 			}
 			return nil
 		},
