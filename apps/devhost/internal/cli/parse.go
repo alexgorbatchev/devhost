@@ -12,7 +12,6 @@ type Kind string
 
 const (
 	KindManifest           Kind = "manifest"
-	KindSkill              Kind = "skill"
 	KindVersion            Kind = "version"
 	KindCaddyLifecycle     Kind = "caddy-lifecycle"
 	KindCaddyPrintRootCert Kind = "caddy-print-root-cert"
@@ -74,20 +73,8 @@ func createRootCommand(result *CommandLineArguments) boa.CmdT[manifestOptions] {
 			return nil
 		},
 		SubCmds: boa.SubCmds(
-			createSkillCommand(result),
 			createCaddyCommand(result),
 		),
-	}
-}
-
-func createSkillCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
-	return boa.CmdT[boa.NoParams]{
-		Use:   "skill",
-		Short: "Print the bundled devhost bootstrap skill.",
-		Args:  cobra.NoArgs,
-		RunFunc: func(_ *boa.NoParams, _ *cobra.Command, _ []string) {
-			*result = CommandLineArguments{Kind: KindSkill}
-		},
 	}
 }
 

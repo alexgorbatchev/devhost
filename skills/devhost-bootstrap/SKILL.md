@@ -1,6 +1,7 @@
 ---
 name: devhost-bootstrap
-description: Create an initial `devhost.toml` manifest for an existing repository. Use when asked to bootstrap, draft, or wire up a first devhost manifest. Start with repo discovery to identify runnable services, commands, ports, health checks, and the right manifest location. Ask the user to choose a base domain before writing routed hosts, with `*.localhost` as the default suggestion.
+description: Create an initial `devhost.toml` manifest for an existing repository, including optional project-local annotation agent commands. Use when asked to bootstrap, draft, or wire up a first devhost manifest. Start with repo discovery to identify runnable services, commands, ports, health checks, and the right manifest location. Ask the user to choose a base domain before writing routed hosts, with `*.localhost` as the default suggestion. For annotation agent integrations in manifests, read `references/agent-adapters.md`; do not use this skill for implementing built-in Go adapters.
+author: alexgorbatchev
 ---
 
 # Devhost Manifest Init
@@ -57,6 +58,7 @@ Build the first manifest from `apps/devhost/devhost.example.toml`, then trim it 
 - Prefer string-array `command` values.
 - Keep all fields for one service inside one table; do not reopen the same service later.
 - Only add `[caddy.global]`, `[devtools]`, `[agent]`, or explicit health tables when the repo actually needs them.
+- Before adding `[agent]`, read `references/agent-adapters.md` to choose between a built-in adapter and a custom command.
 - For a routed service, include both `port` and `host`.
 - For a non-routed service, omit `host`.
 - Prefer the repo's real fixed ports when they are already established.
