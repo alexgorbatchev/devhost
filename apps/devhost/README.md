@@ -637,7 +637,7 @@ bun run compile:devhost
 ./apps/devhost/dist/devhost --version
 ```
 
-That build refreshes the embedded injected devtools bundle with Bun and writes the CLI binary to `apps/devhost/dist/devhost` with the version from `apps/devhost/metadata.json` embedded into `devhost --version`. Source-checkout runs such as `go run ./cmd/devhost --version` use the local placeholder version instead of the packaged release metadata. Bun is only required for source builds inside this repository; the shipped `devhost` binary does not require Bun.
+That build refreshes the embedded injected devtools bundle with Bun and writes the CLI binary to `apps/devhost/dist/devhost` with the version from `apps/devhost/metadata.json` embedded into `devhost --version`. The generated devtools bundle lives under `apps/devhost/internal/devtools/dist/` for Go `//go:embed` and is not committed; run `bun run build:devtools-bundle:devhost` if you need to refresh only those assets. Source-checkout runs such as `go run ./cmd/devhost --version` use the local placeholder version instead of the packaged release metadata. Bun is only required for source builds inside this repository; the shipped `devhost` binary does not require Bun.
 
 ## Contributor notes
 

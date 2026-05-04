@@ -8,6 +8,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Ensure Playwright Chromium is available for Storybook and recorder workflows: `bun run install-browser`
 - Check the full repo: `bun run check`
 - Human-only repo-wide formatting command when manual cleanup is explicitly needed: `bun run fix`
+- Refresh the generated embedded devtools bundle: `bun run build:devtools-bundle:devhost`
 - Check `devhost` app-only validations: `bun run check:devhost`
 - Build `devhost` release tarballs: `bun run build:release-artifacts:devhost`
 - Build the current-platform `devhost` binary: `bun run compile:devhost`
@@ -34,13 +35,14 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Root `package.json` owns the shared TypeScript AI policy tooling and the shared `oxfmt` / `oxlint` configs. Keep workspace-local copies out unless the workspaces genuinely diverge.
 - Root `bun run check` runs shared `oxfmt` / `oxlint` enforcement first, then delegates to package-specific checks.
 - Workspace `check` scripts are package-local validation only; do not duplicate shared lint/format enforcement there unless a workspace intentionally diverges.
-- `bun run check:devhost` runs `go vet ./...` and `go test ./...` in `apps/devhost/`.
+- `bun run check:devhost` refreshes the generated embedded devtools bundle, then runs `go vet ./...` and `go test ./...` in `apps/devhost/`.
 - `packages/devhost-ui` `bun run check` runs the package TypeScript check, `bun test --coverage`, and `bun vitest run -c vitest.storybook.config.ts`.
 - `packages/docs` `bun run check` runs `bun test`, the content sync, `astro check`, and `astro build`.
 - `packages/docs` `bun run dev`, `bun run start`, and `bun run preview` bind Astro to `0.0.0.0` so the docs site can be reached from outside the current environment.
 - `packages/docs` allows all dev/preview hosts in `astro.config.mjs`, so the docs server should be treated as broadly reachable while it is running.
 - `bun run --cwd packages/docs record:marketing` builds the docs site, starts a temporary Astro preview server, and records rrweb JSON artifacts under `packages/docs/public/recordings/marketing/`.
 - `bun run --cwd packages/devhost-ui storybook` starts the interactive Storybook dev server for manual inspection; it does not replace the automated coverage already included in the workspace `check` script.
+- `apps/devhost/internal/devtools/dist/` is generated for Go `//go:embed` and intentionally ignored; run `bun run build:devtools-bundle:devhost`, `bun run check:devhost`, or `bun run compile:devhost` instead of committing those files.
 - Root `postinstall` runs `bun run install-browser`, which uses `playwright install chromium` without `--force` so existing Chromium binaries are reused instead of being re-downloaded on every `bun install`.
 - Keep a single root `bun.lock`. Do not add workspace-local lockfiles.
 

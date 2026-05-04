@@ -1,9 +1,6 @@
 .cache/
 node_modules/
 dist
-!apps/devhost/internal/devtools/dist/
-!apps/devhost/internal/devtools/dist/devtools.js
-!apps/devhost/internal/devtools/dist/xterm.css
 
 caddy/routes/*.caddy
 caddy/routes/.registrations/*.json
