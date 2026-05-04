@@ -535,6 +535,7 @@ func startServiceProcess(manifest ResolvedManifest, service ResolvedService, opt
 	command := exec.Command(service.Command[0], service.Command[1:]...)
 	command.Dir = service.Cwd
 	command.Env = createChildEnvironment(options.environment, service.Env, CreateInjectedServiceEnvironment(manifest, service))
+	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	stdoutPipe, error := command.StdoutPipe()
 	if error != nil {
@@ -964,6 +965,12 @@ func joinCleanupError(runError error, cleanupError error) error {
 func sendSignal(command *exec.Cmd, signal os.Signal) {
 	if command == nil || command.Process == nil {
 		return
+	}
+
+	if signalValue, ok := signal.(syscall.Signal); ok && command.Process.Pid > 0 {
+		if error := syscall.Kill(-command.Process.Pid, signalValue); error == nil {
+			return
+		}
 	}
 
 	_ = command.Process.Signal(signal)

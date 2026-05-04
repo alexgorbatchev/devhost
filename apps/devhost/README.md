@@ -200,7 +200,7 @@ When you run `devhost`, it:
 6. reserves every public hostname before starting any service
 7. starts managed services in dependency order and evaluates unmanaged services in the same dependency graph
 8. waits for each managed service health check before routing it, while unmanaged routed services claim their routes immediately once dependencies are satisfied
-9. removes routes and reservations on shutdown or startup failure
+9. removes routes and reservations on shutdown or startup failure, and forwards shutdown signals to each managed service process group so wrapper-launched descendants do not keep listening
 
 `devhost`-owned logs use the manifest `name` when available and fall back to `[devhost]`. Child service logs remain prefixed with `[service-name]`.
 
