@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build:release-artifacts:devhost": "bun run ./apps/devhost/scripts/buildReleaseArtifacts.ts",
+    "build:devtools-bundle:devhost": "bun run ./apps/devhost/scripts/buildDevtoolsBundle.ts",
     "check": "bun --bun oxfmt --check . && bun --bun oxlint . && bun run check:devhost && bun run --cwd packages/devhost-ui check && bun run --cwd packages/docs check",
     "check:devhost": "./apps/devhost/scripts/check.sh",
     "compile:devhost": "./apps/devhost/scripts/compile.sh",

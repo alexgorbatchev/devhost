@@ -15,7 +15,7 @@ Local React workspace for the injected `devhost` browser UI that gets embedded i
 
 ## Local gotchas
 
-- This package is the source of truth for the injected browser UI, but the shipped bundle is still embedded by the Go app in `apps/devhost/`; update both sides together when the bundling contract changes.
+- This package is the source of truth for the injected browser UI, but the Go app embeds a generated bundle from `apps/devhost/internal/devtools/dist/`. That directory is ignored; run `bun run build:devtools-bundle:devhost`, `bun run check:devhost`, or `bun run compile:devhost` instead of committing generated bundle files.
 - Shared `oxfmt` / `oxlint` enforcement runs from the repo root, not from this workspace `check` script.
 - For styling, theme, and feature-layout rules under `src/devtools/`, follow `src/devtools/AGENTS.md` and `src/devtools/features/AGENTS.md`.
 
