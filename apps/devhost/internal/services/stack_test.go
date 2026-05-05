@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -1001,7 +1003,9 @@ func TestStopStartedServicesStopsRunningServicesGracefully(t *testing.T) {
 	}
 
 	time.Sleep(100 * time.Millisecond)
-	stopStartedServices([]*startedService{firstService, secondService}, 100*time.Millisecond)
+	if error := stopStartedServices([]*startedService{firstService, secondService}, 100*time.Millisecond); error != nil {
+		t.Fatalf("stopStartedServices(...) error = %v", error)
+	}
 
 	stopTrace, error := os.ReadFile(stopLogPath)
 	if error != nil {
@@ -1058,7 +1062,9 @@ func TestStopStartedServiceStopsDescendantProcesses(t *testing.T) {
 		return true
 	})
 
-	stopStartedService(startedService, 100*time.Millisecond)
+	if error := stopStartedService(startedService, 100*time.Millisecond); error != nil {
+		t.Fatalf("stopStartedService(...) error = %v", error)
+	}
 
 	waitForCondition(t, 5*time.Second, func() bool {
 		conn, error := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
@@ -1068,6 +1074,527 @@ func TestStopStartedServiceStopsDescendantProcesses(t *testing.T) {
 		_ = conn.Close()
 		return false
 	})
+}
+
+func TestStopStartedServiceStopsDetachedDescendantProcesses(t *testing.T) {
+	servicePort := mustReservePort(t)
+	childPidPath := filepath.Join(t.TempDir(), "child.pid")
+	t.Cleanup(func() {
+		childPidText, error := os.ReadFile(childPidPath)
+		if error != nil {
+			return
+		}
+		childPid, error := strconv.Atoi(strings.TrimSpace(string(childPidText)))
+		if error != nil {
+			return
+		}
+		_ = syscall.Kill(childPid, syscall.SIGKILL)
+	})
+
+	startedService, error := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+		BindHost: "127.0.0.1",
+		Command:  helperCommand(),
+		Cwd:      t.TempDir(),
+		Env: map[string]string{
+			"GO_WANT_HELPER_PROCESS": "1",
+			"DEVHOST_HELPER_MODE":    "spawn-detached-child-server-and-wait",
+			"CHILD_PID_PATH":         childPidPath,
+			"PORT":                   strconv.Itoa(servicePort),
+		},
+		Health:     ResolvedHealthConfig{Kind: "process"},
+		InjectPort: true,
+		Name:       "web",
+	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
+	if error != nil {
+		t.Fatalf("startServiceProcess(...) error = %v", error)
+	}
+
+	waitForCondition(t, 5*time.Second, func() bool {
+		conn, error := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
+		if error != nil {
+			return false
+		}
+		_ = conn.Close()
+		return true
+	})
+
+	if error := stopStartedService(startedService, 100*time.Millisecond); error != nil {
+		t.Fatalf("stopStartedService(...) error = %v", error)
+	}
+
+	waitForCondition(t, 5*time.Second, func() bool {
+		conn, error := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
+		if error != nil {
+			return true
+		}
+		_ = conn.Close()
+		return false
+	})
+}
+
+func TestStopStartedServiceStopsDescendantsSpawnedDuringSignalHandling(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("linux-specific subreaper adoption test")
+	}
+
+	servicePort := mustReservePort(t)
+	childPidPath := filepath.Join(t.TempDir(), "child.pid")
+	t.Cleanup(func() {
+		childPidText, error := os.ReadFile(childPidPath)
+		if error != nil {
+			return
+		}
+		childPid, error := strconv.Atoi(strings.TrimSpace(string(childPidText)))
+		if error != nil {
+			return
+		}
+		_ = syscall.Kill(childPid, syscall.SIGKILL)
+	})
+
+	startedService, error := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+		BindHost: "127.0.0.1",
+		Command:  helperCommand(),
+		Cwd:      t.TempDir(),
+		Env: map[string]string{
+			"GO_WANT_HELPER_PROCESS": "1",
+			"DEVHOST_HELPER_MODE":    "spawn-detached-child-server-on-term-and-exit",
+			"CHILD_PID_PATH":         childPidPath,
+			"PORT":                   strconv.Itoa(servicePort),
+		},
+		Health:     ResolvedHealthConfig{Kind: "process"},
+		InjectPort: true,
+		Name:       "web",
+	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
+	if error != nil {
+		t.Fatalf("startServiceProcess(...) error = %v", error)
+	}
+
+	if error := stopStartedService(startedService, 250*time.Millisecond); error != nil {
+		t.Fatalf("stopStartedService(...) error = %v", error)
+	}
+
+	waitForCondition(t, 5*time.Second, func() bool {
+		_, error := os.Stat(childPidPath)
+		return error == nil
+	})
+
+	waitForCondition(t, 5*time.Second, func() bool {
+		conn, error := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
+		if error != nil {
+			return true
+		}
+		_ = conn.Close()
+		return false
+	})
+}
+
+func TestStopStartedServiceStopsDetachedDescendantsExitedDuringStartup(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("linux-specific startup containment test")
+	}
+
+	servicePort := mustReservePort(t)
+	childPIDPath := filepath.Join(t.TempDir(), "child.pid")
+	t.Cleanup(func() {
+		childPIDText, error := os.ReadFile(childPIDPath)
+		if error != nil {
+			return
+		}
+		childPID, error := strconv.Atoi(strings.TrimSpace(string(childPIDText)))
+		if error != nil {
+			return
+		}
+		_ = syscall.Kill(childPID, syscall.SIGKILL)
+		_, _ = syscall.Wait4(childPID, nil, 0, nil)
+	})
+
+	startedService, error := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+		BindHost: "127.0.0.1",
+		Command:  helperCommand(),
+		Cwd:      t.TempDir(),
+		Env: map[string]string{
+			"GO_WANT_HELPER_PROCESS": "1",
+			"DEVHOST_HELPER_MODE":    "spawn-detached-child-server-and-exit",
+			"CHILD_PID_PATH":         childPIDPath,
+			"PORT":                   strconv.Itoa(servicePort),
+		},
+		Health:     ResolvedHealthConfig{Kind: "process"},
+		InjectPort: true,
+		Name:       "web",
+	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
+	if error != nil {
+		t.Fatalf("startServiceProcess(...) error = %v", error)
+	}
+
+	waitForCondition(t, 5*time.Second, func() bool {
+		conn, error := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
+		if error != nil {
+			return false
+		}
+		_ = conn.Close()
+		return true
+	})
+
+	if error := stopStartedService(startedService, 250*time.Millisecond); error != nil {
+		t.Fatalf("stopStartedService(...) error = %v", error)
+	}
+
+	waitForCondition(t, 5*time.Second, func() bool {
+		conn, error := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
+		if error != nil {
+			return true
+		}
+		_ = conn.Close()
+		return false
+	})
+}
+
+func TestStopStartedServiceStopsLateExternalPortRespawns(t *testing.T) {
+	servicePort := mustReservePort(t)
+	tempDirectory := t.TempDir()
+	childPIDPath := filepath.Join(tempDirectory, "child.pid")
+	triggerPath := filepath.Join(tempDirectory, "trigger")
+
+	coordinator := exec.Command(os.Args[0], "-test.run=TestServiceHelperProcess", "--")
+	coordinator.Env = append(os.Environ(),
+		"GO_WANT_HELPER_PROCESS=1",
+		"DEVHOST_HELPER_MODE=delayed-child-server-on-file",
+		"CHILD_PID_PATH="+childPIDPath,
+		"DELAY_MS=1200",
+		"PORT="+strconv.Itoa(servicePort),
+		"TRIGGER_PATH="+triggerPath,
+	)
+	coordinator.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if error := coordinator.Start(); error != nil {
+		t.Fatalf("coordinator.Start() error = %v", error)
+	}
+	t.Cleanup(func() {
+		if coordinator.Process != nil {
+			_ = syscall.Kill(-coordinator.Process.Pid, syscall.SIGKILL)
+		}
+		childPIDText, error := os.ReadFile(childPIDPath)
+		if error != nil {
+			return
+		}
+		childPID, error := strconv.Atoi(strings.TrimSpace(string(childPIDText)))
+		if error != nil {
+			return
+		}
+		_ = syscall.Kill(childPID, syscall.SIGKILL)
+	})
+
+	startedService, error := startServiceProcess(newResolvedManifest(tempDirectory, "127.0.0.1:20197"), ResolvedService{
+		BindHost: "127.0.0.1",
+		Command:  helperCommand(),
+		Cwd:      tempDirectory,
+		Env: map[string]string{
+			"GO_WANT_HELPER_PROCESS": "1",
+			"DEVHOST_HELPER_MODE":    "signal-external-coordinator-and-exit-on-term",
+			"TRIGGER_PATH":           triggerPath,
+		},
+		Health:     ResolvedHealthConfig{Kind: "process"},
+		InjectPort: true,
+		Name:       "web",
+		Port:       &servicePort,
+		PortSource: "fixed",
+	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
+	if error != nil {
+		t.Fatalf("startServiceProcess(...) error = %v", error)
+	}
+
+	if error := stopStartedService(startedService, 4*time.Second); error != nil {
+		t.Fatalf("stopStartedService(...) error = %v", error)
+	}
+
+	waitForCondition(t, 5*time.Second, func() bool {
+		_, error := os.Stat(childPIDPath)
+		return error == nil
+	})
+
+	waitForCondition(t, 5*time.Second, func() bool {
+		conn, error := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
+		if error != nil {
+			return true
+		}
+		_ = conn.Close()
+		return false
+	})
+}
+
+func TestStopStartedServicePassesBindHostToLateListenerReader(t *testing.T) {
+	originalReadListeningProcessIDs := readListeningProcessIDs
+	defer func() {
+		readListeningProcessIDs = originalReadListeningProcessIDs
+	}()
+
+	servicePort := 3000
+	gotBindHost := ""
+	gotPort := 0
+	readListeningProcessIDs = func(bindHost string, port int) []int {
+		gotBindHost = bindHost
+		gotPort = port
+		return nil
+	}
+
+	startedService := &startedService{
+		service: ResolvedService{BindHost: "127.0.0.1", Port: &servicePort},
+	}
+	startedService.exitMu.Lock()
+	startedService.exitCode = 0
+	startedService.hasExited = true
+	startedService.exitMu.Unlock()
+	startedService.shutdownMu.Lock()
+	startedService.shutdownAt = time.Now().Add(-lateListenerPollInterval)
+	startedService.shutdownWith = syscall.SIGTERM
+	startedService.shutdownMu.Unlock()
+
+	startedService.handleLateListeners()
+
+	if gotBindHost != "127.0.0.1" || gotPort != servicePort {
+		t.Fatalf("late listener lookup = (%q, %d), want (%q, %d)", gotBindHost, gotPort, "127.0.0.1", servicePort)
+	}
+}
+
+func TestStopStartedServiceReturnsShutdownFailureDetails(t *testing.T) {
+	originalReadListeningProcessIDs := readListeningProcessIDs
+	defer func() {
+		readListeningProcessIDs = originalReadListeningProcessIDs
+	}()
+
+	servicePort := 3010
+	readListeningProcessIDs = func(bindHost string, port int) []int {
+		if bindHost == "127.0.0.1" && port == servicePort {
+			return []int{4321}
+		}
+
+		return nil
+	}
+
+	startedService := &startedService{
+		service: ResolvedService{BindHost: "127.0.0.1", Name: "web", Port: &servicePort},
+		exited:  make(chan struct{}),
+	}
+	startedService.exitMu.Lock()
+	startedService.exitCode = 0
+	startedService.hasExited = true
+	startedService.exitMu.Unlock()
+	close(startedService.exited)
+	startedService.shutdownMu.Lock()
+	startedService.shutdownAt = time.Now().Add(-lateListenerPollInterval)
+	startedService.shutdownWith = syscall.SIGTERM
+	startedService.shutdownMu.Unlock()
+
+	error := stopStartedService(startedService, 50*time.Millisecond)
+	if error == nil {
+		t.Fatal("stopStartedService(...) error = nil, want shutdown failure")
+	}
+	if !strings.Contains(error.Error(), "failed to shut down service web after SIGTERM and SIGKILL") {
+		t.Fatalf("stopStartedService(...) error = %q, want shutdown failure summary", error)
+	}
+	if !strings.Contains(error.Error(), "listener still active on 127.0.0.1:3010 (pids: 4321)") {
+		t.Fatalf("stopStartedService(...) error = %q, want surviving listener details", error)
+	}
+}
+
+func TestStopStartedServicesAggregatesShutdownFailures(t *testing.T) {
+	originalReadListeningProcessIDs := readListeningProcessIDs
+	defer func() {
+		readListeningProcessIDs = originalReadListeningProcessIDs
+	}()
+
+	firstPort := 3011
+	secondPort := 3012
+	readListeningProcessIDs = func(bindHost string, port int) []int {
+		switch {
+		case bindHost == "127.0.0.1" && port == firstPort:
+			return []int{4001}
+		case bindHost == "127.0.0.1" && port == secondPort:
+			return []int{4002}
+		default:
+			return nil
+		}
+	}
+
+	newExitedService := func(name string, port int) *startedService {
+		startedService := &startedService{
+			service: ResolvedService{BindHost: "127.0.0.1", Name: name, Port: &port},
+			exited:  make(chan struct{}),
+		}
+		startedService.exitMu.Lock()
+		startedService.exitCode = 0
+		startedService.hasExited = true
+		startedService.exitMu.Unlock()
+		close(startedService.exited)
+		return startedService
+	}
+
+	error := stopStartedServices([]*startedService{
+		newExitedService("api", firstPort),
+		newExitedService("web", secondPort),
+	}, 50*time.Millisecond)
+	if error == nil {
+		t.Fatal("stopStartedServices(...) error = nil, want aggregated shutdown failure")
+	}
+	if !strings.Contains(error.Error(), "failed to shut down service api after SIGTERM and SIGKILL") {
+		t.Fatalf("stopStartedServices(...) error = %q, want api shutdown failure", error)
+	}
+	if !strings.Contains(error.Error(), "failed to shut down service web after SIGTERM and SIGKILL") {
+		t.Fatalf("stopStartedServices(...) error = %q, want web shutdown failure", error)
+	}
+	if !strings.Contains(error.Error(), "listener still active on 127.0.0.1:3011 (pids: 4001)") {
+		t.Fatalf("stopStartedServices(...) error = %q, want first listener details", error)
+	}
+	if !strings.Contains(error.Error(), "listener still active on 127.0.0.1:3012 (pids: 4002)") {
+		t.Fatalf("stopStartedServices(...) error = %q, want second listener details", error)
+	}
+}
+
+func TestJoinCleanupErrorAggregatesCleanupFailures(t *testing.T) {
+	runError := errors.New("stack startup failed")
+	cleanupError := errors.Join(
+		errors.New("failed to shut down service api after SIGTERM and SIGKILL: listener still active on 127.0.0.1:3011 (pids: 4001)"),
+		errors.New("failed to shut down service web after SIGTERM and SIGKILL: listener still active on 127.0.0.1:3012 (pids: 4002)"),
+	)
+
+	joinedError := joinCleanupError(runError, cleanupError)
+	if joinedError == nil {
+		t.Fatal("joinCleanupError(...) = nil, want joined error")
+	}
+	if !strings.Contains(joinedError.Error(), "stack startup failed") {
+		t.Fatalf("joinCleanupError(...) error = %q, want run failure", joinedError)
+	}
+	if !strings.Contains(joinedError.Error(), "cleanup: failed to shut down service api after SIGTERM and SIGKILL") {
+		t.Fatalf("joinCleanupError(...) error = %q, want first cleanup failure", joinedError)
+	}
+	if !strings.Contains(joinedError.Error(), "failed to shut down service web after SIGTERM and SIGKILL") {
+		t.Fatalf("joinCleanupError(...) error = %q, want second cleanup failure", joinedError)
+	}
+}
+
+func TestStopStartedServiceDoesNotWaitForZombieDescendants(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("linux-specific zombie descendant test")
+	}
+
+	childPIDPath := filepath.Join(t.TempDir(), "child.pid")
+	t.Cleanup(func() {
+		childPIDText, error := os.ReadFile(childPIDPath)
+		if error != nil {
+			return
+		}
+		childPID, error := strconv.Atoi(strings.TrimSpace(string(childPIDText)))
+		if error != nil {
+			return
+		}
+		_, _ = syscall.Wait4(childPID, nil, 0, nil)
+	})
+
+	startedService, error := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+		BindHost: "127.0.0.1",
+		Command:  helperCommand(),
+		Cwd:      t.TempDir(),
+		Env: map[string]string{
+			"GO_WANT_HELPER_PROCESS": "1",
+			"DEVHOST_HELPER_MODE":    "spawn-detached-exit-child-on-term-and-exit",
+			"CHILD_PID_PATH":         childPIDPath,
+		},
+		Health:     ResolvedHealthConfig{Kind: "process"},
+		InjectPort: true,
+		Name:       "web",
+	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
+	if error != nil {
+		t.Fatalf("startServiceProcess(...) error = %v", error)
+	}
+
+	startTime := time.Now()
+	if error := stopStartedService(startedService, 1500*time.Millisecond); error != nil {
+		t.Fatalf("stopStartedService(...) error = %v", error)
+	}
+	elapsed := time.Since(startTime)
+
+	if elapsed >= time.Second {
+		t.Fatalf("stopStartedService(...) elapsed = %s, want less than %s", elapsed, time.Second)
+	}
+}
+
+func TestReadListeningProcessIDsForBindHostSeparatesInterfaces(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("linux-specific listener discovery test")
+	}
+
+	probeIPv4, error := net.Listen("tcp4", "127.0.0.1:0")
+	if error != nil {
+		t.Fatalf("Listen(tcp4) error = %v", error)
+	}
+	port := probeIPv4.Addr().(*net.TCPAddr).Port
+	probeIPv6, error := net.Listen("tcp6", fmt.Sprintf("[::1]:%d", port))
+	if error != nil {
+		_ = probeIPv4.Close()
+		t.Skipf("dual-stack loopback port sharing unavailable: %v", error)
+	}
+	_ = probeIPv4.Close()
+	_ = probeIPv6.Close()
+
+	tempDirectory := t.TempDir()
+	ipv4PIDPath := filepath.Join(tempDirectory, "ipv4.pid")
+	ipv6PIDPath := filepath.Join(tempDirectory, "ipv6.pid")
+
+	startBoundListener := func(bindHost string, pidPath string) *exec.Cmd {
+		command := exec.Command(os.Args[0], "-test.run=TestServiceHelperProcess", "--")
+		command.Env = append(os.Environ(),
+			"GO_WANT_HELPER_PROCESS=1",
+			"DEVHOST_HELPER_MODE=child-http-server",
+			"BIND_HOST="+bindHost,
+			"CHILD_PID_PATH="+pidPath,
+			"PORT="+strconv.Itoa(port),
+		)
+		if error := command.Start(); error != nil {
+			t.Fatalf("startBoundListener(%q) error = %v", bindHost, error)
+		}
+		t.Cleanup(func() {
+			if command.Process != nil {
+				_ = command.Process.Kill()
+				_, _ = command.Process.Wait()
+			}
+		})
+		return command
+	}
+
+	startBoundListener("127.0.0.1", ipv4PIDPath)
+	startBoundListener("::1", ipv6PIDPath)
+
+	waitForCondition(t, 5*time.Second, func() bool {
+		_, ipv4Error := os.Stat(ipv4PIDPath)
+		_, ipv6Error := os.Stat(ipv6PIDPath)
+		return ipv4Error == nil && ipv6Error == nil
+	})
+
+	ipv4PIDText, error := os.ReadFile(ipv4PIDPath)
+	if error != nil {
+		t.Fatalf("ReadFile(ipv4PIDPath) error = %v", error)
+	}
+	ipv6PIDText, error := os.ReadFile(ipv6PIDPath)
+	if error != nil {
+		t.Fatalf("ReadFile(ipv6PIDPath) error = %v", error)
+	}
+	ipv4PID, error := strconv.Atoi(strings.TrimSpace(string(ipv4PIDText)))
+	if error != nil {
+		t.Fatalf("Atoi(ipv4PID) error = %v", error)
+	}
+	ipv6PID, error := strconv.Atoi(strings.TrimSpace(string(ipv6PIDText)))
+	if error != nil {
+		t.Fatalf("Atoi(ipv6PID) error = %v", error)
+	}
+
+	ipv4Listeners := readListeningProcessIDsForBindHost("127.0.0.1", port)
+	ipv6Listeners := readListeningProcessIDsForBindHost("::1", port)
+
+	if !containsInt(ipv4Listeners, ipv4PID) || containsInt(ipv4Listeners, ipv6PID) {
+		t.Fatalf("readListeningProcessIDsForBindHost(127.0.0.1, %d) = %v, want only pid %d", port, ipv4Listeners, ipv4PID)
+	}
+	if !containsInt(ipv6Listeners, ipv6PID) || containsInt(ipv6Listeners, ipv4PID) {
+		t.Fatalf("readListeningProcessIDsForBindHost(::1, %d) = %v, want only pid %d", port, ipv6Listeners, ipv6PID)
+	}
 }
 
 func TestStopStartedServicesSignalsInReverseOrder(t *testing.T) {
@@ -1106,7 +1633,9 @@ func TestStopStartedServicesSignalsInReverseOrder(t *testing.T) {
 		}
 	}
 
-	stopStartedServices([]*startedService{firstService, secondService}, 100*time.Millisecond)
+	if error := stopStartedServices([]*startedService{firstService, secondService}, 100*time.Millisecond); error != nil {
+		t.Fatalf("stopStartedServices(...) error = %v", error)
+	}
 
 	if !stringSlicesEqual(signalOrder, []string{"second:terminated", "first:terminated"}) {
 		t.Fatalf("signal order = %#v, want reverse-order SIGTERM delivery", signalOrder)
@@ -1130,7 +1659,9 @@ func TestStopStartedServiceEscalatesToSIGKILL(t *testing.T) {
 	}
 
 	time.Sleep(100 * time.Millisecond)
-	stopStartedService(startedService, 50*time.Millisecond)
+	if error := stopStartedService(startedService, 50*time.Millisecond); error != nil {
+		t.Fatalf("stopStartedService(...) error = %v", error)
+	}
 	if startedService.exitCodeValue() != -1 {
 		t.Fatalf("exit code = %d, want signal exit", startedService.exitCodeValue())
 	}
@@ -1302,8 +1833,22 @@ func TestServiceHelperProcess(t *testing.T) {
 		runRouteAwareHTTPServerHelper()
 	case "spawn-child-server-and-wait":
 		runSpawnChildServerAndWaitHelper()
+	case "spawn-detached-child-server-and-wait":
+		runSpawnDetachedChildServerAndWaitHelper()
+	case "spawn-detached-child-server-and-exit":
+		runSpawnDetachedChildServerAndExitHelper()
+	case "spawn-detached-child-server-on-term-and-exit":
+		runSpawnDetachedChildServerOnTermAndExitHelper()
+	case "spawn-detached-exit-child-on-term-and-exit":
+		runSpawnDetachedExitChildOnTermAndExitHelper()
+	case "signal-external-coordinator-and-exit-on-term":
+		runSignalExternalCoordinatorAndExitOnTermHelper()
+	case "delayed-child-server-on-file":
+		runDelayedChildServerOnFileHelper()
 	case "child-http-server":
 		runChildHTTPServerHelper()
+	case "exit-immediately":
+		os.Exit(0)
 	case "graceful-signal-waiter":
 		runGracefulSignalWaiterHelper()
 	case "ignore-term":
@@ -1621,13 +2166,135 @@ func runSpawnChildServerAndWaitHelper() {
 	select {}
 }
 
+func runSpawnDetachedChildServerAndWaitHelper() {
+	command := exec.Command(os.Args[0], "-test.run=TestServiceHelperProcess", "--")
+	command.Env = append(os.Environ(),
+		"GO_WANT_HELPER_PROCESS=1",
+		"DEVHOST_HELPER_MODE=child-http-server",
+		"CHILD_PID_PATH="+os.Getenv("CHILD_PID_PATH"),
+		"PORT="+os.Getenv("PORT"),
+	)
+	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if error := command.Start(); error != nil {
+		panic(error)
+	}
+
+	select {}
+}
+
+func runSpawnDetachedChildServerAndExitHelper() {
+	command := exec.Command(os.Args[0], "-test.run=TestServiceHelperProcess", "--")
+	command.Env = append(os.Environ(),
+		"GO_WANT_HELPER_PROCESS=1",
+		"DEVHOST_HELPER_MODE=child-http-server",
+		"CHILD_PID_PATH="+os.Getenv("CHILD_PID_PATH"),
+		"PORT="+os.Getenv("PORT"),
+	)
+	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if error := command.Start(); error != nil {
+		panic(error)
+	}
+
+	os.Exit(0)
+}
+
+func runSpawnDetachedChildServerOnTermAndExitHelper() {
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.Signal(15))
+	<-signals
+
+	command := exec.Command(os.Args[0], "-test.run=TestServiceHelperProcess", "--")
+	command.Env = append(os.Environ(),
+		"GO_WANT_HELPER_PROCESS=1",
+		"DEVHOST_HELPER_MODE=child-http-server",
+		"CHILD_PID_PATH="+os.Getenv("CHILD_PID_PATH"),
+		"PORT="+os.Getenv("PORT"),
+	)
+	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if error := command.Start(); error != nil {
+		panic(error)
+	}
+
+	os.Exit(0)
+}
+
+func runSpawnDetachedExitChildOnTermAndExitHelper() {
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.Signal(15))
+	<-signals
+
+	command := exec.Command(os.Args[0], "-test.run=TestServiceHelperProcess", "--")
+	command.Env = append(os.Environ(),
+		"GO_WANT_HELPER_PROCESS=1",
+		"DEVHOST_HELPER_MODE=exit-immediately",
+		"CHILD_PID_PATH="+os.Getenv("CHILD_PID_PATH"),
+	)
+	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if error := command.Start(); error != nil {
+		panic(error)
+	}
+	if error := os.WriteFile(os.Getenv("CHILD_PID_PATH"), []byte(strconv.Itoa(command.Process.Pid)), 0o644); error != nil {
+		panic(error)
+	}
+
+	os.Exit(0)
+}
+
+func runSignalExternalCoordinatorAndExitOnTermHelper() {
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.Signal(15))
+	<-signals
+
+	if error := os.WriteFile(os.Getenv("TRIGGER_PATH"), []byte("go"), 0o644); error != nil {
+		panic(error)
+	}
+
+	os.Exit(0)
+}
+
+func runDelayedChildServerOnFileHelper() {
+	triggerPath := os.Getenv("TRIGGER_PATH")
+	delayMilliseconds, _ := strconv.Atoi(os.Getenv("DELAY_MS"))
+	for {
+		if _, error := os.Stat(triggerPath); error == nil {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	time.Sleep(time.Duration(delayMilliseconds) * time.Millisecond)
+
+	command := exec.Command(os.Args[0], "-test.run=TestServiceHelperProcess", "--")
+	command.Env = append(os.Environ(),
+		"GO_WANT_HELPER_PROCESS=1",
+		"DEVHOST_HELPER_MODE=child-http-server",
+		"CHILD_PID_PATH="+os.Getenv("CHILD_PID_PATH"),
+		"PORT="+os.Getenv("PORT"),
+	)
+	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if error := command.Start(); error != nil {
+		panic(error)
+	}
+
+	os.Exit(0)
+}
+
 func runChildHTTPServerHelper() {
+	bindHost := os.Getenv("BIND_HOST")
+	if bindHost == "" {
+		bindHost = "127.0.0.1"
+	}
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
 	if error := os.WriteFile(os.Getenv("CHILD_PID_PATH"), []byte(strconv.Itoa(os.Getpid())), 0o644); error != nil {
 		panic(error)
 	}
 
-	server := &http.Server{Addr: fmt.Sprintf("127.0.0.1:%d", port), Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+	address := fmt.Sprintf("%s:%d", bindHost, port)
+	if strings.Contains(bindHost, ":") {
+		address = fmt.Sprintf("[%s]:%d", bindHost, port)
+	}
+
+	server := &http.Server{Addr: address, Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		_, _ = writer.Write([]byte("ok"))
 	})}
 	if error := server.ListenAndServe(); error != nil && error != http.ErrServerClosed {
@@ -1802,6 +2469,16 @@ func stringSlicesEqual(left []string, right []string) bool {
 }
 
 func contains(values []string, target string) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+
+	return false
+}
+
+func containsInt(values []int, target int) bool {
 	for _, value := range values {
 		if value == target {
 			return true
