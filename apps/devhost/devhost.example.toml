@@ -19,6 +19,9 @@
 # - service names must match `^[a-z][a-z0-9-]*$`
 # - every service must define either `port` or `health`
 # - `managed = true` by default; `managed = false` means devhost must not start or restart that service
+# - daemon lifecycle services use `[services.<name>.lifecycle]` with `mode = "daemon"`
+# - daemon lifecycle services must keep `managed = true`, must omit top-level `command`, and must define `lifecycle.start` and `lifecycle.stop`
+# - daemon lifecycle services must not use `port = "auto"` or `health.process`
 # - a routed service (`host = ...`) must also define `port`
 # - a routed service must not use `health.process`
 # - `port = "auto"` must omit `health` in v1
@@ -184,6 +187,7 @@ adapter = "pi"
 # - `services.web` shows a primary routed service with a fixed port
 # - `services.api.health` shows explicit HTTP health
 # - `services.preview` shows an externally managed routed service
+# - `services.mailpit` shows a managed daemon lifecycle service
 # - `services.cache.health` shows explicit TCP health
 # - `services.db` shows `port = "auto"`
 # - `services.worker.health` shows process health
@@ -201,10 +205,12 @@ primary = true
 # `managed` controls whether devhost owns the service process.
 # - `true` (default): devhost starts, stops, and can restart the child process.
 # - `false`: devhost only claims the route/port and health-checks the already-running service.
+# Daemon lifecycle services still use `managed = true`; they switch ownership mode with `[services.<name>.lifecycle]`.
 # managed = false
 # `command` defines the child process command line.
 # - string array (recommended): preserves argument boundaries exactly.
 # - string: supported, but devhost splits it on whitespace and does not preserve shell quoting.
+# Omit `command` when `[services.<name>.lifecycle].mode = "daemon"`.
 command = ["bun", "run", "web:dev"]
 # command = "bun run web:dev"
 # `cwd` sets the working directory for the child process.
@@ -287,6 +293,26 @@ port = 4100
 host = "preview.hello.local.test"
 # Fixed-port unmanaged services still get the default TCP health check on `127.0.0.1:4100`.
 # Add an explicit `[services.preview.health]` block if you want custom TCP or HTTP health instead.
+
+[services.mailpit]
+# A managed daemon lifecycle service.
+# Use this when devhost should own start/stop, but the service backgrounds itself instead of staying as one foreground child.
+port = 8025
+host = "mail.hello.local.test"
+
+[services.mailpit.lifecycle]
+# `mode = "daemon"` switches from the default foreground `command` model to explicit lifecycle commands.
+mode = "daemon"
+# `start` launches or enables the daemonized service.
+start = ["./scripts/mailpit-devctl", "start"]
+# `status` is optional. When it exits `0`, devhost treats the daemon as already running and skips `start`.
+status = ["./scripts/mailpit-devctl", "status"]
+# `stop` shuts the daemon down during stack shutdown, cleanup, and service restart.
+stop = ["./scripts/mailpit-devctl", "stop"]
+
+[services.mailpit.health]
+# Daemon lifecycle services still need normal TCP or HTTP health checks.
+http = "http://127.0.0.1:8025/api/v1/info"
 
 [services.cache]
 # A non-routed service using explicit TCP health instead of `port`.
