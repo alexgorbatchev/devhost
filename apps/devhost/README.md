@@ -87,8 +87,8 @@ $ open https://foo.localhost
 `devhost`:
 
 - routes local apps onto HTTPS hostnames through one shared managed Caddy instance
-- starts managed local child processes and can also route already-running services from `devhost.toml`
-- injects runtime context such as `PORT` and `DEVHOST_*` environment variables into managed child processes
+- starts managed foreground child processes, can drive managed daemon-style services through explicit lifecycle commands, and can also route already-running services from `devhost.toml`
+- injects runtime context such as `PORT` and `DEVHOST_*` environment variables into managed service commands
 - validates manifests, reserves public hosts, reserves fixed bind ports, and waits for managed-service health checks before routing traffic
 - allocates `port = "auto"` best-effort and retries on clear bind-collision startup failures
 - optionally injects a devtools UI for annotations, browser-hosted Neovim sessions, and aggregated third-party devtools launchers
@@ -194,13 +194,13 @@ When you run `devhost`, it:
 
 1. discovers `devhost.toml` upward from the current directory, unless `--manifest` or `DEVHOST_MANIFEST` is provided
 2. parses TOML and validates schema and semantics
-3. resolves `port = "auto"` before spawning children
+3. resolves `port = "auto"` before spawning managed foreground children
 4. requires the managed Caddy admin API to already be available
 5. reserves fixed numeric bind ports before starting any service that uses them
 6. reserves every public hostname before starting any service
-7. starts managed services in dependency order and evaluates unmanaged services in the same dependency graph
+7. starts managed services in dependency order, using either a foreground `command` or daemon `lifecycle.start`, and evaluates unmanaged services in the same dependency graph
 8. waits for each managed service health check before routing it, while unmanaged routed services claim their routes immediately once dependencies are satisfied
-9. removes routes and reservations on shutdown or startup failure, and forwards shutdown signals to each managed service process group so wrapper-launched descendants do not keep listening
+9. removes routes and reservations on shutdown or startup failure, forwards shutdown signals to managed foreground service process groups, and runs daemon `lifecycle.stop` commands for managed daemon services
 
 `devhost`-owned logs use the manifest `name` when available and fall back to `[devhost]`. Child service logs remain prefixed with `[service-name]`.
 
@@ -309,9 +309,41 @@ host = "preview.hello.localhost"
 Unmanaged services must omit `command`, `injectPort`, and `port = "auto"`.
 They can still use fixed-port routing and explicit TCP or HTTP health checks, but `health.process` is invalid because devhost does not own a child process for them.
 
+### Managed daemon-style services
+
+Use daemon lifecycle mode when `devhost` should own a service, but the service itself backgrounds or is controlled through explicit `start` / `stop` commands instead of one long-lived foreground child process.
+
+Daemon lifecycle services use a nested `[services.<name>.lifecycle]` table:
+
+- `mode = "daemon"` switches the service out of the default foreground `command` model
+- `start` and `stop` are required command arrays
+- `status` is optional and lets `devhost` treat an already-running daemon as healthy without re-running `start`
+- top-level `command` is invalid in daemon mode
+- `managed` must stay `true`
+- `port = "auto"` and `health.process` are invalid in daemon mode
+
+Example:
+
+```toml
+name = "hello-stack"
+
+[services.mailpit]
+port = 8025
+host = "mail.hello.localhost"
+health = { http = "http://127.0.0.1:8025/api/v1/info" }
+
+[services.mailpit.lifecycle]
+mode = "daemon"
+start = ["./scripts/mailpit-devctl", "start"]
+status = ["./scripts/mailpit-devctl", "status"]
+stop = ["./scripts/mailpit-devctl", "stop"]
+```
+
+`devhost` runs `lifecycle.start`, waits for the service health check, and then installs routes. On shutdown or restart it runs `lifecycle.stop`. When `status` exits successfully, `devhost` treats the daemon as already running and skips `start`.
+
 ## Injected environment
 
-`devhost` injects environment variables into each managed service child process.
+`devhost` injects environment variables into each managed service command invocation.
 Only `DEVHOST_BIND_HOST` and `PORT` are operational bind inputs.
 The remaining variables are context metadata and must not be used as socket bind targets.
 
@@ -322,7 +354,7 @@ The remaining variables are context metadata and must not be used as socket bind
   - use this for binding sockets
 - `PORT`
   - the listening port selected by `devhost`
-  - injected when the service defines `port`, including `port = "auto"`, unless `injectPort = false`
+  - injected when the service defines `port`, including foreground services with `port = "auto"`, unless `injectPort = false`
   - for `port = "auto"`, the selected port is best-effort and may be retried if the child reports a clear bind collision during startup
   - not injected for services that do not define `port` or for unmanaged services
 - `injectPort = false`
@@ -710,7 +742,7 @@ Internal development details live in:
 `devhost` is not trying to be:
 
 - Docker Compose
-- a persistent daemon beyond the explicitly managed Caddy process
+- a persistent stack supervisor; `devhost` still runs in the foreground even when a managed service uses daemon lifecycle commands
 - a remote orchestration system
 - a DNS manager
 - a generic wildcard-host generator

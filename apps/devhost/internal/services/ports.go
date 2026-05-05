@@ -35,11 +35,19 @@ type ResolvedService struct {
 	Health     ResolvedHealthConfig
 	Host       *string
 	InjectPort bool
+	Lifecycle  ResolvedServiceLifecycle
 	Managed    bool
 	Name       string
 	Path       *string
 	Port       *int
 	PortSource string
+}
+
+type ResolvedServiceLifecycle struct {
+	Mode   string
+	Start  []string
+	Status []string
+	Stop   []string
 }
 
 type ResolvedHealthConfig struct {
@@ -99,6 +107,12 @@ func ResolveServicePorts(value manifest.Manifest) (ResolvedManifest, error) {
 			Health:     health,
 			Host:       service.Host,
 			InjectPort: service.InjectPort,
+			Lifecycle: ResolvedServiceLifecycle{
+				Mode:   service.Lifecycle.Mode,
+				Start:  append([]string{}, service.Lifecycle.Start...),
+				Status: append([]string{}, service.Lifecycle.Status...),
+				Stop:   append([]string{}, service.Lifecycle.Stop...),
+			},
 			Managed:    isValidatedServiceManaged(service),
 			Name:       service.Name,
 			Path:       service.Path,
@@ -122,7 +136,7 @@ func ResolveServicePorts(value manifest.Manifest) (ResolvedManifest, error) {
 }
 
 func isValidatedServiceManaged(service manifest.ValidatedService) bool {
-	return service.Managed || len(service.Command) > 0
+	return service.Managed || len(service.Command) > 0 || service.Lifecycle.Mode == "daemon"
 }
 
 func collectFixedPorts(services map[string]manifest.ValidatedService) map[string]map[int]struct{} {

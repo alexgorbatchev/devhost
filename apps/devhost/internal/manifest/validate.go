@@ -524,16 +524,23 @@ func validateService(
 	schemaIssues *[]string,
 	validationIssues *[]string,
 ) (ValidatedService, bool) {
-	allowKeys(value, []string{"bindHost", "command", "cwd", "dependsOn", "env", "health", "host", "injectPort", "managed", "path", "port", "primary"}, fmt.Sprintf("services.%s", serviceName), schemaIssues)
+	allowKeys(value, []string{"bindHost", "command", "cwd", "dependsOn", "env", "health", "host", "injectPort", "lifecycle", "managed", "path", "port", "primary"}, fmt.Sprintf("services.%s", serviceName), schemaIssues)
 
 	managed, hasManaged := readOptionalBool(value, "managed", schemaIssues)
 	if !hasManaged {
 		managed = true
 	}
 
+	lifecycle, _ := readOptionalServiceLifecycle(value, fmt.Sprintf("services.%s.lifecycle", serviceName), schemaIssues)
+
 	command := []string{}
 	hasCommand := false
-	if managed {
+	if lifecycle.Mode == "daemon" {
+		command, hasCommand = readOptionalCommand(value, "command", schemaIssues)
+		if !hasCommand {
+			command = []string{}
+		}
+	} else if managed {
 		var ok bool
 		command, ok = readRequiredCommand(value, "command", schemaIssues)
 		hasCommand = ok
@@ -549,6 +556,27 @@ func validateService(
 
 	if !managed && hasCommand {
 		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must omit command when managed = false.", serviceName))
+	}
+	if lifecycle.Mode == "daemon" && !managed {
+		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.lifecycle.mode=\"daemon\" requires managed = true.", serviceName))
+	}
+	if lifecycle.Mode == "daemon" && hasCommand {
+		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must omit command when lifecycle.mode = \"daemon\".", serviceName))
+	}
+	if lifecycle.Mode == "daemon" && len(lifecycle.Start) == 0 {
+		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.lifecycle.start is required when lifecycle.mode = \"daemon\".", serviceName))
+	}
+	if lifecycle.Mode == "daemon" && len(lifecycle.Stop) == 0 {
+		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.lifecycle.stop is required when lifecycle.mode = \"daemon\".", serviceName))
+	}
+	if lifecycle.Mode != "daemon" && len(lifecycle.Start) != 0 {
+		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.lifecycle.start is only supported when lifecycle.mode = \"daemon\".", serviceName))
+	}
+	if lifecycle.Mode != "daemon" && len(lifecycle.Status) != 0 {
+		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.lifecycle.status is only supported when lifecycle.mode = \"daemon\".", serviceName))
+	}
+	if lifecycle.Mode != "daemon" && len(lifecycle.Stop) != 0 {
+		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.lifecycle.stop is only supported when lifecycle.mode = \"daemon\".", serviceName))
 	}
 
 	primary, _ := readOptionalBool(value, "primary", schemaIssues)
@@ -629,12 +657,18 @@ func validateService(
 	if hasHealth && health.Process && !managed {
 		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must not use health.process when managed = false.", serviceName))
 	}
+	if hasHealth && health.Process && lifecycle.Mode == "daemon" {
+		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must not use health.process when lifecycle.mode = \"daemon\".", serviceName))
+	}
 
 	if hasPort && port != nil && port.Auto && hasHealth {
 		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must omit health when port = \"auto\" in v1.", serviceName))
 	}
 	if hasPort && port != nil && port.Auto && !managed {
 		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must not use port = \"auto\" when managed = false.", serviceName))
+	}
+	if hasPort && port != nil && port.Auto && lifecycle.Mode == "daemon" {
+		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must not use port = \"auto\" when lifecycle.mode = \"daemon\".", serviceName))
 	}
 
 	if !hasPort && !hasHealth {
@@ -664,6 +698,7 @@ func validateService(
 		Health:     health,
 		Host:       normalizedHost,
 		InjectPort: injectPort,
+		Lifecycle:  lifecycle,
 		Managed:    managed,
 		Name:       serviceName,
 		Path:       normalizedPath,
@@ -1141,6 +1176,70 @@ func readOptionalHealth(value map[string]any, key string, schemaIssues *[]string
 	}
 
 	return result, true
+}
+
+func readOptionalServiceLifecycle(value map[string]any, key string, schemaIssues *[]string) (ServiceLifecycleConfig, bool) {
+	result := ServiceLifecycleConfig{Mode: "foreground"}
+	rawValue, ok := value["lifecycle"]
+	if !ok {
+		return result, false
+	}
+
+	lifecycleValue, ok := readMap(rawValue, key, schemaIssues)
+	if !ok {
+		return result, false
+	}
+
+	allowKeys(lifecycleValue, []string{"mode", "start", "status", "stop"}, key, schemaIssues)
+
+	if modeValue, ok := lifecycleValue["mode"]; ok {
+		mode, ok := modeValue.(string)
+		if !ok || (mode != "foreground" && mode != "daemon") {
+			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.mode must be one of foreground or daemon.", key))
+		} else {
+			result.Mode = mode
+		}
+	}
+
+	result.Start, _ = readOptionalCommandForPath(lifecycleValue, "start", key+".start", schemaIssues)
+	result.Status, _ = readOptionalCommandForPath(lifecycleValue, "status", key+".status", schemaIssues)
+	result.Stop, _ = readOptionalCommandForPath(lifecycleValue, "stop", key+".stop", schemaIssues)
+
+	return result, true
+}
+
+func readOptionalCommandForPath(value map[string]any, key string, fieldPath string, schemaIssues *[]string) ([]string, bool) {
+	rawValue, ok := value[key]
+	if !ok {
+		return nil, false
+	}
+
+	if stringValue, ok := rawValue.(string); ok {
+		command := strings.Fields(stringValue)
+		if len(command) == 0 {
+			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s Expected a non-empty string.", fieldPath))
+			return nil, false
+		}
+		return command, true
+	}
+
+	rawArray, ok := rawValue.([]any)
+	if !ok || len(rawArray) == 0 {
+		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must be a non-empty string or string array.", fieldPath))
+		return nil, false
+	}
+
+	command := make([]string, 0, len(rawArray))
+	for _, item := range rawArray {
+		stringItem, ok := item.(string)
+		if !ok || strings.TrimSpace(stringItem) == "" {
+			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must be a non-empty string or string array.", fieldPath))
+			return nil, false
+		}
+		command = append(command, stringItem)
+	}
+
+	return command, true
 }
 
 func readPortNumber(rawValue any) (int, bool) {
