@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -12,6 +13,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -21,9 +23,11 @@ import (
 )
 
 const (
-	defaultLogLabel       = "devhost"
-	maxAttemptOutputLines = 50
-	shutdownGracePeriod   = 10 * time.Second
+	defaultLogLabel              = "devhost"
+	maxAttemptOutputLines        = 50
+	shutdownGracePeriod          = 10 * time.Second
+	lateListenerMonitorDuration  = 2 * time.Second
+	lateListenerPollInterval     = 100 * time.Millisecond
 )
 
 var serviceSignalSender = sendSignal
@@ -33,6 +37,8 @@ var registerProcessSignals = func(ch chan<- os.Signal) {
 	signal.Notify(ch, supportedSignals...)
 }
 var unregisterProcessSignals = signal.Stop
+var serviceContainmentTokenCounter atomic.Uint64
+var readListeningProcessIDs = readListeningProcessIDsForBindHost
 
 var supportedSignals = []os.Signal{syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM}
 
@@ -53,16 +59,21 @@ type StartStackOptions struct {
 }
 
 type startedService struct {
-	cmd      *exec.Cmd
-	service  ResolvedService
-	exited   chan struct{}
-	outputWG sync.WaitGroup
+	cmd         *exec.Cmd
+	containment *serviceContainment
+	service     ResolvedService
+	exited      chan struct{}
+	outputWG    sync.WaitGroup
 
 	restartMu    sync.Mutex
 	isRestarting bool
 	exitMu       sync.Mutex
 	exitCode     int
 	hasExited    bool
+	shutdownMu   sync.Mutex
+	shutdownAt   time.Time
+	shutdownWith syscall.Signal
+	lastLateListenerCheckAt time.Time
 }
 
 type claimedFixedPort struct {
@@ -144,55 +155,43 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		startedDaemonServicesMu.Lock()
 		startedDaemonServicesSnapshot := append([]daemonLifecycleService{}, startedDaemonServices...)
 		startedDaemonServicesMu.Unlock()
-		stopStartedServices(startedServicesSnapshot, gracePeriod)
-		stopDaemonLifecycleServices(*manifest, startedDaemonServicesSnapshot, options, environment, devtoolsControlServer, &cleanupError)
+		cleanupError = appendCleanupError(cleanupError, stopStartedServices(startedServicesSnapshot, gracePeriod))
+		cleanupError = appendCleanupError(cleanupError, stopDaemonLifecycleServices(*manifest, startedDaemonServicesSnapshot, options, environment, devtoolsControlServer))
 
 		for _, documentInjectionServer := range documentInjectionServers {
 			if documentInjectionServer == nil {
 				continue
 			}
-			if error := documentInjectionServer.Stop(); error != nil && cleanupError == nil {
-				cleanupError = error
-			}
+			cleanupError = appendCleanupError(cleanupError, documentInjectionServer.Stop())
 		}
 
 		if devtoolsControlServer != nil {
-			if error := devtoolsControlServer.Stop(); error != nil && cleanupError == nil {
-				cleanupError = error
-			}
+			cleanupError = appendCleanupError(cleanupError, devtoolsControlServer.Stop())
 		}
 
 		for _, host := range claimedHosts {
-			if error := caddy.ReleaseHostClaim(caddy.ClaimHostOptions{
+			cleanupError = appendCleanupError(cleanupError, caddy.ReleaseHostClaim(caddy.ClaimHostOptions{
 				Host:                       host,
 				ManifestPath:               manifest.ManifestPath,
 				RegistrationsDirectoryPath: paths.RegistrationsDirectoryPath,
-			}); error != nil && cleanupError == nil {
-				cleanupError = error
-			}
+			}))
 		}
 
 		for _, route := range activeRoutes {
-			if error := caddy.UnregisterRoute(route.serviceName, route.host, route.path, manifest.ManifestPath, paths.RegistrationsDirectoryPath, options.CaddyOutputWriters); error != nil && cleanupError == nil {
-				cleanupError = error
-			}
+			cleanupError = appendCleanupError(cleanupError, caddy.UnregisterRoute(route.serviceName, route.host, route.path, manifest.ManifestPath, paths.RegistrationsDirectoryPath, options.CaddyOutputWriters))
 		}
 
 		for _, host := range claimedHosts {
-			if error := caddy.SyncManagedHostRoute(host, managedCaddyAdminAddress, paths.RoutesDirectoryPath, options.CaddyOutputWriters); error != nil && cleanupError == nil {
-				cleanupError = error
-			}
+			cleanupError = appendCleanupError(cleanupError, caddy.SyncManagedHostRoute(host, managedCaddyAdminAddress, paths.RoutesDirectoryPath, options.CaddyOutputWriters))
 		}
 
 		for _, claim := range claimedFixedPorts {
-			if error := caddy.ReleaseFixedPortClaim(caddy.ClaimFixedPortOptions{
+			cleanupError = appendCleanupError(cleanupError, caddy.ReleaseFixedPortClaim(caddy.ClaimFixedPortOptions{
 				BindHost:                claim.bindHost,
 				ManifestPath:            manifest.ManifestPath,
 				Port:                    claim.port,
 				PortClaimsDirectoryPath: paths.PortClaimsDirectoryPath,
-			}); error != nil && cleanupError == nil {
-				cleanupError = error
-			}
+			}))
 		}
 
 		if cleanupError != nil {
@@ -309,7 +308,9 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 				startedServicesMu.Unlock()
 
 				if targetStartedService != nil {
-					stopStartedService(targetStartedService, gracePeriod)
+					if error := stopStartedService(targetStartedService, gracePeriod); error != nil {
+						return error
+					}
 					startedServicesMu.Lock()
 					startedServices = removeStartedService(startedServices, targetStartedService)
 					startedServicesMu.Unlock()
@@ -557,7 +558,9 @@ func startServiceWithRetries(
 			return started, nil
 		}
 
-		stopStartedService(started, resolveGracePeriod(options.ShutdownGracePeriod))
+		if stopError := stopStartedService(started, resolveGracePeriod(options.ShutdownGracePeriod)); stopError != nil {
+			return nil, joinCleanupError(err, stopError)
+		}
 		if devtoolsControlServer != nil {
 			_ = devtoolsControlServer.PublishHealthResponse()
 		}
@@ -647,13 +650,14 @@ func stopDaemonLifecycleServices(
 	options StartStackOptions,
 	environment map[string]string,
 	devtoolsControlServer *devtools.ControlServer,
-	cleanupError *error,
-) {
+	) error {
+	var cleanupError error
+
 	for index := len(startedServices) - 1; index >= 0; index-- {
-		if err := stopDaemonLifecycleService(manifest, startedServices[index].service, options, environment, devtoolsControlServer); err != nil && *cleanupError == nil {
-			*cleanupError = err
-		}
+		cleanupError = appendCleanupError(cleanupError, stopDaemonLifecycleService(manifest, startedServices[index].service, options, environment, devtoolsControlServer))
 	}
+
+	return cleanupError
 }
 
 func readDaemonLifecycleStatus(
@@ -739,9 +743,15 @@ func startServiceProcess(manifest ResolvedManifest, service ResolvedService, opt
 		return nil, fmt.Errorf("service %s command is empty", service.Name)
 	}
 
+	serviceContainmentToken := createServiceContainmentToken()
 	command := exec.Command(service.Command[0], service.Command[1:]...)
 	command.Dir = service.Cwd
-	command.Env = createChildEnvironment(options.environment, service.Env, CreateInjectedServiceEnvironment(manifest, service))
+	command.Env = createChildEnvironment(
+		options.environment,
+		service.Env,
+		CreateInjectedServiceEnvironment(manifest, service),
+		map[string]string{serviceContainmentTokenEnvironment: serviceContainmentToken},
+	)
 	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	stdoutPipe, error := command.StdoutPipe()
@@ -754,14 +764,26 @@ func startServiceProcess(manifest ResolvedManifest, service ResolvedService, opt
 		return nil, fmt.Errorf("create stderr pipe for service %s: %w", service.Name, error)
 	}
 
+	if error := prepareServiceContainment(); error != nil {
+		return nil, fmt.Errorf("prepare service %s containment: %w", service.Name, error)
+	}
+
 	if error := command.Start(); error != nil {
 		return nil, fmt.Errorf("start service %s: %w", service.Name, error)
 	}
 
+	containment, error := startServiceContainment(command.Process.Pid, serviceContainmentToken)
+	if error != nil {
+		serviceSignalSender(command, syscall.Signal(9))
+		_ = command.Wait()
+		return nil, fmt.Errorf("start service %s containment: %w", service.Name, error)
+	}
+
 	startedService := &startedService{
-		cmd:     command,
-		service: service,
-		exited:  make(chan struct{}),
+		cmd:         command,
+		containment: containment,
+		service:     service,
+		exited:      make(chan struct{}),
 	}
 
 	startedService.outputWG.Add(2)
@@ -772,34 +794,34 @@ func startServiceProcess(manifest ResolvedManifest, service ResolvedService, opt
 	return startedService, nil
 }
 
-func stopStartedService(startedService *startedService, gracePeriod time.Duration) {
+func stopStartedService(startedService *startedService, gracePeriod time.Duration) error {
 	if startedService == nil {
-		return
+		return nil
 	}
+	defer startedService.closeContainment()
 
-	if startedService.ReadExitCode() != nil {
+	signalStartedService(startedService, syscall.Signal(15))
+	if waitForStartedServiceShutdownWithinGracePeriod(startedService, gracePeriod) {
 		startedService.wait()
-		return
+		return nil
 	}
 
-	serviceSignalSender(startedService.cmd, syscall.Signal(15))
-	if waitForExitWithinGracePeriod(startedService, gracePeriod) {
-		startedService.wait()
-		return
-	}
-
-	serviceSignalSender(startedService.cmd, syscall.Signal(9))
+	signalStartedService(startedService, syscall.Signal(9))
+	_ = waitForStartedServiceShutdownWithinGracePeriod(startedService, gracePeriod)
 	startedService.wait()
+	return startedService.shutdownFailure()
 }
 
-func stopStartedServices(startedServices []*startedService, gracePeriod time.Duration) {
+func stopStartedServices(startedServices []*startedService, gracePeriod time.Duration) error {
+	var cleanupError error
+
 	for index := len(startedServices) - 1; index >= 0; index-- {
 		startedService := startedServices[index]
-		if startedService == nil || startedService.ReadExitCode() != nil {
+		if startedService == nil {
 			continue
 		}
 
-		serviceSignalSender(startedService.cmd, syscall.Signal(15))
+		signalStartedService(startedService, syscall.Signal(15))
 	}
 
 	for index := len(startedServices) - 1; index >= 0; index-- {
@@ -808,26 +830,82 @@ func stopStartedServices(startedServices []*startedService, gracePeriod time.Dur
 			continue
 		}
 
-		if startedService.ReadExitCode() != nil {
-			startedService.wait()
-			continue
-		}
-
-		if !waitForExitWithinGracePeriod(startedService, gracePeriod) {
-			serviceSignalSender(startedService.cmd, syscall.Signal(9))
+		if !waitForStartedServiceShutdownWithinGracePeriod(startedService, gracePeriod) {
+			signalStartedService(startedService, syscall.Signal(9))
+			_ = waitForStartedServiceShutdownWithinGracePeriod(startedService, gracePeriod)
 		}
 
 		startedService.wait()
+		cleanupError = appendCleanupError(cleanupError, startedService.shutdownFailure())
+		startedService.closeContainment()
 	}
+
+	return cleanupError
 }
 
 func forwardStartedServicesSignal(startedServices []*startedService, receivedSignal os.Signal) {
 	for _, startedService := range startedServices {
-		if startedService == nil || startedService.ReadExitCode() != nil {
+		if startedService == nil {
 			continue
 		}
 
-		serviceSignalSender(startedService.cmd, receivedSignal)
+		signalStartedService(startedService, receivedSignal)
+	}
+}
+
+func signalStartedService(startedService *startedService, signal os.Signal) {
+	if startedService == nil {
+		return
+	}
+	startedService.noteShutdownSignal(signal)
+
+	includeRootProcessGroup := startedService.ReadExitCode() == nil
+	if startedService.containment != nil {
+		startedService.containment.signal(startedService.cmd, includeRootProcessGroup, signal)
+		return
+	}
+
+	if includeRootProcessGroup {
+		serviceSignalSender(startedService.cmd, signal)
+	}
+}
+
+func waitForStartedServiceShutdownWithinGracePeriod(startedService *startedService, gracePeriod time.Duration) bool {
+	if startedService == nil {
+		return true
+	}
+
+	timer := time.NewTimer(resolveGracePeriod(gracePeriod))
+	defer timer.Stop()
+	ticker := time.NewTicker(shutdownPollInterval)
+	defer ticker.Stop()
+
+	for {
+		startedService.handleLateListeners()
+		if startedService.isStopped() {
+			return true
+		}
+
+		select {
+		case <-timer.C:
+			startedService.handleLateListeners()
+			return startedService.isStopped()
+		case <-ticker.C:
+		}
+	}
+}
+
+func isTerminationSignal(signal os.Signal) (syscall.Signal, bool) {
+	signalValue, ok := signal.(syscall.Signal)
+	if !ok {
+		return 0, false
+	}
+
+	switch signalValue {
+	case syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGKILL:
+		return signalValue, true
+	default:
+		return 0, false
 	}
 }
 
@@ -1142,6 +1220,10 @@ func readCurrentEnvironment() map[string]string {
 	return environment
 }
 
+func createServiceContainmentToken() string {
+	return fmt.Sprintf("%d-%d", os.Getpid(), serviceContainmentTokenCounter.Add(1))
+}
+
 func copyEnvironment(value map[string]string) map[string]string {
 	copyValue := map[string]string{}
 	for key, item := range value {
@@ -1195,7 +1277,36 @@ func joinCleanupError(runError error, cleanupError error) error {
 		return cleanupError
 	}
 
-	return fmt.Errorf("%w\ncleanup: %s", runError, cleanupError)
+	return errors.Join(runError, fmt.Errorf("cleanup: %w", cleanupError))
+}
+
+func appendCleanupError(existing error, next error) error {
+	if next == nil {
+		return existing
+	}
+
+	if existing == nil {
+		return next
+	}
+
+	return errors.Join(existing, next)
+}
+
+func formatShutdownPIDList(pids []int) string {
+	parts := make([]string, 0, len(pids))
+	for _, pid := range pids {
+		parts = append(parts, fmt.Sprintf("%d", pid))
+	}
+
+	return strings.Join(parts, ", ")
+}
+
+func formatServiceListenerAddress(bindHost string, port int) string {
+	if bindHost == "" {
+		return fmt.Sprintf("port %d", port)
+	}
+
+	return net.JoinHostPort(bindHost, fmt.Sprintf("%d", port))
 }
 
 func sendSignal(command *exec.Cmd, signal os.Signal) {
@@ -1232,6 +1343,126 @@ func (s *startedService) waitForExit() {
 func (s *startedService) wait() {
 	<-s.exited
 	s.outputWG.Wait()
+}
+
+func (s *startedService) closeContainment() {
+	if s == nil || s.containment == nil {
+		return
+	}
+
+	s.containment.close()
+	s.containment = nil
+}
+
+func (s *startedService) shutdownFailure() error {
+	if s == nil {
+		return nil
+	}
+
+	problems := []string{}
+	if s.ReadExitCode() == nil && s.cmd != nil && s.cmd.Process != nil {
+		problems = append(problems, fmt.Sprintf("root process is still running (pid %d)", s.cmd.Process.Pid))
+	}
+
+	if s.containment != nil {
+		descendantPIDs := s.containment.tracker.liveDescendantPIDs()
+		if len(descendantPIDs) > 0 {
+			problems = append(problems, fmt.Sprintf("live descendant pids: %s", formatShutdownPIDList(descendantPIDs)))
+		}
+	}
+
+	if s.service.Port != nil {
+		listenerPIDs := readListeningProcessIDs(s.service.BindHost, *s.service.Port)
+		if len(listenerPIDs) > 0 {
+			problems = append(problems, fmt.Sprintf("listener still active on %s (pids: %s)", formatServiceListenerAddress(s.service.BindHost, *s.service.Port), formatShutdownPIDList(listenerPIDs)))
+		}
+	}
+
+	if len(problems) == 0 {
+		return nil
+	}
+
+	return fmt.Errorf("failed to shut down service %s after SIGTERM and SIGKILL: %s", s.service.Name, strings.Join(problems, "; "))
+}
+
+func (s *startedService) isStopped() bool {
+	if s == nil {
+		return true
+	}
+
+	if s.ReadExitCode() == nil {
+		return false
+	}
+
+	if s.containment == nil {
+		return s.lateListenerMonitorSatisfied()
+	}
+
+	if s.containment.hasLiveDescendants() {
+		return false
+	}
+
+	return s.lateListenerMonitorSatisfied()
+}
+
+func (s *startedService) noteShutdownSignal(signal os.Signal) {
+	signalValue, ok := isTerminationSignal(signal)
+	if !ok {
+		return
+	}
+
+	s.shutdownMu.Lock()
+	defer s.shutdownMu.Unlock()
+	if s.shutdownAt.IsZero() {
+		s.shutdownAt = time.Now()
+	}
+	s.shutdownWith = signalValue
+}
+
+func (s *startedService) handleLateListeners() {
+	if s == nil || s.service.Port == nil || s.ReadExitCode() == nil {
+		return
+	}
+
+	now := time.Now()
+	s.shutdownMu.Lock()
+	if s.shutdownAt.IsZero() || (!s.lastLateListenerCheckAt.IsZero() && now.Sub(s.lastLateListenerCheckAt) < lateListenerPollInterval) {
+		s.shutdownMu.Unlock()
+		return
+	}
+	s.lastLateListenerCheckAt = now
+	signalValue := s.shutdownWith
+	port := *s.service.Port
+	s.shutdownMu.Unlock()
+
+	listenerPIDs := readListeningProcessIDs(s.service.BindHost, port)
+	if len(listenerPIDs) == 0 {
+		return
+	}
+
+	for _, pid := range listenerPIDs {
+		if pid == os.Getpid() {
+			continue
+		}
+		if error := syscall.Kill(pid, signalValue); error != nil && error != syscall.ESRCH {
+			continue
+		}
+	}
+}
+
+func (s *startedService) lateListenerMonitorSatisfied() bool {
+	if s == nil || s.service.Port == nil {
+		return true
+	}
+
+	s.shutdownMu.Lock()
+	shutdownAt := s.shutdownAt
+	s.shutdownMu.Unlock()
+	if shutdownAt.IsZero() {
+		return true
+	}
+
+	return time.Since(shutdownAt) >= lateListenerMonitorDuration
 }
 
 func (s *startedService) exitCodeValue() int {
