@@ -16,7 +16,7 @@ Starts the playground through `devhost` using `devhost.toml`.
 bun run server
 ```
 
-Starts the Bun development server directly with hot reloading. `devhost.toml` uses this script for the managed `web` service so `bun run dev` does not recurse into `devhost`.
+Starts the Bun development server directly. Hot reloading stays enabled through the `Bun.serve()` development mode in `src/index.ts`, which avoids leaving behind the detached process that `bun --hot` created under `devhost` management. `devhost.toml` uses this script for the managed `web` service so `bun run dev` does not recurse into `devhost`.
 
 ```bash
 bun run build
