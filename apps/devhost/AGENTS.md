@@ -94,6 +94,14 @@ The human-only `fmt` script runs `oxfmt --write` for the repo using the shared r
 - `internal/devtools/` — Go devtools control servers plus embedded browser assets
 - `scripts/buildDevtoolsBundle.ts` — bundles `@alexgorbatchev/devhost-ui/main` into ignored `internal/devtools/dist/devtools.js` and copies `@xterm/xterm/css/xterm.css` to ignored `internal/devtools/dist/xterm.css` for `go:embed`
 
+## Service supervision boundary
+
+- Treat service cleanup as a generic containment contract with platform-specific backends; do not hardcode Linux-only assumptions into shared orchestration code.
+- Linux may use stronger containment primitives (currently child-subreaper setup, descendant tracking, and short post-signal managed-port monitoring). macOS and other platforms are best-effort and may have weaker guarantees.
+- Keep user-facing docs honest about those guarantee differences. Do not describe foreground-service shutdown as perfect or identical across platforms.
+- Services that intentionally daemonize, detach, or escape the tracked foreground process tree are unsupported in foreground `command` mode unless there is an explicit cooperative lifecycle contract. Use daemon lifecycle mode for those services instead.
+- Treat undocumented `DEVHOST_*` environment variables as internal implementation details. Do not document or rely on them as part of the public service contract unless they are intentionally promoted in `README.md` and covered by tests.
+
 ## Logging rules
 
 - All devhost-owned logs must go through the injected logger utility.
