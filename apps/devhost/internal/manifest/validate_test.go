@@ -92,6 +92,10 @@ func TestValidateManifestReturnsNormalizedDefaults(t *testing.T) {
 	if service.Health != nil {
 		t.Fatalf("service.Health = %#v, want nil", service.Health)
 	}
+
+	if service.Lifecycle.Mode != "foreground" || len(service.Lifecycle.Start) != 0 || len(service.Lifecycle.Status) != 0 || len(service.Lifecycle.Stop) != 0 {
+		t.Fatalf("service.Lifecycle = %#v, want default foreground lifecycle", service.Lifecycle)
+	}
 }
 
 func TestValidateManifestAcceptsAnnotationActions(t *testing.T) {
@@ -161,6 +165,11 @@ func TestValidateManifestAcceptsDocumentedFixtureShape(t *testing.T) {
 	apiHealth := manifest.Services["api"].Health
 	if apiHealth == nil || apiHealth.HTTP == nil || *apiHealth.HTTP != "http://127.0.0.1:4000/healthz" {
 		t.Fatalf("manifest.Services[\"api\"].Health = %#v, want HTTP health", apiHealth)
+	}
+
+	workerLifecycle := manifest.Services["worker"].Lifecycle
+	if workerLifecycle.Mode != "foreground" {
+		t.Fatalf("manifest.Services[\"worker\"].Lifecycle = %#v, want default foreground lifecycle", workerLifecycle)
 	}
 }
 
@@ -288,6 +297,23 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 			wantError: "services.db must omit health when port = \"auto\" in v1.",
 		},
 		{
+			name: "accepts daemon lifecycle service without foreground command",
+			manifest: rawManifestWithServices(map[string]any{
+				"services": map[string]any{
+					"db": map[string]any{
+						"lifecycle": map[string]any{
+							"mode":   "daemon",
+							"start":  []any{"docker", "compose", "up", "-d", "db"},
+							"status": []any{"docker", "compose", "ps", "db"},
+							"stop":   []any{"docker", "compose", "stop", "db"},
+						},
+						"port": int64(5432),
+					},
+				},
+			}),
+			wantError: "",
+		},
+		{
 			name: "accepts unmanaged routed service without command",
 			manifest: rawManifestWithServices(map[string]any{
 				"services": map[string]any{
@@ -304,6 +330,55 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 				},
 			}),
 			wantError: "services.web must omit command when managed = false.",
+		},
+		{
+			name: "rejects daemon lifecycle on unmanaged service",
+			manifest: rawManifestWithServices(map[string]any{
+				"services": map[string]any{
+					"web": map[string]any{
+						"lifecycle": map[string]any{
+							"mode":  "daemon",
+							"start": []any{"docker", "compose", "up", "-d", "web"},
+							"stop":  []any{"docker", "compose", "stop", "web"},
+						},
+						"managed": false,
+						"port":    int64(3000),
+					},
+				},
+			}),
+			wantError: "services.web.lifecycle.mode=\"daemon\" requires managed = true.",
+		},
+		{
+			name: "rejects daemon lifecycle with foreground command",
+			manifest: rawManifestWithServices(map[string]any{
+				"services": map[string]any{
+					"web": map[string]any{
+						"command": []any{"bun", "run", "dev"},
+						"lifecycle": map[string]any{
+							"mode":  "daemon",
+							"start": []any{"docker", "compose", "up", "-d", "web"},
+							"stop":  []any{"docker", "compose", "stop", "web"},
+						},
+						"port": int64(3000),
+					},
+				},
+			}),
+			wantError: "services.web must omit command when lifecycle.mode = \"daemon\".",
+		},
+		{
+			name: "rejects daemon lifecycle without stop command",
+			manifest: rawManifestWithServices(map[string]any{
+				"services": map[string]any{
+					"web": map[string]any{
+						"lifecycle": map[string]any{
+							"mode":  "daemon",
+							"start": []any{"docker", "compose", "up", "-d", "web"},
+						},
+						"port": int64(3000),
+					},
+				},
+			}),
+			wantError: "services.web.lifecycle.stop is required when lifecycle.mode = \"daemon\".",
 		},
 		{
 			name: "rejects unmanaged service inject port",
@@ -324,6 +399,22 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 			wantError: "services.web must not use port = \"auto\" when managed = false.",
 		},
 		{
+			name: "rejects daemon lifecycle auto port",
+			manifest: rawManifestWithServices(map[string]any{
+				"services": map[string]any{
+					"web": map[string]any{
+						"lifecycle": map[string]any{
+							"mode":  "daemon",
+							"start": []any{"docker", "compose", "up", "-d", "web"},
+							"stop":  []any{"docker", "compose", "stop", "web"},
+						},
+						"port": "auto",
+					},
+				},
+			}),
+			wantError: "services.web must not use port = \"auto\" when lifecycle.mode = \"daemon\".",
+		},
+		{
 			name: "rejects unmanaged service process health",
 			manifest: rawManifestWithServices(map[string]any{
 				"services": map[string]any{
@@ -331,6 +422,22 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 				},
 			}),
 			wantError: "services.web must not use health.process when managed = false.",
+		},
+		{
+			name: "rejects daemon lifecycle process health",
+			manifest: rawManifestWithServices(map[string]any{
+				"services": map[string]any{
+					"web": map[string]any{
+						"health": map[string]any{"process": true},
+						"lifecycle": map[string]any{
+							"mode":  "daemon",
+							"start": []any{"docker", "compose", "up", "-d", "web"},
+							"stop":  []any{"docker", "compose", "stop", "web"},
+						},
+					},
+				},
+			}),
+			wantError: "services.web must not use health.process when lifecycle.mode = \"daemon\".",
 		},
 		{
 			name: "rejects routed service without port",

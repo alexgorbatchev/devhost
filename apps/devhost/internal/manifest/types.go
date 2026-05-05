@@ -87,10 +87,18 @@ type ValidatedService struct {
 	Health     *HealthConfig
 	Host       *string
 	InjectPort bool
+	Lifecycle  ServiceLifecycleConfig
 	Managed    bool
 	Name       string
 	Path       *string
 	Port       *PortConfig
+}
+
+type ServiceLifecycleConfig struct {
+	Mode   string
+	Start  []string
+	Status []string
+	Stop   []string
 }
 
 type PortConfig struct {

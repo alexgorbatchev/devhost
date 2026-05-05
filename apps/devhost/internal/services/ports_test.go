@@ -128,6 +128,40 @@ func TestResolveServicePorts(t *testing.T) {
 		}
 	})
 
+	t.Run("treats daemon lifecycle services as managed without a foreground command", func(t *testing.T) {
+		t.Parallel()
+
+		webPort := &manifest.PortConfig{Number: 3000}
+		value := manifest.Manifest{Services: map[string]manifest.ValidatedService{
+			"web": {
+				BindHost: "127.0.0.1",
+				Lifecycle: manifest.ServiceLifecycleConfig{
+					Mode:  "daemon",
+					Start: []string{"docker", "compose", "up", "-d", "web"},
+					Stop:  []string{"docker", "compose", "stop", "web"},
+				},
+				Name: "web",
+				Port: webPort,
+			},
+		}}
+
+		resolvedManifest, error := ResolveServicePorts(value)
+		if error != nil {
+			t.Fatalf("ResolveServicePorts(...) unexpected error = %v", error)
+		}
+
+		resolvedService := resolvedManifest.Services["web"]
+		if !resolvedService.Managed {
+			t.Fatalf("resolved web managed = %t, want true", resolvedService.Managed)
+		}
+		if resolvedService.Lifecycle.Mode != "daemon" {
+			t.Fatalf("resolved web lifecycle = %#v, want daemon", resolvedService.Lifecycle)
+		}
+		if resolvedService.Health.Kind != "tcp" {
+			t.Fatalf("resolved web health kind = %q, want tcp", resolvedService.Health.Kind)
+		}
+	})
+
 	t.Run("rejects missing effective health checks", func(t *testing.T) {
 		t.Parallel()
 

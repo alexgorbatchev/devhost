@@ -2,6 +2,7 @@ package services
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -89,6 +90,10 @@ type processStartOptions struct {
 	stdoutWriter       io.Writer
 }
 
+type daemonLifecycleService struct {
+	service ResolvedService
+}
+
 func StartStack(manifest *ResolvedManifest, serviceOrder []string, options StartStackOptions) (exitCode int, returnedError error) {
 	if manifest == nil {
 		return 0, fmt.Errorf("manifest is required")
@@ -116,7 +121,9 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	runtimeDevtoolsFeatures := resolveSupportedDevtoolsFeatures(manifest.Devtools)
 	devtoolsEnabled := hasEnabledDevtools(manifest.Devtools) && hasEnabledRuntimeDevtools(runtimeDevtoolsFeatures)
 	startedServices := []*startedService{}
+	startedDaemonServices := []daemonLifecycleService{}
 	var startedServicesMu sync.Mutex
+	var startedDaemonServicesMu sync.Mutex
 	claimedFixedPorts := []claimedFixedPort{}
 	claimedHosts := []string{}
 	activeRoutes := []activeRoute{}
@@ -134,7 +141,11 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		startedServicesMu.Lock()
 		startedServicesSnapshot := append([]*startedService{}, startedServices...)
 		startedServicesMu.Unlock()
+		startedDaemonServicesMu.Lock()
+		startedDaemonServicesSnapshot := append([]daemonLifecycleService{}, startedDaemonServices...)
+		startedDaemonServicesMu.Unlock()
 		stopStartedServices(startedServicesSnapshot, gracePeriod)
+		stopDaemonLifecycleServices(*manifest, startedDaemonServicesSnapshot, options, environment, devtoolsControlServer, &cleanupError)
 
 		for _, documentInjectionServer := range documentInjectionServers {
 			if documentInjectionServer == nil {
@@ -270,6 +281,26 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 					return fmt.Errorf("service %s is unmanaged and cannot be restarted by devhost", serviceName)
 				}
 
+				if usesDaemonLifecycle(service) {
+					startedDaemonServicesMu.Lock()
+					hadStartedDaemon := hasStartedDaemonLifecycleService(startedDaemonServices, serviceName)
+					startedDaemonServicesMu.Unlock()
+					if hadStartedDaemon {
+						if error := stopDaemonLifecycleService(*manifest, service, options, environment, devtoolsControlServer); error != nil {
+							return error
+						}
+					}
+
+					if error := startDaemonLifecycleService(manifest, serviceName, options, environment, devtoolsControlServer); error != nil {
+						return error
+					}
+
+					startedDaemonServicesMu.Lock()
+					startedDaemonServices = upsertStartedDaemonLifecycleService(startedDaemonServices, manifest.Services[serviceName])
+					startedDaemonServicesMu.Unlock()
+					return nil
+				}
+
 				startedServicesMu.Lock()
 				targetStartedService := findStartedService(startedServices, serviceName)
 				if targetStartedService != nil {
@@ -312,6 +343,17 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		}
 
 		if isManagedService(service) {
+			if usesDaemonLifecycle(service) {
+				if err := startDaemonLifecycleService(manifest, serviceName, options, environment, devtoolsControlServer); err != nil {
+					return 0, joinCleanupError(err, cleanupError)
+				}
+
+				startedDaemonServicesMu.Lock()
+				startedDaemonServices = append(startedDaemonServices, daemonLifecycleService{service: manifest.Services[serviceName]})
+				startedDaemonServicesMu.Unlock()
+
+				service = manifest.Services[serviceName]
+			} else {
 			started, err := startServiceWithRetries(manifest, serviceName, serviceExits, options, environment, devtoolsControlServer)
 			if err != nil {
 				return 0, joinCleanupError(err, cleanupError)
@@ -322,6 +364,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			startedServicesMu.Unlock()
 
 			service = started.service
+			}
 		}
 
 		if service.Host == nil || service.Port == nil {
@@ -447,6 +490,14 @@ func startServiceWithRetries(
 	environment map[string]string,
 	devtoolsControlServer *devtools.ControlServer,
 ) (*startedService, error) {
+	service, ok := manifest.Services[serviceName]
+	if !ok {
+		return nil, fmt.Errorf("unknown service: %s", serviceName)
+	}
+	if usesDaemonLifecycle(service) {
+		return nil, fmt.Errorf("service %s uses daemon lifecycle and must not start as a foreground process", serviceName)
+	}
+
 	retryCount := 0
 
 	for {
@@ -525,6 +576,162 @@ func startServiceWithRetries(
 
 		*manifest = nextManifest
 	}
+}
+
+func startDaemonLifecycleService(
+	manifest *ResolvedManifest,
+	serviceName string,
+	options StartStackOptions,
+	environment map[string]string,
+	devtoolsControlServer *devtools.ControlServer,
+) error {
+	service, ok := manifest.Services[serviceName]
+	if !ok {
+		return fmt.Errorf("unknown service: %s", serviceName)
+	}
+	if !usesDaemonLifecycle(service) {
+		return fmt.Errorf("service %s does not use daemon lifecycle", serviceName)
+	}
+
+	running, err := readDaemonLifecycleStatus(*manifest, service, environment, options, devtoolsControlServer)
+	if err != nil {
+		return err
+	}
+	if !running {
+		if err := runServiceCommand(*manifest, service, service.Lifecycle.Start, "daemon start", environment, options, devtoolsControlServer); err != nil {
+			return err
+		}
+	}
+
+	err = WaitForServiceHealth(WaitForServiceHealthOptions{Health: service.Health, ServiceName: service.Name})
+	if err != nil {
+		return err
+	}
+	if devtoolsControlServer != nil {
+		_ = devtoolsControlServer.PublishHealthResponse()
+	}
+	return nil
+}
+
+func stopDaemonLifecycleService(
+	manifest ResolvedManifest,
+	service ResolvedService,
+	options StartStackOptions,
+	environment map[string]string,
+	devtoolsControlServer *devtools.ControlServer,
+) error {
+	if !usesDaemonLifecycle(service) {
+		return nil
+	}
+
+	running, err := readDaemonLifecycleStatus(manifest, service, environment, options, devtoolsControlServer)
+	if err != nil {
+		return err
+	}
+	if !running {
+		return nil
+	}
+
+	if err := runServiceCommand(manifest, service, service.Lifecycle.Stop, "daemon stop", environment, options, devtoolsControlServer); err != nil {
+		return err
+	}
+	if devtoolsControlServer != nil {
+		_ = devtoolsControlServer.PublishHealthResponse()
+	}
+	return nil
+}
+
+func stopDaemonLifecycleServices(
+	manifest ResolvedManifest,
+	startedServices []daemonLifecycleService,
+	options StartStackOptions,
+	environment map[string]string,
+	devtoolsControlServer *devtools.ControlServer,
+	cleanupError *error,
+) {
+	for index := len(startedServices) - 1; index >= 0; index-- {
+		if err := stopDaemonLifecycleService(manifest, startedServices[index].service, options, environment, devtoolsControlServer); err != nil && *cleanupError == nil {
+			*cleanupError = err
+		}
+	}
+}
+
+func readDaemonLifecycleStatus(
+	manifest ResolvedManifest,
+	service ResolvedService,
+	environment map[string]string,
+	options StartStackOptions,
+	devtoolsControlServer *devtools.ControlServer,
+) (bool, error) {
+	if len(service.Lifecycle.Status) == 0 {
+		return false, nil
+	}
+
+	err := runServiceCommand(manifest, service, service.Lifecycle.Status, "daemon status", environment, options, devtoolsControlServer)
+	if err == nil {
+		return true, nil
+	}
+
+	var exitError *exec.ExitError
+	if errors.As(err, &exitError) {
+		return false, nil
+	}
+
+	return false, err
+}
+
+func runServiceCommand(
+	manifest ResolvedManifest,
+	service ResolvedService,
+	commandArgs []string,
+	commandLabel string,
+	environment map[string]string,
+	options StartStackOptions,
+	devtoolsControlServer *devtools.ControlServer,
+) error {
+	if len(commandArgs) == 0 {
+		return fmt.Errorf("service %s %s command is empty", service.Name, commandLabel)
+	}
+
+	command := exec.Command(commandArgs[0], commandArgs[1:]...)
+	command.Dir = service.Cwd
+	command.Env = createChildEnvironment(environment, service.Env, CreateInjectedServiceEnvironment(manifest, service))
+	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
+	stdoutPipe, err := command.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("create stdout pipe for service %s %s command: %w", service.Name, commandLabel, err)
+	}
+
+	stderrPipe, err := command.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("create stderr pipe for service %s %s command: %w", service.Name, commandLabel, err)
+	}
+
+	if err := command.Start(); err != nil {
+		return fmt.Errorf("start service %s %s command: %w", service.Name, commandLabel, err)
+	}
+
+	var outputWG sync.WaitGroup
+	outputWG.Add(2)
+	go pipeProcessOutput(stdoutPipe, fmt.Sprintf("[%s] ", service.Name), resolveStdoutWriter(options.ServiceStdoutWriter), nil, func(line string) {
+		if devtoolsControlServer != nil {
+			devtoolsControlServer.PublishLogEntry(service.Name, devtools.ServiceLogStreamStdout, line)
+		}
+	}, &outputWG)
+	go pipeProcessOutput(stderrPipe, fmt.Sprintf("[%s] ", service.Name), resolveStderrWriter(options.ServiceStderrWriter), nil, func(line string) {
+		if devtoolsControlServer != nil {
+			devtoolsControlServer.PublishLogEntry(service.Name, devtools.ServiceLogStreamStderr, line)
+		}
+	}, &outputWG)
+
+	err = command.Wait()
+	outputWG.Wait()
+	if err != nil {
+		return fmt.Errorf("wait for service %s %s command: %w", service.Name, commandLabel, err)
+	}
+
+	return nil
 }
 
 func startServiceProcess(manifest ResolvedManifest, service ResolvedService, options processStartOptions) (*startedService, error) {
@@ -830,6 +1037,8 @@ func collectServicesHealth(manifest ResolvedManifest, startedServices []*started
 		managed := isManagedService(service)
 		if !managed {
 			status = CheckServiceHealth(service.Health)
+		} else if usesDaemonLifecycle(service) {
+			status = CheckServiceHealth(service.Health)
 		} else if startedService != nil && startedService.ReadExitCode() == nil {
 			status = CheckServiceHealth(service.Health)
 		}
@@ -847,6 +1056,33 @@ func collectServicesHealth(manifest ResolvedManifest, startedServices []*started
 
 func isManagedService(service ResolvedService) bool {
 	return service.Managed || len(service.Command) > 0
+}
+
+func usesDaemonLifecycle(service ResolvedService) bool {
+	return service.Lifecycle.Mode == "daemon"
+}
+
+func hasStartedDaemonLifecycleService(startedServices []daemonLifecycleService, serviceName string) bool {
+	for _, startedService := range startedServices {
+		if startedService.service.Name == serviceName {
+			return true
+		}
+	}
+
+	return false
+}
+
+func upsertStartedDaemonLifecycleService(startedServices []daemonLifecycleService, service ResolvedService) []daemonLifecycleService {
+	for index, startedService := range startedServices {
+		if startedService.service.Name != service.Name {
+			continue
+		}
+
+		startedServices[index] = daemonLifecycleService{service: service}
+		return startedServices
+	}
+
+	return append(startedServices, daemonLifecycleService{service: service})
 }
 
 func readManagedServiceURL(service ResolvedService, httpsPort int) *string {

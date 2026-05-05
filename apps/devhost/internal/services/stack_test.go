@@ -1139,12 +1139,153 @@ func TestStopStartedServiceEscalatesToSIGKILL(t *testing.T) {
 	}
 }
 
+func TestStartStackRunsDaemonLifecycleCommands(t *testing.T) {
+	stateDirectoryPath := t.TempDir()
+	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
+	adminAddress, stopAdmin := startTestAdminServer(t)
+	defer stopAdmin()
+	writeFakeCaddyExecutable(t, paths.ExecutablePath)
+
+	servicePort := mustReservePort(t)
+	tracePath := filepath.Join(t.TempDir(), "daemon-lifecycle-trace.txt")
+	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
+	manifestValue.PrimaryService = "api"
+	manifestValue.ServiceOrder = []string{"api"}
+	manifestValue.Services["api"] = ResolvedService{
+		BindHost: "127.0.0.1",
+		Cwd:      t.TempDir(),
+		Env: map[string]string{
+			"GO_WANT_HELPER_PROCESS": "1",
+			"LIFECYCLE_TRACE_PATH":   tracePath,
+		},
+		Health: ResolvedHealthConfig{Host: stringPointer("127.0.0.1"), Interval: 50, Kind: "tcp", Port: intPointer(servicePort), Retries: 0, Timeout: 5000},
+		Lifecycle: ResolvedServiceLifecycle{
+			Mode:   "daemon",
+			Start:  helperCommandWithMode("daemon-start-server"),
+			Status: helperCommandWithMode("daemon-status"),
+			Stop:   helperCommandWithMode("daemon-stop-server"),
+		},
+		InjectPort: true,
+		Managed:    true,
+		Name:       "api",
+		Port:       intPointer(servicePort),
+		PortSource: "fixed",
+	}
+
+	originalSignalRegistrar := registerProcessSignals
+	originalSignalStopper := unregisterProcessSignals
+	defer func() {
+		registerProcessSignals = originalSignalRegistrar
+		unregisterProcessSignals = originalSignalStopper
+	}()
+
+	signalExits := make(chan os.Signal, 1)
+	registerProcessSignals = func(ch chan<- os.Signal) {
+		go func() {
+			receivedSignal := <-signalExits
+			ch <- receivedSignal
+		}()
+	}
+	unregisterProcessSignals = func(ch chan<- os.Signal) {}
+
+	resultCh := make(chan struct {
+		exitCode int
+		error    error
+	}, 1)
+	go func() {
+		exitCode, err := StartStack(&manifestValue, []string{"api"}, StartStackOptions{
+			CaddyPaths:          paths,
+			Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
+			LogWriter:           ioDiscard{},
+			ServiceStdoutWriter: ioDiscard{},
+			ServiceStderrWriter: ioDiscard{},
+			ShutdownGracePeriod: 100 * time.Millisecond,
+		})
+		resultCh <- struct {
+			exitCode int
+			error    error
+		}{exitCode: exitCode, error: err}
+	}()
+
+	waitForCondition(t, 5*time.Second, func() bool {
+		traceText, error := os.ReadFile(tracePath)
+		if error != nil {
+			return false
+		}
+		return contains(nonEmptyLines(string(traceText)), "start")
+	})
+
+	signalExits <- syscall.SIGTERM
+	result := <-resultCh
+	if result.error != nil {
+		t.Fatalf("StartStack(...) error = %v", result.error)
+	}
+	if result.exitCode != 143 {
+		t.Fatalf("StartStack(...) exit code = %d, want 143", result.exitCode)
+	}
+
+	traceText, error := os.ReadFile(tracePath)
+	if error != nil {
+		t.Fatalf("ReadFile(...) error = %v", error)
+	}
+	if !stringSlicesEqual(nonEmptyLines(string(traceText)), []string{"status:stopped", "start", "status:running", "stop"}) {
+		t.Fatalf("trace lines = %#v, want daemon start/status/stop sequence", nonEmptyLines(string(traceText)))
+	}
+	if CheckServiceHealth(manifestValue.Services["api"].Health) {
+		t.Fatal("daemon-managed service remained healthy after shutdown")
+	}
+}
+
+func TestCollectServicesHealthChecksDaemonLifecycleServicesWithoutForegroundProcess(t *testing.T) {
+	t.Parallel()
+
+	listener, error := net.Listen("tcp", "127.0.0.1:0")
+	if error != nil {
+		t.Fatalf("Listen(...) error = %v", error)
+	}
+	defer listener.Close()
+
+	tcpAddress, ok := listener.Addr().(*net.TCPAddr)
+	if !ok {
+		t.Fatalf("listener.Addr() = %T, want *net.TCPAddr", listener.Addr())
+	}
+
+	port := tcpAddress.Port
+	manifestValue := ResolvedManifest{
+		Caddy:        manifest.CaddyConfig{Global: manifest.CaddyGlobalConfig{HTTPSPort: 443}},
+		ServiceOrder: []string{"daemon"},
+		Services: map[string]ResolvedService{
+			"daemon": {
+				BindHost:  "127.0.0.1",
+				Health:    ResolvedHealthConfig{Host: stringPointer("127.0.0.1"), Kind: "tcp", Port: intPointer(port), Timeout: 500},
+				Lifecycle: ResolvedServiceLifecycle{Mode: "daemon", Start: []string{"docker", "compose", "up", "-d", "daemon"}, Stop: []string{"docker", "compose", "stop", "daemon"}},
+				Managed:   true,
+				Name:      "daemon",
+				Port:      intPointer(port),
+			},
+		},
+	}
+
+	health := collectServicesHealth(manifestValue, nil)
+	if len(health.Services) != 1 {
+		t.Fatalf("health.Services length = %d, want 1", len(health.Services))
+	}
+	if !health.Services[0].Managed || health.Services[0].Name != "daemon" || !health.Services[0].Status {
+		t.Fatalf("daemon service health = %#v, want managed healthy daemon service", health.Services[0])
+	}
+}
+
 func TestServiceHelperProcess(t *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return
 	}
 
-	switch os.Getenv("DEVHOST_HELPER_MODE") {
+	mode := os.Getenv("DEVHOST_HELPER_MODE")
+	if mode == "" && len(os.Args) > 3 {
+		mode = os.Args[len(os.Args)-1]
+	}
+
+	switch mode {
 	case "exit-1":
 		os.Exit(1)
 	case "auto-port-retry-server":
@@ -1167,6 +1308,12 @@ func TestServiceHelperProcess(t *testing.T) {
 		runGracefulSignalWaiterHelper()
 	case "ignore-term":
 		runIgnoreTermHelper()
+	case "daemon-start-server":
+		runDaemonStartServerHelper()
+	case "daemon-status":
+		runDaemonStatusHelper()
+	case "daemon-stop-server":
+		runDaemonStopServerHelper()
 	default:
 		os.Exit(2)
 	}
@@ -1197,6 +1344,10 @@ func newResolvedManifest(manifestDirectoryPath string, adminAddress string) Reso
 
 func helperCommand() []string {
 	return []string{os.Args[0], "-test.run=TestServiceHelperProcess", "--"}
+}
+
+func helperCommandWithMode(mode string) []string {
+	return []string{os.Args[0], "-test.run=TestServiceHelperProcess", "--", mode}
 }
 
 func startTestAdminServer(t *testing.T) (string, func()) {
@@ -1509,6 +1660,68 @@ func runIgnoreTermHelper() {
 		}
 	}()
 	select {}
+}
+
+func runDaemonStartServerHelper() {
+	port, _ := strconv.Atoi(os.Getenv("PORT"))
+	tracePath := os.Getenv("LIFECYCLE_TRACE_PATH")
+	pidPath := tracePath + ".pid"
+	appendTraceLine(tracePath, "start")
+	command := exec.Command(os.Args[0], "-test.run=TestServiceHelperProcess", "--")
+	command.Env = append(os.Environ(),
+		"GO_WANT_HELPER_PROCESS=1",
+		"DEVHOST_HELPER_MODE=child-http-server",
+		"CHILD_PID_PATH="+pidPath,
+		"PORT="+strconv.Itoa(port),
+	)
+	if error := command.Start(); error != nil {
+		panic(error)
+	}
+}
+
+func runDaemonStatusHelper() {
+	tracePath := os.Getenv("LIFECYCLE_TRACE_PATH")
+	pidPath := tracePath + ".pid"
+	childPidText, error := os.ReadFile(pidPath)
+	if error != nil {
+		appendTraceLine(tracePath, "status:stopped")
+		os.Exit(1)
+	}
+
+	childPID, error := strconv.Atoi(strings.TrimSpace(string(childPidText)))
+	if error != nil {
+		appendTraceLine(tracePath, "status:stopped")
+		os.Exit(1)
+	}
+
+	if error := syscall.Kill(childPID, 0); error != nil {
+		appendTraceLine(tracePath, "status:stopped")
+		_ = os.Remove(pidPath)
+		os.Exit(1)
+	}
+
+	appendTraceLine(tracePath, "status:running")
+	os.Exit(0)
+}
+
+func runDaemonStopServerHelper() {
+	tracePath := os.Getenv("LIFECYCLE_TRACE_PATH")
+	pidPath := tracePath + ".pid"
+	appendTraceLine(tracePath, "stop")
+	childPidText, error := os.ReadFile(pidPath)
+	if error != nil {
+		return
+	}
+
+	childPID, error := strconv.Atoi(strings.TrimSpace(string(childPidText)))
+	if error != nil {
+		panic(error)
+	}
+
+	if error := syscall.Kill(childPID, syscall.SIGTERM); error != nil && error != syscall.ESRCH {
+		panic(error)
+	}
+	_ = os.Remove(pidPath)
 }
 
 func hasFiles(directoryPath string) bool {
