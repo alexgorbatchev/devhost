@@ -54,7 +54,7 @@ host = "api.foo.localhost"
 health = { http = "http://127.0.0.1:4000/healthz" }
 ```
 
-Most projects should wrap `devhost` in the package's `package.json` so you can run it through the usual dev script from the manifest directory:
+Most projects should add `devhost` to the relevant `package.json` so you can run it through the usual dev script from the directory that contains the manifest:
 
 ```json
 {
@@ -78,7 +78,7 @@ $ open https://foo.localhost
 > Your chosen hostnames must already resolve to this machine or the browser will never reach the local proxy.
 >
 > For custom domains, that means loopback resolution, such as exact `A` / `AAAA` records to `127.0.0.1` / `::1`, wildcard DNS records on your domain, or local host entries for exact names. `/etc/hosts` can be
-> used, however it only handles _exact_ hostnames.
+> used; however, it only handles _exact_ hostnames.
 >
 > Good out-of-the-box choices are `localhost` and subdomains under `*.localhost`, such as `foo.localhost` and `api.foo.localhost`, because they work without additional DNS configuration.
 
@@ -121,7 +121,7 @@ That command downloads the managed Caddy binary first when needed, then runs `su
 > [!IMPORTANT]
 > To get HTTPS working, Caddy uses a self-signed certificate that is not trusted by default.
 >
-> The `devhost caddy trust` will prompt for your password and install Caddy's CA into the system trust store.
+> `devhost caddy trust` will prompt for your password and install Caddy's CA into the system trust store.
 
 If you want to trust that same managed Caddy CA from another macOS machine without exposing the Caddy admin API, run this from the client machine:
 
@@ -180,7 +180,7 @@ The routing contract is strict:
 
 On macOS, the managed Caddy instance starts rootlessly by avoiding loopback-specific listener binding.
 That keeps startup unprivileged, but it also means the managed Caddy instance is not loopback-only on that platform.
-If you need strict loopback-only HTTPS on privileged ports, the correct solution is a privileged launcher such as `launchd` socket activation, not pretending wildcard binding is equivalent.
+If you need strict loopback-only HTTPS on privileged ports, use a privileged launcher such as `launchd` socket activation; wildcard binding is not an equivalent substitute.
 
 On non-macOS platforms, opening HTTPS on the configured `caddy.global.httpsPort` still requires privileged-port setup outside `devhost` when that port is privileged.
 Enabling `caddy.global.http = true` adds the same requirement for `caddy.global.httpPort` when that port is privileged.
@@ -313,7 +313,7 @@ They can still use fixed-port routing and explicit TCP or HTTP health checks, bu
 
 ### Managed daemon-style services
 
-Use daemon lifecycle mode when `devhost` should own a service, but the service itself backgrounds or is controlled through explicit `start` / `stop` commands instead of one long-lived foreground child process.
+Use daemon lifecycle mode when `devhost` should own a service, but the service runs in the background or is managed through explicit `start` / `stop` commands rather than one long-lived foreground process.
 
 This is the correct mode for services that intentionally daemonize, re-exec into detached workers, or otherwise cannot guarantee that their long-lived process tree will stay attached to the foreground `command` that `devhost` started.
 
@@ -400,7 +400,7 @@ The injected `devtools` UI mounts inside its own Shadow DOM container so its run
 Routed services in the injected status panel become links automatically, and clicking one opens that service URL in a new browser tab/window by default.
 The panel labels devhost-owned services as `managed` and externally owned services as `external`; only managed services expose restart controls.
 
-When `[devtools.externalToolbars].enabled = true` (the default), devhost also detects supported third-party devtools launcher buttons on the host page, hides the native launcher buttons, and re-renders those launchers inside the injected overlay. The native panels themselves stay owned by the host tools.
+When `[devtools.externalToolbars].enabled = true` (the default), devhost also detects supported third-party devtools buttons on the host page, hides the native controls, and re-renders them inside the injected overlay. The native panels themselves stay owned by the host tools.
 
 The injected overlay is always docked on the right edge of the browser. Use `[devtools.status].position` to switch between `top-right` and `bottom-right`.
 
@@ -412,7 +412,9 @@ The injected overlay is always docked on the right edge of the browser. Use `[de
 - write a comment that references markers like `#1` and `#2`
 - click `Submit` or press `⌘ ↵` / `Ctrl + Enter` to start the selected annotation action with the draft
 - when `Append to active session queue` is enabled, the draft is added to the matching routed service's active agent queue instead of being injected immediately into a busy terminal
-- queued annotations are bucketed by routed service host/path, survive browser reloads and `devhost` restarts, drain automatically when the agent emits `OSC 1337;SetAgentStatus=finished`, and stay collapsed into a compact progress summary until you expand the queue to edit or delete queued or paused items
+- queued annotations are grouped by routed service host/path and survive browser reloads and `devhost` restarts
+- queued annotations drain automatically when the agent emits `OSC 1337;SetAgentStatus=finished`
+- by default, the queue stays collapsed into a compact progress summary until you expand it to edit or delete queued or paused items
 - click `Cancel` or press `Escape` to discard the draft
 
 Annotation selection runs through a selector plugin. The built-in DOM picker is one plugin in that registry, so custom host pages can replace it with a higher-priority selector when the selectable surface is not plain DOM.
