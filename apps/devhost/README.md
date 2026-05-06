@@ -93,13 +93,30 @@ On Linux, run `devhost caddy privileged-ports` once before the first HTTPS start
 
 ## Documentation
 
-The landing page stays intentionally short. The detailed behavior, caveats, and operational guidance live in the docs:
+The landing page stays intentionally short. The detailed behavior, caveats, and operational guidance live in the docs.
+
+Start with the shared reference:
 
 - [Manifest reference](./devhost.example.toml)
+
+### Routing
+
+Use these pages when you want local HTTPS routing and service orchestration without any browser tooling:
+
 - [Managed Caddy and routing](https://alexgorbatchev.github.io/devhost/guides/managed-caddy/)
-- [Service lifecycle and manifest patterns](https://alexgorbatchev.github.io/devhost/guides/service-modes/)
-- [Devtools and annotations](https://alexgorbatchev.github.io/devhost/guides/devtools/)
+- [Stack lifecycle](https://alexgorbatchev.github.io/devhost/guides/stack-lifecycle/)
+- [Shared managed Caddy settings](https://alexgorbatchev.github.io/devhost/guides/shared-managed-caddy-settings/)
+- [Docker-backed services](https://alexgorbatchev.github.io/devhost/guides/docker-backed-services/)
+- [Managed daemon-style services](https://alexgorbatchev.github.io/devhost/guides/managed-daemon-style-services/)
+- [Injected environment](https://alexgorbatchev.github.io/devhost/guides/injected-environment/)
 - [Troubleshooting](https://alexgorbatchev.github.io/devhost/guides/troubleshooting/)
+
+### Devtools
+
+These pages cover the optional browser tooling layer that sits on top of routing:
+
+- [Devtools](https://alexgorbatchev.github.io/devhost/guides/devtools/)
+- [Annotations](https://alexgorbatchev.github.io/devhost/guides/annotations/)
 - [Architecture deep dives](https://alexgorbatchev.github.io/devhost/architecture/external-devtools/)
 
 ## What `devhost` does

@@ -17,4 +17,13 @@ describe("astro config", () => {
     expect(astroConfigText).toContain('import rehypeMermaid from "rehype-mermaid";');
     expect(rehypePluginsMatch[0]).toContain("rehypeMermaid");
   });
+
+  it("separates routing and devtools docs in the sidebar", () => {
+    const astroConfigPath = join(docsPackagePath.pathname, "astro.config.mjs");
+    const astroConfigText = readFileSync(astroConfigPath, "utf8");
+
+    expect(astroConfigText).toContain('label: "Routing"');
+    expect(astroConfigText).toContain('label: "Devtools"');
+    expect(astroConfigText).not.toContain('label: "Guides"');
+  });
 });
