@@ -16,7 +16,8 @@ const repositoryRootPath = path.resolve(docsPackagePath, "../..");
 const docsContentPath = path.join(docsPackagePath, "src/content/docs");
 const readmeSourcePath = path.join(repositoryRootPath, "apps/devhost/README.md");
 const manifestReferenceSourcePath = path.join(repositoryRootPath, "apps/devhost/devhost.example.toml");
-const architectureDocsSourcePath = path.join(repositoryRootPath, "apps/devhost/docs");
+const guidesDocsSourcePath = path.join(repositoryRootPath, "apps/devhost/docs/guides");
+const architectureDocsSourcePath = path.join(repositoryRootPath, "apps/devhost/docs/architecture");
 
 syncDocsSite();
 
@@ -25,6 +26,7 @@ function syncDocsSite(): void {
   fs.writeFileSync(path.join(docsContentPath, ".gitkeep"), "");
   syncLandingPage();
   syncManifestReference();
+  syncGuidesDocs();
   syncArchitectureDocs();
 }
 
@@ -36,10 +38,7 @@ function ensureCleanDirectory(directoryPath: string): void {
 function syncLandingPage(): void {
   const readmeMarkdown: string = fs.readFileSync(readmeSourcePath, "utf8");
   const readmeDocument: IMarkdownDocument = extractMarkdownDocument(readmeMarkdown, "devhost");
-  const rewrittenBody: string = readmeDocument.body.replaceAll(
-    "(./devhost.example.toml)",
-    "(./reference/devhost-example/)",
-  );
+  const rewrittenBody: string = rewriteMarkdownLinksForDocsSite(readmeDocument.body);
   const indexPath: string = path.join(docsContentPath, "index.mdx");
 
   fs.writeFileSync(indexPath, createLandingPage(readmeDocument.title, rewrittenBody));
@@ -60,24 +59,33 @@ function syncManifestReference(): void {
   fs.writeFileSync(manifestReferencePagePath, createMarkdownPage("Manifest reference", manifestReferencePageBody));
 }
 
+function syncGuidesDocs(): void {
+  syncDocsDirectory(guidesDocsSourcePath, "guides");
+}
+
 function syncArchitectureDocs(): void {
-  const markdownFiles = new Bun.Glob("**/*.md").scanSync({ cwd: architectureDocsSourcePath });
+  syncDocsDirectory(architectureDocsSourcePath, "architecture");
+}
+
+function syncDocsDirectory(sourceDirectoryPath: string, destinationDirectory: string): void {
+  const markdownFiles = new Bun.Glob("**/*.md").scanSync({ cwd: sourceDirectoryPath });
 
   for (const relativeSourcePath of markdownFiles) {
     if (relativeSourcePath === "AGENTS.md") {
       continue;
     }
 
-    const sourcePath: string = path.join(architectureDocsSourcePath, relativeSourcePath);
+    const sourcePath: string = path.join(sourceDirectoryPath, relativeSourcePath);
     const sourceMarkdown: string = fs.readFileSync(sourcePath, "utf8");
     const sourceDocument: IMarkdownDocument = extractMarkdownDocument(
       sourceMarkdown,
       createTitleFromRelativePath(relativeSourcePath),
     );
-    const destinationPath: string = path.join(docsContentPath, "architecture", relativeSourcePath);
+    const destinationPath: string = path.join(docsContentPath, destinationDirectory, relativeSourcePath);
+    const rewrittenBody: string = rewriteMarkdownLinksForDocsSite(sourceDocument.body);
 
     fs.mkdirSync(path.dirname(destinationPath), { recursive: true });
-    fs.writeFileSync(destinationPath, createMarkdownPage(sourceDocument.title, sourceDocument.body));
+    fs.writeFileSync(destinationPath, createMarkdownPage(sourceDocument.title, rewrittenBody));
   }
 }
 
@@ -99,6 +107,87 @@ function extractMarkdownDocument(markdown: string, fallbackTitle: string): IMark
 
 function sanitizeTitle(title: string): string {
   return title.replaceAll("`", "");
+}
+
+function rewriteMarkdownLinksForDocsSite(markdown: string): string {
+  return markdown.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match: string, label: string, rawLink: string): string => {
+    const rewrittenLink: string = rewriteDocsSiteLink(rawLink);
+
+    if (rewrittenLink === rawLink) {
+      return match;
+    }
+
+    return `[${label}](${rewrittenLink})`;
+  });
+}
+
+function rewriteDocsSiteLink(rawLink: string): string {
+  const splitLinkResult: ISplitLinkResult = splitLink(rawLink);
+  const normalizedLink: string = splitLinkResult.pathPart.replaceAll("\\", "/");
+  const manifestReferenceFileName = "devhost.example.toml";
+
+  if (isExternalOrSpecialLink(normalizedLink)) {
+    return rawLink;
+  }
+
+  if (normalizedLink === manifestReferenceFileName || normalizedLink.endsWith(`/${manifestReferenceFileName}`)) {
+    const manifestLinkPrefix: string = normalizedLink.slice(
+      0,
+      normalizedLink.length - manifestReferenceFileName.length,
+    );
+
+    return `${manifestLinkPrefix}reference/devhost-example/${splitLinkResult.suffix}`;
+  }
+
+  if (normalizedLink.startsWith("./docs/")) {
+    return `./${convertMarkdownPathToDocsRoute(normalizedLink.slice("./docs/".length))}${splitLinkResult.suffix}`;
+  }
+
+  if (normalizedLink.startsWith("docs/")) {
+    return `./${convertMarkdownPathToDocsRoute(normalizedLink.slice("docs/".length))}${splitLinkResult.suffix}`;
+  }
+
+  if (normalizedLink.endsWith(".md")) {
+    return `${convertMarkdownPathToDocsRoute(normalizedLink)}${splitLinkResult.suffix}`;
+  }
+
+  return rawLink;
+}
+
+function isExternalOrSpecialLink(link: string): boolean {
+  return (
+    link.startsWith("#") ||
+    link.startsWith("/") ||
+    link.startsWith("http://") ||
+    link.startsWith("https://") ||
+    link.startsWith("mailto:")
+  );
+}
+
+interface ISplitLinkResult {
+  pathPart: string;
+  suffix: string;
+}
+
+function splitLink(link: string): ISplitLinkResult {
+  const hashIndex: number = link.indexOf("#");
+
+  if (hashIndex === -1) {
+    return { pathPart: link, suffix: "" };
+  }
+
+  return {
+    pathPart: link.slice(0, hashIndex),
+    suffix: link.slice(hashIndex),
+  };
+}
+
+function convertMarkdownPathToDocsRoute(link: string): string {
+  if (!link.endsWith(".md")) {
+    return link;
+  }
+
+  return `${link.slice(0, -3)}/`;
 }
 
 function createTitleFromRelativePath(relativePath: string): string {
