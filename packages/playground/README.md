@@ -16,7 +16,7 @@ Starts the playground through `devhost` using `devhost.toml`.
 bun run server
 ```
 
-Starts the Bun development server directly. Hot reloading stays enabled through the `Bun.serve()` development mode in `src/index.ts`, which avoids leaving behind the detached process that `bun --hot` created under `devhost` management. `devhost.toml` uses this script for the managed `web` service so `bun run dev` does not recurse into `devhost`.
+Starts the Bun development server directly. Hot reloading stays enabled through the `Bun.serve()` development mode in `src/index.ts`, which avoids the detached process that `bun --hot` can leave behind under `devhost` management. `devhost.toml` uses this script for the managed `web` service so `bun run dev` does not recurse into `devhost`.
 
 ```bash
 bun run build
@@ -50,7 +50,7 @@ Open the routed app at:
 https://playground.localhost
 ```
 
-The manifest routes the `web` service to `bun run server` on port `3000` and enables the injected devtools overlay. Annotation actions include a Pi agent action and a command action that runs the package build.
+The manifest routes the `web` service to `bun run server` on port `3000` and enables the injected devtools overlay. Annotation actions include a Pi-backed launcher and a build command.
 
 ## Project layout
 

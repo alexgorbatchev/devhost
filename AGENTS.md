@@ -7,7 +7,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Install all workspaces when `node_modules/` is missing: `bun install`
 - Ensure Playwright Chromium is available for Storybook and recorder workflows: `bun run install-browser`
 - Check the full repo: `bun run check`
-- Human-only repo-wide formatting command when manual cleanup is explicitly needed: `bun run fix`
+- Human-only repo-wide formatting command for explicit manual cleanup: `bun run fix`
 - Refresh the generated embedded devtools bundle: `bun run build:devtools-bundle:devhost`
 - Check `devhost` app-only validations: `bun run check:devhost`
 - Build `devhost` release tarballs: `bun run build:release-artifacts:devhost`
@@ -21,7 +21,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 ## Documentation policy
 
 - `AGENTS.md`, deploy/release runbooks, and other contributor-facing docs must be kept up to date after workflow, policy, validation, or behavior changes.
-- When shared validation commands, publish steps, release steps, or contributor expectations change, update the affected docs in the same change, including `packages/docs/AGENTS.md` and `apps/devhost/RELEASE.md` when applicable.
+- When shared validation commands, release or publish procedures, or contributor expectations change, update the affected docs in the same change, including `packages/docs/AGENTS.md` and `apps/devhost/RELEASE.md` when applicable.
 - Root `README.md` is a symlink to `apps/devhost/README.md`. Update the app README, not the symlink.
 - Repository-local skills live under `.agents/skills/`. Put new local skills at `.agents/skills/<skill-name>/SKILL.md`.
 

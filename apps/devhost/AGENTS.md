@@ -21,7 +21,7 @@ Local rules for the `devhost` Go app in `apps/devhost/`.
 - **CRITICAL:** `packages/docs/sync.ts` mirrors `README.md`, `devhost.example.toml`, and `docs/**/*.md` into the public docs site. After editing those sources, you **must** validate `packages/docs` so the GitHub Pages content stays in sync.
 - Do not leave README or AGENTS examples/rules stale after changing implementation details.
 - Repo-root `README.md` is a symlink to this workspace README; update `README.md` here, not the root symlink.
-- The `docs/` directory is used for conceptual architecture, complex feature flows (e.g., Mermaid diagrams), and technical design docs that can be mirrored into the public docs site. See `docs/AGENTS.md` for specifics on what belongs in `docs/` vs `README.md`.
+- The `docs/` directory is used for conceptual architecture, complex feature flows (e.g., Mermaid diagrams), and technical design docs that can be mirrored into the public docs site. See `docs/AGENTS.md` for guidance on what belongs in `docs/` versus `README.md`.
 
 ## Development workflow
 
