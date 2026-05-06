@@ -96,11 +96,11 @@ On Linux, run `devhost caddy privileged-ports` once before the first HTTPS start
 The landing page stays intentionally short. The detailed behavior, caveats, and operational guidance live in the docs:
 
 - [Manifest reference](./devhost.example.toml)
-- [Managed Caddy and routing](./docs/guides/managed-caddy.md)
-- [Service lifecycle and manifest patterns](./docs/guides/service-modes.md)
-- [Devtools and annotations](./docs/guides/devtools.md)
-- [Troubleshooting](./docs/guides/troubleshooting.md)
-- [Architecture deep dives](./docs/architecture/external-devtools.md)
+- [Managed Caddy and routing](https://alexgorbatchev.github.io/devhost/guides/managed-caddy/)
+- [Service lifecycle and manifest patterns](https://alexgorbatchev.github.io/devhost/guides/service-modes/)
+- [Devtools and annotations](https://alexgorbatchev.github.io/devhost/guides/devtools/)
+- [Troubleshooting](https://alexgorbatchev.github.io/devhost/guides/troubleshooting/)
+- [Architecture deep dives](https://alexgorbatchev.github.io/devhost/architecture/external-devtools/)
 
 ## What `devhost` does
 

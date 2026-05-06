@@ -1,4 +1,6 @@
-# Troubleshooting
+---
+title: "Troubleshooting"
+---
 
 ## Vite: `localhost` and `127.0.0.1` can be different apps
 

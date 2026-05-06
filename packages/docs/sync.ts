@@ -16,23 +16,14 @@ const repositoryRootPath = path.resolve(docsPackagePath, "../..");
 const docsContentPath = path.join(docsPackagePath, "src/content/docs");
 const readmeSourcePath = path.join(repositoryRootPath, "apps/devhost/README.md");
 const manifestReferenceSourcePath = path.join(repositoryRootPath, "apps/devhost/devhost.example.toml");
-const guidesDocsSourcePath = path.join(repositoryRootPath, "apps/devhost/docs/guides");
-const architectureDocsSourcePath = path.join(repositoryRootPath, "apps/devhost/docs/architecture");
+const publishedDocsBaseUrl = "https://alexgorbatchev.github.io/devhost";
 
 syncDocsSite();
 
 function syncDocsSite(): void {
-  ensureCleanDirectory(docsContentPath);
-  fs.writeFileSync(path.join(docsContentPath, ".gitkeep"), "");
+  fs.mkdirSync(docsContentPath, { recursive: true });
   syncLandingPage();
   syncManifestReference();
-  syncGuidesDocs();
-  syncArchitectureDocs();
-}
-
-function ensureCleanDirectory(directoryPath: string): void {
-  fs.rmSync(directoryPath, { recursive: true, force: true });
-  fs.mkdirSync(directoryPath, { recursive: true });
 }
 
 function syncLandingPage(): void {
@@ -57,36 +48,6 @@ function syncManifestReference(): void {
 
   fs.mkdirSync(path.dirname(manifestReferencePagePath), { recursive: true });
   fs.writeFileSync(manifestReferencePagePath, createMarkdownPage("Manifest reference", manifestReferencePageBody));
-}
-
-function syncGuidesDocs(): void {
-  syncDocsDirectory(guidesDocsSourcePath, "guides");
-}
-
-function syncArchitectureDocs(): void {
-  syncDocsDirectory(architectureDocsSourcePath, "architecture");
-}
-
-function syncDocsDirectory(sourceDirectoryPath: string, destinationDirectory: string): void {
-  const markdownFiles = new Bun.Glob("**/*.md").scanSync({ cwd: sourceDirectoryPath });
-
-  for (const relativeSourcePath of markdownFiles) {
-    if (relativeSourcePath === "AGENTS.md") {
-      continue;
-    }
-
-    const sourcePath: string = path.join(sourceDirectoryPath, relativeSourcePath);
-    const sourceMarkdown: string = fs.readFileSync(sourcePath, "utf8");
-    const sourceDocument: IMarkdownDocument = extractMarkdownDocument(
-      sourceMarkdown,
-      createTitleFromRelativePath(relativeSourcePath),
-    );
-    const destinationPath: string = path.join(docsContentPath, destinationDirectory, relativeSourcePath);
-    const rewrittenBody: string = rewriteMarkdownLinksForDocsSite(sourceDocument.body);
-
-    fs.mkdirSync(path.dirname(destinationPath), { recursive: true });
-    fs.writeFileSync(destinationPath, createMarkdownPage(sourceDocument.title, rewrittenBody));
-  }
 }
 
 function extractMarkdownDocument(markdown: string, fallbackTitle: string): IMarkdownDocument {
@@ -125,6 +86,12 @@ function rewriteDocsSiteLink(rawLink: string): string {
   const splitLinkResult: ISplitLinkResult = splitLink(rawLink);
   const normalizedLink: string = splitLinkResult.pathPart.replaceAll("\\", "/");
   const manifestReferenceFileName = "devhost.example.toml";
+
+  if (normalizedLink === publishedDocsBaseUrl || normalizedLink.startsWith(`${publishedDocsBaseUrl}/`)) {
+    const relativeDocsPath: string = normalizedLink.slice(publishedDocsBaseUrl.length).replace(/^\//, "");
+
+    return `./${relativeDocsPath}${splitLinkResult.suffix}`;
+  }
 
   if (isExternalOrSpecialLink(normalizedLink)) {
     return rawLink;
@@ -189,14 +156,6 @@ function convertMarkdownPathToDocsRoute(link: string): string {
 
   return `${link.slice(0, -3)}/`;
 }
-
-function createTitleFromRelativePath(relativePath: string): string {
-  const fileName: string = path.basename(relativePath, ".md");
-  const words: string[] = fileName.split("-");
-
-  return words.map((word: string): string => word.slice(0, 1).toUpperCase() + word.slice(1)).join(" ");
-}
-
 function createMarkdownPage(title: string, body: string): string {
   const trimmedBody: string = body.trim();
 

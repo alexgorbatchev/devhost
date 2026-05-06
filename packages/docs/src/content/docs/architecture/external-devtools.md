@@ -1,4 +1,6 @@
-# External Devtools
+---
+title: "External Devtools"
+---
 
 The external devtools feature aggregates supported third-party launcher buttons into the injected `devhost` overlay without taking ownership of the third-party panels themselves. It is intentionally conservative: `devhost` proxies launcher actions, hides the native launcher chrome, and lets the host library keep rendering and managing its own panel state.
 
