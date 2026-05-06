@@ -8,7 +8,6 @@ on:
       - ".github/workflows/docs.yml"
       - "apps/devhost/README.md"
       - "apps/devhost/devhost.example.toml"
-      - "apps/devhost/docs/**"
       - "packages/docs/**"
       - "package.json"
       - "bun.lock"

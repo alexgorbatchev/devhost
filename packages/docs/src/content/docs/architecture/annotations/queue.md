@@ -1,4 +1,6 @@
-# Durable Annotation Queues
+---
+title: "Durable Annotation Queues"
+---
 
 The annotation queue allows users to submit multiple agent annotations sequentially per routed service and annotation action without interrupting the agent's current work. The queue is strictly FIFO within each action-specific bucket, persisted to disk, and automatically drains based on terminal OSC status sequences. Generic command annotation actions start standalone terminals and do not use the durable queue.
 
@@ -11,8 +13,8 @@ sequenceDiagram
     participant QS as Queue Store
     participant PTY as Agent Terminal
 
-    UI->>CS: POST /terminal-sessions (actionId, targetSessionId)
-    CS->>QS: enqueue(actionId, annotation, targetSessionId)
+    UI->>CS: POST /terminal-sessions<br/>(actionId, sessionId)
+    CS->>QS: enqueue(actionId, annotation, sesssionId)
     QS->>QS: Persist to disk
     QS-->>UI: WebSocket snapshot update
 

@@ -1,4 +1,6 @@
-# Devtools and annotations
+---
+title: "Devtools and annotations"
+---
 
 When `devtools` are enabled, routed traffic is split like this:
 
@@ -276,6 +278,6 @@ All built-in adapters integrate terminal OSC sequences to reflect working and id
 
 Custom annotation agents must emit `OSC 1337;SetAgentStatus=working` when they begin handling an annotation and `OSC 1337;SetAgentStatus=finished` when they are ready for the next queued item. `devhost` accepts either BEL (`\x07`) or ST (`\x1b\\`) OSC terminators.
 
-For the queue internals and server-owned drain model, see [Durable annotation queues](../architecture/annotations/queue.md).
+For the queue internals and server-owned drain model, see [Durable annotation queues](../architecture/annotations/queue/).
 
-For the external toolbar aggregation architecture, see [External devtools launcher aggregation](../architecture/external-devtools.md).
+For the external toolbar aggregation architecture, see [External devtools launcher aggregation](../architecture/external-devtools/).

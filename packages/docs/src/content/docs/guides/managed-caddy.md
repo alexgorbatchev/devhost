@@ -1,4 +1,6 @@
-# Managed Caddy and routing
+---
+title: "Managed Caddy and routing"
+---
 
 `devhost` routes local apps through one shared managed Caddy instance.
 

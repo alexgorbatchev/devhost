@@ -18,10 +18,9 @@ Local rules for the `devhost` Go app in `apps/devhost/`.
 - If the manifest contract changes, also update `devhost.example.toml`.
 - If devtools-specific contributor rules change, also update `packages/devhost-ui/AGENTS.md` and the nested files under `packages/devhost-ui/src/devtools/`.
 - If the tag-driven binary release flow changes, also update `RELEASE.md` and the relevant shared guidance in the repo-root `AGENTS.md`.
-- **CRITICAL:** `packages/docs/sync.ts` mirrors `README.md`, `devhost.example.toml`, and `docs/**/*.md` into the public docs site. After editing those sources, you **must** validate `packages/docs` so the GitHub Pages content stays in sync.
+- **CRITICAL:** `packages/docs/sync.ts` regenerates the public docs landing page from `README.md` and the manifest reference from `devhost.example.toml`. After editing either source, you **must** validate `packages/docs` so the GitHub Pages content stays in sync.
 - Do not leave README or AGENTS examples/rules stale after changing implementation details.
 - Repo-root `README.md` is a symlink to this workspace README; update `README.md` here, not the root symlink.
-- The `docs/` directory feeds the public docs site beyond the landing page and manifest reference. Use `docs/guides/` for deeper user-facing docs and `docs/architecture/` for conceptual architecture, complex feature flows (e.g., Mermaid diagrams), and technical design docs. See `docs/AGENTS.md` for the exact split.
 
 ## Development workflow
 
