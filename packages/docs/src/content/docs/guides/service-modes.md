@@ -1,6 +1,8 @@
-# Service lifecycle and manifest patterns
+---
+title: "Service lifecycle and manifest patterns"
+---
 
-The canonical manifest reference lives in [../devhost.example.toml](../devhost.example.toml).
+The canonical manifest reference lives in [../devhost.example.toml](../reference/devhost-example/).
 Use that file as the documented source of truth for top-level sections, allowed values, defaults, health variants, inline explanations, and copy/paste examples.
 
 Copy it to `devhost.toml` in your project root and trim it down to the services you actually run.
