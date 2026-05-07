@@ -1,14 +1,14 @@
 {
-  "durationMs": 10026.600000023842,
+  "durationMs": 9868.599999904633,
   "events": [
     {
       "type": 4,
       "data": {
-        "href": "http://127.0.0.1:34323/devhost/__capture__/?scenario=overlay",
+        "href": "http://127.0.0.1:39383/devhost/__capture__/?scenario=overlay",
         "width": 1440,
         "height": 960
       },
-      "timestamp": 1777057424326
+      "timestamp": 1778181544381
     },
     {
       "type": 2,
@@ -82,7 +82,7 @@
                       "tagName": "script",
                       "attributes": {
                         "type": "module",
-                        "src": "http://127.0.0.1:34323/devhost/_astro/page.BIhdncjw.js"
+                        "src": "http://127.0.0.1:39383/devhost/_astro/page.BIhdncjw.js"
                       },
                       "childNodes": [],
                       "id": 10
@@ -368,6 +368,7 @@
                                               "tagName": "section",
                                               "attributes": {
                                                 "class": "captureActionTarget astro-r4ttntje",
+                                                "data-devhost-cursor": "pointer",
                                                 "data-testid": "MarketingCapturePage--annotation-target-primary"
                                               },
                                               "childNodes": [
@@ -429,6 +430,7 @@
                                               "tagName": "section",
                                               "attributes": {
                                                 "class": "captureActionTarget astro-r4ttntje",
+                                                "data-devhost-cursor": "pointer",
                                                 "data-testid": "MarketingCapturePage--annotation-target-secondary"
                                               },
                                               "childNodes": [
@@ -505,9 +507,9 @@
                                       "type": 2,
                                       "tagName": "astro-island",
                                       "attributes": {
-                                        "uid": "2ebKaB",
+                                        "uid": "Zt4aSS",
                                         "prefix": "r1",
-                                        "component-url": "/devhost/_astro/CaptureSourceCardSurface.AIMwgSwr.js",
+                                        "component-url": "/devhost/_astro/CaptureSourceCardSurface.feWLfLG5.js",
                                         "component-export": "CaptureSourceCardSurface",
                                         "renderer-url": "/devhost/_astro/client.BYGIU6oN.js",
                                         "props": "{\"source\":[0,{\"columnNumber\":[0,1],\"componentName\":[0,\"CaptureSourceCardSurface\"],\"fileName\":[0,\"src/components/CaptureSourceCardSurface.tsx\"],\"lineNumber\":[0,1]}]}",
@@ -528,6 +530,7 @@
                                               "tagName": "div",
                                               "attributes": {
                                                 "class": "captureCard captureSourceCard",
+                                                "data-devhost-cursor": "pointer",
                                                 "data-testid": "CaptureSourceContent--source-card",
                                                 "data-capture-source-card-ready": "true"
                                               },
@@ -1466,7 +1469,7 @@
                       "tagName": "script",
                       "attributes": {
                         "type": "module",
-                        "src": "http://127.0.0.1:34323/devhost/_astro/_captureRoute_.astro_astro_type_script_index_0_lang.CaI1zKPk.js"
+                        "src": "http://127.0.0.1:39383/devhost/_astro/_captureRoute_.astro_astro_type_script_index_0_lang.C3oIx3VF.js"
                       },
                       "childNodes": [],
                       "id": 212
@@ -1809,6 +1812,22 @@
                                                     }
                                                   ],
                                                   "id": 249
+                                                },
+                                                {
+                                                  "type": 2,
+                                                  "tagName": "div",
+                                                  "attributes": {
+                                                    "class": "devhost-o5qy8q",
+                                                    "data-testid": "AnnotationQueuePanel--error"
+                                                  },
+                                                  "childNodes": [
+                                                    {
+                                                      "type": 3,
+                                                      "textContent": "devhost annotation queue stream sent malformed data.",
+                                                      "id": 252
+                                                    }
+                                                  ],
+                                                  "id": 251
                                                 }
                                               ],
                                               "id": 248
@@ -1820,162 +1839,8 @@
                                                 "class": "devhost-taqjlb",
                                                 "data-testid": "AnnotationQueuePanel--queue-list"
                                               },
-                                              "childNodes": [
-                                                {
-                                                  "type": 2,
-                                                  "tagName": "article",
-                                                  "attributes": {
-                                                    "class": "devhost-oz949z",
-                                                    "data-testid": "AnnotationQueuePanel--queue"
-                                                  },
-                                                  "childNodes": [
-                                                    {
-                                                      "type": 2,
-                                                      "tagName": "header",
-                                                      "attributes": {
-                                                        "class": "devhost-30n7z8"
-                                                      },
-                                                      "childNodes": [
-                                                        {
-                                                          "type": 2,
-                                                          "tagName": "div",
-                                                          "attributes": {
-                                                            "class": "devhost-18bx7zt"
-                                                          },
-                                                          "childNodes": [
-                                                            {
-                                                              "type": 2,
-                                                              "tagName": "div",
-                                                              "attributes": {
-                                                                "class": "devhost-8knhcs"
-                                                              },
-                                                              "childNodes": [
-                                                                {
-                                                                  "type": 2,
-                                                                  "tagName": "strong",
-                                                                  "attributes": {
-                                                                    "class": "devhost-1wv04w",
-                                                                    "title": "127.0.0.1:34323/devhost/__capture__/"
-                                                                  },
-                                                                  "childNodes": [
-                                                                    {
-                                                                      "type": 3,
-                                                                      "textContent": "127.0.0.1:34323/devhost/__capture__/",
-                                                                      "id": 257
-                                                                    }
-                                                                  ],
-                                                                  "id": 256
-                                                                },
-                                                                {
-                                                                  "type": 2,
-                                                                  "tagName": "span",
-                                                                  "attributes": {
-                                                                    "class": "devhost-yr9uer"
-                                                                  },
-                                                                  "childNodes": [
-                                                                    {
-                                                                      "type": 3,
-                                                                      "textContent": "Paused",
-                                                                      "id": 259
-                                                                    }
-                                                                  ],
-                                                                  "id": 258
-                                                                }
-                                                              ],
-                                                              "id": 255
-                                                            },
-                                                            {
-                                                              "type": 2,
-                                                              "tagName": "div",
-                                                              "attributes": {
-                                                                "class": "devhost-vgj5n9"
-                                                              },
-                                                              "childNodes": [
-                                                                {
-                                                                  "type": 3,
-                                                                  "textContent": "1 of 2",
-                                                                  "id": 261
-                                                                }
-                                                              ],
-                                                              "id": 260
-                                                            },
-                                                            {
-                                                              "type": 2,
-                                                              "tagName": "div",
-                                                              "attributes": {
-                                                                "class": "devhost-18en7re"
-                                                              },
-                                                              "childNodes": [
-                                                                {
-                                                                  "type": 2,
-                                                                  "tagName": "div",
-                                                                  "attributes": {
-                                                                    "class": "devhost-1e0ol3m",
-                                                                    "data-testid": "AnnotationQueuePanel--queue-progress"
-                                                                  },
-                                                                  "childNodes": [],
-                                                                  "id": 263
-                                                                }
-                                                              ],
-                                                              "id": 262
-                                                            }
-                                                          ],
-                                                          "id": 254
-                                                        },
-                                                        {
-                                                          "type": 2,
-                                                          "tagName": "div",
-                                                          "attributes": {
-                                                            "class": "devhost-1dnpdpe"
-                                                          },
-                                                          "childNodes": [
-                                                            {
-                                                              "type": 2,
-                                                              "tagName": "button",
-                                                              "attributes": {
-                                                                "class": "devhost-p4wubb",
-                                                                "data-devhost-instance-testid": "AnnotationQueuePanel--resume",
-                                                                "data-testid": "Button",
-                                                                "type": "button"
-                                                              },
-                                                              "childNodes": [
-                                                                {
-                                                                  "type": 3,
-                                                                  "textContent": "Resume",
-                                                                  "id": 266
-                                                                }
-                                                              ],
-                                                              "id": 265
-                                                            },
-                                                            {
-                                                              "type": 2,
-                                                              "tagName": "button",
-                                                              "attributes": {
-                                                                "class": "devhost-1yifc3j",
-                                                                "data-devhost-instance-testid": "AnnotationQueuePanel--queue-toggle",
-                                                                "data-testid": "Button",
-                                                                "type": "button"
-                                                              },
-                                                              "childNodes": [
-                                                                {
-                                                                  "type": 3,
-                                                                  "textContent": "Show details",
-                                                                  "id": 268
-                                                                }
-                                                              ],
-                                                              "id": 267
-                                                            }
-                                                          ],
-                                                          "id": 264
-                                                        }
-                                                      ],
-                                                      "id": 253
-                                                    }
-                                                  ],
-                                                  "id": 252
-                                                }
-                                              ],
-                                              "id": 251
+                                              "childNodes": [],
+                                              "id": 253
                                             }
                                           ],
                                           "id": 247
@@ -2062,10 +1927,10 @@
                                                                         {
                                                                           "type": 3,
                                                                           "textContent": "Neovim",
-                                                                          "id": 279
+                                                                          "id": 264
                                                                         }
                                                                       ],
-                                                                      "id": 278
+                                                                      "id": 263
                                                                     },
                                                                     {
                                                                       "type": 2,
@@ -2077,16 +1942,16 @@
                                                                         {
                                                                           "type": 3,
                                                                           "textContent": "Connected",
-                                                                          "id": 281
+                                                                          "id": 266
                                                                         }
                                                                       ],
-                                                                      "id": 280
+                                                                      "id": 265
                                                                     }
                                                                   ],
-                                                                  "id": 277
+                                                                  "id": 262
                                                                 }
                                                               ],
-                                                              "id": 276
+                                                              "id": 261
                                                             },
                                                             {
                                                               "type": 2,
@@ -2118,7 +1983,7 @@
                                                                             "class": "xterm-viewport"
                                                                           },
                                                                           "childNodes": [],
-                                                                          "id": 285
+                                                                          "id": 270
                                                                         },
                                                                         {
                                                                           "type": 2,
@@ -2159,7 +2024,7 @@
                                                                                         "style": "left: 0px; top: 16px; width: 8.42857px; height: 16px; line-height: 16px; z-index: -5;"
                                                                                       },
                                                                                       "childNodes": [],
-                                                                                      "id": 289
+                                                                                      "id": 274
                                                                                     },
                                                                                     {
                                                                                       "type": 2,
@@ -2168,7 +2033,7 @@
                                                                                         "class": "composition-view"
                                                                                       },
                                                                                       "childNodes": [],
-                                                                                      "id": 290
+                                                                                      "id": 275
                                                                                     },
                                                                                     {
                                                                                       "type": 2,
@@ -2190,10 +2055,10 @@
                                                                                             {
                                                                                               "type": 3,
                                                                                               "textContent": "................................",
-                                                                                              "id": 293
+                                                                                              "id": 278
                                                                                             }
                                                                                           ],
-                                                                                          "id": 292
+                                                                                          "id": 277
                                                                                         },
                                                                                         {
                                                                                           "type": 2,
@@ -2203,7 +2068,7 @@
                                                                                             "style": "font-weight: bold;"
                                                                                           },
                                                                                           "childNodes": [],
-                                                                                          "id": 294
+                                                                                          "id": 279
                                                                                         },
                                                                                         {
                                                                                           "type": 2,
@@ -2213,7 +2078,7 @@
                                                                                             "style": "font-style: italic; font-weight: normal;"
                                                                                           },
                                                                                           "childNodes": [],
-                                                                                          "id": 295
+                                                                                          "id": 280
                                                                                         },
                                                                                         {
                                                                                           "type": 2,
@@ -2223,13 +2088,13 @@
                                                                                             "style": "font-weight: bold; font-style: italic;"
                                                                                           },
                                                                                           "childNodes": [],
-                                                                                          "id": 296
+                                                                                          "id": 281
                                                                                         }
                                                                                       ],
-                                                                                      "id": 291
+                                                                                      "id": 276
                                                                                     }
                                                                                   ],
-                                                                                  "id": 288
+                                                                                  "id": 273
                                                                                 },
                                                                                 {
                                                                                   "type": 2,
@@ -2241,10 +2106,10 @@
                                                                                     {
                                                                                       "type": 3,
                                                                                       "textContent": "",
-                                                                                      "id": 298
+                                                                                      "id": 283
                                                                                     }
                                                                                   ],
-                                                                                  "id": 297
+                                                                                  "id": 282
                                                                                 },
                                                                                 {
                                                                                   "type": 2,
@@ -2256,10 +2121,10 @@
                                                                                     {
                                                                                       "type": 3,
                                                                                       "textContent": "",
-                                                                                      "id": 300
+                                                                                      "id": 285
                                                                                     }
                                                                                   ],
-                                                                                  "id": 299
+                                                                                  "id": 284
                                                                                 },
                                                                                 {
                                                                                   "type": 2,
@@ -2288,13 +2153,13 @@
                                                                                             {
                                                                                               "type": 3,
                                                                                               "textContent": "~ Devhost demo editor session is ready.",
-                                                                                              "id": 304
+                                                                                              "id": 289
                                                                                             }
                                                                                           ],
-                                                                                          "id": 303
+                                                                                          "id": 288
                                                                                         }
                                                                                       ],
-                                                                                      "id": 302
+                                                                                      "id": 287
                                                                                     },
                                                                                     {
                                                                                       "type": 2,
@@ -2313,13 +2178,148 @@
                                                                                             {
                                                                                               "type": 3,
                                                                                               "textContent": " ",
-                                                                                              "id": 307
+                                                                                              "id": 292
                                                                                             }
                                                                                           ],
-                                                                                          "id": 306
+                                                                                          "id": 291
                                                                                         }
                                                                                       ],
+                                                                                      "id": 290
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 293
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 294
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 295
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 296
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 297
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 298
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 299
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 300
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 301
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 302
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 303
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 304
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
                                                                                       "id": 305
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 306
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 307
                                                                                     },
                                                                                     {
                                                                                       "type": 2,
@@ -2527,144 +2527,9 @@
                                                                                       },
                                                                                       "childNodes": [],
                                                                                       "id": 330
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 331
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 332
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 333
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 334
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 335
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 336
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 337
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 338
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 339
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 340
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 341
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 342
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 343
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 344
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 345
                                                                                     }
                                                                                   ],
-                                                                                  "id": 301
+                                                                                  "id": 286
                                                                                 },
                                                                                 {
                                                                                   "type": 2,
@@ -2674,7 +2539,7 @@
                                                                                     "aria-hidden": "true"
                                                                                   },
                                                                                   "childNodes": [],
-                                                                                  "id": 346
+                                                                                  "id": 331
                                                                                 },
                                                                                 {
                                                                                   "type": 2,
@@ -2686,10 +2551,10 @@
                                                                                     {
                                                                                       "type": 3,
                                                                                       "textContent": "",
-                                                                                      "id": 348
+                                                                                      "id": 333
                                                                                     }
                                                                                   ],
-                                                                                  "id": 347
+                                                                                  "id": 332
                                                                                 },
                                                                                 {
                                                                                   "type": 2,
@@ -2698,10 +2563,10 @@
                                                                                     "class": "xterm-decoration-container"
                                                                                   },
                                                                                   "childNodes": [],
-                                                                                  "id": 349
+                                                                                  "id": 334
                                                                                 }
                                                                               ],
-                                                                              "id": 287
+                                                                              "id": 272
                                                                             },
                                                                             {
                                                                               "type": 2,
@@ -2721,10 +2586,10 @@
                                                                                     "style": "position: absolute; top: 0px; left: 0px; height: 0px; transform: translate3d(0px, 0px, 0px); contain: strict; width: 0px;"
                                                                                   },
                                                                                   "childNodes": [],
-                                                                                  "id": 351
+                                                                                  "id": 336
                                                                                 }
                                                                               ],
-                                                                              "id": 350
+                                                                              "id": 335
                                                                             },
                                                                             {
                                                                               "type": 2,
@@ -2744,28 +2609,28 @@
                                                                                     "style": "position: absolute; top: 0px; left: 0px; width: 14px; transform: translate3d(0px, 0px, 0px); contain: strict; height: 640px;"
                                                                                   },
                                                                                   "childNodes": [],
-                                                                                  "id": 353
+                                                                                  "id": 338
                                                                                 }
                                                                               ],
-                                                                              "id": 352
+                                                                              "id": 337
                                                                             }
                                                                           ],
-                                                                          "id": 286
+                                                                          "id": 271
                                                                         }
                                                                       ],
-                                                                      "id": 284
+                                                                      "id": 269
                                                                     }
                                                                   ],
-                                                                  "id": 283
+                                                                  "id": 268
                                                                 }
                                                               ],
-                                                              "id": 282
+                                                              "id": 267
                                                             }
                                                           ],
-                                                          "id": 275
+                                                          "id": 260
                                                         }
                                                       ],
-                                                      "id": 274
+                                                      "id": 259
                                                     },
                                                     {
                                                       "type": 2,
@@ -2787,16 +2652,16 @@
                                                             {
                                                               "type": 3,
                                                               "textContent": "Connected",
-                                                              "id": 356
+                                                              "id": 341
                                                             }
                                                           ],
-                                                          "id": 355
+                                                          "id": 340
                                                         }
                                                       ],
-                                                      "id": 354
+                                                      "id": 339
                                                     }
                                                   ],
-                                                  "id": 273
+                                                  "id": 258
                                                 },
                                                 {
                                                   "type": 2,
@@ -2843,10 +2708,10 @@
                                                                         {
                                                                           "type": 3,
                                                                           "textContent": "Agent terminal",
-                                                                          "id": 363
+                                                                          "id": 348
                                                                         }
                                                                       ],
-                                                                      "id": 362
+                                                                      "id": 347
                                                                     },
                                                                     {
                                                                       "type": 2,
@@ -2858,16 +2723,16 @@
                                                                         {
                                                                           "type": 3,
                                                                           "textContent": "Connected",
-                                                                          "id": 365
+                                                                          "id": 350
                                                                         }
                                                                       ],
-                                                                      "id": 364
+                                                                      "id": 349
                                                                     }
                                                                   ],
-                                                                  "id": 361
+                                                                  "id": 346
                                                                 }
                                                               ],
-                                                              "id": 360
+                                                              "id": 345
                                                             },
                                                             {
                                                               "type": 2,
@@ -2899,7 +2764,7 @@
                                                                             "class": "xterm-viewport"
                                                                           },
                                                                           "childNodes": [],
-                                                                          "id": 369
+                                                                          "id": 354
                                                                         },
                                                                         {
                                                                           "type": 2,
@@ -2940,7 +2805,7 @@
                                                                                         "style": "left: 0px; top: 16px; width: 8.42857px; height: 16px; line-height: 16px; z-index: -5;"
                                                                                       },
                                                                                       "childNodes": [],
-                                                                                      "id": 373
+                                                                                      "id": 358
                                                                                     },
                                                                                     {
                                                                                       "type": 2,
@@ -2949,7 +2814,7 @@
                                                                                         "class": "composition-view"
                                                                                       },
                                                                                       "childNodes": [],
-                                                                                      "id": 374
+                                                                                      "id": 359
                                                                                     },
                                                                                     {
                                                                                       "type": 2,
@@ -2971,10 +2836,10 @@
                                                                                             {
                                                                                               "type": 3,
                                                                                               "textContent": "................................",
-                                                                                              "id": 377
+                                                                                              "id": 362
                                                                                             }
                                                                                           ],
-                                                                                          "id": 376
+                                                                                          "id": 361
                                                                                         },
                                                                                         {
                                                                                           "type": 2,
@@ -2984,7 +2849,7 @@
                                                                                             "style": "font-weight: bold;"
                                                                                           },
                                                                                           "childNodes": [],
-                                                                                          "id": 378
+                                                                                          "id": 363
                                                                                         },
                                                                                         {
                                                                                           "type": 2,
@@ -2994,7 +2859,7 @@
                                                                                             "style": "font-style: italic; font-weight: normal;"
                                                                                           },
                                                                                           "childNodes": [],
-                                                                                          "id": 379
+                                                                                          "id": 364
                                                                                         },
                                                                                         {
                                                                                           "type": 2,
@@ -3004,13 +2869,13 @@
                                                                                             "style": "font-weight: bold; font-style: italic;"
                                                                                           },
                                                                                           "childNodes": [],
-                                                                                          "id": 380
+                                                                                          "id": 365
                                                                                         }
                                                                                       ],
-                                                                                      "id": 375
+                                                                                      "id": 360
                                                                                     }
                                                                                   ],
-                                                                                  "id": 372
+                                                                                  "id": 357
                                                                                 },
                                                                                 {
                                                                                   "type": 2,
@@ -3022,10 +2887,10 @@
                                                                                     {
                                                                                       "type": 3,
                                                                                       "textContent": "",
-                                                                                      "id": 382
+                                                                                      "id": 367
                                                                                     }
                                                                                   ],
-                                                                                  "id": 381
+                                                                                  "id": 366
                                                                                 },
                                                                                 {
                                                                                   "type": 2,
@@ -3037,10 +2902,10 @@
                                                                                     {
                                                                                       "type": 3,
                                                                                       "textContent": "",
-                                                                                      "id": 384
+                                                                                      "id": 369
                                                                                     }
                                                                                   ],
-                                                                                  "id": 383
+                                                                                  "id": 368
                                                                                 },
                                                                                 {
                                                                                   "type": 2,
@@ -3068,13 +2933,13 @@
                                                                                             {
                                                                                               "type": 3,
                                                                                               "textContent": "MOCKED Agent Pi is ready.",
-                                                                                              "id": 388
+                                                                                              "id": 373
                                                                                             }
                                                                                           ],
-                                                                                          "id": 387
+                                                                                          "id": 372
                                                                                         }
                                                                                       ],
-                                                                                      "id": 386
+                                                                                      "id": 371
                                                                                     },
                                                                                     {
                                                                                       "type": 2,
@@ -3093,13 +2958,148 @@
                                                                                             {
                                                                                               "type": 3,
                                                                                               "textContent": " ",
-                                                                                              "id": 391
+                                                                                              "id": 376
                                                                                             }
                                                                                           ],
-                                                                                          "id": 390
+                                                                                          "id": 375
                                                                                         }
                                                                                       ],
+                                                                                      "id": 374
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 377
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 378
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 379
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 380
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 381
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 382
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 383
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 384
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 385
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 386
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 387
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 388
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
                                                                                       "id": 389
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 390
+                                                                                    },
+                                                                                    {
+                                                                                      "type": 2,
+                                                                                      "tagName": "div",
+                                                                                      "attributes": {
+                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
+                                                                                      },
+                                                                                      "childNodes": [],
+                                                                                      "id": 391
                                                                                     },
                                                                                     {
                                                                                       "type": 2,
@@ -3307,144 +3307,9 @@
                                                                                       },
                                                                                       "childNodes": [],
                                                                                       "id": 414
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 415
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 416
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 417
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 418
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 419
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 420
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 421
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 422
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 423
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 424
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 425
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 426
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 427
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 428
-                                                                                    },
-                                                                                    {
-                                                                                      "type": 2,
-                                                                                      "tagName": "div",
-                                                                                      "attributes": {
-                                                                                        "style": "width: 1003px; height: 16px; line-height: 16px; overflow: hidden;"
-                                                                                      },
-                                                                                      "childNodes": [],
-                                                                                      "id": 429
                                                                                     }
                                                                                   ],
-                                                                                  "id": 385
+                                                                                  "id": 370
                                                                                 },
                                                                                 {
                                                                                   "type": 2,
@@ -3454,7 +3319,7 @@
                                                                                     "aria-hidden": "true"
                                                                                   },
                                                                                   "childNodes": [],
-                                                                                  "id": 430
+                                                                                  "id": 415
                                                                                 },
                                                                                 {
                                                                                   "type": 2,
@@ -3466,10 +3331,10 @@
                                                                                     {
                                                                                       "type": 3,
                                                                                       "textContent": "",
-                                                                                      "id": 432
+                                                                                      "id": 417
                                                                                     }
                                                                                   ],
-                                                                                  "id": 431
+                                                                                  "id": 416
                                                                                 },
                                                                                 {
                                                                                   "type": 2,
@@ -3478,10 +3343,10 @@
                                                                                     "class": "xterm-decoration-container"
                                                                                   },
                                                                                   "childNodes": [],
-                                                                                  "id": 433
+                                                                                  "id": 418
                                                                                 }
                                                                               ],
-                                                                              "id": 371
+                                                                              "id": 356
                                                                             },
                                                                             {
                                                                               "type": 2,
@@ -3501,10 +3366,10 @@
                                                                                     "style": "position: absolute; top: 0px; left: 0px; height: 0px; transform: translate3d(0px, 0px, 0px); contain: strict; width: 0px;"
                                                                                   },
                                                                                   "childNodes": [],
-                                                                                  "id": 435
+                                                                                  "id": 420
                                                                                 }
                                                                               ],
-                                                                              "id": 434
+                                                                              "id": 419
                                                                             },
                                                                             {
                                                                               "type": 2,
@@ -3524,28 +3389,28 @@
                                                                                     "style": "position: absolute; top: 0px; left: 0px; width: 14px; transform: translate3d(0px, 0px, 0px); contain: strict; height: 640px;"
                                                                                   },
                                                                                   "childNodes": [],
-                                                                                  "id": 437
+                                                                                  "id": 422
                                                                                 }
                                                                               ],
-                                                                              "id": 436
+                                                                              "id": 421
                                                                             }
                                                                           ],
-                                                                          "id": 370
+                                                                          "id": 355
                                                                         }
                                                                       ],
-                                                                      "id": 368
+                                                                      "id": 353
                                                                     }
                                                                   ],
-                                                                  "id": 367
+                                                                  "id": 352
                                                                 }
                                                               ],
-                                                              "id": 366
+                                                              "id": 351
                                                             }
                                                           ],
-                                                          "id": 359
+                                                          "id": 344
                                                         }
                                                       ],
-                                                      "id": 358
+                                                      "id": 343
                                                     },
                                                     {
                                                       "type": 2,
@@ -3567,28 +3432,28 @@
                                                             {
                                                               "type": 3,
                                                               "textContent": "Connected",
-                                                              "id": 440
+                                                              "id": 425
                                                             }
                                                           ],
-                                                          "id": 439
+                                                          "id": 424
                                                         }
                                                       ],
-                                                      "id": 438
+                                                      "id": 423
                                                     }
                                                   ],
-                                                  "id": 357
+                                                  "id": 342
                                                 }
                                               ],
-                                              "id": 272
+                                              "id": 257
                                             }
                                           ],
-                                          "id": 271
+                                          "id": 256
                                         }
                                       ],
-                                      "id": 270
+                                      "id": 255
                                     }
                                   ],
-                                  "id": 269
+                                  "id": 254
                                 },
                                 {
                                   "type": 2,
@@ -3610,10 +3475,10 @@
                                         "rr_dataURL": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFsAAAO4CAYAAAC9DoooAAAQAElEQVR4AezcwXUzy3WFUa43ciDOwBE4KYfhlByBM9BYKUhDgSAIkUT3emgW7sdHcmuB6Eah6h5o91n/TPrjyX8yAdgZ9dMTbNihQBil2bBDgTBKs2GHAmGUZsMOBcIozf7O2OFv/3ZRmh0+MtiwQ4EwSrNhhwJhlGbDDgXCKM2GHQqEUZoN+43AD7rV7PBhwoYdCoRRmg07FAijNBt2KBBGaTbsUCCM0mzYkwJfN1uzQ3vYsEOBMEqzYYcCYZRmww4FwijNhh0KhFGaDTsUWI+6e4Jm3021vhH2uuHdE2DfTbW+Efa64d0TYN9Ntb4R9rrh3RNg3021vhH2uuHdE2DfTbW+Efa64d0TYN9Ntb7xXuz1JBP8X82VHdDsUBs27FAgjNJs2KFAGKXZsEOBMEqzYYcCYdSXNTv87/iXiYIdPgrYsEOBMEqzYYcCYZRmww4FwijNhh0KhFGaDfsTAt/giGaHDwk27FAgjNJs2KFAGKXZsEOBMEqzYYcCYZRmww4FdqMe/4VmP950dyLsXZrHfwH78aa7E2Hv0jz+C9iPN92dCHuX5vFfwH686e5E2Ls0j/8C9uNNdyfC3qV5/BewH2+6N9H/dn1XZuALzR5A3RsJe09mYB32AOreSNh7MgPrsAdQ90bC3pMZWIc9gLo3EvaezMA67AHUvZGw92QG1h+NPfATf85I2OGzhA07FAijNBt2KBBGaTbsUCCM0mzYoUAYpdmw/y3wk+40O3yasGGHAmGUZsMOBcIozYYdCoRRmg07FAijNBv2oMAXjtbsEB827FAgjNJs2KFAGKXZsEOBMEqzYYcCYZRmww4FlqPuH6DZ91st74S9THj/ANj3Wy3vhL1MeP8A2PdbLe+EvUx4/wDY91st74S9THj/ANj3Wy3vhL1MeP8A2PdbLe+8E3s5x4CTAOwTQvWCXUmfcmCfEKoX7Er6lAP7hFC9YFfSpxzYJ4TqBbuSPuXAPiFUL9iV9Cnnq7BP0b/vBTt85rBhhwJhlGbDDgXCKM2GHQqEUZoNOxQIozQb9nGB73BCs8OnBBt2KBBGaTbsUCCM0mzYoUAYpdmwQ4EwSrNhhwJ7UQPrmj2AujcS9p7MwDrsAdS9kbD3ZAbWYQ+g7o2EvSczsA57AHVvJOw9mYF12AOoeyNh78kMrMMeQN0e+fQEe09mYB32AOreSNh7MgPrsAdQ90bC3pMZWIc9gLo3EvaezMA67AHUvZGw92QG1mEPoO6NhL0nM7D+YOyBX/iDRsIOHyZs2KFAGKXZsEOBMEqzYYcCYZRmww4FwijNhn0V+FE3mh0+TtiwQ4EwSrNhhwJhlGbDDgXCKM2GHQqEUZoNe07gKydrdqgPG3YoEEZpNuxQIIzSbNihQBil2bBDgTBKs2GHAqtRB85r9gGs1a2wVwUPnId9AGt1K+xVwQPnYR/AWt0Ke1XwwHnYB7BWt8JeFTxwHvYBrNWtsFcFD5yHfQBrdet92Kspzp8FYJ8ZmjfYjfM5BfaZoXmD3TifU2CfGZo32I3zOQX2maF5g904n1NgnxmaN9iN8znli7DP2b/uDXb4yGHDDgXCKM2GHQqEUZoNOxQIozQbdigQRmk27MMC3+KAZoePCTbsUCCM0mzYoUAYpdmwQ4EwSrNhhwJhlGbDDgV2oiaWNXtCdWcm7B2YiWXYE6o7M2HvwEwsw55Q3ZkJewdmYhn2hOrOTNg7MBPLsCdUd2bC3oGZWIY9obo187QG+4RQvWBX0qcc2CeE6gW7kj7lwD4hVC/YlfQpB/YJoXrBrqRPObBPCNULdiV9yoF9Qqhej8WufvU3zYEdPjjYsEOBMEqzYYcCYZRmww4FwijNhh0KhFGaDftV4GddNTt8nrBhhwJhlGbDDgXCKM2GHQqEUZoNOxQIozQb9pjAlw7W7JAfNuxQIIzSbNihQBil2bBDgTBKs2GHAmGUZsMOBRajjhzX7CNai3thLwIeOQ77iNbiXtiLgEeOwz6itbgX9iLgkeOwj2gt7oW9CHjkOOwjWot7YS8CHjkO+4jW4t67sBczHL8IwL5AFBfYhfIlA/YForjALpQvGbAvEMUFdqF8yYB9gSgusAvlSwbsC0RxgV0oXzK+BvsS/tsusMMnDht2KBBGaTbsUCCM0mzYoUAYpdmwQ4EwSrNhHxX4Hvs1O3xOsGGHAmGUZsMOBcIozYYdCoRRmg07FAijNBt2KLAdNbKq2SOs20Nhb7uMrMIeYd0eCnvbZWQV9gjr9lDY2y4jq7BHWLeHwt52GVmFPcK6PRT2tsvIKuwR1tuhzyuwnxWiP9gR9HMM7GeF6A92BP0cA/tZIfqDHUE/x8B+Voj+YEfQzzGwnxWiP9gR9HMM7GeF6O+h2NFv/rYxsMNHBxt2KBBGaTbsUCCM0mzYoUAYpdmwQ4EwSrNhXwR+2EWzwwcKG3YoEEZpNuxQIIzSbNihQBil2bBDgTBKs2FPCXztXM0O/WHDDgXCKM2GHQqEUZoNOxQIozQbdigQRmk27FBgLerQac0+xLW2Gfaa36HTsA9xrW2GveZ36DTsQ1xrm2Gv+R06DfsQ19pm2Gt+h07DPsS1thn2mt+h07APca1tvgd7LcHpqwDsK8X8Dex542sC7CvF/A3seeNrAuwrxfwN7HnjawLsK8X8Dex542sC7CvF/A3seeNrwpdgX9N/2Q3s8IHDhh0KhFGaDTsUCKM0G3YoEEZpNuxQIIzSbNgHBb7Jds0OHxRs2KFAGKXZsEOBMEqzYYcCYZRmww4FwijNhh0KbEbNLGr2jOvmVNibLDOLsGdcN6fC3mSZWYQ947o5FfYmy8wi7BnXzamwN1lmFmHPuG5Ohb3JMrMIe8b149TzZ9hnhuYNduN8ToF9ZmjeYDfO5xTYZ4bmDXbjfE6BfWZo3mA3zucU2GeG5g1243xOgX1maN4eid384m+cAjt8eLBhhwJhlGbDDgXCKM2GHQqEUZoNOxQIozQb9ovAT3vX7PCJwoYdCoRRmg07FAijNBt2KBBGaTbsUCCM0mzYQwJfPFazwwcAG3YoEEZpNuxQIIzSbNihQBil2bBDgTBKs2GHAktRxw5r9jGvpd2wl/iOHYZ9zGtpN+wlvmOHYR/zWtoNe4nv2GHYx7yWdsNe4jt2GPYxr6XdsJf4jh2Gfcxrafcd2EvzHX4jAPsNxvQt7GnhN/Nhv8GYvoU9LfxmPuw3GNO3sKeF38yH/QZj+hb2tPCb+bDfYEzfwp4WfjP/K7DfxP+uW9jh84YNOxQIozQbdigQRmk27FAgjNJs2KFAGKXZsI8JfJfdmh0+KdiwQ4EwSrNhhwJhlGbDDgXCKM2GHQqEUZoNOxTYihpa0+wh2K2xsLdUhtZgD8FujYW9pTK0BnsIdmss7C2VoTXYQ7BbY2FvqQytwR6C3RoLe0tlaA32EOz7sS+fYL84JO+wE+aXENgvDsk77IT5JQT2i0PyDjthfgmB/eKQvMNOmF9CYL84JO+wE+aXENgvDsn7A7GT3/utQ2CHjw827FAgjNJs2KFAGKXZsEOBMEqzYYcCYZRmwz4L/Lg3zQ4fKWzYoUAYpdmwQ4EwSrNhhwJhlGbDDgXCKM2GPSPw1VM1O3wCsGGHAmGUZsMOBcIozYYdCoRRmg07FAijNBt2KLASdfCsZh8EW9kOe0Xv4FnYB8FWtsNe0Tt4FvZBsJXtsFf0Dp6FfRBsZTvsFb2DZ2EfBFvZDntF7+BZ2AfBVrb/OfbKdGffCcB+xzH7Afas77vpsN9xzH6APev7bjrsdxyzH2DP+r6bDvsdx+wH2LO+76bDfscx+wH2rO+76V+A/S7/V32AHT5u2LBDgTBKs2GHAmGUZsMOBcIozYYdCoRRmg37kMC32azZ4aOCDTsUCKM0G3YoEEZpNuxQIIzSbNihQBil2bBDgY2oqSXNnpLdmAt7A2VqCfaU7MZc2BsoU0uwp2Q35sLeQJlagj0luzEX9gbK1BLsKdmNubA3UKaWYE/Jvp17uYd9gSgusAvlSwbsC0RxgV0oXzJgXyCKC+xC+ZIB+wJRXGAXypcM2BeI4gK7UL5kwL5AFJfHYRe/9ptnwA4fIGzYoUAYpdmwQ4EwSrNhhwJhlGbDDgXCKM2G/Szw8/40O3ymsGGHAmGUZsMOBcIozYYdCoRRmg07FAijNBv2iMCXD9Xs8BHAhh0KhFGaDTsUCKM0G3YoEEZpNuxQIIzSbNihwELU0aOafVRsYT/sBbyjR2EfFVvYD3sB7+hR2EfFFvbDXsA7ehT2UbGF/bAX8I4ehX1UbGE/7AW8o0dhHxVb2P+n2AuzHf0gAPsDyORH2JO6H2bD/gAy+RH2pO6H2bA/gEx+hD2p+2E27A8gkx9hT+p+mA37A8jkR9iTuh9m99gffsBv+gg7fNqwYYcCYZRmww4FwijNhh0KhFGaDTsUCKM0G/YRge+zV7PDZwUbdigQRmk27FAgjNJs2KFAGKXZsEOBMEqzYYcCt1FjK5o9Rns7GPatydgK7DHa28Gwb03GVmCP0d4Ohn1rMrYCe4z2djDsW5OxFdhjtLeDYd+ajK3AHqP99+DXO9ivEsEVdoD8GgH7VSK4wg6QXyNgv0oEV9gB8msE7FeJ4Ao7QH6NgP0qEVxhB8ivEbBfJYLrw7CD3/rtI2CHjxA27FAgjNJs2KFAGKXZsEOBMEqzYYcCYZRmw356egoRqijNrqRPObBPCNULdiV9yoF9QqhesCvpUw7sE0L1gl1Jn3JgnxCqF+xK+pQD+4RQvX4RdkW6nwN73+bh38B+OOn+QNj7Ng//BvbDSfcHwt63efg3sB9Ouj8Q9r7Nw7+B/XDS/YGw920e/g3sh5PuD4S9b/Nn3xz+HvZhss8fgP15u8MnYR8m+/wB2J+3O3wS9mGyzx+A/Xm7wydhHyb7/AHYn7c7fBL2YbLPH4D9ebvDJ2EfJvv8gT/D/vxkJ28EYN+QzC3AnrO9mQz7hmRuAfac7c1k2Dckcwuw52xvJsO+IZlbgD1nezMZ9g3J3ALsOdubyTn2zS/4RQuww4cNG3YoEEZpNuxQIIzSbNihQBil2bBDgTBKs2EfEPhGWzU7fFiwYYcCYZRmww4FwijNhh0KhFGaDTsUCKM0G3YocBM1t6DZc7Y3k2HfkMwtwJ6zvZkM+4ZkbgH2nO3NZNg3JHMLsOdsbybDviGZW4A9Z3szGfYNydwC7Dnb18nXK+wrxfwN7HnjawLsK8X8Dex542sC7CvF/A3seeNrAuwrxfwN7HnjawLsK8X8Dex542sC7CvF/M2jsOd/6Q9IgB0+RNiwQ4EwSrNhhwJhlGbDDgXCKM2GHQqEUZoN++kpNMiiNDujfnqCDTsUCKM0G3YoEEZpNuxQIIzSbNihQBil2bAHBP4CIzU7fAh//N////M//6p/oUMSpdkJ80vIH//9X//xt7/q38tP/DnvX/bPyM8hvP+/iX9G7rda3vll/4ws//JvOOCPf/zP+/tZkQAAABdJREFU//59+u8buoz8ZP+MjLBuD/0XAAAA//9DU27sAAAABklEQVQDAEAUY3lRUMkDAAAAAElFTkSuQmCC"
                                       },
                                       "childNodes": [],
-                                      "id": 442
+                                      "id": 427
                                     }
                                   ],
-                                  "id": 441
+                                  "id": 426
                                 }
                               ],
                               "id": 216
@@ -3628,16 +3493,16 @@
                           "attributes": {
                             "data-emotion": "devhost",
                             "data-s": "",
-                            "_cssText": ":host { color: initial; }*, ::before, ::after { box-sizing: border-box; }button { font: inherit; }input { font: inherit; }textarea { font: inherit; }.devhost-xxg4qr { top: 10px; right: 10px; display: grid; gap: 4px; max-width: calc(-24px + 100vw); pointer-events: auto; position: fixed; width: fit-content; z-index: 2147483501; }.devhost-1j9dolm { color: rgb(247, 118, 142); font-size: 12px; line-height: 1.4; }.devhost-1p4gv9j { position: fixed; inset: 0px; pointer-events: none; }.devhost-1rf30i5 { display: flex; -webkit-box-pack: start; justify-content: flex-start; gap: 8px; }.devhost-1tctc4 { display: grid; gap: 4px; }.devhost-15ei743 { font-size: 12px; opacity: 0.72; }.devhost-1oxcm18 { bottom: 10px; display: flex; -webkit-box-pack: center; justify-content: center; left: 10px; pointer-events: none; position: fixed; right: 10px; }.devhost-yggfbh { inset: 0px; pointer-events: none; position: fixed; z-index: 2147483600; }.devhost-1kep4c6 { inset: 0px; pointer-events: none; position: fixed; z-index: 2147483400; }.devhost-iyee19 { align-items: flex-end; display: flex; gap: 10px; max-width: 100%; overflow-x: auto; padding: 8px 10px; pointer-events: auto; }.devhost-14q9pom { display: grid; gap: 8px; padding: 10px; border: 1px solid rgb(122, 162, 247); border-radius: 4px; background: rgb(46, 60, 100); }.devhost-wr77s7 { -webkit-box-align: center; align-items: center; background: rgb(46, 60, 100); border: 1px solid rgb(122, 162, 247); border-radius: 4px; display: flex; gap: 10px; min-width: 0px; padding: 8px 10px; }.devhost-1njy0up { color: rgb(169, 177, 214); flex: 1 1 auto; font-family: \"Maple Mono Normal NF\", \"JetBrainsMono Nerd Font\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace; font-size: 12px; min-width: 0px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.devhost-1keator { flex: 0 0 auto; font-size: 16px; line-height: 1.45; }.devhost-8zt9dm { color: rgb(169, 177, 214); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }.devhost-zqbg7e { display: flex; flex-wrap: wrap; gap: 8px; color: rgb(169, 177, 214); font-size: 12px; }.devhost-1i27l4i { display: flex; gap: 8px; }.devhost-11xhj1x { width: 1040px; height: 720px; display: grid; grid-template-rows: auto auto 1fr; gap: 10px; padding: 10px; box-sizing: border-box; border: 1px solid rgb(86, 95, 137); border-radius: 8px; background: rgb(36, 40, 59); color: rgb(192, 202, 245); box-shadow: rgba(0, 0, 0, 0.8) 4px 5px 10px, rgba(0, 0, 0, 0.4) -4px 5px 10px; }.devhost-do3dls { position: fixed; inset: 0px; background: rgba(26, 27, 38, 0.76); pointer-events: auto; }.devhost-1u0yxsy { position: fixed; inset: 0px; pointer-events: none; z-index: 3; }.devhost-1w8jlzi { position: fixed; top: 0px; left: 0px; width: 1040px; height: 720px; transform: none; pointer-events: auto; z-index: 1; }.devhost-1q64eoc { display: flex; -webkit-box-pack: justify; justify-content: space-between; align-items: flex-start; gap: 10px; }.devhost-lgj0h8 { display: grid; }.devhost-4zuyr { color: rgb(169, 177, 214); font-size: 12px; line-height: 1.4; }.devhost-uwwqev { width: 100%; height: 100%; }.devhost-1d7soq5 { min-height: 0px; overflow: hidden; background: rgb(36, 40, 59); }.devhost-12ikvd3 { position: absolute; left: 8px; right: 8px; bottom: 8px; padding: 4px 8px; border-radius: 8px; background: rgba(86, 95, 137, 0.24); color: rgb(192, 202, 245); font-size: 12px; text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }.devhost-zge9qi { width: 24px; height: 24px; display: block; color: rgb(115, 218, 202); fill: currentcolor; filter: drop-shadow(rgba(115, 218, 202, 0.34) 0px 2px 6px); }.devhost-1p4vugt { -webkit-box-align: center; place-items: center; appearance: none; background: transparent; border-width: medium; border-style: none; border-color: currentcolor; border-image: initial; color: rgb(115, 218, 202); cursor: pointer; display: grid; height: 24px; inset: 0px; margin: auto; padding: 0px; position: absolute; transition: color 120ms; width: 24px; z-index: 2; }.devhost-1p4vugt svg { filter: drop-shadow(rgba(115, 218, 202, 0.34) 0px 2px 6px); transition: filter 120ms; }.devhost-1p4vugt:is(:hover, :focus-visible) { color: rgb(247, 118, 142); outline: none; }.devhost-1p4vugt:is(:hover, :focus-visible) svg { filter: drop-shadow(rgba(247, 118, 142, 0.32) 0px 2px 6px); }.devhost-14rxs0w { display: block; fill: currentcolor; height: 24px; width: 24px; }.devhost-1uk2j4g { position: absolute; inset: 0px; display: grid; place-items: center; pointer-events: none; z-index: 1; }.devhost-1bjlpen { position: absolute; inset: 0px; border: 1px solid rgb(86, 95, 137); border-radius: 8px; background: transparent; cursor: pointer; }.devhost-1i7uojx { position: absolute; left: 0px; bottom: 0px; width: 1040px; height: 720px; transform: scale(0.32); transform-origin: left bottom; pointer-events: none; }.devhost-1lityto { position: relative; flex: 0 0 auto; width: 0px; height: 230.4px; opacity: 0; transition: width 180ms, opacity 180ms; pointer-events: auto; overflow: visible; z-index: 1; }.devhost-1hyfx7x { display: none; }.devhost-bkipsq { color: rgb(192, 202, 245); line-height: 1.45; }.devhost-1xvdb15 { color: rgb(169, 177, 214); font-family: \"Maple Mono Normal NF\", \"JetBrainsMono Nerd Font\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace; font-size: 12px; line-height: 1.4; }.devhost-1gtxj7q { top: 10px; right: calc(14px); display: grid; gap: 4px; max-width: calc(-24px + 100vw); pointer-events: auto; position: fixed; width: fit-content; z-index: 2147483501; }.devhost-weyjm1 { color: rgb(247, 118, 142); font-size: 12px; margin-bottom: 8px; text-align: right; white-space: nowrap; }.devhost-isk7d7 { display: grid; gap: 4px; list-style: none; margin: 0px; padding: 0px; }.devhost-1jn1f4q { border-radius: 4px; color: rgb(192, 202, 245); cursor: pointer; outline: none; text-decoration: underline rgb(122, 162, 247); text-underline-offset: 2px; transition: background 150ms, color 150ms; }.devhost-1jn1f4q:visited { color: rgb(192, 202, 245); }.devhost-1jn1f4q:hover { color: rgb(122, 162, 247); }.devhost-1jn1f4q:focus-visible { background: rgb(46, 60, 100); color: rgb(122, 162, 247); }.devhost-352ugi { background: rgb(46, 60, 100); border: 1px solid rgb(86, 95, 137); border-radius: 999px; color: rgb(169, 177, 214); flex-shrink: 0; font-size: 12px; line-height: 1; padding: 2px 8px; text-transform: lowercase; }.devhost-h1o6ih { color: rgb(192, 202, 245); -webkit-box-flex: 1; flex-grow: 1; font-size: 12px; min-width: 0px; overflow: hidden; text-align: left; text-overflow: clip; white-space: nowrap; }.devhost-exd1zr { -webkit-box-align: center; align-items: center; display: flex; gap: 8px; }.devhost-zgt2xd { -webkit-box-align: center; align-items: center; background: transparent; border-width: medium; border-style: none; border-color: currentcolor; border-image: initial; border-radius: 4px; color: rgb(192, 202, 245); cursor: pointer; display: flex; -webkit-box-pack: center; justify-content: center; opacity: 0.7; padding: 2px; transition: opacity 150ms, background 150ms, color 150ms; }.devhost-zgt2xd:hover { background: rgb(46, 60, 100); color: rgb(192, 202, 245); opacity: 1; }.devhost-zgt2xd:active { opacity: 0.8; }.devhost-zgt2xd:focus-visible { opacity: 1; }.devhost-nbm86w { background: rgb(115, 218, 202); border-radius: 999px; box-shadow: rgba(115, 218, 202, 0.34) 0px 0px 10px, rgba(115, 218, 202, 0.34) 0px 0px 4px; flex-shrink: 0; height: 8px; width: 8px; }.devhost-ib1dl { background: rgb(247, 118, 142); border-radius: 999px; box-shadow: rgba(247, 118, 142, 0.32) 0px 0px 10px, rgba(247, 118, 142, 0.32) 0px 0px 4px; flex-shrink: 0; height: 8px; width: 8px; }.devhost-vj04f { background: rgb(36, 40, 59); border: 1px solid rgb(86, 95, 137); border-radius: 8px; box-shadow: rgba(15, 23, 42, 0.14) 0px 10px 24px; color: rgb(192, 202, 245); font-family: \"Maple Mono Normal NF\", \"JetBrainsMono Nerd Font\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace; font-size: 12px; overflow: visible; padding: 4px 8px; position: relative; transform: translateX(calc(100% - 40px)); transition: transform 160ms; will-change: transform; z-index: 2147483502; }.devhost-vj04f::after { content: \"\"; position: absolute; top: 0px; bottom: 0px; right: -50px; width: 50px; }.devhost-12y925o { display: grid; gap: 8px; width: min(640px, -24px + 100vw); }.devhost-taqjlb { display: grid; gap: 8px; }.devhost-oz949z { border-radius: 8px; display: grid; gap: 8px; }.devhost-30n7z8 { -webkit-box-align: center; align-items: center; display: flex; flex-wrap: wrap; gap: 8px; -webkit-box-pack: justify; justify-content: space-between; }.devhost-18bx7zt { display: grid; flex: 1 1 240px; gap: 4px; min-width: 0px; }.devhost-8knhcs { -webkit-box-align: center; align-items: center; display: flex; flex-wrap: wrap; gap: 8px; min-width: 0px; }.devhost-1wv04w { color: rgb(192, 202, 245); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.devhost-yr9uer { background: rgb(247, 118, 142); border-radius: 999px; color: rgb(17, 18, 26); padding: 2px 8px; }.devhost-vgj5n9 { color: rgb(169, 177, 214); font-size: 12px; }.devhost-18en7re { background: rgb(31, 35, 53); border-radius: 999px; height: 6px; overflow: hidden; }.devhost-1e0ol3m { background: rgb(247, 118, 142); border-radius: 999px; height: 100%; min-width: 8px; width: 50%; }.devhost-1dnpdpe { display: flex; flex-wrap: wrap; gap: 8px; -webkit-box-pack: end; justify-content: flex-end; }.devhost-p4wubb { background: rgb(122, 162, 247); border: 1px solid rgb(122, 162, 247); color: rgb(17, 18, 26); -webkit-box-align: center; align-items: center; border-radius: 4px; box-shadow: rgba(15, 23, 42, 0.14) 0px 10px 24px; cursor: pointer; display: inline-flex; font-family: \"Maple Mono Normal NF\", \"JetBrainsMono Nerd Font\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace; font-size: 12px; gap: 8px; -webkit-box-pack: center; justify-content: center; opacity: 1; padding: 4px 8px; transition: opacity 120ms; }.devhost-10rha4y { display: inline-grid; place-items: center; white-space: nowrap; }.devhost-1yifc3j { background: rgb(36, 40, 59); border: 1px solid rgb(86, 95, 137); color: rgb(192, 202, 245); -webkit-box-align: center; align-items: center; border-radius: 4px; box-shadow: rgba(15, 23, 42, 0.14) 0px 10px 24px; cursor: pointer; display: inline-flex; font-family: \"Maple Mono Normal NF\", \"JetBrainsMono Nerd Font\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace; font-size: 12px; gap: 8px; -webkit-box-pack: center; justify-content: center; opacity: 1; padding: 4px 8px; transition: opacity 120ms; }.devhost-m9cshl { position: relative; flex: 0 0 auto; width: 332.8px; height: 230.4px; opacity: 1; transition: width 180ms, opacity 180ms; pointer-events: auto; overflow: visible; z-index: 1; }.devhost-13urnmn { display: block; width: 100%; height: 100%; pointer-events: none; }.devhost-nagg8j { border-left: 1px solid rgb(86, 95, 137); position: fixed; right: 0px; top: 0px; bottom: 0px; width: 100px; padding: 4px; box-sizing: border-box; background: rgb(31, 35, 53); opacity: 0.5; pointer-events: auto; transform: translateX(calc(80px)); transition: opacity 160ms, transform 160ms; z-index: 2147483500; }.devhost-1a32mau { display: grid; gap: 0px; list-style: none; margin: 0px; padding: 0px; }"
+                            "_cssText": ":host { color: initial; }*, ::before, ::after { box-sizing: border-box; }button { font: inherit; }input { font: inherit; }textarea { font: inherit; }.devhost-xxg4qr { top: 10px; right: 10px; display: grid; gap: 4px; max-width: calc(-24px + 100vw); pointer-events: auto; position: fixed; width: fit-content; z-index: 2147483501; }.devhost-1j9dolm { color: rgb(247, 118, 142); font-size: 12px; line-height: 1.4; }.devhost-1p4gv9j { position: fixed; inset: 0px; pointer-events: none; }.devhost-1rf30i5 { display: flex; -webkit-box-pack: start; justify-content: flex-start; gap: 8px; }.devhost-1tctc4 { display: grid; gap: 4px; }.devhost-15ei743 { font-size: 12px; opacity: 0.72; }.devhost-1oxcm18 { bottom: 10px; display: flex; -webkit-box-pack: center; justify-content: center; left: 10px; pointer-events: none; position: fixed; right: 10px; }.devhost-yggfbh { inset: 0px; pointer-events: none; position: fixed; z-index: 2147483600; }.devhost-1kep4c6 { inset: 0px; pointer-events: none; position: fixed; z-index: 2147483400; }.devhost-iyee19 { align-items: flex-end; display: flex; gap: 10px; max-width: 100%; overflow-x: auto; padding: 8px 10px; pointer-events: auto; }.devhost-14q9pom { display: grid; gap: 8px; padding: 10px; border: 1px solid rgb(122, 162, 247); border-radius: 4px; background: rgb(46, 60, 100); }.devhost-wr77s7 { -webkit-box-align: center; align-items: center; background: rgb(46, 60, 100); border: 1px solid rgb(122, 162, 247); border-radius: 4px; display: flex; gap: 10px; min-width: 0px; padding: 8px 10px; }.devhost-1njy0up { color: rgb(169, 177, 214); flex: 1 1 auto; font-family: \"Maple Mono Normal NF\", \"JetBrainsMono Nerd Font\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace; font-size: 12px; min-width: 0px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.devhost-1keator { flex: 0 0 auto; font-size: 16px; line-height: 1.45; }.devhost-8zt9dm { color: rgb(169, 177, 214); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }.devhost-zqbg7e { display: flex; flex-wrap: wrap; gap: 8px; color: rgb(169, 177, 214); font-size: 12px; }.devhost-1i27l4i { display: flex; gap: 8px; }.devhost-11xhj1x { width: 1040px; height: 720px; display: grid; grid-template-rows: auto auto 1fr; gap: 10px; padding: 10px; box-sizing: border-box; border: 1px solid rgb(86, 95, 137); border-radius: 8px; background: rgb(36, 40, 59); color: rgb(192, 202, 245); box-shadow: rgba(0, 0, 0, 0.8) 4px 5px 10px, rgba(0, 0, 0, 0.4) -4px 5px 10px; }.devhost-do3dls { position: fixed; inset: 0px; background: rgba(26, 27, 38, 0.76); pointer-events: auto; }.devhost-1u0yxsy { position: fixed; inset: 0px; pointer-events: none; z-index: 3; }.devhost-1w8jlzi { position: fixed; top: 0px; left: 0px; width: 1040px; height: 720px; transform: none; pointer-events: auto; z-index: 1; }.devhost-1q64eoc { display: flex; -webkit-box-pack: justify; justify-content: space-between; align-items: flex-start; gap: 10px; }.devhost-lgj0h8 { display: grid; }.devhost-4zuyr { color: rgb(169, 177, 214); font-size: 12px; line-height: 1.4; }.devhost-uwwqev { width: 100%; height: 100%; }.devhost-1d7soq5 { min-height: 0px; overflow: hidden; background: rgb(36, 40, 59); }.devhost-12ikvd3 { position: absolute; left: 8px; right: 8px; bottom: 8px; padding: 4px 8px; border-radius: 8px; background: rgba(86, 95, 137, 0.24); color: rgb(192, 202, 245); font-size: 12px; text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }.devhost-zge9qi { width: 24px; height: 24px; display: block; color: rgb(115, 218, 202); fill: currentcolor; filter: drop-shadow(rgba(115, 218, 202, 0.34) 0px 2px 6px); }.devhost-1p4vugt { -webkit-box-align: center; place-items: center; appearance: none; background: transparent; border-width: medium; border-style: none; border-color: currentcolor; border-image: initial; color: rgb(115, 218, 202); cursor: pointer; display: grid; height: 24px; inset: 0px; margin: auto; padding: 0px; position: absolute; transition: color 120ms; width: 24px; z-index: 2; }.devhost-1p4vugt svg { filter: drop-shadow(rgba(115, 218, 202, 0.34) 0px 2px 6px); transition: filter 120ms; }.devhost-1p4vugt:is(:hover, :focus-visible) { color: rgb(247, 118, 142); outline: none; }.devhost-1p4vugt:is(:hover, :focus-visible) svg { filter: drop-shadow(rgba(247, 118, 142, 0.32) 0px 2px 6px); }.devhost-14rxs0w { display: block; fill: currentcolor; height: 24px; width: 24px; }.devhost-1uk2j4g { position: absolute; inset: 0px; display: grid; place-items: center; pointer-events: none; z-index: 1; }.devhost-1bjlpen { position: absolute; inset: 0px; border: 1px solid rgb(86, 95, 137); border-radius: 8px; background: transparent; cursor: pointer; }.devhost-1i7uojx { position: absolute; left: 0px; bottom: 0px; width: 1040px; height: 720px; transform: scale(0.32); transform-origin: left bottom; pointer-events: none; }.devhost-1lityto { position: relative; flex: 0 0 auto; width: 0px; height: 230.4px; opacity: 0; transition: width 180ms, opacity 180ms; pointer-events: auto; overflow: visible; z-index: 1; }.devhost-1hyfx7x { display: none; }.devhost-bkipsq { color: rgb(192, 202, 245); line-height: 1.45; }.devhost-1xvdb15 { color: rgb(169, 177, 214); font-family: \"Maple Mono Normal NF\", \"JetBrainsMono Nerd Font\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace; font-size: 12px; line-height: 1.4; }.devhost-m9cshl { position: relative; flex: 0 0 auto; width: 332.8px; height: 230.4px; opacity: 1; transition: width 180ms, opacity 180ms; pointer-events: auto; overflow: visible; z-index: 1; }.devhost-1gtxj7q { top: 10px; right: calc(14px); display: grid; gap: 4px; max-width: calc(-24px + 100vw); pointer-events: auto; position: fixed; width: fit-content; z-index: 2147483501; }.devhost-weyjm1 { color: rgb(247, 118, 142); font-size: 12px; margin-bottom: 8px; text-align: right; white-space: nowrap; }.devhost-isk7d7 { display: grid; gap: 4px; list-style: none; margin: 0px; padding: 0px; }.devhost-1jn1f4q { border-radius: 4px; color: rgb(192, 202, 245); cursor: pointer; outline: none; text-decoration: underline rgb(122, 162, 247); text-underline-offset: 2px; transition: background 150ms, color 150ms; }.devhost-1jn1f4q:visited { color: rgb(192, 202, 245); }.devhost-1jn1f4q:hover { color: rgb(122, 162, 247); }.devhost-1jn1f4q:focus-visible { background: rgb(46, 60, 100); color: rgb(122, 162, 247); }.devhost-352ugi { background: rgb(46, 60, 100); border: 1px solid rgb(86, 95, 137); border-radius: 999px; color: rgb(169, 177, 214); flex-shrink: 0; font-size: 12px; line-height: 1; padding: 2px 8px; text-transform: lowercase; }.devhost-h1o6ih { color: rgb(192, 202, 245); -webkit-box-flex: 1; flex-grow: 1; font-size: 12px; min-width: 0px; overflow: hidden; text-align: left; text-overflow: clip; white-space: nowrap; }.devhost-exd1zr { -webkit-box-align: center; align-items: center; display: flex; gap: 8px; }.devhost-zgt2xd { -webkit-box-align: center; align-items: center; background: transparent; border-width: medium; border-style: none; border-color: currentcolor; border-image: initial; border-radius: 4px; color: rgb(192, 202, 245); cursor: pointer; display: flex; -webkit-box-pack: center; justify-content: center; opacity: 0.7; padding: 2px; transition: opacity 150ms, background 150ms, color 150ms; }.devhost-zgt2xd:hover { background: rgb(46, 60, 100); color: rgb(192, 202, 245); opacity: 1; }.devhost-zgt2xd:active { opacity: 0.8; }.devhost-zgt2xd:focus-visible { opacity: 1; }.devhost-nbm86w { background: rgb(115, 218, 202); border-radius: 999px; box-shadow: rgba(115, 218, 202, 0.34) 0px 0px 10px, rgba(115, 218, 202, 0.34) 0px 0px 4px; flex-shrink: 0; height: 8px; width: 8px; }.devhost-ib1dl { background: rgb(247, 118, 142); border-radius: 999px; box-shadow: rgba(247, 118, 142, 0.32) 0px 0px 10px, rgba(247, 118, 142, 0.32) 0px 0px 4px; flex-shrink: 0; height: 8px; width: 8px; }.devhost-vj04f { background: rgb(36, 40, 59); border: 1px solid rgb(86, 95, 137); border-radius: 8px; box-shadow: rgba(15, 23, 42, 0.14) 0px 10px 24px; color: rgb(192, 202, 245); font-family: \"Maple Mono Normal NF\", \"JetBrainsMono Nerd Font\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace; font-size: 12px; overflow: visible; padding: 4px 8px; position: relative; transform: translateX(calc(100% - 40px)); transition: transform 160ms; will-change: transform; z-index: 2147483502; }.devhost-vj04f::after { content: \"\"; position: absolute; top: 0px; bottom: 0px; right: -50px; width: 50px; }.devhost-12y925o { display: grid; gap: 8px; width: min(640px, -24px + 100vw); }.devhost-o5qy8q { color: rgb(247, 118, 142); font-size: 12px; }.devhost-taqjlb { display: grid; gap: 8px; }.devhost-13urnmn { display: block; width: 100%; height: 100%; pointer-events: none; }.devhost-nagg8j { border-left: 1px solid rgb(86, 95, 137); position: fixed; right: 0px; top: 0px; bottom: 0px; width: 100px; padding: 4px; box-sizing: border-box; background: rgb(31, 35, 53); opacity: 0.5; pointer-events: auto; transform: translateX(calc(80px)); transition: opacity 160ms, transform 160ms; z-index: 2147483500; }.devhost-1a32mau { display: grid; gap: 0px; list-style: none; margin: 0px; padding: 0px; }"
                           },
                           "childNodes": [
                             {
                               "type": 3,
                               "textContent": "",
-                              "id": 444
+                              "id": 429
                             }
                           ],
-                          "id": 443,
+                          "id": 428,
                           "isShadow": true
                         },
                         {
@@ -3646,10 +3511,10 @@
                           "attributes": {
                             "id": "devhost-xterm-stylesheet",
                             "rel": "stylesheet",
-                            "href": "http://127.0.0.1:34323/__devhost__/xterm.css"
+                            "href": "http://127.0.0.1:39383/__devhost__/xterm.css"
                           },
                           "childNodes": [],
-                          "id": 445,
+                          "id": 430,
                           "isShadow": true
                         }
                       ],
@@ -3670,7 +3535,7 @@
           "top": 0
         }
       },
-      "timestamp": 1777057424341
+      "timestamp": 1778181544394
     },
     {
       "type": 3,
@@ -3685,7 +3550,7 @@
           }
         ]
       },
-      "timestamp": 1777057424608
+      "timestamp": 1778181544658
     },
     {
       "type": 3,
@@ -3693,50 +3558,50 @@
         "source": 1,
         "positions": [
           {
-            "x": 322,
-            "y": 727,
+            "x": 321,
+            "y": 728,
             "id": 40,
-            "timeOffset": -433
+            "timeOffset": -434
           },
           {
-            "x": 331,
-            "y": 724,
+            "x": 329,
+            "y": 725,
             "id": 40,
-            "timeOffset": -366
+            "timeOffset": -367
           },
           {
-            "x": 345,
-            "y": 718,
+            "x": 342,
+            "y": 721,
             "id": 40,
             "timeOffset": -300
           },
           {
-            "x": 363,
-            "y": 711,
+            "x": 358,
+            "y": 715,
             "id": 40,
-            "timeOffset": -233
+            "timeOffset": -234
           },
           {
-            "x": 386,
-            "y": 701,
-            "id": 53,
-            "timeOffset": -166
+            "x": 379,
+            "y": 708,
+            "id": 257,
+            "timeOffset": -167
           },
           {
-            "x": 413,
-            "y": 689,
+            "x": 404,
+            "y": 698,
             "id": 53,
             "timeOffset": -100
           },
           {
-            "x": 444,
-            "y": 674,
-            "id": 53,
-            "timeOffset": -33
+            "x": 433,
+            "y": 685,
+            "id": 58,
+            "timeOffset": -34
           }
         ]
       },
-      "timestamp": 1777057425107
+      "timestamp": 1778181545158
     },
     {
       "type": 3,
@@ -3744,50 +3609,56 @@
         "source": 1,
         "positions": [
           {
-            "x": 479,
-            "y": 657,
+            "x": 467,
+            "y": 670,
             "id": 51,
-            "timeOffset": -466
+            "timeOffset": -467
           },
           {
-            "x": 518,
-            "y": 637,
+            "x": 504,
+            "y": 652,
             "id": 67,
             "timeOffset": -400
           },
           {
-            "x": 560,
-            "y": 615,
+            "x": 545,
+            "y": 631,
             "id": 67,
-            "timeOffset": -333
+            "timeOffset": -334
           },
           {
-            "x": 606,
-            "y": 591,
-            "id": 64,
-            "timeOffset": -266
+            "x": 590,
+            "y": 607,
+            "id": 62,
+            "timeOffset": -267
           },
           {
-            "x": 654,
-            "y": 565,
+            "x": 637,
+            "y": 580,
             "id": 62,
             "timeOffset": -200
           },
           {
-            "x": 705,
-            "y": 537,
-            "id": 48,
-            "timeOffset": -133
+            "x": 688,
+            "y": 551,
+            "id": 40,
+            "timeOffset": -134
           },
           {
-            "x": 757,
-            "y": 507,
+            "x": 740,
+            "y": 519,
             "id": 48,
-            "timeOffset": -66
+            "timeOffset": -67
+          },
+          {
+            "x": 795,
+            "y": 486,
+            "id": 40,
+            "timeOffset": 0
           }
         ]
       },
-      "timestamp": 1777057425607
+      "timestamp": 1778181545658
     },
     {
       "type": 3,
@@ -3795,84 +3666,78 @@
         "source": 1,
         "positions": [
           {
-            "x": 810,
-            "y": 476,
-            "id": 40,
-            "timeOffset": -500
+            "x": 850,
+            "y": 451,
+            "id": 106,
+            "timeOffset": -434
           },
           {
-            "x": 865,
-            "y": 443,
-            "id": 108,
-            "timeOffset": -433
+            "x": 905,
+            "y": 415,
+            "id": 106,
+            "timeOffset": -367
           },
           {
-            "x": 918,
-            "y": 410,
-            "id": 22,
-            "timeOffset": -366
-          },
-          {
-            "x": 972,
-            "y": 376,
+            "x": 961,
+            "y": 379,
             "id": 24,
             "timeOffset": -300
           },
           {
-            "x": 1024,
-            "y": 342,
+            "x": 1015,
+            "y": 343,
             "id": 24,
-            "timeOffset": -233
+            "timeOffset": -234
           },
           {
-            "x": 1074,
-            "y": 309,
+            "x": 1068,
+            "y": 308,
             "id": 24,
-            "timeOffset": -166
+            "timeOffset": -167
           },
           {
-            "x": 1122,
-            "y": 275,
+            "x": 1118,
+            "y": 274,
             "id": 24,
             "timeOffset": -100
           },
           {
-            "x": 1167,
-            "y": 244,
+            "x": 1165,
+            "y": 242,
             "id": 29,
-            "timeOffset": -33
+            "timeOffset": -34
           }
         ]
       },
-      "timestamp": 1777057426107
+      "timestamp": 1778181546158
     },
     {
       "type": 3,
       "data": {
         "source": 8,
-        "id": 443,
+        "id": 428,
         "adds": [
           {
             "rule": ".devhost-13le6cy{background:#24283b;border:1px solid #565f89;border-radius:8px;box-shadow:0px 10px 24px rgba(15, 23, 42, 0.14);color:#c0caf5;font-family:\"Maple Mono Normal NF\",\"JetBrainsMono Nerd Font\",ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,\"Liberation Mono\",monospace;font-size:12px;overflow:visible;padding:4px 8px;position:relative;-webkit-transform:translateX(0);-moz-transform:translateX(0);-ms-transform:translateX(0);transform:translateX(0);-webkit-transition:-webkit-transform 160ms ease;transition:transform 160ms ease;will-change:transform;z-index:2147483502;}",
-            "index": 82
+            "index": 70
           }
         ]
       },
-      "timestamp": 1777057426542
+      "timestamp": 1778181546591
     },
     {
       "type": 3,
       "data": {
         "source": 8,
-        "id": 443,
+        "id": 428,
         "adds": [
           {
             "rule": ".devhost-13le6cy::after{content:\"\";position:absolute;top:0;bottom:0;right:-50px;width:50px;}",
-            "index": 83
+            "index": 71
           }
         ]
       },
-      "timestamp": 1777057426542
+      "timestamp": 1778181546592
     },
     {
       "type": 3,
@@ -3890,7 +3755,7 @@
         "removes": [],
         "adds": []
       },
-      "timestamp": 1777057426542
+      "timestamp": 1778181546592
     },
     {
       "type": 3,
@@ -3898,56 +3763,56 @@
         "source": 1,
         "positions": [
           {
-            "x": 1209,
-            "y": 213,
+            "x": 1210,
+            "y": 211,
             "id": 29,
-            "timeOffset": -466
+            "timeOffset": -467
           },
           {
-            "x": 1248,
-            "y": 185,
+            "x": 1250,
+            "y": 183,
             "id": 29,
             "timeOffset": -400
           },
           {
-            "x": 1283,
-            "y": 158,
-            "id": 219,
-            "timeOffset": -333
+            "x": 1287,
+            "y": 157,
+            "id": 24,
+            "timeOffset": -334
           },
           {
-            "x": 1315,
+            "x": 1319,
             "y": 134,
             "id": 219,
-            "timeOffset": -266
+            "timeOffset": -267
           },
           {
-            "x": 1343,
-            "y": 113,
+            "x": 1348,
+            "y": 114,
             "id": 219,
             "timeOffset": -200
           },
           {
-            "x": 1367,
-            "y": 95,
+            "x": 1372,
+            "y": 96,
             "id": 219,
-            "timeOffset": -133
+            "timeOffset": -134
           },
           {
-            "x": 1388,
-            "y": 79,
+            "x": 1392,
+            "y": 81,
             "id": 220,
-            "timeOffset": -66
+            "timeOffset": -67
           },
           {
-            "x": 1397,
-            "y": 72,
+            "x": 1400,
+            "y": 74,
             "id": 240,
-            "timeOffset": -13
+            "timeOffset": -17
           }
         ]
       },
-      "timestamp": 1777057426607
+      "timestamp": 1778181546658
     },
     {
       "type": 3,
@@ -3955,32 +3820,32 @@
         "source": 1,
         "positions": [
           {
-            "x": 1412,
-            "y": 61,
+            "x": 1415,
+            "y": 63,
             "id": 242,
-            "timeOffset": -430
+            "timeOffset": -435
           },
           {
-            "x": 1423,
-            "y": 53,
-            "id": 220,
-            "timeOffset": -360
+            "x": 1425,
+            "y": 55,
+            "id": 221,
+            "timeOffset": -369
           },
           {
-            "x": 1431,
-            "y": 48,
+            "x": 1432,
+            "y": 49,
             "id": 220,
-            "timeOffset": -300
+            "timeOffset": -304
           },
           {
             "x": 1435,
             "y": 46,
             "id": 220,
-            "timeOffset": -233
+            "timeOffset": -250
           }
         ]
       },
-      "timestamp": 1777057427107
+      "timestamp": 1778181547158
     },
     {
       "type": 3,
@@ -3988,108 +3853,84 @@
         "source": 1,
         "positions": [
           {
-            "x": 1436,
+            "x": 1435,
             "y": 46,
             "id": 220,
-            "timeOffset": -17
+            "timeOffset": -34
           }
         ]
       },
-      "timestamp": 1777057427607
-    },
-    {
-      "type": 3,
-      "data": {
-        "source": 0,
-        "texts": [],
-        "attributes": [
-          {
-            "id": 220,
-            "attributes": {
-              "class": "devhost-vj04f"
-            }
-          },
-          {
-            "id": 246,
-            "attributes": {
-              "class": "devhost-13le6cy"
-            }
-          }
-        ],
-        "removes": [],
-        "adds": []
-      },
-      "timestamp": 1777057427824
+      "timestamp": 1778181547658
     },
     {
       "type": 3,
       "data": {
         "source": 8,
-        "id": 443,
+        "id": 428,
         "adds": [
           {
             "rule": ".devhost-16s9uop{border-left:1px solid #565f89;position:fixed;right:0;top:0;bottom:0;width:100px;padding:4px;box-sizing:border-box;background:#1f2335;opacity:1;pointer-events:auto;-webkit-transform:translateX(0);-moz-transform:translateX(0);-ms-transform:translateX(0);transform:translateX(0);-webkit-transition:opacity 160ms ease,-webkit-transform 160ms ease;transition:opacity 160ms ease,transform 160ms ease;z-index:2147483500;}",
-            "index": 84
+            "index": 72
           }
         ]
       },
-      "timestamp": 1777057428066
+      "timestamp": 1778181547859
     },
     {
       "type": 3,
       "data": {
         "source": 8,
-        "id": 443,
+        "id": 428,
         "adds": [
           {
             "rule": ".devhost-1s8eyry{position:absolute;right:calc(100% + 8px);top:852px;width:min(80ch, calc(100vw - 100px - 64px));display:grid;gap:8px;padding:8px;border:1px solid #565f89;border-radius:8px;background:#24283b;box-shadow:0px 10px 24px rgba(15, 23, 42, 0.14);color:#c0caf5;font-family:\"Maple Mono Normal NF\",\"JetBrainsMono Nerd Font\",ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,\"Liberation Mono\",monospace;font-size:12px;line-height:1;pointer-events:none;z-index:2147483500;}",
-            "index": 85
+            "index": 73
           }
         ]
       },
-      "timestamp": 1777057428066
+      "timestamp": 1778181547859
     },
     {
       "type": 3,
       "data": {
         "source": 8,
-        "id": 443,
+        "id": 428,
         "adds": [
           {
             "rule": ".devhost-1ozeah3{position:absolute;top:944px;left:4px;right:4px;height:8px;background:rgba(86, 95, 137, 0.24);box-shadow:inset 0 0 0 1px rgba(125, 207, 255, 0.28);pointer-events:none;}",
-            "index": 86
+            "index": 74
           }
         ]
       },
-      "timestamp": 1777057428066
+      "timestamp": 1778181547859
     },
     {
       "type": 3,
       "data": {
         "source": 8,
-        "id": 443,
+        "id": 428,
         "adds": [
           {
             "rule": ".devhost-14g1vdq{box-sizing:border-box;color:#c0caf5;height:24px;line-height:24px;overflow:hidden;padding:0 8px;text-overflow:ellipsis;white-space:pre;}",
-            "index": 87
+            "index": 75
           }
         ]
       },
-      "timestamp": 1777057428066
+      "timestamp": 1778181547859
     },
     {
       "type": 3,
       "data": {
         "source": 8,
-        "id": 443,
+        "id": 428,
         "adds": [
           {
             "rule": ".devhost-1a77phe{background:#6a333e;box-sizing:border-box;color:#ffffff;height:24px;line-height:24px;overflow:hidden;padding:0 8px;text-overflow:ellipsis;white-space:pre;}",
-            "index": 88
+            "index": 76
           }
         ]
       },
-      "timestamp": 1777057428067
+      "timestamp": 1778181547859
     },
     {
       "type": 3,
@@ -4098,13 +3939,13 @@
         "texts": [],
         "attributes": [
           {
-            "id": 246,
+            "id": 220,
             "attributes": {
               "class": "devhost-vj04f"
             }
           },
           {
-            "id": 441,
+            "id": 426,
             "attributes": {
               "class": "devhost-16s9uop"
             }
@@ -4113,7 +3954,7 @@
         "removes": [],
         "adds": [
           {
-            "parentId": 441,
+            "parentId": 426,
             "nextId": null,
             "node": {
               "type": 2,
@@ -4123,11 +3964,11 @@
                 "data-testid": "LogMinimap--preview"
               },
               "childNodes": [],
-              "id": 446
+              "id": 431
             }
           },
           {
-            "parentId": 446,
+            "parentId": 431,
             "nextId": null,
             "node": {
               "type": 2,
@@ -4136,11 +3977,11 @@
                 "class": "devhost-1a32mau"
               },
               "childNodes": [],
-              "id": 447
+              "id": 432
             }
           },
           {
-            "parentId": 447,
+            "parentId": 432,
             "nextId": null,
             "node": {
               "type": 2,
@@ -4149,21 +3990,21 @@
                 "class": "devhost-1a77phe"
               },
               "childNodes": [],
-              "id": 448
+              "id": 433
             }
           },
           {
-            "parentId": 448,
+            "parentId": 433,
             "nextId": null,
             "node": {
               "type": 3,
               "textContent": "Worker failed to start",
-              "id": 449
+              "id": 434
             }
           },
           {
-            "parentId": 441,
-            "nextId": 446,
+            "parentId": 426,
+            "nextId": 431,
             "node": {
               "type": 2,
               "tagName": "div",
@@ -4172,12 +4013,12 @@
                 "data-testid": "LogMinimap--preview-overlay"
               },
               "childNodes": [],
-              "id": 450
+              "id": 435
             }
           },
           {
-            "parentId": 447,
-            "nextId": 448,
+            "parentId": 432,
+            "nextId": 433,
             "node": {
               "type": 2,
               "tagName": "li",
@@ -4185,12 +4026,12 @@
                 "class": "devhost-14g1vdq"
               },
               "childNodes": [],
-              "id": 451
+              "id": 436
             }
           },
           {
-            "parentId": 447,
-            "nextId": 451,
+            "parentId": 432,
+            "nextId": 436,
             "node": {
               "type": 2,
               "tagName": "li",
@@ -4198,75 +4039,195 @@
                 "class": "devhost-14g1vdq"
               },
               "childNodes": [],
-              "id": 452
+              "id": 437
             }
           },
           {
-            "parentId": 452,
+            "parentId": 437,
             "nextId": null,
             "node": {
               "type": 3,
               "textContent": "Listening on https://app.localhost",
-              "id": 453
+              "id": 438
             }
           },
           {
-            "parentId": 451,
+            "parentId": 436,
             "nextId": null,
             "node": {
               "type": 3,
               "textContent": "API listening on port 4000",
-              "id": 454
+              "id": 439
             }
           }
         ]
       },
-      "timestamp": 1777057428068
+      "timestamp": 1778181547860
     },
     {
       "type": 3,
       "data": {
-        "source": 1,
-        "positions": [
+        "source": 0,
+        "texts": [],
+        "attributes": [
           {
-            "x": 1436,
-            "y": 52,
-            "id": 220,
-            "timeOffset": -450
-          },
-          {
-            "x": 1436,
-            "y": 63,
-            "id": 220,
-            "timeOffset": -383
-          },
-          {
-            "x": 1436,
-            "y": 79,
-            "id": 220,
-            "timeOffset": -317
-          },
-          {
-            "x": 1435,
-            "y": 101,
-            "id": 249,
-            "timeOffset": -230
-          },
-          {
-            "x": 1434,
-            "y": 128,
-            "id": 267,
-            "timeOffset": -147
-          },
-          {
-            "x": 1433,
-            "y": 160,
             "id": 246,
-            "timeOffset": -77
+            "attributes": {
+              "class": "devhost-13le6cy"
+            }
+          },
+          {
+            "id": 426,
+            "attributes": {
+              "class": "devhost-nagg8j"
+            }
+          }
+        ],
+        "removes": [
+          {
+            "parentId": 426,
+            "id": 435
+          },
+          {
+            "parentId": 426,
+            "id": 431
+          }
+        ],
+        "adds": []
+      },
+      "timestamp": 1778181547914
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 0,
+        "texts": [],
+        "attributes": [
+          {
+            "id": 246,
+            "attributes": {
+              "class": "devhost-vj04f"
+            }
+          },
+          {
+            "id": 426,
+            "attributes": {
+              "class": "devhost-16s9uop"
+            }
+          }
+        ],
+        "removes": [],
+        "adds": [
+          {
+            "parentId": 426,
+            "nextId": null,
+            "node": {
+              "type": 2,
+              "tagName": "div",
+              "attributes": {
+                "class": "devhost-1s8eyry",
+                "data-testid": "LogMinimap--preview"
+              },
+              "childNodes": [],
+              "id": 440
+            }
+          },
+          {
+            "parentId": 440,
+            "nextId": null,
+            "node": {
+              "type": 2,
+              "tagName": "ol",
+              "attributes": {
+                "class": "devhost-1a32mau"
+              },
+              "childNodes": [],
+              "id": 441
+            }
+          },
+          {
+            "parentId": 441,
+            "nextId": null,
+            "node": {
+              "type": 2,
+              "tagName": "li",
+              "attributes": {
+                "class": "devhost-1a77phe"
+              },
+              "childNodes": [],
+              "id": 442
+            }
+          },
+          {
+            "parentId": 442,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "Worker failed to start",
+              "id": 443
+            }
+          },
+          {
+            "parentId": 426,
+            "nextId": 440,
+            "node": {
+              "type": 2,
+              "tagName": "div",
+              "attributes": {
+                "class": "devhost-1ozeah3",
+                "data-testid": "LogMinimap--preview-overlay"
+              },
+              "childNodes": [],
+              "id": 444
+            }
+          },
+          {
+            "parentId": 441,
+            "nextId": 442,
+            "node": {
+              "type": 2,
+              "tagName": "li",
+              "attributes": {
+                "class": "devhost-14g1vdq"
+              },
+              "childNodes": [],
+              "id": 445
+            }
+          },
+          {
+            "parentId": 441,
+            "nextId": 445,
+            "node": {
+              "type": 2,
+              "tagName": "li",
+              "attributes": {
+                "class": "devhost-14g1vdq"
+              },
+              "childNodes": [],
+              "id": 446
+            }
+          },
+          {
+            "parentId": 446,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "Listening on https://app.localhost",
+              "id": 447
+            }
+          },
+          {
+            "parentId": 445,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "API listening on port 4000",
+              "id": 448
+            }
           }
         ]
       },
-      "timestamp": 1777057428107
+      "timestamp": 1778181548059
     },
     {
       "type": 3,
@@ -4274,56 +4235,50 @@
         "source": 1,
         "positions": [
           {
-            "x": 1433,
-            "y": 195,
-            "id": 441,
-            "timeOffset": -493
-          },
-          {
-            "x": 1433,
-            "y": 232,
-            "id": 441,
-            "timeOffset": -421
-          },
-          {
-            "x": 1433,
-            "y": 271,
-            "id": 441,
-            "timeOffset": -349
+            "x": 1435,
+            "y": 50,
+            "id": 220,
+            "timeOffset": -467
           },
           {
             "x": 1434,
-            "y": 309,
-            "id": 441,
-            "timeOffset": -283
+            "y": 59,
+            "id": 220,
+            "timeOffset": -400
+          },
+          {
+            "x": 1434,
+            "y": 73,
+            "id": 220,
+            "timeOffset": -334
+          },
+          {
+            "x": 1434,
+            "y": 91,
+            "id": 249,
+            "timeOffset": -246
           },
           {
             "x": 1435,
-            "y": 345,
-            "id": 441,
-            "timeOffset": -216
+            "y": 114,
+            "id": 251,
+            "timeOffset": -175
           },
           {
             "x": 1436,
-            "y": 378,
-            "id": 441,
-            "timeOffset": -150
+            "y": 142,
+            "id": 426,
+            "timeOffset": -101
           },
           {
             "x": 1436,
-            "y": 407,
-            "id": 441,
-            "timeOffset": -82
-          },
-          {
-            "x": 1436,
-            "y": 431,
-            "id": 441,
-            "timeOffset": -16
+            "y": 174,
+            "id": 426,
+            "timeOffset": -35
           }
         ]
       },
-      "timestamp": 1777057428607
+      "timestamp": 1778181548158
     },
     {
       "type": 3,
@@ -4332,31 +4287,88 @@
         "positions": [
           {
             "x": 1436,
-            "y": 451,
-            "id": 441,
-            "timeOffset": -450
+            "y": 208,
+            "id": 426,
+            "timeOffset": -465
           },
           {
             "x": 1436,
-            "y": 465,
-            "id": 441,
-            "timeOffset": -383
+            "y": 245,
+            "id": 426,
+            "timeOffset": -392
           },
           {
             "x": 1436,
-            "y": 474,
-            "id": 441,
-            "timeOffset": -317
+            "y": 283,
+            "id": 426,
+            "timeOffset": -322
           },
           {
             "x": 1436,
-            "y": 479,
-            "id": 441,
-            "timeOffset": -250
+            "y": 319,
+            "id": 426,
+            "timeOffset": -267
+          },
+          {
+            "x": 1436,
+            "y": 354,
+            "id": 426,
+            "timeOffset": -200
+          },
+          {
+            "x": 1435,
+            "y": 385,
+            "id": 426,
+            "timeOffset": -134
+          },
+          {
+            "x": 1434,
+            "y": 413,
+            "id": 426,
+            "timeOffset": -67
+          },
+          {
+            "x": 1433,
+            "y": 435,
+            "id": 426,
+            "timeOffset": -1
           }
         ]
       },
-      "timestamp": 1777057429107
+      "timestamp": 1778181548658
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 1,
+        "positions": [
+          {
+            "x": 1434,
+            "y": 453,
+            "id": 426,
+            "timeOffset": -434
+          },
+          {
+            "x": 1434,
+            "y": 466,
+            "id": 426,
+            "timeOffset": -367
+          },
+          {
+            "x": 1435,
+            "y": 475,
+            "id": 426,
+            "timeOffset": -301
+          },
+          {
+            "x": 1435,
+            "y": 479,
+            "id": 426,
+            "timeOffset": -234
+          }
+        ]
+      },
+      "timestamp": 1778181549158
     },
     {
       "type": 3,
@@ -4366,7 +4378,7 @@
         "x": 0,
         "y": 760
       },
-      "timestamp": 1777057429755
+      "timestamp": 1778181549821
     },
     {
       "type": 3,
@@ -4376,12 +4388,12 @@
           {
             "x": 1435,
             "y": 479,
-            "id": 441,
+            "id": 426,
             "timeOffset": 0
           }
         ]
       },
-      "timestamp": 1777057430640
+      "timestamp": 1778181550707
     },
     {
       "type": 3,
@@ -4390,7 +4402,7 @@
         "texts": [],
         "attributes": [
           {
-            "id": 441,
+            "id": 426,
             "attributes": {
               "class": "devhost-nagg8j"
             }
@@ -4398,17 +4410,17 @@
         ],
         "removes": [
           {
-            "parentId": 441,
-            "id": 450
+            "parentId": 426,
+            "id": 444
           },
           {
-            "parentId": 441,
-            "id": 446
+            "parentId": 426,
+            "id": 440
           }
         ],
         "adds": []
       },
-      "timestamp": 1777057431109
+      "timestamp": 1778181551109
     },
     {
       "type": 3,
@@ -4416,107 +4428,107 @@
         "source": 1,
         "positions": [
           {
-            "x": 1432,
+            "x": 1430,
             "y": 477,
-            "id": 441,
+            "id": 426,
             "timeOffset": -433
           },
           {
-            "x": 1425,
-            "y": 473,
-            "id": 441,
+            "x": 1420,
+            "y": 472,
+            "id": 426,
             "timeOffset": -366
           },
           {
-            "x": 1414,
-            "y": 468,
-            "id": 441,
+            "x": 1405,
+            "y": 465,
+            "id": 426,
             "timeOffset": -300
           },
           {
-            "x": 1399,
-            "y": 460,
-            "id": 441,
+            "x": 1385,
+            "y": 455,
+            "id": 426,
             "timeOffset": -233
           },
           {
-            "x": 1381,
-            "y": 450,
-            "id": 441,
+            "x": 1363,
+            "y": 441,
+            "id": 426,
             "timeOffset": -166
           },
           {
-            "x": 1359,
-            "y": 437,
-            "id": 441,
-            "timeOffset": -100
-          },
-          {
-            "x": 1335,
-            "y": 422,
+            "x": 1337,
+            "y": 424,
             "id": 20,
-            "timeOffset": -33
-          }
-        ]
-      },
-      "timestamp": 1777057431140
-    },
-    {
-      "type": 3,
-      "data": {
-        "source": 1,
-        "positions": [
+            "timeOffset": -99
+          },
           {
             "x": 1308,
             "y": 403,
             "id": 22,
-            "timeOffset": -455
-          },
+            "timeOffset": -25
+          }
+        ]
+      },
+      "timestamp": 1778181551207
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 1,
+        "positions": [
           {
-            "x": 1279,
-            "y": 381,
+            "x": 1278,
+            "y": 379,
             "id": 167,
-            "timeOffset": -396
+            "timeOffset": -468
           },
           {
-            "x": 1249,
-            "y": 356,
+            "x": 1247,
+            "y": 351,
             "id": 162,
-            "timeOffset": -336
+            "timeOffset": -411
           },
           {
-            "x": 1218,
-            "y": 328,
+            "x": 1216,
+            "y": 320,
             "id": 162,
+            "timeOffset": -350
+          },
+          {
+            "x": 1185,
+            "y": 287,
+            "id": 22,
             "timeOffset": -283
           },
           {
-            "x": 1187,
-            "y": 298,
-            "id": 22,
+            "x": 1154,
+            "y": 254,
+            "id": 104,
             "timeOffset": -216
           },
           {
-            "x": 1157,
-            "y": 266,
-            "id": 104,
+            "x": 1125,
+            "y": 220,
+            "id": 121,
             "timeOffset": -150
           },
           {
-            "x": 1128,
-            "y": 234,
-            "id": 104,
+            "x": 1096,
+            "y": 187,
+            "id": 149,
             "timeOffset": -83
           },
           {
-            "x": 1101,
-            "y": 201,
+            "x": 1070,
+            "y": 155,
             "id": 149,
             "timeOffset": -16
           }
         ]
       },
-      "timestamp": 1777057431640
+      "timestamp": 1778181551707
     },
     {
       "type": 3,
@@ -4524,50 +4536,50 @@
         "source": 1,
         "positions": [
           {
-            "x": 1076,
-            "y": 170,
-            "id": 149,
-            "timeOffset": -450
+            "x": 1046,
+            "y": 126,
+            "id": 219,
+            "timeOffset": -449
           },
           {
-            "x": 1053,
-            "y": 140,
+            "x": 1024,
+            "y": 99,
             "id": 219,
             "timeOffset": -383
           },
           {
-            "x": 1033,
-            "y": 112,
+            "x": 1006,
+            "y": 76,
             "id": 219,
             "timeOffset": -316
           },
           {
-            "x": 1015,
-            "y": 88,
+            "x": 990,
+            "y": 56,
             "id": 219,
             "timeOffset": -250
           },
           {
-            "x": 1000,
-            "y": 66,
+            "x": 977,
+            "y": 39,
             "id": 219,
             "timeOffset": -183
           },
           {
-            "x": 987,
-            "y": 48,
+            "x": 967,
+            "y": 25,
             "id": 219,
             "timeOffset": -116
           },
           {
-            "x": 976,
-            "y": 33,
+            "x": 960,
+            "y": 15,
             "id": 219,
             "timeOffset": -50
           }
         ]
       },
-      "timestamp": 1777057432140
+      "timestamp": 1778181552207
     },
     {
       "type": 3,
@@ -4575,38 +4587,20 @@
         "source": 1,
         "positions": [
           {
-            "x": 968,
-            "y": 22,
-            "id": 219,
-            "timeOffset": -483
-          },
-          {
-            "x": 962,
-            "y": 14,
-            "id": 219,
-            "timeOffset": -416
-          },
-          {
-            "x": 957,
+            "x": 956,
             "y": 8,
             "id": 121,
-            "timeOffset": -350
-          },
-          {
-            "x": 955,
-            "y": 5,
-            "id": 121,
-            "timeOffset": -283
+            "timeOffset": -483
           },
           {
             "x": 954,
             "y": 4,
             "id": 121,
-            "timeOffset": -216
+            "timeOffset": -416
           }
         ]
       },
-      "timestamp": 1777057432640
+      "timestamp": 1778181552707
     }
   ]
 }
