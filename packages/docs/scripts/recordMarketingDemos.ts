@@ -212,7 +212,7 @@ async function runAnnotationScenario(page: Page): Promise<void> {
   await page.keyboard.up("Alt");
 
   const commentInput = page.getByTestId("AnnotationComposer--comment");
-  const submitButton = page.getByRole("button", { name: "Submit" });
+  const submitButton = page.getByRole("button", { name: /Run / });
 
   await typeIntoLocator(
     page,
