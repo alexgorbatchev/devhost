@@ -1,10 +1,9 @@
-# Agent Adapter Reference
+# Annotation Agent Action Reference
 
-Use this reference when a `devhost.toml` manifest needs an `[agent]` table for annotation handoff.
+Use this reference when a `devhost.toml` manifest needs an annotation `kind = "agent"` action.
 
 ## Decision rules
 
-- Omit `[agent]` when the default Pi integration is acceptable; devhost launches Pi by default.
 - Use `adapter` only for built-ins: `"pi"`, `"claude-code"`, or `"opencode"`.
 - Do not invent project-local adapter names. A new `adapter = "..."` value requires devhost Go code changes and a release.
 - Use a custom command for user-provided or project-local agent integrations.
@@ -12,12 +11,20 @@ Use this reference when a `devhost.toml` manifest needs an `[agent]` table for a
 ## Custom command form
 
 ```toml
-[agent]
+[annotation]
+defaultAction = "fix"
+
+[[annotation.actions]]
+id = "fix"
+label = "Ask My Agent"
+kind = "agent"
+
+[annotation.actions.agent]
 displayName = "My Agent"
 command = ["./scripts/devhost-agent.sh"]
 cwd = "."
 
-[agent.env]
+[annotation.actions.agent.env]
 MY_AGENT_MODE = "annotation"
 ```
 

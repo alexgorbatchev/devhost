@@ -24,12 +24,8 @@ func TestValidateManifestReturnsNormalizedDefaults(t *testing.T) {
 		t.Fatalf("ValidateManifest(...) unexpected error = %v", error)
 	}
 
-	if manifest.Agent.DisplayName != "Pi" || manifest.Agent.Kind != "pi" {
-		t.Fatalf("manifest.Agent = %#v, want Pi default", manifest.Agent)
-	}
-
-	if manifest.Annotation.DefaultActionID != "agent" || len(manifest.Annotation.Actions) != 1 || manifest.Annotation.Actions[0].ID != "agent" || manifest.Annotation.Actions[0].Kind != "agent" || manifest.Annotation.Actions[0].DisplayName != "Pi" || manifest.Annotation.Actions[0].Agent.Kind != "pi" {
-		t.Fatalf("manifest.Annotation.Actions = %#v, want default Pi agent action", manifest.Annotation.Actions)
+	if manifest.Annotation.DefaultActionID != "" || len(manifest.Annotation.Actions) != 0 {
+		t.Fatalf("manifest.Annotation = %#v, want no annotation actions by default", manifest.Annotation)
 	}
 
 	if manifest.Caddy.Global.AdminAddress != defaultManagedCaddyAdminAddress || manifest.Caddy.Global.BindHost != defaultManagedCaddyBindHost || manifest.Caddy.Global.HTTP || manifest.Caddy.Global.HTTPPort != defaultManagedCaddyHTTPPort || manifest.Caddy.Global.HTTPSPort != defaultManagedCaddyHTTPSPort {
@@ -245,14 +241,11 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 			wantError: "annotation.actions.deploy.kind must be one of agent or command.",
 		},
 		{
-			name: "rejects legacy agent with annotation",
+			name: "rejects removed top-level agent table",
 			manifest: rawManifestWithServices(map[string]any{
 				"agent": map[string]any{"adapter": "pi"},
-				"annotation": map[string]any{"actions": []any{
-					map[string]any{"agent": map[string]any{"adapter": "opencode"}, "id": "ask", "kind": "agent", "label": "Ask"},
-				}},
 			}),
-			wantError: "manifest must define either annotation or legacy agent, not both.",
+			wantError: "Unrecognized key: \"agent\"",
 		},
 		{
 			name: "rejects unknown annotation default action",
@@ -264,15 +257,22 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 			wantError: "annotation.defaultAction must reference an annotation action id: missing",
 		},
 		{
-			name: "rejects agent cwd escape",
+			name: "rejects annotation agent cwd escape",
 			manifest: rawManifestWithServices(map[string]any{
-				"agent": map[string]any{
-					"command":     []any{"bun", "./scripts/devhost-agent.ts"},
-					"cwd":         "../outside",
-					"displayName": "Claude Code",
-				},
+				"annotation": map[string]any{"actions": []any{
+					map[string]any{
+						"agent": map[string]any{
+							"command":     []any{"bun", "./scripts/devhost-agent.ts"},
+							"cwd":         "../outside",
+							"displayName": "Claude Code",
+						},
+						"id":    "ask",
+						"kind":  "agent",
+						"label": "Ask Claude",
+					},
+				}},
 			}),
-			wantError: "agent.cwd must stay within /tmp/project.",
+			wantError: "annotation.actions.ask.agent.cwd must stay within /tmp/project.",
 		},
 		{
 			name: "rejects invalid public host",

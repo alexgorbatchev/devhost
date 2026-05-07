@@ -31,7 +31,6 @@ func TestReassignAutoPort(t *testing.T) {
 	t.Parallel()
 
 	manifestValue := ResolvedManifest{
-		Agent:                 manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"},
 		Caddy:                 manifest.CaddyConfig{Global: manifest.CaddyGlobalConfig{AdminAddress: "127.0.0.1:20197", BindHost: "127.0.0.1", HTTPPort: 80, HTTPSPort: 443}},
 		Devtools:              manifest.DevtoolsConfig{Editor: manifest.DevtoolsEditorConfig{Enabled: true, IDE: "vscode"}, ExternalToolbars: manifest.DevtoolsToggleConfig{Enabled: true}, Minimap: manifest.DevtoolsMinimapConfig{Enabled: true}, Status: manifest.DevtoolsStatusConfig{Enabled: true, Position: "bottom-right"}},
 		ManifestDirectoryPath: "/tmp/project",

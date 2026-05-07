@@ -118,6 +118,14 @@ The human-only `fmt` script runs `oxfmt --write` for the repo using the shared r
 - For injected UI work, follow `packages/devhost-ui/AGENTS.md` plus the nested files under `packages/devhost-ui/src/devtools/`.
 - Keep Go-side bundle generation and browser-side UI changes in sync when the embedding contract changes.
 
+## Annotation action boundary
+
+- Top-level `[agent]` manifest configuration is removed. Annotation submission must be configured through `[annotation]` and `[[annotation.actions]]` only.
+- The annotation manifest supports exactly two action kinds: `agent` and `command`.
+- Use `kind = "command"` for non-agent side effects such as creating Jira tickets, invoking a project-local CLI, or kicking off other local automation from an annotation.
+- `devhost` does not ship built-in Jira or generic webhook adapters for annotation submission; integrations like ticket creation must be implemented by the configured command reading `DEVHOST_ANNOTATION_FILE` or `DEVHOST_ANNOTATION_PROMPT_FILE`.
+- Durable annotation queues are supported for `agent` actions only. `command` actions always start standalone terminal sessions and do not participate in the queue.
+
 ## Shared tooling boundary
 
 - Repo-root `package.json`, `oxfmt.config.ts`, and `oxlint.config.ts` own the shared TypeScript AI policy tooling.

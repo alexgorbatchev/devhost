@@ -17,8 +17,6 @@ const (
 	defaultDevtoolsEditor           = "vscode"
 	defaultDevtoolsStatusPosition   = "bottom-right"
 	defaultAnnotationActionID       = "agent"
-	defaultAgentDisplayName         = "Pi"
-	defaultAgentKind                = "pi"
 	defaultServiceBindHost          = "127.0.0.1"
 )
 
@@ -33,21 +31,14 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 	validationIssues := []string{}
 	manifestValue := rawManifest.value
 
-	allowKeys(manifestValue, []string{"agent", "annotation", "caddy", "devtools", "name", "services"}, "", &schemaIssues)
+	allowKeys(manifestValue, []string{"annotation", "caddy", "devtools", "name", "services"}, "", &schemaIssues)
 
 	name, ok := readRequiredNonEmptyString(manifestValue, "name", &schemaIssues)
 	if !ok {
 		name = ""
 	}
 
-	_, hasLegacyAgent := manifestValue["agent"]
-	_, hasAnnotation := manifestValue["annotation"]
-	if hasLegacyAgent && hasAnnotation {
-		validationIssues = append(validationIssues, "manifest must define either annotation or legacy agent, not both.")
-	}
-
-	validatedAgent := validateAgent(manifestValue["agent"], manifestDirectoryPath, &schemaIssues, &validationIssues)
-	validatedAnnotation := validateAnnotation(manifestValue["annotation"], validatedAgent, manifestDirectoryPath, &schemaIssues, &validationIssues)
+	validatedAnnotation := validateAnnotation(manifestValue["annotation"], manifestDirectoryPath, &schemaIssues, &validationIssues)
 	validatedCaddy := validateCaddy(manifestValue["caddy"], &schemaIssues)
 	validatedDevtools := validateDevtools(manifestValue["devtools"], &schemaIssues)
 	validatedServices, primaryService := validateServices(
@@ -67,7 +58,6 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 	}
 
 	return Manifest{
-		Agent:                 validatedAgent,
 		Annotation:            validatedAnnotation,
 		Caddy:                 validatedCaddy,
 		Devtools:              validatedDevtools,
@@ -80,9 +70,9 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 	}, nil
 }
 
-func validateAnnotation(rawValue any, legacyAgent ValidatedAgent, manifestDirectoryPath string, schemaIssues *[]string, validationIssues *[]string) ValidatedAnnotation {
+func validateAnnotation(rawValue any, manifestDirectoryPath string, schemaIssues *[]string, validationIssues *[]string) ValidatedAnnotation {
 	if rawValue == nil {
-		return ValidatedAnnotation{Actions: []ValidatedAnnotationAction{createAgentAnnotationAction(defaultAnnotationActionID, legacyAgent.DisplayName, legacyAgent)}, DefaultActionID: defaultAnnotationActionID}
+		return ValidatedAnnotation{}
 	}
 
 	value, ok := readMap(rawValue, "annotation", schemaIssues)
@@ -234,20 +224,6 @@ func validateCommandAnnotationAction(actionID string, actionLabel string, value 
 
 func createAgentAnnotationAction(actionID string, actionLabel string, agent ValidatedAgent) ValidatedAnnotationAction {
 	return ValidatedAnnotationAction{Agent: agent, DisplayName: actionLabel, ID: actionID, Kind: "agent"}
-}
-
-func validateAgent(rawValue any, manifestDirectoryPath string, schemaIssues *[]string, validationIssues *[]string) ValidatedAgent {
-	if rawValue == nil {
-		return ValidatedAgent{DisplayName: defaultAgentDisplayName, Kind: defaultAgentKind}
-	}
-
-	value, ok := readMap(rawValue, "agent", schemaIssues)
-	if !ok {
-		return ValidatedAgent{}
-	}
-
-	allowKeys(value, []string{"adapter", "command", "cwd", "displayName", "env"}, "agent", schemaIssues)
-	return validateAgentActionFields("agent", value, manifestDirectoryPath, schemaIssues, validationIssues, false)
 }
 
 func validateAgentActionFields(path string, value map[string]any, manifestDirectoryPath string, schemaIssues *[]string, validationIssues *[]string, allowAdapterDisplayName bool) ValidatedAgent {
