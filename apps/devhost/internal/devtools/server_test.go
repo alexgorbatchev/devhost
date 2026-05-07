@@ -19,7 +19,6 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 
 	restartedServices := []string{}
 	controlServer, err := StartControlServer(StartControlServerOptions{
-		AgentDisplayName: "Pi",
 		AnnotationActions: []manifest.ValidatedAnnotationAction{
 			{Agent: manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"}, DisplayName: "Pi", ID: defaultAnnotationActionID, Kind: "agent"},
 			{Command: []string{"bun", "run", "lint"}, Cwd: "/tmp/project", DisplayName: "Run lint", ID: "lint", Kind: "command"},
@@ -70,7 +69,7 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 	if !strings.Contains(injectedScriptText, `"terminalEnabled":false`) {
 		t.Fatalf("inject.js missing terminal capability gate: %q", injectedScriptText)
 	}
-	if !strings.Contains(injectedScriptText, `"agentDisplayName":"Pi"`) || !strings.Contains(injectedScriptText, `"annotationDefaultActionId":"agent"`) || !strings.Contains(injectedScriptText, `"annotationActions":[{"id":"agent","displayName":"Pi","kind":"agent","queueEnabled":true},{"id":"lint","displayName":"Run lint","kind":"command","queueEnabled":false}]`) {
+	if !strings.Contains(injectedScriptText, `"annotationDefaultActionId":"agent"`) || !strings.Contains(injectedScriptText, `"annotationActions":[{"id":"agent","displayName":"Pi","kind":"agent","queueEnabled":true},{"id":"lint","displayName":"Run lint","kind":"command","queueEnabled":false}]`) {
 		t.Fatalf("inject.js missing UI-safe annotation actions: %q", injectedScriptText)
 	}
 
@@ -130,7 +129,6 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 	}
 
 	unsupportedServer, unsupportedError := StartControlServer(StartControlServerOptions{
-		AgentDisplayName: "Pi",
 		ComponentEditor:  "vscode",
 		FeatureToggles:   FeatureToggles{StatusEnabled: true},
 		GetHealthResponse: func() (HealthResponse, error) {
@@ -169,7 +167,6 @@ func TestControlServerHealthAndLogsWebsockets(t *testing.T) {
 
 	healthResponse := HealthResponse{Services: []ServiceHealth{{Managed: true, Name: "web", Status: true}}}
 	controlServer, err := StartControlServer(StartControlServerOptions{
-		AgentDisplayName: "Pi",
 		ComponentEditor:  "vscode",
 		FeatureToggles:   FeatureToggles{MinimapEnabled: true, StatusEnabled: true},
 		GetHealthResponse: func() (HealthResponse, error) {
@@ -224,7 +221,6 @@ func TestControlServerTerminalSessionsEditorOnlyLifecycle(t *testing.T) {
 
 	starter := newTestTerminalStarter()
 	controlServer, err := StartControlServer(StartControlServerOptions{
-		AgentDisplayName: "Pi",
 		AnnotationActions: []manifest.ValidatedAnnotationAction{
 			{Agent: manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"}, DisplayName: "Pi", ID: defaultAnnotationActionID, Kind: "agent"},
 			{Command: []string{"bun", "run", "lint"}, Cwd: "/tmp/project", DisplayName: "Run lint", ID: "lint", Kind: "command"},
@@ -457,7 +453,13 @@ func TestControlServerAgentAnnotationQueuesLifecycle(t *testing.T) {
 	starter := newTestTerminalStarter()
 	stateDirectoryPath := t.TempDir()
 	controlServer, err := StartControlServer(StartControlServerOptions{
-		AgentDisplayName: "Pi",
+		AnnotationActions: []manifest.ValidatedAnnotationAction{{
+			Agent:       manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"},
+			DisplayName: "Pi",
+			ID:          defaultAnnotationActionID,
+			Kind:        "agent",
+		}},
+		AnnotationDefaultActionID: defaultAnnotationActionID,
 		ComponentEditor:  "vscode",
 		FeatureToggles: FeatureToggles{
 			AnnotationEnabled:      true,
@@ -626,7 +628,13 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	firstStarter := newTestTerminalStarter()
 	firstServer, err := StartControlServer(StartControlServerOptions{
-		AgentDisplayName: "Pi",
+		AnnotationActions: []manifest.ValidatedAnnotationAction{{
+			Agent:       manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"},
+			DisplayName: "Pi",
+			ID:          defaultAnnotationActionID,
+			Kind:        "agent",
+		}},
+		AnnotationDefaultActionID: defaultAnnotationActionID,
 		ComponentEditor:  "vscode",
 		FeatureToggles: FeatureToggles{
 			AnnotationEnabled:      true,
@@ -683,7 +691,13 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 
 	secondStarter := newTestTerminalStarter()
 	secondServer, err := StartControlServer(StartControlServerOptions{
-		AgentDisplayName: "Pi",
+		AnnotationActions: []manifest.ValidatedAnnotationAction{{
+			Agent:       manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"},
+			DisplayName: "Pi",
+			ID:          defaultAnnotationActionID,
+			Kind:        "agent",
+		}},
+		AnnotationDefaultActionID: defaultAnnotationActionID,
 		ComponentEditor:  "vscode",
 		FeatureToggles: FeatureToggles{
 			AnnotationEnabled:      true,
@@ -742,7 +756,6 @@ func TestControlServerTerminalSessionsRetainTailAndIdleCleanup(t *testing.T) {
 
 	starter := newTestTerminalStarter()
 	controlServer, err := StartControlServer(StartControlServerOptions{
-		AgentDisplayName: "Pi",
 		ComponentEditor:  "neovim",
 		FeatureToggles: FeatureToggles{
 			EditorEnabled:   true,

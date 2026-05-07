@@ -17,7 +17,6 @@ export {
 export { HoverSlidePanel } from "./HoverSlidePanel";
 export { ThemeProvider } from "./ThemeProvider";
 export { type IDevtoolsTheme } from "./devtoolsTheme";
-export { readDevtoolsAgentDisplayName } from "./readDevtoolsAgentDisplayName";
 export { readDevtoolsAnnotationActions } from "./readDevtoolsAnnotationActions";
 export { readDevtoolsAnnotationDefaultActionId } from "./readDevtoolsAnnotationDefaultActionId";
 export { readDevtoolsComponentEditor } from "./readDevtoolsComponentEditor";

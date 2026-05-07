@@ -15,7 +15,6 @@ import {
 import type { IAnnotationQueueEntrySnapshot, IAnnotationQueueSnapshot, AnnotationQueueStatus } from "./types";
 
 interface IAnnotationQueuePanelProps {
-  agentDisplayName: string;
   errorMessage: string | null;
   isEntryMutationPending: (entryId: string) => boolean;
   isQueueResumePending: (queueId: string) => boolean;

@@ -1,5 +1,3 @@
-export const defaultDevhostAgentDisplayName = "Pi";
-
 export const defaultAnnotationActionId = "agent";
 
 export type AnnotationActionKind = "agent" | "command";

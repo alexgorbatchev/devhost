@@ -16,7 +16,6 @@ func TestResolveServicePorts(t *testing.T) {
 		apiFixed := &manifest.PortConfig{Number: 3000}
 		webFixed := &manifest.PortConfig{Number: 4000}
 		value := manifest.Manifest{
-			Agent:          manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"},
 			Caddy:          manifest.CaddyConfig{Global: manifest.CaddyGlobalConfig{AdminAddress: "127.0.0.1:20197", BindHost: "127.0.0.1", HTTPPort: 80, HTTPSPort: 443}},
 			Devtools:       manifest.DevtoolsConfig{Editor: manifest.DevtoolsEditorConfig{Enabled: true, IDE: "vscode"}, ExternalToolbars: manifest.DevtoolsToggleConfig{Enabled: true}, Minimap: manifest.DevtoolsMinimapConfig{Enabled: true}, Status: manifest.DevtoolsStatusConfig{Enabled: true, Position: "bottom-right"}},
 			ManifestPath:   "/tmp/devhost.toml",
@@ -69,7 +68,6 @@ func TestResolveServicePorts(t *testing.T) {
 		apiPort := &manifest.PortConfig{Number: 4000}
 		healthURL := "http://127.0.0.1:4000/healthz"
 		value := manifest.Manifest{
-			Agent:    manifest.ValidatedAgent{Command: []string{"bun", "./scripts/devhost-agent.ts"}, Cwd: "/tmp", DisplayName: "Claude Code", Env: map[string]string{}, Kind: "configured"},
 			Caddy:    manifest.CaddyConfig{Global: manifest.CaddyGlobalConfig{AdminAddress: "127.0.0.1:22000", BindHost: "0.0.0.0", HTTP: true, HTTPPort: 8080, HTTPSPort: 4443}},
 			Devtools: manifest.DevtoolsConfig{Editor: manifest.DevtoolsEditorConfig{Enabled: false, IDE: "webstorm"}, ExternalToolbars: manifest.DevtoolsToggleConfig{Enabled: false}, Minimap: manifest.DevtoolsMinimapConfig{Enabled: false}, Status: manifest.DevtoolsStatusConfig{Enabled: false, Position: "top-right"}},
 			Services: map[string]manifest.ValidatedService{
@@ -97,9 +95,6 @@ func TestResolveServicePorts(t *testing.T) {
 		}
 		if resolvedService.Health.Kind != "http" || resolvedService.Health.URL == nil || *resolvedService.Health.URL != healthURL {
 			t.Fatalf("resolved api health = %#v, want http %q", resolvedService.Health, healthURL)
-		}
-		if resolvedManifest.Agent.DisplayName != "Claude Code" || resolvedManifest.Agent.Kind != "configured" {
-			t.Fatalf("resolved agent = %#v", resolvedManifest.Agent)
 		}
 	})
 

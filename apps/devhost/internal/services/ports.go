@@ -14,7 +14,6 @@ const (
 )
 
 type ResolvedManifest struct {
-	Agent                 manifest.ValidatedAgent
 	Annotation            manifest.ValidatedAnnotation
 	Caddy                 manifest.CaddyConfig
 	Devtools              manifest.DevtoolsConfig
@@ -122,7 +121,6 @@ func ResolveServicePorts(value manifest.Manifest) (ResolvedManifest, error) {
 	}
 
 	return ResolvedManifest{
-		Agent:                 value.Agent,
 		Annotation:            value.Annotation,
 		Caddy:                 value.Caddy,
 		Devtools:              value.Devtools,

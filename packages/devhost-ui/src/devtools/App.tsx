@@ -14,10 +14,8 @@ import { readDevtoolsFeatureToggles } from "./shared/readDevtoolsFeatureToggles"
 import {
   css,
   DEVTOOLS_ROOT_ID,
-  defaultAnnotationActionId,
   ThemeProvider,
   type IDevtoolsTheme,
-  readDevtoolsAgentDisplayName,
   readDevtoolsAnnotationActions,
   readDevtoolsAnnotationDefaultActionId,
   readDevtoolsComponentEditor,
@@ -41,7 +39,6 @@ export function App(): JSX.Element {
 }
 
 function AppContent(): JSX.Element {
-  const agentDisplayName: string = readDevtoolsAgentDisplayName();
   const annotationActions: IAnnotationAction[] = readDevtoolsAnnotationActions();
   const annotationDefaultActionId: string = readDevtoolsAnnotationDefaultActionId();
   const componentEditor = readDevtoolsComponentEditor();
@@ -87,11 +84,9 @@ function AppContent(): JSX.Element {
     features.externalToolbarsEnabled && externalDevtoolsLaunchers.length > 0;
   const shouldRenderMinimap: boolean = features.minimapEnabled && logEntries.length > 0;
   const currentRoutedServiceKey: string | null = resolveRoutedServiceKeyForUrl(routedServices, window.location.href);
-  const selectedAnnotationAction: IAnnotationAction = resolveSelectedAnnotationAction(
-    annotationActions,
-    selectedAnnotationActionId,
-    agentDisplayName,
-  );
+  const selectedAnnotationAction: IAnnotationAction | null = features.annotationEnabled
+    ? resolveSelectedAnnotationAction(annotationActions, selectedAnnotationActionId)
+    : null;
   const activeAgentSessionId: string | undefined = findActiveAgentSessionId(
     selectedAnnotationAction,
     terminalSessions,
@@ -138,7 +133,7 @@ function AppContent(): JSX.Element {
         <AnnotationComposer
           activeAgentSessionId={activeAgentSessionId}
           annotationActions={annotationActions}
-          selectedActionId={selectedAnnotationAction.id}
+          selectedActionId={selectedAnnotationAction?.id ?? ""}
           onSubmit={submitAnnotation}
           onSelectedActionIdChange={setSelectedAnnotationActionId}
           stackName={stackName}
@@ -159,7 +154,6 @@ function AppContent(): JSX.Element {
         {shouldRenderPanel ? <ServiceStatusPanel errorMessage={errorMessage} services={services} /> : null}
         {features.annotationQueueEnabled ? (
           <AnnotationQueuePanel
-            agentDisplayName={agentDisplayName}
             errorMessage={annotationQueueErrorMessage}
             isEntryMutationPending={isEntryMutationPending}
             isQueueResumePending={isQueueResumePending}
@@ -195,25 +189,24 @@ function readCornerDockMaxWidth(theme: IDevtoolsTheme): string {
 function resolveSelectedAnnotationAction(
   annotationActions: IAnnotationAction[],
   selectedAnnotationActionId: string,
-  agentDisplayName: string,
-): IAnnotationAction {
+): IAnnotationAction | null {
   return (
     annotationActions.find((action: IAnnotationAction): boolean => action.id === selectedAnnotationActionId) ??
-    annotationActions[0] ?? {
-      displayName: agentDisplayName,
-      id: defaultAnnotationActionId,
-      kind: "agent",
-      queueEnabled: true,
-    }
+    annotationActions[0] ??
+    null
   );
 }
 
 function findActiveAgentSessionId(
-  selectedAnnotationAction: IAnnotationAction,
+  selectedAnnotationAction: IAnnotationAction | null,
   terminalSessions: ReturnType<typeof useTerminalSessions>["terminalSessions"],
   routedServices: ReturnType<typeof readDevtoolsRoutedServices>,
   currentRoutedServiceKey: string | null,
 ): string | undefined {
+  if (selectedAnnotationAction === null) {
+    return undefined;
+  }
+
   if (selectedAnnotationAction.kind !== "agent" || !selectedAnnotationAction.queueEnabled) {
     return undefined;
   }

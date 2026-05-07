@@ -162,6 +162,7 @@ When the host page is a React development build that exposes component source me
 ## Annotation actions
 
 Configure annotation launchers with a root-level `[annotation]` table and one or more `[[annotation.actions]]` entries.
+If you omit `[annotation]`, `devhost` does not expose annotation submission actions in the injected UI.
 Each action declares a stable `id`, a UI `label`, and a `kind`. Set `defaultAction` when the UI should preselect an action other than the first one.
 
 Agent actions use the existing built-in integrations:
@@ -180,7 +181,7 @@ adapter = "claude-code"
 ```
 
 Supported agent adapters are `"pi"`, `"claude-code"`, and `"opencode"`.
-For a custom agent action, omit `adapter` and set `command` plus `displayName` inside `[annotation.actions.agent]`; the parent `label` is the action label shown in the composer, and `displayName` remains the agent display name used by the legacy agent environment contract.
+For a custom agent action, omit `adapter` and set `command` plus `displayName` inside `[annotation.actions.agent]`; the parent `label` is the action label shown in the composer, and `displayName` remains the agent display name exposed through the agent command environment.
 
 Generic command actions run directly in a `devhost` terminal and receive the annotation through context files:
 
@@ -212,38 +213,79 @@ CI = "1"
 - `DEVHOST_PROJECT_ROOT`
 - `DEVHOST_STACK_NAME`
 
-Agent actions continue to support durable annotation queues. Command actions start standalone terminal sessions and are not queued.
+Use command actions for non-agent automations such as creating a Jira ticket, running a linter, or handing the annotation off to another project-local CLI. `devhost` does not ship a built-in Jira adapter; the intended integration point is a `kind = "command"` action that reads the annotation files and performs the external side effect itself.
 
-The injected config includes UI-safe action metadata as `annotationActions`, with each action exposing `id`, `displayName`, `kind`, and `queueEnabled`, plus `annotationDefaultActionId` for the selected default. The legacy `agentDisplayName` field remains present for compatibility.
-
-## Legacy annotation agents
-
-Configure a project-local annotation launcher with a root-level `[agent]` table.
-
-Use built-in agent adapters for quick setup:
+Example manifest for a Jira handoff:
 
 ```toml
-[agent]
-adapter = "claude-code"
-```
+[annotation]
+defaultAction = "jira"
 
-Supported adapters: `"pi"`, `"claude-code"`, and `"opencode"`. When both `[agent]` and `[annotation]` are omitted, `devhost` starts Pi by default. When `[annotation]` is omitted but `[agent]` is present, `devhost` exposes one default annotation action backed by `[agent]`.
-Define either `[annotation]` or `[agent]`, not both, in the same manifest.
+[[annotation.actions]]
+id = "jira"
+label = "Create Jira Ticket"
+kind = "command"
 
-For custom annotation agents, provide an explicit command:
-
-```toml
-[agent]
-displayName = "My Agent"
-command = ["bun", "./scripts/devhost-agent.ts"]
+[annotation.actions.command]
+command = ["bun", "./scripts/mock-jira-ticket.ts"]
 cwd = "."
 
-[agent.env]
-DEVHOST_AGENT_MODE = "annotation"
+[annotation.actions.command.env]
+JIRA_BASE_URL = "https://example.atlassian.net"
+JIRA_PROJECT_KEY = "WEB"
 ```
 
-`devhost` executes custom agent commands directly, not through a shell string.
-For configured commands, `devhost` writes the annotation JSON and rendered prompt to temp files and injects them via `DEVHOST_AGENT_*` and neutral `DEVHOST_ANNOTATION_*` environment variables. Built-in adapters receive the rendered prompt natively via command-line arguments.
+Basic mock CLI for illustration:
+
+```ts
+interface AnnotationMarker {
+  element: string;
+  fullPath: string;
+  nearbyText: string;
+}
+
+interface AnnotationPayload {
+  comment: string;
+  markers: AnnotationMarker[];
+  stackName: string;
+  submittedAt: number;
+  title: string;
+  url: string;
+}
+
+const annotationFile = process.env.DEVHOST_ANNOTATION_FILE;
+
+if (!annotationFile) {
+  throw new Error("DEVHOST_ANNOTATION_FILE is required");
+}
+
+const annotation = (await Bun.file(annotationFile).json()) as AnnotationPayload;
+const projectKey = process.env.JIRA_PROJECT_KEY ?? "UNKNOWN";
+const ticketSummary = `[${projectKey}] ${annotation.title}`;
+const ticketDescription = [
+  `Comment: ${annotation.comment}`,
+  `URL: ${annotation.url}`,
+  `Stack: ${annotation.stackName}`,
+  "Markers:",
+  ...annotation.markers.map((marker, index) => {
+    return `${index + 1}. ${marker.element} — ${marker.fullPath} — ${marker.nearbyText}`;
+  }),
+].join("\n");
+
+console.log("Mock Jira CLI would create ticket", {
+  baseUrl: process.env.JIRA_BASE_URL,
+  description: ticketDescription,
+  summary: ticketSummary,
+});
+```
+
+Replace the `console.log(...)` with your real Jira client or HTTP call. The important part is that the script reads the annotation from `DEVHOST_ANNOTATION_FILE` or `DEVHOST_ANNOTATION_PROMPT_FILE` rather than expecting `devhost` to provide a first-class Jira integration.
+
+Agent actions continue to support durable annotation queues. Command actions start standalone terminal sessions and are not queued.
+
+The injected config includes UI-safe action metadata as `annotationActions`, with each action exposing `id`, `displayName`, `kind`, and `queueEnabled`, plus `annotationDefaultActionId` for the selected default.
+
+`devhost` executes custom agent commands directly, not through a shell string. For configured commands, `devhost` writes the annotation JSON and rendered prompt to temp files and injects them via `DEVHOST_AGENT_*` and neutral `DEVHOST_ANNOTATION_*` environment variables. Built-in adapters receive the rendered prompt natively via command-line arguments.
 
 All built-in adapters integrate terminal OSC sequences to reflect working and idle states during embedded session execution, and the durable annotation queue uses those same status events to decide when to drain queued work:
 

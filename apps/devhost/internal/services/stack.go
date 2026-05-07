@@ -129,7 +129,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		gracePeriod = shutdownGracePeriod
 	}
 
-	runtimeDevtoolsFeatures := resolveSupportedDevtoolsFeatures(manifest.Devtools)
+	runtimeDevtoolsFeatures := resolveSupportedDevtoolsFeatures(manifest.Devtools, manifest.Annotation)
 	devtoolsEnabled := hasEnabledDevtools(manifest.Devtools) && hasEnabledRuntimeDevtools(runtimeDevtoolsFeatures)
 	startedServices := []*startedService{}
 	startedDaemonServices := []daemonLifecycleService{}
@@ -256,8 +256,6 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	routedServices := collectRoutedServiceIdentities(manifest.Services)
 	if devtoolsEnabled && len(routedServices) > 0 {
 		controlServer, error := startDevtoolsControlServer(devtools.StartControlServerOptions{
-			Agent:                     manifest.Agent,
-			AgentDisplayName:          manifest.Agent.DisplayName,
 			AnnotationActions:         manifest.Annotation.Actions,
 			AnnotationDefaultActionID: manifest.Annotation.DefaultActionID,
 			ComponentEditor:           manifest.Devtools.Editor.IDE,
@@ -1027,12 +1025,20 @@ func hasEnabledDevtools(config manifest.DevtoolsConfig) bool {
 	return config.Editor.Enabled || config.ExternalToolbars.Enabled || config.Minimap.Enabled || config.Status.Enabled
 }
 
-func resolveSupportedDevtoolsFeatures(config manifest.DevtoolsConfig) devtools.FeatureToggles {
+func resolveSupportedDevtoolsFeatures(config manifest.DevtoolsConfig, annotation manifest.ValidatedAnnotation) devtools.FeatureToggles {
 	devtoolsEnabled := hasEnabledDevtools(config)
+	hasAnnotationActions := len(annotation.Actions) > 0
+	hasQueuedAnnotationActions := false
+	for _, action := range annotation.Actions {
+		if action.Kind == "agent" {
+			hasQueuedAnnotationActions = true
+			break
+		}
+	}
 
 	return devtools.FeatureToggles{
-		AnnotationEnabled:       devtoolsEnabled,
-		AnnotationQueueEnabled:  devtoolsEnabled,
+		AnnotationEnabled:       devtoolsEnabled && hasAnnotationActions,
+		AnnotationQueueEnabled:  devtoolsEnabled && hasQueuedAnnotationActions,
 		EditorEnabled:           config.Editor.Enabled,
 		ExternalToolbarsEnabled: config.ExternalToolbars.Enabled,
 		MinimapEnabled:          config.Minimap.Enabled,

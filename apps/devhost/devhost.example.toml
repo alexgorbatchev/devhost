@@ -11,8 +11,7 @@
 # - `[devtools.externalToolbars]` (optional)
 # - `[devtools.minimap]` (optional)
 # - `[devtools.status]` (optional)
-# - `[annotation]` and `[[annotation.actions]]` (optional; multi-action annotation manifest)
-# - `[agent]` (optional; omit it entirely to launch Pi by default)
+# - `[annotation]` and `[[annotation.actions]]` (optional; annotation actions are unavailable when omitted)
 # - `[services.<name>]` (required; at least one service)
 #
 # Hard validation rules:
@@ -108,36 +107,9 @@ enabled = true
 # - `"bottom-right"` (default): anchor the panel to the bottom-right corner.
 position = "bottom-right"
 
-[agent]
-# `[agent]` is the legacy single-agent annotation configuration.
-# If you omit `[agent]` and `[annotation]` entirely, devhost launches Pi by default.
-# If `[annotation]` is omitted, devhost exposes one default agent action backed by this table.
-#
-# `adapter` selects a built-in annotation-agent integration.
-# - `"pi"`: launch Pi.
-# - `"claude-code"`: launch Claude Code.
-# - `"opencode"`: launch OpenCode.
-adapter = "pi"
-#
-# Custom command form instead of `adapter`:
-# [agent]
-# displayName = "My Agent"
-# command = ["bun", "./scripts/devhost-agent.ts"]
-# cwd = "."
-#
-# [agent.env]
-# DEVHOST_AGENT_MODE = "annotation"
-#
-# Custom agent notes:
-# - `displayName` sets the UI label shown for the configured agent.
-# - `command` must be a string array.
-# - `cwd` defaults to the manifest directory.
-# - `env` defaults to `{}`.
-
-# Multi-action annotation configuration. Uncomment this section when you want
-# multiple annotation actions or a generic command action in the injected UI.
+# Annotation actions are configured only through `[annotation]`.
 # If `[annotation]` is present, `[[annotation.actions]]` must contain at least one action.
-# Define either `[annotation]` or `[agent]`, not both.
+# If `[annotation]` is omitted, annotation submission is unavailable in the injected UI.
 #
 # [annotation]
 # defaultAction = "fix"
@@ -150,21 +122,22 @@ adapter = "pi"
 # [annotation.actions.agent]
 # adapter = "claude-code"
 #
-# Agent actions support the same built-in adapters as `[agent]`: `"pi"`, `"claude-code"`, and `"opencode"`.
+# Agent actions support the built-in adapters `"pi"`, `"claude-code"`, and `"opencode"`.
 # Custom agent actions omit `adapter` and use `displayName`, `command`, optional `cwd`, and optional `env`
-# inside `[annotation.actions.agent]`, just like legacy `[agent]` custom commands.
+# inside `[annotation.actions.agent]`.
 #
 # [[annotation.actions]]
-# id = "lint"
-# label = "Run lint"
+# id = "jira"
+# label = "Create Jira Ticket"
 # kind = "command"
 #
 # [annotation.actions.command]
-# command = ["bun", "run", "lint"]
+# command = ["bun", "./scripts/mock-jira-ticket.ts"]
 # cwd = "."
 #
 # [annotation.actions.command.env]
-# CI = "1"
+# JIRA_BASE_URL = "https://example.atlassian.net"
+# JIRA_PROJECT_KEY = "WEB"
 #
 # Command actions run directly in a devhost terminal with annotation context files exposed via:
 # - `DEVHOST_ANNOTATION_ACTION_ID`
@@ -176,6 +149,11 @@ adapter = "pi"
 # - `DEVHOST_ANNOTATION_TRANSPORT=files`
 # - `DEVHOST_PROJECT_ROOT`
 # - `DEVHOST_STACK_NAME`
+#
+# A Jira ticket integration should be modeled as a `kind = "command"` action like the
+# example above. `devhost` does not provide a built-in Jira adapter; your script or CLI
+# should read `DEVHOST_ANNOTATION_FILE` or `DEVHOST_ANNOTATION_PROMPT_FILE` and create
+# the ticket itself.
 #
 # Durable annotation queues are supported for agent actions only.
 

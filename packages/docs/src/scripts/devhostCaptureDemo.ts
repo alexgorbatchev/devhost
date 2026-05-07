@@ -35,8 +35,16 @@ interface IRoutedService {
   serviceName: string;
 }
 
+interface IInjectedAnnotationAction {
+  displayName: string;
+  id: string;
+  kind: "agent" | "command";
+  queueEnabled: boolean;
+}
+
 interface IInjectedCaptureConfig {
-  agentDisplayName: string;
+  annotationActions: IInjectedAnnotationAction[];
+  annotationDefaultActionId: string;
   annotationEnabled: boolean;
   annotationQueueEnabled: boolean;
   componentEditor: string;
@@ -259,7 +267,8 @@ function createMarketingCaptureApi(
 
 function createInjectedConfig(options: IDevhostCaptureMockOptions): IInjectedCaptureConfig {
   return {
-    agentDisplayName: "Pi",
+    annotationActions: [{ displayName: "Pi", id: "capture-agent-handoff", kind: "agent", queueEnabled: true }],
+    annotationDefaultActionId: "capture-agent-handoff",
     annotationEnabled: true,
     annotationQueueEnabled: true,
     componentEditor: "neovim",

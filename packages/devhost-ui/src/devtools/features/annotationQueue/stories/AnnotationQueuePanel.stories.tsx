@@ -115,7 +115,6 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    agentDisplayName: "Pi",
     errorMessage: null,
     isEntryMutationPending: () => false,
     isQueueResumePending: () => false,
@@ -183,7 +182,6 @@ export const Default: Story = {
 
 export const Collapsed: Story = {
   args: {
-    agentDisplayName: "Pi",
     errorMessage: null,
     isEntryMutationPending: () => false,
     isQueueResumePending: () => false,
@@ -203,7 +201,6 @@ export const Collapsed: Story = {
 
 export const WithError: Story = {
   args: {
-    agentDisplayName: "Pi",
     errorMessage: "Connection lost while syncing queue.",
     isEntryMutationPending: () => false,
     isQueueResumePending: () => false,
@@ -224,7 +221,6 @@ export const WithError: Story = {
 
 export const Launching: Story = {
   args: {
-    agentDisplayName: "Pi",
     errorMessage: null,
     isEntryMutationPending: () => false,
     isQueueResumePending: () => false,
@@ -244,7 +240,6 @@ export const Launching: Story = {
 
 export const ResumePending: Story = {
   args: {
-    agentDisplayName: "Pi",
     errorMessage: null,
     isEntryMutationPending: () => false,
     isQueueResumePending: (queueId: string) => queueId === pausedQueue.queueId,
@@ -267,7 +262,6 @@ export const ResumePending: Story = {
 
 export const EntryMutationPending: Story = {
   args: {
-    agentDisplayName: "Pi",
     errorMessage: null,
     isEntryMutationPending: (entryId: string) => entryId === "entry-queued",
     isQueueResumePending: () => false,
@@ -293,7 +287,6 @@ export const EntryMutationPending: Story = {
 
 export const Empty: Story = {
   args: {
-    agentDisplayName: "Pi",
     errorMessage: null,
     isEntryMutationPending: () => false,
     isQueueResumePending: () => false,

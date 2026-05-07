@@ -33,7 +33,6 @@ function DevhostMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Elemen
     isSetup.current = true;
 
     window.__DEVHOST_INJECTED_CONFIG__ = {
-      agentDisplayName: "Pi",
       annotationActions: [{ displayName: "Pi", id: "agent", kind: "agent", queueEnabled: true }],
       annotationDefaultActionId: "agent",
       componentEditor: "vscode",

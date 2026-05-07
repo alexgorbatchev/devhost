@@ -1872,7 +1872,6 @@ func (ioDiscard) Write(value []byte) (int, error) {
 
 func newResolvedManifest(manifestDirectoryPath string, adminAddress string) ResolvedManifest {
 	return ResolvedManifest{
-		Agent: manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"},
 		Caddy: manifest.CaddyConfig{Global: manifest.CaddyGlobalConfig{AdminAddress: adminAddress, BindHost: "127.0.0.1", HTTP: false, HTTPPort: 80, HTTPSPort: 443}},
 		Devtools: manifest.DevtoolsConfig{
 			Editor:           manifest.DevtoolsEditorConfig{Enabled: false, IDE: "vscode"},

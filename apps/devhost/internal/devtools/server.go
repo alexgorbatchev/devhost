@@ -75,11 +75,9 @@ type ServiceLogEntry struct {
 }
 
 type StartControlServerOptions struct {
-	AgentDisplayName           string
 	AnnotationDefaultActionID  string
 	AnnotationActions          []manifest.ValidatedAnnotationAction
 	ComponentEditor            string
-	Agent                      manifest.ValidatedAgent
 	FeatureToggles             FeatureToggles
 	GetHealthResponse          func() (HealthResponse, error)
 	IdleTerminalSessionTimeout time.Duration
@@ -105,7 +103,6 @@ type ControlServer struct {
 	xtermStylesheet            string
 	restartService             func(string) error
 	getHealth                  func() (HealthResponse, error)
-	agent                      manifest.ValidatedAgent
 	annotationActions          []manifest.ValidatedAnnotationAction
 	projectRootPath            string
 	stackName                  string
@@ -133,7 +130,6 @@ type websocketClient struct {
 }
 
 type injectedConfig struct {
-	AgentDisplayName        string                  `json:"agentDisplayName"`
 	AnnotationDefaultActionID string                  `json:"annotationDefaultActionId"`
 	AnnotationActions       []injectedAnnotationAction `json:"annotationActions"`
 	ComponentEditor         string                  `json:"componentEditor"`
@@ -203,10 +199,9 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		return nil, err
 	}
 
-	annotationActions := normalizeAnnotationActions(options.AnnotationActions, options.Agent)
+	annotationActions := append([]manifest.ValidatedAnnotationAction{}, options.AnnotationActions...)
 	annotationDefaultActionID := normalizeAnnotationDefaultActionID(options.AnnotationDefaultActionID, annotationActions)
 	config := injectedConfig{
-		AgentDisplayName:        options.AgentDisplayName,
 		AnnotationDefaultActionID: annotationDefaultActionID,
 		AnnotationActions:       createInjectedAnnotationActions(annotationActions),
 		AnnotationEnabled:       options.FeatureToggles.AnnotationEnabled,
@@ -230,7 +225,6 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	}
 
 	controlServer := &ControlServer{
-		agent:                      options.Agent,
 		annotationActions:          annotationActions,
 		componentEditor:            options.ComponentEditor,
 		controlToken:               controlToken,
@@ -362,14 +356,6 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 
 	return controlServer, nil
 }
-
-func normalizeAnnotationActions(actions []manifest.ValidatedAnnotationAction, agent manifest.ValidatedAgent) []manifest.ValidatedAnnotationAction {
-	if len(actions) > 0 {
-		return append([]manifest.ValidatedAnnotationAction{}, actions...)
-	}
-	return []manifest.ValidatedAnnotationAction{{Agent: agent, DisplayName: agent.DisplayName, ID: defaultAnnotationActionID, Kind: terminalSessionRequestKindAgent}}
-}
-
 func normalizeAnnotationDefaultActionID(actionID string, actions []manifest.ValidatedAnnotationAction) string {
 	for _, action := range actions {
 		if action.ID == actionID {
@@ -379,7 +365,7 @@ func normalizeAnnotationDefaultActionID(actionID string, actions []manifest.Vali
 	if len(actions) > 0 {
 		return actions[0].ID
 	}
-	return defaultAnnotationActionID
+	return ""
 }
 
 func createInjectedAnnotationActions(actions []manifest.ValidatedAnnotationAction) []injectedAnnotationAction {

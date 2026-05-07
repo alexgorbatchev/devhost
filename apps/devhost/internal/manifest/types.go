@@ -6,7 +6,6 @@ type RawManifest struct {
 }
 
 type Manifest struct {
-	Agent                 ValidatedAgent
 	Annotation            ValidatedAnnotation
 	Caddy                 CaddyConfig
 	Devtools              DevtoolsConfig
