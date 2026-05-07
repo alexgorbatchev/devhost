@@ -2,7 +2,9 @@
 
 `devhost` gives your local app a proper front door: real hostnames, local HTTPS, and one command to start and route your dev services.
 
-Use it when `localhost:3000` stops being good enough: auth callbacks, cookie/domain behavior, multi-service stacks, or just wanting `app.localhost` and `api.app.localhost` to behave more like a real app.
+Use it when `localhost:3000` stops being good enough: auth callbacks, cookie/domain behavior, multi-service stacks, or just wanting `app.localhost` and `api.app.localhost` to behave more like a real app. Any domain can work as well, as long as it is configured to resolve to the machine running `devhost`.
+
+Documentation: [alexgorbatchev.github.io/devhost](https://alexgorbatchev.github.io/devhost/)
 
 What it does well:
 
@@ -18,14 +20,6 @@ What it does well:
 Download the archive for your platform from [GitHub Releases](https://github.com/alexgorbatchev/devhost/releases), extract it, and place the `devhost` binary on your `PATH`.
 
 Published GitHub Releases include versioned `.tar.gz` archives for `darwin-arm64`, `linux-x64`, `linux-arm64`, `linux-x64-musl`, and `linux-arm64-musl`.
-
-To install the manifest-authoring bootstrap skill from this repository:
-
-```bash
-npx skills add https://github.com/alexgorbatchev/devhost --skill devhost-bootstrap -y
-```
-
-Omit `-y` to choose target agents interactively.
 
 To print the CLI build version:
 
@@ -91,45 +85,6 @@ open https://foo.localhost
 
 On Linux, run `devhost caddy privileged-ports` once before the first HTTPS start if you want Caddy to bind privileged ports without running the whole stack as root.
 
-## Documentation
-
-The landing page stays intentionally short. The detailed behavior, caveats, and operational guidance live in the docs.
-
-Start with the shared reference:
-
-- [Manifest reference](./devhost.example.toml)
-
-### Routing
-
-Use these pages when you want local HTTPS routing and service orchestration without any browser tooling:
-
-- [Managed Caddy and routing](https://alexgorbatchev.github.io/devhost/guides/managed-caddy/)
-- [Stack lifecycle](https://alexgorbatchev.github.io/devhost/guides/stack-lifecycle/)
-- [Shared managed Caddy settings](https://alexgorbatchev.github.io/devhost/guides/shared-managed-caddy-settings/)
-- [Docker-backed services](https://alexgorbatchev.github.io/devhost/guides/docker-backed-services/)
-- [Managed daemon-style services](https://alexgorbatchev.github.io/devhost/guides/managed-daemon-style-services/)
-- [Injected environment](https://alexgorbatchev.github.io/devhost/guides/injected-environment/)
-- [Troubleshooting](https://alexgorbatchev.github.io/devhost/guides/troubleshooting/)
-
-### Devtools
-
-These pages cover the optional browser tooling layer that sits on top of routing:
-
-- [Devtools](https://alexgorbatchev.github.io/devhost/guides/devtools/)
-- [Annotations](https://alexgorbatchev.github.io/devhost/guides/annotations/)
-- [Architecture deep dives](https://alexgorbatchev.github.io/devhost/architecture/external-devtools/)
-
-## What `devhost` does
-
-`devhost`:
-
-- routes local apps onto HTTPS hostnames through one shared managed Caddy instance
-- starts managed foreground child processes, managed daemon-style services, or already-running external services from `devhost.toml`
-- injects runtime context such as `PORT` and selected `DEVHOST_*` variables into managed service commands
-- validates manifests, reserves public hosts, reserves fixed bind ports, and waits for managed-service health checks before routing traffic
-- allocates `port = "auto"` best-effort and retries on clear bind-collision startup failures
-- optionally injects a devtools UI for annotations, browser-hosted Neovim sessions, and aggregated third-party devtools launchers
-
 ## Build from source
 
 If you are working from this repository and want a current-platform binary instead of a release download:
@@ -141,18 +96,12 @@ bun run compile:devhost
 
 That build refreshes the embedded injected devtools bundle with Bun and writes the CLI binary to `apps/devhost/dist/devhost` with the version from `apps/devhost/metadata.json` embedded into `devhost --version`.
 
-## Contributor notes
+## AI bootstrap skill
 
-Internal development details live in:
+To install the manifest-authoring bootstrap skill from this repository:
 
-- `./AGENTS.md`
+```bash
+npx skills add https://github.com/alexgorbatchev/devhost --skill devhost-bootstrap -y
+```
 
-## Non-goals
-
-`devhost` is not trying to be:
-
-- Docker Compose
-- a persistent stack supervisor; `devhost` still runs in the foreground even when a managed service uses daemon lifecycle commands
-- a remote orchestration system
-- a DNS manager
-- a generic wildcard-host generator
+Omit `-y` to choose target agents interactively.
