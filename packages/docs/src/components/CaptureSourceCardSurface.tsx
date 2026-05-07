@@ -37,6 +37,7 @@ function CaptureSourceContent({ __source, sourceCardRef }: ICaptureSourceContent
     <article data-testid="CaptureSourceContent">
       <div
         className="captureCard captureSourceCard"
+        data-devhost-cursor="pointer"
         data-testid="CaptureSourceContent--source-card"
         ref={sourceCardRef}
       >

@@ -10,6 +10,13 @@ interface Props {
   recordingWidth: number;
 }
 
+const replayDefaultCursorUrl: string = readResolvedRecordingUrl(import.meta.env.BASE_URL, "cursors/default.svg");
+const replayPointerCursorUrl: string = readResolvedRecordingUrl(import.meta.env.BASE_URL, "cursors/handpointing.svg");
+const replayCursorStyle: string = [
+  `--marketing-recording-default-cursor-image: url("${replayDefaultCursorUrl}")`,
+  `--marketing-recording-pointer-cursor-image: url("${replayPointerCursorUrl}")`,
+].join("; ");
+
 const { recordingHeight, recordingLabel, recordingUrl, recordingWidth }: Props = Astro.props;
 const resolvedRecordingUrl: string = readResolvedRecordingUrl(import.meta.env.BASE_URL, recordingUrl);
 ---
@@ -20,6 +27,7 @@ const resolvedRecordingUrl: string = readResolvedRecordingUrl(import.meta.env.BA
   data-recording-player-root
   data-recording-url={resolvedRecordingUrl}
   data-recording-width={recordingWidth}
+  style={replayCursorStyle}
   data-testid="MarketingRecordingPlayer"
 >
   <div class="MarketingRecordingPlayer--status" data-recording-player-status data-testid="MarketingRecordingPlayer--status">
@@ -442,6 +450,26 @@ const resolvedRecordingUrl: string = readResolvedRecordingUrl(import.meta.env.BA
   .MarketingRecordingPlayer--surface :global(.replayer-wrapper) {
     left: 0;
     top: 0;
+  }
+
+  .MarketingRecordingPlayer--surface :global(.replayer-mouse) {
+    background-image: var(--marketing-recording-default-cursor-image) !important;
+    background-position: top left;
+    background-size: 96px 96px;
+    height: 96px;
+    margin-left: -30px;
+    margin-top: -21px;
+    width: 96px;
+  }
+
+  .MarketingRecordingPlayer--surface :global(.replayer-mouse[data-replay-cursor="pointer"]) {
+    background-image: var(--marketing-recording-pointer-cursor-image) !important;
+    margin-left: -36px;
+    margin-top: -15px;
+  }
+
+  .MarketingRecordingPlayer--surface :global(.replayer-mouse::after) {
+    display: none;
   }
 
   :global(html[data-theme="light"] .MarketingRecordingPlayer .rr-player) {

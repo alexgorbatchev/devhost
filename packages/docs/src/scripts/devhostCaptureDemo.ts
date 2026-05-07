@@ -63,8 +63,17 @@ interface IAnnotationDetail {
 
 interface IAgentTerminalSessionRequest {
   annotation: IAnnotationDetail;
+  actionId: string;
+  displayName: string;
   kind: "agent";
   targetSessionId?: string;
+}
+
+interface ICommandTerminalSessionRequest {
+  annotation: IAnnotationDetail;
+  actionId: string;
+  displayName: string;
+  kind: "command";
 }
 
 interface IEditorTerminalSessionRequest {
@@ -75,7 +84,10 @@ interface IEditorTerminalSessionRequest {
   sourceLabel: string;
 }
 
-type TerminalSessionRequest = IAgentTerminalSessionRequest | IEditorTerminalSessionRequest;
+type TerminalSessionRequest =
+  | IAgentTerminalSessionRequest
+  | ICommandTerminalSessionRequest
+  | IEditorTerminalSessionRequest;
 
 interface IActiveTerminalSessionSnapshot {
   request: TerminalSessionRequest;
@@ -281,6 +293,7 @@ function createTerminalSessionStore(options: IDevhostCaptureMockOptions): ITermi
   const sessions: IActiveTerminalSessionSnapshot[] = [
     {
       request: {
+        actionId: "capture-agent-handoff",
         annotation: {
           comment: "Update the header title",
           markers: [],
@@ -289,6 +302,7 @@ function createTerminalSessionStore(options: IDevhostCaptureMockOptions): ITermi
           title: "MarketingCapturePage",
           url: window.location.href,
         },
+        displayName: "Pi",
         kind: "agent",
       },
       sessionId: "capture-agent-session-1",
@@ -406,6 +420,7 @@ function handleAnnotationQueuesMutationRequest(
 ): Response {
   if (requestMethod === "POST") {
     const resumedSession = sessionStore.createSession({
+      actionId: "capture-agent-handoff",
       annotation: {
         comment: "Resume the paused capture handoff queue.",
         markers: [],
@@ -414,6 +429,7 @@ function handleAnnotationQueuesMutationRequest(
         title: "MarketingCapturePage",
         url: window.location.href,
       },
+      displayName: "Pi",
       kind: "agent",
     });
 
@@ -630,6 +646,10 @@ function readTerminalSessionRequest(requestBody: string): TerminalSessionRequest
       return value;
     }
 
+    if (isCommandTerminalSessionRequest(value)) {
+      return value;
+    }
+
     if (isEditorTerminalSessionRequest(value)) {
       return value;
     }
@@ -645,9 +665,38 @@ function isAgentTerminalSessionRequest(value: unknown): value is IAgentTerminalS
     return false;
   }
 
+  const actionId: unknown = Reflect.get(value, "actionId");
   const annotation: unknown = Reflect.get(value, "annotation");
+  const displayName: unknown = Reflect.get(value, "displayName");
+  const targetSessionId: unknown = Reflect.get(value, "targetSessionId");
 
-  return Reflect.get(value, "kind") === "agent" && isAnnotationDetail(annotation);
+  if (targetSessionId !== undefined && typeof targetSessionId !== "string") {
+    return false;
+  }
+
+  return (
+    Reflect.get(value, "kind") === "agent" &&
+    typeof actionId === "string" &&
+    typeof displayName === "string" &&
+    isAnnotationDetail(annotation)
+  );
+}
+
+function isCommandTerminalSessionRequest(value: unknown): value is ICommandTerminalSessionRequest {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const actionId: unknown = Reflect.get(value, "actionId");
+  const annotation: unknown = Reflect.get(value, "annotation");
+  const displayName: unknown = Reflect.get(value, "displayName");
+
+  return (
+    Reflect.get(value, "kind") === "command" &&
+    typeof actionId === "string" &&
+    typeof displayName === "string" &&
+    isAnnotationDetail(annotation)
+  );
 }
 
 function isEditorTerminalSessionRequest(value: unknown): value is IEditorTerminalSessionRequest {
