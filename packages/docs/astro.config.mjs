@@ -31,7 +31,7 @@ export default defineConfig({
             "guides/shared-managed-caddy-settings",
             "guides/docker-backed-services",
             "guides/managed-daemon-style-services",
-            "guides/injected-environment",
+            "guides/environment-variables",
             "guides/troubleshooting",
           ],
         },
