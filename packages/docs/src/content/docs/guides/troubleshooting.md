@@ -4,9 +4,9 @@ sidebar:
   order: 10
 ---
 
-## Vite: `localhost` and `127.0.0.1` can be different apps
+## Vite bind-host mismatch
 
-Some dev servers print a URL like `http://localhost:5173`, and many projects copy that port directly into `devhost.toml`.
+Some dev servers print a URL like `http://localhost:5173`, and many projects copy that port directly into `devhost.toml`. With Vite-style setups, `localhost` and `127.0.0.1` can point at different listeners, which makes the routed hostname and the printed dev-server URL appear to disagree.
 
 On some machines, though, `http://localhost:5173` and `http://127.0.0.1:5173` do not hit the same listener:
 
@@ -39,9 +39,9 @@ curl -I http://[::1]:5173/
 
 If those responses differ, set `bindHost` explicitly instead of relying on the default.
 
-## Composite services: inherited `PORT` can miswire child processes
+## Composite services
 
-Some "one command" dev scripts are really wrappers that launch multiple long-lived processes, such as a frontend dev server plus an API worker.
+Some "one command" dev scripts are really wrappers that launch multiple long-lived processes, such as a frontend dev server plus an API worker. In those setups, an inherited `PORT` can miswire child processes if every nested process sees the same value.
 
 By default, `devhost` injects the configured service `port` as `PORT` into that top-level command.
 If the wrapper passes its environment through unchanged, every nested child process may inherit the same `PORT`.

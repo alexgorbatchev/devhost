@@ -1,5 +1,5 @@
 ---
-title: "Injected environment"
+title: "Environment Variables"
 sidebar:
   order: 7
 ---
