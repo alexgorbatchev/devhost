@@ -288,7 +288,9 @@ async function runSourceJumpScenario(page: Page): Promise<void> {
 }
 
 async function runSessionsScenario(page: Page): Promise<void> {
-  const sourceCard = page.getByTestId("CaptureSourceContent--source-card");
+  const agentExpandButton = page.getByRole("button", { name: "Expand Agent terminal preview" }).last();
+  const sessionTray = page.getByTestId("TerminalSessionTray--tray-root");
+  const sourceExpandButton = page.getByRole("button", { name: "Expand Neovim preview" }).last();
   const visibleExpandedSessionContent = page.locator('[data-testid="TerminalSessionPanel--content"]:visible').last();
   const visibleTerminalViewport = visibleExpandedSessionContent.locator(
     '[data-testid="TerminalSessionPanel--terminal"]',
@@ -297,29 +299,21 @@ async function runSessionsScenario(page: Page): Promise<void> {
     .locator('[data-devhost-instance-testid="TerminalSessionPanel--minimize"]:visible')
     .last();
 
-  await page.keyboard.down("Alt");
-  await clickLocator(page, sourceCard, "right", sourceCardContextMenuTarget);
-  await page.keyboard.up("Alt");
-
-  const firstMenuItem = page.getByTestId("ComponentSourceMenu--item").first();
-  const sourceExpandButton = page.getByRole("button", { name: "Expand Neovim preview" }).last();
-  const expandButton = page.getByRole("button", { name: "Expand Neovim preview" }).last();
-
-  await firstMenuItem.waitFor({ state: "visible" });
-  await clickLocator(page, firstMenuItem);
+  await sessionTray.waitFor({ state: "visible" });
+  await agentExpandButton.waitFor({ state: "visible" });
+  await clickLocator(page, agentExpandButton, "left", { x: 0.78, y: 0.78 });
+  await visibleExpandedSessionContent.waitFor({ state: "visible" });
+  await page.waitForTimeout(900);
+  await clickLocator(page, visibleMinimizeButton);
+  await sessionTray.waitFor({ state: "visible" });
   await sourceExpandButton.waitFor({ state: "visible" });
+  await moveCursorToLocator(page, sourceExpandButton, 500);
   await clickLocator(page, sourceExpandButton);
   await visibleExpandedSessionContent.waitFor({ state: "visible" });
 
   await clickLocator(page, visibleTerminalViewport);
   await page.keyboard.type(":set relativenumber\r", { delay: 26 });
-  await page.waitForTimeout(700);
-  await clickLocator(page, visibleMinimizeButton);
-  await expandButton.waitFor({ state: "visible" });
-  await moveCursorToLocator(page, expandButton, 500);
-  await clickLocator(page, expandButton);
-  await visibleExpandedSessionContent.waitFor({ state: "visible" });
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(1_600);
 }
 
 async function runOverlayScenario(page: Page): Promise<void> {
