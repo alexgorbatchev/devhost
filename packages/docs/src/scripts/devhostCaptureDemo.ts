@@ -7,11 +7,13 @@ import {
   type MarketingRecordingScenarioId,
 } from "../recordings/marketingRecordingScenarios";
 import type { IRrwebDemoRecording, IRrwebDemoRecordingController } from "../recordings/types";
+import { createMockTerminalSessionScreen } from "./createMockTerminalSessionScreen";
 
 type FetchRequestInput = Parameters<typeof fetch>[0];
 type FetchRequestInit = Parameters<typeof fetch>[1];
 type MockWebSocketUrl = string | URL;
 type Cleanup = () => void;
+type MockWebSocketPayload = string | ArrayBufferLike | Blob | ArrayBufferView;
 
 const captureSourceCardReadySelector =
   '[data-testid="CaptureSourceContent--source-card"][data-capture-source-card-ready="true"]';
@@ -465,12 +467,15 @@ function createMockWebSocketClass(options: IDevhostCaptureMockOptions, sessionSt
     binaryType: BinaryType = "blob";
     bufferedAmount: number = 0;
     extensions: string = "";
+    private readonly terminalSession: IActiveTerminalSessionSnapshot | null;
+    private terminalInputBuffer: string = "";
     protocol: string = "";
     readyState: number = MockWebSocket.CONNECTING;
 
     constructor(url: MockWebSocketUrl) {
       super();
       this.url = String(url);
+      this.terminalSession = readTerminalSessionSnapshot(this.url, sessionStore);
 
       setTimeout((): void => {
         this.openConnection();
@@ -490,7 +495,34 @@ function createMockWebSocketClass(options: IDevhostCaptureMockOptions, sessionSt
       }, 50);
     }
 
-    send(): void {}
+    send(payload?: MockWebSocketPayload): void {
+      if (typeof payload !== "string") {
+        return;
+      }
+
+      const terminalInput = readTerminalSessionInput(payload);
+
+      if (terminalInput === null || this.terminalSession?.request.kind !== "editor") {
+        return;
+      }
+
+      this.terminalInputBuffer = `${this.terminalInputBuffer}${terminalInput}`.slice(-128);
+
+      if (!this.terminalInputBuffer.endsWith(":set relativenumber\r")) {
+        return;
+      }
+
+      this.emitMessage({
+        data: createMockTerminalSessionScreen({
+          componentName: this.terminalSession.request.componentName,
+          kind: "editor",
+          sourceLabel: this.terminalSession.request.sourceLabel,
+          variant: "relative-number",
+        }),
+        type: "output",
+      });
+      this.terminalInputBuffer = "";
+    }
 
     private emitMessage(payload: object): void {
       this.dispatchEvent(new MessageEvent("message", { data: JSON.stringify(payload) }));
@@ -568,20 +600,47 @@ function createMockWebSocketClass(options: IDevhostCaptureMockOptions, sessionSt
       }
 
       if (requestUrl.pathname.includes("/ws/terminal")) {
-        const sessionId: string | null = requestUrl.searchParams.get("sessionId");
-        const session = sessionStore.listSessions().find((activeSession: IActiveTerminalSessionSnapshot): boolean => {
-          return activeSession.sessionId === sessionId;
-        });
+        const session = this.terminalSession;
 
         if (session?.request.kind === "editor") {
           this.emitMessage({
-            data: "\u001b[32m~ Devhost demo editor session is ready.\u001b[0m\r\n",
+            data: createMockTerminalSessionScreen({
+              componentName: session.request.componentName,
+              kind: "editor",
+              sourceLabel: session.request.sourceLabel,
+              variant: "default",
+            }),
             type: "snapshot",
           });
           return;
         }
 
-        this.emitMessage({ data: "MOCKED Agent Pi is ready.\r\n", type: "snapshot" });
+        if (session?.request.kind === "agent") {
+          this.emitMessage({
+            data: createMockTerminalSessionScreen({
+              comment: session.request.annotation.comment,
+              displayName: session.request.displayName,
+              kind: "agent",
+              markerCount: session.request.annotation.markers.length,
+              title: session.request.annotation.title,
+            }),
+            type: "snapshot",
+          });
+          return;
+        }
+
+        if (session?.request.kind === "command") {
+          this.emitMessage({
+            data: createMockTerminalSessionScreen({
+              comment: session.request.annotation.comment,
+              displayName: session.request.displayName,
+              kind: "command",
+              markerCount: session.request.annotation.markers.length,
+              title: session.request.annotation.title,
+            }),
+            type: "snapshot",
+          });
+        }
       }
     }
 
@@ -604,6 +663,36 @@ function createCaptureSourceLocation(): ISourceLocation {
     fileName: "/src/components/CaptureSourceCardSurface.tsx",
     lineNumber: 1,
   };
+}
+
+function readTerminalSessionSnapshot(
+  websocketUrl: string,
+  sessionStore: ITerminalSessionStore,
+): IActiveTerminalSessionSnapshot | null {
+  const requestUrl: URL = new URL(websocketUrl, window.location.href);
+  const sessionId: string | null = requestUrl.searchParams.get("sessionId");
+
+  return (
+    sessionStore.listSessions().find((activeSession: IActiveTerminalSessionSnapshot): boolean => {
+      return activeSession.sessionId === sessionId;
+    }) ?? null
+  );
+}
+
+function readTerminalSessionInput(payload: string): string | null {
+  try {
+    const value: unknown = JSON.parse(payload);
+
+    if (typeof value !== "object" || value === null) {
+      return null;
+    }
+
+    return Reflect.get(value, "type") === "input" && typeof Reflect.get(value, "data") === "string"
+      ? Reflect.get(value, "data")
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 function readRequestedMarketingCaptureScenario(): IMarketingRecordingScenario | null {

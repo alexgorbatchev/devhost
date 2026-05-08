@@ -42,6 +42,7 @@ const resolvedRecordingUrl: string = readResolvedRecordingUrl(import.meta.env.BA
   import rrwebPlayer from "rrweb-player";
   import type { eventWithTime } from "@rrweb/types";
   import { registerMarketingRecordingPlayerLifecycle } from "./registerMarketingRecordingPlayerLifecycle";
+  import { rewriteRrwebRecordingAssetUrls } from "./rewriteRrwebRecordingAssetUrls";
 
   const playerHorizontalPaddingPx = 32;
   const fallbackControllerHeightPx = 80;
@@ -138,7 +139,8 @@ const resolvedRecordingUrl: string = readResolvedRecordingUrl(import.meta.env.BA
         throw new Error(`Request failed with status ${response.status}`);
       }
 
-      const recordingJson: unknown = await response.json();
+      const recordingJsonText: string = rewriteRrwebRecordingAssetUrls(await response.text(), import.meta.env.BASE_URL);
+      const recordingJson: unknown = JSON.parse(recordingJsonText);
       const recording = readRrwebDemoRecording(recordingJson);
       const playerWidth = readDimension(playerRoot.dataset.recordingWidth, 1440);
       const playerHeight = readDimension(playerRoot.dataset.recordingHeight, 960);
