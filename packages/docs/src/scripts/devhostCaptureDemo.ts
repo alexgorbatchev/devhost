@@ -17,6 +17,7 @@ type MockWebSocketPayload = string | ArrayBufferLike | Blob | ArrayBufferView;
 
 const captureSourceCardReadySelector =
   '[data-testid="CaptureSourceContent--source-card"][data-capture-source-card-ready="true"]';
+const captureRouteStatusReadyEventName = "devhost-capture-route-status-ready";
 
 interface IDevtoolsHook {
   isOpen(): boolean;
@@ -349,6 +350,22 @@ function createTerminalSessionStore(options: IDevhostCaptureMockOptions): ITermi
 }
 
 function configureRouteStatus(scenario: IMarketingRecordingScenario | null): Cleanup {
+  let routeStatusCleanup: Cleanup = (): void => {};
+
+  const initializeRouteStatus = (): void => {
+    routeStatusCleanup();
+    routeStatusCleanup = bindRouteStatus(scenario);
+  };
+
+  window.addEventListener(captureRouteStatusReadyEventName, initializeRouteStatus, { once: true });
+
+  return (): void => {
+    window.removeEventListener(captureRouteStatusReadyEventName, initializeRouteStatus);
+    routeStatusCleanup();
+  };
+}
+
+function bindRouteStatus(scenario: IMarketingRecordingScenario | null): Cleanup {
   const { routeStatusButton, routeStatusText }: IRouteStatusElements = readRouteStatusElements();
 
   if (routeStatusButton === null || routeStatusText === null) {
