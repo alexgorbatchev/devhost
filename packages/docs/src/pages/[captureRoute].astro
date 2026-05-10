@@ -1,4 +1,5 @@
 ---
+import { CaptureRouteStatusSurface } from "../components/CaptureRouteStatusSurface";
 import { CaptureSourceCardSurface } from "../components/CaptureSourceCardSurface";
 
 interface ICaptureRouteParams {
@@ -20,6 +21,13 @@ const captureSourceLocation: ISourceLocation = {
   columnNumber: 1,
   componentName: "CaptureSourceCardSurface",
   fileName: "src/components/CaptureSourceCardSurface.tsx",
+  lineNumber: 1,
+};
+
+const routeStatusSourceLocation: ISourceLocation = {
+  columnNumber: 1,
+  componentName: "CaptureRouteStatusSurface",
+  fileName: "src/components/CaptureRouteStatusSurface.tsx",
   lineNumber: 1,
 };
 ---
@@ -312,16 +320,7 @@ const captureSourceLocation: ISourceLocation = {
           </div>
 
           <div class="captureColumn">
-            <article class="captureCard captureRouteStatus" data-testid="MarketingCapturePage--route-status-card">
-              <p class="captureLabel">Routing + health</p>
-              <h2>Managed route status</h2>
-              <p data-capture-route-status-text>
-                Waiting for the managed route to become live so the recorder can reveal the final healthy state.
-              </p>
-              <button class="captureRouteButton" data-testid="MarketingCapturePage--route-live-button" type="button">
-                Reveal live route
-              </button>
-            </article>
+            <CaptureRouteStatusSurface client:load source={routeStatusSourceLocation} />
 
             <article class="captureCard">
               <p class="captureLabel">Service snapshot</p>

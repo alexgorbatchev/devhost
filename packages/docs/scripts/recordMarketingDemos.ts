@@ -33,6 +33,7 @@ interface ILocatorClickTarget {
 }
 
 interface ICursorMotionOptions {
+  pathStyle?: "curved" | "straight";
   speedMultiplier?: number;
 }
 
@@ -65,7 +66,6 @@ const cursorWiggleShowcaseDurationMs: number = 1_000;
 const maximumCursorPathDurationMs: number = 1_250;
 const minimumCursorPathDurationMs: number = 320;
 const serverStartupTimeoutMs: number = 30_000;
-const sourceMenuPauseMs: number = 1_000;
 const sourceCardContextMenuTarget: ILocatorClickTarget = { x: 0.18, y: 0.72 };
 const terminalScrollDistancePx: number = 1_000;
 const terminalScrollDurationMs: number = 2_000;
@@ -200,7 +200,6 @@ async function runScenario(page: Page, scenarioId: MarketingRecordingScenarioId)
 async function runAnnotationScenario(page: Page): Promise<void> {
   const primaryTarget = page.getByTestId("MarketingCapturePage--annotation-target-primary");
   const secondaryTarget = page.getByTestId("MarketingCapturePage--annotation-target-secondary");
-  const sourceCard = page.getByTestId("CaptureSourceContent--source-card");
 
   await moveCursorToLocator(page, primaryTarget, 0);
   await page.keyboard.down("Alt");
@@ -221,6 +220,8 @@ async function runAnnotationScenario(page: Page): Promise<void> {
   );
   await clickLocator(page, submitButton);
 
+  const firstMenuItem = page.getByTestId("ComponentSourceMenu--item").first();
+  const routeButton = page.getByTestId("MarketingCapturePage--route-live-button");
   const sessionTray = page.getByTestId("TerminalSessionTray--tray-root");
   const agentSessionExpandButton = page.getByRole("button", { name: "Expand Agent terminal preview" }).last();
 
@@ -235,18 +236,12 @@ async function runAnnotationScenario(page: Page): Promise<void> {
   await moveCursorToLocator(page, minimizeButton, annotationHighlightPauseMs);
   await clickLocator(page, minimizeButton);
   await sessionTray.waitFor({ state: "visible" });
-  await page.waitForTimeout(annotationTerminalPreviewPauseMs);
-
-  await moveCursorToLocator(page, sourceCard, 0);
-  await wiggleCursorAtLocator(page, sourceCard, cursorWiggleShowcaseDurationMs);
+  await moveCursorToLocator(page, routeButton, 500, { pathStyle: "straight", speedMultiplier: 1.35 });
   await page.keyboard.down("Alt");
-  await clickLocator(page, sourceCard, "right", sourceCardContextMenuTarget);
+  await clickLocator(page, routeButton, "right");
   await page.keyboard.up("Alt");
 
-  const firstMenuItem = page.getByTestId("ComponentSourceMenu--item").first();
-
   await firstMenuItem.waitFor({ state: "visible" });
-  await page.waitForTimeout(sourceMenuPauseMs);
   await moveCursorToLocator(page, firstMenuItem, 0);
   await wiggleCursorAtLocator(page, firstMenuItem, cursorWiggleShowcaseDurationMs);
   await clickLocator(page, firstMenuItem);
@@ -289,6 +284,8 @@ async function runSourceJumpScenario(page: Page): Promise<void> {
 
 async function runSessionsScenario(page: Page): Promise<void> {
   const agentExpandButton = page.getByRole("button", { name: "Expand Agent terminal preview" }).last();
+  const firstMenuItem = page.getByTestId("ComponentSourceMenu--item").first();
+  const routeButton = page.getByTestId("MarketingCapturePage--route-live-button");
   const sessionTray = page.getByTestId("TerminalSessionTray--tray-root");
   const sourceExpandButton = page.getByRole("button", { name: "Expand Neovim preview" }).last();
   const visibleExpandedSessionContent = page.locator('[data-testid="TerminalSessionPanel--content"]:visible').last();
@@ -306,8 +303,15 @@ async function runSessionsScenario(page: Page): Promise<void> {
   await page.waitForTimeout(900);
   await clickLocator(page, visibleMinimizeButton);
   await sessionTray.waitFor({ state: "visible" });
+  await moveCursorToLocator(page, routeButton, 500, { pathStyle: "straight", speedMultiplier: 1.35 });
+  await page.keyboard.down("Alt");
+  await clickLocator(page, routeButton, "right");
+  await page.keyboard.up("Alt");
+  await firstMenuItem.waitFor({ state: "visible" });
+  await moveCursorToLocator(page, firstMenuItem, 0);
+  await wiggleCursorAtLocator(page, firstMenuItem, cursorWiggleShowcaseDurationMs);
+  await clickLocator(page, firstMenuItem);
   await sourceExpandButton.waitFor({ state: "visible" });
-  await moveCursorToLocator(page, sourceExpandButton, 500);
   await clickLocator(page, sourceExpandButton);
   await visibleExpandedSessionContent.waitFor({ state: "visible" });
 
@@ -370,10 +374,15 @@ async function clickLocator(
   await page.waitForTimeout(button === "left" ? afterLeftClickPauseMs : afterRightClickPauseMs);
 }
 
-async function moveCursorToLocator(page: Page, locator: Locator, pauseMs: number): Promise<void> {
+async function moveCursorToLocator(
+  page: Page,
+  locator: Locator,
+  pauseMs: number,
+  options: ICursorMotionOptions = {},
+): Promise<void> {
   const target: IPoint = await readLocatorPoint(locator);
 
-  await moveCursorHumanLike(page, target);
+  await moveCursorHumanLike(page, target, options);
   await page.waitForTimeout(pauseMs);
 }
 
@@ -476,6 +485,11 @@ function createCursorPathPoints(
     minimumCursorPathDurationMs / speedMultiplier,
     maximumCursorPathDurationMs / speedMultiplier,
   );
+
+  if (options.pathStyle === "straight") {
+    return createStraightCursorPathPoints(start, end, viewport, durationMs);
+  }
+
   const minimumStepCount: number = distance < 24 ? 4 : 16;
   const stepCount: number = Math.max(minimumStepCount, Math.round(durationMs / cursorFrameIntervalMs));
   const direction: IPoint = readUnitVector(start, end);
@@ -516,6 +530,36 @@ function createCursorPathPoints(
         {
           x: curvePoint.x + perpendicular.x * wobbleOffsetPx,
           y: curvePoint.y + perpendicular.y * wobbleOffsetPx,
+        },
+        viewport,
+      ),
+    );
+  }
+
+  pathPoints[pathPoints.length - 1] = end;
+  return pathPoints;
+}
+
+function createStraightCursorPathPoints(
+  start: IPoint,
+  end: IPoint,
+  viewport: IMarketingRecordingViewport,
+  durationMs: number,
+): ReadonlyArray<IPoint> {
+  const distance: number = readPointDistance(start, end);
+  const minimumStepCount: number = distance < 24 ? 4 : 16;
+  const stepCount: number = Math.max(minimumStepCount, Math.round(durationMs / cursorFrameIntervalMs));
+  const pathPoints: IPoint[] = [];
+
+  for (let stepIndex = 1; stepIndex <= stepCount; stepIndex += 1) {
+    const progress: number = stepIndex / stepCount;
+    const easedProgress: number = easeInOutSine(progress);
+
+    pathPoints.push(
+      clampPointToViewport(
+        {
+          x: start.x + (end.x - start.x) * easedProgress,
+          y: start.y + (end.y - start.y) * easedProgress,
         },
         viewport,
       ),
