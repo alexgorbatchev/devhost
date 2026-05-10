@@ -1,11 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import {
-  marketingRecordingScenarios,
-  type IMarketingRecordingScenario,
-} from "./src/recordings/marketingRecordingScenarios";
-
 interface IMarkdownDocument {
   title: string;
   body: string;
@@ -244,22 +239,6 @@ function createMarkdownPage(title: string, body: string): string {
 
 function createLandingPage(title: string, body: string): string {
   const trimmedBody: string = body.trim();
-  const recordingsIntro: string = [
-    'import { Tabs, TabItem } from "@astrojs/starlight/components";',
-    'import MarketingRecordingPlayer from "../../components/MarketingRecordingPlayer.astro";',
-    "",
-    "<Tabs>",
-    ...marketingRecordingScenarios.flatMap((scenario: IMarketingRecordingScenario): string[] => {
-      const recordingUrl: string = `./recordings/marketing/${scenario.recordingFileName}`;
 
-      return [
-        `  <TabItem label=${JSON.stringify(scenario.label)}>`,
-        `    <MarketingRecordingPlayer recordingHeight={${scenario.viewport.height}} recordingLabel=${JSON.stringify(scenario.label)} recordingUrl=${JSON.stringify(recordingUrl)} recordingWidth={${scenario.viewport.width}} />`,
-        "  </TabItem>",
-      ];
-    }),
-    "</Tabs>",
-  ].join("\n");
-
-  return `---\ntitle: ${JSON.stringify(title)}\n---\n\n${recordingsIntro}\n\n${trimmedBody}\n`;
+  return `---\ntitle: ${JSON.stringify(title)}\n---\n\n${trimmedBody}\n`;
 }

@@ -5,7 +5,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 ## Shared commands
 
 - Install all workspaces when `node_modules/` is missing: `bun install`
-- Ensure Playwright Chromium is available for Storybook and recorder workflows: `bun run install-browser`
+- Ensure Playwright Chromium is available for Storybook workflows: `bun run install-browser`
 - Check the full repo: `bun run check`
 - Human-only repo-wide formatting command for explicit manual cleanup: `bun run fix`
 - Refresh the generated embedded devtools bundle: `bun run build:devtools-bundle:devhost`
@@ -14,7 +14,6 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Build the current-platform `devhost` binary: `bun run compile:devhost`
 - Check the injected devtools UI package: `bun run --cwd packages/devhost-ui check`
 - Check the docs package-only validations: `bun run --cwd packages/docs check`
-- Record docs demos: `bun run --cwd packages/docs record:marketing [scenario-id ...]`
 - Start the playground dev stack locally: `bun run dev`
 - Start the docs site locally: `bun run docs`
 
@@ -43,7 +42,6 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - `packages/docs` `bun run check` runs `bun test`, the content sync, `astro check`, and `astro build`.
 - `packages/docs` `bun run dev`, `bun run start`, and `bun run preview` bind Astro to `0.0.0.0` so the docs site can be reached from outside the current environment.
 - `packages/docs` allows all dev/preview hosts in `astro.config.mjs`, so the docs server should be treated as broadly reachable while it is running.
-- `bun run --cwd packages/docs record:marketing` builds the docs site, starts a temporary Astro preview server, and records rrweb JSON artifacts under `packages/docs/public/recordings/marketing/`.
 - `bun run --cwd packages/devhost-ui storybook` starts the interactive Storybook dev server for manual inspection; it does not replace the automated coverage already included in the workspace `check` script.
 - `apps/devhost/internal/devtools/dist/` is generated for Go `//go:embed` and intentionally ignored; run `bun run build:devtools-bundle:devhost`, `bun run check:devhost`, or `bun run compile:devhost` instead of committing those files.
 - Root `postinstall` runs `bun run install-browser`, which uses `playwright install chromium` without `--force` so existing Chromium binaries are reused instead of being re-downloaded on every `bun install`.
@@ -65,7 +63,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Ask first: adding a new workspace, changing cross-workspace dependency topology, or changing the publish/release flow.
 - Never: disable lint rules unless the user explicitly authorizes it.
 - Never: build or release `devhost` from the repo root using ad-hoc Go commands; use the documented `apps/devhost` scripts, root package scripts, and runbook.
-- Never: start local docs, Storybook, or capture/recording dev servers proactively; the user will start them when needed.
+- Never: start local docs or Storybook dev servers proactively; the user will start them when needed.
 - Testing exception: agents may start temporary local servers for validation or recording workflows, but must shut them down before the end of the turn.
 
 ## References
