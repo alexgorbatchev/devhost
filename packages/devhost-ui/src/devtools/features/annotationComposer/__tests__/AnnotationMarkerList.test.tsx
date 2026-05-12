@@ -1,12 +1,9 @@
 import assert from "node:assert";
 
-import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import type { ReactNode, ReactElement } from "react";
 
-import { getDevtoolsTheme } from "../../../shared/devtoolsTheme";
 import { AnnotationMarkerList, type IAnnotationMarkerListItem } from "../AnnotationMarkerList";
-
-const cssMock = mock((..._args: unknown[]): string => "mock-class-name");
 
 const FIXTURE_MARKER_ITEMS: IAnnotationMarkerListItem[] = [
   {
@@ -19,17 +16,9 @@ const FIXTURE_MARKER_ITEMS: IAnnotationMarkerListItem[] = [
   },
 ];
 
-beforeEach(() => {
-  cssMock.mockClear();
-});
-
 describe("AnnotationMarkerList", () => {
   test("renders the shared marker list structure for each item", () => {
     const markerList = AnnotationMarkerList({
-      dependencies: {
-        css: cssMock,
-        theme: getDevtoolsTheme("dark"),
-      },
       items: FIXTURE_MARKER_ITEMS,
       testId: "AnnotationComposer--marker-list",
     });
@@ -59,21 +48,13 @@ describe("AnnotationMarkerList", () => {
     });
   });
 
-  test("forwards list margin overrides into the root list styles", () => {
-    AnnotationMarkerList({
-      dependencies: {
-        css: cssMock,
-        theme: getDevtoolsTheme("dark"),
-      },
+  test("renders the Tailwind marker list root class", () => {
+    const markerList = AnnotationMarkerList({
       items: FIXTURE_MARKER_ITEMS,
-      listMargin: "4px 0",
       testId: "AnnotationComposer--marker-list",
     });
 
-    const rootCssCall = cssMock.mock.calls[0];
-
-    assert(rootCssCall !== undefined);
-    expect(rootCssCall[1]).toEqual({ margin: "4px 0" });
+    expect(markerList.props.className).toBe("grid max-h-40 list-none gap-2 overflow-auto p-0");
   });
 });
 

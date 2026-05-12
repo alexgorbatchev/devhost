@@ -1,6 +1,5 @@
 import type { JSX } from "react";
 
-import { css, useDevtoolsTheme } from "../../shared";
 import { TerminalSessionPanel } from "./TerminalSessionPanel";
 import type { TerminalSession } from "./types";
 
@@ -12,7 +11,6 @@ interface ITerminalSessionTrayProps {
 }
 
 export function TerminalSessionTray(props: ITerminalSessionTrayProps): JSX.Element | null {
-  const theme = useDevtoolsTheme();
   const expandedSession: TerminalSession | undefined = props.sessions.find(
     (session: TerminalSession): boolean => session.isExpanded,
   );
@@ -24,41 +22,13 @@ export function TerminalSessionTray(props: ITerminalSessionTrayProps): JSX.Eleme
     return null;
   }
 
-  const dockClassName: string = css({
-    bottom: theme.spacing.sm,
-    display: "flex",
-    justifyContent: "center",
-    left: theme.spacing.sm,
-    pointerEvents: "none",
-    position: "fixed",
-    right: theme.spacing.sm,
-  });
-  const expandedRootClassName: string = css({
-    inset: 0,
-    pointerEvents: "none",
-    position: "fixed",
-    zIndex: theme.zIndices.terminalExpanded,
-  });
-  const trayRootClassName: string = css({
-    inset: 0,
-    pointerEvents: "none",
-    position: "fixed",
-    zIndex: theme.zIndices.terminalTray,
-  });
-  const sessionListClassName: string = css({
-    alignItems: "flex-end",
-    display: "flex",
-    gap: theme.spacing.sm,
-    maxWidth: "100%",
-    overflowX: "auto",
-    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
-    pointerEvents: "auto",
-  });
-
   return (
     <div data-testid="TerminalSessionTray">
       {expandedSession !== undefined ? (
-        <div className={expandedRootClassName} data-testid="TerminalSessionTray--expanded-root">
+        <div
+          className="pointer-events-none fixed inset-0 z-[2147483600]"
+          data-testid="TerminalSessionTray--expanded-root"
+        >
           <TerminalSessionPanel
             isExpanded={true}
             session={expandedSession}
@@ -73,9 +43,15 @@ export function TerminalSessionTray(props: ITerminalSessionTrayProps): JSX.Eleme
         </div>
       ) : null}
       {minimizedSessions.length > 0 ? (
-        <div className={trayRootClassName} data-testid="TerminalSessionTray--tray-root">
-          <div className={dockClassName} data-testid="TerminalSessionTray--dock">
-            <div className={sessionListClassName} data-testid="TerminalSessionTray--session-list">
+        <div className="pointer-events-none fixed inset-0 z-[2147483400]" data-testid="TerminalSessionTray--tray-root">
+          <div
+            className="pointer-events-none fixed inset-x-2.5 bottom-2.5 flex justify-center"
+            data-testid="TerminalSessionTray--dock"
+          >
+            <div
+              className="pointer-events-auto flex max-w-full items-end gap-2.5 overflow-x-auto px-2.5 py-2"
+              data-testid="TerminalSessionTray--session-list"
+            >
               {minimizedSessions.map((session: TerminalSession) => {
                 return (
                   <TerminalSessionPanel

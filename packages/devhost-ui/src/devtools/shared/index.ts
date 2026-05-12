@@ -5,7 +5,7 @@ export {
   DEVTOOLS_ROOT_ID,
   RESTART_SERVICE_PATH,
 } from "./constants";
-export { configureDevtoolsCss, css, cx, injectGlobal } from "./devtoolsCss";
+export { installDevtoolsStyles } from "./devtoolsStyles";
 export {
   defaultAnnotationActionId,
   readDevtoolsComponentEditorLabel,

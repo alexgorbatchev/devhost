@@ -8,8 +8,11 @@
     "verbatimModuleSyntax": true,
     "jsx": "react-jsx",
     "jsxImportSource": "react",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "types": ["bun", "node"],
+    "types": ["bun", "node", "vite/client"],
     "strict": true,
     "isolatedModules": true,
     "noEmit": true,

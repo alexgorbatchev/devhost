@@ -14,7 +14,7 @@ When `devtools` are enabled, routed traffic is split like this:
 
 That keeps assets, HMR, fetches, SSE, and WebSockets off the injection path. The control server also owns the websocket status stream used by the injected UI.
 
-The injected `devtools` UI mounts inside its own Shadow DOM container so its runtime styles do not leak into the host page.
+The injected `devtools` UI mounts inside its own Shadow DOM container so its runtime styles do not leak into the host page. The devtools stylesheet is built from Tailwind v4 and shadcn-compatible CSS variables, then installed into that Shadow DOM root at runtime and in Storybook. Tailwind Preflight is scoped to that root only, not to the host document.
 
 Routed services in the injected status panel become links automatically, and clicking one opens that service URL in a new browser tab or window by default.
 

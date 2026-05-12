@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@alexgorbatchev/typescript-ai-policy": "^5.0.2",
+    "bun-plugin-tailwind": "^0.1.2",
     "husky": "^9.1.7",
     "nano-staged": "^1.0.2",
     "oxfmt": "^0.45.0",

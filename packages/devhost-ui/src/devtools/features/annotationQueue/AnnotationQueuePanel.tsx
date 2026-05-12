@@ -1,7 +1,10 @@
-import type { CSSObject } from "@emotion/css/create-instance";
-import { useEffect, useState, type ChangeEvent, type JSX } from "react";
+import { useEffect, useState, type ChangeEvent, type CSSProperties, type JSX } from "react";
 
-import { Button, css, HoverSlidePanel, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+
+import { Button, HoverSlidePanel, useDevtoolsTheme } from "../../shared";
 import {
   isAnnotationQueueEntryEditable,
   isAnnotationQueueEntrySaveDisabled,
@@ -23,6 +26,12 @@ interface IAnnotationQueuePanelProps {
   onSaveEntry: (entryId: string, comment: string) => Promise<boolean>;
   queues: IAnnotationQueueSnapshot[];
 }
+
+interface IProgressStyle extends CSSProperties {
+  width: string;
+}
+
+type AnnotationEntryBadgeVariant = "default" | "destructive" | "secondary";
 
 export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Element | null {
   const theme = useDevtoolsTheme();
@@ -49,24 +58,22 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
     return null;
   }
 
-  const panelClassName: string = css(createPanelStyle(theme));
-
   return (
     <HoverSlidePanel
       ariaLabel="Annotation queues"
       peekWidth={theme.sizes.serviceStatusPanelPeekWidth}
       testId="AnnotationQueuePanel"
     >
-      <div className={panelClassName}>
-        <div className={css(createHeaderStyle(theme))}>
+      <div className="grid w-[min(640px,calc(100vw_-_24px))] gap-2">
+        <div className="grid gap-1">
           <strong>Annotation queues</strong>
           {props.errorMessage !== null ? (
-            <div className={css(createErrorStyle(theme))} data-testid="AnnotationQueuePanel--error">
+            <div className="text-xs text-destructive" data-testid="AnnotationQueuePanel--error">
               {props.errorMessage}
             </div>
           ) : null}
         </div>
-        <div className={css(createQueueListStyle(theme))} data-testid="AnnotationQueuePanel--queue-list">
+        <div className="grid gap-2" data-testid="AnnotationQueuePanel--queue-list">
           {props.queues.map((queue: IAnnotationQueueSnapshot) => {
             const queueLabel: string = readAnnotationQueueRouteLabel(queue);
             const queueProgressLabel: string = readAnnotationQueueProgressLabel(queue.entries.length);
@@ -76,30 +83,30 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
             const queueResumePending: boolean = props.isQueueResumePending(queue.queueId);
 
             return (
-              <article
-                className={css(createQueueCardStyle(theme))}
-                data-testid="AnnotationQueuePanel--queue"
-                key={queue.queueId}
-              >
-                <header className={css(createQueueCardHeaderStyle(theme))}>
-                  <div className={css(createQueueCardHeaderMainStyle(theme))}>
-                    <div className={css(createQueueHeaderRowStyle(theme))}>
-                      <strong className={css(createQueueLabelStyle(theme))} title={queueLabel}>
+              <article className="grid gap-2 rounded-md" data-testid="AnnotationQueuePanel--queue" key={queue.queueId}>
+                <header className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="grid min-w-0 flex-[1_1_240px] gap-1">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <strong className="truncate text-sm text-foreground" title={queueLabel}>
                         {queueLabel}
                       </strong>
-                      <span className={css(createStatusBadgeStyle(theme, queue.status))}>
+                      <Badge variant={queue.status === "paused" ? "destructive" : "secondary"}>
                         {readStatusLabel(queue.status)}
-                      </span>
+                      </Badge>
                     </div>
-                    <div className={css(createQueueProgressLabelStyle(theme))}>{queueProgressLabel}</div>
-                    <div className={css(createQueueProgressTrackStyle(theme))}>
+                    <div className="text-xs text-muted-foreground">{queueProgressLabel}</div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                       <div
-                        className={css(createQueueProgressFillStyle(theme, queue.status, queueProgressWidth))}
+                        className={cn(
+                          "h-full min-w-2 rounded-full",
+                          queue.status === "paused" ? "bg-destructive" : "bg-primary",
+                        )}
                         data-testid="AnnotationQueuePanel--queue-progress"
+                        style={readProgressStyle(queueProgressWidth)}
                       />
                     </div>
                   </div>
-                  <div className={css(createQueueActionsStyle(theme))}>
+                  <div className="flex flex-wrap justify-end gap-2">
                     {queueIsPaused ? (
                       <Button
                         disabled={queueResumePending}
@@ -123,16 +130,13 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
                   </div>
                 </header>
                 {queueIsExpanded ? (
-                  <div className={css(createQueueDetailsStyle(theme))}>
+                  <div className="grid gap-2">
                     {queueIsPaused && queue.pauseReason !== null ? (
-                      <p
-                        className={css(createPauseReasonStyle(theme))}
-                        data-testid="AnnotationQueuePanel--pause-reason"
-                      >
+                      <p className="m-0 text-xs text-muted-foreground" data-testid="AnnotationQueuePanel--pause-reason">
                         {readAnnotationQueuePauseMessage(queue.pauseReason)}
                       </p>
                     ) : null}
-                    <ol className={css(createEntryListStyle(theme))}>
+                    <ol className="grid list-none gap-2 p-0">
                       {queue.entries.map((entry: IAnnotationQueueEntrySnapshot) => {
                         const comment: string = readAnnotationQueueDraftComment(drafts, entry);
                         const entryIsEditable: boolean = isAnnotationQueueEntryEditable(entry);
@@ -147,18 +151,16 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
 
                         return (
                           <li
-                            className={css(createEntryCardStyle(theme))}
+                            className="grid gap-1 rounded-sm border border-border bg-muted p-2"
                             data-testid="AnnotationQueuePanel--entry"
                             key={entry.entryId}
                           >
-                            <div className={css(createEntrySummaryStyle(theme))}>
-                              <div className={css(createEntrySummaryTextStyle(theme))}>
-                                <span className={css(createEntryStateBadgeStyle(theme, entry.state))}>
-                                  {readEntryStateLabel(entry)}
-                                </span>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex min-w-0 flex-1 items-center gap-2">
+                                <Badge variant={readEntryBadgeVariant(entry)}>{readEntryStateLabel(entry)}</Badge>
                               </div>
                               {entryIsEditable && !entryIsDeleteConfirming ? (
-                                <div className={css(createEntryActionsStyle(theme))}>
+                                <div className="flex flex-wrap gap-2">
                                   {entryIsEditing ? (
                                     <>
                                       <Button
@@ -245,8 +247,7 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
                               ) : null}
                             </div>
                             {entryIsEditing ? (
-                              <textarea
-                                className={css(createTextareaStyle(theme))}
+                              <Textarea
                                 data-testid="AnnotationQueuePanel--comment-input"
                                 rows={4}
                                 value={comment}
@@ -260,7 +261,7 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
                               />
                             ) : (
                               <div
-                                className={css(createReadOnlyCommentStyle(theme))}
+                                className="whitespace-pre-wrap text-sm leading-normal text-foreground"
                                 data-testid="AnnotationQueuePanel--comment"
                               >
                                 {comment}
@@ -268,11 +269,11 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
                             )}
                             {entryIsEditable && entryIsDeleteConfirming ? (
                               <div
-                                className={css(createDeleteConfirmationStyle(theme))}
+                                className="grid gap-2 rounded-sm border border-destructive p-2 text-xs text-destructive"
                                 data-testid="AnnotationQueuePanel--delete-confirmation"
                               >
                                 <div>Delete this annotation?</div>
-                                <div className={css(createEntryActionsStyle(theme))}>
+                                <div className="flex flex-wrap gap-2">
                                   <Button
                                     disabled={entryIsPending}
                                     testId="AnnotationQueuePanel--confirm-delete"
@@ -349,6 +350,18 @@ function readEntryStateLabel(entry: IAnnotationQueueEntrySnapshot): string {
   return "Queued";
 }
 
+function readEntryBadgeVariant(entry: IAnnotationQueueEntrySnapshot): AnnotationEntryBadgeVariant {
+  if (entry.state === "paused-active") {
+    return "destructive";
+  }
+
+  if (entry.state === "active") {
+    return "secondary";
+  }
+
+  return "default";
+}
+
 function readAnnotationQueueRouteLabel(queue: IAnnotationQueueSnapshot): string {
   const queueUrl: string | undefined = queue.entries[0]?.annotation.url;
 
@@ -377,6 +390,10 @@ function readAnnotationQueueProgressWidth(entryCount: number): string {
   return entryCount === 0 ? "0%" : `${100 / entryCount}%`;
 }
 
+function readProgressStyle(width: string): IProgressStyle {
+  return { width };
+}
+
 function appendId(currentIds: string[], id: string): string[] {
   return currentIds.includes(id) ? currentIds : [...currentIds, id];
 }
@@ -391,236 +408,4 @@ function removeId(currentIds: string[], id: string): string[] {
 
 function toggleId(currentIds: string[], id: string): string[] {
   return currentIds.includes(id) ? removeId(currentIds, id) : [...currentIds, id];
-}
-
-function createPanelStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    display: "grid",
-    gap: theme.spacing.xs,
-    width: "min(640px, calc(100vw - 24px))",
-  };
-}
-
-function createHeaderStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    display: "grid",
-    gap: theme.spacing.xxs,
-  };
-}
-
-function createErrorStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    color: theme.colors.dangerForeground,
-    fontSize: theme.fontSizes.sm,
-  };
-}
-
-function createQueueListStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    display: "grid",
-    gap: theme.spacing.xs,
-  };
-}
-
-function createQueueCardStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    borderRadius: theme.radii.md,
-    display: "grid",
-    gap: theme.spacing.xs,
-  };
-}
-
-function createQueueCardHeaderStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    alignItems: "center",
-    display: "flex",
-    flexWrap: "wrap",
-    gap: theme.spacing.xs,
-    justifyContent: "space-between",
-  };
-}
-
-function createQueueCardHeaderMainStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    display: "grid",
-    flex: "1 1 240px",
-    gap: theme.spacing.xxs,
-    minWidth: 0,
-  };
-}
-
-function createQueueHeaderRowStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    alignItems: "center",
-    display: "flex",
-    flexWrap: "wrap",
-    gap: theme.spacing.xs,
-    minWidth: 0,
-  };
-}
-
-function createQueueLabelStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    color: theme.colors.foreground,
-    fontSize: theme.fontSizes.md,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-  };
-}
-
-function createQueueProgressLabelStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    color: theme.colors.mutedForeground,
-    fontSize: theme.fontSizes.sm,
-  };
-}
-
-function createQueueProgressTrackStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    background: theme.colors.logMinimapBackground,
-    borderRadius: theme.radii.pill,
-    height: "6px",
-    overflow: "hidden",
-  };
-}
-
-function createStatusBadgeStyle(theme: IDevtoolsTheme, status: AnnotationQueueStatus): CSSObject {
-  return {
-    background: status === "paused" ? theme.colors.dangerBackground : theme.colors.selectionBackground,
-    borderRadius: theme.radii.pill,
-    color: status === "paused" ? theme.colors.accentForeground : theme.colors.foreground,
-    padding: `2px ${theme.spacing.xs}`,
-  };
-}
-
-function createQueueProgressFillStyle(theme: IDevtoolsTheme, status: AnnotationQueueStatus, width: string): CSSObject {
-  return {
-    background: status === "paused" ? theme.colors.dangerBackground : theme.colors.accentBackground,
-    borderRadius: theme.radii.pill,
-    height: "100%",
-    minWidth: width === "0%" ? 0 : theme.spacing.xs,
-    width,
-  };
-}
-
-function createQueueActionsStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: theme.spacing.xs,
-    justifyContent: "flex-end",
-  };
-}
-
-function createQueueDetailsStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    display: "grid",
-    gap: theme.spacing.xs,
-  };
-}
-
-function createPauseReasonStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    color: theme.colors.mutedForeground,
-    fontSize: theme.fontSizes.sm,
-    margin: 0,
-  };
-}
-
-function createEntryListStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    display: "grid",
-    gap: theme.spacing.xs,
-    listStyle: "none",
-    margin: 0,
-    padding: 0,
-  };
-}
-
-function createEntryCardStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    background: theme.colors.logMinimapBackground,
-    border: `1px solid ${theme.colors.border}`,
-    borderRadius: theme.radii.sm,
-    display: "grid",
-    gap: theme.spacing.xxs,
-    padding: theme.spacing.xs,
-  };
-}
-
-function createEntrySummaryStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    alignItems: "flex-start",
-    display: "flex",
-    gap: theme.spacing.xs,
-    justifyContent: "space-between",
-  };
-}
-
-function createEntrySummaryTextStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    alignItems: "center",
-    display: "flex",
-    flex: 1,
-    gap: theme.spacing.xs,
-    minWidth: 0,
-  };
-}
-
-function createEntryStateBadgeStyle(theme: IDevtoolsTheme, state: IAnnotationQueueEntrySnapshot["state"]): CSSObject {
-  return {
-    background:
-      state === "active"
-        ? theme.colors.selectionBackground
-        : state === "paused-active"
-          ? theme.colors.dangerBackground
-          : theme.colors.accentBackground,
-    borderRadius: theme.radii.pill,
-    color: state === "active" ? theme.colors.foreground : theme.colors.accentForeground,
-    padding: `2px ${theme.spacing.xs}`,
-  };
-}
-
-function createTextareaStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    background: theme.colors.background,
-    border: `1px solid ${theme.colors.border}`,
-    borderRadius: theme.radii.sm,
-    color: theme.colors.foreground,
-    fontFamily: theme.fontFamilies.monospace,
-    fontSize: theme.fontSizes.md,
-    minHeight: "88px",
-    padding: theme.spacing.xs,
-    resize: "vertical",
-  };
-}
-
-function createReadOnlyCommentStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    color: theme.colors.foreground,
-    fontSize: theme.fontSizes.md,
-    lineHeight: 1.5,
-    whiteSpace: "pre-wrap",
-  };
-}
-
-function createEntryActionsStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: theme.spacing.xs,
-  };
-}
-
-function createDeleteConfirmationStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    border: `1px solid ${theme.colors.dangerBackground}`,
-    borderRadius: theme.radii.sm,
-    color: theme.colors.dangerForeground,
-    display: "grid",
-    fontSize: theme.fontSizes.sm,
-    gap: theme.spacing.xs,
-    padding: theme.spacing.xs,
-  };
 }

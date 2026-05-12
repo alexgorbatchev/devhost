@@ -1,8 +1,9 @@
-import type { CSSObject } from "@emotion/css/create-instance";
-import type { JSX } from "react";
+import type { CSSProperties, JSX } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { css, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
+import { cn } from "@/lib/utils";
+
+import { useDevtoolsTheme } from "../../shared";
 import type { ServiceLogEntry } from "../../shared/types";
 import { createLogMinimapMarksFromVisibleRows, type ILogMinimapMark } from "./createLogMinimapMarks";
 import { createLogPreviewWindow } from "./createLogPreviewWindow";
@@ -18,7 +19,10 @@ interface ILogMinimapProps {
   onHoveredChange: (isHovered: boolean) => void;
 }
 
-const minimapTransitionStyle: CSSObject["transition"] = "opacity 160ms ease, transform 160ms ease";
+interface IPositionStyle extends CSSProperties {
+  height?: number;
+  top?: number;
+}
 
 export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
   const theme = useDevtoolsTheme();
@@ -136,16 +140,17 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
     return null;
   }
 
-  const canvasClassName: string = css(canvasStyle);
-  const minimapClassName: string = css(createMinimapStyle(theme, props.isHovered));
-  const previewClassName: string = previewLayout === null ? "" : css(createPreviewStyle(theme, previewLayout.top));
-  const previewListClassName: string = css(createPreviewListStyle());
+  const minimapTransform: string = props.isHovered ? "translateX(0)" : "translateX(calc(100px - 20px))";
 
   return (
     <aside
       aria-hidden="true"
-      className={minimapClassName}
+      className={cn(
+        "pointer-events-auto fixed inset-y-0 right-0 z-[2147483500] box-border w-[100px] border-l border-border bg-muted p-1 transition-[opacity,transform] duration-150 ease-in-out",
+        props.isHovered ? "opacity-100" : "opacity-50",
+      )}
       data-testid="LogMinimap"
+      style={{ transform: minimapTransform }}
       onMouseEnter={(): void => {
         props.onHoveredChange(true);
       }}
@@ -160,19 +165,30 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
         setHoveredRowIndex(resolveHoveredLogRowIndex(marksReference.current, mouseOffsetY));
       }}
     >
-      <canvas ref={canvasReference} className={canvasClassName} data-testid="LogMinimap--canvas" />
+      <canvas ref={canvasReference} className="block size-full pointer-events-none" data-testid="LogMinimap--canvas" />
       {props.isHovered && previewOverlay !== null ? (
         <div
-          className={css(createOverlayStyle(theme, previewOverlay.top, previewOverlay.height))}
+          className="pointer-events-none absolute inset-x-1 bg-primary/10 shadow-[inset_0_0_0_1px_var(--ring)]"
           data-testid="LogMinimap--preview-overlay"
+          style={readPositionStyle(previewOverlay.top, previewOverlay.height)}
         />
       ) : null}
       {props.isHovered && previewLayout !== null && hoveredRowIndex !== null && previewRows.length > 0 ? (
-        <div className={previewClassName} data-testid="LogMinimap--preview">
-          <ol className={previewListClassName}>
+        <div
+          className="pointer-events-none absolute right-[calc(100%+8px)] z-[2147483500] grid w-[min(80ch,calc(100vw-164px))] gap-2 rounded-md border border-border bg-background p-2 text-xs leading-none text-foreground shadow-sm"
+          data-testid="LogMinimap--preview"
+          style={readPositionStyle(previewLayout.top)}
+        >
+          <ol className="grid list-none gap-0 p-0">
             {previewRows.map((row: IVisibleLogRow) => {
               return (
-                <li key={`${row.id}-${row.top}`} className={css(readPreviewLineStyle(theme, row.stream))}>
+                <li
+                  key={`${row.id}-${row.top}`}
+                  className={cn(
+                    "h-6 overflow-hidden text-ellipsis whitespace-pre px-2 leading-6",
+                    row.stream === "stderr" ? "bg-destructive/10 text-destructive" : "text-foreground",
+                  )}
+                >
                   {row.text}
                 </li>
               );
@@ -184,107 +200,12 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
   );
 }
 
-const canvasStyle: CSSObject = {
-  display: "block",
-  width: "100%",
-  height: "100%",
-  pointerEvents: "none",
-};
-
-const overlayShadowStyle: CSSObject["boxShadow"] = "inset 0 0 0 1px";
-
-function readPreviewLineStyle(theme: IDevtoolsTheme, stream: ServiceLogEntry["stream"]): CSSObject {
-  const isStderr: boolean = stream === "stderr";
-
-  return {
-    background: isStderr ? theme.colors.logPreviewStderrBackground : undefined,
-    boxSizing: "border-box",
-    color: isStderr ? theme.colors.logPreviewStderrForeground : theme.colors.foreground,
-    height: theme.sizes.logPreviewRowHeight,
-    lineHeight: theme.sizes.logPreviewRowHeight,
-    overflow: "hidden",
-    padding: `0 ${theme.spacing.xs}`,
-    textOverflow: "ellipsis",
-    whiteSpace: "pre",
-  };
-}
-
-function createPreviewListStyle(): CSSObject {
-  return {
-    display: "grid",
-    gap: 0,
-    listStyle: "none",
-    margin: 0,
-    padding: 0,
-  };
-}
-
-function createMinimapStyle(theme: IDevtoolsTheme, isHovered: boolean): CSSObject {
-  return {
-    borderLeft: `1px solid ${theme.colors.border}`,
-    position: "fixed",
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: theme.sizes.logMinimapWidth,
-    padding: theme.spacing.xxs,
-    boxSizing: "border-box",
-    background: theme.colors.logMinimapBackground,
-    opacity: isHovered ? theme.opacities.logMinimapActive : theme.opacities.logMinimapResting,
-    pointerEvents: "auto",
-    transform: resolveMinimapTransform(theme, isHovered),
-    transition: minimapTransitionStyle,
-    zIndex: theme.zIndices.floating,
-  };
-}
-
-function createOverlayStyle(theme: IDevtoolsTheme, top: number, height: number): CSSObject {
-  return {
-    position: "absolute",
-    top,
-    left: theme.spacing.xxs,
-    right: theme.spacing.xxs,
-    height,
-    background: theme.colors.logMinimapOverlayBackground,
-    boxShadow: `${overlayShadowStyle} ${theme.colors.logMinimapOverlayBorder}`,
-    pointerEvents: "none",
-  };
-}
-
-function createPreviewStyle(theme: IDevtoolsTheme, top: number): CSSObject {
-  return {
-    position: "absolute",
-    right: `calc(100% + ${theme.spacing.xs})`,
-    top,
-    width: `min(${theme.sizes.logPreviewWidth}, calc(100vw - ${theme.sizes.logMinimapWidth} - ${theme.spacing.xl}))`,
-    display: "grid",
-    gap: theme.spacing.xs,
-    padding: theme.spacing.xs,
-    border: `1px solid ${theme.colors.border}`,
-    borderRadius: theme.radii.md,
-    background: theme.colors.background,
-    boxShadow: theme.shadows.floating,
-    color: theme.colors.foreground,
-    fontFamily: theme.fontFamilies.monospace,
-    fontSize: theme.fontSizes.sm,
-    lineHeight: 1,
-    pointerEvents: "none",
-    zIndex: theme.zIndices.floating,
-  };
-}
-
 function readPixelValue(value: string): number {
   const parsedValue: number = Number.parseFloat(value);
 
   return Number.isFinite(parsedValue) ? parsedValue : 0;
 }
 
-function resolveMinimapTransform(theme: IDevtoolsTheme, isHovered: boolean): string {
-  if (isHovered) {
-    return "translateX(0)";
-  }
-
-  const hiddenDistance: string = `calc(${theme.sizes.logMinimapWidth} - ${theme.sizes.logMinimapPeekWidth})`;
-
-  return `translateX(${hiddenDistance})`;
+function readPositionStyle(top: number, height?: number): IPositionStyle {
+  return { height, top };
 }

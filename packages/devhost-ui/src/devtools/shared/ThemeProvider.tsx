@@ -14,5 +14,9 @@ export function ThemeProvider(props: IThemeProviderProps): JSX.Element {
     return getDevtoolsTheme(props.colorScheme);
   }, [props.colorScheme]);
 
-  return <devtoolsThemeContext.Provider value={theme}>{props.children}</devtoolsThemeContext.Provider>;
+  return (
+    <devtoolsThemeContext.Provider value={theme}>
+      <div className={`devhost-theme devhost-theme-${props.colorScheme}`}>{props.children}</div>
+    </devtoolsThemeContext.Provider>
+  );
 }

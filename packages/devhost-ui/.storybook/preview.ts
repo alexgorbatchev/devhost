@@ -1,5 +1,6 @@
 import type { Preview } from "@storybook/react";
 
+import "../src/devtools/shared/devtools.css";
 import {
   DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME,
   HEALTH_WEBSOCKET_PATH,
@@ -9,7 +10,6 @@ import {
   TERMINAL_SESSION_WEBSOCKET_PATH,
   XTERM_STYLESHEET_PATH,
 } from "../src/devtools/shared/constants";
-import { configureDevtoolsCss, injectGlobal } from "../src/devtools/shared/devtoolsCss";
 import type { IInjectedDevtoolsConfig } from "../src/devtools/shared/readInjectedDevtoolsConfig";
 
 type FetchRequestInput = Parameters<typeof fetch>[0];
@@ -151,41 +151,12 @@ const preview: Preview = {
     Reflect.set(globalThis, "fetch", createStorybookFetch());
     Reflect.set(globalThis, "WebSocket", MockStorybookWebSocket);
 
-    configureDevtoolsCss(document.head);
-    injectGlobal({
-      "*, *::before, *::after": {
-        boxSizing: "border-box",
-      },
-      "@media (prefers-color-scheme: light)": {
-        body: {
-          backgroundColor: "#f3f4f6", // darker light
-        },
-      },
-      "@media (prefers-color-scheme: dark)": {
-        body: {
-          backgroundColor: "#1f2937",
-        },
-      },
-      button: {
-        font: "inherit",
-      },
-      input: {
-        font: "inherit",
-      },
-      textarea: {
-        font: "inherit",
-      },
-    });
-
     return (): void => {
       Reflect.deleteProperty(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME);
       restoreGlobalValue("fetch", originalFetch);
       restoreGlobalValue("WebSocket", originalWebSocket);
 
       document.querySelectorAll(`link[href="${XTERM_STYLESHEET_PATH}"]`).forEach((element: Element): void => {
-        element.remove();
-      });
-      document.querySelectorAll('style[data-emotion^="devhost"]').forEach((element: Element): void => {
         element.remove();
       });
     };

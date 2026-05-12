@@ -1,7 +1,6 @@
-import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "react";
 
-import { Button, css, HoverSlidePanel, useDevtoolsTheme } from "../../shared";
+import { Button, HoverSlidePanel, useDevtoolsTheme } from "../../shared";
 import type { IExternalDevtoolsLauncher } from "./types";
 
 interface IExternalDevtoolsPanelProps {
@@ -20,9 +19,6 @@ export function ExternalDevtoolsPanel({
   }
 
   const hasOpenLauncher: boolean = launchers.some((launcher) => launcher.isOpen);
-  const contentClassName: string = css(createContentStyle(theme));
-  const handleClassName: string = css(createHandleStyle(theme));
-  const launcherListClassName: string = css(createLauncherListStyle(theme));
 
   return (
     <HoverSlidePanel
@@ -31,9 +27,9 @@ export function ExternalDevtoolsPanel({
       peekWidth={theme.sizes.serviceStatusPanelPeekWidth}
       testId="ExternalDevtoolsPanel"
     >
-      <div className={contentClassName}>
-        <span className={handleClassName}>Tools</span>
-        <div className={launcherListClassName} data-testid="ExternalDevtoolsPanel--launcher-list">
+      <div className="flex flex-row-reverse items-center gap-2">
+        <span className="whitespace-nowrap text-xs uppercase text-muted-foreground">Tools</span>
+        <div className="flex flex-row flex-wrap justify-start gap-1" data-testid="ExternalDevtoolsPanel--launcher-list">
           {launchers.map((launcher) => (
             <Button
               key={launcher.id}
@@ -49,32 +45,4 @@ export function ExternalDevtoolsPanel({
       </div>
     </HoverSlidePanel>
   );
-}
-
-function createContentStyle(theme: ReturnType<typeof useDevtoolsTheme>): CSSObject {
-  return {
-    alignItems: "center",
-    display: "flex",
-    flexDirection: "row-reverse",
-    gap: theme.spacing.xs,
-  };
-}
-
-function createHandleStyle(theme: ReturnType<typeof useDevtoolsTheme>): CSSObject {
-  return {
-    color: theme.colors.mutedForeground,
-    fontSize: theme.fontSizes.sm,
-    textTransform: "uppercase",
-    whiteSpace: "nowrap",
-  };
-}
-
-function createLauncherListStyle(theme: ReturnType<typeof useDevtoolsTheme>): CSSObject {
-  return {
-    display: "flex",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: theme.spacing.xxs,
-    justifyContent: "flex-start",
-  };
 }

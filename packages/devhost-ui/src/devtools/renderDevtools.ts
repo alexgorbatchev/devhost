@@ -2,7 +2,7 @@ import { jsx } from "react/jsx-runtime";
 import { createRoot } from "react-dom/client";
 
 import { App } from "./App";
-import { DEVTOOLS_HOST_ID, configureDevtoolsCss, injectGlobal } from "./shared";
+import { DEVTOOLS_HOST_ID, installDevtoolsStyles } from "./shared";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "./shared/constants";
 
 export function renderDevtools(): void {
@@ -24,24 +24,7 @@ export function renderDevtools(): void {
     shadowRoot.append(mountNode);
     document.body.append(hostNode);
 
-    configureDevtoolsCss(shadowRoot);
-    injectGlobal({
-      ":host": {
-        color: "initial",
-      },
-      "*, *::before, *::after": {
-        boxSizing: "border-box",
-      },
-      button: {
-        font: "inherit",
-      },
-      input: {
-        font: "inherit",
-      },
-      textarea: {
-        font: "inherit",
-      },
-    });
+    installDevtoolsStyles(shadowRoot);
     createRoot(mountNode).render(jsx(App, {}));
   };
 

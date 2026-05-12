@@ -1,29 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type JSX } from "react";
 
-import { Button, css, type IAnnotationAction, useDevtoolsTheme } from "../../shared";
+import { Textarea } from "@/components/ui/textarea";
+
+import { Button, type IAnnotationAction, useDevtoolsTheme } from "../../shared";
 import { isEventTargetTerminalKeyboardInput } from "../../shared/isEventTargetTerminalKeyboardInput";
 import type { ITerminalSessionStartResult } from "../terminalSessions/types";
 import { AnnotationActionSplitButton } from "./AnnotationActionSplitButton";
 import { AnnotationMarkerList } from "./AnnotationMarkerList";
 import { AnnotationSelectionOverlay } from "./AnnotationSelectionOverlay";
-import {
-  createActionButtonHoverStyle,
-  createCancelButtonStyle,
-  createCheckboxLabelStyle,
-  createPopupStyle,
-  createShortcutBadgeStyle,
-  createSubmissionErrorStyle,
-  createSubmitButtonStyle,
-  createTextareaStyle,
-  popupActionsStyle,
-  popupHeaderStyle,
-  popupMetaStyle,
-  shortcutBadgeHoverStyle,
-} from "./annotationComposerStyles";
-import {
-  readActiveAnnotationSelectionPlugin,
-  subscribeToAnnotationSelectionPlugins,
-} from "./annotationSelectionPluginRegistry";
+import { readActiveAnnotationSelectionPlugin, subscribeToAnnotationSelectionPlugins } from "./annotationSelectionPluginRegistry";
 import {
   type ISelectedAnnotationTarget,
   readPixelValue,
@@ -44,6 +29,13 @@ interface IAnnotationComposerProps {
     targetSessionId?: string,
   ) => Promise<ITerminalSessionStartResult>;
   stackName: string;
+}
+
+interface IFixedFrameStyle extends CSSProperties {
+  height?: number;
+  left: number;
+  top: number;
+  width?: number | string;
 }
 
 export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element {
@@ -208,11 +200,6 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
     };
   }, [selectedTargets.length]);
 
-  const errorClassName: string = css(createSubmissionErrorStyle(theme));
-  const popupActionsClassName: string = css(popupActionsStyle);
-  const popupHeaderClassName: string = css(popupHeaderStyle);
-  const popupMetaClassName: string = css(popupMetaStyle);
-
   return (
     <div data-testid="AnnotationComposer">
       <AnnotationSelectionOverlay
@@ -226,7 +213,11 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
         <div
           ref={popupReference}
           data-testid="AnnotationComposer--popup"
-          className={css(createPopupStyle(theme, popupCoordinates.left, popupCoordinates.top))}
+          className={[
+            "pointer-events-auto fixed z-[2147483500] grid w-[min(360px,calc(100vw_-_20px))]",
+            "gap-2.5 rounded-md border border-border bg-background p-2.5 text-xs text-foreground shadow-lg",
+          ].join(" ")}
+          style={readPopupStyle(popupCoordinates.left, popupCoordinates.top)}
           onClick={(event: React.MouseEvent<HTMLDivElement>): void => {
             event.stopPropagation();
           }}
@@ -234,9 +225,9 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
             event.stopPropagation();
           }}
         >
-          <div className={popupHeaderClassName}>
+          <div className="grid gap-1">
             <strong>Annotation draft</strong>
-            <span className={popupMetaClassName}>
+            <span className="text-xs text-muted-foreground">
               {isSubmitting ? "Submitting annotation…" : `${selectedTargets.length} markers selected`}
             </span>
           </div>
@@ -249,24 +240,23 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
             })}
             testId="AnnotationComposer--marker-list"
           />
-          <textarea
+          <Textarea
             ref={commentTextareaReference}
             data-testid="AnnotationComposer--comment"
             placeholder="Describe the change and refer to markers like #1, #2, #3…"
             rows={5}
-            className={css(createTextareaStyle(theme))}
             value={comment}
             onChange={(event: React.ChangeEvent<HTMLTextAreaElement>): void => {
               setComment(event.currentTarget.value);
             }}
           />
           {submissionErrorMessage !== null ? (
-            <div className={errorClassName} data-testid="AnnotationComposer--error">
+            <div className="text-xs leading-normal text-destructive" data-testid="AnnotationComposer--error">
               {submissionErrorMessage}
             </div>
           ) : null}
           {canAppendToActiveAgentSession ? (
-            <label className={css(createCheckboxLabelStyle(theme))}>
+            <label className="flex cursor-pointer select-none items-center gap-2 text-xs text-foreground">
               <input
                 type="checkbox"
                 checked={sendToActiveSession}
@@ -277,7 +267,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
               Append to active {selectedAction.displayName} queue
             </label>
           ) : null}
-          <div className={popupActionsClassName}>
+          <div className="flex justify-start gap-2">
             {props.annotationActions.length > 1 ? (
               <AnnotationActionSplitButton
                 actions={props.annotationActions}
@@ -293,10 +283,6 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
               <Button
                 disabled={trimmedComment.length === 0 || isSubmitting}
                 endEnhancer="⌘ ↵"
-                endEnhancerStyle={createShortcutBadgeStyle(theme)}
-                endEnhancerStyleHover={shortcutBadgeHoverStyle}
-                style={createSubmitButtonStyle(theme)}
-                styleHover={createActionButtonHoverStyle(theme)}
                 variant="primary"
                 onClick={(): void => {
                   void submitDraft();
@@ -305,16 +291,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
                 {isSubmitting ? "Submitting…" : `Run ${selectedAction.displayName}`}
               </Button>
             )}
-            <Button
-              disabled={isSubmitting}
-              endEnhancer="Esc"
-              endEnhancerStyle={createShortcutBadgeStyle(theme)}
-              endEnhancerStyleHover={shortcutBadgeHoverStyle}
-              style={createCancelButtonStyle(theme)}
-              styleHover={createActionButtonHoverStyle(theme)}
-              variant="secondary"
-              onClick={cancelDraft}
-            >
+            <Button disabled={isSubmitting} endEnhancer="Esc" variant="secondary" onClick={cancelDraft}>
               Cancel
             </Button>
           </div>
@@ -322,4 +299,12 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
       ) : null}
     </div>
   );
+}
+
+function readPopupStyle(left: number, top: number): IFixedFrameStyle {
+  return {
+    left,
+    top,
+    width: "min(360px, calc(100vw - 20px))",
+  };
 }

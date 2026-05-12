@@ -1,10 +1,10 @@
-import type { CSSObject } from "@emotion/css/create-instance";
-import type { JSX } from "react";
+import type { CSSProperties, JSX } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
+import { CircleCheckIcon, CircleXIcon } from "lucide-react";
 
-import { Button, css, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
+import { Button, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
 import { createDevtoolsWebSocketUrl } from "../../shared/createDevtoolsWebSocketUrl";
 import {
   DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME,
@@ -38,9 +38,29 @@ interface ITrayTooltipLayout {
   width: number;
 }
 
+interface IDimensionStyle extends CSSProperties {
+  height: number | string;
+  width: number | string;
+}
+
+interface IExpandedPanelStyle extends IDimensionStyle {
+  left: string;
+  top: string;
+  transform: string;
+}
+
+interface ITrayShellStyle extends IDimensionStyle {
+  opacity: number;
+}
+
+interface ITrayTooltipStyle extends CSSProperties {
+  bottom?: number;
+  left?: number;
+  width?: number;
+}
+
 const normalClosureCode: number = 1000;
 const trayScale: number = 0.32;
-const trayTransitionDurationInMilliseconds: number = 180;
 const xtermStylesheetId: string = "devhost-xterm-stylesheet";
 
 export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Element {
@@ -348,47 +368,58 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
 
   const primaryAction = readTerminalSessionPrimaryAction(hasExited);
   const sessionSummary: ITerminalSessionSummary = props.session.summary;
-  const summaryClassName: string = css(createSummaryStyle(theme));
-  const compactSummaryClassName: string = css(createCompactSummaryStyle(theme));
-  const compactSummaryPathClassName: string = css(createCompactSummaryPathStyle(theme));
-  const summaryHeadlineClassName: string = css(createSummaryHeadlineStyle(theme));
-  const summaryEyebrowClassName: string = css(createSummaryEyebrowStyle(theme));
-  const summaryMetaClassName: string = css(createSummaryMetaStyle(theme));
-  const buttonGroupClassName: string = css(buttonGroupStyle);
-  const chromeClassName: string = css(
-    createChromeStyle(theme, activePanelSize, terminalPanelLayout.isFullscreenExpanded && props.isExpanded),
+  const isFullscreenExpanded: boolean = terminalPanelLayout.isFullscreenExpanded && props.isExpanded;
+  const chromeStyle: IDimensionStyle = {
+    height: activePanelSize.height,
+    width: activePanelSize.width,
+  };
+  const expandedPanelStyle: IExpandedPanelStyle = readExpandedPanelStyle(
+    activePanelSize,
+    terminalPanelLayout.isFullscreenExpanded,
   );
-  const backdropClassName: string = css(createBackdropStyle(theme));
-  const expandedOverlayClassName: string = css(createExpandedOverlayStyle(theme));
-  const expandedPanelClassName: string = css(
-    createExpandedPanelStyle(activePanelSize, terminalPanelLayout.isFullscreenExpanded),
-  );
-  const headerClassName: string = css(createHeaderStyle(theme));
-  const headerTextClassName: string = css(headerTextStyle);
-  const statusClassName: string = css(createStatusStyle(theme, errorMessage !== null));
-  const terminalContainerClassName: string = css(terminalContainerStyle);
-  const terminalViewportClassName: string = css(createTerminalViewportStyle(theme));
-  const trayBadgeClassName: string = css(createTrayBadgeStyle(theme));
-  const trayCompletionIconClassName: string = css(createTrayCompletionIconStyle(theme));
-  const trayCloseButtonClassName: string = css(createTrayCloseButtonStyle(theme));
-  const trayCloseIconClassName: string = css(createTrayCloseIconStyle(theme));
-  const trayCompletionOverlayClassName: string = css(createTrayCompletionOverlayStyle());
-  const trayOverlayButtonClassName: string = css(createTrayOverlayButtonStyle(theme));
-  const trayScaledContentClassName: string = css(createTrayScaledContentStyle(terminalPanelLayout.trayPanelSize));
-  const trayShellClassName: string = css(createTrayShellStyle(theme, terminalPanelLayout.trayPanelSize, isTrayMounted));
-  const trayTooltipClassName: string = css(createTrayTooltipStyle(theme, trayTooltipLayout));
-  const trayTooltipCommentClassName: string = css(createTrayTooltipCommentStyle(theme));
-  const trayTooltipMetaClassName: string = css(createTrayTooltipMetaStyle(theme));
+  const trayScaledContentStyle: IDimensionStyle = {
+    height: terminalPanelLayout.trayPanelSize.height,
+    transform: `scale(${trayScale})`,
+    transformOrigin: "bottom left",
+    width: terminalPanelLayout.trayPanelSize.width,
+  };
+  const trayShellStyle: ITrayShellStyle = {
+    height: terminalPanelLayout.trayPanelSize.height * trayScale,
+    opacity: isTrayMounted ? 1 : 0,
+    width: isTrayMounted ? terminalPanelLayout.trayPanelSize.width * trayScale : 0,
+  };
+  const trayTooltipStyle: ITrayTooltipStyle =
+    trayTooltipLayout === null
+      ? { display: "none" }
+      : {
+          bottom: trayTooltipLayout.bottom,
+          left: trayTooltipLayout.left,
+          width: trayTooltipLayout.width,
+        };
 
   const panelContent: JSX.Element = (
-    <div className={chromeClassName}>
-      <header className={headerClassName} data-testid="TerminalSessionPanel--header">
-        <div className={headerTextClassName}>
+    <div
+      className={[
+        "box-border grid grid-rows-[auto_auto_1fr] gap-2.5 bg-background p-2.5 text-foreground",
+        isFullscreenExpanded ? "rounded-none border-0 shadow-none" : "rounded-md border border-border shadow-lg",
+      ].join(" ")}
+      style={chromeStyle}
+    >
+      <header className="flex items-start justify-between gap-2.5" data-testid="TerminalSessionPanel--header">
+        <div className="grid">
           <strong>{sessionSummary.terminalTitle}</strong>
-          <span className={statusClassName}>{errorMessage ?? statusText}</span>
+          <span
+            className={
+              errorMessage !== null
+                ? "text-xs leading-normal text-destructive"
+                : "text-xs leading-normal text-muted-foreground"
+            }
+          >
+            {errorMessage ?? statusText}
+          </span>
         </div>
         {props.isExpanded ? (
-          <div className={buttonGroupClassName}>
+          <div className="flex gap-2">
             <Button
               testId="TerminalSessionPanel--minimize"
               title={`Minimize ${sessionSummary.terminalTitle}`}
@@ -410,15 +441,21 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
       </header>
       {props.isExpanded ? (
         props.session.kind === "editor" ? (
-          <section className={compactSummaryClassName} data-testid="TerminalSessionPanel--summary">
-            <strong className={summaryHeadlineClassName}>{sessionSummary.headline}</strong>
-            <span className={compactSummaryPathClassName}>{sessionSummary.meta[0]}</span>
+          <section
+            className="flex min-w-0 items-center gap-2.5 rounded-sm border border-primary bg-accent px-2.5 py-2"
+            data-testid="TerminalSessionPanel--summary"
+          >
+            <strong className="flex-none text-base leading-normal">{sessionSummary.headline}</strong>
+            <span className="min-w-0 flex-auto truncate text-xs text-muted-foreground">{sessionSummary.meta[0]}</span>
           </section>
         ) : (
-          <section className={summaryClassName} data-testid="TerminalSessionPanel--summary">
-            <span className={summaryEyebrowClassName}>{sessionSummary.eyebrow}</span>
-            <strong className={summaryHeadlineClassName}>{sessionSummary.headline}</strong>
-            <div className={summaryMetaClassName}>
+          <section
+            className="grid gap-2 rounded-sm border border-primary bg-accent p-2.5"
+            data-testid="TerminalSessionPanel--summary"
+          >
+            <span className="text-xs uppercase tracking-normal text-muted-foreground">{sessionSummary.eyebrow}</span>
+            <strong className="text-base leading-normal">{sessionSummary.headline}</strong>
+            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
               {sessionSummary.meta.map((entry: string) => {
                 return <span key={entry}>{entry}</span>;
               })}
@@ -428,19 +465,27 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
       ) : null}
       <div
         ref={terminalViewportReference}
-        className={terminalViewportClassName}
+        className="min-h-0 overflow-hidden bg-background"
         data-testid="TerminalSessionPanel--terminal"
       >
-        <div ref={terminalContainerReference} className={terminalContainerClassName} />
+        <div ref={terminalContainerReference} className="size-full" />
       </div>
     </div>
   );
 
   if (props.isExpanded) {
     return (
-      <div className={expandedOverlayClassName} data-testid="TerminalSessionPanel">
-        <div aria-hidden="true" className={backdropClassName} data-testid="TerminalSessionPanel--backdrop" />
-        <section className={expandedPanelClassName} data-testid="TerminalSessionPanel--content">
+      <div className="pointer-events-none fixed inset-0 z-[3]" data-testid="TerminalSessionPanel">
+        <div
+          aria-hidden="true"
+          className="pointer-events-auto fixed inset-0 bg-[rgba(26,27,38,0.76)]"
+          data-testid="TerminalSessionPanel--backdrop"
+        />
+        <section
+          className="pointer-events-auto fixed z-[1]"
+          data-testid="TerminalSessionPanel--content"
+          style={expandedPanelStyle}
+        >
           {panelContent}
         </section>
       </div>
@@ -450,8 +495,12 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
   return (
     <section
       ref={trayShellReference}
-      className={trayShellClassName}
+      className={[
+        "pointer-events-auto relative z-[1] flex-none overflow-visible opacity-100",
+        "transition-[width,opacity] duration-200 ease-in-out",
+      ].join(" ")}
       data-testid="TerminalSessionPanel"
+      style={trayShellStyle}
       onMouseEnter={(): void => {
         updateTrayTooltipLayout();
         setIsTrayHoverVisible(true);
@@ -460,10 +509,12 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
         setIsTrayHoverVisible(false);
       }}
     >
-      <div className={trayScaledContentClassName}>{panelContent}</div>
+      <div className="pointer-events-none absolute bottom-0 left-0" style={trayScaledContentStyle}>
+        {panelContent}
+      </div>
       <button
         aria-label={`Expand ${sessionSummary.terminalTitle} preview`}
-        className={trayOverlayButtonClassName}
+        className="absolute inset-0 cursor-pointer rounded-md border border-border bg-transparent"
         data-testid="TerminalSessionPanel--expand"
         type="button"
         onBlur={(): void => {
@@ -475,23 +526,32 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
           setIsTrayHoverVisible(true);
         }}
       >
-        <span className={trayBadgeClassName}>{errorMessage ?? statusText}</span>
+        <span
+          className={[
+            "absolute inset-x-2 bottom-2 overflow-hidden truncate rounded-md bg-primary/10",
+            "px-2 py-1 text-left text-xs text-foreground",
+          ].join(" ")}
+        >
+          {errorMessage ?? statusText}
+        </span>
       </button>
       {hasExited && !isTrayHoverVisible ? (
         <div
           aria-hidden="true"
-          className={trayCompletionOverlayClassName}
+          className="pointer-events-none absolute inset-0 z-[1] grid place-items-center"
           data-testid="TerminalSessionPanel--completion-indicator"
         >
-          <svg className={trayCompletionIconClassName} viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-            <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM369 209L241 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L335 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z" />
-          </svg>
+          <CircleCheckIcon className="block size-6 fill-current text-primary drop-shadow" />
         </div>
       ) : null}
       {hasExited && isTrayHoverVisible ? (
         <button
           aria-label="Close terminal session"
-          className={trayCloseButtonClassName}
+          className={[
+            "absolute inset-0 z-[2] m-auto grid size-6 cursor-pointer appearance-none place-items-center",
+            "border-0 bg-transparent p-0 text-primary transition-colors hover:text-destructive",
+            "focus-visible:text-destructive focus-visible:outline-none",
+          ].join(" ")}
           data-testid="TerminalSessionPanel--tray-close"
           title="Close terminal session"
           type="button"
@@ -500,23 +560,21 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
             discardSession();
           }}
         >
-          <svg
-            className={trayCloseIconClassName}
-            fill="currentColor"
-            stroke="currentColor"
-            strokeWidth="0"
-            viewBox="0 0 512 512"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM175 175c9.4-9.4 24.6-9.4 33.9 0l47 47 47-47c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9l-47 47 47 47c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-47-47-47 47c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l47-47-47-47c-9.4-9.4-9.4-24.6 0-33.9z" />
-          </svg>
+          <CircleXIcon className="block size-6 fill-current" />
         </button>
       ) : null}
       {isTrayHoverVisible && trayTooltipLayout !== null ? (
-        <div className={trayTooltipClassName} data-testid="TerminalSessionPanel--tooltip">
-          <strong className={trayTooltipCommentClassName}>{sessionSummary.trayTooltipPrimary}</strong>
+        <div
+          className={[
+            "pointer-events-none fixed z-[2] grid gap-1 rounded-md border border-border",
+            "bg-background p-2.5 text-foreground shadow-lg",
+          ].join(" ")}
+          data-testid="TerminalSessionPanel--tooltip"
+          style={trayTooltipStyle}
+        >
+          <strong className="leading-normal text-foreground">{sessionSummary.trayTooltipPrimary}</strong>
           {sessionSummary.trayTooltipSecondary !== undefined ? (
-            <span className={trayTooltipMetaClassName}>{sessionSummary.trayTooltipSecondary}</span>
+            <span className="text-xs leading-normal text-muted-foreground">{sessionSummary.trayTooltipSecondary}</span>
           ) : null}
         </div>
       ) : null}
@@ -531,307 +589,17 @@ function appendTerminalSessionParameters(websocketUrl: URL, sessionId: string): 
   return websocketUrl;
 }
 
-function createCompactSummaryStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    alignItems: "center",
-    background: theme.colors.selectionBackground,
-    border: `1px solid ${theme.colors.selectionBorder}`,
-    borderRadius: theme.radii.sm,
-    display: "flex",
-    gap: theme.spacing.sm,
-    minWidth: 0,
-    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
-  };
-}
-
-function createCompactSummaryPathStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    color: theme.colors.mutedForeground,
-    flex: "1 1 auto",
-    fontFamily: theme.fontFamilies.monospace,
-    fontSize: theme.fontSizes.sm,
-    minWidth: 0,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-  };
-}
-
-function createSummaryHeadlineStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    flex: "0 0 auto",
-    fontSize: theme.fontSizes.lg,
-    lineHeight: 1.45,
-  };
-}
-
-function createSummaryEyebrowStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    color: theme.colors.mutedForeground,
-    fontSize: theme.fontSizes.sm,
-    letterSpacing: "0.04em",
-    textTransform: "uppercase",
-  };
-}
-
-function createSummaryMetaStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: theme.spacing.xs,
-    color: theme.colors.mutedForeground,
-    fontSize: theme.fontSizes.sm,
-  };
-}
-
-function createSummaryStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    display: "grid",
-    gap: theme.spacing.xs,
-    padding: theme.spacing.sm,
-    border: `1px solid ${theme.colors.selectionBorder}`,
-    borderRadius: theme.radii.sm,
-    background: theme.colors.selectionBackground,
-  };
-}
-
-function createBackdropStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    position: "fixed",
-    inset: 0,
-    background: theme.colors.backdrop,
-    pointerEvents: "auto",
-  };
-}
-
-function createChromeStyle(theme: IDevtoolsTheme, panelSize: IPanelSize, isFullscreen: boolean): CSSObject {
-  return {
-    width: `${panelSize.width}px`,
-    height: `${panelSize.height}px`,
-    display: "grid",
-    gridTemplateRows: "auto auto 1fr",
-    gap: theme.spacing.sm,
-    padding: theme.spacing.sm,
-    boxSizing: "border-box",
-    border: isFullscreen ? "none" : `1px solid ${theme.colors.border}`,
-    borderRadius: isFullscreen ? "0px" : theme.radii.md,
-    background: theme.colors.background,
-    color: theme.colors.foreground,
-    boxShadow: isFullscreen ? "none" : theme.shadows.popup,
-  };
-}
-
-function createExpandedOverlayStyle(_theme: IDevtoolsTheme): CSSObject {
-  return {
-    position: "fixed",
-    inset: 0,
-    pointerEvents: "none",
-    zIndex: 3,
-  };
-}
-
-function createExpandedPanelStyle(panelSize: IPanelSize, isFullscreen: boolean): CSSObject {
-  return {
-    position: "fixed",
-    top: isFullscreen ? "0px" : "50%",
-    left: isFullscreen ? "0px" : "50%",
-    width: `${panelSize.width}px`,
-    height: `${panelSize.height}px`,
-    transform: isFullscreen ? "none" : "translate(-50%, -50%)",
-    pointerEvents: "auto",
-    zIndex: 1,
-  };
-}
-
 function createExitStatusText(_exitCode: number | null, _signalCode: string | null): string {
   return "Finished";
 }
 
-function createHeaderStyle(theme: IDevtoolsTheme): CSSObject {
+function readExpandedPanelStyle(panelSize: IPanelSize, isFullscreen: boolean): IExpandedPanelStyle {
   return {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: theme.spacing.sm,
-  };
-}
-
-function createStatusStyle(theme: IDevtoolsTheme, isError: boolean): CSSObject {
-  return {
-    color: isError ? theme.colors.dangerForeground : theme.colors.mutedForeground,
-    fontSize: theme.fontSizes.sm,
-    lineHeight: 1.4,
-  };
-}
-
-function createTerminalViewportStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    minHeight: 0,
-    overflow: "hidden",
-    background: theme.colors.background,
-  };
-}
-
-function createTrayBadgeStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    position: "absolute",
-    left: theme.spacing.xs,
-    right: theme.spacing.xs,
-    bottom: theme.spacing.xs,
-    padding: `${theme.spacing.xxs} ${theme.spacing.xs}`,
-    borderRadius: theme.radii.md,
-    background: theme.colors.logMinimapOverlayBackground,
-    color: theme.colors.foreground,
-    fontSize: theme.fontSizes.sm,
-    textAlign: "left",
-    overflow: "hidden",
-    whiteSpace: "nowrap",
-    textOverflow: "ellipsis",
-  };
-}
-
-function createTrayCompletionIconStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    width: "24px",
-    height: "24px",
-    display: "block",
-    color: theme.colors.successBackground,
-    fill: "currentColor",
-    filter: `drop-shadow(0px 2px 6px ${theme.colors.successGlow})`,
-  };
-}
-
-function createTrayCloseButtonStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    alignItems: "center",
-    appearance: "none",
-    background: "transparent",
-    border: "none",
-    color: theme.colors.successBackground,
-    cursor: "pointer",
-    display: "grid",
-    height: "24px",
-    inset: 0,
-    justifyItems: "center",
-    margin: "auto",
-    padding: 0,
-    position: "absolute",
-    transition: "color 120ms ease",
-    width: "24px",
-    zIndex: 2,
-    "& svg": {
-      filter: `drop-shadow(0px 2px 6px ${theme.colors.successGlow})`,
-      transition: "filter 120ms ease",
-    },
-    "&:is(:hover, :focus-visible)": {
-      color: theme.colors.dangerForeground,
-      outline: "none",
-    },
-    "&:is(:hover, :focus-visible) svg": {
-      filter: `drop-shadow(0px 2px 6px ${theme.colors.dangerGlow})`,
-    },
-  };
-}
-
-function createTrayCloseIconStyle(_theme: IDevtoolsTheme): CSSObject {
-  return {
-    display: "block",
-    fill: "currentColor",
-    height: "24px",
-    width: "24px",
-  };
-}
-
-function createTrayCompletionOverlayStyle(): CSSObject {
-  return {
-    position: "absolute",
-    inset: 0,
-    display: "grid",
-    placeItems: "center",
-    pointerEvents: "none",
-    zIndex: 1,
-  };
-}
-
-function createTrayOverlayButtonStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    position: "absolute",
-    inset: 0,
-    border: `1px solid ${theme.colors.border}`,
-    borderRadius: theme.radii.md,
-    background: "transparent",
-    cursor: "pointer",
-  };
-}
-
-function createTrayScaledContentStyle(panelSize: IPanelSize): CSSObject {
-  return {
-    position: "absolute",
-    left: 0,
-    bottom: 0,
-    width: `${panelSize.width}px`,
-    height: `${panelSize.height}px`,
-    transform: `scale(${trayScale})`,
-    transformOrigin: "bottom left",
-    pointerEvents: "none",
-  };
-}
-
-function createTrayShellStyle(_theme: IDevtoolsTheme, panelSize: IPanelSize, isTrayMounted: boolean): CSSObject {
-  return {
-    position: "relative",
-    flex: "0 0 auto",
-    width: isTrayMounted ? `${panelSize.width * trayScale}px` : "0px",
-    height: `${panelSize.height * trayScale}px`,
-    opacity: isTrayMounted ? 1 : 0,
-    transition: [
-      `width ${trayTransitionDurationInMilliseconds}ms ease`,
-      `opacity ${trayTransitionDurationInMilliseconds}ms ease`,
-    ].join(", "),
-    pointerEvents: "auto",
-    overflow: "visible",
-    zIndex: 1,
-  };
-}
-
-function createTrayTooltipCommentStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    color: theme.colors.foreground,
-    lineHeight: 1.45,
-  };
-}
-
-function createTrayTooltipMetaStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    color: theme.colors.mutedForeground,
-    fontFamily: theme.fontFamilies.monospace,
-    fontSize: theme.fontSizes.sm,
-    lineHeight: 1.4,
-  };
-}
-
-function createTrayTooltipStyle(theme: IDevtoolsTheme, trayTooltipLayout: ITrayTooltipLayout | null): CSSObject {
-  if (trayTooltipLayout === null) {
-    return {
-      display: "none",
-    };
-  }
-
-  return {
-    position: "fixed",
-    left: `${trayTooltipLayout.left}px`,
-    bottom: `${trayTooltipLayout.bottom}px`,
-    width: `${trayTooltipLayout.width}px`,
-    display: "grid",
-    gap: theme.spacing.xxs,
-    padding: theme.spacing.sm,
-    pointerEvents: "none",
-    border: `1px solid ${theme.colors.border}`,
-    borderRadius: theme.radii.md,
-    background: theme.colors.background,
-    color: theme.colors.foreground,
-    boxShadow: theme.shadows.popup,
-    zIndex: 2,
+    height: panelSize.height,
+    left: isFullscreen ? "0px" : "50%",
+    top: isFullscreen ? "0px" : "50%",
+    transform: isFullscreen ? "none" : "translate(-50%, -50%)",
+    width: panelSize.width,
   };
 }
 
@@ -957,17 +725,3 @@ function terminateSession(websocket: WebSocket | null): void {
     });
   }
 }
-
-const buttonGroupStyle: CSSObject = {
-  display: "flex",
-  gap: "8px",
-};
-
-const headerTextStyle: CSSObject = {
-  display: "grid",
-};
-
-const terminalContainerStyle: CSSObject = {
-  width: "100%",
-  height: "100%",
-};

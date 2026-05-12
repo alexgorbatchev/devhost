@@ -26,11 +26,8 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     ariaLabel: "Hover panel",
-    children: <div>Hover Panel Content</div>,
+    children: <div className="w-40">Hover Panel Content</div>,
     peekWidth: "32px",
-    style: {
-      width: "160px",
-    },
     testId: "hover-slide-panel",
   },
   play: async ({ canvasElement }): Promise<void> => {
@@ -52,12 +49,9 @@ export const Default: Story = {
 export const Pinned: Story = {
   args: {
     ariaLabel: "Pinned hover panel",
-    children: <div>Pinned Panel Content</div>,
+    children: <div className="w-40">Pinned Panel Content</div>,
     isPinned: true,
     peekWidth: "32px",
-    style: {
-      width: "160px",
-    },
     testId: "hover-slide-panel-pinned",
   },
   play: async ({ canvasElement }): Promise<void> => {

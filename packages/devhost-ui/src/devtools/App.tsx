@@ -1,6 +1,7 @@
-import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "react";
 import { useCallback, useRef, useState } from "react";
+
+import { cn } from "@/lib/utils";
 
 import type { DevtoolsPosition, IAnnotationAction } from "./shared/devtoolsConfig";
 import { AnnotationComposer } from "./features/annotationComposer";
@@ -13,10 +14,8 @@ import { useReactHighlightOverlay } from "./features/reactHighlight";
 import { ServiceStatusPanel, useServiceHealth } from "./features/serviceStatusPanel";
 import { readDevtoolsFeatureToggles } from "./shared/readDevtoolsFeatureToggles";
 import {
-  css,
   DEVTOOLS_ROOT_ID,
   ThemeProvider,
-  type IDevtoolsTheme,
   readDevtoolsAnnotationActions,
   readDevtoolsAnnotationDefaultActionId,
   readDevtoolsComponentEditor,
@@ -26,7 +25,6 @@ import {
   readDevtoolsRoutedServices,
   readDevtoolsStackName,
   resolveRoutedServiceKeyForUrl,
-  useDevtoolsTheme,
   useResolvedColorScheme,
 } from "./shared";
 
@@ -50,7 +48,6 @@ function AppContent(): JSX.Element {
   const routedServices = readDevtoolsRoutedServices();
   const stackName: string = readDevtoolsStackName();
   const features = readDevtoolsFeatureToggles();
-  const theme = useDevtoolsTheme();
   const appRootReference = useRef<HTMLDivElement | null>(null);
   const { errorMessage, services } = useServiceHealth();
   const {
@@ -125,18 +122,6 @@ function AppContent(): JSX.Element {
     },
     [annotationActions, annotationQueues, registerStartedSession, resumeQueue],
   );
-  const cornerDockClassName: string = css({
-    ...readVerticalPositionStyle(theme, devtoolsPosition),
-    ...readHorizontalPositionStyle(theme, shouldRenderMinimap),
-    display: "grid",
-    gap: theme.spacing.xxs,
-    maxWidth: readCornerDockMaxWidth(theme),
-    pointerEvents: "auto",
-    position: "fixed",
-    width: "fit-content",
-    zIndex: Number(theme.zIndices.floating) + 1,
-  });
-
   return (
     <div id={DEVTOOLS_ROOT_ID} ref={appRootReference} data-devhost-devtools="" data-testid="AppContent">
       {features.annotationEnabled ? (
@@ -160,7 +145,14 @@ function AppContent(): JSX.Element {
           }}
         />
       ) : null}
-      <div className={cornerDockClassName} data-testid="AppContent--corner-dock">
+      <div
+        className={cn(
+          "pointer-events-auto fixed z-[2147483501] grid w-fit max-w-[calc(100vw_-_24px)] gap-1",
+          devtoolsPosition === "top-right" ? "top-2.5" : "bottom-2.5",
+          shouldRenderMinimap ? "right-3.5" : "right-2.5",
+        )}
+        data-testid="AppContent--corner-dock"
+      >
         {shouldRenderPanel ? <ServiceStatusPanel errorMessage={errorMessage} services={services} /> : null}
         {features.annotationQueueEnabled ? (
           <AnnotationQueuePanel
@@ -190,10 +182,6 @@ function AppContent(): JSX.Element {
       ) : null}
     </div>
   );
-}
-
-function readCornerDockMaxWidth(theme: IDevtoolsTheme): string {
-  return `calc(100vw - 20px - ${theme.spacing.xxs})`;
 }
 
 function resolveSelectedAnnotationAction(
@@ -232,20 +220,4 @@ function findActiveAgentSessionId(
 
     return resolveRoutedServiceKeyForUrl(routedServices, session.annotation.url) === currentRoutedServiceKey;
   })?.sessionId;
-}
-
-function readHorizontalPositionStyle(theme: IDevtoolsTheme, hasVisibleMinimap: boolean): CSSObject {
-  const baseOffset: string = theme.spacing.sm;
-
-  if (!hasVisibleMinimap) {
-    return { right: baseOffset };
-  }
-
-  const overlaidOffset: string = `calc(${baseOffset} + ${theme.spacing.xxs})`;
-
-  return { right: overlaidOffset };
-}
-
-function readVerticalPositionStyle(theme: IDevtoolsTheme, devtoolsPosition: DevtoolsPosition): CSSObject {
-  return devtoolsPosition === "top-right" ? { top: theme.spacing.sm } : { bottom: theme.spacing.sm };
 }

@@ -1,12 +1,13 @@
-import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "react";
+import { RotateCwIcon } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 import {
-  css,
-  cx,
+  Button,
   DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
   HoverSlidePanel,
-  type IDevtoolsTheme,
   readDevtoolsControlToken,
   RESTART_SERVICE_PATH,
   useDevtoolsTheme,
@@ -27,32 +28,25 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
     return null;
   }
 
-  const errorClassName: string = css(createErrorStyle(theme));
-  const listClassName: string = css(createListStyle(theme));
-  const linkClassName: string = css(createLinkStyle(theme));
-  const badgeClassName: string = css(createManagementBadgeStyle(theme));
-  const nameClassName: string = css(createNameStyle(theme));
-  const rowClassName: string = css(createRowStyle(theme));
-  const restartButtonClassName: string = css(createRestartButtonStyle(theme));
-
   return (
     <HoverSlidePanel
       ariaLabel="devhost services"
       peekWidth={theme.sizes.serviceStatusPanelPeekWidth}
       testId="ServiceStatusPanel"
     >
-      {props.errorMessage !== null ? <div className={errorClassName}>{props.errorMessage}</div> : null}
+      {props.errorMessage !== null ? (
+        <div className="mb-2 whitespace-nowrap text-right text-xs text-destructive">{props.errorMessage}</div>
+      ) : null}
       {visibleServices.length > 0 ? (
-        <ul className={listClassName} data-testid="ServiceStatusPanel--service-list">
+        <ul className="grid list-none gap-1 p-0" data-testid="ServiceStatusPanel--service-list">
           {visibleServices.map((service: ServiceHealth) => {
-            const statusDotClassName: string = css(createStatusDotStyle(theme, service.status));
             const managementBadgeLabel: string = service.managed ? "managed" : "external";
             const name =
               service.url === undefined ? (
-                <span className={nameClassName}>{service.name}</span>
+                <span className="min-w-0 flex-1 truncate text-left text-xs text-foreground">{service.name}</span>
               ) : (
                 <a
-                  className={cx(nameClassName, linkClassName)}
+                  className="min-w-0 flex-1 truncate rounded-sm text-left text-xs text-foreground underline decoration-primary underline-offset-2 transition-colors visited:text-foreground hover:text-primary focus-visible:bg-accent focus-visible:text-primary focus-visible:outline-none"
                   href={service.url}
                   rel="noopener noreferrer"
                   target="_blank"
@@ -63,12 +57,16 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
               );
 
             return (
-              <li key={service.name} className={rowClassName}>
-                <span aria-hidden="true" className={statusDotClassName} />
+              <li key={service.name} className="flex items-center gap-2">
+                <span
+                  aria-hidden="true"
+                  className={cn("size-2 shrink-0 rounded-full", service.status ? "bg-primary" : "bg-destructive")}
+                />
                 {service.managed ? (
-                  <button
-                    aria-label={`Restart ${service.name}`}
-                    className={restartButtonClassName}
+                  <Button
+                    ariaLabel={`Restart ${service.name}`}
+                    title={`Restart ${service.name}`}
+                    variant="secondary"
                     onClick={async (): Promise<void> => {
                       try {
                         await fetch(RESTART_SERVICE_PATH, {
@@ -83,19 +81,12 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
                         console.error(`Failed to restart service ${service.name}:`, error);
                       }
                     }}
-                    title={`Restart ${service.name}`}
-                    type="button"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="12" height="12">
-                      <path
-                        fill="currentColor"
-                        d="M463.5 224H472c13.3 0 24-10.7 24-24V72c0-9.7-5.8-18.5-14.8-22.2s-19.3-1.7-26.2 5.2L413.4 96.6c-87.6-86.5-228.7-86.2-315.8 1c-87.5 87.5-87.5 229.3 0 316.8s229.3 87.5 316.8 0c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0c-62.5 62.5-163.8 62.5-226.3 0s-62.5-163.8 0-226.3c62.2-62.2 162.7-62.5 225.3-1L327 183c-6.9 6.9-8.9 17.2-5.2 26.2s12.5 14.8 22.2 14.8H463.5z"
-                      />
-                    </svg>
-                  </button>
+                    <RotateCwIcon data-icon="inline-start" />
+                  </Button>
                 ) : null}
                 {name}
-                <span className={badgeClassName}>{managementBadgeLabel}</span>
+                <Badge variant="secondary">{managementBadgeLabel}</Badge>
               </li>
             );
           })}
@@ -103,122 +94,4 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
       ) : null}
     </HoverSlidePanel>
   );
-}
-
-function createErrorStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    color: theme.colors.dangerForeground,
-    fontSize: theme.fontSizes.sm,
-    marginBottom: theme.spacing.xs,
-    textAlign: "right",
-    whiteSpace: "nowrap",
-  };
-}
-
-function createListStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    display: "grid",
-    gap: theme.spacing.xxs,
-    listStyle: "none",
-    margin: 0,
-    padding: 0,
-  };
-}
-
-function createNameStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    color: theme.colors.foreground,
-    flexGrow: 1,
-    fontSize: theme.fontSizes.sm,
-    minWidth: 0,
-    overflow: "hidden",
-    textAlign: "left",
-    textOverflow: "clip",
-    whiteSpace: "nowrap",
-  };
-}
-
-function createLinkStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    borderRadius: theme.radii.sm,
-    color: theme.colors.foreground,
-    cursor: "pointer",
-    outline: "none",
-    textDecoration: "underline",
-    textDecorationColor: theme.colors.accentBackground,
-    textUnderlineOffset: "2px",
-    transition: "background 150ms ease, color 150ms ease",
-    "&:visited": {
-      color: theme.colors.foreground,
-    },
-    "&:hover": {
-      color: theme.colors.accentBackground,
-    },
-    "&:focus-visible": {
-      background: theme.colors.selectionBackground,
-      color: theme.colors.accentBackground,
-    },
-  };
-}
-
-function createRowStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    alignItems: "center",
-    display: "flex",
-    gap: theme.spacing.xs,
-  };
-}
-
-function createManagementBadgeStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    background: theme.colors.selectionBackground,
-    border: `1px solid ${theme.colors.border}`,
-    borderRadius: theme.radii.pill,
-    color: theme.colors.mutedForeground,
-    flexShrink: 0,
-    fontSize: theme.fontSizes.sm,
-    lineHeight: 1,
-    padding: `2px ${theme.spacing.xs}`,
-    textTransform: "lowercase",
-  };
-}
-
-function createStatusDotStyle(theme: IDevtoolsTheme, isHealthy: boolean): CSSObject {
-  return {
-    background: isHealthy ? theme.colors.successBackground : theme.colors.dangerBackground,
-    borderRadius: theme.radii.pill,
-    boxShadow: isHealthy
-      ? `0 0 10px ${theme.colors.successGlow}, 0 0 4px ${theme.colors.successGlow}`
-      : `0 0 10px ${theme.colors.dangerGlow}, 0 0 4px ${theme.colors.dangerGlow}`,
-    flexShrink: 0,
-    height: "8px",
-    width: "8px",
-  };
-}
-
-function createRestartButtonStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    alignItems: "center",
-    background: "transparent",
-    border: "none",
-    borderRadius: theme.radii.sm,
-    color: theme.colors.foreground,
-    cursor: "pointer",
-    display: "flex",
-    justifyContent: "center",
-    opacity: 0.7,
-    padding: "2px",
-    transition: "opacity 150ms ease, background 150ms ease, color 150ms ease",
-    "&:hover": {
-      background: theme.colors.selectionBackground,
-      color: theme.colors.foreground,
-      opacity: 1,
-    },
-    "&:active": {
-      opacity: 0.8,
-    },
-    "&:focus-visible": {
-      opacity: 1,
-    },
-  };
 }

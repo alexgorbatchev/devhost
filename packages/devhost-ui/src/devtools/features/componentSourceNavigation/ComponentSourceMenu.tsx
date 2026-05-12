@@ -1,8 +1,10 @@
-import type { CSSObject } from "@emotion/css/create-instance";
-import type { JSX } from "react";
+import type { CSSProperties, JSX } from "react";
 import { useMemo, useState } from "react";
 
-import { css, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+
 import type { ComponentSourceMenuItem } from "./types";
 
 interface IComponentSourceMenuProps {
@@ -16,10 +18,14 @@ interface IComponentSourceMenuProps {
   onItemClick: (index: number) => void;
 }
 
+interface IComponentSourceMenuPositionStyle extends CSSProperties {
+  left: number;
+  top: number;
+}
+
 const menuWidthInPixels: number = 420;
 const menuViewportPaddingInPixels: number = 16;
 const menuPerItemHeightInPixels: number = 88;
-const itemInteractiveSelector: string = "&:is(:hover, :focus-visible)";
 
 export function ComponentSourceMenu({
   items,
@@ -28,7 +34,6 @@ export function ComponentSourceMenu({
   errorMessage,
   onItemClick,
 }: IComponentSourceMenuProps): JSX.Element | null {
-  const theme = useDevtoolsTheme();
   const [hoveredItemIndex, setHoveredItemIndex] = useState<number | null>(null);
   const menuPosition = useMemo(() => {
     const maxLeft: number = Math.max(
@@ -47,36 +52,47 @@ export function ComponentSourceMenu({
       top: Math.min(position.y, maxTop),
     };
   }, [errorMessage, items.length, position.x, position.y]);
-  const menuClassName: string = css(createMenuStyle(theme, menuPosition.left, menuPosition.top));
-  const headerClassName: string = css(headerStyle);
-  const titleClassName: string = css(titleStyle);
-  const listClassName: string = css(listStyle);
-  const errorClassName: string = css(createErrorStyle(theme));
 
   if (items.length === 0) {
     return null;
   }
 
+  const menuPositionStyle: IComponentSourceMenuPositionStyle = {
+    left: menuPosition.left,
+    top: menuPosition.top,
+  };
+
   return (
-    <div className={menuClassName} data-component-source-menu="" data-testid="ComponentSourceMenu">
-      <header className={headerClassName}>
-        <strong className={titleClassName}>{title}</strong>
+    <Card
+      className="fixed z-[2147483501] grid min-w-[420px] max-w-[420px] gap-2 p-2 shadow-lg"
+      data-component-source-menu=""
+      data-testid="ComponentSourceMenu"
+      style={menuPositionStyle}
+    >
+      <CardHeader className="gap-1 p-0">
+        <CardTitle className="leading-tight">{title}</CardTitle>
         {errorMessage !== undefined ? (
-          <div className={errorClassName} role="alert">
+          <div
+            className="rounded-sm border border-destructive bg-destructive/10 p-2 text-xs leading-normal text-destructive"
+            role="alert"
+          >
             {errorMessage}
           </div>
         ) : null}
-      </header>
-      <div className={listClassName}>
+      </CardHeader>
+      <CardContent className="grid gap-2 p-0">
         {items.map((item: ComponentSourceMenuItem, index: number) => {
-          const itemClassName: string = css(createItemStyle(theme, hoveredItemIndex === index));
-          const propsClassName: string = css(propsRowStyle);
-          const sourceClassName: string = css(createSourceLabelStyle(theme));
+          const isHovered: boolean = hoveredItemIndex === index;
 
           return (
             <button
               key={item.key}
-              className={itemClassName}
+              className={cn(
+                "grid w-full cursor-pointer justify-stretch gap-1 rounded-md border bg-muted p-2 text-left",
+                "text-sm text-foreground transition-colors hover:border-primary hover:bg-accent",
+                "focus-visible:border-primary focus-visible:bg-accent focus-visible:outline-none",
+                isHovered ? "border-primary bg-accent" : "border-border",
+              )}
               data-testid="ComponentSourceMenu--item"
               type="button"
               onClick={(): void => {
@@ -101,124 +117,23 @@ export function ComponentSourceMenu({
             >
               <strong>{`<${item.displayName}>`}</strong>
               {item.props.length > 0 ? (
-                <div className={propsClassName}>
+                <div className="flex flex-wrap gap-1.5">
                   {item.props.map((prop) => {
-                    const propClassName: string = css(createPropPillStyle(theme));
-
                     return (
-                      <span key={`${item.key}-${prop.name}`} className={propClassName} title={prop.title}>
+                      <Badge key={`${item.key}-${prop.name}`} title={prop.title} variant="secondary">
                         {prop.name}
-                      </span>
+                      </Badge>
                     );
                   })}
                 </div>
               ) : null}
-              <span className={sourceClassName} title={item.sourceLabel}>
+              <span className="truncate text-xs text-muted-foreground" title={item.sourceLabel}>
                 {item.sourceLabel}
               </span>
             </button>
           );
         })}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
-}
-
-const headerStyle: CSSObject = {
-  display: "grid",
-  gap: "4px",
-};
-
-const listStyle: CSSObject = {
-  display: "grid",
-  gap: "8px",
-};
-
-const propsRowStyle: CSSObject = {
-  display: "flex",
-  flexWrap: "wrap",
-  gap: "6px",
-};
-
-const titleStyle: CSSObject = {
-  lineHeight: 1.25,
-};
-
-function createErrorStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    background: theme.colors.dangerBackground,
-    border: `1px solid ${theme.colors.dangerForeground}`,
-    borderRadius: theme.radii.sm,
-    color: theme.colors.dangerForeground,
-    fontSize: theme.fontSizes.sm,
-    lineHeight: 1.4,
-    padding: theme.spacing.xs,
-  };
-}
-
-function createMenuStyle(theme: IDevtoolsTheme, left: number, top: number): CSSObject {
-  return {
-    background: theme.colors.background,
-    border: `1px solid ${theme.colors.border}`,
-    borderRadius: theme.radii.md,
-    boxShadow: theme.shadows.popup,
-    color: theme.colors.foreground,
-    display: "grid",
-    gap: theme.spacing.xs,
-    left,
-    maxWidth: `${menuWidthInPixels}px`,
-    minWidth: `${menuWidthInPixels}px`,
-    padding: theme.spacing.xs,
-    position: "fixed",
-    top,
-    zIndex: Number(theme.zIndices.floating) + 1,
-  };
-}
-
-function createItemStyle(theme: IDevtoolsTheme, isHovered: boolean): CSSObject {
-  const hoveredStyle: CSSObject = {
-    background: theme.colors.selectionBackground,
-    borderColor: theme.colors.selectionBorder,
-  };
-
-  return {
-    [itemInteractiveSelector]: hoveredStyle,
-    alignItems: "flex-start",
-    background: isHovered ? theme.colors.selectionBackground : theme.colors.logMinimapBackground,
-    border: `1px solid ${isHovered ? theme.colors.selectionBorder : theme.colors.border}`,
-    borderRadius: theme.radii.md,
-    color: theme.colors.foreground,
-    cursor: "pointer",
-    display: "grid",
-    fontFamily: theme.fontFamilies.body,
-    fontSize: theme.fontSizes.md,
-    gap: theme.spacing.xxs,
-    justifyItems: "stretch",
-    padding: theme.spacing.xs,
-    textAlign: "left",
-    width: "100%",
-  };
-}
-
-function createPropPillStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    background: theme.colors.logMinimapOverlayBackground,
-    borderRadius: theme.radii.pill,
-    color: theme.colors.mutedForeground,
-    fontFamily: theme.fontFamilies.monospace,
-    fontSize: theme.fontSizes.sm,
-    lineHeight: 1,
-    padding: `${theme.spacing.xxs} ${theme.spacing.xs}`,
-  };
-}
-
-function createSourceLabelStyle(theme: IDevtoolsTheme): CSSObject {
-  return {
-    color: theme.colors.mutedForeground,
-    fontFamily: theme.fontFamilies.monospace,
-    fontSize: theme.fontSizes.sm,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-  };
 }

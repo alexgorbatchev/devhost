@@ -7,18 +7,21 @@ This `AGENTS.md` file must be kept up to date.
 Its vital that when devtools are injected into the user's web application, CSS that devtools uses/defines must never ever conflict or affect the host application.
 
 - The injected devtools UI must mount inside its own Shadow DOM root.
-- Devtools component styling must use Emotion-generated classes injected into that Shadow DOM root, not direct JSX `style={...}` props for regular component styling.
-- Do not add external stylesheets, CSS modules, or host-page global CSS for devtools UI styling.
+- Devtools component styling must use the Tailwind v4 entry stylesheet at `shared/devtools.css`; runtime and Storybook must install that compiled CSS through `shared/devtoolsStyles.ts` into the active Shadow DOM root.
+- shadcn/ui primitives live under `packages/devhost-ui/src/components/ui/` and may be composed by devtools features. Put app-specific behavior or stable test IDs in devtools-owned wrappers under `shared/` instead of forking generated primitives.
+- Tailwind Preflight is allowed only inside the devtools Shadow DOM root. Do not load the devtools stylesheet into host-page globals.
+- Do not add CSS modules, document-global CSS, or host-page global CSS for devtools UI styling.
 - Exception: `@xterm/xterm` may load its required stylesheet and class names for the interactive terminal feature, but that stylesheet must be mounted inside the devtools Shadow DOM root rather than `document.head`.
 - Do not rely on inherited app CSS for layout, typography, spacing, colors, borders, or shadows.
+- Direct JSX `style={...}` props are allowed only for dynamic geometry that cannot be represented statically, such as measured top/left/width/height values or xterm tray dimensions. Static visual values belong in Tailwind classes or semantic CSS variables.
 - Any intentional document-level styling escape hatch must be narrowly justified at the use site because it breaks isolation guarantees.
 - The injected devtools UI must remain visually isolated from the host page.
 
 ## Theme tokens
 
-- Shared visual values must come from the devtools theme context instead of being threaded through component props.
-- Presentational devtools components must read theme values via the shared theme hook/provider, not a `theme` prop.
-- Shared visual values must come from a basic theme object instead of being duplicated inline across components.
+- Shared visual values must come from shadcn-compatible CSS variables in `shared/devtools.css` or from the devtools theme context when runtime code needs JavaScript values, such as xterm colors or measured layout constants.
+- Presentational devtools components must read theme values via semantic Tailwind tokens and shadcn primitives first, not a `theme` prop.
+- Shared visual values must come from semantic tokens instead of being duplicated inline across components.
 - When the devtools theme intentionally follows Tokyo Night, use `folke/tokyonight.nvim` as the palette reference instead of eyeballing approximations.
 - Prefer the canonical palette files and shipped Pi extras when mapping tokens:
   - `lua/tokyonight/colors/storm.lua`

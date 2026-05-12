@@ -1,32 +1,13 @@
-import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useLayoutEffect, useRef, useState } from "react";
 
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../constants";
-import { configureDevtoolsCss, injectGlobal } from "../devtoolsCss";
+import { installDevtoolsStyles } from "../devtoolsStyles";
 
 interface IDevtoolsStoryShadowRootProps {
   children: ReactNode;
 }
-
-const devtoolsStoryShadowRootGlobalStyles: CSSObject = {
-  ":host": {
-    color: "initial",
-  },
-  "*, *::before, *::after": {
-    boxSizing: "border-box",
-  },
-  button: {
-    font: "inherit",
-  },
-  input: {
-    font: "inherit",
-  },
-  textarea: {
-    font: "inherit",
-  },
-};
 
 export const devtoolsStoryShadowRootHostTestId: string = "DevtoolsStoryShadowRoot";
 
@@ -61,8 +42,7 @@ function DevtoolsStoryShadowRoot(props: IDevtoolsStoryShadowRootProps): JSX.Elem
     mountNode.setAttribute(DEVTOOLS_ROOT_ATTRIBUTE_NAME, "");
     shadowRoot.append(mountNode);
 
-    configureDevtoolsCss(shadowRoot);
-    injectGlobal(devtoolsStoryShadowRootGlobalStyles);
+    installDevtoolsStyles(shadowRoot);
     setShadowMountNode(mountNode);
 
     return () => {

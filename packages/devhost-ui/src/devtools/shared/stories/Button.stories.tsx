@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { expect, fireEvent, fn, userEvent, waitFor, within } from "storybook/test";
 
 import { Button } from "../Button";
 import { ThemeProvider } from "../ThemeProvider";
@@ -28,7 +28,11 @@ export const Default: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     const button = canvas.getByRole("button", { name: "Click me" });
+    const buttonWindow: Window | null = button.ownerDocument.defaultView;
     await expect(button).toBeInTheDocument();
+    await waitFor((): void => {
+      expect(buttonWindow?.getComputedStyle(button).display).toBe("inline-flex");
+    });
     await userEvent.click(button);
     await expect(args.onClick).toHaveBeenCalledTimes(1);
   },
@@ -75,8 +79,7 @@ export const Disabled: Story = {
     const button = canvas.getByRole("button", { name: "Disabled Button" });
     await expect(button).toBeInTheDocument();
     await expect(button).toBeDisabled();
-    // Try clicking disabled button, it shouldn't register a click on the function
-    await userEvent.click(button);
+    await fireEvent.click(button);
     await expect(args.onClick).toHaveBeenCalledTimes(0);
   },
 };
