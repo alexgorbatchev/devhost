@@ -2,18 +2,14 @@ import type { CSSObject } from "@emotion/css/create-instance";
 
 import type { IDevtoolsTheme } from "../../shared";
 
-import { markerSize, popupWidth, type IMarkerRenderModel } from "./annotationComposerModels";
+import {
+  markerSize,
+  popupWidth,
+  readSelectionHighlightFrame,
+  type ISelectionHighlightFrame,
+  type ISelectionOverlayRenderModel,
+} from "./annotationComposerModels";
 import type { IRectSnapshot } from "./types";
-
-interface ISelectionHighlightFrame {
-  height: number;
-  left: number;
-  top: number;
-  width: number;
-}
-
-const selectionHighlightHorizontalPadding: number = 2;
-const selectionHighlightVerticalPadding: number = 1;
 const actionButtonMutedForeground: string = "rgba(255, 255, 255, 0.6)";
 const actionButtonShortcutBackground: string = "rgba(255, 255, 255, 0.1)";
 const actionButtonSubmitForeground: string = "rgba(255, 255, 255, 1)";
@@ -94,24 +90,17 @@ export function createSubmitButtonStyle(theme: IDevtoolsTheme): CSSObject {
 }
 
 export function createHoverHighlightStyle(theme: IDevtoolsTheme, hoveredRectangle: IRectSnapshot): CSSObject {
-  return createSelectionHighlightFrameStyle(theme, {
-    height: hoveredRectangle.height,
-    left: hoveredRectangle.x,
-    top: hoveredRectangle.y,
-    width: hoveredRectangle.width,
-  });
+  return createSelectionHighlightFrameStyle(theme, readSelectionHighlightFrame(hoveredRectangle));
 }
 
-export function createSelectionHighlightStyle(theme: IDevtoolsTheme, marker: IMarkerRenderModel): CSSObject {
-  return createSelectionHighlightFrameStyle(theme, {
-    height: marker.elementHeight,
-    left: marker.elementLeft,
-    top: marker.elementTop,
-    width: marker.elementWidth,
-  });
+export function createSelectionHighlightStyle(
+  theme: IDevtoolsTheme,
+  selectionHighlightFrame: ISelectionHighlightFrame,
+): CSSObject {
+  return createSelectionHighlightFrameStyle(theme, selectionHighlightFrame);
 }
 
-export function createMarkerStyle(theme: IDevtoolsTheme, marker: IMarkerRenderModel): CSSObject {
+export function createMarkerStyle(theme: IDevtoolsTheme, marker: ISelectionOverlayRenderModel): CSSObject {
   return {
     position: "fixed",
     top: marker.markerTop,
@@ -187,10 +176,10 @@ function createSelectionHighlightFrameStyle(
 ): CSSObject {
   return {
     position: "fixed",
-    top: selectionHighlightFrame.top - selectionHighlightVerticalPadding,
-    left: selectionHighlightFrame.left - selectionHighlightHorizontalPadding,
-    width: selectionHighlightFrame.width + selectionHighlightHorizontalPadding * 2,
-    height: selectionHighlightFrame.height + selectionHighlightVerticalPadding * 2,
+    top: selectionHighlightFrame.top,
+    left: selectionHighlightFrame.left,
+    width: selectionHighlightFrame.width,
+    height: selectionHighlightFrame.height,
     boxSizing: "border-box",
     border: `2px solid ${theme.colors.selectionBorder}`,
     borderRadius: theme.radii.sm,

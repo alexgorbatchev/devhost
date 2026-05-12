@@ -299,6 +299,7 @@ function AnnotationSelectionOverlayPositioningPreview(): JSX.Element {
         display: "grid",
         gap: "24px",
         gridTemplateColumns: "minmax(0, 320px) minmax(0, 520px)",
+        paddingBottom: "120vh",
         width: "100%",
         maxWidth: "900px",
       }}
@@ -425,6 +426,8 @@ export const PositioningPreview: Story = {
     const documentBody: HTMLElement = canvasElement.ownerDocument.body;
     const page = within(documentBody);
 
+    window.scrollTo({ left: 0, top: 0 });
+
     await waitFor(() => {
       expect(canvas.getByTestId("AnnotationSelectionOverlayPositioningPreview")).toBeInTheDocument();
       expect(canvas.getByTestId("ContainedStageSingleTargetPreview")).toBeInTheDocument();
@@ -443,12 +446,39 @@ export const PositioningPreview: Story = {
     const containedStageHighlight: HTMLElement = page.getByTestId(
       "ContainedStageSelectionOverlay--selection-highlight",
     );
-    const targetRectangle: DOMRect = containedStageTarget.getBoundingClientRect();
-    const highlightRectangle: DOMRect = containedStageHighlight.getBoundingClientRect();
+    const containedStageMarker: HTMLElement = page.getByTestId("ContainedStageSelectionOverlay--marker");
+    const expectContainedStageHighlightToMatchTarget = (): void => {
+      const targetRectangle: DOMRect = containedStageTarget.getBoundingClientRect();
+      const highlightRectangle: DOMRect = containedStageHighlight.getBoundingClientRect();
 
-    expect(Math.abs(highlightRectangle.x - (targetRectangle.x - 2))).toBeLessThanOrEqual(1);
-    expect(Math.abs(highlightRectangle.y - (targetRectangle.y - 1))).toBeLessThanOrEqual(1);
-    expect(Math.abs(highlightRectangle.width - (targetRectangle.width + 4))).toBeLessThanOrEqual(1);
-    expect(Math.abs(highlightRectangle.height - (targetRectangle.height + 2))).toBeLessThanOrEqual(1);
+      expect(Math.abs(highlightRectangle.x - (targetRectangle.x - 2))).toBeLessThanOrEqual(1);
+      expect(Math.abs(highlightRectangle.y - (targetRectangle.y - 1))).toBeLessThanOrEqual(1);
+      expect(Math.abs(highlightRectangle.width - (targetRectangle.width + 4))).toBeLessThanOrEqual(1);
+      expect(Math.abs(highlightRectangle.height - (targetRectangle.height + 2))).toBeLessThanOrEqual(1);
+    };
+    const expectContainedStageMarkerToStayAnchoredToHighlight = (): void => {
+      const highlightRectangle: DOMRect = containedStageHighlight.getBoundingClientRect();
+      const markerRectangle: DOMRect = containedStageMarker.getBoundingClientRect();
+      const markerCenterX: number = markerRectangle.x + markerRectangle.width / 2;
+      const markerCenterY: number = markerRectangle.y + markerRectangle.height / 2;
+      const visibleHighlightCornerX: number = Math.min(Math.max(highlightRectangle.x, 0), window.innerWidth);
+      const visibleHighlightCornerY: number = Math.min(Math.max(highlightRectangle.y, 0), window.innerHeight);
+
+      expect(Math.abs(markerCenterX - visibleHighlightCornerX)).toBeLessThanOrEqual(1);
+      expect(Math.abs(markerCenterY - visibleHighlightCornerY)).toBeLessThanOrEqual(1);
+    };
+
+    expectContainedStageHighlightToMatchTarget();
+    expectContainedStageMarkerToStayAnchoredToHighlight();
+
+    window.scrollTo({ left: 0, top: 150 });
+
+    await waitFor(() => {
+      expect(window.scrollY).toBeGreaterThanOrEqual(150);
+      expectContainedStageHighlightToMatchTarget();
+      expectContainedStageMarkerToStayAnchoredToHighlight();
+    });
+
+    window.scrollTo({ left: 0, top: 0 });
   },
 };

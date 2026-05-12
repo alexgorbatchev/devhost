@@ -6,7 +6,13 @@ import { css, DEVTOOLS_ROOT_ID, useDevtoolsTheme } from "../../shared";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../shared/constants";
 
 import { clamp } from "./annotationComposerUtils";
-import { markerSize, type IMarkerRenderModel, type ISelectedAnnotationTarget } from "./annotationComposerModels";
+import {
+  markerSize,
+  readSelectionHighlightFrame,
+  readVisibleSelectionHighlightCorner,
+  type ISelectedAnnotationTarget,
+  type ISelectionOverlayRenderModel,
+} from "./annotationComposerModels";
 import {
   createHoverHighlightStyle,
   createMarkerStyle,
@@ -34,7 +40,9 @@ export function AnnotationSelectionOverlay({
 }: IAnnotationSelectionOverlayProps): JSX.Element {
   const theme = useDevtoolsTheme();
   const portalAnchorReference = useRef<HTMLSpanElement | null>(null);
+  const scheduledFrameReference = useRef<number | null>(null);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  const [, setLayoutVersion] = useState<number>(0);
 
   useLayoutEffect(() => {
     const anchorElement: HTMLSpanElement | null = portalAnchorReference.current;
@@ -46,42 +54,82 @@ export function AnnotationSelectionOverlay({
     setPortalTarget(resolveOverlayPortalTarget(anchorElement));
   }, []);
 
-  const markerRenderModels: IMarkerRenderModel[] = selectedTargets.flatMap(
-    (selection: ISelectedAnnotationTarget): IMarkerRenderModel[] => {
+  useLayoutEffect(() => {
+    if (selectedTargets.length === 0) {
+      return;
+    }
+
+    const anchorElement: HTMLSpanElement | null = portalAnchorReference.current;
+
+    if (anchorElement === null) {
+      return;
+    }
+
+    const ownerWindow: Window | null = anchorElement.ownerDocument.defaultView;
+
+    if (ownerWindow === null) {
+      return;
+    }
+
+    const scheduleLayoutRefresh = (): void => {
+      if (scheduledFrameReference.current !== null) {
+        return;
+      }
+
+      scheduledFrameReference.current = ownerWindow.requestAnimationFrame((): void => {
+        scheduledFrameReference.current = null;
+        setLayoutVersion((currentVersion: number): number => currentVersion + 1);
+      });
+    };
+
+    ownerWindow.addEventListener("resize", scheduleLayoutRefresh);
+    ownerWindow.addEventListener("scroll", scheduleLayoutRefresh, true);
+
+    return () => {
+      ownerWindow.removeEventListener("resize", scheduleLayoutRefresh);
+      ownerWindow.removeEventListener("scroll", scheduleLayoutRefresh, true);
+
+      if (scheduledFrameReference.current !== null) {
+        ownerWindow.cancelAnimationFrame(scheduledFrameReference.current);
+        scheduledFrameReference.current = null;
+      }
+    };
+  }, [selectedTargets.length]);
+
+  const markerRenderModels: ISelectionOverlayRenderModel[] = selectedTargets.flatMap(
+    (selection: ISelectedAnnotationTarget): ISelectionOverlayRenderModel[] => {
       const elementRectangle: IRectSnapshot | null = selection.candidate.readRect();
 
       if (elementRectangle === null) {
         return [];
       }
 
-      const markerTop: number = clamp(
-        elementRectangle.y - markerSize / 2,
-        viewportPadding,
-        window.innerHeight - markerSize - viewportPadding,
+      const selectionHighlightFrame = readSelectionHighlightFrame(elementRectangle);
+      const visibleSelectionHighlightCorner = readVisibleSelectionHighlightCorner(
+        selectionHighlightFrame,
+        window.innerHeight,
+        window.innerWidth,
       );
-      const markerLeft: number = clamp(
-        elementRectangle.x - markerSize / 2,
-        viewportPadding,
-        window.innerWidth - markerSize - viewportPadding,
-      );
+      const markerTop: number = visibleSelectionHighlightCorner.y - markerSize / 2;
+      const markerLeft: number = visibleSelectionHighlightCorner.x - markerSize / 2;
       const isVisible: boolean =
         elementRectangle.width > 0 &&
         elementRectangle.height > 0 &&
-        elementRectangle.y + elementRectangle.height >= 0 &&
-        elementRectangle.x + elementRectangle.width >= 0 &&
-        elementRectangle.y <= window.innerHeight &&
-        elementRectangle.x <= window.innerWidth;
+        selectionHighlightFrame.top + selectionHighlightFrame.height >= 0 &&
+        selectionHighlightFrame.left + selectionHighlightFrame.width >= 0 &&
+        selectionHighlightFrame.top <= window.innerHeight &&
+        selectionHighlightFrame.left <= window.innerWidth;
 
       return [
         {
-          elementHeight: elementRectangle.height,
-          elementLeft: elementRectangle.x,
-          elementTop: elementRectangle.y,
-          elementWidth: elementRectangle.width,
+          height: selectionHighlightFrame.height,
           isVisible,
+          left: selectionHighlightFrame.left,
           markerLeft,
           markerNumber: selection.markerNumber,
           markerTop,
+          top: selectionHighlightFrame.top,
+          width: selectionHighlightFrame.width,
         },
       ];
     },
@@ -95,7 +143,7 @@ export function AnnotationSelectionOverlay({
           data-testid={`${testIdPrefix}--hover-highlight`}
         />
       ) : null}
-      {markerRenderModels.map((marker: IMarkerRenderModel) => {
+      {markerRenderModels.map((marker: ISelectionOverlayRenderModel) => {
         if (!marker.isVisible) {
           return null;
         }
