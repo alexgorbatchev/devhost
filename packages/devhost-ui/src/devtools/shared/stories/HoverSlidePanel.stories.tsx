@@ -2,19 +2,19 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, within, waitFor } from "storybook/test";
 
 import { HoverSlidePanel } from "../HoverSlidePanel";
-import { ThemeProvider } from "../ThemeProvider";
 import { StoryContainer } from "./StoryContainer";
+import { StorybookThemeProvider } from "./storybookTheme";
 
 const meta: Meta<typeof HoverSlidePanel> = {
   title: "@alexgorbatchev/devhost-ui/devtools/shared/HoverSlidePanel",
   component: HoverSlidePanel,
-  render: (args) => {
+  render: (args, context) => {
     return (
-      <ThemeProvider colorScheme="dark">
+      <StorybookThemeProvider globals={context.globals}>
         <StoryContainer align="right">
           <HoverSlidePanel {...args} />
         </StoryContainer>
-      </ThemeProvider>
+      </StorybookThemeProvider>
     );
   },
 };

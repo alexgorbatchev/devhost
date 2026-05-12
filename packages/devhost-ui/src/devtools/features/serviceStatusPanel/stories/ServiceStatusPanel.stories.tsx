@@ -1,25 +1,21 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fn, userEvent, within } from "storybook/test";
 
-import {
-  DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
-  readDevtoolsControlToken,
-  RESTART_SERVICE_PATH,
-  ThemeProvider,
-} from "../../../shared";
+import { DEVTOOLS_CONTROL_TOKEN_HEADER_NAME, RESTART_SERVICE_PATH, readDevtoolsControlToken } from "../../../shared";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
+import { StorybookThemeProvider } from "../../../shared/stories/storybookTheme";
 import { ServiceStatusPanel } from "../ServiceStatusPanel";
 
 const meta: Meta<typeof ServiceStatusPanel> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/serviceStatusPanel/ServiceStatusPanel",
   component: ServiceStatusPanel,
-  render: (args) => {
+  render: (args, context) => {
     return (
-      <ThemeProvider colorScheme="dark">
+      <StorybookThemeProvider globals={context.globals}>
         <StoryContainer align="right">
           <ServiceStatusPanel {...args} />
         </StoryContainer>
-      </ThemeProvider>
+      </StorybookThemeProvider>
     );
   },
 };

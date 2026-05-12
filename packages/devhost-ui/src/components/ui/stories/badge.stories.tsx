@@ -2,21 +2,21 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { expect, within } from "storybook/test";
 
 import { Badge } from "../badge";
-import { ThemeProvider } from "../../../devtools/shared/ThemeProvider";
 import {
   devtoolsStoryShadowRootHostTestId,
   readShadowRoot,
   renderInDevtoolsStoryShadowRoot,
 } from "../../../devtools/shared/stories/DevtoolsStoryShadowRoot";
+import { StorybookThemeProvider } from "../../../devtools/shared/stories/storybookTheme";
 
 const meta: Meta<typeof Badge> = {
   title: "@alexgorbatchev/devhost-ui/components/ui/badge",
   component: Badge,
-  render: (args) => {
+  render: (args, context) => {
     return renderInDevtoolsStoryShadowRoot(
-      <ThemeProvider colorScheme="dark">
+      <StorybookThemeProvider globals={context.globals}>
         <Badge {...args} />
-      </ThemeProvider>,
+      </StorybookThemeProvider>,
     );
   },
 };

@@ -1,10 +1,8 @@
-import type { CSSObject } from "@emotion/css/create-instance";
-import { useLayoutEffect, useRef, useState, type JSX, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties, type JSX, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME, DEVTOOLS_ROOT_ID } from "./constants";
 import type { IDevtoolsTheme } from "./devtoolsTheme";
-import { css } from "./devtoolsCss";
 import { useDevtoolsTheme } from "./useDevtoolsTheme";
 
 interface IHighlightFrame {
@@ -20,6 +18,32 @@ interface IHighlightOverlayRenderModel extends IHighlightFrame {
   badgeTop: number;
   id: string | number;
   isVisible: boolean;
+}
+
+interface IHighlightBadgeStyle extends CSSProperties {
+  backgroundColor: string;
+  color: string;
+  left: number;
+  pointerEvents: "none";
+  position: "fixed";
+  top: number;
+  zIndex: NonNullable<CSSProperties["zIndex"]>;
+}
+
+interface IHighlightFrameStyle extends CSSProperties {
+  borderColor: string;
+  height: number;
+  left: number;
+  pointerEvents: "none";
+  position: "fixed";
+  top: number;
+  width: number;
+  zIndex: NonNullable<CSSProperties["zIndex"]>;
+}
+
+interface IViewportPosition {
+  x: number;
+  y: number;
 }
 
 export interface IHighlightOverlayRectangle {
@@ -110,6 +134,26 @@ export function HighlightOverlay({
     };
   }, [highlights.length]);
 
+  useLayoutEffect(() => {
+    if (portalTarget === null || highlights.length === 0) {
+      return;
+    }
+
+    const ownerWindow: Window | null = portalTarget.ownerDocument.defaultView;
+
+    if (ownerWindow === null) {
+      return;
+    }
+
+    const animationFrameId: number = ownerWindow.requestAnimationFrame((): void => {
+      setLayoutVersion((currentVersion: number): number => currentVersion + 1);
+    });
+
+    return () => {
+      ownerWindow.cancelAnimationFrame(animationFrameId);
+    };
+  }, [highlights.length, portalTarget]);
+
   const renderModels: IHighlightOverlayRenderModel[] = highlights.flatMap(
     (highlight: IHighlightOverlayItem): IHighlightOverlayRenderModel[] => {
       const rectangle: IHighlightOverlayRectangle | null = highlight.readRectangle();
@@ -144,8 +188,9 @@ export function HighlightOverlay({
     },
   );
 
+  const overlayRootTestId: string | undefined = rootTestId === "HighlightOverlay" ? undefined : rootTestId;
   const overlay = (
-    <div data-testid={rootTestId} className={css(overlayStyle)}>
+    <div data-testid={overlayRootTestId} className="pointer-events-none fixed inset-0">
       {renderModels.map((highlight: IHighlightOverlayRenderModel) => {
         if (!highlight.isVisible) {
           return null;
@@ -153,9 +198,20 @@ export function HighlightOverlay({
 
         return (
           <div key={highlight.id}>
-            <div className={css(createHighlightStyle(theme, highlight))} data-testid={highlightTestId} />
+            <div
+              className="pointer-events-none fixed box-border rounded-sm border-2"
+              data-testid={highlightTestId}
+              style={createHighlightStyle(theme, highlight)}
+            />
             {highlight.badge !== undefined ? (
-              <div className={css(createBadgeStyle(theme, highlight))} data-testid={badgeTestId}>
+              <div
+                className={[
+                  "pointer-events-none fixed grid size-6 place-items-center",
+                  "rounded-full font-mono text-xs font-bold shadow-md",
+                ].join(" ")}
+                data-testid={badgeTestId}
+                style={createBadgeStyle(theme, highlight)}
+              >
                 {highlight.badge}
               </div>
             ) : null}
@@ -166,45 +222,33 @@ export function HighlightOverlay({
   );
 
   return (
-    <>
-      <span ref={portalAnchorReference} hidden />
+    <span data-testid="HighlightOverlay" ref={portalAnchorReference} hidden>
       {portalTarget === null ? null : createPortal(overlay, portalTarget)}
-    </>
+    </span>
   );
 }
 
-function createBadgeStyle(theme: IDevtoolsTheme, highlight: IHighlightOverlayRenderModel): CSSObject {
+function createBadgeStyle(theme: IDevtoolsTheme, highlight: IHighlightOverlayRenderModel): IHighlightBadgeStyle {
   return {
-    position: "fixed",
+    backgroundColor: theme.colors.highlightBackground,
+    color: theme.colors.highlightForeground,
     top: highlight.badgeTop,
     left: highlight.badgeLeft,
-    width: `${badgeSize}px`,
-    height: `${badgeSize}px`,
-    display: "grid",
-    placeItems: "center",
-    borderRadius: theme.radii.pill,
-    background: theme.colors.accentBackground,
-    color: theme.colors.accentForeground,
-    fontFamily: theme.fontFamilies.monospace,
-    fontSize: theme.fontSizes.sm,
-    fontWeight: 700,
-    boxShadow: theme.shadows.floating,
     pointerEvents: "none",
+    position: "fixed",
     zIndex: theme.zIndices.floating,
   };
 }
 
-function createHighlightStyle(theme: IDevtoolsTheme, highlight: IHighlightFrame): CSSObject {
+function createHighlightStyle(theme: IDevtoolsTheme, highlight: IHighlightFrame): IHighlightFrameStyle {
   return {
-    position: "fixed",
+    borderColor: theme.colors.highlightBackground,
     top: highlight.top,
     left: highlight.left,
     width: highlight.width,
     height: highlight.height,
-    boxSizing: "border-box",
-    border: `2px solid ${theme.colors.selectionBorder}`,
-    borderRadius: theme.radii.sm,
     pointerEvents: "none",
+    position: "fixed",
     zIndex: theme.zIndices.floating,
   };
 }
@@ -222,7 +266,7 @@ function readVisibleHighlightCorner(
   highlightFrame: IHighlightFrame,
   viewportHeight: number,
   viewportWidth: number,
-): { x: number; y: number } {
+): IViewportPosition {
   return {
     x: Math.min(Math.max(highlightFrame.left, 0), viewportWidth),
     y: Math.min(Math.max(highlightFrame.top, 0), viewportHeight),
@@ -262,9 +306,3 @@ function resolveOverlayPortalTarget(anchorElement: HTMLElement): HTMLElement {
 
   return anchorElement;
 }
-
-const overlayStyle: CSSObject = {
-  position: "fixed",
-  inset: 0,
-  pointerEvents: "none",
-};

@@ -1,17 +1,17 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fn, userEvent, within } from "storybook/test";
 
-import { ThemeProvider } from "../../../shared/ThemeProvider";
+import { StorybookThemeProvider } from "../../../shared/stories/storybookTheme";
 import { ComponentSourceMenu } from "../ComponentSourceMenu";
 
 const meta: Meta<typeof ComponentSourceMenu> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/componentSourceNavigation/ComponentSourceMenu",
   component: ComponentSourceMenu,
-  render: (args) => {
+  render: (args, context) => {
     return (
-      <ThemeProvider colorScheme="dark">
+      <StorybookThemeProvider globals={context.globals}>
         <ComponentSourceMenu {...args} />
-      </ThemeProvider>
+      </StorybookThemeProvider>
     );
   },
 };

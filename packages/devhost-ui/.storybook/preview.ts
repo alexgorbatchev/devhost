@@ -1,4 +1,4 @@
-import type { Preview } from "@storybook/react";
+import type { Decorator, Preview } from "@storybook/react";
 
 import "../src/devtools/shared/devtools.css";
 import {
@@ -10,7 +10,13 @@ import {
   TERMINAL_SESSION_WEBSOCKET_PATH,
   XTERM_STYLESHEET_PATH,
 } from "../src/devtools/shared/constants";
+import type { DevtoolsColorScheme } from "../src/devtools/shared/devtoolsTheme";
 import type { IInjectedDevtoolsConfig } from "../src/devtools/shared/readInjectedDevtoolsConfig";
+import {
+  readStorybookPreviewTheme,
+  readStorybookDevtoolsColorScheme,
+  storybookDevtoolsThemeGlobalName,
+} from "../src/devtools/shared/stories/storybookTheme";
 
 type FetchRequestInput = Parameters<typeof fetch>[0];
 type StorybookWebSocketProtocols = ConstructorParameters<typeof WebSocket>[1];
@@ -139,7 +145,30 @@ function restoreGlobalValue(name: string, value: unknown): void {
   Reflect.set(globalThis, name, value);
 }
 
+const withDevtoolsColorScheme: Decorator = (Story, context) => {
+  const colorScheme: DevtoolsColorScheme = readStorybookDevtoolsColorScheme(context.globals);
+  const previewTheme = readStorybookPreviewTheme(colorScheme);
+
+  document.documentElement.style.backgroundColor = previewTheme.backgroundColor;
+  document.documentElement.style.color = previewTheme.color;
+  document.documentElement.style.colorScheme = previewTheme.colorScheme;
+  document.body.style.backgroundColor = previewTheme.backgroundColor;
+  document.body.style.color = previewTheme.color;
+  document.body.style.colorScheme = previewTheme.colorScheme;
+
+  return Story();
+};
+
 const preview: Preview = {
+  decorators: [withDevtoolsColorScheme],
+  globalTypes: {
+    [storybookDevtoolsThemeGlobalName]: {
+      description: "Devhost UI color scheme",
+    },
+  },
+  initialGlobals: {
+    [storybookDevtoolsThemeGlobalName]: "dark",
+  },
   parameters: {
     layout: "fullscreen",
   },

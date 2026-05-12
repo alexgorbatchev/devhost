@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fn, userEvent, within } from "storybook/test";
 
-import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
+import { StorybookThemeProvider } from "../../../shared/stories/storybookTheme";
 import { AnnotationQueuePanel } from "../AnnotationQueuePanel";
 import type { IAnnotationQueueSnapshot } from "../types";
 
@@ -98,13 +98,13 @@ const launchingQueue: IAnnotationQueueSnapshot = {
 const meta: Meta<typeof AnnotationQueuePanel> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/annotationQueue/AnnotationQueuePanel",
   component: AnnotationQueuePanel,
-  render: (args) => {
+  render: (args, context) => {
     return (
-      <ThemeProvider colorScheme="dark">
+      <StorybookThemeProvider globals={context.globals}>
         <StoryContainer align="right">
           <AnnotationQueuePanel {...args} />
         </StoryContainer>
-      </ThemeProvider>
+      </StorybookThemeProvider>
     );
   },
 };

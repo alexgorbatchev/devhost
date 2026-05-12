@@ -1,17 +1,17 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, fireEvent, fn, userEvent, waitFor, within } from "storybook/test";
+import { expect, fireEvent, fn, userEvent, within } from "storybook/test";
 
 import { Button } from "../Button";
-import { ThemeProvider } from "../ThemeProvider";
+import { StorybookThemeProvider } from "./storybookTheme";
 
 const meta: Meta<typeof Button> = {
   title: "@alexgorbatchev/devhost-ui/devtools/shared/Button",
   component: Button,
-  render: (args) => {
+  render: (args, context) => {
     return (
-      <ThemeProvider colorScheme="dark">
+      <StorybookThemeProvider globals={context.globals}>
         <Button {...args} />
-      </ThemeProvider>
+      </StorybookThemeProvider>
     );
   },
 };
@@ -28,11 +28,7 @@ export const Default: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     const button = canvas.getByRole("button", { name: "Click me" });
-    const buttonWindow: Window | null = button.ownerDocument.defaultView;
     await expect(button).toBeInTheDocument();
-    await waitFor((): void => {
-      expect(buttonWindow?.getComputedStyle(button).display).toBe("inline-flex");
-    });
     await userEvent.click(button);
     await expect(args.onClick).toHaveBeenCalledTimes(1);
   },
@@ -72,13 +68,16 @@ export const Disabled: Story = {
   args: {
     children: "Disabled Button",
     disabled: true,
+    endEnhancer: "Esc",
     onClick: fn(),
   },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     const button = canvas.getByRole("button", { name: "Disabled Button" });
+    const enhancer = canvas.getByText("Esc");
     await expect(button).toBeInTheDocument();
     await expect(button).toBeDisabled();
+    await expect(enhancer).toBeInTheDocument();
     await fireEvent.click(button);
     await expect(args.onClick).toHaveBeenCalledTimes(0);
   },

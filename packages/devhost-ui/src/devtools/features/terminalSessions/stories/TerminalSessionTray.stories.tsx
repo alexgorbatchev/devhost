@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fn, userEvent, within } from "storybook/test";
 
-import { ThemeProvider } from "../../../shared";
 import {
   devtoolsStoryShadowRootHostTestId,
   readShadowRoot,
   renderInDevtoolsStoryShadowRoot,
 } from "../../../shared/stories/DevtoolsStoryShadowRoot";
+import { StorybookThemeProvider } from "../../../shared/stories/storybookTheme";
 import { TerminalSessionTray } from "../TerminalSessionTray";
 import type { TerminalSession } from "../types";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
@@ -64,13 +64,13 @@ const secondAgentSession: TerminalSession = {
 const meta: Meta<typeof TerminalSessionTray> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/terminalSessions/TerminalSessionTray",
   component: TerminalSessionTray,
-  render: (args) => {
+  render: (args, context) => {
     return renderInDevtoolsStoryShadowRoot(
-      <ThemeProvider colorScheme="dark">
+      <StorybookThemeProvider globals={context.globals}>
         <StoryContainer align="center">
           <TerminalSessionTray {...args} />
         </StoryContainer>
-      </ThemeProvider>,
+      </StorybookThemeProvider>,
     );
   },
 };

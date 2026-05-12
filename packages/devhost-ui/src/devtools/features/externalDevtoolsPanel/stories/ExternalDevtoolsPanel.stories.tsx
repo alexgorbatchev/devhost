@@ -11,8 +11,8 @@ import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, within, waitFor } from "storybook/test";
 
-import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
+import { StorybookThemeProvider } from "../../../shared/stories/storybookTheme";
 import { ExternalDevtoolsPanel } from "../ExternalDevtoolsPanel";
 import { useExternalDevtoolsLaunchers } from "../useExternalDevtoolsLaunchers";
 
@@ -31,16 +31,20 @@ const indexRoute = createRoute({
 const routeTree = rootRoute.addChildren([indexRoute]);
 const router = createRouter({ history: createMemoryHistory(), routeTree });
 
-function IntegratedPanel() {
+interface IIntegratedPanelProps {
+  globals: Partial<Record<string, unknown>>;
+}
+
+function IntegratedPanel({ globals }: IIntegratedPanelProps) {
   const { launchers, toggleLauncher } = useExternalDevtoolsLaunchers(true);
 
   return (
     <>
-      <ThemeProvider colorScheme="dark">
+      <StorybookThemeProvider globals={globals}>
         <StoryContainer align="right">
           <ExternalDevtoolsPanel launchers={launchers} onToggleLauncher={toggleLauncher} />
         </StoryContainer>
-      </ThemeProvider>
+      </StorybookThemeProvider>
 
       <QueryClientProvider client={queryClient}>
         <ReactQueryDevtools initialIsOpen={false} />
@@ -54,8 +58,8 @@ function IntegratedPanel() {
 const meta: Meta<typeof ExternalDevtoolsPanel> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/externalDevtoolsPanel/ExternalDevtoolsPanel",
   component: ExternalDevtoolsPanel,
-  render: () => {
-    return <IntegratedPanel />;
+  render: (_args, context) => {
+    return <IntegratedPanel globals={context.globals} />;
   },
 };
 

@@ -1,20 +1,20 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, within } from "storybook/test";
 
-import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
+import { StorybookThemeProvider } from "../../../shared/stories/storybookTheme";
 import { AnnotationMarkerList } from "../AnnotationMarkerList";
 
 const meta: Meta<typeof AnnotationMarkerList> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/annotationComposer/AnnotationMarkerList",
   component: AnnotationMarkerList,
-  render: (args) => {
+  render: (args, context) => {
     return (
-      <ThemeProvider colorScheme="dark">
+      <StorybookThemeProvider globals={context.globals}>
         <StoryContainer align="left">
           <AnnotationMarkerList {...args} />
         </StoryContainer>
-      </ThemeProvider>
+      </StorybookThemeProvider>
     );
   },
 };

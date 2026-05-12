@@ -35,7 +35,7 @@ export function AnnotationSelectionOverlay({
   );
 
   return (
-    <>
+    <div className="contents" data-testid="AnnotationSelectionOverlay">
       {hoverHighlights.length > 0 ? (
         <HighlightOverlay
           highlights={hoverHighlights}
@@ -48,9 +48,9 @@ export function AnnotationSelectionOverlay({
           badgeTestId={`${testIdPrefix}--marker`}
           highlightTestId={`${testIdPrefix}--selection-highlight`}
           highlights={selectedHighlights}
-          rootTestId="AnnotationSelectionOverlay"
+          rootTestId={undefined}
         />
       ) : null}
-    </>
+    </div>
   );
 }

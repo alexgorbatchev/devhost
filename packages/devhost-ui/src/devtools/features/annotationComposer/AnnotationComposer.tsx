@@ -8,7 +8,10 @@ import type { ITerminalSessionStartResult } from "../terminalSessions/types";
 import { AnnotationActionSplitButton } from "./AnnotationActionSplitButton";
 import { AnnotationMarkerList } from "./AnnotationMarkerList";
 import { AnnotationSelectionOverlay } from "./AnnotationSelectionOverlay";
-import { readActiveAnnotationSelectionPlugin, subscribeToAnnotationSelectionPlugins } from "./annotationSelectionPluginRegistry";
+import {
+  readActiveAnnotationSelectionPlugin,
+  subscribeToAnnotationSelectionPlugins,
+} from "./annotationSelectionPluginRegistry";
 import {
   type ISelectedAnnotationTarget,
   readPixelValue,

@@ -5,6 +5,7 @@ import { expect, waitFor, within } from "storybook/test";
 import { getDevtoolsTheme, type DevtoolsColorScheme } from "../../../shared/devtoolsTheme";
 import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
+import { readStorybookDevtoolsColorScheme } from "../../../shared/stories/storybookTheme";
 import {
   AnnotationSelectionOverlay,
   createDomAnnotationSelectionCandidateForElement,
@@ -289,7 +290,15 @@ function AnnotationSelectionOverlayPositioningScene({
   );
 }
 
-function AnnotationSelectionOverlayPositioningPreview(): JSX.Element {
+interface IAnnotationSelectionOverlayPositioningPreviewProps {
+  globals: Partial<Record<string, unknown>>;
+}
+
+function AnnotationSelectionOverlayPositioningPreview({
+  globals,
+}: IAnnotationSelectionOverlayPositioningPreviewProps): JSX.Element {
+  const colorScheme: DevtoolsColorScheme = readStorybookDevtoolsColorScheme(globals);
+
   return (
     <section
       aria-label="positioning overlay preview"
@@ -305,7 +314,7 @@ function AnnotationSelectionOverlayPositioningPreview(): JSX.Element {
       }}
     >
       <AnnotationSelectionOverlayContainedStageSingleTargetPreview />
-      <AnnotationSelectionOverlayPositioningScene colorScheme="dark" />
+      <AnnotationSelectionOverlayPositioningScene colorScheme={colorScheme} />
     </section>
   );
 }
@@ -407,8 +416,8 @@ function AnnotationSelectionOverlayContainedStageSingleTargetPreview(): JSX.Elem
 const meta: Meta<typeof AnnotationSelectionOverlay> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/annotationComposer/AnnotationSelectionOverlay",
   component: AnnotationSelectionOverlay,
-  render: () => {
-    return <AnnotationSelectionOverlayPositioningPreview />;
+  render: (_args, context) => {
+    return <AnnotationSelectionOverlayPositioningPreview globals={context.globals} />;
   },
 };
 
@@ -416,7 +425,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const PositioningPreview: Story = {
+const Default: Story = {
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
     const documentBody: HTMLElement = canvasElement.ownerDocument.body;
@@ -464,8 +473,10 @@ export const PositioningPreview: Story = {
       expect(Math.abs(markerCenterY - visibleHighlightCornerY)).toBeLessThanOrEqual(1);
     };
 
-    expectContainedStageHighlightToMatchTarget();
-    expectContainedStageMarkerToStayAnchoredToHighlight();
+    await waitFor(() => {
+      expectContainedStageHighlightToMatchTarget();
+      expectContainedStageMarkerToStayAnchoredToHighlight();
+    });
 
     window.scrollTo({ left: 0, top: 150 });
 
@@ -478,3 +489,5 @@ export const PositioningPreview: Story = {
     window.scrollTo({ left: 0, top: 0 });
   },
 };
+
+export { Default as AnnotationSelectionOverlay };

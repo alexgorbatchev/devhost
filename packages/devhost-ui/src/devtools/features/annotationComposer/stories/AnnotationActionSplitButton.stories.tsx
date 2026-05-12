@@ -3,7 +3,7 @@ import { useState, type JSX } from "react";
 import { expect, fn, userEvent, within } from "storybook/test";
 
 import { type IAnnotationAction } from "../../../shared";
-import { ThemeProvider } from "../../../shared/ThemeProvider";
+import { StorybookThemeProvider } from "../../../shared/stories/storybookTheme";
 import { AnnotationActionSplitButton } from "../AnnotationActionSplitButton";
 
 const agentAction: IAnnotationAction = {
@@ -25,6 +25,7 @@ interface IStoryHarnessProps {
   initialSelectedActionId: string;
   isActionMenuDisabled: boolean;
   isRunDisabled: boolean;
+  globals: Partial<Record<string, unknown>>;
   onActionSelect: (actionId: string) => void;
   onRun: () => void;
 }
@@ -34,6 +35,7 @@ function StoryHarness({
   initialSelectedActionId,
   isActionMenuDisabled,
   isRunDisabled,
+  globals,
   onActionSelect,
   onRun,
 }: IStoryHarnessProps): JSX.Element {
@@ -42,7 +44,7 @@ function StoryHarness({
   );
 
   return (
-    <ThemeProvider colorScheme="dark">
+    <StorybookThemeProvider globals={globals}>
       <AnnotationActionSplitButton
         actions={actions}
         isActionMenuDisabled={isActionMenuDisabled}
@@ -54,7 +56,7 @@ function StoryHarness({
         }}
         onRun={onRun}
       />
-    </ThemeProvider>
+    </StorybookThemeProvider>
   );
 }
 
@@ -71,6 +73,9 @@ function resolveSelectedAction(actions: IAnnotationAction[], selectedActionId: s
 const meta: Meta<typeof AnnotationActionSplitButtonStory> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/annotationComposer/AnnotationActionSplitButton",
   component: AnnotationActionSplitButtonStory,
+  render: (args, context) => {
+    return <AnnotationActionSplitButtonStory {...args} globals={context.globals} />;
+  },
 };
 
 export default meta;

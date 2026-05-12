@@ -2,21 +2,21 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fn, userEvent, within } from "storybook/test";
 
 import { Button } from "../button";
-import { ThemeProvider } from "../../../devtools/shared/ThemeProvider";
 import {
   devtoolsStoryShadowRootHostTestId,
   readShadowRoot,
   renderInDevtoolsStoryShadowRoot,
 } from "../../../devtools/shared/stories/DevtoolsStoryShadowRoot";
+import { StorybookThemeProvider } from "../../../devtools/shared/stories/storybookTheme";
 
 const meta: Meta<typeof Button> = {
   title: "@alexgorbatchev/devhost-ui/components/ui/button",
   component: Button,
-  render: (args) => {
+  render: (args, context) => {
     return renderInDevtoolsStoryShadowRoot(
-      <ThemeProvider colorScheme="dark">
+      <StorybookThemeProvider globals={context.globals}>
         <Button {...args} />
-      </ThemeProvider>,
+      </StorybookThemeProvider>,
     );
   },
 };

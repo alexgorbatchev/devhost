@@ -53,7 +53,10 @@ export function Button({
     >
       {children}
       {endEnhancer !== undefined ? (
-        <span className="inline-grid place-items-center whitespace-nowrap rounded-sm border border-border bg-muted px-1 text-[10px] text-muted-foreground transition-colors group-hover/button:bg-accent group-hover/button:text-accent-foreground">
+        <span
+          aria-hidden="true"
+          className="inline-grid place-items-center whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-muted px-1 text-[10px] text-muted-foreground transition-colors group-hover/button:bg-accent group-hover/button:text-accent-foreground group-disabled/button:border-foreground/40 group-disabled/button:bg-inherit group-disabled/button:text-current"
+        >
           {endEnhancer}
         </span>
       ) : null}

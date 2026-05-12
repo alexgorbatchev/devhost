@@ -2,8 +2,9 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { useMemo, useState, type JSX } from "react";
 import { expect, waitFor, within } from "storybook/test";
 
-import { HighlightOverlay, ThemeProvider } from "../index";
+import { HighlightOverlay } from "../index";
 import { StoryContainer } from "./StoryContainer";
+import { StorybookThemeProvider } from "./storybookTheme";
 
 function HighlightOnlyScene(): JSX.Element {
   const [targetElement, setTargetElement] = useState<HTMLButtonElement | null>(null);
@@ -101,11 +102,11 @@ function BadgedHighlightsScene(): JSX.Element {
 const meta: Meta<typeof HighlightOverlay> = {
   title: "@alexgorbatchev/devhost-ui/devtools/shared/HighlightOverlay",
   component: HighlightOverlay,
-  render: () => {
+  render: (_args, context) => {
     return (
-      <ThemeProvider colorScheme="dark">
+      <StorybookThemeProvider globals={context.globals}>
         <HighlightOnlyScene />
-      </ThemeProvider>
+      </StorybookThemeProvider>
     );
   },
 };
@@ -137,11 +138,11 @@ export const HighlightOnly: Story = {
 };
 
 export const WithBadges: Story = {
-  render: () => {
+  render: (_args, context) => {
     return (
-      <ThemeProvider colorScheme="dark">
+      <StorybookThemeProvider globals={context.globals}>
         <BadgedHighlightsScene />
-      </ThemeProvider>
+      </StorybookThemeProvider>
     );
   },
   play: async ({ canvasElement }): Promise<void> => {

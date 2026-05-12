@@ -2,26 +2,26 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { expect, within } from "storybook/test";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../card";
-import { ThemeProvider } from "../../../devtools/shared/ThemeProvider";
 import {
   devtoolsStoryShadowRootHostTestId,
   readShadowRoot,
   renderInDevtoolsStoryShadowRoot,
 } from "../../../devtools/shared/stories/DevtoolsStoryShadowRoot";
+import { StorybookThemeProvider } from "../../../devtools/shared/stories/storybookTheme";
 
 const meta: Meta<typeof Card> = {
   title: "@alexgorbatchev/devhost-ui/components/ui/card",
   component: Card,
-  render: (args) => {
+  render: (args, context) => {
     return renderInDevtoolsStoryShadowRoot(
-      <ThemeProvider colorScheme="dark">
+      <StorybookThemeProvider globals={context.globals}>
         <Card {...args}>
           <CardHeader>
             <CardTitle>Service status</CardTitle>
           </CardHeader>
           <CardContent>api is healthy</CardContent>
         </Card>
-      </ThemeProvider>,
+      </StorybookThemeProvider>,
     );
   },
 };

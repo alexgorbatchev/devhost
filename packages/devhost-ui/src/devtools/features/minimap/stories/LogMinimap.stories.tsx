@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 
-import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
+import { StorybookThemeProvider } from "../../../shared/stories/storybookTheme";
 import { LogMinimap } from "../LogMinimap";
 import type { ServiceLogEntry } from "../../../shared/types";
 
@@ -16,13 +16,13 @@ const mockEntries: ServiceLogEntry[] = Array.from({ length: 50 }).map((_, i) => 
 const meta: Meta<typeof LogMinimap> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/minimap/LogMinimap",
   component: LogMinimap,
-  render: (args) => {
+  render: (args, context) => {
     return (
-      <ThemeProvider colorScheme="dark">
+      <StorybookThemeProvider globals={context.globals}>
         <StoryContainer align="right">
           <LogMinimap {...args} />
         </StoryContainer>
-      </ThemeProvider>
+      </StorybookThemeProvider>
     );
   },
 };

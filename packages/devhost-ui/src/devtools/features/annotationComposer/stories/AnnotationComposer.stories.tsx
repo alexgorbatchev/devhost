@@ -2,8 +2,8 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { useState, type ComponentProps, type JSX, type ReactNode } from "react";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 
-import { ThemeProvider } from "../../../shared/ThemeProvider";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
+import { StorybookThemeProvider } from "../../../shared/stories/storybookTheme";
 import { AnnotationComposer } from "../AnnotationComposer";
 
 const agentAction = {
@@ -21,26 +21,34 @@ const ticketAction = {
 
 interface IAnnotationComposerStoryFrameProps {
   children: ReactNode;
+  globals: Partial<Record<string, unknown>>;
 }
 
-function AnnotationComposerStoryFrame({ children }: IAnnotationComposerStoryFrameProps): JSX.Element {
+function AnnotationComposerStoryFrame({ children, globals }: IAnnotationComposerStoryFrameProps): JSX.Element {
   return (
     <StoryContainer align="center">
       <button type="button" data-testid="host-action-target" style={{ padding: "20px", background: "red" }}>
         Host action target
       </button>
       <div data-devhost-devtools="">
-        <ThemeProvider colorScheme="dark">{children}</ThemeProvider>
+        <StorybookThemeProvider globals={globals}>{children}</StorybookThemeProvider>
       </div>
     </StoryContainer>
   );
 }
 
-function ControlledMultipleActionsAnnotationComposer(args: ComponentProps<typeof AnnotationComposer>): JSX.Element {
+interface IControlledMultipleActionsAnnotationComposerProps extends ComponentProps<typeof AnnotationComposer> {
+  globals: Partial<Record<string, unknown>>;
+}
+
+function ControlledMultipleActionsAnnotationComposer({
+  globals,
+  ...args
+}: IControlledMultipleActionsAnnotationComposerProps): JSX.Element {
   const [selectedActionId, setSelectedActionId] = useState<string>(args.selectedActionId);
 
   return (
-    <AnnotationComposerStoryFrame>
+    <AnnotationComposerStoryFrame globals={globals}>
       <AnnotationComposer
         {...args}
         selectedActionId={selectedActionId}
@@ -56,9 +64,9 @@ function ControlledMultipleActionsAnnotationComposer(args: ComponentProps<typeof
 const meta: Meta<typeof AnnotationComposer> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/annotationComposer/AnnotationComposer",
   component: AnnotationComposer,
-  render: (args) => {
+  render: (args, context) => {
     return (
-      <AnnotationComposerStoryFrame>
+      <AnnotationComposerStoryFrame globals={context.globals}>
         <AnnotationComposer {...args} />
       </AnnotationComposerStoryFrame>
     );
@@ -225,8 +233,8 @@ export const WithMultipleActions: Story = {
     selectedActionId: "create-ticket",
     stackName: "story-stack",
   },
-  render: (args) => {
-    return <ControlledMultipleActionsAnnotationComposer {...args} />;
+  render: (args, context) => {
+    return <ControlledMultipleActionsAnnotationComposer {...args} globals={context.globals} />;
   },
   play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);

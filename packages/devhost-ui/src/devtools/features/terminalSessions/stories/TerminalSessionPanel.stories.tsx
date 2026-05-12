@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fn, userEvent, within } from "storybook/test";
 
-import { ThemeProvider } from "../../../shared";
 import {
   devtoolsStoryShadowRootHostTestId,
   readShadowRoot,
   renderInDevtoolsStoryShadowRoot,
 } from "../../../shared/stories/DevtoolsStoryShadowRoot";
+import { StorybookThemeProvider } from "../../../shared/stories/storybookTheme";
 import { TerminalSessionPanel } from "../TerminalSessionPanel";
 import type { TerminalSession } from "../types";
 
@@ -91,11 +91,11 @@ const commandSession: TerminalSession = {
 const meta: Meta<typeof TerminalSessionPanel> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/terminalSessions/TerminalSessionPanel",
   component: TerminalSessionPanel,
-  render: (args) => {
+  render: (args, context) => {
     return renderInDevtoolsStoryShadowRoot(
-      <ThemeProvider colorScheme="dark">
+      <StorybookThemeProvider globals={context.globals}>
         <TerminalSessionPanel {...args} />
-      </ThemeProvider>,
+      </StorybookThemeProvider>,
     );
   },
 };

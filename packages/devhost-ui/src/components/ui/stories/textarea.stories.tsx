@@ -2,21 +2,21 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, within } from "storybook/test";
 
 import { Textarea } from "../textarea";
-import { ThemeProvider } from "../../../devtools/shared/ThemeProvider";
 import {
   devtoolsStoryShadowRootHostTestId,
   readShadowRoot,
   renderInDevtoolsStoryShadowRoot,
 } from "../../../devtools/shared/stories/DevtoolsStoryShadowRoot";
+import { StorybookThemeProvider } from "../../../devtools/shared/stories/storybookTheme";
 
 const meta: Meta<typeof Textarea> = {
   title: "@alexgorbatchev/devhost-ui/components/ui/textarea",
   component: Textarea,
-  render: (args) => {
+  render: (args, context) => {
     return renderInDevtoolsStoryShadowRoot(
-      <ThemeProvider colorScheme="dark">
+      <StorybookThemeProvider globals={context.globals}>
         <Textarea {...args} />
-      </ThemeProvider>,
+      </StorybookThemeProvider>,
     );
   },
 };
