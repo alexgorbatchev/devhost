@@ -69,30 +69,35 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-async function createAnnotationDraft(canvas: ReturnType<typeof within>): Promise<void> {
+interface IAnnotationComposerStoryQueries {
+  canvas: ReturnType<typeof within>;
+  page: ReturnType<typeof within>;
+}
+
+async function createAnnotationDraft({ canvas, page }: IAnnotationComposerStoryQueries): Promise<void> {
   const targetButton = canvas.getByTestId("host-action-target");
 
   await userEvent.keyboard("{Alt>}");
   await userEvent.hover(targetButton);
 
   await waitFor(() => {
-    expect(canvas.getByTestId("AnnotationComposer--hover-highlight")).toBeInTheDocument();
+    expect(page.getByTestId("AnnotationComposer--hover-highlight")).toBeInTheDocument();
   });
 
   await userEvent.click(targetButton);
 
   await waitFor(() => {
     expect(canvas.getByTestId("AnnotationComposer--popup")).toBeInTheDocument();
-    expect(canvas.getAllByTestId("AnnotationComposer--marker")).toHaveLength(1);
+    expect(page.getAllByTestId("AnnotationComposer--marker")).toHaveLength(1);
   });
 
   await userEvent.keyboard("{/Alt}");
 }
 
-async function expectDraftToReset(canvas: ReturnType<typeof within>): Promise<void> {
+async function expectDraftToReset({ canvas, page }: IAnnotationComposerStoryQueries): Promise<void> {
   await waitFor(() => {
     expect(canvas.queryByTestId("AnnotationComposer--popup")).not.toBeInTheDocument();
-    expect(canvas.queryAllByTestId("AnnotationComposer--marker")).toHaveLength(0);
+    expect(page.queryAllByTestId("AnnotationComposer--marker")).toHaveLength(0);
   });
 }
 
@@ -108,7 +113,9 @@ export const Default: Story = {
   },
   play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
-    await createAnnotationDraft(canvas);
+    const page = within(canvasElement.ownerDocument.body);
+
+    await createAnnotationDraft({ canvas, page });
 
     const commentInput = await canvas.findByTestId("AnnotationComposer--comment");
     await userEvent.type(commentInput, "Fix the red button");
@@ -132,7 +139,7 @@ export const Default: Story = {
       );
     });
 
-    await expectDraftToReset(canvas);
+    await expectDraftToReset({ canvas, page });
   },
 };
 
@@ -149,7 +156,9 @@ export const WithActiveSession: Story = {
   },
   play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
-    await createAnnotationDraft(canvas);
+    const page = within(canvasElement.ownerDocument.body);
+
+    await createAnnotationDraft({ canvas, page });
 
     const commentInput = await canvas.findByTestId("AnnotationComposer--comment");
     await userEvent.type(commentInput, "Update this component");
@@ -170,7 +179,7 @@ export const WithActiveSession: Story = {
       );
     });
 
-    await expectDraftToReset(canvas);
+    await expectDraftToReset({ canvas, page });
   },
 };
 
@@ -189,7 +198,9 @@ export const WithSubmitError: Story = {
   },
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
-    await createAnnotationDraft(canvas);
+    const page = within(canvasElement.ownerDocument.body);
+
+    await createAnnotationDraft({ canvas, page });
 
     await userEvent.type(await canvas.findByTestId("AnnotationComposer--comment"), "Retry the submit flow");
     await userEvent.click(canvas.getByRole("button", { name: /Run Pi/ }));
@@ -199,7 +210,7 @@ export const WithSubmitError: Story = {
     });
 
     await userEvent.keyboard("{Escape}");
-    await expectDraftToReset(canvas);
+    await expectDraftToReset({ canvas, page });
   },
 };
 
@@ -219,7 +230,9 @@ export const WithMultipleActions: Story = {
   },
   play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
-    await createAnnotationDraft(canvas);
+    const page = within(canvasElement.ownerDocument.body);
+
+    await createAnnotationDraft({ canvas, page });
 
     await expect(canvas.queryByRole("combobox")).not.toBeInTheDocument();
     await expect(canvas.queryByLabelText("Append to active Create Ticket queue")).not.toBeInTheDocument();
@@ -248,6 +261,6 @@ export const WithMultipleActions: Story = {
       );
     });
 
-    await expectDraftToReset(canvas);
+    await expectDraftToReset({ canvas, page });
   },
 };

@@ -357,7 +357,11 @@ function AnnotationSelectionOverlaySingleTargetScene({
       </button>
       <div data-devhost-devtools="">
         <ThemeProvider colorScheme={colorScheme}>
-          <AnnotationSelectionOverlay selectedTargets={selectedTargets} viewportPadding={16} />
+          <AnnotationSelectionOverlay
+            selectedTargets={selectedTargets}
+            testIdPrefix="ContainedStageSelectionOverlay"
+            viewportPadding={16}
+          />
         </ThemeProvider>
       </div>
     </div>
@@ -418,17 +422,33 @@ type Story = StoryObj<typeof meta>;
 export const PositioningPreview: Story = {
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
+    const documentBody: HTMLElement = canvasElement.ownerDocument.body;
+    const page = within(documentBody);
 
     await waitFor(() => {
       expect(canvas.getByTestId("AnnotationSelectionOverlayPositioningPreview")).toBeInTheDocument();
       expect(canvas.getByTestId("ContainedStageSingleTargetPreview")).toBeInTheDocument();
-      expect(canvas.getAllByTestId("AnnotationSelectionOverlay")).toHaveLength(2);
-      expect(canvas.getAllByTestId("AnnotationSelectionOverlay--selection-highlight")).toHaveLength(
-        layoutTargetDefinitions.length + 1,
+      expect(page.getAllByTestId("AnnotationSelectionOverlay")).toHaveLength(2);
+      expect(page.getAllByTestId("AnnotationSelectionOverlay--selection-highlight")).toHaveLength(
+        layoutTargetDefinitions.length,
       );
-      expect(canvas.getAllByTestId("AnnotationSelectionOverlay--marker")).toHaveLength(
-        layoutTargetDefinitions.length + 1,
-      );
+      expect(page.getAllByTestId("AnnotationSelectionOverlay--marker")).toHaveLength(layoutTargetDefinitions.length);
+      expect(page.getByTestId("ContainedStageSelectionOverlay--selection-highlight")).toBeInTheDocument();
+      expect(page.getByTestId("ContainedStageSelectionOverlay--marker")).toBeInTheDocument();
     });
+
+    const containedStageTarget: HTMLElement = canvas.getByRole("button", {
+      name: "single highlighted target light",
+    });
+    const containedStageHighlight: HTMLElement = page.getByTestId(
+      "ContainedStageSelectionOverlay--selection-highlight",
+    );
+    const targetRectangle: DOMRect = containedStageTarget.getBoundingClientRect();
+    const highlightRectangle: DOMRect = containedStageHighlight.getBoundingClientRect();
+
+    expect(Math.abs(highlightRectangle.x - (targetRectangle.x - 2))).toBeLessThanOrEqual(1);
+    expect(Math.abs(highlightRectangle.y - (targetRectangle.y - 1))).toBeLessThanOrEqual(1);
+    expect(Math.abs(highlightRectangle.width - (targetRectangle.width + 4))).toBeLessThanOrEqual(1);
+    expect(Math.abs(highlightRectangle.height - (targetRectangle.height + 2))).toBeLessThanOrEqual(1);
   },
 };

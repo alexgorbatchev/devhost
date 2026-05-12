@@ -1,6 +1,9 @@
 import type { JSX } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
-import { css, useDevtoolsTheme } from "../../shared";
+import { css, DEVTOOLS_ROOT_ID, useDevtoolsTheme } from "../../shared";
+import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../shared/constants";
 
 import { clamp } from "./annotationComposerUtils";
 import { markerSize, type IMarkerRenderModel, type ISelectedAnnotationTarget } from "./annotationComposerModels";
@@ -30,6 +33,19 @@ export function AnnotationSelectionOverlay({
   viewportPadding,
 }: IAnnotationSelectionOverlayProps): JSX.Element {
   const theme = useDevtoolsTheme();
+  const portalAnchorReference = useRef<HTMLSpanElement | null>(null);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+
+  useLayoutEffect(() => {
+    const anchorElement: HTMLSpanElement | null = portalAnchorReference.current;
+
+    if (anchorElement === null) {
+      return;
+    }
+
+    setPortalTarget(resolveOverlayPortalTarget(anchorElement));
+  }, []);
+
   const markerRenderModels: IMarkerRenderModel[] = selectedTargets.flatMap(
     (selection: ISelectedAnnotationTarget): IMarkerRenderModel[] => {
       const elementRectangle: IRectSnapshot | null = selection.candidate.readRect();
@@ -71,7 +87,7 @@ export function AnnotationSelectionOverlay({
     },
   );
 
-  return (
+  const overlay = (
     <div data-testid="AnnotationSelectionOverlay" className={css(overlayStyle)}>
       {isSelectionMode && hoveredRectangle !== null && !isHoveredElementSelected ? (
         <div
@@ -98,4 +114,45 @@ export function AnnotationSelectionOverlay({
       })}
     </div>
   );
+
+  return (
+    <>
+      <span ref={portalAnchorReference} hidden />
+      {portalTarget === null ? null : createPortal(overlay, portalTarget)}
+    </>
+  );
+}
+
+function resolveOverlayPortalTarget(anchorElement: HTMLElement): HTMLElement {
+  const rootNode: Node = anchorElement.getRootNode();
+
+  if (rootNode instanceof ShadowRoot) {
+    const shadowAppRoot: HTMLElement | null = rootNode.querySelector<HTMLElement>(`#${DEVTOOLS_ROOT_ID}`);
+
+    if (shadowAppRoot !== null) {
+      return shadowAppRoot;
+    }
+
+    const shadowRootFallback: HTMLElement | null = rootNode.querySelector<HTMLElement>(
+      `[${DEVTOOLS_ROOT_ATTRIBUTE_NAME}]`,
+    );
+
+    if (shadowRootFallback !== null) {
+      return shadowRootFallback;
+    }
+  }
+
+  const documentAppRoot: HTMLElement | null = anchorElement.ownerDocument.getElementById(DEVTOOLS_ROOT_ID);
+
+  if (documentAppRoot !== null) {
+    return documentAppRoot;
+  }
+
+  const documentBody: HTMLElement | null = anchorElement.ownerDocument.body;
+
+  if (documentBody !== null) {
+    return documentBody;
+  }
+
+  return anchorElement;
 }
