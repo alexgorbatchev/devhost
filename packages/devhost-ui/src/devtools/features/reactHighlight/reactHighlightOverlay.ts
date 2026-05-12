@@ -133,7 +133,11 @@ export function readReactHighlightLocatorsForElement(element: HTMLElement, proje
   return locators;
 }
 
-export async function highlightReactElements(locator: string, projectRootPath: string): Promise<IOverlayElement[]> {
+export async function highlightReactElements(
+  locator: string,
+  projectRootPath: string,
+  overlayRoot: HTMLElement,
+): Promise<IOverlayElement[]> {
   const matchingElements: HTMLElement[] = findReactHighlightElements(locator, projectRootPath);
   const effectiveMatchingElements: HTMLElement[] =
     matchingElements.length === 0
@@ -155,7 +159,7 @@ export async function highlightReactElements(locator: string, projectRootPath: s
 
   return effectiveMatchingElements.map((element: HTMLElement): IOverlayElement => {
     const rect: DOMRect = element.getBoundingClientRect();
-    const overlay: HTMLDivElement = document.createElement("div");
+    const overlay: HTMLDivElement = overlayRoot.ownerDocument.createElement("div");
     overlay.setAttribute("data-devhost-react-highlight-overlay", "");
     overlay.style.position = "fixed";
     overlay.style.left = `${rect.left}px`;
@@ -167,7 +171,7 @@ export async function highlightReactElements(locator: string, projectRootPath: s
     overlay.style.boxSizing = "border-box";
     overlay.style.pointerEvents = "none";
     overlay.style.zIndex = "2147483647";
-    document.body.appendChild(overlay);
+    overlayRoot.appendChild(overlay);
 
     return { overlay };
   });

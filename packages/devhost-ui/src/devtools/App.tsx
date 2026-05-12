@@ -1,6 +1,6 @@
 import type { CSSObject } from "@emotion/css/create-instance";
 import type { JSX } from "react";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import type { DevtoolsPosition, IAnnotationAction } from "./shared/devtoolsConfig";
 import { AnnotationComposer } from "./features/annotationComposer";
@@ -51,6 +51,7 @@ function AppContent(): JSX.Element {
   const stackName: string = readDevtoolsStackName();
   const features = readDevtoolsFeatureToggles();
   const theme = useDevtoolsTheme();
+  const appRootReference = useRef<HTMLDivElement | null>(null);
   const { errorMessage, services } = useServiceHealth();
   const {
     errorMessage: annotationQueueErrorMessage,
@@ -79,6 +80,7 @@ function AppContent(): JSX.Element {
   useReactHighlightOverlay({
     controlToken,
     enabled: features.editorEnabled,
+    overlayRootReference: appRootReference,
     projectRootPath,
   });
   const { componentMenu, openComponentSource } = useComponentSourceNavigation({
@@ -136,7 +138,7 @@ function AppContent(): JSX.Element {
   });
 
   return (
-    <div id={DEVTOOLS_ROOT_ID} data-devhost-devtools="" data-testid="AppContent">
+    <div id={DEVTOOLS_ROOT_ID} ref={appRootReference} data-devhost-devtools="" data-testid="AppContent">
       {features.annotationEnabled ? (
         <AnnotationComposer
           activeAgentSessionId={activeAgentSessionId}

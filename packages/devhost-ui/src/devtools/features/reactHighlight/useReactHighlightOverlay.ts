@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, type RefObject } from "react";
 
 import {
   clearReactHighlightOverlays,
@@ -11,6 +11,7 @@ import { parseReactHighlightCursorPayload } from "./reactHighlightCursorPayload"
 interface IUseReactHighlightOverlayParams {
   controlToken: string;
   enabled: boolean;
+  overlayRootReference: RefObject<HTMLElement | null>;
   projectRootPath: string;
 }
 
@@ -19,6 +20,7 @@ type ReactHighlightOverlayCleanup = () => void;
 export function useReactHighlightOverlay({
   controlToken,
   enabled,
+  overlayRootReference,
   projectRootPath,
 }: IUseReactHighlightOverlayParams): void {
   useEffect((): ReactHighlightOverlayCleanup | undefined => {
@@ -47,7 +49,13 @@ export function useReactHighlightOverlay({
         return;
       }
 
-      void highlightReactElements(payload.locator, payload.projectRoot || projectRootPath).then(
+      const overlayRoot: HTMLElement | null = overlayRootReference.current;
+
+      if (overlayRoot === null) {
+        return;
+      }
+
+      void highlightReactElements(payload.locator, payload.projectRoot || projectRootPath, overlayRoot).then(
         (nextOverlays: Awaited<ReturnType<typeof highlightReactElements>>): void => {
           if (isDisposed || currentMessageSequence !== messageSequence) {
             clearReactHighlightOverlays(nextOverlays);
@@ -65,5 +73,5 @@ export function useReactHighlightOverlay({
       clearReactHighlightOverlays(overlays);
       websocket.close();
     };
-  }, [controlToken, enabled, projectRootPath]);
+  }, [controlToken, enabled, overlayRootReference, projectRootPath]);
 }
