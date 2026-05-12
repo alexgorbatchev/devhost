@@ -82,7 +82,11 @@ enabled = true
 # - `"vscode-insiders"`: open VS Code Insiders via its browser URL handler.
 # - `"cursor"`: open Cursor via its browser URL handler.
 # - `"webstorm"`: open WebStorm via its browser URL handler.
-# - `"neovim"`: open Neovim inside devhost's embedded terminal UI; requires `nvim` on PATH.
+# - `"neovim"`: open Neovim inside devhost's embedded terminal UI; requires `nvim` and `curl` on PATH.
+#   Devhost loads its bundled Neovim plugin for that terminal session so cursor movement in TSX/JSX buffers can
+#   highlight the matching React component in the routed browser page for the same devhost instance.
+#   While the stack runs, `.tmp/devhost/<stack-name>/nvim-shell/bin/devhost-nvim` launches Neovim from a shell with
+#   the same instance token and plugin path.
 ide = "vscode"
 
 [devtools.externalToolbars]

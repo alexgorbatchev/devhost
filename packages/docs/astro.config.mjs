@@ -39,6 +39,7 @@ export default defineConfig({
           label: "Devtools",
           items: [
             "guides/devtools",
+            "guides/react-highlight",
             "guides/annotations",
             {
               label: "Architecture",

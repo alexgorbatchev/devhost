@@ -14,6 +14,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Build the current-platform `devhost` binary: `bun run compile:devhost`
 - Check the injected devtools UI package: `bun run --cwd packages/devhost-ui check`
 - Check the docs package-only validations: `bun run --cwd packages/docs check`
+- Run standalone React Highlight Neovim plugin tests: `bun run test:nvim`
 - Start the playground dev stack locally: `bun run dev`
 - Start the docs site locally: `bun run docs`
 
@@ -43,6 +44,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - `packages/docs` `bun run dev`, `bun run start`, and `bun run preview` bind Astro to `0.0.0.0` so the docs site can be reached from outside the current environment.
 - `packages/docs` allows all dev/preview hosts in `astro.config.mjs`, so the docs server should be treated as broadly reachable while it is running.
 - `bun run --cwd packages/devhost-ui storybook` starts the interactive Storybook dev server for manual inspection; it does not replace the automated coverage already included in the workspace `check` script.
+- `bun run test:nvim` is intentionally standalone and not part of root `bun run check` or CI; use it when changing the Neovim React Highlight plugin under `apps/devhost/internal/devtools/nvim/devhost-react-highlight.nvim/`.
 - `apps/devhost/internal/devtools/dist/` is generated for Go `//go:embed` and intentionally ignored; run `bun run build:devtools-bundle:devhost`, `bun run check:devhost`, or `bun run compile:devhost` instead of committing those files.
 - Root `postinstall` runs `bun run install-browser`, which uses `playwright install chromium` without `--force` so existing Chromium binaries are reused instead of being re-downloaded on every `bun install`.
 - Keep a single root `bun.lock`. Do not add workspace-local lockfiles.
@@ -57,9 +59,10 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Always: run `bun run check` after changing workspace manifests, scripts, CI, or directory layout.
 - Always: address all lint issues before the end of the turn.
 - Always: when changing shared commands, validation flow, deploy flow, release flow, or contributor policy, update the affected `AGENTS.md` files and user/contributor docs in the same change.
+- Always: design runtime state, ports, temporary files, browser control channels, editor/plugin integrations, and cleanup logic to support multiple `devhost` instances running concurrently for different projects.
 - Done: only claim completion after required docs are updated, required checks for the affected scope pass, and any temporary servers or processes started for validation are stopped.
 - Done: if a required step was skipped, a check failed, or a blocker remains, report the work as incomplete and name the exact gap.
-- Never: Agents should NEVER run `bun run fix` or formatting tools directly, even though the human-facing command is listed above. Formatting is handled automatically in the background via a pre-commit hook using nano-staged.
+- Always: when formatting is required, use the root `bun run fix` script instead of ad-hoc formatter invocations so shared ignore/config behavior stays consistent.
 - Ask first: adding a new workspace, changing cross-workspace dependency topology, or changing the publish/release flow.
 - Never: disable lint rules unless the user explicitly authorizes it.
 - Never: build or release `devhost` from the repo root using ad-hoc Go commands; use the documented `apps/devhost` scripts, root package scripts, and runbook.

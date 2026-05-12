@@ -2,6 +2,7 @@ package devtools
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,6 +16,7 @@ import (
 func TestCreateEditorTerminalCommandMatchesNeovimContract(t *testing.T) {
 	t.Parallel()
 
+	projectRootPath := t.TempDir()
 	request := terminalSessionRequest{
 		ComponentName: "PrimaryButton",
 		Kind:          terminalSessionRequestKindEditor,
@@ -26,22 +28,95 @@ func TestCreateEditorTerminalCommandMatchesNeovimContract(t *testing.T) {
 		SourceLabel: "src/components/PrimaryButton.tsx:42:1",
 	}
 
-	command, err := createEditorTerminalCommand("neovim", request, "/tmp/project")
+	command, err := createEditorTerminalCommand("neovim", request, projectRootPath, "hello-stack", editorTerminalIntegration{
+		controlToken: "control-token",
+		endpoint:     "http://127.0.0.1:49152/__devhost__/react-highlight/cursor",
+	})
 	if err != nil {
 		t.Fatalf("createEditorTerminalCommand(...) error = %v", err)
 	}
-	if got, want := strings.Join(command, "\x00"), strings.Join([]string{"nvim", "-c", "call cursor(42, 1)", "--", "/tmp/project/src/components/PrimaryButton.tsx"}, "\x00"); got != want {
-		t.Fatalf("command = %#v, want %#v", command, []string{"nvim", "-c", "call cursor(42, 1)", "--", "/tmp/project/src/components/PrimaryButton.tsx"})
+	defer command.cleanup()
+	wantCommand := []string{
+		"nvim",
+		"-c",
+		"execute 'set packpath^=' . fnameescape($DEVHOST_NVIM_SITE_PATH)",
+		"-c",
+		"packadd dhr.nvim",
+		"-c",
+		"call cursor(42, 1)",
+		"--",
+		filepath.Join(projectRootPath, "src/components/PrimaryButton.tsx"),
+	}
+	if got, want := strings.Join(command.command, "\x00"), strings.Join(wantCommand, "\x00"); got != want {
+		t.Fatalf("command = %#v, want %#v", command.command, wantCommand)
+	}
+	if command.cwd != projectRootPath || command.env[reactHighlightEndpointEnvironmentName] != "http://127.0.0.1:49152/__devhost__/react-highlight/cursor" || command.env[controlTokenEnvironmentName] != "control-token" || command.env[projectRootEnvironmentName] != projectRootPath || command.env[stackNameEnvironmentName] != "hello-stack" || command.env[neovimSitePathEnvironmentName] == "" {
+		t.Fatalf("command cwd/env = %q %#v", command.cwd, command.env)
+	}
+	if _, err := os.Stat(filepath.Join(command.env[neovimSitePathEnvironmentName], "pack", "devhost", "start", "dhr.nvim", "plugin", "devhost-react-highlight.lua")); err != nil {
+		t.Fatalf("Stat(bundled plugin) error = %v", err)
 	}
 
 	request.Launcher = "vscode"
-	if _, err := createEditorTerminalCommand("neovim", request, "/tmp/project"); err == nil || err.Error() != "unsupported editor terminal launcher: vscode" {
+	if _, err := createEditorTerminalCommand("neovim", request, projectRootPath, "hello-stack", editorTerminalIntegration{}); err == nil || err.Error() != "unsupported editor terminal launcher: vscode" {
 		t.Fatalf("unsupported launcher error = %v", err)
 	}
 
 	request.Launcher = terminalSessionLauncherNeovim
-	if _, err := createEditorTerminalCommand("cursor", request, "/tmp/project"); err == nil || err.Error() != "Editor terminal sessions require devtoolsComponentEditor = \"neovim\"." {
+	if _, err := createEditorTerminalCommand("cursor", request, projectRootPath, "hello-stack", editorTerminalIntegration{}); err == nil || err.Error() != "Editor terminal sessions require devtoolsComponentEditor = \"neovim\"." {
 		t.Fatalf("unsupported editor error = %v", err)
+	}
+}
+
+func TestCreateNeovimPluginShellIntegrationFilesWritesLauncher(t *testing.T) {
+	t.Parallel()
+
+	projectRootPath := t.TempDir()
+	files, err := createNeovimPluginShellIntegrationFiles(projectRootPath, "hello stack", "http://127.0.0.1:49152/__devhost__/react-highlight/cursor", "token'with-quote")
+	if err != nil {
+		t.Fatalf("createNeovimPluginShellIntegrationFiles(...) error = %v", err)
+	}
+	defer files.cleanup()
+
+	if _, err := os.Stat(filepath.Join(files.sitePath, "pack", "devhost", "start", "dhr.nvim", "plugin", "devhost-react-highlight.lua")); err != nil {
+		t.Fatalf("Stat(bundled plugin) error = %v", err)
+	}
+	initPayload, err := os.ReadFile(filepath.Join(files.sitePath, "pack", "devhost", "start", "dhr.nvim", "lua", "devhost-react-highlight", "init.lua"))
+	if err != nil {
+		t.Fatalf("ReadFile(bundled plugin init) error = %v", err)
+	}
+	if initText := string(initPayload); !strings.Contains(initText, `vim.fn.sign_define(sign_name, { text = "->", texthl = "Search" })`) || !strings.Contains(initText, "vim.fn.sign_place(sign_id, sign_group, sign_name") {
+		t.Fatalf("bundled plugin init missing Neovim highlight sign support:\n%s", initText)
+	}
+
+	launcherInfo, err := os.Stat(files.launcherPath)
+	if err != nil {
+		t.Fatalf("Stat(launcher) error = %v", err)
+	}
+	if launcherInfo.Mode().Perm() != 0o755 {
+		t.Fatalf("launcher mode = %v, want 0755", launcherInfo.Mode().Perm())
+	}
+
+	launcherPayload, err := os.ReadFile(files.launcherPath)
+	if err != nil {
+		t.Fatalf("ReadFile(launcher) error = %v", err)
+	}
+	launcherScript := string(launcherPayload)
+	for _, want := range []string{
+		"export DEVHOST_REACT_HIGHLIGHT_URL='http://127.0.0.1:49152/__devhost__/react-highlight/cursor'",
+		"export DEVHOST_CONTROL_TOKEN='token'\"'\"'with-quote'",
+		fmt.Sprintf("export DEVHOST_PROJECT_ROOT='%s'", projectRootPath),
+		"export DEVHOST_STACK_NAME='hello stack'",
+		"exec nvim -c \"execute 'set packpath^=' . fnameescape(\\$DEVHOST_NVIM_SITE_PATH)\" -c \"packadd dhr.nvim\" \"$@\"",
+	} {
+		if !strings.Contains(launcherScript, want) {
+			t.Fatalf("launcher script missing %q in:\n%s", want, launcherScript)
+		}
+	}
+
+	files.cleanup()
+	if _, err := os.Stat(files.launcherPath); !os.IsNotExist(err) {
+		t.Fatalf("Stat(cleaned launcher) error = %v, want not exist", err)
 	}
 }
 
@@ -157,7 +232,7 @@ func TestCreateAgentTerminalCommandMatchesBuiltInAdapters(t *testing.T) {
 				ActionID:   defaultAnnotationActionID,
 				Annotation: &annotation,
 				Kind:       terminalSessionRequestKindAgent,
-			}, "hello-stack")
+			}, "hello-stack", editorTerminalIntegration{})
 			if err != nil {
 				t.Fatalf("createTerminalSessionCommand(...) error = %v", err)
 			}
@@ -205,7 +280,7 @@ func TestCreateCommandAnnotationTerminalCommand(t *testing.T) {
 		ActionID:   "lint",
 		Annotation: &annotation,
 		Kind:       terminalSessionRequestKindCommand,
-	}, "hello-stack")
+	}, "hello-stack", editorTerminalIntegration{})
 	if err != nil {
 		t.Fatalf("createTerminalSessionCommand(...) error = %v", err)
 	}
@@ -243,7 +318,7 @@ func TestCreateAgentTerminalCommandRejectsUnsupportedEditorSession(t *testing.T)
 			LineNumber: 42,
 		},
 		SourceLabel: "src/components/PrimaryButton.tsx:42:1",
-	}, "hello-stack"); err == nil || err.Error() != "Editor terminal sessions require devtoolsComponentEditor = \"neovim\"." {
+	}, "hello-stack", editorTerminalIntegration{}); err == nil || err.Error() != "Editor terminal sessions require devtoolsComponentEditor = \"neovim\"." {
 		t.Fatalf("editor terminal error = %v", err)
 	}
 }

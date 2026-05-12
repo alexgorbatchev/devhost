@@ -127,7 +127,10 @@ func (s *ControlServer) createTerminalSession(request terminalSessionRequest) (s
 	starter := s.startTerminalSession
 	if starter == nil {
 		starter = func(request terminalSessionRequest, onData func([]byte)) (*launchedTerminalSession, error) {
-			command, err := createTerminalSessionCommand(s.annotationActions, s.componentEditor, s.projectRootPath, request, s.stackName)
+			command, err := createTerminalSessionCommand(s.annotationActions, s.componentEditor, s.projectRootPath, request, s.stackName, editorTerminalIntegration{
+				controlToken: s.controlToken,
+				endpoint:     fmt.Sprintf("http://127.0.0.1:%d%s", s.Port(), reactHighlightCursorPath),
+			})
 			if err != nil {
 				return nil, err
 			}

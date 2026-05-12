@@ -13,15 +13,15 @@ describe("defaultDomAnnotationSelectionPlugin", () => {
           }
           a[href],
           button,
-          input[type=\"button\"],
-          input[type=\"image\"],
-          input[type=\"reset\"],
-          input[type=\"submit\"],
+          input[type="button"],
+          input[type="image"],
+          input[type="reset"],
+          input[type="submit"],
           label[for],
           select,
           summary,
-          [data-devhost-cursor=\"pointer\"],
-          [role=\"button\"] {
+          [data-devhost-cursor="pointer"],
+          [role="button"] {
             cursor: pointer !important;
           }
           [data-devhost-devtools], [data-devhost-devtools] * {
@@ -29,12 +29,12 @@ describe("defaultDomAnnotationSelectionPlugin", () => {
           }
           [data-devhost-devtools] button,
           [data-devhost-devtools] button *,
-          [data-devhost-devtools] [role=\"button\"],
-          [data-devhost-devtools] [role=\"button\"] * {
+          [data-devhost-devtools] [role="button"],
+          [data-devhost-devtools] [role="button"] * {
             cursor: pointer !important;
           }
           [data-devhost-devtools] textarea,
-          [data-devhost-devtools] input[type=\"text\"] {
+          [data-devhost-devtools] input[type="text"] {
             cursor: text !important;
           }
         "
