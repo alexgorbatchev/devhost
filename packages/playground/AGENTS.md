@@ -20,7 +20,7 @@ Placeholder Bun + React workspace used to exercise `devhost` against a small rou
 
 ## Local gotchas
 
-- `devhost.toml` exposes managed Caddy on local network interfaces and routes `https://devhost.localhost` to the Bun server on port `4000`; avoid introducing another service on the same fixed port.
+- `devhost.toml` routes `https://playground.localhost` to the Bun server on port `3000`; avoid introducing another service on the same fixed port.
 - The root `bun run dev` command delegates to this package's `dev` script, so it starts the `devhost` proxy for this playground.
 - Shared `oxfmt` / `oxlint` enforcement runs from the repo root; do not add workspace-local lint or format config unless this package intentionally diverges.
 
