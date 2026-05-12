@@ -78,6 +78,56 @@ local function nearest_jsx_node(node)
   return nil
 end
 
+local function next_jsx_node_on_line(bufnr, row, column, language)
+  local line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1]
+  if line == nil then
+    return nil
+  end
+
+  local search_start = column + 1
+  local tag_start = line:find("<", search_start, true)
+  if tag_start == nil then
+    return nil
+  end
+
+  local is_closing_tag = line:sub(tag_start + 1, tag_start + 1) == "/"
+  local tag_column = tag_start - 1
+  local ok, node = pcall(vim.treesitter.get_node, { bufnr = bufnr, pos = { row, tag_column }, lang = language })
+  if not ok or node == nil then
+    return nil
+  end
+
+  local jsx_node = nearest_jsx_node(node)
+  if jsx_node == nil then
+    return nil
+  end
+
+  local start_row, start_column = jsx_node:range()
+  if not is_closing_tag and (start_row ~= row or start_column < column) then
+    return nil
+  end
+
+  if is_closing_tag and start_row > row then
+    return nil
+  end
+
+  return jsx_node
+end
+
+local function resolve_jsx_node_at_cursor(bufnr, row, column, language)
+  local ok, node = pcall(vim.treesitter.get_node, { bufnr = bufnr, pos = { row, column }, lang = language })
+
+  if not ok or node == nil then
+    return nil
+  end
+
+  if node:type() == "jsx_element" then
+    return next_jsx_node_on_line(bufnr, row, column, language)
+  end
+
+  return nearest_jsx_node(node)
+end
+
 local function clear_indicator()
   vim.fn.sign_unplace(sign_group)
   state.indicator = nil
@@ -105,13 +155,7 @@ local function resolve_locator()
   local cursor = vim.api.nvim_win_get_cursor(0)
   local row = cursor[1] - 1
   local column = cursor[2]
-  local ok, node = pcall(vim.treesitter.get_node, { bufnr = bufnr, pos = { row, column }, lang = language })
-
-  if not ok or node == nil then
-    return nil
-  end
-
-  local jsx_node = nearest_jsx_node(node)
+  local jsx_node = resolve_jsx_node_at_cursor(bufnr, row, column, language)
   if jsx_node == nil then
     return nil
   end
@@ -143,7 +187,7 @@ local function handle_post_result(locator_result, success)
 end
 
 local function post_payload(locator_result)
-  local locator = nil
+  local locator = vim.NIL
   if locator_result ~= nil then
     locator = locator_result.locator
   end

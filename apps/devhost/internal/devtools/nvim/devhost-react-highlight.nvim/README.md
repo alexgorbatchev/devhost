@@ -40,6 +40,9 @@ require("devhost-react-highlight").setup({
 
 The endpoint and token must come from the devhost instance you want to target. Without them, the plugin stays idle.
 
+The cursor must resolve to a concrete JSX tag or JSX child node. Leading whitespace before a nested opening or closing
+tag resolves to that tag's element instead of falling back to the parent element.
+
 ## Editor Indicator
 
 When the plugin resolves a JSX element and devhost accepts the cursor update, Neovim places a `->` sign on the current

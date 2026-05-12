@@ -66,6 +66,8 @@ Payloads look like:
 
 The plugin de-duplicates successive identical locators. Moving inside the same JSX element does not send another message. Moving to a different JSX opening tag sends a new message. Moving outside JSX clears the browser highlight after the resolved locator changes to `null`.
 
+Leading whitespace before a nested JSX opening or closing tag resolves to that tag's element instead of falling back to the parent element. For example, placing the cursor before `<textarea />` on an indented line highlights the `<textarea />` element, and placing it before `</form>` highlights the `<form>` element.
+
 When devhost accepts a cursor update, Neovim places a `->` sign on the resolved JSX line. That sign means the plugin found a JSX locator and the control server accepted the update; it does not mean the browser found a matching DOM node.
 
 ## Browser Matching
