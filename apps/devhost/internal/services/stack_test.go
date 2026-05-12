@@ -2387,7 +2387,24 @@ func runDaemonStopServerHelper() {
 	if error := syscall.Kill(childPID, syscall.SIGTERM); error != nil && error != syscall.ESRCH {
 		panic(error)
 	}
+	port, error := strconv.Atoi(os.Getenv("PORT"))
+	if error != nil {
+		panic(error)
+	}
+	waitForDaemonPortToClose(port)
 	_ = os.Remove(pidPath)
+}
+
+func waitForDaemonPortToClose(port int) {
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if !canConnectToPort("127.0.0.1", port) {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	panic(fmt.Sprintf("daemon port %d remained open after stop", port))
 }
 
 func hasFiles(directoryPath string) bool {
