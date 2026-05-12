@@ -28,6 +28,11 @@ type ScriptElementReplacement = Element & {
   src: string;
 };
 
+interface ITestChildrenCollection {
+  item: (index: number) => Element | null;
+  length: number;
+}
+
 class TestDocument {
   public readonly body: TestElement;
   public readonly createdElements: TestElement[] = [];
@@ -50,7 +55,7 @@ class TestDocument {
 }
 
 class TestElement {
-  public children: Pick<HTMLCollection, "item" | "length">;
+  public children: ITestChildrenCollection;
   public readonly classList: Pick<DOMTokenList, "contains"> = {
     contains: (): boolean => false,
   };
@@ -99,7 +104,7 @@ class TestElement {
     return this.attributes.get(name);
   }
 
-  private createChildrenCollection(): Pick<HTMLCollection, "item" | "length"> {
+  private createChildrenCollection(): ITestChildrenCollection {
     return {
       item: (index: number): Element | null => {
         return (this.childElements[index] ?? null) as unknown as Element | null;
