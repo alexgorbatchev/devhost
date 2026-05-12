@@ -21,6 +21,12 @@ type ReactFiberTestNode = {
   };
 };
 
+type FetchInput = Parameters<typeof fetch>[0];
+
+type ScriptElementReplacement = Element & {
+  src: string;
+};
+
 describe("reactHighlightOverlay", () => {
   test("creates an instance-token websocket URL for the current routed page", () => {
     const location: Location = new URL("https://app.localhost/dashboard") as unknown as Location;
@@ -65,14 +71,22 @@ describe("reactHighlightOverlay", () => {
   });
 
   test("resolves host JSX elements from Bun source maps when React fibers have no source metadata", async () => {
-    const originalDocument: Document | undefined = globalThis.document;
-    const originalFetch: typeof fetch = globalThis.fetch;
-    const scriptElement: { src: string } = {
-      src: "http://127.0.0.1:4000/_bun/client/index.js",
+    const fallbackDocumentDescriptor: PropertyDescriptor = {
+      configurable: true,
+      value: undefined,
+      writable: true,
     };
+    const originalDocumentDescriptor: PropertyDescriptor =
+      Object.getOwnPropertyDescriptor(globalThis, "document") ?? fallbackDocumentDescriptor;
+    const originalFetch: typeof fetch = globalThis.fetch;
+    const scriptElement = {
+      src: "http://127.0.0.1:4000/_bun/client/index.js",
+    } as ScriptElementReplacement;
     const documentReplacement = {
       querySelectorAll(selector: string): Element[] {
-        return selector === "script[src]" ? ([scriptElement] as unknown as Element[]) : [];
+        expect(selector).toBe("script[src]");
+
+        return [scriptElement];
       },
     };
     const sourceMapPayload = {
@@ -96,19 +110,19 @@ describe("reactHighlightOverlay", () => {
     Object.defineProperty(globalThis, "document", {
       configurable: true,
       value: documentReplacement,
+      writable: true,
     });
-    const fetchReplacement = async (input: string | URL | Request): Promise<Response> => {
+    const fetchReplacement = async (input: FetchInput): Promise<Response> => {
       const url: string = input.toString();
+      const responses: Map<string, Response> = new Map([
+        [
+          "http://127.0.0.1:4000/_bun/client/index.js",
+          new Response('console.log("app");\n//# sourceMappingURL=/index.js.map'),
+        ],
+        ["http://127.0.0.1:4000/index.js.map", Response.json(sourceMapPayload)],
+      ]);
 
-      if (url.endsWith("/index.js")) {
-        return new Response('console.log("app");\n//# sourceMappingURL=/index.js.map');
-      }
-
-      if (url.endsWith("/index.js.map")) {
-        return Response.json(sourceMapPayload);
-      }
-
-      return new Response(null, { status: 404 });
+      return responses.get(url) ?? new Response(null, { status: 404 });
     };
     globalThis.fetch = Object.assign(fetchReplacement, {
       preconnect: originalFetch.preconnect,
@@ -137,14 +151,7 @@ describe("reactHighlightOverlay", () => {
         tagName: "code",
       });
     } finally {
-      if (originalDocument === undefined) {
-        Reflect.deleteProperty(globalThis, "document");
-      } else {
-        Object.defineProperty(globalThis, "document", {
-          configurable: true,
-          value: originalDocument,
-        });
-      }
+      Object.defineProperty(globalThis, "document", originalDocumentDescriptor);
       globalThis.fetch = originalFetch;
     }
   });

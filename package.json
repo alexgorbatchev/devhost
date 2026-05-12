@@ -16,6 +16,7 @@
     "nvim": "bun run ./apps/devhost/scripts/startNvim.ts --project=packages/playground",
     "postinstall": "bun run install-browser",
     "storybook": "bun run --cwd packages/devhost-ui storybook",
+    "test:nvim": "bun run ./apps/devhost/internal/devtools/nvim/devhost-react-highlight.nvim/tests/run.ts",
     "fix": "bun --bun oxfmt --write .",
     "prepare": "husky"
   },
