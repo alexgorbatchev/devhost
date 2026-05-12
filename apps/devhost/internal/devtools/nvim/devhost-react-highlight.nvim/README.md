@@ -52,3 +52,15 @@ JSX element line. The sign clears when the cursor leaves JSX or the update fails
 
 - `curl` on `PATH`
 - Neovim Tree-sitter parser support for TSX/JSX buffers
+
+## Tests
+
+Standalone Neovim integration tests live in `tests/` and are intentionally not part of the main repository or devhost
+check path. Run them directly when changing plugin cursor resolution:
+
+```sh
+bun run apps/devhost/internal/devtools/nvim/devhost-react-highlight.nvim/tests/run.ts
+```
+
+The test harness starts a local HTTP endpoint, launches headless Neovim, drives cursor movement through a TSX fixture,
+and asserts the emitted cursor payloads. It requires a local Neovim setup with TSX Tree-sitter support.

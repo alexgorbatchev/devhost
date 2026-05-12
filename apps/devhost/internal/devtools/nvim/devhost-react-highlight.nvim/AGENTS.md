@@ -5,6 +5,7 @@ Bundled Neovim plugin loaded by `devhost` to send TSX/JSX cursor locators to the
 ## Commands
 
 - Smoke-load the plugin: `nvim --headless -u NONE --cmd "set rtp^=apps/devhost/internal/devtools/nvim/devhost-react-highlight.nvim" -c "lua require('devhost-react-highlight')" -c "qa"`
+- Run the standalone Neovim integration tests: `bun run apps/devhost/internal/devtools/nvim/devhost-react-highlight.nvim/tests/run.ts`
 - Check the Go devtools package after changing bundled plugin behavior: `cd apps/devhost && go test ./internal/devtools`
 - Check the devhost app after launcher, embed, or control-server changes: `bun run check:devhost`
 
@@ -22,11 +23,13 @@ Bundled Neovim plugin loaded by `devhost` to send TSX/JSX cursor locators to the
 - Always: keep generated launcher assumptions in sync with `apps/devhost/internal/devtools/terminal.go`.
 - Never: require users to edit their normal Neovim config for devhost-managed launches.
 - Never: write plugin runtime state outside the current devhost project `.tmp/devhost/<stack-name>/` integration path.
+- Never: wire `tests/run.ts` into the main repo, devhost, or CI check path without an explicit request; these tests are intentionally independent because they require a local Neovim with TSX Tree-sitter support.
 
 ## References
 
 - `README.md`
 - `lua/devhost-react-highlight/init.lua`
 - `plugin/devhost-react-highlight.lua`
+- `tests/run.ts`
 - `apps/devhost/internal/devtools/terminal.go`
 - `packages/docs/src/content/docs/guides/react-highlight.md`
