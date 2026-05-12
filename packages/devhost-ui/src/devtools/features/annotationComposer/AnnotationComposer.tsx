@@ -5,19 +5,16 @@ import { isEventTargetTerminalKeyboardInput } from "../../shared/isEventTargetTe
 import type { ITerminalSessionStartResult } from "../terminalSessions/types";
 import { AnnotationActionSplitButton } from "./AnnotationActionSplitButton";
 import { AnnotationMarkerList } from "./AnnotationMarkerList";
+import { AnnotationSelectionOverlay } from "./AnnotationSelectionOverlay";
 import {
   createActionButtonHoverStyle,
   createCancelButtonStyle,
   createCheckboxLabelStyle,
-  createHoverHighlightStyle,
-  createMarkerStyle,
   createPopupStyle,
-  createSelectionHighlightStyle,
   createShortcutBadgeStyle,
   createSubmissionErrorStyle,
   createSubmitButtonStyle,
   createTextareaStyle,
-  overlayStyle,
   popupActionsStyle,
   popupHeaderStyle,
   popupMetaStyle,
@@ -28,7 +25,6 @@ import {
   subscribeToAnnotationSelectionPlugins,
 } from "./annotationSelectionPluginRegistry";
 import {
-  type IMarkerRenderModel,
   type ISelectedAnnotationTarget,
   readPixelValue,
   resolveSelectedAnnotationAction,
@@ -65,7 +61,6 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
     hoveredRectangle,
     isHoveredElementSelected,
     isSelectionMode,
-    markerRenderModels,
     popupCoordinates,
     popupReference,
     resetSelectionDraft,
@@ -214,35 +209,20 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
   }, [selectedTargets.length]);
 
   const errorClassName: string = css(createSubmissionErrorStyle(theme));
-  const overlayClassName: string = css(overlayStyle);
   const popupActionsClassName: string = css(popupActionsStyle);
   const popupHeaderClassName: string = css(popupHeaderStyle);
   const popupMetaClassName: string = css(popupMetaStyle);
 
   return (
     <div data-testid="AnnotationComposer">
-      <div className={overlayClassName}>
-        {isSelectionMode && hoveredRectangle !== null && !isHoveredElementSelected ? (
-          <div
-            className={css(createHoverHighlightStyle(theme, hoveredRectangle))}
-            data-testid="AnnotationComposer--hover-highlight"
-          />
-        ) : null}
-        {markerRenderModels.map((marker: IMarkerRenderModel) => {
-          if (!marker.isVisible) {
-            return null;
-          }
-
-          return (
-            <div key={marker.markerNumber}>
-              <div className={css(createSelectionHighlightStyle(theme, marker))} />
-              <div className={css(createMarkerStyle(theme, marker))} data-testid="AnnotationComposer--marker">
-                {marker.markerNumber}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <AnnotationSelectionOverlay
+        hoveredRectangle={hoveredRectangle}
+        isHoveredElementSelected={isHoveredElementSelected}
+        isSelectionMode={isSelectionMode}
+        selectedTargets={selectedTargets}
+        testIdPrefix="AnnotationComposer"
+        viewportPadding={viewportPadding}
+      />
       {selectedTargets.length > 0 && popupCoordinates !== null ? (
         <div
           ref={popupReference}

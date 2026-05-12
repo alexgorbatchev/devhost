@@ -1,17 +1,8 @@
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../shared/constants";
-import { collectElementSnapshot, identifyElement } from "./collectElementSnapshot";
+import { createDomAnnotationSelectionCandidateForElement } from "./createDomAnnotationSelectionCandidateForElement";
 import { getElementSourceLocation } from "./getElementSourceLocation";
 import { resolveAnnotationTarget } from "./resolveAnnotationTarget";
-import type { IAnnotationSelectionCandidate, IAnnotationSelectionPlugin } from "./annotationSelectionPluginTypes";
-import type { IAnnotationSourceLocation, IRectSnapshot } from "./types";
-
-interface IDomAnnotationSelectionCandidateOptions {
-  element: HTMLElement;
-  label: string;
-  path: string;
-  selectedText?: string;
-  sourceLocation?: IAnnotationSourceLocation;
-}
+import type { IAnnotationSelectionPlugin } from "./annotationSelectionPluginTypes";
 
 export const defaultDomAnnotationSelectionPlugin: IAnnotationSelectionPlugin = {
   getCursorStyleText: createSelectionCursorStyleText,
@@ -29,50 +20,13 @@ export const defaultDomAnnotationSelectionPlugin: IAnnotationSelectionPlugin = {
       return null;
     }
 
-    const identifiedElement = identifyElement(interactionTarget);
-
-    return createDomAnnotationSelectionCandidate({
+    return createDomAnnotationSelectionCandidateForElement({
       element: interactionTarget,
-      label: identifiedElement.name,
-      path: identifiedElement.path,
       selectedText: intent === "select" ? readSelectedText() : undefined,
       sourceLocation: intent === "select" ? await getElementSourceLocation(interactionTarget) : undefined,
     });
   },
 };
-
-function createDomAnnotationSelectionCandidate(
-  options: IDomAnnotationSelectionCandidateOptions,
-): IAnnotationSelectionCandidate {
-  return {
-    buildMarkerPayload: async (markerNumber: number) => {
-      return collectElementSnapshot({
-        element: options.element,
-        elementName: options.label,
-        elementPath: options.path,
-        markerNumber,
-        selectedText: options.selectedText,
-        sourceLocation: options.sourceLocation,
-      });
-    },
-    id: options.path,
-    label: options.label,
-    readRect: (): IRectSnapshot | null => {
-      const elementRectangle: DOMRect = options.element.getBoundingClientRect();
-
-      if (elementRectangle.width <= 0 || elementRectangle.height <= 0) {
-        return null;
-      }
-
-      return {
-        height: elementRectangle.height,
-        width: elementRectangle.width,
-        x: elementRectangle.left,
-        y: elementRectangle.top,
-      };
-    },
-  };
-}
 
 function readSelectedText(): string | undefined {
   const selection: Selection | null = window.getSelection();

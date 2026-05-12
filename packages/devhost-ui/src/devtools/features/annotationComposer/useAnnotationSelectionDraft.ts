@@ -2,18 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
 
 import { isEventTargetTerminalKeyboardInput } from "../../shared/isEventTargetTerminalKeyboardInput";
 
-import {
-  markerSize,
-  popupWidth,
-  selectionCursorStyleId,
-  type IMarkerRenderModel,
-  type ISelectedAnnotationTarget,
-} from "./annotationComposerModels";
+import { popupWidth, selectionCursorStyleId, type ISelectedAnnotationTarget } from "./annotationComposerModels";
 import { readActiveAnnotationSelectionPlugin } from "./annotationSelectionPluginRegistry";
 import { resolvePopupCoordinates, type IPopupCoordinates } from "./resolvePopupCoordinates";
 import type { IRectSnapshot } from "./types";
 import {
-  clamp,
   doesEventTargetAcceptTextInput,
   isInteractionInsideDevtools,
   removeSelectionCursorStyle,
@@ -35,7 +28,6 @@ interface IUseAnnotationSelectionDraftResult {
   hoveredRectangle: IRectSnapshot | null;
   isHoveredElementSelected: boolean;
   isSelectionMode: boolean;
-  markerRenderModels: IMarkerRenderModel[];
   popupCoordinates: IPopupCoordinates | null;
   popupReference: RefObject<HTMLDivElement | null>;
   resetSelectionDraft: () => void;
@@ -307,48 +299,6 @@ export function useAnnotationSelectionDraft({
     };
   }, [comment, isSubmitting, submissionErrorMessage, layoutVersion, selectedTargets.length]);
 
-  const markerRenderModels: IMarkerRenderModel[] = useMemo((): IMarkerRenderModel[] => {
-    void layoutVersion;
-
-    return selectedTargets.flatMap((selection: ISelectedAnnotationTarget): IMarkerRenderModel[] => {
-      const elementRectangle: IRectSnapshot | null = selection.candidate.readRect();
-
-      if (elementRectangle === null) {
-        return [];
-      }
-
-      const markerTop: number = clamp(
-        elementRectangle.y - markerSize / 2,
-        viewportPadding,
-        window.innerHeight - markerSize - viewportPadding,
-      );
-      const markerLeft: number = clamp(
-        elementRectangle.x - markerSize / 2,
-        viewportPadding,
-        window.innerWidth - markerSize - viewportPadding,
-      );
-      const isVisible: boolean =
-        elementRectangle.width > 0 &&
-        elementRectangle.height > 0 &&
-        elementRectangle.y + elementRectangle.height >= 0 &&
-        elementRectangle.x + elementRectangle.width >= 0 &&
-        elementRectangle.y <= window.innerHeight &&
-        elementRectangle.x <= window.innerWidth;
-
-      return [
-        {
-          elementHeight: elementRectangle.height,
-          elementLeft: elementRectangle.x,
-          elementTop: elementRectangle.y,
-          elementWidth: elementRectangle.width,
-          isVisible,
-          markerLeft,
-          markerNumber: selection.markerNumber,
-          markerTop,
-        },
-      ];
-    });
-  }, [layoutVersion, selectedTargets, viewportPadding]);
   const anchorSelection: ISelectedAnnotationTarget | undefined = selectedTargets[0];
   const anchorRectangle: IRectSnapshot | null = useMemo((): IRectSnapshot | null => {
     void layoutVersion;
@@ -386,7 +336,6 @@ export function useAnnotationSelectionDraft({
     hoveredRectangle,
     isHoveredElementSelected,
     isSelectionMode,
-    markerRenderModels,
     popupCoordinates,
     popupReference,
     resetSelectionDraft,
