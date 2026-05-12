@@ -9,3 +9,4 @@ caddy/routes/.registrations/*.json
 coverage/
 storybook-static/
 .tmp
+/.workspaces
