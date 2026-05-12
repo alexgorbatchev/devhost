@@ -14,4 +14,11 @@ describe("getDevtoolsTheme", () => {
   test("shares the same stacking order across color schemes", () => {
     expect(getDevtoolsTheme("dark").zIndices).toEqual(getDevtoolsTheme("light").zIndices);
   });
+
+  test("does not expose custom geometry or elevation tokens", () => {
+    expect("radii" in getDevtoolsTheme("light")).toBe(false);
+    expect("radii" in getDevtoolsTheme("dark")).toBe(false);
+    expect("shadows" in getDevtoolsTheme("light")).toBe(false);
+    expect("shadows" in getDevtoolsTheme("dark")).toBe(false);
+  });
 });

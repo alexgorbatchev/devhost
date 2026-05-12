@@ -24,12 +24,14 @@ import {
   readDevtoolsProjectRootPath,
   readDevtoolsRoutedServices,
   readDevtoolsStackName,
+  resolveContrastingColorScheme,
   resolveRoutedServiceKeyForUrl,
   useResolvedColorScheme,
 } from "./shared";
 
 export function App(): JSX.Element {
-  const colorScheme = useResolvedColorScheme();
+  const hostColorScheme = useResolvedColorScheme();
+  const colorScheme = resolveContrastingColorScheme(hostColorScheme);
 
   return (
     <ThemeProvider colorScheme={colorScheme}>

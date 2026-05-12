@@ -43,7 +43,7 @@ export const Dark: Story = {
     const canvas = within(canvasElement);
     const consumer = await canvas.findByTestId("theme-consumer");
     await expect(consumer).toBeInTheDocument();
-    await expect(consumer).toHaveTextContent("Background: #24283b");
+    await expect(consumer).toHaveTextContent("Background: oklch(0.145 0 0)");
   },
 };
 
@@ -55,6 +55,6 @@ export const Light: Story = {
     const canvas = within(canvasElement);
     const consumer = await canvas.findByTestId("theme-consumer");
     await expect(consumer).toBeInTheDocument();
-    await expect(consumer).toHaveTextContent("Background: #e1e2e7");
+    await expect(consumer).toHaveTextContent("Background: oklch(1 0 0)");
   },
 };

@@ -26,6 +26,7 @@ export { readDevtoolsPosition } from "./readDevtoolsPosition";
 export { readDevtoolsProjectRootPath } from "./readDevtoolsProjectRootPath";
 export { readDevtoolsRoutedServices } from "./readDevtoolsRoutedServices";
 export { readDevtoolsStackName } from "./readDevtoolsStackName";
+export { resolveContrastingColorScheme } from "./resolveContrastingColorScheme";
 export { resolveRoutedServiceKeyForUrl, type IRoutedServiceIdentity } from "./routedServices";
 export { useDevtoolsTheme } from "./useDevtoolsTheme";
 export { useResolvedColorScheme } from "./useResolvedColorScheme";

@@ -55,22 +55,12 @@ export interface IDevtoolsTheme {
     md: string;
     sm: string;
   };
-  radii: {
-    lg: string;
-    md: string;
-    pill: string;
-    sm: string;
-  };
   sizes: {
     logMinimapPeekWidth: string;
     logMinimapWidth: string;
     logPreviewRowHeight: string;
     logPreviewWidth: string;
     serviceStatusPanelPeekWidth: string;
-  };
-  shadows: {
-    floating: string;
-    popup: string;
   };
   spacing: {
     lg: string;
@@ -85,6 +75,27 @@ export interface IDevtoolsTheme {
     terminalExpanded: NonNullable<React.CSSProperties["zIndex"]>;
     terminalTray: NonNullable<React.CSSProperties["zIndex"]>;
   };
+}
+
+interface IShadcnNeutralThemeColors {
+  accent: string;
+  accentForeground: string;
+  background: string;
+  border: string;
+  card: string;
+  chart1: string;
+  chart2: string;
+  chart3: string;
+  chart4: string;
+  chart5: string;
+  destructive: string;
+  foreground: string;
+  muted: string;
+  mutedForeground: string;
+  primary: string;
+  primaryForeground: string;
+  secondary: string;
+  secondaryForeground: string;
 }
 
 const sharedFontFamily: string = [
@@ -111,12 +122,6 @@ const sharedOpacities: IDevtoolsTheme["opacities"] = {
   logMinimapActive: 1,
   logMinimapResting: 0.5,
 };
-const sharedRadii: IDevtoolsTheme["radii"] = {
-  lg: "12px",
-  md: "8px",
-  pill: "999px",
-  sm: "4px",
-};
 const sharedSizes: IDevtoolsTheme["sizes"] = {
   logMinimapPeekWidth: "20px",
   logMinimapWidth: "100px",
@@ -137,111 +142,143 @@ const sharedZIndices: IDevtoolsTheme["zIndices"] = {
   terminalExpanded: 2_147_483_600,
   terminalTray: 2_147_483_400,
 };
-const sharedShadows: IDevtoolsTheme["shadows"] = {
-  floating: "0px 10px 24px rgba(15, 23, 42, 0.14)",
-  popup: "4px 5px 10px rgba(0, 0, 0, 0.8), -4px 5px 10px rgba(0, 0, 0, 0.4)",
+const shadcnNeutralLightColors: IShadcnNeutralThemeColors = {
+  accent: "oklch(0.97 0 0)",
+  accentForeground: "oklch(0.205 0 0)",
+  background: "oklch(1 0 0)",
+  border: "oklch(0.922 0 0)",
+  card: "oklch(1 0 0)",
+  chart1: "oklch(0.646 0.222 41.116)",
+  chart2: "oklch(0.6 0.118 184.704)",
+  chart3: "oklch(0.398 0.07 227.392)",
+  chart4: "oklch(0.828 0.189 84.429)",
+  chart5: "oklch(0.769 0.188 70.08)",
+  destructive: "oklch(0.577 0.245 27.325)",
+  foreground: "oklch(0.145 0 0)",
+  muted: "oklch(0.97 0 0)",
+  mutedForeground: "oklch(0.556 0 0)",
+  primary: "oklch(0.205 0 0)",
+  primaryForeground: "oklch(0.985 0 0)",
+  secondary: "oklch(0.97 0 0)",
+  secondaryForeground: "oklch(0.205 0 0)",
+};
+const shadcnNeutralDarkColors: IShadcnNeutralThemeColors = {
+  accent: "oklch(0.269 0 0)",
+  accentForeground: "oklch(0.985 0 0)",
+  background: "oklch(0.145 0 0)",
+  border: "oklch(1 0 0 / 10%)",
+  card: "oklch(0.205 0 0)",
+  chart1: "oklch(0.488 0.243 264.376)",
+  chart2: "oklch(0.696 0.17 162.48)",
+  chart3: "oklch(0.769 0.188 70.08)",
+  chart4: "oklch(0.627 0.265 303.9)",
+  chart5: "oklch(0.645 0.246 16.439)",
+  destructive: "oklch(0.704 0.191 22.216)",
+  foreground: "oklch(0.985 0 0)",
+  muted: "oklch(0.269 0 0)",
+  mutedForeground: "oklch(0.708 0 0)",
+  primary: "oklch(0.922 0 0)",
+  primaryForeground: "oklch(0.205 0 0)",
+  secondary: "oklch(0.269 0 0)",
+  secondaryForeground: "oklch(0.985 0 0)",
 };
 const lightTerminalColors: IDevtoolsTheme["terminal"] = {
-  black: "#b4b5b9",
-  blue: "#2e7de9",
-  brightBlack: "#a1a6c5",
-  brightBlue: "#358aff",
-  brightCyan: "#007ea8",
-  brightGreen: "#5c8524",
-  brightMagenta: "#a463ff",
-  brightRed: "#ff4774",
-  brightWhite: "#3760bf",
-  brightYellow: "#a27629",
-  cyan: "#007197",
-  green: "#587539",
-  magenta: "#9854f1",
-  red: "#f52a65",
-  white: "#6172b0",
-  yellow: "#8c6c3e",
+  black: shadcnNeutralLightColors.foreground,
+  blue: shadcnNeutralLightColors.chart1,
+  brightBlack: shadcnNeutralLightColors.mutedForeground,
+  brightBlue: shadcnNeutralLightColors.chart3,
+  brightCyan: shadcnNeutralLightColors.chart2,
+  brightGreen: shadcnNeutralLightColors.chart2,
+  brightMagenta: shadcnNeutralLightColors.chart4,
+  brightRed: shadcnNeutralLightColors.destructive,
+  brightWhite: shadcnNeutralLightColors.primaryForeground,
+  brightYellow: shadcnNeutralLightColors.chart5,
+  cyan: shadcnNeutralLightColors.chart2,
+  green: shadcnNeutralLightColors.chart2,
+  magenta: shadcnNeutralLightColors.chart4,
+  red: shadcnNeutralLightColors.destructive,
+  white: shadcnNeutralLightColors.mutedForeground,
+  yellow: shadcnNeutralLightColors.chart5,
 };
 const darkTerminalColors: IDevtoolsTheme["terminal"] = {
-  black: "#1d202f",
-  blue: "#7aa2f7",
-  brightBlack: "#414868",
-  brightBlue: "#8db0ff",
-  brightCyan: "#a4daff",
-  brightGreen: "#9fe044",
-  brightMagenta: "#c7a9ff",
-  brightRed: "#ff899d",
-  brightWhite: "#c0caf5",
-  brightYellow: "#faba4a",
-  cyan: "#7dcfff",
-  green: "#9ece6a",
-  magenta: "#bb9af7",
-  red: "#f7768e",
-  white: "#a9b1d6",
-  yellow: "#e0af68",
+  black: shadcnNeutralDarkColors.card,
+  blue: shadcnNeutralDarkColors.chart1,
+  brightBlack: shadcnNeutralDarkColors.mutedForeground,
+  brightBlue: shadcnNeutralDarkColors.chart4,
+  brightCyan: shadcnNeutralDarkColors.chart2,
+  brightGreen: shadcnNeutralDarkColors.chart2,
+  brightMagenta: shadcnNeutralDarkColors.chart4,
+  brightRed: shadcnNeutralDarkColors.destructive,
+  brightWhite: shadcnNeutralDarkColors.foreground,
+  brightYellow: shadcnNeutralLightColors.chart5,
+  cyan: shadcnNeutralDarkColors.chart2,
+  green: shadcnNeutralDarkColors.chart2,
+  magenta: shadcnNeutralDarkColors.chart4,
+  red: shadcnNeutralDarkColors.destructive,
+  white: shadcnNeutralDarkColors.mutedForeground,
+  yellow: shadcnNeutralLightColors.chart5,
 };
 const lightDevtoolsTheme: IDevtoolsTheme = {
   colors: {
-    accentBackground: "#2e7de9",
-    accentForeground: "#11121a",
-    backdrop: "rgba(225, 226, 231, 0.76)",
-    background: "#e1e2e7",
-    border: "#b4b5b9",
-    dangerBackground: "#f7768e",
-    dangerForeground: "#c64343",
-    dangerGlow: "rgba(198, 67, 67, 0.38)",
-    foreground: "#3760bf",
-    logMinimapBackground: "#d5d6db",
-    logMinimapOverlayBackground: "rgba(97, 114, 176, 0.12)",
-    logMinimapOverlayBorder: "rgba(64, 148, 163, 0.3)",
-    logMinimapStderr: "rgba(198, 67, 67, 0.88)",
-    logMinimapStdout: "rgba(55, 96, 191, 0.16)",
-    logPreviewStderrBackground: "rgba(198, 67, 67, 0.12)",
-    logPreviewStderrForeground: "#c64343",
-    mutedForeground: "#6172b0",
-    selectionBackground: "#b7c1e3",
-    selectionBorder: "#2e7de9",
-    successBackground: "#387068",
-    successGlow: "rgba(56, 112, 104, 0.35)",
+    accentBackground: shadcnNeutralLightColors.primary,
+    accentForeground: shadcnNeutralLightColors.primaryForeground,
+    backdrop: "oklch(1 0 0 / 78%)",
+    background: shadcnNeutralLightColors.background,
+    border: shadcnNeutralLightColors.border,
+    dangerBackground: shadcnNeutralLightColors.destructive,
+    dangerForeground: shadcnNeutralLightColors.destructive,
+    dangerGlow: "oklch(0.577 0.245 27.325 / 35%)",
+    foreground: shadcnNeutralLightColors.foreground,
+    logMinimapBackground: shadcnNeutralLightColors.secondary,
+    logMinimapOverlayBackground: "oklch(0.556 0 0 / 12%)",
+    logMinimapOverlayBorder: "oklch(0.6 0.118 184.704 / 30%)",
+    logMinimapStderr: "oklch(0.577 0.245 27.325 / 88%)",
+    logMinimapStdout: "oklch(0.145 0 0 / 16%)",
+    logPreviewStderrBackground: "oklch(0.577 0.245 27.325 / 12%)",
+    logPreviewStderrForeground: shadcnNeutralLightColors.destructive,
+    mutedForeground: shadcnNeutralLightColors.mutedForeground,
+    selectionBackground: shadcnNeutralLightColors.accent,
+    selectionBorder: shadcnNeutralLightColors.primary,
+    successBackground: shadcnNeutralLightColors.chart2,
+    successGlow: "oklch(0.6 0.118 184.704 / 35%)",
   },
   fontFamilies: sharedFontFamilies,
   fontSizes: sharedFontSizes,
   opacities: sharedOpacities,
-  radii: sharedRadii,
   terminal: lightTerminalColors,
   sizes: sharedSizes,
-  shadows: sharedShadows,
   spacing: sharedSpacing,
   zIndices: sharedZIndices,
 };
 const darkDevtoolsTheme: IDevtoolsTheme = {
   colors: {
-    accentBackground: "#7aa2f7",
-    accentForeground: "#11121a",
-    backdrop: "rgba(26, 27, 38, 0.76)",
-    background: "#24283b",
-    border: "#565f89",
-    dangerBackground: "#f7768e",
-    dangerForeground: "#f7768e",
-    dangerGlow: "rgba(247, 118, 142, 0.32)",
-    foreground: "#c0caf5",
-    logMinimapBackground: "#1f2335",
-    logMinimapOverlayBackground: "rgba(86, 95, 137, 0.24)",
-    logMinimapOverlayBorder: "rgba(125, 207, 255, 0.28)",
-    logMinimapStderr: "rgba(247, 118, 142, 0.9)",
-    logMinimapStdout: "rgba(192, 202, 245, 0.14)",
-    logPreviewStderrBackground: "#6a333e",
-    logPreviewStderrForeground: "#ffffff",
-    mutedForeground: "#a9b1d6",
-    selectionBackground: "#2e3c64",
-    selectionBorder: "#7aa2f7",
-    successBackground: "#73daca",
-    successGlow: "rgba(115, 218, 202, 0.34)",
+    accentBackground: shadcnNeutralDarkColors.primary,
+    accentForeground: shadcnNeutralDarkColors.primaryForeground,
+    backdrop: "oklch(0.145 0 0 / 78%)",
+    background: shadcnNeutralDarkColors.background,
+    border: shadcnNeutralDarkColors.border,
+    dangerBackground: shadcnNeutralDarkColors.destructive,
+    dangerForeground: shadcnNeutralDarkColors.destructive,
+    dangerGlow: "oklch(0.704 0.191 22.216 / 32%)",
+    foreground: shadcnNeutralDarkColors.foreground,
+    logMinimapBackground: shadcnNeutralDarkColors.secondary,
+    logMinimapOverlayBackground: "oklch(0.556 0 0 / 24%)",
+    logMinimapOverlayBorder: "oklch(0.696 0.17 162.48 / 28%)",
+    logMinimapStderr: "oklch(0.704 0.191 22.216 / 90%)",
+    logMinimapStdout: "oklch(0.985 0 0 / 14%)",
+    logPreviewStderrBackground: "oklch(0.704 0.191 22.216 / 18%)",
+    logPreviewStderrForeground: shadcnNeutralDarkColors.foreground,
+    mutedForeground: shadcnNeutralDarkColors.mutedForeground,
+    selectionBackground: shadcnNeutralDarkColors.accent,
+    selectionBorder: shadcnNeutralDarkColors.primary,
+    successBackground: shadcnNeutralDarkColors.chart2,
+    successGlow: "oklch(0.696 0.17 162.48 / 34%)",
   },
   fontFamilies: sharedFontFamilies,
   fontSizes: sharedFontSizes,
   opacities: sharedOpacities,
-  radii: sharedRadii,
   terminal: darkTerminalColors,
   sizes: sharedSizes,
-  shadows: sharedShadows,
   spacing: sharedSpacing,
   zIndices: sharedZIndices,
 };
