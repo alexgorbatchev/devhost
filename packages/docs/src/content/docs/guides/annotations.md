@@ -1,7 +1,7 @@
 ---
 title: "Annotations"
 sidebar:
-  order: 9
+  order: 10
 ---
 
 Annotations build on top of the injected devtools UI. For the overlay and routing model itself, see [Devtools](./devtools/).

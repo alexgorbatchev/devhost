@@ -50,6 +50,13 @@ Its vital that when devtools are injected into the user's web application, CSS t
 - Treat source metadata capture as best-effort host introspection, not a guaranteed contract across all frameworks, bundlers, or production builds.
 - Do not leave annotation-selection console logging enabled once source-location debugging is complete because it exposes host source paths and pollutes the host-app console.
 
+## React Highlight matching
+
+- React Highlight browser matching must prefer React fiber source metadata and then fall back to fetchable script source maps when host fibers do not expose source locations.
+- Keep the browser diagnostic event `devhost:react-highlight` in sync with matching behavior; it should remain useful for distinguishing transport success from DOM match failure.
+- Treat source-map matching as best-effort for lowercase host JSX tags. Do not claim reliable component-callsite highlighting for uppercase component tags unless runtime instrumentation or fiber metadata proves the rendered DOM subtree.
+- When changing React Highlight matching, update `packages/docs/src/content/docs/guides/react-highlight.md` and feature-local tests under `features/reactHighlight/__tests__/`.
+
 ## Implementation intent
 
 - Keep the theme small and explicit.

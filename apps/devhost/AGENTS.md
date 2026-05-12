@@ -91,6 +91,7 @@ The human-only `fmt` script runs `oxfmt --write` for the repo using the shared r
 - `internal/services/` — child process orchestration, health checks, port resolution, and cleanup
 - `internal/caddy/` — managed Caddy lifecycle, paths, config, and routing
 - `internal/devtools/` — Go devtools control servers plus embedded browser assets
+- `internal/devtools/nvim/devhost-react-highlight.nvim/` — bundled Neovim plugin; follow its nested `AGENTS.md`
 - `scripts/buildDevtoolsBundle.ts` — bundles `@alexgorbatchev/devhost-ui/main` into ignored `internal/devtools/dist/devtools.js` and copies `@xterm/xterm/css/xterm.css` to ignored `internal/devtools/dist/xterm.css` for `go:embed`
 
 ## Service supervision boundary
