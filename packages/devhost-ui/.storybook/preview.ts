@@ -155,6 +155,7 @@ const withDevtoolsColorScheme: Decorator = (Story, context) => {
   document.body.style.backgroundColor = previewTheme.backgroundColor;
   document.body.style.color = previewTheme.color;
   document.body.style.colorScheme = previewTheme.colorScheme;
+  document.body.style.margin = "0";
 
   return Story();
 };
