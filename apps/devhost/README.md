@@ -32,7 +32,14 @@ devhost --version
 - either:
   - a global `caddy` on your `PATH`, or
   - a managed Caddy binary downloaded with `devhost caddy download`
-- `nvim` when `[devtools.editor].ide = "neovim"`
+- `nvim` and `curl` when `[devtools.editor].ide = "neovim"`
+
+When Neovim editor integration is enabled, devhost launches Neovim with a bundled `devhost-react-highlight.nvim`
+plugin loaded for that devhost instance. The plugin streams cursor locations from TSX/JSX buffers back to the same
+browser overlay through the instance's local control port and token, so multiple devhost stacks can run at the same
+time without sharing editor state. While the stack is running, devhost also writes an instance-scoped shell launcher at
+`.tmp/devhost/<stack-name>/nvim-shell/bin/devhost-nvim`; run it from the project to open Neovim with the same plugin,
+token, and project root as the browser-launched editor.
 
 ### Minimal example
 

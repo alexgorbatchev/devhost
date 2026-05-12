@@ -9,9 +9,41 @@ compiled_binary_path="$package_root_path/dist/devhost"
 source_entrypoint_path="$package_root_path/cmd/devhost"
 original_working_directory_path="$(pwd)"
 
+resolve_manifest_path() {
+  local manifest_path="$1"
+  if [[ "$manifest_path" = /* ]]; then
+    printf '%s' "$manifest_path"
+    return
+  fi
+
+  printf '%s/%s' "$original_working_directory_path" "$manifest_path"
+}
+
+resolved_args=()
+while (($# > 0)); do
+  case "$1" in
+    --manifest)
+      resolved_args+=("$1")
+      shift
+      if (($# > 0)); then
+        resolved_args+=("$(resolve_manifest_path "$1")")
+        shift
+      fi
+      ;;
+    --manifest=*)
+      resolved_args+=("--manifest=$(resolve_manifest_path "${1#--manifest=}")")
+      shift
+      ;;
+    *)
+      resolved_args+=("$1")
+      shift
+      ;;
+  esac
+done
+
 if [[ -x "$compiled_binary_path" ]]; then
-  exec "$compiled_binary_path" "$@"
+  exec "$compiled_binary_path" "${resolved_args[@]}"
 fi
 
 cd "$package_root_path"
-exec env DEVHOST_SHIM_CWD="$original_working_directory_path" go run "$source_entrypoint_path" "$@"
+exec env DEVHOST_SHIM_CWD="$original_working_directory_path" go run "$source_entrypoint_path" "${resolved_args[@]}"

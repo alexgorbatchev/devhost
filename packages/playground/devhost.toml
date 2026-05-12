@@ -1,5 +1,9 @@
 name = "playground"
 
+[caddy.global]
+bindHost = "0.0.0.0"
+http = true
+
 [devtools.status]
 position = "bottom-right"
 
@@ -27,7 +31,7 @@ cwd = "."
 primary = true
 command = ["bun", "run", "server"]
 cwd = "."
-port = 3000
+port = 4000
 host = "devhost.localhost"
 
 [services.web.env]

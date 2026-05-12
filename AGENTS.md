@@ -57,6 +57,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Always: run `bun run check` after changing workspace manifests, scripts, CI, or directory layout.
 - Always: address all lint issues before the end of the turn.
 - Always: when changing shared commands, validation flow, deploy flow, release flow, or contributor policy, update the affected `AGENTS.md` files and user/contributor docs in the same change.
+- Always: design runtime state, ports, temporary files, browser control channels, editor/plugin integrations, and cleanup logic to support multiple `devhost` instances running concurrently for different projects.
 - Done: only claim completion after required docs are updated, required checks for the affected scope pass, and any temporary servers or processes started for validation are stopped.
 - Done: if a required step was skipped, a check failed, or a blocker remains, report the work as incomplete and name the exact gap.
 - Never: Agents should NEVER run `bun run fix` or formatting tools directly, even though the human-facing command is listed above. Formatting is handled automatically in the background via a pre-commit hook using nano-staged.

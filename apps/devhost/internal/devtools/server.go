@@ -20,6 +20,8 @@ const (
 	injectedScriptPath               = controlPathPrefix + "/inject.js"
 	terminalSessionsPath             = controlPathPrefix + "/terminal-sessions"
 	terminalWebsocketPath            = controlPathPrefix + "/ws/terminal"
+	reactHighlightCursorPath         = controlPathPrefix + "/react-highlight/cursor"
+	reactHighlightWebsocketPath      = controlPathPrefix + "/ws/react-highlight"
 	xtermStylesheetPath              = controlPathPrefix + "/xterm.css"
 	restartServicePath               = controlPathPrefix + "/restart-service"
 	healthWebsocketPath              = controlPathPrefix + "/ws/health"
@@ -51,9 +53,9 @@ type RoutedServiceIdentity struct {
 
 type ServiceHealth struct {
 	Managed bool    `json:"managed"`
-	Name   string  `json:"name"`
-	Status bool    `json:"status"`
-	URL    *string `json:"url,omitempty"`
+	Name    string  `json:"name"`
+	Status  bool    `json:"status"`
+	URL     *string `json:"url,omitempty"`
 }
 
 type HealthResponse struct {
@@ -108,6 +110,7 @@ type ControlServer struct {
 	stackName                  string
 	startTerminalSession       terminalSessionStarter
 	annotationQueueStore       *annotationQueueStore
+	neovimShellIntegration     *neovimPluginShellIntegrationFiles
 
 	mu                     sync.Mutex
 	isStopped              bool
@@ -119,6 +122,7 @@ type ControlServer struct {
 	annotationQueueClients map[*websocketClient]struct{}
 	healthClients          map[*websocketClient]struct{}
 	logsClients            map[*websocketClient]struct{}
+	reactHighlightClients  map[*websocketClient]struct{}
 
 	serverWG sync.WaitGroup
 	upgrader websocket.Upgrader
@@ -130,21 +134,21 @@ type websocketClient struct {
 }
 
 type injectedConfig struct {
-	AnnotationDefaultActionID string                  `json:"annotationDefaultActionId"`
-	AnnotationActions       []injectedAnnotationAction `json:"annotationActions"`
-	ComponentEditor         string                  `json:"componentEditor"`
-	ControlToken            string                  `json:"controlToken"`
-	Position                string                  `json:"position"`
-	ProjectRootPath         string                  `json:"projectRootPath"`
-	StackName               string                  `json:"stackName"`
-	EditorEnabled           bool                    `json:"editorEnabled"`
-	ExternalToolbarsEnabled bool                    `json:"externalToolbarsEnabled"`
-	MinimapEnabled          bool                    `json:"minimapEnabled"`
-	StatusEnabled           bool                    `json:"statusEnabled"`
-	AnnotationEnabled       bool                    `json:"annotationEnabled"`
-	AnnotationQueueEnabled  bool                    `json:"annotationQueueEnabled"`
-	TerminalEnabled         bool                    `json:"terminalEnabled"`
-	RoutedServices          []RoutedServiceIdentity `json:"routedServices"`
+	AnnotationDefaultActionID string                     `json:"annotationDefaultActionId"`
+	AnnotationActions         []injectedAnnotationAction `json:"annotationActions"`
+	ComponentEditor           string                     `json:"componentEditor"`
+	ControlToken              string                     `json:"controlToken"`
+	Position                  string                     `json:"position"`
+	ProjectRootPath           string                     `json:"projectRootPath"`
+	StackName                 string                     `json:"stackName"`
+	EditorEnabled             bool                       `json:"editorEnabled"`
+	ExternalToolbarsEnabled   bool                       `json:"externalToolbarsEnabled"`
+	MinimapEnabled            bool                       `json:"minimapEnabled"`
+	StatusEnabled             bool                       `json:"statusEnabled"`
+	AnnotationEnabled         bool                       `json:"annotationEnabled"`
+	AnnotationQueueEnabled    bool                       `json:"annotationQueueEnabled"`
+	TerminalEnabled           bool                       `json:"terminalEnabled"`
+	RoutedServices            []RoutedServiceIdentity    `json:"routedServices"`
 }
 
 type injectedAnnotationAction struct {
@@ -170,6 +174,18 @@ type serviceLogSnapshotMessage struct {
 type serviceLogUpdateMessage struct {
 	Entry ServiceLogEntry `json:"entry"`
 	Type  string          `json:"type"`
+}
+
+type reactHighlightCursorRequest struct {
+	Locator *string `json:"locator"`
+}
+
+type reactHighlightCursorMessage struct {
+	Kind        string  `json:"kind"`
+	Locator     *string `json:"locator"`
+	ProjectRoot string  `json:"projectRoot"`
+	StackName   string  `json:"stackName"`
+	Timestamp   int64   `json:"timestamp"`
 }
 
 func StartControlServer(options StartControlServerOptions) (*ControlServer, error) {
@@ -203,20 +219,20 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	annotationDefaultActionID := normalizeAnnotationDefaultActionID(options.AnnotationDefaultActionID, annotationActions)
 	config := injectedConfig{
 		AnnotationDefaultActionID: annotationDefaultActionID,
-		AnnotationActions:       createInjectedAnnotationActions(annotationActions),
-		AnnotationEnabled:       options.FeatureToggles.AnnotationEnabled,
-		AnnotationQueueEnabled:  options.FeatureToggles.AnnotationQueueEnabled,
-		ComponentEditor:         options.ComponentEditor,
-		ControlToken:            controlToken,
-		EditorEnabled:           options.FeatureToggles.EditorEnabled,
-		ExternalToolbarsEnabled: options.FeatureToggles.ExternalToolbarsEnabled,
-		MinimapEnabled:          options.FeatureToggles.MinimapEnabled,
-		Position:                options.Position,
-		ProjectRootPath:         options.ProjectRootPath,
-		RoutedServices:          append([]RoutedServiceIdentity{}, options.RoutedServices...),
-		StackName:               options.StackName,
-		StatusEnabled:           options.FeatureToggles.StatusEnabled,
-		TerminalEnabled:         options.FeatureToggles.TerminalEnabled,
+		AnnotationActions:         createInjectedAnnotationActions(annotationActions),
+		AnnotationEnabled:         options.FeatureToggles.AnnotationEnabled,
+		AnnotationQueueEnabled:    options.FeatureToggles.AnnotationQueueEnabled,
+		ComponentEditor:           options.ComponentEditor,
+		ControlToken:              controlToken,
+		EditorEnabled:             options.FeatureToggles.EditorEnabled,
+		ExternalToolbarsEnabled:   options.FeatureToggles.ExternalToolbarsEnabled,
+		MinimapEnabled:            options.FeatureToggles.MinimapEnabled,
+		Position:                  options.Position,
+		ProjectRootPath:           options.ProjectRootPath,
+		RoutedServices:            append([]RoutedServiceIdentity{}, options.RoutedServices...),
+		StackName:                 options.StackName,
+		StatusEnabled:             options.FeatureToggles.StatusEnabled,
+		TerminalEnabled:           options.FeatureToggles.TerminalEnabled,
 	}
 	configJSON, err := json.Marshal(config)
 	if err != nil {
@@ -238,6 +254,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		logsClients:                map[*websocketClient]struct{}{},
 		nextLogEntryID:             1,
 		projectRootPath:            options.ProjectRootPath,
+		reactHighlightClients:      map[*websocketClient]struct{}{},
 		restartService:             options.RestartService,
 		stackName:                  options.StackName,
 		startTerminalSession:       options.StartTerminalSession,
@@ -251,6 +268,19 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	}
 	if controlServer.idleTerminalSessionTimeout <= 0 {
 		controlServer.idleTerminalSessionTimeout = defaultIdleTerminalSessionPeriod
+	}
+	if options.FeatureToggles.EditorEnabled {
+		neovimShellIntegration, err := createNeovimPluginShellIntegrationFiles(
+			options.ProjectRootPath,
+			options.StackName,
+			fmt.Sprintf("http://127.0.0.1:%d%s", controlServer.Port(), reactHighlightCursorPath),
+			controlToken,
+		)
+		if err != nil {
+			_ = listener.Close()
+			return nil, err
+		}
+		controlServer.neovimShellIntegration = neovimShellIntegration
 	}
 	if options.FeatureToggles.AnnotationQueueEnabled {
 		controlServer.annotationQueueStore = newAnnotationQueueStore(annotationQueueStoreOptions{
@@ -323,8 +353,10 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	mux.HandleFunc(terminalSessionsPath, controlServer.handleTerminalSessions)
 	mux.HandleFunc(annotationQueuesPath, controlServer.handleAnnotationQueues)
 	mux.HandleFunc(annotationQueuesPath+"/", controlServer.handleAnnotationQueues)
+	mux.HandleFunc(reactHighlightCursorPath, controlServer.handleReactHighlightCursor)
 	mux.HandleFunc(terminalWebsocketPath, controlServer.handleTerminalWebsocket)
 	mux.HandleFunc(annotationQueuesWebsocketPath, controlServer.handleAnnotationQueueWebsocket)
+	mux.HandleFunc(reactHighlightWebsocketPath, controlServer.handleReactHighlightWebsocket)
 	mux.HandleFunc(xtermStylesheetPath, controlServer.handleXtermStylesheet)
 	mux.HandleFunc(restartServicePath, controlServer.handleRestartService)
 	mux.HandleFunc(healthWebsocketPath, controlServer.handleHealthWebsocket)
@@ -446,10 +478,14 @@ func (s *ControlServer) Stop() error {
 	healthClients := snapshotClients(s.healthClients)
 	logsClients := snapshotClients(s.logsClients)
 	annotationQueueClients := snapshotClients(s.annotationQueueClients)
+	reactHighlightClients := snapshotClients(s.reactHighlightClients)
 	terminalSessionIDs := append([]string{}, s.terminalSessionOrder...)
+	neovimShellIntegration := s.neovimShellIntegration
 	s.healthClients = map[*websocketClient]struct{}{}
 	s.logsClients = map[*websocketClient]struct{}{}
 	s.annotationQueueClients = map[*websocketClient]struct{}{}
+	s.reactHighlightClients = map[*websocketClient]struct{}{}
+	s.neovimShellIntegration = nil
 	s.mu.Unlock()
 	if s.annotationQueueStore != nil {
 		_ = s.annotationQueueStore.prepareForShutdown()
@@ -458,7 +494,7 @@ func (s *ControlServer) Stop() error {
 	for _, sessionID := range terminalSessionIDs {
 		s.closeTerminalSession(sessionID)
 	}
-	for _, client := range append(append(healthClients, logsClients...), annotationQueueClients...) {
+	for _, client := range append(append(append(healthClients, logsClients...), annotationQueueClients...), reactHighlightClients...) {
 		client.close()
 	}
 
@@ -466,6 +502,9 @@ func (s *ControlServer) Stop() error {
 	defer cancel()
 	shutdownError := s.server.Shutdown(shutdownContext)
 	s.serverWG.Wait()
+	if neovimShellIntegration != nil {
+		neovimShellIntegration.cleanup()
+	}
 	return shutdownError
 }
 
@@ -561,6 +600,68 @@ func (s *ControlServer) handleLogsWebsocket(writer http.ResponseWriter, request 
 	go s.readUntilClosed(client, s.removeLogsClient)
 }
 
+func (s *ControlServer) handleReactHighlightCursor(writer http.ResponseWriter, request *http.Request) {
+	if request.Header.Get(controlTokenHeaderName) != s.controlToken {
+		http.Error(writer, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	if request.Method != http.MethodPost {
+		http.Error(writer, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var payload reactHighlightCursorRequest
+	if error := json.NewDecoder(request.Body).Decode(&payload); error != nil {
+		http.Error(writer, "Invalid React Highlight cursor payload.", http.StatusBadRequest)
+		return
+	}
+	if payload.Locator != nil && *payload.Locator == "" {
+		http.Error(writer, "Invalid React Highlight cursor payload.", http.StatusBadRequest)
+		return
+	}
+
+	message, error := json.Marshal(reactHighlightCursorMessage{
+		Kind:        "cursor",
+		Locator:     payload.Locator,
+		ProjectRoot: s.projectRootPath,
+		StackName:   s.stackName,
+		Timestamp:   time.Now().UnixMilli(),
+	})
+	if error != nil {
+		http.Error(writer, "Failed to encode React Highlight cursor payload.", http.StatusInternalServerError)
+		return
+	}
+
+	s.mu.Lock()
+	clients := snapshotClients(s.reactHighlightClients)
+	s.mu.Unlock()
+	s.broadcast(clients, string(message), func(client *websocketClient) {
+		s.removeReactHighlightClient(client)
+	})
+
+	writer.Header().Set("content-type", "application/json")
+	_ = json.NewEncoder(writer).Encode(successResponse{Success: true})
+}
+
+func (s *ControlServer) handleReactHighlightWebsocket(writer http.ResponseWriter, request *http.Request) {
+	if request.URL.Query().Get(terminalSessionWebsocketQueryToken) != s.controlToken {
+		http.Error(writer, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	client, error := s.upgrade(writer, request)
+	if error != nil {
+		return
+	}
+
+	s.mu.Lock()
+	s.reactHighlightClients[client] = struct{}{}
+	s.mu.Unlock()
+
+	go s.readUntilClosed(client, s.removeReactHighlightClient)
+}
+
 func (s *ControlServer) resolveHealthMessage() (string, error) {
 	healthResponse, error := s.getHealth()
 	if error != nil {
@@ -611,6 +712,13 @@ func (s *ControlServer) removeHealthClient(client *websocketClient) {
 func (s *ControlServer) removeLogsClient(client *websocketClient) {
 	s.mu.Lock()
 	delete(s.logsClients, client)
+	s.mu.Unlock()
+	client.close()
+}
+
+func (s *ControlServer) removeReactHighlightClient(client *websocketClient) {
+	s.mu.Lock()
+	delete(s.reactHighlightClients, client)
 	s.mu.Unlock()
 	client.close()
 }

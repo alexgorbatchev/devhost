@@ -9,6 +9,7 @@ import { ComponentSourceMenu, useComponentSourceNavigation } from "./features/co
 import { ExternalDevtoolsPanel, useExternalDevtoolsLaunchers } from "./features/externalDevtoolsPanel";
 import { LogMinimap, useServiceLogs } from "./features/minimap";
 import { TerminalSessionTray, useTerminalSessions } from "./features/terminalSessions";
+import { useReactHighlightOverlay } from "./features/reactHighlight";
 import { ServiceStatusPanel, useServiceHealth } from "./features/serviceStatusPanel";
 import { readDevtoolsFeatureToggles } from "./shared/readDevtoolsFeatureToggles";
 import {
@@ -19,6 +20,7 @@ import {
   readDevtoolsAnnotationActions,
   readDevtoolsAnnotationDefaultActionId,
   readDevtoolsComponentEditor,
+  readDevtoolsControlToken,
   readDevtoolsPosition,
   readDevtoolsProjectRootPath,
   readDevtoolsRoutedServices,
@@ -42,6 +44,7 @@ function AppContent(): JSX.Element {
   const annotationActions: IAnnotationAction[] = readDevtoolsAnnotationActions();
   const annotationDefaultActionId: string = readDevtoolsAnnotationDefaultActionId();
   const componentEditor = readDevtoolsComponentEditor();
+  const controlToken: string = readDevtoolsControlToken();
   const devtoolsPosition: DevtoolsPosition = readDevtoolsPosition();
   const projectRootPath: string = readDevtoolsProjectRootPath();
   const routedServices = readDevtoolsRoutedServices();
@@ -73,6 +76,11 @@ function AppContent(): JSX.Element {
   const [isMinimapHovered, setIsMinimapHovered] = useState<boolean>(false);
   const [selectedAnnotationActionId, setSelectedAnnotationActionId] = useState<string>(annotationDefaultActionId);
   const logEntries = useServiceLogs(isMinimapHovered);
+  useReactHighlightOverlay({
+    controlToken,
+    enabled: features.editorEnabled,
+    projectRootPath,
+  });
   const { componentMenu, openComponentSource } = useComponentSourceNavigation({
     componentEditor,
     projectRootPath,

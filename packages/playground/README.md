@@ -50,7 +50,7 @@ Open the routed app at:
 https://playground.localhost
 ```
 
-The manifest routes the `web` service to `bun run server` on port `3000` and enables the injected devtools overlay. Annotation actions include a Pi-backed launcher and a build command.
+The manifest routes the `web` service to `bun run server` on port `4000` and enables the injected devtools overlay. Annotation actions include a Pi-backed launcher and a build command.
 
 ## Project layout
 

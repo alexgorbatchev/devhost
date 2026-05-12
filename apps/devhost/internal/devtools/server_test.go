@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -23,7 +25,7 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 			{Agent: manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"}, DisplayName: "Pi", ID: defaultAnnotationActionID, Kind: "agent"},
 			{Command: []string{"bun", "run", "lint"}, Cwd: "/tmp/project", DisplayName: "Run lint", ID: "lint", Kind: "command"},
 		},
-		ComponentEditor:  "vscode",
+		ComponentEditor: "vscode",
 		FeatureToggles: FeatureToggles{
 			AnnotationEnabled:       false,
 			AnnotationQueueEnabled:  false,
@@ -129,8 +131,8 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 	}
 
 	unsupportedServer, unsupportedError := StartControlServer(StartControlServerOptions{
-		ComponentEditor:  "vscode",
-		FeatureToggles:   FeatureToggles{StatusEnabled: true},
+		ComponentEditor: "vscode",
+		FeatureToggles:  FeatureToggles{StatusEnabled: true},
 		GetHealthResponse: func() (HealthResponse, error) {
 			return HealthResponse{Services: []ServiceHealth{}}, nil
 		},
@@ -167,8 +169,8 @@ func TestControlServerHealthAndLogsWebsockets(t *testing.T) {
 
 	healthResponse := HealthResponse{Services: []ServiceHealth{{Managed: true, Name: "web", Status: true}}}
 	controlServer, err := StartControlServer(StartControlServerOptions{
-		ComponentEditor:  "vscode",
-		FeatureToggles:   FeatureToggles{MinimapEnabled: true, StatusEnabled: true},
+		ComponentEditor: "vscode",
+		FeatureToggles:  FeatureToggles{MinimapEnabled: true, StatusEnabled: true},
 		GetHealthResponse: func() (HealthResponse, error) {
 			return healthResponse, nil
 		},
@@ -216,16 +218,143 @@ func TestControlServerHealthAndLogsWebsockets(t *testing.T) {
 	}
 }
 
+func TestControlServerReactHighlightCursorBroadcastIsInstanceScoped(t *testing.T) {
+	t.Parallel()
+
+	firstProjectRootPath := t.TempDir()
+	secondProjectRootPath := t.TempDir()
+	firstServer, err := StartControlServer(StartControlServerOptions{
+		ComponentEditor: "neovim",
+		FeatureToggles:  FeatureToggles{EditorEnabled: true, StatusEnabled: true, TerminalEnabled: true},
+		GetHealthResponse: func() (HealthResponse, error) {
+			return HealthResponse{Services: []ServiceHealth{}}, nil
+		},
+		Position:        "bottom-right",
+		ProjectRootPath: firstProjectRootPath,
+		StackName:       "first-stack",
+	})
+	if err != nil {
+		t.Fatalf("StartControlServer(first) error = %v", err)
+	}
+	t.Cleanup(func() {
+		_ = firstServer.Stop()
+	})
+
+	secondServer, err := StartControlServer(StartControlServerOptions{
+		ComponentEditor: "neovim",
+		FeatureToggles:  FeatureToggles{EditorEnabled: true, StatusEnabled: true, TerminalEnabled: true},
+		GetHealthResponse: func() (HealthResponse, error) {
+			return HealthResponse{Services: []ServiceHealth{}}, nil
+		},
+		Position:        "bottom-right",
+		ProjectRootPath: secondProjectRootPath,
+		StackName:       "second-stack",
+	})
+	if err != nil {
+		t.Fatalf("StartControlServer(second) error = %v", err)
+	}
+	t.Cleanup(func() {
+		_ = secondServer.Stop()
+	})
+
+	firstToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(firstServer.Port(), injectedScriptPath))))
+	secondToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(secondServer.Port(), injectedScriptPath))))
+	firstSocket := mustDialWebsocket(t, reactHighlightWebsocketURL(firstServer.Port(), firstToken))
+	defer firstSocket.Close()
+	secondSocket := mustDialWebsocket(t, reactHighlightWebsocketURL(secondServer.Port(), secondToken))
+	defer secondSocket.Close()
+
+	crossTokenRequest, err := http.NewRequest(http.MethodPost, serverURL(secondServer.Port(), reactHighlightCursorPath), strings.NewReader(`{"locator":"src/App.tsx:1:1"}`))
+	if err != nil {
+		t.Fatalf("NewRequest(cross token) error = %v", err)
+	}
+	crossTokenRequest.Header.Set(controlTokenHeaderName, firstToken)
+	crossTokenResponse, err := http.DefaultClient.Do(crossTokenRequest)
+	if err != nil {
+		t.Fatalf("Do(cross token) error = %v", err)
+	}
+	defer crossTokenResponse.Body.Close()
+	if crossTokenResponse.StatusCode != http.StatusForbidden {
+		t.Fatalf("cross-token React Highlight status = %d, want 403", crossTokenResponse.StatusCode)
+	}
+
+	firstRequest, err := http.NewRequest(http.MethodPost, serverURL(firstServer.Port(), reactHighlightCursorPath), strings.NewReader(`{"locator":"src/App.tsx:10:5"}`))
+	if err != nil {
+		t.Fatalf("NewRequest(first cursor) error = %v", err)
+	}
+	firstRequest.Header.Set(controlTokenHeaderName, firstToken)
+	firstRequest.Header.Set("content-type", "application/json")
+	firstResponse, err := http.DefaultClient.Do(firstRequest)
+	if err != nil {
+		t.Fatalf("Do(first cursor) error = %v", err)
+	}
+	defer firstResponse.Body.Close()
+	if firstResponse.StatusCode != http.StatusOK {
+		t.Fatalf("first cursor status = %d, want 200", firstResponse.StatusCode)
+	}
+
+	var message reactHighlightCursorMessage
+	if err := firstSocket.ReadJSON(&message); err != nil {
+		t.Fatalf("ReadJSON(first cursor) error = %v", err)
+	}
+	if message.Kind != "cursor" || message.Locator == nil || *message.Locator != "src/App.tsx:10:5" || message.ProjectRoot != firstProjectRootPath || message.StackName != "first-stack" || message.Timestamp <= 0 {
+		t.Fatalf("first cursor message = %#v", message)
+	}
+
+	_ = secondSocket.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
+	if _, _, err := secondSocket.ReadMessage(); err == nil {
+		t.Fatal("ReadMessage(second socket after first cursor) error = nil, want deadline timeout")
+	}
+	_ = secondSocket.SetReadDeadline(time.Time{})
+}
+
+func TestControlServerWritesNeovimShellLauncher(t *testing.T) {
+	t.Parallel()
+
+	projectRootPath := t.TempDir()
+	controlServer, err := StartControlServer(StartControlServerOptions{
+		ComponentEditor: "vscode",
+		FeatureToggles:  FeatureToggles{EditorEnabled: true, StatusEnabled: true, TerminalEnabled: true},
+		GetHealthResponse: func() (HealthResponse, error) {
+			return HealthResponse{Services: []ServiceHealth{}}, nil
+		},
+		Position:        "bottom-right",
+		ProjectRootPath: projectRootPath,
+		StackName:       "hello-stack",
+	})
+	if err != nil {
+		t.Fatalf("StartControlServer(...) error = %v", err)
+	}
+
+	launcherPath := filepath.Join(projectRootPath, ".tmp", "devhost", "hello-stack", "nvim-shell", "bin", "devhost-nvim")
+	launcherPayload, err := os.ReadFile(launcherPath)
+	if err != nil {
+		t.Fatalf("ReadFile(launcher) error = %v", err)
+	}
+	launcherScript := string(launcherPayload)
+	if !strings.Contains(launcherScript, fmt.Sprintf("export DEVHOST_REACT_HIGHLIGHT_URL='http://127.0.0.1:%d/__devhost__/react-highlight/cursor'", controlServer.Port())) || !strings.Contains(launcherScript, fmt.Sprintf("export DEVHOST_CONTROL_TOKEN='%s'", controlServer.controlToken)) {
+		t.Fatalf("launcher script missing instance endpoint/token:\n%s", launcherScript)
+	}
+
+	if err := controlServer.Stop(); err != nil {
+		t.Fatalf("Stop() error = %v", err)
+	}
+	if _, err := os.Stat(launcherPath); !os.IsNotExist(err) {
+		t.Fatalf("Stat(cleaned launcher) error = %v, want not exist", err)
+	}
+}
+
 func TestControlServerTerminalSessionsEditorOnlyLifecycle(t *testing.T) {
 	t.Parallel()
 
 	starter := newTestTerminalStarter()
+	projectRootPath := t.TempDir()
 	controlServer, err := StartControlServer(StartControlServerOptions{
 		AnnotationActions: []manifest.ValidatedAnnotationAction{
 			{Agent: manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"}, DisplayName: "Pi", ID: defaultAnnotationActionID, Kind: "agent"},
 			{Command: []string{"bun", "run", "lint"}, Cwd: "/tmp/project", DisplayName: "Run lint", ID: "lint", Kind: "command"},
 		},
-		ComponentEditor:  "neovim",
+		ComponentEditor: "neovim",
 		FeatureToggles: FeatureToggles{
 			EditorEnabled:   true,
 			StatusEnabled:   true,
@@ -235,7 +364,7 @@ func TestControlServerTerminalSessionsEditorOnlyLifecycle(t *testing.T) {
 			return HealthResponse{Services: []ServiceHealth{}}, nil
 		},
 		Position:             "bottom-right",
-		ProjectRootPath:      "/tmp/project",
+		ProjectRootPath:      projectRootPath,
 		StackName:            "hello-stack",
 		StartTerminalSession: starter.start,
 	})
@@ -460,7 +589,7 @@ func TestControlServerAgentAnnotationQueuesLifecycle(t *testing.T) {
 			Kind:        "agent",
 		}},
 		AnnotationDefaultActionID: defaultAnnotationActionID,
-		ComponentEditor:  "vscode",
+		ComponentEditor:           "vscode",
 		FeatureToggles: FeatureToggles{
 			AnnotationEnabled:      true,
 			AnnotationQueueEnabled: true,
@@ -635,7 +764,7 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 			Kind:        "agent",
 		}},
 		AnnotationDefaultActionID: defaultAnnotationActionID,
-		ComponentEditor:  "vscode",
+		ComponentEditor:           "vscode",
 		FeatureToggles: FeatureToggles{
 			AnnotationEnabled:      true,
 			AnnotationQueueEnabled: true,
@@ -698,7 +827,7 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 			Kind:        "agent",
 		}},
 		AnnotationDefaultActionID: defaultAnnotationActionID,
-		ComponentEditor:  "vscode",
+		ComponentEditor:           "vscode",
 		FeatureToggles: FeatureToggles{
 			AnnotationEnabled:      true,
 			AnnotationQueueEnabled: true,
@@ -755,8 +884,9 @@ func TestControlServerTerminalSessionsRetainTailAndIdleCleanup(t *testing.T) {
 	t.Parallel()
 
 	starter := newTestTerminalStarter()
+	projectRootPath := t.TempDir()
 	controlServer, err := StartControlServer(StartControlServerOptions{
-		ComponentEditor:  "neovim",
+		ComponentEditor: "neovim",
 		FeatureToggles: FeatureToggles{
 			EditorEnabled:   true,
 			StatusEnabled:   true,
@@ -767,7 +897,7 @@ func TestControlServerTerminalSessionsRetainTailAndIdleCleanup(t *testing.T) {
 		},
 		IdleTerminalSessionTimeout: 25 * time.Millisecond,
 		Position:                   "bottom-right",
-		ProjectRootPath:            "/tmp/project",
+		ProjectRootPath:            projectRootPath,
 		StackName:                  "hello-stack",
 		StartTerminalSession:       starter.start,
 	})
@@ -864,6 +994,10 @@ func terminalWebsocketURL(port int, sessionID string, controlToken string) strin
 
 func annotationQueueWebsocketURL(port int, controlToken string) string {
 	return fmt.Sprintf("ws://127.0.0.1:%d%s?token=%s", port, annotationQueuesWebsocketPath, controlToken)
+}
+
+func reactHighlightWebsocketURL(port int, controlToken string) string {
+	return fmt.Sprintf("ws://127.0.0.1:%d%s?token=%s", port, reactHighlightWebsocketPath, controlToken)
 }
 
 func extractControlToken(t *testing.T, injectedScript string) string {

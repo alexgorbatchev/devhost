@@ -34,7 +34,7 @@ type terminalSessionCommand struct {
 	env     map[string]string
 }
 
-func createTerminalSessionCommand(actions []manifest.ValidatedAnnotationAction, componentEditor string, projectRootPath string, request terminalSessionRequest, stackName string) (*terminalSessionCommand, error) {
+func createTerminalSessionCommand(actions []manifest.ValidatedAnnotationAction, componentEditor string, projectRootPath string, request terminalSessionRequest, stackName string, editorIntegration editorTerminalIntegration) (*terminalSessionCommand, error) {
 	if request.Kind == terminalSessionRequestKindAgent || request.Kind == terminalSessionRequestKindCommand {
 		if request.Annotation == nil {
 			return nil, fmt.Errorf("annotation terminal payload is required")
@@ -52,17 +52,7 @@ func createTerminalSessionCommand(actions []manifest.ValidatedAnnotationAction, 
 		return createCommandAnnotationTerminalCommand(action, projectRootPath, *request.Annotation, stackName)
 	}
 
-	command, err := createEditorTerminalCommand(componentEditor, request, projectRootPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return &terminalSessionCommand{
-		cleanup: func() {},
-		command: command,
-		cwd:     projectRootPath,
-		env:     map[string]string{},
-	}, nil
+	return createEditorTerminalCommand(componentEditor, request, projectRootPath, stackName, editorIntegration)
 }
 
 func findAnnotationAction(actions []manifest.ValidatedAnnotationAction, actionID string) (manifest.ValidatedAnnotationAction, bool) {
