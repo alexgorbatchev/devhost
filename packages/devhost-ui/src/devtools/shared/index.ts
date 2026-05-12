@@ -15,6 +15,7 @@ export {
   type IAnnotationAction,
 } from "./devtoolsConfig";
 export { HoverSlidePanel } from "./HoverSlidePanel";
+export { HighlightOverlay, type IHighlightOverlayItem, type IHighlightOverlayRectangle } from "./HighlightOverlay";
 export { ThemeProvider } from "./ThemeProvider";
 export { type IDevtoolsTheme } from "./devtoolsTheme";
 export { readDevtoolsAnnotationActions } from "./readDevtoolsAnnotationActions";

@@ -221,7 +221,6 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
         isSelectionMode={isSelectionMode}
         selectedTargets={selectedTargets}
         testIdPrefix="AnnotationComposer"
-        viewportPadding={viewportPadding}
       />
       {selectedTargets.length > 0 && popupCoordinates !== null ? (
         <div

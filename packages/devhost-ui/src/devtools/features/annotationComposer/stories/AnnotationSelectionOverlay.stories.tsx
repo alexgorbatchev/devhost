@@ -281,7 +281,7 @@ function AnnotationSelectionOverlayPositioningScene({
 
         <div data-devhost-devtools="">
           <ThemeProvider colorScheme={colorScheme}>
-            <AnnotationSelectionOverlay selectedTargets={selectedTargets} viewportPadding={16} />
+            <AnnotationSelectionOverlay selectedTargets={selectedTargets} />
           </ThemeProvider>
         </div>
       </div>
@@ -358,11 +358,7 @@ function AnnotationSelectionOverlaySingleTargetScene({
       </button>
       <div data-devhost-devtools="">
         <ThemeProvider colorScheme={colorScheme}>
-          <AnnotationSelectionOverlay
-            selectedTargets={selectedTargets}
-            testIdPrefix="ContainedStageSelectionOverlay"
-            viewportPadding={16}
-          />
+          <AnnotationSelectionOverlay selectedTargets={selectedTargets} testIdPrefix="ContainedStageSelectionOverlay" />
         </ThemeProvider>
       </div>
     </div>

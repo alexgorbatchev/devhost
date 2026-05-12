@@ -2,24 +2,11 @@ import type { CSSObject } from "@emotion/css/create-instance";
 
 import type { IDevtoolsTheme } from "../../shared";
 
-import {
-  markerSize,
-  popupWidth,
-  readSelectionHighlightFrame,
-  type ISelectionHighlightFrame,
-  type ISelectionOverlayRenderModel,
-} from "./annotationComposerModels";
-import type { IRectSnapshot } from "./types";
+import { popupWidth } from "./annotationComposerModels";
 const actionButtonMutedForeground: string = "rgba(255, 255, 255, 0.6)";
 const actionButtonShortcutBackground: string = "rgba(255, 255, 255, 0.1)";
 const actionButtonSubmitForeground: string = "rgba(255, 255, 255, 1)";
 const actionButtonHoverRing: string = "rgba(255, 255, 255, 0.22)";
-
-export const overlayStyle: CSSObject = {
-  position: "fixed",
-  inset: 0,
-  pointerEvents: "none",
-};
 
 export const popupHeaderStyle: CSSObject = {
   display: "grid",
@@ -89,38 +76,6 @@ export function createSubmitButtonStyle(theme: IDevtoolsTheme): CSSObject {
   };
 }
 
-export function createHoverHighlightStyle(theme: IDevtoolsTheme, hoveredRectangle: IRectSnapshot): CSSObject {
-  return createSelectionHighlightFrameStyle(theme, readSelectionHighlightFrame(hoveredRectangle));
-}
-
-export function createSelectionHighlightStyle(
-  theme: IDevtoolsTheme,
-  selectionHighlightFrame: ISelectionHighlightFrame,
-): CSSObject {
-  return createSelectionHighlightFrameStyle(theme, selectionHighlightFrame);
-}
-
-export function createMarkerStyle(theme: IDevtoolsTheme, marker: ISelectionOverlayRenderModel): CSSObject {
-  return {
-    position: "fixed",
-    top: marker.markerTop,
-    left: marker.markerLeft,
-    width: `${markerSize}px`,
-    height: `${markerSize}px`,
-    display: "grid",
-    placeItems: "center",
-    borderRadius: theme.radii.pill,
-    background: theme.colors.accentBackground,
-    color: theme.colors.accentForeground,
-    fontFamily: theme.fontFamilies.monospace,
-    fontSize: theme.fontSizes.sm,
-    fontWeight: 700,
-    boxShadow: theme.shadows.floating,
-    pointerEvents: "none",
-    zIndex: theme.zIndices.floating,
-  };
-}
-
 export function createPopupStyle(theme: IDevtoolsTheme, left: number, top: number): CSSObject {
   return {
     position: "fixed",
@@ -167,23 +122,5 @@ export function createCheckboxLabelStyle(theme: IDevtoolsTheme): CSSObject {
     color: theme.colors.foreground,
     cursor: "pointer",
     userSelect: "none",
-  };
-}
-
-function createSelectionHighlightFrameStyle(
-  theme: IDevtoolsTheme,
-  selectionHighlightFrame: ISelectionHighlightFrame,
-): CSSObject {
-  return {
-    position: "fixed",
-    top: selectionHighlightFrame.top,
-    left: selectionHighlightFrame.left,
-    width: selectionHighlightFrame.width,
-    height: selectionHighlightFrame.height,
-    boxSizing: "border-box",
-    border: `2px solid ${theme.colors.selectionBorder}`,
-    borderRadius: theme.radii.sm,
-    pointerEvents: "none",
-    zIndex: theme.zIndices.floating,
   };
 }
