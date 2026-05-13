@@ -4,14 +4,8 @@ import { RotateCwIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-import {
-  Button,
-  DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
-  HoverSlidePanel,
-  readDevtoolsControlToken,
-  RESTART_SERVICE_PATH,
-  useDevtoolsTheme,
-} from "../../shared";
+import { Button, DEVTOOLS_CONTROL_TOKEN_HEADER_NAME, HoverSlidePanel, RESTART_SERVICE_PATH } from "../../shared";
+import { readInjectedDevtoolsConfig } from "../../shared/readInjectedDevtoolsConfig";
 import type { ServiceHealth } from "../../shared/types";
 
 interface IServiceStatusPanelProps {
@@ -20,7 +14,7 @@ interface IServiceStatusPanelProps {
 }
 
 export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element | null {
-  const theme = useDevtoolsTheme();
+  const { controlToken } = readInjectedDevtoolsConfig();
   const visibleServices: ServiceHealth[] = props.services;
   const shouldRenderPanel: boolean = props.errorMessage !== null || visibleServices.length > 0;
 
@@ -31,12 +25,10 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
   return (
     <HoverSlidePanel
       ariaLabel="devhost services"
-      peekWidth={theme.sizes.serviceStatusPanelPeekWidth}
+      error={props.errorMessage ?? undefined}
       testId="ServiceStatusPanel"
+      title="Services"
     >
-      {props.errorMessage !== null ? (
-        <div className="mb-2 whitespace-nowrap text-right text-xs text-destructive">{props.errorMessage}</div>
-      ) : null}
       {visibleServices.length > 0 ? (
         <ul className="grid list-none gap-1 p-0" data-testid="ServiceStatusPanel--service-list">
           {visibleServices.map((service: ServiceHealth) => {
@@ -65,6 +57,8 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
                 {service.managed ? (
                   <Button
                     ariaLabel={`Restart ${service.name}`}
+                    size="icon-sm"
+                    startEnhancer={<RotateCwIcon data-icon="inline-start" />}
                     title={`Restart ${service.name}`}
                     variant="secondary"
                     onClick={async (): Promise<void> => {
@@ -72,7 +66,7 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
                         await fetch(RESTART_SERVICE_PATH, {
                           body: JSON.stringify({ serviceName: service.name }),
                           headers: {
-                            [DEVTOOLS_CONTROL_TOKEN_HEADER_NAME]: readDevtoolsControlToken(),
+                            [DEVTOOLS_CONTROL_TOKEN_HEADER_NAME]: controlToken,
                             "content-type": "application/json",
                           },
                           method: "POST",
@@ -81,9 +75,7 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
                         console.error(`Failed to restart service ${service.name}:`, error);
                       }
                     }}
-                  >
-                    <RotateCwIcon data-icon="inline-start" />
-                  </Button>
+                  />
                 ) : null}
                 {name}
                 <Badge variant="secondary">{managementBadgeLabel}</Badge>

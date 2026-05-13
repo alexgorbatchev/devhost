@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fn, userEvent, within } from "storybook/test";
 
-import { DEVTOOLS_CONTROL_TOKEN_HEADER_NAME, RESTART_SERVICE_PATH, readDevtoolsControlToken } from "../../../shared";
+import { DEVTOOLS_CONTROL_TOKEN_HEADER_NAME, RESTART_SERVICE_PATH } from "../../../shared";
+import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
 import { StorybookThemeProvider } from "../../../shared/stories/storybookTheme";
 import { ServiceStatusPanel } from "../ServiceStatusPanel";
@@ -57,7 +58,7 @@ export const Default: Story = {
         expect.objectContaining({
           body: JSON.stringify({ serviceName: "api" }),
           headers: expect.objectContaining({
-            [DEVTOOLS_CONTROL_TOKEN_HEADER_NAME]: readDevtoolsControlToken(),
+            [DEVTOOLS_CONTROL_TOKEN_HEADER_NAME]: readInjectedDevtoolsConfig().controlToken,
             "content-type": "application/json",
           }),
           method: "POST",

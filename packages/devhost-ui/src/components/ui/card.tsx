@@ -6,9 +6,13 @@ interface ICardProps extends React.ComponentProps<"div"> {
   size?: "default" | "sm";
 }
 
-export function Card({ className, size = "default", ...props }: ICardProps): React.ReactElement {
+export const Card = React.forwardRef<HTMLDivElement, ICardProps>(function Card(
+  { className, size = "default", ...props }: ICardProps,
+  reference,
+): React.ReactElement {
   return (
     <div
+      ref={reference}
       data-size={size}
       data-slot="card"
       data-testid="Card"
@@ -19,7 +23,7 @@ export function Card({ className, size = "default", ...props }: ICardProps): Rea
       {...props}
     />
   );
-}
+});
 
 export function CardHeader({ className, ...props }: React.ComponentProps<"div">): React.ReactElement {
   return (

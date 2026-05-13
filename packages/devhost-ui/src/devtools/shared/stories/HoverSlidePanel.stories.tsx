@@ -27,7 +27,6 @@ export const Default: Story = {
   args: {
     ariaLabel: "Hover panel",
     children: <div className="w-40">Hover Panel Content</div>,
-    peekWidth: "32px",
     testId: "hover-slide-panel",
   },
   play: async ({ canvasElement }): Promise<void> => {
@@ -36,13 +35,18 @@ export const Default: Story = {
     await expect(panel).toBeInTheDocument();
     await expect(canvas.getByText("Hover Panel Content")).toBeInTheDocument();
 
-    // Test hover interaction
-    const beforeHoverTransform = window.getComputedStyle(panel).transform;
+    const restingLeft = panel.getBoundingClientRect().left;
+
     await userEvent.hover(panel);
     await waitFor(() => {
-      expect(window.getComputedStyle(panel).transform).not.toEqual(beforeHoverTransform);
+      expect(panel.getBoundingClientRect().left).toBeLessThan(restingLeft);
     });
+
     await userEvent.unhover(panel);
+
+    await waitFor(() => {
+      expect(panel.getBoundingClientRect().left).toEqual(restingLeft);
+    });
   },
 };
 
@@ -51,24 +55,45 @@ export const Pinned: Story = {
     ariaLabel: "Pinned hover panel",
     children: <div className="w-40">Pinned Panel Content</div>,
     isPinned: true,
-    peekWidth: "32px",
     testId: "hover-slide-panel-pinned",
   },
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
     const panel = await canvas.findByTestId("hover-slide-panel-pinned");
-    const pinnedTransform = window.getComputedStyle(panel).transform;
+    const pinnedLeft = panel.getBoundingClientRect().left;
 
     await expect(canvas.getByText("Pinned Panel Content")).toBeInTheDocument();
 
     await userEvent.hover(panel);
     await waitFor(() => {
-      expect(window.getComputedStyle(panel).transform).toEqual(pinnedTransform);
+      expect(panel.getBoundingClientRect().left).toEqual(pinnedLeft);
     });
 
     await userEvent.unhover(panel);
     await waitFor(() => {
-      expect(window.getComputedStyle(panel).transform).toEqual(pinnedTransform);
+      expect(panel.getBoundingClientRect().left).toEqual(pinnedLeft);
     });
+  },
+};
+
+export const WithHeaderAndError: Story = {
+  args: {
+    actions: <button type="button">Retry</button>,
+    ariaLabel: "Services panel",
+    children: <div className="w-40">Panel Content</div>,
+    description: "Review current service availability.",
+    error: "Service health is unavailable.",
+    testId: "hover-slide-panel-with-header",
+    title: "Services",
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    const panel = await canvas.findByTestId("hover-slide-panel-with-header");
+
+    await expect(panel).toBeInTheDocument();
+    await expect(canvas.getByText("Services")).toBeInTheDocument();
+    await expect(canvas.getByText("Review current service availability.")).toBeInTheDocument();
+    await expect(canvas.getByRole("alert")).toHaveTextContent("Service health is unavailable.");
+    await expect(canvas.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   },
 };

@@ -1,5 +1,14 @@
 import { useEffect, useId, useRef, useState, type JSX } from "react";
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { buttonVariants } from "@/components/ui/buttonVariants";
 import { cn } from "@/lib/utils";
 
 import { Button, type IAnnotationAction } from "../../shared";
@@ -24,26 +33,7 @@ export function AnnotationActionSplitButton({
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const rootReference = useRef<HTMLDivElement | null>(null);
   const menuId: string = useId();
-
-  useEffect(() => {
-    if (!isMenuOpen) {
-      return;
-    }
-
-    const handlePointerDown = (event: MouseEvent): void => {
-      if (isNodeInsideContainer(rootReference.current, event.target)) {
-        return;
-      }
-
-      setIsMenuOpen(false);
-    };
-
-    document.addEventListener("mousedown", handlePointerDown, true);
-
-    return () => {
-      document.removeEventListener("mousedown", handlePointerDown, true);
-    };
-  }, [isMenuOpen]);
+  const portalContainer: HTMLDivElement | null = rootReference.current;
 
   useEffect(() => {
     if (!isActionMenuDisabled || !isMenuOpen) {
@@ -55,61 +45,54 @@ export function AnnotationActionSplitButton({
 
   return (
     <div ref={rootReference} className="relative inline-flex gap-px" data-testid="AnnotationActionSplitButton">
-      <Button disabled={isRunDisabled} endEnhancer="⌘ ↵" variant="primary" onClick={onRun}>
+      <Button
+        disabled={isRunDisabled}
+        endEnhancer={
+          <KbdGroup>
+            <Kbd>⌘</Kbd>
+            <Kbd>↵</Kbd>
+          </KbdGroup>
+        }
+        variant="primary"
+        onClick={onRun}
+      >
         {`Run ${selectedAction.displayName}`}
       </Button>
-      <Button
-        ariaControls={isMenuOpen ? menuId : undefined}
-        ariaExpanded={isMenuOpen}
-        ariaHaspopup="menu"
-        ariaLabel={`Select annotation action. Current: ${selectedAction.displayName}`}
-        disabled={isActionMenuDisabled}
-        testId="AnnotationActionSplitButton--action-menu-toggle"
-        variant="primary"
-        onClick={(): void => {
-          setIsMenuOpen((currentValue: boolean): boolean => !currentValue);
-        }}
-      >
-        ▾
-      </Button>
-      {isMenuOpen ? (
-        <div
-          aria-label="Annotation actions"
-          className="absolute right-0 top-[calc(100%+4px)] z-[2147483501] grid min-w-[220px] gap-1 rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg"
-          id={menuId}
-          role="menu"
+      <DropdownMenu modal={false} open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+        <DropdownMenuTrigger
+          aria-controls={isMenuOpen ? menuId : undefined}
+          aria-label={`Select annotation action. Current: ${selectedAction.displayName}`}
+          className={cn(buttonVariants({ size: "default", variant: "default" }), "px-2")}
+          data-testid="AnnotationActionSplitButton--action-menu-toggle"
+          disabled={isActionMenuDisabled}
         >
-          {actions.map((action: IAnnotationAction) => {
-            const isSelectedAction: boolean = action.id === selectedAction.id;
-
-            return (
-              <button
-                key={action.id}
-                aria-checked={isSelectedAction}
-                className={cn(
-                  "flex min-h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-sm border px-2.5 py-2 text-left text-xs text-foreground transition-colors hover:border-primary hover:bg-accent hover:text-accent-foreground focus-visible:border-primary focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none",
-                  isSelectedAction ? "border-primary bg-accent" : "border-transparent bg-background",
-                )}
-                role="menuitemradio"
-                type="button"
-                onClick={(): void => {
-                  onActionSelect(action.id);
-                  setIsMenuOpen(false);
-                }}
-              >
-                <span>{action.displayName}</span>
-                <span aria-hidden="true" className={cn(isSelectedAction ? "opacity-100" : "opacity-0")}>
-                  ✓
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
+          ▾
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          aria-label="Annotation actions"
+          className="min-w-[220px]"
+          container={portalContainer}
+          id={menuId}
+        >
+          <DropdownMenuRadioGroup value={selectedAction.id}>
+            {actions.map((action: IAnnotationAction) => {
+              return (
+                <DropdownMenuRadioItem
+                  key={action.id}
+                  value={action.id}
+                  onSelect={(): void => {
+                    onActionSelect(action.id);
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  {action.displayName}
+                </DropdownMenuRadioItem>
+              );
+            })}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
-}
-
-function isNodeInsideContainer(container: HTMLDivElement | null, target: EventTarget | null): boolean {
-  return container !== null && target instanceof Node && container.contains(target);
 }

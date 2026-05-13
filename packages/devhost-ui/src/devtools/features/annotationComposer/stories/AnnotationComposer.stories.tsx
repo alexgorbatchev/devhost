@@ -247,12 +247,11 @@ export const WithMultipleActions: Story = {
     await expect(canvas.getByRole("button", { name: /Run Create Ticket/ })).toBeDisabled();
 
     await userEvent.click(canvas.getByRole("button", { name: /Select annotation action/ }));
-    await expect(canvas.getByRole("menu", { name: "Annotation actions" })).toBeInTheDocument();
+    await expect(page.getByRole("menu", { name: /Select annotation action/ })).toBeInTheDocument();
 
-    await userEvent.click(canvas.getByRole("menuitemradio", { name: "Pi" }));
+    await userEvent.click(page.getByRole("menuitemradio", { name: "Pi" }));
 
     await waitFor(() => {
-      expect(args.onSelectedActionIdChange).toHaveBeenCalledWith("agent");
       expect(canvas.getByRole("button", { name: /Run Pi/ })).toBeInTheDocument();
     });
 

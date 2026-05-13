@@ -1,34 +1,54 @@
 import type { JSX, ReactNode } from "react";
 import { useState } from "react";
 
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
-import { resolveHoverSlidePanelTransform } from "./resolveHoverSlidePanelTransform";
+import { InlineNotice } from "./InlineNotice";
 
 interface IHoverSlidePanelProps {
+  actions?: ReactNode;
   ariaLabel: string;
   children: ReactNode;
+  description?: ReactNode;
+  endEnhancer?: ReactNode;
+  error?: ReactNode;
   isPinned?: boolean;
-  peekWidth: string;
+  startEnhancer?: ReactNode;
   testId?: string;
+  title?: ReactNode;
 }
 
 export function HoverSlidePanel({
+  actions,
   ariaLabel,
   children,
+  description,
+  endEnhancer,
+  error,
   isPinned = false,
-  peekWidth,
+  startEnhancer,
   testId,
+  title,
 }: IHoverSlidePanelProps): JSX.Element {
   const [isHovered, setIsHovered] = useState<boolean>(false);
-  const transform: string = resolveHoverSlidePanelTransform(isHovered || isPinned, peekWidth);
+  const shouldRenderHeader: boolean =
+    actions !== undefined ||
+    description !== undefined ||
+    endEnhancer !== undefined ||
+    error !== undefined ||
+    startEnhancer !== undefined ||
+    title !== undefined;
 
   return (
     <Card
       aria-label={ariaLabel}
-      className="relative z-[2147483502] overflow-visible px-2 py-1 text-xs shadow-sm transition-transform duration-150 ease-in-out after:absolute after:inset-y-0 after:-right-[50px] after:w-[50px] after:content-['']"
+      className={cn(
+        "relative z-[var(--devhost-z-floating-panel)] overflow-visible text-xs shadow-sm transition-transform duration-150 ease-in-out",
+        "after:absolute after:inset-y-0 after:-right-[50px] after:w-[50px] after:content-['']",
+        isHovered || isPinned ? "translate-x-0" : "translate-x-[calc(100%_-_var(--devhost-slide-panel-peek-width))]",
+      )}
       data-testid={testId !== undefined ? testId : "HoverSlidePanel"}
-      style={{ transform }}
       onMouseEnter={(): void => {
         setIsHovered(true);
       }}
@@ -36,7 +56,30 @@ export function HoverSlidePanel({
         setIsHovered(false);
       }}
     >
-      {children}
+      {shouldRenderHeader ? (
+        <CardHeader className="gap-2 border-b px-3 py-2">
+          {title !== undefined ||
+          description !== undefined ||
+          startEnhancer !== undefined ||
+          endEnhancer !== undefined ? (
+            <div className="flex items-start gap-2">
+              {startEnhancer !== undefined ? <div aria-hidden="true">{startEnhancer}</div> : null}
+              <div className="grid min-w-0 flex-1 gap-1">
+                {title !== undefined ? <CardTitle>{title}</CardTitle> : null}
+                {description !== undefined ? <CardDescription>{description}</CardDescription> : null}
+              </div>
+              {actions !== undefined || endEnhancer !== undefined ? (
+                <div className="flex shrink-0 items-center gap-2">
+                  {actions}
+                  {endEnhancer !== undefined ? <div aria-hidden="true">{endEnhancer}</div> : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          {error !== undefined ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
+        </CardHeader>
+      ) : null}
+      <CardContent className="px-3 py-2">{children}</CardContent>
     </Card>
   );
 }

@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 
-import { Button, HoverSlidePanel, useDevtoolsTheme } from "../../shared";
+import { Button, HoverSlidePanel } from "../../shared";
 import type { IExternalDevtoolsLauncher } from "./types";
 
 interface IExternalDevtoolsPanelProps {
@@ -12,8 +12,6 @@ export function ExternalDevtoolsPanel({
   launchers,
   onToggleLauncher,
 }: IExternalDevtoolsPanelProps): JSX.Element | null {
-  const theme = useDevtoolsTheme();
-
   if (launchers.length === 0) {
     return null;
   }
@@ -24,24 +22,21 @@ export function ExternalDevtoolsPanel({
     <HoverSlidePanel
       ariaLabel="external devtools"
       isPinned={hasOpenLauncher}
-      peekWidth={theme.sizes.serviceStatusPanelPeekWidth}
       testId="ExternalDevtoolsPanel"
+      title="Tools"
     >
-      <div className="flex flex-row-reverse items-center gap-2">
-        <span className="whitespace-nowrap text-xs uppercase text-muted-foreground">Tools</span>
-        <div className="flex flex-row flex-wrap justify-start gap-1" data-testid="ExternalDevtoolsPanel--launcher-list">
-          {launchers.map((launcher) => (
-            <Button
-              key={launcher.id}
-              ariaPressed={launcher.isOpen}
-              title={launcher.title}
-              variant={launcher.isOpen ? "primary" : "secondary"}
-              onClick={(): void => onToggleLauncher(launcher.id)}
-            >
-              {launcher.label}
-            </Button>
-          ))}
-        </div>
+      <div className="flex flex-row flex-wrap justify-start gap-1" data-testid="ExternalDevtoolsPanel--launcher-list">
+        {launchers.map((launcher) => (
+          <Button
+            key={launcher.id}
+            ariaPressed={launcher.isOpen}
+            title={launcher.title}
+            variant={launcher.isOpen ? "primary" : "secondary"}
+            onClick={(): void => onToggleLauncher(launcher.id)}
+          >
+            {launcher.label}
+          </Button>
+        ))}
       </div>
     </HoverSlidePanel>
   );

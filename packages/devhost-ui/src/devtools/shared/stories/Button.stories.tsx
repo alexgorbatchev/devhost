@@ -99,3 +99,23 @@ export const WithEndEnhancer: Story = {
     await expect(args.onClick).toHaveBeenCalledTimes(1);
   },
 };
+
+export const WithStartAndEndEnhancers: Story = {
+  args: {
+    children: "Restart service",
+    endEnhancer: "⌘R",
+    onClick: fn(),
+    startEnhancer: "↻",
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const button = canvas.getByRole("button", { name: /Restart service/ });
+
+    await expect(button).toBeInTheDocument();
+    await expect(canvas.getByText("↻")).toBeInTheDocument();
+    await expect(canvas.getByText("⌘R")).toBeInTheDocument();
+
+    await userEvent.click(button);
+    await expect(args.onClick).toHaveBeenCalledTimes(1);
+  },
+};

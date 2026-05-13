@@ -1,14 +1,14 @@
 import { useContext } from "react";
 
 import { devtoolsThemeContext } from "./devtoolsThemeContext";
-import type { IDevtoolsTheme } from "./devtoolsTheme";
+import { getDevtoolsTheme, type IDevtoolsTheme } from "./devtoolsTheme";
 
 export function useDevtoolsTheme(): IDevtoolsTheme {
-  const theme: IDevtoolsTheme | null = useContext(devtoolsThemeContext);
+  const colorScheme = useContext(devtoolsThemeContext);
 
-  if (theme === null) {
+  if (colorScheme === null) {
     throw new Error("Devtools theme is unavailable outside ThemeProvider.");
   }
 
-  return theme;
+  return getDevtoolsTheme(colorScheme);
 }

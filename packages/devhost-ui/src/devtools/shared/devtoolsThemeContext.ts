@@ -1,5 +1,5 @@
 import { createContext } from "react";
 
-import type { IDevtoolsTheme } from "./devtoolsTheme";
+import type { DevtoolsColorScheme } from "./devtoolsTheme";
 
-export const devtoolsThemeContext = createContext<IDevtoolsTheme | null>(null);
+export const devtoolsThemeContext = createContext<DevtoolsColorScheme | null>(null);

@@ -1,8 +1,8 @@
 import type { ReactNode, JSX } from "react";
-import { useMemo } from "react";
+
+import { type DevtoolsColorScheme } from "./devtoolsTheme";
 
 import { devtoolsThemeContext } from "./devtoolsThemeContext";
-import { getDevtoolsTheme, type DevtoolsColorScheme, type IDevtoolsTheme } from "./devtoolsTheme";
 
 interface IThemeProviderProps {
   children: ReactNode;
@@ -10,13 +10,9 @@ interface IThemeProviderProps {
 }
 
 export function ThemeProvider(props: IThemeProviderProps): JSX.Element {
-  const theme: IDevtoolsTheme = useMemo((): IDevtoolsTheme => {
-    return getDevtoolsTheme(props.colorScheme);
-  }, [props.colorScheme]);
-
   return (
-    <devtoolsThemeContext.Provider value={theme}>
-      <div className={`devhost-theme devhost-theme-${props.colorScheme}`}>{props.children}</div>
+    <devtoolsThemeContext.Provider value={props.colorScheme}>
+      <div className={props.colorScheme === "dark" ? "devhost-theme dark" : "devhost-theme"}>{props.children}</div>
     </devtoolsThemeContext.Provider>
   );
 }

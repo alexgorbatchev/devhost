@@ -1,9 +1,7 @@
-import { useLayoutEffect, useRef, useState, type CSSProperties, type JSX, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type JSX, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
-import { DEVTOOLS_ROOT_ATTRIBUTE_NAME, DEVTOOLS_ROOT_ID } from "./constants";
-import type { IDevtoolsTheme } from "./devtoolsTheme";
-import { useDevtoolsTheme } from "./useDevtoolsTheme";
+import { resolveDevtoolsPortalContainer } from "./resolveDevtoolsPortalContainer";
 
 interface IHighlightFrame {
   height: number;
@@ -18,27 +16,6 @@ interface IHighlightOverlayRenderModel extends IHighlightFrame {
   badgeTop: number;
   id: string | number;
   isVisible: boolean;
-}
-
-interface IHighlightBadgeStyle extends CSSProperties {
-  backgroundColor: string;
-  color: string;
-  left: number;
-  pointerEvents: "none";
-  position: "fixed";
-  top: number;
-  zIndex: NonNullable<CSSProperties["zIndex"]>;
-}
-
-interface IHighlightFrameStyle extends CSSProperties {
-  borderColor: string;
-  height: number;
-  left: number;
-  pointerEvents: "none";
-  position: "fixed";
-  top: number;
-  width: number;
-  zIndex: NonNullable<CSSProperties["zIndex"]>;
 }
 
 interface IViewportPosition {
@@ -76,7 +53,6 @@ export function HighlightOverlay({
   highlights,
   rootTestId = "HighlightOverlay",
 }: IHighlightOverlayProps): JSX.Element {
-  const theme = useDevtoolsTheme();
   const portalAnchorReference = useRef<HTMLSpanElement | null>(null);
   const scheduledFrameReference = useRef<number | null>(null);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
@@ -89,7 +65,7 @@ export function HighlightOverlay({
       return;
     }
 
-    setPortalTarget(resolveOverlayPortalTarget(anchorElement));
+    setPortalTarget(resolveDevtoolsPortalContainer(anchorElement));
   }, []);
 
   useLayoutEffect(() => {
@@ -199,18 +175,19 @@ export function HighlightOverlay({
         return (
           <div key={highlight.id}>
             <div
-              className="pointer-events-none fixed box-border rounded-sm border-2"
+              className="pointer-events-none fixed z-[var(--devhost-z-floating)] box-border rounded-sm border-2 border-[var(--devhost-highlight-background)]"
               data-testid={highlightTestId}
-              style={createHighlightStyle(theme, highlight)}
+              style={{ height: highlight.height, left: highlight.left, top: highlight.top, width: highlight.width }}
             />
             {highlight.badge !== undefined ? (
               <div
                 className={[
-                  "pointer-events-none fixed grid size-6 place-items-center",
+                  "pointer-events-none fixed z-[var(--devhost-z-floating)] grid size-6 place-items-center",
+                  "bg-[var(--devhost-highlight-background)] text-[var(--devhost-highlight-foreground)]",
                   "rounded-full font-mono text-xs font-bold shadow-md",
                 ].join(" ")}
                 data-testid={badgeTestId}
-                style={createBadgeStyle(theme, highlight)}
+                style={{ left: highlight.badgeLeft, top: highlight.badgeTop }}
               >
                 {highlight.badge}
               </div>
@@ -226,31 +203,6 @@ export function HighlightOverlay({
       {portalTarget === null ? null : createPortal(overlay, portalTarget)}
     </span>
   );
-}
-
-function createBadgeStyle(theme: IDevtoolsTheme, highlight: IHighlightOverlayRenderModel): IHighlightBadgeStyle {
-  return {
-    backgroundColor: theme.colors.highlightBackground,
-    color: theme.colors.highlightForeground,
-    top: highlight.badgeTop,
-    left: highlight.badgeLeft,
-    pointerEvents: "none",
-    position: "fixed",
-    zIndex: theme.zIndices.floating,
-  };
-}
-
-function createHighlightStyle(theme: IDevtoolsTheme, highlight: IHighlightFrame): IHighlightFrameStyle {
-  return {
-    borderColor: theme.colors.highlightBackground,
-    top: highlight.top,
-    left: highlight.left,
-    width: highlight.width,
-    height: highlight.height,
-    pointerEvents: "none",
-    position: "fixed",
-    zIndex: theme.zIndices.floating,
-  };
 }
 
 function readHighlightFrame(rectangle: IHighlightOverlayRectangle): IHighlightFrame {
@@ -271,38 +223,4 @@ function readVisibleHighlightCorner(
     x: Math.min(Math.max(highlightFrame.left, 0), viewportWidth),
     y: Math.min(Math.max(highlightFrame.top, 0), viewportHeight),
   };
-}
-
-function resolveOverlayPortalTarget(anchorElement: HTMLElement): HTMLElement {
-  const rootNode: Node = anchorElement.getRootNode();
-
-  if (rootNode instanceof ShadowRoot) {
-    const shadowAppRoot: HTMLElement | null = rootNode.querySelector<HTMLElement>(`#${DEVTOOLS_ROOT_ID}`);
-
-    if (shadowAppRoot !== null) {
-      return shadowAppRoot;
-    }
-
-    const shadowRootFallback: HTMLElement | null = rootNode.querySelector<HTMLElement>(
-      `[${DEVTOOLS_ROOT_ATTRIBUTE_NAME}]`,
-    );
-
-    if (shadowRootFallback !== null) {
-      return shadowRootFallback;
-    }
-  }
-
-  const documentAppRoot: HTMLElement | null = anchorElement.ownerDocument.getElementById(DEVTOOLS_ROOT_ID);
-
-  if (documentAppRoot !== null) {
-    return documentAppRoot;
-  }
-
-  const documentBody: HTMLElement | null = anchorElement.ownerDocument.body;
-
-  if (documentBody !== null) {
-    return documentBody;
-  }
-
-  return anchorElement;
 }

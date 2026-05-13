@@ -50,15 +50,19 @@
 }
 
 .devhost-theme {
+  --devhost-z-floating: 2147483500;
+  --devhost-z-floating-panel: 2147483502;
+  --devhost-z-floating-raised: 2147483501;
+  --devhost-z-terminal-expanded: 2147483600;
+  --devhost-z-terminal-tray: 2147483400;
+  --devhost-slide-panel-peek-width: 40px;
+  --devhost-highlight-background: var(--chart-3);
+  --devhost-highlight-foreground: hsl(0 0% 100%);
   --font-sans:
     "Maple Mono Normal NF", "JetBrainsMono Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", monospace;
   --font-heading: var(--font-sans);
   --radius: 0.5em;
-  font-family: var(--font-sans);
-}
-
-.devhost-theme-light {
   --background: hsl(220 23.077% 94.902%);
   --foreground: hsl(234 16.022% 35.49%);
   --card: hsl(220 23.077% 94.902%);
@@ -92,9 +96,10 @@
   --sidebar-border: hsl(225 13.559% 76.863%);
   --sidebar-ring: hsl(234 16.022% 35.49%);
   color-scheme: light;
+  font-family: var(--font-sans);
 }
 
-.devhost-theme-dark {
+.devhost-theme.dark {
   --background: hsl(229 18.644% 23.137%);
   --foreground: hsl(227 70.149% 86.863%);
   --card: hsl(229 18.644% 23.137%);

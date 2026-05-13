@@ -1,10 +1,10 @@
-import { useEffect, useState, type ChangeEvent, type CSSProperties, type JSX } from "react";
+import { useEffect, useState, type ChangeEvent, type JSX } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-import { Button, HoverSlidePanel, useDevtoolsTheme } from "../../shared";
+import { Button, HoverSlidePanel, InlineNotice } from "../../shared";
 import {
   isAnnotationQueueEntryEditable,
   isAnnotationQueueEntrySaveDisabled,
@@ -27,14 +27,9 @@ interface IAnnotationQueuePanelProps {
   queues: IAnnotationQueueSnapshot[];
 }
 
-interface IProgressStyle extends CSSProperties {
-  width: string;
-}
-
 type AnnotationEntryBadgeVariant = "default" | "destructive" | "secondary";
 
 export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Element | null {
-  const theme = useDevtoolsTheme();
   const [confirmDeleteEntryIds, setConfirmDeleteEntryIds] = useState<string[]>([]);
   const [drafts, setDrafts] = useState<IAnnotationQueueDraft[]>([]);
   const [editingEntryIds, setEditingEntryIds] = useState<string[]>([]);
@@ -61,18 +56,11 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
   return (
     <HoverSlidePanel
       ariaLabel="Annotation queues"
-      peekWidth={theme.sizes.serviceStatusPanelPeekWidth}
+      error={props.errorMessage ?? undefined}
       testId="AnnotationQueuePanel"
+      title="Annotation queues"
     >
       <div className="grid w-[min(640px,calc(100vw_-_24px))] gap-2">
-        <div className="grid gap-1">
-          <strong>Annotation queues</strong>
-          {props.errorMessage !== null ? (
-            <div className="text-xs text-destructive" data-testid="AnnotationQueuePanel--error">
-              {props.errorMessage}
-            </div>
-          ) : null}
-        </div>
         <div className="grid gap-2" data-testid="AnnotationQueuePanel--queue-list">
           {props.queues.map((queue: IAnnotationQueueSnapshot) => {
             const queueLabel: string = readAnnotationQueueRouteLabel(queue);
@@ -102,7 +90,7 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
                           queue.status === "paused" ? "bg-destructive" : "bg-primary",
                         )}
                         data-testid="AnnotationQueuePanel--queue-progress"
-                        style={readProgressStyle(queueProgressWidth)}
+                        style={{ width: queueProgressWidth }}
                       />
                     </div>
                   </div>
@@ -268,48 +256,47 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
                               </div>
                             )}
                             {entryIsEditable && entryIsDeleteConfirming ? (
-                              <div
-                                className="grid gap-2 rounded-sm border border-destructive p-2 text-xs text-destructive"
-                                data-testid="AnnotationQueuePanel--delete-confirmation"
-                              >
-                                <div>Delete this annotation?</div>
-                                <div className="flex flex-wrap gap-2">
-                                  <Button
-                                    disabled={entryIsPending}
-                                    testId="AnnotationQueuePanel--confirm-delete"
-                                    variant="danger"
-                                    onClick={(): void => {
-                                      void (async (): Promise<void> => {
-                                        const didRemoveEntry: boolean = await props.onRemoveEntry(entry.entryId);
+                              <InlineNotice testId="AnnotationQueuePanel--delete-confirmation" tone="danger">
+                                <div className="grid gap-2">
+                                  <div>Delete this annotation?</div>
+                                  <div className="flex flex-wrap gap-2">
+                                    <Button
+                                      disabled={entryIsPending}
+                                      testId="AnnotationQueuePanel--confirm-delete"
+                                      variant="danger"
+                                      onClick={(): void => {
+                                        void (async (): Promise<void> => {
+                                          const didRemoveEntry: boolean = await props.onRemoveEntry(entry.entryId);
 
-                                        if (!didRemoveEntry) {
-                                          return;
-                                        }
+                                          if (!didRemoveEntry) {
+                                            return;
+                                          }
 
+                                          setConfirmDeleteEntryIds((currentIds: string[]): string[] => {
+                                            return removeId(currentIds, entry.entryId);
+                                          });
+                                          setEditingEntryIds((currentIds: string[]): string[] => {
+                                            return removeId(currentIds, entry.entryId);
+                                          });
+                                        })();
+                                      }}
+                                    >
+                                      Confirm delete
+                                    </Button>
+                                    <Button
+                                      disabled={entryIsPending}
+                                      testId="AnnotationQueuePanel--cancel-delete"
+                                      onClick={(): void => {
                                         setConfirmDeleteEntryIds((currentIds: string[]): string[] => {
                                           return removeId(currentIds, entry.entryId);
                                         });
-                                        setEditingEntryIds((currentIds: string[]): string[] => {
-                                          return removeId(currentIds, entry.entryId);
-                                        });
-                                      })();
-                                    }}
-                                  >
-                                    Confirm delete
-                                  </Button>
-                                  <Button
-                                    disabled={entryIsPending}
-                                    testId="AnnotationQueuePanel--cancel-delete"
-                                    onClick={(): void => {
-                                      setConfirmDeleteEntryIds((currentIds: string[]): string[] => {
-                                        return removeId(currentIds, entry.entryId);
-                                      });
-                                    }}
-                                  >
-                                    Cancel
-                                  </Button>
+                                      }}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
                                 </div>
-                              </div>
+                              </InlineNotice>
                             ) : null}
                           </li>
                         );
@@ -388,10 +375,6 @@ function readAnnotationQueueProgressLabel(entryCount: number): string {
 
 function readAnnotationQueueProgressWidth(entryCount: number): string {
   return entryCount === 0 ? "0%" : `${100 / entryCount}%`;
-}
-
-function readProgressStyle(width: string): IProgressStyle {
-  return { width };
 }
 
 function appendId(currentIds: string[], id: string): string[] {

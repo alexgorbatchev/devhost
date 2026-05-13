@@ -48,21 +48,13 @@ export interface IDevtoolsTheme {
     white: string;
     yellow: string;
   };
-  opacities: {
-    logMinimapActive: number;
-    logMinimapResting: number;
-  };
   fontSizes: {
     lg: string;
     md: string;
     sm: string;
   };
   sizes: {
-    logMinimapPeekWidth: string;
-    logMinimapWidth: string;
     logPreviewRowHeight: string;
-    logPreviewWidth: string;
-    serviceStatusPanelPeekWidth: string;
   };
   spacing: {
     lg: string;
@@ -71,11 +63,6 @@ export interface IDevtoolsTheme {
     xl: string;
     xs: string;
     xxs: string;
-  };
-  zIndices: {
-    floating: NonNullable<React.CSSProperties["zIndex"]>;
-    terminalExpanded: NonNullable<React.CSSProperties["zIndex"]>;
-    terminalTray: NonNullable<React.CSSProperties["zIndex"]>;
   };
 }
 
@@ -120,16 +107,8 @@ const sharedFontSizes: IDevtoolsTheme["fontSizes"] = {
   md: "14px",
   sm: "12px",
 };
-const sharedOpacities: IDevtoolsTheme["opacities"] = {
-  logMinimapActive: 1,
-  logMinimapResting: 0.5,
-};
 const sharedSizes: IDevtoolsTheme["sizes"] = {
-  logMinimapPeekWidth: "20px",
-  logMinimapWidth: "100px",
   logPreviewRowHeight: "24px",
-  logPreviewWidth: "80ch",
-  serviceStatusPanelPeekWidth: "40px",
 };
 const sharedSpacing: IDevtoolsTheme["spacing"] = {
   lg: "16px",
@@ -138,11 +117,6 @@ const sharedSpacing: IDevtoolsTheme["spacing"] = {
   xl: "64px",
   xs: "8px",
   xxs: "4px",
-};
-const sharedZIndices: IDevtoolsTheme["zIndices"] = {
-  floating: 2_147_483_500,
-  terminalExpanded: 2_147_483_600,
-  terminalTray: 2_147_483_400,
 };
 const sharedHighlightForeground: string = "hsl(0 0% 100%)";
 const catppuccinLatteColors: ICatppuccinThemeColors = {
@@ -249,11 +223,9 @@ const lightDevtoolsTheme: IDevtoolsTheme = {
   },
   fontFamilies: sharedFontFamilies,
   fontSizes: sharedFontSizes,
-  opacities: sharedOpacities,
   terminal: lightTerminalColors,
   sizes: sharedSizes,
   spacing: sharedSpacing,
-  zIndices: sharedZIndices,
 };
 const darkDevtoolsTheme: IDevtoolsTheme = {
   colors: {
@@ -283,11 +255,9 @@ const darkDevtoolsTheme: IDevtoolsTheme = {
   },
   fontFamilies: sharedFontFamilies,
   fontSizes: sharedFontSizes,
-  opacities: sharedOpacities,
   terminal: darkTerminalColors,
   sizes: sharedSizes,
   spacing: sharedSpacing,
-  zIndices: sharedZIndices,
 };
 
 export function getDevtoolsTheme(colorScheme: DevtoolsColorScheme): IDevtoolsTheme {

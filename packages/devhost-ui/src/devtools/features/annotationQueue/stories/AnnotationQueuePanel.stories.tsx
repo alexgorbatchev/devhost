@@ -213,9 +213,7 @@ export const WithError: Story = {
     const canvas = within(canvasElement);
 
     await expect(canvas.getByTestId("AnnotationQueuePanel")).toBeInTheDocument();
-    await expect(canvas.getByTestId("AnnotationQueuePanel--error")).toHaveTextContent(
-      "Connection lost while syncing queue.",
-    );
+    await expect(canvas.getByRole("alert")).toHaveTextContent("Connection lost while syncing queue.");
   },
 };
 

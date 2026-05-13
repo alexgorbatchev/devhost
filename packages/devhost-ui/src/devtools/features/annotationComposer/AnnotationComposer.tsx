@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type JSX } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "react";
 
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Textarea } from "@/components/ui/textarea";
 
-import { Button, type IAnnotationAction, useDevtoolsTheme } from "../../shared";
+import { Button, FloatingPanel, InlineNotice, type IAnnotationAction, useDevtoolsTheme } from "../../shared";
 import { isEventTargetTerminalKeyboardInput } from "../../shared/isEventTargetTerminalKeyboardInput";
 import type { ITerminalSessionStartResult } from "../terminalSessions/types";
 import { AnnotationActionSplitButton } from "./AnnotationActionSplitButton";
@@ -32,13 +33,6 @@ interface IAnnotationComposerProps {
     targetSessionId?: string,
   ) => Promise<ITerminalSessionStartResult>;
   stackName: string;
-}
-
-interface IFixedFrameStyle extends CSSProperties {
-  height?: number;
-  left: number;
-  top: number;
-  width?: number | string;
 }
 
 export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element {
@@ -213,14 +207,12 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
         testIdPrefix="AnnotationComposer"
       />
       {selectedTargets.length > 0 && popupCoordinates !== null ? (
-        <div
+        <FloatingPanel
           ref={popupReference}
-          data-testid="AnnotationComposer--popup"
-          className={[
-            "pointer-events-auto fixed z-[2147483500] grid w-[min(360px,calc(100vw_-_20px))]",
-            "gap-2.5 rounded-md border border-border bg-background p-2.5 text-xs text-foreground shadow-lg",
-          ].join(" ")}
-          style={readPopupStyle(popupCoordinates.left, popupCoordinates.top)}
+          className="pointer-events-auto grid w-[min(360px,calc(100vw_-_20px))] gap-2.5 px-2.5 py-2.5 text-xs text-foreground"
+          position="fixed"
+          style={{ left: popupCoordinates.left, top: popupCoordinates.top }}
+          testId="AnnotationComposer--popup"
           onClick={(event: React.MouseEvent<HTMLDivElement>): void => {
             event.stopPropagation();
           }}
@@ -254,9 +246,9 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
             }}
           />
           {submissionErrorMessage !== null ? (
-            <div className="text-xs leading-normal text-destructive" data-testid="AnnotationComposer--error">
+            <InlineNotice testId="AnnotationComposer--error" tone="danger">
               {submissionErrorMessage}
-            </div>
+            </InlineNotice>
           ) : null}
           {canAppendToActiveAgentSession ? (
             <label className="flex cursor-pointer select-none items-center gap-2 text-xs text-foreground">
@@ -285,7 +277,12 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
             ) : (
               <Button
                 disabled={trimmedComment.length === 0 || isSubmitting}
-                endEnhancer="⌘ ↵"
+                endEnhancer={
+                  <KbdGroup>
+                    <Kbd>⌘</Kbd>
+                    <Kbd>↵</Kbd>
+                  </KbdGroup>
+                }
                 variant="primary"
                 onClick={(): void => {
                   void submitDraft();
@@ -294,20 +291,12 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
                 {isSubmitting ? "Submitting…" : `Run ${selectedAction.displayName}`}
               </Button>
             )}
-            <Button disabled={isSubmitting} endEnhancer="Esc" variant="secondary" onClick={cancelDraft}>
+            <Button disabled={isSubmitting} endEnhancer={<Kbd>Esc</Kbd>} variant="secondary" onClick={cancelDraft}>
               Cancel
             </Button>
           </div>
-        </div>
+        </FloatingPanel>
       ) : null}
     </div>
   );
-}
-
-function readPopupStyle(left: number, top: number): IFixedFrameStyle {
-  return {
-    left,
-    top,
-    width: "min(360px, calc(100vw - 20px))",
-  };
 }

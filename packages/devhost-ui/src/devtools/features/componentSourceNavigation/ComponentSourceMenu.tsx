@@ -1,10 +1,10 @@
-import type { CSSProperties, JSX } from "react";
-import { useMemo, useState } from "react";
+import type { JSX } from "react";
+import { useMemo } from "react";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+import { FloatingPanel, InlineNotice } from "../../shared";
 import type { ComponentSourceMenuItem } from "./types";
 
 interface IComponentSourceMenuProps {
@@ -18,11 +18,6 @@ interface IComponentSourceMenuProps {
   onItemClick: (index: number) => void;
 }
 
-interface IComponentSourceMenuPositionStyle extends CSSProperties {
-  left: number;
-  top: number;
-}
-
 const menuWidthInPixels: number = 420;
 const menuViewportPaddingInPixels: number = 16;
 const menuPerItemHeightInPixels: number = 88;
@@ -34,7 +29,6 @@ export function ComponentSourceMenu({
   errorMessage,
   onItemClick,
 }: IComponentSourceMenuProps): JSX.Element | null {
-  const [hoveredItemIndex, setHoveredItemIndex] = useState<number | null>(null);
   const menuPosition = useMemo(() => {
     const maxLeft: number = Math.max(
       menuViewportPaddingInPixels,
@@ -57,62 +51,29 @@ export function ComponentSourceMenu({
     return null;
   }
 
-  const menuPositionStyle: IComponentSourceMenuPositionStyle = {
-    left: menuPosition.left,
-    top: menuPosition.top,
-  };
-
   return (
-    <Card
-      className="fixed z-[2147483501] grid min-w-[420px] max-w-[420px] gap-2 p-2 shadow-lg"
+    <FloatingPanel
+      className="min-w-[420px] max-w-[420px] gap-2 p-2"
       data-component-source-menu=""
-      data-testid="ComponentSourceMenu"
-      style={menuPositionStyle}
+      level="raised"
+      position="fixed"
+      style={{ left: menuPosition.left, top: menuPosition.top }}
+      testId="ComponentSourceMenu"
     >
       <CardHeader className="gap-1 p-0">
         <CardTitle className="leading-tight">{title}</CardTitle>
-        {errorMessage !== undefined ? (
-          <div
-            className="rounded-sm border border-destructive bg-destructive/10 p-2 text-xs leading-normal text-destructive"
-            role="alert"
-          >
-            {errorMessage}
-          </div>
-        ) : null}
+        {errorMessage !== undefined ? <InlineNotice tone="danger">{errorMessage}</InlineNotice> : null}
       </CardHeader>
       <CardContent className="grid gap-2 p-0">
         {items.map((item: ComponentSourceMenuItem, index: number) => {
-          const isHovered: boolean = hoveredItemIndex === index;
-
           return (
             <button
               key={item.key}
-              className={cn(
-                "grid w-full cursor-pointer justify-stretch gap-1 rounded-md border bg-muted p-2 text-left",
-                "text-sm text-foreground transition-colors hover:border-primary hover:bg-accent",
-                "focus-visible:border-primary focus-visible:bg-accent focus-visible:outline-none",
-                isHovered ? "border-primary bg-accent" : "border-border",
-              )}
+              className="grid w-full justify-stretch gap-1 rounded-md border border-border bg-muted p-2 text-left text-sm text-foreground transition-colors hover:border-primary hover:bg-accent focus-visible:border-primary focus-visible:bg-accent focus-visible:outline-none"
               data-testid="ComponentSourceMenu--item"
               type="button"
               onClick={(): void => {
                 onItemClick(index);
-              }}
-              onFocus={(): void => {
-                setHoveredItemIndex(index);
-              }}
-              onBlur={(): void => {
-                setHoveredItemIndex((currentIndex: number | null): number | null => {
-                  return currentIndex === index ? null : currentIndex;
-                });
-              }}
-              onMouseEnter={(): void => {
-                setHoveredItemIndex(index);
-              }}
-              onMouseLeave={(): void => {
-                setHoveredItemIndex((currentIndex: number | null): number | null => {
-                  return currentIndex === index ? null : currentIndex;
-                });
               }}
             >
               <strong>{`<${item.displayName}>`}</strong>
@@ -134,6 +95,6 @@ export function ComponentSourceMenu({
           );
         })}
       </CardContent>
-    </Card>
+    </FloatingPanel>
   );
 }

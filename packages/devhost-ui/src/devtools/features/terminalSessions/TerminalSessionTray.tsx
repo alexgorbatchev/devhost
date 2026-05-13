@@ -26,7 +26,7 @@ export function TerminalSessionTray(props: ITerminalSessionTrayProps): JSX.Eleme
     <div data-testid="TerminalSessionTray">
       {expandedSession !== undefined ? (
         <div
-          className="pointer-events-none fixed inset-0 z-[2147483600]"
+          className="pointer-events-none fixed inset-0 z-[var(--devhost-z-terminal-expanded)]"
           data-testid="TerminalSessionTray--expanded-root"
         >
           <TerminalSessionPanel
@@ -43,7 +43,10 @@ export function TerminalSessionTray(props: ITerminalSessionTrayProps): JSX.Eleme
         </div>
       ) : null}
       {minimizedSessions.length > 0 ? (
-        <div className="pointer-events-none fixed inset-0 z-[2147483400]" data-testid="TerminalSessionTray--tray-root">
+        <div
+          className="pointer-events-none fixed inset-0 z-[var(--devhost-z-terminal-tray)]"
+          data-testid="TerminalSessionTray--tray-root"
+        >
           <div
             className="pointer-events-none fixed inset-x-2.5 bottom-2.5 flex justify-center"
             data-testid="TerminalSessionTray--dock"

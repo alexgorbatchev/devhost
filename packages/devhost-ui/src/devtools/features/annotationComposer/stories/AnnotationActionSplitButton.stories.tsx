@@ -93,10 +93,11 @@ export const Default: Story = {
   },
   play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
 
     await expect(canvas.getByTestId("AnnotationActionSplitButton")).toBeInTheDocument();
     await userEvent.click(canvas.getByRole("button", { name: /Select annotation action/ }));
-    await userEvent.click(canvas.getByRole("menuitemradio", { name: "Create Ticket" }));
+    await userEvent.click(page.getByRole("menuitemradio", { name: "Create Ticket" }));
 
     await expect(args.onActionSelect).toHaveBeenCalledWith("create-ticket");
     await expect(canvas.getByRole("button", { name: /Run Create Ticket/ })).toBeInTheDocument();
@@ -117,12 +118,13 @@ export const CanSelectActionWhileRunDisabled: Story = {
   },
   play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
 
     await expect(canvas.getByRole("button", { name: /Run Pi/ })).toBeDisabled();
     await expect(canvas.getByRole("button", { name: /Select annotation action/ })).toBeEnabled();
 
     await userEvent.click(canvas.getByRole("button", { name: /Select annotation action/ }));
-    await userEvent.click(canvas.getByRole("menuitemradio", { name: "Create Ticket" }));
+    await userEvent.click(page.getByRole("menuitemradio", { name: "Create Ticket" }));
 
     await expect(args.onActionSelect).toHaveBeenCalledWith("create-ticket");
     await expect(canvas.getByRole("button", { name: /Run Create Ticket/ })).toBeDisabled();

@@ -12,18 +12,10 @@ import { LogMinimap, useServiceLogs } from "./features/minimap";
 import { TerminalSessionTray, useTerminalSessions } from "./features/terminalSessions";
 import { useReactHighlightOverlay } from "./features/reactHighlight";
 import { ServiceStatusPanel, useServiceHealth } from "./features/serviceStatusPanel";
-import { readDevtoolsFeatureToggles } from "./shared/readDevtoolsFeatureToggles";
+import { readInjectedDevtoolsConfig } from "./shared/readInjectedDevtoolsConfig";
 import {
   DEVTOOLS_ROOT_ID,
   ThemeProvider,
-  readDevtoolsAnnotationActions,
-  readDevtoolsAnnotationDefaultActionId,
-  readDevtoolsComponentEditor,
-  readDevtoolsControlToken,
-  readDevtoolsPosition,
-  readDevtoolsProjectRootPath,
-  readDevtoolsRoutedServices,
-  readDevtoolsStackName,
   resolveMatchingColorScheme,
   resolveRoutedServiceKeyForUrl,
   useResolvedColorScheme,
@@ -41,15 +33,23 @@ export function App(): JSX.Element {
 }
 
 function AppContent(): JSX.Element {
-  const annotationActions: IAnnotationAction[] = readDevtoolsAnnotationActions();
-  const annotationDefaultActionId: string = readDevtoolsAnnotationDefaultActionId();
-  const componentEditor = readDevtoolsComponentEditor();
-  const controlToken: string = readDevtoolsControlToken();
-  const devtoolsPosition: DevtoolsPosition = readDevtoolsPosition();
-  const projectRootPath: string = readDevtoolsProjectRootPath();
-  const routedServices = readDevtoolsRoutedServices();
-  const stackName: string = readDevtoolsStackName();
-  const features = readDevtoolsFeatureToggles();
+  const {
+    annotationActions,
+    annotationDefaultActionId,
+    annotationEnabled,
+    annotationQueueEnabled,
+    componentEditor,
+    controlToken,
+    editorEnabled,
+    externalToolbarsEnabled,
+    minimapEnabled,
+    position: devtoolsPosition,
+    projectRootPath,
+    routedServices,
+    stackName,
+    statusEnabled,
+    terminalEnabled,
+  } = readInjectedDevtoolsConfig();
   const appRootReference = useRef<HTMLDivElement | null>(null);
   const { errorMessage, services } = useServiceHealth();
   const {
@@ -60,10 +60,9 @@ function AppContent(): JSX.Element {
     removeEntry,
     resumeQueue,
     saveEntry,
-  } = useAnnotationQueues(features.annotationQueueEnabled);
-  const { launchers: externalDevtoolsLaunchers, toggleLauncher } = useExternalDevtoolsLaunchers(
-    features.externalToolbarsEnabled,
-  );
+  } = useAnnotationQueues(annotationQueueEnabled);
+  const { launchers: externalDevtoolsLaunchers, toggleLauncher } =
+    useExternalDevtoolsLaunchers(externalToolbarsEnabled);
   const {
     expandSession,
     minimizeSession,
@@ -72,13 +71,13 @@ function AppContent(): JSX.Element {
     removeSession,
     startComponentSourceSession,
     submitAnnotation,
-  } = useTerminalSessions(features.terminalEnabled);
+  } = useTerminalSessions(terminalEnabled);
   const [isMinimapHovered, setIsMinimapHovered] = useState<boolean>(false);
   const [selectedAnnotationActionId, setSelectedAnnotationActionId] = useState<string>(annotationDefaultActionId);
   const logEntries = useServiceLogs(isMinimapHovered);
   useReactHighlightOverlay({
     controlToken,
-    enabled: features.editorEnabled,
+    enabled: editorEnabled,
     overlayRootReference: appRootReference,
     projectRootPath,
   });
@@ -86,14 +85,13 @@ function AppContent(): JSX.Element {
     componentEditor,
     projectRootPath,
     startComponentSourceSession,
-    enabled: features.editorEnabled,
+    enabled: editorEnabled,
   });
-  const shouldRenderPanel: boolean = features.statusEnabled && (errorMessage !== null || services.length > 0);
-  const shouldRenderExternalDevtoolsPanel: boolean =
-    features.externalToolbarsEnabled && externalDevtoolsLaunchers.length > 0;
-  const shouldRenderMinimap: boolean = features.minimapEnabled && logEntries.length > 0;
+  const shouldRenderPanel: boolean = statusEnabled && (errorMessage !== null || services.length > 0);
+  const shouldRenderExternalDevtoolsPanel: boolean = externalToolbarsEnabled && externalDevtoolsLaunchers.length > 0;
+  const shouldRenderMinimap: boolean = minimapEnabled && logEntries.length > 0;
   const currentRoutedServiceKey: string | null = resolveRoutedServiceKeyForUrl(routedServices, window.location.href);
-  const selectedAnnotationAction: IAnnotationAction | null = features.annotationEnabled
+  const selectedAnnotationAction: IAnnotationAction | null = annotationEnabled
     ? resolveSelectedAnnotationAction(annotationActions, selectedAnnotationActionId)
     : null;
   const activeAgentSessionId: string | undefined = findActiveAgentSessionId(
@@ -126,7 +124,7 @@ function AppContent(): JSX.Element {
   );
   return (
     <div id={DEVTOOLS_ROOT_ID} ref={appRootReference} data-devhost-devtools="" data-testid="AppContent">
-      {features.annotationEnabled ? (
+      {annotationEnabled ? (
         <AnnotationComposer
           activeAgentSessionId={activeAgentSessionId}
           annotationActions={annotationActions}
@@ -149,14 +147,14 @@ function AppContent(): JSX.Element {
       ) : null}
       <div
         className={cn(
-          "pointer-events-auto fixed z-[2147483501] grid w-fit max-w-[calc(100vw_-_24px)] gap-1",
+          "pointer-events-auto fixed z-[var(--devhost-z-floating-raised)] grid w-fit max-w-[calc(100vw_-_24px)] gap-1",
           devtoolsPosition === "top-right" ? "top-2.5" : "bottom-2.5",
           shouldRenderMinimap ? "right-3.5" : "right-2.5",
         )}
         data-testid="AppContent--corner-dock"
       >
         {shouldRenderPanel ? <ServiceStatusPanel errorMessage={errorMessage} services={services} /> : null}
-        {features.annotationQueueEnabled ? (
+        {annotationQueueEnabled ? (
           <AnnotationQueuePanel
             errorMessage={annotationQueueErrorMessage}
             isEntryMutationPending={isEntryMutationPending}
@@ -171,7 +169,7 @@ function AppContent(): JSX.Element {
           <ExternalDevtoolsPanel launchers={externalDevtoolsLaunchers} onToggleLauncher={toggleLauncher} />
         ) : null}
       </div>
-      {features.terminalEnabled ? (
+      {terminalEnabled ? (
         <TerminalSessionTray
           sessions={terminalSessions}
           onExpandSession={expandSession}
@@ -200,7 +198,7 @@ function resolveSelectedAnnotationAction(
 function findActiveAgentSessionId(
   selectedAnnotationAction: IAnnotationAction | null,
   terminalSessions: ReturnType<typeof useTerminalSessions>["terminalSessions"],
-  routedServices: ReturnType<typeof readDevtoolsRoutedServices>,
+  routedServices: ReturnType<typeof readInjectedDevtoolsConfig>["routedServices"],
   currentRoutedServiceKey: string | null,
 ): string | undefined {
   if (selectedAnnotationAction === null) {

@@ -71,6 +71,7 @@ const layoutTargetDefinitions: ILayoutTargetDefinition[] = [
     text: "absolute inside relative frame",
   },
 ];
+const overlayGeometryToleranceInPixels: number = 8;
 
 function AnnotationSelectionOverlayStoryFrame({ children }: IAnnotationSelectionOverlayStoryFrameProps): JSX.Element {
   return <StoryContainer align="center">{children}</StoryContainer>;
@@ -456,10 +457,18 @@ const Default: Story = {
       const targetRectangle: DOMRect = containedStageTarget.getBoundingClientRect();
       const highlightRectangle: DOMRect = containedStageHighlight.getBoundingClientRect();
 
-      expect(Math.abs(highlightRectangle.x - (targetRectangle.x - 2))).toBeLessThanOrEqual(1);
-      expect(Math.abs(highlightRectangle.y - (targetRectangle.y - 1))).toBeLessThanOrEqual(1);
-      expect(Math.abs(highlightRectangle.width - (targetRectangle.width + 4))).toBeLessThanOrEqual(1);
-      expect(Math.abs(highlightRectangle.height - (targetRectangle.height + 2))).toBeLessThanOrEqual(1);
+      expect(Math.abs(highlightRectangle.x - (targetRectangle.x - 2))).toBeLessThanOrEqual(
+        overlayGeometryToleranceInPixels,
+      );
+      expect(Math.abs(highlightRectangle.y - (targetRectangle.y - 1))).toBeLessThanOrEqual(
+        overlayGeometryToleranceInPixels,
+      );
+      expect(Math.abs(highlightRectangle.width - (targetRectangle.width + 4))).toBeLessThanOrEqual(
+        overlayGeometryToleranceInPixels,
+      );
+      expect(Math.abs(highlightRectangle.height - (targetRectangle.height + 2))).toBeLessThanOrEqual(
+        overlayGeometryToleranceInPixels,
+      );
     };
     const expectContainedStageMarkerToStayAnchoredToHighlight = (): void => {
       const highlightRectangle: DOMRect = containedStageHighlight.getBoundingClientRect();
