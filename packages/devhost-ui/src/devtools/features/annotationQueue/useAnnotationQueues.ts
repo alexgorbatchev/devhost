@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { readDevtoolsControlToken } from "../../shared/readDevtoolsControlToken";
+import { readInjectedDevtoolsConfig } from "../../shared/readInjectedDevtoolsConfig";
 import {
   createAnnotationQueuesWebSocketUrl,
   deleteAnnotationQueueEntry,
@@ -23,6 +23,7 @@ interface IUseAnnotationQueuesResult {
 }
 
 export function useAnnotationQueues(enabled: boolean = true): IUseAnnotationQueuesResult {
+  const { controlToken } = readInjectedDevtoolsConfig();
   const [entryMutationIds, setEntryMutationIds] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [queueResumeIds, setQueueResumeIds] = useState<string[]>([]);
@@ -36,7 +37,7 @@ export function useAnnotationQueues(enabled: boolean = true): IUseAnnotationQueu
     }
 
     let isDisposed: boolean = false;
-    const websocket = new WebSocket(createAnnotationQueuesWebSocketUrl(window.location, readDevtoolsControlToken()));
+    const websocket = new WebSocket(createAnnotationQueuesWebSocketUrl(window.location, controlToken));
 
     const handleOpen = (): void => {
       setErrorMessage(null);
@@ -73,7 +74,7 @@ export function useAnnotationQueues(enabled: boolean = true): IUseAnnotationQueu
       isDisposed = true;
       websocket.close(normalClosureCode, "devtools unmounted");
     };
-  }, [enabled]);
+  }, [controlToken, enabled]);
 
   const saveEntry = useCallback(
     async (entryId: string, comment: string): Promise<boolean> => {
@@ -82,11 +83,11 @@ export function useAnnotationQueues(enabled: boolean = true): IUseAnnotationQueu
       }
 
       return await runEntryMutation(entryId, setEntryMutationIds, setErrorMessage, async (): Promise<boolean> => {
-        await updateAnnotationQueueEntry(entryId, comment, fetch, readDevtoolsControlToken());
+        await updateAnnotationQueueEntry(entryId, comment, fetch, controlToken);
         return true;
       });
     },
-    [enabled],
+    [controlToken, enabled],
   );
 
   const removeEntry = useCallback(
@@ -96,11 +97,11 @@ export function useAnnotationQueues(enabled: boolean = true): IUseAnnotationQueu
       }
 
       return await runEntryMutation(entryId, setEntryMutationIds, setErrorMessage, async (): Promise<boolean> => {
-        await deleteAnnotationQueueEntry(entryId, fetch, readDevtoolsControlToken());
+        await deleteAnnotationQueueEntry(entryId, fetch, controlToken);
         return true;
       });
     },
-    [enabled],
+    [controlToken, enabled],
   );
 
   const resumeQueue = useCallback(
@@ -112,7 +113,7 @@ export function useAnnotationQueues(enabled: boolean = true): IUseAnnotationQueu
       setQueueResumeIds((currentIds: string[]): string[] => appendPendingId(currentIds, queueId));
 
       try {
-        const response = await resumeAnnotationQueue(queueId, fetch, readDevtoolsControlToken());
+        const response = await resumeAnnotationQueue(queueId, fetch, controlToken);
 
         setErrorMessage(null);
         return response.sessionId;
@@ -123,7 +124,7 @@ export function useAnnotationQueues(enabled: boolean = true): IUseAnnotationQueu
         setQueueResumeIds((currentIds: string[]): string[] => removePendingId(currentIds, queueId));
       }
     },
-    [enabled],
+    [controlToken, enabled],
   );
 
   return {

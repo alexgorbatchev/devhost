@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { HEALTH_WEBSOCKET_PATH } from "../../shared/constants";
 import { createDevtoolsWebSocketUrl } from "../../shared/createDevtoolsWebSocketUrl";
-import { readDevtoolsStackName } from "../../shared/readDevtoolsStackName";
+import { readInjectedDevtoolsConfig } from "../../shared/readInjectedDevtoolsConfig";
 import type { HealthResponse, ServiceHealth } from "../../shared/types";
 import { markServicesAsUnavailable } from "./markServicesAsUnavailable";
 
@@ -16,7 +16,7 @@ interface IUseServiceHealthResult {
 export function useServiceHealth(): IUseServiceHealthResult {
   const [services, setServices] = useState<ServiceHealth[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const devtoolsStackName: string = readDevtoolsStackName();
+  const { stackName: devtoolsStackName } = readInjectedDevtoolsConfig();
 
   useEffect(() => {
     let websocket: WebSocket | null = null;

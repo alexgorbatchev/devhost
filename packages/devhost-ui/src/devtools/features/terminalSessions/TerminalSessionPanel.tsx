@@ -12,7 +12,7 @@ import {
   TERMINAL_SESSION_WEBSOCKET_PATH,
   XTERM_STYLESHEET_PATH,
 } from "../../shared/constants";
-import { readDevtoolsControlToken } from "../../shared/readDevtoolsControlToken";
+import { readInjectedDevtoolsConfig } from "../../shared/readInjectedDevtoolsConfig";
 import { createXtermTheme } from "./createXtermTheme";
 import { readTerminalSessionPrimaryAction } from "./readTerminalSessionPrimaryAction";
 import { resolveTerminalPanelLayout, type IPanelSize } from "./resolveTerminalPanelLayout";
@@ -64,6 +64,7 @@ const trayScale: number = 0.32;
 const xtermStylesheetId: string = "devhost-xterm-stylesheet";
 
 export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Element {
+  const { controlToken } = readInjectedDevtoolsConfig();
   const theme = useDevtoolsTheme();
   const fitAddonReference = useRef<FitAddon | null>(null);
   const hasExitedReference = useRef<boolean>(false);
@@ -232,7 +233,9 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
     });
     const fitAddon = new FitAddon();
     const websocketUrl: URL = new URL(createDevtoolsWebSocketUrl(TERMINAL_SESSION_WEBSOCKET_PATH, window.location));
-    const websocket = new WebSocket(appendTerminalSessionParameters(websocketUrl, props.session.sessionId).toString());
+    const websocket = new WebSocket(
+      appendTerminalSessionParameters(websocketUrl, props.session.sessionId, controlToken).toString(),
+    );
 
     fitAddonReference.current = fitAddon;
     terminalReference.current = terminal;
@@ -332,7 +335,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
       terminalReference.current = null;
       websocketReference.current = null;
     };
-  }, [props.session.sessionId, scheduleTerminalResize]);
+  }, [controlToken, props.session.sessionId, scheduleTerminalResize]);
 
   useEffect(() => {
     const fitAddon: FitAddon | null = fitAddonReference.current;
@@ -582,8 +585,8 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
   );
 }
 
-function appendTerminalSessionParameters(websocketUrl: URL, sessionId: string): URL {
-  websocketUrl.searchParams.set(DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME, readDevtoolsControlToken());
+function appendTerminalSessionParameters(websocketUrl: URL, sessionId: string, controlToken: string): URL {
+  websocketUrl.searchParams.set(DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME, controlToken);
   websocketUrl.searchParams.set(TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME, sessionId);
 
   return websocketUrl;
