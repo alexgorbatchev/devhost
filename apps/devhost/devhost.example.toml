@@ -31,8 +31,16 @@
 # - fixed numeric bind ports are reserved across live devhost processes before spawn
 # - hostname ownership is exclusive across projects, but one manifest may mount multiple services under the same host on distinct paths
 # - annotation action ids must match `^[a-z][a-z0-9-]*$` and be unique
+# - string values support environment-variable interpolation with `$NAME` and `${NAME}` placeholders
+# - placeholder names must start with a letter or underscore and then use letters, digits, or underscores
+# - other `$` sequences stay literal
+# - malformed `${...}` text stays literal, and an unterminated `${` keeps the rest of that string literal
+# - referencing an undefined valid placeholder is a manifest read error
+# - defined placeholders may expand to the empty string
 
 # `name` identifies the stack in logs, state, and injected metadata.
+# You can interpolate environment variables in string values, for example:
+# `name = "$USER-stack"` or `host = "devhost-${USER}.localhost"`.
 name = "hello-stack"
 
 # Managed Caddy lifecycle is shared and manual.
