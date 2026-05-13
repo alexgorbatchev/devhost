@@ -1,10 +1,10 @@
 import type { CSSProperties, JSX } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import { CircleCheckIcon, CircleXIcon } from "lucide-react";
 
-import { Button, type IDevtoolsTheme, useDevtoolsTheme } from "../../shared";
+import { Button, useDevtoolsColorScheme } from "../../shared";
 import { createDevtoolsWebSocketUrl } from "../../shared/createDevtoolsWebSocketUrl";
 import {
   DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME,
@@ -13,7 +13,7 @@ import {
   XTERM_STYLESHEET_PATH,
 } from "../../shared/constants";
 import { readInjectedDevtoolsConfig } from "../../shared/readInjectedDevtoolsConfig";
-import { createXtermTheme } from "./createXtermTheme";
+import { readTerminalTheme, type ITerminalTheme } from "./readTerminalTheme";
 import { readTerminalSessionPrimaryAction } from "./readTerminalSessionPrimaryAction";
 import { resolveTerminalPanelLayout, type IPanelSize } from "./resolveTerminalPanelLayout";
 import { shouldAutoRemoveTerminalSession } from "./shouldAutoRemoveTerminalSession";
@@ -65,14 +65,17 @@ const xtermStylesheetId: string = "devhost-xterm-stylesheet";
 
 export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Element {
   const { controlToken } = readInjectedDevtoolsConfig();
-  const theme = useDevtoolsTheme();
+  const colorScheme = useDevtoolsColorScheme();
+  const terminalTheme: ITerminalTheme = useMemo((): ITerminalTheme => {
+    return readTerminalTheme(colorScheme);
+  }, [colorScheme]);
   const fitAddonReference = useRef<FitAddon | null>(null);
   const hasExitedReference = useRef<boolean>(false);
   const resizeAnimationFrameReference = useRef<number | null>(null);
   const terminalContainerReference = useRef<HTMLDivElement | null>(null);
   const terminalReference = useRef<Terminal | null>(null);
   const terminalViewportReference = useRef<HTMLDivElement | null>(null);
-  const themeReference = useRef<IDevtoolsTheme>(theme);
+  const terminalThemeReference = useRef<ITerminalTheme>(terminalTheme);
   const trayShellReference = useRef<HTMLElement | null>(null);
   const websocketReference = useRef<WebSocket | null>(null);
   const isExpandedReference = useRef<boolean>(props.isExpanded);
@@ -95,7 +98,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
     onRemove();
   }, [onRemove]);
 
-  themeReference.current = theme;
+  terminalThemeReference.current = terminalTheme;
   isExpandedReference.current = props.isExpanded;
   const terminalPanelLayout = resolveTerminalPanelLayout(
     props.session.behavior,
@@ -219,17 +222,17 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
 
     ensureXtermStylesheet(terminalContainer.getRootNode());
 
-    const currentTheme: IDevtoolsTheme = themeReference.current;
+    const currentTheme: ITerminalTheme = terminalThemeReference.current;
     const terminal = new Terminal({
       allowTransparency: true,
       cols: 120,
       cursorBlink: true,
       disableStdin: !isExpandedReference.current,
-      fontFamily: currentTheme.fontFamilies.monospace,
-      fontSize: Number.parseInt(currentTheme.fontSizes.md, 10),
+      fontFamily: currentTheme.fontFamily,
+      fontSize: currentTheme.fontSize,
       rows: 80,
       scrollback: 2_000,
-      theme: createXtermTheme(currentTheme),
+      theme: currentTheme.theme,
     });
     const fitAddon = new FitAddon();
     const websocketUrl: URL = new URL(createDevtoolsWebSocketUrl(TERMINAL_SESSION_WEBSOCKET_PATH, window.location));
@@ -347,9 +350,9 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
     }
 
     terminal.options.disableStdin = !props.isExpanded || hasExited;
-    terminal.options.theme = createXtermTheme(theme);
-    terminal.options.fontFamily = theme.fontFamilies.monospace;
-    terminal.options.fontSize = Number.parseInt(theme.fontSizes.md, 10);
+    terminal.options.theme = terminalTheme.theme;
+    terminal.options.fontFamily = terminalTheme.fontFamily;
+    terminal.options.fontSize = terminalTheme.fontSize;
 
     if (props.isExpanded && !hasExited) {
       terminal.focus();
@@ -359,7 +362,14 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
     }
 
     scheduleTerminalResize();
-  }, [activePanelSize.height, activePanelSize.width, hasExited, props.isExpanded, scheduleTerminalResize, theme]);
+  }, [
+    activePanelSize.height,
+    activePanelSize.width,
+    hasExited,
+    props.isExpanded,
+    scheduleTerminalResize,
+    terminalTheme,
+  ]);
 
   useEffect(() => {
     if (!shouldAutoRemoveTerminalSession(session, hasExited)) {

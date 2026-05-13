@@ -1,5 +1,10 @@
 name = "playground"
 
+[caddy.global]
+http = true
+httpPort = 80
+bindHost = "0.0.0.0"
+
 [devtools.status]
 position = "bottom-right"
 
@@ -28,7 +33,17 @@ primary = true
 command = ["bun", "run", "server"]
 cwd = "."
 port = 3000
-host = "devhost.localhost"
+#host = "devhost.localhost"
+host = "devhost-devbox.cvb.lol"
 
 [services.web.env]
 NODE_ENV = "development"
+
+[services.agent-browser-dashboard]
+port = 4848
+host = "ab-devbox.cvb.lol"
+
+[services.agent-browser-dashboard.lifecycle]
+mode = "daemon"
+start = ["agent-browser", "dashboard", "start"]
+stop = ["agent-browser", "dashboard", "stop"]

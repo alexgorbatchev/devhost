@@ -1,4 +1,4 @@
-import type { DevtoolsColorScheme } from "./devtoolsTheme";
+import type { DevtoolsColorScheme } from "./DevtoolsColorScheme";
 
 export function resolveDocumentColorScheme(
   computedColorScheme: string,

@@ -10,7 +10,7 @@ import {
   TERMINAL_SESSION_WEBSOCKET_PATH,
   XTERM_STYLESHEET_PATH,
 } from "../src/devtools/shared/constants";
-import type { DevtoolsColorScheme } from "../src/devtools/shared/devtoolsTheme";
+import type { DevtoolsColorScheme } from "../src/devtools/shared";
 import type { IInjectedDevtoolsConfig } from "../src/devtools/shared/readInjectedDevtoolsConfig";
 import {
   readStorybookPreviewTheme,

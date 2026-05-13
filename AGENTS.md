@@ -65,6 +65,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Always: when formatting is required, use the root `bun run fix` script instead of ad-hoc formatter invocations so shared ignore/config behavior stays consistent.
 - Ask first: adding a new workspace, changing cross-workspace dependency topology, or changing the publish/release flow.
 - Never: disable lint rules unless the user explicitly authorizes it.
+- Never: add tests that only lock static CSS, class names, theme token values, or full stylesheet text. Prefer behavior and integration contracts such as config registration, accessible state, or browser-visible interactions.
 - Never: build or release `devhost` from the repo root using ad-hoc Go commands; use the documented `apps/devhost` scripts, root package scripts, and runbook.
 - Never: start local docs or Storybook dev servers proactively; the user will start them when needed.
 - Testing exception: agents may start temporary local servers for validation or recording workflows, but must shut them down before the end of the turn.

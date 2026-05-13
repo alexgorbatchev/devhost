@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import type { DevtoolsColorScheme } from "./devtoolsTheme";
+import type { DevtoolsColorScheme } from "./DevtoolsColorScheme";
 import { resolveDocumentColorScheme } from "./resolveDocumentColorScheme";
 
 const darkColorSchemeMediaQuery: string = "(prefers-color-scheme: dark)";

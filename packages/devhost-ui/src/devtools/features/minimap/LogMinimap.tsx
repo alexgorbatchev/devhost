@@ -1,13 +1,14 @@
-import type { CSSProperties, JSX } from "react";
+import type { JSX } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-import { useDevtoolsTheme } from "../../shared";
+import { useDevtoolsColorScheme } from "../../shared";
 import type { ServiceLogEntry } from "../../shared/types";
 import { createLogMinimapMarksFromVisibleRows, type ILogMinimapMark } from "./createLogMinimapMarks";
 import { createLogPreviewWindow } from "./createLogPreviewWindow";
 import { createVisibleLogRows, type IVisibleLogRow } from "./createVisibleLogRows";
+import { readLogMinimapPalette, type ILogMinimapPalette } from "./readLogMinimapPalette";
 import { resolveHoveredLogRowIndex } from "./resolveHoveredLogRowIndex";
 import { resolveLogPreviewLayout } from "./resolveLogPreviewLayout";
 import { resolveLogPreviewOverlay } from "./resolveLogPreviewOverlay";
@@ -19,25 +20,21 @@ interface ILogMinimapProps {
   onHoveredChange: (isHovered: boolean) => void;
 }
 
-interface IPositionStyle extends CSSProperties {
-  height?: number;
-  top?: number;
-}
-
 export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
-  const theme = useDevtoolsTheme();
+  const colorScheme = useDevtoolsColorScheme();
+  const palette: ILogMinimapPalette = readLogMinimapPalette(colorScheme);
   const canvasReference = useRef<HTMLCanvasElement | null>(null);
   const entriesReference = useRef<ServiceLogEntry[]>(props.entries);
   const marksReference = useRef<ILogMinimapMark[]>([]);
   const visibleRowsReference = useRef<IVisibleLogRow[]>([]);
   const renderCanvasReference = useRef<IRenderCanvasFunction>(() => {});
-  const stderrColorReference = useRef<string>(theme.colors.logMinimapStderr);
-  const stdoutColorReference = useRef<string>(theme.colors.logMinimapStdout);
+  const stderrColorReference = useRef<string>(palette.stderr);
+  const stdoutColorReference = useRef<string>(palette.stdout);
   const [hoveredRowIndex, setHoveredRowIndex] = useState<number | null>(null);
 
   entriesReference.current = props.entries;
-  stderrColorReference.current = theme.colors.logMinimapStderr;
-  stdoutColorReference.current = theme.colors.logMinimapStdout;
+  stderrColorReference.current = palette.stderr;
+  stdoutColorReference.current = palette.stdout;
 
   useEffect(() => {
     const canvas: HTMLCanvasElement | null = canvasReference.current;
@@ -105,7 +102,7 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
 
   useEffect(() => {
     renderCanvasReference.current();
-  }, [props.entries, theme.colors.logMinimapStderr, theme.colors.logMinimapStdout]);
+  }, [palette.stderr, palette.stdout, props.entries]);
 
   const previewLayout = useMemo(() => {
     if (hoveredRowIndex === null) {
@@ -116,13 +113,13 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
       borderWidth: 1,
       hoveredRowIndex,
       marks: marksReference.current,
-      previewPadding: readPixelValue(theme.spacing.xs),
+      previewPadding: logPreviewPadding,
       rowGap: 0,
-      rowHeight: readPixelValue(theme.sizes.logPreviewRowHeight),
+      rowHeight: logPreviewRowHeight,
       viewportHeight: canvasReference.current?.clientHeight ?? 0,
-      viewportPadding: readPixelValue(theme.spacing.sm),
+      viewportPadding: logPreviewViewportPadding,
     });
-  }, [hoveredRowIndex, theme]);
+  }, [hoveredRowIndex]);
   const previewRows: IVisibleLogRow[] = useMemo((): IVisibleLogRow[] => {
     if (hoveredRowIndex === null || previewLayout === null) {
       return [];
@@ -140,17 +137,14 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
     return null;
   }
 
-  const minimapTransform: string = props.isHovered ? "translateX(0)" : "translateX(calc(100px - 20px))";
-
   return (
     <aside
       aria-hidden="true"
       className={cn(
-        "pointer-events-auto fixed inset-y-0 right-0 z-[2147483500] box-border w-[100px] border-l border-border bg-muted p-1 transition-[opacity,transform] duration-150 ease-in-out",
-        props.isHovered ? "opacity-100" : "opacity-50",
+        "pointer-events-auto fixed inset-y-0 right-0 z-[var(--devhost-z-floating)] box-border w-[100px] border-l border-border bg-muted p-1 transition-[opacity,transform] duration-150 ease-in-out",
+        props.isHovered ? "translate-x-0 opacity-100" : "translate-x-[calc(100px_-_20px)] opacity-50",
       )}
       data-testid="LogMinimap"
-      style={{ transform: minimapTransform }}
       onMouseEnter={(): void => {
         props.onHoveredChange(true);
       }}
@@ -170,14 +164,14 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
         <div
           className="pointer-events-none absolute inset-x-1 bg-primary/10 shadow-[inset_0_0_0_1px_var(--ring)]"
           data-testid="LogMinimap--preview-overlay"
-          style={readPositionStyle(previewOverlay.top, previewOverlay.height)}
+          style={{ height: previewOverlay.height, top: previewOverlay.top }}
         />
       ) : null}
       {props.isHovered && previewLayout !== null && hoveredRowIndex !== null && previewRows.length > 0 ? (
         <div
-          className="pointer-events-none absolute right-[calc(100%+8px)] z-[2147483500] grid w-[min(80ch,calc(100vw-164px))] gap-2 rounded-md border border-border bg-background p-2 text-xs leading-none text-foreground shadow-sm"
+          className="pointer-events-none absolute right-[calc(100%+8px)] z-[var(--devhost-z-floating)] grid w-[min(80ch,calc(100vw-164px))] gap-2 rounded-md border border-border bg-background p-2 text-xs leading-none text-foreground shadow-sm"
           data-testid="LogMinimap--preview"
-          style={readPositionStyle(previewLayout.top)}
+          style={{ top: previewLayout.top }}
         >
           <ol className="grid list-none gap-0 p-0">
             {previewRows.map((row: IVisibleLogRow) => {
@@ -200,12 +194,6 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
   );
 }
 
-function readPixelValue(value: string): number {
-  const parsedValue: number = Number.parseFloat(value);
-
-  return Number.isFinite(parsedValue) ? parsedValue : 0;
-}
-
-function readPositionStyle(top: number, height?: number): IPositionStyle {
-  return { height, top };
-}
+const logPreviewPadding: number = 8;
+const logPreviewRowHeight: number = 24;
+const logPreviewViewportPadding: number = 10;

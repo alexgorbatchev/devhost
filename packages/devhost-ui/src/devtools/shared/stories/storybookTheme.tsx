@@ -1,7 +1,6 @@
 import type { JSX, ReactNode } from "react";
 
-import { type DevtoolsColorScheme, getDevtoolsTheme } from "../devtoolsTheme";
-import { ThemeProvider } from "../ThemeProvider";
+import { ColorSchemeProvider, type DevtoolsColorScheme } from "..";
 import { storybookDevtoolsThemeGlobalName } from "./storybookThemeGlobals";
 
 export { storybookDevtoolsThemeGlobalName };
@@ -28,15 +27,28 @@ export function readStorybookDevtoolsColorScheme(globals: Partial<Record<string,
 }
 
 export function readStorybookPreviewTheme(colorScheme: DevtoolsColorScheme): IStorybookPreviewTheme {
-  const theme = getDevtoolsTheme(colorScheme);
-
-  return {
-    backgroundColor: theme.colors.background,
-    color: theme.colors.foreground,
-    colorScheme,
-  };
+  return colorScheme === "dark" ? darkStorybookPreviewTheme : lightStorybookPreviewTheme;
 }
 
 export function StorybookThemeProvider(props: IStorybookThemeProviderProps): JSX.Element {
-  return <ThemeProvider colorScheme={readStorybookDevtoolsColorScheme(props.globals)}>{props.children}</ThemeProvider>;
+  const colorScheme: DevtoolsColorScheme = readStorybookDevtoolsColorScheme(props.globals);
+
+  return (
+    <ColorSchemeProvider colorScheme={colorScheme}>
+      <div className="contents" data-devhost-story-theme="" data-theme={colorScheme}>
+        {props.children}
+      </div>
+    </ColorSchemeProvider>
+  );
 }
+
+const darkStorybookPreviewTheme: IStorybookPreviewTheme = {
+  backgroundColor: "hsl(229 18.644% 23.137%)",
+  color: "hsl(227 70.149% 86.863%)",
+  colorScheme: "dark",
+};
+const lightStorybookPreviewTheme: IStorybookPreviewTheme = {
+  backgroundColor: "hsl(220 23.077% 94.902%)",
+  color: "hsl(234 16.022% 35.49%)",
+  colorScheme: "light",
+};

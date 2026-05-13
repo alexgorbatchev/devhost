@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "rea
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Textarea } from "@/components/ui/textarea";
 
-import { Button, FloatingPanel, InlineNotice, type IAnnotationAction, useDevtoolsTheme } from "../../shared";
+import { Button, FloatingPanel, InlineNotice, type IAnnotationAction } from "../../shared";
 import { isEventTargetTerminalKeyboardInput } from "../../shared/isEventTargetTerminalKeyboardInput";
 import type { ITerminalSessionStartResult } from "../terminalSessions/types";
 import { AnnotationActionSplitButton } from "./AnnotationActionSplitButton";
@@ -13,11 +13,7 @@ import {
   readActiveAnnotationSelectionPlugin,
   subscribeToAnnotationSelectionPlugins,
 } from "./annotationSelectionPluginRegistry";
-import {
-  type ISelectedAnnotationTarget,
-  readPixelValue,
-  resolveSelectedAnnotationAction,
-} from "./annotationComposerModels";
+import { type ISelectedAnnotationTarget, resolveSelectedAnnotationAction } from "./annotationComposerModels";
 import { createAnnotationSubmitDetail } from "./createAnnotationSubmitDetail";
 import type { IAnnotationSubmitDetail } from "./types";
 import { useAnnotationSelectionDraft } from "./useAnnotationSelectionDraft";
@@ -36,14 +32,12 @@ interface IAnnotationComposerProps {
 }
 
 export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element {
-  const theme = useDevtoolsTheme();
   const [annotationSelectionPluginVersion, setAnnotationSelectionPluginVersion] = useState<number>(0);
   const [comment, setComment] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [sendToActiveSession, setSendToActiveSession] = useState<boolean>(true);
   const [submissionErrorMessage, setSubmissionErrorMessage] = useState<string | null>(null);
   const commentTextareaReference = useRef<HTMLTextAreaElement | null>(null);
-  const viewportPadding: number = readPixelValue(theme.spacing.sm);
   const annotationSelectionPlugin = useMemo(readActiveAnnotationSelectionPlugin, [annotationSelectionPluginVersion]);
   const trimmedComment: string = comment.trim();
   const {
@@ -59,7 +53,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
     comment,
     isSubmitting,
     submissionErrorMessage,
-    viewportPadding,
+    viewportPadding: annotationPopupViewportPadding,
   });
   const hasActiveAnnotationInteraction: boolean =
     isSelectionMode || selectedTargets.length > 0 || trimmedComment.length > 0;
@@ -300,3 +294,5 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
     </div>
   );
 }
+
+const annotationPopupViewportPadding: number = 10;

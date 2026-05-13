@@ -19,7 +19,7 @@ Its vital that when devtools are injected into the user's web application, CSS t
 
 ## Theme tokens
 
-- Shared visual values must come from shadcn-compatible CSS variables in `shared/devtools.css` or from the devtools theme context when runtime code needs JavaScript values, such as xterm colors or measured layout constants.
+- Shared visual values must come from shadcn-compatible CSS variables in `shared/devtools.css`. Runtime JavaScript theme access must stay in narrow adapters for values CSS cannot consume directly, such as xterm colors, canvas colors, or matched font settings. Shared interaction geometry and layout constants that are not actual theme values belong near the logic that uses them instead of a theme context.
 - Presentational devtools components must read theme values via semantic Tailwind tokens and shadcn primitives first, not a `theme` prop.
 - Shared visual values must come from semantic tokens instead of being duplicated inline across components.
 - When the devtools theme intentionally follows Tokyo Night, use `folke/tokyonight.nvim` as the palette reference instead of eyeballing approximations.
@@ -34,7 +34,7 @@ Its vital that when devtools are injected into the user's web application, CSS t
   - spacing values
   - border radii
   - shadows when used
-  - z-index values when used
+  - z-index values when they are actual reusable visual tokens
 - Repeated hardcoded visual values are not allowed when they belong in the shared theme.
 - Component styles must compose from the shared theme first and add only the minimum component-local overrides.
 
@@ -65,6 +65,11 @@ Its vital that when devtools are injected into the user's web application, CSS t
 - Keep the theme small and explicit.
 - Prefer stable semantic names over raw color names.
 - Treat the injected UI like a self-contained widget system, not like page-local markup.
+
+## Testing guidance
+
+- Do not write unit tests or Storybook `play` assertions that only snapshot exact HSL values, Tailwind class strings, xterm theme palettes, or raw stylesheet text when those values are static implementation details.
+- Prefer tests that prove observable behavior, accessibility state, integration wiring, or layout/geometry behavior that users can actually notice.
 
 ## Done policy
 

@@ -2,8 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { useMemo, useState, type JSX, type ReactNode, type RefCallback } from "react";
 import { expect, waitFor, within } from "storybook/test";
 
-import { getDevtoolsTheme, type DevtoolsColorScheme } from "../../../shared/devtoolsTheme";
-import { ThemeProvider } from "../../../shared/ThemeProvider";
+import { ColorSchemeProvider, type DevtoolsColorScheme } from "../../../shared";
 import { StoryContainer } from "../../../shared/stories/StoryContainer";
 import { readStorybookDevtoolsColorScheme } from "../../../shared/stories/storybookTheme";
 import {
@@ -72,6 +71,7 @@ const layoutTargetDefinitions: ILayoutTargetDefinition[] = [
   },
 ];
 const overlayGeometryToleranceInPixels: number = 8;
+const storyPreviewForeground: string = "hsl(234 16.022% 35.49%)";
 
 function AnnotationSelectionOverlayStoryFrame({ children }: IAnnotationSelectionOverlayStoryFrameProps): JSX.Element {
   return <StoryContainer align="center">{children}</StoryContainer>;
@@ -282,9 +282,9 @@ function AnnotationSelectionOverlayPositioningScene({
         </section>
 
         <div data-devhost-devtools="">
-          <ThemeProvider colorScheme={colorScheme}>
+          <ColorSchemeProvider colorScheme={colorScheme}>
             <AnnotationSelectionOverlay selectedTargets={selectedTargets} />
-          </ThemeProvider>
+          </ColorSchemeProvider>
         </div>
       </div>
     </AnnotationSelectionOverlayStoryFrame>
@@ -367,9 +367,9 @@ function AnnotationSelectionOverlaySingleTargetScene({
         single contained stage target
       </button>
       <div data-devhost-devtools="">
-        <ThemeProvider colorScheme={colorScheme}>
+        <ColorSchemeProvider colorScheme={colorScheme}>
           <AnnotationSelectionOverlay selectedTargets={selectedTargets} testIdPrefix="ContainedStageSelectionOverlay" />
-        </ThemeProvider>
+        </ColorSchemeProvider>
       </div>
     </div>
   );
@@ -377,7 +377,6 @@ function AnnotationSelectionOverlaySingleTargetScene({
 
 function AnnotationSelectionOverlayContainedStageSingleTargetPreview(): JSX.Element {
   const colorScheme: DevtoolsColorScheme = "light";
-  const theme = getDevtoolsTheme(colorScheme);
 
   return (
     <section
@@ -385,10 +384,10 @@ function AnnotationSelectionOverlayContainedStageSingleTargetPreview(): JSX.Elem
       data-testid="ContainedStageSingleTargetPreview"
       style={{
         boxSizing: "border-box",
-        color: theme.colors.foreground,
+        color: storyPreviewForeground,
         display: "grid",
         minWidth: 0,
-        padding: theme.spacing.lg,
+        padding: "16px",
         position: "relative",
       }}
     >
@@ -402,7 +401,7 @@ function AnnotationSelectionOverlayContainedStageSingleTargetPreview(): JSX.Elem
           justifyItems: "center",
           minHeight: "320px",
           overflow: "hidden",
-          padding: theme.spacing.xl,
+          padding: "64px",
           position: "relative",
           transform: "translateZ(0)",
           width: "100%",
