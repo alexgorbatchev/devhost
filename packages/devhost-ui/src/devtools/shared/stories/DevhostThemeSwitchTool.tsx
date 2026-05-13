@@ -1,7 +1,7 @@
 import React, { type CSSProperties, type JSX } from "react";
 import { useGlobals } from "storybook/manager-api";
 
-import type { DevtoolsColorScheme } from "../devtoolsTheme";
+import type { DevtoolsColorScheme } from "../DevtoolsColorScheme";
 import { storybookDevtoolsThemeGlobalName } from "./storybookThemeGlobals";
 
 export function DevhostThemeSwitchTool(): JSX.Element {

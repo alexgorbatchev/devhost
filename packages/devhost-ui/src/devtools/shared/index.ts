@@ -1,4 +1,5 @@
 export { Button } from "./Button";
+export { ColorSchemeProvider } from "./ColorSchemeProvider";
 export {
   DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
   DEVTOOLS_HOST_ID,
@@ -9,13 +10,6 @@ export { FloatingPanel } from "./FloatingPanel";
 export { HoverSlidePanel } from "./HoverSlidePanel";
 export { HighlightOverlay, type IHighlightOverlayItem, type IHighlightOverlayRectangle } from "./HighlightOverlay";
 export { InlineNotice } from "./InlineNotice";
-export {
-  DEVTOOLS_FLOATING_PANEL_Z_INDEX,
-  DEVTOOLS_FLOATING_RAISED_Z_INDEX,
-  DEVTOOLS_FLOATING_Z_INDEX,
-  DEVTOOLS_TERMINAL_EXPANDED_Z_INDEX,
-  DEVTOOLS_TERMINAL_TRAY_Z_INDEX,
-} from "./devtoolsLayout";
 export { installDevtoolsStyles } from "./devtoolsStyles";
 export {
   defaultAnnotationActionId,
@@ -25,10 +19,9 @@ export {
   type DevtoolsPosition,
   type IAnnotationAction,
 } from "./devtoolsConfig";
-export { ThemeProvider } from "./ThemeProvider";
-export { type IDevtoolsTheme } from "./devtoolsTheme";
+export { type DevtoolsColorScheme } from "./DevtoolsColorScheme";
 export { resolveDevtoolsPortalContainer } from "./resolveDevtoolsPortalContainer";
 export { resolveMatchingColorScheme } from "./resolveMatchingColorScheme";
 export { resolveRoutedServiceKeyForUrl, type IRoutedServiceIdentity } from "./routedServices";
-export { useDevtoolsTheme } from "./useDevtoolsTheme";
+export { useDevtoolsColorScheme } from "./useDevtoolsColorScheme";
 export { useResolvedColorScheme } from "./useResolvedColorScheme";

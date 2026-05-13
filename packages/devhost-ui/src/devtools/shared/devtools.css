@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 @import "@fontsource-variable/geist";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(:host([data-theme="dark"]) *, [data-devhost-story-theme][data-theme="dark"] *));
 
 @source "../../**/*.{ts,tsx}";
 
@@ -49,7 +49,8 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
-.devhost-theme {
+:host,
+[data-devhost-story-theme] {
   --devhost-z-floating: 2147483500;
   --devhost-z-floating-panel: 2147483502;
   --devhost-z-floating-raised: 2147483501;
@@ -96,10 +97,12 @@
   --sidebar-border: hsl(225 13.559% 76.863%);
   --sidebar-ring: hsl(234 16.022% 35.49%);
   color-scheme: light;
+  color: initial;
   font-family: var(--font-sans);
 }
 
-.devhost-theme.dark {
+:host([data-theme="dark"]),
+[data-devhost-story-theme][data-theme="dark"] {
   --background: hsl(229 18.644% 23.137%);
   --foreground: hsl(227 70.149% 86.863%);
   --card: hsl(229 18.644% 23.137%);
@@ -138,10 +141,6 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-  }
-
-  :host {
-    color: initial;
   }
 
   body {

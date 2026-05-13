@@ -17,7 +17,7 @@ This directory contains isolated, feature-specific modules for the injected devt
 ## Boundaries
 
 - **Always:** Use `src/devtools/shared/` for cross-feature code. If two features need the same component (like `Button` or `HoverSlidePanel`), hook, or utility, move it to `shared/`.
-- **Always:** Retrieve shared visual styling and dimensions from the global `IDevtoolsTheme` context.
+- **Always:** Use semantic Tailwind tokens and logic-local layout constants first. Runtime JavaScript theme access must stay in narrow adapters for values CSS cannot consume directly, such as xterm colors, canvas colors, or matched font settings.
 - **Always:** Prefer selector-based suppression for third-party launcher chrome over removing or mutating specific host nodes. Host-owned panels and controls must remain owned by the host library.
 - **Always:** When a feature intentionally reaches outside the Shadow DOM boundary, keep that escape hatch narrowly scoped, document the behavior in `packages/docs/src/content/docs/`, and cover the adapter/state logic with feature-local tests.
 - **Never:** Place generic hooks, shared layout wrappers, or transport utilities (websockets, tokens) inside a feature folder.

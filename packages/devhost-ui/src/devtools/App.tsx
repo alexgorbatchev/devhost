@@ -3,7 +3,7 @@ import { useCallback, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-import type { DevtoolsPosition, IAnnotationAction } from "./shared/devtoolsConfig";
+import type { IAnnotationAction } from "./shared/devtoolsConfig";
 import { AnnotationComposer } from "./features/annotationComposer";
 import { AnnotationQueuePanel, useAnnotationQueues } from "./features/annotationQueue";
 import { ComponentSourceMenu, useComponentSourceNavigation } from "./features/componentSourceNavigation";
@@ -14,8 +14,8 @@ import { useReactHighlightOverlay } from "./features/reactHighlight";
 import { ServiceStatusPanel, useServiceHealth } from "./features/serviceStatusPanel";
 import { readInjectedDevtoolsConfig } from "./shared/readInjectedDevtoolsConfig";
 import {
+  ColorSchemeProvider,
   DEVTOOLS_ROOT_ID,
-  ThemeProvider,
   resolveMatchingColorScheme,
   resolveRoutedServiceKeyForUrl,
   useResolvedColorScheme,
@@ -26,9 +26,9 @@ export function App(): JSX.Element {
   const colorScheme = resolveMatchingColorScheme(hostColorScheme);
 
   return (
-    <ThemeProvider colorScheme={colorScheme}>
+    <ColorSchemeProvider colorScheme={colorScheme}>
       <AppContent />
-    </ThemeProvider>
+    </ColorSchemeProvider>
   );
 }
 

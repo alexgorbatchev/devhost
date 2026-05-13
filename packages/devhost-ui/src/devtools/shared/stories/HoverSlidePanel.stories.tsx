@@ -2,6 +2,11 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, within, waitFor } from "storybook/test";
 
 import { HoverSlidePanel } from "../HoverSlidePanel";
+import {
+  devtoolsStoryShadowRootHostTestId,
+  readShadowRoot,
+  renderInDevtoolsStoryShadowRoot,
+} from "./DevtoolsStoryShadowRoot";
 import { StoryContainer } from "./StoryContainer";
 import { StorybookThemeProvider } from "./storybookTheme";
 
@@ -9,12 +14,12 @@ const meta: Meta<typeof HoverSlidePanel> = {
   title: "@alexgorbatchev/devhost-ui/devtools/shared/HoverSlidePanel",
   component: HoverSlidePanel,
   render: (args, context) => {
-    return (
+    return renderInDevtoolsStoryShadowRoot(
       <StorybookThemeProvider globals={context.globals}>
         <StoryContainer align="right">
           <HoverSlidePanel {...args} />
         </StoryContainer>
-      </StorybookThemeProvider>
+      </StorybookThemeProvider>,
     );
   },
 };
@@ -30,10 +35,10 @@ export const Default: Story = {
     testId: "hover-slide-panel",
   },
   play: async ({ canvasElement }): Promise<void> => {
-    const canvas = within(canvasElement);
-    const panel = await canvas.findByTestId("hover-slide-panel");
+    const shadowCanvas = readHoverSlidePanelShadowCanvas(canvasElement);
+    const panel = await shadowCanvas.findByTestId("hover-slide-panel");
     await expect(panel).toBeInTheDocument();
-    await expect(canvas.getByText("Hover Panel Content")).toBeInTheDocument();
+    await expect(shadowCanvas.getByText("Hover Panel Content")).toBeInTheDocument();
 
     const restingLeft = panel.getBoundingClientRect().left;
 
@@ -58,11 +63,11 @@ export const Pinned: Story = {
     testId: "hover-slide-panel-pinned",
   },
   play: async ({ canvasElement }): Promise<void> => {
-    const canvas = within(canvasElement);
-    const panel = await canvas.findByTestId("hover-slide-panel-pinned");
+    const shadowCanvas = readHoverSlidePanelShadowCanvas(canvasElement);
+    const panel = await shadowCanvas.findByTestId("hover-slide-panel-pinned");
     const pinnedLeft = panel.getBoundingClientRect().left;
 
-    await expect(canvas.getByText("Pinned Panel Content")).toBeInTheDocument();
+    await expect(shadowCanvas.getByText("Pinned Panel Content")).toBeInTheDocument();
 
     await userEvent.hover(panel);
     await waitFor(() => {
@@ -87,13 +92,21 @@ export const WithHeaderAndError: Story = {
     title: "Services",
   },
   play: async ({ canvasElement }): Promise<void> => {
-    const canvas = within(canvasElement);
-    const panel = await canvas.findByTestId("hover-slide-panel-with-header");
+    const shadowCanvas = readHoverSlidePanelShadowCanvas(canvasElement);
+    const panel = await shadowCanvas.findByTestId("hover-slide-panel-with-header");
 
     await expect(panel).toBeInTheDocument();
-    await expect(canvas.getByText("Services")).toBeInTheDocument();
-    await expect(canvas.getByText("Review current service availability.")).toBeInTheDocument();
-    await expect(canvas.getByRole("alert")).toHaveTextContent("Service health is unavailable.");
-    await expect(canvas.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    await expect(shadowCanvas.getByText("Services")).toBeInTheDocument();
+    await expect(shadowCanvas.getByText("Review current service availability.")).toBeInTheDocument();
+    await expect(shadowCanvas.getByRole("alert")).toHaveTextContent("Service health is unavailable.");
+    await expect(shadowCanvas.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   },
 };
+
+function readHoverSlidePanelShadowCanvas(canvasElement: HTMLElement): ReturnType<typeof within> {
+  const canvas = within(canvasElement);
+  const hostElement = canvas.getByTestId(devtoolsStoryShadowRootHostTestId);
+  const shadowRoot: ShadowRoot = readShadowRoot(hostElement, "HoverSlidePanel story shadow root was not created.");
+
+  return within(shadowRoot as unknown as HTMLElement);
+}

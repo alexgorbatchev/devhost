@@ -27,6 +27,7 @@ Public Astro + Starlight docs workspace for `devhost`, published to GitHub Pages
 - `astro.config.mjs` allows all dev/preview hosts for this workspace; treat the docs server as broadly reachable while it is running.
 - The site ships from GitHub Pages at `/devhost`, so content should rely on relative links or Starlight routing instead of hard-coded root-relative `/...` paths.
 - `src/content/docs/index.mdx` and `src/content/docs/reference/devhost-example.md` are generated outputs; edit `apps/devhost/README.md` and `apps/devhost/devhost.example.toml` instead.
+- Do not add docs tests that snapshot whole static CSS files or literal font/theme declarations when the real contract is config registration or successful build integration.
 
 ## Boundaries
 
