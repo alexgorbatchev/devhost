@@ -13,16 +13,22 @@ import { StorybookThemeProvider } from "../../../devtools/shared/stories/storybo
 const meta: Meta<typeof Alert> = {
   title: "@alexgorbatchev/devhost-ui/components/ui/alert",
   component: Alert,
-  render: (args, context) => {
+  render: (_args, context) => {
     return renderInDevtoolsStoryShadowRoot(
       <StorybookThemeProvider globals={context.globals}>
-        <Alert {...args}>
-          <AlertTitle>Payment failed</AlertTitle>
-          <AlertDescription>Check the payment method and try again.</AlertDescription>
-          <AlertAction>
-            <Button variant="secondary">Retry</Button>
-          </AlertAction>
-        </Alert>
+        <div className="grid gap-3">
+          <Alert>
+            <AlertTitle>Service connected</AlertTitle>
+            <AlertDescription>The development service is responding normally.</AlertDescription>
+          </Alert>
+          <Alert variant="destructive">
+            <AlertTitle>Payment failed</AlertTitle>
+            <AlertDescription>Check the payment method and try again.</AlertDescription>
+            <AlertAction>
+              <Button variant="secondary">Retry</Button>
+            </AlertAction>
+          </Alert>
+        </div>
       </StorybookThemeProvider>,
     );
   },
@@ -33,13 +39,14 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const Default: Story = {
-  args: {
-    variant: "destructive",
-  },
   play: async ({ canvasElement }): Promise<void> => {
     const shadowCanvas = readAlertShadowCanvas(canvasElement);
 
-    await expect(shadowCanvas.getByRole("alert")).toHaveTextContent("Payment failed");
+    const alerts = shadowCanvas.getAllByRole("alert");
+
+    await expect(alerts).toHaveLength(2);
+    await expect(alerts[0]).toHaveTextContent("Service connected");
+    await expect(alerts[1]).toHaveTextContent("Payment failed");
     await expect(shadowCanvas.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   },
 };
