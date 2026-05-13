@@ -35,7 +35,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 ## Shared gotchas
 
 - Root `package.json` owns the shared TypeScript AI policy tooling and the shared `oxfmt` / `oxlint` configs. Keep workspace-local copies out unless the workspaces genuinely diverge.
-- Root `bun run check` runs shared `oxfmt` / `oxlint` enforcement first, excluding `packages/playground/**`, then delegates to package-specific checks.
+- Root `bun run check` runs `bun --bun typescript-ai-policy check` first (wrapping the shared `oxfmt` / `oxlint` enforcement and excluding `packages/playground/**`), then delegates to package-specific checks.
 - `packages/playground/**` is a local dev harness and is intentionally excluded from shared root lint/format enforcement.
 - Workspace `check` scripts are package-local validation only; do not duplicate shared lint/format enforcement there unless a workspace intentionally diverges.
 - `bun run check:devhost` refreshes the generated embedded devtools bundle, then runs `go vet ./...` and `go test ./...` in `apps/devhost/`.
