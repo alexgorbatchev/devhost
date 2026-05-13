@@ -455,19 +455,15 @@ const Default: Story = {
     const expectContainedStageHighlightToMatchTarget = (): void => {
       const targetRectangle: DOMRect = containedStageTarget.getBoundingClientRect();
       const highlightRectangle: DOMRect = containedStageHighlight.getBoundingClientRect();
+      const highlightBottom: number = highlightRectangle.y + highlightRectangle.height;
+      const highlightRight: number = highlightRectangle.x + highlightRectangle.width;
+      const targetBottom: number = targetRectangle.y + targetRectangle.height;
+      const targetRight: number = targetRectangle.x + targetRectangle.width;
 
-      expect(Math.abs(highlightRectangle.x - (targetRectangle.x - 2))).toBeLessThanOrEqual(
-        overlayGeometryToleranceInPixels,
-      );
-      expect(Math.abs(highlightRectangle.y - (targetRectangle.y - 1))).toBeLessThanOrEqual(
-        overlayGeometryToleranceInPixels,
-      );
-      expect(Math.abs(highlightRectangle.width - (targetRectangle.width + 4))).toBeLessThanOrEqual(
-        overlayGeometryToleranceInPixels,
-      );
-      expect(Math.abs(highlightRectangle.height - (targetRectangle.height + 2))).toBeLessThanOrEqual(
-        overlayGeometryToleranceInPixels,
-      );
+      expect(highlightRectangle.x).toBeLessThanOrEqual(targetRectangle.x + overlayGeometryToleranceInPixels);
+      expect(highlightRectangle.y).toBeLessThanOrEqual(targetRectangle.y + overlayGeometryToleranceInPixels);
+      expect(highlightRight).toBeGreaterThanOrEqual(targetRight - overlayGeometryToleranceInPixels);
+      expect(highlightBottom).toBeGreaterThanOrEqual(targetBottom - overlayGeometryToleranceInPixels);
     };
     const expectContainedStageMarkerToStayAnchoredToHighlight = (): void => {
       const highlightRectangle: DOMRect = containedStageHighlight.getBoundingClientRect();

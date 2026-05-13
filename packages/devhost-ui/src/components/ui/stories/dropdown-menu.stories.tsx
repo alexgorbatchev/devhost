@@ -1,16 +1,22 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState, type JSX } from "react";
-import { expect, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import { Button } from "../button";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "../dropdown-menu";
 import {
@@ -36,6 +42,18 @@ function OpenDropdownMenuStory(): JSX.Element {
               Restart service
               <DropdownMenuShortcut>R</DropdownMenuShortcut>
             </DropdownMenuItem>
+            <DropdownMenuItem inset>Open dashboard</DropdownMenuItem>
+            <DropdownMenuCheckboxItem checked>Show hidden services</DropdownMenuCheckboxItem>
+            <DropdownMenuRadioGroup value="tail">
+              <DropdownMenuRadioItem value="tail">Tail logs</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="archive">Archived logs</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>More actions</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem>Copy service URL</DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
             <DropdownMenuItem variant="destructive">Stop service</DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
@@ -68,6 +86,16 @@ const Default: Story = {
 
     await expect(shadowCanvas.getByRole("button", { name: "Open commands" })).toBeInTheDocument();
     await expect(shadowCanvas.getByRole("menuitem", { name: /Restart service/ })).toBeInTheDocument();
+    await expect(shadowCanvas.getByRole("menuitem", { name: "Open dashboard" })).toBeInTheDocument();
+    await expect(shadowCanvas.getByRole("menuitemcheckbox", { name: "Show hidden services" })).toBeChecked();
+    await expect(shadowCanvas.getByRole("menuitemradio", { name: "Tail logs" })).toBeChecked();
+    const moreActionsItem = shadowCanvas.getByRole("menuitem", { name: "More actions" });
+
+    await userEvent.hover(moreActionsItem);
+    await waitFor(() => {
+      expect(moreActionsItem).toHaveAttribute("aria-expanded", "true");
+    });
+    await expect(shadowCanvas.getByRole("menuitem", { name: "Copy service URL" })).toBeInTheDocument();
     await expect(shadowCanvas.getByRole("menuitem", { name: "Stop service" })).toBeInTheDocument();
   },
 };
