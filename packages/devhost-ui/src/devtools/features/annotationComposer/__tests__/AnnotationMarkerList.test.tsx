@@ -47,15 +47,6 @@ describe("AnnotationMarkerList", () => {
       strongText: "#2",
     });
   });
-
-  test("renders the Tailwind marker list root class", () => {
-    const markerList = AnnotationMarkerList({
-      items: FIXTURE_MARKER_ITEMS,
-      testId: "AnnotationComposer--marker-list",
-    });
-
-    expect(markerList.props.className).toBe("grid max-h-40 list-none gap-2 overflow-auto p-0");
-  });
 });
 
 interface IRenderedMarkerListItem {

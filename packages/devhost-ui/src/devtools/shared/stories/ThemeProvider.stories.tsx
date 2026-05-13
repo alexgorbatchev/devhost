@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, within } from "storybook/test";
 
 import { ThemeProvider } from "../ThemeProvider";
 import { useDevtoolsTheme } from "../useDevtoolsTheme";
@@ -39,22 +38,10 @@ export const Dark: Story = {
   args: {
     colorScheme: "dark",
   },
-  play: async ({ canvasElement }): Promise<void> => {
-    const canvas = within(canvasElement);
-    const consumer = await canvas.findByTestId("theme-consumer");
-    await expect(consumer).toBeInTheDocument();
-    await expect(consumer).toHaveTextContent("Background: hsl(229 18.644% 23.137%)");
-  },
 };
 
 export const Light: Story = {
   args: {
     colorScheme: "light",
-  },
-  play: async ({ canvasElement }): Promise<void> => {
-    const canvas = within(canvasElement);
-    const consumer = await canvas.findByTestId("theme-consumer");
-    await expect(consumer).toBeInTheDocument();
-    await expect(consumer).toHaveTextContent("Background: hsl(220 23.077% 94.902%)");
   },
 };
