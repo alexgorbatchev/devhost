@@ -23,8 +23,8 @@ import {
   devtoolsStoryShadowRootHostTestId,
   readShadowRoot,
   renderInDevtoolsStoryShadowRoot,
-} from "../../../devtools/shared/stories/DevtoolsStoryShadowRoot";
-import { StorybookThemeProvider } from "../../../devtools/shared/stories/storybookTheme";
+} from "../../../devtools/shared/components/stories/helpers";
+import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
 
 function OpenDropdownMenuStory(): JSX.Element {
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);

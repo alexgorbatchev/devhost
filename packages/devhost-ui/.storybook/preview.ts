@@ -16,7 +16,7 @@ import {
   readStorybookPreviewTheme,
   readStorybookDevtoolsColorScheme,
   storybookDevtoolsThemeGlobalName,
-} from "../src/devtools/shared/stories/storybookTheme";
+} from "../src/devtools/shared/storybookTheme";
 
 type FetchRequestInput = Parameters<typeof fetch>[0];
 type StorybookWebSocketProtocols = ConstructorParameters<typeof WebSocket>[1];

@@ -61,5 +61,5 @@ The manifest routes the `web` service to `bun run server` on port `3000` and ena
 
 ## Notes
 
-- The root `bun run dev` command delegates to `packages/playground` and starts this `devhost` stack.
+- The root `bun run dev` command starts the repo-root `devhost.toml`, which includes this playground and Storybook.
 - Use `bun run server` only when you want the Bun app without the HTTPS hostname, routing, or injected devtools overlay.

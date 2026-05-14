@@ -1,2 +1,2 @@
-export { ExternalDevtoolsPanel } from "./ExternalDevtoolsPanel";
-export { useExternalDevtoolsLaunchers } from "./useExternalDevtoolsLaunchers";
+export { ExternalDevtoolsPanel } from "./components/ExternalDevtoolsPanel";
+export { useExternalDevtoolsLaunchers } from "./hooks/useExternalDevtoolsLaunchers";

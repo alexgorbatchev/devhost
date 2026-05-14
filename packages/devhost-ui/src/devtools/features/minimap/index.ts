@@ -1,3 +1,3 @@
-export { LogMinimap } from "./LogMinimap";
-export { useServiceLogs } from "./useServiceLogs";
+export { LogMinimap } from "./components/LogMinimap";
+export { useServiceLogs } from "./hooks/useServiceLogs";
 export type { IRenderCanvasFunction } from "./types";

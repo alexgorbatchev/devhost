@@ -1,6 +1,6 @@
 import { addons, types } from "storybook/manager-api";
 
-import { DevhostThemeSwitchTool } from "../src/devtools/shared/stories/DevhostThemeSwitchTool";
+import { DevhostThemeSwitchTool } from "../src/devtools/shared/components/stories/helpers";
 
 const addonId: string = "devhost/theme-switch";
 const toolId: string = `${addonId}/tool`;

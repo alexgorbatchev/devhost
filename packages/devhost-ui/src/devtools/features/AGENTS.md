@@ -10,13 +10,15 @@ This directory contains isolated, feature-specific modules for the injected devt
 
 - **Folder structure:** Every feature must live inside its own directory (e.g., `features/annotationComposer/`, `features/minimap/`).
 - **Encapsulation:** Feature folders should not cross-import from other feature folders unless explicitly creating an integration boundary.
-- **Stories:** Place Storybook files in a `stories/` subdirectory within the feature folder (e.g., `features/minimap/stories/Minimap.stories.tsx`).
-- **Tests:** Place unit and component tests in a `__tests__/` subdirectory within the feature folder (e.g., `features/minimap/__tests__/useServiceLogs.test.ts`).
+- **Components:** Place feature-owned React components in `components/` and keep their matching Storybook files in `components/stories/` (e.g., `features/minimap/components/LogMinimap.tsx` and `features/minimap/components/stories/LogMinimap.stories.tsx`).
+- **Hooks:** Place exported hooks in direct-child `hooks/use*.ts[x]` files and keep their matching tests in `hooks/__tests__/` (e.g., `features/minimap/hooks/useServiceLogs.ts` and `features/minimap/hooks/__tests__/useServiceLogs.test.ts`).
+- **Pure tests:** Keep tests for pure helpers, reducers, parsers, and adapters in a feature-level `__tests__/` directory beside the source helpers they exercise.
 - **Host DOM integrations:** If a feature must inspect or coordinate with third-party UI already mounted on the host page, isolate that logic behind feature-local adapters or pure state helpers instead of scattering selectors and host DOM assumptions through UI components.
 
 ## Boundaries
 
 - **Always:** Use `src/devtools/shared/` for cross-feature code. If two features need the same component (like `Button` or `HoverSlidePanel`), hook, or utility, move it to `shared/`.
+- **Always:** Follow the repository TypeScript AI policy layout: component `.tsx` files under `components/`, exported hooks under `hooks/`, stories under sibling `components/stories/`, and hook tests under sibling `hooks/__tests__/`.
 - **Always:** Use semantic Tailwind tokens and logic-local layout constants first. Runtime JavaScript theme access must stay in narrow adapters for values CSS cannot consume directly, such as xterm colors, canvas colors, or matched font settings.
 - **Always:** Prefer selector-based suppression for third-party launcher chrome over removing or mutating specific host nodes. Host-owned panels and controls must remain owned by the host library.
 - **Always:** When a feature intentionally reaches outside the Shadow DOM boundary, keep that escape hatch narrowly scoped, document the behavior in `packages/docs/src/content/docs/`, and cover the adapter/state logic with feature-local tests.

@@ -1,2 +1,2 @@
-export { ServiceStatusPanel } from "./ServiceStatusPanel";
-export { useServiceHealth } from "./useServiceHealth";
+export { ServiceStatusPanel } from "./components/ServiceStatusPanel";
+export { useServiceHealth } from "./hooks/useServiceHealth";

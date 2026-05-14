@@ -1,2 +1,2 @@
-export { TerminalSessionTray } from "./TerminalSessionTray";
-export { useTerminalSessions } from "./useTerminalSessions";
+export { TerminalSessionTray } from "./components/TerminalSessionTray";
+export { useTerminalSessions } from "./hooks/useTerminalSessions";

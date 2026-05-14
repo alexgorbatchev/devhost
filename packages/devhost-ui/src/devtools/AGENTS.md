@@ -41,8 +41,10 @@ Its vital that when devtools are injected into the user's web application, CSS t
 ## Feature organization
 
 - Organize devtools code by feature first.
-- Put feature-owned components, hooks, and helpers under `features/<featureName>/`.
-- Keep cross-feature theme, config, websocket helpers, and shared types under `shared/`.
+- Put feature-owned React components under `features/<featureName>/components/`, with their Storybook files under the sibling `features/<featureName>/components/stories/` directory.
+- Put exported feature hooks under `features/<featureName>/hooks/use*.ts[x]`, with hook tests under the sibling `features/<featureName>/hooks/__tests__/` directory.
+- Keep feature-owned pure helpers and their tests under `features/<featureName>/` and `features/<featureName>/__tests__/` unless they are component or hook ownership files.
+- Keep cross-feature theme, config, websocket helpers, and shared types under `shared/`; shared React components belong in `shared/components/`, shared hooks in `shared/hooks/`, and shared Storybook harness components in `shared/components/stories/helpers.tsx`.
 - Do not leave feature-specific logic in the `src/devtools/` root when it belongs to a concrete feature folder.
 - See `features/AGENTS.md` for specific rules on feature encapsulation, stories, and tests.
 

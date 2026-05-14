@@ -1,0 +1,22 @@
+name = "devhost"
+
+[caddy.global]
+http = true
+httpPort = 80
+bindHost = "0.0.0.0"
+
+[services.storybook]
+primary = true
+command = ["sh", "-c", "exec ./node_modules/.bin/storybook dev --ci --port \"$PORT\""]
+cwd = "packages/devhost-ui"
+port = "auto"
+host = "devhost-storybook-devbox.cvb.lol"
+
+[services.playground]
+command = ["bun", "run", "server"]
+cwd = "packages/playground"
+port = "auto"
+host = "devhost-playground-devbox.cvb.lol"
+
+[services.playground.env]
+NODE_ENV = "development"

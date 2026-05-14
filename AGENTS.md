@@ -15,7 +15,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Check the injected devtools UI package: `bun run --cwd packages/devhost-ui check`
 - Check the docs package-only validations: `bun run --cwd packages/docs check`
 - Run standalone React Highlight Neovim plugin tests: `bun run test:nvim`
-- Start the playground dev stack locally: `bun run dev`
+- Start the root devhost stack locally: `bun run dev`
 - Start the docs site locally: `bun run docs`
 
 ## Documentation policy
