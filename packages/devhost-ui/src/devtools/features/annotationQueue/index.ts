@@ -1,2 +1,2 @@
-export { AnnotationQueuePanel } from "./AnnotationQueuePanel";
-export { useAnnotationQueues } from "./useAnnotationQueues";
+export { AnnotationQueuePanel } from "./components/AnnotationQueuePanel";
+export { useAnnotationQueues } from "./hooks/useAnnotationQueues";

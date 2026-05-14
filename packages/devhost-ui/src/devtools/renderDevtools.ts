@@ -1,7 +1,7 @@
 import { jsx } from "react/jsx-runtime";
 import { createRoot } from "react-dom/client";
 
-import { App } from "./App";
+import { App } from "./components/App";
 import { DEVTOOLS_HOST_ID, installDevtoolsStyles } from "./shared";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "./shared/constants";
 

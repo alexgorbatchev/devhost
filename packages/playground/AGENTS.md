@@ -8,7 +8,7 @@ Placeholder Bun + React workspace used to exercise `devhost` against a small rou
 - Start the Bun server directly without devhost: `bun run server`
 - Build the browser bundle: `bun run build`
 - Start the production server: `bun run start`
-- Start through devhost from the repo root: `apps/devhost/bin/devhost --manifest packages/playground/devhost.toml`
+- Start the root devhost stack from the repo root: `bun run dev`
 - Start managed Caddy for this manifest from the repo root: `apps/devhost/bin/devhost caddy start --manifest packages/playground/devhost.toml`
 
 ## Local conventions
@@ -21,7 +21,7 @@ Placeholder Bun + React workspace used to exercise `devhost` against a small rou
 ## Local gotchas
 
 - `devhost.toml` routes `https://playground.localhost` to the Bun server on port `3000`; avoid introducing another service on the same fixed port.
-- The root `bun run dev` command delegates to this package's `dev` script, so it starts the `devhost` proxy for this playground.
+- The root `bun run dev` command starts the repo-root `devhost.toml`, which includes this playground and Storybook.
 - Shared `oxfmt` / `oxlint` enforcement runs from the repo root; do not add workspace-local lint or format config unless this package intentionally diverges.
 
 ## Boundaries

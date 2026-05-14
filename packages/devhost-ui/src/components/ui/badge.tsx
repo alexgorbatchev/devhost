@@ -2,8 +2,8 @@ import * as React from "react";
 import { type VariantProps } from "class-variance-authority";
 import { Slot } from "radix-ui";
 
-import { cn } from "@/lib/utils";
-import { badgeVariants } from "./badgeVariants";
+import { cn } from "../../lib/utils";
+import { badgeVariants } from "./constants";
 
 interface IBadgeProps extends React.ComponentProps<"span">, VariantProps<typeof badgeVariants> {
   asChild?: boolean;

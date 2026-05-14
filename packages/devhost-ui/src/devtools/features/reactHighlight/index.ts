@@ -1,1 +1,1 @@
-export { useReactHighlightOverlay } from "./useReactHighlightOverlay";
+export { useReactHighlightOverlay } from "./hooks/useReactHighlightOverlay";

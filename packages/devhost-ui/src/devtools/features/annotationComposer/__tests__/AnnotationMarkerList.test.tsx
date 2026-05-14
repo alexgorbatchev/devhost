@@ -3,7 +3,7 @@ import assert from "node:assert";
 import { describe, expect, test } from "bun:test";
 import type { ReactNode, ReactElement } from "react";
 
-import { AnnotationMarkerList, type IAnnotationMarkerListItem } from "../AnnotationMarkerList";
+import { AnnotationMarkerList, type IAnnotationMarkerListItem } from "../components/AnnotationMarkerList";
 
 const FIXTURE_MARKER_ITEMS: IAnnotationMarkerListItem[] = [
   {
