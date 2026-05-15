@@ -1,12 +1,13 @@
 import type { ServiceLogEntry, ServiceLogStream } from "../../shared/types";
+import { parseAnsiLogLine, type ILogAnsiFragment } from "./parseAnsiLogLine";
 
-const maximumCharactersPerWrappedRow: number = 80;
 const markGapInPixels: number = 1;
 const markHeightInPixels: number = 2;
 const minimumWidthRatio: number = 0.12;
 
 export interface IVisibleLogRow {
   entryIndex: number;
+  fragments: ILogAnsiFragment[];
   height: number;
   id: number;
   stream: ServiceLogStream;
@@ -33,51 +34,29 @@ export function createVisibleLogRows(
 
   for (let entryIndex = entries.length - 1; entryIndex >= 0 && nextTop + markHeightInPixels > 0; entryIndex -= 1) {
     const entry: ServiceLogEntry = entries[entryIndex]!;
-    const wrappedRows: string[] = createWrappedRows(entry.line);
+    const parsedLine = parseAnsiLogLine(entry.line);
 
-    for (
-      let wrappedRowIndex = wrappedRows.length - 1;
-      wrappedRowIndex >= 0 && nextTop + markHeightInPixels > 0;
-      wrappedRowIndex -= 1
-    ) {
-      const wrappedRowText: string = wrappedRows[wrappedRowIndex]!;
-
-      rowsFromBottom.push({
-        entryIndex,
-        height: markHeightInPixels,
-        id: entry.id,
-        stream: entry.stream,
-        text: wrappedRowText,
-        top: nextTop,
-        width: resolveMarkWidth(wrappedRowText, resolvedViewportWidth),
-      });
-      nextTop -= strideInPixels;
-    }
+    rowsFromBottom.push({
+      entryIndex,
+      fragments: parsedLine.fragments,
+      height: markHeightInPixels,
+      id: entry.id,
+      stream: entry.stream,
+      text: parsedLine.text,
+      top: nextTop,
+      width: resolveMarkWidth(parsedLine.text, resolvedViewportWidth),
+    });
+    nextTop -= strideInPixels;
   }
 
   return rowsFromBottom.reverse();
 }
 
-function createWrappedRows(line: string): string[] {
-  if (line.length === 0) {
-    return [""];
-  }
-
-  const wrappedRows: string[] = [];
-  let startIndex: number = 0;
-
-  while (startIndex < line.length) {
-    wrappedRows.push(line.slice(startIndex, startIndex + maximumCharactersPerWrappedRow));
-    startIndex += maximumCharactersPerWrappedRow;
-  }
-
-  return wrappedRows;
-}
-
-function resolveMarkWidth(wrappedRowText: string, viewportWidth: number): number {
+function resolveMarkWidth(visibleLineText: string, viewportWidth: number): number {
   const minimumWidth: number = Math.max(1, Math.round(viewportWidth * minimumWidthRatio));
-  const normalizedLength: number = Math.min(wrappedRowText.length, maximumCharactersPerWrappedRow);
-  const scaledWidth: number = Math.round((normalizedLength / maximumCharactersPerWrappedRow) * viewportWidth);
+  const maximumVisibleCharactersPerPreviewLine: number = 80;
+  const normalizedLength: number = Math.min(visibleLineText.length, maximumVisibleCharactersPerPreviewLine);
+  const scaledWidth: number = Math.round((normalizedLength / maximumVisibleCharactersPerPreviewLine) * viewportWidth);
 
   return Math.max(minimumWidth, scaledWidth);
 }
