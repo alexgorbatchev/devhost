@@ -1,4 +1,4 @@
-import devtoolsCssText from "./devtools.css?inline";
+import devtoolsCssText from "./devtoolsCssText";
 
 const devtoolsStylesheetAttributeName: string = "data-devhost-devtools-styles";
 const devtoolsStylesheetViteSourcePathSuffix: string = "/src/devtools/shared/devtools.css";

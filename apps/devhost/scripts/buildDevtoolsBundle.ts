@@ -9,6 +9,7 @@ const devtoolsEntrypointPath: string = fileURLToPath(
 const devtoolsStylesheetPath: string = fileURLToPath(
   new URL("../../../packages/devhost-ui/src/devtools/shared/devtools.css", import.meta.url),
 );
+const devtoolsStylesheetTextModuleImportPath: string = "./devtoolsCssText";
 const assetOutputDirectoryPath: string = fileURLToPath(new URL("../internal/devtools/dist/", import.meta.url));
 const devtoolsScriptOutputPath: string = fileURLToPath(
   new URL("../internal/devtools/dist/devtools.js", import.meta.url),
@@ -82,7 +83,14 @@ function createInlineDevtoolsStylesheetPlugin(stylesheetText: string): BunPlugin
   return {
     name: "devhost-inline-devtools-stylesheet",
     setup(build): void {
-      build.onResolve({ filter: /devtools\.css\?inline$/ }, () => {
+      build.onResolve({ filter: /^\.\/devtoolsCssText$/ }, ({ importer, path }) => {
+        if (
+          !importer.endsWith("/src/devtools/shared/devtoolsStyles.ts") ||
+          path !== devtoolsStylesheetTextModuleImportPath
+        ) {
+          return;
+        }
+
         return {
           namespace: "devhost-inline-css",
           path: devtoolsStylesheetPath,
