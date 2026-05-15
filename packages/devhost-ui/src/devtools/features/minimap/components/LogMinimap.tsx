@@ -1,10 +1,11 @@
-import type { JSX } from "react";
+import type { CSSProperties, JSX } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "../../../../lib/utils";
 
 import { useDevtoolsColorScheme } from "../../../shared";
 import type { ServiceLogEntry } from "../../../shared/types";
+import type { ILogAnsiFragment } from "../parseAnsiLogLine";
 import { createLogMinimapMarksFromVisibleRows, type ILogMinimapMark } from "../createLogMinimapMarks";
 import { createLogPreviewWindow } from "../createLogPreviewWindow";
 import { createVisibleLogRows, type IVisibleLogRow } from "../createVisibleLogRows";
@@ -179,11 +180,29 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
                 <li
                   key={`${row.id}-${row.top}`}
                   className={cn(
-                    "h-6 overflow-hidden text-ellipsis whitespace-pre px-2 leading-6",
+                    "h-6 overflow-hidden whitespace-pre px-2 leading-6",
                     row.stream === "stderr" ? "bg-destructive/10 text-destructive" : "text-foreground",
                   )}
                 >
-                  {row.text}
+                  {row.fragments.length === 0
+                    ? row.text
+                    : row.fragments.map((fragment: ILogAnsiFragment, fragmentIndex: number) => {
+                        return (
+                          <span
+                            key={`${row.id}-${row.top}-${fragmentIndex}`}
+                            className={cn(
+                              fragment.isBold ? "font-semibold" : null,
+                              fragment.isDim ? "opacity-70" : null,
+                              fragment.isItalic ? "italic" : null,
+                              fragment.isStrikethrough ? "line-through" : null,
+                              fragment.isUnderline ? "underline" : null,
+                            )}
+                            style={resolveAnsiFragmentStyle(fragment)}
+                          >
+                            {fragment.text}
+                          </span>
+                        );
+                      })}
                 </li>
               );
             })}
@@ -197,3 +216,14 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
 const logPreviewPadding: number = 8;
 const logPreviewRowHeight: number = 24;
 const logPreviewViewportPadding: number = 10;
+
+function resolveAnsiFragmentStyle(fragment: ILogAnsiFragment): CSSProperties | undefined {
+  if (fragment.backgroundColor === null && fragment.foregroundColor === null) {
+    return undefined;
+  }
+
+  return {
+    backgroundColor: fragment.backgroundColor ?? undefined,
+    color: fragment.foregroundColor ?? undefined,
+  };
+}

@@ -102,7 +102,7 @@ describe("createLogMinimapMarks", () => {
     ]);
   });
 
-  test("wraps long log lines into multiple stacked marks", () => {
+  test("clips long log lines to a single minimap mark", () => {
     const entries: ServiceLogEntry[] = [
       {
         id: 1,
@@ -120,20 +120,12 @@ describe("createLogMinimapMarks", () => {
 
     expect(createLogMinimapMarks(entries, 8, 100)).toEqual([
       {
-        entryIndex: 1,
+        entryIndex: 0,
         height: 2,
-        id: 2,
-        stream: "stderr",
-        top: 0,
-        width: 100,
-      },
-      {
-        entryIndex: 1,
-        height: 2,
-        id: 2,
-        stream: "stderr",
+        id: 1,
+        stream: "stdout",
         top: 3,
-        width: 100,
+        width: 12,
       },
       {
         entryIndex: 1,
@@ -141,7 +133,7 @@ describe("createLogMinimapMarks", () => {
         id: 2,
         stream: "stderr",
         top: 6,
-        width: 50,
+        width: 100,
       },
     ]);
   });

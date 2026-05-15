@@ -9,6 +9,18 @@ const logStreams: ServiceLogStream[] = ["stdout", "stderr"];
 function createRow(id: number): IVisibleLogRow {
   return {
     entryIndex: id - 1,
+    fragments: [
+      {
+        backgroundColor: null,
+        foregroundColor: null,
+        isBold: false,
+        isDim: false,
+        isItalic: false,
+        isStrikethrough: false,
+        isUnderline: false,
+        text: `row ${id}`,
+      },
+    ],
     height: 2,
     id,
     stream: logStreams[id % logStreams.length] ?? "stdout",

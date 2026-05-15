@@ -13,6 +13,8 @@ What it does well:
 - waits for health checks before exposing managed routes
 - optionally injects browser devtools for logs, service status, annotations, browser-hosted Neovim sessions, and aggregated third-party launcher buttons
 
+The injected log minimap is intentionally a compact preview: each log entry stays on a single row and clips horizontally instead of wrapping into a full log viewer.
+
 ## Quick start
 
 ### Installation
