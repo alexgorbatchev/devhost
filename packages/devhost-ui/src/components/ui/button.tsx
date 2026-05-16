@@ -1,6 +1,6 @@
 import * as React from "react";
 import { type VariantProps } from "class-variance-authority";
-import { Slot } from "radix-ui";
+import { Slot } from "@radix-ui/react-slot";
 
 import { cn } from "../../lib/utils";
 import { buttonVariants } from "./constants";
@@ -16,7 +16,7 @@ export function Button({
   variant = "default",
   ...props
 }: IButtonProps): React.ReactElement {
-  const Component = asChild ? Slot.Root : "button";
+  const Component = asChild ? Slot : "button";
 
   return (
     <Component

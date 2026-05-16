@@ -19,17 +19,28 @@ import {
 } from "../src/devtools/shared/storybookTheme";
 
 type FetchRequestInput = Parameters<typeof fetch>[0];
+type FetchRequestInit = Parameters<typeof fetch>[1];
+type FetchPreconnect = typeof fetch.preconnect;
 type StorybookWebSocketProtocols = ConstructorParameters<typeof WebSocket>[1];
 type StorybookWebSocketSendData = Parameters<WebSocket["send"]>[0];
 type StorybookWebSocketUrl = ConstructorParameters<typeof WebSocket>[0];
 
 const storybookInjectedConfig: IInjectedDevtoolsConfig = {
-  agentDisplayName: "Pi",
+  annotationActions: [],
+  annotationDefaultActionId: "",
+  annotationEnabled: false,
+  annotationQueueEnabled: false,
   componentEditor: "vscode",
   controlToken: "storybook-token",
+  editorEnabled: true,
+  externalToolbarsEnabled: true,
+  minimapEnabled: true,
   position: "bottom-right",
   projectRootPath: "storybook-workspace",
+  routedServices: [],
   stackName: "storybook-stack",
+  statusEnabled: true,
+  terminalEnabled: true,
 };
 
 class MockStorybookWebSocket extends EventTarget {
@@ -115,17 +126,34 @@ class MockStorybookWebSocket extends EventTarget {
 }
 
 function createStorybookFetch(): typeof fetch {
-  return async (input, _init): Promise<Response> => {
-    const requestUrl: URL = readRequestUrl(input);
+  const preconnect: FetchPreconnect = (...args): ReturnType<FetchPreconnect> => {
+    const fetchPreconnect: unknown = Reflect.get(globalThis.fetch, "preconnect");
 
-    if (requestUrl.pathname === TERMINAL_SESSION_START_PATH) {
-      return new Response(JSON.stringify({ sessionId: "storybook-session" }), {
-        headers: { "content-type": "application/json" },
-      });
+    if (typeof fetchPreconnect === "function") {
+      return fetchPreconnect(...args);
     }
 
-    return new Response("Not found", { status: 404 });
+    return undefined;
   };
+
+  const storybookFetch: typeof fetch = Object.assign(
+    async (input: FetchRequestInput, _init?: FetchRequestInit): Promise<Response> => {
+      const requestUrl: URL = readRequestUrl(input);
+
+      if (requestUrl.pathname === TERMINAL_SESSION_START_PATH) {
+        return new Response(JSON.stringify({ sessionId: "storybook-session" }), {
+          headers: { "content-type": "application/json" },
+        });
+      }
+
+      return new Response("Not found", { status: 404 });
+    },
+    {
+      preconnect,
+    },
+  );
+
+  return storybookFetch;
 }
 
 function readRequestUrl(input: FetchRequestInput): URL {
