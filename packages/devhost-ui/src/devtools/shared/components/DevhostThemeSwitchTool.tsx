@@ -1,34 +1,35 @@
-import React, { type CSSProperties, type JSX } from "react";
-import { useGlobals } from "storybook/manager-api";
+import type { CSSProperties, JSX } from "react";
 
-import type { DevtoolsColorScheme } from "../src/devtools/shared";
-import { storybookDevtoolsThemeGlobalName } from "../src/devtools/shared/storybookTheme";
+import type { DevtoolsColorScheme } from "../DevtoolsColorScheme";
 
-export function DevhostThemeSwitchTool(): JSX.Element {
-  const [globals, updateGlobals] = useGlobals();
-  const colorScheme: DevtoolsColorScheme = globals[storybookDevtoolsThemeGlobalName] === "light" ? "light" : "dark";
+export interface IDevhostThemeSwitchToolProps {
+  colorScheme: DevtoolsColorScheme;
+  onSelectColorScheme: (nextColorScheme: DevtoolsColorScheme) => void;
+}
 
-  function selectColorScheme(nextColorScheme: DevtoolsColorScheme): void {
-    updateGlobals({ [storybookDevtoolsThemeGlobalName]: nextColorScheme });
-  }
-
+export function DevhostThemeSwitchTool({
+  colorScheme,
+  onSelectColorScheme,
+}: IDevhostThemeSwitchToolProps): JSX.Element {
   return (
     <div aria-label="Devhost UI color scheme" data-testid="DevhostThemeSwitchTool" role="group" style={toolStyle}>
       <button
+        aria-label="Use light preview theme"
         aria-pressed={colorScheme === "light"}
-        onClick={(): void => selectColorScheme("light")}
         style={colorScheme === "light" ? activeButtonStyle : inactiveButtonStyle}
         title="Use light preview theme"
         type="button"
+        onClick={(): void => onSelectColorScheme("light")}
       >
         Light
       </button>
       <button
+        aria-label="Use dark preview theme"
         aria-pressed={colorScheme === "dark"}
-        onClick={(): void => selectColorScheme("dark")}
         style={colorScheme === "dark" ? activeButtonStyle : inactiveButtonStyle}
         title="Use dark preview theme"
         type="button"
+        onClick={(): void => onSelectColorScheme("dark")}
       >
         Dark
       </button>
