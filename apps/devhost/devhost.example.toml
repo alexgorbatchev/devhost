@@ -31,16 +31,16 @@
 # - fixed numeric bind ports are reserved across live devhost processes before spawn
 # - hostname ownership is exclusive across projects, but one manifest may mount multiple services under the same host on distinct paths
 # - annotation action ids must match `^[a-z][a-z0-9-]*$` and be unique
-# - string values support environment-variable interpolation with `$NAME` and `${NAME}` placeholders
+# - string values support environment-variable interpolation with `{{ env.NAME }}` placeholders
 # - placeholder names must start with a letter or underscore and then use letters, digits, or underscores
-# - other `$` sequences stay literal
-# - malformed `${...}` text stays literal, and an unterminated `${` keeps the rest of that string literal
+# - other text stays literal
+# - malformed `{{ ... }}` text stays literal, and an unterminated `{{` keeps the rest of that string literal
 # - referencing an undefined valid placeholder is a manifest read error
 # - defined placeholders may expand to the empty string
 
 # `name` identifies the stack in logs, state, and injected metadata.
 # You can interpolate environment variables in string values, for example:
-# `name = "$USER-stack"` or `host = "devhost-${USER}.localhost"`.
+# `name = "{{ env.USER }}-stack"` or `host = "devhost-{{ env.USER }}.localhost"`.
 name = "hello-stack"
 
 # Managed Caddy lifecycle is shared and manual.
@@ -200,6 +200,10 @@ primary = true
 # `command` defines the child process command line.
 # - string array (recommended): preserves argument boundaries exactly.
 # - string: supported, but devhost splits it on whitespace and does not preserve shell quoting.
+# - commands run directly, not through an implicit shell.
+# - `command = ["storybook", "dev", "--port", "$PORT"]` passes literal `$PORT`.
+# - use an explicit shell such as `command = ["sh", "-c", "exec storybook dev --port \"$PORT\""]`
+#   only when you intentionally want shell expansion or shell features.
 # Omit `command` when `[services.<name>.lifecycle].mode = "daemon"`.
 command = ["bun", "run", "web:dev"]
 # command = "bun run web:dev"
@@ -214,6 +218,7 @@ port = 3000
 # - `true` (default): inject `PORT` when `port` is set.
 # - `false`: keep routing and health on the configured port, but do not export `PORT`.
 #   Use this for composite commands that launch multiple child processes and should not all inherit the same port.
+# - injecting `PORT` does not expand `$PORT` inside `command`; that still requires an explicit shell.
 # injectPort = false
 # `bindHost` sets the socket interface the child process should bind to.
 # - `"127.0.0.1"` (default): IPv4 loopback only.

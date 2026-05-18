@@ -97,7 +97,7 @@ func TestReadManifestInterpolatesEnvironmentVariablesInAllStringFields(t *testin
 	temporaryDirectoryPath := t.TempDir()
 	manifestPath := filepath.Join(temporaryDirectoryPath, "devhost.toml")
 	manifestText := strings.Join([]string{
-		`name = "$STACK_NAME"`,
+		`name = "{{ env.STACK_NAME }}"`,
 		"",
 		"[annotation]",
 		`defaultAction = "open-code"`,
@@ -105,25 +105,25 @@ func TestReadManifestInterpolatesEnvironmentVariablesInAllStringFields(t *testin
 		"[[annotation.actions]]",
 		`id = "open-code"`,
 		`kind = "command"`,
-		`label = "$ACTION_LABEL"`,
+		`label = "{{ env.ACTION_LABEL }}"`,
 		`[annotation.actions.command]`,
-		`command = ["bun", "run", "$TASK_NAME"]`,
-		`cwd = "$SERVICE_DIR"`,
+		`command = ["bun", "run", "{{ env.TASK_NAME }}"]`,
+		`cwd = "{{ env.SERVICE_DIR }}"`,
 		`[annotation.actions.command.env]`,
-		`TARGET_HOST = "https://${PUBLIC_HOST}"`,
+		`TARGET_HOST = "https://{{ env.PUBLIC_HOST }}"`,
 		"",
 		"[services.web]",
-		`command = ["bun", "run", "$TASK_NAME"]`,
-		`cwd = "$SERVICE_DIR"`,
-		`host = "${PUBLIC_HOST}"`,
-		`path = "/${API_PREFIX}/*"`,
+		`command = ["bun", "run", "{{ env.TASK_NAME }}"]`,
+		`cwd = "{{ env.SERVICE_DIR }}"`,
+		`host = "{{ env.PUBLIC_HOST }}"`,
+		`path = "/{{ env.API_PREFIX }}/*"`,
 		`port = 3000`,
 		"",
 		"[services.web.env]",
-		`PUBLIC_URL = "https://${PUBLIC_HOST}"`,
+		`PUBLIC_URL = "https://{{ env.PUBLIC_HOST }}"`,
 		"",
 		"[services.web.health]",
-		`http = "http://${HEALTH_HOST}:${HEALTH_PORT}/healthz"`,
+		`http = "http://{{ env.HEALTH_HOST }}:{{ env.HEALTH_PORT }}/healthz"`,
 	}, "\n")
 	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
 		t.Fatalf("WriteFile(...) error = %v", error)
@@ -206,7 +206,7 @@ func TestReadManifestRejectsUndefinedEnvironmentVariables(t *testing.T) {
 		"",
 		"[services.web]",
 		`command = ["bun", "run", "dev"]`,
-		`host = "${MISSING_PUBLIC_HOST}"`,
+		`host = "{{ env.MISSING_PUBLIC_HOST }}"`,
 		`port = 3000`,
 	}, "\n")
 	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
@@ -223,7 +223,7 @@ func TestReadManifestRejectsUndefinedEnvironmentVariables(t *testing.T) {
 	}
 }
 
-func TestReadManifestPreservesUnsupportedDollarSequences(t *testing.T) {
+func TestReadManifestPreservesUnsupportedInterpolationSequences(t *testing.T) {
 	t.Setenv("PUBLIC_HOST", "devhost-storybook-devbox.cvb.lol")
 
 	temporaryDirectoryPath := t.TempDir()
@@ -232,8 +232,8 @@ func TestReadManifestPreservesUnsupportedDollarSequences(t *testing.T) {
 		`name = "hello-stack"`,
 		"",
 		"[services.web]",
-		`command = ["/bin/sh", "-c", "echo $$ $1 $? $0 ${} $PUBLIC_HOST ${BROKEN-$PUBLIC_HOST} ${BROKEN-$MISSING} ${BROKEN-${PUBLIC_HOST}} ${BROKEN-${MISSING}} ${PUBLIC_HOST}"]`,
-		`host = "${PUBLIC_HOST}"`,
+		`command = ["/bin/sh", "-c", "echo $$ $1 $? $0 ${} $PUBLIC_HOST ${PUBLIC_HOST} {{}} {{ nope }} {{ env. }} {{ env.BROKEN-NAME }} {{ env.PUBLIC_HOST }}"]`,
+		`host = "{{ env.PUBLIC_HOST }}"`,
 		`port = 3000`,
 	}, "\n")
 	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
@@ -258,7 +258,7 @@ func TestReadManifestPreservesUnsupportedDollarSequences(t *testing.T) {
 		t.Fatalf("service command = %#v, want array", webService["command"])
 	}
 
-	want := "echo $$ $1 $? $0 ${} devhost-storybook-devbox.cvb.lol ${BROKEN-$PUBLIC_HOST} ${BROKEN-$MISSING} ${BROKEN-${PUBLIC_HOST}} ${BROKEN-${MISSING}} devhost-storybook-devbox.cvb.lol"
+	want := "echo $$ $1 $? $0 ${} $PUBLIC_HOST ${PUBLIC_HOST} {{}} {{ nope }} {{ env. }} {{ env.BROKEN-NAME }} devhost-storybook-devbox.cvb.lol"
 	if commandValue[2] != want {
 		t.Fatalf("service command[2] = %#v, want %q", commandValue[2], want)
 	}
@@ -273,12 +273,12 @@ func TestReadManifestAllowsDefinedEmptyEnvironmentVariables(t *testing.T) {
 	temporaryDirectoryPath := t.TempDir()
 	manifestPath := filepath.Join(temporaryDirectoryPath, "devhost.toml")
 	manifestText := strings.Join([]string{
-		`name = "hello${STACK_SUFFIX}-stack"`,
+		`name = "hello{{ env.STACK_SUFFIX }}-stack"`,
 		"",
 		"[services.web]",
 		`command = ["bun", "run", "dev"]`,
 		`host = "web.localhost"`,
-		`path = "/${STACK_SUFFIX}api/*"`,
+		`path = "/{{ env.STACK_SUFFIX }}api/*"`,
 		`port = 3000`,
 	}, "\n")
 	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
@@ -306,7 +306,7 @@ func TestReadManifestAllowsDefinedEmptyEnvironmentVariables(t *testing.T) {
 	}
 }
 
-func TestReadManifestContinuesAfterUnterminatedBracketedSequence(t *testing.T) {
+func TestReadManifestContinuesAfterUnterminatedInterpolationSequence(t *testing.T) {
 	t.Setenv("PUBLIC_HOST", "devhost-storybook-devbox.cvb.lol")
 
 	temporaryDirectoryPath := t.TempDir()
@@ -315,8 +315,8 @@ func TestReadManifestContinuesAfterUnterminatedBracketedSequence(t *testing.T) {
 		`name = "hello-stack"`,
 		"",
 		"[services.web]",
-		`command = ["/bin/sh", "-c", "echo ${BROKEN- still $PUBLIC_HOST"]`,
-		`host = "${PUBLIC_HOST}"`,
+		`command = ["/bin/sh", "-c", "echo {{ env.BROKEN still {{ env.PUBLIC_HOST }}"]`,
+		`host = "{{ env.PUBLIC_HOST }}"`,
 		`port = 3000`,
 	}, "\n")
 	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
@@ -341,13 +341,13 @@ func TestReadManifestContinuesAfterUnterminatedBracketedSequence(t *testing.T) {
 		t.Fatalf("service command = %#v, want array", webService["command"])
 	}
 
-	want := "echo ${BROKEN- still $PUBLIC_HOST"
+	want := "echo {{ env.BROKEN still {{ env.PUBLIC_HOST }}"
 	if commandValue[2] != want {
 		t.Fatalf("service command[2] = %#v, want %q", commandValue[2], want)
 	}
 }
 
-func TestReadManifestContinuesAfterMalformedBracketedSequenceBeforeLaterClosingBrace(t *testing.T) {
+func TestReadManifestContinuesAfterMalformedInterpolationSequenceBeforeLaterClosingBrace(t *testing.T) {
 	t.Setenv("PUBLIC_HOST", "devhost-storybook-devbox.cvb.lol")
 
 	temporaryDirectoryPath := t.TempDir()
@@ -356,8 +356,8 @@ func TestReadManifestContinuesAfterMalformedBracketedSequenceBeforeLaterClosingB
 		`name = "hello-stack"`,
 		"",
 		"[services.web]",
-		`command = ["/bin/sh", "-c", "echo ${BROKEN- still $PUBLIC_HOST } ${PUBLIC_HOST}"]`,
-		`host = "${PUBLIC_HOST}"`,
+		`command = ["/bin/sh", "-c", "echo {{ env.BROKEN still {{ env.PUBLIC_HOST } }} {{ env.PUBLIC_HOST }}"]`,
+		`host = "{{ env.PUBLIC_HOST }}"`,
 		`port = 3000`,
 	}, "\n")
 	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
@@ -382,13 +382,13 @@ func TestReadManifestContinuesAfterMalformedBracketedSequenceBeforeLaterClosingB
 		t.Fatalf("service command = %#v, want array", webService["command"])
 	}
 
-	want := "echo ${BROKEN- still $PUBLIC_HOST } devhost-storybook-devbox.cvb.lol"
+	want := "echo {{ env.BROKEN still {{ env.PUBLIC_HOST } }} devhost-storybook-devbox.cvb.lol"
 	if commandValue[2] != want {
 		t.Fatalf("service command[2] = %#v, want %q", commandValue[2], want)
 	}
 }
 
-func TestReadManifestContinuesAfterMalformedBracketedSequenceBeforeNestedBracketedPlaceholder(t *testing.T) {
+func TestReadManifestContinuesAfterMalformedInterpolationSequenceBeforeNestedPlaceholder(t *testing.T) {
 	t.Setenv("PUBLIC_HOST", "devhost-storybook-devbox.cvb.lol")
 
 	temporaryDirectoryPath := t.TempDir()
@@ -397,8 +397,8 @@ func TestReadManifestContinuesAfterMalformedBracketedSequenceBeforeNestedBracket
 		`name = "hello-stack"`,
 		"",
 		"[services.web]",
-		`command = ["/bin/sh", "-c", "echo ${BROKEN-${PUBLIC_HOST}} ${PUBLIC_HOST}"]`,
-		`host = "${PUBLIC_HOST}"`,
+		`command = ["/bin/sh", "-c", "echo {{ env.BROKEN-{{ env.PUBLIC_HOST }} }} {{ env.PUBLIC_HOST }}"]`,
+		`host = "{{ env.PUBLIC_HOST }}"`,
 		`port = 3000`,
 	}, "\n")
 	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
@@ -423,7 +423,7 @@ func TestReadManifestContinuesAfterMalformedBracketedSequenceBeforeNestedBracket
 		t.Fatalf("service command = %#v, want array", webService["command"])
 	}
 
-	want := "echo ${BROKEN-${PUBLIC_HOST}} devhost-storybook-devbox.cvb.lol"
+	want := "echo {{ env.BROKEN-{{ env.PUBLIC_HOST }} }} devhost-storybook-devbox.cvb.lol"
 	if commandValue[2] != want {
 		t.Fatalf("service command[2] = %#v, want %q", commandValue[2], want)
 	}

@@ -10,16 +10,16 @@ primary = true
 command = ["sh", "-c", "exec ./node_modules/.bin/storybook dev --ci --port \"$PORT\""]
 cwd = "packages/devhost-ui"
 port = "auto"
-host = "${DEVHOST_STORYBOOK}"
+host = "{{ env.DEVHOST_STORYBOOK }}"
 
 [services.storybook.env]
-__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS = "${DEVHOST_STORYBOOK}"
+__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS = "{{ env.DEVHOST_STORYBOOK }}"
 
 [services.playground]
 command = ["bun", "run", "server"]
 cwd = "packages/playground"
 port = "auto"
-host = "${DEVHOST_PLAYGROUND}"
+host = "{{ env.DEVHOST_PLAYGROUND }}"
 
 [services.playground.env]
 NODE_ENV = "development"

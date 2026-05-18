@@ -19,6 +19,8 @@ Undocumented `DEVHOST_*` variables are reserved for internal supervision and may
   - injected when the service defines `port`, including foreground services with `port = "auto"`, unless `injectPort = false`
   - for `port = "auto"`, the selected port is best-effort and may be retried if the child reports a clear bind collision during startup
   - not injected for services that do not define `port` or for unmanaged services
+  - injection only adds `PORT` to the child process environment; it does not make `"$PORT"` expand inside a manifest `command`
+  - `command = ["storybook", "dev", "--port", "$PORT"]` passes literal `$PORT`; use an explicit shell only when you intentionally need shell expansion
 - `injectPort = false`
   - service-level opt-out for `PORT` injection
   - keeps routing and health checks on the configured service `port`, but does not export `PORT` into the child process environment
