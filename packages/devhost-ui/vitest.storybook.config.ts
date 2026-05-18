@@ -5,15 +5,9 @@ import { playwright } from "@vitest/browser-playwright";
 import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 import { defineConfig, mergeConfig } from "vitest/config";
 
-import viteConfig from "./vite.config";
+import viteConfig, { optimizeDependencyEntries } from "./vite.config";
 
 const dirname: string = typeof __dirname !== "undefined" ? __dirname : path.dirname(fileURLToPath(import.meta.url));
-
-const optimizeDependencyEntries: string[] = [
-  "@storybook/react-dom-shim",
-  "@tanstack/react-query-devtools/production",
-  "@tanstack/router-devtools",
-];
 const storybookTestPort: number = Number(process.env.DEVHOST_UI_STORYBOOK_TEST_PORT ?? 6106);
 
 export default mergeConfig(
