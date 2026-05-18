@@ -90,19 +90,13 @@ func interpolateManifestString(value string, undefinedVariableSet map[string]str
 	builder.Grow(len(value))
 
 	for index := 0; index < len(value); {
-		if value[index] != '$' {
+		if value[index] != '{' || index+1 >= len(value) || value[index+1] != '{' {
 			builder.WriteByte(value[index])
 			index += 1
 			continue
 		}
 
-		if interpolatedValue, nextIndex, ok := readBracketedEnvVar(value, index, undefinedVariableSet); ok {
-			builder.WriteString(interpolatedValue)
-			index = nextIndex
-			continue
-		}
-
-		if interpolatedValue, nextIndex, ok := readBareEnvVar(value, index, undefinedVariableSet); ok {
+		if interpolatedValue, nextIndex, ok := readTemplateEnvVar(value, index, undefinedVariableSet); ok {
 			builder.WriteString(interpolatedValue)
 			index = nextIndex
 			continue
@@ -115,40 +109,30 @@ func interpolateManifestString(value string, undefinedVariableSet map[string]str
 	return builder.String()
 }
 
-func readBracketedEnvVar(value string, index int, undefinedVariableSet map[string]struct{}) (string, int, bool) {
-	if index+1 >= len(value) || value[index+1] != '{' {
+func readTemplateEnvVar(value string, index int, undefinedVariableSet map[string]struct{}) (string, int, bool) {
+	if index+1 >= len(value) || value[index] != '{' || value[index+1] != '{' {
 		return "", index, false
 	}
 
-	closingBraceIndex := strings.IndexByte(value[index+2:], '}')
-	if closingBraceIndex < 0 {
+	closingDelimiterIndex := strings.Index(value[index+2:], "}}")
+	if closingDelimiterIndex < 0 {
 		return value[index:], len(value), true
 	}
-	closingBraceIndex += index + 2
+	closingDelimiterIndex += index + 2
 
-	name := value[index+2 : closingBraceIndex]
+	rawExpression := value[index+2 : closingDelimiterIndex]
+	trimmedExpression := strings.TrimSpace(rawExpression)
+	if !strings.HasPrefix(trimmedExpression, "env.") {
+		return value[index : closingDelimiterIndex+2], closingDelimiterIndex + 2, true
+	}
+
+	name := strings.TrimSpace(strings.TrimPrefix(trimmedExpression, "env."))
 	if !isValidEnvVarName(name) {
-		return value[index : closingBraceIndex+1], closingBraceIndex + 1, true
+		return value[index : closingDelimiterIndex+2], closingDelimiterIndex + 2, true
 	}
 
 	interpolatedValue := lookupInterpolatedValue(name, undefinedVariableSet)
-	return interpolatedValue, closingBraceIndex + 1, true
-}
-
-func readBareEnvVar(value string, index int, undefinedVariableSet map[string]struct{}) (string, int, bool) {
-	nameStart := index + 1
-	if nameStart >= len(value) || !isValidEnvVarNameStart(value[nameStart]) {
-		return "", index, false
-	}
-
-	nameEnd := nameStart + 1
-	for nameEnd < len(value) && isValidEnvVarNameContinue(value[nameEnd]) {
-		nameEnd += 1
-	}
-
-	name := value[nameStart:nameEnd]
-	interpolatedValue := lookupInterpolatedValue(name, undefinedVariableSet)
-	return interpolatedValue, nameEnd, true
+	return interpolatedValue, closingDelimiterIndex + 2, true
 }
 
 func lookupInterpolatedValue(name string, undefinedVariableSet map[string]struct{}) string {

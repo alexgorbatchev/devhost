@@ -87,12 +87,18 @@ open https://foo.localhost
 
 (`pnpm dev`, `yarn dev`, and `bun run dev` work the same way when they invoke the same script.)
 
-Manifest string values support environment-variable interpolation with `$NAME` and `${NAME}` placeholders. This
-applies to string fields throughout the manifest, including hosts, paths, cwd values, command arguments, labels,
-and `env` maps. Placeholder names must start with a letter or underscore and then use letters, digits, or
-underscores. Other `$` sequences stay literal, including malformed `${...}` text, and an unterminated `${` keeps the
-rest of that string literal. Referencing an undefined valid placeholder is a manifest read error, while defined
-placeholders may expand to the empty string.
+Manifest string values support environment-variable interpolation with `{{ env.NAME }}` placeholders. This applies to
+string fields throughout the manifest, including hosts, paths, cwd values, command arguments, labels, and `env` maps.
+Placeholder names must start with a letter or underscore and then use letters, digits, or underscores. Other text
+stays literal, including malformed `{{ ... }}` sequences, and an unterminated `{{` keeps the rest of that string
+literal. Referencing an undefined valid placeholder is a manifest read error, while defined placeholders may expand to
+the empty string.
+
+Service commands are executed directly, not through an implicit shell. In practice that means
+`command = ["storybook", "dev", "--port", "$PORT"]` passes the literal string `$PORT` as an argument, while
+`command = ["sh", "-c", "exec storybook dev --port \"$PORT\""]` lets the shell expand `$PORT` from the child
+process environment. Manifest interpolation still happens before launch, so `{{ env.NAME }}` inside command arguments
+is also subject to the manifest interpolation rules above.
 
 > [!IMPORTANT]
 > `devhost` manages HTTPS routing through Caddy, not DNS.
