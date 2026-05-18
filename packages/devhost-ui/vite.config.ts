@@ -6,7 +6,16 @@ import { defineConfig } from "vite";
 
 const dirname: string = path.dirname(fileURLToPath(import.meta.url));
 
+export const optimizeDependencyEntries: string[] = [
+  "@storybook/react-dom-shim",
+  "@tanstack/react-query-devtools/production",
+  "@tanstack/router-devtools",
+];
+
 export default defineConfig({
+  optimizeDeps: {
+    include: optimizeDependencyEntries,
+  },
   plugins: [tailwindcss()],
   resolve: {
     alias: {
