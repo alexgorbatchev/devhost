@@ -1,13 +1,34 @@
-import { addons, types } from "storybook/manager-api";
+import { jsx } from "react/jsx-runtime";
+import { addons, types, useGlobals } from "storybook/manager-api";
 
-import { DevhostThemeSwitchTool } from "./DevhostThemeSwitchTool";
+import type { DevtoolsColorScheme } from "../src/devtools/shared";
+import { DevhostThemeSwitchTool } from "../src/devtools/shared/components/DevhostThemeSwitchTool";
+import {
+  readStorybookDevtoolsColorScheme,
+  storybookDevtoolsThemeGlobalName,
+} from "../src/devtools/shared/storybookTheme";
 
 const addonId: string = "devhost/theme-switch";
 const toolId: string = `${addonId}/tool`;
 
+function renderDevhostThemeSwitchTool() {
+  const [globals, updateGlobals] = useGlobals();
+  const colorScheme: DevtoolsColorScheme = readStorybookDevtoolsColorScheme(globals);
+
+  function selectColorScheme(nextColorScheme: DevtoolsColorScheme): void {
+    updateGlobals({ [storybookDevtoolsThemeGlobalName]: nextColorScheme });
+  }
+
+  // Storybook manager config is a non-component integration file, so keep the actual UI in the owned component module.
+  return jsx(DevhostThemeSwitchTool, {
+    colorScheme,
+    onSelectColorScheme: selectColorScheme,
+  });
+}
+
 addons.register(addonId, (): void => {
   addons.add(toolId, {
-    render: DevhostThemeSwitchTool,
+    render: renderDevhostThemeSwitchTool,
     title: "Devhost theme",
     type: types.TOOL,
   });
