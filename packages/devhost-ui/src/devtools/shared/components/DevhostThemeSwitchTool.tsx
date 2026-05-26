@@ -1,3 +1,4 @@
+import React from "react";
 import type { CSSProperties, JSX } from "react";
 
 import type { DevtoolsColorScheme } from "../DevtoolsColorScheme";
