@@ -137,6 +137,53 @@ func TestWriteLogLinePrefixBehavior(t *testing.T) {
 	})
 }
 
+func TestLogServiceURLs(t *testing.T) {
+	t.Parallel()
+
+	t.Run("prints each service URL in manifest order", func(t *testing.T) {
+		t.Parallel()
+
+		manifestValue := ResolvedManifest{
+			Caddy: manifest.CaddyConfig{Global: manifest.CaddyGlobalConfig{HTTPSPort: 443}},
+			Name:  "hello-stack",
+			ServiceOrder: []string{"api", "web", "worker"},
+			Services: map[string]ResolvedService{
+				"api": {
+					BindHost: "127.0.0.1",
+					Host:     stringPointer("api.hello.localhost"),
+					Name:     "api",
+					Path:     stringPointer("/v1/*"),
+					Port:     intPointer(4000),
+				},
+				"web": {
+					BindHost: "127.0.0.1",
+					Host:     stringPointer("hello.localhost"),
+					Name:     "web",
+					Path:     stringPointer("/"),
+					Port:     intPointer(3000),
+				},
+				"worker": {
+					BindHost: "127.0.0.1",
+					Name:     "worker",
+					Port:     intPointer(3200),
+				},
+			},
+		}
+
+		var output strings.Builder
+		LogServiceURLs(manifestValue, &output)
+
+		if output.String() != strings.Join([]string{
+			"[hello-stack] api: https://api.hello.localhost/v1/",
+			"[hello-stack] web: https://hello.localhost",
+			"[hello-stack] worker: http://127.0.0.1:3200",
+			"",
+		}, "\n") {
+			t.Fatalf("LogServiceURLs(...) = %q", output.String())
+		}
+	})
+}
+
 func TestCollectServicesHealthIncludesUnmanagedServices(t *testing.T) {
 	t.Parallel()
 
@@ -303,8 +350,8 @@ func TestStartStackRetriesAutoPortAndPrefixesOutput(t *testing.T) {
 	if infoLines[0] != "[retry-stack] retrying web with a new auto port after a bind collision." {
 		t.Fatalf("retry log = %q", infoLines[0])
 	}
-	if infoLines[1] != fmt.Sprintf("[retry-stack] primary web -> http://127.0.0.1:%d", *finalPort) {
-		t.Fatalf("primary log = %q", infoLines[1])
+	if infoLines[1] != fmt.Sprintf("[retry-stack] web: http://127.0.0.1:%d", *finalPort) {
+		t.Fatalf("service URL log = %q", infoLines[1])
 	}
 }
 
@@ -518,7 +565,7 @@ func TestStartStackActivatesRoutesAndCleansUpAfterExit(t *testing.T) {
 		t.Fatalf("trace = %q", trace)
 	}
 
-	if lines := nonEmptyLines(infoLog.String()); len(lines) != 1 || lines[0] != "[route-stack] primary https://hello.localhost" {
+	if lines := nonEmptyLines(infoLog.String()); len(lines) != 1 || lines[0] != "[route-stack] web: https://hello.localhost" {
 		t.Fatalf("info lines = %#v", lines)
 	}
 

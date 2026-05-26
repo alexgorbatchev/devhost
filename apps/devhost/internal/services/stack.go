@@ -419,7 +419,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		activeRoutes = append(activeRoutes, activeRoute{host: *service.Host, path: path, serviceName: service.Name})
 	}
 
-	LogPrimaryService(*manifest, options.LogWriter)
+	LogServiceURLs(*manifest, options.LogWriter)
 
 	select {
 	case result := <-serviceExits:
@@ -455,30 +455,67 @@ func CreateInjectedServiceEnvironment(manifest ResolvedManifest, service Resolve
 	return environment
 }
 
-func LogPrimaryService(manifest ResolvedManifest, writer io.Writer) {
-	primaryService, ok := manifest.Services[manifest.PrimaryService]
-	if !ok {
-		return
+func LogServiceURLs(manifest ResolvedManifest, writer io.Writer) {
+	for _, serviceName := range orderedManifestServiceNames(manifest) {
+		service, ok := manifest.Services[serviceName]
+		if !ok {
+			continue
+		}
+
+		serviceURL := readServiceURL(service, manifest.Caddy.Global.HTTPSPort)
+		if serviceURL == nil {
+			continue
+		}
+
+		writeLogLine(writer, manifest.Name, fmt.Sprintf("%s: %s", service.Name, *serviceURL))
+	}
+}
+
+func orderedManifestServiceNames(manifest ResolvedManifest) []string {
+	orderedNames := make([]string, 0, len(manifest.Services))
+	seenServiceNames := make(map[string]struct{}, len(manifest.Services))
+
+	for _, serviceName := range manifest.ServiceOrder {
+		if _, ok := manifest.Services[serviceName]; !ok {
+			continue
+		}
+		if _, ok := seenServiceNames[serviceName]; ok {
+			continue
+		}
+
+		orderedNames = append(orderedNames, serviceName)
+		seenServiceNames[serviceName] = struct{}{}
 	}
 
-	if primaryService.Host != nil {
-		writeLogLine(writer, manifest.Name, fmt.Sprintf(
-			"primary %s",
-			strings.TrimSuffix(caddy.CreateManagedCaddyURL("https", *primaryService.Host, manifest.Caddy.Global.HTTPSPort, "/"), "/"),
-		))
-		return
+	remainingServiceNames := make([]string, 0, len(manifest.Services)-len(seenServiceNames))
+	for serviceName := range manifest.Services {
+		if _, ok := seenServiceNames[serviceName]; ok {
+			continue
+		}
+
+		remainingServiceNames = append(remainingServiceNames, serviceName)
+	}
+	sort.Strings(remainingServiceNames)
+
+	return append(orderedNames, remainingServiceNames...)
+}
+
+func readServiceURL(service ResolvedService, httpsPort int) *string {
+	if url := readManagedServiceURL(service, httpsPort); url != nil {
+		return url
 	}
 
-	if primaryService.Port == nil {
-		return
+	if service.Port == nil {
+		return nil
 	}
 
-	proxyHost, error := caddy.ResolveProxyHost(primaryService.BindHost)
+	proxyHost, error := caddy.ResolveProxyHost(service.BindHost)
 	if error != nil {
-		return
+		return nil
 	}
 
-	writeLogLine(writer, manifest.Name, fmt.Sprintf("primary %s -> http://%s", primaryService.Name, caddy.FormatProxyAddress(proxyHost, *primaryService.Port)))
+	url := fmt.Sprintf("http://%s", caddy.FormatProxyAddress(proxyHost, *service.Port))
+	return &url
 }
 
 func startServiceWithRetries(
@@ -1174,7 +1211,13 @@ func readManagedServiceURL(service ResolvedService, httpsPort int) *string {
 		return nil
 	}
 
-	url := caddy.CreateManagedCaddyURL("https", *service.Host, httpsPort, normalizeManagedServiceURLPath(*service.Path))
+	normalizedPath := normalizeManagedServiceURLPath(*service.Path)
+	if normalizedPath == "/" {
+		url := caddy.FormatManagedCaddySiteAddress("https", httpsPort, *service.Host)
+		return &url
+	}
+
+	url := caddy.CreateManagedCaddyURL("https", *service.Host, httpsPort, normalizedPath)
 	return &url
 }
 

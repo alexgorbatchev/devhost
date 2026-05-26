@@ -87,6 +87,8 @@ open https://foo.localhost
 
 (`pnpm dev`, `yarn dev`, and `bun run dev` work the same way when they invoke the same script.)
 
+After startup, `devhost` prints one line per reachable service URL using the format `service-name: url`.
+
 Manifest string values support environment-variable interpolation with `{{ env.NAME }}` placeholders. This applies to
 string fields throughout the manifest, including hosts, paths, cwd values, command arguments, labels, and `env` maps.
 Placeholder names must start with a letter or underscore and then use letters, digits, or underscores. Other text
