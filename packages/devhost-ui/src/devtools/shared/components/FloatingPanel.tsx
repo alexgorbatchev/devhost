@@ -30,7 +30,7 @@ export const FloatingPanel = forwardRef<HTMLDivElement, FloatingPanelProps>(func
           : level === "raised"
             ? "z-[var(--devhost-z-floating-raised)]"
             : "z-[var(--devhost-z-floating)]",
-        "shadow-lg",
+        "shadow-sm",
         className,
       )}
       data-testid={testId}
