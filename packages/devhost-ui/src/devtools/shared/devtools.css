@@ -63,7 +63,7 @@
     "Maple Mono Normal NF", "JetBrainsMono Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", monospace;
   --font-heading: var(--font-sans);
-  --radius: 0.5em;
+  --radius: 6px;
   --background: hsl(220 23.077% 94.902%);
   --foreground: hsl(234 16.022% 35.49%);
   --card: hsl(220 23.077% 94.902%);
