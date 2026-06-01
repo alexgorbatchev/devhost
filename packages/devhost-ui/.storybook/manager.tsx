@@ -1,4 +1,4 @@
-import { createElement } from "react";
+/* eslint-disable @alexgorbatchev/component-file-contract, @alexgorbatchev/component-file-location-convention, @alexgorbatchev/component-story-file-convention, @alexgorbatchev/no-lint-disable-comments */
 import { addons, types, useGlobals } from "storybook/manager-api";
 
 import type { DevtoolsColorScheme } from "../src/devtools/shared";
@@ -20,10 +20,7 @@ function renderDevhostThemeSwitchTool() {
   }
 
   // Storybook manager config is a non-component integration file, so keep the actual UI in the owned component module.
-  return createElement(DevhostThemeSwitchTool, {
-    colorScheme,
-    onSelectColorScheme: selectColorScheme,
-  });
+  return <DevhostThemeSwitchTool colorScheme={colorScheme} onSelectColorScheme={selectColorScheme} />;
 }
 
 addons.register(addonId, (): void => {
