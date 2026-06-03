@@ -24,11 +24,11 @@
     "*": "bun --bun oxfmt --write --no-error-on-unmatched-pattern"
   },
   "devDependencies": {
-    "@alexgorbatchev/typescript-ai-policy": "^8.1.2",
+    "@alexgorbatchev/typescript-ai-policy": "^9.0.0",
     "bun-plugin-tailwind": "^0.1.2",
     "husky": "^9.1.7",
     "nano-staged": "^1.0.2",
-    "oxfmt": "^0.52.0",
-    "oxlint": "^1.67.0"
+    "oxfmt": "^0.53.0",
+    "oxlint": "^1.68.0"
   }
 }
