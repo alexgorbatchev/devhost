@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import { RotateCwIcon } from "lucide-react";
 
-import { Badge } from "../../../../components/ui/badge";
+import { Badge } from "../../../../components/ui/Badge";
 import { cn } from "../../../../lib/utils";
 
 import { Button, DEVTOOLS_CONTROL_TOKEN_HEADER_NAME, HoverSlidePanel, RESTART_SERVICE_PATH } from "../../../shared";

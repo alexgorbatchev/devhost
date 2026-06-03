@@ -1,8 +1,8 @@
 import type { JSX } from "react";
 import { useMemo } from "react";
 
-import { Badge } from "../../../../components/ui/badge";
-import { CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
+import { Badge } from "../../../../components/ui/Badge";
+import { CardContent, CardHeader, CardTitle } from "../../../../components/ui/Card";
 
 import { FloatingPanel, InlineNotice } from "../../../shared";
 import type { ComponentSourceMenuItem } from "../types";

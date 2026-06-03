@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fn, userEvent, within } from "storybook/test";
 
-import { Button } from "../button";
+import { Button } from "../Button";
 import {
   devtoolsStoryShadowRootHostTestId,
   readShadowRoot,
@@ -10,7 +10,7 @@ import {
 import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
 
 const meta: Meta<typeof Button> = {
-  title: "@alexgorbatchev/devhost-ui/components/ui/button",
+  title: "@alexgorbatchev/devhost-ui/components/ui/Button",
   component: Button,
   render: (args, context) => {
     return renderInDevtoolsStoryShadowRoot(

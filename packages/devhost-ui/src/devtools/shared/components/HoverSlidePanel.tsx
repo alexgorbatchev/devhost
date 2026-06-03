@@ -1,7 +1,7 @@
 import type { JSX, ReactNode } from "react";
 import { useState } from "react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/Card";
 import { cn } from "../../../lib/utils";
 
 import { InlineNotice } from "./InlineNotice";

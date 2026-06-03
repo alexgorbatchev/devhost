@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, within } from "storybook/test";
 
-import { Button } from "../button";
-import { Alert, AlertAction, AlertDescription, AlertTitle } from "../alert";
+import { Button } from "../Button";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "../Alert";
 import {
   devtoolsStoryShadowRootHostTestId,
   readShadowRoot,
@@ -11,7 +11,7 @@ import {
 import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
 
 const meta: Meta<typeof Alert> = {
-  title: "@alexgorbatchev/devhost-ui/components/ui/alert",
+  title: "@alexgorbatchev/devhost-ui/components/ui/Alert",
   component: Alert,
   render: (_args, context) => {
     return renderInDevtoolsStoryShadowRoot(

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, within } from "storybook/test";
 
-import { Kbd, KbdGroup } from "../kbd";
+import { Kbd, KbdGroup } from "../Kbd";
 import {
   devtoolsStoryShadowRootHostTestId,
   readShadowRoot,
@@ -10,7 +10,7 @@ import {
 import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
 
 const meta: Meta<typeof Kbd> = {
-  title: "@alexgorbatchev/devhost-ui/components/ui/kbd",
+  title: "@alexgorbatchev/devhost-ui/components/ui/Kbd",
   component: Kbd,
   render: (_args, context) => {
     return renderInDevtoolsStoryShadowRoot(

@@ -1,4 +1,3 @@
-/* eslint-disable @alexgorbatchev/component-file-contract, @alexgorbatchev/component-file-location-convention, @alexgorbatchev/component-story-file-convention, @alexgorbatchev/no-lint-disable-comments */
 import { addons, types, useGlobals } from "storybook/manager-api";
 
 import type { DevtoolsColorScheme } from "../src/devtools/shared";

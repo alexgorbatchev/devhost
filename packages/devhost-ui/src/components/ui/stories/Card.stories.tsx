@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, within } from "storybook/test";
 
-import { Card, CardContent, CardHeader, CardTitle } from "../card";
+import { Card, CardContent, CardHeader, CardTitle } from "../Card";
 import {
   devtoolsStoryShadowRootHostTestId,
   readShadowRoot,
@@ -10,7 +10,7 @@ import {
 import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
 
 const meta: Meta<typeof Card> = {
-  title: "@alexgorbatchev/devhost-ui/components/ui/card",
+  title: "@alexgorbatchev/devhost-ui/components/ui/Card",
   component: Card,
   render: (args, context) => {
     return renderInDevtoolsStoryShadowRoot(

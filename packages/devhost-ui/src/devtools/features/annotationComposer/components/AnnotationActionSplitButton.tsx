@@ -6,8 +6,8 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-} from "../../../../components/ui/dropdown-menu";
-import { Kbd, KbdGroup } from "../../../../components/ui/kbd";
+} from "../../../../components/ui/DropdownMenu";
+import { Kbd, KbdGroup } from "../../../../components/ui/Kbd";
 import { buttonVariants } from "@/components/ui/constants";
 import { cn } from "../../../../lib/utils";
 
