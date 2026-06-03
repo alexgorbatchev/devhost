@@ -10,7 +10,7 @@
     "check": "typescript-ai-policy check && bun run check:devhost && bun run --cwd packages/devhost-ui check && bun run --cwd packages/docs check",
     "check:devhost": "./apps/devhost/scripts/check.sh",
     "compile:devhost": "./apps/devhost/scripts/compile.sh",
-    "dev": "apps/devhost/bin/devhost --manifest devhost.toml",
+    "dev": "bun run build:devtools-bundle:devhost && apps/devhost/bin/devhost --manifest devhost.toml",
     "docs": "bun run --cwd packages/docs dev",
     "install-browser": "bun x playwright install chromium",
     "nvim": "bun run ./apps/devhost/scripts/startNvim.ts --project=packages/playground",
