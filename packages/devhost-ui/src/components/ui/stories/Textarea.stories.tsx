@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, within } from "storybook/test";
 
-import { Textarea } from "../textarea";
+import { Textarea } from "../Textarea";
 import {
   devtoolsStoryShadowRootHostTestId,
   readShadowRoot,
@@ -10,7 +10,7 @@ import {
 import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
 
 const meta: Meta<typeof Textarea> = {
-  title: "@alexgorbatchev/devhost-ui/components/ui/textarea",
+  title: "@alexgorbatchev/devhost-ui/components/ui/Textarea",
   component: Textarea,
   render: (args, context) => {
     return renderInDevtoolsStoryShadowRoot(

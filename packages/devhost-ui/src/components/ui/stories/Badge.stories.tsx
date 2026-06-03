@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, within } from "storybook/test";
 
-import { Badge } from "../badge";
+import { Badge } from "../Badge";
 import {
   devtoolsStoryShadowRootHostTestId,
   readShadowRoot,
@@ -10,7 +10,7 @@ import {
 import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
 
 const meta: Meta<typeof Badge> = {
-  title: "@alexgorbatchev/devhost-ui/components/ui/badge",
+  title: "@alexgorbatchev/devhost-ui/components/ui/Badge",
   component: Badge,
   render: (args, context) => {
     return renderInDevtoolsStoryShadowRoot(

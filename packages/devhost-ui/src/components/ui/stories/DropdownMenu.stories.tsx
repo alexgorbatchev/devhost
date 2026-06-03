@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { useState, type JSX } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 
-import { Button } from "../button";
+import { Button } from "../Button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -18,7 +18,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "../dropdown-menu";
+} from "../DropdownMenu";
 import {
   devtoolsStoryShadowRootHostTestId,
   readShadowRoot,
@@ -65,7 +65,7 @@ function OpenDropdownMenuStory(): JSX.Element {
 }
 
 const meta: Meta<typeof DropdownMenu> = {
-  title: "@alexgorbatchev/devhost-ui/components/ui/dropdown-menu",
+  title: "@alexgorbatchev/devhost-ui/components/ui/DropdownMenu",
   component: DropdownMenu,
   render: (_args, context) => {
     return renderInDevtoolsStoryShadowRoot(

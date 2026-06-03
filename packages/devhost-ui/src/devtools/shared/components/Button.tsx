@@ -1,6 +1,6 @@
 import type { JSX, MouseEventHandler, ReactNode } from "react";
 
-import { Button as ShadcnButton } from "../../../components/ui/button";
+import { Button as ShadcnButton } from "../../../components/ui/Button";
 
 export type ButtonVariant = "danger" | "primary" | "secondary";
 export type ButtonSize = "default" | "icon" | "icon-lg" | "icon-sm" | "icon-xs" | "lg" | "sm" | "xs";

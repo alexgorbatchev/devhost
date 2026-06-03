@@ -1,6 +1,6 @@
 import type { JSX, ReactNode } from "react";
 
-import { Alert, AlertAction, AlertDescription, AlertTitle } from "../../../components/ui/alert";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "../../../components/ui/Alert";
 
 type InlineNoticeTone = "default" | "danger";
 

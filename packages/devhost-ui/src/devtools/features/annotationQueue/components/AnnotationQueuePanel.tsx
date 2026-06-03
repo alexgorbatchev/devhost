@@ -1,7 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type JSX } from "react";
 
-import { Badge } from "../../../../components/ui/badge";
-import { Textarea } from "../../../../components/ui/textarea";
+import { Badge } from "../../../../components/ui/Badge";
+import { Textarea } from "../../../../components/ui/Textarea";
 import { cn } from "../../../../lib/utils";
 
 import { Button, HoverSlidePanel, InlineNotice } from "../../../shared";

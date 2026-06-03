@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "react";
 
-import { Kbd, KbdGroup } from "../../../../components/ui/kbd";
-import { Textarea } from "../../../../components/ui/textarea";
+import { Kbd, KbdGroup } from "../../../../components/ui/Kbd";
+import { Textarea } from "../../../../components/ui/Textarea";
 
 import { Button, FloatingPanel, InlineNotice, type IAnnotationAction } from "../../../shared";
 import { isEventTargetTerminalKeyboardInput } from "../../../shared/isEventTargetTerminalKeyboardInput";
