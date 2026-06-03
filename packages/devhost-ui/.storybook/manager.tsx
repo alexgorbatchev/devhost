@@ -1,3 +1,4 @@
+import React from "react";
 import { addons, types, useGlobals } from "storybook/manager-api";
 
 import type { DevtoolsColorScheme } from "../src/devtools/shared";

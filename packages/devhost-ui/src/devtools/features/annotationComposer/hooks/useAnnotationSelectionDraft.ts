@@ -213,11 +213,12 @@ export function useAnnotationSelectionDraft({
 
   useEffect(() => {
     const handleAltKeyDown = (event: KeyboardEvent): void => {
-      if (isEventTargetTerminalKeyboardInput(event.target) || event.key !== "Alt") {
+      const target = event.composedPath()[0] || event.target;
+      if (isEventTargetTerminalKeyboardInput(target) || event.key !== "Alt") {
         return;
       }
 
-      if (isSubmitting || doesEventTargetAcceptTextInput(event.target)) {
+      if (isSubmitting || doesEventTargetAcceptTextInput(target)) {
         return;
       }
 

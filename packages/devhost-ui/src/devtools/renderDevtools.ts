@@ -22,6 +22,13 @@ export function renderDevtools(): void {
     hostNode.id = DEVTOOLS_HOST_ID;
     hostNode.setAttribute(DEVTOOLS_ROOT_ATTRIBUTE_NAME, "");
     hostNode.setAttribute("data-theme", "dark");
+    hostNode.style.position = "fixed";
+    hostNode.style.width = "0";
+    hostNode.style.height = "0";
+    hostNode.style.border = "none";
+    hostNode.style.padding = "0";
+    hostNode.style.margin = "0";
+    hostNode.style.pointerEvents = "none";
     shadowRoot.append(mountNode);
     document.body.append(hostNode);
 

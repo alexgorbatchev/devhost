@@ -138,7 +138,8 @@ export function useComponentSourceNavigation({
       closeComponentMenu();
     };
     const handleKeyDown = (event: KeyboardEvent): void => {
-      if (isEventTargetTerminalKeyboardInput(event.target)) {
+      const target = event.composedPath()[0] || event.target;
+      if (isEventTargetTerminalKeyboardInput(target)) {
         return;
       }
 
