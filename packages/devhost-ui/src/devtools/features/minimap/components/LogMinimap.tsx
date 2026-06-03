@@ -142,10 +142,13 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
     <aside
       aria-hidden="true"
       className={cn(
-        "pointer-events-auto fixed inset-y-0 right-0 z-[var(--devhost-z-floating)] box-border w-[100px] border-l border-border bg-muted p-1 transition-[opacity,transform] duration-150 ease-in-out",
-        props.isHovered ? "translate-x-0 opacity-100" : "translate-x-[calc(100px_-_20px)] opacity-50",
+        "pointer-events-auto fixed inset-y-0 right-0 z-[var(--devhost-z-floating)] box-border w-[100px] border-l border-border bg-muted p-1 transition-all duration-150 ease-in-out",
+        props.isHovered ? "opacity-100" : "opacity-50",
       )}
       data-testid="LogMinimap"
+      style={{
+        transform: props.isHovered ? "translateX(0)" : "translateX(80px)",
+      }}
       onMouseEnter={(): void => {
         props.onHoveredChange(true);
       }}

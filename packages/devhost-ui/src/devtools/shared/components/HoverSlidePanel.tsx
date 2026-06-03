@@ -46,9 +46,12 @@ export function HoverSlidePanel({
       className={cn(
         "relative z-[var(--devhost-z-floating-panel)] overflow-visible text-xs shadow-sm transition-transform duration-150 ease-in-out",
         "after:absolute after:inset-y-0 after:-right-[50px] after:w-[50px] after:content-['']",
-        isHovered || isPinned ? "translate-x-0" : "translate-x-[calc(100%_-_var(--devhost-slide-panel-peek-width))]",
       )}
       data-testid={testId !== undefined ? testId : "HoverSlidePanel"}
+      style={{
+        transform:
+          isHovered || isPinned ? "translateX(0)" : "translateX(calc(100% - var(--devhost-slide-panel-peek-width)))",
+      }}
       onMouseEnter={(): void => {
         setIsHovered(true);
       }}

@@ -175,19 +175,29 @@ export function HighlightOverlay({
         return (
           <div key={highlight.id}>
             <div
-              className="pointer-events-none fixed z-[var(--devhost-z-floating)] box-border rounded-sm border-2 border-[var(--devhost-highlight-background)]"
+              className="pointer-events-none fixed z-[var(--devhost-z-floating)] box-border rounded-sm border-2"
               data-testid={highlightTestId}
-              style={{ height: highlight.height, left: highlight.left, top: highlight.top, width: highlight.width }}
+              style={{
+                height: highlight.height,
+                left: highlight.left,
+                top: highlight.top,
+                width: highlight.width,
+                borderColor: "var(--devhost-highlight-background)",
+              }}
             />
             {highlight.badge !== undefined ? (
               <div
                 className={[
                   "pointer-events-none fixed z-[var(--devhost-z-floating)] grid size-6 place-items-center",
-                  "bg-[var(--devhost-highlight-background)] text-[var(--devhost-highlight-foreground)]",
                   "rounded-full font-mono text-xs font-bold shadow-md",
                 ].join(" ")}
                 data-testid={badgeTestId}
-                style={{ left: highlight.badgeLeft, top: highlight.badgeTop }}
+                style={{
+                  left: highlight.badgeLeft,
+                  top: highlight.badgeTop,
+                  backgroundColor: "var(--devhost-highlight-background)",
+                  color: "var(--devhost-highlight-foreground)",
+                }}
               >
                 {highlight.badge}
               </div>

@@ -137,7 +137,8 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
     }
 
     const handleEscapeKeyDown = (event: KeyboardEvent): void => {
-      if (isEventTargetTerminalKeyboardInput(event.target) || event.key !== "Escape") {
+      const target = event.composedPath()[0] || event.target;
+      if (isEventTargetTerminalKeyboardInput(target) || event.key !== "Escape") {
         return;
       }
 
@@ -158,7 +159,8 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
     }
 
     const handleSubmitKeyDown = (event: KeyboardEvent): void => {
-      if (isEventTargetTerminalKeyboardInput(event.target)) {
+      const target = event.composedPath()[0] || event.target;
+      if (isEventTargetTerminalKeyboardInput(target)) {
         return;
       }
 
