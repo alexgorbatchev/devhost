@@ -381,7 +381,7 @@ func TestDevtoolsTerminalHelperProcess(t *testing.T) {
 	switch os.Getenv("DEVHOST_TERMINAL_HELPER_MODE") {
 	case "print-terminal-env":
 		isPTY := 0
-		if _, err := unix.IoctlGetTermios(int(os.Stdin.Fd()), unix.TCGETS); err == nil {
+		if _, err := unix.IoctlGetWinsize(int(os.Stdin.Fd()), unix.TIOCGWINSZ); err == nil {
 			isPTY = 1
 		}
 		_, _ = os.Stdout.WriteString("PTY=" + string(rune('0'+isPTY)) + "\n")
