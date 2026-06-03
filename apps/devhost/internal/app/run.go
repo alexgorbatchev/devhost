@@ -30,6 +30,23 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 	case cli.KindVersion:
 		_, _ = fmt.Fprintf(stdout, "%s\n", version.String())
 		return 0
+	case cli.KindStop:
+		manifestPath := arguments.ManifestPath
+		if manifestPath == nil {
+			resolvedPath, resolveError := manifest.ResolveManifestPath(cwd)
+			if resolveError != nil {
+				_, _ = fmt.Fprintf(stderr, "failed: %s\n", resolveError.Error())
+				return 1
+			}
+			manifestPath = &resolvedPath
+		}
+
+		if error := services.StopStack(*manifestPath, readEnvironment(), stdout, stderr); error != nil {
+			_, _ = fmt.Fprintf(stderr, "failed: %s\n", error.Error())
+			return 1
+		}
+
+		return 0
 	case cli.KindManifest:
 		manifestPath := arguments.ManifestPath
 		if manifestPath == nil {

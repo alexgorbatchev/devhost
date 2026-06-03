@@ -13,6 +13,7 @@ type Kind string
 const (
 	KindManifest           Kind = "manifest"
 	KindVersion            Kind = "version"
+	KindStop               Kind = "stop"
 	KindCaddyLifecycle     Kind = "caddy-lifecycle"
 	KindCaddyPrintRootCert Kind = "caddy-print-root-cert"
 	KindCaddyTrustRemote   Kind = "caddy-trust-remote"
@@ -76,7 +77,24 @@ func createRootCommand(result *CommandLineArguments) boa.CmdT[manifestOptions] {
 		},
 		SubCmds: boa.SubCmds(
 			createCaddyCommand(result),
+			createStopCommand(result),
 		),
+	}
+}
+
+func createStopCommand(result *CommandLineArguments) boa.CmdT[manifestOptions] {
+	return boa.CmdT[manifestOptions]{
+		Use:   "stop",
+		Short: "Stop active processes for the current devhost stack.",
+		Args:  cobra.NoArgs,
+		RunFuncE: func(options *manifestOptions, _ *cobra.Command, _ []string) error {
+			if error := validateManifestPath(options.ManifestPath); error != nil {
+				return error
+			}
+
+			*result = CommandLineArguments{Kind: KindStop, ManifestPath: options.ManifestPath}
+			return nil
+		},
 	}
 }
 

@@ -16,6 +16,39 @@ func TestParseCommandLineArguments(t *testing.T) {
 		comparePath bool
 	}{
 		{
+			name:    "parses stop command",
+			rawArgs: []string{"stop"},
+			want: CommandLineArguments{
+				Kind: KindStop,
+			},
+		},
+		{
+			name:    "parses stop command with explicit manifest",
+			rawArgs: []string{"stop", "--manifest", manifestPath},
+			want: CommandLineArguments{
+				Kind:         KindStop,
+				ManifestPath: &manifestPath,
+			},
+			comparePath: true,
+		},
+		{
+			name:    "parses stop command manifest from environment",
+			rawArgs: []string{"stop"},
+			env: map[string]string{
+				"DEVHOST_MANIFEST": manifestPath,
+			},
+			want: CommandLineArguments{
+				Kind:         KindStop,
+				ManifestPath: &manifestPath,
+			},
+			comparePath: true,
+		},
+		{
+			name:      "rejects invalid stop manifest suffix",
+			rawArgs:   []string{"stop", "--manifest", "./other.toml"},
+			wantError: "--manifest must point to a file named devhost.toml, received: ./other.toml",
+		},
+		{
 			name:    "parses caddy start",
 			rawArgs: []string{"caddy", "start"},
 			want: CommandLineArguments{

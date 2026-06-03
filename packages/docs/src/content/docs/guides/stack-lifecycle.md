@@ -28,3 +28,20 @@ When you run `devhost`, it:
 Managed Caddy runtime logs are discarded by the generated Caddyfile so background Caddy stderr does not leak into `devhost` stack output. Managed Caddy command output from stack route reloads is hidden by default during `devhost` runs. Use `devhost --verbose` when you need to see those reload stdout/stderr lines while debugging routing. Explicit `devhost caddy ...` lifecycle and setup commands still print their normal command output.
 
 Managed foreground-service shutdown is best-effort and platform-specific. On Linux, `devhost` enables child-subreaper tracking, remembers discovered descendants, and keeps a short post-signal watch on managed service ports so late rebinds can still be terminated before shutdown completes. On macOS and other platforms, `devhost` falls back to descendant discovery and signaling without Linux subreaper guarantees. Services that intentionally daemonize or fully detach from `devhost` supervision are unsupported in foreground `command` mode unless they also provide a cooperative shutdown path that `devhost` can call explicitly. If `devhost` still cannot stop managed services during cleanup, it exits non-zero and reports each affected service plus any surviving listener or descendant details it could still observe.
+
+## Stopping a Stack
+
+To shut down a running stack cleanly, you can run the `stop` command from your project's manifest directory, or point to it explicitly:
+
+```bash
+devhost stop
+# Or with an explicit manifest:
+devhost stop --manifest path/to/devhost.toml
+```
+
+When you run `devhost stop`, the command performs the following lifecycle operations:
+
+1. **Path Resolution**: Resolves the absolute and clean filesystem path of the target manifest file.
+2. **Scan Claims**: Scans the registrations and claims directories (`.host-claims`, `.port-claims`, and `.registrations`) to discover all PIDs registered under that manifest path.
+3. **Graceful Term**: Sends `SIGTERM` (or platform equivalent) to each active process, and polls for up to 15 seconds to allow them to stop cleanly.
+4. **Force Kill Escalation**: If any target processes remain active after the 15-second grace period, it escalates to `SIGKILL` (force-killing) to ensure the stack is fully cleared.
