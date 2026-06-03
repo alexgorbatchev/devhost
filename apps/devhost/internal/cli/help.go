@@ -3,12 +3,13 @@ package cli
 const HelpText = `Usage:
   devhost [--manifest ./devhost.toml] [--verbose]
   devhost --version
+  devhost stop [--manifest ./devhost.toml]
   devhost caddy start|stop|trust [--manifest ./devhost.toml]
   devhost caddy download|privileged-ports|print-root-cert
   devhost caddy trust-remote <ssh-target>
 
 Options:
-  --manifest  Explicit path to devhost.toml. Available on devhost and on devhost caddy start|stop|trust.
+  --manifest  Explicit path to devhost.toml. Available on devhost, devhost stop, and devhost caddy start|stop|trust.
   --verbose   Print managed Caddy command output while running a stack.
   --version   Print the build version. Source-checkout go run usage may report the local placeholder.
 
@@ -17,6 +18,7 @@ Environment:
 
 Behavior:
   - If devhost runs without --manifest, it searches for devhost.toml from the current directory upward.
+  - devhost stop scans for active processes associated with the target manifest, signals them with SIGTERM, and escalates to SIGKILL if they do not stop within 15 seconds.
   - devhost caddy start|stop|trust --manifest uses that manifest to read a manifest-defined Caddy admin address.
   - Routed HTML document navigations may receive an injected devtools overlay.
   - Managed Caddy state lives under the devhost state directory and is shared across stacks.

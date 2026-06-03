@@ -87,6 +87,16 @@ open https://foo.localhost
 
 (`pnpm dev`, `yarn dev`, and `bun run dev` work the same way when they invoke the same script.)
 
+To shut down a running stack cleanly, run the `stop` command from the manifest directory, or point to it explicitly:
+
+```bash
+devhost stop
+# Or with an explicit manifest:
+devhost stop --manifest path/to/devhost.toml
+```
+
+This scans active registrations and host/port claims, targets the matching running processes, signals them with SIGTERM, waits for them to stop, and falls back to a force-kill if they do not stop within 15 seconds.
+
 After startup, `devhost` prints one line per reachable service URL using the format `service-name: url`.
 
 Manifest string values support environment-variable interpolation with `{{ env.NAME }}` placeholders. This applies to
