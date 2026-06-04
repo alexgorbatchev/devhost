@@ -45,6 +45,7 @@ type ActivateRouteOptions struct {
 	HTTPEnabled           bool
 	Path                  string
 	ServiceName           string
+	StackName             string
 }
 
 type RouteCommandOutputWriters struct {
@@ -83,6 +84,7 @@ type routeRegistration struct {
 	CaddyBindHost         *string `json:"caddyBindHost,omitempty"`
 	CaddyHTTPPort         *int    `json:"caddyHttpPort,omitempty"`
 	CaddyHTTPSPort        *int    `json:"caddyHttpsPort,omitempty"`
+	StackName             string  `json:"stackName,omitempty"`
 }
 
 type legacyRouteRegistration struct {
@@ -111,6 +113,7 @@ type managedRouteRecord struct {
 	Path                  string
 	Port                  int
 	ServiceName           string
+	StackName             string
 }
 
 type routeRegistrationJSON struct {
@@ -129,6 +132,7 @@ type routeRegistrationJSON struct {
 	OwnerPID              *int    `json:"ownerPid"`
 	Path                  *string `json:"path"`
 	ServiceName           *string `json:"serviceName"`
+	StackName             *string `json:"stackName"`
 }
 
 type legacyRouteRegistrationJSON struct {
@@ -547,6 +551,7 @@ func createRouteRegistrationText(options ActivateRouteOptions, manifestPath stri
 		OwnerPID:     routeMutationProcessID(),
 		Path:         normalizeRoutePath(options.Path),
 		ServiceName:  options.ServiceName,
+		StackName:    options.StackName,
 	}
 	if options.DevtoolsControlPort != 0 {
 		registration.DevtoolsControlPort = &options.DevtoolsControlPort
@@ -583,6 +588,7 @@ func renderHostRouteSnippet(
 	httpEnabled bool,
 	httpPort int,
 	httpsPort int,
+	routesDirectoryPath string,
 ) (string, error) {
 	if httpPort == 0 {
 		httpPort = defaultManagedCaddyHTTPPort
@@ -605,13 +611,13 @@ func renderHostRouteSnippet(
 
 	lines := []string{}
 	if httpEnabled {
-		httpLines, error := renderHostRouteSiteBlock(FormatManagedCaddySiteAddress("http", httpPort, host), rootRegistration, nonRootRegistrations, false)
+		httpLines, error := renderHostRouteSiteBlock(FormatManagedCaddySiteAddress("http", httpPort, host), rootRegistration, nonRootRegistrations, false, routesDirectoryPath)
 		if error != nil {
 			return "", error
 		}
 		lines = append(lines, httpLines...)
 	}
-	httpsLines, error := renderHostRouteSiteBlock(FormatManagedCaddySiteAddress("https", httpsPort, host), rootRegistration, nonRootRegistrations, true)
+	httpsLines, error := renderHostRouteSiteBlock(FormatManagedCaddySiteAddress("https", httpsPort, host), rootRegistration, nonRootRegistrations, true, routesDirectoryPath)
 	if error != nil {
 		return "", error
 	}
@@ -624,6 +630,7 @@ func renderHostRouteSiteBlock(
 	rootRegistration *routeRegistration,
 	nonRootRegistrations []routeRegistration,
 	useInternalTLS bool,
+	routesDirectoryPath string,
 ) ([]string, error) {
 	lines := []string{siteAddress + "{"}
 	// fix: site address formatting parity requires a space before the opening brace.
@@ -632,6 +639,28 @@ func renderHostRouteSiteBlock(
 		lines = append(lines, "    tls internal")
 	}
 	lines = append(lines, "")
+
+	var stackName string
+	if rootRegistration != nil && rootRegistration.StackName != "" {
+		stackName = rootRegistration.StackName
+	} else {
+		for _, reg := range nonRootRegistrations {
+			if reg.StackName != "" {
+				stackName = reg.StackName
+				break
+			}
+		}
+	}
+
+	if stackName != "" {
+		paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
+		logFilePath := filepath.Join(paths.CaddyDirectoryPath, "logs", fmt.Sprintf("%s_access.log", stackName))
+		logFileSlash := filepath.ToSlash(logFilePath)
+		lines = append(lines, "    log {")
+		lines = append(lines, "        output file \""+logFileSlash+"\"")
+		lines = append(lines, "    }")
+		lines = append(lines, "")
+	}
 
 	if rootRegistration != nil && rootRegistration.DevtoolsControlPort != nil {
 		lines = append(lines, renderNamedProxyHandleLines("@devhost_control path /__devhost__/*", "@devhost_control", *rootRegistration.DevtoolsControlPort)...)
@@ -736,7 +765,7 @@ func syncHostRoute(host string, routesDirectoryPath string, settings *managedCad
 		}
 	}
 
-	snippet, error := renderHostRouteSnippet(registrations, effectiveSettings.HTTPEnabled, effectiveSettings.HTTPPort, effectiveSettings.HTTPSPort)
+	snippet, error := renderHostRouteSnippet(registrations, effectiveSettings.HTTPEnabled, effectiveSettings.HTTPPort, effectiveSettings.HTTPSPort, routesDirectoryPath)
 	if error != nil {
 		return error
 	}
@@ -868,6 +897,9 @@ func parseManagedRouteRecord(registrationText []byte) (managedRouteRecord, error
 		if modernValue.CaddyHTTPSPort != nil {
 			record.CaddyHTTPSPort = *modernValue.CaddyHTTPSPort
 		}
+		if modernValue.StackName != nil {
+			record.StackName = *modernValue.StackName
+		}
 
 		return record, nil
 	}
@@ -936,6 +968,9 @@ func routeRegistrationFromRecord(record managedRouteRecord) routeRegistration {
 	}
 	if record.CaddyHTTPSPort != 0 {
 		registration.CaddyHTTPSPort = &record.CaddyHTTPSPort
+	}
+	if record.StackName != "" {
+		registration.StackName = record.StackName
 	}
 
 	return registration
