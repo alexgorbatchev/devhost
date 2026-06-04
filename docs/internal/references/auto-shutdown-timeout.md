@@ -1,10 +1,21 @@
 ---
-created_on: Wed Jun 03 2026
-last_modified: Wed Jun 03 2026
+created_on: 2026-06-03 12:00
+last_modified: 2026-06-03 18:45
 status: current
 ---
 
-# Design Document: Auto-Shutdown Idle Timeout
+# Reference Document: Auto-Shutdown Idle Timeout
+
+This is the maintained internal reference for the implemented automatic idle-timeout shutdown feature.
+It records the current architecture for the idle-timeout monitoring, Caddy stack-isolated logging, activity tracking, and graceful cascading teardown used by `devhost` background daemons.
+
+## Implementation Record
+
+The implementation landed through these changes:
+
+- [feat(devhost): implement automatic idle-timeout shutdown]
+
+---
 
 ## Table of Contents
 
@@ -275,7 +286,7 @@ No new HTTP endpoints are added.
 
 ## 14. Definition of done
 
-- [ ] All unit and integration tests under `apps/devhost/` pass successfully.
-- [ ] Auto-shutdown is verified via real timeout triggers.
-- [ ] `bun run compile:devhost` builds successfully.
-- [ ] Pair with subagent until clean review.
+- [x] All unit and integration tests under `apps/devhost/` pass successfully.
+- [x] Auto-shutdown is verified via real timeout triggers.
+- [x] `bun run compile:devhost` builds successfully.
+- [x] Pair with subagent until clean review.
