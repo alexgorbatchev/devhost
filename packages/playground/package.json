@@ -6,9 +6,5 @@
   "workspaces": [
     "backend",
     "frontend"
-  ],
-  "scripts": {
-    "dev": "../../apps/devhost/bin/devhost --manifest ./devhost.toml",
-    "build": "bun run --cwd frontend build"
-  }
+  ]
 }
