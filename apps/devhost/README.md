@@ -11,7 +11,7 @@ What it does well:
 - routes local services onto HTTPS hostnames through managed Caddy
 - starts one service or a full stack from `devhost.toml`, including optional externally managed backends
 - waits for health checks before exposing managed routes
-- optionally injects browser devtools for logs, service status, annotations, browser-hosted Neovim sessions, and aggregated third-party launcher buttons
+- optionally injects browser devtools for logs, service status, annotations, browser-hosted Neovim sessions, hotkey-driven parallel restarts, and aggregated third-party launcher buttons
 
 The injected log minimap is intentionally a compact preview: each log entry stays on a single row and clips horizontally instead of wrapping into a full log viewer.
 
@@ -51,12 +51,16 @@ Configure your stack in `devhost.toml`, then run it through `devhost`.
 ```toml
 name = "hello-stack"
 
+[devtools.shortcuts]
+restartServices = "alt+shift+r"
+
 [services.ui]
 primary = true
 command = ["bun", "run", "ui:dev"]
 port = 3000
 host = "foo.localhost"
 dependsOn = ["api"]
+watch = ["src/"]
 
 [services.api]
 command = ["bun", "run", "api:dev"]

@@ -96,6 +96,13 @@ To speed up frontend UI development, you can configure the on-demand asset dev l
 - `internal/devtools/nvim/devhost-react-highlight.nvim/` — bundled Neovim plugin; follow its nested `AGENTS.md`
 - `scripts/buildDevtoolsBundle.ts` — bundles `@alexgorbatchev/devhost-ui/main` into ignored `internal/devtools/dist/devtools.js` and copies `@xterm/xterm/css/xterm.css` to ignored `internal/devtools/dist/xterm.css` for `go:embed`
 
+## Manifest configuration and casing rules
+
+- **MANDATORY camelCase rule:** All keys across the entire TOML manifest must use standard `camelCase` naming conventions. Never introduce kebab-case (hyphenated), snake_case, or mixed casing for properties in the manifest.
+- This rule applies to both top-level tables and nested keys, including (but not limited to) `idleTimeout`, `externalToolbars`, `bindHost`, `httpPort`, `httpsPort`, `adminAddress`, `defaultAction`, `injectPort`, `dependsOn`, `primary`, `managed`, `restartServices`, etc.
+- When defining or updating schema validation logic or structs in Go (e.g., `validate.go` or `types.go`), always ensure allowed-keys lists, parsed fields, struct members, and serialization tags explicitly enforce and respect `camelCase`.
+- Never submit or merge schema additions that break this naming contract.
+
 ## Service supervision boundary
 
 - Treat service cleanup as a generic containment contract with platform-specific backends; do not hardcode Linux-only assumptions into shared orchestration code.
