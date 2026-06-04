@@ -123,11 +123,11 @@ position = "bottom-right"
 [devtools.shortcuts]
 # `restartServices` defines a global keyboard shortcut to trigger a parallel, topological restart
 # of all dirty (modified) services in the browser.
-# - string (e.g. "alt+shift+r"): the keyboard shortcut.
-# - Supported modifiers: "ctrl", "alt", "shift", "meta", combined with "+" and any physical layout-independent key code (like "r", "enter", "escape").
-# - Syntaxes must be separated by "+", for example: "ctrl+shift+x".
-# - If invalid syntax is provided or if omitted, it defaults back to "alt+shift+r".
-restartServices = "alt+shift+r"
+# - string (e.g. "alt+ctrl+r"): the keyboard shortcut.
+# Supported modifiers: "ctrl", "alt", "shift", "meta", combined with "+" and any physical layout-independent key code (like "r", "enter", "escape").
+# Syntaxes must be separated by "+", for example: "ctrl+shift+x".
+# If invalid syntax is provided or if omitted, it defaults back to "alt+ctrl+r".
+restartServices = "alt+ctrl+r"
 
 # `idleTimeout` sets the automatic idle shutdown duration (e.g. 30s, 1m, 1h).
 # If the daemon receives no routed Caddy traffic and has no persistent browser WebSocket

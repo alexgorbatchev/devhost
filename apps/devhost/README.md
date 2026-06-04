@@ -52,7 +52,7 @@ Configure your stack in `devhost.toml`, then run it through `devhost`.
 name = "hello-stack"
 
 [devtools.shortcuts]
-restartServices = "alt+shift+r"
+restartServices = "alt+ctrl+r"
 
 [services.ui]
 primary = true
