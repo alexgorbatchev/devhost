@@ -54,6 +54,10 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Docs deploy entrypoint: push docs changes to `main` so `.github/workflows/docs.yml` publishes `packages/docs` to GitHub Pages.
 - CLI release entrypoint: push a tag like `v0.0.2`. `apps/devhost/RELEASE.md` and `.github/workflows/publish.yml` are the authoritative GitHub Release binary procedure.
 
+## File Conventions
+
+- `docs/` — repository and internal-only documentation; follow `docs/AGENTS.md` and `docs/internal/AGENTS.md`
+
 ## Shared boundaries
 
 - Always: run `bun run check` after changing workspace manifests, scripts, CI, or directory layout.
@@ -72,6 +76,8 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 
 ## References
 
+- `docs/AGENTS.md`
+- `docs/internal/AGENTS.md`
 - `apps/devhost/AGENTS.md`
 - `apps/devhost/RELEASE.md`
 - `packages/devhost-ui/AGENTS.md`
