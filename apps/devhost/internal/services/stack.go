@@ -153,12 +153,12 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			_ = devtoolsControlServer.PublishHealthResponse()
 		}
 	}
-	watchManager := NewWatchManager(dirtyTracker, onDirty)
+	watchManager := NewWatchManager(dirtyTracker, onDirty, options.LogWriter, manifest.Name)
 
 	for _, s := range manifest.Services {
 		if len(s.Watch) > 0 {
-			if err := watchManager.StartWatching(s.Name, s.Watch, manifest.ManifestDirectoryPath); err != nil {
-				fmt.Fprintf(os.Stderr, "WARNING: failed to start watching for service %s: %v\n", s.Name, err)
+			if err := watchManager.StartWatching(s.Name, s.Watch, s.Cwd); err != nil {
+				return 0, fmt.Errorf("failed to start watching for service %s: %w", s.Name, err)
 			}
 		}
 	}
