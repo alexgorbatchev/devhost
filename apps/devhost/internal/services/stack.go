@@ -509,6 +509,10 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		}
 	}
 
+	if finalIdleTimeout > 0 {
+		writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("Idle timeout enabled: %s (will automatically shut down when inactive)", finalIdleTimeout))
+	}
+
 	idleShutdownChan := make(chan struct{}, 1)
 	if finalIdleTimeout > 0 && devtoolsControlServer != nil {
 		logFilePath := filepath.Join(paths.CaddyDirectoryPath, "logs", fmt.Sprintf("%s_access.log", manifest.Name))
