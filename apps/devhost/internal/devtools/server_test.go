@@ -40,8 +40,9 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 		},
 		Position:        "bottom-right",
 		ProjectRootPath: "/tmp/project",
-		RestartService: func(serviceName string) error {
-			restartedServices = append(restartedServices, serviceName)
+		PrimaryService:  "web",
+		RestartService: func(serviceNames []string) error {
+			restartedServices = append(restartedServices, serviceNames...)
 			return nil
 		},
 		StackName: "hello-stack",

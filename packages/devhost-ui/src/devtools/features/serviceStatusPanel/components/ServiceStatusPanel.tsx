@@ -10,6 +10,7 @@ import type { ServiceHealth } from "../../../shared/types";
 
 interface IServiceStatusPanelProps {
   errorMessage: string | null;
+  onSetErrorMessage?: (message: string | null) => void;
   services: ServiceHealth[];
 }
 
@@ -58,12 +59,15 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
                   <Button
                     ariaLabel={`Restart ${service.name}`}
                     size="icon-sm"
-                    startEnhancer={<RotateCwIcon data-icon="inline-start" />}
+                    startEnhancer={
+                      <RotateCwIcon className={cn(service.restarting && "animate-spin")} data-icon="inline-start" />
+                    }
                     title={`Restart ${service.name}`}
-                    variant="secondary"
+                    variant={service.dirty && !service.restarting ? "danger" : "secondary"}
+                    disabled={service.restarting}
                     onClick={async (): Promise<void> => {
                       try {
-                        await fetch(RESTART_SERVICE_PATH, {
+                        const response = await fetch(RESTART_SERVICE_PATH, {
                           body: JSON.stringify({ serviceName: service.name }),
                           headers: {
                             [DEVTOOLS_CONTROL_TOKEN_HEADER_NAME]: controlToken,
@@ -71,8 +75,27 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
                           },
                           method: "POST",
                         });
-                      } catch (error) {
+                        if (!response.ok) {
+                          const bodyText = await response.text();
+                          let parsedError = bodyText;
+                          try {
+                            const parsed = JSON.parse(bodyText);
+                            parsedError = parsed.error || parsed.message || bodyText;
+                          } catch {}
+                          if (props.onSetErrorMessage) {
+                            props.onSetErrorMessage(`Failed to restart service ${service.name}: ${parsedError}`);
+                          }
+                        } else {
+                          if (props.onSetErrorMessage) {
+                            props.onSetErrorMessage(null);
+                          }
+                        }
+                      } catch (error: unknown) {
                         console.error(`Failed to restart service ${service.name}:`, error);
+                        if (props.onSetErrorMessage) {
+                          const errorMsg = error instanceof Error ? error.message : String(error);
+                          props.onSetErrorMessage(`Failed to restart service ${service.name}: ${errorMsg}`);
+                        }
                       }
                     }}
                   />

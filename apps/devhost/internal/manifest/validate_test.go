@@ -646,3 +646,59 @@ func rawManifestWithServices(extra map[string]any) RawManifest {
 
 	return RawManifest{serviceOrder: []string{"web"}, value: value}
 }
+
+func TestValidateManifestWatchAndShortcuts(t *testing.T) {
+	t.Parallel()
+
+	manifestPath := filepath.Join(string(filepath.Separator), "tmp", "project", "devhost.toml")
+
+	manifest, error := ValidateManifest(manifestPath, RawManifest{value: map[string]any{
+		"name": "hello-stack",
+		"devtools": map[string]any{
+			"shortcuts": map[string]any{
+				"restart-services": "ctrl+shift+k",
+			},
+		},
+		"services": map[string]any{
+			"web": map[string]any{
+				"command": []any{"bun", "run", "dev"},
+				"port":    int64(3000),
+				"watch":   []any{"src/", "package.json"},
+			},
+		},
+	}})
+	if error != nil {
+		t.Fatalf("unexpected error: %v", error)
+	}
+
+	if manifest.Devtools.Shortcuts.RestartServices != "ctrl+shift+k" {
+		t.Fatalf("RestartServices = %q, want %q", manifest.Devtools.Shortcuts.RestartServices, "ctrl+shift+k")
+	}
+
+	service := manifest.Services["web"]
+	if len(service.Watch) != 2 || service.Watch[0] != "src/" || service.Watch[1] != "package.json" {
+		t.Fatalf("service.Watch = %#v, want [\"src/\", \"package.json\"]", service.Watch)
+	}
+
+	manifest2, error2 := ValidateManifest(manifestPath, RawManifest{value: map[string]any{
+		"name": "hello-stack",
+		"devtools": map[string]any{
+			"shortcuts": map[string]any{
+				"restart-services": "Alt+Shift+R!!",
+			},
+		},
+		"services": map[string]any{
+			"web": map[string]any{
+				"command": []any{"bun", "run", "dev"},
+				"port":    int64(3000),
+			},
+		},
+	}})
+	if error2 != nil {
+		t.Fatalf("unexpected error: %v", error2)
+	}
+
+	if manifest2.Devtools.Shortcuts.RestartServices != "alt+shift+r" {
+		t.Fatalf("RestartServices = %q, want %q", manifest2.Devtools.Shortcuts.RestartServices, "alt+shift+r")
+	}
+}
