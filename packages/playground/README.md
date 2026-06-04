@@ -1,6 +1,11 @@
 # Playground
 
-This package is a small Bun + React app for exercising `devhost` against a routed local service. The Bun server in `src/index.ts` serves the React app shell and exposes simple `/api/hello` endpoints used by the placeholder UI.
+This workspace contains two Bun + React apps for exercising `devhost` against routed local services starting on different ports:
+
+- **Frontend**: A React app starting on port 3001, mounted at `/` (root path) on the routed host.
+- **Backend**: A Bun API server starting on port 3000, mounted at `/api/*` on the exact same routed host.
+
+Because they are routed on the same host using `devhost`'s managed Caddy routing, they share the same origin, avoiding CORS issues and allowing simple relative `/api/hello` requests from the frontend to the backend.
 
 ## Commands
 
@@ -10,25 +15,7 @@ Run commands from `packages/playground/` unless a command says otherwise.
 bun run dev
 ```
 
-Starts the playground through `devhost` using `devhost.toml`.
-
-```bash
-bun run server
-```
-
-Starts the Bun development server directly. Hot reloading stays enabled through the `Bun.serve()` development mode in `src/index.ts`, which avoids the detached process that `bun --hot` can leave behind under `devhost` management. `devhost.toml` uses this script for the managed `web` service so `bun run dev` does not recurse into `devhost`.
-
-```bash
-bun run build
-```
-
-Builds the browser bundle into `dist/`.
-
-```bash
-bun run start
-```
-
-Starts the Bun server with `NODE_ENV=production`.
+Starts both the backend and frontend apps through `devhost` using `devhost.toml`.
 
 ## Run through `devhost`
 
@@ -47,19 +34,21 @@ bun run --cwd packages/playground dev
 Open the routed app at:
 
 ```text
-https://playground.localhost
+https://devhost-devbox.cvb.lol
 ```
 
-The manifest routes the `web` service to `bun run server` on port `3000` and enables the injected devtools overlay. Annotation actions include a Pi-backed launcher and a build command.
+The manifest routes `/api/*` to the backend on port `3000` and `/` to the frontend on port `3001`, and enables the injected devtools overlay.
 
 ## Project layout
 
-- `src/index.ts` — Bun server routes and static app shell serving.
-- `src/frontend.tsx` — React browser entrypoint.
-- `src/App.tsx` — placeholder React app.
+- `backend/` — Backend app
+  - `src/index.ts` — Bun API server with `/api/hello` routes.
+- `frontend/` — Frontend React app
+  - `src/index.ts` — Frontend static server.
+  - `src/frontend.tsx` — React browser entrypoint.
+  - `src/App.tsx` — placeholder React app.
 - `devhost.toml` — local `devhost` manifest for the playground stack.
 
 ## Notes
 
-- The root `bun run dev` command starts the repo-root `devhost.toml`, which includes this playground and Storybook.
-- Use `bun run server` only when you want the Bun app without the HTTPS hostname, routing, or injected devtools overlay.
+- The root `bun run dev` command starts the repo-root `devhost.toml`, which includes this playground split services and Storybook.
