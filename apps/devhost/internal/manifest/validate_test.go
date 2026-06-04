@@ -656,7 +656,7 @@ func TestValidateManifestWatchAndShortcuts(t *testing.T) {
 		"name": "hello-stack",
 		"devtools": map[string]any{
 			"shortcuts": map[string]any{
-				"restart-services": "ctrl+shift+k",
+				"restartServices": "ctrl+shift+k",
 			},
 		},
 		"services": map[string]any{
@@ -684,7 +684,7 @@ func TestValidateManifestWatchAndShortcuts(t *testing.T) {
 		"name": "hello-stack",
 		"devtools": map[string]any{
 			"shortcuts": map[string]any{
-				"restart-services": "Alt+Shift+R!!",
+				"restartServices": "Alt+Shift+R!!",
 			},
 		},
 		"services": map[string]any{

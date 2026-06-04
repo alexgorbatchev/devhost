@@ -54,7 +54,7 @@ type DevtoolsConfig struct {
 }
 
 type DevtoolsShortcutsConfig struct {
-	RestartServices string `descr:"Global keyboard shortcut for restarting services." name:"restart-services"`
+	RestartServices string `descr:"Global keyboard shortcut for restarting services." name:"restartServices"`
 }
 
 type DevtoolsEditorConfig struct {

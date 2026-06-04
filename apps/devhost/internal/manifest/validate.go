@@ -421,8 +421,8 @@ func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 	if rawShortcuts := value["shortcuts"]; rawShortcuts != nil {
 		shortcutsValue, ok := readMap(rawShortcuts, "devtools.shortcuts", schemaIssues)
 		if ok {
-			allowKeys(shortcutsValue, []string{"restart-services"}, "devtools.shortcuts", schemaIssues)
-			if restartServices, ok := readOptionalString(shortcutsValue, "restart-services", schemaIssues); ok {
+			allowKeys(shortcutsValue, []string{"restartServices"}, "devtools.shortcuts", schemaIssues)
+			if restartServices, ok := readOptionalString(shortcutsValue, "restartServices", schemaIssues); ok {
 				if isValidShortcut(restartServices) {
 					result.Shortcuts.RestartServices = restartServices
 				} else {
