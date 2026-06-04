@@ -1,6 +1,6 @@
 ---
 created_on: 2026-06-03 12:00
-last_modified: 2026-06-03 18:45
+last_modified: 2026-06-03 19:05
 status: current
 ---
 
@@ -231,6 +231,7 @@ type DevtoolsConfig struct {
 2. **WebSocket Connections:** WS handler calls `IncrementActive()` on connect, and `DecrementActive()` on close.
 3. **Application API & WS Traffic:** Any traffic routed by Caddy to the stack's backend services is logged to `<caddy-paths>/logs/<stack_name>_access.log`. The `os.Stat` poller detects the modification time change and immediately triggers `RecordActivity()`, resetting the idle timer.
 4. **Idle Checking:** Every 5 seconds, `stack.go` checks `tracker.IsIdle()` and `!ControlServer.HasActiveTerminalSessions()`. If idle, it initiates a clean, graceful stack teardown.
+5. **Console Logging:** On startup, if an idle timeout is active, `devhost` prints `[stack-name] Idle timeout enabled: <duration> (will automatically shut down when inactive)`. Upon shutdown, it logs `[stack-name] Idle timeout of <duration> reached. Automatically shutting down the stack...` before stopping child processes.
 
 ---
 
