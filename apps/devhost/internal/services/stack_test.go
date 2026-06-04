@@ -220,7 +220,7 @@ func TestCollectServicesHealthIncludesUnmanagedServices(t *testing.T) {
 		},
 	}
 
-	health := collectServicesHealth(manifestValue, nil)
+	health := collectServicesHealth(manifestValue, nil, nil)
 	if len(health.Services) != 2 {
 		t.Fatalf("health.Services length = %d, want 2", len(health.Services))
 	}
@@ -1844,7 +1844,7 @@ func TestCollectServicesHealthChecksDaemonLifecycleServicesWithoutForegroundProc
 		},
 	}
 
-	health := collectServicesHealth(manifestValue, nil)
+	health := collectServicesHealth(manifestValue, nil, nil)
 	if len(health.Services) != 1 {
 		t.Fatalf("health.Services length = %d, want 1", len(health.Services))
 	}

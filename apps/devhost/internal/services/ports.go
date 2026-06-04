@@ -40,6 +40,7 @@ type ResolvedService struct {
 	Path       *string
 	Port       *int
 	PortSource string
+	Watch      []string
 }
 
 type ResolvedServiceLifecycle struct {
@@ -117,6 +118,7 @@ func ResolveServicePorts(value manifest.Manifest) (ResolvedManifest, error) {
 			Path:       service.Path,
 			Port:       resolvedPort,
 			PortSource: portSource,
+			Watch:      service.Watch,
 		}
 	}
 

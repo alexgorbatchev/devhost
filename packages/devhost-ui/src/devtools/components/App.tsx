@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "../../lib/utils";
 
@@ -19,6 +19,8 @@ import {
   resolveMatchingColorScheme,
   resolveRoutedServiceKeyForUrl,
   useResolvedColorScheme,
+  RESTART_SERVICE_PATH,
+  DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
 } from "../shared";
 
 export function App(): JSX.Element {
@@ -49,9 +51,11 @@ function AppContent(): JSX.Element {
     stackName,
     statusEnabled,
     terminalEnabled,
+    restartServicesShortcut,
+    primaryService,
   } = readInjectedDevtoolsConfig();
   const appRootReference = useRef<HTMLDivElement | null>(null);
-  const { errorMessage, services } = useServiceHealth();
+  const { errorMessage, setErrorMessage, services } = useServiceHealth();
   const {
     errorMessage: annotationQueueErrorMessage,
     isEntryMutationPending,
@@ -87,6 +91,81 @@ function AppContent(): JSX.Element {
     startComponentSourceSession,
     enabled: editorEnabled,
   });
+
+  useEffect(() => {
+    const handleKeyDown = async (event: KeyboardEvent) => {
+      if (!parseAndMatchShortcut(restartServicesShortcut || "alt+shift+r", event)) {
+        return;
+      }
+
+      const target = (event.composedPath()?.[0] || event.target) as HTMLElement;
+      if (target) {
+        const tagName = target.tagName?.toLowerCase();
+        const isInput =
+          tagName === "input" ||
+          tagName === "textarea" ||
+          tagName === "select" ||
+          target.isContentEditable ||
+          target.closest?.(".xterm") !== null ||
+          target.closest?.("[contenteditable]") !== null;
+        if (isInput) return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const dirtyServices = services.filter((s) => s.dirty && !s.restarting);
+      const activeRestarts = services.filter((s) => s.restarting);
+      if (activeRestarts.length > 0) {
+        return;
+      }
+
+      let targetServiceNames: string[] = [];
+      if (dirtyServices.length === 1) {
+        targetServiceNames = [dirtyServices[0].name];
+      } else if (dirtyServices.length > 1) {
+        targetServiceNames = dirtyServices.map((s) => s.name);
+      } else if (primaryService) {
+        targetServiceNames = [primaryService];
+      }
+
+      if (targetServiceNames.length === 0) {
+        return;
+      }
+
+      try {
+        const response = await fetch(RESTART_SERVICE_PATH, {
+          body: JSON.stringify({ serviceNames: targetServiceNames }),
+          headers: {
+            [DEVTOOLS_CONTROL_TOKEN_HEADER_NAME]: controlToken,
+            "content-type": "application/json",
+          },
+          method: "POST",
+        });
+
+        if (!response.ok) {
+          const bodyText = await response.text();
+          let parsedError = bodyText;
+          try {
+            const parsed = JSON.parse(bodyText);
+            parsedError = parsed.error || parsed.message || bodyText;
+          } catch {}
+          setErrorMessage(`Failed to restart service(s) ${targetServiceNames.join(", ")}: ${parsedError}`);
+        } else {
+          setErrorMessage(null);
+        }
+      } catch (error: unknown) {
+        console.error(`Failed to restart service(s) ${targetServiceNames.join(", ")}:`, error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        setErrorMessage(`Failed to restart service(s) ${targetServiceNames.join(", ")}: ${errorMsg}`);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [restartServicesShortcut, services, primaryService, controlToken, setErrorMessage]);
   const shouldRenderPanel: boolean = statusEnabled && (errorMessage !== null || services.length > 0);
   const shouldRenderExternalDevtoolsPanel: boolean = externalToolbarsEnabled && externalDevtoolsLaunchers.length > 0;
   const shouldRenderMinimap: boolean = minimapEnabled && logEntries.length > 0;
@@ -153,7 +232,9 @@ function AppContent(): JSX.Element {
         )}
         data-testid="AppContent--corner-dock"
       >
-        {shouldRenderPanel ? <ServiceStatusPanel errorMessage={errorMessage} services={services} /> : null}
+        {shouldRenderPanel ? (
+          <ServiceStatusPanel errorMessage={errorMessage} services={services} onSetErrorMessage={setErrorMessage} />
+        ) : null}
         {annotationQueueEnabled ? (
           <AnnotationQueuePanel
             errorMessage={annotationQueueErrorMessage}
@@ -220,4 +301,37 @@ function findActiveAgentSessionId(
 
     return resolveRoutedServiceKeyForUrl(routedServices, session.annotation.url) === currentRoutedServiceKey;
   })?.sessionId;
+}
+
+function parseAndMatchShortcut(shortcut: string, event: KeyboardEvent): boolean {
+  const parts = shortcut.toLowerCase().split("+");
+  let targetCode = "";
+  let reqAlt = false;
+  let reqShift = false;
+  let reqCtrl = false;
+  let reqMeta = false;
+
+  for (const part of parts) {
+    if (part === "alt") {
+      reqAlt = true;
+    } else if (part === "shift") {
+      reqShift = true;
+    } else if (part === "ctrl") {
+      reqCtrl = true;
+    } else if (part === "meta" || part === "cmd") {
+      reqMeta = true;
+    } else if (/^[a-z]$/.test(part)) {
+      targetCode = "Key" + part.toUpperCase();
+    } else if (/^[0-9]$/.test(part)) {
+      targetCode = "Digit" + part;
+    }
+  }
+
+  return (
+    event.code === targetCode &&
+    event.altKey === reqAlt &&
+    event.shiftKey === reqShift &&
+    event.ctrlKey === reqCtrl &&
+    event.metaKey === reqMeta
+  );
 }
