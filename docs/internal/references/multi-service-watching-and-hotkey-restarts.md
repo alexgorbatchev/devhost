@@ -1,6 +1,6 @@
 ---
 created_on: 2026-06-03 12:00
-last_modified: 2026-06-03 19:35
+last_modified: 2026-06-04 12:00
 status: current
 ---
 
@@ -25,7 +25,7 @@ The multi-service file watching and parallel hotkey restart system is divided in
 
 1. **Manifest Configuration (`internal/manifest`)**:
    - Extended `types.go` and `validate.go` to support `watch = [...]` string arrays on service tables and the `[devtools.shortcuts]` configuration.
-   - Built a robust layout-independent shortcut validator (`isValidShortcut`) defaulting invalid shortcut strings to `"alt+shift+r"`.
+   - Built a robust layout-independent shortcut validator (`isValidShortcut`) defaulting invalid shortcut strings to `"alt+ctrl+r"`.
 
 2. **FSNotify Watcher (`internal/services/watch.go`)**:
    - Implements native filesystem watching utilizing `github.com/fsnotify/fsnotify`.
