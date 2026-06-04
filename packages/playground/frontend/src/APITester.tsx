@@ -10,10 +10,8 @@ export function APITester() {
       const form = e.currentTarget;
       const formData = new FormData(form);
       const endpoint = formData.get("endpoint") as string;
-      const baseUrl = process.env.BUN_PUBLIC_API_URL || location.origin;
-      const url = new URL(endpoint, baseUrl);
       const method = formData.get("method") as string;
-      const res = await fetch(url, { method });
+      const res = await fetch(endpoint, { method });
 
       const data = await res.json();
       responseInputRef.current!.value = JSON.stringify(data, null, 2);
