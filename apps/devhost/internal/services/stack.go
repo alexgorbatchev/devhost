@@ -325,6 +325,8 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 						return fmt.Errorf("service %s is unmanaged and cannot be restarted by devhost", serviceName)
 					}
 
+					writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("restarting service: %s", serviceName))
+
 					// Immediately reset dirty status and cancel timers
 					dirtyTracker.SetDirty(serviceName, false)
 					if watchManager != nil {
