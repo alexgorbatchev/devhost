@@ -642,7 +642,11 @@ func LogServiceURLs(manifest ResolvedManifest, writer io.Writer) {
 			continue
 		}
 
-		writeLogLine(writer, manifest.Name, fmt.Sprintf("%s: %s", service.Name, *serviceURL))
+		displayName := service.Name
+		if service.Name == manifest.PrimaryService {
+			displayName = fmt.Sprintf("%s (primary)", service.Name)
+		}
+		writeLogLine(writer, manifest.Name, fmt.Sprintf("%s: %s", displayName, *serviceURL))
 	}
 }
 
