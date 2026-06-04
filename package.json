@@ -20,7 +20,8 @@
     "storybook": "bun run --cwd packages/devhost-ui storybook",
     "test:nvim": "bun run ./apps/devhost/internal/devtools/nvim/devhost-react-highlight.nvim/tests/run.ts",
     "fix": "bun --bun oxfmt --write .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "clean": "find . -name \"node_modules\" -type d -prune -exec rm -rf '{}' +"
   },
   "nano-staged": {
     "*": "bun --bun oxfmt --write --no-error-on-unmatched-pattern"
