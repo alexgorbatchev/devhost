@@ -19,14 +19,15 @@ __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS = "{{ env.DEVHOST_STORYBOOK }}"
 command = ["bun", "run", "dev"]
 cwd = "packages/playground/backend"
 port = "auto"
-host = "{{ env.DEVHOST_PLAYGROUND_BACKEND }}"
+host = "{{ env.DEVHOST_PLAYGROUND }}"
+path = "/api/*"
 
 [services.playground-frontend]
 command = ["bun", "run", "dev"]
 cwd = "packages/playground/frontend"
 port = "auto"
 host = "{{ env.DEVHOST_PLAYGROUND }}"
+path = "/"
 
 [services.playground-frontend.env]
 NODE_ENV = "development"
-BUN_PUBLIC_API_URL = "https://{{ env.DEVHOST_PLAYGROUND_BACKEND }}"
