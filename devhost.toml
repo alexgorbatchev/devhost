@@ -5,6 +5,9 @@ http = true
 httpPort = 80
 bindHost = "0.0.0.0"
 
+[devtools.shortcuts]
+restartServices = "alt+ctrl+r"
+
 [services.storybook]
 primary = true
 command = ["sh", "-c", "exec ./node_modules/.bin/storybook dev --ci --port \"$PORT\""]
@@ -28,6 +31,7 @@ cwd = "packages/playground/frontend"
 port = "auto"
 host = "{{ env.DEVHOST_PLAYGROUND }}"
 path = "/"
+watch = ["src/"]
 
 [services.playground-frontend.env]
 NODE_ENV = "development"

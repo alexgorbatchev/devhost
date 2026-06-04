@@ -11,6 +11,7 @@
 # - `[devtools.externalToolbars]` (optional)
 # - `[devtools.minimap]` (optional)
 # - `[devtools.status]` (optional)
+# - `[devtools.shortcuts]` (optional)
 # - `[annotation]` and `[[annotation.actions]]` (optional; annotation actions are unavailable when omitted)
 # - `[services.<name>]` (required; at least one service)
 #
@@ -118,6 +119,15 @@ enabled = true
 # - `"top-right"`: anchor the panel to the top-right corner.
 # - `"bottom-right"` (default): anchor the panel to the bottom-right corner.
 position = "bottom-right"
+
+[devtools.shortcuts]
+# `restartServices` defines a global keyboard shortcut to trigger a parallel, topological restart
+# of all dirty (modified) services in the browser.
+# - string (e.g. "alt+shift+r"): the keyboard shortcut.
+# - Supported modifiers: "ctrl", "alt", "shift", "meta", combined with "+" and any physical layout-independent key code (like "r", "enter", "escape").
+# - Syntaxes must be separated by "+", for example: "ctrl+shift+x".
+# - If invalid syntax is provided or if omitted, it defaults back to "alt+shift+r".
+restartServices = "alt+shift+r"
 
 # `idleTimeout` sets the automatic idle shutdown duration (e.g. 30s, 1m, 1h).
 # If the daemon receives no routed Caddy traffic and has no persistent browser WebSocket
@@ -243,6 +253,11 @@ host = "hello.local.test"
 # path = "/api/*"
 # `dependsOn` declares services that must start before this service.
 dependsOn = ["api"]
+# `watch` lists relative paths within the manifest directory to watch for file changes.
+# - string array (e.g. ["src/"]): when files change, the service turns red (dirty) in the Status Panel.
+# - All folders are watched recursively. Heavy paths (e.g., node_modules, .git, .workspaces, .tmp) are automatically ignored.
+# - Rapid concurrent modifications are debounced by 200ms automatically.
+watch = ["src/"]
 # No explicit `[services.web.health]` block is used here.
 # Because `port = 3000`, devhost will apply the default TCP health check for `127.0.0.1:3000`.
 
