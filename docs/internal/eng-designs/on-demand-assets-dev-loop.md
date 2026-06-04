@@ -166,7 +166,7 @@ No new HTTP routes or WS channels are added. The existing routes serve dynamic c
 
 ## 14. Definition of done
 
-- [ ] All unit and integration tests under `apps/devhost/` pass successfully.
-- [ ] On-demand asset dev-loop is verified with disk assets loading.
-- [ ] `bun run compile:devhost` builds successfully.
-- [ ] Pair with subagent until clean review.
+- [x] All unit and integration tests under `apps/devhost/` pass successfully.
+- [x] On-demand asset dev-loop is verified with disk assets loading.
+- [x] `bun run compile:devhost` builds successfully.
+- [x] Pair with subagent until clean review.
