@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -857,6 +858,78 @@ func TestStartStackStopsDevtoolsServersDuringCleanup(t *testing.T) {
 	if response, error := http.Get(serverURL(documentPort, "/")); error == nil {
 		defer response.Body.Close()
 		t.Fatalf("document injection server request unexpectedly succeeded with status %d", response.StatusCode)
+	}
+}
+
+func TestStartStackGracefulIdleTimeoutShutdown(t *testing.T) {
+	stateDirectoryPath := t.TempDir()
+	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
+	adminAddress, stopAdmin := startTestAdminServer(t)
+	defer stopAdmin()
+	writeFakeCaddyExecutable(t, paths.ExecutablePath)
+
+	servicePort := mustReservePort(t)
+	tracePath := filepath.Join(t.TempDir(), "service-trace.txt")
+
+	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
+	manifestValue.Name = "idle-timeout-stack"
+	manifestValue.PrimaryService = "web"
+	manifestValue.Devtools.Minimap.Enabled = true
+	manifestValue.Devtools.Status.Enabled = true
+	manifestValue.Services["web"] = ResolvedService{
+		BindHost:  "127.0.0.1",
+		Command:   helperCommand(),
+		Cwd:       t.TempDir(),
+		DependsOn: []string{},
+		Env: map[string]string{
+			"GO_WANT_HELPER_PROCESS":       "1",
+			"DEVHOST_HELPER_MODE":          "route-aware-http-server",
+			"TRACE_PATH":                   tracePath,
+			"HOST_CLAIMS_DIRECTORY_PATH":   paths.HostClaimsDirectoryPath,
+			"PORT_CLAIMS_DIRECTORY_PATH":   paths.PortClaimsDirectoryPath,
+			"REGISTRATIONS_DIRECTORY_PATH": paths.RegistrationsDirectoryPath,
+		},
+		Health:     ResolvedHealthConfig{Host: stringPointer("127.0.0.1"), Interval: 50, Kind: "tcp", Port: intPointer(servicePort), Retries: 0, Timeout: 5000},
+		Host:       stringPointer("idle.localhost"),
+		InjectPort: true,
+		Name:       "web",
+		Path:       stringPointer("/"),
+		Port:       intPointer(servicePort),
+		PortSource: "fixed",
+	}
+
+	startOptions := StartStackOptions{
+		CaddyOutputWriters: caddy.RouteCommandOutputWriters{},
+		CaddyPaths:          paths,
+		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
+		LogWriter:           os.Stdout,
+		ServiceStdoutWriter: io.Discard,
+		ServiceStderrWriter: io.Discard,
+		IdleTimeout:         100 * time.Millisecond,
+	}
+
+	doneChan := make(chan struct{})
+	var exitCode int
+	var err error
+
+	go func() {
+		exitCode, err = StartStack(&manifestValue, []string{"web"}, startOptions)
+		close(doneChan)
+	}()
+
+	select {
+	case <-doneChan:
+		if err != nil {
+			t.Fatalf("StartStack failed with error: %v", err)
+		}
+		if exitCode != 0 {
+			t.Fatalf("expected exit code 0, got %d", exitCode)
+		}
+	case <-time.After(5 * time.Second):
+		buf := make([]byte, 100000)
+		n := runtime.Stack(buf, true)
+		t.Logf("Stack trace:\n%s", buf[:n])
+		t.Fatalf("timed out waiting for automatic idle shutdown")
 	}
 }
 
