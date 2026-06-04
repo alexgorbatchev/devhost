@@ -103,6 +103,7 @@ To speed up frontend UI development, you can configure the on-demand asset dev l
 - Keep user-facing docs honest about those guarantee differences. Do not describe foreground-service shutdown as perfect or identical across platforms.
 - Services that intentionally daemonize, detach, or escape the tracked foreground process tree are unsupported in foreground `command` mode unless there is an explicit cooperative lifecycle contract. Use daemon lifecycle mode for those services instead.
 - Treat undocumented `DEVHOST_*` environment variables as internal implementation details. Do not document or rely on them as part of the public service contract unless they are intentionally promoted in `README.md` and covered by tests.
+- **Auto-Shutdown Idle Timeout:** The stack-level auto-shutdown monitors Caddy proxy access log modification times (which are stack-isolated at `<caddy-paths>/logs/<stack_name>_access.log`) and active control server WebSocket connections. Upon timeout, the supervisor triggers a clean, graceful cascading teardown (sending `SIGTERM` and cleaning up routing configurations). To support both automated tests with very short timeouts (down to 10ms) and larger production settings without CPU overhead, the log poller and check tickers use adaptive polling intervals (scaled to `idleTimeout / 2` with a minimum of 10ms).
 
 ## Logging rules
 
