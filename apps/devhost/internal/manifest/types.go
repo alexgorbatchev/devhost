@@ -50,6 +50,7 @@ type DevtoolsConfig struct {
 	Minimap          DevtoolsMinimapConfig
 	Status           DevtoolsStatusConfig
 	Shortcuts        DevtoolsShortcutsConfig // New table
+	IdleTimeout      string
 }
 
 type DevtoolsShortcutsConfig struct {

@@ -1,35 +1,27 @@
 ---
-created_on: Wed Jun 03 2026
-last_modified: Wed Jun 03 2026
+created_on: 2026-06-03 12:45
+last_modified: 2026-06-03 18:35
 status: current
 ---
 
-# Design Document: On-Demand Dynamic Asset Dev Loop
+# On-Demand Dynamic Asset Dev Loop
 
-## Table of Contents
+This is the maintained internal reference for the implemented on-demand dynamic asset dev loop contract.
+It records the current architecture for dynamic, on-demand frontend bundle compilation and dynamic stylesheet serving used by `devhost` during local development.
 
-- [1. Objective and non-goals](#1-objective-and-non-goals)
-- [2. Current codebase baseline](#2-current-codebase-baseline)
-- [3. Non-negotiable constraints](#3-non-negotiable-constraints)
-- [4. Exact architecture choice](#4-exact-architecture-choice)
-- [5. Data model / schema](#5-data-model--schema)
-- [6. Types and contracts](#6-types-and-contracts)
-- [7. Exact file plan](#7-exact-file-plan)
-- [8. Runtime behavior](#8-runtime-behavior)
-- [9. Validation rules](#9-validation-rules)
-- [10. Exact API surface](#10-exact-api-surface)
-- [11. Implementation order](#11-implementation-order)
-- [12. Testing plan](#12-testing-plan)
-- [13. Out-of-scope / rejection list](#13-out-of-scope--rejection-list)
-- [14. Definition of done](#14-definition-of-done)
+## Implementation Record
 
----
+The implementation landed through these changes:
+
+- [feat(devtools): implement on-demand dynamic asset dev loop]
+- [chore(root): add DEVHOST_DEV_ASSETS_DIR to dev script]
+- [feat(devtools): log notice when on-demand asset loop is active]
 
 ## 1. Objective and non-goals
 
 ### Objective
 
-This design aims to eliminate binary rebuilds and process restarts for developers making changes to the devtools UI workspace (`packages/devhost-ui`). It enables:
+This design eliminates binary rebuilds and process restarts for developers making changes to the devtools UI workspace (`packages/devhost-ui`). It enables:
 
 1. **On-Demand Disk Asset Serving:** The Go `devhost` daemon serves frontend files (`devtools.js` and `xterm.css`) dynamically on-demand from a configured local directory when requested by the browser overlay.
 2. **On-Demand Asset Rebuilding (Manual-Trigger Browser Refresh):** When the browser requests `/__devhost__/inject.js`, the Go backend compares the modification times of the source files in `packages/devhost-ui/src/devtools/` against the compiled `devtools.js` on disk. If any source file is newer (indicating changes were made), the Go server automatically spawns a child process to rebuild the assets (`bun run build:devtools-bundle:devhost`), waiting for it to finish successfully before serving the fresh bundle. This completely eliminates manual build terminal commands and file watchers—recompilation is elegantly triggered only when the developer manually refreshes the browser page.
@@ -164,9 +156,7 @@ No new HTTP routes or WS channels are added. The existing routes serve dynamic c
 
 ---
 
-## 14. Definition of done
+## 14. Validation Requirements
 
-- [ ] All unit and integration tests under `apps/devhost/` pass successfully.
-- [ ] On-demand asset dev-loop is verified with disk assets loading.
-- [ ] `bun run compile:devhost` builds successfully.
-- [ ] Pair with subagent until clean review.
+- Run full repo checks and formatting via `bun run check`.
+- Run Go unit tests via `bun run check:devhost` (or `go test ./...` in `apps/devhost/`).
