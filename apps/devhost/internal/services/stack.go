@@ -264,6 +264,10 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			devAssetsDir = filepath.Join(manifest.ManifestDirectoryPath, devAssetsDir)
 		}
 
+		if devAssetsDir != "" {
+			writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("Using on-demand dynamic devtools assets from: %s", devAssetsDir))
+		}
+
 		controlServer, error := startDevtoolsControlServer(devtools.StartControlServerOptions{
 			AnnotationActions:         manifest.Annotation.Actions,
 			AnnotationDefaultActionID: manifest.Annotation.DefaultActionID,
