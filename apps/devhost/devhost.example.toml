@@ -119,6 +119,14 @@ enabled = true
 # - `"bottom-right"` (default): anchor the panel to the bottom-right corner.
 position = "bottom-right"
 
+# `idleTimeout` sets the automatic idle shutdown duration (e.g. 30s, 1m, 1h).
+# If the daemon receives no routed Caddy traffic and has no persistent browser WebSocket
+# connections or active interactive terminal sessions for this duration, it automatically
+# stops all started services and cleanly shuts down the stack.
+# - string (e.g. "1h"): enable auto-shutdown after the given duration.
+# - empty/negative/0 (default): disable auto-shutdown.
+# idleTimeout = "1h"
+
 # Annotation actions are configured only through `[annotation]`.
 # If `[annotation]` is present, `[[annotation.actions]]` must contain at least one action.
 # If `[annotation]` is omitted, annotation submission is unavailable in the injected UI.

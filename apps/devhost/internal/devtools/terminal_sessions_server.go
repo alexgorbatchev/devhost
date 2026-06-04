@@ -443,3 +443,9 @@ func writeJSONMessage(client *websocketClient, value any) error {
 
 	return client.write(websocket.TextMessage, payload)
 }
+
+func (s *ControlServer) HasActiveTerminalSessions() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.terminalSessions) > 0
+}
