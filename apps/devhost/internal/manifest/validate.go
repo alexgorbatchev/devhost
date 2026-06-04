@@ -350,7 +350,7 @@ func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 		ExternalToolbars: DevtoolsToggleConfig{Enabled: true},
 		Minimap:          DevtoolsMinimapConfig{Enabled: true},
 		Status:           DevtoolsStatusConfig{Enabled: true, Position: defaultDevtoolsStatusPosition},
-		Shortcuts:        DevtoolsShortcutsConfig{RestartServices: "alt+shift+r"},
+		Shortcuts:        DevtoolsShortcutsConfig{RestartServices: "alt+ctrl+r"},
 	}
 
 	if rawValue == nil {
@@ -426,7 +426,7 @@ func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 				if isValidShortcut(restartServices) {
 					result.Shortcuts.RestartServices = restartServices
 				} else {
-					result.Shortcuts.RestartServices = "alt+shift+r"
+					result.Shortcuts.RestartServices = "alt+ctrl+r"
 				}
 			}
 		}

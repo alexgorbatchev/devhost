@@ -698,7 +698,7 @@ func TestValidateManifestWatchAndShortcuts(t *testing.T) {
 		t.Fatalf("unexpected error: %v", error2)
 	}
 
-	if manifest2.Devtools.Shortcuts.RestartServices != "alt+shift+r" {
-		t.Fatalf("RestartServices = %q, want %q", manifest2.Devtools.Shortcuts.RestartServices, "alt+shift+r")
+	if manifest2.Devtools.Shortcuts.RestartServices != "alt+ctrl+r" {
+		t.Fatalf("RestartServices = %q, want %q", manifest2.Devtools.Shortcuts.RestartServices, "alt+ctrl+r")
 	}
 }
