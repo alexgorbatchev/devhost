@@ -49,6 +49,7 @@ type DevtoolsConfig struct {
 	ExternalToolbars DevtoolsToggleConfig
 	Minimap          DevtoolsMinimapConfig
 	Status           DevtoolsStatusConfig
+	IdleTimeout      string
 }
 
 type DevtoolsEditorConfig struct {

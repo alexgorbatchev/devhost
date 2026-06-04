@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 )
 
 const (
@@ -359,7 +360,7 @@ func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 		return result
 	}
 
-	allowKeys(value, []string{"editor", "externalToolbars", "minimap", "status"}, "devtools", schemaIssues)
+	allowKeys(value, []string{"editor", "externalToolbars", "idleTimeout", "minimap", "status"}, "devtools", schemaIssues)
 
 	if rawEditor := value["editor"]; rawEditor != nil {
 		editorValue, ok := readMap(rawEditor, "devtools.editor", schemaIssues)
@@ -412,6 +413,14 @@ func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 					*schemaIssues = append(*schemaIssues, "devtools.status.position must be top-right or bottom-right.")
 				}
 			}
+		}
+	}
+
+	if idleTimeout, ok := readOptionalString(value, "idleTimeout", schemaIssues); ok {
+		if _, err := time.ParseDuration(idleTimeout); err != nil {
+			*schemaIssues = append(*schemaIssues, fmt.Sprintf("devtools.idleTimeout must be a valid duration: %v", err))
+		} else {
+			result.IdleTimeout = idleTimeout
 		}
 	}
 

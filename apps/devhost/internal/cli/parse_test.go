@@ -123,6 +123,25 @@ func TestParseCommandLineArguments(t *testing.T) {
 			},
 		},
 		{
+			name:    "parses idle-timeout flag",
+			rawArgs: []string{"--idle-timeout", "1h"},
+			want: CommandLineArguments{
+				Kind:        KindManifest,
+				IdleTimeout: "1h",
+			},
+		},
+		{
+			name: "parses idle-timeout from environment",
+			env: map[string]string{
+				"DEVHOST_IDLE_TIMEOUT": "30s",
+			},
+			rawArgs: []string{},
+			want: CommandLineArguments{
+				Kind:        KindManifest,
+				IdleTimeout: "30s",
+			},
+		},
+		{
 			name: "parses manifest from environment",
 			env: map[string]string{
 				"DEVHOST_MANIFEST": manifestPath,

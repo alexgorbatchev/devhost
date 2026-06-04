@@ -2,6 +2,7 @@ package services
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"strings"
@@ -49,13 +51,14 @@ var signalExitCodes = map[syscall.Signal]int{
 }
 
 type StartStackOptions struct {
-	CaddyOutputWriters caddy.RouteCommandOutputWriters
+	CaddyOutputWriters  caddy.RouteCommandOutputWriters
 	CaddyPaths          caddy.Paths
 	Environment         map[string]string
 	LogWriter           io.Writer
 	ServiceStdoutWriter io.Writer
 	ServiceStderrWriter io.Writer
 	ShutdownGracePeriod time.Duration
+	IdleTimeout         time.Duration
 }
 
 type startedService struct {
@@ -391,6 +394,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			HTTPEnabled:        manifest.Caddy.Global.HTTP,
 			Path:               path,
 			ServiceName:        service.Name,
+			StackName:          manifest.Name,
 		}
 
 		if devtoolsControlServer != nil && isRootCompatibleServicePath(service.Path) {
@@ -421,6 +425,89 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 
 	LogServiceURLs(*manifest, options.LogWriter)
 
+	finalIdleTimeout := options.IdleTimeout
+	if finalIdleTimeout == 0 && manifest.Devtools.IdleTimeout != "" {
+		if d, err := time.ParseDuration(manifest.Devtools.IdleTimeout); err == nil {
+			finalIdleTimeout = d
+		}
+	}
+
+	idleShutdownChan := make(chan struct{}, 1)
+	if finalIdleTimeout > 0 && devtoolsControlServer != nil {
+		logFilePath := filepath.Join(paths.CaddyDirectoryPath, "logs", fmt.Sprintf("%s_access.log", manifest.Name))
+		_ = os.MkdirAll(filepath.Dir(logFilePath), 0o755)
+		if runtime.GOOS != "windows" {
+			if f, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644); err == nil {
+				_ = f.Close()
+			}
+		}
+
+		pollerCtx, pollerCancel := context.WithCancel(context.Background())
+		defer pollerCancel()
+
+		go func() {
+			var lastModTime time.Time
+			if info, err := os.Stat(logFilePath); err == nil {
+				lastModTime = info.ModTime()
+			}
+
+			statInterval := 2 * time.Second
+			if finalIdleTimeout < statInterval {
+				statInterval = finalIdleTimeout / 2
+				if statInterval < 10 * time.Millisecond {
+					statInterval = 10 * time.Millisecond
+				}
+			}
+			ticker := time.NewTicker(statInterval)
+			defer ticker.Stop()
+
+			for {
+				select {
+				case <-pollerCtx.Done():
+					return
+				case <-ticker.C:
+					info, err := os.Stat(logFilePath)
+					if err == nil {
+						modTime := info.ModTime()
+						if lastModTime.IsZero() {
+							lastModTime = modTime
+						} else if modTime.After(lastModTime) {
+							lastModTime = modTime
+							devtoolsControlServer.Tracker().RecordActivity()
+						}
+					}
+				}
+			}
+		}()
+
+		go func() {
+			checkInterval := 5 * time.Second
+			if finalIdleTimeout < checkInterval {
+				checkInterval = finalIdleTimeout / 2
+				if checkInterval < 10 * time.Millisecond {
+					checkInterval = 10 * time.Millisecond
+				}
+			}
+			ticker := time.NewTicker(checkInterval)
+			defer ticker.Stop()
+
+			for {
+				select {
+				case <-pollerCtx.Done():
+					return
+				case <-ticker.C:
+					if devtoolsControlServer.Tracker().IsIdle(finalIdleTimeout) && !devtoolsControlServer.HasActiveTerminalSessions() {
+						select {
+						case idleShutdownChan <- struct{}{}:
+						default:
+						}
+						return
+					}
+				}
+			}
+		}()
+	}
+
 	select {
 	case result := <-serviceExits:
 		return result.exitCode, nil
@@ -430,6 +517,13 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		startedServicesMu.Unlock()
 		forwardStartedServicesSignal(startedServicesSnapshot, receivedSignal)
 		return readSignalExitCode(receivedSignal), nil
+	case <-idleShutdownChan:
+		writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("Idle timeout of %s reached. Automatically shutting down the stack...", finalIdleTimeout))
+		startedServicesMu.Lock()
+		startedServicesSnapshot := append([]*startedService{}, startedServices...)
+		startedServicesMu.Unlock()
+		forwardStartedServicesSignal(startedServicesSnapshot, syscall.SIGTERM)
+		return 0, nil
 	}
 }
 

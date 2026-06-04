@@ -36,3 +36,34 @@ The shipped Go runtime supports `Alt` + `right-click` component-source navigatio
 - Other supported editors use their direct external-editor URL launch path instead of the embedded terminal.
 
 Embedded terminal sessions normalize their terminal environment to `TERM=xterm-256color` and `COLORTERM=truecolor` so terminal UIs like Neovim render against the xterm.js emulator instead of inheriting incompatible host-terminal identities. Neovim component-source sessions expand to fill the available viewport when opened as a modal.
+
+## Automatic Idle Timeout
+
+`devhost` supports automatically shutting down the entire stack and all of its managed child processes when no activity has occurred for a configured duration.
+
+This is highly useful for preventing background resource leaks (CPU, RAM, battery) when you are no longer actively developing on the project.
+
+### Configuration
+
+You can configure the idle timeout in three ways, with the following priority of resolution:
+
+1. Command-line flag: `--idle-timeout <duration>` (e.g. `--idle-timeout 1h`, `--idle-timeout 30s`)
+2. Environment variable: `DEVHOST_IDLE_TIMEOUT`
+3. Manifest configuration: `devtools.idleTimeout` in `devhost.toml`
+
+For example, to configure a 1-hour idle timeout directly in your manifest:
+
+```toml
+[devtools]
+idleTimeout = "1h"
+```
+
+### How activity is tracked
+
+`devhost` passive activity tracking combines three signals:
+
+- **WebSocket connections:** Any active WS connection to the devhost control server (such as the browser overlay, logs viewer, health monitor) keeps the daemon alive. When browser tabs are closed or reloaded, active WebSockets momentarily drop to 0. To prevent naive instant shutdowns during reloads, the daemon restarts the idle timer on drop to 0, providing a full timeout buffer.
+- **Application traffic:** Any HTTP/HTTPS requests proxied by Caddy to your backend services are passively monitored. The daemon periodically polls the modification time of stack-isolated Caddy access logs (`os.Stat` on `<caddy-paths>/logs/<stack_name>_access.log`) without locking, which avoids Windows portability sharing violations.
+- **Terminal sessions:** The daemon will never shut down if there is an active interactive terminal session (such as a Neovim integration session), even if no HTTP requests are arriving.
+
+Any of these active signals resets the idle timer. When no activity has been detected for the configured timeout, `devhost` triggers a clean, graceful cascading teardown of all managed services and routing configurations.

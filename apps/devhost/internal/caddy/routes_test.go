@@ -347,7 +347,7 @@ func TestRenderHostRouteSnippet(t *testing.T) {
 		}, "/tmp/project/devhost.toml")),
 	}
 
-	snippet, error := renderHostRouteSnippet(registrations, true, 8080, 4443)
+	snippet, error := renderHostRouteSnippet(registrations, true, 8080, 4443, t.TempDir())
 	if error != nil {
 		t.Fatalf("renderHostRouteSnippet(...) unexpected error = %v", error)
 	}
@@ -370,12 +370,41 @@ func TestRenderHostRouteSnippet(t *testing.T) {
 		Host:        "hello.localhost",
 		Path:        "/api/*",
 		ServiceName: "api",
-	}, "/tmp/project/devhost.toml"))}, false, 0, 0)
+	}, "/tmp/project/devhost.toml"))}, false, 0, 0, t.TempDir())
 	if error != nil {
 		t.Fatalf("renderHostRouteSnippet(...) missing-root unexpected error = %v", error)
 	}
 	if !strings.Contains(missingRootSnippet, "    error 404") {
 		t.Fatalf("renderHostRouteSnippet(...) missing root fallback = %q", missingRootSnippet)
+	}
+}
+
+func TestRenderHostRouteSnippetWithStackName(t *testing.T) {
+	registrations := []routeRegistration{
+		mustParseRouteRegistration(t, createRouteRegistrationText(ActivateRouteOptions{
+			AppBindHost: "127.0.0.1",
+			AppPort:     3001,
+			Host:        "hello.localhost",
+			Path:        "/",
+			ServiceName: "api",
+			StackName:   "my-awesome-stack",
+		}, "/tmp/project/devhost.toml")),
+	}
+
+	tempDir := t.TempDir()
+	routesDirectoryPath := filepath.Join(tempDir, "caddy", "routes")
+	snippet, error := renderHostRouteSnippet(registrations, true, 8080, 4443, routesDirectoryPath)
+	if error != nil {
+		t.Fatalf("renderHostRouteSnippet(...) unexpected error = %v", error)
+	}
+
+	// Verify the log block exists and points to the correct location
+	expectedLogPath := filepath.ToSlash(filepath.Join(tempDir, "caddy", "logs", "my-awesome-stack_access.log"))
+	expectedSnippet := `    log {
+        output file "` + expectedLogPath + `"
+    }`
+	if !strings.Contains(snippet, expectedSnippet) {
+		t.Fatalf("expected snippet to contain log configuration, got:\n%s\nExpected:\n%s", snippet, expectedSnippet)
 	}
 }
 
