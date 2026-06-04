@@ -147,6 +147,7 @@ func TestLogServiceURLs(t *testing.T) {
 		manifestValue := ResolvedManifest{
 			Caddy: manifest.CaddyConfig{Global: manifest.CaddyGlobalConfig{HTTPSPort: 443}},
 			Name:  "hello-stack",
+			PrimaryService: "web",
 			ServiceOrder: []string{"api", "web", "worker"},
 			Services: map[string]ResolvedService{
 				"api": {
@@ -176,7 +177,7 @@ func TestLogServiceURLs(t *testing.T) {
 
 		if output.String() != strings.Join([]string{
 			"[hello-stack] api: https://api.hello.localhost/v1/",
-			"[hello-stack] web: https://hello.localhost",
+			"[hello-stack] web (primary): https://hello.localhost",
 			"[hello-stack] worker: http://127.0.0.1:3200",
 			"",
 		}, "\n") {
@@ -351,7 +352,7 @@ func TestStartStackRetriesAutoPortAndPrefixesOutput(t *testing.T) {
 	if infoLines[0] != "[retry-stack] retrying web with a new auto port after a bind collision." {
 		t.Fatalf("retry log = %q", infoLines[0])
 	}
-	if infoLines[1] != fmt.Sprintf("[retry-stack] web: http://127.0.0.1:%d", *finalPort) {
+	if infoLines[1] != fmt.Sprintf("[retry-stack] web (primary): http://127.0.0.1:%d", *finalPort) {
 		t.Fatalf("service URL log = %q", infoLines[1])
 	}
 }
@@ -566,7 +567,7 @@ func TestStartStackActivatesRoutesAndCleansUpAfterExit(t *testing.T) {
 		t.Fatalf("trace = %q", trace)
 	}
 
-	if lines := nonEmptyLines(infoLog.String()); len(lines) != 1 || lines[0] != "[route-stack] web: https://hello.localhost" {
+	if lines := nonEmptyLines(infoLog.String()); len(lines) != 1 || lines[0] != "[route-stack] web (primary): https://hello.localhost" {
 		t.Fatalf("info lines = %#v", lines)
 	}
 
