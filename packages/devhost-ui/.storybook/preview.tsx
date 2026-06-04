@@ -1,3 +1,4 @@
+import React from "react";
 import type { Decorator, Preview } from "@storybook/react";
 
 import "../src/devtools/shared/devtools.css";
@@ -177,15 +178,18 @@ const withDevtoolsColorScheme: Decorator = (Story, context) => {
   const colorScheme: DevtoolsColorScheme = readStorybookDevtoolsColorScheme(context.globals);
   const previewTheme = readStorybookPreviewTheme(colorScheme);
 
-  document.documentElement.style.backgroundColor = previewTheme.backgroundColor;
-  document.documentElement.style.color = previewTheme.color;
-  document.documentElement.style.colorScheme = previewTheme.colorScheme;
-  document.body.style.backgroundColor = previewTheme.backgroundColor;
-  document.body.style.color = previewTheme.color;
-  document.body.style.colorScheme = previewTheme.colorScheme;
-  document.body.style.margin = "0";
-
-  return Story();
+  return (
+    <div
+      style={{
+        backgroundColor: previewTheme.backgroundColor,
+        color: previewTheme.color,
+        colorScheme: previewTheme.colorScheme,
+        minHeight: "100vh",
+      }}
+    >
+      <Story />
+    </div>
+  );
 };
 
 const preview: Preview = {
