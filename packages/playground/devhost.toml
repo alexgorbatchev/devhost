@@ -28,16 +28,22 @@ kind = "command"
 command = ["bun", "run", "build"]
 cwd = "."
 
-[services.web]
-primary = true
-command = ["bun", "run", "server"]
-cwd = "."
+[services.backend]
+command = ["bun", "run", "dev"]
+cwd = "backend"
 port = 3000
-#host = "devhost.localhost"
+host = "api-devbox.cvb.lol"
+
+[services.frontend]
+primary = true
+command = ["bun", "run", "dev"]
+cwd = "frontend"
+port = 3001
 host = "devhost-devbox.cvb.lol"
 
-[services.web.env]
+[services.frontend.env]
 NODE_ENV = "development"
+BUN_PUBLIC_API_URL = "https://api-devbox.cvb.lol"
 
 [services.agent-browser-dashboard]
 port = 4848
