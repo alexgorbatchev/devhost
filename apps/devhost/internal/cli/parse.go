@@ -35,6 +35,7 @@ type CommandLineArguments struct {
 	Action       CaddyLifecycleAction
 	SSHTarget    string
 	Verbose      bool
+	IdleTimeout  string
 }
 
 const caddyActionListText = "start, stop, trust, download, privileged-ports, print-root-cert, or trust-remote"
@@ -56,6 +57,7 @@ func ParseCommandLineArguments(rawArguments []string) (CommandLineArguments, err
 type manifestOptions struct {
 	ManifestPath *string `descr:"Explicit path to devhost.toml." env:"DEVHOST_MANIFEST" name:"manifest"`
 	Verbose      bool    `descr:"Print managed Caddy command output while running a stack." name:"verbose"`
+	IdleTimeout  string  `descr:"Idle timeout duration (e.g. 30s, 1m) before the stack automatically shuts down." env:"DEVHOST_IDLE_TIMEOUT" name:"idle-timeout" optional:"true"`
 }
 
 type trustRemoteOptions struct {
@@ -72,7 +74,12 @@ func createRootCommand(result *CommandLineArguments) boa.CmdT[manifestOptions] {
 				return error
 			}
 
-			*result = CommandLineArguments{Kind: KindManifest, ManifestPath: options.ManifestPath, Verbose: options.Verbose}
+			*result = CommandLineArguments{
+				Kind:         KindManifest,
+				ManifestPath: options.ManifestPath,
+				Verbose:      options.Verbose,
+				IdleTimeout:  options.IdleTimeout,
+			}
 			return nil
 		},
 		SubCmds: boa.SubCmds(
