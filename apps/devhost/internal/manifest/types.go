@@ -49,6 +49,11 @@ type DevtoolsConfig struct {
 	ExternalToolbars DevtoolsToggleConfig
 	Minimap          DevtoolsMinimapConfig
 	Status           DevtoolsStatusConfig
+	Shortcuts        DevtoolsShortcutsConfig // New table
+}
+
+type DevtoolsShortcutsConfig struct {
+	RestartServices string `descr:"Global keyboard shortcut for restarting services." name:"restart-services"`
 }
 
 type DevtoolsEditorConfig struct {
@@ -91,6 +96,7 @@ type ValidatedService struct {
 	Name       string
 	Path       *string
 	Port       *PortConfig
+	Watch      []string
 }
 
 type ServiceLifecycleConfig struct {

@@ -56,10 +56,12 @@ type RoutedServiceIdentity struct {
 }
 
 type ServiceHealth struct {
-	Managed bool    `json:"managed"`
-	Name    string  `json:"name"`
-	Status  bool    `json:"status"`
-	URL     *string `json:"url,omitempty"`
+	Managed    bool    `json:"managed"`
+	Name       string  `json:"name"`
+	Status     bool    `json:"status"`
+	URL        *string `json:"url,omitempty"`
+	Dirty      bool    `json:"dirty,omitempty"`
+	Restarting bool    `json:"restarting,omitempty"`
 }
 
 type HealthResponse struct {
@@ -91,7 +93,9 @@ type StartControlServerOptions struct {
 	ManifestPath               string
 	Position                   string
 	ProjectRootPath            string
-	RestartService             func(string) error
+	PrimaryService             string
+	RestartService             func([]string) error
+	RestartServicesShortcut    string
 	RoutedServices             []RoutedServiceIdentity
 	StateDirectoryPath         string
 	StartTerminalSession       terminalSessionStarter
@@ -108,7 +112,7 @@ type ControlServer struct {
 	featureToggles             FeatureToggles
 	idleTerminalSessionTimeout time.Duration
 	xtermStylesheet            string
-	restartService             func(string) error
+	restartService             func([]string) error
 	getHealth                  func() (HealthResponse, error)
 	annotationActions          []manifest.ValidatedAnnotationAction
 	projectRootPath            string
@@ -161,6 +165,8 @@ type injectedConfig struct {
 	AnnotationQueueEnabled    bool                       `json:"annotationQueueEnabled"`
 	TerminalEnabled           bool                       `json:"terminalEnabled"`
 	RoutedServices            []RoutedServiceIdentity    `json:"routedServices"`
+	RestartServicesShortcut   string                     `json:"restartServicesShortcut"`
+	PrimaryService            string                     `json:"primaryService"`
 }
 
 type injectedAnnotationAction struct {
@@ -171,7 +177,8 @@ type injectedAnnotationAction struct {
 }
 
 type restartServiceRequest struct {
-	ServiceName string `json:"serviceName"`
+	ServiceName  string   `json:"serviceName,omitempty"`
+	ServiceNames []string `json:"serviceNames,omitempty"`
 }
 
 type successResponse struct {
@@ -245,6 +252,8 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		StackName:                 options.StackName,
 		StatusEnabled:             options.FeatureToggles.StatusEnabled,
 		TerminalEnabled:           options.FeatureToggles.TerminalEnabled,
+		RestartServicesShortcut:   options.RestartServicesShortcut,
+		PrimaryService:            options.PrimaryService,
 	}
 	configJSON, err := json.Marshal(config)
 	if err != nil {
@@ -699,8 +708,18 @@ func (s *ControlServer) handleRestartService(writer http.ResponseWriter, request
 	}
 
 	var payload restartServiceRequest
-	if error := json.NewDecoder(request.Body).Decode(&payload); error != nil || payload.ServiceName == "" {
+	if error := json.NewDecoder(request.Body).Decode(&payload); error != nil {
 		http.Error(writer, "Invalid restart service payload.", http.StatusBadRequest)
+		return
+	}
+
+	serviceNames := payload.ServiceNames
+	if len(serviceNames) == 0 && payload.ServiceName != "" {
+		serviceNames = []string{payload.ServiceName}
+	}
+
+	if len(serviceNames) == 0 {
+		http.Error(writer, "Invalid restart service payload: no services specified.", http.StatusBadRequest)
 		return
 	}
 
@@ -709,7 +728,7 @@ func (s *ControlServer) handleRestartService(writer http.ResponseWriter, request
 		return
 	}
 
-	if error := s.restartService(payload.ServiceName); error != nil {
+	if error := s.restartService(serviceNames); error != nil {
 		http.Error(writer, error.Error(), http.StatusInternalServerError)
 		return
 	}

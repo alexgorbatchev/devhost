@@ -3,6 +3,7 @@ package manifest
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -348,6 +349,7 @@ func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 		ExternalToolbars: DevtoolsToggleConfig{Enabled: true},
 		Minimap:          DevtoolsMinimapConfig{Enabled: true},
 		Status:           DevtoolsStatusConfig{Enabled: true, Position: defaultDevtoolsStatusPosition},
+		Shortcuts:        DevtoolsShortcutsConfig{RestartServices: "alt+shift+r"},
 	}
 
 	if rawValue == nil {
@@ -359,7 +361,7 @@ func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 		return result
 	}
 
-	allowKeys(value, []string{"editor", "externalToolbars", "minimap", "status"}, "devtools", schemaIssues)
+	allowKeys(value, []string{"editor", "externalToolbars", "minimap", "status", "shortcuts"}, "devtools", schemaIssues)
 
 	if rawEditor := value["editor"]; rawEditor != nil {
 		editorValue, ok := readMap(rawEditor, "devtools.editor", schemaIssues)
@@ -410,6 +412,20 @@ func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 					result.Status.Position = position
 				} else {
 					*schemaIssues = append(*schemaIssues, "devtools.status.position must be top-right or bottom-right.")
+				}
+			}
+		}
+	}
+
+	if rawShortcuts := value["shortcuts"]; rawShortcuts != nil {
+		shortcutsValue, ok := readMap(rawShortcuts, "devtools.shortcuts", schemaIssues)
+		if ok {
+			allowKeys(shortcutsValue, []string{"restart-services"}, "devtools.shortcuts", schemaIssues)
+			if restartServices, ok := readOptionalString(shortcutsValue, "restart-services", schemaIssues); ok {
+				if isValidShortcut(restartServices) {
+					result.Shortcuts.RestartServices = restartServices
+				} else {
+					result.Shortcuts.RestartServices = "alt+shift+r"
 				}
 			}
 		}
@@ -500,7 +516,19 @@ func validateService(
 	schemaIssues *[]string,
 	validationIssues *[]string,
 ) (ValidatedService, bool) {
-	allowKeys(value, []string{"bindHost", "command", "cwd", "dependsOn", "env", "health", "host", "injectPort", "lifecycle", "managed", "path", "port", "primary"}, fmt.Sprintf("services.%s", serviceName), schemaIssues)
+	allowKeys(value, []string{"bindHost", "command", "cwd", "dependsOn", "env", "health", "host", "injectPort", "lifecycle", "managed", "path", "port", "primary", "watch"}, fmt.Sprintf("services.%s", serviceName), schemaIssues)
+
+	watch := []string{}
+	if watchValues, ok := readOptionalStringArray(value, "watch", schemaIssues); ok {
+		for _, p := range watchValues {
+			resolvedPath := filepath.Clean(filepath.Join(manifestDirectoryPath, p))
+			relativePath, err := filepath.Rel(manifestDirectoryPath, resolvedPath)
+			if err != nil || relativePath == ".." || strings.HasPrefix(relativePath, ".."+string(filepath.Separator)) {
+				fmt.Fprintf(os.Stderr, "WARNING: services.%s.watch path %q resolves outside the manifest directory %q\n", serviceName, p, manifestDirectoryPath)
+			}
+			watch = append(watch, p)
+		}
+	}
 
 	managed, hasManaged := readOptionalBool(value, "managed", schemaIssues)
 	if !hasManaged {
@@ -679,6 +707,7 @@ func validateService(
 		Name:       serviceName,
 		Path:       normalizedPath,
 		Port:       port,
+		Watch:      watch,
 	}, primary
 }
 
@@ -1260,4 +1289,25 @@ func contains(values []string, value string) bool {
 	}
 
 	return false
+}
+
+func isValidShortcut(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	parts := strings.Split(s, "+")
+	if len(parts) == 0 {
+		return false
+	}
+	for _, p := range parts {
+		if p == "" {
+			return false
+		}
+		for _, char := range p {
+			if !((char >= 'a' && char <= 'z') || (char >= '0' && char <= '9')) {
+				return false
+			}
+		}
+	}
+	return true
 }

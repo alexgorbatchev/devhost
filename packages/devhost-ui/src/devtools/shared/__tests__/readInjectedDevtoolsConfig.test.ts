@@ -29,6 +29,8 @@ describe("readInjectedDevtoolsConfig", () => {
       minimapEnabled: true,
       statusEnabled: true,
       terminalEnabled: true,
+      restartServicesShortcut: "alt+shift+r",
+      primaryService: "",
     });
   });
 
@@ -60,6 +62,8 @@ describe("readInjectedDevtoolsConfig", () => {
       minimapEnabled: true,
       statusEnabled: true,
       terminalEnabled: true,
+      restartServicesShortcut: "alt+shift+r",
+      primaryService: "",
     });
   });
 
@@ -84,6 +88,8 @@ describe("readInjectedDevtoolsConfig", () => {
       minimapEnabled: true,
       statusEnabled: true,
       terminalEnabled: true,
+      restartServicesShortcut: "alt+shift+r",
+      primaryService: "",
     });
   });
 
@@ -110,6 +116,8 @@ describe("readInjectedDevtoolsConfig", () => {
       minimapEnabled: true,
       statusEnabled: true,
       terminalEnabled: false,
+      restartServicesShortcut: "alt+shift+r",
+      primaryService: "",
     });
   });
 
@@ -141,6 +149,8 @@ describe("readInjectedDevtoolsConfig", () => {
       minimapEnabled: true,
       statusEnabled: true,
       terminalEnabled: true,
+      restartServicesShortcut: "alt+shift+r",
+      primaryService: "",
     });
   });
 });
