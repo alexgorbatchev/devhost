@@ -8,6 +8,10 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -80,6 +84,7 @@ type StartControlServerOptions struct {
 	AnnotationDefaultActionID  string
 	AnnotationActions          []manifest.ValidatedAnnotationAction
 	ComponentEditor            string
+	DevAssetsDir               string
 	FeatureToggles             FeatureToggles
 	GetHealthResponse          func() (HealthResponse, error)
 	IdleTerminalSessionTimeout time.Duration
@@ -111,6 +116,13 @@ type ControlServer struct {
 	startTerminalSession       terminalSessionStarter
 	annotationQueueStore       *annotationQueueStore
 	neovimShellIntegration     *neovimPluginShellIntegrationFiles
+
+	devAssetsDir   string
+	configJSON     []byte
+	ctx            context.Context
+	cancel         context.CancelFunc
+	buildMu        sync.Mutex
+	disableRebuild bool
 
 	mu                     sync.Mutex
 	isStopped              bool
@@ -240,7 +252,12 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		return nil, fmt.Errorf("marshal devtools config: %w", err)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
 	controlServer := &ControlServer{
+		ctx:                        ctx,
+		cancel:                     cancel,
+		devAssetsDir:               options.DevAssetsDir,
+		configJSON:                 configJSON,
 		annotationActions:          annotationActions,
 		componentEditor:            options.ComponentEditor,
 		controlToken:               controlToken,
@@ -475,6 +492,9 @@ func (s *ControlServer) Stop() error {
 		return nil
 	}
 	s.isStopped = true
+	if s.cancel != nil {
+		s.cancel()
+	}
 	healthClients := snapshotClients(s.healthClients)
 	logsClients := snapshotClients(s.logsClients)
 	annotationQueueClients := snapshotClients(s.annotationQueueClients)
@@ -508,15 +528,162 @@ func (s *ControlServer) Stop() error {
 	return shutdownError
 }
 
+func formatJSError(errLog string) string {
+	return fmt.Sprintf(`console.error("DEVHOST COMPILATION ERROR:\n" + %q);
+if (typeof document !== "undefined") {
+	const banner = document.createElement("div");
+	banner.style.position = "fixed";
+	banner.style.bottom = "0";
+	banner.style.left = "0";
+	banner.style.right = "0";
+	banner.style.background = "#ff3333";
+	banner.style.color = "white";
+	banner.style.padding = "16px";
+	banner.style.zIndex = "999999";
+	banner.style.fontFamily = "monospace";
+	banner.style.whiteSpace = "pre-wrap";
+	banner.style.fontSize = "14px";
+	banner.innerText = "DEVHOST COMPILATION ERROR:\n" + %q;
+	document.body.appendChild(banner);
+}`, errLog, errLog)
+}
+
+func (s *ControlServer) checkAndBuildAssets() (string, bool) {
+	srcDir := filepath.Join(s.projectRootPath, "packages/devhost-ui/src/devtools")
+	compiledPath := filepath.Join(s.devAssetsDir, "devtools.js")
+
+	s.buildMu.Lock()
+	defer s.buildMu.Unlock()
+
+	if s.disableRebuild {
+		return "", false
+	}
+
+	var maxModTime time.Time
+	walkErr := filepath.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		name := d.Name()
+		if strings.HasPrefix(name, ".") {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if strings.HasSuffix(name, ".test.ts") ||
+			strings.HasSuffix(name, ".test.tsx") ||
+			strings.HasSuffix(name, ".spec.ts") ||
+			strings.HasSuffix(name, ".spec.tsx") {
+			return nil
+		}
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
+		if info.ModTime().After(maxModTime) {
+			maxModTime = info.ModTime()
+		}
+		return nil
+	})
+
+	if walkErr != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Warning: failed to walk source assets directory: %v\n", walkErr)
+		return "", false
+	}
+
+	var needsBuild bool
+	compiledInfo, err := os.Stat(compiledPath)
+	if os.IsNotExist(err) {
+		needsBuild = true
+	} else if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Warning: failed to stat compiled assets: %v\n", err)
+		return "", false
+	} else if maxModTime.After(compiledInfo.ModTime()) {
+		needsBuild = true
+	}
+
+	if !needsBuild {
+		content, err := os.ReadFile(compiledPath)
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "Warning: failed to read compiled assets from disk: %v\n", err)
+			return "", false
+		}
+		return string(content), true
+	}
+
+	_, _ = fmt.Fprintln(os.Stderr, "[devhost] Changes detected in devtools UI source files. Rebuilding assets...")
+
+	cmd := exec.CommandContext(s.ctx, "bun", "run", "build:devtools-bundle:devhost")
+	cmd.Dir = s.projectRootPath
+
+	var stderr strings.Builder
+	cmd.Stderr = &stderr
+
+	runErr := cmd.Run()
+	if runErr != nil {
+		errLog := stderr.String()
+		if errLog == "" {
+			errLog = runErr.Error()
+		}
+		_, _ = fmt.Fprintf(os.Stderr, "[devhost] Compilation failed:\n%s\n", errLog)
+
+		jsError := formatJSError(errLog)
+		return jsError, true
+	}
+
+	_, err = os.Stat(compiledPath)
+	if os.IsNotExist(err) {
+		_, _ = fmt.Fprintln(os.Stderr, "Error: compilation completed successfully, but devtools.js is still missing from disk.")
+		s.disableRebuild = true
+		return "", false
+	}
+
+	content, err := os.ReadFile(compiledPath)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Warning: failed to read newly compiled assets: %v\n", err)
+		return "", false
+	}
+
+	return string(content), true
+}
+
 func (s *ControlServer) handleInjectedScript(writer http.ResponseWriter, _ *http.Request) {
 	writer.Header().Set("cache-control", cacheControlNoStore)
 	writer.Header().Set("content-type", applicationJavascriptContentType)
-	_, _ = writer.Write([]byte(s.devtoolsScript))
+
+	var script string
+	var ok bool
+
+	if s.devAssetsDir != "" {
+		script, ok = s.checkAndBuildAssets()
+	}
+
+	if ok {
+		fullScript := fmt.Sprintf("globalThis.__DEVHOST_INJECTED_CONFIG__=%s;\n%s", string(s.configJSON), script)
+		_, _ = writer.Write([]byte(fullScript))
+	} else {
+		_, _ = writer.Write([]byte(s.devtoolsScript))
+	}
 }
 
 func (s *ControlServer) handleXtermStylesheet(writer http.ResponseWriter, _ *http.Request) {
 	writer.Header().Set("cache-control", cacheControlNoStore)
 	writer.Header().Set("content-type", textCSSContentType)
+
+	if s.devAssetsDir != "" {
+		compiledPath := filepath.Join(s.devAssetsDir, "xterm.css")
+		content, err := os.ReadFile(compiledPath)
+		if err == nil {
+			_, _ = writer.Write(content)
+			return
+		}
+		_, _ = fmt.Fprintf(os.Stderr, "Warning: failed to read xterm.css from disk: %v\n", err)
+	}
+
 	_, _ = writer.Write([]byte(s.xtermStylesheet))
 }
 
