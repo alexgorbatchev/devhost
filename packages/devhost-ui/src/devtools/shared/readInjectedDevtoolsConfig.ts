@@ -45,7 +45,7 @@ const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
   minimapEnabled: true,
   statusEnabled: true,
   terminalEnabled: true,
-  restartServicesShortcut: "alt+shift+r",
+  restartServicesShortcut: "alt+ctrl+r",
   primaryService: "",
 };
 
@@ -243,7 +243,7 @@ function readRestartServicesShortcutValue(injectedConfig: object): string {
 
   return typeof restartServicesShortcut === "string" && restartServicesShortcut.length > 0
     ? restartServicesShortcut
-    : "alt+shift+r";
+    : "alt+ctrl+r";
 }
 
 function readPrimaryServiceValue(injectedConfig: object): string {

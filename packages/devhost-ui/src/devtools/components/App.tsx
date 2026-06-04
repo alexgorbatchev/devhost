@@ -94,7 +94,7 @@ function AppContent(): JSX.Element {
 
   useEffect(() => {
     const handleKeyDown = async (event: KeyboardEvent) => {
-      if (!parseAndMatchShortcut(restartServicesShortcut || "alt+shift+r", event)) {
+      if (!parseAndMatchShortcut(restartServicesShortcut || "alt+ctrl+r", event)) {
         return;
       }
 
