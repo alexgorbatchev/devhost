@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -43,15 +44,31 @@ type WatchManager struct {
 	debounceTimers map[string]*time.Timer
 	timersMu       sync.Mutex
 	onDirty        func(string)
+	logWriter      io.Writer
+	manifestName   string
 }
 
-func NewWatchManager(tracker *DirtyTracker, onDirty func(string)) *WatchManager {
+func NewWatchManager(tracker *DirtyTracker, onDirty func(string), logWriter io.Writer, manifestName string) *WatchManager {
 	return &WatchManager{
 		tracker:        tracker,
 		watchers:       make(map[string]*fsnotify.Watcher),
 		debounceTimers: make(map[string]*time.Timer),
 		onDirty:        onDirty,
+		logWriter:      logWriter,
+		manifestName:   manifestName,
 	}
+}
+
+func (wm *WatchManager) writeLog(message string) {
+	if wm.logWriter == nil {
+		_, _ = fmt.Fprintln(os.Stderr, message)
+		return
+	}
+	trimmedLabel := strings.TrimSpace(wm.manifestName)
+	if trimmedLabel == "" {
+		trimmedLabel = "devhost"
+	}
+	_, _ = fmt.Fprintf(wm.logWriter, "[%s] %s\n", trimmedLabel, message)
 }
 
 var excludedDirectories = map[string]bool{
@@ -72,7 +89,7 @@ func isExcludedDir(name string) bool {
 	return excludedDirectories[name]
 }
 
-func watchDirectoryRecursive(watcher *fsnotify.Watcher, root string) error {
+func (wm *WatchManager) watchDirectoryRecursive(watcher *fsnotify.Watcher, root string) error {
 	return filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -84,7 +101,7 @@ func watchDirectoryRecursive(watcher *fsnotify.Watcher, root string) error {
 			err := watcher.Add(path)
 			if err != nil {
 				if isLimitError(err) {
-					logLimitWarning()
+					wm.logLimitWarning()
 					return filepath.SkipDir
 				}
 				return err
@@ -96,10 +113,10 @@ func watchDirectoryRecursive(watcher *fsnotify.Watcher, root string) error {
 
 var limitWarningLogged sync.Once
 
-func logLimitWarning() {
+func (wm *WatchManager) logLimitWarning() {
 	limitWarningLogged.Do(func() {
-		fmt.Fprintln(os.Stderr, "WARNING: File watching limit reached (no space left on device or too many open files).")
-		fmt.Fprintln(os.Stderr, "To increase watch limits, run: `sudo sysctl -w fs.inotify.max_user_watches=524288`")
+		wm.writeLog("WARNING: File watching limit reached (no space left on device or too many open files).")
+		wm.writeLog("To increase watch limits, run: `sudo sysctl -w fs.inotify.max_user_watches=524288`")
 	})
 }
 
@@ -124,7 +141,7 @@ func containsAny(s string, sub ...string) bool {
 	return false
 }
 
-func (wm *WatchManager) StartWatching(serviceName string, watchPaths []string, manifestDir string) error {
+func (wm *WatchManager) StartWatching(serviceName string, watchPaths []string, baseDir string) error {
 	if len(watchPaths) == 0 {
 		return nil
 	}
@@ -137,19 +154,19 @@ func (wm *WatchManager) StartWatching(serviceName string, watchPaths []string, m
 	wm.watchers[serviceName] = watcher
 
 	for _, p := range watchPaths {
-		absPath := filepath.Clean(filepath.Join(manifestDir, p))
+		absPath := filepath.Clean(filepath.Join(baseDir, p))
 		info, err := os.Stat(absPath)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "WARNING: watch path %q for service %s does not exist\n", absPath, serviceName)
+			wm.writeLog(fmt.Sprintf("WARNING: watch path %q for service %s does not exist", absPath, serviceName))
 			continue
 		}
 
 		if info.IsDir() {
-			err = watchDirectoryRecursive(watcher, absPath)
+			err = wm.watchDirectoryRecursive(watcher, absPath)
 		} else {
 			err = watcher.Add(absPath)
 			if err != nil && isLimitError(err) {
-				logLimitWarning()
+				wm.logLimitWarning()
 				err = nil
 			}
 		}
@@ -173,9 +190,9 @@ func (wm *WatchManager) StartWatching(serviceName string, watchPaths []string, m
 					return
 				}
 				if isLimitError(err) {
-					logLimitWarning()
+					wm.logLimitWarning()
 				} else {
-					fmt.Fprintf(os.Stderr, "watcher error for service %s: %v\n", serviceName, err)
+					wm.writeLog(fmt.Sprintf("watcher error for service %s: %v", serviceName, err))
 				}
 			}
 		}
@@ -190,7 +207,7 @@ func (wm *WatchManager) handleEvent(serviceName string, event fsnotify.Event) {
 		if err == nil && info.IsDir() {
 			if !isExcludedDir(info.Name()) {
 				if watcher, ok := wm.watchers[serviceName]; ok {
-					_ = watchDirectoryRecursive(watcher, event.Name)
+					_ = wm.watchDirectoryRecursive(watcher, event.Name)
 				}
 			}
 		}

@@ -40,7 +40,7 @@ func TestWatchManagerDebounceAndDynamicDir(t *testing.T) {
 	dirtyCh := make(chan string, 10)
 	wm := NewWatchManager(tracker, func(svc string) {
 		dirtyCh <- svc
-	})
+	}, nil, "")
 	defer wm.StopAll()
 
 	err = wm.StartWatching("web", []string{"src/"}, tmpDir)
