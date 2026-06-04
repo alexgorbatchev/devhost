@@ -5,6 +5,8 @@ export type ServiceHealth = {
   name: string;
   status: boolean;
   url?: string;
+  dirty?: boolean; // Indicates file changes have been detected
+  restarting?: boolean; // Indicates service is actively in process of restarting
 };
 
 export type HealthResponse = {

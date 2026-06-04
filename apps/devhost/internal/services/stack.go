@@ -147,11 +147,31 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	var devtoolsControlServer *devtools.ControlServer
 	var cleanupError error
 
+	dirtyTracker := NewDirtyTracker()
+	onDirty := func(serviceName string) {
+		if devtoolsControlServer != nil {
+			_ = devtoolsControlServer.PublishHealthResponse()
+		}
+	}
+	watchManager := NewWatchManager(dirtyTracker, onDirty)
+
+	for _, s := range manifest.Services {
+		if len(s.Watch) > 0 {
+			if err := watchManager.StartWatching(s.Name, s.Watch, manifest.ManifestDirectoryPath); err != nil {
+				fmt.Fprintf(os.Stderr, "WARNING: failed to start watching for service %s: %v\n", s.Name, err)
+			}
+		}
+	}
+
 	managedCaddyAdminAddress := caddy.ResolveManagedCaddyAdminAddress(manifest.Caddy.Global.AdminAddress)
 	registerProcessSignals(signalExits)
 	defer unregisterProcessSignals(signalExits)
 
 	defer func() {
+		if watchManager != nil {
+			watchManager.StopAll()
+		}
+
 		startedServicesMu.Lock()
 		startedServicesSnapshot := append([]*startedService{}, startedServices...)
 		startedServicesMu.Unlock()
@@ -280,69 +300,113 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 				startedServicesMu.Lock()
 				startedServicesSnapshot := append([]*startedService{}, startedServices...)
 				startedServicesMu.Unlock()
-				return collectServicesHealth(*manifest, startedServicesSnapshot), nil
+				return collectServicesHealth(*manifest, startedServicesSnapshot, dirtyTracker), nil
 			},
 			ManifestPath:    manifest.ManifestPath,
 			Position:        manifest.Devtools.Status.Position,
 			ProjectRootPath: manifest.ManifestDirectoryPath,
-			RestartService: func(serviceName string) error {
-				service, ok := manifest.Services[serviceName]
-				if !ok {
-					return fmt.Errorf("unknown service: %s", serviceName)
+			PrimaryService:  manifest.PrimaryService,
+			RestartService: func(serviceNames []string) error {
+				// Sort requested list based on their positions in serviceOrder
+				orderMap := make(map[string]int)
+				for i, name := range serviceOrder {
+					orderMap[name] = i
 				}
-				if !isManagedService(service) {
-					return fmt.Errorf("service %s is unmanaged and cannot be restarted by devhost", serviceName)
-				}
+				sort.Slice(serviceNames, func(i, j int) bool {
+					return orderMap[serviceNames[i]] < orderMap[serviceNames[j]]
+				})
 
-				if usesDaemonLifecycle(service) {
-					startedDaemonServicesMu.Lock()
-					hadStartedDaemon := hasStartedDaemonLifecycleService(startedDaemonServices, serviceName)
-					startedDaemonServicesMu.Unlock()
-					if hadStartedDaemon {
-						if error := stopDaemonLifecycleService(*manifest, service, options, environment, devtoolsControlServer); error != nil {
+				for _, serviceName := range serviceNames {
+					service, ok := manifest.Services[serviceName]
+					if !ok {
+						return fmt.Errorf("unknown service: %s", serviceName)
+					}
+					if !isManagedService(service) {
+						return fmt.Errorf("service %s is unmanaged and cannot be restarted by devhost", serviceName)
+					}
+
+					// Immediately reset dirty status and cancel timers
+					dirtyTracker.SetDirty(serviceName, false)
+					if watchManager != nil {
+						watchManager.CancelTimer(serviceName)
+					}
+
+					if usesDaemonLifecycle(service) {
+						if devtoolsControlServer != nil {
+							_ = devtoolsControlServer.PublishHealthResponse()
+						}
+
+						startedDaemonServicesMu.Lock()
+						hadStartedDaemon := hasStartedDaemonLifecycleService(startedDaemonServices, serviceName)
+						startedDaemonServicesMu.Unlock()
+						if hadStartedDaemon {
+							if error := stopDaemonLifecycleService(*manifest, service, options, environment, devtoolsControlServer); error != nil {
+								return error
+							}
+						}
+
+						if error := startDaemonLifecycleService(manifest, serviceName, options, environment, devtoolsControlServer); error != nil {
 							return error
 						}
+
+						startedDaemonServicesMu.Lock()
+						startedDaemonServices = upsertStartedDaemonLifecycleService(startedDaemonServices, manifest.Services[serviceName])
+						startedDaemonServicesMu.Unlock()
+					} else {
+						startedServicesMu.Lock()
+						targetStartedService := findStartedService(startedServices, serviceName)
+						if targetStartedService != nil {
+							targetStartedService.setRestarting(true)
+						}
+						startedServicesMu.Unlock()
+
+						if devtoolsControlServer != nil {
+							_ = devtoolsControlServer.PublishHealthResponse()
+						}
+
+						if targetStartedService != nil {
+							if error := stopStartedService(targetStartedService, gracePeriod); error != nil {
+								return error
+							}
+							startedServicesMu.Lock()
+							startedServices = removeStartedService(startedServices, targetStartedService)
+							startedServicesMu.Unlock()
+						}
+
+						restartedService, restartError := startServiceWithRetries(manifest, serviceName, serviceExits, options, environment, devtoolsControlServer)
+						if restartError != nil {
+							return restartError
+						}
+
+						startedServicesMu.Lock()
+						startedServices = append(startedServices, restartedService)
+						startedServicesMu.Unlock()
 					}
 
-					if error := startDaemonLifecycleService(manifest, serviceName, options, environment, devtoolsControlServer); error != nil {
-						return error
+					// Wait for health check to pass successfully before continuing to next service
+					if service.Health.Kind != "" {
+						retries := service.Health.Retries
+						intervalMs := service.Health.Interval * 1000
+
+						healthy := false
+						for r := 0; r <= retries; r++ {
+							if CheckServiceHealth(service.Health) {
+								healthy = true
+								break
+							}
+							time.Sleep(time.Duration(intervalMs) * time.Millisecond)
+						}
+						if !healthy {
+							return fmt.Errorf("service %s did not become healthy within the timeout", serviceName)
+						}
 					}
-
-					startedDaemonServicesMu.Lock()
-					startedDaemonServices = upsertStartedDaemonLifecycleService(startedDaemonServices, manifest.Services[serviceName])
-					startedDaemonServicesMu.Unlock()
-					return nil
 				}
-
-				startedServicesMu.Lock()
-				targetStartedService := findStartedService(startedServices, serviceName)
-				if targetStartedService != nil {
-					targetStartedService.setRestarting(true)
-				}
-				startedServicesMu.Unlock()
-
-				if targetStartedService != nil {
-					if error := stopStartedService(targetStartedService, gracePeriod); error != nil {
-						return error
-					}
-					startedServicesMu.Lock()
-					startedServices = removeStartedService(startedServices, targetStartedService)
-					startedServicesMu.Unlock()
-				}
-
-				restartedService, restartError := startServiceWithRetries(manifest, serviceName, serviceExits, options, environment, devtoolsControlServer)
-				if restartError != nil {
-					return restartError
-				}
-
-				startedServicesMu.Lock()
-				startedServices = append(startedServices, restartedService)
-				startedServicesMu.Unlock()
 				return nil
 			},
-			RoutedServices:     routedServices,
-			StateDirectoryPath: paths.StateDirectoryPath,
-			StackName:          manifest.Name,
+			RestartServicesShortcut: manifest.Devtools.Shortcuts.RestartServices,
+			RoutedServices:          routedServices,
+			StateDirectoryPath:      paths.StateDirectoryPath,
+			StackName:               manifest.Name,
 		})
 		if error != nil {
 			return 0, joinCleanupError(error, cleanupError)
@@ -1236,7 +1300,7 @@ func isRootCompatibleServicePath(path *string) bool {
 	return path == nil || *path == "/" || *path == "/*"
 }
 
-func collectServicesHealth(manifest ResolvedManifest, startedServices []*startedService) devtools.HealthResponse {
+func collectServicesHealth(manifest ResolvedManifest, startedServices []*startedService, dirtyTracker *DirtyTracker) devtools.HealthResponse {
 	startedServicesByName := map[string]*startedService{}
 	for _, startedService := range startedServices {
 		if startedService == nil {
@@ -1271,11 +1335,23 @@ func collectServicesHealth(manifest ResolvedManifest, startedServices []*started
 			status = CheckServiceHealth(service.Health)
 		}
 
+		dirty := false
+		if dirtyTracker != nil {
+			dirty = dirtyTracker.IsDirty(service.Name)
+		}
+
+		restarting := false
+		if startedService != nil {
+			restarting = startedService.isRestartingValue()
+		}
+
 		services = append(services, devtools.ServiceHealth{
-			Managed: managed,
-			Name:   service.Name,
-			Status: status,
-			URL:    readManagedServiceURL(service, manifest.Caddy.Global.HTTPSPort),
+			Managed:    managed,
+			Name:       service.Name,
+			Status:     status,
+			URL:        readManagedServiceURL(service, manifest.Caddy.Global.HTTPSPort),
+			Dirty:      dirty,
+			Restarting: restarting,
 		})
 	}
 

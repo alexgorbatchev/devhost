@@ -10,6 +10,7 @@ const normalClosureCode: number = 1_000;
 
 interface IUseServiceHealthResult {
   errorMessage: string | null;
+  setErrorMessage: (message: string | null) => void;
   services: ServiceHealth[];
 }
 
@@ -69,6 +70,7 @@ export function useServiceHealth(): IUseServiceHealthResult {
 
   return {
     errorMessage,
+    setErrorMessage,
     services,
   };
 }
@@ -100,12 +102,16 @@ function isHealthResponse(value: unknown): value is HealthResponse {
     }
 
     const url: unknown = Reflect.get(service, "url");
+    const dirty: unknown = Reflect.get(service, "dirty");
+    const restarting: unknown = Reflect.get(service, "restarting");
 
     return (
       typeof Reflect.get(service, "managed") === "boolean" &&
       typeof Reflect.get(service, "name") === "string" &&
       typeof Reflect.get(service, "status") === "boolean" &&
-      (typeof url === "string" || url === undefined)
+      (typeof url === "string" || url === undefined) &&
+      (typeof dirty === "boolean" || dirty === undefined) &&
+      (typeof restarting === "boolean" || restarting === undefined)
     );
   });
 }

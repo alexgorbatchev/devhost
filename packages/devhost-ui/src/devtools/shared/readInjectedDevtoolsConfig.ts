@@ -25,6 +25,8 @@ export interface IInjectedDevtoolsConfig {
   minimapEnabled: boolean;
   statusEnabled: boolean;
   terminalEnabled: boolean;
+  restartServicesShortcut?: string;
+  primaryService?: string;
 }
 
 const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
@@ -43,6 +45,8 @@ const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
   minimapEnabled: true,
   statusEnabled: true,
   terminalEnabled: true,
+  restartServicesShortcut: "alt+shift+r",
+  primaryService: "",
 };
 
 export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
@@ -75,6 +79,8 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
   const minimapEnabled: boolean = readBooleanValue(injectedConfig, "minimapEnabled", true);
   const statusEnabled: boolean = readBooleanValue(injectedConfig, "statusEnabled", true);
   const terminalEnabled: boolean = readBooleanValue(injectedConfig, "terminalEnabled", true);
+  const restartServicesShortcut: string = readRestartServicesShortcutValue(injectedConfig);
+  const primaryService: string = readPrimaryServiceValue(injectedConfig);
 
   return {
     annotationActions,
@@ -92,6 +98,8 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
     minimapEnabled,
     statusEnabled,
     terminalEnabled,
+    restartServicesShortcut,
+    primaryService,
   };
 }
 
@@ -228,4 +236,18 @@ function readStackNameValue(injectedConfig: object): string {
 function readBooleanValue(injectedConfig: object, key: string, defaultValue: boolean): boolean {
   const value = Reflect.get(injectedConfig, key);
   return typeof value === "boolean" ? value : defaultValue;
+}
+
+function readRestartServicesShortcutValue(injectedConfig: object): string {
+  const restartServicesShortcut: unknown = Reflect.get(injectedConfig, "restartServicesShortcut");
+
+  return typeof restartServicesShortcut === "string" && restartServicesShortcut.length > 0
+    ? restartServicesShortcut
+    : "alt+shift+r";
+}
+
+function readPrimaryServiceValue(injectedConfig: object): string {
+  const primaryService: unknown = Reflect.get(injectedConfig, "primaryService");
+
+  return typeof primaryService === "string" && primaryService.length > 0 ? primaryService : "";
 }
