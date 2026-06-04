@@ -1,7 +1,9 @@
 {
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "packages/playground/backend",
+    "packages/playground/frontend"
   ],
   "type": "module",
   "scripts": {
