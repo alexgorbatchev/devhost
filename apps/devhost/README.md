@@ -131,6 +131,15 @@ bun run compile:devhost
 
 That build refreshes the embedded injected devtools bundle with Bun and writes the CLI binary to `apps/devhost/dist/devhost` with the version from `apps/devhost/metadata.json` embedded into `devhost --version`.
 
+## Frontend UI development
+
+If you are modifying the injected browser devtools UI (`packages/devhost-ui/`) and want to test your changes instantly without manually rebuilding the Go app or restarting the service stack, you can use the built-in on-demand asset dev loop:
+
+1. Set the `DEVHOST_DEV_ASSETS_DIR` environment variable to your compiled asset directory (e.g. `apps/devhost/internal/devtools/dist` relative to the manifest directory).
+2. On every browser page refresh, `devhost` checks if any source files in `packages/devhost-ui/src/devtools/` are newer than the compiled `devtools.js` on disk.
+3. If changes are detected, `devhost` automatically serializes and triggers a background build via `bun run build:devtools-bundle:devhost`, and blocks to serve the freshly built assets.
+4. If filesystem reads, walking checks, or background compilation fail, the server logs a warning and falls back seamlessly to serving the compile-time embedded assets.
+
 ## AI bootstrap skill
 
 To install the manifest-authoring bootstrap skill from this repository:
