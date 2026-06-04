@@ -1170,3 +1170,97 @@ func waitForCondition(t *testing.T, timeout time.Duration, condition func() bool
 
 	t.Fatal("condition did not become true before timeout")
 }
+
+func TestControlServerDevAssetsDir(t *testing.T) {
+	t.Parallel()
+
+	projectRoot := t.TempDir()
+	devAssetsDir := t.TempDir()
+
+	srcDir := filepath.Join(projectRoot, "packages", "devhost-ui", "src", "devtools")
+	if err := os.MkdirAll(srcDir, 0755); err != nil {
+		t.Fatalf("failed to create src dir: %v", err)
+	}
+
+	controlServer, err := StartControlServer(StartControlServerOptions{
+		ComponentEditor: "vscode",
+		DevAssetsDir:   devAssetsDir,
+		FeatureToggles: FeatureToggles{
+			StatusEnabled: true,
+		},
+		GetHealthResponse: func() (HealthResponse, error) {
+			return HealthResponse{Services: []ServiceHealth{}}, nil
+		},
+		Position:        "bottom-right",
+		ProjectRootPath: projectRoot,
+		StackName:       "test-assets-stack",
+	})
+	if err != nil {
+		t.Fatalf("failed to start control server: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = controlServer.Stop()
+	})
+
+	injectResp, err := http.Get(serverURL(controlServer.Port(), injectedScriptPath))
+	if err != nil {
+		t.Fatalf("failed to get inject.js: %v", err)
+	}
+	defer injectResp.Body.Close()
+	injectBody := readResponseText(t, injectResp)
+	if !strings.Contains(injectBody, "globalThis.__DEVHOST_INJECTED_CONFIG__") {
+		t.Fatalf("expected embedded injectBody, got: %s", injectBody)
+	}
+
+	xtermResp, err := http.Get(serverURL(controlServer.Port(), xtermStylesheetPath))
+	if err != nil {
+		t.Fatalf("failed to get xterm.css: %v", err)
+	}
+	defer xtermResp.Body.Close()
+	xtermBody := readResponseText(t, xtermResp)
+	if !strings.Contains(xtermBody, ".xterm") {
+		t.Fatalf("expected embedded xtermBody, got: %s", xtermBody)
+	}
+
+	dummyJS := "console.log('from disk');"
+	if err := os.WriteFile(filepath.Join(devAssetsDir, "devtools.js"), []byte(dummyJS), 0644); err != nil {
+		t.Fatalf("failed to write devtools.js: %v", err)
+	}
+	dummyCSS := "/* css from disk */"
+	if err := os.WriteFile(filepath.Join(devAssetsDir, "xterm.css"), []byte(dummyCSS), 0644); err != nil {
+		t.Fatalf("failed to write xterm.css: %v", err)
+	}
+
+	dummySrcPath := filepath.Join(srcDir, "main.ts")
+	if err := os.WriteFile(dummySrcPath, []byte("export {}"), 0644); err != nil {
+		t.Fatalf("failed to write source file: %v", err)
+	}
+
+	now := time.Now()
+	if err := os.Chtimes(dummySrcPath, now.Add(-time.Hour), now.Add(-time.Hour)); err != nil {
+		t.Fatalf("failed to set source modtime: %v", err)
+	}
+	if err := os.Chtimes(filepath.Join(devAssetsDir, "devtools.js"), now, now); err != nil {
+		t.Fatalf("failed to set devtools.js modtime: %v", err)
+	}
+
+	injectResp2, err := http.Get(serverURL(controlServer.Port(), injectedScriptPath))
+	if err != nil {
+		t.Fatalf("failed to get inject.js: %v", err)
+	}
+	defer injectResp2.Body.Close()
+	injectBody2 := readResponseText(t, injectResp2)
+	if !strings.Contains(injectBody2, "from disk") {
+		t.Fatalf("expected disk script, got: %s", injectBody2)
+	}
+
+	xtermResp2, err := http.Get(serverURL(controlServer.Port(), xtermStylesheetPath))
+	if err != nil {
+		t.Fatalf("failed to get xterm.css: %v", err)
+	}
+	defer xtermResp2.Body.Close()
+	xtermBody2 := readResponseText(t, xtermResp2)
+	if !strings.Contains(xtermBody2, "css from disk") {
+		t.Fatalf("expected disk css, got: %s", xtermBody2)
+	}
+}

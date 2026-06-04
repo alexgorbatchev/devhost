@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"path/filepath"
 	"os/exec"
 	"os/signal"
 	"runtime"
@@ -255,10 +256,19 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 
 	routedServices := collectRoutedServiceIdentities(manifest.Services)
 	if devtoolsEnabled && len(routedServices) > 0 {
+		devAssetsDir := environment["DEVHOST_DEV_ASSETS_DIR"]
+		if devAssetsDir == "" {
+			devAssetsDir = os.Getenv("DEVHOST_DEV_ASSETS_DIR")
+		}
+		if devAssetsDir != "" && !filepath.IsAbs(devAssetsDir) {
+			devAssetsDir = filepath.Join(manifest.ManifestDirectoryPath, devAssetsDir)
+		}
+
 		controlServer, error := startDevtoolsControlServer(devtools.StartControlServerOptions{
 			AnnotationActions:         manifest.Annotation.Actions,
 			AnnotationDefaultActionID: manifest.Annotation.DefaultActionID,
 			ComponentEditor:           manifest.Devtools.Editor.IDE,
+			DevAssetsDir:               devAssetsDir,
 			FeatureToggles:            runtimeDevtoolsFeatures,
 			GetHealthResponse: func() (devtools.HealthResponse, error) {
 				startedServicesMu.Lock()

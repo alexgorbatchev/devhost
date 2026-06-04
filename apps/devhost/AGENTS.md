@@ -64,6 +64,8 @@ The human-only `fmt` script runs `oxfmt --write` for the repo using the shared r
 
 `scripts/buildDevtoolsBundle.ts` refreshes the generated injected devtools assets under `internal/devtools/dist/` used by Go `//go:embed`. That `dist/` directory is intentionally ignored; do not commit its generated `devtools.js` or `xterm.css` files.
 
+To speed up frontend UI development, you can configure the on-demand asset dev loop by setting the `DEVHOST_DEV_ASSETS_DIR` environment variable to point to your compiled asset directory (e.g. `apps/devhost/internal/devtools/dist`). When configured, requesting `/__devhost__/inject.js` will automatically check if any source files under `packages/devhost-ui/src/devtools/` are newer than the compiled asset, serialize and trigger a background build via `bun run build:devtools-bundle:devhost`, and serve the fresh asset on demand. This allows you to simply reload your browser page to compile and view your UI changes on the fly. If file reads or compilation fail, the server gracefully falls back to serving the embedded assets.
+
 `bun run build:release-artifacts:devhost` refreshes that bundle, cross-compiles the supported Go release targets, embeds the current `metadata.json` version into `devhost --version`, and writes versioned `.tar.gz` archives to `apps/devhost/dist/release/`.
 
 `bun run compile:devhost` refreshes that bundle, embeds the current `metadata.json` version into `devhost --version`, then writes the current-platform executable to `apps/devhost/dist/devhost`.
