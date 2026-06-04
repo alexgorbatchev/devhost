@@ -135,6 +135,23 @@ func TestValidateManifestAcceptsAnnotationActions(t *testing.T) {
 	}
 }
 
+func TestValidateManifestAcceptsIdleTimeout(t *testing.T) {
+	t.Parallel()
+
+	manifest, error := ValidateManifest(filepath.Join(string(filepath.Separator), "tmp", "project", "devhost.toml"), rawManifestWithServices(map[string]any{
+		"devtools": map[string]any{
+			"idleTimeout": "5m",
+		},
+	}))
+	if error != nil {
+		t.Fatalf("ValidateManifest(...) unexpected error = %v", error)
+	}
+
+	if manifest.Devtools.IdleTimeout != "5m" {
+		t.Fatalf("manifest.Devtools.IdleTimeout = %q, want %q", manifest.Devtools.IdleTimeout, "5m")
+	}
+}
+
 func TestValidateManifestAcceptsDocumentedFixtureShape(t *testing.T) {
 	t.Parallel()
 
@@ -177,6 +194,13 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 		manifest  RawManifest
 		wantError string
 	}{
+		{
+			name: "rejects invalid devtools.idleTimeout",
+			manifest: rawManifestWithServices(map[string]any{
+				"devtools": map[string]any{"idleTimeout": "invalid_duration"},
+			}),
+			wantError: "devtools.idleTimeout must be a valid duration",
+		},
 		{
 			name: "rejects unsupported caddy bind host",
 			manifest: rawManifestWithServices(map[string]any{

@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cli"
@@ -82,11 +83,22 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			return 1
 		}
 
+		var idleTimeout time.Duration
+		if arguments.IdleTimeout != "" {
+			parsed, err := time.ParseDuration(arguments.IdleTimeout)
+			if err != nil {
+				_, _ = fmt.Fprintf(stderr, "failed: invalid idle-timeout: %s\n", err.Error())
+				return 1
+			}
+			idleTimeout = parsed
+		}
+
 		startOptions := services.StartStackOptions{
 			Environment:         readEnvironment(),
 			LogWriter:           stdout,
 			ServiceStdoutWriter: stdout,
 			ServiceStderrWriter: stderr,
+			IdleTimeout:         idleTimeout,
 		}
 		if arguments.Verbose {
 			startOptions.CaddyOutputWriters = caddy.RouteCommandOutputWriters{

@@ -111,6 +111,7 @@ type ControlServer struct {
 	startTerminalSession       terminalSessionStarter
 	annotationQueueStore       *annotationQueueStore
 	neovimShellIntegration     *neovimPluginShellIntegrationFiles
+	tracker                    *ActivityTracker
 
 	mu                     sync.Mutex
 	isStopped              bool
@@ -129,8 +130,10 @@ type ControlServer struct {
 }
 
 type websocketClient struct {
-	conn    *websocket.Conn
-	writeMu sync.Mutex
+	conn      *websocket.Conn
+	writeMu   sync.Mutex
+	closeOnce sync.Once
+	tracker   *ActivityTracker
 }
 
 type injectedConfig struct {
@@ -260,6 +263,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		startTerminalSession:       options.StartTerminalSession,
 		terminalSessions:           map[string]*terminalSessionState{},
 		xtermStylesheet:            xtermStylesheet,
+		tracker:                    NewActivityTracker(),
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(*http.Request) bool {
 				return true
@@ -361,7 +365,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	mux.HandleFunc(restartServicePath, controlServer.handleRestartService)
 	mux.HandleFunc(healthWebsocketPath, controlServer.handleHealthWebsocket)
 	mux.HandleFunc(logsWebsocketPath, controlServer.handleLogsWebsocket)
-	controlServer.server = &http.Server{Handler: mux}
+	controlServer.server = &http.Server{Handler: controlServer.trackerMiddleware(mux)}
 
 	controlServer.serverWG.Add(2)
 	go func() {
@@ -415,6 +419,17 @@ func createInjectedAnnotationActions(actions []manifest.ValidatedAnnotationActio
 
 func (s *ControlServer) Port() int {
 	return s.listener.Addr().(*net.TCPAddr).Port
+}
+
+func (s *ControlServer) Tracker() *ActivityTracker {
+	return s.tracker
+}
+
+func (s *ControlServer) trackerMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s.tracker.RecordActivity()
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (s *ControlServer) PublishHealthResponse() error {
@@ -682,7 +697,8 @@ func (s *ControlServer) upgrade(writer http.ResponseWriter, request *http.Reques
 		return nil, error
 	}
 
-	return &websocketClient{conn: connection}, nil
+	s.tracker.IncrementActive()
+	return &websocketClient{conn: connection, tracker: s.tracker}, nil
 }
 
 func (s *ControlServer) readUntilClosed(client *websocketClient, remove func(*websocketClient)) {
@@ -744,7 +760,12 @@ func (c *websocketClient) write(messageType int, payload []byte) error {
 func (c *websocketClient) close() {
 	c.writeMu.Lock()
 	defer c.writeMu.Unlock()
-	_ = c.conn.Close()
+	c.closeOnce.Do(func() {
+		_ = c.conn.Close()
+		if c.tracker != nil {
+			c.tracker.DecrementActive()
+		}
+	})
 }
 
 func createControlToken() (string, error) {
