@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"os/exec"
 	"os/signal"
-	"path/filepath"
 	"runtime"
 	"sort"
 	"strings"
