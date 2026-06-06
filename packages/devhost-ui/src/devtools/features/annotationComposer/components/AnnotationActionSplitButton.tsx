@@ -59,19 +59,22 @@ export function AnnotationActionSplitButton({
         {`Run ${selectedAction.displayName}`}
       </Button>
       <DropdownMenu modal={false} open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-        <DropdownMenuTrigger
-          aria-controls={isMenuOpen ? menuId : undefined}
-          aria-label={`Select annotation action. Current: ${selectedAction.displayName}`}
-          className={cn(buttonVariants({ size: "default", variant: "default" }), "px-2")}
-          data-testid="AnnotationActionSplitButton--action-menu-toggle"
-          disabled={isActionMenuDisabled}
-        >
-          ▾
+        <DropdownMenuTrigger asChild>
+          <button
+            aria-controls={isMenuOpen ? menuId : undefined}
+            aria-label={`Select annotation action. Current: ${selectedAction.displayName}`}
+            className={cn(buttonVariants({ size: "default", variant: "default" }), "px-2")}
+            data-testid="AnnotationActionSplitButton--action-menu-toggle"
+            disabled={isActionMenuDisabled}
+            type="button"
+          >
+            ▾
+          </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="end"
           aria-label="Annotation actions"
-          className="min-w-[220px]"
+          variant="wide"
           container={portalContainer}
           id={menuId}
         >

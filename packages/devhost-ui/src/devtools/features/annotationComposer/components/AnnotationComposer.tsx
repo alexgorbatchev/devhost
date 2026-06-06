@@ -203,12 +203,11 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
         testIdPrefix="AnnotationComposer"
       />
       {selectedTargets.length > 0 && popupCoordinates !== null ? (
-        <FloatingPanel
+        <div
           ref={popupReference}
-          className="pointer-events-auto grid w-[min(360px,calc(100vw_-_20px))] gap-2.5 px-2.5 py-2.5 text-xs text-foreground"
-          position="fixed"
+          className="pointer-events-auto fixed z-[var(--devhost-z-floating-raised)] grid w-[min(360px,calc(100vw_-_20px))] text-xs text-foreground"
+          data-testid="AnnotationComposer--popup"
           style={{ left: popupCoordinates.left, top: popupCoordinates.top }}
-          testId="AnnotationComposer--popup"
           onClick={(event: React.MouseEvent<HTMLDivElement>): void => {
             event.stopPropagation();
           }}
@@ -216,82 +215,86 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
             event.stopPropagation();
           }}
         >
-          <div className="grid gap-1">
-            <strong>Annotation draft</strong>
-            <span className="text-xs text-muted-foreground">
-              {isSubmitting ? "Submitting annotation…" : `${selectedTargets.length} markers selected`}
-            </span>
-          </div>
-          <AnnotationMarkerList
-            items={selectedTargets.map((selection: ISelectedAnnotationTarget) => {
-              return {
-                label: selection.candidate.label,
-                markerNumber: selection.markerNumber,
-              };
-            })}
-            testId="AnnotationComposer--marker-list"
-          />
-          <Textarea
-            ref={commentTextareaReference}
-            data-testid="AnnotationComposer--comment"
-            placeholder="Describe the change and refer to markers like #1, #2, #3…"
-            rows={5}
-            value={comment}
-            onChange={(event: React.ChangeEvent<HTMLTextAreaElement>): void => {
-              setComment(event.currentTarget.value);
-            }}
-          />
-          {submissionErrorMessage !== null ? (
-            <InlineNotice testId="AnnotationComposer--error" tone="danger">
-              {submissionErrorMessage}
-            </InlineNotice>
-          ) : null}
-          {canAppendToActiveAgentSession ? (
-            <label className="flex cursor-pointer select-none items-center gap-2 text-xs text-foreground">
-              <input
-                type="checkbox"
-                checked={sendToActiveSession}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>): void => {
-                  setSendToActiveSession(event.currentTarget.checked);
+          <FloatingPanel level="raised" position="fixed">
+            <div className="grid gap-2.5 px-2.5 py-2.5">
+              <div className="grid gap-1">
+                <strong>Annotation draft</strong>
+                <span className="text-xs text-muted-foreground">
+                  {isSubmitting ? "Submitting annotation…" : `${selectedTargets.length} markers selected`}
+                </span>
+              </div>
+              <AnnotationMarkerList
+                items={selectedTargets.map((selection: ISelectedAnnotationTarget) => {
+                  return {
+                    label: selection.candidate.label,
+                    markerNumber: selection.markerNumber,
+                  };
+                })}
+                testId="AnnotationComposer--marker-list"
+              />
+              <Textarea
+                ref={commentTextareaReference}
+                data-testid="AnnotationComposer--comment"
+                placeholder="Describe the change and refer to markers like #1, #2, #3…"
+                rows={5}
+                value={comment}
+                onChange={(event: React.ChangeEvent<HTMLTextAreaElement>): void => {
+                  setComment(event.currentTarget.value);
                 }}
               />
-              Append to active {selectedAction.displayName} queue
-            </label>
-          ) : null}
-          <div className="flex justify-start gap-2">
-            {props.annotationActions.length > 1 ? (
-              <AnnotationActionSplitButton
-                actions={props.annotationActions}
-                isActionMenuDisabled={isSubmitting}
-                isRunDisabled={trimmedComment.length === 0 || isSubmitting}
-                selectedAction={selectedAction}
-                onActionSelect={props.onSelectedActionIdChange}
-                onRun={(): void => {
-                  void submitDraft();
-                }}
-              />
-            ) : (
-              <Button
-                disabled={trimmedComment.length === 0 || isSubmitting}
-                endEnhancer={
-                  <KbdGroup>
-                    <Kbd>⌘</Kbd>
-                    <Kbd>↵</Kbd>
-                  </KbdGroup>
-                }
-                variant="primary"
-                onClick={(): void => {
-                  void submitDraft();
-                }}
-              >
-                {isSubmitting ? "Submitting…" : `Run ${selectedAction.displayName}`}
-              </Button>
-            )}
-            <Button disabled={isSubmitting} endEnhancer={<Kbd>Esc</Kbd>} variant="secondary" onClick={cancelDraft}>
-              Cancel
-            </Button>
-          </div>
-        </FloatingPanel>
+              {submissionErrorMessage !== null ? (
+                <InlineNotice testId="AnnotationComposer--error" tone="danger">
+                  {submissionErrorMessage}
+                </InlineNotice>
+              ) : null}
+              {canAppendToActiveAgentSession ? (
+                <label className="flex cursor-pointer select-none items-center gap-2 text-xs text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={sendToActiveSession}
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>): void => {
+                      setSendToActiveSession(event.currentTarget.checked);
+                    }}
+                  />
+                  Append to active {selectedAction.displayName} queue
+                </label>
+              ) : null}
+              <div className="flex justify-start gap-2">
+                {props.annotationActions.length > 1 ? (
+                  <AnnotationActionSplitButton
+                    actions={props.annotationActions}
+                    isActionMenuDisabled={isSubmitting}
+                    isRunDisabled={trimmedComment.length === 0 || isSubmitting}
+                    selectedAction={selectedAction}
+                    onActionSelect={props.onSelectedActionIdChange}
+                    onRun={(): void => {
+                      void submitDraft();
+                    }}
+                  />
+                ) : (
+                  <Button
+                    disabled={trimmedComment.length === 0 || isSubmitting}
+                    endEnhancer={
+                      <KbdGroup>
+                        <Kbd>⌘</Kbd>
+                        <Kbd>↵</Kbd>
+                      </KbdGroup>
+                    }
+                    variant="primary"
+                    onClick={(): void => {
+                      void submitDraft();
+                    }}
+                  >
+                    {isSubmitting ? "Submitting…" : `Run ${selectedAction.displayName}`}
+                  </Button>
+                )}
+                <Button disabled={isSubmitting} endEnhancer={<Kbd>Esc</Kbd>} variant="secondary" onClick={cancelDraft}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </FloatingPanel>
+        </div>
       ) : null}
     </div>
   );
