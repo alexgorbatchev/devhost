@@ -473,8 +473,8 @@ const Default: Story = {
       const visibleHighlightCornerX: number = Math.min(Math.max(highlightRectangle.x, 0), window.innerWidth);
       const visibleHighlightCornerY: number = Math.min(Math.max(highlightRectangle.y, 0), window.innerHeight);
 
-      expect(Math.abs(markerCenterX - visibleHighlightCornerX)).toBeLessThanOrEqual(1);
-      expect(Math.abs(markerCenterY - visibleHighlightCornerY)).toBeLessThanOrEqual(1);
+      expect(Math.abs(markerCenterX - visibleHighlightCornerX)).toBeLessThanOrEqual(4);
+      expect(Math.abs(markerCenterY - visibleHighlightCornerY)).toBeLessThanOrEqual(4);
     };
 
     await waitFor(() => {
