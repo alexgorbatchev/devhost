@@ -24,12 +24,11 @@ type Story = StoryObj<typeof meta>;
 const Default: Story = {
   args: {
     position: "absolute",
-    testId: "floating-panel",
   },
   play: async ({ canvasElement }): Promise<void> => {
     const shadowCanvas = readFloatingPanelShadowCanvas(canvasElement);
 
-    await expect(shadowCanvas.getByTestId("floating-panel")).toHaveTextContent("Panel content");
+    await expect(shadowCanvas.getByTestId("FloatingPanel")).toHaveTextContent("Panel content");
   },
 };
 
