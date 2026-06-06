@@ -1,6 +1,5 @@
-import { forwardRef, type ComponentProps, type JSX, type ReactNode } from "react";
+import { forwardRef, type JSX, type ReactNode } from "react";
 
-import { Card } from "../../../components/ui/Card";
 import { cn } from "../../../lib/utils";
 
 type FloatingPanelLevel = "floating" | "panel" | "raised";
@@ -8,22 +7,19 @@ type FloatingPanelPosition = "absolute" | "fixed";
 
 interface IFloatingPanelProps {
   children: ReactNode;
-  className?: string;
   level?: FloatingPanelLevel;
   position?: FloatingPanelPosition;
-  testId?: string;
 }
 
-type FloatingPanelProps = IFloatingPanelProps & Omit<ComponentProps<"div">, "children">;
-
-export const FloatingPanel = forwardRef<HTMLDivElement, FloatingPanelProps>(function FloatingPanel(
-  { children, className, level = "floating", position = "fixed", testId, ...props }: FloatingPanelProps,
+export const FloatingPanel = forwardRef<HTMLDivElement, IFloatingPanelProps>(function FloatingPanel(
+  { children, level = "floating", position = "fixed" }: IFloatingPanelProps,
   reference,
 ): JSX.Element {
   return (
-    <Card
+    <div
       ref={reference}
       className={cn(
+        "group/card flex flex-col gap-4 overflow-hidden rounded-md bg-card py-4 text-sm text-card-foreground ring-1 ring-foreground/10 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-md *:[img:last-child]:rounded-b-md",
         position === "absolute" ? "absolute" : "fixed",
         level === "panel"
           ? "z-[var(--devhost-z-floating-panel)]"
@@ -31,12 +27,11 @@ export const FloatingPanel = forwardRef<HTMLDivElement, FloatingPanelProps>(func
             ? "z-[var(--devhost-z-floating-raised)]"
             : "z-[var(--devhost-z-floating)]",
         "shadow-sm",
-        className,
       )}
-      data-testid={testId}
-      {...props}
+      data-slot="card"
+      data-testid="FloatingPanel"
     >
       {children}
-    </Card>
+    </div>
   );
 });
