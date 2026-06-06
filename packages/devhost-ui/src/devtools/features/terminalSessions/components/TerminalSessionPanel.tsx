@@ -554,7 +554,9 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
           className="pointer-events-none absolute inset-0 z-[1] grid place-items-center"
           data-testid="TerminalSessionPanel--completion-indicator"
         >
-          <CircleCheckIcon className="block size-6 fill-current text-primary drop-shadow" />
+          <span className="block size-6 fill-current text-primary drop-shadow">
+            <CircleCheckIcon />
+          </span>
         </div>
       ) : null}
       {hasExited && isTrayHoverVisible ? (
@@ -573,7 +575,9 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
             discardSession();
           }}
         >
-          <CircleXIcon className="block size-6 fill-current" />
+          <span className="block size-6 fill-current">
+            <CircleXIcon />
+          </span>
         </button>
       ) : null}
       {isTrayHoverVisible && trayTooltipLayout !== null ? (
