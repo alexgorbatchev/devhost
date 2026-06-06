@@ -7,8 +7,11 @@
 @source "../../**/*.{ts,tsx}";
 
 @theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: "Geist Variable", sans-serif;
+  --font-mono:
+    "Maple Mono Normal NF", "JetBrainsMono Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", monospace;
+  --font-heading: var(--font-mono);
+  --font-sans: var(--font-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -26,6 +29,8 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-success: var(--chart-5);
+  --color-success-foreground: var(--primary-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -40,13 +45,39 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+
+  --radius: 6px;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  --radius-xl: var(--radius-md);
+  --radius-2xl: var(--radius-md);
+  --radius-3xl: var(--radius-md);
+  --radius-4xl: var(--radius-md);
+
+  /* Semantic spacing values (compact and tight) */
+  --spacing-sm: 3px;
+  --spacing-md: 4px;
+  --spacing-lg: 5px;
+
+  --spacing: var(--spacing-sm);
+  --spacing-1: var(--spacing-sm);
+  --spacing-1.5: var(--spacing-md);
+  --spacing-2: var(--spacing-lg);
+
+  /* Font sizes (readable, not overly small) */
+  --font-size-sm: 10px;
+  --font-size-md: 10px;
+  --font-size-lg: 10px;
+
+  --text-sm: var(--font-size-sm);
+  --text-md: var(--font-size-md);
+  --text-lg: var(--font-size-lg);
+
+  /* Reusable z-index tokens */
+  --z-index-floating: var(--devhost-z-floating);
+  --z-index-floating-panel: var(--devhost-z-floating-panel);
+  --z-index-floating-raised: var(--devhost-z-floating-raised);
 }
 
 :host,
@@ -63,7 +94,6 @@
     "Maple Mono Normal NF", "JetBrainsMono Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", monospace;
   --font-heading: var(--font-sans);
-  --radius: 6px;
   --background: hsl(220 23.077% 94.902%);
   --foreground: hsl(234 16.022% 35.49%);
   --card: hsl(220 23.077% 94.902%);

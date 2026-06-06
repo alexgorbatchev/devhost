@@ -53,7 +53,7 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
               <li key={service.name} className="flex items-center gap-2">
                 <span
                   aria-hidden="true"
-                  className={cn("size-2 shrink-0 rounded-full", service.status ? "bg-primary" : "bg-destructive")}
+                  className={cn("size-2 shrink-0 rounded-full", service.status ? "bg-success" : "bg-destructive")}
                 />
                 {service.managed ? (
                   <Button
