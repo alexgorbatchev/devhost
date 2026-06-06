@@ -5,12 +5,12 @@
     "": {
       "name": "localhost-domains",
       "devDependencies": {
-        "@alexgorbatchev/typescript-ai-policy": "^9.0.0",
-        "bun-plugin-tailwind": "^0.1.2",
-        "husky": "^9.1.7",
-        "nano-staged": "^1.0.2",
-        "oxfmt": "^0.53.0",
-        "oxlint": "^1.68.0",
+        "@alexgorbatchev/typescript-ai-policy": "latest",
+        "bun-plugin-tailwind": "latest",
+        "husky": "latest",
+        "nano-staged": "latest",
+        "oxfmt": "latest",
+        "oxlint": "latest",
       },
     },
     "packages/devhost-ui": {
@@ -110,7 +110,7 @@
 
     "@alexgorbatchev/devhost-ui": ["@alexgorbatchev/devhost-ui@workspace:packages/devhost-ui"],
 
-    "@alexgorbatchev/typescript-ai-policy": ["@alexgorbatchev/typescript-ai-policy@9.0.0", "", { "dependencies": { "commander": "^14.0.3", "minimatch": "^10.2.5", "package-manager-detector": "^1.6.0" }, "peerDependencies": { "@typescript/native-preview": "^7.0.0-dev.20260513.1", "oxfmt": "^0.49.0", "oxlint": "^1.64.0", "typescript": "^6.0.3" }, "optionalPeers": ["@typescript/native-preview", "typescript"], "bin": { "typescript-ai-policy": "dist/bin/typescript-ai-policy.js" } }, "sha512-ClcxMXOrPWKGOsxs5T9EUSKcGWuw/sxdqwV0d10jPXY963C0ZmlyzcpOVv8fRW22M02uArwxbzhv9hfOt/s33Q=="],
+    "@alexgorbatchev/typescript-ai-policy": ["@alexgorbatchev/typescript-ai-policy@10.0.0", "", { "dependencies": { "commander": "^14.0.3", "minimatch": "^10.2.5", "package-manager-detector": "^1.6.0" }, "peerDependencies": { "@typescript/native-preview": "^7.0.0-dev.20260513.1", "oxfmt": "^0.49.0", "oxlint": "^1.64.0", "typescript": "^6.0.3" }, "optionalPeers": ["@typescript/native-preview", "typescript"], "bin": { "typescript-ai-policy": "dist/bin/typescript-ai-policy.js" } }, "sha512-PzRJw615OIRtQhZrE8NNt3flL5hyuj+DhqGM3VfRTPgyGY1iLIRXxmw55uJiH7Ob/K/KfyxecvFjEUgLuvWh/w=="],
 
     "@antfu/install-pkg": ["@antfu/install-pkg@1.1.0", "", { "dependencies": { "package-manager-detector": "^1.3.0", "tinyexec": "^1.0.1" } }, "sha512-MGQsmw10ZyI+EJo45CdSER4zEb+p31LpDAFp2Z3gkSd1yqVZGi0Ebx++YTEMonJy4oChEMLsxZ64j8FH6sSqtQ=="],
 
