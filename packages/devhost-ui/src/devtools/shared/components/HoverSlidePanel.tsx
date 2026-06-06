@@ -44,7 +44,7 @@ export function HoverSlidePanel({
     <div
       aria-label={ariaLabel}
       className={cn(
-        "relative z-[var(--devhost-z-floating-panel)] overflow-visible text-xs shadow-sm transition-transform duration-150 ease-in-out",
+        "relative z-[var(--devhost-z-floating-panel)] overflow-visible transition-transform duration-150 ease-in-out",
         "after:absolute after:inset-y-0 after:-right-[50px] after:w-[50px] after:content-['']",
       )}
       data-testid={testId !== undefined ? testId : "HoverSlidePanel"}
@@ -59,10 +59,10 @@ export function HoverSlidePanel({
         setIsHovered(false);
       }}
     >
-      <Card size="sm">
+      <Card size="xs">
         {shouldRenderHeader ? (
-          <CardHeader>
-            <div className="border-b pb-2 gap-2 flex flex-col w-full">
+          <CardHeader bordered>
+            <div className="gap-2 flex flex-col w-full">
               {title !== undefined ||
               description !== undefined ||
               startEnhancer !== undefined ||
@@ -85,9 +85,7 @@ export function HoverSlidePanel({
             </div>
           </CardHeader>
         ) : null}
-        <CardContent>
-          <div className="py-2">{children}</div>
-        </CardContent>
+        <CardContent>{children}</CardContent>
       </Card>
     </div>
   );

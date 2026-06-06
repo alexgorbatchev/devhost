@@ -2,7 +2,7 @@ import type { JSX } from "react";
 import { useMemo } from "react";
 
 import { Badge } from "../../../../components/ui/Badge";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/Card";
+import { CardContent, CardHeader, CardTitle } from "../../../../components/ui/Card";
 
 import { FloatingPanel, InlineNotice } from "../../../shared";
 import type { ComponentSourceMenuItem } from "../types";
@@ -59,47 +59,45 @@ export function ComponentSourceMenu({
       style={{ left: menuPosition.left, top: menuPosition.top }}
     >
       <FloatingPanel level="raised" position="fixed">
-        <Card>
-          <CardHeader>
-            <div className="gap-1 flex flex-col w-full">
-              <CardTitle>{title}</CardTitle>
-              {errorMessage !== undefined ? <InlineNotice tone="danger">{errorMessage}</InlineNotice> : null}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-2">
-              {items.map((item: ComponentSourceMenuItem, index: number) => {
-                return (
-                  <button
-                    key={item.key}
-                    className="grid w-full justify-stretch gap-1 rounded-md border border-border bg-muted p-2 text-left text-sm text-foreground transition-colors hover:border-primary hover:bg-accent focus-visible:border-primary focus-visible:bg-accent focus-visible:outline-none"
-                    data-testid="ComponentSourceMenu--item"
-                    type="button"
-                    onClick={(): void => {
-                      onItemClick(index);
-                    }}
-                  >
-                    <strong>{`<${item.displayName}>`}</strong>
-                    {item.props.length > 0 ? (
-                      <div className="flex flex-wrap gap-1.5">
-                        {item.props.map((prop) => {
-                          return (
-                            <Badge key={`${item.key}-${prop.name}`} title={prop.title} variant="secondary">
-                              {prop.name}
-                            </Badge>
-                          );
-                        })}
-                      </div>
-                    ) : null}
-                    <span className="truncate text-xs text-muted-foreground" title={item.sourceLabel}>
-                      {item.sourceLabel}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+        <CardHeader>
+          <div className="gap-1 flex flex-col w-full">
+            <CardTitle>{title}</CardTitle>
+            {errorMessage !== undefined ? <InlineNotice tone="danger">{errorMessage}</InlineNotice> : null}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2">
+            {items.map((item: ComponentSourceMenuItem, index: number) => {
+              return (
+                <button
+                  key={item.key}
+                  className="grid w-full justify-stretch gap-1 rounded-md border border-border bg-muted p-2 text-left text-sm text-foreground transition-colors hover:border-primary hover:bg-accent focus-visible:border-primary focus-visible:bg-accent focus-visible:outline-none"
+                  data-testid="ComponentSourceMenu--item"
+                  type="button"
+                  onClick={(): void => {
+                    onItemClick(index);
+                  }}
+                >
+                  <strong>{`<${item.displayName}>`}</strong>
+                  {item.props.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {item.props.map((prop) => {
+                        return (
+                          <Badge key={`${item.key}-${prop.name}`} title={prop.title} variant="secondary">
+                            {prop.name}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                  <span className="truncate text-xs text-muted-foreground" title={item.sourceLabel}>
+                    {item.sourceLabel}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
       </FloatingPanel>
     </div>
   );

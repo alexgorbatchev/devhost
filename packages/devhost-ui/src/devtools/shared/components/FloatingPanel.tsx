@@ -10,10 +10,11 @@ interface IFloatingPanelProps {
   children: ReactNode;
   level?: FloatingPanelLevel;
   position?: FloatingPanelPosition;
+  size?: "default" | "sm" | "xs";
 }
 
 export const FloatingPanel = forwardRef<HTMLDivElement, IFloatingPanelProps>(function FloatingPanel(
-  { children, level = "floating", position = "fixed" }: IFloatingPanelProps,
+  { children, level = "floating", position = "fixed", size = "default" }: IFloatingPanelProps,
   reference,
 ): JSX.Element {
   return (
@@ -30,7 +31,7 @@ export const FloatingPanel = forwardRef<HTMLDivElement, IFloatingPanelProps>(fun
       )}
       data-testid="FloatingPanel"
     >
-      <Card>{children}</Card>
+      <Card size={size}>{children}</Card>
     </div>
   );
 });
