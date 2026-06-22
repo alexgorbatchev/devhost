@@ -57,8 +57,8 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
                 />
                 {service.managed ? (
                   <Button
-                    ariaLabel={`Restart ${service.name}`}
-                    size="icon-sm"
+                    aria-label={`Restart ${service.name}`}
+                    size="sm"
                     startEnhancer={
                       <span className={cn(service.restarting && "animate-spin")} data-icon="inline-start">
                         <RotateCwIcon />

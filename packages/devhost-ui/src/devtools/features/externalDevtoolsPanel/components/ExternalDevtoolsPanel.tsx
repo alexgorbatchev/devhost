@@ -29,7 +29,7 @@ export function ExternalDevtoolsPanel({
         {launchers.map((launcher) => (
           <Button
             key={launcher.id}
-            ariaPressed={launcher.isOpen}
+            aria-pressed={launcher.isOpen}
             title={launcher.title}
             variant={launcher.isOpen ? "primary" : "secondary"}
             onClick={(): void => onToggleLauncher(launcher.id)}

@@ -1,4 +1,4 @@
-import type { ButtonVariant } from "../../shared/components/Button";
+import type { ButtonVariant } from "../../shared";
 
 interface ITerminalSessionPrimaryAction {
   label: string;
