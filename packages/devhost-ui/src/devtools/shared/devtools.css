@@ -55,6 +55,11 @@
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
 
+  /* Reusable shadow tokens (tweakable classic shadcn/ui defaults) */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
   /* Reusable z-index tokens */
   --z-index-floating: var(--devhost-z-floating);
   --z-index-floating-panel: var(--devhost-z-floating-panel);
