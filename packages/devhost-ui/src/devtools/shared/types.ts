@@ -38,8 +38,6 @@ type ReactFunctionLocationTuple = [string, string, number, number];
 
 export type NormalizedSourceValue = ReactFunctionLocationTuple | IStandardSourceShape | null | undefined;
 
-export type WebSocketMessageData = string | ArrayBuffer | Uint8Array;
-
 export interface ILocationHostProtocol {
   host: string;
   protocol: string;

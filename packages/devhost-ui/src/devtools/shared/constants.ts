@@ -1,8 +1,6 @@
 export const CONTROL_PATH_PREFIX: string = "/__devhost__";
-export const INJECTED_SCRIPT_PATH: string = `${CONTROL_PATH_PREFIX}/inject.js`;
 export const XTERM_STYLESHEET_PATH: string = `${CONTROL_PATH_PREFIX}/xterm.css`;
 export const TERMINAL_SESSION_START_PATH: string = `${CONTROL_PATH_PREFIX}/terminal-sessions`;
-export const REACT_HIGHLIGHT_CURSOR_PATH: string = `${CONTROL_PATH_PREFIX}/react-highlight/cursor`;
 export const ANNOTATION_QUEUES_PATH: string = `${CONTROL_PATH_PREFIX}/annotation-queues`;
 export const HEALTH_WEBSOCKET_PATH: string = `${CONTROL_PATH_PREFIX}/ws/health`;
 export const LOGS_WEBSOCKET_PATH: string = `${CONTROL_PATH_PREFIX}/ws/logs`;

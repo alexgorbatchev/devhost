@@ -23,18 +23,6 @@ export interface IAnnotationQueueSnapshot {
   status: AnnotationQueueStatus;
 }
 
-export interface IListAnnotationQueuesResponse {
-  queues: IAnnotationQueueSnapshot[];
-}
-
-export interface IUpdateAnnotationQueueEntryRequest {
-  comment: string;
-}
-
-export interface IAnnotationQueueMutationResponse {
-  success: true;
-}
-
 export interface IResumeAnnotationQueueResponse {
   sessionId: string;
   success: true;
