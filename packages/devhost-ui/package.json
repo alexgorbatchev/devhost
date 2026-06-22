@@ -8,7 +8,7 @@
     "./main": "./src/devtools/main.ts"
   },
   "scripts": {
-    "check": "tsgo --noEmit -p tsconfig.json && bun test --coverage && bun vitest run -c vitest.storybook.config.ts",
+    "check": "tsgo --noEmit -p tsconfig.json && bun --bun x ts-unused tsconfig.json && bun test --coverage && bun vitest run -c vitest.storybook.config.ts",
     "storybook": "storybook dev --ci --port 6006"
   },
   "dependencies": {

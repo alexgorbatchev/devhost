@@ -21,12 +21,6 @@ export function resolveSelectedAnnotationAction(
   );
 }
 
-export function readPixelValue(value: string): number {
-  const parsedValue: number = Number.parseFloat(value);
-
-  return Number.isFinite(parsedValue) ? parsedValue : 0;
-}
-
 function createFallbackAnnotationAction(): IAnnotationAction {
   return {
     displayName: "Pi",

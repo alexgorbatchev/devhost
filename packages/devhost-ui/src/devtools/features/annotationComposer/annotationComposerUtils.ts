@@ -43,7 +43,3 @@ export function doesEventTargetAcceptTextInput(target: EventTarget | null): bool
 export function removeSelectionCursorStyle(styleId: string): void {
   document.getElementById(styleId)?.remove();
 }
-
-export function clamp(value: number, minimum: number, maximum: number): number {
-  return Math.min(Math.max(value, minimum), maximum);
-}
