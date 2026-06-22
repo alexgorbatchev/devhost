@@ -16,7 +16,6 @@ import { readInjectedDevtoolsConfig } from "../shared/readInjectedDevtoolsConfig
 import {
   ColorSchemeProvider,
   DEVTOOLS_ROOT_ID,
-  resolveMatchingColorScheme,
   resolveRoutedServiceKeyForUrl,
   useResolvedColorScheme,
   RESTART_SERVICE_PATH,
@@ -25,10 +24,9 @@ import {
 
 export function App(): JSX.Element {
   const hostColorScheme = useResolvedColorScheme();
-  const colorScheme = resolveMatchingColorScheme(hostColorScheme);
 
   return (
-    <ColorSchemeProvider colorScheme={colorScheme}>
+    <ColorSchemeProvider colorScheme={hostColorScheme}>
       <AppContent />
     </ColorSchemeProvider>
   );

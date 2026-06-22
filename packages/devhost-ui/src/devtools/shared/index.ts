@@ -25,7 +25,6 @@ export {
 } from "./devtoolsConfig";
 export { type DevtoolsColorScheme } from "./DevtoolsColorScheme";
 export { resolveDevtoolsPortalContainer } from "./resolveDevtoolsPortalContainer";
-export { resolveMatchingColorScheme } from "./resolveMatchingColorScheme";
 export { resolveRoutedServiceKeyForUrl, type IRoutedServiceIdentity } from "./routedServices";
 export { useDevtoolsColorScheme } from "./hooks/useDevtoolsColorScheme";
 export { useResolvedColorScheme } from "./hooks/useResolvedColorScheme";
