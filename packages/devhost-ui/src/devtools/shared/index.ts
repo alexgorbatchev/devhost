@@ -1,4 +1,4 @@
-export { Button } from "./components/Button";
+export { Button, type ButtonSize, type ButtonVariant } from "../../components/ui/Button";
 export { ColorSchemeProvider } from "./components/ColorSchemeProvider";
 export {
   DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
