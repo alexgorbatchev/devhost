@@ -27,7 +27,7 @@
     "*": "bun --bun oxfmt --write --no-error-on-unmatched-pattern"
   },
   "devDependencies": {
-    "@alexgorbatchev/typescript-ai-policy": "^10.0.0",
+    "@alexgorbatchev/typescript-ai-policy": "^11.0.3",
     "bun-plugin-tailwind": "^0.1.2",
     "husky": "^9.1.7",
     "nano-staged": "^1.0.2",
