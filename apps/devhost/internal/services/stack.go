@@ -774,6 +774,8 @@ func startServiceWithRetries(
 			return started, nil
 		}
 
+		started.wait()
+
 		if stopError := stopStartedService(started, resolveGracePeriod(options.ShutdownGracePeriod)); stopError != nil {
 			return nil, joinCleanupError(err, stopError)
 		}
