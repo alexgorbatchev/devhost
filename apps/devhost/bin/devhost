@@ -42,10 +42,13 @@ while (($# > 0)); do
 done
 
 # Execute the compiled binary only if it exists and is up-to-date with Go source files.
-# If any Go source file is newer than the binary, fall back to running the source code directly via 'go run'.
+# If any Go source file is newer than the binary, compile it first.
 if [[ -x "$compiled_binary_path" ]] && ! find "$package_root_path" -name "dist" -prune -o -name "*.go" -newer "$compiled_binary_path" -print | read -r; then
   exec "$compiled_binary_path" "${resolved_args[@]}"
 fi
 
 cd "$package_root_path"
-exec env DEVHOST_SHIM_CWD="$original_working_directory_path" go run "$source_entrypoint_path" "${resolved_args[@]}"
+if ! go build -o "$compiled_binary_path" "$source_entrypoint_path"; then
+  exit 1
+fi
+exec env DEVHOST_SHIM_CWD="$original_working_directory_path" "$compiled_binary_path" "${resolved_args[@]}"
