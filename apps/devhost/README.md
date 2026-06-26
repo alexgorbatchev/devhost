@@ -103,12 +103,43 @@ This scans active registrations and host/port claims, targets the matching runni
 
 After startup, `devhost` prints one line per reachable service URL using the format `service-name: url`.
 
+### Manifest Interpolation
+
 Manifest string values support environment-variable interpolation with `{{ env.NAME }}` placeholders. This applies to
 string fields throughout the manifest, including hosts, paths, cwd values, command arguments, labels, and `env` maps.
 Placeholder names must start with a letter or underscore and then use letters, digits, or underscores. Other text
 stays literal, including malformed `{{ ... }}` sequences, and an unterminated `{{` keeps the rest of that string
 literal. Referencing an undefined valid placeholder is a manifest read error, while defined placeholders may expand to
 the empty string.
+
+### Late-Binding Service References
+
+In addition to static environment variable interpolation, `devhost` supports late-binding service references using `{{ services.<name>.<property> }}` placeholders. This allows services to dynamically discover configuration (like auto-allocated ports) right before they are launched:
+
+```toml
+[services.postgres]
+bindHost = "127.0.0.1"
+port = "auto"
+
+[services.poc-backend]
+env = { DATABASE_URL = "postgres://...@{{ services.postgres.bindHost }}:{{ services.postgres.port }}/..." }
+```
+
+For more details see the [Environment Variables Guide](https://alexgorbatchev.github.io/devhost/guides/environment-variables/) page.
+
+### Manifest Includes
+
+Manifest includes let you split your `devhost` stack configuration across multiple files. This is particularly powerful in monorepo environments, allowing each sub-application or package to define and manage its own services locally:
+
+```toml
+# root devhost.toml
+name = "my-monorepo-stack"
+includes = ["packages/*/devhost.toml", "apps/*/devhost.toml"]
+```
+
+Included manifests are recursively parsed, and their services and annotation actions are merged into the root stack. Relative paths for `cwd` and `watch` folders are automatically resolved, and missing `cwd` keys default to the directory of the manifest they were defined in. See the [Manifest Includes Documentation](https://alexgorbatchev.github.io/devhost/guides/manifest-includes/) page for more details.
+
+### Service Commands
 
 Service commands are executed directly, not through an implicit shell. In practice that means
 `command = ["storybook", "dev", "--port", "$PORT"]` passes the literal string `$PORT` as an argument, while
