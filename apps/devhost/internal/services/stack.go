@@ -629,7 +629,30 @@ func CreateInjectedServiceEnvironment(manifest ResolvedManifest, service Resolve
 		environment["DEVHOST_PATH"] = *service.Path
 	}
 
+	for _, otherService := range manifest.Services {
+		if otherService.Port != nil {
+			envSafeName := toEnvSafeName(otherService.Name)
+			environment["DEVHOST_PORT_"+envSafeName] = fmt.Sprintf("%d", *otherService.Port)
+		}
+	}
+
 	return environment
+}
+
+func toEnvSafeName(name string) string {
+	var builder strings.Builder
+	builder.Grow(len(name))
+	for i := 0; i < len(name); i++ {
+		b := name[i]
+		if (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9') {
+			builder.WriteByte(b)
+		} else if b >= 'a' && b <= 'z' {
+			builder.WriteByte(b - 'a' + 'A')
+		} else {
+			builder.WriteByte('_')
+		}
+	}
+	return builder.String()
 }
 
 func LogServiceURLs(manifest ResolvedManifest, writer io.Writer) {

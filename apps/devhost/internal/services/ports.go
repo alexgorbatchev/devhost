@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"net"
+	"strings"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
@@ -122,6 +123,30 @@ func ResolveServicePorts(value manifest.Manifest) (ResolvedManifest, error) {
 		}
 	}
 
+	for serviceName, service := range resolvedServices {
+		interpolatedEnv := make(map[string]string, len(service.Env))
+		for k, v := range service.Env {
+			val, err := interpolateServiceTemplates(v, resolvedServices)
+			if err != nil {
+				return ResolvedManifest{}, fmt.Errorf("service %q: interpolate env %q: %w", serviceName, k, err)
+			}
+			interpolatedEnv[k] = val
+		}
+		service.Env = interpolatedEnv
+
+		interpolatedCommand := make([]string, len(service.Command))
+		for i, cmdPart := range service.Command {
+			val, err := interpolateServiceTemplates(cmdPart, resolvedServices)
+			if err != nil {
+				return ResolvedManifest{}, fmt.Errorf("service %q: interpolate command arg %q: %w", serviceName, cmdPart, err)
+			}
+			interpolatedCommand[i] = val
+		}
+		service.Command = interpolatedCommand
+
+		resolvedServices[serviceName] = service
+	}
+
 	return ResolvedManifest{
 		Annotation:            value.Annotation,
 		Caddy:                 value.Caddy,
@@ -133,6 +158,72 @@ func ResolveServicePorts(value manifest.Manifest) (ResolvedManifest, error) {
 		ServiceOrder:          append([]string{}, value.ServiceOrder...),
 		Services:              resolvedServices,
 	}, nil
+}
+
+func interpolateServiceTemplates(val string, resolvedServices map[string]ResolvedService) (string, error) {
+	var builder strings.Builder
+	builder.Grow(len(val))
+
+	for i := 0; i < len(val); {
+		if val[i] != '{' || i+1 >= len(val) || val[i+1] != '{' {
+			builder.WriteByte(val[i])
+			i++
+			continue
+		}
+
+		closeIdx := strings.Index(val[i+2:], "}}")
+		if closeIdx < 0 {
+			builder.WriteString(val[i:])
+			break
+		}
+		closeIdx += i + 2
+
+		rawExpr := val[i+2 : closeIdx]
+		trimmedExpr := strings.TrimSpace(rawExpr)
+
+		if strings.HasPrefix(trimmedExpr, "services.") {
+			parts := strings.Split(trimmedExpr, ".")
+			if len(parts) == 3 {
+				targetServiceName := parts[1]
+				property := parts[2]
+
+				targetService, ok := resolvedServices[targetServiceName]
+				if !ok {
+					return "", fmt.Errorf("referenced service %q in template %q does not exist", targetServiceName, val[i:closeIdx+2])
+				}
+
+				var resolvedValue string
+				switch property {
+				case "port":
+					if targetService.Port == nil {
+						return "", fmt.Errorf("referenced service %q in template %q does not have a port", targetServiceName, val[i:closeIdx+2])
+					}
+					resolvedValue = fmt.Sprintf("%d", *targetService.Port)
+				case "host":
+					if targetService.Host != nil {
+						resolvedValue = *targetService.Host
+					} else {
+						resolvedValue = targetService.BindHost
+					}
+				case "bindHost":
+					resolvedValue = targetService.BindHost
+				default:
+					return "", fmt.Errorf("unknown property %q on service %q in template %q", property, targetServiceName, val[i:closeIdx+2])
+				}
+
+				builder.WriteString(resolvedValue)
+				i = closeIdx + 2
+				continue
+			} else {
+				return "", fmt.Errorf("invalid template expression %q (expected services.<name>.<property>)", val[i:closeIdx+2])
+			}
+		}
+
+		builder.WriteString(val[i : closeIdx+2])
+		i = closeIdx + 2
+	}
+
+	return builder.String(), nil
 }
 
 func isValidatedServiceManaged(service manifest.ValidatedService) bool {
