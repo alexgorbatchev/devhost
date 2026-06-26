@@ -767,10 +767,42 @@ func startServiceWithRetries(
 			return nil, err
 		}
 
+		var lastProgressLog time.Time
+		var lastAmbiguityWarning time.Time
+
 		err = WaitForServiceHealth(WaitForServiceHealthOptions{
 			Health:       service.Health,
 			ReadExitCode: started.ReadExitCode,
 			ServiceName:  service.Name,
+			OnProgress: func(attempts int, elapsed time.Duration) {
+				now := time.Now()
+				if elapsed >= 2*time.Second && (lastProgressLog.IsZero() || now.Sub(lastProgressLog) >= 5*time.Second) {
+					lastProgressLog = now
+					address := ""
+					if service.Health.Host != nil && service.Health.Port != nil {
+						address = fmt.Sprintf(" on %s:%d", *service.Health.Host, *service.Health.Port)
+					} else if service.Health.URL != nil {
+						address = fmt.Sprintf(" on %s", *service.Health.URL)
+					}
+					writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("Waiting for service %s to pass its health check%s (elapsed: %s)...", service.Name, address, elapsed.Round(time.Second)))
+
+					if service.Health.Kind == "tcp" && service.Health.Host != nil && service.Health.Port != nil && (lastAmbiguityWarning.IsZero() || now.Sub(lastAmbiguityWarning) >= 10*time.Second) {
+						altBindHost := readAlternativeBindHost(*service.Health.Host)
+						if altBindHost != "" {
+							proxyHost, err := caddy.ResolveProxyHost(altBindHost)
+							if err == nil && proxyHost != "" {
+								if canConnectToPort(proxyHost, *service.Health.Port) {
+									lastAmbiguityWarning = now
+									writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf(
+										"WARNING: Service %s is not responding on %s:%d, but accepted a connection on %s:%d! Consider setting services.%s.bindHost = %q in your manifest.",
+										service.Name, *service.Health.Host, *service.Health.Port, altBindHost, *service.Health.Port, service.Name, altBindHost,
+									))
+								}
+							}
+						}
+					}
+				}
+			},
 		})
 		if err == nil {
 			if warning := ReadLoopbackBindHostAmbiguityWarning(service, manifest.Caddy.Global.HTTPSPort); warning != "" {
@@ -847,7 +879,42 @@ func startDaemonLifecycleService(
 		}
 	}
 
-	err = WaitForServiceHealth(WaitForServiceHealthOptions{Health: service.Health, ServiceName: service.Name})
+	var lastProgressLog time.Time
+	var lastAmbiguityWarning time.Time
+
+	err = WaitForServiceHealth(WaitForServiceHealthOptions{
+		Health:      service.Health,
+		ServiceName: service.Name,
+		OnProgress: func(attempts int, elapsed time.Duration) {
+			now := time.Now()
+			if elapsed >= 2*time.Second && (lastProgressLog.IsZero() || now.Sub(lastProgressLog) >= 5*time.Second) {
+				lastProgressLog = now
+				address := ""
+				if service.Health.Host != nil && service.Health.Port != nil {
+					address = fmt.Sprintf(" on %s:%d", *service.Health.Host, *service.Health.Port)
+				} else if service.Health.URL != nil {
+					address = fmt.Sprintf(" on %s", *service.Health.URL)
+				}
+				writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("Waiting for service %s to pass its health check%s (elapsed: %s)...", service.Name, address, elapsed.Round(time.Second)))
+
+				if service.Health.Kind == "tcp" && service.Health.Host != nil && service.Health.Port != nil && (lastAmbiguityWarning.IsZero() || now.Sub(lastAmbiguityWarning) >= 10*time.Second) {
+					altBindHost := readAlternativeBindHost(*service.Health.Host)
+					if altBindHost != "" {
+						proxyHost, err := caddy.ResolveProxyHost(altBindHost)
+						if err == nil && proxyHost != "" {
+							if canConnectToPort(proxyHost, *service.Health.Port) {
+								lastAmbiguityWarning = now
+								writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf(
+									"WARNING: Service %s is not responding on %s:%d, but accepted a connection on %s:%d! Consider setting services.%s.bindHost = %q in your manifest.",
+									service.Name, *service.Health.Host, *service.Health.Port, altBindHost, *service.Health.Port, service.Name, altBindHost,
+								))
+							}
+						}
+					}
+				}
+			}
+		},
+	})
 	if err != nil {
 		return err
 	}

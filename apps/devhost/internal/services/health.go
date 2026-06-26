@@ -16,6 +16,7 @@ type WaitForServiceHealthOptions struct {
 	Health       ResolvedHealthConfig
 	ReadExitCode func() *int
 	ServiceName  string
+	OnProgress   func(attempts int, elapsed time.Duration)
 }
 
 type healthDependencies struct {
@@ -48,8 +49,10 @@ func waitForServiceHealth(options WaitForServiceHealthOptions, dependencies heal
 
 	timeout := time.Duration(options.Health.Timeout) * time.Millisecond
 	interval := time.Duration(options.Health.Interval) * time.Millisecond
-	deadline := dependencies.now().Add(timeout)
+	startTime := dependencies.now()
+	deadline := startTime.Add(timeout)
 	consecutiveFailures := 0
+	attempts := 0
 
 	for dependencies.now().Before(deadline) {
 		if checkServiceHealth(options.Health, dependencies) {
@@ -58,12 +61,17 @@ func waitForServiceHealth(options WaitForServiceHealthOptions, dependencies heal
 		}
 
 		consecutiveFailures++
+		attempts++
 		if options.Health.Retries > 0 && consecutiveFailures > options.Health.Retries {
 			return fmt.Errorf("Service %s failed its health check %d consecutive times.", options.ServiceName, consecutiveFailures)
 		}
 
 		if error := throwIfExited(options.ReadExitCode, options.ServiceName); error != nil {
 			return error
+		}
+
+		if options.OnProgress != nil {
+			options.OnProgress(attempts, dependencies.now().Sub(startTime))
 		}
 
 		dependencies.sleep(interval)
