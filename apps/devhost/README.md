@@ -175,12 +175,12 @@ If you are modifying the injected browser devtools UI (`packages/devhost-ui/`) a
 3. If changes are detected, `devhost` automatically serializes and triggers a background build via `bun run build:devtools-bundle:devhost`, and blocks to serve the freshly built assets.
 4. If filesystem reads, walking checks, or background compilation fail, the server logs a warning and falls back seamlessly to serving the compile-time embedded assets.
 
-## AI bootstrap skill
+## AI dev host - manifest update skill
 
-To install the manifest-authoring bootstrap skill from this repository:
+To install the manifest-authoring and dev host update skill from this repository:
 
 ```bash
-npx skills add https://github.com/alexgorbatchev/devhost --skill devhost-bootstrap -y
+npx skills add https://github.com/alexgorbatchev/devhost --skill dev-host-manifest-update -y
 ```
 
 Omit `-y` to choose target agents interactively.

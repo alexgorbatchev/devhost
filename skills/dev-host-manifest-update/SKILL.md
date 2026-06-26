@@ -1,10 +1,10 @@
 ---
-name: devhost-bootstrap
-description: Create an initial `devhost.toml` manifest for an existing repository, including optional project-local annotation agent commands. Use when asked to bootstrap, draft, or wire up a first devhost manifest. Start with repo discovery to identify runnable services, commands, ports, health checks, and the right manifest location. Ask the user to choose a base domain before writing routed hosts, with `*.localhost` as the default suggestion. For annotation agent integrations in manifests, read `references/agent-adapters.md`; do not use this skill for implementing built-in Go adapters.
+name: dev-host-manifest-update
+description: Use anytime devhost.toml is involved, including reading, writing, making changes, bootstrapping, and running dev host. Start with repository discovery to identify runnable services, commands, ports, health checks, and the correct manifest location. Propose or update configurations, including routing and annotation agent commands. If first drafting, ask the user to choose a base domain with *.localhost as the default suggestion.
 author: alexgorbatchev
 ---
 
-# Devhost Manifest Init
+# Dev Host - Manifest Update
 
 ## Workflow
 
