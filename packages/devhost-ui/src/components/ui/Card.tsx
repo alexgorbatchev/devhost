@@ -69,6 +69,7 @@ export function CardDescription({ ...props }: Omit<React.ComponentProps<"div">, 
   );
 }
 
+// @ts-unused-ignore planned for future panel use
 export function CardAction({ ...props }: Omit<React.ComponentProps<"div">, OmitKeys>): React.ReactElement {
   return (
     <div
@@ -91,6 +92,7 @@ export function CardContent({ ...props }: Omit<React.ComponentProps<"div">, Omit
   );
 }
 
+// @ts-unused-ignore planned for custom layout use
 export function CardFooter({ ...props }: Omit<React.ComponentProps<"div">, OmitKeys>): React.ReactElement {
   return (
     <div

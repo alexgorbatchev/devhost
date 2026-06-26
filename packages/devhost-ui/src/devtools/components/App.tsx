@@ -269,7 +269,7 @@ function resolveSelectedAnnotationAction(
 ): IAnnotationAction | null {
   return (
     annotationActions.find((action: IAnnotationAction): boolean => action.id === selectedAnnotationActionId) ??
-    annotationActions[0] ??
+    (annotationActions[0] as IAnnotationAction | undefined) ??
     null
   );
 }
