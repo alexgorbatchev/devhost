@@ -14,7 +14,7 @@
     "compile:devhost": "./apps/devhost/scripts/compile.sh",
     "dev": "bun run build:devtools-bundle:devhost && DEVHOST_DEV_ASSETS_DIR=apps/devhost/internal/devtools/dist apps/devhost/bin/devhost --manifest devhost.toml",
     "docs": "bun run --cwd packages/docs dev",
-    "install-browser": "npx --prefix packages/devhost-ui playwright install chromium",
+    "install-browser": "cd packages/devhost-ui && npx playwright install chromium",
     "nvim": "bun run ./apps/devhost/scripts/startNvim.ts --project=packages/playground",
     "postinstall": "bun run install-browser",
     "storybook": "bun run --cwd packages/devhost-ui storybook",
