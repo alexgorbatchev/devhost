@@ -33,6 +33,6 @@
     "nano-staged": "^1.0.2",
     "oxfmt": "^0.53.0",
     "oxlint": "^1.68.0",
-    "ts-unused": "^2.0.1"
+    "ts-unused": "^3.2.0"
   }
 }
