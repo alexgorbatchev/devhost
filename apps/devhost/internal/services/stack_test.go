@@ -100,6 +100,37 @@ func TestCreateInjectedServiceEnvironment(t *testing.T) {
 				"DEVHOST_SERVICE_NAME":  "web",
 			},
 		},
+		{
+			name: "injects other service ports as environment variables",
+			manifest: ResolvedManifest{
+				ManifestPath:   "/tmp/project/devhost.toml",
+				PrimaryService: "web",
+				Name:           "hello-stack",
+				Services: map[string]ResolvedService{
+					"web": {
+						Name: "web",
+						Port: &port,
+					},
+					"postgres-db": {
+						Name: "postgres-db",
+						Port: &port,
+					},
+				},
+			},
+			service: ResolvedService{
+				BindHost:   "127.0.0.1",
+				InjectPort: false,
+				Name:       "web",
+				Port:       &port,
+			},
+			want: map[string]string{
+				"DEVHOST_BIND_HOST":        "127.0.0.1",
+				"DEVHOST_MANIFEST_PATH":    "/tmp/project/devhost.toml",
+				"DEVHOST_SERVICE_NAME":     "web",
+				"DEVHOST_PORT_WEB":         "3200",
+				"DEVHOST_PORT_POSTGRES_DB": "3200",
+			},
+		},
 	}
 
 	for _, tt := range tests {

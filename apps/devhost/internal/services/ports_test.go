@@ -1,6 +1,7 @@
 package services
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
@@ -168,6 +169,79 @@ func TestResolveServicePorts(t *testing.T) {
 		want := "Service api is missing an effective health check."
 		if error == nil || error.Error() != want {
 			t.Fatalf("ResolveServicePorts(...) error = %v, want %q", error, want)
+		}
+	})
+
+	t.Run("interpolates late-binding service templates in Env and Command", func(t *testing.T) {
+		t.Parallel()
+
+		dbPort := &manifest.PortConfig{Number: 5432}
+		routedHost := "my-service.local"
+		value := manifest.Manifest{
+			Services: map[string]manifest.ValidatedService{
+				"db": {
+					Name:     "db",
+					BindHost: "127.0.0.1",
+					Host:     &routedHost,
+					Port:     dbPort,
+				},
+				"api": {
+					Name:     "api",
+					BindHost: "127.0.0.1",
+					Command:  []string{"node", "server.js", "--db-port", "{{ services.db.port }}", "--db-host", "{{ services.db.host }}", "--db-bindHost", "{{ services.db.bindHost }}"},
+					Env: map[string]string{
+						"DB_URL": "postgres://user:pass@{{ services.db.host }}:{{ services.db.port }}/dbname",
+					},
+					Port: &manifest.PortConfig{Number: 8080},
+				},
+			},
+		}
+
+		resolvedManifest, err := ResolveServicePorts(value)
+		if err != nil {
+			t.Fatalf("ResolveServicePorts(...) unexpected error = %v", err)
+		}
+
+		apiService := resolvedManifest.Services["api"]
+		expectedCommand := []string{"node", "server.js", "--db-port", "5432", "--db-host", "my-service.local", "--db-bindHost", "127.0.0.1"}
+		if len(apiService.Command) != len(expectedCommand) {
+			t.Fatalf("resolved api command length = %d, want %d", len(apiService.Command), len(expectedCommand))
+		}
+		for i, v := range apiService.Command {
+			if v != expectedCommand[i] {
+				t.Fatalf("resolved api command[%d] = %q, want %q", i, v, expectedCommand[i])
+			}
+		}
+
+		expectedEnv := "postgres://user:pass@my-service.local:5432/dbname"
+		if apiService.Env["DB_URL"] != expectedEnv {
+			t.Fatalf("resolved api Env[DB_URL] = %q, want %q", apiService.Env["DB_URL"], expectedEnv)
+		}
+	})
+
+	t.Run("rejects service template interpolation if referenced service does not exist", func(t *testing.T) {
+		t.Parallel()
+
+		value := manifest.Manifest{
+			Services: map[string]manifest.ValidatedService{
+				"api": {
+					Name:     "api",
+					BindHost: "127.0.0.1",
+					Command:  []string{"node", "server.js"},
+					Env: map[string]string{
+						"DB_URL": "postgres://user:pass@{{ services.db.host }}:5432/dbname",
+					},
+					Port: &manifest.PortConfig{Number: 8080},
+				},
+			},
+		}
+
+		_, err := ResolveServicePorts(value)
+		if err == nil {
+			t.Fatalf("expected error for missing referenced service in template")
+		}
+		if !strings.Contains(err.Error(), "referenced service \"db\"") {
+			t.Fatalf("expected error about missing referenced service, got: %v", err)
 		}
 	})
 }
