@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -16,15 +17,10 @@ var duplicateTableIndicatorPattern = regexp.MustCompile(`(?i)(already been defin
 var parseErrorLinePattern = regexp.MustCompile(`line (\d+)`)
 
 func ReadManifest(manifestPath string) (RawManifest, error) {
-	manifestBytes, error := os.ReadFile(manifestPath)
-	if error != nil {
-		return RawManifest{}, fmt.Errorf("read manifest %s: %w", manifestPath, error)
-	}
-
-	manifestText := string(manifestBytes)
-	manifestValue := map[string]any{}
-	if _, error := toml.Decode(manifestText, &manifestValue); error != nil {
-		return RawManifest{}, fmt.Errorf("Failed to parse %s: %s", manifestPath, formatManifestParseError(manifestText, error))
+	visited := map[string]bool{}
+	manifestValue, serviceOrder, err := loadAndMergeManifests(manifestPath, "", visited)
+	if err != nil {
+		return RawManifest{}, err
 	}
 
 	interpolatedManifestValue, undefinedVariables := interpolateManifestValue(manifestValue)
@@ -37,9 +33,310 @@ func ReadManifest(manifestPath string) (RawManifest, error) {
 	}
 
 	return RawManifest{
-		serviceOrder: readServiceOrder(manifestText),
+		serviceOrder: serviceOrder,
 		value:        manifestMap,
 	}, nil
+}
+
+func loadAndMergeManifests(manifestPath string, rootManifestDir string, visited map[string]bool) (map[string]any, []string, error) {
+	absPath, err := filepath.Abs(manifestPath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("resolve manifest absolute path: %w", err)
+	}
+
+	if visited[absPath] {
+		return map[string]any{}, nil, nil
+	}
+	visited[absPath] = true
+
+	manifestBytes, err := os.ReadFile(absPath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("read manifest %s: %w", absPath, err)
+	}
+
+	manifestText := string(manifestBytes)
+	manifestValue := map[string]any{}
+	if _, err := toml.Decode(manifestText, &manifestValue); err != nil {
+		return nil, nil, fmt.Errorf("Failed to parse %s: %s", absPath, formatManifestParseError(manifestText, err))
+	}
+
+	serviceOrder := readServiceOrder(manifestText)
+	manifestDir := filepath.Dir(absPath)
+
+	if rootManifestDir == "" {
+		rootManifestDir = manifestDir
+	}
+
+	rawIncludes, ok := manifestValue["includes"]
+	if ok {
+		includePatterns := []string{}
+		switch val := rawIncludes.(type) {
+		case string:
+			includePatterns = []string{val}
+		case []any:
+			for _, item := range val {
+				if strItem, ok := item.(string); ok {
+					includePatterns = append(includePatterns, strItem)
+				} else {
+					return nil, nil, fmt.Errorf("includes must contain only strings")
+				}
+			}
+		default:
+			return nil, nil, fmt.Errorf("includes must be a string or string array")
+		}
+
+		for _, pattern := range includePatterns {
+			globPattern := pattern
+			if !filepath.IsAbs(pattern) {
+				globPattern = filepath.Join(manifestDir, pattern)
+			}
+
+			matches, err := filepath.Glob(globPattern)
+			if err != nil {
+				return nil, nil, fmt.Errorf("invalid glob pattern %q: %w", pattern, err)
+			}
+
+			sort.Strings(matches)
+
+			for _, match := range matches {
+				matchAbs, err := filepath.Abs(match)
+				if err != nil {
+					return nil, nil, fmt.Errorf("resolve include absolute path: %w", err)
+				}
+
+				subManifest, subServiceOrder, err := loadAndMergeManifests(matchAbs, rootManifestDir, visited)
+				if err != nil {
+					return nil, nil, err
+				}
+
+				if len(subManifest) == 0 {
+					continue
+				}
+
+				subManifestCopy := copyMap(subManifest)
+				preparedSub := prepareSubManifest(subManifestCopy, rootManifestDir, filepath.Dir(matchAbs))
+
+				if subServices, ok := preparedSub["services"].(map[string]any); ok {
+					if _, exists := manifestValue["services"]; !exists {
+						manifestValue["services"] = map[string]any{}
+					}
+					mergedServices, ok := manifestValue["services"].(map[string]any)
+					if !ok {
+						return nil, nil, fmt.Errorf("services in %s must be a table", absPath)
+					}
+
+					for serviceName, serviceVal := range subServices {
+						if _, exists := mergedServices[serviceName]; exists {
+							return nil, nil, fmt.Errorf("service %q is defined multiple times (conflict in %s)", serviceName, matchAbs)
+						}
+						mergedServices[serviceName] = serviceVal
+					}
+				}
+
+				for _, serviceName := range subServiceOrder {
+					if !contains(serviceOrder, serviceName) {
+						serviceOrder = append(serviceOrder, serviceName)
+					}
+				}
+
+				if subAnnotation, ok := preparedSub["annotation"].(map[string]any); ok {
+					if subActions, ok := subAnnotation["actions"]; ok {
+						if _, exists := manifestValue["annotation"]; !exists {
+							manifestValue["annotation"] = map[string]any{}
+						}
+						annotationMap, ok := manifestValue["annotation"].(map[string]any)
+						if !ok {
+							return nil, nil, fmt.Errorf("annotation in %s must be a table", absPath)
+						}
+
+						var existingActions []any
+						if rawActions, ok := annotationMap["actions"].([]any); ok {
+							existingActions = rawActions
+						} else if rawActions, ok := annotationMap["actions"].([]map[string]any); ok {
+							existingActions = make([]any, len(rawActions))
+							for i, act := range rawActions {
+								existingActions[i] = act
+							}
+						}
+
+						switch val := subActions.(type) {
+						case []any:
+							existingActions = append(existingActions, val...)
+						case []map[string]any:
+							for _, act := range val {
+								existingActions = append(existingActions, act)
+							}
+						}
+
+						annotationMap["actions"] = existingActions
+					}
+				}
+			}
+		}
+	}
+
+	return manifestValue, serviceOrder, nil
+}
+
+func prepareSubManifest(subManifest map[string]any, rootDir, subDir string) map[string]any {
+	if services, ok := subManifest["services"].(map[string]any); ok {
+		for _, serviceVal := range services {
+			if serviceMap, ok := serviceVal.(map[string]any); ok {
+				if _, exists := serviceMap["cwd"]; !exists {
+					serviceMap["cwd"] = "."
+				}
+			}
+		}
+	}
+
+	if annotation, ok := subManifest["annotation"].(map[string]any); ok {
+		if actions, ok := annotation["actions"].([]any); ok {
+			for _, actionVal := range actions {
+				if actionMap, ok := actionVal.(map[string]any); ok {
+					if cmdVal, ok := actionMap["command"].(map[string]any); ok {
+						if _, exists := cmdVal["cwd"]; !exists {
+							cmdVal["cwd"] = "."
+						}
+					}
+					if agentVal, ok := actionMap["agent"].(map[string]any); ok {
+						if _, exists := agentVal["cwd"]; !exists {
+							agentVal["cwd"] = "."
+						}
+					}
+				}
+			}
+		} else if actions, ok := annotation["actions"].([]map[string]any); ok {
+			for _, actionMap := range actions {
+				if cmdVal, ok := actionMap["command"].(map[string]any); ok {
+					if _, exists := cmdVal["cwd"]; !exists {
+						cmdVal["cwd"] = "."
+					}
+				}
+				if agentVal, ok := actionMap["agent"].(map[string]any); ok {
+					if _, exists := agentVal["cwd"]; !exists {
+						agentVal["cwd"] = "."
+					}
+				}
+			}
+		}
+	}
+
+	rewritten := rewritePaths(rootDir, subDir, subManifest)
+	return rewritten.(map[string]any)
+}
+
+func rewritePaths(rootManifestDir, subManifestDir string, value any) any {
+	switch item := value.(type) {
+	case map[string]any:
+		result := make(map[string]any, len(item))
+		for k, v := range item {
+			if k == "cwd" {
+				if str, ok := v.(string); ok && !filepath.IsAbs(str) && !strings.Contains(str, "{{") {
+					absPath := filepath.Join(subManifestDir, str)
+					relPath, err := filepath.Rel(rootManifestDir, absPath)
+					if err == nil {
+						result[k] = relPath
+					} else {
+						result[k] = absPath
+					}
+					continue
+				}
+			}
+			if k == "watch" {
+				if arr, ok := v.([]any); ok {
+					newArr := make([]any, len(arr))
+					for i, elem := range arr {
+						if str, ok := elem.(string); ok && !filepath.IsAbs(str) && !strings.Contains(str, "{{") {
+							absPath := filepath.Join(subManifestDir, str)
+							relPath, err := filepath.Rel(rootManifestDir, absPath)
+							if err == nil {
+								newArr[i] = relPath
+							} else {
+								newArr[i] = absPath
+							}
+						} else {
+							newArr[i] = elem
+						}
+					}
+					result[k] = newArr
+					continue
+				} else if arr, ok := v.([]string); ok {
+					newArr := make([]any, len(arr))
+					for i, elem := range arr {
+						if !filepath.IsAbs(elem) && !strings.Contains(elem, "{{") {
+							absPath := filepath.Join(subManifestDir, elem)
+							relPath, err := filepath.Rel(rootManifestDir, absPath)
+							if err == nil {
+								newArr[i] = relPath
+							} else {
+								newArr[i] = absPath
+							}
+						} else {
+							newArr[i] = elem
+						}
+					}
+					result[k] = newArr
+					continue
+				}
+			}
+			result[k] = rewritePaths(rootManifestDir, subManifestDir, v)
+		}
+		return result
+	case []any:
+		result := make([]any, len(item))
+		for i, v := range item {
+			result[i] = rewritePaths(rootManifestDir, subManifestDir, v)
+		}
+		return result
+	case []map[string]any:
+		result := make([]map[string]any, len(item))
+		for i, v := range item {
+			if rewritten, ok := rewritePaths(rootManifestDir, subManifestDir, v).(map[string]any); ok {
+				result[i] = rewritten
+			} else {
+				result[i] = v
+			}
+		}
+		return result
+	default:
+		return value
+	}
+}
+
+func copyMap(m map[string]any) map[string]any {
+	if m == nil {
+		return nil
+	}
+	result := make(map[string]any, len(m))
+	for k, v := range m {
+		switch val := v.(type) {
+		case map[string]any:
+			result[k] = copyMap(val)
+		case []any:
+			result[k] = copySlice(val)
+		default:
+			result[k] = v
+		}
+	}
+	return result
+}
+
+func copySlice(s []any) []any {
+	if s == nil {
+		return nil
+	}
+	result := make([]any, len(s))
+	for i, v := range s {
+		switch val := v.(type) {
+		case map[string]any:
+			result[i] = copyMap(val)
+		case []any:
+			result[i] = copySlice(val)
+		default:
+			result[i] = v
+		}
+	}
+	return result
 }
 
 func interpolateManifestValue(value any) (any, []string) {

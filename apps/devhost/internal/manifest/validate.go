@@ -33,7 +33,7 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 	validationIssues := []string{}
 	manifestValue := rawManifest.value
 
-	allowKeys(manifestValue, []string{"annotation", "caddy", "devtools", "name", "services"}, "", &schemaIssues)
+	allowKeys(manifestValue, []string{"annotation", "caddy", "devtools", "name", "services", "includes"}, "", &schemaIssues)
 
 	name, ok := readRequiredNonEmptyString(manifestValue, "name", &schemaIssues)
 	if !ok {
