@@ -9,7 +9,7 @@
   "scripts": {
     "build:release-artifacts:devhost": "bun run ./apps/devhost/scripts/buildReleaseArtifacts.ts",
     "build:devtools-bundle:devhost": "bun run ./apps/devhost/scripts/buildDevtoolsBundle.ts",
-    "check": "typescript-ai-policy check && bun run check:devhost && bun run --cwd packages/devhost-ui check && bun run --cwd packages/docs check",
+    "check": "echo 'Running formatting and policy checks...' && typescript-ai-policy check && echo 'Formatting and policy checks passed successfully!' && bun run check:devhost && bun run --cwd packages/devhost-ui check && bun run --cwd packages/docs check",
     "check:devhost": "./apps/devhost/scripts/check.sh",
     "compile:devhost": "./apps/devhost/scripts/compile.sh",
     "dev": "bun run build:devtools-bundle:devhost && DEVHOST_DEV_ASSETS_DIR=apps/devhost/internal/devtools/dist apps/devhost/bin/devhost --manifest devhost.toml",
