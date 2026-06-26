@@ -43,3 +43,15 @@ Undocumented `DEVHOST_*` variables are reserved for internal supervision and may
   - the manifest service key for the current child process
 - `DEVHOST_MANIFEST_PATH`
   - the absolute path to the resolved `devhost.toml`
+
+## Auto-Injected Service Port Variables
+
+To simplify service discovery without requiring manual template references, `devhost` also automatically injects the resolved port of **every** service with a port as an environment variable into all child processes using the format `DEVHOST_PORT_<SERVICE_NAME_UPPERCASE>`. Non-alphanumeric characters in the service name are replaced with underscores (e.g., `postgres-db` becomes `DEVHOST_PORT_POSTGRES_DB`).
+
+For example, using our `postgres` service from above running on dynamically-allocated port `5433`, **every** service process in the stack will automatically receive:
+
+```sh
+DEVHOST_PORT_POSTGRES=5433
+```
+
+This allows programs to dynamically query ports directly from the environment at startup.

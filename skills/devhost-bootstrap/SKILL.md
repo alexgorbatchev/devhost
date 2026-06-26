@@ -62,7 +62,9 @@ Build the first manifest from `apps/devhost/devhost.example.toml`, then trim it 
 - For a routed service, include both `port` and `host`.
 - For a non-routed service, omit `host`.
 - Prefer the repo's real fixed ports when they are already established.
-- Use `port = "auto"` only when the service can bind from `PORT` and does not need an explicit `health` block.
+- Use `port = "auto"` for services and databases that can bind dynamically. To coordinate dynamic ports:
+  - Consuming services should use late-binding service references (e.g., `env = { DATABASE_URL = "postgres://postgres:postgres@{{ services.db.bindHost }}:{{ services.db.port }}/mydb" }`) or read the auto-injected environment variable `DEVHOST_PORT_<SERVICE_NAME_UPPERCASE>`.
+  - When `port = "auto"` is used, omit explicit `health` blocks so that `devhost` automatically applies a TCP health check on the dynamically allocated port.
 - Prefer explicit HTTP health only when the repo already exposes a stable health URL; otherwise rely on the default TCP health for fixed-port services.
 
 ## Output
