@@ -125,7 +125,7 @@ port = "auto"
 env = { DATABASE_URL = "postgres://...@{{ services.postgres.bindHost }}:{{ services.postgres.port }}/..." }
 ```
 
-For more details see the [Environment Variables Guide](https://alexgorbatchev.github.io/devhost/guides/environment-variables/) page.
+For more details see the [Service References Guide](https://alexgorbatchev.github.io/devhost/guides/service-references/) page.
 
 ### Manifest Includes
 
