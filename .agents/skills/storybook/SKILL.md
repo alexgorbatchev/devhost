@@ -55,6 +55,12 @@ Do not use JSDOM-only hacks, manual DOM event mocking, `dispatchEvent`-driven si
 
 If browser layout or positioning matters, assert against the real DOM and computed browser state.
 
+## Devhost Environment Integration
+
+When running Storybook, Vitest, or Vite-style dev servers in the `devhost` HTTPS-routed development environment, you must handle unique networking, host verification, environment variables, mock web sockets, and test optimization rules.
+
+Refer to the complete guide: [references/devhost-environment.md](references/devhost-environment.md)
+
 ## Checklist
 
 Before finishing a story file, verify all of the following:
