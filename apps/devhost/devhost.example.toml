@@ -5,6 +5,7 @@
 #
 # Top-level sections:
 # - `name` (required)
+# - `includes` (optional; string or string array of file glob patterns to merge multiple sub-manifests)
 # - `[caddy.global]` (optional)
 # - `[devtools]` (optional)
 # - `[devtools.editor]` (optional)
@@ -43,6 +44,19 @@
 # You can interpolate environment variables in string values, for example:
 # `name = "{{ env.USER }}-stack"` or `host = "devhost-{{ env.USER }}.localhost"`.
 name = "hello-stack"
+
+# `includes` lists file paths or glob patterns (relative to this manifest's directory)
+# of sub-manifests to load and merge. This is perfect for monorepos where each sub-application
+# maintains its own services.
+# - Included manifests' services and annotation actions are recursively merged.
+# - Service names must be unique across all merged manifests.
+# - Relative paths (like `cwd` and `watch` folders) in included manifests are automatically
+#   rewritten to be relative to the root manifest's directory.
+# - If `cwd` is missing in an included service, it defaults to the directory of the manifest
+#   it was defined in.
+# - Cyclic references are safely and gracefully ignored.
+#
+# includes = ["packages/*/devhost.toml", "apps/*/devhost.toml"]
 
 # Managed Caddy lifecycle is shared and manual.
 # Start it explicitly with `devhost caddy start` before running one or more stacks.
@@ -285,6 +299,8 @@ dependsOn = ["db"]
 
 [services.api.env]
 LOG_LEVEL = "debug"
+# Use late-binding template references to get the dynamically allocated port and bind host of the `db` service:
+DATABASE_URL = "postgres://postgres:postgres@{{ services.db.bindHost }}:{{ services.db.port }}/mydb"
 
 [services.api.health]
 # `http` defines an absolute HTTP health-check URL.

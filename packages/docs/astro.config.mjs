@@ -32,6 +32,7 @@ export default defineConfig({
             "guides/docker-backed-services",
             "guides/managed-daemon-style-services",
             "guides/environment-variables",
+            "guides/manifest-includes",
             "guides/troubleshooting",
           ],
         },
