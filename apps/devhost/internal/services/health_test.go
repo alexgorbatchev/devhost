@@ -170,6 +170,53 @@ func TestWaitForServiceHealth(t *testing.T) {
 			t.Fatalf("WaitForServiceHealth(...) checks = %d, want 3", checks)
 		}
 	})
+
+	t.Run("triggers OnProgress callback during polling", func(t *testing.T) {
+		t.Parallel()
+
+		progressCalls := 0
+		var elapsedPassed time.Duration
+		var attemptsPassed int
+
+		currentTime := time.Unix(0, 0)
+		error := waitForServiceHealth(WaitForServiceHealthOptions{
+			Health: ResolvedHealthConfig{Kind: "tcp", Interval: 10, Retries: 0, Timeout: 30, Host: stringPointer("127.0.0.1"), Port: intPointer(3000)},
+			ReadExitCode: func() *int {
+				return nil
+			},
+			ServiceName: "web",
+			OnProgress: func(attempts int, elapsed time.Duration) {
+				progressCalls++
+				attemptsPassed = attempts
+				elapsedPassed = elapsed
+			},
+		}, healthDependencies{
+			canConnectToPort: func(host string, port int) bool {
+				return false
+			},
+			isReadyHTTPEndpoint: func(url string) bool { return false },
+			now: func() time.Time {
+				return currentTime
+			},
+			sleep: func(duration time.Duration) {
+				currentTime = currentTime.Add(duration)
+			},
+		})
+
+		wantError := "Service web did not pass its health check within 30ms."
+		if error == nil || error.Error() != wantError {
+			t.Fatalf("WaitForServiceHealth(...) error = %v, want %q", error, wantError)
+		}
+		if progressCalls != 3 {
+			t.Fatalf("OnProgress called %d times, want 3", progressCalls)
+		}
+		if attemptsPassed != 3 {
+			t.Fatalf("OnProgress attempts = %d, want 3", attemptsPassed)
+		}
+		if elapsedPassed != 20*time.Millisecond {
+			t.Fatalf("OnProgress elapsed = %v, want 20ms", elapsedPassed)
+		}
+	})
 }
 
 func TestCheckServiceHealth(t *testing.T) {
