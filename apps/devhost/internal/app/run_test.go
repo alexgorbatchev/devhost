@@ -189,7 +189,21 @@ func TestRunManifestModeReportsExistingSameManifestFixedPortClaim(t *testing.T) 
 	defer stopAdminServer()
 
 	manifestDirectoryPath := t.TempDir()
-	manifestPath := writeManifestWithAdminAddress(t, manifestDirectoryPath, adminAddress)
+	manifestPath := filepath.Join(manifestDirectoryPath, "devhost.toml")
+	manifestText := strings.Join([]string{
+		`name = "hello-stack"`,
+		`killZombies = false`,
+		"",
+		"[caddy.global]",
+		`adminAddress = "` + adminAddress + `"`,
+		"",
+		"[services.web]",
+		`command = "bun run dev"`,
+		"port = 3000",
+	}, "\n")
+	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
+		t.Fatalf("WriteFile(...) error = %v", error)
+	}
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
 	if error := caddy.EnsureManagedCaddyConfig(paths, caddy.ManagedCaddyConfigFallback{AdminAddress: adminAddress}); error != nil {
 		t.Fatalf("EnsureManagedCaddyConfig(...) error = %v", error)

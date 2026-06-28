@@ -257,6 +257,8 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			ManifestPath:            manifest.ManifestPath,
 			Port:                    *service.Port,
 			PortClaimsDirectoryPath: paths.PortClaimsDirectoryPath,
+			KillZombies:             manifest.KillZombies,
+			LogWriter:               options.LogWriter,
 		}); error != nil {
 			return 0, joinCleanupError(error, cleanupError)
 		}
@@ -269,6 +271,8 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			Host:                       host,
 			ManifestPath:               manifest.ManifestPath,
 			RegistrationsDirectoryPath: paths.RegistrationsDirectoryPath,
+			KillZombies:                manifest.KillZombies,
+			LogWriter:                  options.LogWriter,
 		}); error != nil {
 			return 0, joinCleanupError(error, cleanupError)
 		}

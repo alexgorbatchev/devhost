@@ -33,11 +33,16 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 	validationIssues := []string{}
 	manifestValue := rawManifest.value
 
-	allowKeys(manifestValue, []string{"annotation", "caddy", "devtools", "name", "services", "includes"}, "", &schemaIssues)
+	allowKeys(manifestValue, []string{"annotation", "caddy", "devtools", "name", "services", "includes", "killZombies"}, "", &schemaIssues)
 
 	name, ok := readRequiredNonEmptyString(manifestValue, "name", &schemaIssues)
 	if !ok {
 		name = ""
+	}
+
+	killZombies, hasKillZombies := readOptionalBool(manifestValue, "killZombies", &schemaIssues)
+	if !hasKillZombies {
+		killZombies = true
 	}
 
 	validatedAnnotation := validateAnnotation(manifestValue["annotation"], manifestDirectoryPath, &schemaIssues, &validationIssues)
@@ -69,6 +74,7 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 		PrimaryService:        primaryService,
 		ServiceOrder:          append([]string{}, rawManifest.serviceOrder...),
 		Services:              validatedServices,
+		KillZombies:           killZombies,
 	}, nil
 }
 
