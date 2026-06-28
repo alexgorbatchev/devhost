@@ -15,6 +15,7 @@ type Manifest struct {
 	PrimaryService        string
 	ServiceOrder          []string
 	Services              map[string]ValidatedService
+	KillZombies           bool
 }
 
 type ValidatedAnnotation struct {

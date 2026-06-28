@@ -1,6 +1,7 @@
 package caddy
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
@@ -267,6 +268,117 @@ func TestClaimHost(t *testing.T) {
 	}
 	if _, error := os.Stat(claimPath); !errors.Is(error, os.ErrNotExist) {
 		t.Fatalf("stat released host claim error = %v, want not-exist", error)
+	}
+}
+
+func TestClaimHostKillZombies(t *testing.T) {
+	withRouteMutationTestHooks(t, routeMutationTestHooks{
+		now:       time.Date(2026, time.April, 19, 12, 34, 56, 0, time.UTC),
+		processID: 4321,
+		processAlive: func(pid int) bool {
+			return pid == 4321 || pid == 9999
+		},
+	})
+
+	paths := newManagedCaddyPaths(t)
+
+	// Write a registration claimed by another PID but same manifest
+	writeRegistration(t, filepath.Join(paths.RegistrationsDirectoryPath, "hello.localhost_api_2f6170692f2a.json"), strings.Join([]string{
+		"{",
+		`  "appBindHost": "127.0.0.1",`,
+		`  "appPort": 4000,`,
+		`  "createdAt": "2026-04-19T12:34:56.000Z",`,
+		`  "host": "hello.localhost",`,
+		`  "manifestPath": "/tmp/project/devhost.toml",`,
+		`  "ownerPid": 9999,`, // Different PID!
+		`  "path": "/api/*",`,
+		`  "serviceName": "api"`,
+		"}",
+	}, "\n"))
+
+	var buf bytes.Buffer
+
+	// Try to claim the host without KillZombies (should fail)
+	if error := ClaimHost(ClaimHostOptions{
+		Host:                       "hello.localhost",
+		ManifestPath:               "/tmp/project/devhost.toml",
+		RegistrationsDirectoryPath: paths.RegistrationsDirectoryPath,
+		KillZombies:                false,
+		LogWriter:                  &buf,
+	}); error == nil || !strings.Contains(error.Error(), "hello.localhost is already claimed by PID 9999") {
+		t.Fatalf("ClaimHost(...) without KillZombies expected failure, got = %v", error)
+	}
+
+	// Try to claim with KillZombies (should succeed and log)
+	if error := ClaimHost(ClaimHostOptions{
+		Host:                       "hello.localhost",
+		ManifestPath:               "/tmp/project/devhost.toml",
+		RegistrationsDirectoryPath: paths.RegistrationsDirectoryPath,
+		KillZombies:                true,
+		LogWriter:                  &buf,
+	}); error != nil {
+		t.Fatalf("ClaimHost(...) with KillZombies unexpected error = %v", error)
+	}
+
+	if !strings.Contains(buf.String(), "Killing zombie PID 9999 claiming hello.localhost") {
+		t.Fatalf("ClaimHost(...) did not log expected zombie killing message: %q", buf.String())
+	}
+}
+
+func TestClaimFixedPortKillZombies(t *testing.T) {
+	withRouteMutationTestHooks(t, routeMutationTestHooks{
+		now:       time.Date(2026, time.April, 19, 12, 34, 56, 0, time.UTC),
+		processID: 4321,
+		processAlive: func(pid int) bool {
+			return pid == 4321 || pid == 9999
+		},
+	})
+
+	paths := newManagedCaddyPaths(t)
+
+	// Write an existing port claim with another PID but same manifest
+	claimPath := filepath.Join(paths.PortClaimsDirectoryPath, "ipv4_3000.json")
+	claimText := strings.Join([]string{
+		"{",
+		`  "bindHost": "127.0.0.1",`,
+		`  "createdAt": "2026-04-19T12:34:56.000Z",`,
+		`  "manifestPath": "/tmp/project/devhost.toml",`,
+		`  "ownerPid": 9999,`,
+		`  "port": 3000`,
+		"}",
+	}, "\n")
+	if err := os.WriteFile(claimPath, []byte(claimText), 0644); err != nil {
+		t.Fatalf("failed to write existing port claim: %v", err)
+	}
+
+	var buf bytes.Buffer
+
+	// Try to claim the port without KillZombies (should fail)
+	if error := ClaimFixedPort(ClaimFixedPortOptions{
+		BindHost:                "127.0.0.1",
+		ManifestPath:            "/tmp/project/devhost.toml",
+		Port:                    3000,
+		PortClaimsDirectoryPath: paths.PortClaimsDirectoryPath,
+		KillZombies:             false,
+		LogWriter:               &buf,
+	}); error == nil {
+		t.Fatalf("ClaimFixedPort(...) without KillZombies expected failure")
+	}
+
+	// Try to claim with KillZombies (should succeed and log)
+	if error := ClaimFixedPort(ClaimFixedPortOptions{
+		BindHost:                "127.0.0.1",
+		ManifestPath:            "/tmp/project/devhost.toml",
+		Port:                    3000,
+		PortClaimsDirectoryPath: paths.PortClaimsDirectoryPath,
+		KillZombies:             true,
+		LogWriter:               &buf,
+	}); error != nil {
+		t.Fatalf("ClaimFixedPort(...) with KillZombies unexpected error = %v", error)
+	}
+
+	if !strings.Contains(buf.String(), "Killing zombie PID 9999 claiming port 3000") {
+		t.Fatalf("ClaimFixedPort(...) did not log expected zombie killing message: %q", buf.String())
 	}
 }
 

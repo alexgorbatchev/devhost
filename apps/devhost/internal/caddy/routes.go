@@ -23,12 +23,16 @@ type ClaimFixedPortOptions struct {
 	ManifestPath            string
 	Port                    int
 	PortClaimsDirectoryPath string
+	KillZombies             bool
+	LogWriter               io.Writer
 }
 
 type ClaimHostOptions struct {
 	Host                       string
 	ManifestPath               string
 	RegistrationsDirectoryPath string
+	KillZombies                bool
+	LogWriter                  io.Writer
 }
 
 type ActivateRouteOptions struct {
@@ -185,6 +189,19 @@ func ClaimFixedPort(options ClaimFixedPortOptions) error {
 		return error
 	}
 	if !isFixedPortClaimStale(existingClaim) {
+		if options.KillZombies && existingClaim.ManifestPath == options.ManifestPath && existingClaim.OwnerPID != routeMutationProcessID() {
+			if options.LogWriter != nil {
+				_, _ = fmt.Fprintf(options.LogWriter, "[devhost] Killing zombie PID %d claiming port %d...\n", existingClaim.OwnerPID, options.Port)
+			}
+			if process, err := os.FindProcess(existingClaim.OwnerPID); err == nil {
+				_ = process.Kill()
+			}
+			if error := removeIfExists(claimPath); error != nil {
+				return error
+			}
+			return writeFileExclusive(claimPath, claimText)
+		}
+
 		return errors.New(formatFixedPortClaimConflict(options, existingClaim))
 	}
 
@@ -278,6 +295,19 @@ func ClaimHost(options ClaimHostOptions) error {
 	}
 	if existingClaim.OwnerPID == routeMutationProcessID() && existingClaim.ManifestPath == options.ManifestPath {
 		return nil
+	}
+
+	if options.KillZombies && existingClaim.ManifestPath == options.ManifestPath {
+		if options.LogWriter != nil {
+			_, _ = fmt.Fprintf(options.LogWriter, "[devhost] Killing zombie PID %d claiming %s...\n", existingClaim.OwnerPID, options.Host)
+		}
+		if process, err := os.FindProcess(existingClaim.OwnerPID); err == nil {
+			_ = process.Kill()
+		}
+		if error := removeIfExists(hostClaimPath); error != nil {
+			return error
+		}
+		return writeFileExclusive(hostClaimPath, claimText)
 	}
 
 	return fmt.Errorf("%s is already claimed by PID %d from %s.", options.Host, existingClaim.OwnerPID, existingClaim.ManifestPath)
@@ -1210,6 +1240,16 @@ func assertHostIsAvailable(options ClaimHostOptions) error {
 		}
 		if !registration.IsLegacy {
 			if registration.OwnerPID == routeMutationProcessID() && registration.ManifestPath == options.ManifestPath {
+				continue
+			}
+
+			if options.KillZombies && registration.ManifestPath == options.ManifestPath {
+				if options.LogWriter != nil {
+					_, _ = fmt.Fprintf(options.LogWriter, "[devhost] Killing zombie PID %d claiming %s...\n", registration.OwnerPID, options.Host)
+				}
+				if process, err := os.FindProcess(registration.OwnerPID); err == nil {
+					_ = process.Kill()
+				}
 				continue
 			}
 

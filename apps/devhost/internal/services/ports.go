@@ -24,6 +24,7 @@ type ResolvedManifest struct {
 	PrimaryService        string
 	ServiceOrder          []string
 	Services              map[string]ResolvedService
+	KillZombies           bool
 }
 
 type ResolvedService struct {
@@ -157,6 +158,7 @@ func ResolveServicePorts(value manifest.Manifest) (ResolvedManifest, error) {
 		PrimaryService:        value.PrimaryService,
 		ServiceOrder:          append([]string{}, value.ServiceOrder...),
 		Services:              resolvedServices,
+		KillZombies:           value.KillZombies,
 	}, nil
 }
 

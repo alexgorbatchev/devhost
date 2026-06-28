@@ -92,6 +92,10 @@ func TestValidateManifestReturnsNormalizedDefaults(t *testing.T) {
 	if service.Lifecycle.Mode != "foreground" || len(service.Lifecycle.Start) != 0 || len(service.Lifecycle.Status) != 0 || len(service.Lifecycle.Stop) != 0 {
 		t.Fatalf("service.Lifecycle = %#v, want default foreground lifecycle", service.Lifecycle)
 	}
+
+	if !manifest.KillZombies {
+		t.Fatalf("manifest.KillZombies = %t, want true by default", manifest.KillZombies)
+	}
 }
 
 func TestValidateManifestAcceptsAnnotationActions(t *testing.T) {
@@ -152,6 +156,21 @@ func TestValidateManifestAcceptsIdleTimeout(t *testing.T) {
 	}
 }
 
+func TestValidateManifestAcceptsKillZombies(t *testing.T) {
+	t.Parallel()
+
+	manifest, error := ValidateManifest(filepath.Join(string(filepath.Separator), "tmp", "project", "devhost.toml"), rawManifestWithServices(map[string]any{
+		"killZombies": false,
+	}))
+	if error != nil {
+		t.Fatalf("ValidateManifest(...) unexpected error = %v", error)
+	}
+
+	if manifest.KillZombies {
+		t.Fatalf("manifest.KillZombies = %t, want false", manifest.KillZombies)
+	}
+}
+
 func TestValidateManifestAcceptsDocumentedFixtureShape(t *testing.T) {
 	t.Parallel()
 
@@ -200,6 +219,13 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 				"devtools": map[string]any{"idleTimeout": "invalid_duration"},
 			}),
 			wantError: "devtools.idleTimeout must be a valid duration",
+		},
+		{
+			name: "rejects invalid killZombies type",
+			manifest: rawManifestWithServices(map[string]any{
+				"killZombies": "not-a-bool",
+			}),
+			wantError: "killZombies must be a boolean",
 		},
 		{
 			name: "rejects unsupported caddy bind host",
