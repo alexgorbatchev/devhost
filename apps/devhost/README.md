@@ -103,6 +103,19 @@ This scans active registrations and host/port claims, targets the matching runni
 
 After startup, `devhost` prints one line per reachable service URL using the format `service-name: url`.
 
+### Zombie Process Recovery (killZombies)
+
+If a previous `devhost` run crashed, got aborted, or left behind dangling child processes (zombies) claiming the same port or public host, `devhost` will automatically clean them up.
+
+By default, `killZombies = true` is enabled at the manifest level. When `devhost` starts, if it detects a host or fixed-port claim that is already active from the **same manifest file path**, it will automatically find the owning process ID (PID), log a message, terminate/kill that process, and successfully reclaim the host or port.
+
+If you wish to disable this behavior and receive a standard port/host collision error instead, you can set `killZombies = false` at the top level of your `devhost.toml`:
+
+```toml
+name = "hello-stack"
+killZombies = false
+```
+
 ### Manifest Interpolation
 
 Manifest string values support environment-variable interpolation with `{{ env.NAME }}` placeholders. This applies to
