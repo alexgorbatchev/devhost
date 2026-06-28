@@ -5,6 +5,7 @@
 #
 # Top-level sections:
 # - `name` (required)
+# - `killZombies` (optional; boolean to automatically kill zombie processes from the same manifest, default `true`)
 # - `includes` (optional; string or string array of file glob patterns to merge multiple sub-manifests)
 # - `[caddy.global]` (optional)
 # - `[devtools]` (optional)
@@ -44,6 +45,12 @@
 # You can interpolate environment variables in string values, for example:
 # `name = "{{ env.USER }}-stack"` or `host = "devhost-{{ env.USER }}.localhost"`.
 name = "hello-stack"
+
+# `killZombies` controls whether devhost automatically kills and reclaims zombie
+# processes claiming the same hosts or ports from the same manifest path.
+# - `true` (default): find and kill any active devhost child or main process from the same manifest, log a message, and succeed.
+# - `false`: abort and report the claim conflict as an error.
+# killZombies = true
 
 # `includes` lists file paths or glob patterns (relative to this manifest's directory)
 # of sub-manifests to load and merge. This is perfect for monorepos where each sub-application
