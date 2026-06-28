@@ -15,7 +15,7 @@ Local rules for the `devhost` Go app in `apps/devhost/`.
   - logging behavior
   - devtools behavior
   - limitations, caveats, or failure modes
-- If the manifest contract changes, also update `devhost.example.toml`.
+- If the manifest contract changes or the public app surface is changed, also update `devhost.example.toml` and the local devhost skill at `skills/devhost/SKILL.md` (and its reference files).
 - If devtools-specific contributor rules change, also update `packages/devhost-ui/AGENTS.md` and the nested files under `packages/devhost-ui/src/devtools/`.
 - If the tag-driven binary release flow changes, also update `RELEASE.md` and the relevant shared guidance in the repo-root `AGENTS.md`.
 - **CRITICAL:** `packages/docs/sync.ts` regenerates the public docs landing page from `README.md` and the manifest reference from `devhost.example.toml`. After editing either source, you **must** validate `packages/docs` so the GitHub Pages content stays in sync.

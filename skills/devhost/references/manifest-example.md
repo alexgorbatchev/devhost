@@ -6,6 +6,10 @@ Below is a complete, production-grade `devhost.toml` manifest illustrating every
 # `name` identifies the stack in logs, state, and injected metadata.
 name = "hello-stack"
 
+# `killZombies` automatically terminates processes from the same manifest path
+# that are still claiming needed hosts or ports (default: true).
+killZombies = true
+
 # `includes` lists file paths or glob patterns (relative to this manifest's directory)
 # of sub-manifests to load and merge. Perfect for monorepos.
 includes = ["packages/*/devhost.toml", "apps/*/devhost.toml"]
