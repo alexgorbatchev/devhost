@@ -96,7 +96,7 @@ type serviceExitResult struct {
 }
 
 type processStartOptions struct {
-	attemptOutputLines *[]string
+	attemptOutput      *attemptOutputLines
 	environment        map[string]string
 	onStderrLine       func(string)
 	onStdoutLine       func(string)
@@ -750,9 +750,9 @@ func startServiceWithRetries(
 			return nil, fmt.Errorf("unknown service: %s", serviceName)
 		}
 
-		attemptOutputLines := []string{}
+		attemptOutput := &attemptOutputLines{}
 		started, err := startServiceProcess(*manifest, service, processStartOptions{
-			attemptOutputLines: &attemptOutputLines,
+			attemptOutput:      attemptOutput,
 			environment:        environment,
 			onStderrLine: func(line string) {
 				if devtoolsControlServer != nil {
@@ -833,8 +833,9 @@ func startServiceWithRetries(
 			return started, nil
 		}
 
-		started.wait()
-
+		// stopStartedService signals the whole contained process tree and then waits for exit and for the output readers
+		// to drain, so attemptOutput is complete below. Waiting before it could block on a surviving descendant that
+		// still holds the inherited output pipe.
 		if stopError := stopStartedService(started, resolveGracePeriod(options.ShutdownGracePeriod)); stopError != nil {
 			return nil, joinCleanupError(err, stopError)
 		}
@@ -842,7 +843,7 @@ func startServiceWithRetries(
 			_ = devtoolsControlServer.PublishHealthResponse()
 		}
 
-		if !ShouldRetryAutoPortStartup(service, err, attemptOutputLines, retryCount) {
+		if !ShouldRetryAutoPortStartup(service, err, attemptOutput.snapshot(), retryCount) {
 			return nil, err
 		}
 
@@ -1066,28 +1067,46 @@ func startServiceProcess(manifest ResolvedManifest, service ResolvedService, opt
 	)
 	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
-	stdoutPipe, error := command.StdoutPipe()
+	// The parent owns the read ends instead of using Cmd.StdoutPipe/StderrPipe: Cmd.Wait closes those as soon as the
+	// process exits, discarding output still buffered in the pipe (such as the bind-collision line an auto-port retry
+	// depends on). Wait never closes caller-provided files, so the readers drain every line to EOF.
+	stdout, error := newServiceOutputPipe()
 	if error != nil {
 		return nil, fmt.Errorf("create stdout pipe for service %s: %w", service.Name, error)
 	}
 
-	stderrPipe, error := command.StderrPipe()
+	stderr, error := newServiceOutputPipe()
 	if error != nil {
+		stdout.close()
 		return nil, fmt.Errorf("create stderr pipe for service %s: %w", service.Name, error)
 	}
 
+	command.Stdout = stdout.writer
+	command.Stderr = stderr.writer
+
 	if error := prepareServiceContainment(); error != nil {
+		stdout.close()
+		stderr.close()
 		return nil, fmt.Errorf("prepare service %s containment: %w", service.Name, error)
 	}
 
-	if error := command.Start(); error != nil {
-		return nil, fmt.Errorf("start service %s: %w", service.Name, error)
+	startError := command.Start()
+	// The child holds its own copies of the write ends; closing the parent's lets the readers see EOF once the
+	// service (and any descendant that inherited them) is gone.
+	stdout.closeWriter()
+	stderr.closeWriter()
+	if startError != nil {
+		stdout.close()
+		stderr.close()
+		return nil, fmt.Errorf("start service %s: %w", service.Name, startError)
 	}
 
 	containment, error := startServiceContainment(command.Process.Pid, serviceContainmentToken)
 	if error != nil {
 		serviceSignalSender(command, syscall.Signal(9))
 		_ = command.Wait()
+		stdout.close()
+		stderr.close()
 		return nil, fmt.Errorf("start service %s containment: %w", service.Name, error)
 	}
 
@@ -1099,8 +1118,8 @@ func startServiceProcess(manifest ResolvedManifest, service ResolvedService, opt
 	}
 
 	startedService.outputWG.Add(2)
-	go pipeProcessOutput(stdoutPipe, fmt.Sprintf("[%s] ", service.Name), resolveStdoutWriter(options.stdoutWriter), options.attemptOutputLines, options.onStdoutLine, &startedService.outputWG)
-	go pipeProcessOutput(stderrPipe, fmt.Sprintf("[%s] ", service.Name), resolveStderrWriter(options.stderrWriter), options.attemptOutputLines, options.onStderrLine, &startedService.outputWG)
+	go pipeServiceOutput(stdout.reader, fmt.Sprintf("[%s] ", service.Name), resolveStdoutWriter(options.stdoutWriter), options.attemptOutput, options.onStdoutLine, &startedService.outputWG)
+	go pipeServiceOutput(stderr.reader, fmt.Sprintf("[%s] ", service.Name), resolveStderrWriter(options.stderrWriter), options.attemptOutput, options.onStderrLine, &startedService.outputWG)
 	go startedService.waitForExit()
 
 	return startedService, nil
@@ -1237,7 +1256,7 @@ func waitForExitWithinGracePeriod(startedService *startedService, gracePeriod ti
 	}
 }
 
-func pipeProcessOutput(reader io.Reader, prefix string, writer io.Writer, attemptOutputLines *[]string, onLine func(string), wg *sync.WaitGroup) {
+func pipeProcessOutput(reader io.Reader, prefix string, writer io.Writer, attemptOutput *attemptOutputLines, onLine func(string), wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	scanner := bufio.NewScanner(reader)
@@ -1245,7 +1264,7 @@ func pipeProcessOutput(reader io.Reader, prefix string, writer io.Writer, attemp
 
 	for scanner.Scan() {
 		line := prefix + scanner.Text()
-		appendAttemptOutputLine(attemptOutputLines, line)
+		attemptOutput.append(line)
 		_, _ = fmt.Fprintln(writer, line)
 		if onLine != nil {
 			onLine(line)
@@ -1253,18 +1272,7 @@ func pipeProcessOutput(reader io.Reader, prefix string, writer io.Writer, attemp
 	}
 
 	if error := scanner.Err(); error != nil {
-		appendAttemptOutputLine(attemptOutputLines, prefix+error.Error())
-	}
-}
-
-func appendAttemptOutputLine(outputLines *[]string, line string) {
-	if outputLines == nil {
-		return
-	}
-
-	*outputLines = append(*outputLines, line)
-	if len(*outputLines) > maxAttemptOutputLines {
-		*outputLines = (*outputLines)[len(*outputLines)-maxAttemptOutputLines:]
+		attemptOutput.append(prefix + error.Error())
 	}
 }
 

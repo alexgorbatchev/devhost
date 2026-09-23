@@ -1978,6 +1978,8 @@ func TestServiceHelperProcess(t *testing.T) {
 		runRecordStartServeAndExitHelper()
 	case "record-start-and-wait":
 		runRecordStartAndWaitHelper()
+	case "stderr-around-fifo-handshake-and-exit":
+		runStderrAroundFIFOHandshakeAndExitHelper()
 	case "serve-until-health-probe-and-exit":
 		runServeUntilHealthProbeAndExitHelper()
 	case "route-aware-http-server":
@@ -2159,15 +2161,8 @@ func runAutoPortRetryHelper() {
 		panic(error)
 	}
 
-	server := &http.Server{Addr: fmt.Sprintf("127.0.0.1:%d", port), Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		_, _ = writer.Write([]byte("ok"))
-	})}
-	go func() {
-		_ = server.ListenAndServe()
-	}()
-	time.Sleep(250 * time.Millisecond)
-	_ = server.Close()
-	os.Exit(0)
+	// Serve until the TCP health probe connects, then exit cleanly; a fixed serving window races the probe under load.
+	runServeUntilHealthProbeAndExitHelper()
 }
 
 func runDelayedRouteHealthServerHelper() {
