@@ -25,11 +25,12 @@ import (
 )
 
 const (
-	defaultLogLabel              = "devhost"
-	maxAttemptOutputLines        = 50
-	shutdownGracePeriod          = 10 * time.Second
-	lateListenerMonitorDuration  = 2 * time.Second
-	lateListenerPollInterval     = 100 * time.Millisecond
+	defaultLogLabel             = "devhost"
+	maxAttemptOutputLines       = 50
+	shutdownGracePeriod         = 10 * time.Second
+	lateListenerMonitorDuration = 2 * time.Second
+	lateListenerPollInterval    = 100 * time.Millisecond
+	lifecycleCommandWaitDelay   = 100 * time.Millisecond
 )
 
 var serviceSignalSender = sendSignal
@@ -68,14 +69,14 @@ type startedService struct {
 	exited      chan struct{}
 	outputWG    sync.WaitGroup
 
-	restartMu    sync.Mutex
-	isRestarting bool
-	exitMu       sync.Mutex
-	exitCode     int
-	hasExited    bool
-	shutdownMu   sync.Mutex
-	shutdownAt   time.Time
-	shutdownWith syscall.Signal
+	restartMu               sync.Mutex
+	isRestarting            bool
+	exitMu                  sync.Mutex
+	exitCode                int
+	hasExited               bool
+	shutdownMu              sync.Mutex
+	shutdownAt              time.Time
+	shutdownWith            syscall.Signal
 	lastLateListenerCheckAt time.Time
 }
 
@@ -96,12 +97,12 @@ type serviceExitResult struct {
 }
 
 type processStartOptions struct {
-	attemptOutput      *attemptOutputLines
-	environment        map[string]string
-	onStderrLine       func(string)
-	onStdoutLine       func(string)
-	stderrWriter       io.Writer
-	stdoutWriter       io.Writer
+	attemptOutput *attemptOutputLines
+	environment   map[string]string
+	onStderrLine  func(string)
+	onStdoutLine  func(string)
+	stderrWriter  io.Writer
+	stdoutWriter  io.Writer
 }
 
 type daemonLifecycleService struct {
@@ -298,7 +299,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			AnnotationActions:         manifest.Annotation.Actions,
 			AnnotationDefaultActionID: manifest.Annotation.DefaultActionID,
 			ComponentEditor:           manifest.Devtools.Editor.IDE,
-			DevAssetsDir:               devAssetsDir,
+			DevAssetsDir:              devAssetsDir,
 			FeatureToggles:            runtimeDevtoolsFeatures,
 			GetHealthResponse: func() (devtools.HealthResponse, error) {
 				startedServicesMu.Lock()
@@ -439,16 +440,16 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 
 				service = manifest.Services[serviceName]
 			} else {
-			started, err := startServiceWithRetries(manifest, serviceName, serviceExits, options, environment, devtoolsControlServer)
-			if err != nil {
-				return 0, joinCleanupError(err, cleanupError)
-			}
+				started, err := startServiceWithRetries(manifest, serviceName, serviceExits, options, environment, devtoolsControlServer)
+				if err != nil {
+					return 0, joinCleanupError(err, cleanupError)
+				}
 
-			startedServicesMu.Lock()
-			startedServices = append(startedServices, started)
-			startedServicesMu.Unlock()
+				startedServicesMu.Lock()
+				startedServices = append(startedServices, started)
+				startedServicesMu.Unlock()
 
-			service = started.service
+				service = started.service
 			}
 		}
 
@@ -541,7 +542,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			statInterval := 2 * time.Second
 			if finalIdleTimeout < statInterval {
 				statInterval = finalIdleTimeout / 2
-				if statInterval < 10 * time.Millisecond {
+				if statInterval < 10*time.Millisecond {
 					statInterval = 10 * time.Millisecond
 				}
 			}
@@ -571,7 +572,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			checkInterval := 5 * time.Second
 			if finalIdleTimeout < checkInterval {
 				checkInterval = finalIdleTimeout / 2
-				if checkInterval < 10 * time.Millisecond {
+				if checkInterval < 10*time.Millisecond {
 					checkInterval = 10 * time.Millisecond
 				}
 			}
@@ -752,8 +753,8 @@ func startServiceWithRetries(
 
 		attemptOutput := &attemptOutputLines{}
 		started, err := startServiceProcess(*manifest, service, processStartOptions{
-			attemptOutput:      attemptOutput,
-			environment:        environment,
+			attemptOutput: attemptOutput,
+			environment:   environment,
 			onStderrLine: func(line string) {
 				if devtoolsControlServer != nil {
 					devtoolsControlServer.PublishLogEntry(service.Name, devtools.ServiceLogStreamStderr, line)
@@ -963,7 +964,7 @@ func stopDaemonLifecycleServices(
 	options StartStackOptions,
 	environment map[string]string,
 	devtoolsControlServer *devtools.ControlServer,
-	) error {
+) error {
 	var cleanupError error
 
 	for index := len(startedServices) - 1; index >= 0; index-- {
@@ -1015,36 +1016,37 @@ func runServiceCommand(
 	command.Env = createChildEnvironment(environment, service.Env, CreateInjectedServiceEnvironment(manifest, service))
 	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
-	stdoutPipe, err := command.StdoutPipe()
-	if err != nil {
-		return fmt.Errorf("create stdout pipe for service %s %s command: %w", service.Name, commandLabel, err)
-	}
+	stdoutWriter := newLifecycleCommandOutputWriter(
+		fmt.Sprintf("[%s] ", service.Name),
+		resolveStdoutWriter(options.ServiceStdoutWriter),
+		func(line string) {
+			if devtoolsControlServer != nil {
+				devtoolsControlServer.PublishLogEntry(service.Name, devtools.ServiceLogStreamStdout, line)
+			}
+		},
+	)
+	stderrWriter := newLifecycleCommandOutputWriter(
+		fmt.Sprintf("[%s] ", service.Name),
+		resolveStderrWriter(options.ServiceStderrWriter),
+		func(line string) {
+			if devtoolsControlServer != nil {
+				devtoolsControlServer.PublishLogEntry(service.Name, devtools.ServiceLogStreamStderr, line)
+			}
+		},
+	)
 
-	stderrPipe, err := command.StderrPipe()
-	if err != nil {
-		return fmt.Errorf("create stderr pipe for service %s %s command: %w", service.Name, commandLabel, err)
-	}
+	command.Stdout = stdoutWriter
+	command.Stderr = stderrWriter
+	command.WaitDelay = lifecycleCommandWaitDelay
 
 	if err := command.Start(); err != nil {
 		return fmt.Errorf("start service %s %s command: %w", service.Name, commandLabel, err)
 	}
 
-	var outputWG sync.WaitGroup
-	outputWG.Add(2)
-	go pipeProcessOutput(stdoutPipe, fmt.Sprintf("[%s] ", service.Name), resolveStdoutWriter(options.ServiceStdoutWriter), nil, func(line string) {
-		if devtoolsControlServer != nil {
-			devtoolsControlServer.PublishLogEntry(service.Name, devtools.ServiceLogStreamStdout, line)
-		}
-	}, &outputWG)
-	go pipeProcessOutput(stderrPipe, fmt.Sprintf("[%s] ", service.Name), resolveStderrWriter(options.ServiceStderrWriter), nil, func(line string) {
-		if devtoolsControlServer != nil {
-			devtoolsControlServer.PublishLogEntry(service.Name, devtools.ServiceLogStreamStderr, line)
-		}
-	}, &outputWG)
-
-	err = command.Wait()
-	outputWG.Wait()
-	if err != nil {
+	err := command.Wait()
+	stdoutWriter.Flush()
+	stderrWriter.Flush()
+	if err != nil && !errors.Is(err, exec.ErrWaitDelay) {
 		return fmt.Errorf("wait for service %s %s command: %w", service.Name, commandLabel, err)
 	}
 

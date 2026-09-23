@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"sync"
 	"syscall"
 	"testing"
@@ -69,6 +70,9 @@ func TestStartServiceProcessKeepsOutputWrittenBeforeExit(t *testing.T) {
 }
 
 func runStderrAroundFIFOHandshakeAndExitHelper() {
+	if pidPath := os.Getenv("HELPER_PID_PATH"); pidPath != "" {
+		_ = os.WriteFile(pidPath, []byte(strconv.Itoa(os.Getpid())), 0o644)
+	}
 	_, _ = fmt.Fprintln(os.Stderr, "before-handshake")
 	fifo, err := os.Open(os.Getenv("HANDSHAKE_FIFO_PATH"))
 	if err != nil {

@@ -176,10 +176,10 @@ func TestLogServiceURLs(t *testing.T) {
 		t.Parallel()
 
 		manifestValue := ResolvedManifest{
-			Caddy: manifest.CaddyConfig{Global: manifest.CaddyGlobalConfig{HTTPSPort: 443}},
-			Name:  "hello-stack",
+			Caddy:          manifest.CaddyConfig{Global: manifest.CaddyGlobalConfig{HTTPSPort: 443}},
+			Name:           "hello-stack",
 			PrimaryService: "web",
-			ServiceOrder: []string{"api", "web", "worker"},
+			ServiceOrder:   []string{"api", "web", "worker"},
 			Services: map[string]ResolvedService{
 				"api": {
 					BindHost: "127.0.0.1",
@@ -928,7 +928,7 @@ func TestStartStackGracefulIdleTimeoutShutdown(t *testing.T) {
 	}
 
 	startOptions := StartStackOptions{
-		CaddyOutputWriters: caddy.RouteCommandOutputWriters{},
+		CaddyOutputWriters:  caddy.RouteCommandOutputWriters{},
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           os.Stdout,
@@ -2012,6 +2012,10 @@ func TestServiceHelperProcess(t *testing.T) {
 		runDaemonStatusHelper()
 	case "daemon-stop-server":
 		runDaemonStopServerHelper()
+	case "stderr-then-spawn-stderr-holder-and-exit":
+		runStderrThenSpawnStderrHolderAndExitHelper()
+	case "wait-for-termination":
+		runWaitForTerminationHelper()
 	default:
 		os.Exit(2)
 	}
