@@ -98,10 +98,16 @@
 
 :host,
 [data-devhost-story-theme] {
-  --devhost-z-overlay: 2147483500;
-  --devhost-z-dock: 2147483501;
-  --devhost-z-popover: 2147483502;
-  --devhost-z-modal: 2147483600;
+  /* Layers sit near the 32-bit z-index ceiling to stay above host-page overlays. Each value has at most six
+     significant digits because the bundle's CSS minifier rounds numbers to six, which would otherwise collapse
+     neighbouring layers into one z-index and leave stacking to DOM order. `edge` holds surfaces docked to the viewport
+     edge, such as the minimap, which stay usable above terminal windows. */
+  --devhost-z-overlay: 2147440000;
+  --devhost-z-dock: 2147450000;
+  --devhost-z-popover: 2147460000;
+  --devhost-z-modal: 2147470000;
+  --devhost-z-edge: 2147480000;
+  --devhost-minimap-collapsed-width: 12px;
   --devhost-duration-fade: 120ms;
   --devhost-color-scheme: dark;
 

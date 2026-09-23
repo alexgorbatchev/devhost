@@ -24,7 +24,7 @@ The services panel lists every service with its state. Routed services become li
 
 When `[devtools.externalToolbars].enabled = true` (the default), `devhost` also detects supported third-party devtools buttons on the host page, hides the native controls, and re-renders them as toggles in the toolbar. The native panels themselves stay owned by the host tools.
 
-Terminal sessions (annotation agents, annotation commands, and Neovim) appear as chips in the toolbar. Clicking a chip opens its terminal window; minimizing returns it to the chip while the session keeps running and reporting its status. When the chips no longer fit, the rest collapse into a `+N` button that lists every session.
+Terminal sessions (annotation agents, annotation commands, and Neovim) appear as chips in the toolbar. Clicking a chip opens its terminal window; minimizing returns it to the chip while the session keeps running and reporting its status. When the chips no longer fit, the rest collapse into a `+N` button that lists every session. Terminal windows open fullscreen; when the log minimap is shown, the window stops at the minimap strip, and hovering the minimap widens it over the terminal with the usual log preview.
 
 When all devtools features are disabled, `devhost` does not mount these control routes for that stack.
 

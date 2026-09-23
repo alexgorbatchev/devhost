@@ -271,6 +271,7 @@ function AppContent(): JSX.Element {
       ) : null}
       {terminalEnabled ? (
         <TerminalSessionHost
+          isMinimapVisible={shouldRenderMinimap}
           sessions={terminalSessions}
           onMinimizeSession={minimizeSession}
           onRemoveSession={removeSession}
