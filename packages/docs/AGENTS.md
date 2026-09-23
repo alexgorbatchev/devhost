@@ -4,6 +4,7 @@ Public Astro + Starlight docs workspace for `devhost`, published to GitHub Pages
 
 ## Commands
 
+- Open the docs site design reference in the default browser: `just design-docs`
 - Sync the generated landing page and manifest reference: `bun run sync`
 - Start the local docs server: `bun run dev`
 - Check package-local validations: `bun run check`
