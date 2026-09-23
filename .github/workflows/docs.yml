@@ -9,6 +9,7 @@ on:
       - "apps/devhost/README.md"
       - "apps/devhost/devhost.example.toml"
       - "packages/docs/**"
+      - "packages/design/**"
       - "package.json"
       - "bun.lock"
   workflow_dispatch:

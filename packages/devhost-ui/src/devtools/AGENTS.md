@@ -25,14 +25,14 @@ Its vital that when devtools are injected into the user's web application, CSS t
 
 ## Theme tokens & Visual Design
 
-- **Design reference:** `packages/devhost-ui/design/index.html` (`just design`) is the visual source of truth for tokens, layout, and state treatments.
+- **Design reference:** `packages/design/references/devtools.html` (`just design`) is the visual source of truth for tokens, layout, and state treatments.
 
 - **Compact Layout & Sizing:** The UI styling must be compact. This means no large spaces and no large rounded corners. Keep spacing values tight and border-radius options small.
 - **Fixed Monospace Typography:** Fixed monospace fonts must be used throughout the devtools interface (e.g., Maple Mono Normal NF, JetBrainsMono, or other system monospaces). Font sizes must not be too small even though the layout is compact, ensuring high readability.
 - **Distinct Status States:** Disabled, error, active, and neutral states must all be visually distinct from one another. Avoid subtle styling differences that could be missed.
 - **High Contrast:** The overall styling and color palette must provide enough contrast to be easily visible and readable on top of any layout or background color. This rule applies equally to both light and dark themes.
 - **No Redundancy:** There must not be repeated labels, content, or indicators in the layout. Keep the layout lean and informative.
-- **Visual Isolation & Variables:** Shared visual values must come from shadcn-compatible CSS variables in `shared/devtools.css`. Runtime JavaScript theme access must stay in narrow adapters for values CSS cannot consume directly, such as xterm colors, canvas colors, or matched font settings. Shared interaction geometry and layout constants that are not actual theme values belong near the logic that uses them instead of a theme context.
+- **Visual Isolation & Variables:** Shared visual values must come from shadcn-compatible CSS variables in `shared/devtools.css`, which map onto the `--dh-*` tokens imported from `@alexgorbatchev/devhost-design` (`packages/design`); change color values there, not here. xterm takes the literal `TERMINAL_PALETTES` from the same package. Runtime JavaScript theme access must stay in narrow adapters for values CSS cannot consume directly, such as xterm colors, canvas colors, or matched font settings. Shared interaction geometry and layout constants that are not actual theme values belong near the logic that uses them instead of a theme context.
 - **Component Access:** Presentational devtools components must read theme values via semantic Tailwind tokens and shadcn primitives first, not a `theme` prop.
 - **Semantic Mapping:** Shared visual values must come from semantic tokens instead of being duplicated inline across components.
 - **Minimum Token Checklist:** Reusable tokens must include, at minimum:

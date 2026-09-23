@@ -12,13 +12,15 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Check `devhost` app-only validations: `bun run check:devhost`
 - Build `devhost` release tarballs: `bun run build:release-artifacts:devhost`
 - Build the current-platform `devhost` binary: `bun run compile:devhost`
+- Check the shared design tokens package: `bun run --cwd packages/design check`
+- Regenerate `packages/design/tokens.css` after editing `packages/design/src/constants.ts`: `bun run --cwd packages/design write-tokens`
 - Check the injected devtools UI package: `bun run --cwd packages/devhost-ui check`
 - Check the docs package-only validations: `bun run --cwd packages/docs check`
 - Run standalone React Highlight Neovim plugin tests: `bun run test:nvim`
 - Start the root devhost stack locally: `bun run dev`
 - Start the docs site locally: `bun run docs`
-- Open the injected devtools UI design reference (`packages/devhost-ui/design/index.html`) in the default browser: `just design`
-- Open the docs site design reference (`packages/docs/design/index.html`) in the default browser: `just design-docs`
+- Open the injected devtools UI design reference (`packages/design/references/devtools.html`) in the default browser: `just design`
+- Open the docs site design reference (`packages/design/references/docs.html`) in the default browser: `just design-docs`
 
 ## Documentation policy
 
@@ -31,6 +33,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 ## Workspace map
 
 - `apps/devhost/` — Go CLI app; follow `apps/devhost/AGENTS.md`
+- `packages/design/` — shared `--dh-*` design tokens and both design references; follow `packages/design/AGENTS.md`
 - `packages/devhost-ui/` — injected browser UI package; follow `packages/devhost-ui/AGENTS.md`
 - `packages/docs/` — public Astro docs site; follow `packages/docs/AGENTS.md`
 
@@ -42,6 +45,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Workspace `check` scripts are package-local validation only; do not duplicate shared lint/format enforcement there unless a workspace intentionally diverges.
 - `bun run check:devhost` refreshes the generated embedded devtools bundle, then runs `go vet ./...` and `go test ./...` in `apps/devhost/`.
 - `packages/devhost-ui` `bun run check` runs the package TypeScript check, `bun test --coverage`, and `bun vitest run -c vitest.storybook.config.ts`.
+- `packages/design` is the single source of the devhost colors, radii, and host markers for the devtools UI, the docs site, and both design references. Change values only in `packages/design/src/constants.ts` and regenerate `tokens.css`; its `bun run check` fails while the committed file is stale.
 - `packages/docs` `bun run check` runs `bun test`, the content sync, `astro check`, and `astro build`.
 - `packages/docs` `bun run dev`, `bun run start`, and `bun run preview` bind Astro to `0.0.0.0` so the docs site can be reached from outside the current environment.
 - `packages/docs` allows all dev/preview hosts in `astro.config.mjs`, so the docs server should be treated as broadly reachable while it is running.

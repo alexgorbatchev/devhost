@@ -22,21 +22,20 @@
         document.documentElement.dataset.theme = resolved;
       })();
     </script>
+    <!-- Shared color, radius, and marker tokens: the same file the docs site and the devtools UI load. -->
+    <link rel="stylesheet" href="../tokens.css" />
     <style>
       /* ================================================================
        * DESIGN TOKENS
-       * Color, radius, line, and frame tokens are copied verbatim from
-       * packages/devhost-ui/design/index.html so the docs site and the
-       * injected devtools read as one product. Only the type scale and
-       * layout metrics below are docs-specific: long-form reading needs
-       * larger text than the dense 11-13px devtools chrome.
-       * Maps 1:1 to Starlight's --sl-* variables later (see STARLIGHT MAP).
+       * Color, radius, line, and frame tokens (`--dh-*`) come from
+       * ../tokens.css, shared with the docs site and the injected devtools
+       * so they read as one product. Only the type scale and layout
+       * metrics below are docs-specific: long-form reading needs larger
+       * text than the dense 11-13px devtools chrome.
        * ================================================================ */
       :root {
         --dh-font:
           "JetBrainsMono Nerd Font", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        --dh-radius-sm: 2px;
-        --dh-radius-md: 4px;
         --dh-duration-fade: 120ms;
 
         /* Docs type scale */
@@ -57,53 +56,9 @@
         --dh-toc-w: 240px;
         --dh-prose-w: 80ch;
         --dh-gutter: 16px;
-
-        /* Dark (default) — identical to devhost-ui */
-        --dh-surface: #121417;
-        --dh-surface-2: #1c1f24;
-        --dh-surface-3: #282c33;
-        --dh-fg: #eceff3;
-        --dh-fg-muted: #a3abb6;
-        --dh-fg-faint: #6f7783;
-        --dh-line: #353b44;
-        --dh-edge: rgb(255 255 255 / 0.24);
-        --dh-halo: rgb(0 0 0 / 0.92);
-        --dh-shadow: 0 6px 22px rgb(0 0 0 / 0.5);
-        --dh-accent: #ff5cd6;
-        --dh-on-accent: #1a0014;
-        --dh-ok: #3ddc84;
-        --dh-on-ok: #00210f;
-        --dh-warn: #ffb224;
-        --dh-on-warn: #231500;
-        --dh-danger: #ff6159;
-        --dh-on-danger: #1f0000;
-        --dh-danger-soft: rgb(255 97 89 / 0.16);
-        --dh-backdrop: rgb(4 5 7 / 0.7);
-        --dh-term-bg: #0b0c0f;
         color-scheme: dark;
       }
       :root[data-theme="light"] {
-        --dh-surface: #fcfcfd;
-        --dh-surface-2: #eef0f3;
-        --dh-surface-3: #e0e4ea;
-        --dh-fg: #0c0e11;
-        --dh-fg-muted: #4b535e;
-        --dh-fg-faint: #7c8490;
-        --dh-line: #c7ccd4;
-        --dh-edge: rgb(0 0 0 / 0.42);
-        --dh-halo: rgb(255 255 255 / 0.95);
-        --dh-shadow: 0 6px 22px rgb(0 0 0 / 0.3);
-        --dh-accent: #b8168c;
-        --dh-on-accent: #ffffff;
-        --dh-ok: #0a7d40;
-        --dh-on-ok: #ffffff;
-        --dh-warn: #a35400;
-        --dh-on-warn: #ffffff;
-        --dh-danger: #cc1f1f;
-        --dh-on-danger: #ffffff;
-        --dh-danger-soft: rgb(204 31 31 / 0.1);
-        --dh-backdrop: rgb(10 12 16 / 0.55);
-        --dh-term-bg: #ffffff;
         color-scheme: light;
       }
 
@@ -1185,7 +1140,7 @@
 
       /* ------------------------------------------------------------------
        * PROTOTYPE CONTROLS (not part of the design; same convention as
-       * packages/devhost-ui/design/index.html).
+       * devtools.html in this directory).
        * ------------------------------------------------------------------ */
       #proto-controls {
         position: fixed;
@@ -1762,8 +1717,9 @@ open https://foo.localhost</code></pre>
             <h1 class="page-title">Primitives</h1>
             <div class="prose">
               <p>
-                Every element the docs site renders, in every state it needs. Color tokens are shared verbatim with
-                <code>packages/devhost-ui/design/index.html</code>; switch the theme in the header to check both.
+                Every element the docs site renders, in every state it needs. Color tokens come from
+                <code>../tokens.css</code>, shared with <code>devtools.html</code>; switch the theme in the header to
+                check both.
               </p>
               <h2 id="p-color">Color tokens</h2>
               <ul class="swatches" data-swatches></ul>
