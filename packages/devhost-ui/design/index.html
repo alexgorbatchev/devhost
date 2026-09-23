@@ -513,6 +513,7 @@
           --dh-z-dock: 2147483501;
           --dh-z-popover: 2147483502;
           --dh-z-modal: 2147483600;
+          --dh-duration-fade: 120ms;
 
           /* Host-content markers: identical in both themes because they are
              drawn over arbitrary host pixels, never over our own surfaces. */
@@ -651,6 +652,31 @@
           .spin,
           .led.running {
             animation: none;
+          }
+          .fade {
+            transition: none;
+          }
+        }
+
+        /* ================================================================
+         * FADE: native enter/exit for persistent surfaces toggled via `hidden`.
+         * Enter: @starting-style supplies opacity 0 when display leaves none.
+         * Exit: allow-discrete holds `display` until opacity reaches 0.
+         * Firefox (no transitionable display yet) fades in and hides instantly.
+         * ================================================================ */
+        .fade {
+          transition-property: opacity, display;
+          transition-duration: var(--dh-duration-fade);
+          transition-timing-function: ease-out;
+          transition-behavior: allow-discrete;
+        }
+        .fade[hidden] {
+          display: none;
+          opacity: 0;
+        }
+        @starting-style {
+          .fade:not([hidden]) {
+            opacity: 0;
           }
         }
 
@@ -1732,16 +1758,32 @@
       shadow.appendChild(document.getElementById("devhost-styles").content.cloneNode(true));
       const rootElement = document.createElement("div");
       rootElement.className = "root";
+      // Floating surfaces are persistent elements toggled with `hidden` so the
+      // `.fade` enter/exit transition can run (see the FADE section in CSS).
       rootElement.innerHTML = `
         <div data-region="overlay"></div>
-        <div data-region="hint"></div>
-        <div data-region="composer"></div>
-        <div data-region="cmenu"></div>
-        <div data-region="dock"></div>
+        <div class="hint frame fade" data-surface="hint" role="status" hidden>
+          <strong>Annotate</strong><span class="muted">click to mark elements</span><span class="kbd">Esc</span>
+        </div>
+        <section class="composer frame fade" data-surface="composer" aria-label="Annotation draft" hidden></section>
+        <section class="cmenu frame fade" data-surface="cmenu" aria-label="Open component source" hidden></section>
+        <div class="dock" data-surface="dock">
+          <section class="panel frame fade" data-surface="panel" hidden></section>
+          <div class="bar frame" data-surface="bar" role="toolbar" aria-label="devhost"></div>
+        </div>
         <div data-region="minimap"></div>
-        <div data-region="term"></div>`;
+        <div class="backdrop fade" data-surface="backdrop" data-action="session-minimize" hidden></div>
+        <section class="term frame fade" data-surface="term" role="dialog" hidden></section>`;
       shadow.appendChild(rootElement);
       const region = (name) => rootElement.querySelector(`[data-region="${name}"]`);
+      const surface = (name) => rootElement.querySelector(`[data-surface="${name}"]`);
+
+      // `inert` drops a fading-out surface from focus, pointer and a11y trees
+      // immediately, while CSS keeps it painted until the fade completes.
+      function setSurfaceVisible(element, isVisible) {
+        element.hidden = !isVisible;
+        element.inert = !isVisible;
+      }
 
       // Re-rendering via innerHTML must not steal focus/caret from inputs.
       function patch(target, html) {
@@ -1771,9 +1813,9 @@
       function render() {
         hostElement.dataset.theme = resolveTheme();
         renderDockFitted();
-        patch(region("term"), renderTerminal());
-        patch(region("cmenu"), renderComponentMenu());
-        patch(region("hint"), renderHint());
+        renderTerminal();
+        renderComponentMenu();
+        setSurfaceVisible(surface("hint"), state.selecting && state.markers.length === 0);
         renderComposer();
         renderOverlay();
         renderMinimap();
@@ -1812,7 +1854,7 @@
           segments.push(
             `<span class="seg tight"><span class="dot ${worst}"></span><span class="sr-only">stack ${worst}</span></span>`,
           );
-          return `<div class="dock" data-position="${state.position}" data-minimap="${state.minimap}"><div class="bar frame">${segments.join("")}</div></div>`;
+          return segments.join("");
         }
 
         if (services.length > 0 || state.serviceError) {
@@ -1863,20 +1905,26 @@
             </span>`);
         }
 
-        const panel =
-          state.openPanel === "services"
-            ? renderServicesPanel()
-            : state.openPanel === "queues"
-              ? renderQueuesPanel()
-              : state.openPanel === "sessions"
-                ? renderSessionsPanel()
-                : "";
+        return segments.join("");
+      }
 
-        return `
-          <div class="dock" data-position="${state.position}" data-minimap="${state.minimap}">
-            ${panel}
-            <div class="bar frame" role="toolbar" aria-label="devhost">${segments.join("")}</div>
-          </div>`;
+      function readOpenPanel() {
+        if (state.openPanel === "services") return renderServicesPanel();
+        if (state.openPanel === "queues") return renderQueuesPanel();
+        if (state.openPanel === "sessions") return renderSessionsPanel();
+        return null;
+      }
+
+      // The panel keeps its last content while hidden so it can fade out.
+      function renderDockPanel() {
+        const panelElement = surface("panel");
+        const panel = readOpenPanel();
+        if (panel !== null) {
+          panelElement.style.width = `${panel.width}px`;
+          panelElement.setAttribute("aria-label", panel.label);
+          patch(panelElement, panel.html);
+        }
+        setSurfaceVisible(panelElement, panel !== null);
       }
 
       // Chips that do not fit collapse into "+N". Keep the open session and
@@ -1896,19 +1944,23 @@
       // Measure-and-shrink: the bar never clips. Re-render with one fewer chip
       // until the bar fits its available width (or no chips remain).
       function renderDockFitted() {
+        const dock = surface("dock");
+        const bar = surface("bar");
+        dock.dataset.position = state.position;
+        dock.dataset.minimap = String(state.minimap);
         state.sessionChipLimit = Infinity;
-        patch(region("dock"), renderDock());
-        const bar = () => region("dock").querySelector(".bar");
-        let visibleCount = region("dock").querySelectorAll(".bar .chip").length;
-        while (bar() && bar().scrollWidth > bar().clientWidth && visibleCount > 0) {
+        patch(bar, renderDock());
+        let visibleCount = bar.querySelectorAll(".chip").length;
+        while (bar.scrollWidth > bar.clientWidth && visibleCount > 0) {
           visibleCount -= 1;
           state.sessionChipLimit = visibleCount;
-          patch(region("dock"), renderDock());
+          patch(bar, renderDock());
         }
-        if (state.openPanel === "sessions" && !region("dock").querySelector("[data-overflow]")) {
+        if (state.openPanel === "sessions" && !bar.querySelector("[data-overflow]")) {
           state.openPanel = null;
-          patch(region("dock"), renderDock());
+          patch(bar, renderDock());
         }
+        renderDockPanel();
       }
 
       function renderSessionsPanel() {
@@ -1932,11 +1984,13 @@
               </div>`;
           })
           .join("");
-        return `
-          <section class="panel frame" style="width:360px" aria-label="Terminal sessions">
+        return {
+          width: 360,
+          label: "Terminal sessions",
+          html: `
             <header class="panel-head"><span class="grow">Terminal sessions</span></header>
-            <div class="panel-body">${rows}</div>
-          </section>`;
+            <div class="panel-body">${rows}</div>`,
+        };
       }
 
       function renderSessionChip(session) {
@@ -1980,15 +2034,17 @@
               </div>`;
           })
           .join("");
-        return `
-          <section class="panel frame" style="width:300px" aria-label="Services">
+        return {
+          width: 300,
+          label: "Services",
+          html: `
             <header class="panel-head">
               <span class="grow">Services</span>
               <span class="muted" style="font-weight:400" title="Restart changed services (or the primary service)"><span class="kbd">⌃⌥R</span></span>
             </header>
             ${state.serviceError ? renderNotice(state.serviceError, "dismiss-service-error") : ""}
-            <div class="panel-body">${rows}</div>
-          </section>`;
+            <div class="panel-body">${rows}</div>`,
+        };
       }
 
       function renderNotice(message, dismissAction) {
@@ -2039,12 +2095,14 @@
               </article>`;
           })
           .join("");
-        return `
-          <section class="panel frame" style="width:440px" aria-label="Annotation queues">
+        return {
+          width: 440,
+          label: "Annotation queues",
+          html: `
             <header class="panel-head"><span class="grow">Annotation queues</span></header>
             ${state.queueError ? renderNotice(state.queueError, "dismiss-queue-error") : ""}
-            <div class="panel-body">${body}</div>
-          </section>`;
+            <div class="panel-body">${body}</div>`,
+        };
       }
 
       function renderQueueEntry(entry) {
@@ -2083,7 +2141,17 @@
 
       function renderTerminal() {
         const session = state.sessions.find((s) => s.id === state.expandedSessionId);
-        if (!session) return "";
+        const termElement = surface("term");
+        setSurfaceVisible(surface("backdrop"), session !== undefined && !session.fullscreen);
+        if (session !== undefined) {
+          termElement.classList.toggle("fullscreen", session.fullscreen);
+          termElement.setAttribute("aria-label", `${session.title} terminal`);
+          patch(termElement, renderTerminalContent(session));
+        }
+        setSurfaceVisible(termElement, session !== undefined);
+      }
+
+      function renderTerminalContent(session) {
         const running = session.status !== "finished";
         const statusTag = running ? `<span class="tag accent">running</span>` : `<span class="tag ok">finished</span>`;
         const primary = running
@@ -2111,8 +2179,6 @@
   <span class="t-ok">+ &lt;button&gt;Checkout&lt;/button&gt;</span>
 ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ Done.</span>`}`;
         return `
-          ${session.fullscreen ? "" : `<div class="backdrop" data-action="session-minimize" data-id="${session.id}"></div>`}
-          <section class="term frame ${session.fullscreen ? "fullscreen" : ""}" role="dialog" aria-label="${esc(session.title)} terminal">
             <header class="term-head">
               ${session.kind === "editor" ? icon("code") : icon("terminal")}
               <strong>${esc(session.title)}</strong>
@@ -2121,24 +2187,19 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
               <button class="btn icon" type="button" data-action="session-minimize" data-id="${session.id}" title="Minimize to toolbar" aria-label="Minimize">${icon("minus")}</button>
               ${primary}
             </header>
-            <pre class="term-body">${lines}</pre>
-          </section>`;
-      }
-
-      function renderHint() {
-        if (!state.selecting || state.markers.length > 0) return "";
-        return `<div class="hint frame" role="status"><strong>Annotate</strong><span class="muted">click to mark elements</span><span class="kbd">Esc</span></div>`;
+            <pre class="term-body">${lines}</pre>`;
       }
 
       // --- Composer ---------------------------------------------------------
       let composerSignature = "";
       function renderComposer() {
-        const target = region("composer");
+        const target = surface("composer");
         if (state.markers.length === 0) {
           composerSignature = "";
-          target.innerHTML = "";
+          setSurfaceVisible(target, false);
           return;
         }
+        setSurfaceVisible(target, true);
         const action = ANNOTATION_ACTIONS.find((a) => a.id === state.selectedActionId);
         const activeAgent = state.sessions.find(
           (s) => s.kind === "agent" && s.status === "running" && s.label === action.displayName,
@@ -2158,8 +2219,7 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
           const menuBelow = false;
           patch(
             target,
-            `<section class="composer frame" aria-label="Annotation draft" data-composer>
-              <header class="panel-head">
+            `<header class="panel-head">
                 <span>Annotate</span>
                 <span class="muted grow" style="font-weight:400">${state.submitting ? "submitting…" : `${state.markers.length} marker${state.markers.length === 1 ? "" : "s"}`}</span>
                 <button class="btn icon ghost" type="button" data-action="composer-cancel" title="Cancel (Esc)" aria-label="Cancel annotation">${icon("x")}</button>
@@ -2192,16 +2252,15 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
                   <span class="grow"></span>
                   <button class="btn ghost" type="button" data-action="composer-cancel" ${state.submitting ? "disabled" : ""}>Cancel <span class="kbd">Esc</span></button>
                 </div>
-              </div>
-            </section>`,
+              </div>`,
           );
         }
         positionComposer();
       }
 
       function positionComposer() {
-        const composer = region("composer").querySelector("[data-composer]");
-        if (!composer) return;
+        const composer = surface("composer");
+        if (state.markers.length === 0) return;
         const last = state.markers[state.markers.length - 1].el.getBoundingClientRect();
         const width = composer.offsetWidth;
         const height = composer.offsetHeight;
@@ -2219,9 +2278,17 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
       // --- Component source menu -------------------------------------------
       function renderComponentMenu() {
         const menu = state.componentMenu;
-        if (!menu) return "";
+        const menuElement = surface("cmenu");
+        if (menu) {
+          menuElement.style.left = `${menu.x}px`;
+          menuElement.style.top = `${menu.y}px`;
+          patch(menuElement, renderComponentMenuContent(menu));
+        }
+        setSurfaceVisible(menuElement, Boolean(menu));
+      }
+
+      function renderComponentMenuContent(menu) {
         return `
-          <section class="cmenu frame" style="left:${menu.x}px;top:${menu.y}px" aria-label="Open component source" data-cmenu>
             <header class="panel-head"><span class="grow trunc">${esc(menu.title)}</span><span class="muted" style="font-weight:400">open in Neovim</span></header>
             <div class="panel-body" role="menu">
               ${menu.items
@@ -2233,8 +2300,7 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
                 </button>`,
                 )
                 .join("")}
-            </div>
-          </section>`;
+            </div>`;
       }
 
       // --- Host overlays ----------------------------------------------------
