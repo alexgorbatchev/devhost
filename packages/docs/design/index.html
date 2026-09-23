@@ -454,16 +454,21 @@
         background: var(--dh-surface-2);
       }
       .sidebar a[aria-current="page"] {
+        /* Current page is marked by surface + bar, never weight: weight belongs to group headers. */
         color: var(--dh-fg);
-        font-weight: 600;
         background: var(--dh-surface-2);
         box-shadow: inset 2px 0 0 var(--dh-accent);
       }
       .sidebar details {
         margin-top: 16px;
       }
+      /* Nested groups read as an expandable item, not a section header: the
+         indent rule wraps only the children, so it starts under its own row. */
       .sidebar details details {
-        margin: 4px 0 0 8px;
+        margin: 0;
+      }
+      .sidebar details details > ul {
+        margin: 1px 0 0 8px;
         padding-left: 8px;
         border-left: 1px solid var(--dh-line);
       }
@@ -474,7 +479,7 @@
         padding: 4px 8px;
         border-radius: var(--dh-radius-sm);
         color: var(--dh-fg);
-        font-size: var(--dh-doc-text-sm);
+        font-size: var(--dh-doc-text-md);
         font-weight: 700;
         list-style: none;
         cursor: pointer;
@@ -496,8 +501,29 @@
         transform: rotate(90deg);
       }
       .sidebar details details summary {
+        padding: 6px 8px;
         color: var(--dh-fg-muted);
-        font-weight: 600;
+        font-weight: 400;
+      }
+      .sidebar details details summary:hover {
+        color: var(--dh-fg);
+      }
+      /* Top-level group headers get the same rule + accent tick as content h2s.
+         A rule, not text-decoration: underlined text means "link" in the prose. */
+      .sidebar > details > summary {
+        position: relative;
+        margin-bottom: 4px;
+        border-bottom: 1px solid var(--dh-line);
+        border-radius: var(--dh-radius-sm) var(--dh-radius-sm) 0 0;
+      }
+      .sidebar > details > summary::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        bottom: -1px;
+        width: 16px;
+        height: 2px;
+        background: var(--dh-accent);
       }
       .sidebar-footer {
         display: none;
@@ -571,8 +597,9 @@
 
       /* ================================================================
        * PAGE TITLE + PROSE (Starlight: PageTitle, MarkdownContent)
-       * Hierarchy comes from size, weight, and rules; never from color.
-       * Accent is reserved for "current / interactive" state only.
+       * Hierarchy comes from size, weight, and rules. Color is decoration
+       * on top of that (markers, link underlines, rule ticks) and always
+       * comes from the shared status tokens, never from new hues.
        * ================================================================ */
       .breadcrumb {
         display: flex;
@@ -618,7 +645,7 @@
         list-style: "- ";
       }
       .prose li::marker {
-        color: var(--dh-fg-faint);
+        color: var(--dh-accent);
       }
       .prose strong {
         font-weight: 700;
@@ -632,6 +659,17 @@
         margin: 40px 0 16px;
         padding-top: 24px;
         border-top: 1px solid var(--dh-line);
+        position: relative;
+      }
+      /* Accent tick over the start of the section rule. */
+      .heading-wrap.h2::before {
+        content: "";
+        position: absolute;
+        top: -1px;
+        left: 0;
+        width: 32px;
+        height: 2px;
+        background: var(--dh-accent);
       }
       .heading-wrap.h3 {
         margin: 28px 0 12px;
@@ -663,7 +701,7 @@
       .prose a:not(.anchor, .btn) {
         color: var(--dh-fg);
         text-decoration: underline;
-        text-decoration-color: var(--dh-fg-faint);
+        text-decoration-color: color-mix(in srgb, var(--dh-accent) 55%, transparent);
         text-underline-offset: 3px;
       }
       .prose a:not(.anchor, .btn):hover {
@@ -671,9 +709,11 @@
         text-decoration-color: var(--dh-accent);
       }
       /* Everything is monospace, so inline code is set apart by surface, not by font. */
+      /* Side padding stays at a quarter character: the surrounding word space
+         is already a full 1ch, and monospace glyph bearings keep text off the border. */
       .prose :not(pre) > code {
-        padding: 1px 5px;
-        border: 1px solid var(--dh-line);
+        padding: 1px 0.25ch;
+        border: 1px solid color-mix(in srgb, var(--dh-line) 49%, transparent);
         border-radius: var(--dh-radius-sm);
         background: var(--dh-surface-2);
         font-size: 0.92em;
@@ -702,6 +742,12 @@
         background: var(--dh-surface-2);
         color: var(--dh-fg-muted);
         font-size: var(--dh-doc-text-sm);
+      }
+      .code-head > .ic {
+        color: var(--dh-accent);
+      }
+      .code[data-kind="terminal"] .code-head > .ic {
+        color: var(--dh-ok);
       }
       .code-head .lang {
         margin-left: auto;
@@ -737,17 +783,15 @@
         color: var(--dh-fg-faint);
         font-style: italic;
       }
-      .t-kw {
-        color: var(--dh-accent);
+      .t-kw,
+      .t-num {
+        color: var(--dh-warn);
       }
       .t-str {
         color: var(--dh-ok);
       }
-      .t-num {
-        color: var(--dh-warn);
-      }
       .t-sec {
-        color: var(--dh-fg);
+        color: var(--dh-accent);
         font-weight: 700;
       }
       .t-key {
@@ -759,16 +803,16 @@
 
       /* ================================================================
        * ASIDES (Starlight: Aside / :::note :::tip :::caution :::danger)
-       * Tone = inset bar + label color. Only danger fills its surface,
-       * mirroring devhost-ui's `.reason` treatment.
+       * Tone = inset bar + label color + a tone-tinted surface and edge.
+       * Danger keeps devhost-ui's stronger `--dh-danger-soft` fill.
        * ================================================================ */
       .aside {
         --tone: var(--dh-accent);
         margin: 20px 0;
         padding: 10px 14px 12px 16px;
-        border: 1px solid var(--dh-line);
+        border: 1px solid color-mix(in srgb, var(--tone) 35%, var(--dh-line));
         border-radius: var(--dh-radius-md);
-        background: var(--dh-surface-2);
+        background: color-mix(in srgb, var(--tone) 8%, var(--dh-surface));
         box-shadow: inset 2px 0 0 var(--tone);
       }
       .aside.tip {
@@ -849,7 +893,7 @@
       }
       .d-actor rect {
         fill: var(--dh-surface-2);
-        stroke: var(--dh-line);
+        stroke: var(--dh-accent);
       }
       .d-actor text {
         fill: var(--dh-fg);
@@ -903,7 +947,7 @@
         border-color: var(--dh-fg-faint);
       }
       .pagination .dir {
-        color: var(--dh-fg-muted);
+        color: var(--dh-accent);
         font-size: var(--dh-doc-text-sm);
       }
       .pagination .ttl {
