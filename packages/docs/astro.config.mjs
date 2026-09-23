@@ -4,11 +4,23 @@ import react from "@astrojs/react";
 import starlight from "@astrojs/starlight";
 import rehypeMermaid from "rehype-mermaid";
 
+import { rehypeWrapMermaidDiagrams } from "./src/markdown/rehypeWrapMermaidDiagrams";
+import {
+  CODE_STYLE_OVERRIDES,
+  DARK_CODE_THEME_PALETTE,
+  LIGHT_CODE_THEME_PALETTE,
+  MERMAID_CONFIG,
+} from "./src/theme/constants";
+import { createDevhostCodeTheme } from "./src/theme/createDevhostCodeTheme";
+
 export default defineConfig({
   site: "https://alexgorbatchev.github.io",
   base: "/devhost",
   markdown: {
-    rehypePlugins: [[rehypeMermaid, { dark: true, strategy: "img-svg" }]],
+    rehypePlugins: [
+      [rehypeMermaid, { strategy: "inline-svg", mermaidConfig: MERMAID_CONFIG }],
+      rehypeWrapMermaidDiagrams,
+    ],
   },
   server: {
     allowedHosts: true,
@@ -18,7 +30,20 @@ export default defineConfig({
     starlight({
       title: "@alexgorbatchev/devhost",
       description: "Local HTTPS routing and developer tooling for multi-service dev stacks.",
-      customCss: ["./src/styles/docsFontTheme.css"],
+      customCss: [
+        "./src/styles/docsFontTheme.css",
+        "@alexgorbatchev/devhost-design/tokens.css",
+        "./src/styles/devhostTokens.css",
+        "./src/styles/devhostChrome.css",
+        "./src/styles/devhostContent.css",
+      ],
+      components: {
+        SiteTitle: "./src/starlight/SiteTitle.astro",
+      },
+      expressiveCode: {
+        themes: [createDevhostCodeTheme(DARK_CODE_THEME_PALETTE), createDevhostCodeTheme(LIGHT_CODE_THEME_PALETTE)],
+        styleOverrides: CODE_STYLE_OVERRIDES,
+      },
       disable404Route: true,
       social: [{ icon: "github", label: "GitHub", href: "https://github.com/alexgorbatchev/devhost" }],
       sidebar: [
@@ -32,6 +57,7 @@ export default defineConfig({
             "guides/docker-backed-services",
             "guides/managed-daemon-style-services",
             "guides/environment-variables",
+            "guides/service-references",
             "guides/manifest-includes",
             "guides/troubleshooting",
           ],

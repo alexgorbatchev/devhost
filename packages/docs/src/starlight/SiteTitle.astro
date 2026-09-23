@@ -1,0 +1,58 @@
+---
+import { splitSiteTitle } from "./splitSiteTitle";
+
+const { siteTitle, siteTitleHref } = Astro.locals.starlightRoute;
+const { scope, name } = splitSiteTitle(siteTitle);
+---
+
+<a href={siteTitleHref} class="site-title">
+  <span class="mark" aria-hidden="true">dh</span>
+  <span class="title" translate="no"><span class="scope">{scope}</span><span class="name">{name}</span></span>
+</a>
+
+<style>
+  /* Same wordmark treatment as the devtools toolbar logo. */
+  .site-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    color: var(--dh-fg);
+    font-size: var(--dh-doc-text-md);
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .mark {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: var(--dh-radius-sm);
+    background: var(--dh-fg);
+    color: var(--dh-surface);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+  .scope {
+    display: none;
+    color: var(--dh-fg-muted);
+    font-weight: 400;
+  }
+  .site-title:hover .name {
+    color: var(--dh-accent);
+  }
+  /* Starlight's `md` breakpoint: the scope only fits once the sidebar is docked. */
+  @media (min-width: 50rem) {
+    .scope {
+      display: inline;
+    }
+  }
+</style>

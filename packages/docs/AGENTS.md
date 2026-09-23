@@ -18,6 +18,10 @@ Public Astro + Starlight docs workspace for `devhost`, published to GitHub Pages
 - `src/content/docs/guides/**/*.md` is the source of truth for the Guides section.
 - `src/content/docs/architecture/**/*.md` is the source of truth for the Architecture section.
 - `sync.ts` only regenerates `src/content/docs/index.mdx` and `src/content/docs/reference/devhost-example.md` from the app README and manifest reference.
+- `../design/references/docs.html` (`just design-docs`) is the visual design reference for the docs site. Match its tokens, layout, and state treatments when changing docs styling, and update it in the same change when the design intentionally diverges.
+- Site styling lives in `src/styles/devhostTokens.css` (docs type scale and the Starlight `--sl-*` mapping), `src/styles/devhostChrome.css` (header, search, sidebar, table of contents, pagination), and `src/styles/devhostContent.css` (Markdown content, asides, code frames, diagrams). `src/starlight/SiteTitle.astro` overrides Starlight's `SiteTitle`.
+- Colors, radii, and markers come from `@alexgorbatchev/devhost-design` (`tokens.css` in Starlight `customCss`); `src/styles/devhostTokens.css` only adds the docs type scale and the Starlight `--sl-*` mapping. Code block syntax colors come from `src/theme/createDevhostCodeTheme.ts` with palettes derived from `DESIGN_TOKENS`.
+- Mermaid diagrams render as inline SVG themed by `MERMAID_CONFIG` in `src/theme/constants.ts` through `--dh-*` custom properties, so they follow the theme select; `src/markdown/rehypeWrapMermaidDiagrams.ts` wraps each one in a horizontally scrollable figure at its natural width.
 
 ## Local gotchas
 
@@ -29,6 +33,8 @@ Public Astro + Starlight docs workspace for `devhost`, published to GitHub Pages
 - The site ships from GitHub Pages at `/devhost`, so content should rely on relative links or Starlight routing instead of hard-coded root-relative `/...` paths.
 - `src/content/docs/index.mdx` and `src/content/docs/reference/devhost-example.md` are generated outputs; edit `apps/devhost/README.md` and `apps/devhost/devhost.example.toml` instead.
 - Do not add docs tests that snapshot whole static CSS files or literal font/theme declarations when the real contract is config registration or successful build integration.
+- Astro caches rendered Markdown in `node_modules/.astro/data-store.json` and only invalidates it when `astro.config.mjs` itself changes. After editing a module the config imports (rehype plugins, Mermaid or code theme constants), delete that file before `bun run build`, or the build reuses stale content.
+- Starlight ships its CSS inside `@layer`, so the unlayered stylesheets override it without `!important`. They target Starlight 0.38 markup (for example `.sidebar-content .top-level`, `starlight-toc`, `site-search`); recheck the site visually after Starlight upgrades.
 
 ## Boundaries
 
@@ -43,7 +49,11 @@ Public Astro + Starlight docs workspace for `devhost`, published to GitHub Pages
 - `package.json`
 - `astro.config.mjs`
 - `sync.ts`
+- `../design/references/docs.html`
 - `src/content.config.ts`
+- `src/styles/`
+- `src/theme/constants.ts`
+- `../design/AGENTS.md`
 - `.github/workflows/docs.yml`
 - `apps/devhost/README.md`
 - `apps/devhost/devhost.example.toml`

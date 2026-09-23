@@ -1,0 +1,172 @@
+/*
+ * Markdown content restyled to the docs design reference (packages/design/references/docs.html). Hierarchy comes from
+ * size, weight, and rules; color is decoration on top (markers, link underlines, rule ticks) and always comes from
+ * the shared status tokens. `:where(.not-content *)` exclusions follow Starlight so components keep their own styles.
+ */
+
+h1#_top {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.sl-markdown-content :is(h1, h2, h3, h4, h5, h6):not(:where(.not-content *)) {
+  font-weight: 700;
+}
+.sl-markdown-content .sl-heading-wrapper.level-h2 {
+  position: relative;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--dh-line);
+}
+/* Accent tick over the start of the section rule. */
+.sl-markdown-content .sl-heading-wrapper.level-h2::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 2rem;
+  height: 2px;
+  background-color: var(--dh-accent);
+}
+.sl-markdown-content .sl-heading-wrapper.level-h3 {
+  margin-top: 1.75rem;
+}
+.sl-markdown-content .sl-anchor-link {
+  color: var(--dh-fg-faint);
+}
+.sl-markdown-content .sl-anchor-link:hover {
+  color: var(--dh-accent);
+}
+
+.sl-markdown-content a:not(.sl-anchor-link):not(:where(.not-content *)) {
+  color: var(--dh-fg);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--dh-accent) 55%, transparent);
+  text-underline-offset: 3px;
+}
+.sl-markdown-content a:not(.sl-anchor-link):hover:not(:where(.not-content *)) {
+  color: var(--dh-accent);
+  text-decoration-color: var(--dh-accent);
+}
+
+.sl-markdown-content strong:not(:where(.not-content *)) {
+  font-weight: 700;
+}
+
+/*
+ * Everything is monospace, so inline code is set apart by surface, not by font. Side padding stays at a quarter
+ * character: the surrounding word space is already a full 1ch, and glyph bearings keep text off the border.
+ */
+.sl-markdown-content :not(pre) > code:not(:where(.not-content *)) {
+  padding: 0.0625rem 0.25ch;
+  border: 1px solid color-mix(in srgb, var(--dh-line) 49%, transparent);
+  border-radius: var(--dh-radius-sm);
+  background-color: var(--dh-surface-2);
+}
+
+.sl-markdown-content :is(ul, ol):not(:where(.not-content *)) {
+  padding-inline-start: 3ch;
+}
+.sl-markdown-content ul:not(:where(.not-content *)) > li {
+  list-style: "- ";
+}
+.sl-markdown-content li:not(:where(.not-content *))::marker {
+  color: var(--dh-accent);
+}
+
+/* Tables: Starlight renders them as scrollable blocks; frame that block and draw row rules between rows only. */
+.sl-markdown-content table:not(:where(.not-content *)) {
+  border: 1px solid var(--dh-line);
+  border-radius: var(--dh-radius-md);
+  font-size: var(--dh-doc-text-md);
+  line-height: 1.45;
+}
+.sl-markdown-content :is(th, td):not(:where(.not-content *)),
+.sl-markdown-content :is(th:first-child, td:first-child):not(:where(.not-content *)),
+.sl-markdown-content :is(th:last-child, td:last-child):not(:where(.not-content *)) {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 0;
+  vertical-align: top;
+}
+.sl-markdown-content th:not(:where(.not-content *)) {
+  border-bottom: 1px solid var(--dh-line);
+  background-color: var(--dh-surface-2);
+  font-size: var(--dh-doc-text-sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.sl-markdown-content tr + tr td:not(:where(.not-content *)) {
+  border-top: 1px solid var(--dh-line);
+}
+
+/* Asides: tone = inset bar + label color + tone-tinted surface and edge; danger keeps the stronger soft fill. */
+.starlight-aside {
+  border: 1px solid color-mix(in srgb, var(--sl-color-asides-border) 35%, var(--dh-line));
+  border-radius: var(--dh-radius-md);
+  padding: 0.625rem 0.875rem 0.75rem 1rem;
+  background-color: color-mix(in srgb, var(--sl-color-asides-border) 8%, var(--dh-surface));
+  box-shadow: inset 2px 0 0 var(--sl-color-asides-border);
+  color: var(--dh-fg);
+}
+.starlight-aside--note {
+  --sl-color-asides-border: var(--dh-accent);
+  --sl-color-asides-text-accent: var(--dh-accent);
+}
+.starlight-aside--tip {
+  --sl-color-asides-border: var(--dh-ok);
+  --sl-color-asides-text-accent: var(--dh-ok);
+}
+.starlight-aside--caution {
+  --sl-color-asides-border: var(--dh-warn);
+  --sl-color-asides-text-accent: var(--dh-warn);
+}
+.starlight-aside--danger {
+  --sl-color-asides-border: var(--dh-danger);
+  --sl-color-asides-text-accent: var(--dh-danger);
+  background-color: var(--dh-danger-soft);
+}
+.starlight-aside__title {
+  gap: 0.375rem;
+  font-size: var(--dh-doc-text-sm);
+  font-weight: 700;
+}
+.starlight-aside__icon {
+  font-size: 1.1em;
+}
+.starlight-aside__title + .starlight-aside__content {
+  margin-top: 0.25rem;
+}
+
+/*
+ * Expressive Code terminal frames: the header icon slot is a 60x16 strip sized for three dots. Give the terminal
+ * glyph (CODE_STYLE_OVERRIDES.frames.terminalIcon) a square, vertically centered icon box instead.
+ */
+.expressive-code .frame.is-terminal .header::before {
+  top: 50%;
+  width: 0.875rem;
+  height: 0.875rem;
+  transform: translateY(-50%);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+/* Mermaid diagrams, wrapped by src/markdown/rehypeWrapMermaidDiagrams.ts; colors come from MERMAID_THEME_CSS. */
+.sl-markdown-content .dh-diagram {
+  margin-inline: 0;
+  border: 1px solid var(--dh-line);
+  border-radius: var(--dh-radius-md);
+  background-color: var(--dh-term-bg);
+  overflow: hidden;
+}
+.dh-diagram-scroll {
+  padding: 1rem;
+  overflow-x: auto;
+}
+.dh-diagram-scroll:focus-visible {
+  outline: 2px solid var(--dh-accent);
+  outline-offset: -2px;
+}
+.dh-diagram svg {
+  display: block;
+  height: auto;
+}

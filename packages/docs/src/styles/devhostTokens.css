@@ -1,0 +1,99 @@
+/*
+ * Docs-site tokens and the Starlight variable mapping.
+ *
+ * Color, radius, and marker tokens (`--dh-*`) come from @alexgorbatchev/devhost-design/tokens.css, registered ahead
+ * of this file in astro.config.mjs; packages/design/references/docs.html is the visual reference for how the docs use
+ * them. Only the docs type scale and control height live here.
+ *
+ * Starlight ships all of its CSS inside `@layer`, so these unlayered rules win over its dark defaults, its
+ * `[data-theme="light"]` block, and its breakpoint overrides without needing `!important`.
+ */
+/* `::backdrop` does not reliably inherit from :root, so it gets the tokens too (as Starlight does). */
+:root,
+::backdrop {
+  --dh-doc-text-xs: 0.6875rem;
+  --dh-doc-text-sm: 0.75rem;
+  --dh-doc-text-md: 0.8125rem;
+  --dh-doc-text: 0.875rem;
+  --dh-doc-text-h3: 0.9375rem;
+  --dh-doc-text-h2: 1.125rem;
+  --dh-doc-text-h1: 1.625rem;
+  --dh-control-h: 1.75rem;
+}
+
+/* Starlight theme variables mapped onto the tokens. Declared once: the tokens themselves switch with data-theme. */
+:root,
+::backdrop {
+  --sl-color-white: var(--dh-fg);
+  --sl-color-gray-1: var(--dh-fg);
+  --sl-color-gray-2: var(--dh-fg-muted);
+  --sl-color-gray-3: var(--dh-fg-faint);
+  --sl-color-gray-4: var(--dh-fg-faint);
+  --sl-color-gray-5: var(--dh-line);
+  --sl-color-gray-6: var(--dh-surface-2);
+  --sl-color-gray-7: var(--dh-surface-2);
+  --sl-color-black: var(--dh-surface);
+
+  --sl-color-accent-low: color-mix(in srgb, var(--dh-accent) 18%, var(--dh-surface));
+  --sl-color-accent: var(--dh-accent);
+  --sl-color-accent-high: var(--dh-accent);
+
+  /* Hue ramps drive Starlight badges; map them to the matching status tokens. */
+  --sl-color-purple-low: color-mix(in srgb, var(--dh-accent) 16%, var(--dh-surface));
+  --sl-color-purple: var(--dh-accent);
+  --sl-color-purple-high: var(--dh-accent);
+  --sl-color-blue-low: color-mix(in srgb, var(--dh-accent) 16%, var(--dh-surface));
+  --sl-color-blue: var(--dh-accent);
+  --sl-color-blue-high: var(--dh-accent);
+  --sl-color-green-low: color-mix(in srgb, var(--dh-ok) 16%, var(--dh-surface));
+  --sl-color-green: var(--dh-ok);
+  --sl-color-green-high: var(--dh-ok);
+  --sl-color-orange-low: color-mix(in srgb, var(--dh-warn) 16%, var(--dh-surface));
+  --sl-color-orange: var(--dh-warn);
+  --sl-color-orange-high: var(--dh-warn);
+  --sl-color-red-low: var(--dh-danger-soft);
+  --sl-color-red: var(--dh-danger);
+  --sl-color-red-high: var(--dh-danger);
+
+  --sl-color-text: var(--dh-fg);
+  --sl-color-text-accent: var(--dh-accent);
+  --sl-color-text-invert: var(--dh-on-accent);
+  --sl-color-bg: var(--dh-surface);
+  --sl-color-bg-nav: var(--dh-surface);
+  --sl-color-bg-sidebar: var(--dh-surface);
+  --sl-color-bg-inline-code: var(--dh-surface-2);
+  --sl-color-bg-accent: var(--dh-accent);
+  --sl-color-hairline-light: var(--dh-line);
+  --sl-color-hairline: var(--dh-line);
+  --sl-color-hairline-shade: var(--dh-line);
+  --sl-color-backdrop-overlay: var(--dh-backdrop);
+
+  --sl-shadow-sm: none;
+  --sl-shadow-md: none;
+  --sl-shadow-lg: 0 0 0 1px var(--dh-halo), var(--dh-shadow);
+
+  --sl-text-body: var(--dh-doc-text);
+  --sl-text-body-sm: var(--dh-doc-text-md);
+  --sl-text-code: var(--dh-doc-text-md);
+  --sl-text-code-sm: 0.92em;
+  --sl-text-h1: var(--dh-doc-text-h1);
+  --sl-text-h2: var(--dh-doc-text-h2);
+  --sl-text-h3: var(--dh-doc-text-h3);
+  --sl-text-h4: var(--dh-doc-text);
+  --sl-text-h5: var(--dh-doc-text);
+  --sl-text-h6: var(--dh-doc-text);
+  --sl-line-height: 1.65;
+  --sl-line-height-headings: 1.3;
+
+  --sl-nav-height: 3rem;
+  --sl-nav-pad-y: 0.625rem;
+  --sl-sidebar-width: 17rem;
+  --sl-sidebar-pad-x: 0.75rem;
+  --sl-menu-button-size: var(--dh-control-h);
+  --sl-content-width: 42rem;
+}
+
+/* Starlight leaves body text at the browser default (1rem); the docs read at the design's 14px body size. */
+body {
+  font-size: var(--sl-text-body);
+}
