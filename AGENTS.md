@@ -17,6 +17,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Run standalone React Highlight Neovim plugin tests: `bun run test:nvim`
 - Start the root devhost stack locally: `bun run dev`
 - Start the docs site locally: `bun run docs`
+- Open the injected devtools UI design reference (`packages/devhost-ui/design/index.html`) in the default browser: `just design`
 
 ## Documentation policy
 
