@@ -24,7 +24,9 @@ export function DevtoolsToolbar(props: IDevtoolsToolbarProps): JSX.Element {
       className={cn(
         "group/toolbar pointer-events-auto fixed z-(--devhost-z-dock) flex",
         props.position === "top-right" ? "top-2" : "bottom-2",
-        props.isMinimapVisible ? "right-5 max-w-[calc(100vw-28px)]" : "right-2 max-w-[calc(100vw-16px)]",
+        props.isMinimapVisible
+          ? "right-[calc(var(--devhost-minimap-collapsed-width)+var(--spacing)*2)] max-w-[calc(100vw-var(--devhost-minimap-collapsed-width)-var(--spacing)*4)]"
+          : "right-2 max-w-[calc(100vw-var(--spacing)*4)]",
       )}
       data-position={props.position}
       data-testid="DevtoolsToolbar"

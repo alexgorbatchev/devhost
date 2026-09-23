@@ -509,10 +509,14 @@
           --dh-control-h: 20px;
           --dh-row-h: 24px;
           --dh-bar-h: 26px;
-          --dh-z-overlay: 2147483500;
-          --dh-z-dock: 2147483501;
-          --dh-z-popover: 2147483502;
-          --dh-z-modal: 2147483600;
+          /* At most six significant digits: the production CSS minifier rounds numbers to six, which would collapse
+             neighbouring layers. `edge` holds edge-docked surfaces (the minimap) that stay usable above terminals. */
+          --dh-z-overlay: 2147440000;
+          --dh-z-dock: 2147450000;
+          --dh-z-popover: 2147460000;
+          --dh-z-modal: 2147470000;
+          --dh-z-edge: 2147480000;
+          --dh-minimap-collapsed-width: 12px;
           --dh-duration-fade: 120ms;
 
           /* Host-content markers: identical in both themes because they are
@@ -915,8 +919,8 @@
           bottom: auto;
         }
         .dock[data-minimap="true"] {
-          right: 20px;
-          max-width: calc(100vw - 28px);
+          right: calc(var(--dh-minimap-collapsed-width) + 8px);
+          max-width: calc(100vw - var(--dh-minimap-collapsed-width) - 16px);
         }
         .bar {
           display: flex;
@@ -1421,6 +1425,11 @@
           border: 0;
           box-shadow: none;
         }
+        /* A fullscreen terminal leaves the collapsed minimap strip uncovered. */
+        .term.fullscreen[data-minimap="true"] {
+          right: var(--dh-minimap-collapsed-width);
+          width: auto;
+        }
         .term-head {
           display: flex;
           align-items: center;
@@ -1459,8 +1468,8 @@
           top: 0;
           right: 0;
           bottom: 0;
-          z-index: var(--dh-z-overlay);
-          width: 12px;
+          z-index: var(--dh-z-edge);
+          width: var(--dh-minimap-collapsed-width);
           background: var(--dh-surface);
           border-left: 1px solid var(--dh-edge);
           box-shadow: -1px 0 0 var(--dh-halo);
@@ -2163,6 +2172,7 @@
         setSurfaceVisible(surface("backdrop"), session !== undefined && !session.fullscreen);
         if (session !== undefined) {
           termElement.classList.toggle("fullscreen", session.fullscreen);
+          termElement.dataset.minimap = String(state.minimap);
           termElement.setAttribute("aria-label", `${session.title} terminal`);
           patch(termElement, renderTerminalContent(session));
         }

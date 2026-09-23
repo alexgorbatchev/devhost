@@ -4,6 +4,7 @@ import { TerminalSessionPanel } from "./TerminalSessionPanel";
 import type { TerminalSession, TerminalSessionStatus } from "../types";
 
 interface ITerminalSessionHostProps {
+  isMinimapVisible: boolean;
   onMinimizeSession: (sessionId: string) => void;
   onRemoveSession: (sessionId: string) => void;
   onSessionStatusChange: (sessionId: string, status: TerminalSessionStatus, errorMessage: string | null) => void;
@@ -25,6 +26,7 @@ export function TerminalSessionHost(props: ITerminalSessionHostProps): JSX.Eleme
         <TerminalSessionPanel
           key={session.sessionId}
           isExpanded={session.isExpanded}
+          isMinimapVisible={props.isMinimapVisible}
           session={session}
           onMinimize={(): void => {
             props.onMinimizeSession(session.sessionId);

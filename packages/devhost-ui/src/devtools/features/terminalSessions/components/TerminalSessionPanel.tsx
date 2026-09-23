@@ -29,6 +29,8 @@ import type {
 
 interface ITerminalSessionPanelProps {
   isExpanded: boolean;
+  /** A fullscreen window leaves the collapsed minimap strip uncovered so the minimap stays usable beside it. */
+  isMinimapVisible: boolean;
   onMinimize: () => void;
   onRemove: () => void;
   onStatusChange: (status: TerminalSessionStatus, errorMessage: string | null) => void;
@@ -298,7 +300,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
           "devhost-fade pointer-events-auto fixed z-(--devhost-z-modal) grid overflow-hidden bg-card text-card-foreground",
           session.errorMessage === null ? "grid-rows-[auto_1fr]" : "grid-rows-[auto_auto_1fr]",
           isFullscreen
-            ? "inset-0"
+            ? cn("inset-y-0 left-0", props.isMinimapVisible ? "right-(--devhost-minimap-collapsed-width)" : "right-0")
             : "top-1/2 left-1/2 h-[min(700px,calc(100vh-32px))] w-[min(1100px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-md border border-edge shadow-frame",
         )}
         data-testid="TerminalSessionPanel--content"

@@ -22,6 +22,7 @@ const meta: Meta<typeof TerminalSessionPanel> = {
   component: TerminalSessionPanel,
   args: {
     isExpanded: true,
+    isMinimapVisible: false,
     onMinimize: fn(),
     onRemove: fn(),
     onStatusChange: fn(),

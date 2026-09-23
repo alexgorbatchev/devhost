@@ -142,8 +142,8 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
     <aside
       aria-hidden="true"
       className={cn(
-        "pointer-events-auto fixed inset-y-0 right-0 z-(--devhost-z-overlay) box-border border-l border-edge bg-card shadow-[-1px_0_0_var(--halo)] transition-[width] duration-(--devhost-duration-fade) ease-out",
-        props.isHovered ? "w-24" : "w-3",
+        "pointer-events-auto fixed inset-y-0 right-0 z-(--devhost-z-edge) box-border border-l border-edge bg-card shadow-[-1px_0_0_var(--halo)] transition-[width] duration-(--devhost-duration-fade) ease-out",
+        props.isHovered ? "w-24" : "w-(--devhost-minimap-collapsed-width)",
       )}
       data-testid="LogMinimap"
       onMouseEnter={(): void => {
