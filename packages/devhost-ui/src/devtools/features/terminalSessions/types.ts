@@ -1,3 +1,4 @@
+import type { DevtoolsColorScheme } from "../../shared/DevtoolsColorScheme";
 import type { ISourceLocation } from "../../shared/sourceLocation";
 import type { IAnnotationSubmitDetail } from "../annotationComposer/types";
 
@@ -27,6 +28,7 @@ export type EditorTerminalLauncher = "neovim";
 export interface IStartAgentTerminalSessionRequest {
   annotation: IAnnotationSubmitDetail;
   actionId: string;
+  colorScheme?: DevtoolsColorScheme;
   displayName: string;
   kind: "agent";
   targetSessionId?: string;

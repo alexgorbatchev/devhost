@@ -40,7 +40,7 @@ func (s *ControlServer) handleTerminalSessions(writer http.ResponseWriter, reque
 				http.Error(writer, "Invalid terminal session payload.", http.StatusBadRequest)
 				return
 			}
-			result, queueErr := s.annotationQueueStore.enqueue(terminalRequest.ActionID, *terminalRequest.Annotation, targetSessionID)
+			result, queueErr := s.annotationQueueStore.enqueue(terminalRequest.ActionID, *terminalRequest.Annotation, terminalRequest.ColorScheme, targetSessionID)
 			err = queueErr
 			sessionID = result.SessionID
 		} else {

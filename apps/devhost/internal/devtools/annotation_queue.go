@@ -105,11 +105,12 @@ type queueSessionResult struct {
 }
 
 type persistedAnnotationQueueEntry struct {
-	ActionID   string                 `json:"actionId,omitempty"`
-	Annotation annotationSubmitDetail `json:"annotation"`
-	CreatedAt  int64                  `json:"createdAt"`
-	EntryID    string                 `json:"entryId"`
-	UpdatedAt  int64                  `json:"updatedAt"`
+	ActionID    string                 `json:"actionId,omitempty"`
+	Annotation  annotationSubmitDetail `json:"annotation"`
+	ColorScheme agentColorScheme       `json:"colorScheme,omitempty"`
+	CreatedAt   int64                  `json:"createdAt"`
+	EntryID     string                 `json:"entryId"`
+	UpdatedAt   int64                  `json:"updatedAt"`
 }
 
 type persistedAnnotationQueueRecord struct {
@@ -137,6 +138,7 @@ type liveAgentSessionSnapshot struct {
 	actionID    string
 	agentStatus *agentSessionStatus
 	annotation  annotationSubmitDetail
+	colorScheme agentColorScheme
 	sessionID   string
 }
 
@@ -146,7 +148,7 @@ type annotationQueueStoreOptions struct {
 	readLiveAgentSession     func(string) *liveAgentSessionSnapshot
 	routedServices           []RoutedServiceIdentity
 	stackName                string
-	startAgentSession        func(string, annotationSubmitDetail) (string, error)
+	startAgentSession        func(string, annotationSubmitDetail, agentColorScheme) (string, error)
 	stateDirectoryPath       string
 	writeAnnotationToSession func(string, string, annotationSubmitDetail) error
 }
@@ -159,7 +161,7 @@ type annotationQueueStore struct {
 	onQueuesChanged          func([]annotationQueueSnapshot)
 	readLiveAgentSession     func(string) *liveAgentSessionSnapshot
 	routedServices           []RoutedServiceIdentity
-	startAgentSession        func(string, annotationSubmitDetail) (string, error)
+	startAgentSession        func(string, annotationSubmitDetail, agentColorScheme) (string, error)
 	writeAnnotationToSession func(string, string, annotationSubmitDetail) error
 }
 
@@ -199,7 +201,7 @@ func (s *annotationQueueStore) getSnapshot() []annotationQueueSnapshot {
 	return s.createSnapshotsLocked()
 }
 
-func (s *annotationQueueStore) enqueue(actionID string, annotation annotationSubmitDetail, targetSessionID *string) (queueSessionResult, error) {
+func (s *annotationQueueStore) enqueue(actionID string, annotation annotationSubmitDetail, colorScheme agentColorScheme, targetSessionID *string) (queueSessionResult, error) {
 	if actionID == "" {
 		actionID = defaultAnnotationActionID
 	}
@@ -222,7 +224,7 @@ func (s *annotationQueueStore) enqueue(actionID string, annotation annotationSub
 		targetQueue = s.findQueueBySessionIDLocked(*targetSessionID)
 	}
 	if targetQueue != nil {
-		return s.enqueueIntoExistingQueueLocked(targetQueue, actionID, annotation, time.Now().UnixMilli())
+		return s.enqueueIntoExistingQueueLocked(targetQueue, createPersistedQueueEntry(actionID, annotation, colorScheme, time.Now().UnixMilli()))
 	}
 
 	var serviceQueue *runtimeAnnotationQueueRecord
@@ -230,15 +232,14 @@ func (s *annotationQueueStore) enqueue(actionID string, annotation annotationSub
 		serviceQueue = s.findQueueByServiceKeyLocked(actionID, annotationServiceKey)
 	}
 	if serviceQueue != nil {
-		return s.enqueueIntoExistingQueueLocked(serviceQueue, actionID, annotation, time.Now().UnixMilli())
+		return s.enqueueIntoExistingQueueLocked(serviceQueue, createPersistedQueueEntry(actionID, annotation, colorScheme, time.Now().UnixMilli()))
 	}
 
 	var liveTarget *liveAgentSessionSnapshot
 	if shouldUseTargetSession {
 		liveTarget = targetLiveSession
 	}
-	timestamp := time.Now().UnixMilli()
-	queue := createRuntimeQueueForEnqueue(actionID, annotation, timestamp, liveTarget)
+	queue := createRuntimeQueueForEnqueue(createPersistedQueueEntry(actionID, annotation, colorScheme, time.Now().UnixMilli()), liveTarget)
 	s.queues[queue.queueID] = queue
 	s.queueOrder = append(s.queueOrder, queue.queueID)
 	if err := s.persistLocked(); err != nil {
@@ -394,7 +395,9 @@ func (s *annotationQueueStore) resumePersistedQueue(queueID string) (queueSessio
 	return queueSessionResult{SessionID: sessionID}, nil
 }
 
-func (s *annotationQueueStore) resumeQueue(queueID string) (queueSessionResult, error) {
+// resumeQueue restarts a paused queue. A non-empty colorScheme replaces the one stored on the current entry, so the
+// resumed agent renders for the devtools theme in effect now; empty keeps the stored scheme.
+func (s *annotationQueueStore) resumeQueue(queueID string, colorScheme agentColorScheme) (queueSessionResult, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -407,9 +410,14 @@ func (s *annotationQueueStore) resumeQueue(queueID string) (queueSessionResult, 
 	}
 
 	previousPauseReason := queue.pauseReason
+	previousColorScheme := queue.currentEntry.ColorScheme
 	queue.pauseReason = nil
+	if colorScheme != "" {
+		queue.currentEntry.ColorScheme = colorScheme
+	}
 	if err := s.persistLocked(); err != nil {
 		queue.pauseReason = previousPauseReason
+		queue.currentEntry.ColorScheme = previousColorScheme
 		return queueSessionResult{}, err
 	}
 
@@ -485,8 +493,8 @@ func (s *annotationQueueStore) deleteEntry(entryID string) error {
 	return nil
 }
 
-func (s *annotationQueueStore) enqueueIntoExistingQueueLocked(queue *runtimeAnnotationQueueRecord, actionID string, annotation annotationSubmitDetail, timestamp int64) (queueSessionResult, error) {
-	queue.pendingEntries = append(queue.pendingEntries, createPersistedQueueEntry(actionID, annotation, timestamp))
+func (s *annotationQueueStore) enqueueIntoExistingQueueLocked(queue *runtimeAnnotationQueueRecord, entry persistedAnnotationQueueEntry) (queueSessionResult, error) {
+	queue.pendingEntries = append(queue.pendingEntries, entry)
 	if err := s.persistLocked(); err != nil {
 		return queueSessionResult{}, err
 	}
@@ -532,7 +540,7 @@ func (s *annotationQueueStore) dispatchQueueHeadLocked(queue *runtimeAnnotationQ
 		return activeSession.sessionID, nil
 	}
 
-	sessionID, err := s.startAgentSession(queue.currentEntry.ActionID, queue.currentEntry.Annotation)
+	sessionID, err := s.startAgentSession(queue.currentEntry.ActionID, queue.currentEntry.Annotation, queue.currentEntry.ColorScheme)
 	if err != nil {
 		return "", err
 	}
@@ -690,12 +698,12 @@ func (s *annotationQueueStore) deleteQueueLocked(queueID string) {
 	}
 }
 
-func createRuntimeQueueForEnqueue(actionID string, annotation annotationSubmitDetail, timestamp int64, liveTargetSession *liveAgentSessionSnapshot) *runtimeAnnotationQueueRecord {
+func createRuntimeQueueForEnqueue(entry persistedAnnotationQueueEntry, liveTargetSession *liveAgentSessionSnapshot) *runtimeAnnotationQueueRecord {
 	if liveTargetSession == nil {
-		return createRuntimeQueueRecord(createPersistedQueueEntry(actionID, annotation, timestamp))
+		return createRuntimeQueueRecord(entry)
 	}
 	if liveTargetSession.agentStatus != nil && *liveTargetSession.agentStatus == agentSessionStatusFinished {
-		queue := createRuntimeQueueRecord(createPersistedQueueEntry(actionID, annotation, timestamp))
+		queue := createRuntimeQueueRecord(entry)
 		queue.activeSessionID = stringPointer(liveTargetSession.sessionID)
 		queue.status = annotationQueueStatusLaunching
 		return queue
@@ -708,8 +716,8 @@ func createRuntimeQueueForEnqueue(actionID string, annotation annotationSubmitDe
 
 	return &runtimeAnnotationQueueRecord{
 		activeSessionID: stringPointer(liveTargetSession.sessionID),
-		currentEntry:    createPersistedQueueEntry(liveTargetSession.actionID, liveTargetSession.annotation, liveTargetSession.annotation.SubmittedAt),
-		pendingEntries:  []persistedAnnotationQueueEntry{createPersistedQueueEntry(actionID, annotation, timestamp)},
+		currentEntry:    createPersistedQueueEntry(liveTargetSession.actionID, liveTargetSession.annotation, liveTargetSession.colorScheme, liveTargetSession.annotation.SubmittedAt),
+		pendingEntries:  []persistedAnnotationQueueEntry{entry},
 		queueID:         mustCreateID(),
 		status:          status,
 	}
@@ -724,16 +732,17 @@ func createRuntimeQueueRecord(currentEntry persistedAnnotationQueueEntry) *runti
 	}
 }
 
-func createPersistedQueueEntry(actionID string, annotation annotationSubmitDetail, timestamp int64) persistedAnnotationQueueEntry {
+func createPersistedQueueEntry(actionID string, annotation annotationSubmitDetail, colorScheme agentColorScheme, timestamp int64) persistedAnnotationQueueEntry {
 	if actionID == "" {
 		actionID = defaultAnnotationActionID
 	}
 	return persistedAnnotationQueueEntry{
-		ActionID:   actionID,
-		Annotation: annotation,
-		CreatedAt:  timestamp,
-		EntryID:    mustCreateID(),
-		UpdatedAt:  timestamp,
+		ActionID:    actionID,
+		Annotation:  annotation,
+		ColorScheme: colorScheme,
+		CreatedAt:   timestamp,
+		EntryID:     mustCreateID(),
+		UpdatedAt:   timestamp,
 	}
 }
 

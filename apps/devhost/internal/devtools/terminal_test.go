@@ -256,6 +256,149 @@ func TestCreateAgentTerminalCommandMatchesBuiltInAdapters(t *testing.T) {
 	}
 }
 
+func TestCreateAgentTerminalCommandAppliesColorScheme(t *testing.T) {
+	t.Parallel()
+
+	annotation := annotationSubmitDetail{
+		Comment:     "Fix the primary button spacing.",
+		Markers:     []annotationMarkerPayload{},
+		StackName:   "hello-stack",
+		SubmittedAt: 1717171717000,
+		Title:       "Buttons",
+		URL:         "https://hello.test/buttons",
+	}
+	tests := []struct {
+		name        string
+		agent       manifest.ValidatedAgent
+		colorScheme agentColorScheme
+		wantCommand func(command *terminalSessionCommand) []string
+		wantTheme   string
+	}{
+		{
+			name:        "pi light",
+			agent:       manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"},
+			colorScheme: agentColorSchemeLight,
+			wantCommand: func(command *terminalSessionCommand) []string {
+				return []string{"pi", "-e", command.command[2], "--use-theme", "light", "@" + command.env["DEVHOST_AGENT_PROMPT_FILE"]}
+			},
+			// The generated Claude settings file is exported to every agent adapter, so it carries the theme too.
+			wantTheme: "light",
+		},
+		{
+			name:        "pi dark",
+			agent:       manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"},
+			colorScheme: agentColorSchemeDark,
+			wantCommand: func(command *terminalSessionCommand) []string {
+				return []string{"pi", "-e", command.command[2], "--use-theme", "dark", "@" + command.env["DEVHOST_AGENT_PROMPT_FILE"]}
+			},
+			// The generated Claude settings file is exported to every agent adapter, so it carries the theme too.
+			wantTheme: "dark",
+		},
+		{
+			name:  "pi unspecified",
+			agent: manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"},
+			wantCommand: func(command *terminalSessionCommand) []string {
+				return []string{"pi", "-e", command.command[2], "@" + command.env["DEVHOST_AGENT_PROMPT_FILE"]}
+			},
+		},
+		{
+			name:        "claude-code light",
+			agent:       manifest.ValidatedAgent{DisplayName: "Claude Code", Kind: "claude-code"},
+			colorScheme: agentColorSchemeLight,
+			wantTheme:   "light",
+		},
+		{
+			name:  "claude-code unspecified",
+			agent: manifest.ValidatedAgent{DisplayName: "Claude Code", Kind: "claude-code"},
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			command, err := createTerminalSessionCommand([]manifest.ValidatedAnnotationAction{{Agent: tc.agent, DisplayName: tc.agent.DisplayName, ID: defaultAnnotationActionID, Kind: "agent"}}, "vscode", "/tmp/project", terminalSessionRequest{
+				ActionID:    defaultAnnotationActionID,
+				Annotation:  &annotation,
+				ColorScheme: tc.colorScheme,
+				Kind:        terminalSessionRequestKindAgent,
+			}, "hello-stack", editorTerminalIntegration{})
+			if err != nil {
+				t.Fatalf("createTerminalSessionCommand(...) error = %v", err)
+			}
+			defer command.cleanup()
+
+			if tc.wantCommand != nil {
+				if got, want := strings.Join(command.command, "\x00"), strings.Join(tc.wantCommand(command), "\x00"); got != want {
+					t.Fatalf("command = %#v, want %#v", command.command, tc.wantCommand(command))
+				}
+			}
+
+			settingsPayload, err := os.ReadFile(command.env["DEVHOST_AGENT_CLAUDE_SETTINGS_FILE"])
+			if err != nil {
+				t.Fatalf("ReadFile(claude settings) error = %v", err)
+			}
+			var settings map[string]any
+			if err := json.Unmarshal(settingsPayload, &settings); err != nil {
+				t.Fatalf("Unmarshal(claude settings) error = %v", err)
+			}
+			theme, hasTheme := settings["theme"]
+			if tc.wantTheme == "" && hasTheme {
+				t.Fatalf("claude settings theme = %#v, want no theme key", theme)
+			}
+			if tc.wantTheme != "" && theme != tc.wantTheme {
+				t.Fatalf("claude settings theme = %#v, want %q", theme, tc.wantTheme)
+			}
+			if _, hasHooks := settings["hooks"]; !hasHooks {
+				t.Fatalf("claude settings = %#v, want status hooks kept", settings)
+			}
+		})
+	}
+}
+
+func TestParseTerminalSessionRequestColorScheme(t *testing.T) {
+	t.Parallel()
+
+	annotation := annotationSubmitDetail{
+		Comment:     "Fix it",
+		Markers:     []annotationMarkerPayload{},
+		StackName:   "hello-stack",
+		SubmittedAt: 1,
+		Title:       "Example",
+		URL:         "https://example.test/page",
+	}
+	tests := []struct {
+		name            string
+		colorScheme     *string
+		wantOK          bool
+		wantColorScheme agentColorScheme
+	}{
+		{name: "light", colorScheme: stringPointer("light"), wantOK: true, wantColorScheme: agentColorSchemeLight},
+		{name: "dark", colorScheme: stringPointer("dark"), wantOK: true, wantColorScheme: agentColorSchemeDark},
+		{name: "omitted", colorScheme: nil, wantOK: true, wantColorScheme: ""},
+		{name: "unsupported", colorScheme: stringPointer("sepia"), wantOK: false},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			kind := terminalSessionRequestKindAgent
+			request, _, ok := parseTerminalSessionRequest(terminalSessionRequestPayload{
+				Annotation:  &annotation,
+				ColorScheme: tc.colorScheme,
+				Kind:        &kind,
+			})
+			if ok != tc.wantOK {
+				t.Fatalf("parseTerminalSessionRequest(...) ok = %v, want %v", ok, tc.wantOK)
+			}
+			if tc.wantOK && request.ColorScheme != tc.wantColorScheme {
+				t.Fatalf("parseTerminalSessionRequest(...) colorScheme = %q, want %q", request.ColorScheme, tc.wantColorScheme)
+			}
+		})
+	}
+}
+
 func TestCreateCommandAnnotationTerminalCommand(t *testing.T) {
 	t.Parallel()
 
@@ -326,14 +469,22 @@ func TestCreateAgentTerminalCommandRejectsUnsupportedEditorSession(t *testing.T)
 func TestCreateAgentSessionFilesWritesExpectedSupportFiles(t *testing.T) {
 	t.Parallel()
 
-	files, err := createAgentSessionFiles(annotationSubmitDetail{
-		Comment:     "Fix it",
-		Markers:     []annotationMarkerPayload{},
-		StackName:   "hello-stack",
-		SubmittedAt: 1,
-		Title:       "Example",
-		URL:         "https://example.test/page",
-	}, defaultAnnotationActionID, "Ask Pi", "Pi", "/tmp/project", "Prompt text", "hello-stack")
+	files, err := createAgentSessionFiles(agentSessionFilesOptions{
+		actionID:         defaultAnnotationActionID,
+		actionLabel:      "Ask Pi",
+		agentDisplayName: "Pi",
+		annotation: annotationSubmitDetail{
+			Comment:     "Fix it",
+			Markers:     []annotationMarkerPayload{},
+			StackName:   "hello-stack",
+			SubmittedAt: 1,
+			Title:       "Example",
+			URL:         "https://example.test/page",
+		},
+		projectRootPath: "/tmp/project",
+		prompt:          "Prompt text",
+		stackName:       "hello-stack",
+	})
 	if err != nil {
 		t.Fatalf("createAgentSessionFiles(...) error = %v", err)
 	}

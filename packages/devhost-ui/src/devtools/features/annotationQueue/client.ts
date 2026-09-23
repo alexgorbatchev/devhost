@@ -1,3 +1,4 @@
+import type { DevtoolsColorScheme } from "../../shared/DevtoolsColorScheme";
 import type { ILocationHostProtocol } from "../../shared/types";
 import { createDevtoolsWebSocketUrl } from "../../shared/createDevtoolsWebSocketUrl";
 import {
@@ -70,13 +71,17 @@ export async function deleteAnnotationQueueEntry(
   );
 }
 
+// The resumed agent session is relaunched for the color scheme the devtools are showing now.
 export async function resumeAnnotationQueue(
   queueId: string,
+  colorScheme: DevtoolsColorScheme,
   fetchImplementation: FetchImplementation,
   controlToken: string,
 ): Promise<IResumeAnnotationQueueResponse> {
   const response = await fetchImplementation(`${ANNOTATION_QUEUES_PATH}/${encodeURIComponent(queueId)}/resume`, {
+    body: JSON.stringify({ colorScheme }),
     headers: {
+      "content-type": "application/json",
       [DEVTOOLS_CONTROL_TOKEN_HEADER_NAME]: controlToken,
     },
     method: "POST",

@@ -331,14 +331,15 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 					actionID:    session.request.ActionID,
 					agentStatus: session.agentStatus,
 					annotation:  *session.request.Annotation,
+					colorScheme: session.request.ColorScheme,
 					sessionID:   sessionID,
 				}
 			},
 			routedServices:     options.RoutedServices,
 			stackName:          options.StackName,
 			stateDirectoryPath: options.StateDirectoryPath,
-			startAgentSession: func(actionID string, annotation annotationSubmitDetail) (string, error) {
-				return controlServer.createTerminalSession(terminalSessionRequest{ActionID: actionID, Annotation: &annotation, Kind: terminalSessionRequestKindAgent})
+			startAgentSession: func(actionID string, annotation annotationSubmitDetail, colorScheme agentColorScheme) (string, error) {
+				return controlServer.createTerminalSession(terminalSessionRequest{ActionID: actionID, Annotation: &annotation, ColorScheme: colorScheme, Kind: terminalSessionRequestKindAgent})
 			},
 			writeAnnotationToSession: func(actionID string, sessionID string, annotation annotationSubmitDetail) error {
 				action, ok := findAnnotationAction(annotationActions, actionID)
@@ -353,9 +354,19 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 				}
 				session.request.Annotation = &annotation
 				write := session.write
+				colorScheme := session.request.ColorScheme
 				controlServer.mu.Unlock()
 
-				sessionFiles, err := createAgentSessionFiles(annotation, action.ID, action.DisplayName, action.Agent.DisplayName, options.ProjectRootPath, createAnnotationAgentPrompt(annotation), options.StackName)
+				sessionFiles, err := createAgentSessionFiles(agentSessionFilesOptions{
+					actionID:         action.ID,
+					actionLabel:      action.DisplayName,
+					agentDisplayName: action.Agent.DisplayName,
+					annotation:       annotation,
+					colorScheme:      colorScheme,
+					projectRootPath:  options.ProjectRootPath,
+					prompt:           createAnnotationAgentPrompt(annotation),
+					stackName:        options.StackName,
+				})
 				if err != nil {
 					return err
 				}

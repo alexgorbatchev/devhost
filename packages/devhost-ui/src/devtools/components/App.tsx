@@ -20,6 +20,7 @@ import {
   ColorSchemeProvider,
   DEVTOOLS_ROOT_ID,
   resolveRoutedServiceKeyForUrl,
+  useDevtoolsColorScheme,
   useResolvedColorScheme,
   RESTART_SERVICE_PATH,
   DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
@@ -57,6 +58,7 @@ function AppContent(): JSX.Element {
     primaryService,
   } = readInjectedDevtoolsConfig();
   const appRootReference = useRef<HTMLDivElement | null>(null);
+  const colorScheme = useDevtoolsColorScheme();
   const { errorMessage, setErrorMessage, services } = useServiceHealth();
   const {
     errorMessage: annotationQueueErrorMessage,
@@ -78,7 +80,7 @@ function AppContent(): JSX.Element {
     startComponentSourceSession,
     submitAnnotation,
     updateSessionStatus,
-  } = useTerminalSessions(terminalEnabled);
+  } = useTerminalSessions(colorScheme, terminalEnabled);
   const [isMinimapHovered, setIsMinimapHovered] = useState<boolean>(false);
   const [selectedAnnotationActionId, setSelectedAnnotationActionId] = useState<string>(annotationDefaultActionId);
   const logEntries = useServiceLogs(isMinimapHovered);
@@ -190,7 +192,7 @@ function AppContent(): JSX.Element {
     async (queueId: string): Promise<string | null> => {
       const resumedQueue = annotationQueues.find((queue) => queue.queueId === queueId);
       const activeEntry = resumedQueue?.entries[0];
-      const sessionId = await resumeQueue(queueId);
+      const sessionId = await resumeQueue(queueId, colorScheme);
       const activeAction = annotationActions.find((action: IAnnotationAction): boolean => {
         return action.id === activeEntry?.actionId;
       });
@@ -199,6 +201,7 @@ function AppContent(): JSX.Element {
         registerStartedSession(sessionId, {
           actionId: activeAction.id,
           annotation: activeEntry.annotation,
+          colorScheme,
           displayName: activeAction.displayName,
           kind: "agent",
         });
@@ -206,7 +209,7 @@ function AppContent(): JSX.Element {
 
       return sessionId;
     },
-    [annotationActions, annotationQueues, registerStartedSession, resumeQueue],
+    [annotationActions, annotationQueues, colorScheme, registerStartedSession, resumeQueue],
   );
   return (
     <div id={DEVTOOLS_ROOT_ID} ref={appRootReference} data-devhost-devtools="" data-testid="AppContent">
