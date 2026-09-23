@@ -71,7 +71,8 @@ func TestStopStack_CleanShutdown(t *testing.T) {
 		t.Fatalf("failed to start helper process: %v", err)
 	}
 	defer func() {
-		_ = cmd.Process.Kill()
+		_ = cmd.Process.Kill() // no-op once StopStack has stopped it
+		_ = cmd.Wait()         // reap the helper so it does not linger as a zombie
 	}()
 
 	manifestPath := filepath.Join(tempDir, "devhost.toml")
