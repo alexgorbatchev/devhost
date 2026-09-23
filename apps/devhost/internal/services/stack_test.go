@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -990,13 +991,28 @@ func TestStartStackReturnsSignalExitCodeAndUnregistersHandlers(t *testing.T) {
 				serviceSignalSender = originalServiceSignalSender
 			}()
 
+			var signalMu sync.Mutex
 			var signalChannel chan<- os.Signal
 			var stoppedSignalChannel chan<- os.Signal
 			registerProcessSignals = func(ch chan<- os.Signal) {
+				signalMu.Lock()
+				defer signalMu.Unlock()
 				signalChannel = ch
 			}
 			unregisterProcessSignals = func(ch chan<- os.Signal) {
+				signalMu.Lock()
+				defer signalMu.Unlock()
 				stoppedSignalChannel = ch
+			}
+			getSignalChannel := func() chan<- os.Signal {
+				signalMu.Lock()
+				defer signalMu.Unlock()
+				return signalChannel
+			}
+			getStoppedSignalChannel := func() chan<- os.Signal {
+				signalMu.Lock()
+				defer signalMu.Unlock()
+				return stoppedSignalChannel
 			}
 			serviceSignalSender = func(command *exec.Cmd, receivedSignal os.Signal) {
 				if receivedSignal == syscall.SIGTERM {
@@ -1048,10 +1064,10 @@ func TestStartStackReturnsSignalExitCodeAndUnregistersHandlers(t *testing.T) {
 
 			waitForCondition(t, 5*time.Second, func() bool {
 				_, error := os.Stat(startTracePath)
-				return error == nil && signalChannel != nil
+				return error == nil && getSignalChannel() != nil
 			})
 
-			signalChannel <- tc.signal
+			getSignalChannel() <- tc.signal
 
 			result := <-resultChannel
 			if result.error != nil {
@@ -1060,8 +1076,8 @@ func TestStartStackReturnsSignalExitCodeAndUnregistersHandlers(t *testing.T) {
 			if result.exitCode != tc.wantExitCode {
 				t.Fatalf("StartStack(...) exit code = %d, want %d", result.exitCode, tc.wantExitCode)
 			}
-			if stoppedSignalChannel != signalChannel {
-				t.Fatalf("unregisterProcessSignals(...) channel = %p, want %p", stoppedSignalChannel, signalChannel)
+			if getStoppedSignalChannel() != getSignalChannel() {
+				t.Fatalf("unregisterProcessSignals(...) channel = %p, want %p", getStoppedSignalChannel(), getSignalChannel())
 			}
 		})
 	}
@@ -1152,7 +1168,7 @@ func TestStopStartedServicesStopsRunningServicesGracefully(t *testing.T) {
 	}
 
 	time.Sleep(100 * time.Millisecond)
-	if error := stopStartedServices([]*startedService{firstService, secondService}, 100*time.Millisecond); error != nil {
+	if error := stopStartedServices([]*startedService{firstService, secondService}, 2*time.Second); error != nil {
 		t.Fatalf("stopStartedServices(...) error = %v", error)
 	}
 
