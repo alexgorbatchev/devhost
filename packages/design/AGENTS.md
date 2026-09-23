@@ -23,6 +23,7 @@ Single source of the devhost design tokens (colors, radii, host markers, termina
 - Always: after changing token values, run `bun run write-tokens` and check both consumers (`bun run --cwd packages/devhost-ui check`, `bun run --cwd packages/docs check`) and both design references.
 - Ask first: renaming or removing a `--dh-*` custom property, because the devtools bundle, the docs site, and the references all consume it.
 - Never: add color literals to consumers when a token exists here.
+- Never: add tests that only snapshot full stylesheet text; verify rule structure and rely on the `tokens.css` freshness check instead.
 
 ## References
 
