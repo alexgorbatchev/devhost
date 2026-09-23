@@ -72,17 +72,17 @@ func (wm *WatchManager) writeLog(message string) {
 }
 
 var excludedDirectories = map[string]bool{
-	".git":        true,
+	".git":         true,
 	"node_modules": true,
-	"vendor":      true,
-	".next":       true,
-	".tmp":        true,
-	"dist":        true,
-	"target":      true,
-	".workspaces": true,
-	".shadow":     true,
-	".agents":     true,
-	"build":       true,
+	"vendor":       true,
+	".next":        true,
+	".tmp":         true,
+	"dist":         true,
+	"target":       true,
+	".workspaces":  true,
+	".shadow":      true,
+	".agents":      true,
+	"build":        true,
 }
 
 func isExcludedDir(name string) bool {
