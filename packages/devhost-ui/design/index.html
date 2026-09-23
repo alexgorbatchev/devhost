@@ -1,0 +1,2762 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>devhost UI prototype</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ------------------------------------------------------------------
+       * HOST PAGE (simulated third-party site). Everything here is outside
+       * the devtools Shadow DOM and exists only to stress-test visibility.
+       * ------------------------------------------------------------------ */
+      html,
+      body {
+        margin: 0;
+      }
+      body {
+        font:
+          16px/1.5 Georgia,
+          "Times New Roman",
+          serif;
+        background: var(--page-bg);
+        color: var(--page-fg);
+        min-height: 100vh;
+      }
+      .page {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 24px 32px 120px;
+      }
+      .site-nav {
+        display: flex;
+        gap: 24px;
+        align-items: center;
+        padding: 14px 32px;
+        background: var(--nav-bg);
+        color: var(--nav-fg);
+      }
+      .site-nav .brand {
+        font-weight: 700;
+        font-size: 20px;
+        margin-right: auto;
+      }
+      .site-nav a {
+        color: inherit;
+      }
+      .hero {
+        padding: 56px 40px;
+        margin: 24px 0;
+        border-radius: 12px;
+        background: var(--hero-bg);
+        color: var(--hero-fg);
+      }
+      .hero h1 {
+        font-size: 48px;
+        margin: 0 0 12px;
+        line-height: 1.1;
+      }
+      .cta {
+        display: inline-block;
+        padding: 12px 22px;
+        border-radius: 999px;
+        border: 0;
+        font: inherit;
+        font-weight: 700;
+        background: var(--cta-bg);
+        color: var(--cta-fg);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 20px;
+      }
+      .card {
+        border-radius: 10px;
+        overflow: hidden;
+        background: var(--card-bg);
+        color: var(--card-fg);
+        box-shadow: 0 2px 10px rgb(0 0 0 / 0.15);
+      }
+      .card .img {
+        height: 140px;
+        background: var(--img-bg);
+      }
+      .card .body {
+        padding: 14px;
+      }
+      .card h3 {
+        margin: 0 0 6px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 32px 0;
+        background: var(--card-bg);
+        color: var(--card-fg);
+      }
+      td,
+      th {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--rule);
+        text-align: left;
+      }
+      footer.site-footer {
+        padding: 48px 32px;
+        background: var(--nav-bg);
+        color: var(--nav-fg);
+      }
+
+      body[data-scene="docs"] {
+        --page-bg: #ffffff;
+        --page-fg: #1b1b1b;
+        --nav-bg: #f4f4f5;
+        --nav-fg: #111;
+        --hero-bg: #f8fafc;
+        --hero-fg: #0f172a;
+        --cta-bg: #2563eb;
+        --cta-fg: #fff;
+        --card-bg: #fff;
+        --card-fg: #111;
+        --img-bg: linear-gradient(135deg, #e0e7ff, #f5f5f5);
+        --rule: #e5e7eb;
+        color-scheme: light;
+      }
+      body[data-scene="dark"] {
+        --page-bg: #07080a;
+        --page-fg: #d8dde3;
+        --nav-bg: #000;
+        --nav-fg: #fff;
+        --hero-bg: #111318;
+        --hero-fg: #fff;
+        --cta-bg: #fff;
+        --cta-fg: #000;
+        --card-bg: #15171c;
+        --card-fg: #e6e6e6;
+        --img-bg: linear-gradient(135deg, #1d2330, #0b0c10);
+        --rule: #262a31;
+        color-scheme: dark;
+      }
+      body[data-scene="gray"] {
+        --page-bg: #7f7f7f;
+        --page-fg: #111;
+        --nav-bg: #6b6b6b;
+        --nav-fg: #f0f0f0;
+        --hero-bg: #8c8c8c;
+        --hero-fg: #000;
+        --cta-bg: #3d3d3d;
+        --cta-fg: #fff;
+        --card-bg: #959595;
+        --card-fg: #111;
+        --img-bg: linear-gradient(135deg, #6f6f6f, #a0a0a0);
+        --rule: #6a6a6a;
+        color-scheme: light;
+      }
+      body[data-scene="brand"] {
+        --page-bg: #ff5a1f;
+        --page-fg: #fff;
+        --nav-bg: #1c0a00;
+        --nav-fg: #ffd9c7;
+        --hero-bg: #ffd400;
+        --hero-fg: #1c0a00;
+        --cta-bg: #1c0a00;
+        --cta-fg: #ffd400;
+        --card-bg: #fff3eb;
+        --card-fg: #1c0a00;
+        --img-bg: linear-gradient(135deg, #ff2d55, #ffd400);
+        --rule: #ffb08f;
+        color-scheme: light;
+      }
+      body[data-scene="magenta"] {
+        --page-bg: #ff3fd0;
+        --page-fg: #1a0014;
+        --nav-bg: #c0189a;
+        --nav-fg: #fff;
+        --hero-bg: #ff8ce6;
+        --hero-fg: #1a0014;
+        --cta-bg: #1a0014;
+        --cta-fg: #ff3fd0;
+        --card-bg: #ffd1f3;
+        --card-fg: #1a0014;
+        --img-bg: linear-gradient(135deg, #ff3fd0, #7a00ff);
+        --rule: #ff8ce6;
+        color-scheme: light;
+      }
+      body[data-scene="busy"] {
+        --page-bg: repeating-linear-gradient(45deg, #000 0 14px, #fff 14px 28px), #000;
+        --page-fg: #000;
+        --nav-bg: repeating-linear-gradient(90deg, #00e5ff 0 40px, #ff0080 40px 80px);
+        --nav-fg: #000;
+        --hero-bg:
+          radial-gradient(circle at 20% 30%, #ff0 0 12%, transparent 13%),
+          radial-gradient(circle at 70% 60%, #0ff 0 18%, transparent 19%),
+          conic-gradient(from 45deg, #f00, #0f0, #00f, #f0f, #f00);
+        --hero-fg: #fff;
+        --cta-bg: #fff;
+        --cta-fg: #000;
+        --card-bg: repeating-linear-gradient(0deg, #fff 0 6px, #ddd 6px 12px);
+        --card-fg: #000;
+        --img-bg: conic-gradient(#000 25%, #fff 0 50%, #000 0 75%, #fff 0) 0 0 / 20px 20px;
+        --rule: #000;
+        color-scheme: light;
+      }
+      body[data-scene="busy"] .hero h1 {
+        text-shadow: 0 2px 0 #000;
+      }
+
+      /* Hostile global CSS: proves the Shadow DOM boundary and :host reset hold. */
+      body.hostile * {
+        font-family: "Comic Sans MS", cursive !important;
+        letter-spacing: 0.1em !important;
+      }
+      body.hostile button {
+        font-size: 22px !important;
+        text-transform: uppercase !important;
+      }
+      body.hostile svg {
+        width: 64px !important;
+      }
+
+      /* ------------------------------------------------------------------
+       * PROTOTYPE CONTROLS (not part of the design).
+       * ------------------------------------------------------------------ */
+      #proto-controls {
+        position: fixed;
+        top: 8px;
+        left: 8px;
+        z-index: 2147483647;
+        width: 250px;
+        max-height: calc(100vh - 16px);
+        overflow: auto;
+        font:
+          12px/1.4 system-ui,
+          sans-serif !important;
+        letter-spacing: normal !important;
+        background: #fffbe6;
+        color: #222;
+        border: 2px dashed #b58900;
+        border-radius: 6px;
+        padding: 8px 10px;
+      }
+      #proto-controls * {
+        font: inherit !important;
+        letter-spacing: normal !important;
+        text-transform: none !important;
+      }
+      #proto-controls summary {
+        cursor: pointer;
+        font-weight: 700 !important;
+      }
+      #proto-controls fieldset {
+        border: 1px solid #e0cf8a;
+        margin: 6px 0;
+        padding: 4px 6px;
+      }
+      #proto-controls legend {
+        font-weight: 700 !important;
+      }
+      #proto-controls label {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      #proto-controls button {
+        margin: 2px 2px 2px 0;
+      }
+      #proto-controls p {
+        margin: 4px 0;
+        color: #6b5900;
+      }
+    </style>
+  </head>
+  <body data-scene="docs">
+    <!-- ================================================================
+         Simulated host page
+         ================================================================ -->
+    <nav class="site-nav" data-component="SiteNav" data-props="links,user" data-src="src/layout/SiteNav.tsx:12:3">
+      <span class="brand">Acme Shop</span>
+      <a href="#">Catalog</a>
+      <a href="#">Deals</a>
+      <a href="#">Account</a>
+    </nav>
+    <main class="page" data-component="ShopPage" data-props="" data-src="src/routes/shop/index.tsx:40:5">
+      <section
+        class="hero"
+        data-component="Hero"
+        data-props="title,subtitle,cta"
+        data-src="src/components/Hero.tsx:9:3"
+      >
+        <h1>Autumn collection</h1>
+        <p>Everything you need for the season, delivered tomorrow.</p>
+        <button
+          class="cta"
+          data-component="CtaButton"
+          data-props="variant,onClick"
+          data-src="src/components/CtaButton.tsx:21:7"
+        >
+          Shop now
+        </button>
+      </section>
+      <div
+        class="grid"
+        data-component="ProductGrid"
+        data-props="items,columns"
+        data-src="src/components/ProductGrid.tsx:30:5"
+      >
+        <article
+          class="card"
+          data-component="ProductCard"
+          data-props="title,price,onAdd"
+          data-src="src/components/ProductCard.tsx:18:5"
+        >
+          <div class="img"></div>
+          <div class="body">
+            <h3>Wool scarf</h3>
+            <p>$39.00</p>
+            <button
+              class="cta"
+              data-component="AddToCart"
+              data-props="sku,qty"
+              data-src="src/components/AddToCart.tsx:11:9"
+            >
+              Add to cart
+            </button>
+          </div>
+        </article>
+        <article
+          class="card"
+          data-component="ProductCard"
+          data-props="title,price,onAdd"
+          data-src="src/components/ProductCard.tsx:18:5"
+        >
+          <div class="img"></div>
+          <div class="body">
+            <h3>Rain boots</h3>
+            <p>$89.00</p>
+            <button
+              class="cta"
+              data-component="AddToCart"
+              data-props="sku,qty"
+              data-src="src/components/AddToCart.tsx:11:9"
+            >
+              Add to cart
+            </button>
+          </div>
+        </article>
+        <article
+          class="card"
+          data-component="ProductCard"
+          data-props="title,price,onAdd"
+          data-src="src/components/ProductCard.tsx:18:5"
+        >
+          <div class="img"></div>
+          <div class="body">
+            <h3>Knit beanie</h3>
+            <p>$24.00</p>
+            <button
+              class="cta"
+              data-component="AddToCart"
+              data-props="sku,qty"
+              data-src="src/components/AddToCart.tsx:11:9"
+            >
+              Add to cart
+            </button>
+          </div>
+        </article>
+        <article
+          class="card"
+          data-component="ProductCard"
+          data-props="title,price,onAdd"
+          data-src="src/components/ProductCard.tsx:18:5"
+        >
+          <div class="img"></div>
+          <div class="body">
+            <h3>Leather gloves</h3>
+            <p>$59.00</p>
+            <button
+              class="cta"
+              data-component="AddToCart"
+              data-props="sku,qty"
+              data-src="src/components/AddToCart.tsx:11:9"
+            >
+              Add to cart
+            </button>
+          </div>
+        </article>
+      </div>
+      <table data-component="OrderTable" data-props="orders,onSort" data-src="src/components/OrderTable.tsx:52:5">
+        <thead>
+          <tr>
+            <th>Order</th>
+            <th>Status</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>#10423</td>
+            <td>Shipped</td>
+            <td>$128.00</td>
+          </tr>
+          <tr>
+            <td>#10424</td>
+            <td>Processing</td>
+            <td>$39.00</td>
+          </tr>
+          <tr>
+            <td>#10425</td>
+            <td>Delivered</td>
+            <td>$212.50</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="height: 600px">Scroll filler so the page scrolls under the fixed overlay.</p>
+    </main>
+    <footer class="site-footer">© Acme Shop</footer>
+
+    <!-- ================================================================
+         Prototype controls (NOT part of the design)
+         ================================================================ -->
+    <details id="proto-controls" open>
+      <summary>Prototype controls</summary>
+      <p>
+        Hold <b>Alt</b> and click page elements to annotate. <b>Alt + right-click</b> opens component source.
+        <b>⌃⌥R</b> restarts changed services.
+      </p>
+      <fieldset>
+        <legend>Host page</legend>
+        <label
+          >Scene
+          <select id="pc-scene">
+            <option value="docs">Light docs (white)</option>
+            <option value="dark">Dark app (near-black)</option>
+            <option value="gray">Mid gray (#7f7f7f)</option>
+            <option value="brand">Saturated orange/yellow</option>
+            <option value="magenta">Magenta (accent clash)</option>
+            <option value="busy">Busy stripes + conic</option>
+          </select>
+        </label>
+        <label><input type="checkbox" id="pc-hostile" /> Hostile global CSS</label>
+      </fieldset>
+      <fieldset>
+        <legend>Devtools</legend>
+        <label
+          >Theme
+          <select id="pc-theme">
+            <option value="auto">auto (from host)</option>
+            <option value="light">light</option>
+            <option value="dark">dark</option>
+          </select>
+        </label>
+        <label
+          >Position
+          <select id="pc-position">
+            <option value="bottom-right">bottom-right</option>
+            <option value="top-right">top-right</option>
+          </select>
+        </label>
+        <label><input type="checkbox" id="pc-minimap" checked /> Log minimap</label>
+        <label><input type="checkbox" id="pc-react" /> React highlight (Neovim cursor)</label>
+      </fieldset>
+      <fieldset>
+        <legend>Simulate</legend>
+        <label><input type="checkbox" id="pc-svc-error" /> Health poll error</label>
+        <label><input type="checkbox" id="pc-restart-fail" /> Restarts fail</label>
+        <label><input type="checkbox" id="pc-queue-error" /> Queue error</label>
+        <label><input type="checkbox" id="pc-submit-fail" /> Annotation submit fails</label>
+        <button type="button" id="pc-dirty">Mark api + web changed</button>
+        <button type="button" id="pc-add-agent">+ agent session</button>
+        <button type="button" id="pc-add-editor">+ Neovim session</button>
+        <button type="button" id="pc-finish">Finish running sessions</button>
+        <button type="button" id="pc-no-queues">Toggle queues</button>
+      </fieldset>
+    </details>
+
+    <!-- Devtools host element; everything inside lives in its Shadow DOM. -->
+    <devhost-devtools id="devhost-root"></devhost-devtools>
+
+    <template id="devhost-styles">
+      <style>
+        /* ================================================================
+         * DESIGN TOKENS
+         * One small, explicit token set. Maps 1:1 to Tailwind @theme later.
+         * ================================================================ */
+        /* Outer-document rules targeting the host element (e.g. `* { letter-spacing: .1em !important }`)
+           beat plain :host rules and then inherit into the shadow tree. Per CSS Cascade "context", an
+           !important declaration from the inner (shadow) context wins over outer !important, so this
+           is the only reset that reliably cuts host inheritance. `all` never touches custom properties;
+           color-scheme is therefore applied on .root from a token instead of here. */
+        :host {
+          all: initial !important;
+          --dh-font:
+            "JetBrains Mono", "Maple Mono Normal NF", "JetBrainsMono Nerd Font", ui-monospace, SFMono-Regular, Menlo,
+            Consolas, monospace;
+          --dh-text-sm: 11px;
+          --dh-text-md: 12px;
+          --dh-text-lg: 13px;
+          --dh-leading: 1.35;
+          --dh-space-1: 2px;
+          --dh-space-2: 4px;
+          --dh-space-3: 6px;
+          --dh-space-4: 8px;
+          --dh-radius-sm: 2px;
+          --dh-radius-md: 4px;
+          --dh-control-h: 20px;
+          --dh-row-h: 24px;
+          --dh-bar-h: 26px;
+          --dh-z-overlay: 2147483500;
+          --dh-z-dock: 2147483501;
+          --dh-z-popover: 2147483502;
+          --dh-z-modal: 2147483600;
+
+          /* Host-content markers: identical in both themes because they are
+             drawn over arbitrary host pixels, never over our own surfaces. */
+          --dh-mark: #ff4fd8;
+          --dh-mark-ink: #000;
+          --dh-mark-alt: #1ee3ff;
+          --dh-mark-halo-in: #fff;
+          --dh-mark-halo-out: #000;
+
+          /* Dark (default) */
+          --dh-surface: #121417;
+          --dh-surface-2: #1c1f24;
+          --dh-surface-3: #282c33;
+          --dh-fg: #eceff3;
+          --dh-fg-muted: #a3abb6;
+          --dh-fg-faint: #6f7783;
+          --dh-line: #353b44;
+          --dh-edge: rgb(255 255 255 / 0.24);
+          --dh-halo: rgb(0 0 0 / 0.92);
+          --dh-shadow: 0 6px 22px rgb(0 0 0 / 0.5);
+          --dh-accent: #ff5cd6;
+          --dh-on-accent: #1a0014;
+          --dh-ok: #3ddc84;
+          --dh-on-ok: #00210f;
+          --dh-warn: #ffb224;
+          --dh-on-warn: #231500;
+          --dh-danger: #ff6159;
+          --dh-on-danger: #1f0000;
+          --dh-danger-soft: rgb(255 97 89 / 0.16);
+          --dh-backdrop: rgb(4 5 7 / 0.7);
+          --dh-term-bg: #0b0c0f;
+          --dh-color-scheme: dark;
+        }
+        :host([data-theme="light"]) {
+          --dh-surface: #fcfcfd;
+          --dh-surface-2: #eef0f3;
+          --dh-surface-3: #e0e4ea;
+          --dh-fg: #0c0e11;
+          --dh-fg-muted: #4b535e;
+          --dh-fg-faint: #7c8490;
+          --dh-line: #c7ccd4;
+          --dh-edge: rgb(0 0 0 / 0.42);
+          --dh-halo: rgb(255 255 255 / 0.95);
+          --dh-shadow: 0 6px 22px rgb(0 0 0 / 0.3);
+          --dh-accent: #b8168c;
+          --dh-on-accent: #ffffff;
+          --dh-ok: #0a7d40;
+          --dh-on-ok: #ffffff;
+          --dh-warn: #a35400;
+          --dh-on-warn: #ffffff;
+          --dh-danger: #cc1f1f;
+          --dh-on-danger: #ffffff;
+          --dh-danger-soft: rgb(204 31 31 / 0.1);
+          --dh-backdrop: rgb(10 12 16 / 0.55);
+          --dh-term-bg: #ffffff;
+          --dh-color-scheme: light;
+        }
+
+        /* ================================================================
+         * BASE
+         * ================================================================ */
+        *,
+        *::before,
+        *::after {
+          box-sizing: border-box;
+        }
+        .root {
+          font-family: var(--dh-font);
+          font-size: var(--dh-text-md);
+          line-height: var(--dh-leading);
+          color: var(--dh-fg);
+          -webkit-font-smoothing: antialiased;
+          font-variant-ligatures: none;
+          color-scheme: var(--dh-color-scheme);
+        }
+        button,
+        textarea,
+        input {
+          font: inherit;
+          color: inherit;
+          letter-spacing: normal;
+          text-transform: none;
+        }
+        :focus-visible {
+          outline: 2px solid var(--dh-accent);
+          outline-offset: 1px;
+        }
+        .ic {
+          width: 14px;
+          height: 14px;
+          flex: none;
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 2;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+        .ic.fill {
+          fill: currentColor;
+          stroke: none;
+        }
+        .sr-only {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip-path: inset(50%);
+          white-space: nowrap;
+        }
+        .muted {
+          color: var(--dh-fg-muted);
+        }
+        .trunc {
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .grow {
+          flex: 1 1 auto;
+        }
+        .spin {
+          animation: dh-spin 0.8s linear infinite;
+        }
+        @keyframes dh-spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        @keyframes dh-pulse {
+          50% {
+            opacity: 0.35;
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .spin,
+          .led.running {
+            animation: none;
+          }
+        }
+
+        /* ================================================================
+         * FRAME: the "visible on anything" surface.
+         * Opaque fill + inner edge of opposite lightness + outer halo ring.
+         * Dark page -> the light inner edge separates. Light page -> the
+         * dark halo (dark theme) or dark edge (light theme) separates.
+         * ================================================================ */
+        .frame {
+          background: var(--dh-surface);
+          border: 1px solid var(--dh-edge);
+          border-radius: var(--dh-radius-md);
+          box-shadow:
+            0 0 0 1px var(--dh-halo),
+            var(--dh-shadow);
+        }
+
+        /* ================================================================
+         * PRIMITIVES
+         * ================================================================ */
+        .btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: var(--dh-space-2);
+          height: var(--dh-control-h);
+          padding: 0 var(--dh-space-3);
+          border: 1px solid var(--dh-line);
+          border-radius: var(--dh-radius-sm);
+          background: var(--dh-surface-2);
+          color: var(--dh-fg);
+          font-size: var(--dh-text-md);
+          white-space: nowrap;
+          cursor: pointer;
+        }
+        .btn:hover {
+          background: var(--dh-surface-3);
+          border-color: var(--dh-fg-faint);
+        }
+        .btn.icon {
+          width: var(--dh-control-h);
+          padding: 0;
+        }
+        .btn.ghost {
+          background: transparent;
+          border-color: transparent;
+          color: var(--dh-fg-muted);
+        }
+        .btn.ghost:hover {
+          color: var(--dh-fg);
+          background: var(--dh-surface-3);
+        }
+        .btn.primary,
+        .btn[aria-pressed="true"] {
+          background: var(--dh-accent);
+          border-color: transparent;
+          color: var(--dh-on-accent);
+          font-weight: 600;
+        }
+        .btn.primary:hover,
+        .btn[aria-pressed="true"]:hover {
+          filter: brightness(1.1);
+        }
+        .btn.warn {
+          background: var(--dh-warn);
+          border-color: transparent;
+          color: var(--dh-on-warn);
+          font-weight: 600;
+        }
+        .btn.danger {
+          background: transparent;
+          border-color: var(--dh-danger);
+          color: var(--dh-danger);
+        }
+        .btn.danger:hover {
+          background: var(--dh-danger);
+          color: var(--dh-on-danger);
+        }
+        /* Disabled is structurally different (dashed, hollow), not just dimmer. */
+        .btn:disabled,
+        .btn:disabled:hover {
+          background: transparent;
+          border: 1px dashed var(--dh-line);
+          color: var(--dh-fg-faint);
+          font-weight: 400;
+          filter: none;
+          cursor: not-allowed;
+        }
+        .kbd {
+          display: inline-flex;
+          align-items: center;
+          height: 14px;
+          padding: 0 3px;
+          border: 1px solid currentColor;
+          border-radius: var(--dh-radius-sm);
+          font-size: var(--dh-text-sm);
+          line-height: 1;
+          opacity: 0.8;
+        }
+        .tag {
+          display: inline-flex;
+          align-items: center;
+          flex: none;
+          height: 16px;
+          padding: 0 4px;
+          border: 1px solid var(--dh-line);
+          border-radius: var(--dh-radius-sm);
+          font-size: var(--dh-text-sm);
+          color: var(--dh-fg-muted);
+          white-space: nowrap;
+        }
+        .tag.warn {
+          background: var(--dh-warn);
+          color: var(--dh-on-warn);
+          border-color: transparent;
+          font-weight: 600;
+        }
+        .tag.danger {
+          background: var(--dh-danger);
+          color: var(--dh-on-danger);
+          border-color: transparent;
+          font-weight: 600;
+        }
+        .tag.accent {
+          background: var(--dh-accent);
+          color: var(--dh-on-accent);
+          border-color: transparent;
+          font-weight: 600;
+        }
+        .tag.ok {
+          background: var(--dh-ok);
+          color: var(--dh-on-ok);
+          border-color: transparent;
+          font-weight: 600;
+        }
+        .dot {
+          width: 8px;
+          height: 8px;
+          flex: none;
+          border-radius: 50%;
+        }
+        .dot.ok {
+          background: var(--dh-ok);
+        }
+        .dot.down {
+          background: var(--dh-danger);
+          box-shadow: 0 0 0 2px var(--dh-danger-soft);
+        }
+        .dot.dirty {
+          background: var(--dh-warn);
+        }
+        .dot.restarting {
+          background: transparent;
+          border: 2px solid var(--dh-warn);
+          border-right-color: transparent;
+          animation: dh-spin 0.8s linear infinite;
+        }
+        .led {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          flex: none;
+        }
+        .led.running {
+          background: var(--dh-accent);
+          animation: dh-pulse 1.2s ease-in-out infinite;
+        }
+        .led.connecting {
+          background: var(--dh-fg-faint);
+        }
+        .led.error {
+          background: var(--dh-danger);
+        }
+        .notice {
+          display: flex;
+          align-items: center;
+          gap: var(--dh-space-3);
+          padding: var(--dh-space-2) var(--dh-space-4);
+          background: var(--dh-danger);
+          color: var(--dh-on-danger);
+          font-size: var(--dh-text-md);
+          font-weight: 600;
+        }
+        .notice .btn {
+          color: inherit;
+        }
+        .input {
+          display: block;
+          width: 100%;
+          padding: var(--dh-space-2) var(--dh-space-3);
+          border: 1px solid var(--dh-line);
+          border-radius: var(--dh-radius-sm);
+          background: var(--dh-surface-2);
+          color: var(--dh-fg);
+          font-size: var(--dh-text-lg);
+          line-height: var(--dh-leading);
+          resize: vertical;
+        }
+        .input::placeholder {
+          color: var(--dh-fg-faint);
+        }
+        .input:focus {
+          outline: none;
+          border-color: var(--dh-accent);
+          box-shadow: 0 0 0 1px var(--dh-accent);
+        }
+        .check {
+          display: flex;
+          align-items: center;
+          gap: var(--dh-space-3);
+          cursor: pointer;
+          user-select: none;
+        }
+        .check input {
+          accent-color: var(--dh-accent);
+          margin: 0;
+        }
+
+        /* ================================================================
+         * DOCK: one bar instead of three stacked hover cards.
+         * ================================================================ */
+        .dock {
+          position: fixed;
+          right: 8px;
+          bottom: 8px;
+          z-index: var(--dh-z-dock);
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: var(--dh-space-3);
+          max-width: calc(100vw - 16px);
+        }
+        .dock[data-position="top-right"] {
+          top: 8px;
+          bottom: auto;
+          flex-direction: column-reverse;
+        }
+        .dock[data-minimap="true"] {
+          right: 20px;
+          max-width: calc(100vw - 28px);
+        }
+        .bar {
+          display: flex;
+          align-items: stretch;
+          height: var(--dh-bar-h);
+          max-width: 100%;
+          overflow: hidden;
+        }
+        .seg {
+          display: flex;
+          align-items: center;
+          gap: var(--dh-space-3);
+          padding: 0 var(--dh-space-4);
+          border: 0;
+          border-left: 1px solid var(--dh-line);
+          background: transparent;
+          color: var(--dh-fg);
+          font-size: var(--dh-text-md);
+          white-space: nowrap;
+        }
+        .seg:first-child {
+          border-left: 0;
+        }
+        button.seg {
+          cursor: pointer;
+        }
+        button.seg:hover {
+          background: var(--dh-surface-2);
+        }
+        button.seg[aria-expanded="true"] {
+          background: var(--dh-surface-3);
+          box-shadow: inset 0 -2px 0 var(--dh-accent);
+        }
+        .dock[data-position="top-right"] button.seg[aria-expanded="true"] {
+          box-shadow: inset 0 2px 0 var(--dh-accent);
+        }
+        .seg.alert {
+          background: var(--dh-danger);
+          color: var(--dh-on-danger);
+          font-weight: 600;
+        }
+        button.seg.alert:hover {
+          background: var(--dh-danger);
+          filter: brightness(1.1);
+        }
+        .seg.tight {
+          gap: var(--dh-space-2);
+          padding: 0 var(--dh-space-2);
+        }
+        .logo {
+          display: grid;
+          place-items: center;
+          width: 16px;
+          height: 16px;
+          border-radius: var(--dh-radius-sm);
+          background: var(--dh-fg);
+          color: var(--dh-surface);
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: -0.04em;
+        }
+        .dots {
+          display: flex;
+          gap: 3px;
+        }
+        .chip {
+          display: inline-flex;
+          align-items: center;
+          gap: var(--dh-space-2);
+          height: var(--dh-control-h);
+          max-width: 180px;
+          padding: 0 var(--dh-space-3);
+          border: 1px solid var(--dh-line);
+          border-radius: var(--dh-radius-sm);
+          background: var(--dh-surface-2);
+          font-size: var(--dh-text-md);
+          cursor: pointer;
+        }
+        .chip:hover {
+          border-color: var(--dh-fg-faint);
+          background: var(--dh-surface-3);
+        }
+        .chip[aria-pressed="true"] {
+          border-color: var(--dh-accent);
+          box-shadow: inset 0 0 0 1px var(--dh-accent);
+        }
+        .chip.done {
+          border-color: var(--dh-ok);
+        }
+        .chip.done .ic.state {
+          color: var(--dh-ok);
+        }
+        .chip-group {
+          display: inline-flex;
+        }
+        .chip-group .chip.done {
+          border-top-right-radius: 0;
+          border-bottom-right-radius: 0;
+        }
+        .chip-group .btn.icon {
+          height: var(--dh-control-h);
+          border-color: var(--dh-ok);
+          border-left: 0;
+          border-top-left-radius: 0;
+          border-bottom-left-radius: 0;
+        }
+
+        .linkish {
+          display: block;
+          padding: 0;
+          border: 0;
+          background: transparent;
+          text-align: left;
+          cursor: pointer;
+        }
+        .linkish:hover strong,
+        .linkish[aria-pressed="true"] strong {
+          color: var(--dh-accent);
+          text-decoration: underline;
+          text-underline-offset: 2px;
+        }
+        .ok-ic {
+          display: inline-flex;
+          color: var(--dh-ok);
+        }
+
+        /* ================================================================
+         * POPOVER PANELS
+         * ================================================================ */
+        .panel {
+          display: flex;
+          flex-direction: column;
+          max-width: calc(100vw - 32px);
+          max-height: min(60vh, 520px);
+          overflow: hidden;
+        }
+        .panel-head {
+          display: flex;
+          align-items: center;
+          gap: var(--dh-space-3);
+          flex: none;
+          height: var(--dh-row-h);
+          padding: 0 var(--dh-space-2) 0 var(--dh-space-4);
+          border-bottom: 1px solid var(--dh-line);
+          font-weight: 700;
+        }
+        .panel-body {
+          overflow: auto;
+        }
+        .row {
+          display: flex;
+          align-items: center;
+          gap: var(--dh-space-3);
+          min-height: var(--dh-row-h);
+          padding: var(--dh-space-1) var(--dh-space-2) var(--dh-space-1) var(--dh-space-4);
+        }
+        .row + .row,
+        .q + .q {
+          border-top: 1px solid var(--dh-line);
+        }
+        .row:hover {
+          background: var(--dh-surface-2);
+        }
+        .row a {
+          color: var(--dh-fg);
+          text-decoration: underline;
+          text-decoration-color: var(--dh-fg-faint);
+          text-underline-offset: 2px;
+        }
+        .row a:hover {
+          text-decoration-color: var(--dh-accent);
+          color: var(--dh-accent);
+        }
+        .row.down .name {
+          color: var(--dh-danger);
+          font-weight: 600;
+        }
+        .progress {
+          height: 3px;
+          background: var(--dh-surface-3);
+        }
+        .progress > span {
+          display: block;
+          height: 100%;
+          background: var(--dh-accent);
+        }
+        .progress.paused > span {
+          background: var(--dh-danger);
+        }
+        .entries {
+          list-style: none;
+          margin: 0;
+          padding: 0 0 var(--dh-space-2);
+          background: var(--dh-surface-2);
+        }
+        .entry {
+          display: grid;
+          gap: var(--dh-space-2);
+          padding: var(--dh-space-2) var(--dh-space-2) var(--dh-space-2) 26px;
+          border-top: 1px solid var(--dh-line);
+        }
+        .entry-head {
+          display: flex;
+          align-items: center;
+          gap: var(--dh-space-3);
+          min-height: var(--dh-control-h);
+        }
+        .entry-comment {
+          font-size: var(--dh-text-lg);
+          white-space: pre-wrap;
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        .reason {
+          padding: var(--dh-space-2) var(--dh-space-4) var(--dh-space-2) 26px;
+          color: var(--dh-danger);
+          background: var(--dh-danger-soft);
+          border-top: 1px solid var(--dh-line);
+        }
+        .confirm {
+          display: flex;
+          align-items: center;
+          gap: var(--dh-space-3);
+          padding: var(--dh-space-2) var(--dh-space-3);
+          background: var(--dh-danger-soft);
+          border: 1px solid var(--dh-danger);
+          border-radius: var(--dh-radius-sm);
+          color: var(--dh-danger);
+          font-weight: 600;
+        }
+        .actions {
+          display: flex;
+          gap: var(--dh-space-2);
+        }
+
+        /* ================================================================
+         * HOST OVERLAYS (drawn over arbitrary host pixels)
+         * Two-tone ring: colored stroke sandwiched between white and black
+         * hairlines, so at least one layer contrasts with any pixel.
+         * ================================================================ */
+        .hl {
+          position: fixed;
+          z-index: var(--dh-z-overlay);
+          pointer-events: none;
+          border: 2px solid var(--dh-mark);
+          border-radius: var(--dh-radius-sm);
+          box-shadow:
+            0 0 0 1px var(--dh-mark-halo-out),
+            inset 0 0 0 1px var(--dh-mark-halo-in);
+          background: color-mix(in srgb, var(--dh-mark) 10%, transparent);
+        }
+        .hl.hover {
+          border-style: dashed;
+          background: transparent;
+        }
+        .hl.react {
+          border-color: var(--dh-mark-alt);
+          background: color-mix(in srgb, var(--dh-mark-alt) 10%, transparent);
+        }
+        .hl-badge {
+          position: fixed;
+          z-index: var(--dh-z-overlay);
+          pointer-events: none;
+          display: grid;
+          place-items: center;
+          min-width: 18px;
+          height: 18px;
+          padding: 0 4px;
+          border-radius: 9px;
+          background: var(--dh-mark);
+          color: var(--dh-mark-ink);
+          font-size: var(--dh-text-sm);
+          font-weight: 700;
+          box-shadow:
+            0 0 0 1px var(--dh-mark-halo-in),
+            0 0 0 2px var(--dh-mark-halo-out);
+        }
+        .hl-label {
+          position: fixed;
+          z-index: var(--dh-z-overlay);
+          pointer-events: none;
+          max-width: 420px;
+          padding: 1px 5px;
+          background: #000;
+          color: #fff;
+          border: 1px solid var(--dh-mark);
+          border-radius: var(--dh-radius-sm);
+          font-size: var(--dh-text-sm);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .hl-label.react {
+          border-color: var(--dh-mark-alt);
+        }
+        .hl-label b {
+          color: var(--dh-mark);
+        }
+        .hl-label.react b {
+          color: var(--dh-mark-alt);
+        }
+        .hint {
+          position: fixed;
+          top: 8px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: var(--dh-z-popover);
+          display: flex;
+          align-items: center;
+          gap: var(--dh-space-4);
+          height: var(--dh-bar-h);
+          padding: 0 var(--dh-space-4);
+          pointer-events: none;
+        }
+
+        /* ================================================================
+         * ANNOTATION COMPOSER
+         * ================================================================ */
+        .composer {
+          position: fixed;
+          z-index: var(--dh-z-popover);
+          width: min(340px, calc(100vw - 20px));
+        }
+        .composer-body {
+          display: grid;
+          gap: var(--dh-space-3);
+          padding: var(--dh-space-3) var(--dh-space-4) var(--dh-space-4);
+        }
+        .markers {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          display: grid;
+          gap: var(--dh-space-1);
+          max-height: 96px;
+          overflow: auto;
+        }
+        .markers li {
+          display: flex;
+          align-items: center;
+          gap: var(--dh-space-3);
+          min-width: 0;
+        }
+        .num {
+          display: grid;
+          place-items: center;
+          flex: none;
+          min-width: 16px;
+          height: 16px;
+          padding: 0 3px;
+          border-radius: 8px;
+          background: var(--dh-mark);
+          color: var(--dh-mark-ink);
+          font-size: var(--dh-text-sm);
+          font-weight: 700;
+        }
+        .composer-foot {
+          display: flex;
+          align-items: center;
+          gap: var(--dh-space-3);
+        }
+        .split {
+          position: relative;
+          display: inline-flex;
+        }
+        .split > .btn:first-child {
+          border-top-right-radius: 0;
+          border-bottom-right-radius: 0;
+        }
+        .split > .btn.caret {
+          width: 18px;
+          padding: 0;
+          border-top-left-radius: 0;
+          border-bottom-left-radius: 0;
+          border-left: 1px solid color-mix(in srgb, var(--dh-on-accent) 35%, transparent);
+        }
+        .menu {
+          position: absolute;
+          left: 0;
+          bottom: calc(100% + 4px);
+          z-index: 1;
+          min-width: 180px;
+          padding: var(--dh-space-1) 0;
+        }
+        .menu.below {
+          bottom: auto;
+          top: calc(100% + 4px);
+        }
+        .menu button {
+          display: flex;
+          align-items: center;
+          gap: var(--dh-space-3);
+          width: 100%;
+          height: var(--dh-row-h);
+          padding: 0 var(--dh-space-4);
+          border: 0;
+          background: transparent;
+          text-align: left;
+          cursor: pointer;
+        }
+        .menu button:hover,
+        .menu button:focus-visible {
+          background: var(--dh-surface-3);
+          outline: none;
+        }
+        .menu .ic {
+          visibility: hidden;
+          color: var(--dh-accent);
+        }
+        .menu [aria-checked="true"] .ic {
+          visibility: visible;
+        }
+
+        /* ================================================================
+         * COMPONENT SOURCE MENU
+         * ================================================================ */
+        .cmenu {
+          position: fixed;
+          z-index: var(--dh-z-popover);
+          width: min(400px, calc(100vw - 20px));
+        }
+        .citem {
+          display: grid;
+          gap: var(--dh-space-1);
+          width: 100%;
+          padding: var(--dh-space-2) var(--dh-space-4);
+          border: 0;
+          border-top: 1px solid var(--dh-line);
+          background: transparent;
+          text-align: left;
+          cursor: pointer;
+        }
+        .citem:first-child {
+          border-top: 0;
+        }
+        .citem:hover,
+        .citem:focus-visible {
+          background: var(--dh-surface-2);
+          box-shadow: inset 2px 0 0 var(--dh-accent);
+          outline: none;
+        }
+        .citem-line {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: var(--dh-space-2);
+        }
+        .citem-name {
+          font-weight: 700;
+          font-size: var(--dh-text-lg);
+        }
+        .citem-path {
+          font-size: var(--dh-text-sm);
+          color: var(--dh-fg-muted);
+          direction: rtl;
+          text-align: left;
+        }
+
+        /* ================================================================
+         * TERMINAL WINDOW
+         * ================================================================ */
+        .backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: var(--dh-z-modal);
+          background: var(--dh-backdrop);
+        }
+        .term {
+          position: fixed;
+          z-index: var(--dh-z-modal);
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: min(1100px, calc(100vw - 32px));
+          height: min(700px, calc(100vh - 32px));
+          display: grid;
+          grid-template-rows: auto 1fr;
+          overflow: hidden;
+        }
+        .term.fullscreen {
+          inset: 0;
+          transform: none;
+          width: 100vw;
+          height: 100vh;
+          border-radius: 0;
+          border: 0;
+          box-shadow: none;
+        }
+        .term-head {
+          display: flex;
+          align-items: center;
+          gap: var(--dh-space-3);
+          height: var(--dh-bar-h);
+          padding: 0 var(--dh-space-2) 0 var(--dh-space-4);
+          border-bottom: 1px solid var(--dh-line);
+        }
+        .term-body {
+          margin: 0;
+          padding: var(--dh-space-3) var(--dh-space-4);
+          overflow: auto;
+          background: var(--dh-term-bg);
+          font-size: var(--dh-text-lg);
+          line-height: 1.45;
+          white-space: pre;
+        }
+        .t-dim {
+          color: var(--dh-fg-faint);
+        }
+        .t-acc {
+          color: var(--dh-accent);
+        }
+        .t-ok {
+          color: var(--dh-ok);
+        }
+        .t-err {
+          color: var(--dh-danger);
+        }
+
+        /* ================================================================
+         * LOG MINIMAP: always-visible opaque strip; widens on hover.
+         * ================================================================ */
+        .minimap {
+          position: fixed;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          z-index: var(--dh-z-overlay);
+          width: 12px;
+          background: var(--dh-surface);
+          border-left: 1px solid var(--dh-edge);
+          box-shadow: -1px 0 0 var(--dh-halo);
+          transition: width 0.12s ease-out;
+        }
+        .minimap:hover {
+          width: 96px;
+        }
+        .minimap canvas {
+          display: block;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+        }
+        .mm-window {
+          position: absolute;
+          left: 0;
+          right: 0;
+          pointer-events: none;
+          background: color-mix(in srgb, var(--dh-accent) 18%, transparent);
+          box-shadow: inset 0 0 0 1px var(--dh-accent);
+        }
+        .mm-preview {
+          position: absolute;
+          right: calc(100% + 6px);
+          width: min(80ch, calc(100vw - 140px));
+          overflow: hidden;
+          pointer-events: none;
+        }
+        .mm-preview ol {
+          list-style: none;
+          margin: 0;
+          padding: var(--dh-space-2) 0;
+        }
+        .mm-preview li {
+          display: flex;
+          gap: var(--dh-space-4);
+          height: 18px;
+          padding: 0 var(--dh-space-4);
+          line-height: 18px;
+          white-space: pre;
+          overflow: hidden;
+        }
+        .mm-preview li .svc {
+          flex: none;
+          width: 7ch;
+          color: var(--dh-fg-faint);
+        }
+        .mm-preview li.stderr {
+          color: var(--dh-danger);
+          background: var(--dh-danger-soft);
+          box-shadow: inset 2px 0 0 var(--dh-danger);
+        }
+        .mm-preview li.focus {
+          background: var(--dh-surface-3);
+        }
+        .mm-preview li.stderr.focus {
+          background: color-mix(in srgb, var(--dh-danger) 28%, transparent);
+        }
+      </style>
+    </template>
+
+    <script>
+      "use strict";
+
+      // ======================================================================
+      // Icons (lucide geometry)
+      // ======================================================================
+      const ICONS = {
+        restart: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
+        chevDown: '<path d="m6 9 6 6 6-6"/>',
+        chevRight: '<path d="m9 18 6-6-6-6"/>',
+        x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+        minus: '<path d="M5 12h14"/>',
+        terminal: '<path d="m4 17 6-6-6-6"/><path d="M12 19h8"/>',
+        queue:
+          '<path d="M10 12h11"/><path d="M10 18h11"/><path d="M10 6h11"/><path d="M4 10h2"/><path d="M4 6h1v4"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/>',
+        code: '<path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/>',
+        pencil:
+          '<path d="M21.17 6.81a1 1 0 0 0-3.99-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/>',
+        trash:
+          '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+        play: '<path d="M6 3l14 9-14 9z"/>',
+        check: '<path d="M20 6 9 17l-5-5"/>',
+        external:
+          '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+        alert:
+          '<path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+        collapse: '<path d="m15 18-6-6 6-6"/>',
+        expand: '<path d="m9 18 6-6-6-6"/>',
+      };
+      function icon(name, extraClass) {
+        return `<svg class="ic ${extraClass || ""}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
+      }
+      function esc(value) {
+        return String(value).replace(
+          /[&<>"']/g,
+          (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+        );
+      }
+
+      // ======================================================================
+      // Mock state
+      // ======================================================================
+      const ANNOTATION_ACTIONS = [
+        { id: "claude", displayName: "Claude", kind: "agent", queueEnabled: true },
+        { id: "codex", displayName: "Codex", kind: "agent", queueEnabled: false },
+        { id: "lint", displayName: "Lint fix", kind: "command", queueEnabled: false },
+      ];
+
+      const state = {
+        scene: "docs",
+        theme: "auto",
+        position: "bottom-right",
+        stackName: "acme-shop",
+        dockCollapsed: false,
+        openPanel: null,
+        services: [
+          { name: "web", managed: true, status: true, url: "https://shop.localhost", dirty: false, restarting: false },
+          {
+            name: "api",
+            managed: true,
+            status: true,
+            url: "https://api.shop.localhost",
+            dirty: true,
+            restarting: false,
+          },
+          { name: "worker", managed: true, status: false, dirty: false, restarting: false },
+          {
+            name: "docs",
+            managed: true,
+            status: true,
+            url: "https://docs.shop.localhost",
+            dirty: false,
+            restarting: false,
+          },
+          { name: "postgres", managed: false, status: true, dirty: false, restarting: false },
+        ],
+        serviceError: null,
+        failRestart: false,
+        queues: [],
+        queueError: null,
+        queueUi: { expanded: new Set(["q1"]), editing: new Set(), confirming: new Set(), drafts: {} },
+        tools: [
+          { id: "router", label: "Router", title: "Toggle TanStack Router devtools", isOpen: false },
+          { id: "query", label: "Query", title: "Toggle TanStack Query devtools", isOpen: true },
+        ],
+        sessions: [],
+        expandedSessionId: null,
+        minimap: true,
+        reactHighlight: false,
+        selecting: false,
+        hoverEl: null,
+        markers: [],
+        comment: "",
+        composerError: null,
+        submitting: false,
+        failSubmit: false,
+        selectedActionId: "claude",
+        actionMenuOpen: false,
+        appendToActive: true,
+        componentMenu: null,
+        minimapHoverY: null,
+        sessionChipLimit: Infinity,
+      };
+
+      const MOCK_QUEUES = [
+        {
+          queueId: "q1",
+          status: "working",
+          pauseReason: null,
+          entries: [
+            {
+              entryId: "e1",
+              state: "active",
+              annotation: {
+                url: "https://shop.localhost/cart",
+                comment: "#1 button text should read 'Checkout', and #2 total needs tax line.",
+              },
+            },
+            {
+              entryId: "e2",
+              state: "queued",
+              annotation: { url: "https://shop.localhost/cart", comment: "Make #1 sticky on mobile." },
+            },
+            {
+              entryId: "e3",
+              state: "queued",
+              annotation: {
+                url: "https://shop.localhost/cart",
+                comment: "Empty state for #1 when cart has no items; reuse the illustration from /wishlist.",
+              },
+            },
+          ],
+        },
+        {
+          queueId: "q2",
+          status: "paused",
+          pauseReason: "session-exited-before-finished",
+          entries: [
+            {
+              entryId: "e4",
+              state: "paused-active",
+              annotation: {
+                url: "https://admin.shop.localhost/orders",
+                comment: "#1 table should sort by date desc by default.",
+              },
+            },
+            {
+              entryId: "e5",
+              state: "queued",
+              annotation: { url: "https://admin.shop.localhost/orders", comment: "Add CSV export next to #1." },
+            },
+          ],
+        },
+      ];
+      const PAUSE_MESSAGES = {
+        "user-terminated": "Session terminated. Edit the head annotation or resume the queue.",
+        "session-exited-before-finished": "Session exited before the annotation finished. Resume to retry.",
+      };
+      state.queues = structuredClone(MOCK_QUEUES);
+
+      let sessionCounter = 0;
+      function addSession(kind, extra) {
+        sessionCounter += 1;
+        const id = `s${sessionCounter}`;
+        const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        let session;
+        if (kind === "agent") {
+          const action = extra?.action || ANNOTATION_ACTIONS[0];
+          session = {
+            id,
+            kind,
+            label: action.displayName,
+            title: action.displayName,
+            meta: [`${extra?.markers ?? 2} markers`, "Cart — Acme Shop", "shop.localhost", now],
+            status: "running",
+            fullscreen: false,
+          };
+        } else if (kind === "command") {
+          const action = extra?.action || ANNOTATION_ACTIONS[2];
+          session = {
+            id,
+            kind,
+            label: action.displayName,
+            title: action.displayName,
+            meta: [`${extra?.markers ?? 1} markers`, "shop.localhost", now],
+            status: "running",
+            fullscreen: false,
+          };
+          setTimeout(() => {
+            session.status = "finished";
+            render();
+          }, 6000);
+        } else {
+          const component = extra?.component || "ProductCard";
+          session = {
+            id,
+            kind: "editor",
+            label: `<${component}>`,
+            title: "Neovim",
+            meta: [`<${component}>`, extra?.src || "src/components/ProductCard.tsx:18:5"],
+            status: "running",
+            fullscreen: true,
+          };
+        }
+        state.sessions.push(session);
+        return session;
+      }
+      addSession("agent");
+      addSession("editor", { component: "OrderTable", src: "src/components/OrderTable.tsx:52:5" });
+      state.sessions[1].status = "finished";
+
+      // Log entries for the minimap.
+      const LOG_SERVICES = ["web", "api", "worker"];
+      const LOG_SAMPLES = [
+        ["stdout", "GET /api/products 200 in 14ms"],
+        ["stdout", "compiled client and server successfully in 812 ms (1204 modules)"],
+        ["stdout", "POST /api/cart/items 201 in 31ms"],
+        ["stdout", "hmr update /src/components/ProductCard.tsx"],
+        ["stdout", "job email.send completed in 220ms"],
+        ["stderr", "TypeError: Cannot read properties of undefined (reading 'price')"],
+        ["stderr", "    at ProductCard (src/components/ProductCard.tsx:24:31)"],
+        ["stdout", "GET /favicon.ico 304 in 2ms"],
+        ["stderr", "warn: slow query (412ms) SELECT * FROM orders WHERE ..."],
+        ["stdout", "listening on http://127.0.0.1:4101"],
+      ];
+      const logEntries = Array.from({ length: 360 }, (_, index) => {
+        const stdoutSamples = LOG_SAMPLES.filter((s) => s[0] === "stdout");
+        const stderrSamples = LOG_SAMPLES.filter((s) => s[0] === "stderr");
+        const isStderr = index % 37 === 0 || index % 53 === 0;
+        const pool = isStderr ? stderrSamples : stdoutSamples;
+        const sample = pool[(index * 7 + (index % 3)) % pool.length];
+        const burst = index > 220 && index < 232;
+        return {
+          id: index,
+          serviceName: LOG_SERVICES[index % LOG_SERVICES.length],
+          stream: burst ? "stderr" : sample[0],
+          line: burst ? `Error: connect ECONNREFUSED 127.0.0.1:5432 (attempt ${index - 220})` : sample[1],
+        };
+      });
+
+      // ======================================================================
+      // Shadow root setup
+      // ======================================================================
+      const hostElement = document.getElementById("devhost-root");
+      const shadow = hostElement.attachShadow({ mode: "open" });
+      shadow.appendChild(document.getElementById("devhost-styles").content.cloneNode(true));
+      const rootElement = document.createElement("div");
+      rootElement.className = "root";
+      rootElement.innerHTML = `
+        <div data-region="overlay"></div>
+        <div data-region="hint"></div>
+        <div data-region="composer"></div>
+        <div data-region="cmenu"></div>
+        <div data-region="dock"></div>
+        <div data-region="minimap"></div>
+        <div data-region="term"></div>`;
+      shadow.appendChild(rootElement);
+      const region = (name) => rootElement.querySelector(`[data-region="${name}"]`);
+
+      // Re-rendering via innerHTML must not steal focus/caret from inputs.
+      function patch(target, html) {
+        const active = shadow.activeElement;
+        const focusKey = active?.dataset?.focusKey;
+        const selection = active && "selectionStart" in active ? [active.selectionStart, active.selectionEnd] : null;
+        target.innerHTML = html;
+        if (focusKey) {
+          const next =
+            target.querySelector(`[data-focus-key="${focusKey}"]`) ||
+            shadow.querySelector(`[data-focus-key="${focusKey}"]`);
+          if (next) {
+            next.focus();
+            if (selection && "selectionStart" in next) next.setSelectionRange(selection[0], selection[1]);
+          }
+        }
+      }
+
+      // ======================================================================
+      // Rendering
+      // ======================================================================
+      function resolveTheme() {
+        if (state.theme !== "auto") return state.theme;
+        return getComputedStyle(document.body).colorScheme.includes("dark") ? "dark" : "light";
+      }
+
+      function render() {
+        hostElement.dataset.theme = resolveTheme();
+        renderDockFitted();
+        patch(region("term"), renderTerminal());
+        patch(region("cmenu"), renderComponentMenu());
+        patch(region("hint"), renderHint());
+        renderComposer();
+        renderOverlay();
+        renderMinimap();
+      }
+
+      function serviceDotClass(service) {
+        if (service.restarting) return "restarting";
+        if (!service.status) return "down";
+        if (service.dirty) return "dirty";
+        return "ok";
+      }
+      function serviceStateText(service) {
+        if (service.restarting) return "restarting";
+        if (!service.status) return "down";
+        if (service.dirty) return "up, files changed";
+        return "up";
+      }
+
+      function renderDock() {
+        const { services, queues, tools, sessions } = state;
+        const upCount = services.filter((s) => s.status).length;
+        const downCount = services.length - upCount;
+        const dirtyCount = services.filter((s) => s.dirty && !s.restarting).length;
+        const panelOpen = (name) => (state.openPanel === name ? "true" : "false");
+        const segments = [];
+
+        segments.push(`
+          <button class="seg tight" type="button" data-action="toggle-dock"
+            title="${state.dockCollapsed ? "Expand" : "Collapse"} devhost (${esc(state.stackName)})"
+            aria-label="${state.dockCollapsed ? "Expand" : "Collapse"} devhost toolbar">
+            <span class="logo">dh</span>${state.dockCollapsed ? "" : `<span>${esc(state.stackName)}</span>`}
+          </button>`);
+
+        if (state.dockCollapsed) {
+          const worst = state.serviceError || downCount > 0 ? "down" : dirtyCount > 0 ? "dirty" : "ok";
+          segments.push(
+            `<span class="seg tight"><span class="dot ${worst}"></span><span class="sr-only">stack ${worst}</span></span>`,
+          );
+          return `<div class="dock" data-position="${state.position}" data-minimap="${state.minimap}"><div class="bar frame">${segments.join("")}</div></div>`;
+        }
+
+        if (services.length > 0 || state.serviceError) {
+          const alert = state.serviceError !== null;
+          segments.push(`
+            <button class="seg ${alert ? "alert" : ""}" type="button" data-action="panel" data-panel="services"
+              aria-expanded="${panelOpen("services")}" aria-label="Services: ${upCount} of ${services.length} up${dirtyCount ? `, ${dirtyCount} changed` : ""}">
+              ${alert ? icon("alert") : ""}
+              <span class="dots">${services.map((s) => `<span class="dot ${serviceDotClass(s)}" title="${esc(s.name)}: ${serviceStateText(s)}"></span>`).join("")}</span>
+              <span>${upCount}/${services.length}</span>
+              ${dirtyCount > 0 && !alert ? `<span class="tag warn">${dirtyCount} changed</span>` : ""}
+            </button>`);
+        }
+
+        if (queues.length > 0 || state.queueError) {
+          const pausedCount = queues.filter((q) => q.status === "paused").length;
+          const entryCount = queues.reduce((total, q) => total + q.entries.length, 0);
+          const alert = state.queueError !== null;
+          segments.push(`
+            <button class="seg ${alert ? "alert" : ""}" type="button" data-action="panel" data-panel="queues"
+              aria-expanded="${panelOpen("queues")}" aria-label="Annotation queues: ${entryCount} annotations${pausedCount ? `, ${pausedCount} paused` : ""}">
+              ${alert ? icon("alert") : icon("queue")}
+              <span>${entryCount}</span>
+              ${pausedCount > 0 && !alert ? `<span class="tag danger">${pausedCount} paused</span>` : ""}
+            </button>`);
+        }
+
+        if (tools.length > 0) {
+          segments.push(`
+            <span class="seg tight" role="group" aria-label="External devtools">
+              ${tools.map((t) => `<button class="btn" type="button" data-action="tool" data-id="${t.id}" aria-pressed="${t.isOpen}" title="${esc(t.title)}">${esc(t.label)}</button>`).join("")}
+            </span>`);
+        }
+
+        if (sessions.length > 0) {
+          const visible = pickVisibleSessions(sessions, state.sessionChipLimit);
+          const hidden = sessions.filter((s) => !visible.includes(s));
+          const hiddenRunning = hidden.some((s) => s.status !== "finished");
+          const overflow =
+            hidden.length === 0
+              ? ""
+              : `<button class="btn" type="button" data-action="panel" data-panel="sessions" data-overflow
+                  aria-expanded="${panelOpen("sessions")}" aria-label="All terminal sessions (${hidden.length} more)" title="All terminal sessions">
+                  ${hiddenRunning ? `<span class="led running" aria-hidden="true"></span>` : ""}+${hidden.length}</button>`;
+          segments.push(`
+            <span class="seg tight" role="group" aria-label="Terminal sessions">
+              ${visible.map(renderSessionChip).join("")}${overflow}
+            </span>`);
+        }
+
+        const panel =
+          state.openPanel === "services"
+            ? renderServicesPanel()
+            : state.openPanel === "queues"
+              ? renderQueuesPanel()
+              : state.openPanel === "sessions"
+                ? renderSessionsPanel()
+                : "";
+
+        return `
+          <div class="dock" data-position="${state.position}" data-minimap="${state.minimap}">
+            ${panel}
+            <div class="bar frame" role="toolbar" aria-label="devhost">${segments.join("")}</div>
+          </div>`;
+      }
+
+      // Chips that do not fit collapse into "+N". Keep the open session and
+      // running sessions visible first, newest first; finished ones fold away
+      // first. Visible chips keep creation order so positions stay stable.
+      function pickVisibleSessions(sessions, limit) {
+        if (limit >= sessions.length) return sessions;
+        const rank = (s) => (s.id === state.expandedSessionId ? 0 : s.status !== "finished" ? 1 : 2);
+        const kept = [...sessions]
+          .map((s, index) => ({ s, index }))
+          .sort((a, b) => rank(a.s) - rank(b.s) || b.index - a.index)
+          .slice(0, limit)
+          .map((entry) => entry.s);
+        return sessions.filter((s) => kept.includes(s));
+      }
+
+      // Measure-and-shrink: the bar never clips. Re-render with one fewer chip
+      // until the bar fits its available width (or no chips remain).
+      function renderDockFitted() {
+        state.sessionChipLimit = Infinity;
+        patch(region("dock"), renderDock());
+        const bar = () => region("dock").querySelector(".bar");
+        let visibleCount = region("dock").querySelectorAll(".bar .chip").length;
+        while (bar() && bar().scrollWidth > bar().clientWidth && visibleCount > 0) {
+          visibleCount -= 1;
+          state.sessionChipLimit = visibleCount;
+          patch(region("dock"), renderDock());
+        }
+        if (state.openPanel === "sessions" && !region("dock").querySelector("[data-overflow]")) {
+          state.openPanel = null;
+          patch(region("dock"), renderDock());
+        }
+      }
+
+      function renderSessionsPanel() {
+        const rows = state.sessions
+          .map((session) => {
+            const done = session.status === "finished";
+            const open = state.expandedSessionId === session.id;
+            return `
+              <div class="row">
+                ${done ? `<span class="ok-ic">${icon("check")}</span>` : `<span class="led ${session.status}" aria-hidden="true"></span>`}
+                <span class="sr-only">${done ? "finished" : session.status}</span>
+                ${session.kind === "editor" ? icon("code") : icon("terminal")}
+                <button class="linkish trunc grow" type="button" data-action="session-expand" data-id="${session.id}" aria-pressed="${open}"
+                  title="Open ${esc(session.title)} terminal"><strong>${esc(session.label)}</strong> <span class="muted">${esc(
+                    session.meta
+                      .filter((m) => m !== session.label)
+                      .slice(0, 2)
+                      .join(" · "),
+                  )}</span></button>
+                ${done ? `<button class="btn icon ghost" type="button" data-action="session-close" data-id="${session.id}" title="Close ${esc(session.label)} session" aria-label="Close ${esc(session.label)} session">${icon("x")}</button>` : ""}
+              </div>`;
+          })
+          .join("");
+        return `
+          <section class="panel frame" style="width:360px" aria-label="Terminal sessions">
+            <header class="panel-head"><span class="grow">Terminal sessions</span></header>
+            <div class="panel-body">${rows}</div>
+          </section>`;
+      }
+
+      function renderSessionChip(session) {
+        const done = session.status === "finished";
+        const stateIcon = done
+          ? icon("check", "state")
+          : `<span class="led ${session.status}" aria-hidden="true"></span>`;
+        const kindIcon = session.kind === "editor" ? icon("code") : icon("terminal");
+        const pressed = state.expandedSessionId === session.id;
+        const chip = `
+          <button class="chip ${done ? "done" : ""}" type="button" data-action="session-expand" data-id="${session.id}"
+            aria-pressed="${pressed}" title="${esc(session.title)} · ${esc(session.meta[0])} — ${done ? "finished" : session.status}">
+            ${stateIcon}${kindIcon}<span class="trunc">${esc(session.label)}</span>
+          </button>`;
+        if (!done) return chip;
+        return `<span class="chip-group">${chip}<button class="btn icon" type="button" data-action="session-close" data-id="${session.id}" title="Close ${esc(session.label)} session" aria-label="Close ${esc(session.label)} session">${icon("x")}</button></span>`;
+      }
+
+      function renderServicesPanel() {
+        const rows = state.services
+          .map((service) => {
+            const name = service.url
+              ? `<a class="name trunc grow" href="${esc(service.url)}" target="_blank" rel="noopener noreferrer" title="Open ${esc(service.name)} in a new window">${esc(service.name)}</a>`
+              : `<span class="name trunc grow">${esc(service.name)}</span>`;
+            const tags = [
+              !service.managed
+                ? `<span class="tag" title="Not managed by devhost; cannot restart">external</span>`
+                : "",
+              service.dirty && !service.restarting ? `<span class="tag warn">changed</span>` : "",
+            ].join("");
+            const restart = service.managed
+              ? `<button class="btn icon ${service.dirty && !service.restarting ? "warn" : ""}" type="button" data-action="restart" data-name="${esc(service.name)}"
+                  ${service.restarting ? "disabled" : ""} title="${service.restarting ? "Restarting…" : `Restart ${esc(service.name)}`}" aria-label="Restart ${esc(service.name)}">
+                  ${icon("restart", service.restarting ? "spin" : "")}</button>`
+              : "";
+            return `
+              <div class="row ${service.status ? "" : "down"}">
+                <span class="dot ${serviceDotClass(service)}" aria-hidden="true"></span>
+                <span class="sr-only">${serviceStateText(service)}</span>
+                ${name}${tags}${restart}
+              </div>`;
+          })
+          .join("");
+        return `
+          <section class="panel frame" style="width:300px" aria-label="Services">
+            <header class="panel-head">
+              <span class="grow">Services</span>
+              <span class="muted" style="font-weight:400" title="Restart changed services (or the primary service)"><span class="kbd">⌃⌥R</span></span>
+            </header>
+            ${state.serviceError ? renderNotice(state.serviceError, "dismiss-service-error") : ""}
+            <div class="panel-body">${rows}</div>
+          </section>`;
+      }
+
+      function renderNotice(message, dismissAction) {
+        return `<div class="notice" role="alert">${icon("alert")}<span class="grow">${esc(message)}</span>${
+          dismissAction
+            ? `<button class="btn icon ghost" type="button" data-action="${dismissAction}" aria-label="Dismiss">${icon("x")}</button>`
+            : ""
+        }</div>`;
+      }
+
+      function routeLabel(url) {
+        try {
+          const parsed = new URL(url);
+          return parsed.pathname === "/" ? parsed.host : parsed.host + parsed.pathname;
+        } catch {
+          return url;
+        }
+      }
+
+      function renderQueuesPanel() {
+        const ui = state.queueUi;
+        const body = state.queues
+          .map((queue) => {
+            const expanded = ui.expanded.has(queue.queueId);
+            const paused = queue.status === "paused";
+            const total = queue.entries.length;
+            const statusTag = paused
+              ? `<span class="tag danger">paused</span>`
+              : queue.status === "launching"
+                ? `<span class="tag">launching</span>`
+                : `<span class="tag accent">working</span>`;
+            const entries = !expanded
+              ? ""
+              : `${paused && queue.pauseReason ? `<div class="reason">${esc(PAUSE_MESSAGES[queue.pauseReason])}</div>` : ""}
+                <ol class="entries">${queue.entries.map((entry, index) => renderQueueEntry(entry, index)).join("")}</ol>`;
+            return `
+              <article class="q">
+                <div class="row">
+                  <button class="btn icon ghost" type="button" data-action="queue-toggle" data-id="${queue.queueId}"
+                    aria-expanded="${expanded}" aria-label="${expanded ? "Hide" : "Show"} annotations">${icon(expanded ? "chevDown" : "chevRight")}</button>
+                  <strong class="trunc grow" title="${esc(queue.entries[0]?.annotation.url ?? "")}">${esc(routeLabel(queue.entries[0]?.annotation.url ?? "Annotation queue"))}</strong>
+                  ${statusTag}
+                  <span class="muted" title="Working on annotation 1 of ${total}">${total === 0 ? "0/0" : `1/${total}`}</span>
+                  ${paused ? `<button class="btn primary" type="button" data-action="queue-resume" data-id="${queue.queueId}">${icon("play", "fill")}Resume</button>` : ""}
+                </div>
+                <div class="progress ${paused ? "paused" : ""}"><span style="width:${total === 0 ? 0 : 100 / total}%"></span></div>
+                ${entries}
+              </article>`;
+          })
+          .join("");
+        return `
+          <section class="panel frame" style="width:440px" aria-label="Annotation queues">
+            <header class="panel-head"><span class="grow">Annotation queues</span></header>
+            ${state.queueError ? renderNotice(state.queueError, "dismiss-queue-error") : ""}
+            <div class="panel-body">${body}</div>
+          </section>`;
+      }
+
+      function renderQueueEntry(entry) {
+        const ui = state.queueUi;
+        const editable = entry.state === "queued" || entry.state === "paused-active";
+        const editing = ui.editing.has(entry.entryId);
+        const confirming = ui.confirming.has(entry.entryId);
+        const draft = ui.drafts[entry.entryId] ?? entry.annotation.comment;
+        const stateTag =
+          entry.state === "active"
+            ? `<span class="tag accent">active</span>`
+            : entry.state === "paused-active"
+              ? `<span class="tag danger">paused</span>`
+              : `<span class="tag">queued</span>`;
+        const actions =
+          editable && !editing && !confirming
+            ? `<span class="actions">
+                <button class="btn icon ghost" type="button" data-action="entry-edit" data-id="${entry.entryId}" title="Edit annotation" aria-label="Edit annotation">${icon("pencil")}</button>
+                <button class="btn icon ghost" type="button" data-action="entry-delete" data-id="${entry.entryId}" title="Delete annotation" aria-label="Delete annotation">${icon("trash")}</button>
+              </span>`
+            : "";
+        const body = editing
+          ? `<textarea class="input" rows="3" data-focus-key="entry-${entry.entryId}" data-input="entry-draft" data-id="${entry.entryId}">${esc(draft)}</textarea>
+             <div class="actions">
+               <button class="btn primary" type="button" data-action="entry-save" data-id="${entry.entryId}" ${draft.trim() === "" || draft === entry.annotation.comment ? "disabled" : ""}>Save</button>
+               <button class="btn" type="button" data-action="entry-cancel" data-id="${entry.entryId}">Cancel</button>
+             </div>`
+          : `<div class="entry-comment">${esc(entry.annotation.comment)}</div>`;
+        const confirm = confirming
+          ? `<div class="confirm" role="alert"><span class="grow">Delete this annotation?</span>
+              <button class="btn danger" type="button" data-action="entry-confirm-delete" data-id="${entry.entryId}">Delete</button>
+              <button class="btn" type="button" data-action="entry-cancel-delete" data-id="${entry.entryId}">Cancel</button></div>`
+          : "";
+        return `<li class="entry"><div class="entry-head">${stateTag}<span class="grow"></span>${actions}</div>${body}${confirm}</li>`;
+      }
+
+      function renderTerminal() {
+        const session = state.sessions.find((s) => s.id === state.expandedSessionId);
+        if (!session) return "";
+        const running = session.status !== "finished";
+        const statusTag = running ? `<span class="tag accent">running</span>` : `<span class="tag ok">finished</span>`;
+        const primary = running
+          ? `<button class="btn danger" type="button" data-action="session-terminate" data-id="${session.id}" title="Terminate terminal session">${icon("x")}Terminate</button>`
+          : `<button class="btn" type="button" data-action="session-close" data-id="${session.id}" title="Close terminal session">${icon("x")}Close</button>`;
+        const lines =
+          session.kind === "editor"
+            ? `<span class="t-dim">  1 </span>import type { JSX } from "react";
+<span class="t-dim">  2 </span>
+<span class="t-dim"> 18 </span><span class="t-acc">export function</span> ${esc(session.meta[0].slice(1, -1))}(props: IProps): JSX.Element {
+<span class="t-dim"> 19 </span>  return (
+<span class="t-dim"> 20 </span>    &lt;article className="card"&gt;
+<span class="t-dim"> 21 </span>      &lt;h3&gt;{props.title}&lt;/h3&gt;
+<span class="t-dim"> 22 </span>    &lt;/article&gt;
+<span class="t-dim"> 23 </span>  );
+<span class="t-dim"> 24 </span>}
+<span class="t-dim">~
+~</span>
+<span class="t-dim">NORMAL  ${esc(session.meta[1])}</span>`
+            : `<span class="t-dim">$</span> claude --append-system-prompt …
+<span class="t-acc">●</span> Reading annotation (2 markers) for <span class="t-acc">shop.localhost/cart</span>
+<span class="t-acc">●</span> Editing src/components/CartSummary.tsx
+  <span class="t-ok">+ &lt;span&gt;Tax: {formatMoney(tax)}&lt;/span&gt;</span>
+  <span class="t-err">- &lt;button&gt;Continue&lt;/button&gt;</span>
+  <span class="t-ok">+ &lt;button&gt;Checkout&lt;/button&gt;</span>
+${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ Done.</span>`}`;
+        return `
+          ${session.fullscreen ? "" : `<div class="backdrop" data-action="session-minimize" data-id="${session.id}"></div>`}
+          <section class="term frame ${session.fullscreen ? "fullscreen" : ""}" role="dialog" aria-label="${esc(session.title)} terminal">
+            <header class="term-head">
+              ${session.kind === "editor" ? icon("code") : icon("terminal")}
+              <strong>${esc(session.title)}</strong>
+              <span class="muted trunc grow">${session.meta.map(esc).join(" · ")}</span>
+              ${statusTag}
+              <button class="btn icon" type="button" data-action="session-minimize" data-id="${session.id}" title="Minimize to toolbar" aria-label="Minimize">${icon("minus")}</button>
+              ${primary}
+            </header>
+            <pre class="term-body">${lines}</pre>
+          </section>`;
+      }
+
+      function renderHint() {
+        if (!state.selecting || state.markers.length > 0) return "";
+        return `<div class="hint frame" role="status"><strong>Annotate</strong><span class="muted">click to mark elements</span><span class="kbd">Esc</span></div>`;
+      }
+
+      // --- Composer ---------------------------------------------------------
+      let composerSignature = "";
+      function renderComposer() {
+        const target = region("composer");
+        if (state.markers.length === 0) {
+          composerSignature = "";
+          target.innerHTML = "";
+          return;
+        }
+        const action = ANNOTATION_ACTIONS.find((a) => a.id === state.selectedActionId);
+        const activeAgent = state.sessions.find(
+          (s) => s.kind === "agent" && s.status === "running" && s.label === action.displayName,
+        );
+        const canAppend = action.kind === "agent" && action.queueEnabled && activeAgent !== undefined;
+        const signature = JSON.stringify([
+          state.markers.map((m) => m.label),
+          state.composerError,
+          state.submitting,
+          state.selectedActionId,
+          state.actionMenuOpen,
+          canAppend,
+          state.appendToActive,
+        ]);
+        if (signature !== composerSignature) {
+          composerSignature = signature;
+          const menuBelow = false;
+          patch(
+            target,
+            `<section class="composer frame" aria-label="Annotation draft" data-composer>
+              <header class="panel-head">
+                <span>Annotate</span>
+                <span class="muted grow" style="font-weight:400">${state.submitting ? "submitting…" : `${state.markers.length} marker${state.markers.length === 1 ? "" : "s"}`}</span>
+                <button class="btn icon ghost" type="button" data-action="composer-cancel" title="Cancel (Esc)" aria-label="Cancel annotation">${icon("x")}</button>
+              </header>
+              ${state.composerError ? renderNotice(state.composerError, null) : ""}
+              <div class="composer-body">
+                <ol class="markers">${state.markers.map((m, i) => `<li><span class="num">${i + 1}</span><span class="trunc" title="${esc(m.label)}">${esc(m.label)}</span></li>`).join("")}</ol>
+                <textarea class="input" rows="4" data-focus-key="composer-comment" data-input="composer-comment"
+                  placeholder="Describe the change. Refer to markers as #1, #2…">${esc(state.comment)}</textarea>
+                ${canAppend ? `<label class="check"><input type="checkbox" data-input="append" ${state.appendToActive ? "checked" : ""}/>Append to running ${esc(action.displayName)} session</label>` : ""}
+                <div class="composer-foot">
+                  ${
+                    ANNOTATION_ACTIONS.length > 1
+                      ? `<span class="split">
+                          <button class="btn primary" type="button" data-action="composer-run" data-run ${state.comment.trim() === "" || state.submitting ? "disabled" : ""}>
+                            Run ${esc(action.displayName)} <span class="kbd">⌘↵</span></button>
+                          <button class="btn primary caret" type="button" data-action="composer-menu" aria-haspopup="menu" aria-expanded="${state.actionMenuOpen}"
+                            aria-label="Choose action. Current: ${esc(action.displayName)}" ${state.submitting ? "disabled" : ""}>${icon("chevDown")}</button>
+                          ${
+                            state.actionMenuOpen
+                              ? `<div class="menu frame ${menuBelow ? "below" : ""}" role="menu">${ANNOTATION_ACTIONS.map(
+                                  (a) =>
+                                    `<button type="button" role="menuitemradio" aria-checked="${a.id === action.id}" data-action="composer-pick" data-id="${a.id}">${icon("check")}<span class="grow">${esc(a.displayName)}</span><span class="muted">${a.kind}</span></button>`,
+                                ).join("")}</div>`
+                              : ""
+                          }
+                        </span>`
+                      : ""
+                  }
+                  <span class="grow"></span>
+                  <button class="btn ghost" type="button" data-action="composer-cancel" ${state.submitting ? "disabled" : ""}>Cancel <span class="kbd">Esc</span></button>
+                </div>
+              </div>
+            </section>`,
+          );
+        }
+        positionComposer();
+      }
+
+      function positionComposer() {
+        const composer = region("composer").querySelector("[data-composer]");
+        if (!composer) return;
+        const last = state.markers[state.markers.length - 1].el.getBoundingClientRect();
+        const width = composer.offsetWidth;
+        const height = composer.offsetHeight;
+        const pad = 10;
+        let left = last.right + 12;
+        if (left + width > innerWidth - pad) left = last.left - width - 12;
+        if (left < pad) left = Math.min(Math.max(pad, last.left), innerWidth - width - pad);
+        let top = last.top;
+        if (left === Math.min(Math.max(pad, last.left), innerWidth - width - pad)) top = last.bottom + 12;
+        top = Math.min(Math.max(pad, top), innerHeight - height - pad);
+        composer.style.left = `${left}px`;
+        composer.style.top = `${top}px`;
+      }
+
+      // --- Component source menu -------------------------------------------
+      function renderComponentMenu() {
+        const menu = state.componentMenu;
+        if (!menu) return "";
+        return `
+          <section class="cmenu frame" style="left:${menu.x}px;top:${menu.y}px" aria-label="Open component source" data-cmenu>
+            <header class="panel-head"><span class="grow trunc">${esc(menu.title)}</span><span class="muted" style="font-weight:400">open in Neovim</span></header>
+            <div class="panel-body" role="menu">
+              ${menu.items
+                .map(
+                  (item, index) => `
+                <button class="citem" type="button" role="menuitem" data-action="cmenu-open" data-index="${index}">
+                  <span class="citem-line"><span class="citem-name">&lt;${esc(item.name)}&gt;</span>${item.props.map((p) => `<span class="tag">${esc(p)}</span>`).join("")}</span>
+                  <span class="citem-path trunc" title="${esc(item.src)}">${esc(item.src)}</span>
+                </button>`,
+                )
+                .join("")}
+            </div>
+          </section>`;
+      }
+
+      // --- Host overlays ----------------------------------------------------
+      function describeElement(element) {
+        const tag = element.tagName.toLowerCase();
+        const cls = element.classList[0] ? `.${element.classList[0]}` : "";
+        const text = (element.textContent || "").trim().replace(/\s+/g, " ");
+        return `${tag}${cls}${text ? ` "${text.length > 28 ? `${text.slice(0, 28)}…` : text}"` : ""}`;
+      }
+      function renderOverlay() {
+        const parts = [];
+        const box = (rect, cls) => {
+          const p = 3;
+          return `<div class="hl ${cls}" style="left:${rect.left - p}px;top:${rect.top - p}px;width:${rect.width + p * 2}px;height:${rect.height + p * 2}px"></div>`;
+        };
+        const label = (rect, html, cls) => {
+          const top = rect.top - 24 < 4 ? rect.bottom + 6 : rect.top - 24;
+          return `<div class="hl-label ${cls || ""}" style="left:${Math.max(4, rect.left - 3)}px;top:${top}px">${html}</div>`;
+        };
+        state.markers.forEach((marker, index) => {
+          const rect = marker.el.getBoundingClientRect();
+          parts.push(box(rect, ""));
+          parts.push(
+            `<div class="hl-badge" style="left:${rect.left - 12}px;top:${rect.top - 12}px">${index + 1}</div>`,
+          );
+        });
+        if (state.selecting && state.hoverEl && !state.markers.some((m) => m.el === state.hoverEl)) {
+          const rect = state.hoverEl.getBoundingClientRect();
+          parts.push(box(rect, "hover"));
+          parts.push(
+            label(
+              rect,
+              `<b>${esc(state.hoverEl.dataset.component ? `<${state.hoverEl.dataset.component}>` : "")}</b> ${esc(describeElement(state.hoverEl))}`,
+            ),
+          );
+        }
+        if (state.reactHighlight) {
+          const target = document.querySelectorAll('[data-component="ProductCard"]')[1];
+          const rect = target.getBoundingClientRect();
+          parts.push(box(rect, "react"));
+          parts.push(label(rect, `<b>&lt;ProductCard&gt;</b> ProductCard.tsx:18`, "react"));
+        }
+        region("overlay").innerHTML = parts.join("");
+      }
+
+      // --- Minimap ----------------------------------------------------------
+      function renderMinimap() {
+        const target = region("minimap");
+        if (!state.minimap) {
+          target.innerHTML = "";
+          return;
+        }
+        if (!target.querySelector(".minimap")) {
+          target.innerHTML = `<aside class="minimap" aria-hidden="true"><canvas></canvas><div data-mm-overlay></div></aside>`;
+          const aside = target.querySelector(".minimap");
+          aside.addEventListener("mousemove", (event) => {
+            state.minimapHoverY = event.clientY - aside.getBoundingClientRect().top;
+            drawMinimapPreview();
+          });
+          aside.addEventListener("mouseleave", () => {
+            state.minimapHoverY = null;
+            drawMinimapPreview();
+          });
+          aside.addEventListener("transitionend", drawMinimapCanvas);
+        }
+        drawMinimapCanvas();
+      }
+      const MM_ROW = 3;
+      function drawMinimapCanvas() {
+        const canvas = region("minimap").querySelector("canvas");
+        if (!canvas) return;
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        const dpr = Math.max(1, devicePixelRatio || 1);
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
+        const context = canvas.getContext("2d");
+        context.scale(dpr, dpr);
+        const styles = getComputedStyle(hostElement);
+        const stdout = styles.getPropertyValue("--dh-fg-faint").trim();
+        const stderr = styles.getPropertyValue("--dh-danger").trim();
+        const visible = logEntries.slice(-Math.floor(height / MM_ROW));
+        visible.forEach((entry, index) => {
+          context.fillStyle = entry.stream === "stderr" ? stderr : stdout;
+          const lineWidth =
+            entry.stream === "stderr"
+              ? width - 2
+              : Math.max(2, Math.min(width - 2, (entry.line.length / 80) * (width - 2)));
+          context.fillRect(1, index * MM_ROW, lineWidth, MM_ROW - 1);
+        });
+      }
+      function drawMinimapPreview() {
+        const overlay = region("minimap").querySelector("[data-mm-overlay]");
+        const canvas = region("minimap").querySelector("canvas");
+        if (!overlay || !canvas) return;
+        if (state.minimapHoverY === null) {
+          overlay.innerHTML = "";
+          return;
+        }
+        const visible = logEntries.slice(-Math.floor(canvas.clientHeight / MM_ROW));
+        const hovered = Math.min(visible.length - 1, Math.max(0, Math.floor(state.minimapHoverY / MM_ROW)));
+        const span = 14;
+        const start = Math.max(0, Math.min(visible.length - span, hovered - Math.floor(span / 2)));
+        const rows = visible.slice(start, start + span);
+        const previewHeight = span * 18 + 10;
+        const previewTop = Math.min(
+          Math.max(8, state.minimapHoverY - previewHeight / 2),
+          canvas.clientHeight - previewHeight - 8,
+        );
+        overlay.innerHTML = `
+          <div class="mm-window" style="top:${start * MM_ROW}px;height:${span * MM_ROW}px"></div>
+          <div class="mm-preview frame" style="top:${previewTop}px">
+            <ol>${rows
+              .map(
+                (row, index) =>
+                  `<li class="${row.stream} ${start + index === hovered ? "focus" : ""}"><span class="svc">${esc(row.serviceName)}</span><span>${esc(row.line)}</span></li>`,
+              )
+              .join("")}</ol>
+          </div>`;
+      }
+
+      // ======================================================================
+      // Behavior
+      // ======================================================================
+      async function restartServices(names) {
+        const targets = state.services.filter((s) => names.includes(s.name) && s.managed);
+        targets.forEach((s) => (s.restarting = true));
+        render();
+        await new Promise((resolve) => setTimeout(resolve, 1600));
+        targets.forEach((s) => {
+          s.restarting = false;
+          if (!state.failRestart) {
+            s.status = true;
+            s.dirty = false;
+          }
+        });
+        state.serviceError = state.failRestart
+          ? `Failed to restart ${names.join(", ")}: exit status 1 (see logs)`
+          : state.serviceError;
+        render();
+      }
+
+      function closePopovers() {
+        state.openPanel = null;
+        state.componentMenu = null;
+        state.actionMenuOpen = false;
+      }
+
+      function cancelDraft() {
+        state.markers = [];
+        state.comment = "";
+        state.composerError = null;
+        state.submitting = false;
+        state.actionMenuOpen = false;
+      }
+
+      async function submitDraft() {
+        if (state.comment.trim() === "" || state.submitting) return;
+        state.submitting = true;
+        state.composerError = null;
+        render();
+        await new Promise((resolve) => setTimeout(resolve, 700));
+        state.submitting = false;
+        if (state.failSubmit) {
+          state.composerError = "Failed to start the Claude action: agent command not found on PATH";
+          render();
+          return;
+        }
+        const action = ANNOTATION_ACTIONS.find((a) => a.id === state.selectedActionId);
+        const markerCount = state.markers.length;
+        const running = state.sessions.find(
+          (s) => s.kind === "agent" && s.status === "running" && s.label === action.displayName,
+        );
+        if (action.kind === "agent" && action.queueEnabled && running && state.appendToActive) {
+          const queue = state.queues[0] ?? { queueId: "q-new", status: "working", pauseReason: null, entries: [] };
+          if (!state.queues.includes(queue)) state.queues.unshift(queue);
+          queue.entries.push({
+            entryId: `e${Date.now()}`,
+            state: "queued",
+            annotation: { url: location.href, comment: state.comment.trim() },
+          });
+        } else {
+          addSession(action.kind, { action, markers: markerCount });
+        }
+        cancelDraft();
+        render();
+      }
+
+      shadow.addEventListener("input", (event) => {
+        const target = event.target;
+        const kind = target.dataset.input;
+        if (kind === "composer-comment") {
+          state.comment = target.value;
+          const run = shadow.querySelector("[data-run]");
+          if (run) run.disabled = state.comment.trim() === "" || state.submitting;
+        } else if (kind === "entry-draft") {
+          state.queueUi.drafts[target.dataset.id] = target.value;
+          const save = target.parentElement.querySelector('[data-action="entry-save"]');
+          const original = findEntry(target.dataset.id)?.entry.annotation.comment;
+          if (save) save.disabled = target.value.trim() === "" || target.value === original;
+        }
+      });
+      shadow.addEventListener("change", (event) => {
+        if (event.target.dataset.input === "append") {
+          state.appendToActive = event.target.checked;
+          render();
+        }
+      });
+
+      function findEntry(entryId) {
+        for (const queue of state.queues) {
+          const entry = queue.entries.find((e) => e.entryId === entryId);
+          if (entry) return { queue, entry };
+        }
+        return null;
+      }
+
+      shadow.addEventListener("click", (event) => {
+        const trigger = event.target.closest("[data-action]");
+        if (!trigger) return;
+        const { action, id, panel, name, index } = trigger.dataset;
+        const ui = state.queueUi;
+        switch (action) {
+          case "toggle-dock":
+            state.dockCollapsed = !state.dockCollapsed;
+            state.openPanel = null;
+            break;
+          case "panel":
+            state.openPanel = state.openPanel === panel ? null : panel;
+            break;
+          case "tool": {
+            const tool = state.tools.find((t) => t.id === id);
+            tool.isOpen = !tool.isOpen;
+            break;
+          }
+          case "restart":
+            restartServices([name]);
+            return;
+          case "dismiss-service-error":
+            state.serviceError = null;
+            break;
+          case "dismiss-queue-error":
+            state.queueError = null;
+            break;
+          case "queue-toggle":
+            ui.expanded.has(id) ? ui.expanded.delete(id) : ui.expanded.add(id);
+            break;
+          case "queue-resume": {
+            const queue = state.queues.find((q) => q.queueId === id);
+            queue.status = "launching";
+            queue.pauseReason = null;
+            queue.entries[0].state = "active";
+            setTimeout(() => {
+              queue.status = "working";
+              render();
+            }, 1200);
+            addSession("agent");
+            break;
+          }
+          case "entry-edit":
+            ui.confirming.delete(id);
+            ui.editing.add(id);
+            break;
+          case "entry-cancel":
+            ui.editing.delete(id);
+            delete ui.drafts[id];
+            break;
+          case "entry-save": {
+            const found = findEntry(id);
+            found.entry.annotation.comment = ui.drafts[id];
+            ui.editing.delete(id);
+            delete ui.drafts[id];
+            break;
+          }
+          case "entry-delete":
+            ui.editing.delete(id);
+            ui.confirming.add(id);
+            break;
+          case "entry-cancel-delete":
+            ui.confirming.delete(id);
+            break;
+          case "entry-confirm-delete": {
+            const found = findEntry(id);
+            found.queue.entries = found.queue.entries.filter((e) => e.entryId !== id);
+            ui.confirming.delete(id);
+            if (found.queue.entries.length === 0) state.queues = state.queues.filter((q) => q !== found.queue);
+            break;
+          }
+          case "session-expand":
+            state.expandedSessionId = state.expandedSessionId === id ? null : id;
+            state.openPanel = null;
+            break;
+          case "session-minimize":
+            state.expandedSessionId = null;
+            break;
+          case "session-terminate":
+          case "session-close":
+            state.sessions = state.sessions.filter((s) => s.id !== id);
+            if (state.expandedSessionId === id) state.expandedSessionId = null;
+            break;
+          case "composer-cancel":
+            cancelDraft();
+            break;
+          case "composer-run":
+            submitDraft();
+            return;
+          case "composer-menu":
+            state.actionMenuOpen = !state.actionMenuOpen;
+            break;
+          case "composer-pick":
+            state.selectedActionId = id;
+            state.actionMenuOpen = false;
+            break;
+          case "cmenu-open": {
+            const item = state.componentMenu.items[Number(index)];
+            state.componentMenu = null;
+            const session = addSession("editor", { component: item.name, src: item.src });
+            state.expandedSessionId = session.id;
+            break;
+          }
+        }
+        render();
+      });
+
+      // Clicks outside devtools close popovers (dock panels, component menu).
+      document.addEventListener("mousedown", (event) => {
+        if (event.composedPath().includes(hostElement)) return;
+        if (event.target.closest?.("#proto-controls")) return;
+        if (state.openPanel || state.componentMenu) {
+          state.openPanel = null;
+          state.componentMenu = null;
+          render();
+        }
+      });
+
+      // --- Annotation selection (hold Alt) ---------------------------------
+      function isHostTarget(element) {
+        return (
+          element instanceof Element &&
+          !element.closest("#proto-controls") &&
+          element !== hostElement &&
+          element !== document.body &&
+          element !== document.documentElement
+        );
+      }
+      document.addEventListener(
+        "keydown",
+        (event) => {
+          if (event.key === "Alt" && !state.selecting) {
+            state.selecting = true;
+            render();
+          }
+          if (event.key === "Escape") {
+            if (state.expandedSessionId) return;
+            if (state.markers.length || state.selecting || state.openPanel || state.componentMenu) {
+              event.preventDefault();
+              cancelDraft();
+              closePopovers();
+              render();
+            }
+          }
+          if (event.key === "Enter" && (event.metaKey || event.ctrlKey) && state.markers.length) {
+            event.preventDefault();
+            submitDraft();
+          }
+          if (event.code === "KeyR" && event.altKey && event.ctrlKey && !event.shiftKey && !event.metaKey) {
+            event.preventDefault();
+            if (state.services.some((s) => s.restarting)) return;
+            const dirty = state.services.filter((s) => s.dirty).map((s) => s.name);
+            restartServices(dirty.length ? dirty : ["web"]);
+          }
+        },
+        true,
+      );
+      document.addEventListener(
+        "keyup",
+        (event) => {
+          if (event.key === "Alt") {
+            state.selecting = false;
+            state.hoverEl = null;
+            render();
+          }
+        },
+        true,
+      );
+      window.addEventListener("blur", () => {
+        state.selecting = false;
+        state.hoverEl = null;
+        render();
+      });
+      document.addEventListener(
+        "mousemove",
+        (event) => {
+          if (!state.selecting) return;
+          const target = event.composedPath()[0];
+          const next = isHostTarget(target) ? target : null;
+          if (next !== state.hoverEl) {
+            state.hoverEl = next;
+            renderOverlay();
+          }
+        },
+        true,
+      );
+      document.addEventListener(
+        "click",
+        (event) => {
+          if (!event.altKey || event.composedPath().includes(hostElement)) return;
+          const target = event.composedPath()[0];
+          if (!isHostTarget(target)) return;
+          event.preventDefault();
+          event.stopPropagation();
+          if (state.markers.some((m) => m.el === target)) return;
+          state.markers.push({ el: target, label: describeElement(target) });
+          render();
+          requestAnimationFrame(() => shadow.querySelector('[data-focus-key="composer-comment"]')?.focus());
+        },
+        true,
+      );
+      document.addEventListener(
+        "contextmenu",
+        (event) => {
+          if (!event.altKey || event.composedPath().includes(hostElement)) return;
+          const target = event.composedPath()[0];
+          if (!isHostTarget(target)) return;
+          event.preventDefault();
+          const items = [];
+          for (let node = target; node && node !== document.body; node = node.parentElement) {
+            if (node.dataset?.component) {
+              items.push({
+                name: node.dataset.component,
+                props: node.dataset.props ? node.dataset.props.split(",") : [],
+                src: node.dataset.src,
+              });
+            }
+          }
+          if (items.length === 0) return;
+          const width = Math.min(400, innerWidth - 20);
+          const height = 26 + items.length * 44;
+          state.componentMenu = {
+            title: describeElement(target),
+            items,
+            x: Math.min(event.clientX, innerWidth - width - 10),
+            y: Math.min(event.clientY, innerHeight - height - 10),
+          };
+          state.selecting = false;
+          state.hoverEl = null;
+          render();
+        },
+        true,
+      );
+      window.addEventListener(
+        "scroll",
+        () => {
+          renderOverlay();
+          positionComposer();
+        },
+        { passive: true },
+      );
+      window.addEventListener("resize", () => render());
+
+      // ======================================================================
+      // Prototype controls wiring
+      // ======================================================================
+      const bind = (id, eventName, handler) => document.getElementById(id).addEventListener(eventName, handler);
+      bind("pc-scene", "change", (e) => {
+        document.body.dataset.scene = e.target.value;
+        render();
+      });
+      bind("pc-hostile", "change", (e) => document.body.classList.toggle("hostile", e.target.checked));
+      bind("pc-theme", "change", (e) => {
+        state.theme = e.target.value;
+        render();
+      });
+      bind("pc-position", "change", (e) => {
+        state.position = e.target.value;
+        render();
+      });
+      bind("pc-minimap", "change", (e) => {
+        state.minimap = e.target.checked;
+        render();
+      });
+      bind("pc-react", "change", (e) => {
+        state.reactHighlight = e.target.checked;
+        render();
+      });
+      bind("pc-svc-error", "change", (e) => {
+        state.serviceError = e.target.checked
+          ? "Health check failed: devhost control server unreachable (ECONNREFUSED)"
+          : null;
+        render();
+      });
+      bind("pc-restart-fail", "change", (e) => (state.failRestart = e.target.checked));
+      bind("pc-queue-error", "change", (e) => {
+        state.queueError = e.target.checked ? "Queue connection lost. Retrying…" : null;
+        render();
+      });
+      bind("pc-submit-fail", "change", (e) => (state.failSubmit = e.target.checked));
+      bind("pc-dirty", "click", () => {
+        state.services.forEach((s) => {
+          if (s.name === "api" || s.name === "web") s.dirty = true;
+        });
+        render();
+      });
+      bind("pc-add-agent", "click", () => {
+        addSession("agent");
+        render();
+      });
+      bind("pc-add-editor", "click", () => {
+        addSession("editor");
+        render();
+      });
+      bind("pc-finish", "click", () => {
+        state.sessions.forEach((s) => (s.status = "finished"));
+        render();
+      });
+      bind("pc-no-queues", "click", () => {
+        state.queues = state.queues.length ? [] : structuredClone(MOCK_QUEUES);
+        if (state.openPanel === "queues" && state.queues.length === 0) state.openPanel = null;
+        render();
+      });
+
+      render();
+    </script>
+  </body>
+</html>
