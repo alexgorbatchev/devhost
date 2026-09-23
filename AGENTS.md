@@ -18,6 +18,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Start the root devhost stack locally: `bun run dev`
 - Start the docs site locally: `bun run docs`
 - Open the injected devtools UI design reference (`packages/devhost-ui/design/index.html`) in the default browser: `just design`
+- Open the docs site design reference (`packages/docs/design/index.html`) in the default browser: `just design-docs`
 
 ## Documentation policy
 
