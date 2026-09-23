@@ -5,8 +5,8 @@ import { createLogPreviewRange } from "../createLogPreviewRange";
 describe("createLogPreviewRange", () => {
   test("returns a centered preview range when enough context exists", () => {
     expect(createLogPreviewRange(30, 15)).toEqual({
-      endIndex: 26,
-      startIndex: 5,
+      endIndex: 23,
+      startIndex: 8,
     });
   });
 

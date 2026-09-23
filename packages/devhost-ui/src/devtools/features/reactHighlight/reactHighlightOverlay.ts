@@ -38,6 +38,8 @@ interface IReactHighlightSourceMapElementLocator {
 }
 
 const maximumFiberDepth: number = 50;
+const reactHighlightOverlayClassName: string =
+  "pointer-events-none fixed z-(--devhost-z-overlay) box-border rounded-sm border-2 border-mark-alt bg-mark-alt/10 shadow-mark";
 const sourceMapCache: Map<string, Promise<IReactHighlightSourceMap | undefined>> = new Map();
 
 export function createReactHighlightWebSocketUrl(location: Location, controlToken: string): string {
@@ -161,16 +163,13 @@ export async function highlightReactElements(
     const rect: DOMRect = element.getBoundingClientRect();
     const overlay: HTMLDivElement = overlayRoot.ownerDocument.createElement("div");
     overlay.setAttribute("data-devhost-react-highlight-overlay", "");
-    overlay.style.position = "fixed";
+    // Same two-tone marker ring as annotation highlights, in the alternate (cyan) mark color; only the measured
+    // geometry is set inline.
+    overlay.className = reactHighlightOverlayClassName;
     overlay.style.left = `${rect.left}px`;
     overlay.style.top = `${rect.top}px`;
     overlay.style.width = `${rect.width}px`;
     overlay.style.height = `${rect.height}px`;
-    overlay.style.border = "2px solid rgba(32, 144, 255, 0.9)";
-    overlay.style.borderRadius = "4px";
-    overlay.style.boxSizing = "border-box";
-    overlay.style.pointerEvents = "none";
-    overlay.style.zIndex = "2147483647";
     overlayRoot.appendChild(overlay);
 
     return { overlay };

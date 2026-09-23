@@ -23,6 +23,7 @@ function createRow(id: number): IVisibleLogRow {
     ],
     height: 2,
     id,
+    serviceName: "api",
     stream: logStreams[id % logStreams.length] ?? "stdout",
     text: `row ${id}`,
     top: id * 3,
@@ -31,13 +32,13 @@ function createRow(id: number): IVisibleLogRow {
 }
 
 describe("createLogPreviewWindow", () => {
-  test("returns the hovered visible row with ten rows of context on each side when available", () => {
+  test("returns the hovered visible row with seven rows of context on each side when available", () => {
     const rows: IVisibleLogRow[] = Array.from({ length: 30 }, (_, index: number): IVisibleLogRow => {
       return createRow(index + 1);
     });
 
     expect(createLogPreviewWindow(rows, 15).map((row: IVisibleLogRow): number => row.id)).toEqual([
-      6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
+      9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
     ]);
   });
 

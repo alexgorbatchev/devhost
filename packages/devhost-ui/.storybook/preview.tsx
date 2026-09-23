@@ -13,6 +13,7 @@ import {
 } from "../src/devtools/shared/constants";
 import type { DevtoolsColorScheme } from "../src/devtools/shared";
 import type { IInjectedDevtoolsConfig } from "../src/devtools/shared/readInjectedDevtoolsConfig";
+import { registerDevtoolsFonts } from "../src/devtools/shared/registerDevtoolsFonts";
 import {
   readStorybookPreviewTheme,
   readStorybookDevtoolsColorScheme,
@@ -212,6 +213,7 @@ const preview: Preview = {
     const originalFetch: unknown = Reflect.get(globalThis, "fetch");
     const originalWebSocket: unknown = Reflect.get(globalThis, "WebSocket");
 
+    registerDevtoolsFonts(document.fonts);
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, storybookInjectedConfig);
     Reflect.set(globalThis, "fetch", createStorybookFetch());
     Reflect.set(globalThis, "WebSocket", MockStorybookWebSocket);

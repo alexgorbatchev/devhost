@@ -1,6 +1,7 @@
 import React, { type JSX, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useLayoutEffect, useRef, useState } from "react";
+import { within } from "storybook/test";
 
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../constants";
 import type { DevtoolsColorScheme } from "../../DevtoolsColorScheme";
@@ -16,6 +17,20 @@ export const devtoolsStoryShadowRootHostTestId: string = "DevtoolsStoryShadowRoo
 
 export function renderInDevtoolsStoryShadowRoot(children: ReactNode): JSX.Element {
   return <DevtoolsStoryShadowRoot>{children}</DevtoolsStoryShadowRoot>;
+}
+
+// Queries are scoped to the mount element rather than the ShadowRoot itself: testing-library cannot format a
+// ShadowRoot in its failure messages, which turns a failed query into a hang until the test timeout.
+export async function readDevtoolsStoryShadowCanvas(canvasElement: HTMLElement): Promise<ReturnType<typeof within>> {
+  const hostElement: HTMLElement = await within(canvasElement).findByTestId(devtoolsStoryShadowRootHostTestId);
+  const shadowRoot: ShadowRoot = readShadowRoot(hostElement, "The story did not attach a devtools shadow root.");
+  const mountElement: HTMLElement | null = shadowRoot.querySelector<HTMLElement>(`[${DEVTOOLS_ROOT_ATTRIBUTE_NAME}]`);
+
+  if (mountElement === null) {
+    throw new Error("The story shadow root has no devtools mount element.");
+  }
+
+  return within(mountElement);
 }
 
 export function readShadowRoot(hostElement: HTMLElement, errorMessage: string): ShadowRoot {
@@ -43,6 +58,9 @@ function DevtoolsStoryShadowRoot(props: IDevtoolsStoryShadowRootProps): JSX.Elem
     const mountNode: HTMLDivElement = document.createElement("div");
 
     mountNode.setAttribute(DEVTOOLS_ROOT_ATTRIBUTE_NAME, "");
+    // The shadow host inherits `pointer-events: none` from `:host` (production surfaces opt back in on their own
+    // roots); stories render components outside those surfaces, so the story mount node opts back in instead.
+    mountNode.style.pointerEvents = "auto";
     shadowRoot.append(mountNode);
 
     installDevtoolsStyles(shadowRoot);

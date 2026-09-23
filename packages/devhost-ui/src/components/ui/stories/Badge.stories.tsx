@@ -25,19 +25,59 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const Default: Story = {
+function readBadgeShadowCanvas(canvasElement: HTMLElement): ReturnType<typeof within> {
+  const canvas = within(canvasElement);
+  const hostElement = canvas.getByTestId(devtoolsStoryShadowRootHostTestId);
+  const shadowRoot: ShadowRoot = readShadowRoot(hostElement, "Badge story shadow root was not created.");
+
+  return within(shadowRoot as unknown as HTMLElement);
+}
+
+export const Default: Story = {
   args: {
-    children: "managed",
-    variant: "secondary",
+    children: "external",
   },
   play: async ({ canvasElement }): Promise<void> => {
-    const canvas = within(canvasElement);
-    const hostElement = canvas.getByTestId(devtoolsStoryShadowRootHostTestId);
-    const shadowRoot: ShadowRoot = readShadowRoot(hostElement, "Badge story shadow root was not created.");
-    const shadowCanvas = within(shadowRoot as unknown as HTMLElement);
-
-    await expect(shadowCanvas.getByText("managed")).toBeInTheDocument();
+    await expect(readBadgeShadowCanvas(canvasElement).getByText("external")).toBeInTheDocument();
   },
 };
 
-export { Default as Badge };
+export const Primary: Story = {
+  args: {
+    children: "working",
+    variant: "primary",
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    await expect(readBadgeShadowCanvas(canvasElement).getByText("working")).toBeInTheDocument();
+  },
+};
+
+export const Destructive: Story = {
+  args: {
+    children: "paused",
+    variant: "destructive",
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    await expect(readBadgeShadowCanvas(canvasElement).getByText("paused")).toBeInTheDocument();
+  },
+};
+
+export const Warning: Story = {
+  args: {
+    children: "changed",
+    variant: "warning",
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    await expect(readBadgeShadowCanvas(canvasElement).getByText("changed")).toBeInTheDocument();
+  },
+};
+
+export const Success: Story = {
+  args: {
+    children: "finished",
+    variant: "success",
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    await expect(readBadgeShadowCanvas(canvasElement).getByText("finished")).toBeInTheDocument();
+  },
+};

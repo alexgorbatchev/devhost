@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type JSX, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
+import { cn } from "../../../lib/utils";
 import { resolveDevtoolsPortalContainer } from "../resolveDevtoolsPortalContainer";
 
 interface IHighlightFrame {
@@ -16,7 +17,11 @@ interface IHighlightOverlayRenderModel extends IHighlightFrame {
   badgeTop: number;
   id: string | number;
   isVisible: boolean;
+  label?: ReactNode;
+  labelTop: number;
 }
+
+type HighlightOverlayAppearance = "hover" | "selected";
 
 interface IViewportPosition {
   x: number;
@@ -33,24 +38,31 @@ export interface IHighlightOverlayRectangle {
 export interface IHighlightOverlayItem {
   badge?: ReactNode;
   id: string | number;
+  label?: ReactNode;
   readRectangle: () => IHighlightOverlayRectangle | null;
 }
 
 interface IHighlightOverlayProps {
+  appearance?: HighlightOverlayAppearance;
   badgeTestId?: string;
   highlightTestId?: string;
   highlights: IHighlightOverlayItem[];
+  labelTestId?: string;
   rootTestId?: string;
 }
 
-const highlightHorizontalPadding: number = 2;
-const highlightVerticalPadding: number = 1;
-const badgeSize: number = 24;
+const highlightHorizontalPadding: number = 3;
+const highlightVerticalPadding: number = 3;
+const badgeSize: number = 18;
+const labelHeight: number = 18;
+const labelGap: number = 6;
 
 export function HighlightOverlay({
+  appearance = "selected",
   badgeTestId = "HighlightOverlay--badge",
   highlightTestId = "HighlightOverlay--highlight",
   highlights,
+  labelTestId = "HighlightOverlay--label",
   rootTestId = "HighlightOverlay",
 }: IHighlightOverlayProps): JSX.Element {
   const portalAnchorReference = useRef<HTMLSpanElement | null>(null);
@@ -156,6 +168,8 @@ export function HighlightOverlay({
           height: highlightFrame.height,
           id: highlight.id,
           isVisible,
+          label: highlight.label,
+          labelTop: readLabelTop(highlightFrame, window.innerHeight),
           left: highlightFrame.left,
           top: highlightFrame.top,
           width: highlightFrame.width,
@@ -175,31 +189,47 @@ export function HighlightOverlay({
         return (
           <div key={highlight.id}>
             <div
-              className="pointer-events-none fixed z-[var(--devhost-z-floating)] box-border rounded-sm border-2"
+              className={cn(
+                "pointer-events-none fixed z-(--devhost-z-overlay) box-border rounded-sm border-2 border-mark shadow-mark",
+                appearance === "hover" ? "border-dashed" : "bg-mark/10",
+              )}
+              data-appearance={appearance}
               data-testid={highlightTestId}
               style={{
                 height: highlight.height,
                 left: highlight.left,
                 top: highlight.top,
                 width: highlight.width,
-                borderColor: "var(--devhost-highlight-background)",
               }}
             />
             {highlight.badge !== undefined ? (
               <div
                 className={[
-                  "pointer-events-none fixed z-[var(--devhost-z-floating)] grid size-6 place-items-center",
-                  "rounded-full font-mono text-xs font-bold shadow-md",
+                  "pointer-events-none fixed z-(--devhost-z-overlay) grid h-4.5 min-w-4.5 place-items-center rounded-full",
+                  "bg-mark px-1 text-sm font-bold text-mark-foreground shadow-mark-badge",
                 ].join(" ")}
                 data-testid={badgeTestId}
                 style={{
                   left: highlight.badgeLeft,
                   top: highlight.badgeTop,
-                  backgroundColor: "var(--devhost-highlight-background)",
-                  color: "var(--devhost-highlight-foreground)",
                 }}
               >
                 {highlight.badge}
+              </div>
+            ) : null}
+            {highlight.label !== undefined ? (
+              <div
+                className={[
+                  "pointer-events-none fixed z-(--devhost-z-overlay) h-4.5 max-w-105 truncate rounded-sm border",
+                  "border-mark bg-mark-halo-outer px-1.5 text-sm/4 text-mark-halo-inner",
+                ].join(" ")}
+                data-testid={labelTestId}
+                style={{
+                  left: Math.max(4, highlight.left),
+                  top: highlight.labelTop,
+                }}
+              >
+                {highlight.label}
               </div>
             ) : null}
           </div>
@@ -213,6 +243,17 @@ export function HighlightOverlay({
       {portalTarget === null ? null : createPortal(overlay, portalTarget)}
     </span>
   );
+}
+
+// Labels sit above the highlight, or below it when the highlight touches the top of the viewport.
+function readLabelTop(highlightFrame: IHighlightFrame, viewportHeight: number): number {
+  const aboveTop: number = highlightFrame.top - labelHeight - labelGap;
+
+  if (aboveTop >= 4) {
+    return aboveTop;
+  }
+
+  return Math.min(highlightFrame.top + highlightFrame.height + labelGap, viewportHeight - labelHeight - 4);
 }
 
 function readHighlightFrame(rectangle: IHighlightOverlayRectangle): IHighlightFrame {

@@ -132,13 +132,13 @@ enabled = true
 enabled = true
 
 [devtools.status]
-# `enabled` controls whether the injected service-status panel is shown.
-# - `true` (default): show stack and service state in the overlay.
-# - `false`: hide the status panel.
+# `enabled` controls whether service status is shown in the devtools toolbar.
+# - `true` (default): show service state and the services panel in the toolbar.
+# - `false`: hide service status.
 enabled = true
-# `position` selects where the status panel is anchored.
-# - `"top-right"`: anchor the panel to the top-right corner.
-# - `"bottom-right"` (default): anchor the panel to the bottom-right corner.
+# `position` selects the corner the devtools toolbar is anchored to.
+# - `"top-right"`: anchor the toolbar to the top-right corner; its panels open below it.
+# - `"bottom-right"` (default): anchor the toolbar to the bottom-right corner; its panels open above it.
 position = "bottom-right"
 
 [devtools.shortcuts]
@@ -275,7 +275,7 @@ host = "hello.local.test"
 # `dependsOn` declares services that must start before this service.
 dependsOn = ["api"]
 # `watch` lists relative paths within the manifest directory to watch for file changes.
-# - string array (e.g. ["src/"]): when files change, the service turns red (dirty) in the Status Panel.
+# - string array (e.g. ["src/"]): when files change, the service is marked `changed` (dirty) in the devtools toolbar.
 # - All folders are watched recursively. Heavy paths (e.g., node_modules, .git, .workspaces, .tmp) are automatically ignored.
 # - Rapid concurrent modifications are debounced by 200ms automatically.
 watch = ["src/"]

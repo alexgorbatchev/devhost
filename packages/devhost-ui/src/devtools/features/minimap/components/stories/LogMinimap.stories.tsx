@@ -75,10 +75,13 @@ async function assertHoveredPreview(canvas: ReturnType<typeof within>): Promise<
 }
 
 function readPreviewRowTexts(canvas: ReturnType<typeof within>): string[] {
-  const preview: HTMLElement = canvas.getByTestId("LogMinimap--preview");
-  const items: NodeListOf<HTMLLIElement> = preview.querySelectorAll("li");
+  return canvas.getAllByTestId("LogMinimap--preview-line").map((line: HTMLElement): string => line.textContent ?? "");
+}
 
-  return Array.from(items, (item: HTMLLIElement): string => item.textContent ?? "");
+function readPreviewServiceNames(canvas: ReturnType<typeof within>): string[] {
+  return canvas
+    .getAllByTestId("LogMinimap--preview-service")
+    .map((cell: HTMLElement): string => cell.textContent ?? "");
 }
 
 export const Default: Story = {
@@ -95,6 +98,9 @@ export const Default: Story = {
 
     const minimapCanvas = canvas.getByTestId("LogMinimap--canvas");
     await expect(minimapCanvas).toBeInTheDocument();
+    // Collapsed, the minimap is a narrow always-visible strip on the right edge.
+    await expect(logMinimap.getBoundingClientRect().width).toBe(12);
+    await expect(Math.round(logMinimap.getBoundingClientRect().right)).toBe(window.innerWidth);
 
     // Simulate hover interactions on the wrapper, not the canvas which has pointer-events: none
     await userEvent.hover(logMinimap);
@@ -116,7 +122,9 @@ export const Hovered: Story = {
 
     await expect(canvas.getByTestId("LogMinimap")).toBeInTheDocument();
     await expect(canvas.getByTestId("LogMinimap--canvas")).toBeInTheDocument();
+    await waitFor(() => expect(canvas.getByTestId("LogMinimap").getBoundingClientRect().width).toBe(96));
     await assertHoveredPreview(canvas);
+    await expect(readPreviewServiceNames(canvas).length).toBeGreaterThan(0);
   },
 };
 

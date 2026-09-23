@@ -11,7 +11,7 @@ import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, within, waitFor } from "storybook/test";
 
-import { StoryContainer } from "@/devtools/shared/components/stories/helpers";
+import { DevtoolsToolbar } from "@/devtools/shared/components/DevtoolsToolbar";
 import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
 import { ExternalDevtoolsPanel } from "../ExternalDevtoolsPanel";
 import { useExternalDevtoolsLaunchers } from "../../hooks/useExternalDevtoolsLaunchers";
@@ -41,9 +41,9 @@ function IntegratedPanel({ globals }: IIntegratedPanelProps) {
   return (
     <>
       <StorybookThemeProvider globals={globals}>
-        <StoryContainer align="right">
+        <DevtoolsToolbar collapsedIndicator={null} isMinimapVisible={false} position="bottom-right" stackName="demo">
           <ExternalDevtoolsPanel launchers={launchers} onToggleLauncher={toggleLauncher} />
-        </StoryContainer>
+        </DevtoolsToolbar>
       </StorybookThemeProvider>
 
       <QueryClientProvider client={queryClient}>
@@ -129,7 +129,6 @@ async function waitForQueryPanelToBeClosed(): Promise<void> {
 interface IStoryLaunchers {
   readQueryLauncherButton: LauncherButtonReader;
   readRouterLauncherButton: LauncherButtonReader;
-  storyContainerElement: HTMLElement;
 }
 
 const setupSharedPlayTest = async ({ canvasElement }: ISharedPlayTestArgs): Promise<IStoryLaunchers> => {
@@ -139,7 +138,7 @@ const setupSharedPlayTest = async ({ canvasElement }: ISharedPlayTestArgs): Prom
 
   await canvas.findByRole("button", { name: "Router" });
   await canvas.findByRole("button", { name: "Query" });
-  await expect(canvas.getByTestId("ExternalDevtoolsPanel")).toBeInTheDocument();
+  await expect(canvas.getByRole("group", { name: "External devtools" })).toBeVisible();
 
   await waitForToolbarsToBeHidden(["footer.TanStackRouterDevtools > button"]);
   await waitForToolbarsToBeHidden([".tsqd-open-btn-container", ".tsqd-open-btn", ".tsqd-minimize-btn"]);
@@ -151,22 +150,17 @@ const setupSharedPlayTest = async ({ canvasElement }: ISharedPlayTestArgs): Prom
   return {
     readRouterLauncherButton,
     readQueryLauncherButton,
-    storyContainerElement: canvas.getByTestId("StoryContainer"),
   };
 };
 
-async function waitForLaunchersToStayInsideStoryContainer(
-  storyContainerElement: HTMLElement,
-  readLauncherButtons: LauncherButtonReader[],
-): Promise<void> {
+async function waitForLaunchersToStayInsideViewport(readLauncherButtons: LauncherButtonReader[]): Promise<void> {
   await waitFor(() => {
-    const storyRect = storyContainerElement.getBoundingClientRect();
-
     for (const readLauncherButton of readLauncherButtons) {
       const buttonRect = readLauncherButton().getBoundingClientRect();
 
-      expect(buttonRect.left).toBeGreaterThanOrEqual(storyRect.left);
-      expect(buttonRect.right).toBeLessThanOrEqual(storyRect.right);
+      expect(buttonRect.left).toBeGreaterThanOrEqual(0);
+      expect(buttonRect.right).toBeLessThanOrEqual(window.innerWidth);
+      expect(buttonRect.bottom).toBeLessThanOrEqual(window.innerHeight);
     }
   });
 }
@@ -192,26 +186,20 @@ async function runQueryLauncherCycle(readQueryLauncherButton: LauncherButtonRead
 async function runRouterLauncherCycle(
   readRouterLauncherButton: LauncherButtonReader,
   readQueryLauncherButton: LauncherButtonReader,
-  storyContainerElement: HTMLElement,
 ): Promise<void> {
   readRouterLauncherButton().click();
   await waitForRouterPanelToBeVisible();
-  await waitForLaunchersToStayInsideStoryContainer(storyContainerElement, [
-    readRouterLauncherButton,
-    readQueryLauncherButton,
-  ]);
+  await waitForLaunchersToStayInsideViewport([readRouterLauncherButton, readQueryLauncherButton]);
 
   readRouterLauncherButton().click();
   await waitForRouterPanelToBeClosed();
 }
 
 const sharedPlayTest = async ({ canvasElement }: ISharedPlayTestArgs): Promise<void> => {
-  const { readQueryLauncherButton, readRouterLauncherButton, storyContainerElement } = await setupSharedPlayTest({
-    canvasElement,
-  });
+  const { readQueryLauncherButton, readRouterLauncherButton } = await setupSharedPlayTest({ canvasElement });
 
   await runQueryLauncherCycle(readQueryLauncherButton);
-  await runRouterLauncherCycle(readRouterLauncherButton, readQueryLauncherButton, storyContainerElement);
+  await runRouterLauncherCycle(readRouterLauncherButton, readQueryLauncherButton);
   await waitForToolbarsToBeHidden(["footer.TanStackRouterDevtools > button"]);
 };
 

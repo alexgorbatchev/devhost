@@ -42,10 +42,10 @@ describe("resolveLogPreviewLayout", () => {
       }),
     ).toEqual({
       range: {
-        endIndex: 131,
-        startIndex: 110,
+        endIndex: 128,
+        startIndex: 113,
       },
-      top: 100,
+      top: 172,
     });
   });
 
@@ -67,7 +67,7 @@ describe("resolveLogPreviewLayout", () => {
       }),
     ).toEqual({
       range: {
-        endIndex: 21,
+        endIndex: 15,
         startIndex: 0,
       },
       top: 10,
@@ -92,10 +92,10 @@ describe("resolveLogPreviewLayout", () => {
       }),
     ).toEqual({
       range: {
-        endIndex: 21,
+        endIndex: 15,
         startIndex: 0,
       },
-      top: 43,
+      top: 115,
     });
 
     expect(
@@ -111,10 +111,10 @@ describe("resolveLogPreviewLayout", () => {
       }),
     ).toEqual({
       range: {
-        endIndex: 21,
+        endIndex: 15,
         startIndex: 0,
       },
-      top: 55,
+      top: 127,
     });
   });
 
@@ -135,9 +135,9 @@ describe("resolveLogPreviewLayout", () => {
     ).toEqual({
       range: {
         endIndex: 60,
-        startIndex: 39,
+        startIndex: 45,
       },
-      top: 168,
+      top: 312,
     });
   });
 });

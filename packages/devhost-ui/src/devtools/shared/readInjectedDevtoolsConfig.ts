@@ -6,7 +6,11 @@ import {
   type DevtoolsPosition,
   type IAnnotationAction,
 } from "./devtoolsConfig";
-import { DEVHOST_SERVICE_NAME, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "./constants";
+import {
+  DEFAULT_RESTART_SERVICES_SHORTCUT,
+  DEVHOST_SERVICE_NAME,
+  DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME,
+} from "./constants";
 import { normalizeRoutedServicePath, type IRoutedServiceIdentity } from "./routedServices";
 
 export interface IInjectedDevtoolsConfig {
@@ -45,7 +49,7 @@ const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
   minimapEnabled: true,
   statusEnabled: true,
   terminalEnabled: true,
-  restartServicesShortcut: "alt+ctrl+r",
+  restartServicesShortcut: DEFAULT_RESTART_SERVICES_SHORTCUT,
   primaryService: "",
 };
 
@@ -243,7 +247,7 @@ function readRestartServicesShortcutValue(injectedConfig: object): string {
 
   return typeof restartServicesShortcut === "string" && restartServicesShortcut.length > 0
     ? restartServicesShortcut
-    : "alt+ctrl+r";
+    : DEFAULT_RESTART_SERVICES_SHORTCUT;
 }
 
 function readPrimaryServiceValue(injectedConfig: object): string {

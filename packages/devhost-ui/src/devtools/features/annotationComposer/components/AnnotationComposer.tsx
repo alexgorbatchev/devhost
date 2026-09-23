@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "react";
 
-import { CardContent } from "../../../../components/ui/Card";
-import { Kbd, KbdGroup } from "../../../../components/ui/Kbd";
+import { XIcon } from "lucide-react";
+
+import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/Card";
+import { Kbd } from "../../../../components/ui/Kbd";
 import { Textarea } from "../../../../components/ui/Textarea";
 
-import { Button, FloatingPanel, InlineNotice, type IAnnotationAction } from "../../../shared";
+import { Button, InlineNotice, type IAnnotationAction } from "../../../shared";
+import { useRetainedValue } from "../../../shared/hooks/useRetainedValue";
 import { isEventTargetTerminalKeyboardInput } from "../../../shared/isEventTargetTerminalKeyboardInput";
 import type { ITerminalSessionStartResult } from "../../terminalSessions/types";
 import { AnnotationActionSplitButton } from "./AnnotationActionSplitButton";
 import { AnnotationMarkerList } from "./AnnotationMarkerList";
+import { AnnotationSelectionHint } from "./AnnotationSelectionHint";
 import { AnnotationSelectionOverlay } from "./AnnotationSelectionOverlay";
 import {
   readActiveAnnotationSelectionPlugin,
@@ -42,6 +46,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
   const annotationSelectionPlugin = useMemo(readActiveAnnotationSelectionPlugin, [annotationSelectionPluginVersion]);
   const trimmedComment: string = comment.trim();
   const {
+    hoveredLabel,
     hoveredRectangle,
     isHoveredElementSelected,
     isSelectionMode,
@@ -194,115 +199,132 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
     };
   }, [selectedTargets.length]);
 
+  const isPopupOpen: boolean = selectedTargets.length > 0 && popupCoordinates !== null;
+  // The popup stays mounted while it fades out; keep showing the last draft instead of an emptied form.
+  const displayedTargets: ISelectedAnnotationTarget[] = useRetainedValue(selectedTargets, isPopupOpen);
+  const displayedCoordinates = useRetainedValue(popupCoordinates, isPopupOpen);
+  const displayedComment: string = useRetainedValue(comment, isPopupOpen);
+  const runLabel: string = isSubmitting ? "Submitting…" : `Run ${selectedAction.displayName}`;
+  const markerCountLabel: string = `${displayedTargets.length} ${displayedTargets.length === 1 ? "marker" : "markers"}`;
+
   return (
     <div data-testid="AnnotationComposer">
       <AnnotationSelectionOverlay
+        hoveredLabel={hoveredLabel}
         hoveredRectangle={hoveredRectangle}
         isHoveredElementSelected={isHoveredElementSelected}
         isSelectionMode={isSelectionMode}
         selectedTargets={selectedTargets}
         testIdPrefix="AnnotationComposer"
       />
-      {selectedTargets.length > 0 && popupCoordinates !== null ? (
-        <div
+      <AnnotationSelectionHint isVisible={isSelectionMode && selectedTargets.length === 0} />
+      {displayedCoordinates !== null ? (
+        <section
           ref={popupReference}
-          className="pointer-events-auto fixed z-[var(--devhost-z-floating-raised)] grid w-[min(360px,calc(100vw_-_20px))] text-xs text-foreground"
+          aria-label="Annotation draft"
+          className="devhost-fade pointer-events-auto fixed z-(--devhost-z-popover) w-80 max-w-[calc(100vw-20px)]"
           data-testid="AnnotationComposer--popup"
-          style={{ left: popupCoordinates.left, top: popupCoordinates.top }}
-          onClick={(event: React.MouseEvent<HTMLDivElement>): void => {
+          hidden={!isPopupOpen}
+          inert={!isPopupOpen}
+          role="dialog"
+          style={{ left: displayedCoordinates.left, top: displayedCoordinates.top }}
+          onClick={(event: React.MouseEvent<HTMLElement>): void => {
             event.stopPropagation();
           }}
-          onMouseDown={(event: React.MouseEvent<HTMLDivElement>): void => {
+          onMouseDown={(event: React.MouseEvent<HTMLElement>): void => {
             event.stopPropagation();
           }}
         >
-          <FloatingPanel level="raised" position="fixed" size="xs">
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                Annotate{" "}
+                <span className="font-normal text-muted-foreground">
+                  {isSubmitting ? "submitting…" : markerCountLabel}
+                </span>
+              </CardTitle>
+              <Button
+                aria-label="Cancel annotation"
+                disabled={isSubmitting}
+                startEnhancer={<XIcon />}
+                testId="AnnotationComposer--close"
+                title="Cancel (Esc)"
+                variant="ghost"
+                onClick={cancelDraft}
+              />
+            </CardHeader>
+            {submissionErrorMessage !== null ? (
+              <InlineNotice testId="AnnotationComposer--error" tone="danger">
+                {submissionErrorMessage}
+              </InlineNotice>
+            ) : null}
             <CardContent>
-              <div className="grid gap-2.5">
-                <div className="grid gap-1">
-                  <strong>Annotation draft</strong>
-                  <span className="text-xs text-muted-foreground">
-                    {isSubmitting ? "Submitting annotation…" : `${selectedTargets.length} markers selected`}
-                  </span>
-                </div>
-                <AnnotationMarkerList
-                  items={selectedTargets.map((selection: ISelectedAnnotationTarget) => {
-                    return {
-                      label: selection.candidate.label,
-                      markerNumber: selection.markerNumber,
-                    };
-                  })}
-                  testId="AnnotationComposer--marker-list"
-                />
-                <Textarea
-                  ref={commentTextareaReference}
-                  data-testid="AnnotationComposer--comment"
-                  placeholder="Describe the change and refer to markers like #1, #2, #3…"
-                  rows={5}
-                  value={comment}
-                  onChange={(event: React.ChangeEvent<HTMLTextAreaElement>): void => {
-                    setComment(event.currentTarget.value);
-                  }}
-                />
-                {submissionErrorMessage !== null ? (
-                  <InlineNotice testId="AnnotationComposer--error" tone="danger">
-                    {submissionErrorMessage}
-                  </InlineNotice>
-                ) : null}
-                {canAppendToActiveAgentSession ? (
-                  <label className="flex cursor-pointer select-none items-center gap-2 text-xs text-foreground">
-                    <input
-                      type="checkbox"
-                      checked={sendToActiveSession}
-                      onChange={(event: React.ChangeEvent<HTMLInputElement>): void => {
-                        setSendToActiveSession(event.currentTarget.checked);
-                      }}
-                    />
-                    Append to active {selectedAction.displayName} queue
-                  </label>
-                ) : null}
-                <div className="flex justify-start gap-2">
-                  {props.annotationActions.length > 1 ? (
-                    <AnnotationActionSplitButton
-                      actions={props.annotationActions}
-                      isActionMenuDisabled={isSubmitting}
-                      isRunDisabled={trimmedComment.length === 0 || isSubmitting}
-                      selectedAction={selectedAction}
-                      onActionSelect={props.onSelectedActionIdChange}
-                      onRun={(): void => {
-                        void submitDraft();
-                      }}
-                    />
-                  ) : (
-                    <Button
-                      disabled={trimmedComment.length === 0 || isSubmitting}
-                      endEnhancer={
-                        <KbdGroup>
-                          <Kbd>⌘</Kbd>
-                          <Kbd>↵</Kbd>
-                        </KbdGroup>
-                      }
-                      variant="primary"
-                      onClick={(): void => {
-                        void submitDraft();
-                      }}
-                    >
-                      {isSubmitting ? "Submitting…" : `Run ${selectedAction.displayName}`}
-                    </Button>
-                  )}
+              <AnnotationMarkerList
+                items={displayedTargets.map((selection: ISelectedAnnotationTarget) => {
+                  return {
+                    label: selection.candidate.label,
+                    markerNumber: selection.markerNumber,
+                  };
+                })}
+                testId="AnnotationComposer--marker-list"
+              />
+              <Textarea
+                ref={commentTextareaReference}
+                aria-label="Annotation comment"
+                data-testid="AnnotationComposer--comment"
+                placeholder="Describe the change. Refer to markers as #1, #2…"
+                rows={4}
+                value={displayedComment}
+                onChange={(event: React.ChangeEvent<HTMLTextAreaElement>): void => {
+                  setComment(event.currentTarget.value);
+                }}
+              />
+              {canAppendToActiveAgentSession ? (
+                <label className="flex cursor-pointer items-center gap-1.5 select-none">
+                  <input
+                    checked={sendToActiveSession}
+                    className="m-0 accent-primary"
+                    type="checkbox"
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>): void => {
+                      setSendToActiveSession(event.currentTarget.checked);
+                    }}
+                  />
+                  Append to active {selectedAction.displayName} queue
+                </label>
+              ) : null}
+              <div className="flex items-center gap-1.5">
+                {props.annotationActions.length > 1 ? (
+                  <AnnotationActionSplitButton
+                    actions={props.annotationActions}
+                    isActionMenuDisabled={isSubmitting}
+                    isRunDisabled={trimmedComment.length === 0 || isSubmitting}
+                    runLabel={runLabel}
+                    selectedAction={selectedAction}
+                    onActionSelect={props.onSelectedActionIdChange}
+                    onRun={(): void => {
+                      void submitDraft();
+                    }}
+                  />
+                ) : (
                   <Button
-                    disabled={isSubmitting}
-                    endEnhancer={<Kbd>Esc</Kbd>}
-                    variant="secondary"
-                    onClick={cancelDraft}
+                    disabled={trimmedComment.length === 0 || isSubmitting}
+                    endEnhancer={<Kbd>⌘↵</Kbd>}
+                    variant="primary"
+                    onClick={(): void => {
+                      void submitDraft();
+                    }}
                   >
-                    Cancel
+                    {runLabel}
                   </Button>
-                </div>
+                )}
+                <span className="flex-1" />
+                <Button disabled={isSubmitting} endEnhancer={<Kbd>Esc</Kbd>} variant="ghost" onClick={cancelDraft}>
+                  Cancel
+                </Button>
               </div>
             </CardContent>
-          </FloatingPanel>
-        </div>
+          </Card>
+        </section>
       ) : null}
     </div>
   );

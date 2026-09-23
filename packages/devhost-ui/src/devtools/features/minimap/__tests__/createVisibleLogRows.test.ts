@@ -31,10 +31,11 @@ describe("createVisibleLogRows", () => {
           },
         ],
         id: 1,
+        serviceName: "api",
         stream: "stderr",
         text: "x".repeat(90),
         top: 6,
-        width: 100,
+        width: 98,
       },
     ]);
   });
@@ -66,10 +67,11 @@ describe("createVisibleLogRows", () => {
           },
         ],
         id: 1,
+        serviceName: "api",
         stream: "stdout",
         text: "warn",
         top: 6,
-        width: 12,
+        width: 5,
       },
     ]);
   });

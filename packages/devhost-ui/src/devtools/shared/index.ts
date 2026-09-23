@@ -1,4 +1,4 @@
-export { Button, type ButtonSize, type ButtonVariant } from "../../components/ui/Button";
+export { Button, type ButtonVariant } from "../../components/ui/Button";
 export { ColorSchemeProvider } from "./components/ColorSchemeProvider";
 export {
   DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
@@ -6,8 +6,6 @@ export {
   DEVTOOLS_ROOT_ID,
   RESTART_SERVICE_PATH,
 } from "./constants";
-export { FloatingPanel } from "./components/FloatingPanel";
-export { HoverSlidePanel } from "./components/HoverSlidePanel";
 export {
   HighlightOverlay,
   type IHighlightOverlayItem,

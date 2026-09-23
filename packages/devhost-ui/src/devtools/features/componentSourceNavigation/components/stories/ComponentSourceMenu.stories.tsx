@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 
 import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
 import { ComponentSourceMenu } from "../ComponentSourceMenu";
@@ -7,6 +7,9 @@ import { ComponentSourceMenu } from "../ComponentSourceMenu";
 const meta: Meta<typeof ComponentSourceMenu> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/componentSourceNavigation/components/ComponentSourceMenu",
   component: ComponentSourceMenu,
+  args: {
+    isOpen: true,
+  },
   render: (args, context) => {
     return (
       <StorybookThemeProvider globals={context.globals}>
@@ -46,10 +49,24 @@ export const Default: Story = {
   },
   play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
-    const itemButton = canvas.getByTestId("ComponentSourceMenu--item");
-    await expect(itemButton).toBeInTheDocument();
+    const menu = canvas.getByRole("region", { name: "Open in VS Code" });
+    const itemButton = within(menu).getByRole("button", { name: "<Button> label example.tsx:1:1" });
+
+    await waitFor(() => expect(menu).toBeVisible());
     await userEvent.click(itemButton);
     await expect(args.onItemClick).toHaveBeenCalledWith(0);
+  },
+};
+
+export const Closed: Story = {
+  args: {
+    ...Default.args,
+    isOpen: false,
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+
+    await expect(canvas.queryByRole("region", { name: "Open in VS Code" })).toBeNull();
   },
 };
 
@@ -131,7 +148,7 @@ export const WithErrorMessage: Story = {
   },
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByTestId("ComponentSourceMenu")).toBeInTheDocument();
+    await waitFor(() => expect(canvas.getByRole("region", { name: "Open in VS Code" })).toBeVisible());
     await expect(canvas.getByRole("alert")).toHaveTextContent("Failed to resolve source file path.");
   },
 };

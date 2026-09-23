@@ -17,7 +17,7 @@ This directory contains isolated, feature-specific modules for the injected devt
 
 ## Boundaries
 
-- **Always:** Use `src/devtools/shared/` for cross-feature code. If two features need the same component (like `Button` or `HoverSlidePanel`), hook, or utility, move it to `shared/`.
+- **Always:** Use `src/devtools/shared/` for cross-feature code. If two features need the same component (like `Button` or `ToolbarPopover`), hook, or utility, move it to `shared/`.
 - **Always:** Follow the repository TypeScript AI policy layout: component `.tsx` files under `components/`, exported hooks under `hooks/`, stories under sibling `components/stories/`, and hook tests under sibling `hooks/__tests__/`.
 - **Always:** Use semantic Tailwind tokens and logic-local layout constants first. Runtime JavaScript theme access must stay in narrow adapters for values CSS cannot consume directly, such as xterm colors, canvas colors, or matched font settings.
 - **Always:** Prefer selector-based suppression for third-party launcher chrome over removing or mutating specific host nodes. Host-owned panels and controls must remain owned by the host library.

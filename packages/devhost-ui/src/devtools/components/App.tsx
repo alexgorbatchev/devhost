@@ -3,16 +3,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "../../lib/utils";
 
+import type { ServiceHealth } from "../shared/types";
 import type { IAnnotationAction } from "../shared/devtoolsConfig";
 import { AnnotationComposer } from "../features/annotationComposer";
 import { AnnotationQueuePanel, useAnnotationQueues } from "../features/annotationQueue";
 import { ComponentSourceMenu, useComponentSourceNavigation } from "../features/componentSourceNavigation";
 import { ExternalDevtoolsPanel, useExternalDevtoolsLaunchers } from "../features/externalDevtoolsPanel";
 import { LogMinimap, useServiceLogs } from "../features/minimap";
-import { TerminalSessionTray, useTerminalSessions } from "../features/terminalSessions";
+import { TerminalSessionChips, TerminalSessionHost, useTerminalSessions } from "../features/terminalSessions";
 import { useReactHighlightOverlay } from "../features/reactHighlight";
 import { ServiceStatusPanel, useServiceHealth } from "../features/serviceStatusPanel";
 import { readInjectedDevtoolsConfig } from "../shared/readInjectedDevtoolsConfig";
+import { DevtoolsToolbar } from "../shared/components/DevtoolsToolbar";
+import { useRetainedValue } from "../shared/hooks/useRetainedValue";
 import {
   ColorSchemeProvider,
   DEVTOOLS_ROOT_ID,
@@ -21,6 +24,7 @@ import {
   RESTART_SERVICE_PATH,
   DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
 } from "../shared";
+import { DEFAULT_RESTART_SERVICES_SHORTCUT } from "../shared/constants";
 
 export function App(): JSX.Element {
   const hostColorScheme = useResolvedColorScheme();
@@ -73,6 +77,7 @@ function AppContent(): JSX.Element {
     removeSession,
     startComponentSourceSession,
     submitAnnotation,
+    updateSessionStatus,
   } = useTerminalSessions(terminalEnabled);
   const [isMinimapHovered, setIsMinimapHovered] = useState<boolean>(false);
   const [selectedAnnotationActionId, setSelectedAnnotationActionId] = useState<string>(annotationDefaultActionId);
@@ -89,10 +94,12 @@ function AppContent(): JSX.Element {
     startComponentSourceSession,
     enabled: editorEnabled,
   });
+  // The menu stays mounted while it fades out, showing its last contents.
+  const displayedComponentMenu = useRetainedValue(componentMenu, componentMenu !== null);
 
   useEffect(() => {
     const handleKeyDown = async (event: KeyboardEvent) => {
-      if (!parseAndMatchShortcut(restartServicesShortcut || "alt+ctrl+r", event)) {
+      if (!parseAndMatchShortcut(restartServicesShortcut ?? DEFAULT_RESTART_SERVICES_SHORTCUT, event)) {
         return;
       }
 
@@ -166,6 +173,8 @@ function AppContent(): JSX.Element {
   }, [restartServicesShortcut, services, primaryService, controlToken, setErrorMessage]);
   const shouldRenderPanel: boolean = statusEnabled && (errorMessage !== null || services.length > 0);
   const shouldRenderExternalDevtoolsPanel: boolean = externalToolbarsEnabled && externalDevtoolsLaunchers.length > 0;
+  const shouldRenderToolbar: boolean =
+    statusEnabled || annotationQueueEnabled || externalToolbarsEnabled || terminalEnabled;
   const shouldRenderMinimap: boolean = minimapEnabled && logEntries.length > 0;
   const currentRoutedServiceKey: string | null = resolveRoutedServiceKeyForUrl(routedServices, window.location.href);
   const selectedAnnotationAction: IAnnotationAction | null = annotationEnabled
@@ -211,49 +220,58 @@ function AppContent(): JSX.Element {
           stackName={stackName}
         />
       ) : null}
-      {componentMenu !== null ? (
+      {displayedComponentMenu !== null ? (
         <ComponentSourceMenu
-          errorMessage={componentMenu.errorMessage}
-          items={componentMenu.items}
-          position={{ x: componentMenu.x, y: componentMenu.y }}
-          title={componentMenu.title}
+          errorMessage={displayedComponentMenu.errorMessage}
+          isOpen={componentMenu !== null}
+          items={displayedComponentMenu.items}
+          position={{ x: displayedComponentMenu.x, y: displayedComponentMenu.y }}
+          title={displayedComponentMenu.title}
           onItemClick={(itemIndex: number): void => {
             void openComponentSource(itemIndex);
           }}
         />
       ) : null}
-      <div
-        className={cn(
-          "pointer-events-auto fixed z-[var(--devhost-z-floating-raised)] grid w-fit max-w-[calc(100vw_-_24px)] gap-1",
-          devtoolsPosition === "top-right" ? "top-2.5" : "bottom-2.5",
-          shouldRenderMinimap ? "right-3.5" : "right-2.5",
-        )}
-        data-testid="AppContent--corner-dock"
-      >
-        {shouldRenderPanel ? (
-          <ServiceStatusPanel errorMessage={errorMessage} services={services} onSetErrorMessage={setErrorMessage} />
-        ) : null}
-        {annotationQueueEnabled ? (
-          <AnnotationQueuePanel
-            errorMessage={annotationQueueErrorMessage}
-            isEntryMutationPending={isEntryMutationPending}
-            isQueueResumePending={isQueueResumePending}
-            onRemoveEntry={removeEntry}
-            onResumeQueue={handleResumeQueue}
-            onSaveEntry={saveEntry}
-            queues={annotationQueues}
-          />
-        ) : null}
-        {shouldRenderExternalDevtoolsPanel ? (
-          <ExternalDevtoolsPanel launchers={externalDevtoolsLaunchers} onToggleLauncher={toggleLauncher} />
-        ) : null}
-      </div>
+      {shouldRenderToolbar ? (
+        <DevtoolsToolbar
+          collapsedIndicator={<StackHealthIndicator errorMessage={errorMessage} services={services} />}
+          isMinimapVisible={shouldRenderMinimap}
+          position={devtoolsPosition}
+          stackName={stackName}
+        >
+          {shouldRenderPanel ? (
+            <ServiceStatusPanel errorMessage={errorMessage} services={services} onSetErrorMessage={setErrorMessage} />
+          ) : null}
+          {annotationQueueEnabled ? (
+            <AnnotationQueuePanel
+              errorMessage={annotationQueueErrorMessage}
+              isEntryMutationPending={isEntryMutationPending}
+              isQueueResumePending={isQueueResumePending}
+              onRemoveEntry={removeEntry}
+              onResumeQueue={handleResumeQueue}
+              onSaveEntry={saveEntry}
+              queues={annotationQueues}
+            />
+          ) : null}
+          {shouldRenderExternalDevtoolsPanel ? (
+            <ExternalDevtoolsPanel launchers={externalDevtoolsLaunchers} onToggleLauncher={toggleLauncher} />
+          ) : null}
+          {terminalEnabled ? (
+            <TerminalSessionChips
+              sessions={terminalSessions}
+              onExpandSession={expandSession}
+              onMinimizeSession={minimizeSession}
+              onRemoveSession={removeSession}
+            />
+          ) : null}
+        </DevtoolsToolbar>
+      ) : null}
       {terminalEnabled ? (
-        <TerminalSessionTray
+        <TerminalSessionHost
           sessions={terminalSessions}
-          onExpandSession={expandSession}
           onMinimizeSession={minimizeSession}
           onRemoveSession={removeSession}
+          onSessionStatusChange={updateSessionStatus}
         />
       ) : null}
       {shouldRenderMinimap ? (
@@ -261,6 +279,40 @@ function AppContent(): JSX.Element {
       ) : null}
     </div>
   );
+}
+
+type StackHealthState = "changed" | "down" | "healthy";
+
+interface IStackHealthIndicatorProps {
+  errorMessage: string | null;
+  services: ServiceHealth[];
+}
+
+const stackHealthDotClassNames: Record<StackHealthState, string> = {
+  changed: "bg-warning",
+  down: "bg-destructive",
+  healthy: "bg-success",
+};
+
+// Shown in place of the toolbar segments while the toolbar is collapsed: the worst state across the stack.
+function StackHealthIndicator({ errorMessage, services }: IStackHealthIndicatorProps): JSX.Element {
+  const healthState: StackHealthState = readStackHealthState(errorMessage, services);
+
+  return (
+    <span
+      aria-label={`stack ${healthState}`}
+      className={cn("size-2 rounded-full", stackHealthDotClassNames[healthState])}
+      role="img"
+    />
+  );
+}
+
+function readStackHealthState(errorMessage: string | null, services: ServiceHealth[]): StackHealthState {
+  if (errorMessage !== null || services.some((service: ServiceHealth): boolean => !service.status)) {
+    return "down";
+  }
+
+  return services.some((service: ServiceHealth): boolean => service.dirty === true) ? "changed" : "healthy";
 }
 
 function resolveSelectedAnnotationAction(

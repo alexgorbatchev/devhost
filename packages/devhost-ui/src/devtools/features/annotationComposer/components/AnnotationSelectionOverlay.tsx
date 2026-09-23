@@ -6,6 +6,7 @@ import type { ISelectedAnnotationTarget } from "../annotationComposerModels";
 import type { IRectSnapshot } from "../types";
 
 interface IAnnotationSelectionOverlayProps {
+  hoveredLabel?: string | null;
   hoveredRectangle?: IRectSnapshot | null;
   isHoveredElementSelected?: boolean;
   isSelectionMode?: boolean;
@@ -14,6 +15,7 @@ interface IAnnotationSelectionOverlayProps {
 }
 
 export function AnnotationSelectionOverlay({
+  hoveredLabel = null,
   hoveredRectangle = null,
   isHoveredElementSelected = false,
   isSelectionMode = false,
@@ -22,7 +24,7 @@ export function AnnotationSelectionOverlay({
 }: IAnnotationSelectionOverlayProps): JSX.Element {
   const hoverHighlights: IHighlightOverlayItem[] =
     isSelectionMode && hoveredRectangle !== null && !isHoveredElementSelected
-      ? [{ id: "hover", readRectangle: () => hoveredRectangle }]
+      ? [{ id: "hover", label: hoveredLabel ?? undefined, readRectangle: () => hoveredRectangle }]
       : [];
   const selectedHighlights: IHighlightOverlayItem[] = selectedTargets.map(
     (selectedTarget: ISelectedAnnotationTarget): IHighlightOverlayItem => {
@@ -38,8 +40,10 @@ export function AnnotationSelectionOverlay({
     <div className="contents" data-testid="AnnotationSelectionOverlay">
       {hoverHighlights.length > 0 ? (
         <HighlightOverlay
+          appearance="hover"
           highlights={hoverHighlights}
           highlightTestId={`${testIdPrefix}--hover-highlight`}
+          labelTestId={`${testIdPrefix}--hover-label`}
           rootTestId={undefined}
         />
       ) : null}

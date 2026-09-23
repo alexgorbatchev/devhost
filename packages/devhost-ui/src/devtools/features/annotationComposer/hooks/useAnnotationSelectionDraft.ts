@@ -25,11 +25,12 @@ interface IUseAnnotationSelectionDraftParams {
 }
 
 interface IUseAnnotationSelectionDraftResult {
+  hoveredLabel: string | null;
   hoveredRectangle: IRectSnapshot | null;
   isHoveredElementSelected: boolean;
   isSelectionMode: boolean;
   popupCoordinates: IPopupCoordinates | null;
-  popupReference: RefObject<HTMLDivElement | null>;
+  popupReference: RefObject<HTMLElement | null>;
   resetSelectionDraft: () => void;
   selectedTargets: ISelectedAnnotationTarget[];
 }
@@ -47,7 +48,7 @@ export function useAnnotationSelectionDraft({
   const [popupHeight, setPopupHeight] = useState<number>(220);
   const [selectedTargets, setSelectedTargets] = useState<ISelectedAnnotationTarget[]>([]);
   const hoveredCandidateReference = useRef<IAnnotationSelectionCandidate | null>(null);
-  const popupReference = useRef<HTMLDivElement | null>(null);
+  const popupReference = useRef<HTMLElement | null>(null);
   const selectionResolutionSequenceReference = useRef<number>(0);
   const scheduledFrameReference = useRef<number | null>(null);
   const selectedTargetsReference = useRef<ISelectedAnnotationTarget[]>([]);
@@ -281,7 +282,7 @@ export function useAnnotationSelectionDraft({
   }, [annotationSelectionPlugin, isSelectionMode]);
 
   useEffect(() => {
-    const popupElement: HTMLDivElement | null = popupReference.current;
+    const popupElement: HTMLElement | null = popupReference.current;
 
     if (popupElement === null || selectedTargets.length === 0) {
       return;
@@ -334,6 +335,7 @@ export function useAnnotationSelectionDraft({
     });
 
   return {
+    hoveredLabel: hoveredCandidate?.label ?? null,
     hoveredRectangle,
     isHoveredElementSelected,
     isSelectionMode,

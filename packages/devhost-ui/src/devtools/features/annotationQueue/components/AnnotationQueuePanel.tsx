@@ -1,10 +1,19 @@
 import { useEffect, useState, type ChangeEvent, type JSX } from "react";
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  ListOrderedIcon,
+  PencilIcon,
+  PlayIcon,
+  Trash2Icon,
+  TriangleAlertIcon,
+} from "lucide-react";
 
 import { Badge } from "../../../../components/ui/Badge";
 import { Textarea } from "../../../../components/ui/Textarea";
-import { cn } from "../../../../lib/utils";
 
-import { Button, HoverSlidePanel, InlineNotice } from "../../../shared";
+import { Button, InlineNotice } from "../../../shared";
+import { ToolbarPopover } from "../../../shared/components/ToolbarPopover";
 import {
   isAnnotationQueueEntryEditable,
   isAnnotationQueueEntrySaveDisabled,
@@ -27,7 +36,7 @@ interface IAnnotationQueuePanelProps {
   queues: IAnnotationQueueSnapshot[];
 }
 
-type AnnotationEntryBadgeVariant = "default" | "destructive" | "secondary";
+type AnnotationBadgeVariant = "default" | "destructive" | "primary";
 
 export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Element | null {
   const [confirmDeleteEntryIds, setConfirmDeleteEntryIds] = useState<string[]>([]);
@@ -53,300 +62,293 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
     return null;
   }
 
+  const hasError: boolean = props.errorMessage !== null;
+  const entryCount: number = props.queues.reduce((total: number, queue: IAnnotationQueueSnapshot): number => {
+    return total + queue.entries.length;
+  }, 0);
+  const pausedCount: number = props.queues.filter((queue: IAnnotationQueueSnapshot): boolean => {
+    return queue.status === "paused";
+  }).length;
+
+  const stopEditing = (entryId: string): void => {
+    setEditingEntryIds((currentIds: string[]): string[] => removeId(currentIds, entryId));
+  };
+  const stopConfirmingDelete = (entryId: string): void => {
+    setConfirmDeleteEntryIds((currentIds: string[]): string[] => removeId(currentIds, entryId));
+  };
+
   return (
-    <HoverSlidePanel
-      ariaLabel="Annotation queues"
-      error={props.errorMessage ?? undefined}
+    <ToolbarPopover
+      notice={
+        props.errorMessage !== null ? (
+          <InlineNotice testId="AnnotationQueuePanel--error" tone="danger">
+            {props.errorMessage}
+          </InlineNotice>
+        ) : undefined
+      }
+      panelLabel="Annotation queues"
+      panelWidth="lg"
       testId="AnnotationQueuePanel"
-      title="Annotation queues"
+      triggerContent={
+        <>
+          {hasError ? (
+            <TriangleAlertIcon aria-hidden="true" className="size-3.5" />
+          ) : (
+            <ListOrderedIcon aria-hidden="true" className="size-3.5" />
+          )}
+          <span aria-hidden="true">{entryCount}</span>
+          {pausedCount > 0 && !hasError ? (
+            <Badge aria-hidden="true" variant="destructive">{`${pausedCount} paused`}</Badge>
+          ) : null}
+        </>
+      }
+      triggerLabel={readQueuesTriggerLabel(entryCount, pausedCount, hasError)}
+      triggerTone={hasError ? "alert" : "default"}
     >
-      <div className="grid w-[min(640px,calc(100vw_-_24px))] gap-2">
-        <div className="grid gap-2" data-testid="AnnotationQueuePanel--queue-list">
-          {props.queues.map((queue: IAnnotationQueueSnapshot) => {
-            const queueLabel: string = readAnnotationQueueRouteLabel(queue);
-            const queueProgressLabel: string = readAnnotationQueueProgressLabel(queue.entries.length);
-            const queueProgressWidth: string = readAnnotationQueueProgressWidth(queue.entries.length);
-            const queueIsExpanded: boolean = expandedQueueIds.includes(queue.queueId);
-            const queueIsPaused: boolean = queue.status === "paused";
-            const queueResumePending: boolean = props.isQueueResumePending(queue.queueId);
+      <div data-testid="AnnotationQueuePanel--queue-list">
+        {props.queues.map((queue: IAnnotationQueueSnapshot) => {
+          const queueIsExpanded: boolean = expandedQueueIds.includes(queue.queueId);
+          const queueIsPaused: boolean = queue.status === "paused";
+          const entryTotal: number = queue.entries.length;
 
-            return (
-              <article className="grid gap-2 rounded-md" data-testid="AnnotationQueuePanel--queue" key={queue.queueId}>
-                <header className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="grid min-w-0 flex-[1_1_240px] gap-1">
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
-                      <strong className="truncate text-sm text-foreground" title={queueLabel}>
-                        {queueLabel}
-                      </strong>
-                      <Badge variant={queue.status === "paused" ? "destructive" : "secondary"}>
-                        {readStatusLabel(queue.status)}
-                      </Badge>
-                    </div>
-                    <div className="text-xs text-muted-foreground">{queueProgressLabel}</div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className={cn(
-                          "h-full min-w-2 rounded-full",
-                          queue.status === "paused" ? "bg-destructive" : "bg-primary",
-                        )}
-                        data-testid="AnnotationQueuePanel--queue-progress"
-                        style={{ width: queueProgressWidth }}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap justify-end gap-2">
-                    {queueIsPaused ? (
-                      <Button
-                        disabled={queueResumePending}
-                        testId="AnnotationQueuePanel--resume"
-                        variant="primary"
-                        onClick={(): void => {
-                          void props.onResumeQueue(queue.queueId);
-                        }}
-                      >
-                        Resume
-                      </Button>
-                    ) : null}
-                    <Button
-                      testId="AnnotationQueuePanel--queue-toggle"
-                      onClick={(): void => {
-                        setExpandedQueueIds((currentIds: string[]): string[] => toggleId(currentIds, queue.queueId));
-                      }}
+          return (
+            <article className="not-first:border-t" data-testid="AnnotationQueuePanel--queue" key={queue.queueId}>
+              <header className="flex min-h-6 items-center gap-1.5 py-0.5 pr-1 pl-1">
+                <Button
+                  aria-expanded={queueIsExpanded}
+                  aria-label={queueIsExpanded ? "Hide annotations" : "Show annotations"}
+                  startEnhancer={queueIsExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
+                  testId="AnnotationQueuePanel--queue-toggle"
+                  variant="ghost"
+                  onClick={(): void => {
+                    setExpandedQueueIds((currentIds: string[]): string[] => toggleId(currentIds, queue.queueId));
+                  }}
+                />
+                <strong className="min-w-0 flex-1 truncate" title={queue.entries[0]?.annotation.url}>
+                  {readAnnotationQueueRouteLabel(queue)}
+                </strong>
+                <Badge variant={readQueueStatusBadgeVariant(queue.status)}>{queue.status}</Badge>
+                <span className="text-muted-foreground" title={`Working on annotation 1 of ${entryTotal}`}>
+                  {entryTotal === 0 ? "0/0" : `1/${entryTotal}`}
+                </span>
+                {queueIsPaused ? (
+                  <Button
+                    disabled={props.isQueueResumePending(queue.queueId)}
+                    startEnhancer={<PlayIcon />}
+                    testId="AnnotationQueuePanel--resume"
+                    variant="primary"
+                    onClick={(): void => {
+                      void props.onResumeQueue(queue.queueId);
+                    }}
+                  >
+                    Resume
+                  </Button>
+                ) : null}
+              </header>
+              <div className="h-[3px] bg-accent">
+                <div
+                  className={queueIsPaused ? "h-full bg-destructive" : "h-full bg-primary"}
+                  data-testid="AnnotationQueuePanel--queue-progress"
+                  style={{ width: readAnnotationQueueProgressWidth(entryTotal) }}
+                />
+              </div>
+              {queueIsExpanded ? (
+                <>
+                  {queueIsPaused && queue.pauseReason !== null ? (
+                    <p
+                      className="m-0 border-t bg-destructive/15 py-1 pr-2 pl-6.5 text-destructive"
+                      data-testid="AnnotationQueuePanel--pause-reason"
                     >
-                      {queueIsExpanded ? "Hide details" : "Show details"}
-                    </Button>
-                  </div>
-                </header>
-                {queueIsExpanded ? (
-                  <div className="grid gap-2">
-                    {queueIsPaused && queue.pauseReason !== null ? (
-                      <p className="m-0 text-xs text-muted-foreground" data-testid="AnnotationQueuePanel--pause-reason">
-                        {readAnnotationQueuePauseMessage(queue.pauseReason)}
-                      </p>
-                    ) : null}
-                    <ol className="grid list-none gap-2 p-0">
-                      {queue.entries.map((entry: IAnnotationQueueEntrySnapshot) => {
-                        const comment: string = readAnnotationQueueDraftComment(drafts, entry);
-                        const entryIsEditable: boolean = isAnnotationQueueEntryEditable(entry);
-                        const entryIsPending: boolean = props.isEntryMutationPending(entry.entryId);
-                        const entryIsEditing: boolean = editingEntryIds.includes(entry.entryId);
-                        const entryIsDeleteConfirming: boolean = confirmDeleteEntryIds.includes(entry.entryId);
-                        const isSaveDisabled: boolean = isAnnotationQueueEntrySaveDisabled(
-                          entry,
-                          comment,
-                          entryIsPending,
-                        );
+                      {readAnnotationQueuePauseMessage(queue.pauseReason)}
+                    </p>
+                  ) : null}
+                  <ol className="m-0 list-none bg-secondary p-0 pb-1">
+                    {queue.entries.map((entry: IAnnotationQueueEntrySnapshot) => {
+                      const comment: string = readAnnotationQueueDraftComment(drafts, entry);
+                      const entryIsEditable: boolean = isAnnotationQueueEntryEditable(entry);
+                      const entryIsPending: boolean = props.isEntryMutationPending(entry.entryId);
+                      const entryIsEditing: boolean = editingEntryIds.includes(entry.entryId);
+                      const entryIsDeleteConfirming: boolean = confirmDeleteEntryIds.includes(entry.entryId);
 
-                        return (
-                          <li
-                            className="grid gap-1 rounded-sm border border-border bg-muted p-2"
-                            data-testid="AnnotationQueuePanel--entry"
-                            key={entry.entryId}
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex min-w-0 flex-1 items-center gap-2">
-                                <Badge variant={readEntryBadgeVariant(entry)}>{readEntryStateLabel(entry)}</Badge>
-                              </div>
-                              {entryIsEditable && !entryIsDeleteConfirming ? (
-                                <div className="flex flex-wrap gap-2">
-                                  {entryIsEditing ? (
-                                    <>
-                                      <Button
-                                        disabled={isSaveDisabled}
-                                        testId="AnnotationQueuePanel--save"
-                                        variant="primary"
-                                        onClick={(): void => {
-                                          void (async (): Promise<void> => {
-                                            const didSaveEntry: boolean = await props.onSaveEntry(
-                                              entry.entryId,
-                                              comment,
-                                            );
-
-                                            if (!didSaveEntry) {
-                                              return;
-                                            }
-
-                                            setEditingEntryIds((currentIds: string[]): string[] => {
-                                              return removeId(currentIds, entry.entryId);
-                                            });
-                                          })();
-                                        }}
-                                      >
-                                        Save
-                                      </Button>
-                                      <Button
-                                        disabled={entryIsPending}
-                                        testId="AnnotationQueuePanel--cancel-edit"
-                                        onClick={(): void => {
-                                          setConfirmDeleteEntryIds((currentIds: string[]): string[] => {
-                                            return removeId(currentIds, entry.entryId);
-                                          });
-                                          setDrafts(
-                                            (currentDrafts: IAnnotationQueueDraft[]): IAnnotationQueueDraft[] => {
-                                              return upsertAnnotationQueueDraft(
-                                                currentDrafts,
-                                                entry.entryId,
-                                                entry.annotation.comment,
-                                              );
-                                            },
-                                          );
-                                          setEditingEntryIds((currentIds: string[]): string[] => {
-                                            return removeId(currentIds, entry.entryId);
-                                          });
-                                        }}
-                                      >
-                                        Cancel
-                                      </Button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Button
-                                        disabled={entryIsPending}
-                                        testId="AnnotationQueuePanel--edit"
-                                        onClick={(): void => {
-                                          setConfirmDeleteEntryIds((currentIds: string[]): string[] => {
-                                            return removeId(currentIds, entry.entryId);
-                                          });
-                                          setEditingEntryIds((currentIds: string[]): string[] => {
-                                            return appendId(currentIds, entry.entryId);
-                                          });
-                                        }}
-                                      >
-                                        Edit
-                                      </Button>
-                                      <Button
-                                        disabled={entryIsPending}
-                                        testId="AnnotationQueuePanel--remove"
-                                        variant="danger"
-                                        onClick={(): void => {
-                                          setEditingEntryIds((currentIds: string[]): string[] => {
-                                            return removeId(currentIds, entry.entryId);
-                                          });
-                                          setConfirmDeleteEntryIds((currentIds: string[]): string[] => {
-                                            return toggleId(currentIds, entry.entryId);
-                                          });
-                                        }}
-                                      >
-                                        Delete
-                                      </Button>
-                                    </>
-                                  )}
-                                </div>
-                              ) : null}
-                            </div>
-                            {entryIsEditing ? (
+                      return (
+                        <li
+                          className="grid gap-1 border-t py-1 pr-1 pl-6.5"
+                          data-testid="AnnotationQueuePanel--entry"
+                          key={entry.entryId}
+                        >
+                          <div className="flex min-h-5 items-center gap-1.5">
+                            <Badge variant={readEntryBadgeVariant(entry)}>{readEntryStateLabel(entry)}</Badge>
+                            <span className="flex-1" />
+                            {entryIsEditable && !entryIsEditing && !entryIsDeleteConfirming ? (
+                              <>
+                                <Button
+                                  aria-label="Edit annotation"
+                                  disabled={entryIsPending}
+                                  startEnhancer={<PencilIcon />}
+                                  testId="AnnotationQueuePanel--edit"
+                                  title="Edit annotation"
+                                  variant="ghost"
+                                  onClick={(): void => {
+                                    stopConfirmingDelete(entry.entryId);
+                                    setEditingEntryIds((currentIds: string[]): string[] => {
+                                      return appendId(currentIds, entry.entryId);
+                                    });
+                                  }}
+                                />
+                                <Button
+                                  aria-label="Delete annotation"
+                                  disabled={entryIsPending}
+                                  startEnhancer={<Trash2Icon />}
+                                  testId="AnnotationQueuePanel--remove"
+                                  title="Delete annotation"
+                                  variant="ghost"
+                                  onClick={(): void => {
+                                    stopEditing(entry.entryId);
+                                    setConfirmDeleteEntryIds((currentIds: string[]): string[] => {
+                                      return appendId(currentIds, entry.entryId);
+                                    });
+                                  }}
+                                />
+                              </>
+                            ) : null}
+                          </div>
+                          {entryIsEditing ? (
+                            <>
                               <Textarea
+                                aria-label="Annotation comment"
                                 data-testid="AnnotationQueuePanel--comment-input"
-                                rows={4}
+                                rows={3}
                                 value={comment}
                                 onChange={(event: ChangeEvent<HTMLTextAreaElement>): void => {
-                                  const value = event.currentTarget.value;
+                                  const value: string = event.currentTarget.value;
 
                                   setDrafts((currentDrafts: IAnnotationQueueDraft[]): IAnnotationQueueDraft[] => {
                                     return upsertAnnotationQueueDraft(currentDrafts, entry.entryId, value);
                                   });
                                 }}
                               />
-                            ) : (
-                              <div
-                                className="whitespace-pre-wrap text-sm leading-normal text-foreground"
-                                data-testid="AnnotationQueuePanel--comment"
-                              >
-                                {comment}
+                              <div className="flex gap-1">
+                                <Button
+                                  disabled={isAnnotationQueueEntrySaveDisabled(entry, comment, entryIsPending)}
+                                  testId="AnnotationQueuePanel--save"
+                                  variant="primary"
+                                  onClick={(): void => {
+                                    void (async (): Promise<void> => {
+                                      if (await props.onSaveEntry(entry.entryId, comment)) {
+                                        stopEditing(entry.entryId);
+                                      }
+                                    })();
+                                  }}
+                                >
+                                  Save
+                                </Button>
+                                <Button
+                                  disabled={entryIsPending}
+                                  testId="AnnotationQueuePanel--cancel-edit"
+                                  onClick={(): void => {
+                                    setDrafts((currentDrafts: IAnnotationQueueDraft[]): IAnnotationQueueDraft[] => {
+                                      return upsertAnnotationQueueDraft(
+                                        currentDrafts,
+                                        entry.entryId,
+                                        entry.annotation.comment,
+                                      );
+                                    });
+                                    stopEditing(entry.entryId);
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
                               </div>
-                            )}
-                            {entryIsEditable && entryIsDeleteConfirming ? (
-                              <InlineNotice testId="AnnotationQueuePanel--delete-confirmation" tone="danger">
-                                <div className="grid gap-2">
-                                  <div>Delete this annotation?</div>
-                                  <div className="flex flex-wrap gap-2">
-                                    <Button
-                                      disabled={entryIsPending}
-                                      testId="AnnotationQueuePanel--confirm-delete"
-                                      variant="danger"
-                                      onClick={(): void => {
-                                        void (async (): Promise<void> => {
-                                          const didRemoveEntry: boolean = await props.onRemoveEntry(entry.entryId);
-
-                                          if (!didRemoveEntry) {
-                                            return;
-                                          }
-
-                                          setConfirmDeleteEntryIds((currentIds: string[]): string[] => {
-                                            return removeId(currentIds, entry.entryId);
-                                          });
-                                          setEditingEntryIds((currentIds: string[]): string[] => {
-                                            return removeId(currentIds, entry.entryId);
-                                          });
-                                        })();
-                                      }}
-                                    >
-                                      Confirm delete
-                                    </Button>
-                                    <Button
-                                      disabled={entryIsPending}
-                                      testId="AnnotationQueuePanel--cancel-delete"
-                                      onClick={(): void => {
-                                        setConfirmDeleteEntryIds((currentIds: string[]): string[] => {
-                                          return removeId(currentIds, entry.entryId);
-                                        });
-                                      }}
-                                    >
-                                      Cancel
-                                    </Button>
-                                  </div>
-                                </div>
-                              </InlineNotice>
-                            ) : null}
-                          </li>
-                        );
-                      })}
-                    </ol>
-                  </div>
-                ) : null}
-              </article>
-            );
-          })}
-        </div>
+                            </>
+                          ) : (
+                            <div
+                              className="line-clamp-3 text-lg whitespace-pre-wrap"
+                              data-testid="AnnotationQueuePanel--comment"
+                            >
+                              {comment}
+                            </div>
+                          )}
+                          {entryIsEditable && entryIsDeleteConfirming ? (
+                            <div
+                              className="flex items-center gap-1.5 rounded-sm border border-destructive bg-destructive/15 px-1.5 py-1 font-semibold text-destructive"
+                              data-testid="AnnotationQueuePanel--delete-confirmation"
+                              role="alert"
+                            >
+                              <span className="flex-1">Delete this annotation?</span>
+                              <Button
+                                disabled={entryIsPending}
+                                testId="AnnotationQueuePanel--confirm-delete"
+                                variant="danger"
+                                onClick={(): void => {
+                                  void (async (): Promise<void> => {
+                                    if (await props.onRemoveEntry(entry.entryId)) {
+                                      stopConfirmingDelete(entry.entryId);
+                                      stopEditing(entry.entryId);
+                                    }
+                                  })();
+                                }}
+                              >
+                                Delete
+                              </Button>
+                              <Button
+                                disabled={entryIsPending}
+                                testId="AnnotationQueuePanel--cancel-delete"
+                                onClick={(): void => {
+                                  stopConfirmingDelete(entry.entryId);
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </>
+              ) : null}
+            </article>
+          );
+        })}
       </div>
-    </HoverSlidePanel>
+    </ToolbarPopover>
   );
 }
 
-function readStatusLabel(status: AnnotationQueueStatus): string {
-  if (status === "launching") {
-    return "Launching";
+function readQueuesTriggerLabel(entryCount: number, pausedCount: number, hasError: boolean): string {
+  const summary: string = `Annotation queues: ${entryCount} ${entryCount === 1 ? "annotation" : "annotations"}`;
+  const pausedSuffix: string = pausedCount > 0 ? `, ${pausedCount} paused` : "";
+  const errorSuffix: string = hasError ? ", error" : "";
+
+  return `${summary}${pausedSuffix}${errorSuffix}`;
+}
+
+function readQueueStatusBadgeVariant(status: AnnotationQueueStatus): AnnotationBadgeVariant {
+  if (status === "paused") {
+    return "destructive";
   }
 
-  if (status === "working") {
-    return "Working";
-  }
-
-  return "Paused";
+  return status === "working" ? "primary" : "default";
 }
 
 function readEntryStateLabel(entry: IAnnotationQueueEntrySnapshot): string {
   if (entry.state === "active") {
-    return "Active";
+    return "active";
   }
 
   if (entry.state === "paused-active") {
-    return "Paused";
+    return "paused";
   }
 
-  return "Queued";
+  return "queued";
 }
 
-function readEntryBadgeVariant(entry: IAnnotationQueueEntrySnapshot): AnnotationEntryBadgeVariant {
+function readEntryBadgeVariant(entry: IAnnotationQueueEntrySnapshot): AnnotationBadgeVariant {
   if (entry.state === "paused-active") {
     return "destructive";
   }
 
-  if (entry.state === "active") {
-    return "secondary";
-  }
-
-  return "default";
+  return entry.state === "active" ? "primary" : "default";
 }
 
 function readAnnotationQueueRouteLabel(queue: IAnnotationQueueSnapshot): string {
@@ -356,21 +358,13 @@ function readAnnotationQueueRouteLabel(queue: IAnnotationQueueSnapshot): string 
     return "Annotation queue";
   }
 
-  return readAnnotationRouteLabel(queueUrl);
-}
-
-function readAnnotationRouteLabel(url: string): string {
   try {
-    const parsedUrl = new URL(url);
+    const parsedUrl = new URL(queueUrl);
 
     return parsedUrl.pathname === "/" ? parsedUrl.host : `${parsedUrl.host}${parsedUrl.pathname}`;
   } catch {
-    return url;
+    return queueUrl;
   }
-}
-
-function readAnnotationQueueProgressLabel(entryCount: number): string {
-  return entryCount === 0 ? "0 of 0" : `1 of ${entryCount}`;
 }
 
 function readAnnotationQueueProgressWidth(entryCount: number): string {

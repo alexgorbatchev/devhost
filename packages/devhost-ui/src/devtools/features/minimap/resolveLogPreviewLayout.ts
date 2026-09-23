@@ -2,7 +2,7 @@ import type { ILogMinimapMark } from "./createLogMinimapMarks";
 import { createLogPreviewRange, type ILogPreviewRange } from "./createLogPreviewRange";
 
 const minimumVisibleRows: number = 1;
-const preferredMaximumVisibleRows: number = 21;
+const preferredMaximumVisibleRows: number = 15;
 
 export interface ILogPreviewLayout {
   range: ILogPreviewRange;

@@ -1,151 +1,73 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor } from "storybook/test";
+import { useState, type ComponentProps, type JSX } from "react";
 
 import {
-  devtoolsStoryShadowRootHostTestId,
-  readShadowRoot,
+  readDevtoolsStoryShadowCanvas,
   renderInDevtoolsStoryShadowRoot,
-} from "../../../../shared/components/stories/helpers";
-import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
+  StorybookThemeProvider,
+} from "@/devtools/shared/components/stories/helpers";
 import { TerminalSessionPanel } from "../TerminalSessionPanel";
-import type { TerminalSession } from "../../types";
-
-const agentSession: TerminalSession = {
-  actionId: "agent",
-  annotation: {
-    comment: "Fix button",
-    markers: [],
-    stackName: "story-stack",
-    submittedAt: 1,
-    title: "@alexgorbatchev/devhost-ui/devtools/features/terminalSessions/components/TerminalSessionPanel",
-    url: "https://example.test",
-  },
-  behavior: {
-    defaultIsExpanded: false,
-    isFullscreenExpanded: true,
-    shouldAutoRemoveOnExit: false,
-  },
-  displayName: "Pi",
-  isExpanded: false,
-  kind: "agent",
-  sessionId: "session-1",
-  summary: {
-    eyebrow: "Pi",
-    headline: "Agent session",
-    meta: ["0 initial markers"],
-    terminalTitle: "Agent terminal",
-    trayTooltipPrimary: "Agent session",
-    trayTooltipSecondary: "Pi",
-  },
-};
-
-const editorSession: TerminalSession = {
-  behavior: {
-    defaultIsExpanded: true,
-    isFullscreenExpanded: false,
-    shouldAutoRemoveOnExit: true,
-  },
-  componentName: "PrimaryButton",
-  isExpanded: true,
-  kind: "editor",
-  launcher: "neovim",
-  sessionId: "editor-session-1",
-  sourceLabel: "src/components/PrimaryButton.tsx:12",
-  summary: {
-    eyebrow: "Editor",
-    headline: "PrimaryButton",
-    meta: ["src/components/PrimaryButton.tsx:12"],
-    terminalTitle: "Neovim",
-    trayTooltipPrimary: "<PrimaryButton>",
-    trayTooltipSecondary: "src/components/PrimaryButton.tsx:12",
-  },
-};
-
-const finishedAgentSession: TerminalSession = {
-  ...agentSession,
-  sessionId: "session-finished",
-};
-
-const commandSession: TerminalSession = {
-  actionId: "create-ticket",
-  annotation: agentSession.annotation,
-  behavior: {
-    defaultIsExpanded: true,
-    isFullscreenExpanded: true,
-    shouldAutoRemoveOnExit: true,
-  },
-  displayName: "Create Ticket",
-  isExpanded: true,
-  kind: "command",
-  sessionId: "command-session-1",
-  summary: {
-    eyebrow: "Create Ticket",
-    headline: "Annotation command",
-    meta: ["0 initial markers"],
-    terminalTitle: "Annotation command",
-    trayTooltipPrimary: "Annotation command",
-    trayTooltipSecondary: "Create Ticket",
-  },
-};
+import type { TerminalSession, TerminalSessionStatus } from "../../types";
+import {
+  fixture_agentSession,
+  fixture_commandSession,
+  fixture_editorSession,
+  fixture_finishedAgentSession,
+  fixture_fullscreenAgentSession,
+} from "./fixtures";
 
 const meta: Meta<typeof TerminalSessionPanel> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/terminalSessions/components/TerminalSessionPanel",
   component: TerminalSessionPanel,
-  render: (args, context) => {
-    return renderInDevtoolsStoryShadowRoot(
-      <StorybookThemeProvider globals={context.globals}>
-        <TerminalSessionPanel {...args} />
-      </StorybookThemeProvider>,
-    );
+  args: {
+    isExpanded: true,
+    onMinimize: fn(),
+    onRemove: fn(),
+    onStatusChange: fn(),
+    session: fixture_agentSession,
   },
+  render: (args, context) =>
+    renderInDevtoolsStoryShadowRoot(
+      <StorybookThemeProvider globals={context.globals}>
+        <TerminalSessionPanelHarness {...args} />
+      </StorybookThemeProvider>,
+    ),
 };
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Minimized: Story = {
-  args: {
-    isExpanded: false,
-    onExpand: fn(),
-    onMinimize: fn(),
-    onRemove: fn(),
-    session: agentSession,
-  },
-  play: async ({ args, canvasElement }): Promise<void> => {
-    const shadowCanvas = await readStoryShadowCanvas(canvasElement);
+type TerminalSessionPanelProps = ComponentProps<typeof TerminalSessionPanel>;
 
-    const panel = shadowCanvas.getByTestId("TerminalSessionPanel");
-    const expandButton = shadowCanvas.getByTestId("TerminalSessionPanel--expand");
+// Applies reported status back onto the session, as useTerminalSessions does in the app.
+function TerminalSessionPanelHarness(props: TerminalSessionPanelProps): JSX.Element {
+  const [session, setSession] = useState<TerminalSession>(() => props.session);
 
-    await userEvent.hover(panel);
-    await expect(shadowCanvas.getByTestId("TerminalSessionPanel--tooltip")).toHaveTextContent("Agent session");
-    await expect(shadowCanvas.getByText("Pi")).toBeInTheDocument();
-
-    await userEvent.click(expandButton);
-    await expect(args.onExpand).toHaveBeenCalledTimes(1);
-  },
-};
+  return (
+    <TerminalSessionPanel
+      {...props}
+      session={session}
+      onStatusChange={(status: TerminalSessionStatus, errorMessage: string | null): void => {
+        props.onStatusChange(status, errorMessage);
+        setSession((currentSession: TerminalSession): TerminalSession => {
+          return { ...currentSession, errorMessage, status };
+        });
+      }}
+    />
+  );
+}
 
 export const Expanded: Story = {
-  args: {
-    isExpanded: true,
-    onExpand: fn(),
-    onMinimize: fn(),
-    onRemove: fn(),
-    session: {
-      ...agentSession,
-      behavior: {
-        ...agentSession.behavior,
-        isFullscreenExpanded: false,
-      },
-    },
-  },
   play: async ({ args, canvasElement }): Promise<void> => {
-    const shadowCanvas = await readStoryShadowCanvas(canvasElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const dialog = await shadowCanvas.findByRole("dialog", { name: "Pi terminal" });
 
-    await expect(shadowCanvas.getByTestId("TerminalSessionPanel--content")).toBeInTheDocument();
-    await expect(shadowCanvas.getByTestId("TerminalSessionPanel--summary")).toHaveTextContent("Agent session");
+    await waitFor(() => expect(dialog).toBeVisible());
+    await expect(dialog).toHaveTextContent("0 initial markers · Cart — Acme Shop · shop.example.test");
+    await expect(shadowCanvas.getByTestId("TerminalSessionPanel--backdrop")).toBeVisible();
+    await waitFor(() => expect(args.onStatusChange).toHaveBeenCalledWith("running", null));
 
     await userEvent.click(shadowCanvas.getByRole("button", { name: "Minimize" }));
     await expect(args.onMinimize).toHaveBeenCalledTimes(1);
@@ -157,88 +79,67 @@ export const Expanded: Story = {
 
 export const FullscreenExpanded: Story = {
   args: {
-    isExpanded: true,
-    onExpand: fn(),
-    onMinimize: fn(),
-    onRemove: fn(),
-    session: {
-      ...agentSession,
-      behavior: {
-        ...agentSession.behavior,
-        isFullscreenExpanded: true,
-      },
-    },
+    session: fixture_fullscreenAgentSession,
   },
   play: async ({ canvasElement }): Promise<void> => {
-    const shadowCanvas = await readStoryShadowCanvas(canvasElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const dialog = await shadowCanvas.findByRole("dialog", { name: "Pi terminal" });
 
-    await expect(shadowCanvas.getByTestId("TerminalSessionPanel--backdrop")).toBeInTheDocument();
-    await expect(shadowCanvas.getByTestId("TerminalSessionPanel--content")).toBeInTheDocument();
-    await expect(shadowCanvas.getByText("Agent terminal")).toBeInTheDocument();
+    await waitFor(() => expect(dialog).toBeVisible());
+    await expect(dialog.getBoundingClientRect().width).toBe(window.innerWidth);
+    await expect(shadowCanvas.getByTestId("TerminalSessionPanel--backdrop")).not.toBeVisible();
+  },
+};
+
+// Minimized sessions stay mounted and connected so their toolbar chip keeps reporting live status.
+export const Minimized: Story = {
+  args: {
+    isExpanded: false,
+  },
+  play: async ({ args, canvasElement }): Promise<void> => {
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+
+    await waitFor(() => expect(args.onStatusChange).toHaveBeenCalledWith("running", null));
+    await expect(shadowCanvas.queryByRole("dialog", { name: "Pi terminal" })).toBeNull();
   },
 };
 
 export const EditorExpanded: Story = {
   args: {
-    isExpanded: true,
-    onExpand: fn(),
-    onMinimize: fn(),
-    onRemove: fn(),
-    session: editorSession,
+    session: fixture_editorSession,
   },
   play: async ({ canvasElement }): Promise<void> => {
-    const shadowCanvas = await readStoryShadowCanvas(canvasElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const dialog = await shadowCanvas.findByRole("dialog", { name: "Neovim terminal" });
 
-    await expect(shadowCanvas.getByText("Neovim")).toBeInTheDocument();
-    await expect(shadowCanvas.getByTestId("TerminalSessionPanel--summary")).toHaveTextContent("PrimaryButton");
-    await expect(shadowCanvas.getByText("src/components/PrimaryButton.tsx:12")).toBeInTheDocument();
+    await waitFor(() => expect(dialog).toBeVisible());
+    await expect(dialog).toHaveTextContent("<PrimaryButton> · src/components/PrimaryButton.tsx:12:3");
   },
 };
 
 export const CommandExpanded: Story = {
   args: {
-    isExpanded: true,
-    onExpand: fn(),
-    onMinimize: fn(),
-    onRemove: fn(),
-    session: commandSession,
+    session: fixture_commandSession,
   },
   play: async ({ canvasElement }): Promise<void> => {
-    const shadowCanvas = await readStoryShadowCanvas(canvasElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
 
-    await expect(shadowCanvas.getByTestId("TerminalSessionPanel--summary")).toHaveTextContent("Create Ticket");
+    await waitFor(async () => {
+      await expect(await shadowCanvas.findByRole("dialog", { name: "Create Ticket terminal" })).toBeVisible();
+    });
   },
 };
 
-export const FinishedMinimized: Story = {
+export const Finished: Story = {
   args: {
-    isExpanded: false,
-    onExpand: fn(),
-    onMinimize: fn(),
-    onRemove: fn(),
-    session: finishedAgentSession,
+    session: fixture_finishedAgentSession,
   },
   play: async ({ args, canvasElement }): Promise<void> => {
-    const shadowCanvas = await readStoryShadowCanvas(canvasElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
 
-    await expect(await shadowCanvas.findByTestId("TerminalSessionPanel--completion-indicator")).toBeInTheDocument();
+    await waitFor(() => expect(args.onStatusChange).toHaveBeenCalledWith("exited", null));
 
-    await userEvent.hover(shadowCanvas.getByTestId("TerminalSessionPanel"));
-    await userEvent.click(await shadowCanvas.findByTestId("TerminalSessionPanel--tray-close"));
+    await userEvent.click(await shadowCanvas.findByRole("button", { name: "Close" }));
     await expect(args.onRemove).toHaveBeenCalledTimes(1);
   },
 };
-
-async function readStoryShadowCanvas(canvasElement: HTMLElement): Promise<ReturnType<typeof within>> {
-  const canvas = within(canvasElement);
-  const shadowHost: HTMLElement = await canvas.findByTestId(devtoolsStoryShadowRootHostTestId);
-  const shadowRoot: ShadowRoot = readShadowRoot(
-    shadowHost,
-    "Expected the terminal panel story to attach a shadow root.",
-  );
-  const typedShadowCanvas = within(shadowRoot as unknown as HTMLElement);
-
-  await typedShadowCanvas.findByTestId("TerminalSessionPanel");
-
-  return typedShadowCanvas;
-}

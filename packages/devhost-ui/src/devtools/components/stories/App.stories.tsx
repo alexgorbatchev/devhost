@@ -1,13 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, waitFor, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import { useEffect, useRef, type JSX, type ComponentType } from "react";
 
 import { App as DevtoolsApp } from "../App";
 import { renderDevtools } from "../../renderDevtools";
-import { DEVTOOLS_HOST_ID } from "../../shared";
+import { DEVTOOLS_HOST_ID, installDevtoolsStyles } from "../../shared";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../shared/constants";
 import {
   devtoolsStoryShadowRootHostTestId,
+  readDevtoolsStoryShadowCanvas,
   readShadowRoot,
   renderInDevtoolsStoryShadowRoot,
 } from "../../shared/components/stories/helpers";
@@ -34,22 +35,79 @@ export const App: Story = {
     ),
   play: async ({ canvasElement }): Promise<void> => {
     const shadowRoot = await readStoryShadowRoot(canvasElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
 
     expect(shadowRoot.querySelector("[data-testid='AppContent']")).not.toBeNull();
 
+    const toolbar = await shadowCanvas.findByRole("toolbar", { name: "devhost" });
+
     await waitFor(() => {
-      expect(shadowRoot.querySelector("[data-testid='ServiceStatusPanel']")).not.toBeNull();
-      expect(shadowRoot.querySelector("[data-testid='LogMinimap']")).not.toBeNull();
+      expect(within(toolbar).getByRole("button", { name: "Services: 2 of 3 up" })).toBeVisible();
+      expect(within(toolbar).getByRole("button", { name: /^Annotation queues: / })).toBeVisible();
+      expect(within(toolbar).getByRole("button", { name: /^Pi terminal, / })).toBeVisible();
+      expect(within(toolbar).getByRole("button", { name: /^<Header> terminal, / })).toBeVisible();
+      expect(shadowRoot.querySelector("[data-testid='LogMinimap--canvas']")).not.toBeNull();
       expect(shadowRoot.querySelector("[data-testid='AnnotationComposer']")).not.toBeNull();
-      expect(shadowRoot.querySelector("[data-testid='AnnotationQueuePanel']")).not.toBeNull();
-      expect(shadowRoot.querySelector("[data-testid='TerminalSessionTray']")).not.toBeNull();
     });
 
-    expect(shadowRoot.querySelector("[data-testid='ServiceStatusPanel--service-list']")).not.toBeNull();
-    expect(shadowRoot.querySelector("[data-testid='LogMinimap--canvas']")).not.toBeNull();
-    expect(shadowRoot.querySelector("[data-testid='AnnotationQueuePanel--queue-list']")).not.toBeNull();
-    expect(shadowRoot.querySelector("[data-testid='TerminalSessionTray--session-list']")).not.toBeNull();
-    expect(shadowRoot.querySelector("[data-testid='TerminalSessionPanel--expand']")).not.toBeNull();
+    // Restored sessions stay minimized: their windows are mounted but not shown.
+    await expect(shadowCanvas.queryByRole("dialog")).toBeNull();
+
+    await userEvent.click(within(toolbar).getByRole("button", { name: /^Pi terminal, / }));
+    await waitFor(async () => {
+      await expect(await shadowCanvas.findByRole("dialog", { name: "Pi terminal" })).toBeVisible();
+    });
+    await userEvent.click(shadowCanvas.getByRole("button", { name: "Minimize" }));
+    await waitFor(() => expect(shadowCanvas.queryByRole("dialog", { name: "Pi terminal" })).toBeNull());
+  },
+};
+
+/**
+ * Mounts the production devtools host under aggressive host-page CSS and a shrunken root font size. The devtools
+ * UI must stay unaffected: shadow-DOM styles plus `:host { all: initial !important }` cut inherited host styles,
+ * and px-based tokens ignore the host's rem scale.
+ */
+export const HostileHostPage: Story = {
+  render: () => <HostileHostPageStory />,
+  play: async (): Promise<void> => {
+    const toolbar: HTMLElement = await waitFor(() => {
+      const hostElement: HTMLElement | null = document.getElementById(DEVTOOLS_HOST_ID);
+      const toolbarBar: HTMLElement | null =
+        hostElement?.shadowRoot?.querySelector<HTMLElement>("[data-testid='DevtoolsToolbar--bar']") ?? null;
+
+      expect(toolbarBar).not.toBeNull();
+
+      return toolbarBar as HTMLElement;
+    });
+    const toolbarStyle: CSSStyleDeclaration = getComputedStyle(toolbar);
+
+    await expect(toolbarStyle.letterSpacing).toBe("normal");
+    await expect(toolbarStyle.textTransform).toBe("none");
+    await expect(toolbarStyle.fontFamily.startsWith('"devhost JetBrains Mono"')).toBe(true);
+    await expect(toolbar.getBoundingClientRect().height).toBe(26);
+  },
+};
+
+/**
+ * Storybook's preview also loads devtools.css into the main document, which registers Tailwind's `@property` rules
+ * globally and hides the production failure mode. This story mounts a shadow root inside a clean iframe document so
+ * only the shadow stylesheet applies, and asserts that border and shadow utilities still resolve there.
+ */
+export const ShadowRootWithoutDocumentStyles: Story = {
+  render: () => <ShadowRootWithoutDocumentStylesStory />,
+  play: async ({ canvasElement }): Promise<void> => {
+    const frame: HTMLElement = await waitFor(() => {
+      const frameElement: HTMLDivElement | null = readIsolatedFrameProbe(canvasElement);
+
+      expect(frameElement).not.toBeNull();
+
+      return frameElement as HTMLDivElement;
+    });
+    const frameStyle: CSSStyleDeclaration = frame.ownerDocument.defaultView!.getComputedStyle(frame);
+
+    await expect(frameStyle.borderTopStyle).toBe("solid");
+    await expect(frameStyle.borderTopWidth).toBe("1px");
+    await expect(frameStyle.boxShadow).not.toBe("none");
   },
 };
 
@@ -78,8 +136,8 @@ export const DesignOverview: Story = {
     // 1. Wait for devtools to render
     await waitFor(
       () => {
-        const expandButtons = shadowCanvas.queryAllByTestId("TerminalSessionPanel--expand");
-        expect(expandButtons.length).toBe(2);
+        const sessionChips = shadowCanvas.queryAllByRole("button", { name: / terminal, / });
+        expect(sessionChips.length).toBe(2);
       },
       { timeout: 10000 },
     );
@@ -118,6 +176,69 @@ export const DesignOverview: Story = {
     }
   },
 };
+
+const hostileHostStylesheetText: string = [
+  "* { letter-spacing: 0.3em !important; font-family: serif !important; text-transform: uppercase !important; }",
+  "html { font-size: 10px !important; }",
+].join("\n");
+
+function HostileHostPageStory(): null {
+  useEffect(() => {
+    const hostileStylesheet: HTMLStyleElement = document.createElement("style");
+
+    hostileStylesheet.textContent = hostileHostStylesheetText;
+    document.head.append(hostileStylesheet);
+    renderDevtools();
+
+    return () => {
+      document.getElementById(DEVTOOLS_HOST_ID)?.remove();
+      hostileStylesheet.remove();
+    };
+  }, []);
+
+  return null;
+}
+
+const isolatedFrameTestId: string = "ShadowRootWithoutDocumentStyles--frame";
+const isolatedFrameProbeTestId: string = "ShadowRootWithoutDocumentStyles--probe";
+
+function ShadowRootWithoutDocumentStylesStory(): JSX.Element {
+  // Mounts on `load`: an srcDoc iframe starts on a temporary about:blank document that is replaced once it loads.
+  const mountIsolatedShadowRoot = (event: React.SyntheticEvent<HTMLIFrameElement>): void => {
+    const frameDocument: Document | null = event.currentTarget.contentDocument;
+
+    if (frameDocument === null) {
+      return;
+    }
+
+    const hostElement: HTMLDivElement = frameDocument.createElement("div");
+    const shadowRoot: ShadowRoot = hostElement.attachShadow({ mode: "open" });
+    const probeElement: HTMLDivElement = frameDocument.createElement("div");
+
+    probeElement.className = "rounded-md border border-edge bg-card shadow-frame";
+    probeElement.setAttribute("data-testid", isolatedFrameProbeTestId);
+    probeElement.textContent = "framed surface";
+    shadowRoot.append(probeElement);
+    frameDocument.body.append(hostElement);
+    installDevtoolsStyles(shadowRoot);
+  };
+
+  return (
+    <iframe
+      data-testid={isolatedFrameTestId}
+      srcDoc="<!doctype html><body></body>"
+      title="isolated"
+      onLoad={mountIsolatedShadowRoot}
+    />
+  );
+}
+
+function readIsolatedFrameProbe(canvasElement: HTMLElement): HTMLDivElement | null {
+  const frameElement: HTMLIFrameElement | null = canvasElement.querySelector(`[data-testid='${isolatedFrameTestId}']`);
+  const hostElement: Element | null = frameElement?.contentDocument?.body.firstElementChild ?? null;
+
+  return hostElement?.shadowRoot?.querySelector<HTMLDivElement>(`[data-testid='${isolatedFrameProbeTestId}']`) ?? null;
+}
 
 function InjectedMountStory(): null {
   useEffect(() => {

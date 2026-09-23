@@ -1,6 +1,6 @@
 ---
 created_on: 2026-06-03 12:00
-last_modified: 2026-06-04 12:00
+last_modified: 2026-09-22 23:32
 status: current
 ---
 
@@ -42,9 +42,10 @@ The multi-service file watching and parallel hotkey restart system is divided in
 
 ### Frontend UI Overlay
 
-1. **Status Panel Indicator (`ServiceStatusPanel.tsx`)**:
+1. **Services Toolbar Panel (`ServiceStatusPanel.tsx`)**:
    - Observes `service.dirty` and `service.restarting` boolean fields.
-   - Styles the manual restart button with a red `"danger"` variant when dirty, disables the button during active restarts, and applies smooth, continuous `animate-spin` on the `RotateCwIcon`.
+   - Summarizes changed services on the toolbar trigger (`N changed`), marks each changed service with a `changed` badge and an amber `"warning"` restart button, disables the button during active restarts, and applies a continuous `animate-spin` on the `RotateCwIcon`.
+   - Shows the configured `restartServicesShortcut` in the panel header.
    - Incorporates robust, non-blocking error handling for non-200 responses, parsing structured JSON or plain text errors from the Go backend.
 
 2. **Global Hotkey Listener (`App.tsx`)**:

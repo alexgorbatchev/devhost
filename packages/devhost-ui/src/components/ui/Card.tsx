@@ -1,105 +1,45 @@
 import * as React from "react";
 
-import { cn } from "../../lib/utils";
-
 type OmitKeys = "className" | "style";
 
-interface ICardProps extends Omit<React.ComponentProps<"div">, OmitKeys> {
-  size?: "default" | "sm" | "xs";
-}
+type CardProps = Omit<React.ComponentProps<"div">, OmitKeys>;
 
-export const Card = React.forwardRef<HTMLDivElement, ICardProps>(function Card(
-  { size = "default", ...props }: ICardProps,
+/**
+ * The devtools "frame": an opaque surface with an inner edge of opposite lightness and an outer halo ring, so it
+ * stays distinguishable on any host background (see `--shadow-frame` in devtools.css).
+ */
+export const Card = React.forwardRef<HTMLDivElement, CardProps>(function Card(
+  props: CardProps,
   reference,
 ): React.ReactElement {
   return (
     <div
       ref={reference}
-      data-size={size}
       data-slot="card"
       data-testid="Card"
-      className="group/card flex flex-col overflow-hidden rounded-md bg-card text-card-foreground ring-1 ring-foreground/10
-        data-[size=default]:gap-4 data-[size=default]:py-4 data-[size=default]:text-sm
-        data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:text-sm
-        data-[size=xs]:gap-2 data-[size=xs]:py-2 data-[size=xs]:text-xs
-        has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0
-        *:[img:first-child]:rounded-t-md *:[img:last-child]:rounded-b-md"
+      className="flex flex-col overflow-hidden rounded-md border border-edge bg-card text-card-foreground shadow-frame"
       {...props}
     />
   );
 });
 
-interface ICardHeaderProps extends Omit<React.ComponentProps<"div">, OmitKeys> {
-  bordered?: boolean;
-}
-
-export function CardHeader({ bordered = false, ...props }: ICardHeaderProps): React.ReactElement {
+export function CardHeader(props: CardProps): React.ReactElement {
   return (
     <div
       data-slot="card-header"
       data-testid="CardHeader"
-      className={cn(
-        "group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-t-md px-4 group-data-[size=sm]/card:px-3 group-data-[size=xs]/card:px-3 group-data-[size=sm]/card:py-2 group-data-[size=xs]/card:py-2 group-data-[size=sm]/card:gap-2 group-data-[size=xs]/card:gap-2 has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-4 group-data-[size=sm]/card:[.border-b]:pb-3 group-data-[size=xs]/card:[.border-b]:pb-2",
-        bordered && "border-b pb-2",
-      )}
+      className="flex h-6 shrink-0 items-center gap-1.5 border-b border-border pr-1 pl-2"
       {...props}
     />
   );
 }
 
-export function CardTitle({ ...props }: Omit<React.ComponentProps<"div">, OmitKeys>): React.ReactElement {
+export function CardTitle(props: CardProps): React.ReactElement {
   return (
-    <div
-      data-slot="card-title"
-      data-testid="CardTitle"
-      className="font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm group-data-[size=xs]/card:text-xs"
-      {...props}
-    />
+    <div data-slot="card-title" data-testid="CardTitle" className="min-w-0 flex-1 truncate font-bold" {...props} />
   );
 }
 
-export function CardDescription({ ...props }: Omit<React.ComponentProps<"div">, OmitKeys>): React.ReactElement {
-  return (
-    <div
-      data-slot="card-description"
-      data-testid="CardDescription"
-      className="text-sm text-muted-foreground group-data-[size=xs]/card:text-[10px]"
-      {...props}
-    />
-  );
-}
-
-// @ts-unused-ignore planned for future panel use
-export function CardAction({ ...props }: Omit<React.ComponentProps<"div">, OmitKeys>): React.ReactElement {
-  return (
-    <div
-      data-slot="card-action"
-      data-testid="CardAction"
-      className="col-start-2 row-span-2 row-start-1 self-start justify-self-end"
-      {...props}
-    />
-  );
-}
-
-export function CardContent({ ...props }: Omit<React.ComponentProps<"div">, OmitKeys>): React.ReactElement {
-  return (
-    <div
-      data-slot="card-content"
-      data-testid="CardContent"
-      className="px-4 group-data-[size=sm]/card:px-3 group-data-[size=xs]/card:px-3 group-data-[size=sm]/card:py-2 group-data-[size=xs]/card:py-2"
-      {...props}
-    />
-  );
-}
-
-// @ts-unused-ignore planned for custom layout use
-export function CardFooter({ ...props }: Omit<React.ComponentProps<"div">, OmitKeys>): React.ReactElement {
-  return (
-    <div
-      data-slot="card-footer"
-      data-testid="CardFooter"
-      className="flex items-center rounded-b-md border-t bg-muted/50 p-4 group-data-[size=sm]/card:p-3 group-data-[size=xs]/card:p-2"
-      {...props}
-    />
-  );
+export function CardContent(props: CardProps): React.ReactElement {
+  return <div data-slot="card-content" data-testid="CardContent" className="grid gap-1.5 px-2 py-1.5" {...props} />;
 }

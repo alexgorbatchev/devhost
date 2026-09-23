@@ -13,7 +13,7 @@ export function readTerminalSessionPrimaryAction(hasExited: boolean): ITerminalS
       label: "Close",
       testId: "TerminalSessionPanel--close",
       title: "Close terminal session",
-      variant: "secondary",
+      variant: "default",
     };
   }
 

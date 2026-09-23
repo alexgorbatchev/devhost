@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type JSX } from "react";
+import { ChevronDownIcon } from "lucide-react";
 
 import {
   DropdownMenu,
@@ -7,9 +8,8 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "../../../../components/ui/DropdownMenu";
-import { Kbd, KbdGroup } from "../../../../components/ui/Kbd";
+import { Kbd } from "../../../../components/ui/Kbd";
 import { buttonVariants } from "@/components/ui/constants";
-import { cn } from "../../../../lib/utils";
 
 import { Button, type IAnnotationAction } from "../../../shared";
 
@@ -17,6 +17,7 @@ interface IAnnotationActionSplitButtonProps {
   actions: IAnnotationAction[];
   isActionMenuDisabled: boolean;
   isRunDisabled: boolean;
+  runLabel: string;
   selectedAction: IAnnotationAction;
   onActionSelect: (actionId: string) => void;
   onRun: () => void;
@@ -26,6 +27,7 @@ export function AnnotationActionSplitButton({
   actions,
   isActionMenuDisabled,
   isRunDisabled,
+  runLabel,
   selectedAction,
   onActionSelect,
   onRun,
@@ -44,31 +46,29 @@ export function AnnotationActionSplitButton({
   }, [isActionMenuDisabled, isMenuOpen]);
 
   return (
-    <div ref={rootReference} className="relative inline-flex gap-px" data-testid="AnnotationActionSplitButton">
-      <Button
-        disabled={isRunDisabled}
-        endEnhancer={
-          <KbdGroup>
-            <Kbd>⌘</Kbd>
-            <Kbd>↵</Kbd>
-          </KbdGroup>
-        }
-        variant="primary"
-        onClick={onRun}
-      >
-        {`Run ${selectedAction.displayName}`}
+    <div
+      ref={rootReference}
+      className="relative inline-flex [&>button:first-child]:rounded-r-none"
+      data-testid="AnnotationActionSplitButton"
+    >
+      <Button disabled={isRunDisabled} endEnhancer={<Kbd>⌘↵</Kbd>} variant="primary" onClick={onRun}>
+        {runLabel}
       </Button>
       <DropdownMenu modal={false} open={isMenuOpen} onOpenChange={setIsMenuOpen}>
         <DropdownMenuTrigger asChild>
           <button
             aria-controls={isMenuOpen ? menuId : undefined}
             aria-label={`Select annotation action. Current: ${selectedAction.displayName}`}
-            className={cn(buttonVariants({ size: "default", variant: "default" }), "px-2")}
+            className={buttonVariants({
+              className: "rounded-l-none border-l border-l-primary-foreground/35",
+              shape: "icon",
+              variant: "primary",
+            })}
             data-testid="AnnotationActionSplitButton--action-menu-toggle"
             disabled={isActionMenuDisabled}
             type="button"
           >
-            ▾
+            <ChevronDownIcon aria-hidden="true" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -89,7 +89,10 @@ export function AnnotationActionSplitButton({
                     setIsMenuOpen(false);
                   }}
                 >
-                  {action.displayName}
+                  <span className="flex-1">{action.displayName}</span>
+                  <span aria-hidden="true" className="text-muted-foreground">
+                    {action.kind}
+                  </span>
                 </DropdownMenuRadioItem>
               );
             })}
