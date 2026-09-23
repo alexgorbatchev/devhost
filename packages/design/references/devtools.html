@@ -481,10 +481,14 @@
     <devhost-devtools id="devhost-root"></devhost-devtools>
 
     <template id="devhost-styles">
+      <!-- Shared color, radius, and marker tokens (`:host` / `:host([data-theme="light"])`), the same file the
+           devtools bundle and the docs site load. -->
+      <link rel="stylesheet" href="../tokens.css" />
       <style>
         /* ================================================================
          * DESIGN TOKENS
-         * One small, explicit token set. Maps 1:1 to Tailwind @theme later.
+         * Colors, radii, and host markers come from ../tokens.css; only the
+         * devtools-local type, spacing, sizing, and layering live here.
          * ================================================================ */
         /* Outer-document rules targeting the host element (e.g. `* { letter-spacing: .1em !important }`)
            beat plain :host rules and then inherit into the shadow tree. Per CSS Cascade "context", an
@@ -504,8 +508,6 @@
           --dh-space-2: 4px;
           --dh-space-3: 6px;
           --dh-space-4: 8px;
-          --dh-radius-sm: 2px;
-          --dh-radius-md: 4px;
           --dh-control-h: 20px;
           --dh-row-h: 24px;
           --dh-bar-h: 26px;
@@ -518,61 +520,9 @@
           --dh-z-edge: 2147480000;
           --dh-minimap-collapsed-width: 12px;
           --dh-duration-fade: 120ms;
-
-          /* Host-content markers: identical in both themes because they are
-             drawn over arbitrary host pixels, never over our own surfaces. */
-          --dh-mark: #ff4fd8;
-          --dh-mark-ink: #000;
-          --dh-mark-alt: #1ee3ff;
-          --dh-mark-halo-in: #fff;
-          --dh-mark-halo-out: #000;
-
-          /* Dark (default) */
-          --dh-surface: #121417;
-          --dh-surface-2: #1c1f24;
-          --dh-surface-3: #282c33;
-          --dh-fg: #eceff3;
-          --dh-fg-muted: #a3abb6;
-          --dh-fg-faint: #6f7783;
-          --dh-line: #353b44;
-          --dh-edge: rgb(255 255 255 / 0.24);
-          --dh-halo: rgb(0 0 0 / 0.92);
-          --dh-shadow: 0 6px 22px rgb(0 0 0 / 0.5);
-          --dh-accent: #ff5cd6;
-          --dh-on-accent: #1a0014;
-          --dh-ok: #3ddc84;
-          --dh-on-ok: #00210f;
-          --dh-warn: #ffb224;
-          --dh-on-warn: #231500;
-          --dh-danger: #ff6159;
-          --dh-on-danger: #1f0000;
-          --dh-danger-soft: rgb(255 97 89 / 0.16);
-          --dh-backdrop: rgb(4 5 7 / 0.7);
-          --dh-term-bg: #0b0c0f;
           --dh-color-scheme: dark;
         }
         :host([data-theme="light"]) {
-          --dh-surface: #fcfcfd;
-          --dh-surface-2: #eef0f3;
-          --dh-surface-3: #e0e4ea;
-          --dh-fg: #0c0e11;
-          --dh-fg-muted: #4b535e;
-          --dh-fg-faint: #7c8490;
-          --dh-line: #c7ccd4;
-          --dh-edge: rgb(0 0 0 / 0.42);
-          --dh-halo: rgb(255 255 255 / 0.95);
-          --dh-shadow: 0 6px 22px rgb(0 0 0 / 0.3);
-          --dh-accent: #b8168c;
-          --dh-on-accent: #ffffff;
-          --dh-ok: #0a7d40;
-          --dh-on-ok: #ffffff;
-          --dh-warn: #a35400;
-          --dh-on-warn: #ffffff;
-          --dh-danger: #cc1f1f;
-          --dh-on-danger: #ffffff;
-          --dh-danger-soft: rgb(204 31 31 / 0.1);
-          --dh-backdrop: rgb(10 12 16 / 0.55);
-          --dh-term-bg: #ffffff;
           --dh-color-scheme: light;
         }
 

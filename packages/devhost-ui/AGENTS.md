@@ -13,7 +13,7 @@ Local React workspace for the injected `devhost` browser UI that gets embedded i
 - Keep the injected UI source under `src/devtools/` so the Go app and the public website can both consume the same entrypoint.
 - Re-export public entrypoints through `package.json` exports. Consumers should use `@alexgorbatchev/devhost-ui` or `@alexgorbatchev/devhost-ui/main` instead of reaching into source paths.
 - Keep package-owned Storybook and browser tests inside this workspace.
-- `design/index.html` is the visual design reference for the injected UI: a standalone page that mounts every devtools surface in a Shadow DOM over switchable host backgrounds. Match its tokens, layout, and state treatments when changing devtools components, and update it in the same change when the design intentionally diverges.
+- `../design/references/devtools.html` (`just design`) is the visual design reference for the injected UI: a standalone page that mounts every devtools surface in a Shadow DOM over switchable host backgrounds. Match its tokens, layout, and state treatments when changing devtools components, and update it in the same change when the design intentionally diverges.
 
 ## Local gotchas
 
@@ -30,7 +30,7 @@ Local React workspace for the injected `devhost` browser UI that gets embedded i
 ## References
 
 - `package.json`
-- `design/index.html`
+- `../design/references/devtools.html`
 - `src/devtools/AGENTS.md`
 - `src/devtools/features/AGENTS.md`
 - `apps/devhost/scripts/buildDevtoolsBundle.ts`

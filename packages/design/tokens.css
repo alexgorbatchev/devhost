@@ -1,0 +1,60 @@
+/* Generated from packages/design/src/constants.ts by `bun run --cwd packages/design write-tokens`. Do not edit. */
+
+:root,
+:host,
+::backdrop {
+  --dh-radius-sm: 2px;
+  --dh-radius-md: 4px;
+  --dh-mark: #ff4fd8;
+  --dh-mark-ink: #000000;
+  --dh-mark-alt: #1ee3ff;
+  --dh-mark-halo-in: #ffffff;
+  --dh-mark-halo-out: #000000;
+  --dh-surface: #121417;
+  --dh-surface-2: #1c1f24;
+  --dh-surface-3: #282c33;
+  --dh-fg: #eceff3;
+  --dh-fg-muted: #a3abb6;
+  --dh-fg-faint: #6f7783;
+  --dh-line: #353b44;
+  --dh-edge: rgb(255 255 255 / 0.24);
+  --dh-halo: rgb(0 0 0 / 0.92);
+  --dh-shadow: 0 6px 22px rgb(0 0 0 / 0.5);
+  --dh-accent: #ff5cd6;
+  --dh-on-accent: #1a0014;
+  --dh-ok: #3ddc84;
+  --dh-on-ok: #00210f;
+  --dh-warn: #ffb224;
+  --dh-on-warn: #231500;
+  --dh-danger: #ff6159;
+  --dh-on-danger: #1f0000;
+  --dh-danger-soft: rgb(255 97 89 / 0.16);
+  --dh-backdrop: rgb(4 5 7 / 0.7);
+  --dh-term-bg: #0b0c0f;
+}
+
+[data-theme="light"],
+[data-theme="light"] ::backdrop,
+:host([data-theme="light"]) {
+  --dh-surface: #fcfcfd;
+  --dh-surface-2: #eef0f3;
+  --dh-surface-3: #e0e4ea;
+  --dh-fg: #0c0e11;
+  --dh-fg-muted: #4b535e;
+  --dh-fg-faint: #7c8490;
+  --dh-line: #c7ccd4;
+  --dh-edge: rgb(0 0 0 / 0.42);
+  --dh-halo: rgb(255 255 255 / 0.95);
+  --dh-shadow: 0 6px 22px rgb(0 0 0 / 0.3);
+  --dh-accent: #b8168c;
+  --dh-on-accent: #ffffff;
+  --dh-ok: #0a7d40;
+  --dh-on-ok: #ffffff;
+  --dh-warn: #a35400;
+  --dh-on-warn: #ffffff;
+  --dh-danger: #cc1f1f;
+  --dh-on-danger: #ffffff;
+  --dh-danger-soft: rgb(204 31 31 / 0.1);
+  --dh-backdrop: rgb(10 12 16 / 0.55);
+  --dh-term-bg: #ffffff;
+}

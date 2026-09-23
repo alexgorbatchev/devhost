@@ -1,12 +1,14 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* Shared devhost color, radius, and marker tokens (`--dh-*`), the single source for devtools and docs. */
+@import "@alexgorbatchev/devhost-design/tokens.css";
 
 @custom-variant dark (&:where(:host([data-theme="dark"]) *, [data-devhost-story-theme][data-theme="dark"] *));
 
 @source "../../**/*.{ts,tsx}";
 
 /*
- * Visual design reference: packages/devhost-ui/design/index.html
+ * Visual design reference: packages/design/references/devtools.html
  *
  * Every size is in px: `rem` resolves against the HOST document root font size, so rem-based
  * spacing or type would shrink or grow with whatever page devhost is injected into.
@@ -25,8 +27,8 @@
   --text-lg: 13px;
   --text-lg--line-height: 1.4;
 
-  --radius-sm: 2px;
-  --radius-md: 4px;
+  --radius-sm: var(--dh-radius-sm);
+  --radius-md: var(--dh-radius-md);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -111,75 +113,48 @@
   --devhost-duration-fade: 120ms;
   --devhost-color-scheme: dark;
 
-  --mark: #ff4fd8;
-  --mark-foreground: #000000;
-  --mark-alt: #1ee3ff;
-  --mark-halo-inner: #ffffff;
-  --mark-halo-outer: #000000;
+  /* shadcn-compatible names mapped onto the shared `--dh-*` tokens. They resolve on the same element as the tokens,
+     so the light values from tokens.css apply without restating them here. */
+  --mark: var(--dh-mark);
+  --mark-foreground: var(--dh-mark-ink);
+  --mark-alt: var(--dh-mark-alt);
+  --mark-halo-inner: var(--dh-mark-halo-in);
+  --mark-halo-outer: var(--dh-mark-halo-out);
 
-  --background: #121417;
-  --foreground: #eceff3;
-  --card: #121417;
-  --card-foreground: #eceff3;
-  --popover: #121417;
-  --popover-foreground: #eceff3;
-  --primary: #ff5cd6;
-  --primary-foreground: #1a0014;
-  --secondary: #1c1f24;
-  --secondary-foreground: #eceff3;
-  --muted: #1c1f24;
-  --muted-foreground: #a3abb6;
-  --faint: #6f7783;
-  --accent: #282c33;
-  --accent-foreground: #eceff3;
-  --destructive: #ff6159;
-  --destructive-foreground: #1f0000;
-  --success: #3ddc84;
-  --success-foreground: #00210f;
-  --warning: #ffb224;
-  --warning-foreground: #231500;
-  --border: #353b44;
-  --input: #353b44;
-  --ring: #ff5cd6;
-  --edge: rgb(255 255 255 / 0.24);
-  --halo: rgb(0 0 0 / 0.92);
-  --drop-shadow: 0 6px 22px rgb(0 0 0 / 0.5);
-  --backdrop: rgb(4 5 7 / 0.7);
-  --terminal: #0b0c0f;
+  --background: var(--dh-surface);
+  --foreground: var(--dh-fg);
+  --card: var(--dh-surface);
+  --card-foreground: var(--dh-fg);
+  --popover: var(--dh-surface);
+  --popover-foreground: var(--dh-fg);
+  --primary: var(--dh-accent);
+  --primary-foreground: var(--dh-on-accent);
+  --secondary: var(--dh-surface-2);
+  --secondary-foreground: var(--dh-fg);
+  --muted: var(--dh-surface-2);
+  --muted-foreground: var(--dh-fg-muted);
+  --faint: var(--dh-fg-faint);
+  --accent: var(--dh-surface-3);
+  --accent-foreground: var(--dh-fg);
+  --destructive: var(--dh-danger);
+  --destructive-foreground: var(--dh-on-danger);
+  --success: var(--dh-ok);
+  --success-foreground: var(--dh-on-ok);
+  --warning: var(--dh-warn);
+  --warning-foreground: var(--dh-on-warn);
+  --border: var(--dh-line);
+  --input: var(--dh-line);
+  --ring: var(--dh-accent);
+  --edge: var(--dh-edge);
+  --halo: var(--dh-halo);
+  --drop-shadow: var(--dh-shadow);
+  --backdrop: var(--dh-backdrop);
+  --terminal: var(--dh-term-bg);
 }
 
 :host([data-theme="light"]),
 [data-devhost-story-theme][data-theme="light"] {
   --devhost-color-scheme: light;
-  --background: #fcfcfd;
-  --foreground: #0c0e11;
-  --card: #fcfcfd;
-  --card-foreground: #0c0e11;
-  --popover: #fcfcfd;
-  --popover-foreground: #0c0e11;
-  --primary: #b8168c;
-  --primary-foreground: #ffffff;
-  --secondary: #eef0f3;
-  --secondary-foreground: #0c0e11;
-  --muted: #eef0f3;
-  --muted-foreground: #4b535e;
-  --faint: #7c8490;
-  --accent: #e0e4ea;
-  --accent-foreground: #0c0e11;
-  --destructive: #cc1f1f;
-  --destructive-foreground: #ffffff;
-  --success: #0a7d40;
-  --success-foreground: #ffffff;
-  --warning: #a35400;
-  --warning-foreground: #ffffff;
-  --border: #c7ccd4;
-  --input: #c7ccd4;
-  --ring: #b8168c;
-  --edge: rgb(0 0 0 / 0.42);
-  --halo: rgb(255 255 255 / 0.95);
-  --drop-shadow: 0 6px 22px rgb(0 0 0 / 0.3);
-  --backdrop: rgb(10 12 16 / 0.55);
-  --terminal: #ffffff;
 }
 
 /*
