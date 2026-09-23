@@ -839,10 +839,7 @@ func TestStartStackStopsDevtoolsServersDuringCleanup(t *testing.T) {
 		DependsOn: []string{},
 		Env: map[string]string{
 			"GO_WANT_HELPER_PROCESS": "1",
-			"DEVHOST_HELPER_MODE":    "record-start-serve-and-exit",
-			"START_TRACE_PATH":       filepath.Join(t.TempDir(), "start.txt"),
-			"START_TRACE_VALUE":      "web-start",
-			"EXIT_DELAY_MS":          "50",
+			"DEVHOST_HELPER_MODE":    "serve-until-health-probe-and-exit",
 		},
 		Health:     ResolvedHealthConfig{Host: stringPointer("127.0.0.1"), Interval: 50, Kind: "tcp", Port: intPointer(servicePort), Retries: 0, Timeout: 5000},
 		Host:       stringPointer("cleanup-devtools.localhost"),
@@ -1981,6 +1978,8 @@ func TestServiceHelperProcess(t *testing.T) {
 		runRecordStartServeAndExitHelper()
 	case "record-start-and-wait":
 		runRecordStartAndWaitHelper()
+	case "serve-until-health-probe-and-exit":
+		runServeUntilHealthProbeAndExitHelper()
 	case "route-aware-http-server":
 		runRouteAwareHTTPServerHelper()
 	case "spawn-child-server-and-wait":
@@ -2227,6 +2226,24 @@ func runRecordStartServeAndExitHelper() {
 	}()
 	time.Sleep(time.Duration(delayMilliseconds) * time.Millisecond)
 	_ = server.Close()
+	os.Exit(0)
+}
+
+// runServeUntilHealthProbeAndExitHelper exits cleanly right after the first TCP connection, which is devhost's
+// health probe. Exiting on that handshake instead of a timer guarantees the service passes its health check first,
+// however slowly the helper or the probe gets scheduled.
+func runServeUntilHealthProbeAndExitHelper() {
+	port, _ := strconv.Atoi(os.Getenv("PORT"))
+	listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	if err != nil {
+		os.Exit(1)
+	}
+	connection, err := listener.Accept()
+	if err != nil {
+		os.Exit(1)
+	}
+	_ = connection.Close()
+	_ = listener.Close()
 	os.Exit(0)
 }
 
