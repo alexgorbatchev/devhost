@@ -25,7 +25,7 @@ const meta: Meta<typeof Alert> = {
             <AlertTitle>Payment failed</AlertTitle>
             <AlertDescription>Check the payment method and try again.</AlertDescription>
             <AlertAction>
-              <Button variant="secondary">Retry</Button>
+              <Button>Retry</Button>
             </AlertAction>
           </Alert>
         </div>

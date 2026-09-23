@@ -16,4 +16,6 @@ export const DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME: string = "__DEVHOST_INJECTED_
 export const DEVTOOLS_HOST_ID: string = "devhost-devtools-host";
 export const DEVTOOLS_ROOT_ID: string = "devhost-services-panel";
 export const DEVTOOLS_ROOT_ATTRIBUTE_NAME: string = "data-devhost-devtools";
+export const DEVTOOLS_FONT_FAMILY: string = "devhost JetBrains Mono";
 export const maximumRetainedLogEntries: number = 512;
+export const DEFAULT_RESTART_SERVICES_SHORTCUT: string = "alt+ctrl+r";

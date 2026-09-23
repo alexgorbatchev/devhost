@@ -17,7 +17,7 @@ describe("readTerminalSessionPrimaryAction", () => {
       label: "Close",
       testId: "TerminalSessionPanel--close",
       title: "Close terminal session",
-      variant: "secondary",
+      variant: "default",
     });
   });
 });

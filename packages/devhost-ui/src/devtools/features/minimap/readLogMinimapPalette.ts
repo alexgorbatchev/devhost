@@ -5,16 +5,18 @@ export interface ILogMinimapPalette {
   stdout: string;
 }
 
+// Canvas marks are painted from JavaScript, so these mirror the `--faint` (stdout) and `--destructive` (stderr)
+// tokens in shared/devtools.css.
 export function readLogMinimapPalette(colorScheme: DevtoolsColorScheme): ILogMinimapPalette {
   if (colorScheme === "dark") {
     return {
-      stderr: "hsl(359 67.785% 70.784% / 90%)",
-      stdout: "hsl(227 70.149% 86.863% / 14%)",
+      stderr: "#ff6159",
+      stdout: "#6f7783",
     };
   }
 
   return {
-    stderr: "hsl(347 86.667% 44.118% / 88%)",
-    stdout: "hsl(234 16.022% 35.49% / 16%)",
+    stderr: "#cc1f1f",
+    stdout: "#7c8490",
   };
 }

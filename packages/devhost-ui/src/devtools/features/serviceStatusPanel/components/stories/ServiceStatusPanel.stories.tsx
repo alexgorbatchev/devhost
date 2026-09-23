@@ -1,24 +1,27 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor } from "storybook/test";
 
 import { DEVTOOLS_CONTROL_TOKEN_HEADER_NAME, RESTART_SERVICE_PATH } from "../../../../shared";
+import { DevtoolsToolbar } from "../../../../shared/components/DevtoolsToolbar";
 import { readInjectedDevtoolsConfig } from "../../../../shared/readInjectedDevtoolsConfig";
-import { StoryContainer } from "@/devtools/shared/components/stories/helpers";
-import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
+import {
+  readDevtoolsStoryShadowCanvas,
+  renderInDevtoolsStoryShadowRoot,
+  StorybookThemeProvider,
+} from "@/devtools/shared/components/stories/helpers";
 import { ServiceStatusPanel } from "../ServiceStatusPanel";
 
 const meta: Meta<typeof ServiceStatusPanel> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/serviceStatusPanel/components/ServiceStatusPanel",
   component: ServiceStatusPanel,
-  render: (args, context) => {
-    return (
+  render: (args, context) =>
+    renderInDevtoolsStoryShadowRoot(
       <StorybookThemeProvider globals={context.globals}>
-        <StoryContainer align="right">
+        <DevtoolsToolbar collapsedIndicator={null} isMinimapVisible={false} position="bottom-right" stackName="demo">
           <ServiceStatusPanel {...args} />
-        </StoryContainer>
-      </StorybookThemeProvider>
-    );
-  },
+        </DevtoolsToolbar>
+      </StorybookThemeProvider>,
+    ),
 };
 
 export default meta;
@@ -34,12 +37,16 @@ export const Default: Story = {
     ],
   },
   play: async ({ canvasElement }): Promise<void> => {
-    const canvas = within(canvasElement);
-    const panel = await canvas.findByTestId("ServiceStatusPanel");
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
 
-    await expect(panel).toBeInTheDocument();
-    await expect(canvas.getByText("worker")).toBeInTheDocument();
-    await expect(canvas.getByText("api")).toBeInTheDocument();
+    await userEvent.click(await shadowCanvas.findByRole("button", { name: "Services: 1 of 2 up" }));
+
+    const panel = await shadowCanvas.findByRole("region", { name: "Services" });
+
+    await waitFor(() => expect(panel).toBeVisible());
+    await expect(shadowCanvas.getByText("external")).toBeVisible();
+    await expect(shadowCanvas.queryByText("managed")).toBeNull();
+    await expect(shadowCanvas.queryByRole("button", { name: "Restart worker" })).toBeNull();
 
     const restartFetch = fn(async () => new Response(null, { status: 204 }));
     const originalFetch = globalThis.fetch;
@@ -47,11 +54,7 @@ export const Default: Story = {
     Reflect.set(globalThis, "fetch", restartFetch as unknown as typeof fetch);
 
     try {
-      await userEvent.hover(panel);
-      await userEvent.click(canvas.getByRole("button", { name: "Restart api" }));
-      await expect(canvas.queryByRole("button", { name: "Restart worker" })).not.toBeInTheDocument();
-      await expect(canvas.getByText("managed")).toBeInTheDocument();
-      await expect(canvas.getByText("external")).toBeInTheDocument();
+      await userEvent.click(shadowCanvas.getByRole("button", { name: "Restart api" }));
 
       await expect(restartFetch).toHaveBeenCalledWith(
         RESTART_SERVICE_PATH,
@@ -70,19 +73,36 @@ export const Default: Story = {
   },
 };
 
-export const HealthyServices: Story = {
+export const ChangedService: Story = {
   args: {
     errorMessage: null,
     services: [
-      { managed: true, name: "frontend", status: true },
-      { managed: true, name: "backend", status: true },
+      { dirty: true, managed: true, name: "api", status: true },
+      { managed: true, name: "web", status: true },
     ],
   },
   play: async ({ canvasElement }): Promise<void> => {
-    const canvas = within(canvasElement);
-    await expect(canvas.getByTestId("ServiceStatusPanel")).toBeInTheDocument();
-    await expect(canvas.getByText("frontend")).toBeInTheDocument();
-    await expect(canvas.getByText("backend")).toBeInTheDocument();
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const trigger = await shadowCanvas.findByRole("button", { name: "Services: 2 of 2 up, 1 changed" });
+
+    await expect(trigger).toHaveTextContent("1 changed");
+    await userEvent.click(trigger);
+    await waitFor(() => expect(shadowCanvas.getByRole("region", { name: "Services" })).toBeVisible());
+    await expect(shadowCanvas.getByRole("button", { name: "Restart api" })).toBeEnabled();
+  },
+};
+
+export const RestartingService: Story = {
+  args: {
+    errorMessage: null,
+    services: [{ managed: true, name: "api", restarting: true, status: true }],
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+
+    await userEvent.click(await shadowCanvas.findByRole("button", { name: "Services: 1 of 1 up" }));
+    await waitFor(() => expect(shadowCanvas.getByRole("region", { name: "Services" })).toBeVisible());
+    await expect(shadowCanvas.getByRole("button", { name: "Restart api" })).toBeDisabled();
   },
 };
 
@@ -95,24 +115,30 @@ export const WithLinks: Story = {
     ],
   },
   play: async ({ canvasElement }): Promise<void> => {
-    const canvas = within(canvasElement);
-    await expect(canvas.getByTestId("ServiceStatusPanel")).toBeInTheDocument();
-    const webLink = canvas.getByRole("link", { name: "web" });
-    await expect(webLink).toBeInTheDocument();
-    await expect(webLink).toHaveAttribute("href", "http://localhost:3000");
-    await expect(canvas.queryByRole("button", { name: "Restart docs" })).not.toBeInTheDocument();
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+
+    await userEvent.click(await shadowCanvas.findByRole("button", { name: "Services: 2 of 2 up" }));
+    await waitFor(() => expect(shadowCanvas.getByRole("region", { name: "Services" })).toBeVisible());
+    await expect(shadowCanvas.getByRole("link", { name: "web" })).toHaveAttribute("href", "http://localhost:3000");
+    await expect(shadowCanvas.queryByRole("button", { name: "Restart docs" })).toBeNull();
   },
 };
 
 export const WithErrorMessage: Story = {
   args: {
     errorMessage: "Connection to devhost lost",
+    onSetErrorMessage: fn(),
     services: [],
   },
-  play: async ({ canvasElement }): Promise<void> => {
-    const canvas = within(canvasElement);
-    await expect(canvas.getByTestId("ServiceStatusPanel")).toBeInTheDocument();
-    await expect(canvas.getByText("Connection to devhost lost")).toBeInTheDocument();
+  play: async ({ args, canvasElement }): Promise<void> => {
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+
+    await userEvent.click(await shadowCanvas.findByRole("button", { name: "Services: 0 of 0 up, error" }));
+    await waitFor(() => expect(shadowCanvas.getByRole("region", { name: "Services" })).toBeVisible());
+    await expect(shadowCanvas.getByRole("alert")).toHaveTextContent("Connection to devhost lost");
+
+    await userEvent.click(shadowCanvas.getByRole("button", { name: "Dismiss" }));
+    await expect(args.onSetErrorMessage).toHaveBeenCalledWith(null);
   },
 };
 
@@ -122,8 +148,9 @@ export const Empty: Story = {
     services: [],
   },
   play: async ({ canvasElement }): Promise<void> => {
-    const canvas = within(canvasElement);
-    // Should render nothing
-    await expect(canvas.queryByTestId("ServiceStatusPanel")).not.toBeInTheDocument();
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+
+    await expect(await shadowCanvas.findByRole("toolbar", { name: "devhost" })).toBeVisible();
+    await expect(shadowCanvas.queryByRole("button", { name: /^Services/ })).toBeNull();
   },
 };

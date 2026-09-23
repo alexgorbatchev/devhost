@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, within } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 
 import { InlineNotice } from "../InlineNotice";
 import { devtoolsStoryShadowRootHostTestId, readShadowRoot, renderInDevtoolsStoryShadowRoot } from "./helpers";
@@ -21,7 +21,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const Default: Story = {
+export const Default: Story = {
   args: {
     action: <button type="button">Retry</button>,
     children: "Service health is unavailable.",
@@ -36,7 +36,19 @@ const Default: Story = {
   },
 };
 
-export { Default as InlineNotice };
+export const Dismissible: Story = {
+  args: {
+    children: "Queue connection lost. Retrying…",
+    onDismiss: fn(),
+    tone: "danger",
+  },
+  play: async ({ args, canvasElement }): Promise<void> => {
+    const shadowCanvas = readInlineNoticeShadowCanvas(canvasElement);
+
+    await userEvent.click(shadowCanvas.getByRole("button", { name: "Dismiss" }));
+    await expect(args.onDismiss).toHaveBeenCalledTimes(1);
+  },
+};
 
 function readInlineNoticeShadowCanvas(canvasElement: HTMLElement): ReturnType<typeof within> {
   const canvas = within(canvasElement);

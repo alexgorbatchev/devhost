@@ -2,40 +2,50 @@ import type { JSX } from "react";
 import { useMemo } from "react";
 
 import { Badge } from "../../../../components/ui/Badge";
-import { CardContent, CardHeader, CardTitle } from "../../../../components/ui/Card";
+import { Card, CardHeader, CardTitle } from "../../../../components/ui/Card";
 
-import { FloatingPanel, InlineNotice } from "../../../shared";
+import { InlineNotice } from "../../../shared";
 import type { ComponentSourceMenuItem } from "../types";
 
 interface IComponentSourceMenuProps {
+  errorMessage?: string;
+  isOpen: boolean;
   items: ComponentSourceMenuItem[];
+  onItemClick: (index: number) => void;
   position: {
     x: number;
     y: number;
   };
   title: string;
-  errorMessage?: string;
-  onItemClick: (index: number) => void;
 }
 
-const menuWidthInPixels: number = 420;
-const menuViewportPaddingInPixels: number = 16;
-const menuPerItemHeightInPixels: number = 88;
+const menuWidthInPixels: number = 400;
+const menuViewportPaddingInPixels: number = 10;
+const menuHeaderHeightInPixels: number = 26;
+const menuErrorHeightInPixels: number = 28;
+const menuPerItemHeightInPixels: number = 44;
 
+/**
+ * Chooser shown on Alt + right-click listing the component chain under the pointer. It stays mounted while it
+ * fades out; the owner keeps passing the last menu contents with `isOpen` false.
+ */
 export function ComponentSourceMenu({
+  errorMessage,
+  isOpen,
   items,
+  onItemClick,
   position,
   title,
-  errorMessage,
-  onItemClick,
 }: IComponentSourceMenuProps): JSX.Element | null {
   const menuPosition = useMemo(() => {
     const maxLeft: number = Math.max(
       menuViewportPaddingInPixels,
       window.innerWidth - menuWidthInPixels - menuViewportPaddingInPixels,
     );
-    const errorMessageHeightInPixels: number = errorMessage === undefined ? 0 : 56;
-    const estimatedMenuHeight: number = 64 + errorMessageHeightInPixels + items.length * menuPerItemHeightInPixels;
+    const estimatedMenuHeight: number =
+      menuHeaderHeightInPixels +
+      (errorMessage === undefined ? 0 : menuErrorHeightInPixels) +
+      items.length * menuPerItemHeightInPixels;
     const maxTop: number = Math.max(
       menuViewportPaddingInPixels,
       window.innerHeight - estimatedMenuHeight - menuViewportPaddingInPixels,
@@ -52,53 +62,51 @@ export function ComponentSourceMenu({
   }
 
   return (
-    <div
-      className="fixed z-[var(--devhost-z-floating-raised)] min-w-[420px] max-w-[420px]"
+    <section
+      aria-label={title}
+      className="devhost-fade pointer-events-auto fixed z-(--devhost-z-popover) w-100 max-w-[calc(100vw-20px)]"
       data-component-source-menu=""
       data-testid="ComponentSourceMenu"
+      hidden={!isOpen}
+      inert={!isOpen}
       style={{ left: menuPosition.left, top: menuPosition.top }}
     >
-      <FloatingPanel level="raised" position="fixed">
+      <Card>
         <CardHeader>
-          <div className="gap-1 flex flex-col w-full">
-            <CardTitle>{title}</CardTitle>
-            {errorMessage !== undefined ? <InlineNotice tone="danger">{errorMessage}</InlineNotice> : null}
-          </div>
+          <CardTitle>{title}</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-2">
-            {items.map((item: ComponentSourceMenuItem, index: number) => {
-              return (
-                <button
-                  key={item.key}
-                  className="grid w-full justify-stretch gap-1 rounded-md border border-border bg-muted p-2 text-left text-sm text-foreground transition-colors hover:border-primary hover:bg-accent focus-visible:border-primary focus-visible:bg-accent focus-visible:outline-none"
-                  data-testid="ComponentSourceMenu--item"
-                  type="button"
-                  onClick={(): void => {
-                    onItemClick(index);
-                  }}
-                >
-                  <strong>{`<${item.displayName}>`}</strong>
-                  {item.props.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5">
-                      {item.props.map((prop) => {
-                        return (
-                          <Badge key={`${item.key}-${prop.name}`} title={prop.title} variant="secondary">
-                            {prop.name}
-                          </Badge>
-                        );
-                      })}
-                    </div>
-                  ) : null}
-                  <span className="truncate text-xs text-muted-foreground" title={item.sourceLabel}>
-                    {item.sourceLabel}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </CardContent>
-      </FloatingPanel>
-    </div>
+        {errorMessage !== undefined ? <InlineNotice tone="danger">{errorMessage}</InlineNotice> : null}
+        <div className="max-h-[min(60vh,480px)] overflow-auto">
+          {items.map((item: ComponentSourceMenuItem, index: number) => {
+            return (
+              <button
+                key={item.key}
+                className="grid w-full gap-0.5 px-2 py-1 text-left not-first:border-t hover:bg-secondary hover:shadow-[inset_2px_0_0_var(--primary)] focus-visible:bg-secondary focus-visible:shadow-[inset_2px_0_0_var(--primary)] focus-visible:outline-none"
+                data-testid="ComponentSourceMenu--item"
+                type="button"
+                onClick={(): void => {
+                  onItemClick(index);
+                }}
+              >
+                <span className="flex flex-wrap items-center gap-1">
+                  <span className="text-lg font-bold">{`<${item.displayName}>`}</span>
+                  {item.props.map((prop) => {
+                    return (
+                      <Badge key={`${item.key}-${prop.name}`} title={prop.title}>
+                        {prop.name}
+                      </Badge>
+                    );
+                  })}
+                </span>
+                {/* Truncates from the left so the file name and line stay visible for long paths. */}
+                <span className="truncate text-sm text-muted-foreground [direction:rtl]" title={item.sourceLabel}>
+                  {item.sourceLabel}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+    </section>
   );
 }

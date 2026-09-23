@@ -86,25 +86,32 @@ async function createAnnotationDraft({ canvas, page }: IAnnotationComposerStoryQ
   const targetButton = canvas.getByTestId("host-action-target");
 
   await userEvent.keyboard("{Alt>}");
+  await expect(await canvas.findByRole("status", { name: "Annotation selection" })).toHaveTextContent(
+    "Annotateclick to mark elementsEsc",
+  );
   await userEvent.hover(targetButton);
 
   await waitFor(() => {
     expect(page.getByTestId("AnnotationComposer--hover-highlight")).toBeInTheDocument();
+    // Synthetic hover events carry no pointer coordinates, so only the presence of the label is asserted here.
+    expect(page.getByTestId("AnnotationComposer--hover-label")).toBeVisible();
   });
 
   await userEvent.click(targetButton);
 
   await waitFor(() => {
-    expect(canvas.getByTestId("AnnotationComposer--popup")).toBeInTheDocument();
+    expect(canvas.getByRole("dialog", { name: "Annotation draft" })).toBeVisible();
     expect(page.getAllByTestId("AnnotationComposer--marker")).toHaveLength(1);
+    expect(canvas.queryByRole("status", { name: "Annotation selection" })).toBeNull();
   });
 
+  await expect(canvas.getByRole("dialog", { name: "Annotation draft" })).toHaveTextContent("1 marker");
   await userEvent.keyboard("{/Alt}");
 }
 
 async function expectDraftToReset({ canvas, page }: IAnnotationComposerStoryQueries): Promise<void> {
   await waitFor(() => {
-    expect(canvas.queryByTestId("AnnotationComposer--popup")).not.toBeInTheDocument();
+    expect(canvas.queryByRole("dialog", { name: "Annotation draft" })).toBeNull();
     expect(page.queryAllByTestId("AnnotationComposer--marker")).toHaveLength(0);
   });
 }
@@ -219,6 +226,28 @@ export const WithSubmitError: Story = {
 
     await userEvent.keyboard("{Escape}");
     await expectDraftToReset({ canvas, page });
+  },
+};
+
+export const CancelledWithCloseButton: Story = {
+  args: {
+    annotationActions: [agentAction],
+    onSubmit: fn(async () => {
+      return { success: true };
+    }),
+    onSelectedActionIdChange: fn(),
+    selectedActionId: "agent",
+    stackName: "story-stack",
+  },
+  play: async ({ args, canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+
+    await createAnnotationDraft({ canvas, page });
+    await userEvent.click(canvas.getByRole("button", { name: "Cancel annotation" }));
+
+    await expectDraftToReset({ canvas, page });
+    await expect(args.onSubmit).not.toHaveBeenCalled();
   },
 };
 

@@ -13,11 +13,18 @@ Its vital that when devtools are injected into the user's web application, CSS t
 - Do not add CSS modules, document-global CSS, or host-page global CSS for devtools UI styling.
 - Exception: `@xterm/xterm` may load its required stylesheet and class names for the interactive terminal feature, but that stylesheet must be mounted inside the devtools Shadow DOM root rather than `document.head`.
 - Do not rely on inherited app CSS for layout, typography, spacing, colors, borders, or shadows.
-- Direct JSX `style={...}` props are allowed only for dynamic geometry that cannot be represented statically, such as measured top/left/width/height values or xterm tray dimensions. Static visual values belong in Tailwind classes or semantic CSS variables.
+- `:host` is reset with `all: initial !important`, `display: contents`, and `pointer-events: none`. Host-page rules that match the host element still beat plain `:host` rules and inherit into the shadow tree; only an inner-context `!important` wins. Base typography therefore lives on `:host > *`, not `:host`, and every interactive surface must opt back in with `pointer-events-auto`.
+- Keep every theme size in px (`--spacing`, `--text-*`, radii). `rem` resolves against the host document's root font size, so rem-based utilities rescale with whatever page devhost is injected into.
+- Browsers also ignore `@property` inside a shadow root, which leaves Tailwind v4's `--tw-*` variables undefined there, so border, ring, shadow, and transform utilities silently compute to nothing in production. `shared/devtoolsStyles.ts` restates every registered property's initial value in `@layer properties` when installing into a shadow root. Storybook's preview also loads `devtools.css` into the main document, which registers the properties globally and masks this; the `ShadowRootWithoutDocumentStyles` App story covers it inside a clean iframe.
+- Browsers ignore `@font-face` inside a shadow root. The devtools font is registered with `document.fonts` by `shared/registerDevtoolsFonts.ts` under the namespaced `devhost JetBrains Mono` family; this is the documented document-level escape hatch for fonts. The Go bundle inlines the `.woff2` files through the plugin in `apps/devhost/scripts/buildDevtoolsBundle.ts`.
+- Toolbar panels use the Popover API (`ToolbarPopover`) plus CSS anchor positioning, so they live in the top layer, light-dismiss natively, and only one is open at a time. Other floating surfaces stay mounted and toggle `hidden`/`inert`; both use the shared `devhost-fade` utility for enter/exit transitions, and `useRetainedValue` keeps their last content while fading out.
+- Direct JSX `style={...}` props are allowed only for dynamic geometry that cannot be represented statically, such as measured top/left/width/height values. Static visual values belong in Tailwind classes or semantic CSS variables.
 - Any intentional document-level styling escape hatch must be narrowly justified at the use site because it breaks isolation guarantees.
 - The injected devtools UI must remain visually isolated from the host page.
 
 ## Theme tokens & Visual Design
+
+- **Design reference:** `packages/devhost-ui/design/index.html` (`just design`) is the visual source of truth for tokens, layout, and state treatments.
 
 - **Compact Layout & Sizing:** The UI styling must be compact. This means no large spaces and no large rounded corners. Keep spacing values tight and border-radius options small.
 - **Fixed Monospace Typography:** Fixed monospace fonts must be used throughout the devtools interface (e.g., Maple Mono Normal NF, JetBrainsMono, or other system monospaces). Font sizes must not be too small even though the layout is compact, ensuring high readability.

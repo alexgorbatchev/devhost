@@ -44,8 +44,8 @@ export const Default: Story = {
 
     await expect(markerList).toBeInTheDocument();
     await expect(markerItems).toHaveLength(2);
-    await expect(markerItems[0]).toHaveTextContent('#1 button "Save changes"');
-    await expect(markerItems[1]).toHaveTextContent('#2 input "Email address"');
+    await expect(markerItems[0]).toHaveTextContent('1button "Save changes"');
+    await expect(markerItems[1]).toHaveTextContent('2input "Email address"');
   },
 };
 
@@ -66,7 +66,7 @@ export const SingleItem: Story = {
 
     await expect(markerList).toBeInTheDocument();
     await expect(markerItems).toHaveLength(1);
-    await expect(markerItems[0]).toHaveTextContent("#1 div.container");
+    await expect(markerItems[0]).toHaveTextContent("1div.container");
   },
 };
 

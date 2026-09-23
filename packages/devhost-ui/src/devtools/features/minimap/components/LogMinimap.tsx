@@ -8,7 +8,7 @@ import type { ServiceLogEntry } from "../../../shared/types";
 import type { ILogAnsiFragment } from "../parseAnsiLogLine";
 import { createLogMinimapMarksFromVisibleRows, type ILogMinimapMark } from "../createLogMinimapMarks";
 import { createLogPreviewWindow } from "../createLogPreviewWindow";
-import { createVisibleLogRows, type IVisibleLogRow } from "../createVisibleLogRows";
+import { createVisibleLogRows, LOG_MINIMAP_MARK_INSET_IN_PIXELS, type IVisibleLogRow } from "../createVisibleLogRows";
 import { readLogMinimapPalette, type ILogMinimapPalette } from "../readLogMinimapPalette";
 import { resolveHoveredLogRowIndex } from "../resolveHoveredLogRowIndex";
 import { resolveLogPreviewLayout } from "../resolveLogPreviewLayout";
@@ -76,7 +76,7 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
       for (const mark of marks) {
         context.fillStyle = mark.stream === "stderr" ? stderrColorReference.current : stdoutColorReference.current;
         context.fillRect(
-          0,
+          Math.round(LOG_MINIMAP_MARK_INSET_IN_PIXELS * devicePixelRatio),
           Math.round(mark.top * devicePixelRatio),
           Math.round(mark.width * devicePixelRatio),
           Math.max(1, Math.round(mark.height * devicePixelRatio)),
@@ -142,13 +142,10 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
     <aside
       aria-hidden="true"
       className={cn(
-        "pointer-events-auto fixed inset-y-0 right-0 z-[var(--devhost-z-floating)] box-border w-[100px] border-l border-border bg-muted p-1 transition-all duration-150 ease-in-out",
-        props.isHovered ? "opacity-100" : "opacity-50",
+        "pointer-events-auto fixed inset-y-0 right-0 z-(--devhost-z-overlay) box-border border-l border-edge bg-card shadow-[-1px_0_0_var(--halo)] transition-[width] duration-(--devhost-duration-fade) ease-out",
+        props.isHovered ? "w-24" : "w-3",
       )}
       data-testid="LogMinimap"
-      style={{
-        transform: props.isHovered ? "translateX(0)" : "translateX(80px)",
-      }}
       onMouseEnter={(): void => {
         props.onHoveredChange(true);
       }}
@@ -166,46 +163,55 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
       <canvas ref={canvasReference} className="block size-full pointer-events-none" data-testid="LogMinimap--canvas" />
       {props.isHovered && previewOverlay !== null ? (
         <div
-          className="pointer-events-none absolute inset-x-1 bg-primary/10 shadow-[inset_0_0_0_1px_var(--ring)]"
+          className="pointer-events-none absolute inset-x-0 bg-primary/20 shadow-[inset_0_0_0_1px_var(--primary)]"
           data-testid="LogMinimap--preview-overlay"
           style={{ height: previewOverlay.height, top: previewOverlay.top }}
         />
       ) : null}
       {props.isHovered && previewLayout !== null && hoveredRowIndex !== null && previewRows.length > 0 ? (
         <div
-          className="pointer-events-none absolute right-[calc(100%+8px)] z-[var(--devhost-z-floating)] grid w-[min(80ch,calc(100vw-164px))] gap-2 rounded-md border border-border bg-background p-2 text-xs leading-none text-foreground shadow-sm"
+          className="pointer-events-none absolute right-[calc(100%+6px)] z-(--devhost-z-overlay) w-[min(80ch,calc(100vw-140px))] overflow-hidden rounded-md border border-edge bg-card py-1 text-md text-card-foreground shadow-frame"
           data-testid="LogMinimap--preview"
           style={{ top: previewLayout.top }}
         >
-          <ol className="grid list-none gap-0 p-0">
-            {previewRows.map((row: IVisibleLogRow) => {
+          <ol className="m-0 grid list-none gap-0 p-0">
+            {previewRows.map((row: IVisibleLogRow, rowIndex: number) => {
+              const isFocusedRow: boolean = previewLayout.range.startIndex + rowIndex === hoveredRowIndex;
+
               return (
                 <li
                   key={`${row.id}-${row.top}`}
                   className={cn(
-                    "h-6 overflow-hidden whitespace-pre px-2 leading-6",
-                    row.stream === "stderr" ? "bg-destructive/10 text-destructive" : "text-foreground",
+                    "flex h-4.5 gap-2 overflow-hidden px-2 leading-4.5 whitespace-pre",
+                    row.stream === "stderr" &&
+                      "bg-destructive/15 text-destructive shadow-[inset_2px_0_0_var(--destructive)]",
+                    isFocusedRow && (row.stream === "stderr" ? "bg-destructive/30" : "bg-accent"),
                   )}
                 >
-                  {row.fragments.length === 0
-                    ? row.text
-                    : row.fragments.map((fragment: ILogAnsiFragment, fragmentIndex: number) => {
-                        return (
-                          <span
-                            key={`${row.id}-${row.top}-${fragmentIndex}`}
-                            className={cn(
-                              fragment.isBold ? "font-semibold" : null,
-                              fragment.isDim ? "opacity-70" : null,
-                              fragment.isItalic ? "italic" : null,
-                              fragment.isStrikethrough ? "line-through" : null,
-                              fragment.isUnderline ? "underline" : null,
-                            )}
-                            style={resolveAnsiFragmentStyle(fragment)}
-                          >
-                            {fragment.text}
-                          </span>
-                        );
-                      })}
+                  <span className="w-[7ch] shrink-0 truncate text-faint" data-testid="LogMinimap--preview-service">
+                    {row.serviceName}
+                  </span>
+                  <span className="min-w-0" data-testid="LogMinimap--preview-line">
+                    {row.fragments.length === 0
+                      ? row.text
+                      : row.fragments.map((fragment: ILogAnsiFragment, fragmentIndex: number) => {
+                          return (
+                            <span
+                              key={`${row.id}-${row.top}-${fragmentIndex}`}
+                              className={cn(
+                                fragment.isBold ? "font-semibold" : null,
+                                fragment.isDim ? "opacity-70" : null,
+                                fragment.isItalic ? "italic" : null,
+                                fragment.isStrikethrough ? "line-through" : null,
+                                fragment.isUnderline ? "underline" : null,
+                              )}
+                              style={resolveAnsiFragmentStyle(fragment)}
+                            >
+                              {fragment.text}
+                            </span>
+                          );
+                        })}
+                  </span>
                 </li>
               );
             })}
@@ -216,8 +222,8 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
   );
 }
 
-const logPreviewPadding: number = 8;
-const logPreviewRowHeight: number = 24;
+const logPreviewPadding: number = 4;
+const logPreviewRowHeight: number = 18;
 const logPreviewViewportPadding: number = 10;
 
 function resolveAnsiFragmentStyle(fragment: ILogAnsiFragment): CSSProperties | undefined {

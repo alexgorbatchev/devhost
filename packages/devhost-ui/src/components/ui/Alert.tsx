@@ -3,14 +3,14 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "../../lib/utils";
 
+// Errors are a solid strip rather than tinted text so they read on any theme and any host background.
 const alertVariants = cva(
-  "group/alert relative grid w-full gap-0.5 rounded-md border px-2.5 py-2 text-left text-sm has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-4",
+  "flex w-full items-center gap-1.5 px-2 py-1 text-left text-md [&>svg]:size-3.5 [&>svg]:shrink-0 [&>svg]:text-current",
   {
     variants: {
       variant: {
-        default: "bg-card text-card-foreground",
-        destructive:
-          "bg-card text-destructive *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current",
+        default: "border-y border-border bg-secondary text-foreground",
+        destructive: "bg-destructive font-semibold text-destructive-foreground",
       },
     },
     defaultVariants: {
@@ -34,17 +34,7 @@ export function Alert({ className, variant, ...props }: AlertProps) {
 }
 
 export function AlertTitle({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="alert-title"
-      data-testid="AlertTitle"
-      className={cn(
-        "font-medium group-has-[>svg]/alert:col-start-2 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground",
-        className,
-      )}
-      {...props}
-    />
-  );
+  return <div data-slot="alert-title" data-testid="AlertTitle" className={cn("font-bold", className)} {...props} />;
 }
 
 export function AlertDescription({ className, ...props }: React.ComponentProps<"div">) {
@@ -52,10 +42,7 @@ export function AlertDescription({ className, ...props }: React.ComponentProps<"
     <div
       data-slot="alert-description"
       data-testid="AlertDescription"
-      className={cn(
-        "text-sm text-balance text-muted-foreground md:text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4",
-        className,
-      )}
+      className={cn("min-w-0 flex-1", className)}
       {...props}
     />
   );
@@ -66,7 +53,7 @@ export function AlertAction({ className, ...props }: React.ComponentProps<"div">
     <div
       data-slot="alert-action"
       data-testid="AlertAction"
-      className={cn("absolute top-2 right-2", className)}
+      className={cn("flex shrink-0 items-center gap-1", className)}
       {...props}
     />
   );

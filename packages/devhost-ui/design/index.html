@@ -2420,7 +2420,8 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
         }
         const visible = logEntries.slice(-Math.floor(canvas.clientHeight / MM_ROW));
         const hovered = Math.min(visible.length - 1, Math.max(0, Math.floor(state.minimapHoverY / MM_ROW)));
-        const span = 14;
+        // Odd so the hovered line sits in the middle, matching the app (7 rows of context on each side).
+        const span = 15;
         const start = Math.max(0, Math.min(visible.length - span, hovered - Math.floor(span / 2)));
         const rows = visible.slice(start, start + span);
         const previewHeight = span * 18 + 10;

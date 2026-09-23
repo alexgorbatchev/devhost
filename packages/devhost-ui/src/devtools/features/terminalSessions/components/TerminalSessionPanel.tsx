@@ -1,10 +1,13 @@
-import type { CSSProperties, JSX } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { JSX } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
-import { CircleCheckIcon, CircleXIcon } from "lucide-react";
+import { CodeIcon, MinusIcon, TerminalIcon, XIcon } from "lucide-react";
 
-import { Button, useDevtoolsColorScheme } from "../../../shared";
+import { Badge } from "../../../../components/ui/Badge";
+import { cn } from "../../../../lib/utils";
+
+import { Button, InlineNotice, useDevtoolsColorScheme } from "../../../shared";
 import { createDevtoolsWebSocketUrl } from "../../../shared/createDevtoolsWebSocketUrl";
 import {
   DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME,
@@ -13,56 +16,44 @@ import {
   XTERM_STYLESHEET_PATH,
 } from "../../../shared/constants";
 import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
-import { readTerminalTheme, type ITerminalTheme } from "../readTerminalTheme";
 import { readTerminalSessionPrimaryAction } from "../readTerminalSessionPrimaryAction";
-import { resolveTerminalPanelLayout, type IPanelSize } from "../resolveTerminalPanelLayout";
+import { readTerminalSessionStatusLabel } from "../readTerminalSessionStatusLabel";
+import { readTerminalTheme, type ITerminalTheme } from "../readTerminalTheme";
 import { shouldAutoRemoveTerminalSession } from "../shouldAutoRemoveTerminalSession";
 import type {
   TerminalSession,
-  ITerminalSessionSummary,
   TerminalSessionClientMessage,
   TerminalSessionServerMessage,
+  TerminalSessionStatus,
 } from "../types";
 
 interface ITerminalSessionPanelProps {
   isExpanded: boolean;
-  onExpand: () => void;
   onMinimize: () => void;
   onRemove: () => void;
+  onStatusChange: (status: TerminalSessionStatus, errorMessage: string | null) => void;
   session: TerminalSession;
 }
 
-interface ITrayTooltipLayout {
-  bottom: number;
-  left: number;
-  width: number;
-}
+type StatusBadgeVariant = "default" | "destructive" | "primary" | "success";
 
-interface IDimensionStyle extends CSSProperties {
-  height: number | string;
-  width: number | string;
-}
-
-interface IExpandedPanelStyle extends IDimensionStyle {
-  left: string;
-  top: string;
-  transform: string;
-}
-
-interface ITrayShellStyle extends IDimensionStyle {
-  opacity: number;
-}
-
-interface ITrayTooltipStyle extends CSSProperties {
-  bottom?: number;
-  left?: number;
-  width?: number;
-}
+const statusBadgeVariants: Record<TerminalSessionStatus, StatusBadgeVariant> = {
+  connecting: "default",
+  disconnected: "destructive",
+  error: "destructive",
+  exited: "success",
+  idle: "success",
+  running: "primary",
+  working: "primary",
+};
 
 const normalClosureCode: number = 1000;
-const trayScale: number = 0.32;
 const xtermStylesheetId: string = "devhost-xterm-stylesheet";
 
+/**
+ * One terminal session window. It stays mounted (hidden) while minimized so the websocket and xterm buffer
+ * persist and the session keeps reporting status to its toolbar chip; expanding only reveals it.
+ */
 export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Element {
   const { controlToken } = readInjectedDevtoolsConfig();
   const colorScheme = useDevtoolsColorScheme();
@@ -71,43 +62,26 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
   }, [colorScheme]);
   const fitAddonReference = useRef<FitAddon | null>(null);
   const hasExitedReference = useRef<boolean>(false);
+  const isExpandedReference = useRef<boolean>(props.isExpanded);
+  const onStatusChangeReference = useRef(props.onStatusChange);
   const resizeAnimationFrameReference = useRef<number | null>(null);
   const terminalContainerReference = useRef<HTMLDivElement | null>(null);
   const terminalReference = useRef<Terminal | null>(null);
-  const terminalViewportReference = useRef<HTMLDivElement | null>(null);
   const terminalThemeReference = useRef<ITerminalTheme>(terminalTheme);
-  const trayShellReference = useRef<HTMLElement | null>(null);
+  const terminalViewportReference = useRef<HTMLDivElement | null>(null);
   const websocketReference = useRef<WebSocket | null>(null);
-  const isExpandedReference = useRef<boolean>(props.isExpanded);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [hasExited, setHasExited] = useState<boolean>(false);
-  const [isTrayHoverVisible, setIsTrayHoverVisible] = useState<boolean>(false);
-  const [isTrayMounted, setIsTrayMounted] = useState<boolean>(false);
-  const [trayTooltipLayout, setTrayTooltipLayout] = useState<ITrayTooltipLayout | null>(null);
-  const [viewportSize, setViewportSize] = useState<IPanelSize>(() => {
-    return {
-      height: window.innerHeight,
-      width: window.innerWidth,
-    };
-  });
-  const [statusText, setStatusText] = useState<string>("Connecting…");
-  const onRemove = props.onRemove;
-  const session: TerminalSession = props.session;
+  const { onRemove, session } = props;
+  const hasExited: boolean = session.status === "exited";
+  const isFullscreen: boolean = session.behavior.isFullscreenExpanded;
+
+  terminalThemeReference.current = terminalTheme;
+  isExpandedReference.current = props.isExpanded;
+  onStatusChangeReference.current = props.onStatusChange;
+
   const discardSession = useCallback((): void => {
     terminateSession(websocketReference.current);
     onRemove();
   }, [onRemove]);
-
-  terminalThemeReference.current = terminalTheme;
-  isExpandedReference.current = props.isExpanded;
-  const terminalPanelLayout = resolveTerminalPanelLayout(
-    props.session.behavior,
-    viewportSize.width,
-    viewportSize.height,
-  );
-  const activePanelSize: IPanelSize = props.isExpanded
-    ? terminalPanelLayout.expandedPanelSize
-    : terminalPanelLayout.trayPanelSize;
 
   const scheduleTerminalResize = useCallback((): void => {
     const fitAddon: FitAddon | null = fitAddonReference.current;
@@ -129,55 +103,11 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
   }, []);
 
   useEffect(() => {
-    const handleWindowResize = (): void => {
-      setViewportSize({
-        height: window.innerHeight,
-        width: window.innerWidth,
-      });
-    };
-
-    window.addEventListener("resize", handleWindowResize);
-
-    return () => {
-      window.removeEventListener("resize", handleWindowResize);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (props.isExpanded) {
-      setIsTrayMounted(false);
-      return;
-    }
-
-    let animationFrameId: number = 0;
-
-    setIsTrayMounted(false);
-    animationFrameId = window.requestAnimationFrame((): void => {
-      setIsTrayMounted(true);
-    });
-
-    return () => {
-      window.cancelAnimationFrame(animationFrameId);
-    };
-  }, [props.isExpanded, props.session.sessionId]);
-
-  const updateTrayTooltipLayout = useCallback((): void => {
-    const trayShell: HTMLElement | null = trayShellReference.current;
-
-    if (trayShell === null) {
-      return;
-    }
-
-    const trayShellBounds: DOMRect = trayShell.getBoundingClientRect();
-
-    setTrayTooltipLayout(resolveTrayTooltipLayout(trayShellBounds, window.innerWidth, window.innerHeight));
-  }, []);
-
-  useEffect(() => {
     if (!props.isExpanded) {
       return;
     }
 
+    // Document-level escape hatch: an expanded terminal owns scrolling, so the host page must not scroll beneath it.
     const { body, documentElement } = document;
     const previousBodyOverflow: string = body.style.overflow;
     const previousDocumentOverflow: string = documentElement.style.overflow;
@@ -192,29 +122,13 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
   }, [props.isExpanded]);
 
   useEffect(() => {
-    if (!isTrayHoverVisible || props.isExpanded) {
-      return;
-    }
-
-    const handleWindowResize = (): void => {
-      updateTrayTooltipLayout();
-    };
-
-    window.addEventListener("resize", handleWindowResize);
-
-    return () => {
-      window.removeEventListener("resize", handleWindowResize);
-    };
-  }, [isTrayHoverVisible, props.isExpanded, updateTrayTooltipLayout]);
-
-  useEffect(() => {
     const terminalContainer: HTMLDivElement | null = terminalContainerReference.current;
     const terminalViewport: HTMLDivElement | null = terminalViewportReference.current;
+    const reportStatus = (status: TerminalSessionStatus, errorMessage: string | null = null): void => {
+      onStatusChangeReference.current(status, errorMessage);
+    };
 
-    setErrorMessage(null);
-    setHasExited(false);
     hasExitedReference.current = false;
-    setStatusText("Connecting…");
 
     if (terminalContainer === null || terminalViewport === null) {
       return;
@@ -237,7 +151,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
     const fitAddon = new FitAddon();
     const websocketUrl: URL = new URL(createDevtoolsWebSocketUrl(TERMINAL_SESSION_WEBSOCKET_PATH, window.location));
     const websocket = new WebSocket(
-      appendTerminalSessionParameters(websocketUrl, props.session.sessionId, controlToken).toString(),
+      appendTerminalSessionParameters(websocketUrl, session.sessionId, controlToken).toString(),
     );
 
     fitAddonReference.current = fitAddon;
@@ -251,13 +165,15 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
     });
     const oscListener = terminal.parser.registerOscHandler(1337, (data: string): boolean => {
       if (data === "SetAgentStatus=working") {
-        setStatusText("Working…");
+        reportStatus("working");
         return true;
       }
+
       if (data === "SetAgentStatus=finished") {
-        setStatusText("Finished");
+        reportStatus("idle");
         return true;
       }
+
       return false;
     });
     const dataListener = terminal.onData((data: string): void => {
@@ -267,8 +183,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
       });
     });
     const handleOpen = (): void => {
-      setErrorMessage(null);
-      setStatusText("Connected");
+      reportStatus("running");
       scheduleTerminalResize();
 
       if (isExpandedReference.current) {
@@ -277,19 +192,17 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
     };
     const handleClose = (): void => {
       if (!hasExitedReference.current) {
-        setStatusText("Terminal session disconnected");
+        reportStatus("disconnected");
       }
-
-      setIsTrayHoverVisible(false);
     };
     const handleError = (): void => {
-      setErrorMessage("The terminal websocket failed.");
+      reportStatus("error", "The terminal websocket failed.");
     };
     const handleMessage = (event: MessageEvent<string>): void => {
       const message: TerminalSessionServerMessage | null = parseTerminalSessionServerMessage(event.data);
 
       if (message === null) {
-        setErrorMessage("Received an invalid terminal message.");
+        reportStatus("error", "Received an invalid terminal message.");
         return;
       }
 
@@ -300,12 +213,11 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
 
       if (message.type === "exit") {
         hasExitedReference.current = true;
-        setHasExited(true);
-        setStatusText(createExitStatusText(message.exitCode, message.signalCode));
+        reportStatus("exited");
         return;
       }
 
-      setErrorMessage(message.message);
+      reportStatus("error", message.message);
     };
 
     websocket.addEventListener("open", handleOpen);
@@ -338,14 +250,12 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
       terminalReference.current = null;
       websocketReference.current = null;
     };
-  }, [controlToken, props.session.sessionId, scheduleTerminalResize]);
+  }, [controlToken, scheduleTerminalResize, session.sessionId]);
 
   useEffect(() => {
-    const fitAddon: FitAddon | null = fitAddonReference.current;
     const terminal: Terminal | null = terminalReference.current;
-    const websocket: WebSocket | null = websocketReference.current;
 
-    if (fitAddon === null || terminal === null || websocket === null) {
+    if (terminal === null) {
       return;
     }
 
@@ -358,18 +268,10 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
       terminal.focus();
     } else {
       terminal.blur();
-      setIsTrayHoverVisible(false);
     }
 
     scheduleTerminalResize();
-  }, [
-    activePanelSize.height,
-    activePanelSize.width,
-    hasExited,
-    props.isExpanded,
-    scheduleTerminalResize,
-    terminalTheme,
-  ]);
+  }, [hasExited, props.isExpanded, scheduleTerminalResize, terminalTheme]);
 
   useEffect(() => {
     if (!shouldAutoRemoveTerminalSession(session, hasExited)) {
@@ -380,222 +282,73 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
   }, [hasExited, onRemove, session]);
 
   const primaryAction = readTerminalSessionPrimaryAction(hasExited);
-  const sessionSummary: ITerminalSessionSummary = props.session.summary;
-  const isFullscreenExpanded: boolean = terminalPanelLayout.isFullscreenExpanded && props.isExpanded;
-  const chromeStyle: IDimensionStyle = {
-    height: activePanelSize.height,
-    width: activePanelSize.width,
-  };
-  const expandedPanelStyle: IExpandedPanelStyle = readExpandedPanelStyle(
-    activePanelSize,
-    terminalPanelLayout.isFullscreenExpanded,
-  );
-  const trayScaledContentStyle: IDimensionStyle = {
-    height: terminalPanelLayout.trayPanelSize.height,
-    transform: `scale(${trayScale})`,
-    transformOrigin: "bottom left",
-    width: terminalPanelLayout.trayPanelSize.width,
-  };
-  const trayShellStyle: ITrayShellStyle = {
-    height: terminalPanelLayout.trayPanelSize.height * trayScale,
-    opacity: isTrayMounted ? 1 : 0,
-    width: isTrayMounted ? terminalPanelLayout.trayPanelSize.width * trayScale : 0,
-  };
-  const trayTooltipStyle: ITrayTooltipStyle =
-    trayTooltipLayout === null
-      ? { display: "none" }
-      : {
-          bottom: trayTooltipLayout.bottom,
-          left: trayTooltipLayout.left,
-          width: trayTooltipLayout.width,
-        };
-
-  const panelContent: JSX.Element = (
-    <div
-      className={[
-        "box-border grid grid-rows-[auto_auto_1fr] gap-2.5 bg-background p-2.5 text-foreground",
-        isFullscreenExpanded ? "rounded-none border-0 shadow-none" : "rounded-md border border-border shadow-lg",
-      ].join(" ")}
-      style={chromeStyle}
-    >
-      <header className="flex items-start justify-between gap-2.5" data-testid="TerminalSessionPanel--header">
-        <div className="grid">
-          <strong>{sessionSummary.terminalTitle}</strong>
-          <span
-            className={
-              errorMessage !== null
-                ? "text-xs leading-normal text-destructive"
-                : "text-xs leading-normal text-muted-foreground"
-            }
-          >
-            {errorMessage ?? statusText}
-          </span>
-        </div>
-        {props.isExpanded ? (
-          <div className="flex gap-2">
-            <Button
-              testId="TerminalSessionPanel--minimize"
-              title={`Minimize ${sessionSummary.terminalTitle}`}
-              variant="secondary"
-              onClick={props.onMinimize}
-            >
-              Minimize
-            </Button>
-            <Button
-              testId={primaryAction.testId}
-              title={primaryAction.title}
-              variant={primaryAction.variant}
-              onClick={discardSession}
-            >
-              {primaryAction.label}
-            </Button>
-          </div>
-        ) : null}
-      </header>
-      {props.isExpanded ? (
-        props.session.kind === "editor" ? (
-          <section
-            className="flex min-w-0 items-center gap-2.5 rounded-sm border border-primary bg-accent px-2.5 py-2"
-            data-testid="TerminalSessionPanel--summary"
-          >
-            <strong className="flex-none text-base leading-normal">{sessionSummary.headline}</strong>
-            <span className="min-w-0 flex-auto truncate text-xs text-muted-foreground">{sessionSummary.meta[0]}</span>
-          </section>
-        ) : (
-          <section
-            className="grid gap-2 rounded-sm border border-primary bg-accent p-2.5"
-            data-testid="TerminalSessionPanel--summary"
-          >
-            <span className="text-xs uppercase tracking-normal text-muted-foreground">{sessionSummary.eyebrow}</span>
-            <strong className="text-base leading-normal">{sessionSummary.headline}</strong>
-            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-              {sessionSummary.meta.map((entry: string) => {
-                return <span key={entry}>{entry}</span>;
-              })}
-            </div>
-          </section>
-        )
-      ) : null}
-      <div
-        ref={terminalViewportReference}
-        className="min-h-0 overflow-hidden bg-background"
-        data-testid="TerminalSessionPanel--terminal"
-      >
-        <div ref={terminalContainerReference} className="size-full" />
-      </div>
-    </div>
-  );
-
-  if (props.isExpanded) {
-    return (
-      <div className="pointer-events-none fixed inset-0 z-[3]" data-testid="TerminalSessionPanel">
-        <div
-          aria-hidden="true"
-          className="pointer-events-auto fixed inset-0 bg-[rgba(26,27,38,0.76)]"
-          data-testid="TerminalSessionPanel--backdrop"
-        />
-        <section
-          className="pointer-events-auto fixed z-[1]"
-          data-testid="TerminalSessionPanel--content"
-          style={expandedPanelStyle}
-        >
-          {panelContent}
-        </section>
-      </div>
-    );
-  }
 
   return (
-    <section
-      ref={trayShellReference}
-      className={[
-        "pointer-events-auto relative z-[1] flex-none overflow-visible opacity-100",
-        "transition-[width,opacity] duration-200 ease-in-out",
-      ].join(" ")}
-      data-testid="TerminalSessionPanel"
-      style={trayShellStyle}
-      onMouseEnter={(): void => {
-        updateTrayTooltipLayout();
-        setIsTrayHoverVisible(true);
-      }}
-      onMouseLeave={(): void => {
-        setIsTrayHoverVisible(false);
-      }}
-    >
-      <div className="pointer-events-none absolute bottom-0 left-0" style={trayScaledContentStyle}>
-        {panelContent}
-      </div>
-      <button
-        aria-label={`Expand ${sessionSummary.terminalTitle} preview`}
-        className="absolute inset-0 cursor-pointer rounded-md border border-border bg-transparent"
-        data-testid="TerminalSessionPanel--expand"
-        type="button"
-        onBlur={(): void => {
-          setIsTrayHoverVisible(false);
-        }}
-        onClick={props.onExpand}
-        onFocus={(): void => {
-          updateTrayTooltipLayout();
-          setIsTrayHoverVisible(true);
-        }}
+    <div className="contents" data-testid="TerminalSessionPanel">
+      <div
+        aria-hidden="true"
+        className="devhost-fade pointer-events-auto fixed inset-0 z-(--devhost-z-modal) bg-backdrop"
+        data-testid="TerminalSessionPanel--backdrop"
+        hidden={!props.isExpanded || isFullscreen}
+        onClick={props.onMinimize}
+      />
+      <section
+        aria-label={`${session.summary.title} terminal`}
+        className={cn(
+          "devhost-fade pointer-events-auto fixed z-(--devhost-z-modal) grid overflow-hidden bg-card text-card-foreground",
+          session.errorMessage === null ? "grid-rows-[auto_1fr]" : "grid-rows-[auto_auto_1fr]",
+          isFullscreen
+            ? "inset-0"
+            : "top-1/2 left-1/2 h-[min(700px,calc(100vh-32px))] w-[min(1100px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-md border border-edge shadow-frame",
+        )}
+        data-testid="TerminalSessionPanel--content"
+        hidden={!props.isExpanded}
+        inert={!props.isExpanded}
+        role="dialog"
       >
-        <span
-          className={[
-            "absolute inset-x-2 bottom-2 overflow-hidden truncate rounded-md bg-primary/10",
-            "px-2 py-1 text-left text-xs text-foreground",
-          ].join(" ")}
+        <header
+          className="flex h-6.5 min-w-0 items-center gap-1.5 border-b border-border pr-1 pl-2"
+          data-testid="TerminalSessionPanel--header"
         >
-          {errorMessage ?? statusText}
-        </span>
-      </button>
-      {hasExited && !isTrayHoverVisible ? (
+          {session.kind === "editor" ? (
+            <CodeIcon aria-hidden="true" className="size-3.5 shrink-0" />
+          ) : (
+            <TerminalIcon aria-hidden="true" className="size-3.5 shrink-0" />
+          )}
+          <strong className="shrink-0">{session.summary.title}</strong>
+          <span className="min-w-0 flex-1 truncate text-muted-foreground">{session.summary.meta.join(" · ")}</span>
+          <Badge variant={statusBadgeVariants[session.status]}>{readTerminalSessionStatusLabel(session.status)}</Badge>
+          <Button
+            aria-label="Minimize"
+            startEnhancer={<MinusIcon />}
+            testId="TerminalSessionPanel--minimize"
+            title="Minimize to toolbar"
+            onClick={props.onMinimize}
+          />
+          <Button
+            startEnhancer={<XIcon />}
+            testId={primaryAction.testId}
+            title={primaryAction.title}
+            variant={primaryAction.variant}
+            onClick={discardSession}
+          >
+            {primaryAction.label}
+          </Button>
+        </header>
+        {session.errorMessage === null ? null : (
+          <InlineNotice testId="TerminalSessionPanel--error" tone="danger">
+            {session.errorMessage}
+          </InlineNotice>
+        )}
         <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 z-[1] grid place-items-center"
-          data-testid="TerminalSessionPanel--completion-indicator"
+          ref={terminalViewportReference}
+          className="min-h-0 overflow-hidden bg-terminal px-2 py-1.5"
+          data-testid="TerminalSessionPanel--terminal"
         >
-          <span className="block size-6 fill-current text-primary drop-shadow">
-            <CircleCheckIcon />
-          </span>
+          <div ref={terminalContainerReference} className="size-full" />
         </div>
-      ) : null}
-      {hasExited && isTrayHoverVisible ? (
-        <button
-          aria-label="Close terminal session"
-          className={[
-            "absolute inset-0 z-[2] m-auto grid size-6 cursor-pointer appearance-none place-items-center",
-            "border-0 bg-transparent p-0 text-primary transition-colors hover:text-destructive",
-            "focus-visible:text-destructive focus-visible:outline-none",
-          ].join(" ")}
-          data-testid="TerminalSessionPanel--tray-close"
-          title="Close terminal session"
-          type="button"
-          onClick={(event: React.MouseEvent<HTMLButtonElement>): void => {
-            event.stopPropagation();
-            discardSession();
-          }}
-        >
-          <span className="block size-6 fill-current">
-            <CircleXIcon />
-          </span>
-        </button>
-      ) : null}
-      {isTrayHoverVisible && trayTooltipLayout !== null ? (
-        <div
-          className={[
-            "pointer-events-none fixed z-[2] grid gap-1 rounded-md border border-border",
-            "bg-background p-2.5 text-foreground shadow-lg",
-          ].join(" ")}
-          data-testid="TerminalSessionPanel--tooltip"
-          style={trayTooltipStyle}
-        >
-          <strong className="leading-normal text-foreground">{sessionSummary.trayTooltipPrimary}</strong>
-          {sessionSummary.trayTooltipSecondary !== undefined ? (
-            <span className="text-xs leading-normal text-muted-foreground">{sessionSummary.trayTooltipSecondary}</span>
-          ) : null}
-        </div>
-      ) : null}
-    </section>
+      </section>
+    </div>
   );
 }
 
@@ -604,40 +357,6 @@ function appendTerminalSessionParameters(websocketUrl: URL, sessionId: string, c
   websocketUrl.searchParams.set(TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME, sessionId);
 
   return websocketUrl;
-}
-
-function createExitStatusText(_exitCode: number | null, _signalCode: string | null): string {
-  return "Finished";
-}
-
-function readExpandedPanelStyle(panelSize: IPanelSize, isFullscreen: boolean): IExpandedPanelStyle {
-  return {
-    height: panelSize.height,
-    left: isFullscreen ? "0px" : "50%",
-    top: isFullscreen ? "0px" : "50%",
-    transform: isFullscreen ? "none" : "translate(-50%, -50%)",
-    width: panelSize.width,
-  };
-}
-
-function resolveTrayTooltipLayout(
-  trayShellBounds: DOMRect,
-  viewportWidth: number,
-  viewportHeight: number,
-): ITrayTooltipLayout {
-  const viewportPadding: number = 24;
-  const width: number = Math.min(trayShellBounds.width, viewportWidth - viewportPadding * 2);
-  const left: number = Math.max(
-    viewportPadding,
-    Math.min(trayShellBounds.left, viewportWidth - viewportPadding - width),
-  );
-  const bottom: number = viewportHeight - trayShellBounds.top + 8;
-
-  return {
-    bottom,
-    left,
-    width,
-  };
 }
 
 function ensureXtermStylesheet(rootNode: Node): void {

@@ -37,14 +37,12 @@ describe("AnnotationMarkerList", () => {
     expect(listItems).toHaveLength(2);
 
     expect(readMarkerListItem(firstListItem)).toEqual({
-      labelText: ' button "Save changes"',
+      labelText: 'button "Save changes"',
       markerNumber: 1,
-      strongText: "#1",
     });
     expect(readMarkerListItem(secondListItem)).toEqual({
-      labelText: ' input "Email address"',
+      labelText: 'input "Email address"',
       markerNumber: 2,
-      strongText: "#2",
     });
   });
 });
@@ -52,7 +50,6 @@ describe("AnnotationMarkerList", () => {
 interface IRenderedMarkerListItem {
   labelText: string;
   markerNumber: number;
-  strongText: string;
 }
 
 function isVNode(value: ReactNode): value is ReactElement {
@@ -71,27 +68,20 @@ function readChildren(vnode: ReactElement): ReactNode[] {
 function readMarkerListItem(listItem: ReactElement): IRenderedMarkerListItem {
   const listItemChildren = readChildren(listItem);
   const markerPill = listItemChildren[0];
-  const markerText = listItemChildren[1];
+  const markerLabel = listItemChildren[1];
 
   assert(markerPill !== undefined);
-  assert(markerText !== undefined);
+  assert(markerLabel !== undefined);
   assert(isVNode(markerPill));
-  assert(isVNode(markerText));
+  assert(isVNode(markerLabel));
 
-  const markerTextChildren = readChildren(markerText);
-  const markerStrong = markerTextChildren[0];
-  const markerLabelText = readTextValue(markerTextChildren.slice(1));
-
-  assert(markerStrong !== undefined);
-  assert(isVNode(markerStrong));
   const markerPillProps = markerPill.props as IWithChildrenProps;
-  const markerStrongProps = markerStrong.props as IWithChildrenProps;
+  const markerLabelProps = markerLabel.props as IWithChildrenProps;
   assert(typeof markerPillProps.children === "number");
 
   return {
-    labelText: markerLabelText,
+    labelText: readTextValue(markerLabelProps.children),
     markerNumber: markerPillProps.children,
-    strongText: readTextValue(markerStrongProps.children),
   };
 }
 

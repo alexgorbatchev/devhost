@@ -27,7 +27,7 @@ describe("createLogMinimapMarks", () => {
         id: 1,
         stream: "stdout",
         top: 35,
-        width: 13,
+        width: 12,
       },
       {
         entryIndex: 1,
@@ -35,7 +35,7 @@ describe("createLogMinimapMarks", () => {
         id: 2,
         stream: "stderr",
         top: 38,
-        width: 14,
+        width: 98,
       },
     ]);
   });
@@ -81,7 +81,7 @@ describe("createLogMinimapMarks", () => {
         id: 3,
         stream: "stdout",
         top: 0,
-        width: 12,
+        width: 6,
       },
       {
         entryIndex: 3,
@@ -89,7 +89,7 @@ describe("createLogMinimapMarks", () => {
         id: 4,
         stream: "stderr",
         top: 3,
-        width: 12,
+        width: 98,
       },
       {
         entryIndex: 4,
@@ -97,12 +97,12 @@ describe("createLogMinimapMarks", () => {
         id: 5,
         stream: "stdout",
         top: 6,
-        width: 12,
+        width: 5,
       },
     ]);
   });
 
-  test("clips long log lines to a single minimap mark", () => {
+  test("draws stderr marks across the full inset width and clips long lines", () => {
     const entries: ServiceLogEntry[] = [
       {
         id: 1,
@@ -125,7 +125,7 @@ describe("createLogMinimapMarks", () => {
         id: 1,
         stream: "stdout",
         top: 3,
-        width: 12,
+        width: 10,
       },
       {
         entryIndex: 1,
@@ -133,7 +133,7 @@ describe("createLogMinimapMarks", () => {
         id: 2,
         stream: "stderr",
         top: 6,
-        width: 100,
+        width: 98,
       },
     ]);
   });

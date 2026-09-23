@@ -7,7 +7,12 @@ import type { IAnnotationSubmitDetail } from "../../annotationComposer/types";
 import type { ComponentSourceMenuItem } from "../../componentSourceNavigation/types";
 import { appendStartedTerminalSessionIfNeeded } from "../appendStartedTerminalSessionIfNeeded";
 import { createTerminalSession } from "../createTerminalSession";
-import { expandTerminalSession, minimizeTerminalSession, removeTerminalSession } from "../manageTerminalSessions";
+import {
+  expandTerminalSession,
+  minimizeTerminalSession,
+  removeTerminalSession,
+  updateTerminalSessionStatus,
+} from "../manageTerminalSessions";
 import { restoreTerminalSessions } from "../restoreTerminalSessions";
 import type {
   IActiveTerminalSessionSnapshot,
@@ -16,6 +21,7 @@ import type {
   IStartTerminalSessionResponse,
   TerminalSession,
   ITerminalSessionStartResult,
+  TerminalSessionStatus,
 } from "../types";
 
 interface IUseTerminalSessionsResult {
@@ -30,6 +36,7 @@ interface IUseTerminalSessionsResult {
     action: IAnnotationAction,
     targetSessionId?: string,
   ) => Promise<ITerminalSessionStartResult>;
+  updateSessionStatus: (sessionId: string, status: TerminalSessionStatus, errorMessage: string | null) => void;
 }
 
 export function useTerminalSessions(enabled: boolean = true): IUseTerminalSessionsResult {
@@ -62,6 +69,15 @@ export function useTerminalSessions(enabled: boolean = true): IUseTerminalSessio
       return removeTerminalSession(currentSessions, sessionId);
     });
   }, []);
+
+  const updateSessionStatus = useCallback(
+    (sessionId: string, status: TerminalSessionStatus, errorMessage: string | null): void => {
+      setTerminalSessions((currentSessions: TerminalSession[]): TerminalSession[] => {
+        return updateTerminalSessionStatus(currentSessions, sessionId, status, errorMessage);
+      });
+    },
+    [],
+  );
 
   const registerStartedSession = useCallback((sessionId: string, request: StartTerminalSessionRequest): void => {
     setTerminalSessions((currentSessions: TerminalSession[]): TerminalSession[] => {
@@ -166,6 +182,7 @@ export function useTerminalSessions(enabled: boolean = true): IUseTerminalSessio
     removeSession,
     startComponentSourceSession,
     submitAnnotation,
+    updateSessionStatus,
   };
 }
 

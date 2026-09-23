@@ -77,6 +77,62 @@ export const Danger: Story = {
   },
 };
 
+export const Warning: Story = {
+  args: {
+    children: "Restart changed",
+    variant: "warning",
+    onClick: fn(),
+  },
+  play: async ({ args, canvasElement }) => {
+    const shadowCanvas = await getShadowCanvas(canvasElement);
+    const button = shadowCanvas.getByRole("button", { name: "Restart changed" });
+    await userEvent.click(button);
+    await expect(args.onClick).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const Ghost: Story = {
+  args: {
+    children: "Cancel",
+    variant: "ghost",
+    onClick: fn(),
+  },
+  play: async ({ args, canvasElement }) => {
+    const shadowCanvas = await getShadowCanvas(canvasElement);
+    const button = shadowCanvas.getByRole("button", { name: "Cancel" });
+    await userEvent.click(button);
+    await expect(args.onClick).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const Pressed: Story = {
+  args: {
+    "aria-pressed": true,
+    children: "Query",
+    onClick: fn(),
+  },
+  play: async ({ args, canvasElement }) => {
+    const shadowCanvas = await getShadowCanvas(canvasElement);
+    const button = shadowCanvas.getByRole("button", { name: "Query", pressed: true });
+    await userEvent.click(button);
+    await expect(args.onClick).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const IconOnly: Story = {
+  args: {
+    "aria-label": "Restart api",
+    startEnhancer: "↻",
+    onClick: fn(),
+  },
+  play: async ({ args, canvasElement }) => {
+    const shadowCanvas = await getShadowCanvas(canvasElement);
+    const button = shadowCanvas.getByRole("button", { name: "Restart api" });
+    await userEvent.click(button);
+    await expect(args.onClick).toHaveBeenCalledTimes(1);
+  },
+};
+
 export const Disabled: Story = {
   args: {
     children: "Disabled Button",

@@ -6,15 +6,20 @@ import { HighlightOverlay } from "../../index";
 import { StoryContainer } from "./helpers";
 import { StorybookThemeProvider } from "./helpers";
 
-function HighlightOnlyScene(): JSX.Element {
+interface IHighlightOnlySceneProps {
+  appearance?: "hover" | "selected";
+  label?: string;
+}
+
+function HighlightOnlyScene({ appearance, label }: IHighlightOnlySceneProps): JSX.Element {
   const [targetElement, setTargetElement] = useState<HTMLButtonElement | null>(null);
   const highlights = useMemo(() => {
     if (targetElement === null) {
       return [];
     }
 
-    return [{ id: "highlight-only", readRectangle: () => targetElement.getBoundingClientRect() }];
-  }, [targetElement]);
+    return [{ id: "highlight-only", label, readRectangle: () => targetElement.getBoundingClientRect() }];
+  }, [label, targetElement]);
 
   return (
     <StoryContainer align="center">
@@ -36,7 +41,7 @@ function HighlightOnlyScene(): JSX.Element {
         >
           highlight only target
         </button>
-        <HighlightOverlay highlights={highlights} />
+        <HighlightOverlay appearance={appearance} highlights={highlights} />
       </div>
     </StoryContainer>
   );
@@ -130,10 +135,35 @@ export const HighlightOnly: Story = {
     const targetRectangle = target.getBoundingClientRect();
     const highlightRectangle = page.getByTestId("HighlightOverlay--highlight").getBoundingClientRect();
 
-    expect(Math.abs(highlightRectangle.x - (targetRectangle.x - 2))).toBeLessThanOrEqual(1);
-    expect(Math.abs(highlightRectangle.y - (targetRectangle.y - 1))).toBeLessThanOrEqual(1);
-    expect(Math.abs(highlightRectangle.width - (targetRectangle.width + 4))).toBeLessThanOrEqual(1);
-    expect(Math.abs(highlightRectangle.height - (targetRectangle.height + 2))).toBeLessThanOrEqual(1);
+    // The ring sits 3px outside the target on every side so the two-tone outline never covers target content.
+    expect(Math.abs(highlightRectangle.x - (targetRectangle.x - 3))).toBeLessThanOrEqual(1);
+    expect(Math.abs(highlightRectangle.y - (targetRectangle.y - 3))).toBeLessThanOrEqual(1);
+    expect(Math.abs(highlightRectangle.width - (targetRectangle.width + 6))).toBeLessThanOrEqual(1);
+    expect(Math.abs(highlightRectangle.height - (targetRectangle.height + 6))).toBeLessThanOrEqual(1);
+    expect(page.getByTestId("HighlightOverlay--highlight")).toHaveAttribute("data-appearance", "selected");
+  },
+};
+
+export const HoverWithLabel: Story = {
+  render: (_args, context) => {
+    return (
+      <StorybookThemeProvider globals={context.globals}>
+        <HighlightOnlyScene appearance="hover" label='button "highlight only target"' />
+      </StorybookThemeProvider>
+    );
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const page = within(canvasElement.ownerDocument.body);
+
+    await waitFor(() => {
+      expect(page.getByTestId("HighlightOverlay--label")).toHaveTextContent('button "highlight only target"');
+    });
+
+    const highlight = page.getByTestId("HighlightOverlay--highlight");
+    const label = page.getByTestId("HighlightOverlay--label");
+
+    expect(highlight).toHaveAttribute("data-appearance", "hover");
+    expect(label.getBoundingClientRect().bottom).toBeLessThanOrEqual(highlight.getBoundingClientRect().top);
   },
 };
 

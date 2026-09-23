@@ -28,7 +28,7 @@ export async function buildDevtoolsBundle(): Promise<void> {
     entrypoints: [devtoolsEntrypointPath],
     format: "esm",
     minify: true,
-    plugins: [createInlineDevtoolsStylesheetPlugin(devtoolsStylesheetText)],
+    plugins: [createInlineDevtoolsStylesheetPlugin(devtoolsStylesheetText), createInlineFontPlugin()],
     splitting: false,
     target: "browser",
     throw: false,
@@ -99,6 +99,24 @@ function createInlineDevtoolsStylesheetPlugin(stylesheetText: string): BunPlugin
       build.onLoad({ filter: /.*/, namespace: "devhost-inline-css" }, () => {
         return {
           contents: `export default ${JSON.stringify(stylesheetText)};`,
+          loader: "js",
+        };
+      });
+    },
+  };
+}
+
+// Fonts ship inside devtools.js as data URLs: the Go server embeds and serves only devtools.js and xterm.css,
+// and Bun's default `file` loader would emit separate font files that nothing serves.
+function createInlineFontPlugin(): BunPlugin {
+  return {
+    name: "devhost-inline-font",
+    setup(build): void {
+      build.onLoad({ filter: /\.woff2$/ }, async ({ path }) => {
+        const fontBase64: string = Buffer.from(await readFile(path)).toString("base64");
+
+        return {
+          contents: `export default ${JSON.stringify(`data:font/woff2;base64,${fontBase64}`)};`,
           loader: "js",
         };
       });

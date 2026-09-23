@@ -3,13 +3,18 @@ import { parseAnsiLogLine, type ILogAnsiFragment } from "./parseAnsiLogLine";
 
 const markGapInPixels: number = 1;
 const markHeightInPixels: number = 2;
-const minimumWidthRatio: number = 0.12;
+const minimumMarkWidthInPixels: number = 2;
+const maximumVisibleCharactersPerMarkWidth: number = 80;
+
+// Marks leave this gap from both strip edges; the canvas draws each mark starting at this x offset.
+export const LOG_MINIMAP_MARK_INSET_IN_PIXELS: number = 1;
 
 export interface IVisibleLogRow {
   entryIndex: number;
   fragments: ILogAnsiFragment[];
   height: number;
   id: number;
+  serviceName: string;
   stream: ServiceLogStream;
   text: string;
   top: number;
@@ -41,10 +46,11 @@ export function createVisibleLogRows(
       fragments: parsedLine.fragments,
       height: markHeightInPixels,
       id: entry.id,
+      serviceName: entry.serviceName,
       stream: entry.stream,
       text: parsedLine.text,
       top: nextTop,
-      width: resolveMarkWidth(parsedLine.text, resolvedViewportWidth),
+      width: resolveMarkWidth(entry.stream, parsedLine.text, resolvedViewportWidth),
     });
     nextTop -= strideInPixels;
   }
@@ -52,11 +58,16 @@ export function createVisibleLogRows(
   return rowsFromBottom.reverse();
 }
 
-function resolveMarkWidth(visibleLineText: string, viewportWidth: number): number {
-  const minimumWidth: number = Math.max(1, Math.round(viewportWidth * minimumWidthRatio));
-  const maximumVisibleCharactersPerPreviewLine: number = 80;
-  const normalizedLength: number = Math.min(visibleLineText.length, maximumVisibleCharactersPerPreviewLine);
-  const scaledWidth: number = Math.round((normalizedLength / maximumVisibleCharactersPerPreviewLine) * viewportWidth);
+// stderr marks span the full inset width so error bursts read as solid bands; stdout marks scale with line length.
+function resolveMarkWidth(stream: ServiceLogStream, visibleLineText: string, viewportWidth: number): number {
+  const insetWidth: number = Math.max(1, viewportWidth - LOG_MINIMAP_MARK_INSET_IN_PIXELS * 2);
 
-  return Math.max(minimumWidth, scaledWidth);
+  if (stream === "stderr") {
+    return insetWidth;
+  }
+
+  const normalizedLength: number = Math.min(visibleLineText.length, maximumVisibleCharactersPerMarkWidth);
+  const scaledWidth: number = Math.round((normalizedLength / maximumVisibleCharactersPerMarkWidth) * insetWidth);
+
+  return Math.min(insetWidth, Math.max(minimumMarkWidthInPixels, scaledWidth));
 }

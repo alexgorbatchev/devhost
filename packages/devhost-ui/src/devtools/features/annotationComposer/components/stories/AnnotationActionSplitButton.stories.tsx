@@ -49,6 +49,7 @@ function StoryHarness({
         actions={actions}
         isActionMenuDisabled={isActionMenuDisabled}
         isRunDisabled={isRunDisabled}
+        runLabel={`Run ${selectedAction.displayName}`}
         selectedAction={selectedAction}
         onActionSelect={(actionId: string): void => {
           setSelectedAction(resolveSelectedAction(actions, actionId));

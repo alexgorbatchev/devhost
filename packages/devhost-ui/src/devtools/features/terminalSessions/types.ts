@@ -8,13 +8,19 @@ export interface ITerminalSessionBehavior {
 }
 
 export interface ITerminalSessionSummary {
-  eyebrow: string;
-  headline: string;
+  chipLabel: string;
   meta: string[];
-  terminalTitle: string;
-  trayTooltipPrimary: string;
-  trayTooltipSecondary?: string;
+  title: string;
 }
+
+/**
+ * Lifecycle of a terminal session as observed by the browser:
+ * - `connecting` until the websocket opens, then `running`.
+ * - `working` / `idle` come from the agent's OSC 1337 `SetAgentStatus` reports (idle = task finished, the agent
+ *   process is still alive and waiting).
+ * - `exited` once the process exits, `disconnected` when the socket closes first, `error` on transport failures.
+ */
+export type TerminalSessionStatus = "connecting" | "disconnected" | "error" | "exited" | "idle" | "running" | "working";
 
 export type EditorTerminalLauncher = "neovim";
 
@@ -66,8 +72,10 @@ export interface ITerminalSessionStartResult {
 
 interface ITerminalSessionBase {
   behavior: ITerminalSessionBehavior;
+  errorMessage: string | null;
   isExpanded: boolean;
   sessionId: string;
+  status: TerminalSessionStatus;
   summary: ITerminalSessionSummary;
 }
 

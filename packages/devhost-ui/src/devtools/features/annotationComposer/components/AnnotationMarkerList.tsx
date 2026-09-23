@@ -13,18 +13,18 @@ interface IAnnotationMarkerListProps {
 export function AnnotationMarkerList(props: IAnnotationMarkerListProps): JSX.Element {
   return (
     <ol
-      className="grid max-h-40 list-none gap-2 overflow-auto p-0"
+      className="m-0 grid max-h-24 list-none gap-0.5 overflow-auto p-0"
       data-devhost-instance-testid={props.testId}
       data-testid="AnnotationMarkerList"
     >
       {props.items.map((item: IAnnotationMarkerListItem) => {
         return (
-          <li key={item.markerNumber} className="grid grid-cols-[auto_1fr] items-center gap-2">
-            <span className="grid size-6 min-w-6 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+          <li key={item.markerNumber} className="flex min-w-0 items-center gap-1.5">
+            <span className="grid h-4 min-w-4 shrink-0 place-items-center rounded-full bg-mark px-[3px] text-sm font-bold text-mark-foreground">
               {item.markerNumber}
             </span>
-            <span className="self-center leading-snug">
-              <strong>#{item.markerNumber}</strong> {item.label}
+            <span className="min-w-0 truncate" title={item.label}>
+              {item.label}
             </span>
           </li>
         );

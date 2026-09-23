@@ -6,6 +6,7 @@ import {
   expandTerminalSession,
   minimizeTerminalSession,
   removeTerminalSession,
+  updateTerminalSessionStatus,
 } from "../manageTerminalSessions";
 import type { TerminalSession } from "../types";
 
@@ -109,6 +110,31 @@ describe("manageTerminalSessions", () => {
         isExpanded: false,
       },
     ]);
+  });
+
+  test("updates the status and error message of only the requested session", () => {
+    expect(
+      updateTerminalSessionStatus(
+        [FIRST_SESSION, SECOND_SESSION],
+        SECOND_SESSION.sessionId,
+        "error",
+        "The terminal websocket failed.",
+      ),
+    ).toEqual([
+      FIRST_SESSION,
+      {
+        ...SECOND_SESSION,
+        errorMessage: "The terminal websocket failed.",
+        status: "error",
+      },
+    ]);
+  });
+
+  test("returns the same collection when a status update changes nothing", () => {
+    const sessions: TerminalSession[] = [FIRST_SESSION, SECOND_SESSION];
+
+    expect(updateTerminalSessionStatus(sessions, FIRST_SESSION.sessionId, "connecting", null)).toBe(sessions);
+    expect(updateTerminalSessionStatus(sessions, "missing-session", "exited", null)).toBe(sessions);
   });
 
   test("removes terminated sessions from the collection", () => {

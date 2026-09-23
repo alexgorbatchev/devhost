@@ -32,9 +32,6 @@ const terminalBehaviorByEditorLauncher: Record<EditorTerminalLauncher, ITerminal
   },
 };
 
-const agentTerminalTitle: string = "Agent terminal";
-const commandTerminalTitle: string = "Annotation command";
-
 const terminalTitleByEditorLauncher: Record<EditorTerminalLauncher, string> = {
   neovim: "Neovim",
 };
@@ -46,9 +43,11 @@ export function createTerminalSession(sessionId: string, request: StartTerminalS
       annotation: request.annotation,
       behavior: agentTerminalBehavior,
       displayName: request.displayName,
+      errorMessage: null,
       isExpanded: agentTerminalBehavior.defaultIsExpanded,
       kind: "agent",
       sessionId,
+      status: "connecting",
       summary: createAgentTerminalSummary(request),
     } satisfies IAgentTerminalSession;
   }
@@ -59,9 +58,11 @@ export function createTerminalSession(sessionId: string, request: StartTerminalS
       annotation: request.annotation,
       behavior: commandTerminalBehavior,
       displayName: request.displayName,
+      errorMessage: null,
       isExpanded: commandTerminalBehavior.defaultIsExpanded,
       kind: "command",
       sessionId,
+      status: "connecting",
       summary: createCommandTerminalSummary(request),
     } satisfies ICommandTerminalSession;
   }
@@ -71,60 +72,50 @@ export function createTerminalSession(sessionId: string, request: StartTerminalS
   return {
     behavior,
     componentName: request.componentName,
+    errorMessage: null,
     isExpanded: behavior.defaultIsExpanded,
     kind: "editor",
     launcher: request.launcher,
     sessionId,
     sourceLabel: request.sourceLabel,
+    status: "connecting",
     summary: createEditorTerminalSummary(request),
   } satisfies IEditorTerminalSession;
 }
 
 function createAgentTerminalSummary(request: IStartAgentTerminalSessionRequest): ITerminalSessionSummary {
   return {
-    eyebrow: request.displayName,
-    headline: "Agent session",
-    meta: [
-      `${request.annotation.markers.length} initial markers`,
-      request.annotation.title,
-      new URL(request.annotation.url).host,
-      new Date(request.annotation.submittedAt).toLocaleString(),
-    ],
-    terminalTitle: agentTerminalTitle,
-    trayTooltipPrimary: "Agent session",
-    trayTooltipSecondary: request.displayName,
+    chipLabel: request.displayName,
+    meta: createAnnotationSummaryMeta(request),
+    title: request.displayName,
   };
 }
 
 function createCommandTerminalSummary(request: IStartCommandTerminalSessionRequest): ITerminalSessionSummary {
   return {
-    eyebrow: request.displayName,
-    headline: "Annotation command",
-    meta: [
-      `${request.annotation.markers.length} initial markers`,
-      request.annotation.title,
-      new URL(request.annotation.url).host,
-      new Date(request.annotation.submittedAt).toLocaleString(),
-    ],
-    terminalTitle: commandTerminalTitle,
-    trayTooltipPrimary: "Annotation command",
-    trayTooltipSecondary: request.displayName,
+    chipLabel: request.displayName,
+    meta: createAnnotationSummaryMeta(request),
+    title: request.displayName,
   };
 }
 
 function createEditorTerminalSummary(request: IStartEditorTerminalSessionRequest): ITerminalSessionSummary {
+  const componentLabel: string = `<${request.componentName}>`;
+
   return {
-    eyebrow: "Component source",
-    headline: `<${request.componentName}>`,
-    meta: [formatRawSourceLocation(request)],
-    terminalTitle: terminalTitleByEditorLauncher[request.launcher],
-    trayTooltipPrimary: `<${request.componentName}>`,
-    trayTooltipSecondary: request.sourceLabel,
+    chipLabel: componentLabel,
+    meta: [componentLabel, request.sourceLabel],
+    title: terminalTitleByEditorLauncher[request.launcher],
   };
 }
 
-function formatRawSourceLocation(request: IStartEditorTerminalSessionRequest): string {
-  const columnSuffix: string = request.source.columnNumber === undefined ? "" : `:${request.source.columnNumber}`;
-
-  return `${request.source.fileName}:${request.source.lineNumber}${columnSuffix}`;
+function createAnnotationSummaryMeta(
+  request: IStartAgentTerminalSessionRequest | IStartCommandTerminalSessionRequest,
+): string[] {
+  return [
+    `${request.annotation.markers.length} initial markers`,
+    request.annotation.title,
+    new URL(request.annotation.url).host,
+    new Date(request.annotation.submittedAt).toLocaleString(),
+  ];
 }

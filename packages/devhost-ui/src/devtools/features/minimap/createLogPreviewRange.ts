@@ -3,7 +3,7 @@ export interface ILogPreviewRange {
   startIndex: number;
 }
 
-const defaultMaximumVisibleRows: number = 21;
+const defaultMaximumVisibleRows: number = 15;
 
 export function createLogPreviewRange(
   totalEntries: number,

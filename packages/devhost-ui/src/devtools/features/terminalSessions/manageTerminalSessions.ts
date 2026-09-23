@@ -1,4 +1,23 @@
-import type { TerminalSession } from "./types";
+import type { TerminalSession, TerminalSessionStatus } from "./types";
+
+export function updateTerminalSessionStatus(
+  currentSessions: TerminalSession[],
+  targetSessionId: string,
+  status: TerminalSessionStatus,
+  errorMessage: string | null,
+): TerminalSession[] {
+  const targetSession: TerminalSession | undefined = currentSessions.find((session: TerminalSession): boolean => {
+    return session.sessionId === targetSessionId;
+  });
+
+  if (targetSession === undefined || (targetSession.status === status && targetSession.errorMessage === errorMessage)) {
+    return currentSessions;
+  }
+
+  return currentSessions.map((session: TerminalSession): TerminalSession => {
+    return session.sessionId === targetSessionId ? { ...session, errorMessage, status } : session;
+  });
+}
 
 export function appendTerminalSession(
   currentSessions: TerminalSession[],
