@@ -8,6 +8,17 @@ bindHost = "0.0.0.0"
 [devtools.shortcuts]
 restartServices = "alt+ctrl+r"
 
+[annotation]
+defaultAction = "fix"
+
+[[annotation.actions]]
+id = "fix"
+label = "Ask Pi"
+kind = "agent"
+
+[annotation.actions.agent]
+adapter = "pi"
+
 [services.storybook]
 primary = true
 command = ["sh", "-c", "exec ./node_modules/.bin/storybook dev --ci --port \"$PORT\""]
