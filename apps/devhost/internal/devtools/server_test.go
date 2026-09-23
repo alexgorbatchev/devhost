@@ -1204,7 +1204,7 @@ func TestControlServerDevAssetsDir(t *testing.T) {
 
 	controlServer, err := StartControlServer(StartControlServerOptions{
 		ComponentEditor: "vscode",
-		DevAssetsDir:   devAssetsDir,
+		DevAssetsDir:    devAssetsDir,
 		FeatureToggles: FeatureToggles{
 			StatusEnabled: true,
 		},

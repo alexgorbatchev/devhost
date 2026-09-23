@@ -633,7 +633,7 @@ func validateService(
 		if !managed {
 			injectPort = false
 		} else {
-		injectPort = true
+			injectPort = true
 		}
 	}
 	if !managed && hasInjectPort {

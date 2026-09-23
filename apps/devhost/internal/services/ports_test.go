@@ -63,7 +63,7 @@ func TestResolveServicePorts(t *testing.T) {
 		}
 	})
 
-		t.Run("preserves explicit health checks fixed ports and configured agents", func(t *testing.T) {
+	t.Run("preserves explicit health checks fixed ports and configured agents", func(t *testing.T) {
 		t.Parallel()
 
 		apiPort := &manifest.PortConfig{Number: 4000}
