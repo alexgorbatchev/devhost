@@ -62,7 +62,7 @@ The queue is owned by the `devhost` control server (`internal/devtools/annotatio
 
 ### Durability and Recovery
 
-Every state transition (enqueue, finish, delete, edit, pause) is written to a JSON file in the `devhost` state directory **before** any action is taken. Persisted queue entries store the action id so recovery resumes the same agent action that originally received the annotation.
+Every state transition (enqueue, finish, delete, edit, pause) is written to a JSON file in the `devhost` state directory **before** any action is taken. Persisted queue entries store the action id and the devtools color scheme so recovery resumes the same agent action, rendered for the same theme, that originally received the annotation. A manual resume request may carry a new `colorScheme` in its body, which replaces the stored one for the current entry.
 If you close your browser or completely restart `devhost`, the server automatically resumes the paused queues and replays the current "head" annotation into a fresh terminal session. It relies on at-least-once replay to ensure pending work is never lost.
 
 ### Automatic Draining via OSC Hooks

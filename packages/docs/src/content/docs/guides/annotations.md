@@ -293,6 +293,14 @@ All built-in adapters integrate terminal OSC sequences to reflect working and id
 - `claude-code` utilizes its `--settings` API mapping commands to its native session and user prompt hooks
 - `opencode` integrates via an inline `--config` plugin listening for `session.status` events
 
+Agent sessions render inside the devtools terminal, so built-in adapters follow the devtools color scheme (`light` or `dark`) instead of guessing from terminal queries:
+
+- `pi` is launched with `--use-theme light` or `--use-theme dark`
+- `claude-code` receives `"theme": "light"` or `"theme": "dark"` in its generated `--settings` file, which overrides the user's own theme for that session
+- `opencode` runs as `opencode run`, which has no interactive theme to set
+
+Queued work keeps the color scheme it was submitted with. Resuming a paused queue relaunches the agent with the color scheme the devtools show at that moment.
+
 Custom annotation agents must emit `OSC 1337;SetAgentStatus=working` when they begin handling an annotation and `OSC 1337;SetAgentStatus=finished` when they are ready for the next queued item. `devhost` accepts either BEL (`\x07`) or ST (`\x1b\\`) OSC terminators.
 
 For the queue internals and server-owned drain model, see [Durable annotation queues](../architecture/annotations/queue/).

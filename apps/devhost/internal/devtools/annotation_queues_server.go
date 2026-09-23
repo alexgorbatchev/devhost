@@ -3,6 +3,7 @@ package devtools
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -86,7 +87,21 @@ func (s *ControlServer) handleAnnotationQueueResume(writer http.ResponseWriter, 
 		return
 	}
 
-	result, err := s.annotationQueueStore.resumeQueue(queueID)
+	// The body is optional: clients that send none keep the color scheme stored on the queue entry.
+	var payload struct {
+		ColorScheme *string `json:"colorScheme"`
+	}
+	if err := json.NewDecoder(request.Body).Decode(&payload); err != nil && !errors.Is(err, io.EOF) {
+		http.Error(writer, "Invalid annotation queue resume payload.", http.StatusBadRequest)
+		return
+	}
+	colorScheme, ok := parseAgentColorScheme(payload.ColorScheme)
+	if !ok {
+		http.Error(writer, "Invalid annotation queue resume payload.", http.StatusBadRequest)
+		return
+	}
+
+	result, err := s.annotationQueueStore.resumeQueue(queueID, colorScheme)
 	if err != nil {
 		writeAnnotationQueueMutationError(writer, err)
 		return

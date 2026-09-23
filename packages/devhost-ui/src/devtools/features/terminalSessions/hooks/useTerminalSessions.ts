@@ -2,10 +2,12 @@ import { useCallback, useEffect, useState } from "react";
 
 import { DEVTOOLS_CONTROL_TOKEN_HEADER_NAME, TERMINAL_SESSION_START_PATH } from "../../../shared/constants";
 import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
+import type { DevtoolsColorScheme } from "../../../shared/DevtoolsColorScheme";
 import type { IAnnotationAction } from "../../../shared/devtoolsConfig";
 import type { IAnnotationSubmitDetail } from "../../annotationComposer/types";
 import type { ComponentSourceMenuItem } from "../../componentSourceNavigation/types";
 import { appendStartedTerminalSessionIfNeeded } from "../appendStartedTerminalSessionIfNeeded";
+import { createAnnotationTerminalSessionRequest } from "../createAnnotationTerminalSessionRequest";
 import { createTerminalSession } from "../createTerminalSession";
 import {
   expandTerminalSession,
@@ -39,7 +41,10 @@ interface IUseTerminalSessionsResult {
   updateSessionStatus: (sessionId: string, status: TerminalSessionStatus, errorMessage: string | null) => void;
 }
 
-export function useTerminalSessions(enabled: boolean = true): IUseTerminalSessionsResult {
+export function useTerminalSessions(
+  colorScheme: DevtoolsColorScheme,
+  enabled: boolean = true,
+): IUseTerminalSessionsResult {
   const { controlToken } = readInjectedDevtoolsConfig();
   const [terminalSessions, setTerminalSessions] = useState<TerminalSession[]>([]);
 
@@ -141,24 +146,11 @@ export function useTerminalSessions(enabled: boolean = true): IUseTerminalSessio
       action: IAnnotationAction,
       targetSessionId?: string,
     ): Promise<ITerminalSessionStartResult> => {
-      if (action.kind === "agent") {
-        return await startSession({
-          actionId: action.id,
-          annotation,
-          displayName: action.displayName,
-          kind: "agent",
-          targetSessionId,
-        });
-      }
-
-      return await startSession({
-        actionId: action.id,
-        annotation,
-        displayName: action.displayName,
-        kind: "command",
-      });
+      return await startSession(
+        createAnnotationTerminalSessionRequest({ action, annotation, colorScheme, targetSessionId }),
+      );
     },
-    [startSession],
+    [colorScheme, startSession],
   );
 
   const startComponentSourceSession = useCallback(
@@ -358,10 +350,15 @@ function isStartTerminalSessionRequest(value: unknown): value is StartTerminalSe
   if (requestKind === "agent") {
     const actionId: unknown = Reflect.get(value, "actionId");
     const annotation: unknown = Reflect.get(value, "annotation");
+    const colorScheme: unknown = Reflect.get(value, "colorScheme");
     const displayName: unknown = Reflect.get(value, "displayName");
     const targetSessionId: unknown = Reflect.get(value, "targetSessionId");
 
     if (targetSessionId !== undefined && typeof targetSessionId !== "string") {
+      return false;
+    }
+
+    if (colorScheme !== undefined && colorScheme !== "light" && colorScheme !== "dark") {
       return false;
     }
 

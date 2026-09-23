@@ -82,9 +82,19 @@ type annotationSubmitDetail struct {
 	URL         string                    `json:"url"`
 }
 
+// agentColorScheme is the devtools color scheme an agent session is launched for, so agent CLIs render for the
+// terminal palette they are shown in. The zero value means unspecified: the agent keeps its own theme setting.
+type agentColorScheme string
+
+const (
+	agentColorSchemeDark  agentColorScheme = "dark"
+	agentColorSchemeLight agentColorScheme = "light"
+)
+
 type terminalSessionRequest struct {
 	ActionID      string                  `json:"actionId,omitempty"`
 	Annotation    *annotationSubmitDetail `json:"annotation,omitempty"`
+	ColorScheme   agentColorScheme        `json:"colorScheme,omitempty"`
 	ComponentName string                  `json:"componentName,omitempty"`
 	Kind          string                  `json:"kind"`
 	Launcher      string                  `json:"launcher,omitempty"`
@@ -165,6 +175,7 @@ type launchedTerminalSession struct {
 type terminalSessionRequestPayload struct {
 	ActionID      *string                 `json:"actionId"`
 	Annotation    *annotationSubmitDetail `json:"annotation"`
+	ColorScheme   *string                 `json:"colorScheme"`
 	ComponentName *string                 `json:"componentName"`
 	Kind          *string                 `json:"kind"`
 	Launcher      *string                 `json:"launcher"`
@@ -196,6 +207,19 @@ type neovimPluginShellIntegrationFiles struct {
 	sitePath     string
 }
 
+// parseAgentColorScheme accepts an omitted value (unspecified) or one of the supported schemes.
+func parseAgentColorScheme(value *string) (agentColorScheme, bool) {
+	if value == nil {
+		return "", true
+	}
+	switch colorScheme := agentColorScheme(*value); colorScheme {
+	case agentColorSchemeDark, agentColorSchemeLight:
+		return colorScheme, true
+	default:
+		return "", false
+	}
+}
+
 func parseTerminalSessionRequest(payload terminalSessionRequestPayload) (terminalSessionRequest, *string, bool) {
 	if payload.Kind == nil {
 		return terminalSessionRequest{}, nil, false
@@ -210,10 +234,15 @@ func parseTerminalSessionRequest(payload terminalSessionRequestPayload) (termina
 		if payload.ActionID != nil {
 			actionID = *payload.ActionID
 		}
+		colorScheme, ok := parseAgentColorScheme(payload.ColorScheme)
+		if !ok {
+			return terminalSessionRequest{}, nil, false
+		}
 		return terminalSessionRequest{
-			ActionID:   actionID,
-			Annotation: payload.Annotation,
-			Kind:       terminalSessionRequestKindAgent,
+			ActionID:    actionID,
+			Annotation:  payload.Annotation,
+			ColorScheme: colorScheme,
+			Kind:        terminalSessionRequestKindAgent,
 		}, payload.TargetSession, isAnnotationSubmitDetail(*payload.Annotation)
 	case terminalSessionRequestKindCommand:
 		if payload.Annotation == nil || payload.ActionID == nil || *payload.ActionID == "" || payload.TargetSession != nil {

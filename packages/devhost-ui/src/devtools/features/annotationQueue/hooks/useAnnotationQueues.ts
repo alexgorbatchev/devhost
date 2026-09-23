@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
+import type { DevtoolsColorScheme } from "../../../shared/DevtoolsColorScheme";
 import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
 import {
   createAnnotationQueuesWebSocketUrl,
@@ -18,7 +19,7 @@ interface IUseAnnotationQueuesResult {
   isQueueResumePending: (queueId: string) => boolean;
   queues: IAnnotationQueueSnapshot[];
   removeEntry: (entryId: string) => Promise<boolean>;
-  resumeQueue: (queueId: string) => Promise<string | null>;
+  resumeQueue: (queueId: string, colorScheme: DevtoolsColorScheme) => Promise<string | null>;
   saveEntry: (entryId: string, comment: string) => Promise<boolean>;
 }
 
@@ -105,7 +106,7 @@ export function useAnnotationQueues(enabled: boolean = true): IUseAnnotationQueu
   );
 
   const resumeQueue = useCallback(
-    async (queueId: string): Promise<string | null> => {
+    async (queueId: string, colorScheme: DevtoolsColorScheme): Promise<string | null> => {
       if (!enabled) {
         return null;
       }
@@ -113,7 +114,7 @@ export function useAnnotationQueues(enabled: boolean = true): IUseAnnotationQueu
       setQueueResumeIds((currentIds: string[]): string[] => appendPendingId(currentIds, queueId));
 
       try {
-        const response = await resumeAnnotationQueue(queueId, fetch, controlToken);
+        const response = await resumeAnnotationQueue(queueId, colorScheme, fetch, controlToken);
 
         setErrorMessage(null);
         return response.sessionId;

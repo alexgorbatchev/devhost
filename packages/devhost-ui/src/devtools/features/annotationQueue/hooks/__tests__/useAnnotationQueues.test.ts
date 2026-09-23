@@ -101,7 +101,7 @@ describe("useAnnotationQueues", () => {
     await updateAnnotationQueueEntry("entry-1", "Updated comment", fetchMock, "secret-token");
     await deleteAnnotationQueueEntry("entry-2", fetchMock, "secret-token");
 
-    await expect(resumeAnnotationQueue("queue-1", fetchMock, "secret-token")).resolves.toEqual({
+    await expect(resumeAnnotationQueue("queue-1", "light", fetchMock, "secret-token")).resolves.toEqual({
       sessionId: "session-2",
       success: true,
     });
@@ -133,7 +133,9 @@ describe("useAnnotationQueues", () => {
     });
     expect(thirdCall[0]).toBe("/__devhost__/annotation-queues/queue-1/resume");
     expect(thirdCall[1]).toEqual({
+      body: JSON.stringify({ colorScheme: "light" }),
       headers: {
+        "content-type": "application/json",
         "x-devhost-control-token": "secret-token",
       },
       method: "POST",

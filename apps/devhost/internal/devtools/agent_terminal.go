@@ -47,7 +47,7 @@ func createTerminalSessionCommand(actions []manifest.ValidatedAnnotationAction, 
 			return nil, fmt.Errorf("Annotation action %s cannot start %s terminal sessions.", action.ID, request.Kind)
 		}
 		if request.Kind == terminalSessionRequestKindAgent {
-			return createAgentTerminalCommand(action, projectRootPath, *request.Annotation, stackName)
+			return createAgentTerminalCommand(action, projectRootPath, *request.Annotation, request.ColorScheme, stackName)
 		}
 		return createCommandAnnotationTerminalCommand(action, projectRootPath, *request.Annotation, stackName)
 	}
@@ -67,10 +67,18 @@ func findAnnotationAction(actions []manifest.ValidatedAnnotationAction, actionID
 	return manifest.ValidatedAnnotationAction{}, false
 }
 
-func createAgentTerminalCommand(action manifest.ValidatedAnnotationAction, projectRootPath string, annotation annotationSubmitDetail, stackName string) (*terminalSessionCommand, error) {
+func createAgentTerminalCommand(action manifest.ValidatedAnnotationAction, projectRootPath string, annotation annotationSubmitDetail, colorScheme agentColorScheme, stackName string) (*terminalSessionCommand, error) {
 	agent := action.Agent
-	prompt := createAnnotationAgentPrompt(annotation)
-	sessionFiles, err := createAgentSessionFiles(annotation, action.ID, action.DisplayName, agent.DisplayName, projectRootPath, prompt, stackName)
+	sessionFiles, err := createAgentSessionFiles(agentSessionFilesOptions{
+		actionID:         action.ID,
+		actionLabel:      action.DisplayName,
+		agentDisplayName: agent.DisplayName,
+		annotation:       annotation,
+		colorScheme:      colorScheme,
+		projectRootPath:  projectRootPath,
+		prompt:           createAnnotationAgentPrompt(annotation),
+		stackName:        stackName,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +89,13 @@ func createAgentTerminalCommand(action manifest.ValidatedAnnotationAction, proje
 
 	switch agent.Kind {
 	case "pi":
-		command = []string{"pi", "-e", sessionFiles.piExtensionFilePath, "@" + sessionFiles.env["DEVHOST_AGENT_PROMPT_FILE"]}
+		command = []string{"pi", "-e", sessionFiles.piExtensionFilePath}
+		if colorScheme != "" {
+			// pi's built-in light and dark themes match the devtools terminal palette; without the flag pi
+			// guesses from terminal queries and falls back to dark.
+			command = append(command, "--use-theme", string(colorScheme))
+		}
+		command = append(command, "@"+sessionFiles.env["DEVHOST_AGENT_PROMPT_FILE"])
 	case "claude-code":
 		command = []string{
 			"claude",
@@ -185,7 +199,20 @@ type agentSessionFiles struct {
 	piExtensionFilePath string
 }
 
-func createAgentSessionFiles(annotation annotationSubmitDetail, actionID string, actionLabel string, agentDisplayName string, projectRootPath string, prompt string, stackName string) (*agentSessionFiles, error) {
+type agentSessionFilesOptions struct {
+	actionID         string
+	actionLabel      string
+	agentDisplayName string
+	annotation       annotationSubmitDetail
+	// colorScheme is written as the Claude Code theme when set; empty leaves the user's own theme in effect.
+	colorScheme     agentColorScheme
+	projectRootPath string
+	prompt          string
+	stackName       string
+}
+
+func createAgentSessionFiles(options agentSessionFilesOptions) (*agentSessionFiles, error) {
+	annotation := options.annotation
 	sessionDirectoryPath, err := os.MkdirTemp("", agentSessionDirectoryPrefix)
 	if err != nil {
 		return nil, fmt.Errorf("create agent session directory: %w", err)
@@ -210,7 +237,7 @@ func createAgentSessionFiles(annotation annotationSubmitDetail, actionID string,
 		cleanup()
 		return nil, fmt.Errorf("write annotation session file: %w", err)
 	}
-	if err := os.WriteFile(promptFilePath, []byte(prompt), 0o600); err != nil {
+	if err := os.WriteFile(promptFilePath, []byte(options.prompt), 0o600); err != nil {
 		cleanup()
 		return nil, fmt.Errorf("write agent prompt file: %w", err)
 	}
@@ -222,6 +249,9 @@ func createAgentSessionFiles(annotation annotationSubmitDetail, actionID string,
 			"Stop":             []map[string]any{{"matcher": "", "hooks": []map[string]string{{"type": "command", "command": "printf '\\x1b]1337;SetAgentStatus=finished\\x07'"}}}},
 			"SessionEnd":       []map[string]any{{"matcher": "", "hooks": []map[string]string{{"type": "command", "command": "printf '\\x1b]1337;SetAgentStatus=finished\\x07'"}}}},
 		},
+	}
+	if options.colorScheme != "" {
+		claudeSettings["theme"] = string(options.colorScheme)
 	}
 	claudeJSON, err := json.MarshalIndent(claudeSettings, "", "  ")
 	if err != nil {
@@ -276,21 +306,21 @@ func createAgentSessionFiles(annotation annotationSubmitDetail, actionID string,
 	return &agentSessionFiles{
 		cleanup: cleanup,
 		env: map[string]string{
-			"DEVHOST_ANNOTATION_ACTION_ID":       actionID,
+			"DEVHOST_ANNOTATION_ACTION_ID":       options.actionID,
 			"DEVHOST_ANNOTATION_ACTION_KIND":     terminalSessionRequestKindAgent,
-			"DEVHOST_ANNOTATION_ACTION_LABEL":    actionLabel,
-			"DEVHOST_ANNOTATION_DISPLAY_NAME":    actionLabel,
+			"DEVHOST_ANNOTATION_ACTION_LABEL":    options.actionLabel,
+			"DEVHOST_ANNOTATION_DISPLAY_NAME":    options.actionLabel,
 			"DEVHOST_ANNOTATION_FILE":            annotationFilePath,
 			"DEVHOST_ANNOTATION_PROMPT_FILE":     promptFilePath,
 			"DEVHOST_ANNOTATION_TRANSPORT":       agentTransportMode,
 			"DEVHOST_AGENT_ANNOTATION_FILE":      annotationFilePath,
 			"DEVHOST_AGENT_CLAUDE_SETTINGS_FILE": claudeSettingsFilePath,
-			"DEVHOST_AGENT_DISPLAY_NAME":         agentDisplayName,
+			"DEVHOST_AGENT_DISPLAY_NAME":         options.agentDisplayName,
 			"DEVHOST_AGENT_OPENCODE_CONFIG_FILE": opencodeConfigFilePath,
 			"DEVHOST_AGENT_PROMPT_FILE":          promptFilePath,
 			"DEVHOST_AGENT_TRANSPORT":            agentTransportMode,
-			"DEVHOST_PROJECT_ROOT":               projectRootPath,
-			"DEVHOST_STACK_NAME":                 stackName,
+			"DEVHOST_PROJECT_ROOT":               options.projectRootPath,
+			"DEVHOST_STACK_NAME":                 options.stackName,
 		},
 		piExtensionFilePath: piExtensionFilePath,
 	}, nil

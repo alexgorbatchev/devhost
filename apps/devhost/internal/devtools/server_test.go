@@ -615,7 +615,7 @@ func TestControlServerAgentAnnotationQueuesLifecycle(t *testing.T) {
 	})
 
 	controlToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(controlServer.Port(), injectedScriptPath))))
-	createRequest, err := http.NewRequest(http.MethodPost, serverURL(controlServer.Port(), terminalSessionsPath), strings.NewReader(`{"annotation":{"comment":"First annotation","markers":[],"stackName":"hello-stack","submittedAt":1,"title":"Example","url":"https://app.localhost/dashboard"},"kind":"agent"}`))
+	createRequest, err := http.NewRequest(http.MethodPost, serverURL(controlServer.Port(), terminalSessionsPath), strings.NewReader(`{"annotation":{"comment":"First annotation","markers":[],"stackName":"hello-stack","submittedAt":1,"title":"Example","url":"https://app.localhost/dashboard"},"colorScheme":"light","kind":"agent"}`))
 	if err != nil {
 		t.Fatalf("NewRequest(first agent) error = %v", err)
 	}
@@ -734,11 +734,27 @@ func TestControlServerAgentAnnotationQueuesLifecycle(t *testing.T) {
 		t.Fatalf("paused snapshot = %q", message)
 	}
 
-	resumeRequest, err := http.NewRequest(http.MethodPost, serverURL(controlServer.Port(), annotationQueuesPath+"/"+listedQueues.Queues[0].QueueID+"/resume"), nil)
+	invalidResumeRequest, err := http.NewRequest(http.MethodPost, serverURL(controlServer.Port(), annotationQueuesPath+"/"+listedQueues.Queues[0].QueueID+"/resume"), strings.NewReader(`{"colorScheme":"sepia"}`))
+	if err != nil {
+		t.Fatalf("NewRequest(invalid resume queue) error = %v", err)
+	}
+	invalidResumeRequest.Header.Set(controlTokenHeaderName, controlToken)
+	invalidResumeRequest.Header.Set("content-type", "application/json")
+	invalidResumeResponse, err := http.DefaultClient.Do(invalidResumeRequest)
+	if err != nil {
+		t.Fatalf("Do(invalid resume queue) error = %v", err)
+	}
+	defer invalidResumeResponse.Body.Close()
+	if invalidResumeResponse.StatusCode != http.StatusBadRequest {
+		t.Fatalf("invalid resume queue status = %d, want 400", invalidResumeResponse.StatusCode)
+	}
+
+	resumeRequest, err := http.NewRequest(http.MethodPost, serverURL(controlServer.Port(), annotationQueuesPath+"/"+listedQueues.Queues[0].QueueID+"/resume"), strings.NewReader(`{"colorScheme":"dark"}`))
 	if err != nil {
 		t.Fatalf("NewRequest(resume queue) error = %v", err)
 	}
 	resumeRequest.Header.Set(controlTokenHeaderName, controlToken)
+	resumeRequest.Header.Set("content-type", "application/json")
 	resumeResponse, err := http.DefaultClient.Do(resumeRequest)
 	if err != nil {
 		t.Fatalf("Do(resume queue) error = %v", err)
@@ -749,6 +765,9 @@ func TestControlServerAgentAnnotationQueuesLifecycle(t *testing.T) {
 	}
 	if len(starter.sessions) != 2 {
 		t.Fatalf("resumed started sessions = %d, want 2", len(starter.sessions))
+	}
+	if len(starter.startedRequests) != 2 || starter.startedRequests[0].ColorScheme != agentColorSchemeLight || starter.startedRequests[1].ColorScheme != agentColorSchemeDark {
+		t.Fatalf("started request color schemes = %#v, want light then dark", starter.startedRequests)
 	}
 }
 
