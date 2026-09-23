@@ -1,0 +1,298 @@
+/*
+ * Starlight chrome (header, search, theme select, sidebar, table of contents, pagination) restyled to the docs design
+ * reference in packages/design/references/docs.html. Selectors target Starlight 0.38 markup; its component styles are
+ * layered, so these unlayered rules take precedence.
+ */
+
+/* Same focus ring as the devtools UI. */
+:focus-visible {
+  outline: 2px solid var(--dh-accent);
+  outline-offset: 1px;
+}
+
+/* ------------------------------------------------------------------
+ * Header controls: devhost-ui `.btn` anatomy at docs control height.
+ * ------------------------------------------------------------------ */
+site-search button[data-open-modal],
+starlight-theme-select select,
+starlight-menu-button button {
+  height: var(--dh-control-h);
+  border: 1px solid var(--dh-line);
+  border-radius: var(--dh-radius-sm);
+  background-color: var(--dh-surface-2);
+  color: var(--dh-fg-muted);
+  font-size: var(--dh-doc-text-sm);
+}
+site-search button[data-open-modal]:hover,
+starlight-theme-select select:hover,
+starlight-menu-button button:hover {
+  border-color: var(--dh-fg-faint);
+  background-color: var(--dh-surface-3);
+  color: var(--dh-fg);
+}
+
+site-search button[data-open-modal] {
+  justify-content: center;
+  width: var(--dh-control-h);
+  padding: 0;
+}
+site-search button > kbd {
+  height: 1rem;
+  padding-inline: 0.25rem;
+  border: 1px solid currentColor;
+  border-radius: var(--dh-radius-sm);
+  background: transparent;
+  font-size: var(--dh-doc-text-xs);
+  opacity: 0.8;
+}
+@media (min-width: 50rem) {
+  site-search button[data-open-modal] {
+    justify-content: flex-start;
+    width: 100%;
+    max-width: 20rem;
+    padding-inline: 0.625rem 0.375rem;
+  }
+}
+
+/*
+ * Starlight's fixed --sl-select-width is tuned for proportional fonts; size to the longest monospace option instead.
+ * Its negative inline margins bleed the select past its label, which only works while the select is borderless, so
+ * the select sits inside the label and the icons move in to its padding.
+ */
+starlight-theme-select select {
+  width: auto;
+  margin-inline: 0;
+  padding-block: 0;
+}
+starlight-theme-select .label-icon {
+  inset-inline-start: 0.5rem;
+}
+starlight-theme-select .caret {
+  inset-inline-end: 0.375rem;
+}
+
+/* Social links are ghost icon buttons, not accent links. */
+.social-icons a {
+  color: var(--dh-fg-muted);
+}
+.social-icons a:hover {
+  color: var(--dh-fg);
+}
+
+/* Mobile menu footer: center the social icons on the theme select instead of stretching the row. */
+.mobile-preferences {
+  align-items: center;
+}
+.mobile-preferences .social-icons {
+  padding-block: 0;
+}
+
+/* The page title flows straight into the content; section rules carry the structure instead. */
+.content-panel + .content-panel {
+  border-top: 0;
+}
+
+starlight-menu-button button {
+  width: var(--dh-control-h);
+  padding: 0.375rem;
+  box-shadow: none;
+}
+starlight-menu-button[aria-expanded="true"] button,
+:root[data-theme="light"] starlight-menu-button button {
+  color: var(--dh-fg);
+  box-shadow: none;
+}
+starlight-menu-button[aria-expanded="true"] button {
+  background-color: var(--dh-surface-3);
+}
+:root[data-theme="light"] starlight-menu-button:not([aria-expanded="true"]) button {
+  background-color: var(--dh-surface-2);
+}
+
+/* ------------------------------------------------------------------
+ * Search dialog: the devhost-ui floating `.frame` surface.
+ * ------------------------------------------------------------------ */
+site-search dialog {
+  border: 1px solid var(--dh-edge);
+  background-color: var(--dh-surface);
+  box-shadow:
+    0 0 0 1px var(--dh-halo),
+    var(--dh-shadow);
+}
+@media (min-width: 50rem) {
+  site-search dialog {
+    border-radius: var(--dh-radius-md);
+  }
+}
+site-search dialog::backdrop {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+#starlight__search {
+  --pagefind-ui-primary: var(--dh-accent);
+  --pagefind-ui-text: var(--dh-fg);
+  --pagefind-ui-background: var(--dh-surface-2);
+  --pagefind-ui-border: var(--dh-line);
+  --pagefind-ui-border-radius: var(--dh-radius-sm);
+  --pagefind-ui-tag: var(--dh-surface-3);
+}
+#starlight__search mark {
+  background: color-mix(in srgb, var(--dh-accent) 22%, transparent);
+  color: inherit;
+}
+
+/* ------------------------------------------------------------------
+ * Sidebar. Group headers carry weight (plus a rule and accent tick);
+ * the current page carries surface + accent bar, never weight; nested
+ * groups read as expandable items whose indent rule wraps only their
+ * children.
+ * ------------------------------------------------------------------ */
+.sidebar-content .top-level {
+  font-size: var(--dh-doc-text-md);
+}
+.sidebar-content .top-level a,
+.sidebar-content .top-level a.large {
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--dh-radius-sm);
+  color: var(--dh-fg-muted);
+  font-size: var(--dh-doc-text-md);
+  font-weight: 400;
+  line-height: 1.3;
+}
+.sidebar-content .top-level a:hover,
+.sidebar-content .top-level a:focus-visible {
+  background-color: var(--dh-surface-2);
+  color: var(--dh-fg);
+}
+.sidebar-content .top-level a[aria-current="page"],
+.sidebar-content .top-level a[aria-current="page"]:hover,
+.sidebar-content .top-level a[aria-current="page"]:focus {
+  background-color: var(--dh-surface-2);
+  box-shadow: inset 2px 0 0 var(--dh-accent);
+  color: var(--dh-fg);
+  font-weight: 400;
+}
+.sidebar-content .top-level li + li {
+  margin-top: 1px;
+}
+.sidebar-content .top-level > li + li {
+  margin-top: 1rem;
+}
+.sidebar-content summary {
+  border-radius: var(--dh-radius-sm);
+}
+.sidebar-content summary:hover {
+  background-color: var(--dh-surface-2);
+}
+.sidebar-content summary .caret {
+  font-size: 0.875rem;
+  color: var(--dh-fg-faint);
+}
+
+.sidebar-content .top-level > li > details > summary {
+  position: relative;
+  margin-bottom: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-bottom: 1px solid var(--dh-line);
+  border-radius: var(--dh-radius-sm) var(--dh-radius-sm) 0 0;
+}
+.sidebar-content .top-level > li > details > summary::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 1rem;
+  height: 2px;
+  background-color: var(--dh-accent);
+}
+.sidebar-content .top-level > li > details > summary .large {
+  color: var(--dh-fg);
+  font-size: var(--dh-doc-text-md);
+  font-weight: 700;
+}
+
+/* Direct group children sit flush; only nested groups draw the indent rule (Starlight draws it at every depth). */
+.sidebar-content .top-level > li > details > ul > li {
+  margin-inline-start: 0;
+  border-inline-start: 0;
+  padding-inline-start: 0;
+}
+.sidebar-content .top-level ul details > summary {
+  padding: 0.375rem 0.5rem;
+  line-height: 1.3;
+}
+.sidebar-content .top-level ul details > summary .large {
+  color: var(--dh-fg-muted);
+  font-size: var(--dh-doc-text-md);
+  font-weight: 400;
+}
+.sidebar-content .top-level ul details > summary:hover .large {
+  color: var(--dh-fg);
+}
+
+/* ------------------------------------------------------------------
+ * Table of contents (desktop rail + mobile dropdown).
+ * ------------------------------------------------------------------ */
+.right-sidebar-panel h2 {
+  color: var(--dh-fg);
+  font-size: var(--dh-doc-text-sm);
+  font-weight: 700;
+}
+starlight-toc nav > ul {
+  border-inline-start: 1px solid var(--dh-line);
+}
+starlight-toc a {
+  margin-inline-start: -1px;
+  border-inline-start: 2px solid transparent;
+  border-radius: 0;
+  color: var(--dh-fg-muted);
+  font-size: var(--dh-doc-text-sm);
+  line-height: 1.3;
+}
+starlight-toc a:hover {
+  color: var(--dh-fg);
+}
+starlight-toc a[aria-current="true"] {
+  border-inline-start-color: var(--dh-accent);
+  color: var(--dh-fg);
+  font-weight: 600;
+}
+
+mobile-starlight-toc summary {
+  font-size: var(--dh-doc-text-sm);
+}
+mobile-starlight-toc .toggle {
+  border-radius: var(--dh-radius-sm);
+  background-color: var(--dh-surface-2);
+}
+mobile-starlight-toc .display-current {
+  color: var(--dh-fg-muted);
+}
+
+/* ------------------------------------------------------------------
+ * Pagination.
+ * ------------------------------------------------------------------ */
+.pagination-links a {
+  gap: 0.75rem;
+  border-color: var(--dh-line);
+  border-radius: var(--dh-radius-md);
+  padding: 0.625rem 0.875rem;
+  color: var(--dh-accent);
+  font-size: var(--dh-doc-text-sm);
+}
+.pagination-links a:hover {
+  border-color: var(--dh-fg-faint);
+  background-color: var(--dh-surface-2);
+}
+.pagination-links svg {
+  font-size: 1rem;
+  color: var(--dh-fg-faint);
+}
+.pagination-links .link-title {
+  color: var(--dh-fg);
+  font-size: var(--dh-doc-text);
+  font-weight: 700;
+}
+.pagination-links a:hover .link-title {
+  color: var(--dh-accent);
+}
