@@ -913,7 +913,6 @@
         .dock[data-position="top-right"] {
           top: 8px;
           bottom: auto;
-          flex-direction: column-reverse;
         }
         .dock[data-minimap="true"] {
           right: 20px;
@@ -1047,12 +1046,26 @@
         /* ================================================================
          * POPOVER PANELS
          * ================================================================ */
+        /* Toolbar popouts attach to the button that opened them via CSS anchor
+           positioning: above it (below for a top-right dock), start-aligned with
+           the trigger, flipping to end-aligned when the viewport edge is near. */
         .panel {
+          position: fixed;
+          position-anchor: --dh-panel-anchor;
+          position-area: top span-right;
+          position-try-fallbacks: flip-inline;
+          margin: var(--dh-space-3) 0;
           display: flex;
           flex-direction: column;
           max-width: calc(100vw - 32px);
           max-height: min(60vh, 520px);
           overflow: hidden;
+        }
+        .dock[data-position="top-right"] .panel {
+          position-area: bottom span-right;
+        }
+        [data-panel-anchor] {
+          anchor-name: --dh-panel-anchor;
         }
         .panel-head {
           display: flex;
@@ -1612,6 +1625,7 @@
         componentMenu: null,
         minimapHoverY: null,
         sessionChipLimit: Infinity,
+        panelAnchor: null,
       };
 
       const MOCK_QUEUES = [
@@ -1768,8 +1782,9 @@
         <section class="composer frame fade" data-surface="composer" aria-label="Annotation draft" hidden></section>
         <section class="cmenu frame fade" data-surface="cmenu" aria-label="Open component source" hidden></section>
         <div class="dock" data-surface="dock">
-          <section class="panel frame fade" data-surface="panel" hidden></section>
           <div class="bar frame" data-surface="bar" role="toolbar" aria-label="devhost"></div>
+          <!-- Must follow the bar: an anchor has to be laid out before the element anchored to it. -->
+          <section class="panel frame fade" data-surface="panel" hidden></section>
         </div>
         <div data-region="minimap"></div>
         <div class="backdrop fade" data-surface="backdrop" data-action="session-minimize" hidden></div>
@@ -1960,6 +1975,9 @@
           state.openPanel = null;
           patch(bar, renderDock());
         }
+        // Anchor follows the last-opened trigger (not only the open one) so a
+        // closing panel fades out in place instead of losing its anchor.
+        bar.querySelector(`[data-panel="${state.panelAnchor}"]`)?.setAttribute("data-panel-anchor", "");
         renderDockPanel();
       }
 
@@ -2530,6 +2548,7 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
             break;
           case "panel":
             state.openPanel = state.openPanel === panel ? null : panel;
+            if (state.openPanel !== null) state.panelAnchor = state.openPanel;
             break;
           case "tool": {
             const tool = state.tools.find((t) => t.id === id);
