@@ -470,7 +470,7 @@ func TestStartStackStartsServicesInDependencyOrderAndEndsOnFirstChildExit(t *tes
 			"DEVHOST_HELPER_MODE":    "record-start-serve-and-exit",
 			"START_TRACE_PATH":       startTracePath,
 			"START_TRACE_VALUE":      "api-start",
-			"EXIT_DELAY_MS":          "200",
+			"WAIT_TRACE_VALUE":       "web-start",
 		},
 		Health:     ResolvedHealthConfig{Host: stringPointer("127.0.0.1"), Interval: 50, Kind: "tcp", Port: intPointer(apiPort), Retries: 0, Timeout: 5000},
 		InjectPort: true,
@@ -1428,12 +1428,14 @@ func TestStartStackActivatesRoutesOnlyAfterHealthPasses(t *testing.T) {
 
 func TestStopStartedServicesStopsRunningServicesGracefully(t *testing.T) {
 	stopLogPath := filepath.Join(t.TempDir(), "stop-log.txt")
+	firstReadyPath := filepath.Join(t.TempDir(), "first-ready.txt")
+	secondReadyPath := filepath.Join(t.TempDir(), "second-ready.txt")
 
 	firstService, error := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 		BindHost:   "127.0.0.1",
 		Command:    helperCommand(),
 		Cwd:        t.TempDir(),
-		Env:        map[string]string{"GO_WANT_HELPER_PROCESS": "1", "DEVHOST_HELPER_MODE": "graceful-signal-waiter", "STOP_TRACE_PATH": stopLogPath, "STOP_TRACE_VALUE": "first"},
+		Env:        map[string]string{"GO_WANT_HELPER_PROCESS": "1", "DEVHOST_HELPER_MODE": "graceful-signal-waiter", "STOP_TRACE_PATH": stopLogPath, "STOP_TRACE_VALUE": "first", "READY_FILE_PATH": firstReadyPath},
 		InjectPort: true,
 		Name:       "first",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
@@ -1445,7 +1447,7 @@ func TestStopStartedServicesStopsRunningServicesGracefully(t *testing.T) {
 		BindHost:   "127.0.0.1",
 		Command:    helperCommand(),
 		Cwd:        t.TempDir(),
-		Env:        map[string]string{"GO_WANT_HELPER_PROCESS": "1", "DEVHOST_HELPER_MODE": "graceful-signal-waiter", "STOP_TRACE_PATH": stopLogPath, "STOP_TRACE_VALUE": "second"},
+		Env:        map[string]string{"GO_WANT_HELPER_PROCESS": "1", "DEVHOST_HELPER_MODE": "graceful-signal-waiter", "STOP_TRACE_PATH": stopLogPath, "STOP_TRACE_VALUE": "second", "READY_FILE_PATH": secondReadyPath},
 		InjectPort: true,
 		Name:       "second",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
@@ -1453,7 +1455,11 @@ func TestStopStartedServicesStopsRunningServicesGracefully(t *testing.T) {
 		t.Fatalf("startServiceProcess(second) error = %v", error)
 	}
 
-	time.Sleep(100 * time.Millisecond)
+	waitForCondition(t, 5*time.Second, func() bool {
+		_, err1 := os.Stat(firstReadyPath)
+		_, err2 := os.Stat(secondReadyPath)
+		return err1 == nil && err2 == nil
+	})
 	if error := stopStartedServices([]*startedService{firstService, secondService}, 2*time.Second); error != nil {
 		t.Fatalf("stopStartedServices(...) error = %v", error)
 	}
@@ -2097,11 +2103,12 @@ func TestStopStartedServicesSignalsInReverseOrder(t *testing.T) {
 }
 
 func TestStopStartedServiceEscalatesToSIGKILL(t *testing.T) {
+	readyPath := filepath.Join(t.TempDir(), "ready.txt")
 	startedService, error := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 		BindHost:   "127.0.0.1",
 		Command:    helperCommand(),
 		Cwd:        t.TempDir(),
-		Env:        map[string]string{"GO_WANT_HELPER_PROCESS": "1", "DEVHOST_HELPER_MODE": "ignore-term"},
+		Env:        map[string]string{"GO_WANT_HELPER_PROCESS": "1", "DEVHOST_HELPER_MODE": "ignore-term", "READY_FILE_PATH": readyPath},
 		InjectPort: true,
 		Name:       "worker",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
@@ -2109,7 +2116,10 @@ func TestStopStartedServiceEscalatesToSIGKILL(t *testing.T) {
 		t.Fatalf("startServiceProcess(...) error = %v", error)
 	}
 
-	time.Sleep(100 * time.Millisecond)
+	waitForCondition(t, 5*time.Second, func() bool {
+		_, err := os.Stat(readyPath)
+		return err == nil
+	})
 	if error := stopStartedService(startedService, 50*time.Millisecond); error != nil {
 		t.Fatalf("stopStartedService(...) error = %v", error)
 	}
@@ -2274,8 +2284,6 @@ func TestServiceHelperProcess(t *testing.T) {
 		runAutoPortRetryHelper()
 	case "delayed-route-health-server":
 		runDelayedRouteHealthServerHelper()
-	case "record-start-and-exit":
-		runRecordStartAndExitHelper()
 	case "record-start-serve-and-exit":
 		runRecordStartServeAndExitHelper()
 	case "record-start-and-wait":
@@ -2486,7 +2494,6 @@ func runDelayedRouteHealthServerHelper() {
 		traceLines = append(traceLines, "route-missing-before-health")
 	}
 
-	time.Sleep(250 * time.Millisecond)
 	server := &http.Server{Addr: fmt.Sprintf("127.0.0.1:%d", port), Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		_, _ = writer.Write([]byte("ok"))
 	})}
@@ -2507,29 +2514,38 @@ func runDelayedRouteHealthServerHelper() {
 		panic(error)
 	}
 
-	time.Sleep(150 * time.Millisecond)
 	_ = server.Close()
-	os.Exit(0)
-}
-
-func runRecordStartAndExitHelper() {
-	appendTraceLine(os.Getenv("START_TRACE_PATH"), os.Getenv("START_TRACE_VALUE"))
-	delayMilliseconds, _ := strconv.Atoi(os.Getenv("EXIT_DELAY_MS"))
-	time.Sleep(time.Duration(delayMilliseconds) * time.Millisecond)
 	os.Exit(0)
 }
 
 func runRecordStartServeAndExitHelper() {
 	appendTraceLine(os.Getenv("START_TRACE_PATH"), os.Getenv("START_TRACE_VALUE"))
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
-	delayMilliseconds, _ := strconv.Atoi(os.Getenv("EXIT_DELAY_MS"))
 	server := &http.Server{Addr: fmt.Sprintf("127.0.0.1:%d", port), Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		_, _ = writer.Write([]byte("ok"))
 	})}
 	go func() {
 		_ = server.ListenAndServe()
 	}()
-	time.Sleep(time.Duration(delayMilliseconds) * time.Millisecond)
+
+	waitValue := os.Getenv("WAIT_TRACE_VALUE")
+	if waitValue != "" {
+		tracePath := os.Getenv("START_TRACE_PATH")
+		deadline := time.Now().Add(10 * time.Second)
+		found := false
+		for time.Now().Before(deadline) {
+			data, err := os.ReadFile(tracePath)
+			if err == nil && strings.Contains(string(data), waitValue) {
+				found = true
+				break
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+		if !found {
+			panic(fmt.Sprintf("timed out waiting for trace value %q in %s", waitValue, tracePath))
+		}
+	}
+
 	_ = server.Close()
 	os.Exit(0)
 }
@@ -2685,7 +2701,6 @@ func runRouteAwareHTTPServerHelper() {
 		panic(error)
 	}
 
-	time.Sleep(200 * time.Millisecond)
 	_ = server.Close()
 	os.Exit(0)
 }
@@ -2844,8 +2859,14 @@ func runChildHTTPServerHelper() {
 func runGracefulSignalWaiterHelper() {
 	tracePath := os.Getenv("STOP_TRACE_PATH")
 	traceValue := os.Getenv("STOP_TRACE_VALUE")
+	readyPath := os.Getenv("READY_FILE_PATH")
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.Signal(15))
+	if readyPath != "" {
+		if error := os.WriteFile(readyPath, []byte("ready"), 0o644); error != nil {
+			panic(error)
+		}
+	}
 	<-signals
 	file, error := os.OpenFile(tracePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 	if error != nil {
@@ -2859,8 +2880,14 @@ func runGracefulSignalWaiterHelper() {
 }
 
 func runIgnoreTermHelper() {
+	readyPath := os.Getenv("READY_FILE_PATH")
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.Signal(15))
+	if readyPath != "" {
+		if error := os.WriteFile(readyPath, []byte("ready"), 0o644); error != nil {
+			panic(error)
+		}
+	}
 	go func() {
 		for range signals {
 		}

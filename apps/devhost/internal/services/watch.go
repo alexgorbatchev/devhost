@@ -39,24 +39,56 @@ func (d *DirtyTracker) IsDirty(serviceName string) bool {
 }
 
 type WatchManager struct {
-	tracker        *DirtyTracker
-	watchers       map[string]*fsnotify.Watcher
-	debounceTimers map[string]*time.Timer
-	timersMu       sync.Mutex
-	onDirty        func(string)
-	logWriter      io.Writer
-	manifestName   string
+	tracker          *DirtyTracker
+	watchers         map[string]*fsnotify.Watcher
+	watchersMu       sync.RWMutex
+	debounceTimers   map[string]*time.Timer
+	timersMu         sync.Mutex
+	onDirty          func(string)
+	onTimerDone      func(string)
+	logWriter        io.Writer
+	manifestName     string
+	debounceDuration time.Duration
 }
 
 func NewWatchManager(tracker *DirtyTracker, onDirty func(string), logWriter io.Writer, manifestName string) *WatchManager {
 	return &WatchManager{
-		tracker:        tracker,
-		watchers:       make(map[string]*fsnotify.Watcher),
-		debounceTimers: make(map[string]*time.Timer),
-		onDirty:        onDirty,
-		logWriter:      logWriter,
-		manifestName:   manifestName,
+		tracker:          tracker,
+		watchers:         make(map[string]*fsnotify.Watcher),
+		debounceTimers:   make(map[string]*time.Timer),
+		onDirty:          onDirty,
+		logWriter:        logWriter,
+		manifestName:     manifestName,
+		debounceDuration: 200 * time.Millisecond,
 	}
+}
+
+func (wm *WatchManager) SetDebounceDuration(duration time.Duration) {
+	wm.timersMu.Lock()
+	defer wm.timersMu.Unlock()
+	wm.debounceDuration = duration
+}
+
+func (wm *WatchManager) HasPendingTimer(serviceName string) bool {
+	wm.timersMu.Lock()
+	defer wm.timersMu.Unlock()
+	return wm.debounceTimers[serviceName] != nil
+}
+
+func (wm *WatchManager) IsWatchingPath(serviceName string, path string) bool {
+	wm.watchersMu.RLock()
+	watcher, ok := wm.watchers[serviceName]
+	wm.watchersMu.RUnlock()
+	if !ok || watcher == nil {
+		return false
+	}
+	cleanTarget := filepath.Clean(path)
+	for _, watched := range watcher.WatchList() {
+		if filepath.Clean(watched) == cleanTarget {
+			return true
+		}
+	}
+	return false
 }
 
 func (wm *WatchManager) writeLog(message string) {
@@ -151,7 +183,9 @@ func (wm *WatchManager) StartWatching(serviceName string, watchPaths []string, b
 		return fmt.Errorf("create fsnotify watcher: %w", err)
 	}
 
+	wm.watchersMu.Lock()
 	wm.watchers[serviceName] = watcher
+	wm.watchersMu.Unlock()
 
 	for _, p := range watchPaths {
 		absPath := filepath.Clean(filepath.Join(baseDir, p))
@@ -206,7 +240,10 @@ func (wm *WatchManager) handleEvent(serviceName string, event fsnotify.Event) {
 		info, err := os.Stat(event.Name)
 		if err == nil && info.IsDir() {
 			if !isExcludedDir(info.Name()) {
-				if watcher, ok := wm.watchers[serviceName]; ok {
+				wm.watchersMu.RLock()
+				watcher, ok := wm.watchers[serviceName]
+				wm.watchersMu.RUnlock()
+				if ok && watcher != nil {
 					_ = wm.watchDirectoryRecursive(watcher, event.Name)
 				}
 			}
@@ -220,15 +257,27 @@ func (wm *WatchManager) handleEvent(serviceName string, event fsnotify.Event) {
 		timer.Stop()
 	}
 
-	wm.debounceTimers[serviceName] = time.AfterFunc(200*time.Millisecond, func() {
+	duration := wm.debounceDuration
+	if duration <= 0 {
+		duration = 200 * time.Millisecond
+	}
+
+	var timer *time.Timer
+	timer = time.AfterFunc(duration, func() {
 		wm.tracker.SetDirty(serviceName, true)
 		if wm.onDirty != nil {
 			wm.onDirty(serviceName)
 		}
 		wm.timersMu.Lock()
-		delete(wm.debounceTimers, serviceName)
+		if wm.debounceTimers[serviceName] == timer {
+			delete(wm.debounceTimers, serviceName)
+		}
 		wm.timersMu.Unlock()
+		if wm.onTimerDone != nil {
+			wm.onTimerDone(serviceName)
+		}
 	})
+	wm.debounceTimers[serviceName] = timer
 }
 
 func (wm *WatchManager) CancelTimer(serviceName string) {
@@ -241,9 +290,13 @@ func (wm *WatchManager) CancelTimer(serviceName string) {
 }
 
 func (wm *WatchManager) StopAll() {
+	wm.watchersMu.Lock()
 	for _, watcher := range wm.watchers {
 		_ = watcher.Close()
 	}
+	wm.watchers = make(map[string]*fsnotify.Watcher)
+	wm.watchersMu.Unlock()
+
 	wm.timersMu.Lock()
 	for _, timer := range wm.debounceTimers {
 		if timer != nil {
