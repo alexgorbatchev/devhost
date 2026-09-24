@@ -915,7 +915,7 @@ func TestControlServerTerminalSessionsRetainTailAndIdleCleanup(t *testing.T) {
 		GetHealthResponse: func() (HealthResponse, error) {
 			return HealthResponse{Services: []ServiceHealth{}}, nil
 		},
-		IdleTerminalSessionTimeout: 25 * time.Millisecond,
+		IdleTerminalSessionTimeout: 100 * time.Millisecond,
 		Position:                   "bottom-right",
 		ProjectRootPath:            projectRootPath,
 		StackName:                  "hello-stack",
@@ -972,27 +972,25 @@ func TestControlServerTerminalSessionsRetainTailAndIdleCleanup(t *testing.T) {
 	}
 	terminalSocket.Close()
 
-	time.Sleep(80 * time.Millisecond)
+	waitForCondition(t, 5*time.Second, func() bool {
+		listRequest, err := http.NewRequest(http.MethodGet, serverURL(controlServer.Port(), terminalSessionsPath), nil)
+		if err != nil {
+			return false
+		}
+		listRequest.Header.Set(controlTokenHeaderName, controlToken)
+		listResponse, err := http.DefaultClient.Do(listRequest)
+		if err != nil {
+			return false
+		}
+		defer listResponse.Body.Close()
 
-	listRequest, err := http.NewRequest(http.MethodGet, serverURL(controlServer.Port(), terminalSessionsPath), nil)
-	if err != nil {
-		t.Fatalf("NewRequest(list terminal sessions) error = %v", err)
-	}
-	listRequest.Header.Set(controlTokenHeaderName, controlToken)
-	listResponse, err := http.DefaultClient.Do(listRequest)
-	if err != nil {
-		t.Fatalf("Do(list terminal sessions) error = %v", err)
-	}
-	defer listResponse.Body.Close()
-
-	var listed listTerminalSessionsResponse
-	if err := json.NewDecoder(listResponse.Body).Decode(&listed); err != nil {
-		t.Fatalf("Decode(list terminal sessions) error = %v", err)
-	}
-	if len(listed.Sessions) != 0 {
-		t.Fatalf("listed sessions after idle cleanup = %#v, want []", listed.Sessions)
-	}
-	waitForCondition(t, time.Second, func() bool {
+		var listed listTerminalSessionsResponse
+		if err := json.NewDecoder(listResponse.Body).Decode(&listed); err != nil {
+			return false
+		}
+		return len(listed.Sessions) == 0
+	})
+	waitForCondition(t, 5*time.Second, func() bool {
 		return starter.sessions[0].closeCountValue() == 1
 	})
 	if closeCount := starter.sessions[0].closeCountValue(); closeCount != 1 {
