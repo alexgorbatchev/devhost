@@ -11,3 +11,4 @@ storybook-static/
 .tmp
 /.workspaces
 /.envrc.local
+/.codegraph
