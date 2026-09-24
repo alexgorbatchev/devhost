@@ -195,6 +195,37 @@ func TestValidateManifestAcceptsAnnotationAgentArgs(t *testing.T) {
 	}
 }
 
+func TestValidateManifestAcceptsEmptyAnnotationAgentArgs(t *testing.T) {
+	t.Parallel()
+
+	manifest, err := ValidateManifest(filepath.Join(string(filepath.Separator), "tmp", "project", "devhost.toml"), rawManifestWithServices(map[string]any{
+		"annotation": map[string]any{
+			"actions": []any{
+				map[string]any{
+					"agent": map[string]any{
+						"adapter": "claude-code",
+						"args":    []any{},
+					},
+					"id":    "ask-claude",
+					"kind":  "agent",
+					"label": "Ask Claude",
+				},
+			},
+		},
+	}))
+	if err != nil {
+		t.Fatalf("ValidateManifest(...) unexpected error = %v", err)
+	}
+
+	if len(manifest.Annotation.Actions) != 1 {
+		t.Fatalf("manifest.Annotation.Actions = %#v, want 1 action", manifest.Annotation.Actions)
+	}
+	action := manifest.Annotation.Actions[0]
+	if action.Agent.Args == nil || len(action.Agent.Args) != 0 {
+		t.Fatalf("action.Agent.Args = %#v, want empty non-nil slice", action.Agent.Args)
+	}
+}
+
 func TestValidateManifestAcceptsIdleTimeout(t *testing.T) {
 	t.Parallel()
 
@@ -399,6 +430,24 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 			wantError: "annotation.actions.ask.agent.args is only supported when adapter is configured.",
 		},
 		{
+			name: "rejects empty annotation agent args on custom command agent",
+			manifest: rawManifestWithServices(map[string]any{
+				"annotation": map[string]any{"actions": []any{
+					map[string]any{
+						"agent": map[string]any{
+							"args":        []any{},
+							"command":     []any{"bun", "./scripts/devhost-agent.ts"},
+							"displayName": "Claude Code",
+						},
+						"id":    "ask",
+						"kind":  "agent",
+						"label": "Ask Claude",
+					},
+				}},
+			}),
+			wantError: "annotation.actions.ask.agent.args is only supported when adapter is configured.",
+		},
+		{
 			name: "rejects annotation agent args with non-string entry",
 			manifest: rawManifestWithServices(map[string]any{
 				"annotation": map[string]any{"actions": []any{
@@ -406,6 +455,23 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 						"agent": map[string]any{
 							"adapter": "pi",
 							"args":    []any{123},
+						},
+						"id":    "ask",
+						"kind":  "agent",
+						"label": "Ask Pi",
+					},
+				}},
+			}),
+			wantError: "args must contain only non-empty strings.",
+		},
+		{
+			name: "rejects annotation agent args with empty string entry",
+			manifest: rawManifestWithServices(map[string]any{
+				"annotation": map[string]any{"actions": []any{
+					map[string]any{
+						"agent": map[string]any{
+							"adapter": "pi",
+							"args":    []any{""},
 						},
 						"id":    "ask",
 						"kind":  "agent",
