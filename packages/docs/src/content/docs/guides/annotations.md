@@ -178,10 +178,11 @@ kind = "agent"
 
 [annotation.actions.agent]
 adapter = "claude-code"
+args = ["--thinking", "high"]
 ```
 
-Supported agent adapters are `"pi"`, `"claude-code"`, and `"opencode"`.
-For a custom agent action, omit `adapter` and set `command` plus `displayName` inside `[annotation.actions.agent]`; the parent `label` is the action label shown in the composer, and `displayName` remains the agent display name exposed through the agent command environment.
+Supported agent adapters are `"pi"`, `"claude-code"`, and `"opencode"`. Built-in adapters accept an optional `args` string array to pass harness flags (such as a model, thinking level, or permission mode) while keeping status reporting, hooks, and prompt file arguments intact.
+For a custom agent action, omit `adapter` and set `command` plus `displayName` inside `[annotation.actions.agent]`; the parent `label` is the action label shown in the composer, and `displayName` remains the agent display name exposed through the agent command environment (`args` is valid only with `adapter`).
 
 Generic command actions run directly in a `devhost` terminal and receive the annotation through context files:
 

@@ -5,8 +5,65 @@ Use this reference when a `devhost.toml` manifest needs an annotation `kind = "a
 ## Decision rules
 
 - Use `adapter` only for built-ins: `"pi"`, `"claude-code"`, or `"opencode"`.
+- Built-in adapters accept an optional `args = ["..."]` string array to pass extra CLI flags (e.g., model, thinking level, or permission modes) while preserving built-in status reporting and prompt handoff. An empty array `args = []` is accepted when no extra arguments are passed.
+- `args` is only valid when `adapter` is configured; it cannot be used with custom command agents.
 - Do not invent project-local adapter names. A new `adapter = "..."` value requires devhost Go code changes and a release.
-- Use a custom command for user-provided or project-local agent integrations.
+- Use a custom command for user-provided or project-local agent integrations. Custom agent actions omit `adapter` and use `displayName`, `command`, optional `cwd`, and optional `env` inside `[annotation.actions.agent]`.
+
+## Built-in adapter form
+
+Built-in adapters provide zero-configuration terminal integration, automatic status reporting, and prompt handoff for supported coding agents:
+
+- `"pi"`: launches `pi -e <extension> [args...] @<prompt-file>`
+- `"claude-code"`: launches `claude --settings <settings> [args...] <instruction>`
+- `"opencode"`: launches `opencode run [args...] <instruction>`
+
+```toml
+[annotation]
+defaultAction = "fix"
+
+[[annotation.actions]]
+id = "fix"
+label = "Ask Claude"
+kind = "agent"
+
+[annotation.actions.agent]
+adapter = "claude-code"
+args = ["--thinking", "high"]
+```
+
+Example with `pi`:
+
+```toml
+[[annotation.actions]]
+id = "fix-pi"
+label = "Ask Pi"
+kind = "agent"
+
+[annotation.actions.agent]
+adapter = "pi"
+args = ["--thinking", "high"]
+```
+
+Example with `opencode`:
+
+```toml
+[[annotation.actions]]
+id = "fix-opencode"
+label = "Ask OpenCode"
+kind = "agent"
+
+[annotation.actions.agent]
+adapter = "opencode"
+args = ["--model", "gpt-4o"]
+```
+
+Rules:
+
+- `adapter` must be one of `"pi"`, `"claude-code"`, or `"opencode"`.
+- `args` is optional. When specified, it must be an array of non-empty strings (e.g. `args = ["--model", "sonnet"]`) or an empty array `args = []`.
+- `args` is only supported when `adapter` is configured.
+- When `adapter` is configured, custom command fields (`command`, `cwd`, `env`) must be omitted.
 
 ## Custom command form
 
