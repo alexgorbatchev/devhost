@@ -95,21 +95,24 @@ func createAgentTerminalCommand(action manifest.ValidatedAnnotationAction, proje
 			// guesses from terminal queries and falls back to dark.
 			command = append(command, "--use-theme", string(colorScheme))
 		}
+		command = append(command, agent.Args...)
 		command = append(command, "@"+sessionFiles.env["DEVHOST_AGENT_PROMPT_FILE"])
 	case "claude-code":
 		command = []string{
 			"claude",
 			"--settings",
 			sessionFiles.env["DEVHOST_AGENT_CLAUDE_SETTINGS_FILE"],
-			fmt.Sprintf("Please read the annotation details from %s and address the requested change.", sessionFiles.env["DEVHOST_AGENT_PROMPT_FILE"]),
 		}
+		command = append(command, agent.Args...)
+		command = append(command, fmt.Sprintf("Please read the annotation details from %s and address the requested change.", sessionFiles.env["DEVHOST_AGENT_PROMPT_FILE"]))
 	case "opencode":
 		env["OPENCODE_CONFIG"] = sessionFiles.env["DEVHOST_AGENT_OPENCODE_CONFIG_FILE"]
 		command = []string{
 			"opencode",
 			"run",
-			fmt.Sprintf("Please read the annotation details from %s and address the requested change.", sessionFiles.env["DEVHOST_AGENT_PROMPT_FILE"]),
 		}
+		command = append(command, agent.Args...)
+		command = append(command, fmt.Sprintf("Please read the annotation details from %s and address the requested change.", sessionFiles.env["DEVHOST_AGENT_PROMPT_FILE"]))
 	case "configured":
 		command = append([]string{}, agent.Command...)
 		cwd = agent.Cwd
@@ -280,7 +283,7 @@ func createAgentSessionFiles(options agentSessionFilesOptions) (*agentSessionFil
 		return nil, fmt.Errorf("write OpenCode plugin file: %w", err)
 	}
 
-	opencodeConfigJSON, err := json.MarshalIndent(map[string][]string{"plugin": []string{opencodePluginFilePath}}, "", "  ")
+	opencodeConfigJSON, err := json.MarshalIndent(map[string][]string{"plugin": {opencodePluginFilePath}}, "", "  ")
 	if err != nil {
 		cleanup()
 		return nil, fmt.Errorf("marshal OpenCode config file: %w", err)
