@@ -45,6 +45,7 @@ type WatchManager struct {
 	debounceTimers   map[string]*time.Timer
 	timersMu         sync.Mutex
 	onDirty          func(string)
+	onTimerDone      func(string)
 	logWriter        io.Writer
 	manifestName     string
 	debounceDuration time.Duration
@@ -272,6 +273,9 @@ func (wm *WatchManager) handleEvent(serviceName string, event fsnotify.Event) {
 			delete(wm.debounceTimers, serviceName)
 		}
 		wm.timersMu.Unlock()
+		if wm.onTimerDone != nil {
+			wm.onTimerDone(serviceName)
+		}
 	})
 	wm.debounceTimers[serviceName] = timer
 }
