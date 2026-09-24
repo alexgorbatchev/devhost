@@ -74,7 +74,9 @@ func TestWatchManagerDebounceAndDynamicDir(t *testing.T) {
 		t.Fatalf("failed to create components dir: %v", err)
 	}
 
-	time.Sleep(50 * time.Millisecond)
+	waitForCondition(t, 5*time.Second, func() bool {
+		return wm.IsWatchingPath("web", subDir)
+	})
 
 	subFile := filepath.Join(subDir, "Button.js")
 	err = os.WriteFile(subFile, []byte("export const Button = () => {};"), 0644)
@@ -95,23 +97,30 @@ func TestWatchManagerDebounceAndDynamicDir(t *testing.T) {
 	}
 
 	tracker.SetDirty("web", false)
+	wm.SetDebounceDuration(1 * time.Hour)
+
 	testFile2 := filepath.Join(srcDir, "app2.js")
 	err = os.WriteFile(testFile2, []byte("console.log(2);"), 0644)
 	if err != nil {
 		t.Fatalf("failed to write app2.js: %v", err)
 	}
 
-	// Give background fsnotify loop a brief moment to process event and create the timer
-	time.Sleep(50 * time.Millisecond)
+	// Wait until background fsnotify loop processes event and creates the debounce timer
+	waitForCondition(t, 5*time.Second, func() bool {
+		return wm.HasPendingTimer("web")
+	})
 
 	wm.CancelTimer("web")
 
 	select {
 	case svc := <-dirtyCh:
 		t.Fatalf("unexpected dirty event fired for %q after cancellation", svc)
-	case <-time.After(500 * time.Millisecond):
+	case <-time.After(100 * time.Millisecond):
 		if tracker.IsDirty("web") {
 			t.Fatal("expected web to remain clean since timer was cancelled")
 		}
+	}
+	if wm.HasPendingTimer("web") {
+		t.Fatal("expected web pending timer to be removed after cancellation")
 	}
 }

@@ -8,53 +8,52 @@ import (
 
 func TestActivityTracker_IsIdle(t *testing.T) {
 	tracker := NewActivityTracker()
-	timeout := 10 * time.Millisecond
+	shortTimeout := 10 * time.Millisecond
+	longTimeout := time.Hour
 
 	// Newly created tracker is not idle initially because lastActivity is set to time.Now()
-	if tracker.IsIdle(timeout) {
+	if tracker.IsIdle(longTimeout) {
 		t.Fatalf("expected tracker not to be idle initially")
 	}
 
-	// Wait for more than timeout
-	time.Sleep(15 * time.Millisecond)
-	if !tracker.IsIdle(timeout) {
-		t.Fatalf("expected tracker to be idle after waiting")
-	}
+	// Wait for idle after short timeout
+	waitForCondition(t, 5*time.Second, func() bool {
+		return tracker.IsIdle(shortTimeout)
+	})
 
 	// Recording activity resets the timer
 	tracker.RecordActivity()
-	if tracker.IsIdle(timeout) {
+	if tracker.IsIdle(longTimeout) {
 		t.Fatalf("expected tracker not to be idle immediately after recording activity")
 	}
 
-	time.Sleep(15 * time.Millisecond)
-	if !tracker.IsIdle(timeout) {
-		t.Fatalf("expected tracker to be idle again")
-	}
+	waitForCondition(t, 5*time.Second, func() bool {
+		return tracker.IsIdle(shortTimeout)
+	})
 }
 
 func TestActivityTracker_ActiveCount(t *testing.T) {
 	tracker := NewActivityTracker()
-	timeout := 10 * time.Millisecond
+	shortTimeout := 10 * time.Millisecond
+	longTimeout := time.Hour
 
 	// Incrementing active connection count keeps tracker from being idle
 	tracker.IncrementActive()
 	time.Sleep(15 * time.Millisecond)
-	if tracker.IsIdle(timeout) {
+	if tracker.IsIdle(shortTimeout) {
 		t.Fatalf("expected tracker not to be idle while active count > 0")
 	}
 
 	// Decrementing active connection count resets the idle timer (F5 drops protection)
 	tracker.DecrementActive()
 	// Immediately after decrementing to 0, it shouldn't be idle even if we waited before
-	if tracker.IsIdle(timeout) {
+	if tracker.IsIdle(longTimeout) {
 		t.Fatalf("expected tracker not to be idle immediately after active count drops to 0")
 	}
 
-	time.Sleep(15 * time.Millisecond)
-	if !tracker.IsIdle(timeout) {
-		t.Fatalf("expected tracker to be idle after timeout since active count is 0")
-	}
+	waitForCondition(t, 5*time.Second, func() bool {
+		return tracker.IsIdle(shortTimeout)
+	})
 }
 
 func TestActivityTracker_Concurrency(t *testing.T) {
