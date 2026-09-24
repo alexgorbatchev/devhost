@@ -1,15 +1,11 @@
 {
   "name": "@alexgorbatchev/devhost-design",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
     "./tokens.css": "./tokens.css"
-  },
-  "scripts": {
-    "check": "tsc --noEmit -p tsconfig.json && bun test",
-    "write-tokens": "bun scripts/writeTokensCss.ts"
   },
   "devDependencies": {
     "@types/bun": "^1.3.12",

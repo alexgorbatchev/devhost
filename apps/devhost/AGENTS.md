@@ -33,42 +33,42 @@ go run ./cmd/devhost --help
 Build a standalone executable for the current platform:
 
 ```bash
-bun run compile:devhost
+just compile
 ```
 
 Refresh the generated embedded devtools bundle without building the binary:
 
 ```bash
-bun run build:devtools-bundle:devhost
+just build-devtools-bundle
 ```
 
 Build the versioned cross-platform release tarballs:
 
 ```bash
-bun run build:release-artifacts:devhost
+just build-release-artifacts
 ```
 
 Human-only repo format step when manual cleanup is explicitly needed:
 
 ```bash
-bun run fix
+just fix
 ```
 
 Run the app check suite:
 
 ```bash
-bun run check:devhost
+just devhost check
 ```
 
-The human-only `fmt` script runs `oxfmt --write` for the repo using the shared root config. Agents should not run it directly; formatting is handled automatically by the repo's git hooks. `bun run check:devhost` refreshes the generated embedded devtools bundle, then runs `go vet ./...` and `go test ./...` from this app. The injected UI checks and Storybook coverage now live in `packages/devhost-ui/`. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
+The human-only `fix` recipe runs `oxfmt --write` for the repo using the shared root config. Agents should not run it directly; formatting is handled automatically by the repo's git hooks. `just devhost check` refreshes the generated embedded devtools bundle, then runs `go vet ./...` and `go test ./...` from this app. The injected UI checks and Storybook coverage now live in `packages/devhost-ui/`. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
 
 `scripts/buildDevtoolsBundle.ts` refreshes the generated injected devtools assets under `internal/devtools/dist/` used by Go `//go:embed`. That `dist/` directory is intentionally ignored; do not commit its generated `devtools.js` or `xterm.css` files.
 
-To speed up frontend UI development, you can configure the on-demand asset dev loop by setting the `DEVHOST_DEV_ASSETS_DIR` environment variable to point to your compiled asset directory (e.g. `apps/devhost/internal/devtools/dist`). When configured, requesting `/__devhost__/inject.js` will automatically check if any source files under `packages/devhost-ui/src/devtools/` are newer than the compiled asset, serialize and trigger a background build via `bun run build:devtools-bundle:devhost`, and serve the fresh asset on demand. This allows you to simply reload your browser page to compile and view your UI changes on the fly. If file reads or compilation fail, the server gracefully falls back to serving the embedded assets.
+To speed up frontend UI development, you can configure the on-demand asset dev loop by setting the `DEVHOST_DEV_ASSETS_DIR` environment variable to point to your compiled asset directory (e.g. `apps/devhost/internal/devtools/dist`). When configured, requesting `/__devhost__/inject.js` will automatically check if any source files under `packages/devhost-ui/src/devtools/` are newer than the compiled asset, serialize and trigger a background build via `just build-devtools-bundle`, and serve the fresh asset on demand. This allows you to simply reload your browser page to compile and view your UI changes on the fly. If file reads or compilation fail, the server gracefully falls back to serving the embedded assets.
 
-`bun run build:release-artifacts:devhost` refreshes that bundle, cross-compiles the supported Go release targets, embeds the current `metadata.json` version into `devhost --version`, and writes versioned `.tar.gz` archives to `apps/devhost/dist/release/`.
+`just build-release-artifacts` (or `just devhost build-release-artifacts`) refreshes that bundle, cross-compiles the supported Go release targets, embeds the current `metadata.json` version into `devhost --version`, and writes versioned `.tar.gz` archives to `apps/devhost/dist/release/`.
 
-`bun run compile:devhost` refreshes that bundle, embeds the current `metadata.json` version into `devhost --version`, then writes the current-platform executable to `apps/devhost/dist/devhost`.
+`just compile` (or `just devhost compile`) refreshes that bundle, embeds the current `metadata.json` version into `devhost --version`, then writes the current-platform executable to `apps/devhost/dist/devhost`.
 
 ## Release workflow
 
@@ -79,8 +79,8 @@ To speed up frontend UI development, you can configure the on-demand asset dev l
 ## Done policy
 
 - Done means the required app docs are updated (`README.md`, relevant `AGENTS.md`, `RELEASE.md`, and `devhost.example.toml` when applicable), required validation for the affected scope has passed, and any temporary local processes started for validation are stopped.
-- When changes affect the shipped `devhost` executable or its user-visible behavior, run `bun run compile:devhost` successfully before yielding to the user.
-- If `bun run check:devhost`, packaging checks, or required documentation updates were skipped, failed, or are blocked, report the app work as incomplete and call out the exact blocker.
+- When changes affect the shipped `devhost` executable or its user-visible behavior, run `just compile` successfully before yielding to the user.
+- If `just devhost check`, packaging checks, or required documentation updates were skipped, failed, or are blocked, report the app work as incomplete and call out the exact blocker.
 - Release work is not done until the tag exists remotely, the publish workflow has reached its expected result, and the matching GitHub Release state is confirmed.
 
 ## Internal app layout

@@ -7,21 +7,8 @@
   ],
   "type": "module",
   "scripts": {
-    "build:release-artifacts:devhost": "bun run ./apps/devhost/scripts/buildReleaseArtifacts.ts",
-    "build:devtools-bundle:devhost": "bun run ./apps/devhost/scripts/buildDevtoolsBundle.ts",
-    "check": "echo 'Running formatting and policy checks...' && typescript-ai-policy check && echo 'Formatting and policy checks passed successfully!' && bun run check:devhost && bun run --cwd packages/design check && bun run --cwd packages/devhost-ui check && bun run --cwd packages/docs check",
-    "check:devhost": "./apps/devhost/scripts/check.sh",
-    "compile:devhost": "./apps/devhost/scripts/compile.sh",
-    "dev": "bun run build:devtools-bundle:devhost && DEVHOST_DEV_ASSETS_DIR=apps/devhost/internal/devtools/dist apps/devhost/bin/devhost --manifest devhost.toml",
-    "docs": "bun run --cwd packages/docs dev",
-    "install-browser": "cd packages/devhost-ui && npx playwright install chromium",
-    "nvim": "bun run ./apps/devhost/scripts/startNvim.ts --project=packages/playground",
-    "postinstall": "bun run install-browser",
-    "storybook": "bun run --cwd packages/devhost-ui storybook",
-    "test:nvim": "bun run ./apps/devhost/internal/devtools/nvim/devhost-react-highlight.nvim/tests/run.ts",
-    "fix": "bun --bun oxfmt --write .",
-    "prepare": "husky",
-    "clean": "find . -name \"node_modules\" -type d -prune -exec rm -rf '{}' +"
+    "postinstall": "just install-browser",
+    "prepare": "husky"
   },
   "nano-staged": {
     "*": "bun --bun oxfmt --write --no-error-on-unmatched-pattern"

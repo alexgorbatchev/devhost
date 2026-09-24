@@ -56,7 +56,7 @@ async function resolveLauncherPath(options: IStartNvimOptions): Promise<string> 
     throw new Error(
       `Multiple devhost Neovim launchers exist under ${options.projectRootPath}/.tmp/devhost: ` +
         `${candidates.map((candidate) => candidate.stackDirectoryName).join(", ")}.\n` +
-        "Select one with: bun run nvim -- --stack=<stack-name>",
+        "Select one with: just nvim --stack=<stack-name>",
     );
   }
 
@@ -160,7 +160,7 @@ async function doesFileExist(filePath: string): Promise<boolean> {
 }
 
 function printHelp(): void {
-  console.log(`Usage: bun run nvim -- [--project=<path>] [--stack=<name>] [nvim args...]`);
+  console.log(`Usage: just nvim [--project=<path>] [--stack=<name>] [nvim args...]`);
   console.log("");
   console.log("Launches the devhost-generated Neovim wrapper for a running stack.");
 }

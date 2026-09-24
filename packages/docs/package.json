@@ -1,26 +1,16 @@
 {
   "name": "@alexgorbatchev/devhost-docs",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
-  "scripts": {
-    "test": "bun test",
-    "sync": "bun sync.ts",
-    "dev": "bun run sync && astro dev --host 0.0.0.0",
-    "start": "bun run sync && astro dev --host 0.0.0.0",
-    "build": "bun run sync && astro build",
-    "preview": "astro preview --host 0.0.0.0",
-    "check": "bun test && bun run sync && astro check && astro build",
-    "astro": "astro"
-  },
   "dependencies": {
+    "@alexgorbatchev/devhost-design": "workspace:*",
     "@astrojs/react": "^4.4.0",
     "@astrojs/starlight": "^0.38.3",
     "astro": "^6.0.1",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "sharp": "^0.34.2",
-    "@alexgorbatchev/devhost-design": "workspace:*"
+    "sharp": "^0.34.2"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",

@@ -9,32 +9,10 @@ Because they are routed on the same host using `devhost`'s managed Caddy routing
 
 ## Commands
 
-Run commands from `packages/playground/` unless a command says otherwise.
+Start the root devhost stack from the repository root:
 
 ```bash
-bun run dev
-```
-
-Starts both the backend and frontend apps through `devhost` using `devhost.toml`.
-
-## Run through `devhost`
-
-Start the shared managed Caddy instance once from the repository root:
-
-```bash
-apps/devhost/bin/devhost caddy start --manifest packages/playground/devhost.toml
-```
-
-Then start this playground stack:
-
-```bash
-bun run --cwd packages/playground dev
-```
-
-Open the routed app at:
-
-```text
-https://devhost-devbox.cvb.lol
+just dev
 ```
 
 The manifest routes `/api/*` to the backend on port `3000` and `/` to the frontend on port `3001`, and enables the injected devtools overlay.
@@ -51,4 +29,4 @@ The manifest routes `/api/*` to the backend on port `3000` and `/` to the fronte
 
 ## Notes
 
-- The root `bun run dev` command starts the repo-root `devhost.toml`, which includes this playground split services and Storybook.
+- The root `just dev` command starts the repo-root `devhost.toml`, which includes this playground split services and Storybook.

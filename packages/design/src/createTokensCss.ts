@@ -21,8 +21,7 @@ function renderRule(selectors: string[], declarations: string[]): string {
 
 export function createTokensCss(tokens: IDesignTokens): string {
   const header =
-    "/* Generated from packages/design/src/constants.ts by `bun run --cwd packages/design write-tokens`. " +
-    "Do not edit. */\n";
+    "/* Generated from packages/design/src/constants.ts by `just design write-tokens`. " + "Do not edit. */\n";
 
   return [
     header,

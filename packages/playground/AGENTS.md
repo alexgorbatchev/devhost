@@ -4,9 +4,7 @@ Placeholder Bun + React workspace split into frontend and backend apps, used to 
 
 ## Commands
 
-- Start the full playground stack through devhost from this package root: `bun run dev`
-- Start the root devhost stack from the repo root: `bun run dev`
-- Start managed Caddy for this manifest from the repo root: `apps/devhost/bin/devhost caddy start --manifest packages/playground/devhost.toml`
+- Start the root devhost stack from the repo root: `just dev`
 
 ## Local conventions
 
@@ -18,12 +16,12 @@ Placeholder Bun + React workspace split into frontend and backend apps, used to 
 ## Local gotchas
 
 - `devhost.toml` routes both services under `https://devhost-devbox.cvb.lol` (or `https://playground.localhost` at root): `/api/*` goes to the backend, and `/` goes to the frontend.
-- The root `bun run dev` command starts the repo-root `devhost.toml`, which includes this playground split services and Storybook.
+- The root `just dev` command starts the repo-root `devhost.toml`, which includes this playground split services and Storybook.
 - Shared `oxfmt` / `oxlint` enforcement runs from the repo root; do not add workspace-local lint or format config unless these packages intentionally diverge.
 
 ## Boundaries
 
-- Always: run `bun run check:devhost` after changing `devhost.toml`.
+- Always: run `just devhost check` after changing `devhost.toml`.
 - Ask first: changing the routed hostname, fixed port, or root `package.json` `dev` delegation.
 - Never: commit any `dist/`, `node_modules/`, or a package-local lockfile.
 

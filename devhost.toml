@@ -30,14 +30,14 @@ host = "{{ env.DEVHOST_STORYBOOK }}"
 __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS = "{{ env.DEVHOST_STORYBOOK }}"
 
 [services.playground-backend]
-command = ["bun", "run", "dev"]
+command = ["just", "dev"]
 cwd = "packages/playground/backend"
 port = "auto"
 host = "{{ env.DEVHOST_PLAYGROUND }}"
 path = "/api/*"
 
 [services.playground-frontend]
-command = ["bun", "run", "dev"]
+command = ["just", "dev"]
 cwd = "packages/playground/frontend"
 port = "auto"
 host = "{{ env.DEVHOST_PLAYGROUND }}"

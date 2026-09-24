@@ -33,6 +33,9 @@ jobs:
         with:
           bun-version: 1.3.11
 
+      - name: Setup Just
+        uses: extractions/setup-just@v2
+
       - name: Derive release version from tag
         run: |
           set -euo pipefail
@@ -56,15 +59,15 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Install Playwright Browsers
-        run: bun run install-browser
+        run: just install-browser
 
       - name: Verify package
         env:
           CI: "false"
-        run: bun run check
+        run: just check
 
       - name: Build release artifacts
-        run: bun run build:release-artifacts:devhost
+        run: just build-release-artifacts
 
       - name: Create GitHub Release
         env:
