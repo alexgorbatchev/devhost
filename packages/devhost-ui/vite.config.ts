@@ -9,7 +9,7 @@ const dirname: string = path.dirname(fileURLToPath(import.meta.url));
 export const optimizeDependencyEntries: string[] = [
   "@storybook/react-dom-shim",
   "@tanstack/react-query-devtools/production",
-  "@tanstack/router-devtools",
+  "@tanstack/react-router-devtools",
 ];
 
 export default defineConfig({
