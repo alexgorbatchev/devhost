@@ -891,6 +891,292 @@ func TestStartStackStopsDevtoolsServersDuringCleanup(t *testing.T) {
 	}
 }
 
+func TestStartStackRestartServiceDoesNotStallOnRedundantHealthLoop(t *testing.T) {
+	stateDirectoryPath := t.TempDir()
+	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
+	adminAddress, stopAdmin := startTestAdminServer(t)
+	defer stopAdmin()
+	writeFakeCaddyExecutable(t, paths.ExecutablePath)
+
+	originalStartControlServer := startDevtoolsControlServer
+	originalStartDocumentInjectionServer := startDocumentInjectionServer
+	originalRegisterProcessSignals := registerProcessSignals
+	originalUnregisterProcessSignals := unregisterProcessSignals
+	originalServiceSignalSender := serviceSignalSender
+	defer func() {
+		startDevtoolsControlServer = originalStartControlServer
+		startDocumentInjectionServer = originalStartDocumentInjectionServer
+		registerProcessSignals = originalRegisterProcessSignals
+		unregisterProcessSignals = originalUnregisterProcessSignals
+		serviceSignalSender = originalServiceSignalSender
+	}()
+	serviceSignalSender = func(cmd *exec.Cmd, sig os.Signal) {
+		if cmd != nil && cmd.Process != nil {
+			_ = cmd.Process.Signal(sig)
+		}
+	}
+
+	var signalMu sync.Mutex
+	var signalChannel chan<- os.Signal
+	registerProcessSignals = func(ch chan<- os.Signal) {
+		signalMu.Lock()
+		defer signalMu.Unlock()
+		signalChannel = ch
+	}
+	unregisterProcessSignals = func(ch chan<- os.Signal) {
+		signalMu.Lock()
+		defer signalMu.Unlock()
+		signalChannel = nil
+	}
+	getSignalChannel := func() chan<- os.Signal {
+		signalMu.Lock()
+		defer signalMu.Unlock()
+		return signalChannel
+	}
+
+	var restartMu sync.Mutex
+	var restartService func([]string) error
+	startDevtoolsControlServer = func(options devtools.StartControlServerOptions) (*devtools.ControlServer, error) {
+		restartMu.Lock()
+		restartService = options.RestartService
+		restartMu.Unlock()
+		return devtools.StartControlServer(options)
+	}
+
+	servicePort := mustReservePort(t)
+	stateFilePath := filepath.Join(t.TempDir(), "restart-state.txt")
+	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
+	manifestValue.Name = "restart-health-stack"
+	manifestValue.PrimaryService = "web"
+	manifestValue.Devtools.Status.Enabled = true
+	manifestValue.Services["web"] = ResolvedService{
+		BindHost:  "127.0.0.1",
+		Command:   helperCommand(),
+		Cwd:       t.TempDir(),
+		DependsOn: []string{},
+		Env: map[string]string{
+			"GO_WANT_HELPER_PROCESS": "1",
+			"DEVHOST_HELPER_MODE":    "serve-then-probe-exit-on-restart",
+			"RESTART_STATE_FILE":     stateFilePath,
+		},
+		Health:     ResolvedHealthConfig{Host: stringPointer("127.0.0.1"), Interval: 250, Kind: "tcp", Port: intPointer(servicePort), Retries: 0, Timeout: 2000},
+		Host:       stringPointer("restart-health.localhost"),
+		InjectPort: true,
+		Name:       "web",
+		Path:       stringPointer("/"),
+		Port:       intPointer(servicePort),
+		PortSource: "fixed",
+	}
+
+	stackDone := make(chan struct {
+		exitCode int
+		err      error
+	}, 1)
+	go func() {
+		exitCode, err := StartStack(&manifestValue, []string{"web"}, StartStackOptions{
+			CaddyPaths:          paths,
+			Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
+			LogWriter:           ioDiscard{},
+			ServiceStdoutWriter: ioDiscard{},
+			ServiceStderrWriter: ioDiscard{},
+			ShutdownGracePeriod: 100 * time.Millisecond,
+		})
+		stackDone <- struct {
+			exitCode int
+			err      error
+		}{exitCode: exitCode, err: err}
+	}()
+
+	defer func() {
+		if ch := getSignalChannel(); ch != nil {
+			select {
+			case ch <- syscall.SIGTERM:
+			default:
+			}
+		}
+		select {
+		case <-stackDone:
+		case <-time.After(2 * time.Second):
+		}
+	}()
+
+	waitForCondition(t, 5*time.Second, func() bool {
+		restartMu.Lock()
+		fn := restartService
+		restartMu.Unlock()
+		if fn == nil {
+			return false
+		}
+		_, err := os.Stat(filepath.Join(paths.RoutesDirectoryPath, "restart-health.localhost.caddy"))
+		return err == nil
+	})
+
+	startTime := time.Now()
+	restartDone := make(chan error, 1)
+	go func() {
+		restartMu.Lock()
+		fn := restartService
+		restartMu.Unlock()
+		restartDone <- fn([]string{"web"})
+	}()
+
+	select {
+	case err := <-restartDone:
+		elapsed := time.Since(startTime)
+		if err != nil {
+			t.Fatalf("RestartService(...) error = %v, want nil", err)
+		}
+		if elapsed > 15*time.Second {
+			t.Fatalf("RestartService took %v, want prompt completion without redundant loop stall", elapsed)
+		}
+	case <-time.After(20 * time.Second):
+		t.Fatal("RestartService stalled on redundant health loop (exceeded 20s)")
+	}
+}
+
+func TestStartStackRestartServiceFailsPromptlyWithinHealthTimeout(t *testing.T) {
+	stateDirectoryPath := t.TempDir()
+	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
+	adminAddress, stopAdmin := startTestAdminServer(t)
+	defer stopAdmin()
+	writeFakeCaddyExecutable(t, paths.ExecutablePath)
+
+	originalStartControlServer := startDevtoolsControlServer
+	originalStartDocumentInjectionServer := startDocumentInjectionServer
+	originalRegisterProcessSignals := registerProcessSignals
+	originalUnregisterProcessSignals := unregisterProcessSignals
+	originalServiceSignalSender := serviceSignalSender
+	defer func() {
+		startDevtoolsControlServer = originalStartControlServer
+		startDocumentInjectionServer = originalStartDocumentInjectionServer
+		registerProcessSignals = originalRegisterProcessSignals
+		unregisterProcessSignals = originalUnregisterProcessSignals
+		serviceSignalSender = originalServiceSignalSender
+	}()
+	serviceSignalSender = func(cmd *exec.Cmd, sig os.Signal) {
+		if cmd != nil && cmd.Process != nil {
+			_ = cmd.Process.Signal(sig)
+		}
+	}
+
+	var signalMu sync.Mutex
+	var signalChannel chan<- os.Signal
+	registerProcessSignals = func(ch chan<- os.Signal) {
+		signalMu.Lock()
+		defer signalMu.Unlock()
+		signalChannel = ch
+	}
+	unregisterProcessSignals = func(ch chan<- os.Signal) {
+		signalMu.Lock()
+		defer signalMu.Unlock()
+		signalChannel = nil
+	}
+	getSignalChannel := func() chan<- os.Signal {
+		signalMu.Lock()
+		defer signalMu.Unlock()
+		return signalChannel
+	}
+
+	var restartMu sync.Mutex
+	var restartService func([]string) error
+	startDevtoolsControlServer = func(options devtools.StartControlServerOptions) (*devtools.ControlServer, error) {
+		restartMu.Lock()
+		restartService = options.RestartService
+		restartMu.Unlock()
+		return devtools.StartControlServer(options)
+	}
+
+	servicePort := mustReservePort(t)
+	stateFilePath := filepath.Join(t.TempDir(), "restart-state.txt")
+	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
+	manifestValue.Name = "restart-fail-stack"
+	manifestValue.PrimaryService = "web"
+	manifestValue.Devtools.Status.Enabled = true
+	manifestValue.Services["web"] = ResolvedService{
+		BindHost:  "127.0.0.1",
+		Command:   helperCommand(),
+		Cwd:       t.TempDir(),
+		DependsOn: []string{},
+		Env: map[string]string{
+			"GO_WANT_HELPER_PROCESS": "1",
+			"DEVHOST_HELPER_MODE":    "serve-then-fail-on-restart",
+			"RESTART_STATE_FILE":     stateFilePath,
+		},
+		Health:     ResolvedHealthConfig{Host: stringPointer("127.0.0.1"), Interval: 20, Kind: "tcp", Port: intPointer(servicePort), Retries: 0, Timeout: 100},
+		Host:       stringPointer("restart-fail.localhost"),
+		InjectPort: true,
+		Name:       "web",
+		Path:       stringPointer("/"),
+		Port:       intPointer(servicePort),
+		PortSource: "fixed",
+	}
+
+	stackDone := make(chan struct {
+		exitCode int
+		err      error
+	}, 1)
+	go func() {
+		exitCode, err := StartStack(&manifestValue, []string{"web"}, StartStackOptions{
+			CaddyPaths:          paths,
+			Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
+			LogWriter:           ioDiscard{},
+			ServiceStdoutWriter: ioDiscard{},
+			ServiceStderrWriter: ioDiscard{},
+			ShutdownGracePeriod: 100 * time.Millisecond,
+		})
+		stackDone <- struct {
+			exitCode int
+			err      error
+		}{exitCode: exitCode, err: err}
+	}()
+
+	defer func() {
+		if ch := getSignalChannel(); ch != nil {
+			select {
+			case ch <- syscall.SIGTERM:
+			default:
+			}
+		}
+		select {
+		case <-stackDone:
+		case <-time.After(2 * time.Second):
+		}
+	}()
+
+	waitForCondition(t, 5*time.Second, func() bool {
+		restartMu.Lock()
+		fn := restartService
+		restartMu.Unlock()
+		if fn == nil {
+			return false
+		}
+		_, err := os.Stat(filepath.Join(paths.RoutesDirectoryPath, "restart-fail.localhost.caddy"))
+		return err == nil
+	})
+
+	startTime := time.Now()
+	restartDone := make(chan error, 1)
+	go func() {
+		restartMu.Lock()
+		fn := restartService
+		restartMu.Unlock()
+		restartDone <- fn([]string{"web"})
+	}()
+
+	select {
+	case err := <-restartDone:
+		elapsed := time.Since(startTime)
+		if err == nil {
+			t.Fatal("RestartService(...) error = nil, want health check failure")
+		}
+		if elapsed > 15*time.Second {
+			t.Fatalf("RestartService took %v, want failure within 15s", elapsed)
+		}
+	case <-time.After(20 * time.Second):
+		t.Fatal("RestartService stalled on failed health check (exceeded 20s)")
+	}
+}
+
 func TestStartStackGracefulIdleTimeoutShutdown(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
@@ -1998,6 +2284,10 @@ func TestServiceHelperProcess(t *testing.T) {
 		runStderrAroundFIFOHandshakeAndExitHelper()
 	case "serve-until-health-probe-and-exit":
 		runServeUntilHealthProbeAndExitHelper()
+	case "serve-then-probe-exit-on-restart":
+		runServeThenProbeExitOnRestartHelper()
+	case "serve-then-fail-on-restart":
+		runServeThenFailOnRestartHelper()
 	case "route-aware-http-server":
 		runRouteAwareHTTPServerHelper()
 	case "spawn-child-server-and-wait":
@@ -2260,6 +2550,72 @@ func runServeUntilHealthProbeAndExitHelper() {
 	_ = connection.Close()
 	_ = listener.Close()
 	os.Exit(0)
+}
+
+func runServeThenProbeExitOnRestartHelper() {
+	port, _ := strconv.Atoi(os.Getenv("PORT"))
+	stateFilePath := os.Getenv("RESTART_STATE_FILE")
+	if _, err := os.Stat(stateFilePath); os.IsNotExist(err) {
+		_ = os.WriteFile(stateFilePath, []byte("started"), 0o644)
+		listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+		if err != nil {
+			os.Exit(1)
+		}
+		signals := make(chan os.Signal, 1)
+		signal.Notify(signals, syscall.SIGTERM)
+		go func() {
+			for {
+				conn, err := listener.Accept()
+				if err != nil {
+					return
+				}
+				_ = conn.Close()
+			}
+		}()
+		<-signals
+		_ = listener.Close()
+		os.Exit(0)
+	}
+
+	listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	if err != nil {
+		os.Exit(1)
+	}
+	connection, err := listener.Accept()
+	if err != nil {
+		os.Exit(1)
+	}
+	_ = connection.Close()
+	_ = listener.Close()
+	os.Exit(0)
+}
+
+func runServeThenFailOnRestartHelper() {
+	port, _ := strconv.Atoi(os.Getenv("PORT"))
+	stateFilePath := os.Getenv("RESTART_STATE_FILE")
+	if _, err := os.Stat(stateFilePath); os.IsNotExist(err) {
+		_ = os.WriteFile(stateFilePath, []byte("started"), 0o644)
+		listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+		if err != nil {
+			os.Exit(1)
+		}
+		signals := make(chan os.Signal, 1)
+		signal.Notify(signals, syscall.SIGTERM)
+		go func() {
+			for {
+				conn, err := listener.Accept()
+				if err != nil {
+					return
+				}
+				_ = conn.Close()
+			}
+		}()
+		<-signals
+		_ = listener.Close()
+		os.Exit(0)
+	}
+
+	os.Exit(1)
 }
 
 func runRecordStartAndWaitHelper() {
