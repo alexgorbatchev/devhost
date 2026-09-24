@@ -1,0 +1,7 @@
+# Run playground backend in development
+dev:
+    bun src/index.ts
+
+# Run playground backend in production
+start:
+    NODE_ENV=production bun src/index.ts

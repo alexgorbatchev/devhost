@@ -4,8 +4,8 @@ Local rules for the repository-level documentation in `docs/`.
 
 ## Shared commands
 
-- Validate the documentation build: `bun run check`
-- Format all files in the repository: `bun run fix`
+- Validate the documentation build: `just check`
+- Format all files in the repository: `just fix`
 
 ## Documentation topology
 

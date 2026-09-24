@@ -5,9 +5,9 @@ Bundled Neovim plugin loaded by `devhost` to send TSX/JSX cursor locators to the
 ## Commands
 
 - Smoke-load the plugin: `nvim --headless -u NONE --cmd "set rtp^=apps/devhost/internal/devtools/nvim/devhost-react-highlight.nvim" -c "lua require('devhost-react-highlight')" -c "qa"`
-- Run the standalone Neovim integration tests: `bun run apps/devhost/internal/devtools/nvim/devhost-react-highlight.nvim/tests/run.ts`
+- Run the standalone Neovim integration tests: `just test-nvim` (or `just devhost test-nvim`)
 - Check the Go devtools package after changing bundled plugin behavior: `cd apps/devhost && go test ./internal/devtools`
-- Check the devhost app after launcher, embed, or control-server changes: `bun run check:devhost`
+- Check the devhost app after launcher, embed, or control-server changes: `just devhost check`
 
 ## Local conventions
 

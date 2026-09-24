@@ -1,0 +1,28 @@
+build-version := `bun -e 'const metadata = await Bun.file("./metadata.json").json(); console.log(metadata.version)'`
+build-version-variable := "github.com/alexgorbatchev/devhost/apps/devhost/internal/version.buildVersion"
+
+# Build embedded devtools bundle
+build-devtools-bundle:
+    bun run ./scripts/buildDevtoolsBundle.ts
+
+# Compile devhost executable for the current platform
+compile: build-devtools-bundle
+    mkdir -p ./dist
+    go build -trimpath -ldflags "-X {{build-version-variable}}={{build-version}}" -o ./dist/devhost ./cmd/devhost
+
+# Run Go vetting and tests
+check: build-devtools-bundle
+    go vet ./...
+    go test ./...
+
+# Build versioned release archives
+build-release-artifacts *args: build-devtools-bundle
+    bun run ./scripts/buildReleaseArtifacts.ts {{args}}
+
+# Start Neovim with playground project
+nvim *args:
+    bun run ./scripts/startNvim.ts {{args}}
+
+# Run standalone React Highlight Neovim plugin tests
+test-nvim:
+    bun run ./internal/devtools/nvim/devhost-react-highlight.nvim/tests/run.ts

@@ -25,7 +25,7 @@ describe("createTokensCss", () => {
     expect(css).toContain("--dh-surface: light-surface;");
   });
 
-  it("matches the committed tokens.css (regenerate with `bun run --cwd packages/design write-tokens`)", () => {
+  it("matches the committed tokens.css (regenerate with `just design write-tokens`)", () => {
     expect(readFileSync(join(designPackagePath, "tokens.css"), "utf8")).toBe(createTokensCss(DESIGN_TOKENS));
   });
 });

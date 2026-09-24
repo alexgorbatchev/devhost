@@ -4,8 +4,8 @@ Single source of the devhost design tokens (colors, radii, host markers, termina
 
 ## Commands
 
-- Check package-local validations (TypeScript, tests including the `tokens.css` freshness check): `bun run check`
-- Regenerate `tokens.css` from `src/constants.ts`: `bun run write-tokens`
+- Check package-local validations (TypeScript, tests including the `tokens.css` freshness check): `just design check`
+- Regenerate `tokens.css` from `src/constants.ts`: `just design write-tokens`
 - Open the devtools UI design reference (from the repo root): `just design`
 - Open the docs site design reference (from the repo root): `just design-docs`
 
@@ -20,7 +20,7 @@ Single source of the devhost design tokens (colors, radii, host markers, termina
 
 ## Boundaries
 
-- Always: after changing token values, run `bun run write-tokens` and check both consumers (`bun run --cwd packages/devhost-ui check`, `bun run --cwd packages/docs check`) and both design references.
+- Always: after changing token values, run `just design write-tokens` and check both consumers (`just ui check`, `just docs check`) and both design references.
 - Ask first: renaming or removing a `--dh-*` custom property, because the devtools bundle, the docs site, and the references all consume it.
 - Never: add color literals to consumers when a token exists here.
 - Never: add tests that only snapshot full stylesheet text; verify rule structure and rely on the `tokens.css` freshness check instead.

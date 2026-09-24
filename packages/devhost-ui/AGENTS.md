@@ -4,8 +4,8 @@ Local React workspace for the injected `devhost` browser UI that gets embedded i
 
 ## Commands
 
-- Check package-local validations: `bun run --cwd packages/devhost-ui check`
-- Storybook: `bun run --cwd packages/devhost-ui storybook`
+- Check package-local validations: `just ui check`
+- Storybook: `just ui storybook` (or `just storybook`)
 - Open the design reference in the default browser (from the repo root): `just design`
 
 ## Local conventions
@@ -17,8 +17,8 @@ Local React workspace for the injected `devhost` browser UI that gets embedded i
 
 ## Local gotchas
 
-- This package is the source of truth for the injected browser UI, but the Go app embeds a generated bundle from `apps/devhost/internal/devtools/dist/`. That directory is ignored; run `bun run build:devtools-bundle:devhost`, `bun run check:devhost`, or `bun run compile:devhost` instead of committing generated bundle files.
-- Shared `oxfmt` / `oxlint` enforcement runs from the repo root, not from this workspace `check` script.
+- This package is the source of truth for the injected browser UI, but the Go app embeds a generated bundle from `apps/devhost/internal/devtools/dist/`. That directory is ignored; run `just build-devtools-bundle`, `just devhost check`, or `just compile` instead of committing generated bundle files.
+- Shared `oxfmt` / `oxlint` enforcement runs from the repo root, not from this workspace `check` recipe.
 - For styling, theme, and feature-layout rules under `src/devtools/`, follow `src/devtools/AGENTS.md` and `src/devtools/features/AGENTS.md`.
 
 ## Boundaries

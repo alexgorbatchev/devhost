@@ -1,0 +1,14 @@
+# Run package-local checks (TypeScript, unused exports, unit tests with coverage, Storybook vitest tests)
+check:
+    bun tsgo --noEmit -p tsconfig.json
+    bun --bun x ts-unused tsconfig.json
+    bun test --coverage
+    bun vitest run -c vitest.storybook.config.ts
+
+# Ensure Playwright Chromium is available for Storybook
+install-browser:
+    bun playwright install chromium
+
+# Start interactive Storybook dev server
+storybook:
+    bun storybook dev --ci --port 6006

@@ -1,0 +1,27 @@
+# Start local docs server with host 0.0.0.0
+dev: sync
+    bun astro dev --host 0.0.0.0
+
+# Alias for dev
+start: dev
+
+# Sync generated docs content from app README and examples
+sync:
+    bun sync.ts
+
+# Run docs unit tests
+test:
+    bun test
+
+# Build the static docs site
+build: sync
+    bun astro build
+
+# Check package-local validations
+check: test sync
+    bun astro check
+    bun astro build
+
+# Preview built static site
+preview:
+    bun astro preview --host 0.0.0.0

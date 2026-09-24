@@ -1,0 +1,26 @@
+# Open the injected devtools UI design reference in the default browser
+[macos]
+devtools:
+    open references/devtools.html
+
+[linux]
+devtools:
+    xdg-open references/devtools.html
+
+# Open the docs site design reference in the default browser
+[macos]
+docs:
+    open references/docs.html
+
+[linux]
+docs:
+    xdg-open references/docs.html
+
+# Check package-local validations (TypeScript and unit tests)
+check:
+    bun tsc --noEmit -p tsconfig.json
+    bun test
+
+# Regenerate tokens.css from src/constants.ts
+write-tokens:
+    bun scripts/writeTokensCss.ts
