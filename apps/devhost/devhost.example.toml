@@ -172,10 +172,13 @@ restartServices = "alt+ctrl+r"
 #
 # [annotation.actions.agent]
 # adapter = "claude-code"
+# args = ["--thinking", "high"]
 #
 # Agent actions support the built-in adapters `"pi"`, `"claude-code"`, and `"opencode"`.
+# Built-in adapters accept an optional `args` string array to pass extra CLI flags (e.g. model,
+# thinking level, or permission modes) while preserving built-in status reporting and prompt handoff.
 # Custom agent actions omit `adapter` and use `displayName`, `command`, optional `cwd`, and optional `env`
-# inside `[annotation.actions.agent]`.
+# inside `[annotation.actions.agent]` (`args` is valid only with `adapter`).
 #
 # [[annotation.actions]]
 # id = "jira"

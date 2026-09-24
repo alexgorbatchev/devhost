@@ -77,6 +77,7 @@ type DevtoolsStatusConfig struct {
 }
 
 type ValidatedAgent struct {
+	Args        []string
 	Command     []string
 	Cwd         string
 	DisplayName string
