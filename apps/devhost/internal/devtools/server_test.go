@@ -993,9 +993,6 @@ func TestControlServerTerminalSessionsRetainTailAndIdleCleanup(t *testing.T) {
 	waitForCondition(t, 5*time.Second, func() bool {
 		return starter.sessions[0].closeCountValue() == 1
 	})
-	if closeCount := starter.sessions[0].closeCountValue(); closeCount != 1 {
-		t.Fatalf("close count after idle cleanup = %d, want 1", closeCount)
-	}
 }
 
 func serverURL(port int, path string) string {

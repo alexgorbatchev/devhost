@@ -261,15 +261,19 @@ func (wm *WatchManager) handleEvent(serviceName string, event fsnotify.Event) {
 		duration = 200 * time.Millisecond
 	}
 
-	wm.debounceTimers[serviceName] = time.AfterFunc(duration, func() {
+	var timer *time.Timer
+	timer = time.AfterFunc(duration, func() {
 		wm.tracker.SetDirty(serviceName, true)
 		if wm.onDirty != nil {
 			wm.onDirty(serviceName)
 		}
 		wm.timersMu.Lock()
-		delete(wm.debounceTimers, serviceName)
+		if wm.debounceTimers[serviceName] == timer {
+			delete(wm.debounceTimers, serviceName)
+		}
 		wm.timersMu.Unlock()
 	})
+	wm.debounceTimers[serviceName] = timer
 }
 
 func (wm *WatchManager) CancelTimer(serviceName string) {

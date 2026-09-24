@@ -2532,12 +2532,17 @@ func runRecordStartServeAndExitHelper() {
 	if waitValue != "" {
 		tracePath := os.Getenv("START_TRACE_PATH")
 		deadline := time.Now().Add(10 * time.Second)
+		found := false
 		for time.Now().Before(deadline) {
 			data, err := os.ReadFile(tracePath)
 			if err == nil && strings.Contains(string(data), waitValue) {
+				found = true
 				break
 			}
 			time.Sleep(10 * time.Millisecond)
+		}
+		if !found {
+			panic(fmt.Sprintf("timed out waiting for trace value %q in %s", waitValue, tracePath))
 		}
 	} else if delayMilliseconds, _ := strconv.Atoi(os.Getenv("EXIT_DELAY_MS")); delayMilliseconds > 0 {
 		time.Sleep(time.Duration(delayMilliseconds) * time.Millisecond)
