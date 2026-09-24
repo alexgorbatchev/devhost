@@ -389,24 +389,6 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 						startedServices = append(startedServices, restartedService)
 						startedServicesMu.Unlock()
 					}
-
-					// Wait for health check to pass successfully before continuing to next service
-					if service.Health.Kind != "" {
-						retries := service.Health.Retries
-						intervalMs := service.Health.Interval * 1000
-
-						healthy := false
-						for r := 0; r <= retries; r++ {
-							if CheckServiceHealth(service.Health) {
-								healthy = true
-								break
-							}
-							time.Sleep(time.Duration(intervalMs) * time.Millisecond)
-						}
-						if !healthy {
-							return fmt.Errorf("service %s did not become healthy within the timeout", serviceName)
-						}
-					}
 				}
 				return nil
 			},
