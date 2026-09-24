@@ -153,10 +153,19 @@ func TestWatchManagerDebounceTimerNotDeletedByPriorTimer(t *testing.T) {
 	wm.SetDebounceDuration(1 * time.Hour)
 	wm.handleEvent("web", fsnotify.Event{Name: "foo2.js", Op: fsnotify.Write})
 
+	timerDone := make(chan struct{}, 1)
+	wm.onTimerDone = func(svc string) {
+		select {
+		case timerDone <- struct{}{}:
+		default:
+		}
+	}
 	close(holdFirst)
-
-	time.Sleep(20 * time.Millisecond)
-
+	select {
+	case <-timerDone:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timeout waiting for timer cleanup")
+	}
 	if !wm.HasPendingTimer("web") {
 		t.Fatal("expected pending timer for web to remain present after first timer completed")
 	}

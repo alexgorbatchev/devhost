@@ -2544,8 +2544,6 @@ func runRecordStartServeAndExitHelper() {
 		if !found {
 			panic(fmt.Sprintf("timed out waiting for trace value %q in %s", waitValue, tracePath))
 		}
-	} else if delayMilliseconds, _ := strconv.Atoi(os.Getenv("EXIT_DELAY_MS")); delayMilliseconds > 0 {
-		time.Sleep(time.Duration(delayMilliseconds) * time.Millisecond)
 	}
 
 	_ = server.Close()

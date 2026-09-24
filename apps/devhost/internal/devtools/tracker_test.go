@@ -39,7 +39,7 @@ func TestActivityTracker_ActiveCount(t *testing.T) {
 
 	// Incrementing active connection count keeps tracker from being idle
 	tracker.IncrementActive()
-	time.Sleep(15 * time.Millisecond)
+	tracker.lastActivity.Store(time.Now().Add(-1 * time.Hour).UnixNano())
 	if tracker.IsIdle(shortTimeout) {
 		t.Fatalf("expected tracker not to be idle while active count > 0")
 	}
