@@ -189,7 +189,7 @@ func validateAgentAnnotationAction(actionID string, actionLabel string, value ma
 	if !ok {
 		return ValidatedAnnotationAction{DisplayName: actionLabel, ID: actionID, Kind: "agent"}
 	}
-	allowKeys(agentValue, []string{"adapter", "command", "cwd", "displayName", "env"}, "annotation.actions."+actionID+".agent", schemaIssues)
+	allowKeys(agentValue, []string{"adapter", "args", "command", "cwd", "displayName", "env"}, "annotation.actions."+actionID+".agent", schemaIssues)
 	agent := validateAgentActionFields("annotation.actions."+actionID+".agent", agentValue, manifestDirectoryPath, schemaIssues, validationIssues, false)
 	if agent.DisplayName == "" || agent.Kind == "" {
 		return ValidatedAnnotationAction{DisplayName: actionLabel, ID: actionID, Kind: "agent"}
@@ -237,6 +237,7 @@ func createAgentAnnotationAction(actionID string, actionLabel string, agent Vali
 func validateAgentActionFields(path string, value map[string]any, manifestDirectoryPath string, schemaIssues *[]string, validationIssues *[]string, allowAdapterDisplayName bool) ValidatedAgent {
 
 	adapterValue, hasAdapter := readOptionalString(value, "adapter", schemaIssues)
+	argsValue, hasArgs := readOptionalStringArrayAllowEmpty(value, "args", schemaIssues)
 	commandValue, hasCommand := readOptionalStringArray(value, "command", schemaIssues)
 	displayName, hasDisplayName := readOptionalNonEmptyString(value, "displayName", schemaIssues)
 	cwdValue, hasCwd := readOptionalString(value, "cwd", schemaIssues)
@@ -250,15 +251,20 @@ func validateAgentActionFields(path string, value map[string]any, manifestDirect
 
 		switch adapterValue {
 		case "pi":
-			return ValidatedAgent{DisplayName: readAdapterDisplayName("Pi", displayName, hasDisplayName), Kind: "pi"}
+			return ValidatedAgent{Args: argsValue, DisplayName: readAdapterDisplayName("Pi", displayName, hasDisplayName), Kind: "pi"}
 		case "claude-code":
-			return ValidatedAgent{DisplayName: readAdapterDisplayName("Claude Code", displayName, hasDisplayName), Kind: "claude-code"}
+			return ValidatedAgent{Args: argsValue, DisplayName: readAdapterDisplayName("Claude Code", displayName, hasDisplayName), Kind: "claude-code"}
 		case "opencode":
-			return ValidatedAgent{DisplayName: readAdapterDisplayName("OpenCode", displayName, hasDisplayName), Kind: "opencode"}
+			return ValidatedAgent{Args: argsValue, DisplayName: readAdapterDisplayName("OpenCode", displayName, hasDisplayName), Kind: "opencode"}
 		default:
 			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.adapter must be one of pi, claude-code, or opencode.", path))
 			return ValidatedAgent{}
 		}
+	}
+
+	if hasArgs {
+		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.args is only supported when adapter is configured.", path))
+		return ValidatedAgent{}
 	}
 
 	if !hasCommand || !hasDisplayName {
@@ -992,6 +998,14 @@ func readOptionalPort(value map[string]any, key string, path string, schemaIssue
 }
 
 func readOptionalStringArray(value map[string]any, key string, schemaIssues *[]string) ([]string, bool) {
+	return parseOptionalStringArray(value, key, schemaIssues, false)
+}
+
+func readOptionalStringArrayAllowEmpty(value map[string]any, key string, schemaIssues *[]string) ([]string, bool) {
+	return parseOptionalStringArray(value, key, schemaIssues, true)
+}
+
+func parseOptionalStringArray(value map[string]any, key string, schemaIssues *[]string, allowEmpty bool) ([]string, bool) {
 	rawValue, ok := value[key]
 	if !ok {
 		return nil, false
@@ -1013,7 +1027,7 @@ func readOptionalStringArray(value map[string]any, key string, schemaIssues *[]s
 		result = append(result, stringValue)
 	}
 
-	if len(result) == 0 {
+	if !allowEmpty && len(result) == 0 {
 		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must contain at least one string.", key))
 		return nil, false
 	}
