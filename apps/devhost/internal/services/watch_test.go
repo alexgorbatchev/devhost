@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
 )
 
 func TestDirtyTracker(t *testing.T) {
@@ -124,3 +126,39 @@ func TestWatchManagerDebounceAndDynamicDir(t *testing.T) {
 		t.Fatal("expected web pending timer to be removed after cancellation")
 	}
 }
+
+func TestWatchManagerDebounceTimerNotDeletedByPriorTimer(t *testing.T) {
+	tracker := NewDirtyTracker()
+	firstFired := make(chan struct{})
+	holdFirst := make(chan struct{})
+	wm := NewWatchManager(tracker, func(svc string) {
+		select {
+		case <-firstFired:
+		default:
+			close(firstFired)
+			<-holdFirst
+		}
+	}, nil, "")
+	defer wm.StopAll()
+
+	wm.SetDebounceDuration(5 * time.Millisecond)
+	wm.handleEvent("web", fsnotify.Event{Name: "foo.js", Op: fsnotify.Write})
+
+	select {
+	case <-firstFired:
+	case <-time.After(1 * time.Second):
+		t.Fatal("timeout waiting for first timer callback to fire")
+	}
+
+	wm.SetDebounceDuration(1 * time.Hour)
+	wm.handleEvent("web", fsnotify.Event{Name: "foo2.js", Op: fsnotify.Write})
+
+	close(holdFirst)
+
+	time.Sleep(20 * time.Millisecond)
+
+	if !wm.HasPendingTimer("web") {
+		t.Fatal("expected pending timer for web to remain present after first timer completed")
+	}
+}
+
