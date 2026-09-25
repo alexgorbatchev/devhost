@@ -19,8 +19,9 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Run standalone React Highlight Neovim plugin tests: `just test-nvim` (or `just devhost test-nvim`)
 - Start the root devhost stack locally: `just dev`
 - Start the docs site locally: `just docs` (or `just docs dev`)
-- Open the injected devtools UI design reference (`packages/design/references/devtools.html`) in the default browser: `just design`
+- Open the injected devtools UI design reference (`packages/design/references/devtools.html`) in the default browser: `just design-devtools`
 - Open the docs site design reference (`packages/design/references/docs.html`) in the default browser: `just design-docs`
+- Open the general design reference document (`packages/design/references/design-system.html`) in the default browser: `just design-system`
 
 ## Documentation policy
 
@@ -33,7 +34,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 ## Workspace map
 
 - `apps/devhost/` — Go CLI app; follow `apps/devhost/AGENTS.md`
-- `packages/design/` — shared `--dh-*` design tokens and both design references; follow `packages/design/AGENTS.md`
+- `packages/design/` — shared `--dh-*` design tokens and design references; follow `packages/design/AGENTS.md`
 - `packages/devhost-ui/` — injected browser UI package; follow `packages/devhost-ui/AGENTS.md`
 - `packages/docs/` — public Astro docs site; follow `packages/docs/AGENTS.md`
 
@@ -45,7 +46,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Workspace `justfile` recipes are package-local validation only; do not duplicate shared lint/format enforcement there unless a workspace intentionally diverges.
 - `just devhost check` refreshes the generated embedded devtools bundle, then runs `go vet ./...` and `go test ./...` in `apps/devhost/`.
 - `just ui check` runs the package TypeScript check, `bun test --coverage`, and vitest storybook tests in `packages/devhost-ui/`.
-- `packages/design` is the single source of the devhost colors, radii, and host markers for the devtools UI, the docs site, and both design references. Change values only in `packages/design/src/constants.ts` and regenerate `tokens.css`; its `just design check` fails while the committed file is stale.
+- `packages/design` is the single source of the devhost colors, radii, and host markers for the devtools UI, the docs site, and design references. Change values only in `packages/design/src/constants.ts` and regenerate `tokens.css`; its `just design check` fails while the committed file is stale.
 - `just docs check` runs `bun test`, the content sync, `astro check`, and `astro build`.
 - `just docs dev` (or `just docs`) binds Astro to `0.0.0.0` so the docs site can be reached from outside the current environment.
 - `packages/docs` allows all dev/preview hosts in `astro.config.mjs`, so the docs server should be treated as broadly reachable while it is running.
