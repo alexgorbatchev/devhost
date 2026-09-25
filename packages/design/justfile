@@ -16,6 +16,15 @@ docs:
 docs:
     xdg-open references/docs.html
 
+# Open the general design reference document in the default browser
+[macos]
+system:
+    open references/design-system.html
+
+[linux]
+system:
+    xdg-open references/design-system.html
+
 # Check package-local validations (TypeScript and unit tests)
 check:
     bun tsc --noEmit -p tsconfig.json

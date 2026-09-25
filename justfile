@@ -48,5 +48,11 @@ test-nvim: devhost::test-nvim
 clean:
     find . -name "node_modules" -type d -prune -exec rm -rf '{}' +
 
+# Open the injected devtools UI design reference in the default browser
+design-devtools: design::devtools
+
+# Open the general design reference document in the default browser
+design-system: design::system
+
 # Open the docs site design reference in the default browser
 design-docs: design::docs
