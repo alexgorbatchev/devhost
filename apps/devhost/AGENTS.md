@@ -48,7 +48,7 @@ Build the versioned cross-platform release tarballs:
 just build-release-artifacts
 ```
 
-Human-only repo format step when manual cleanup is explicitly needed:
+Format the repo:
 
 ```bash
 just fix
@@ -60,7 +60,7 @@ Run the app check suite:
 just devhost check
 ```
 
-The human-only `fix` recipe runs `oxfmt --write` for the repo using the shared root config. Agents should not run it directly; formatting is handled automatically by the repo's git hooks. `just devhost check` refreshes the generated embedded devtools bundle, then runs `go vet ./...` and `go test ./...` from this app. The injected UI checks and Storybook coverage now live in `packages/devhost-ui/`. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
+The `fix` recipe runs `oxfmt --write` for the repo using the shared root config; the pre-commit hook also formats staged files. `just devhost check` refreshes the generated embedded devtools bundle, then runs `go vet ./...` and `go test ./...` from this app. The injected UI checks and Storybook coverage now live in `packages/devhost-ui/`. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
 
 `scripts/buildDevtoolsBundle.ts` refreshes the generated injected devtools assets under `internal/devtools/dist/` used by Go `//go:embed`. That `dist/` directory is intentionally ignored; do not commit its generated `devtools.js` or `xterm.css` files.
 
