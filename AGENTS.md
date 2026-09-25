@@ -7,7 +7,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Install all workspaces when `node_modules/` is missing: `bun install`
 - Ensure Playwright Chromium is available for Storybook workflows: `just install-browser`
 - Check the full repo: `just check`
-- Human-only repo-wide formatting command for explicit manual cleanup: `just fix`
+- Repo-wide formatting command: `just fix`
 - Refresh the generated embedded devtools bundle: `just build-devtools-bundle` (or `just devhost build-devtools-bundle`)
 - Check `devhost` app-only validations: `just devhost check`
 - Build `devhost` release tarballs: `just build-release-artifacts` (or `just devhost build-release-artifacts`)
