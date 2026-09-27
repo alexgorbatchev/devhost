@@ -69,7 +69,7 @@ Run the app check suite:
 just devhost check
 ```
 
-The `fix` recipe runs `oxfmt --write` for the repo using the shared root config; the pre-commit hook also formats staged files. `just devhost check` refreshes the generated embedded devtools bundle, runs the Bun script tests, then runs `go vet ./...` and `go test ./...` from this app. The injected UI checks and Storybook coverage now live in `packages/devhost-ui/`. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
+The root `fix` recipe runs `oxfmt --write` for the repo using the shared root config and `gofmt -w` for this app; the pre-commit hook also formats staged files. `just devhost check` refreshes the generated embedded devtools bundle, then runs `just devhost lint` (fails on unformatted Go files, then `go vet ./...`, `go tool predeclared ./...`, and `go mod tidy -diff`) and the Bun script tests and `go test ./...` from this app. The injected UI checks and Storybook coverage now live in `packages/devhost-ui/`. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
 
 `scripts/buildDevtoolsBundle.ts` refreshes the generated injected devtools assets under `internal/devtools/dist/` used by Go `//go:embed`. That `dist/` directory is intentionally ignored; do not commit its generated `devtools.js` or `xterm.css` files.
 
@@ -151,6 +151,10 @@ To speed up frontend UI development, you can configure the on-demand asset dev l
 - Use `kind = "command"` for non-agent side effects such as creating Jira tickets, invoking a project-local CLI, or kicking off other local automation from an annotation.
 - `devhost` does not ship built-in Jira or generic webhook adapters for annotation submission; integrations like ticket creation must be implemented by the configured command reading `DEVHOST_ANNOTATION_FILE` or `DEVHOST_ANNOTATION_PROMPT_FILE`.
 - Durable annotation queues are supported for `agent` actions only. `command` actions always start standalone terminal sessions and do not participate in the queue.
+
+## Go naming rule
+
+- Name error variables `err`, never `error`. A local `error` hides the built-in `error` type for every function literal declared after it in that scope, so a later `func() (T, error)` fails to compile. `just devhost lint` runs `go tool predeclared ./...` (a `tool` directive in `go.mod`), which rejects any declaration that shadows a built-in identifier.
 
 ## Shared tooling boundary
 

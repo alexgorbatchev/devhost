@@ -10,10 +10,23 @@ compile: build-devtools-bundle
     mkdir -p ./dist
     go build -trimpath -ldflags "-X {{build-version-variable}}={{build-version}}" -o ./dist/devhost ./cmd/devhost
 
-# Run Go vetting and tests
-check: build-devtools-bundle
-    bun test ./scripts/__tests__
+# Fail on unformatted Go files, go vet findings, shadowed built-ins such as a variable named error, and module drift
+lint: build-devtools-bundle
+    #!/usr/bin/env bash
+    set -euo pipefail
+    unformatted="$(gofmt -l .)"
+    if [ -n "${unformatted}" ]; then
+        echo "gofmt is not clean, run 'just fix' from the repo root:" >&2
+        echo "${unformatted}" >&2
+        exit 1
+    fi
     go vet ./...
+    go tool predeclared ./...
+    go mod tidy -diff
+
+# Run Go formatting, vetting, module hygiene, and tests
+check: lint
+    bun test ./scripts/__tests__
     go test ./...
 
 # Build versioned release archives

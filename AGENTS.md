@@ -7,7 +7,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Install all workspaces when `node_modules/` is missing: `bun install`
 - Ensure Playwright Chromium is available for Storybook workflows: `just install-browser`
 - Check the full repo: `just check`
-- Repo-wide formatting command: `just fix`
+- Repo-wide formatting command: `just fix` (`oxfmt` for the repo, `gofmt -w` for `apps/devhost`)
 - Refresh the generated embedded devtools bundle: `just build-devtools-bundle` (or `just devhost build-devtools-bundle`)
 - Check `devhost` app-only validations: `just devhost check`
 - Build `devhost` release tarballs: `just build-release-artifacts` (or `just devhost build-release-artifacts`)
@@ -45,7 +45,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Root `just check` runs `typescript-ai-policy check` first (wrapping the shared `oxfmt` / `oxlint` enforcement and excluding `packages/playground/**`), then delegates to package-specific checks.
 - `packages/playground/**` is a local dev harness and is intentionally excluded from shared root lint/format enforcement.
 - Workspace `justfile` recipes are package-local validation only; do not duplicate shared lint/format enforcement there unless a workspace intentionally diverges.
-- `just devhost check` refreshes the generated embedded devtools bundle, runs the Bun script tests, then runs `go vet ./...` and `go test ./...` in `apps/devhost/`.
+- `just devhost check` refreshes the generated embedded devtools bundle, then runs `just devhost lint` (fails on any `gofmt -l` output, then `go vet ./...`, `go tool predeclared ./...`, and `go mod tidy -diff`) and the Bun script tests and `go test ./...` in `apps/devhost/`. Fix formatting failures with root `just fix`.
 - `just ui check` runs the package TypeScript check, `bun test --coverage`, and vitest storybook tests in `packages/devhost-ui/`.
 - `packages/design` is the single source of the devhost colors, radii, and host markers for the devtools UI, the docs site, and design references. Change values only in `packages/design/src/constants.ts` and regenerate `tokens.css`; its `just design check` fails while the committed file is stale.
 - `just docs check` runs `bun test`, the content sync, `astro check`, and `astro build`.
