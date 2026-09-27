@@ -16,6 +16,7 @@ check:
 # Human-only repo-wide formatting command for explicit manual cleanup
 fix:
     bun --bun oxfmt --write .
+    gofmt -w apps/devhost
 
 # Ensure Playwright Chromium is available for Storybook workflows
 install-browser: ui::install-browser
