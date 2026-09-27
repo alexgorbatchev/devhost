@@ -221,9 +221,9 @@ func TestLogServiceURLs(t *testing.T) {
 func TestCollectServicesHealthIncludesUnmanagedServices(t *testing.T) {
 	t.Parallel()
 
-	listener, error := net.Listen("tcp", "127.0.0.1:0")
-	if error != nil {
-		t.Fatalf("Listen(...) error = %v", error)
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen(...) error = %v", err)
 	}
 	defer listener.Close()
 
@@ -294,7 +294,7 @@ func TestStartStackKeepsStartupCrashUntilExplicitShutdown(t *testing.T) {
 		PortSource: "fixed",
 	}
 
-	exitCode, error := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
+	exitCode, err := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           ioDiscard{},
@@ -302,8 +302,8 @@ func TestStartStackKeepsStartupCrashUntilExplicitShutdown(t *testing.T) {
 		ServiceStderrWriter: ioDiscard{},
 		ShutdownGracePeriod: 100 * time.Millisecond,
 	})
-	if error != nil || exitCode != 143 {
-		t.Fatalf("StartStack(...) = (%d, %v), want explicit SIGTERM shutdown", exitCode, error)
+	if err != nil || exitCode != 143 {
+		t.Fatalf("StartStack(...) = (%d, %v), want explicit SIGTERM shutdown", exitCode, err)
 	}
 
 	assertDirectoryEntries(t, paths.HostClaimsDirectoryPath, nil)
@@ -366,7 +366,7 @@ func TestStartStackRetriesAutoPortAndPrefixesOutput(t *testing.T) {
 		PortSource: "auto",
 	}
 
-	exitCode, error := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
+	exitCode, err := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           &infoLog,
@@ -374,8 +374,8 @@ func TestStartStackRetriesAutoPortAndPrefixesOutput(t *testing.T) {
 		ServiceStderrWriter: &stderrLog,
 		ShutdownGracePeriod: 100 * time.Millisecond,
 	})
-	if error != nil {
-		t.Fatalf("StartStack(...) error = %v", error)
+	if err != nil {
+		t.Fatalf("StartStack(...) error = %v", err)
 	}
 
 	if exitCode != 143 {
@@ -387,9 +387,9 @@ func TestStartStackRetriesAutoPortAndPrefixesOutput(t *testing.T) {
 		t.Fatalf("final auto port = %v, want reassigned port", finalPort)
 	}
 
-	assignedPortText, error := os.ReadFile(tracePath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) error = %v", error)
+	assignedPortText, err := os.ReadFile(tracePath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) error = %v", err)
 	}
 	if strings.TrimSpace(string(assignedPortText)) != strconv.Itoa(*finalPort) {
 		t.Fatalf("assigned port = %q, want %d", strings.TrimSpace(string(assignedPortText)), *finalPort)
@@ -439,7 +439,7 @@ func TestStartStackVerifiesManagedCaddyAdminBeforeServiceStartup(t *testing.T) {
 		Name:       "web",
 	}
 
-	_, error := StartStack(&manifestValue, []string{"web"}, StartStackOptions{
+	_, err := StartStack(&manifestValue, []string{"web"}, StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           ioDiscard{},
@@ -447,8 +447,8 @@ func TestStartStackVerifiesManagedCaddyAdminBeforeServiceStartup(t *testing.T) {
 		ServiceStderrWriter: ioDiscard{},
 		ShutdownGracePeriod: 100 * time.Millisecond,
 	})
-	if error == nil || !strings.Contains(error.Error(), "Caddy admin API is not available. Run 'devhost caddy start' first.") {
-		t.Fatalf("StartStack(...) error = %v, want admin availability failure", error)
+	if err == nil || !strings.Contains(err.Error(), "Caddy admin API is not available. Run 'devhost caddy start' first.") {
+		t.Fatalf("StartStack(...) error = %v, want admin availability failure", err)
 	}
 
 	if _, statError := os.Stat(tracePath); !os.IsNotExist(statError) {
@@ -474,9 +474,9 @@ func TestStartStackStartsServicesInDependencyOrderAndStopsOnSignalAfterChildExit
 			"web": {DependsOn: []string{"api"}},
 		},
 	}
-	serviceOrder, error := ResolveServiceOrder(orderManifest)
-	if error != nil {
-		t.Fatalf("ResolveServiceOrder(...) error = %v", error)
+	serviceOrder, err := ResolveServiceOrder(orderManifest)
+	if err != nil {
+		t.Fatalf("ResolveServiceOrder(...) error = %v", err)
 	}
 	if !stringSlicesEqual(serviceOrder, []string{"api", "web"}) {
 		t.Fatalf("ResolveServiceOrder(...) = %#v, want dependency-first order", serviceOrder)
@@ -523,7 +523,7 @@ func TestStartStackStartsServicesInDependencyOrderAndStopsOnSignalAfterChildExit
 		PortSource: "fixed",
 	}
 
-	exitCode, error := startStackUntilServiceExit(t, &manifestValue, serviceOrder, StartStackOptions{
+	exitCode, err := startStackUntilServiceExit(t, &manifestValue, serviceOrder, StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           ioDiscard{},
@@ -531,8 +531,8 @@ func TestStartStackStartsServicesInDependencyOrderAndStopsOnSignalAfterChildExit
 		ServiceStderrWriter: ioDiscard{},
 		ShutdownGracePeriod: 100 * time.Millisecond,
 	})
-	if error != nil {
-		t.Fatalf("StartStack(...) error = %v", error)
+	if err != nil {
+		t.Fatalf("StartStack(...) error = %v", err)
 	}
 	if exitCode != 143 {
 		t.Fatalf("StartStack(...) exit code = %d, want 143", exitCode)
@@ -591,7 +591,7 @@ func TestStartStackActivatesRoutesAndCleansUpAfterShutdown(t *testing.T) {
 		PortSource: "fixed",
 	}
 
-	exitCode, error := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
+	exitCode, err := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           &infoLog,
@@ -599,16 +599,16 @@ func TestStartStackActivatesRoutesAndCleansUpAfterShutdown(t *testing.T) {
 		ServiceStderrWriter: ioDiscard{},
 		ShutdownGracePeriod: 100 * time.Millisecond,
 	})
-	if error != nil {
-		t.Fatalf("StartStack(...) error = %v", error)
+	if err != nil {
+		t.Fatalf("StartStack(...) error = %v", err)
 	}
 	if exitCode != 143 {
 		t.Fatalf("StartStack(...) exit code = %d, want 143", exitCode)
 	}
 
-	traceText, error := os.ReadFile(tracePath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) error = %v", error)
+	traceText, err := os.ReadFile(tracePath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) error = %v", err)
 	}
 	trace := strings.TrimSpace(string(traceText))
 	if trace != strings.Join([]string{
@@ -672,7 +672,7 @@ func TestStartStackActivatesDevtoolsRoutesForRootCompatibleServices(t *testing.T
 		PortSource: "fixed",
 	}
 
-	exitCode, error := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
+	exitCode, err := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           ioDiscard{},
@@ -680,16 +680,16 @@ func TestStartStackActivatesDevtoolsRoutesForRootCompatibleServices(t *testing.T
 		ServiceStderrWriter: ioDiscard{},
 		ShutdownGracePeriod: 100 * time.Millisecond,
 	})
-	if error != nil {
-		t.Fatalf("StartStack(...) error = %v", error)
+	if err != nil {
+		t.Fatalf("StartStack(...) error = %v", err)
 	}
 	if exitCode != 143 {
 		t.Fatalf("StartStack(...) exit code = %d, want 143", exitCode)
 	}
 
-	traceText, error := os.ReadFile(tracePath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) error = %v", error)
+	traceText, err := os.ReadFile(tracePath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) error = %v", err)
 	}
 	if !contains(nonEmptyLines(string(traceText)), "devtools-route-ok") {
 		t.Fatalf("trace = %#v, want devtools-route-ok", nonEmptyLines(string(traceText)))
@@ -733,7 +733,7 @@ func TestStartStackSkipsDocumentInjectionForNonRootRoutes(t *testing.T) {
 		PortSource: "fixed",
 	}
 
-	exitCode, error := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
+	exitCode, err := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           ioDiscard{},
@@ -741,16 +741,16 @@ func TestStartStackSkipsDocumentInjectionForNonRootRoutes(t *testing.T) {
 		ServiceStderrWriter: ioDiscard{},
 		ShutdownGracePeriod: 100 * time.Millisecond,
 	})
-	if error != nil {
-		t.Fatalf("StartStack(...) error = %v", error)
+	if err != nil {
+		t.Fatalf("StartStack(...) error = %v", err)
 	}
 	if exitCode != 143 {
 		t.Fatalf("StartStack(...) exit code = %d, want 143", exitCode)
 	}
 
-	traceText, error := os.ReadFile(tracePath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) error = %v", error)
+	traceText, err := os.ReadFile(tracePath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) error = %v", err)
 	}
 	if !contains(nonEmptyLines(string(traceText)), "devtools-route-missing") {
 		t.Fatalf("trace = %#v, want devtools-route-missing", nonEmptyLines(string(traceText)))
@@ -797,7 +797,7 @@ func TestStartStackLeavesDevtoolsRoutesUnmountedWhenAllFeaturesAreDisabled(t *te
 		PortSource: "fixed",
 	}
 
-	exitCode, error := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
+	exitCode, err := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           ioDiscard{},
@@ -805,16 +805,16 @@ func TestStartStackLeavesDevtoolsRoutesUnmountedWhenAllFeaturesAreDisabled(t *te
 		ServiceStderrWriter: ioDiscard{},
 		ShutdownGracePeriod: 100 * time.Millisecond,
 	})
-	if error != nil {
-		t.Fatalf("StartStack(...) error = %v", error)
+	if err != nil {
+		t.Fatalf("StartStack(...) error = %v", err)
 	}
 	if exitCode != 143 {
 		t.Fatalf("StartStack(...) exit code = %d, want 143", exitCode)
 	}
 
-	traceText, error := os.ReadFile(tracePath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) error = %v", error)
+	traceText, err := os.ReadFile(tracePath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) error = %v", err)
 	}
 	if !contains(nonEmptyLines(string(traceText)), "devtools-route-missing") {
 		t.Fatalf("trace = %#v, want devtools-route-missing", nonEmptyLines(string(traceText)))
@@ -838,18 +838,18 @@ func TestStartStackStopsDevtoolsServersDuringCleanup(t *testing.T) {
 	controlPort := 0
 	documentPort := 0
 	startDevtoolsControlServer = func(options devtools.StartControlServerOptions) (*devtools.ControlServer, error) {
-		server, error := devtools.StartControlServer(options)
-		if error == nil {
+		server, err := devtools.StartControlServer(options)
+		if err == nil {
 			controlPort = server.Port()
 		}
-		return server, error
+		return server, err
 	}
 	startDocumentInjectionServer = func(options devtools.StartDocumentInjectionServerOptions) (*devtools.DocumentInjectionServer, error) {
-		server, error := devtools.StartDocumentInjectionServer(options)
-		if error == nil {
+		server, err := devtools.StartDocumentInjectionServer(options)
+		if err == nil {
 			documentPort = server.Port()
 		}
-		return server, error
+		return server, err
 	}
 
 	servicePort := mustReservePort(t)
@@ -876,7 +876,7 @@ func TestStartStackStopsDevtoolsServersDuringCleanup(t *testing.T) {
 		PortSource: "fixed",
 	}
 
-	exitCode, error := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
+	exitCode, err := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           ioDiscard{},
@@ -884,8 +884,8 @@ func TestStartStackStopsDevtoolsServersDuringCleanup(t *testing.T) {
 		ServiceStderrWriter: ioDiscard{},
 		ShutdownGracePeriod: 100 * time.Millisecond,
 	})
-	if error != nil {
-		t.Fatalf("StartStack(...) error = %v", error)
+	if err != nil {
+		t.Fatalf("StartStack(...) error = %v", err)
 	}
 	if exitCode != 143 {
 		t.Fatalf("StartStack(...) exit code = %d, want 143", exitCode)
@@ -898,19 +898,19 @@ func TestStartStackStopsDevtoolsServersDuringCleanup(t *testing.T) {
 	}
 
 	waitForCondition(t, time.Second, func() bool {
-		_, error := http.Get(serverURL(controlPort, "/__devhost__/inject.js"))
-		return error != nil
+		_, err := http.Get(serverURL(controlPort, "/__devhost__/inject.js"))
+		return err != nil
 	})
-	if response, error := http.Get(serverURL(controlPort, "/__devhost__/inject.js")); error == nil {
+	if response, err := http.Get(serverURL(controlPort, "/__devhost__/inject.js")); err == nil {
 		defer response.Body.Close()
 		t.Fatalf("control server request unexpectedly succeeded with status %d", response.StatusCode)
 	}
 
 	waitForCondition(t, time.Second, func() bool {
-		_, error := http.Get(serverURL(documentPort, "/"))
-		return error != nil
+		_, err := http.Get(serverURL(documentPort, "/"))
+		return err != nil
 	})
-	if response, error := http.Get(serverURL(documentPort, "/")); error == nil {
+	if response, err := http.Get(serverURL(documentPort, "/")); err == nil {
 		defer response.Body.Close()
 		t.Fatalf("document injection server request unexpectedly succeeded with status %d", response.StatusCode)
 	}
@@ -1375,8 +1375,8 @@ func TestStartStackReturnsSignalExitCodeAndUnregistersHandlers(t *testing.T) {
 			}()
 
 			waitForCondition(t, 5*time.Second, func() bool {
-				_, error := os.Stat(startTracePath)
-				return error == nil && getSignalChannel() != nil
+				_, err := os.Stat(startTracePath)
+				return err == nil && getSignalChannel() != nil
 			})
 
 			getSignalChannel() <- tc.signal
@@ -1428,7 +1428,7 @@ func TestStartStackActivatesRoutesOnlyAfterHealthPasses(t *testing.T) {
 		PortSource: "fixed",
 	}
 
-	exitCode, error := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
+	exitCode, err := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           ioDiscard{},
@@ -1436,8 +1436,8 @@ func TestStartStackActivatesRoutesOnlyAfterHealthPasses(t *testing.T) {
 		ServiceStderrWriter: ioDiscard{},
 		ShutdownGracePeriod: 100 * time.Millisecond,
 	})
-	if error != nil {
-		t.Fatalf("StartStack(...) error = %v", error)
+	if err != nil {
+		t.Fatalf("StartStack(...) error = %v", err)
 	}
 	if exitCode != 143 {
 		t.Fatalf("StartStack(...) exit code = %d, want 143", exitCode)
@@ -1457,7 +1457,7 @@ func TestStopStartedServicesStopsRunningServicesGracefully(t *testing.T) {
 	firstReadyPath := filepath.Join(t.TempDir(), "first-ready.txt")
 	secondReadyPath := filepath.Join(t.TempDir(), "second-ready.txt")
 
-	firstService, error := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+	firstService, err := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 		BindHost:   "127.0.0.1",
 		Command:    helperCommand(),
 		Cwd:        t.TempDir(),
@@ -1465,11 +1465,11 @@ func TestStopStartedServicesStopsRunningServicesGracefully(t *testing.T) {
 		InjectPort: true,
 		Name:       "first",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
-	if error != nil {
-		t.Fatalf("startServiceProcess(first) error = %v", error)
+	if err != nil {
+		t.Fatalf("startServiceProcess(first) error = %v", err)
 	}
 
-	secondService, error := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+	secondService, err := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 		BindHost:   "127.0.0.1",
 		Command:    helperCommand(),
 		Cwd:        t.TempDir(),
@@ -1477,8 +1477,8 @@ func TestStopStartedServicesStopsRunningServicesGracefully(t *testing.T) {
 		InjectPort: true,
 		Name:       "second",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
-	if error != nil {
-		t.Fatalf("startServiceProcess(second) error = %v", error)
+	if err != nil {
+		t.Fatalf("startServiceProcess(second) error = %v", err)
 	}
 
 	waitForCondition(t, 5*time.Second, func() bool {
@@ -1486,13 +1486,13 @@ func TestStopStartedServicesStopsRunningServicesGracefully(t *testing.T) {
 		_, err2 := os.Stat(secondReadyPath)
 		return err1 == nil && err2 == nil
 	})
-	if error := stopStartedServices([]*startedService{firstService, secondService}, 2*time.Second); error != nil {
-		t.Fatalf("stopStartedServices(...) error = %v", error)
+	if err := stopStartedServices([]*startedService{firstService, secondService}, 2*time.Second); err != nil {
+		t.Fatalf("stopStartedServices(...) error = %v", err)
 	}
 
-	stopTrace, error := os.ReadFile(stopLogPath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) error = %v", error)
+	stopTrace, err := os.ReadFile(stopLogPath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) error = %v", err)
 	}
 	stopLines := nonEmptyLines(string(stopTrace))
 	if !contains(stopLines, "first") || !contains(stopLines, "second") {
@@ -1507,18 +1507,18 @@ func TestStopStartedServiceStopsDescendantProcesses(t *testing.T) {
 	servicePort := mustReservePort(t)
 	childPidPath := filepath.Join(t.TempDir(), "child.pid")
 	t.Cleanup(func() {
-		childPidText, error := os.ReadFile(childPidPath)
-		if error != nil {
+		childPidText, err := os.ReadFile(childPidPath)
+		if err != nil {
 			return
 		}
-		childPid, error := strconv.Atoi(strings.TrimSpace(string(childPidText)))
-		if error != nil {
+		childPid, err := strconv.Atoi(strings.TrimSpace(string(childPidText)))
+		if err != nil {
 			return
 		}
 		_ = syscall.Kill(childPid, syscall.SIGKILL)
 	})
 
-	startedService, error := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+	startedService, err := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 		BindHost: "127.0.0.1",
 		Command:  helperCommand(),
 		Cwd:      t.TempDir(),
@@ -1532,26 +1532,26 @@ func TestStopStartedServiceStopsDescendantProcesses(t *testing.T) {
 		InjectPort: true,
 		Name:       "web",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
-	if error != nil {
-		t.Fatalf("startServiceProcess(...) error = %v", error)
+	if err != nil {
+		t.Fatalf("startServiceProcess(...) error = %v", err)
 	}
 
 	waitForCondition(t, 5*time.Second, func() bool {
-		conn, error := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
-		if error != nil {
+		conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
+		if err != nil {
 			return false
 		}
 		_ = conn.Close()
 		return true
 	})
 
-	if error := stopStartedService(startedService, 100*time.Millisecond); error != nil {
-		t.Fatalf("stopStartedService(...) error = %v", error)
+	if err := stopStartedService(startedService, 100*time.Millisecond); err != nil {
+		t.Fatalf("stopStartedService(...) error = %v", err)
 	}
 
 	waitForCondition(t, 5*time.Second, func() bool {
-		conn, error := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
-		if error != nil {
+		conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
+		if err != nil {
 			return true
 		}
 		_ = conn.Close()
@@ -1563,18 +1563,18 @@ func TestStopStartedServiceStopsDetachedDescendantProcesses(t *testing.T) {
 	servicePort := mustReservePort(t)
 	childPidPath := filepath.Join(t.TempDir(), "child.pid")
 	t.Cleanup(func() {
-		childPidText, error := os.ReadFile(childPidPath)
-		if error != nil {
+		childPidText, err := os.ReadFile(childPidPath)
+		if err != nil {
 			return
 		}
-		childPid, error := strconv.Atoi(strings.TrimSpace(string(childPidText)))
-		if error != nil {
+		childPid, err := strconv.Atoi(strings.TrimSpace(string(childPidText)))
+		if err != nil {
 			return
 		}
 		_ = syscall.Kill(childPid, syscall.SIGKILL)
 	})
 
-	startedService, error := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+	startedService, err := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 		BindHost: "127.0.0.1",
 		Command:  helperCommand(),
 		Cwd:      t.TempDir(),
@@ -1588,26 +1588,26 @@ func TestStopStartedServiceStopsDetachedDescendantProcesses(t *testing.T) {
 		InjectPort: true,
 		Name:       "web",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
-	if error != nil {
-		t.Fatalf("startServiceProcess(...) error = %v", error)
+	if err != nil {
+		t.Fatalf("startServiceProcess(...) error = %v", err)
 	}
 
 	waitForCondition(t, 5*time.Second, func() bool {
-		conn, error := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
-		if error != nil {
+		conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
+		if err != nil {
 			return false
 		}
 		_ = conn.Close()
 		return true
 	})
 
-	if error := stopStartedService(startedService, 100*time.Millisecond); error != nil {
-		t.Fatalf("stopStartedService(...) error = %v", error)
+	if err := stopStartedService(startedService, 100*time.Millisecond); err != nil {
+		t.Fatalf("stopStartedService(...) error = %v", err)
 	}
 
 	waitForCondition(t, 5*time.Second, func() bool {
-		conn, error := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
-		if error != nil {
+		conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
+		if err != nil {
 			return true
 		}
 		_ = conn.Close()
@@ -1623,18 +1623,18 @@ func TestStopStartedServiceStopsDescendantsSpawnedDuringSignalHandling(t *testin
 	servicePort := mustReservePort(t)
 	childPidPath := filepath.Join(t.TempDir(), "child.pid")
 	t.Cleanup(func() {
-		childPidText, error := os.ReadFile(childPidPath)
-		if error != nil {
+		childPidText, err := os.ReadFile(childPidPath)
+		if err != nil {
 			return
 		}
-		childPid, error := strconv.Atoi(strings.TrimSpace(string(childPidText)))
-		if error != nil {
+		childPid, err := strconv.Atoi(strings.TrimSpace(string(childPidText)))
+		if err != nil {
 			return
 		}
 		_ = syscall.Kill(childPid, syscall.SIGKILL)
 	})
 
-	startedService, error := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+	startedService, err := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 		BindHost: "127.0.0.1",
 		Command:  helperCommand(),
 		Cwd:      t.TempDir(),
@@ -1648,22 +1648,22 @@ func TestStopStartedServiceStopsDescendantsSpawnedDuringSignalHandling(t *testin
 		InjectPort: true,
 		Name:       "web",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
-	if error != nil {
-		t.Fatalf("startServiceProcess(...) error = %v", error)
+	if err != nil {
+		t.Fatalf("startServiceProcess(...) error = %v", err)
 	}
 
-	if error := stopStartedService(startedService, 250*time.Millisecond); error != nil {
-		t.Fatalf("stopStartedService(...) error = %v", error)
+	if err := stopStartedService(startedService, 250*time.Millisecond); err != nil {
+		t.Fatalf("stopStartedService(...) error = %v", err)
 	}
 
 	waitForCondition(t, 5*time.Second, func() bool {
-		_, error := os.Stat(childPidPath)
-		return error == nil
+		_, err := os.Stat(childPidPath)
+		return err == nil
 	})
 
 	waitForCondition(t, 5*time.Second, func() bool {
-		conn, error := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
-		if error != nil {
+		conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
+		if err != nil {
 			return true
 		}
 		_ = conn.Close()
@@ -1679,19 +1679,19 @@ func TestStopStartedServiceStopsDetachedDescendantsExitedDuringStartup(t *testin
 	servicePort := mustReservePort(t)
 	childPIDPath := filepath.Join(t.TempDir(), "child.pid")
 	t.Cleanup(func() {
-		childPIDText, error := os.ReadFile(childPIDPath)
-		if error != nil {
+		childPIDText, err := os.ReadFile(childPIDPath)
+		if err != nil {
 			return
 		}
-		childPID, error := strconv.Atoi(strings.TrimSpace(string(childPIDText)))
-		if error != nil {
+		childPID, err := strconv.Atoi(strings.TrimSpace(string(childPIDText)))
+		if err != nil {
 			return
 		}
 		_ = syscall.Kill(childPID, syscall.SIGKILL)
 		_, _ = syscall.Wait4(childPID, nil, 0, nil)
 	})
 
-	startedService, error := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+	startedService, err := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 		BindHost: "127.0.0.1",
 		Command:  helperCommand(),
 		Cwd:      t.TempDir(),
@@ -1705,26 +1705,26 @@ func TestStopStartedServiceStopsDetachedDescendantsExitedDuringStartup(t *testin
 		InjectPort: true,
 		Name:       "web",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
-	if error != nil {
-		t.Fatalf("startServiceProcess(...) error = %v", error)
+	if err != nil {
+		t.Fatalf("startServiceProcess(...) error = %v", err)
 	}
 
 	waitForCondition(t, 5*time.Second, func() bool {
-		conn, error := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
-		if error != nil {
+		conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
+		if err != nil {
 			return false
 		}
 		_ = conn.Close()
 		return true
 	})
 
-	if error := stopStartedService(startedService, 250*time.Millisecond); error != nil {
-		t.Fatalf("stopStartedService(...) error = %v", error)
+	if err := stopStartedService(startedService, 250*time.Millisecond); err != nil {
+		t.Fatalf("stopStartedService(...) error = %v", err)
 	}
 
 	waitForCondition(t, 5*time.Second, func() bool {
-		conn, error := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
-		if error != nil {
+		conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
+		if err != nil {
 			return true
 		}
 		_ = conn.Close()
@@ -1748,25 +1748,25 @@ func TestStopStartedServiceStopsLateExternalPortRespawns(t *testing.T) {
 		"TRIGGER_PATH="+triggerPath,
 	)
 	coordinator.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	if error := coordinator.Start(); error != nil {
-		t.Fatalf("coordinator.Start() error = %v", error)
+	if err := coordinator.Start(); err != nil {
+		t.Fatalf("coordinator.Start() error = %v", err)
 	}
 	t.Cleanup(func() {
 		if coordinator.Process != nil {
 			_ = syscall.Kill(-coordinator.Process.Pid, syscall.SIGKILL)
 		}
-		childPIDText, error := os.ReadFile(childPIDPath)
-		if error != nil {
+		childPIDText, err := os.ReadFile(childPIDPath)
+		if err != nil {
 			return
 		}
-		childPID, error := strconv.Atoi(strings.TrimSpace(string(childPIDText)))
-		if error != nil {
+		childPID, err := strconv.Atoi(strings.TrimSpace(string(childPIDText)))
+		if err != nil {
 			return
 		}
 		_ = syscall.Kill(childPID, syscall.SIGKILL)
 	})
 
-	startedService, error := startServiceProcess(newResolvedManifest(tempDirectory, "127.0.0.1:20197"), ResolvedService{
+	startedService, err := startServiceProcess(newResolvedManifest(tempDirectory, "127.0.0.1:20197"), ResolvedService{
 		BindHost: "127.0.0.1",
 		Command:  helperCommand(),
 		Cwd:      tempDirectory,
@@ -1781,22 +1781,22 @@ func TestStopStartedServiceStopsLateExternalPortRespawns(t *testing.T) {
 		Port:       &servicePort,
 		PortSource: "fixed",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
-	if error != nil {
-		t.Fatalf("startServiceProcess(...) error = %v", error)
+	if err != nil {
+		t.Fatalf("startServiceProcess(...) error = %v", err)
 	}
 
-	if error := stopStartedService(startedService, 4*time.Second); error != nil {
-		t.Fatalf("stopStartedService(...) error = %v", error)
+	if err := stopStartedService(startedService, 4*time.Second); err != nil {
+		t.Fatalf("stopStartedService(...) error = %v", err)
 	}
 
 	waitForCondition(t, 5*time.Second, func() bool {
-		_, error := os.Stat(childPIDPath)
-		return error == nil
+		_, err := os.Stat(childPIDPath)
+		return err == nil
 	})
 
 	waitForCondition(t, 5*time.Second, func() bool {
-		conn, error := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
-		if error != nil {
+		conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
+		if err != nil {
 			return true
 		}
 		_ = conn.Close()
@@ -1867,15 +1867,15 @@ func TestStopStartedServiceReturnsShutdownFailureDetails(t *testing.T) {
 	startedService.shutdownWith = syscall.SIGTERM
 	startedService.shutdownMu.Unlock()
 
-	error := stopStartedService(startedService, 50*time.Millisecond)
-	if error == nil {
+	err := stopStartedService(startedService, 50*time.Millisecond)
+	if err == nil {
 		t.Fatal("stopStartedService(...) error = nil, want shutdown failure")
 	}
-	if !strings.Contains(error.Error(), "failed to shut down service web after SIGTERM and SIGKILL") {
-		t.Fatalf("stopStartedService(...) error = %q, want shutdown failure summary", error)
+	if !strings.Contains(err.Error(), "failed to shut down service web after SIGTERM and SIGKILL") {
+		t.Fatalf("stopStartedService(...) error = %q, want shutdown failure summary", err)
 	}
-	if !strings.Contains(error.Error(), "listener still active on 127.0.0.1:3010 (pids: 4321)") {
-		t.Fatalf("stopStartedService(...) error = %q, want surviving listener details", error)
+	if !strings.Contains(err.Error(), "listener still active on 127.0.0.1:3010 (pids: 4321)") {
+		t.Fatalf("stopStartedService(...) error = %q, want surviving listener details", err)
 	}
 }
 
@@ -1911,24 +1911,24 @@ func TestStopStartedServicesAggregatesShutdownFailures(t *testing.T) {
 		return startedService
 	}
 
-	error := stopStartedServices([]*startedService{
+	err := stopStartedServices([]*startedService{
 		newExitedService("api", firstPort),
 		newExitedService("web", secondPort),
 	}, 50*time.Millisecond)
-	if error == nil {
+	if err == nil {
 		t.Fatal("stopStartedServices(...) error = nil, want aggregated shutdown failure")
 	}
-	if !strings.Contains(error.Error(), "failed to shut down service api after SIGTERM and SIGKILL") {
-		t.Fatalf("stopStartedServices(...) error = %q, want api shutdown failure", error)
+	if !strings.Contains(err.Error(), "failed to shut down service api after SIGTERM and SIGKILL") {
+		t.Fatalf("stopStartedServices(...) error = %q, want api shutdown failure", err)
 	}
-	if !strings.Contains(error.Error(), "failed to shut down service web after SIGTERM and SIGKILL") {
-		t.Fatalf("stopStartedServices(...) error = %q, want web shutdown failure", error)
+	if !strings.Contains(err.Error(), "failed to shut down service web after SIGTERM and SIGKILL") {
+		t.Fatalf("stopStartedServices(...) error = %q, want web shutdown failure", err)
 	}
-	if !strings.Contains(error.Error(), "listener still active on 127.0.0.1:3011 (pids: 4001)") {
-		t.Fatalf("stopStartedServices(...) error = %q, want first listener details", error)
+	if !strings.Contains(err.Error(), "listener still active on 127.0.0.1:3011 (pids: 4001)") {
+		t.Fatalf("stopStartedServices(...) error = %q, want first listener details", err)
 	}
-	if !strings.Contains(error.Error(), "listener still active on 127.0.0.1:3012 (pids: 4002)") {
-		t.Fatalf("stopStartedServices(...) error = %q, want second listener details", error)
+	if !strings.Contains(err.Error(), "listener still active on 127.0.0.1:3012 (pids: 4002)") {
+		t.Fatalf("stopStartedServices(...) error = %q, want second listener details", err)
 	}
 }
 
@@ -1961,18 +1961,18 @@ func TestStopStartedServiceDoesNotWaitForZombieDescendants(t *testing.T) {
 
 	childPIDPath := filepath.Join(t.TempDir(), "child.pid")
 	t.Cleanup(func() {
-		childPIDText, error := os.ReadFile(childPIDPath)
-		if error != nil {
+		childPIDText, err := os.ReadFile(childPIDPath)
+		if err != nil {
 			return
 		}
-		childPID, error := strconv.Atoi(strings.TrimSpace(string(childPIDText)))
-		if error != nil {
+		childPID, err := strconv.Atoi(strings.TrimSpace(string(childPIDText)))
+		if err != nil {
 			return
 		}
 		_, _ = syscall.Wait4(childPID, nil, 0, nil)
 	})
 
-	startedService, error := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+	startedService, err := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 		BindHost: "127.0.0.1",
 		Command:  helperCommand(),
 		Cwd:      t.TempDir(),
@@ -1985,13 +1985,13 @@ func TestStopStartedServiceDoesNotWaitForZombieDescendants(t *testing.T) {
 		InjectPort: true,
 		Name:       "web",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
-	if error != nil {
-		t.Fatalf("startServiceProcess(...) error = %v", error)
+	if err != nil {
+		t.Fatalf("startServiceProcess(...) error = %v", err)
 	}
 
 	startTime := time.Now()
-	if error := stopStartedService(startedService, 1500*time.Millisecond); error != nil {
-		t.Fatalf("stopStartedService(...) error = %v", error)
+	if err := stopStartedService(startedService, 1500*time.Millisecond); err != nil {
+		t.Fatalf("stopStartedService(...) error = %v", err)
 	}
 	elapsed := time.Since(startTime)
 
@@ -2005,15 +2005,15 @@ func TestReadListeningProcessIDsForBindHostSeparatesInterfaces(t *testing.T) {
 		t.Skip("linux-specific listener discovery test")
 	}
 
-	probeIPv4, error := net.Listen("tcp4", "127.0.0.1:0")
-	if error != nil {
-		t.Fatalf("Listen(tcp4) error = %v", error)
+	probeIPv4, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen(tcp4) error = %v", err)
 	}
 	port := probeIPv4.Addr().(*net.TCPAddr).Port
-	probeIPv6, error := net.Listen("tcp6", fmt.Sprintf("[::1]:%d", port))
-	if error != nil {
+	probeIPv6, err := net.Listen("tcp6", fmt.Sprintf("[::1]:%d", port))
+	if err != nil {
 		_ = probeIPv4.Close()
-		t.Skipf("dual-stack loopback port sharing unavailable: %v", error)
+		t.Skipf("dual-stack loopback port sharing unavailable: %v", err)
 	}
 	_ = probeIPv4.Close()
 	_ = probeIPv6.Close()
@@ -2031,8 +2031,8 @@ func TestReadListeningProcessIDsForBindHostSeparatesInterfaces(t *testing.T) {
 			"CHILD_PID_PATH="+pidPath,
 			"PORT="+strconv.Itoa(port),
 		)
-		if error := command.Start(); error != nil {
-			t.Fatalf("startBoundListener(%q) error = %v", bindHost, error)
+		if err := command.Start(); err != nil {
+			t.Fatalf("startBoundListener(%q) error = %v", bindHost, err)
 		}
 		t.Cleanup(func() {
 			if command.Process != nil {
@@ -2052,21 +2052,21 @@ func TestReadListeningProcessIDsForBindHostSeparatesInterfaces(t *testing.T) {
 		return ipv4Error == nil && ipv6Error == nil
 	})
 
-	ipv4PIDText, error := os.ReadFile(ipv4PIDPath)
-	if error != nil {
-		t.Fatalf("ReadFile(ipv4PIDPath) error = %v", error)
+	ipv4PIDText, err := os.ReadFile(ipv4PIDPath)
+	if err != nil {
+		t.Fatalf("ReadFile(ipv4PIDPath) error = %v", err)
 	}
-	ipv6PIDText, error := os.ReadFile(ipv6PIDPath)
-	if error != nil {
-		t.Fatalf("ReadFile(ipv6PIDPath) error = %v", error)
+	ipv6PIDText, err := os.ReadFile(ipv6PIDPath)
+	if err != nil {
+		t.Fatalf("ReadFile(ipv6PIDPath) error = %v", err)
 	}
-	ipv4PID, error := strconv.Atoi(strings.TrimSpace(string(ipv4PIDText)))
-	if error != nil {
-		t.Fatalf("Atoi(ipv4PID) error = %v", error)
+	ipv4PID, err := strconv.Atoi(strings.TrimSpace(string(ipv4PIDText)))
+	if err != nil {
+		t.Fatalf("Atoi(ipv4PID) error = %v", err)
 	}
-	ipv6PID, error := strconv.Atoi(strings.TrimSpace(string(ipv6PIDText)))
-	if error != nil {
-		t.Fatalf("Atoi(ipv6PID) error = %v", error)
+	ipv6PID, err := strconv.Atoi(strings.TrimSpace(string(ipv6PIDText)))
+	if err != nil {
+		t.Fatalf("Atoi(ipv6PID) error = %v", err)
 	}
 
 	ipv4Listeners := readListeningProcessIDsForBindHost("127.0.0.1", port)
@@ -2116,8 +2116,8 @@ func TestStopStartedServicesSignalsInReverseOrder(t *testing.T) {
 		}
 	}
 
-	if error := stopStartedServices([]*startedService{firstService, secondService}, 100*time.Millisecond); error != nil {
-		t.Fatalf("stopStartedServices(...) error = %v", error)
+	if err := stopStartedServices([]*startedService{firstService, secondService}, 100*time.Millisecond); err != nil {
+		t.Fatalf("stopStartedServices(...) error = %v", err)
 	}
 
 	if !stringSlicesEqual(signalOrder, []string{"second:terminated", "first:terminated"}) {
@@ -2130,7 +2130,7 @@ func TestStopStartedServicesSignalsInReverseOrder(t *testing.T) {
 
 func TestStopStartedServiceEscalatesToSIGKILL(t *testing.T) {
 	readyPath := filepath.Join(t.TempDir(), "ready.txt")
-	startedService, error := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+	startedService, err := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 		BindHost:   "127.0.0.1",
 		Command:    helperCommand(),
 		Cwd:        t.TempDir(),
@@ -2138,16 +2138,16 @@ func TestStopStartedServiceEscalatesToSIGKILL(t *testing.T) {
 		InjectPort: true,
 		Name:       "worker",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
-	if error != nil {
-		t.Fatalf("startServiceProcess(...) error = %v", error)
+	if err != nil {
+		t.Fatalf("startServiceProcess(...) error = %v", err)
 	}
 
 	waitForCondition(t, 5*time.Second, func() bool {
 		_, err := os.Stat(readyPath)
 		return err == nil
 	})
-	if error := stopStartedService(startedService, 50*time.Millisecond); error != nil {
-		t.Fatalf("stopStartedService(...) error = %v", error)
+	if err := stopStartedService(startedService, 50*time.Millisecond); err != nil {
+		t.Fatalf("stopStartedService(...) error = %v", err)
 	}
 	if startedService.exitCodeValue() != -1 {
 		t.Fatalf("exit code = %d, want signal exit", startedService.exitCodeValue())
@@ -2226,8 +2226,8 @@ func TestStartStackRunsDaemonLifecycleCommands(t *testing.T) {
 	}()
 
 	waitForCondition(t, 5*time.Second, func() bool {
-		traceText, error := os.ReadFile(tracePath)
-		if error != nil {
+		traceText, err := os.ReadFile(tracePath)
+		if err != nil {
 			return false
 		}
 		return contains(nonEmptyLines(string(traceText)), "start")
@@ -2242,9 +2242,9 @@ func TestStartStackRunsDaemonLifecycleCommands(t *testing.T) {
 		t.Fatalf("StartStack(...) exit code = %d, want 143", result.exitCode)
 	}
 
-	traceText, error := os.ReadFile(tracePath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) error = %v", error)
+	traceText, err := os.ReadFile(tracePath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) error = %v", err)
 	}
 	if !stringSlicesEqual(nonEmptyLines(string(traceText)), []string{"status:stopped", "start", "status:running", "stop"}) {
 		t.Fatalf("trace lines = %#v, want daemon start/status/stop sequence", nonEmptyLines(string(traceText)))
@@ -2257,9 +2257,9 @@ func TestStartStackRunsDaemonLifecycleCommands(t *testing.T) {
 func TestCollectServicesHealthChecksDaemonLifecycleServicesWithoutForegroundProcess(t *testing.T) {
 	t.Parallel()
 
-	listener, error := net.Listen("tcp", "127.0.0.1:0")
-	if error != nil {
-		t.Fatalf("Listen(...) error = %v", error)
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen(...) error = %v", err)
 	}
 	defer listener.Close()
 
@@ -2394,9 +2394,9 @@ func helperCommandWithMode(mode string) []string {
 func startTestAdminServer(t *testing.T) (string, func()) {
 	t.Helper()
 
-	listener, error := net.Listen("tcp", "127.0.0.1:0")
-	if error != nil {
-		t.Fatalf("Listen(...) error = %v", error)
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen(...) error = %v", err)
 	}
 
 	server := &http.Server{Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -2433,19 +2433,19 @@ func waitForCondition(t *testing.T, timeout time.Duration, condition func() bool
 
 func writeFakeCaddyExecutable(t *testing.T, executablePath string) {
 	t.Helper()
-	if error := os.MkdirAll(filepath.Dir(executablePath), 0o755); error != nil {
-		t.Fatalf("MkdirAll(...) error = %v", error)
+	if err := os.MkdirAll(filepath.Dir(executablePath), 0o755); err != nil {
+		t.Fatalf("MkdirAll(...) error = %v", err)
 	}
-	if error := os.WriteFile(executablePath, []byte("#!/bin/sh\nexit 0\n"), 0o755); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
+	if err := os.WriteFile(executablePath, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 }
 
 func assertDirectoryEntries(t *testing.T, directoryPath string, want []string) {
 	t.Helper()
-	entries, error := os.ReadDir(directoryPath)
-	if error != nil {
-		t.Fatalf("ReadDir(%q) error = %v", directoryPath, error)
+	entries, err := os.ReadDir(directoryPath)
+	if err != nil {
+		t.Fatalf("ReadDir(%q) error = %v", directoryPath, err)
 	}
 
 	got := []string{}
@@ -2460,9 +2460,9 @@ func assertDirectoryEntries(t *testing.T, directoryPath string, want []string) {
 
 func assertRouteDirectoryEmpty(t *testing.T, routesDirectoryPath string) {
 	t.Helper()
-	entries, error := os.ReadDir(routesDirectoryPath)
-	if error != nil {
-		t.Fatalf("ReadDir(...) error = %v", error)
+	entries, err := os.ReadDir(routesDirectoryPath)
+	if err != nil {
+		t.Fatalf("ReadDir(...) error = %v", err)
 	}
 
 	files := []string{}
@@ -2479,9 +2479,9 @@ func assertRouteDirectoryEmpty(t *testing.T, routesDirectoryPath string) {
 
 func mustReservePort(t *testing.T) int {
 	t.Helper()
-	listener, error := net.Listen("tcp", "127.0.0.1:0")
-	if error != nil {
-		t.Fatalf("Listen(...) error = %v", error)
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen(...) error = %v", err)
 	}
 	defer listener.Close()
 	return listener.Addr().(*net.TCPAddr).Port
@@ -2501,8 +2501,8 @@ func runAutoPortRetryHelper() {
 		os.Exit(1)
 	}
 
-	if error := os.WriteFile(tracePath, []byte(strconv.Itoa(port)), 0o644); error != nil {
-		panic(error)
+	if err := os.WriteFile(tracePath, []byte(strconv.Itoa(port)), 0o644); err != nil {
+		panic(err)
 	}
 
 	// Serve until the TCP health probe connects, then exit cleanly; a fixed serving window races the probe under load.
@@ -2536,8 +2536,8 @@ func runDelayedRouteHealthServerHelper() {
 		time.Sleep(25 * time.Millisecond)
 	}
 
-	if error := os.WriteFile(tracePath, []byte(strings.Join(traceLines, "\n")), 0o644); error != nil {
-		panic(error)
+	if err := os.WriteFile(tracePath, []byte(strings.Join(traceLines, "\n")), 0o644); err != nil {
+		panic(err)
 	}
 
 	_ = server.Close()
@@ -2723,8 +2723,8 @@ func runRouteAwareHTTPServerHelper() {
 			claimChecks = append(claimChecks, "devtools-route-missing")
 		}
 	}
-	if error := os.WriteFile(tracePath, []byte(strings.Join(claimChecks, "\n")), 0o644); error != nil {
-		panic(error)
+	if err := os.WriteFile(tracePath, []byte(strings.Join(claimChecks, "\n")), 0o644); err != nil {
+		panic(err)
 	}
 
 	_ = server.Close()
@@ -2739,8 +2739,8 @@ func runSpawnChildServerAndWaitHelper() {
 		"CHILD_PID_PATH="+os.Getenv("CHILD_PID_PATH"),
 		"PORT="+os.Getenv("PORT"),
 	)
-	if error := command.Start(); error != nil {
-		panic(error)
+	if err := command.Start(); err != nil {
+		panic(err)
 	}
 
 	select {}
@@ -2755,8 +2755,8 @@ func runSpawnDetachedChildServerAndWaitHelper() {
 		"PORT="+os.Getenv("PORT"),
 	)
 	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	if error := command.Start(); error != nil {
-		panic(error)
+	if err := command.Start(); err != nil {
+		panic(err)
 	}
 
 	select {}
@@ -2771,8 +2771,8 @@ func runSpawnDetachedChildServerAndExitHelper() {
 		"PORT="+os.Getenv("PORT"),
 	)
 	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	if error := command.Start(); error != nil {
-		panic(error)
+	if err := command.Start(); err != nil {
+		panic(err)
 	}
 
 	os.Exit(0)
@@ -2791,8 +2791,8 @@ func runSpawnDetachedChildServerOnTermAndExitHelper() {
 		"PORT="+os.Getenv("PORT"),
 	)
 	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	if error := command.Start(); error != nil {
-		panic(error)
+	if err := command.Start(); err != nil {
+		panic(err)
 	}
 
 	os.Exit(0)
@@ -2810,11 +2810,11 @@ func runSpawnDetachedExitChildOnTermAndExitHelper() {
 		"CHILD_PID_PATH="+os.Getenv("CHILD_PID_PATH"),
 	)
 	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	if error := command.Start(); error != nil {
-		panic(error)
+	if err := command.Start(); err != nil {
+		panic(err)
 	}
-	if error := os.WriteFile(os.Getenv("CHILD_PID_PATH"), []byte(strconv.Itoa(command.Process.Pid)), 0o644); error != nil {
-		panic(error)
+	if err := os.WriteFile(os.Getenv("CHILD_PID_PATH"), []byte(strconv.Itoa(command.Process.Pid)), 0o644); err != nil {
+		panic(err)
 	}
 
 	os.Exit(0)
@@ -2825,8 +2825,8 @@ func runSignalExternalCoordinatorAndExitOnTermHelper() {
 	signal.Notify(signals, syscall.Signal(15))
 	<-signals
 
-	if error := os.WriteFile(os.Getenv("TRIGGER_PATH"), []byte("go"), 0o644); error != nil {
-		panic(error)
+	if err := os.WriteFile(os.Getenv("TRIGGER_PATH"), []byte("go"), 0o644); err != nil {
+		panic(err)
 	}
 
 	os.Exit(0)
@@ -2836,7 +2836,7 @@ func runDelayedChildServerOnFileHelper() {
 	triggerPath := os.Getenv("TRIGGER_PATH")
 	delayMilliseconds, _ := strconv.Atoi(os.Getenv("DELAY_MS"))
 	for {
-		if _, error := os.Stat(triggerPath); error == nil {
+		if _, err := os.Stat(triggerPath); err == nil {
 			break
 		}
 		time.Sleep(10 * time.Millisecond)
@@ -2852,8 +2852,8 @@ func runDelayedChildServerOnFileHelper() {
 		"PORT="+os.Getenv("PORT"),
 	)
 	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	if error := command.Start(); error != nil {
-		panic(error)
+	if err := command.Start(); err != nil {
+		panic(err)
 	}
 
 	os.Exit(0)
@@ -2865,8 +2865,8 @@ func runChildHTTPServerHelper() {
 		bindHost = "127.0.0.1"
 	}
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
-	if error := os.WriteFile(os.Getenv("CHILD_PID_PATH"), []byte(strconv.Itoa(os.Getpid())), 0o644); error != nil {
-		panic(error)
+	if err := os.WriteFile(os.Getenv("CHILD_PID_PATH"), []byte(strconv.Itoa(os.Getpid())), 0o644); err != nil {
+		panic(err)
 	}
 
 	address := fmt.Sprintf("%s:%d", bindHost, port)
@@ -2877,8 +2877,8 @@ func runChildHTTPServerHelper() {
 	server := &http.Server{Addr: address, Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		_, _ = writer.Write([]byte("ok"))
 	})}
-	if error := server.ListenAndServe(); error != nil && error != http.ErrServerClosed {
-		panic(error)
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		panic(err)
 	}
 }
 
@@ -2889,18 +2889,18 @@ func runGracefulSignalWaiterHelper() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.Signal(15))
 	if readyPath != "" {
-		if error := os.WriteFile(readyPath, []byte("ready"), 0o644); error != nil {
-			panic(error)
+		if err := os.WriteFile(readyPath, []byte("ready"), 0o644); err != nil {
+			panic(err)
 		}
 	}
 	<-signals
-	file, error := os.OpenFile(tracePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
-	if error != nil {
-		panic(error)
+	file, err := os.OpenFile(tracePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
+		panic(err)
 	}
 	defer file.Close()
-	if _, error := fmt.Fprintln(file, traceValue); error != nil {
-		panic(error)
+	if _, err := fmt.Fprintln(file, traceValue); err != nil {
+		panic(err)
 	}
 	os.Exit(0)
 }
@@ -2910,8 +2910,8 @@ func runIgnoreTermHelper() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.Signal(15))
 	if readyPath != "" {
-		if error := os.WriteFile(readyPath, []byte("ready"), 0o644); error != nil {
-			panic(error)
+		if err := os.WriteFile(readyPath, []byte("ready"), 0o644); err != nil {
+			panic(err)
 		}
 	}
 	go func() {
@@ -2933,27 +2933,27 @@ func runDaemonStartServerHelper() {
 		"CHILD_PID_PATH="+pidPath,
 		"PORT="+strconv.Itoa(port),
 	)
-	if error := command.Start(); error != nil {
-		panic(error)
+	if err := command.Start(); err != nil {
+		panic(err)
 	}
 }
 
 func runDaemonStatusHelper() {
 	tracePath := os.Getenv("LIFECYCLE_TRACE_PATH")
 	pidPath := tracePath + ".pid"
-	childPidText, error := os.ReadFile(pidPath)
-	if error != nil {
+	childPidText, err := os.ReadFile(pidPath)
+	if err != nil {
 		appendTraceLine(tracePath, "status:stopped")
 		os.Exit(1)
 	}
 
-	childPID, error := strconv.Atoi(strings.TrimSpace(string(childPidText)))
-	if error != nil {
+	childPID, err := strconv.Atoi(strings.TrimSpace(string(childPidText)))
+	if err != nil {
 		appendTraceLine(tracePath, "status:stopped")
 		os.Exit(1)
 	}
 
-	if error := syscall.Kill(childPID, 0); error != nil {
+	if err := syscall.Kill(childPID, 0); err != nil {
 		appendTraceLine(tracePath, "status:stopped")
 		_ = os.Remove(pidPath)
 		os.Exit(1)
@@ -2967,22 +2967,22 @@ func runDaemonStopServerHelper() {
 	tracePath := os.Getenv("LIFECYCLE_TRACE_PATH")
 	pidPath := tracePath + ".pid"
 	appendTraceLine(tracePath, "stop")
-	childPidText, error := os.ReadFile(pidPath)
-	if error != nil {
+	childPidText, err := os.ReadFile(pidPath)
+	if err != nil {
 		return
 	}
 
-	childPID, error := strconv.Atoi(strings.TrimSpace(string(childPidText)))
-	if error != nil {
-		panic(error)
+	childPID, err := strconv.Atoi(strings.TrimSpace(string(childPidText)))
+	if err != nil {
+		panic(err)
 	}
 
-	if error := syscall.Kill(childPID, syscall.SIGTERM); error != nil && error != syscall.ESRCH {
-		panic(error)
+	if err := syscall.Kill(childPID, syscall.SIGTERM); err != nil && err != syscall.ESRCH {
+		panic(err)
 	}
-	port, error := strconv.Atoi(os.Getenv("PORT"))
-	if error != nil {
-		panic(error)
+	port, err := strconv.Atoi(os.Getenv("PORT"))
+	if err != nil {
+		panic(err)
 	}
 	waitForDaemonPortToClose(port)
 	_ = os.Remove(pidPath)
@@ -3001,16 +3001,16 @@ func waitForDaemonPortToClose(port int) {
 }
 
 func hasFiles(directoryPath string) bool {
-	entries, error := os.ReadDir(directoryPath)
-	if error != nil {
+	entries, err := os.ReadDir(directoryPath)
+	if err != nil {
 		return false
 	}
 	return len(entries) > 0
 }
 
 func registrationHasDevtoolsPorts(directoryPath string) bool {
-	entries, error := os.ReadDir(directoryPath)
-	if error != nil {
+	entries, err := os.ReadDir(directoryPath)
+	if err != nil {
 		return false
 	}
 
@@ -3019,8 +3019,8 @@ func registrationHasDevtoolsPorts(directoryPath string) bool {
 			continue
 		}
 
-		text, error := os.ReadFile(filepath.Join(directoryPath, entry.Name()))
-		if error != nil {
+		text, err := os.ReadFile(filepath.Join(directoryPath, entry.Name()))
+		if err != nil {
 			return false
 		}
 
@@ -3031,13 +3031,13 @@ func registrationHasDevtoolsPorts(directoryPath string) bool {
 }
 
 func appendTraceLine(path string, value string) {
-	file, error := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
-	if error != nil {
-		panic(error)
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
+		panic(err)
 	}
 	defer file.Close()
-	if _, error := fmt.Fprintln(file, value); error != nil {
-		panic(error)
+	if _, err := fmt.Fprintln(file, value); err != nil {
+		panic(err)
 	}
 }
 

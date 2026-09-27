@@ -31,17 +31,17 @@ func RunCommand(arguments []string, options RunCommandOptions) CommandResult {
 		command.Stdin = os.Stdin
 		command.Stdout = os.Stdout
 		command.Stderr = os.Stderr
-		error := command.Run()
-		return CommandResult{Stderr: []byte{}, Stdout: []byte{}, Success: error == nil}
+		err := command.Run()
+		return CommandResult{Stderr: []byte{}, Stdout: []byte{}, Success: err == nil}
 	}
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	command.Stdout = &stdout
 	command.Stderr = &stderr
-	error := command.Run()
+	err := command.Run()
 
-	return CommandResult{Stderr: stderr.Bytes(), Stdout: stdout.Bytes(), Success: error == nil}
+	return CommandResult{Stderr: stderr.Bytes(), Stdout: stdout.Bytes(), Success: err == nil}
 }
 
 type ManagedCaddyCommandOptions struct {
@@ -79,7 +79,7 @@ func ResolveManagedCaddyExecutablePath(paths Paths, runtimeOS string, stat func(
 	}
 
 	executablePath := CreateManagedCaddyExecutablePath(paths, runtimeOS)
-	if _, error := stat(executablePath); error == nil {
+	if _, err := stat(executablePath); err == nil {
 		return executablePath
 	}
 

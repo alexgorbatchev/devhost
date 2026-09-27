@@ -1053,9 +1053,9 @@ func extractControlToken(t *testing.T, injectedScript string) string {
 func mustGet(t *testing.T, url string) *http.Response {
 	t.Helper()
 
-	response, error := http.Get(url)
-	if error != nil {
-		t.Fatalf("Get(%s) error = %v", url, error)
+	response, err := http.Get(url)
+	if err != nil {
+		t.Fatalf("Get(%s) error = %v", url, err)
 	}
 
 	return response
@@ -1064,9 +1064,9 @@ func mustGet(t *testing.T, url string) *http.Response {
 func readResponseText(t *testing.T, response *http.Response) string {
 	t.Helper()
 
-	body, error := io.ReadAll(response.Body)
-	if error != nil {
-		t.Fatalf("ReadAll(...) error = %v", error)
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		t.Fatalf("ReadAll(...) error = %v", err)
 	}
 
 	return string(body)
@@ -1075,9 +1075,9 @@ func readResponseText(t *testing.T, response *http.Response) string {
 func mustDialWebsocket(t *testing.T, url string) *websocket.Conn {
 	t.Helper()
 
-	connection, _, error := websocket.DefaultDialer.Dial(url, nil)
-	if error != nil {
-		t.Fatalf("Dial(%s) error = %v", url, error)
+	connection, _, err := websocket.DefaultDialer.Dial(url, nil)
+	if err != nil {
+		t.Fatalf("Dial(%s) error = %v", url, err)
 	}
 
 	return connection
@@ -1086,9 +1086,9 @@ func mustDialWebsocket(t *testing.T, url string) *websocket.Conn {
 func readWebsocketText(t *testing.T, connection *websocket.Conn) string {
 	t.Helper()
 
-	_, message, error := connection.ReadMessage()
-	if error != nil {
-		t.Fatalf("ReadMessage(...) error = %v", error)
+	_, message, err := connection.ReadMessage()
+	if err != nil {
+		t.Fatalf("ReadMessage(...) error = %v", err)
 	}
 
 	return string(message)

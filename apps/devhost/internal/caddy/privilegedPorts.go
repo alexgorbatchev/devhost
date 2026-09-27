@@ -22,8 +22,8 @@ func ConfigureManagedCaddyPrivilegedPorts(
 	dependencies PrivilegedPortsDependencies,
 ) (int, error) {
 	if runtimeOS == "darwin" {
-		if error := logInfo(logWriter, "managed caddy does not need privileged-port setup on macOS."); error != nil {
-			return 0, fmt.Errorf("log macOS privileged-port skip: %w", error)
+		if err := logInfo(logWriter, "managed caddy does not need privileged-port setup on macOS."); err != nil {
+			return 0, fmt.Errorf("log macOS privileged-port skip: %w", err)
 		}
 		return 0, nil
 	}
@@ -54,18 +54,18 @@ func ConfigureManagedCaddyPrivilegedPorts(
 
 	if !hasManagedCaddyBinary(paths.ExecutablePath) {
 		message := fmt.Sprintf("managed caddy binary not found at %s. Downloading it first.", paths.ExecutablePath)
-		if error := logInfo(logWriter, message); error != nil {
-			return 0, fmt.Errorf("log missing managed caddy binary: %w", error)
+		if err := logInfo(logWriter, message); err != nil {
+			return 0, fmt.Errorf("log missing managed caddy binary: %w", err)
 		}
 
-		if error := downloadCaddy(logWriter, runtimeOS, runtimeArch, paths, dependencies.DownloadDependencies); error != nil {
-			return 0, error
+		if err := downloadCaddy(logWriter, runtimeOS, runtimeArch, paths, dependencies.DownloadDependencies); err != nil {
+			return 0, err
 		}
 	}
 
 	message := "managed caddy privileged-port setup may prompt for your password because granting low-port bind capability is privileged."
-	if error := logInfo(logWriter, message); error != nil {
-		return 0, fmt.Errorf("log privileged-port warning: %w", error)
+	if err := logInfo(logWriter, message); err != nil {
+		return 0, fmt.Errorf("log privileged-port warning: %w", err)
 	}
 
 	commandArguments := []string{"sudo", "setcap", "cap_net_bind_service=+ep", paths.ExecutablePath}
@@ -79,16 +79,16 @@ func ConfigureManagedCaddyPrivilegedPorts(
 	}
 
 	message = fmt.Sprintf("managed caddy low-port binding enabled for %s", paths.ExecutablePath)
-	if error := logInfo(logWriter, message); error != nil {
-		return 0, fmt.Errorf("log privileged-port success: %w", error)
+	if err := logInfo(logWriter, message); err != nil {
+		return 0, fmt.Errorf("log privileged-port success: %w", err)
 	}
 
 	return 0, nil
 }
 
 func defaultHasManagedCaddyBinary(executablePath string) bool {
-	_, error := os.Stat(executablePath)
-	return error == nil
+	_, err := os.Stat(executablePath)
+	return err == nil
 }
 
 func defaultIsRootUser() bool {

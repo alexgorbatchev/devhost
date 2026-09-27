@@ -23,17 +23,17 @@ func TestProcessTreeMonitorRefreshTrackersUsesSingleSnapshot(t *testing.T) {
 	})
 	t.Cleanup(monitor.close)
 
-	trackerOne, error := monitor.startTracker(10, "")
-	if error != nil {
-		t.Fatalf("monitor.startTracker(10) error = %v", error)
+	trackerOne, err := monitor.startTracker(10, "")
+	if err != nil {
+		t.Fatalf("monitor.startTracker(10) error = %v", err)
 	}
-	trackerTwo, error := monitor.startTracker(20, "")
-	if error != nil {
-		t.Fatalf("monitor.startTracker(20) error = %v", error)
+	trackerTwo, err := monitor.startTracker(20, "")
+	if err != nil {
+		t.Fatalf("monitor.startTracker(20) error = %v", err)
 	}
 
-	if error := monitor.refreshTrackers(); error != nil {
-		t.Fatalf("monitor.refreshTrackers() error = %v", error)
+	if err := monitor.refreshTrackers(); err != nil {
+		t.Fatalf("monitor.refreshTrackers() error = %v", err)
 	}
 
 	if snapshotCalls != 3 {
@@ -54,8 +54,8 @@ func TestProcessTreeMonitorRefreshTrackerReturnsSnapshotError(t *testing.T) {
 	})
 	t.Cleanup(monitor.close)
 
-	if _, error := monitor.startTracker(10, ""); !errors.Is(error, want) {
-		t.Fatalf("monitor.startTracker(10) error = %v, want %v", error, want)
+	if _, err := monitor.startTracker(10, ""); !errors.Is(err, want) {
+		t.Fatalf("monitor.startTracker(10) error = %v, want %v", err, want)
 	}
 }
 

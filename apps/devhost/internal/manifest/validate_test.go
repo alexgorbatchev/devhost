@@ -52,7 +52,7 @@ func TestValidateManifestReturnsNormalizedDefaults(t *testing.T) {
 	t.Parallel()
 
 	manifestPath := filepath.Join(string(filepath.Separator), "tmp", "project", "devhost.toml")
-	manifest, error := ValidateManifest(manifestPath, RawManifest{value: map[string]any{
+	manifest, err := ValidateManifest(manifestPath, RawManifest{value: map[string]any{
 		"name": "hello-stack",
 		"services": map[string]any{
 			"web": map[string]any{
@@ -62,8 +62,8 @@ func TestValidateManifestReturnsNormalizedDefaults(t *testing.T) {
 			},
 		},
 	}})
-	if error != nil {
-		t.Fatalf("ValidateManifest(...) unexpected error = %v", error)
+	if err != nil {
+		t.Fatalf("ValidateManifest(...) unexpected error = %v", err)
 	}
 
 	if manifest.Annotation.DefaultActionID != "" || len(manifest.Annotation.Actions) != 0 {
@@ -143,7 +143,7 @@ func TestValidateManifestReturnsNormalizedDefaults(t *testing.T) {
 func TestValidateManifestAcceptsAnnotationActions(t *testing.T) {
 	t.Parallel()
 
-	manifest, error := ValidateManifest(filepath.Join(string(filepath.Separator), "tmp", "project", "devhost.toml"), rawManifestWithServices(map[string]any{
+	manifest, err := ValidateManifest(filepath.Join(string(filepath.Separator), "tmp", "project", "devhost.toml"), rawManifestWithServices(map[string]any{
 		"annotation": map[string]any{
 			"defaultAction": "lint",
 			"actions": []any{
@@ -161,8 +161,8 @@ func TestValidateManifestAcceptsAnnotationActions(t *testing.T) {
 			},
 		},
 	}))
-	if error != nil {
-		t.Fatalf("ValidateManifest(...) unexpected error = %v", error)
+	if err != nil {
+		t.Fatalf("ValidateManifest(...) unexpected error = %v", err)
 	}
 
 	if len(manifest.Annotation.Actions) != 2 {
@@ -271,13 +271,13 @@ func TestValidateManifestAcceptsEmptyAnnotationAgentArgs(t *testing.T) {
 func TestValidateManifestAcceptsIdleTimeout(t *testing.T) {
 	t.Parallel()
 
-	manifest, error := ValidateManifest(filepath.Join(string(filepath.Separator), "tmp", "project", "devhost.toml"), rawManifestWithServices(map[string]any{
+	manifest, err := ValidateManifest(filepath.Join(string(filepath.Separator), "tmp", "project", "devhost.toml"), rawManifestWithServices(map[string]any{
 		"devtools": map[string]any{
 			"idleTimeout": "5m",
 		},
 	}))
-	if error != nil {
-		t.Fatalf("ValidateManifest(...) unexpected error = %v", error)
+	if err != nil {
+		t.Fatalf("ValidateManifest(...) unexpected error = %v", err)
 	}
 
 	if manifest.Devtools.IdleTimeout != "5m" {
@@ -288,11 +288,11 @@ func TestValidateManifestAcceptsIdleTimeout(t *testing.T) {
 func TestValidateManifestAcceptsKillZombies(t *testing.T) {
 	t.Parallel()
 
-	manifest, error := ValidateManifest(filepath.Join(string(filepath.Separator), "tmp", "project", "devhost.toml"), rawManifestWithServices(map[string]any{
+	manifest, err := ValidateManifest(filepath.Join(string(filepath.Separator), "tmp", "project", "devhost.toml"), rawManifestWithServices(map[string]any{
 		"killZombies": false,
 	}))
-	if error != nil {
-		t.Fatalf("ValidateManifest(...) unexpected error = %v", error)
+	if err != nil {
+		t.Fatalf("ValidateManifest(...) unexpected error = %v", err)
 	}
 
 	if manifest.KillZombies {
@@ -303,16 +303,16 @@ func TestValidateManifestAcceptsKillZombies(t *testing.T) {
 func TestValidateManifestAcceptsDocumentedFixtureShape(t *testing.T) {
 	t.Parallel()
 
-	rawManifest, error := ReadManifest(filepath.Join("..", "..", "devhost.example.toml"))
-	if error != nil {
-		t.Fatalf("ReadManifest(...) unexpected error = %v", error)
+	rawManifest, err := ReadManifest(filepath.Join("..", "..", "devhost.example.toml"))
+	if err != nil {
+		t.Fatalf("ReadManifest(...) unexpected error = %v", err)
 	}
 
 	manifestPath := filepath.Join(string(filepath.Separator), "tmp", "devhost.toml")
 	rawManifest.serviceOrder = []string{"web", "api", "cache", "db", "worker"}
-	manifest, error := ValidateManifest(manifestPath, rawManifest)
-	if error != nil {
-		t.Fatalf("ValidateManifest(...) unexpected error = %v", error)
+	manifest, err := ValidateManifest(manifestPath, rawManifest)
+	if err != nil {
+		t.Fatalf("ValidateManifest(...) unexpected error = %v", err)
 	}
 
 	if manifest.PrimaryService != "web" {
@@ -833,10 +833,10 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			manifest, error := ValidateManifest(filepath.Join(string(filepath.Separator), "tmp", "project", "devhost.toml"), tc.manifest)
+			manifest, err := ValidateManifest(filepath.Join(string(filepath.Separator), "tmp", "project", "devhost.toml"), tc.manifest)
 			if tc.wantError == "" {
-				if error != nil {
-					t.Fatalf("ValidateManifest(...) unexpected error = %v", error)
+				if err != nil {
+					t.Fatalf("ValidateManifest(...) unexpected error = %v", err)
 				}
 
 				if tc.name == "preserves insertion order primary fallback" && manifest.PrimaryService != "api" {
@@ -846,12 +846,12 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 				return
 			}
 
-			if error == nil {
+			if err == nil {
 				t.Fatalf("ValidateManifest(...) error = nil, want substring %q", tc.wantError)
 			}
 
-			if !strings.Contains(error.Error(), tc.wantError) {
-				t.Fatalf("ValidateManifest(...) error = %q, want substring %q", error.Error(), tc.wantError)
+			if !strings.Contains(err.Error(), tc.wantError) {
+				t.Fatalf("ValidateManifest(...) error = %q, want substring %q", err.Error(), tc.wantError)
 			}
 		})
 	}
@@ -877,7 +877,7 @@ func TestValidateManifestWatchAndShortcuts(t *testing.T) {
 
 	manifestPath := filepath.Join(string(filepath.Separator), "tmp", "project", "devhost.toml")
 
-	manifest, error := ValidateManifest(manifestPath, RawManifest{value: map[string]any{
+	manifest, err := ValidateManifest(manifestPath, RawManifest{value: map[string]any{
 		"name": "hello-stack",
 		"devtools": map[string]any{
 			"shortcuts": map[string]any{
@@ -892,8 +892,8 @@ func TestValidateManifestWatchAndShortcuts(t *testing.T) {
 			},
 		},
 	}})
-	if error != nil {
-		t.Fatalf("unexpected error: %v", error)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 
 	if manifest.Devtools.Shortcuts.RestartServices != "ctrl+shift+k" {

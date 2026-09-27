@@ -13,11 +13,11 @@ func TestSyncManagedCaddyNotFoundSite(t *testing.T) {
 	temporaryDirectoryPath := t.TempDir()
 	paths := CreateManagedCaddyPaths(temporaryDirectoryPath)
 	sitePaths := createManagedCaddyNotFoundSitePaths(paths.CaddyDirectoryPath)
-	if error := os.MkdirAll(paths.RegistrationsDirectoryPath, 0o755); error != nil {
-		t.Fatalf("MkdirAll(...) error = %v", error)
+	if err := os.MkdirAll(paths.RegistrationsDirectoryPath, 0o755); err != nil {
+		t.Fatalf("MkdirAll(...) error = %v", err)
 	}
-	if error := os.MkdirAll(paths.RoutesDirectoryPath, 0o755); error != nil {
-		t.Fatalf("MkdirAll(...) error = %v", error)
+	if err := os.MkdirAll(paths.RoutesDirectoryPath, 0o755); err != nil {
+		t.Fatalf("MkdirAll(...) error = %v", err)
 	}
 
 	writeRegistration(t, filepath.Join(paths.RegistrationsDirectoryPath, "hello.localhost_web.json"), `{"appBindHost":"127.0.0.1","host":"hello.localhost","path":"/"}`)
@@ -29,13 +29,13 @@ func TestSyncManagedCaddyNotFoundSite(t *testing.T) {
 	writeRouteFile(t, filepath.Join(paths.RoutesDirectoryPath, "api.localhost.caddy"))
 	writeRouteFile(t, filepath.Join(paths.RoutesDirectoryPath, "legacy.localhost_legacy.caddy"))
 
-	if error := syncManagedCaddyNotFoundSite(paths.RoutesDirectoryPath, 4443); error != nil {
-		t.Fatalf("syncManagedCaddyNotFoundSite(...) unexpected error = %v", error)
+	if err := syncManagedCaddyNotFoundSite(paths.RoutesDirectoryPath, 4443); err != nil {
+		t.Fatalf("syncManagedCaddyNotFoundSite(...) unexpected error = %v", err)
 	}
 
-	pageTextBytes, error := os.ReadFile(sitePaths.PagePath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) error = %v", error)
+	pageTextBytes, err := os.ReadFile(sitePaths.PagePath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) error = %v", err)
 	}
 	pageText := string(pageTextBytes)
 	if !strings.Contains(pageText, `<link rel="stylesheet" href="/devhost-route-not-found.css">`) {
@@ -51,9 +51,9 @@ func TestSyncManagedCaddyNotFoundSite(t *testing.T) {
 		t.Fatalf("pageText route order = %q, want api before hello", pageText)
 	}
 
-	stylesheetText, error := os.ReadFile(sitePaths.StylesheetPath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) error = %v", error)
+	stylesheetText, err := os.ReadFile(sitePaths.StylesheetPath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) error = %v", err)
 	}
 	if string(stylesheetText) != managedCaddyNotFoundPageCSS {
 		t.Fatalf("stylesheetText length = %d, want exact managed caddy stylesheet", len(stylesheetText))
@@ -65,21 +65,21 @@ func TestSyncManagedCaddyNotFoundSiteEmptyState(t *testing.T) {
 
 	temporaryDirectoryPath := t.TempDir()
 	paths := CreateManagedCaddyPaths(temporaryDirectoryPath)
-	if error := os.MkdirAll(paths.RegistrationsDirectoryPath, 0o755); error != nil {
-		t.Fatalf("MkdirAll(...) error = %v", error)
+	if err := os.MkdirAll(paths.RegistrationsDirectoryPath, 0o755); err != nil {
+		t.Fatalf("MkdirAll(...) error = %v", err)
 	}
-	if error := os.MkdirAll(paths.RoutesDirectoryPath, 0o755); error != nil {
-		t.Fatalf("MkdirAll(...) error = %v", error)
+	if err := os.MkdirAll(paths.RoutesDirectoryPath, 0o755); err != nil {
+		t.Fatalf("MkdirAll(...) error = %v", err)
 	}
 
-	if error := syncManagedCaddyNotFoundSite(paths.RoutesDirectoryPath, defaultManagedCaddyHTTPSPort); error != nil {
-		t.Fatalf("syncManagedCaddyNotFoundSite(...) unexpected error = %v", error)
+	if err := syncManagedCaddyNotFoundSite(paths.RoutesDirectoryPath, defaultManagedCaddyHTTPSPort); err != nil {
+		t.Fatalf("syncManagedCaddyNotFoundSite(...) unexpected error = %v", err)
 	}
 
 	sitePaths := createManagedCaddyNotFoundSitePaths(paths.CaddyDirectoryPath)
-	pageText, error := os.ReadFile(sitePaths.PagePath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) error = %v", error)
+	pageText, err := os.ReadFile(sitePaths.PagePath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) error = %v", err)
 	}
 	if !strings.Contains(string(pageText), "No devhost hostnames are active right now.") {
 		t.Fatalf("pageText = %q, want empty-state copy", string(pageText))
@@ -88,20 +88,20 @@ func TestSyncManagedCaddyNotFoundSiteEmptyState(t *testing.T) {
 
 func writeRegistration(t *testing.T, path string, text string) {
 	t.Helper()
-	if error := os.MkdirAll(filepath.Dir(path), 0o755); error != nil {
-		t.Fatalf("MkdirAll(...) error = %v", error)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("MkdirAll(...) error = %v", err)
 	}
-	if error := os.WriteFile(path, []byte(text), 0o644); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
+	if err := os.WriteFile(path, []byte(text), 0o644); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 }
 
 func writeRouteFile(t *testing.T, path string) {
 	t.Helper()
-	if error := os.MkdirAll(filepath.Dir(path), 0o755); error != nil {
-		t.Fatalf("MkdirAll(...) error = %v", error)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("MkdirAll(...) error = %v", err)
 	}
-	if error := os.WriteFile(path, []byte("route"), 0o644); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
+	if err := os.WriteFile(path, []byte("route"), 0o644); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 }

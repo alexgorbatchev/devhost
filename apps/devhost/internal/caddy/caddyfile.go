@@ -31,9 +31,9 @@ func renderManagedCaddyfile(options renderManagedCaddyfileOptions) (string, erro
 		httpsPort = defaultManagedCaddyHTTPSPort
 	}
 
-	bindDirective, error := ResolveManagedCaddyBindDirective(options.RuntimeOS, bindHost)
-	if error != nil {
-		return "", error
+	bindDirective, err := ResolveManagedCaddyBindDirective(options.RuntimeOS, bindHost)
+	if err != nil {
+		return "", err
 	}
 
 	notFoundSitePaths := createManagedCaddyNotFoundSitePaths(options.Paths.CaddyDirectoryPath)

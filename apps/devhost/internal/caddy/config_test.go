@@ -11,16 +11,16 @@ func TestEnsureManagedCaddyConfig(t *testing.T) {
 	t.Parallel()
 
 	paths := CreateManagedCaddyPaths(t.TempDir())
-	if error := os.MkdirAll(paths.RegistrationsDirectoryPath, 0o755); error != nil {
-		t.Fatalf("MkdirAll(...) error = %v", error)
+	if err := os.MkdirAll(paths.RegistrationsDirectoryPath, 0o755); err != nil {
+		t.Fatalf("MkdirAll(...) error = %v", err)
 	}
 	writeRegistration(t, filepath.Join(paths.RegistrationsDirectoryPath, "hello.localhost_web.json"), `{"appBindHost":"127.0.0.1","host":"hello.localhost","path":"/","httpEnabled":false}`)
 	writeRegistration(t, filepath.Join(paths.RegistrationsDirectoryPath, "api.localhost_api.json"), `{"appBindHost":"127.0.0.1","host":"api.localhost","path":"/v1","httpEnabled":true,"caddyAdminAddress":"127.0.0.1:22000","caddyBindHost":"0.0.0.0","caddyHttpPort":8080,"caddyHttpsPort":4443}`)
 	writeRouteFile(t, filepath.Join(paths.RoutesDirectoryPath, "hello.localhost.caddy"))
 	writeRouteFile(t, filepath.Join(paths.RoutesDirectoryPath, "api.localhost.caddy"))
 
-	if error := ensureManagedCaddyConfig(paths, ManagedCaddyConfigFallback{AdminAddress: "127.0.0.1:23000", RuntimeOS: "linux"}); error != nil {
-		t.Fatalf("ensureManagedCaddyConfig(...) unexpected error = %v", error)
+	if err := ensureManagedCaddyConfig(paths, ManagedCaddyConfigFallback{AdminAddress: "127.0.0.1:23000", RuntimeOS: "linux"}); err != nil {
+		t.Fatalf("ensureManagedCaddyConfig(...) unexpected error = %v", err)
 	}
 
 	for _, directoryPath := range []string{paths.CaddyDirectoryPath, paths.RoutesDirectoryPath, paths.HostClaimsDirectoryPath, paths.PortClaimsDirectoryPath, paths.RegistrationsDirectoryPath, paths.StorageDirectoryPath} {
@@ -29,9 +29,9 @@ func TestEnsureManagedCaddyConfig(t *testing.T) {
 		}
 	}
 
-	caddyfile, error := os.ReadFile(paths.CaddyfilePath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) error = %v", error)
+	caddyfile, err := os.ReadFile(paths.CaddyfilePath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) error = %v", err)
 	}
 	caddyfileText := string(caddyfile)
 	if !strings.Contains(caddyfileText, "    admin 127.0.0.1:22000") || !strings.Contains(caddyfileText, "    default_bind 0.0.0.0 [::]") {
@@ -42,9 +42,9 @@ func TestEnsureManagedCaddyConfig(t *testing.T) {
 	}
 
 	sitePaths := createManagedCaddyNotFoundSitePaths(paths.CaddyDirectoryPath)
-	pageText, error := os.ReadFile(sitePaths.PagePath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) error = %v", error)
+	pageText, err := os.ReadFile(sitePaths.PagePath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) error = %v", err)
 	}
 	if !strings.Contains(string(pageText), `href="https://api.localhost:4443/v1"`) {
 		t.Fatalf("pageText = %q, want synced not-found page", string(pageText))
@@ -55,13 +55,13 @@ func TestEnsureManagedCaddyConfigFallbackAdminAddress(t *testing.T) {
 	t.Parallel()
 
 	paths := CreateManagedCaddyPaths(t.TempDir())
-	if error := ensureManagedCaddyConfig(paths, ManagedCaddyConfigFallback{AdminAddress: "127.0.0.1:23000", RuntimeOS: "linux"}); error != nil {
-		t.Fatalf("ensureManagedCaddyConfig(...) unexpected error = %v", error)
+	if err := ensureManagedCaddyConfig(paths, ManagedCaddyConfigFallback{AdminAddress: "127.0.0.1:23000", RuntimeOS: "linux"}); err != nil {
+		t.Fatalf("ensureManagedCaddyConfig(...) unexpected error = %v", err)
 	}
 
-	caddyfile, error := os.ReadFile(paths.CaddyfilePath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) error = %v", error)
+	caddyfile, err := os.ReadFile(paths.CaddyfilePath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) error = %v", err)
 	}
 	if !strings.Contains(string(caddyfile), "    admin 127.0.0.1:23000") {
 		t.Fatalf("caddyfile = %q, want fallback admin address", string(caddyfile))
@@ -109,18 +109,18 @@ func TestReadManagedCaddyGlobalSettingsRejectsConflicts(t *testing.T) {
 			t.Parallel()
 
 			paths := CreateManagedCaddyPaths(t.TempDir())
-			if error := os.MkdirAll(paths.RegistrationsDirectoryPath, 0o755); error != nil {
-				t.Fatalf("MkdirAll(...) error = %v", error)
+			if err := os.MkdirAll(paths.RegistrationsDirectoryPath, 0o755); err != nil {
+				t.Fatalf("MkdirAll(...) error = %v", err)
 			}
 			writeRegistration(t, filepath.Join(paths.RegistrationsDirectoryPath, "one.json"), tc.first)
 			writeRegistration(t, filepath.Join(paths.RegistrationsDirectoryPath, "two.json"), tc.second)
 
-			_, error := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
-			if error == nil {
+			_, err := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
+			if err == nil {
 				t.Fatalf("readManagedCaddyGlobalSettings(...) error = nil, want %q", tc.wantError)
 			}
-			if error.Error() != tc.wantError {
-				t.Fatalf("readManagedCaddyGlobalSettings(...) error = %q, want %q", error.Error(), tc.wantError)
+			if err.Error() != tc.wantError {
+				t.Fatalf("readManagedCaddyGlobalSettings(...) error = %q, want %q", err.Error(), tc.wantError)
 			}
 		})
 	}

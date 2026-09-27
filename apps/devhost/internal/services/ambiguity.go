@@ -34,8 +34,8 @@ func readLoopbackBindHostAmbiguityWarning(service ResolvedService, httpsPort int
 		return ""
 	}
 
-	proxyHost, error := caddy.ResolveProxyHost(service.BindHost)
-	if error != nil {
+	proxyHost, err := caddy.ResolveProxyHost(service.BindHost)
+	if err != nil {
 		return ""
 	}
 
@@ -59,8 +59,8 @@ func readLoopbackBindHostAmbiguityWarning(service ResolvedService, httpsPort int
 		return ""
 	}
 
-	preferredProxyHost, error := caddy.ResolveProxyHost(preferredBindHost)
-	if error != nil {
+	preferredProxyHost, err := caddy.ResolveProxyHost(preferredBindHost)
+	if err != nil {
 		return ""
 	}
 
@@ -92,8 +92,8 @@ func probeHTTPResponse(host string, port int) *loopbackProbe {
 		Timeout: probeTimeoutDuration,
 	}
 
-	response, error := client.Get(fmt.Sprintf("http://%s/", caddy.FormatProxyAddress(host, port)))
-	if error != nil {
+	response, err := client.Get(fmt.Sprintf("http://%s/", caddy.FormatProxyAddress(host, port)))
+	if err != nil {
 		return nil
 	}
 	defer response.Body.Close()

@@ -96,7 +96,7 @@ func TestDownloadCaddy(t *testing.T) {
 			chmodCalls := []string{}
 			var logOutput bytes.Buffer
 
-			error := DownloadCaddy(&logOutput, tc.runtimeOS, tc.runtimeArch, paths, DownloadDependencies{
+			err := DownloadCaddy(&logOutput, tc.runtimeOS, tc.runtimeArch, paths, DownloadDependencies{
 				Chmod: func(path string, mode os.FileMode) error {
 					chmodCalls = append(chmodCalls, fmt.Sprintf("%s:%#o", path, mode))
 					return nil
@@ -114,19 +114,19 @@ func TestDownloadCaddy(t *testing.T) {
 			})
 
 			if tc.wantError != "" {
-				if error == nil {
+				if err == nil {
 					t.Fatalf("DownloadCaddy(...) error = nil, want %q", tc.wantError)
 				}
 
-				if error.Error() != tc.wantError {
-					t.Fatalf("DownloadCaddy(...) error = %q, want %q", error.Error(), tc.wantError)
+				if err.Error() != tc.wantError {
+					t.Fatalf("DownloadCaddy(...) error = %q, want %q", err.Error(), tc.wantError)
 				}
 
 				return
 			}
 
-			if error != nil {
-				t.Fatalf("DownloadCaddy(...) unexpected error = %v", error)
+			if err != nil {
+				t.Fatalf("DownloadCaddy(...) unexpected error = %v", err)
 			}
 
 			if transport.lastRequestURL != tc.wantFetchURL {

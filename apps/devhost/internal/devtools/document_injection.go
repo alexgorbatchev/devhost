@@ -54,9 +54,9 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 				return nil
 			}
 
-			body, error := io.ReadAll(response.Body)
-			if error != nil {
-				return error
+			body, err := io.ReadAll(response.Body)
+			if err != nil {
+				return err
 			}
 			_ = response.Body.Close()
 

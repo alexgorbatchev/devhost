@@ -22,9 +22,9 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 		return 0
 	}
 
-	arguments, error := cli.ParseCommandLineArguments(rawArguments)
-	if error != nil {
-		_, _ = fmt.Fprintf(stderr, "failed: %s\n", error.Error())
+	arguments, err := cli.ParseCommandLineArguments(rawArguments)
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "failed: %s\n", err.Error())
 		return 1
 	}
 
@@ -43,8 +43,8 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			manifestPath = &resolvedPath
 		}
 
-		if error := services.StopStack(*manifestPath, readEnvironment(), stdout, stderr); error != nil {
-			_, _ = fmt.Fprintf(stderr, "failed: %s\n", error.Error())
+		if err := services.StopStack(*manifestPath, readEnvironment(), stdout, stderr); err != nil {
+			_, _ = fmt.Fprintf(stderr, "failed: %s\n", err.Error())
 			return 1
 		}
 
@@ -121,29 +121,29 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 
 		return exitCode
 	case cli.KindCaddyPrintRootCert:
-		paths, error := caddy.CreateManagedCaddyPathsFromEnvironment(readEnvironment())
-		if error != nil {
-			_, _ = fmt.Fprintf(stderr, "failed: %s\n", error.Error())
+		paths, err := caddy.CreateManagedCaddyPathsFromEnvironment(readEnvironment())
+		if err != nil {
+			_, _ = fmt.Fprintf(stderr, "failed: %s\n", err.Error())
 			return 1
 		}
 
-		exitCode, error := caddy.PrintManagedCaddyRootCertificate(stdout, paths)
-		if error != nil {
-			_, _ = fmt.Fprintf(stderr, "failed: %s\n", error.Error())
+		exitCode, err := caddy.PrintManagedCaddyRootCertificate(stdout, paths)
+		if err != nil {
+			_, _ = fmt.Fprintf(stderr, "failed: %s\n", err.Error())
 			return 1
 		}
 
 		return exitCode
 	case cli.KindCaddyLifecycle:
-		paths, error := caddy.CreateManagedCaddyPathsFromEnvironment(readEnvironment())
-		if error != nil {
-			_, _ = fmt.Fprintf(stderr, "failed: %s\n", error.Error())
+		paths, err := caddy.CreateManagedCaddyPathsFromEnvironment(readEnvironment())
+		if err != nil {
+			_, _ = fmt.Fprintf(stderr, "failed: %s\n", err.Error())
 			return 1
 		}
 
 		if arguments.Action == cli.CaddyDownload {
-			if error := caddy.DownloadCaddy(stderr, runtime.GOOS, runtime.GOARCH, paths, caddy.DownloadDependencies{}); error != nil {
-				_, _ = fmt.Fprintf(stderr, "failed: %s\n", error.Error())
+			if err := caddy.DownloadCaddy(stderr, runtime.GOOS, runtime.GOARCH, paths, caddy.DownloadDependencies{}); err != nil {
+				_, _ = fmt.Fprintf(stderr, "failed: %s\n", err.Error())
 				return 1
 			}
 
@@ -151,9 +151,9 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 		}
 
 		if arguments.Action == cli.CaddyPrivilegedPorts {
-			exitCode, error := caddy.ConfigureManagedCaddyPrivilegedPorts(stderr, runtime.GOOS, runtime.GOARCH, paths, caddy.PrivilegedPortsDependencies{})
-			if error != nil {
-				_, _ = fmt.Fprintf(stderr, "failed: %s\n", error.Error())
+			exitCode, err := caddy.ConfigureManagedCaddyPrivilegedPorts(stderr, runtime.GOOS, runtime.GOARCH, paths, caddy.PrivilegedPortsDependencies{})
+			if err != nil {
+				_, _ = fmt.Fprintf(stderr, "failed: %s\n", err.Error())
 				return 1
 			}
 
@@ -177,23 +177,23 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			fallback.AdminAddress = validatedManifest.Caddy.Global.AdminAddress
 		}
 
-		exitCode, error := caddy.RunManagedCaddyLifecycleCommand(
+		exitCode, err := caddy.RunManagedCaddyLifecycleCommand(
 			caddy.LifecycleAction(arguments.Action),
 			stderr,
 			paths,
 			fallback,
 			caddy.ManagedCaddyLifecycleDependencies{RuntimeOS: runtime.GOOS},
 		)
-		if error != nil {
-			_, _ = fmt.Fprintf(stderr, "failed: %s\n", error.Error())
+		if err != nil {
+			_, _ = fmt.Fprintf(stderr, "failed: %s\n", err.Error())
 			return 1
 		}
 
 		return exitCode
 	case cli.KindCaddyTrustRemote:
-		exitCode, error := caddy.TrustManagedCaddyRemoteCertificate(arguments.SSHTarget, stderr, runtime.GOOS, caddy.TrustRemoteDependencies{})
-		if error != nil {
-			_, _ = fmt.Fprintf(stderr, "failed: %s\n", error.Error())
+		exitCode, err := caddy.TrustManagedCaddyRemoteCertificate(arguments.SSHTarget, stderr, runtime.GOOS, caddy.TrustRemoteDependencies{})
+		if err != nil {
+			_, _ = fmt.Fprintf(stderr, "failed: %s\n", err.Error())
 			return 1
 		}
 

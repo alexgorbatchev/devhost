@@ -31,9 +31,9 @@ func ReassignAutoPort(value ResolvedManifest, serviceName string) (ResolvedServi
 	}
 
 	excludedPorts := collectExcludedRuntimePorts(value, service.BindHost, serviceName)
-	nextPort, error := reserveAutoPort(service.BindHost, excludedPorts)
-	if error != nil {
-		return ResolvedService{}, ResolvedManifest{}, error
+	nextPort, err := reserveAutoPort(service.BindHost, excludedPorts)
+	if err != nil {
+		return ResolvedService{}, ResolvedManifest{}, err
 	}
 
 	service.Port = &nextPort

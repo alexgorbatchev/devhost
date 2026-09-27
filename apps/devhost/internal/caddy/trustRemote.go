@@ -32,8 +32,8 @@ func TrustManagedCaddyRemoteCertificate(
 		return 0, fmt.Errorf("Managed Caddy remote trust is currently supported on macOS only.")
 	}
 
-	if error := logInfo(logWriter, "managed caddy remote trust may prompt for your password because installing a root CA into the system trust store is privileged."); error != nil {
-		return 0, fmt.Errorf("log remote trust warning: %w", error)
+	if err := logInfo(logWriter, "managed caddy remote trust may prompt for your password because installing a root CA into the system trust store is privileged."); err != nil {
+		return 0, fmt.Errorf("log remote trust warning: %w", err)
 	}
 
 	certificate, readError := ReadRemoteManagedCaddyRootCertificate(sshTarget, dependencies)
@@ -69,17 +69,17 @@ func TrustManagedCaddyRemoteCertificate(
 	}()
 
 	message := fmt.Sprintf("managed caddy remote root sha256 from %s: %s", sshTarget, hex.EncodeToString(certificateFingerprint[:]))
-	if error := logInfo(logWriter, message); error != nil {
-		return 0, fmt.Errorf("log remote certificate fingerprint: %w", error)
+	if err := logInfo(logWriter, message); err != nil {
+		return 0, fmt.Errorf("log remote certificate fingerprint: %w", err)
 	}
 
-	if error := installTrustedCertificate(temporaryCertificatePath); error != nil {
-		return 0, error
+	if err := installTrustedCertificate(temporaryCertificatePath); err != nil {
+		return 0, err
 	}
 
 	message = fmt.Sprintf("managed caddy local CA from %s trusted.", sshTarget)
-	if error := logInfo(logWriter, message); error != nil {
-		return 0, fmt.Errorf("log remote trust success: %w", error)
+	if err := logInfo(logWriter, message); err != nil {
+		return 0, fmt.Errorf("log remote trust success: %w", err)
 	}
 
 	return 0, nil
@@ -130,14 +130,14 @@ func installTrustedMacOSCertificate(certificatePath string, dependencies TrustRe
 }
 
 func defaultCreateTemporaryCertificateFile(certificate []byte) (string, error) {
-	temporaryDirectoryPath, error := os.MkdirTemp("", "devhost-caddy-remote-trust-")
-	if error != nil {
-		return "", error
+	temporaryDirectoryPath, err := os.MkdirTemp("", "devhost-caddy-remote-trust-")
+	if err != nil {
+		return "", err
 	}
 
 	certificatePath := filepath.Join(temporaryDirectoryPath, "root.crt")
-	if error := os.WriteFile(certificatePath, certificate, 0o644); error != nil {
-		return "", error
+	if err := os.WriteFile(certificatePath, certificate, 0o644); err != nil {
+		return "", err
 	}
 
 	return certificatePath, nil

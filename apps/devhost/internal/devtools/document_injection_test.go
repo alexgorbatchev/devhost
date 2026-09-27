@@ -32,21 +32,21 @@ func TestDocumentInjectionServerRewritesHTMLDocuments(t *testing.T) {
 	}))
 	defer backendServer.Close()
 
-	backendHost, backendPortText, error := net.SplitHostPort(backendServer.Listener.Addr().String())
-	if error != nil {
-		t.Fatalf("SplitHostPort(...) error = %v", error)
+	backendHost, backendPortText, err := net.SplitHostPort(backendServer.Listener.Addr().String())
+	if err != nil {
+		t.Fatalf("SplitHostPort(...) error = %v", err)
 	}
-	backendPort, error := strconv.Atoi(backendPortText)
-	if error != nil {
-		t.Fatalf("Atoi(...) error = %v", error)
+	backendPort, err := strconv.Atoi(backendPortText)
+	if err != nil {
+		t.Fatalf("Atoi(...) error = %v", err)
 	}
 
-	documentServer, error := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{
+	documentServer, err := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{
 		BackendHost: backendHost,
 		BackendPort: backendPort,
 	})
-	if error != nil {
-		t.Fatalf("StartDocumentInjectionServer(...) error = %v", error)
+	if err != nil {
+		t.Fatalf("StartDocumentInjectionServer(...) error = %v", err)
 	}
 	t.Cleanup(func() {
 		_ = documentServer.Stop()
@@ -61,14 +61,14 @@ func TestDocumentInjectionServerRewritesHTMLDocuments(t *testing.T) {
 		t.Fatalf("document injection port = %d, want distinct ephemeral port", documentServer.Port())
 	}
 
-	htmlRequest, error := http.NewRequest(http.MethodGet, serverURL(documentServer.Port(), "/"), nil)
-	if error != nil {
-		t.Fatalf("NewRequest(html) error = %v", error)
+	htmlRequest, err := http.NewRequest(http.MethodGet, serverURL(documentServer.Port(), "/"), nil)
+	if err != nil {
+		t.Fatalf("NewRequest(html) error = %v", err)
 	}
 	htmlRequest.Host = "hello.localhost"
-	htmlResponse, error := http.DefaultClient.Do(htmlRequest)
-	if error != nil {
-		t.Fatalf("Do(html request) error = %v", error)
+	htmlResponse, err := http.DefaultClient.Do(htmlRequest)
+	if err != nil {
+		t.Fatalf("Do(html request) error = %v", err)
 	}
 	defer htmlResponse.Body.Close()
 	htmlBody := readResponseText(t, htmlResponse)
@@ -97,14 +97,14 @@ func TestDocumentInjectionServerRewritesHTMLDocuments(t *testing.T) {
 		t.Fatalf("x-forwarded-proto = %q, want https", observedHeaders["x-forwarded-proto"])
 	}
 
-	cssRequest, error := http.NewRequest(http.MethodGet, serverURL(documentServer.Port(), "/styles.css"), nil)
-	if error != nil {
-		t.Fatalf("NewRequest(css) error = %v", error)
+	cssRequest, err := http.NewRequest(http.MethodGet, serverURL(documentServer.Port(), "/styles.css"), nil)
+	if err != nil {
+		t.Fatalf("NewRequest(css) error = %v", err)
 	}
 	cssRequest.Host = "hello.localhost"
-	cssResponse, error := http.DefaultClient.Do(cssRequest)
-	if error != nil {
-		t.Fatalf("Do(css request) error = %v", error)
+	cssResponse, err := http.DefaultClient.Do(cssRequest)
+	if err != nil {
+		t.Fatalf("Do(css request) error = %v", err)
 	}
 	defer cssResponse.Body.Close()
 	if cssBody := readResponseText(t, cssResponse); cssBody != "body{color:red}" {

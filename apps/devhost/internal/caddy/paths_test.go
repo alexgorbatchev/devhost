@@ -48,21 +48,21 @@ func TestResolveDevhostStateDirectoryPath(t *testing.T) {
 			t.Parallel()
 
 			homeDirectoryPath := strings.TrimSpace(tc.environment["HOME"])
-			got, error := resolveDevhostStateDirectoryPath(tc.environment, homeDirectoryPath)
+			got, err := resolveDevhostStateDirectoryPath(tc.environment, homeDirectoryPath)
 			if tc.wantError != "" {
-				if error == nil {
+				if err == nil {
 					t.Fatalf("ResolveDevhostStateDirectoryPath(...) error = nil, want %q", tc.wantError)
 				}
 
-				if error.Error() != tc.wantError {
-					t.Fatalf("ResolveDevhostStateDirectoryPath(...) error = %q, want %q", error.Error(), tc.wantError)
+				if err.Error() != tc.wantError {
+					t.Fatalf("ResolveDevhostStateDirectoryPath(...) error = %q, want %q", err.Error(), tc.wantError)
 				}
 
 				return
 			}
 
-			if error != nil {
-				t.Fatalf("ResolveDevhostStateDirectoryPath(...) unexpected error = %v", error)
+			if err != nil {
+				t.Fatalf("ResolveDevhostStateDirectoryPath(...) unexpected error = %v", err)
 			}
 
 			if got != tc.want {

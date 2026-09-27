@@ -67,9 +67,9 @@ func RunManagedCaddyLifecycleCommand(
 	removeManagedPidFile := dependencies.RemoveManagedPidFile
 	if removeManagedPidFile == nil {
 		removeManagedPidFile = func() error {
-			error := os.Remove(paths.PidFilePath)
-			if error != nil && !os.IsNotExist(error) {
-				return error
+			err := os.Remove(paths.PidFilePath)
+			if err != nil && !os.IsNotExist(err) {
+				return err
 			}
 			return nil
 		}
@@ -82,8 +82,8 @@ func RunManagedCaddyLifecycleCommand(
 		}
 	}
 
-	if error := ensureConfig(); error != nil {
-		return 0, error
+	if err := ensureConfig(); err != nil {
+		return 0, err
 	}
 
 	switch action {
@@ -109,15 +109,15 @@ func startManagedCaddy(
 	runManagedCaddyCommand func([]string, ManagedCaddyCommandOptions) CommandResult,
 ) (int, error) {
 	if !hasManagedRootCert() {
-		if error := logInfo(logWriter, "managed caddy may prompt for your password on first start so it can install its local CA into the system trust store."); error != nil {
-			return 0, fmt.Errorf("log managed caddy first-start trust warning: %w", error)
+		if err := logInfo(logWriter, "managed caddy may prompt for your password on first start so it can install its local CA into the system trust store."); err != nil {
+			return 0, fmt.Errorf("log managed caddy first-start trust warning: %w", err)
 		}
 	}
 
 	if isManagedCaddyAvailable() {
 		if hasManagedPidFile() {
-			if error := logInfo(logWriter, fmt.Sprintf("managed caddy is already running with %s", paths.CaddyfilePath)); error != nil {
-				return 0, fmt.Errorf("log managed caddy already running: %w", error)
+			if err := logInfo(logWriter, fmt.Sprintf("managed caddy is already running with %s", paths.CaddyfilePath)); err != nil {
+				return 0, fmt.Errorf("log managed caddy already running: %w", err)
 			}
 			return 0, nil
 		}
@@ -130,8 +130,8 @@ func startManagedCaddy(
 		return 0, errors.New(CreateManagedCaddyStartErrorMessage(result, runtimeOS))
 	}
 
-	if error := logInfo(logWriter, fmt.Sprintf("managed caddy started with %s", paths.CaddyfilePath)); error != nil {
-		return 0, fmt.Errorf("log managed caddy start success: %w", error)
+	if err := logInfo(logWriter, fmt.Sprintf("managed caddy started with %s", paths.CaddyfilePath)); err != nil {
+		return 0, fmt.Errorf("log managed caddy start success: %w", err)
 	}
 
 	_ = adminAddress
@@ -150,17 +150,17 @@ func stopManagedCaddy(
 	isManagedProcessAvailable := isManagedCaddyAvailable()
 	if !isManagedProcessAvailable {
 		if isManagedProcessKnown {
-			if error := removeManagedPidFile(); error != nil {
-				return 0, fmt.Errorf("remove stale managed caddy pid file: %w", error)
+			if err := removeManagedPidFile(); err != nil {
+				return 0, fmt.Errorf("remove stale managed caddy pid file: %w", err)
 			}
-			if error := logInfo(logWriter, "managed caddy is not running. Removed the stale pid file."); error != nil {
-				return 0, fmt.Errorf("log managed caddy stale pidfile cleanup: %w", error)
+			if err := logInfo(logWriter, "managed caddy is not running. Removed the stale pid file."); err != nil {
+				return 0, fmt.Errorf("log managed caddy stale pidfile cleanup: %w", err)
 			}
 			return 0, nil
 		}
 
-		if error := logInfo(logWriter, "managed caddy is not running."); error != nil {
-			return 0, fmt.Errorf("log managed caddy not running: %w", error)
+		if err := logInfo(logWriter, "managed caddy is not running."); err != nil {
+			return 0, fmt.Errorf("log managed caddy not running: %w", err)
 		}
 		return 0, nil
 	}
@@ -174,11 +174,11 @@ func stopManagedCaddy(
 		return 0, errors.New(CreateManagedCaddyCommandErrorMessage("stop", result))
 	}
 
-	if error := removeManagedPidFile(); error != nil {
-		return 0, fmt.Errorf("remove managed caddy pid file after stop: %w", error)
+	if err := removeManagedPidFile(); err != nil {
+		return 0, fmt.Errorf("remove managed caddy pid file after stop: %w", err)
 	}
-	if error := logInfo(logWriter, "managed caddy stopped."); error != nil {
-		return 0, fmt.Errorf("log managed caddy stop success: %w", error)
+	if err := logInfo(logWriter, "managed caddy stopped."); err != nil {
+		return 0, fmt.Errorf("log managed caddy stop success: %w", err)
 	}
 
 	return 0, nil
@@ -191,8 +191,8 @@ func trustManagedCaddy(
 	isManagedCaddyAvailable func() bool,
 	runManagedCaddyCommand func([]string, ManagedCaddyCommandOptions) CommandResult,
 ) (int, error) {
-	if error := logInfo(logWriter, "managed caddy trust may prompt for your password because installing a root CA into the system trust store is privileged."); error != nil {
-		return 0, fmt.Errorf("log managed caddy trust warning: %w", error)
+	if err := logInfo(logWriter, "managed caddy trust may prompt for your password because installing a root CA into the system trust store is privileged."); err != nil {
+		return 0, fmt.Errorf("log managed caddy trust warning: %w", err)
 	}
 
 	if !isManagedCaddyAvailable() {
@@ -207,8 +207,8 @@ func trustManagedCaddy(
 		return 0, errors.New(CreateManagedCaddyCommandErrorMessage("trust", result))
 	}
 
-	if error := logInfo(logWriter, "managed caddy local CA trusted."); error != nil {
-		return 0, fmt.Errorf("log managed caddy trust success: %w", error)
+	if err := logInfo(logWriter, "managed caddy local CA trusted."); err != nil {
+		return 0, fmt.Errorf("log managed caddy trust success: %w", err)
 	}
 
 	return 0, nil
@@ -221,8 +221,8 @@ func CreateManagedCaddyStartErrorMessage(result CommandResult, runtimeOS string)
 		return baseMessage
 	}
 
-	bindDirective, error := ResolveManagedCaddyBindDirective(runtimeOS, defaultManagedCaddyBindHost)
-	if error == nil && bindDirective == "" {
+	bindDirective, err := ResolveManagedCaddyBindDirective(runtimeOS, defaultManagedCaddyBindHost)
+	if err == nil && bindDirective == "" {
 		return baseMessage + "\nmacOS allows rootless binds on :443 only with wildcard listeners, not loopback-specific ones."
 	}
 

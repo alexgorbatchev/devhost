@@ -18,9 +18,9 @@ func TestResolveServiceOrder(t *testing.T) {
 			"db":  {Name: "db", DependsOn: []string{}},
 		}}
 
-		orderedServices, error := ResolveServiceOrder(value)
-		if error != nil {
-			t.Fatalf("ResolveServiceOrder(...) unexpected error = %v", error)
+		orderedServices, err := ResolveServiceOrder(value)
+		if err != nil {
+			t.Fatalf("ResolveServiceOrder(...) unexpected error = %v", err)
 		}
 
 		want := []string{"db", "api", "web"}
@@ -37,10 +37,10 @@ func TestResolveServiceOrder(t *testing.T) {
 			"api": {Name: "api", DependsOn: []string{"web"}},
 		}}
 
-		_, error := ResolveServiceOrder(value)
+		_, err := ResolveServiceOrder(value)
 		want := "Dependency cycle detected: web -> api -> web"
-		if error == nil || error.Error() != want {
-			t.Fatalf("ResolveServiceOrder(...) error = %v, want %q", error, want)
+		if err == nil || err.Error() != want {
+			t.Fatalf("ResolveServiceOrder(...) error = %v, want %q", err, want)
 		}
 	})
 }

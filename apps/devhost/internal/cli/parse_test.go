@@ -245,21 +245,21 @@ func TestParseCommandLineArguments(t *testing.T) {
 				t.Setenv(key, value)
 			}
 
-			got, error := ParseCommandLineArguments(tc.rawArgs)
+			got, err := ParseCommandLineArguments(tc.rawArgs)
 			if tc.wantError != "" {
-				if error == nil {
+				if err == nil {
 					t.Fatalf("ParseCommandLineArguments(%q) error = nil, want %q", tc.rawArgs, tc.wantError)
 				}
 
-				if error.Error() != tc.wantError {
-					t.Fatalf("ParseCommandLineArguments(%q) error = %q, want %q", tc.rawArgs, error.Error(), tc.wantError)
+				if err.Error() != tc.wantError {
+					t.Fatalf("ParseCommandLineArguments(%q) error = %q, want %q", tc.rawArgs, err.Error(), tc.wantError)
 				}
 
 				return
 			}
 
-			if error != nil {
-				t.Fatalf("ParseCommandLineArguments(%q) unexpected error = %v", tc.rawArgs, error)
+			if err != nil {
+				t.Fatalf("ParseCommandLineArguments(%q) unexpected error = %v", tc.rawArgs, err)
 			}
 
 			if got.Kind != tc.want.Kind || got.Action != tc.want.Action || got.SSHTarget != tc.want.SSHTarget || got.Verbose != tc.want.Verbose || got.IdleTimeout != tc.want.IdleTimeout {

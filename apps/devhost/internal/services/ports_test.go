@@ -28,9 +28,9 @@ func TestResolveServicePorts(t *testing.T) {
 			},
 		}
 
-		resolvedManifest, error := ResolveServicePorts(value)
-		if error != nil {
-			t.Fatalf("ResolveServicePorts(...) unexpected error = %v", error)
+		resolvedManifest, err := ResolveServicePorts(value)
+		if err != nil {
+			t.Fatalf("ResolveServicePorts(...) unexpected error = %v", err)
 		}
 
 		databasePort := resolvedManifest.Services["db"].Port
@@ -58,8 +58,8 @@ func TestResolveServicePorts(t *testing.T) {
 			"web": {Name: "web", BindHost: "0.0.0.0", Command: []string{"bun", "run", "web"}, Health: &manifest.HealthConfig{TCP: &webHealthPort}},
 		}}
 
-		if _, error := ResolveServicePorts(value); error != nil {
-			t.Fatalf("ResolveServicePorts(...) unexpected error = %v", error)
+		if _, err := ResolveServicePorts(value); err != nil {
+			t.Fatalf("ResolveServicePorts(...) unexpected error = %v", err)
 		}
 	})
 
@@ -76,9 +76,9 @@ func TestResolveServicePorts(t *testing.T) {
 			},
 		}
 
-		resolvedManifest, error := ResolveServicePorts(value)
-		if error != nil {
-			t.Fatalf("ResolveServicePorts(...) unexpected error = %v", error)
+		resolvedManifest, err := ResolveServicePorts(value)
+		if err != nil {
+			t.Fatalf("ResolveServicePorts(...) unexpected error = %v", err)
 		}
 
 		resolvedService := resolvedManifest.Services["api"]
@@ -107,9 +107,9 @@ func TestResolveServicePorts(t *testing.T) {
 			"web": {Name: "web", BindHost: "127.0.0.1", Managed: false, Port: webPort},
 		}}
 
-		resolvedManifest, error := ResolveServicePorts(value)
-		if error != nil {
-			t.Fatalf("ResolveServicePorts(...) unexpected error = %v", error)
+		resolvedManifest, err := ResolveServicePorts(value)
+		if err != nil {
+			t.Fatalf("ResolveServicePorts(...) unexpected error = %v", err)
 		}
 
 		resolvedService := resolvedManifest.Services["web"]
@@ -141,9 +141,9 @@ func TestResolveServicePorts(t *testing.T) {
 			},
 		}}
 
-		resolvedManifest, error := ResolveServicePorts(value)
-		if error != nil {
-			t.Fatalf("ResolveServicePorts(...) unexpected error = %v", error)
+		resolvedManifest, err := ResolveServicePorts(value)
+		if err != nil {
+			t.Fatalf("ResolveServicePorts(...) unexpected error = %v", err)
 		}
 
 		resolvedService := resolvedManifest.Services["web"]
@@ -165,10 +165,10 @@ func TestResolveServicePorts(t *testing.T) {
 			"api": {Name: "api", BindHost: "127.0.0.1", Command: []string{"bun", "run", "api"}},
 		}}
 
-		_, error := ResolveServicePorts(value)
+		_, err := ResolveServicePorts(value)
 		want := "Service api is missing an effective health check."
-		if error == nil || error.Error() != want {
-			t.Fatalf("ResolveServicePorts(...) error = %v, want %q", error, want)
+		if err == nil || err.Error() != want {
+			t.Fatalf("ResolveServicePorts(...) error = %v, want %q", err, want)
 		}
 	})
 

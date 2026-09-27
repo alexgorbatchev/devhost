@@ -174,19 +174,19 @@ func ClaimFixedPort(options ClaimFixedPortOptions) error {
 	claimPath := getFixedPortClaimPath(options.BindHost, options.Port, options.PortClaimsDirectoryPath)
 	claimText := createFixedPortClaimText(options.BindHost, options.ManifestPath, options.Port)
 
-	if error := writeFileExclusive(claimPath, claimText); error == nil {
+	if err := writeFileExclusive(claimPath, claimText); err == nil {
 		return nil
-	} else if !errors.Is(error, os.ErrExist) {
-		return error
+	} else if !errors.Is(err, os.ErrExist) {
+		return err
 	}
 
-	existingClaimText, error := os.ReadFile(claimPath)
-	if error != nil {
-		return error
+	existingClaimText, err := os.ReadFile(claimPath)
+	if err != nil {
+		return err
 	}
-	existingClaim, error := parseFixedPortClaim(existingClaimText)
-	if error != nil {
-		return error
+	existingClaim, err := parseFixedPortClaim(existingClaimText)
+	if err != nil {
+		return err
 	}
 	if !isFixedPortClaimStale(existingClaim) {
 		if options.KillZombies && existingClaim.ManifestPath == options.ManifestPath && existingClaim.OwnerPID != routeMutationProcessID() {
@@ -196,8 +196,8 @@ func ClaimFixedPort(options ClaimFixedPortOptions) error {
 			if process, err := os.FindProcess(existingClaim.OwnerPID); err == nil {
 				_ = process.Kill()
 			}
-			if error := removeIfExists(claimPath); error != nil {
-				return error
+			if err := removeIfExists(claimPath); err != nil {
+				return err
 			}
 			return writeFileExclusive(claimPath, claimText)
 		}
@@ -205,8 +205,8 @@ func ClaimFixedPort(options ClaimFixedPortOptions) error {
 		return errors.New(formatFixedPortClaimConflict(options, existingClaim))
 	}
 
-	if error := removeIfExists(claimPath); error != nil {
-		return error
+	if err := removeIfExists(claimPath); err != nil {
+		return err
 	}
 
 	return writeFileExclusive(claimPath, claimText)
@@ -214,17 +214,17 @@ func ClaimFixedPort(options ClaimFixedPortOptions) error {
 
 func ReleaseFixedPortClaim(options ClaimFixedPortOptions) error {
 	claimPath := getFixedPortClaimPath(options.BindHost, options.Port, options.PortClaimsDirectoryPath)
-	claimText, error := os.ReadFile(claimPath)
-	if error != nil {
-		if errors.Is(error, os.ErrNotExist) {
+	claimText, err := os.ReadFile(claimPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
 			return nil
 		}
-		return error
+		return err
 	}
 
-	claim, error := parseFixedPortClaim(claimText)
-	if error != nil {
-		return error
+	claim, err := parseFixedPortClaim(claimText)
+	if err != nil {
+		return err
 	}
 	if claim.OwnerPID != routeMutationProcessID() || claim.ManifestPath != options.ManifestPath {
 		return nil
@@ -234,9 +234,9 @@ func ReleaseFixedPortClaim(options ClaimFixedPortOptions) error {
 }
 
 func CleanupStaleFixedPortClaims(portClaimsDirectoryPath string) error {
-	entries, error := os.ReadDir(portClaimsDirectoryPath)
-	if error != nil {
-		return error
+	entries, err := os.ReadDir(portClaimsDirectoryPath)
+	if err != nil {
+		return err
 	}
 
 	for _, entry := range entries {
@@ -245,20 +245,20 @@ func CleanupStaleFixedPortClaims(portClaimsDirectoryPath string) error {
 		}
 
 		claimPath := filepath.Join(portClaimsDirectoryPath, entry.Name())
-		claimText, error := os.ReadFile(claimPath)
-		if error != nil {
-			return error
+		claimText, err := os.ReadFile(claimPath)
+		if err != nil {
+			return err
 		}
-		claim, error := parseFixedPortClaim(claimText)
-		if error != nil {
-			return error
+		claim, err := parseFixedPortClaim(claimText)
+		if err != nil {
+			return err
 		}
 		if !isFixedPortClaimStale(claim) {
 			continue
 		}
 
-		if error := removeIfExists(claimPath); error != nil {
-			return error
+		if err := removeIfExists(claimPath); err != nil {
+			return err
 		}
 	}
 
@@ -266,30 +266,30 @@ func CleanupStaleFixedPortClaims(portClaimsDirectoryPath string) error {
 }
 
 func ClaimHost(options ClaimHostOptions) error {
-	if error := assertHostIsAvailable(options); error != nil {
-		return error
+	if err := assertHostIsAvailable(options); err != nil {
+		return err
 	}
 
 	hostClaimPath := getHostClaimPath(options.Host, options.RegistrationsDirectoryPath)
 	claimText := createHostClaimText(options.Host, options.ManifestPath)
 
-	if error := writeFileExclusive(hostClaimPath, claimText); error == nil {
+	if err := writeFileExclusive(hostClaimPath, claimText); err == nil {
 		return nil
-	} else if !errors.Is(error, os.ErrExist) {
-		return error
+	} else if !errors.Is(err, os.ErrExist) {
+		return err
 	}
 
-	existingClaimText, error := os.ReadFile(hostClaimPath)
-	if error != nil {
-		return error
+	existingClaimText, err := os.ReadFile(hostClaimPath)
+	if err != nil {
+		return err
 	}
-	existingClaim, error := parseHostClaim(existingClaimText)
-	if error != nil {
-		return error
+	existingClaim, err := parseHostClaim(existingClaimText)
+	if err != nil {
+		return err
 	}
 	if isHostClaimStale(existingClaim) {
-		if error := removeIfExists(hostClaimPath); error != nil {
-			return error
+		if err := removeIfExists(hostClaimPath); err != nil {
+			return err
 		}
 		return writeFileExclusive(hostClaimPath, claimText)
 	}
@@ -304,8 +304,8 @@ func ClaimHost(options ClaimHostOptions) error {
 		if process, err := os.FindProcess(existingClaim.OwnerPID); err == nil {
 			_ = process.Kill()
 		}
-		if error := removeIfExists(hostClaimPath); error != nil {
-			return error
+		if err := removeIfExists(hostClaimPath); err != nil {
+			return err
 		}
 		return writeFileExclusive(hostClaimPath, claimText)
 	}
@@ -315,17 +315,17 @@ func ClaimHost(options ClaimHostOptions) error {
 
 func ReleaseHostClaim(options ClaimHostOptions) error {
 	claimPath := getHostClaimPath(options.Host, options.RegistrationsDirectoryPath)
-	claimText, error := os.ReadFile(claimPath)
-	if error != nil {
-		if errors.Is(error, os.ErrNotExist) {
+	claimText, err := os.ReadFile(claimPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
 			return nil
 		}
-		return error
+		return err
 	}
 
-	claim, error := parseHostClaim(claimText)
-	if error != nil {
-		return error
+	claim, err := parseHostClaim(claimText)
+	if err != nil {
+		return err
 	}
 	if claim.OwnerPID != routeMutationProcessID() || claim.ManifestPath != options.ManifestPath {
 		return nil
@@ -337,14 +337,14 @@ func ReleaseHostClaim(options ClaimHostOptions) error {
 func CleanupStaleRegistrations(registrationsDirectoryPath string) error {
 	routesDirectoryPath := filepath.Clean(filepath.Join(registrationsDirectoryPath, ".."))
 	paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
-	previousSettings, error := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
-	if error != nil {
-		return error
+	previousSettings, err := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
+	if err != nil {
+		return err
 	}
 
-	entries, error := os.ReadDir(registrationsDirectoryPath)
-	if error != nil {
-		return error
+	entries, err := os.ReadDir(registrationsDirectoryPath)
+	if err != nil {
+		return err
 	}
 
 	affectedHostsByName := map[string]struct{}{}
@@ -355,13 +355,13 @@ func CleanupStaleRegistrations(registrationsDirectoryPath string) error {
 		}
 
 		registrationPath := filepath.Join(registrationsDirectoryPath, entry.Name())
-		registrationText, error := os.ReadFile(registrationPath)
-		if error != nil {
-			return error
+		registrationText, err := os.ReadFile(registrationPath)
+		if err != nil {
+			return err
 		}
-		registration, error := parseManagedRouteRecord(registrationText)
-		if error != nil {
-			return error
+		registration, err := parseManagedRouteRecord(registrationText)
+		if err != nil {
+			return err
 		}
 		if routeMutationIsProcessAlive(registration.OwnerPID) {
 			continue
@@ -371,38 +371,38 @@ func CleanupStaleRegistrations(registrationsDirectoryPath string) error {
 			affectedHostsByName[registration.Host] = struct{}{}
 			affectedHosts = append(affectedHosts, registration.Host)
 		}
-		if error := removeIfExists(registrationPath); error != nil {
-			return error
+		if err := removeIfExists(registrationPath); err != nil {
+			return err
 		}
 		if registration.IsLegacy {
 			legacyRoutePath := filepath.Join(routesDirectoryPath, strings.TrimSuffix(entry.Name(), ".json")+".caddy")
-			if error := removeIfExists(legacyRoutePath); error != nil {
-				return error
+			if err := removeIfExists(legacyRoutePath); err != nil {
+				return err
 			}
 		}
 	}
 
-	if error := cleanupStaleHostClaims(paths.HostClaimsDirectoryPath); error != nil {
-		return error
+	if err := cleanupStaleHostClaims(paths.HostClaimsDirectoryPath); err != nil {
+		return err
 	}
 	for _, host := range affectedHosts {
-		if error := syncHostRoute(host, routesDirectoryPath, nil); error != nil {
-			return error
+		if err := syncHostRoute(host, routesDirectoryPath, nil); err != nil {
+			return err
 		}
 	}
 
-	nextSettings, error := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
-	if error != nil {
-		return error
+	nextSettings, err := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
+	if err != nil {
+		return err
 	}
 	if didManagedCaddyGlobalSettingsChange(previousSettings, nextSettings) {
-		if error := syncManagedCaddyGlobalState(routesDirectoryPath, nextSettings); error != nil {
-			return error
+		if err := syncManagedCaddyGlobalState(routesDirectoryPath, nextSettings); err != nil {
+			return err
 		}
 	}
 	if len(affectedHosts) > 0 {
-		if error := syncManagedCaddyNotFoundSite(routesDirectoryPath, nextSettings.HTTPSPort); error != nil {
-			return error
+		if err := syncManagedCaddyNotFoundSite(routesDirectoryPath, nextSettings.HTTPSPort); err != nil {
+			return err
 		}
 	}
 
@@ -420,49 +420,49 @@ func UnregisterRoute(
 	routesDirectoryPath := filepath.Clean(filepath.Join(registrationsDirectoryPath, ".."))
 	paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
 	registrationPath := getRouteRegistrationPath(serviceName, host, path, routesDirectoryPath)
-	previousSettings, error := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
-	if error != nil {
-		return error
+	previousSettings, err := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
+	if err != nil {
+		return err
 	}
 
-	registrationText, error := os.ReadFile(registrationPath)
-	if error != nil {
+	registrationText, err := os.ReadFile(registrationPath)
+	if err != nil {
 		return nil
 	}
-	registration, error := parseRouteRegistration(registrationText)
-	if error != nil {
+	registration, err := parseRouteRegistration(registrationText)
+	if err != nil {
 		return nil
 	}
 	if registration.OwnerPID != routeMutationProcessID() || registration.ManifestPath != manifestPath {
 		return nil
 	}
 
-	if error := removeIfExists(registrationPath); error != nil {
-		return error
+	if err := removeIfExists(registrationPath); err != nil {
+		return err
 	}
-	nextSettings, error := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
-	if error != nil {
-		return error
+	nextSettings, err := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
+	if err != nil {
+		return err
 	}
 	if didManagedCaddyGlobalSettingsChange(previousSettings, nextSettings) {
-		if error := syncManagedCaddyGlobalState(routesDirectoryPath, nextSettings); error != nil {
-			return error
+		if err := syncManagedCaddyGlobalState(routesDirectoryPath, nextSettings); err != nil {
+			return err
 		}
 	} else {
-		if error := syncHostRoute(host, routesDirectoryPath, &nextSettings); error != nil {
-			return error
+		if err := syncHostRoute(host, routesDirectoryPath, &nextSettings); err != nil {
+			return err
 		}
 	}
-	if error := syncManagedCaddyNotFoundSite(routesDirectoryPath, nextSettings.HTTPSPort); error != nil {
-		return error
+	if err := syncManagedCaddyNotFoundSite(routesDirectoryPath, nextSettings.HTTPSPort); err != nil {
+		return err
 	}
 
 	return reloadManagedCaddy(nextSettings.AdminAddress, routesDirectoryPath, outputWriters)
 }
 
 func SyncManagedHostRoute(host string, adminAddress string, routesDirectoryPath string, outputWriters RouteCommandOutputWriters) error {
-	if error := syncHostRoute(host, routesDirectoryPath, nil); error != nil {
-		return error
+	if err := syncHostRoute(host, routesDirectoryPath, nil); err != nil {
+		return err
 	}
 
 	return reloadManagedCaddy(adminAddress, routesDirectoryPath, outputWriters)
@@ -587,15 +587,15 @@ func renderHostRouteSnippet(
 
 	lines := []string{}
 	if httpEnabled {
-		httpLines, error := renderHostRouteSiteBlock(FormatManagedCaddySiteAddress("http", httpPort, host), rootRegistration, nonRootRegistrations, false, routesDirectoryPath)
-		if error != nil {
-			return "", error
+		httpLines, err := renderHostRouteSiteBlock(FormatManagedCaddySiteAddress("http", httpPort, host), rootRegistration, nonRootRegistrations, false, routesDirectoryPath)
+		if err != nil {
+			return "", err
 		}
 		lines = append(lines, httpLines...)
 	}
-	httpsLines, error := renderHostRouteSiteBlock(FormatManagedCaddySiteAddress("https", httpsPort, host), rootRegistration, nonRootRegistrations, true, routesDirectoryPath)
-	if error != nil {
-		return "", error
+	httpsLines, err := renderHostRouteSiteBlock(FormatManagedCaddySiteAddress("https", httpsPort, host), rootRegistration, nonRootRegistrations, true, routesDirectoryPath)
+	if err != nil {
+		return "", err
 	}
 	lines = append(lines, httpsLines...)
 	return strings.Join(lines, "\n"), nil
@@ -643,9 +643,9 @@ func renderHostRouteSiteBlock(
 		lines = append(lines, "")
 	}
 	for _, registration := range nonRootRegistrations {
-		serviceHandleLines, error := renderServiceHandle(registration)
-		if error != nil {
-			return nil, error
+		serviceHandleLines, err := renderServiceHandle(registration)
+		if err != nil {
+			return nil, err
 		}
 		lines = append(lines, serviceHandleLines...)
 		lines = append(lines, "")
@@ -655,9 +655,9 @@ func renderHostRouteSiteBlock(
 			lines = append(lines, renderNamedProxyHandleLines("@devhost_document header Sec-Fetch-Dest document", "@devhost_document", *rootRegistration.DocumentInjectionPort)...)
 			lines = append(lines, "")
 		}
-		rootProxyHandleLines, error := renderRootProxyHandleLines(*rootRegistration)
-		if error != nil {
-			return nil, error
+		rootProxyHandleLines, err := renderRootProxyHandleLines(*rootRegistration)
+		if err != nil {
+			return nil, err
 		}
 		lines = append(lines, rootProxyHandleLines...)
 	} else {
@@ -678,9 +678,9 @@ func renderNamedProxyHandleLines(matcher string, handleName string, port int) []
 }
 
 func renderRootProxyHandleLines(registration routeRegistration) ([]string, error) {
-	target, error := readAppTarget(registration)
-	if error != nil {
-		return nil, error
+	target, err := readAppTarget(registration)
+	if err != nil {
+		return nil, err
 	}
 
 	return []string{
@@ -699,9 +699,9 @@ func renderRootErrorHandleLines(statusCode int) []string {
 }
 
 func renderServiceHandle(registration routeRegistration) ([]string, error) {
-	target, error := readAppTarget(registration)
-	if error != nil {
-		return nil, error
+	target, err := readAppTarget(registration)
+	if err != nil {
+		return nil, err
 	}
 
 	return []string{
@@ -712,18 +712,18 @@ func renderServiceHandle(registration routeRegistration) ([]string, error) {
 }
 
 func readAppTarget(registration routeRegistration) (string, error) {
-	host, error := ResolveProxyHost(registration.AppBindHost)
-	if error != nil {
-		return "", error
+	host, err := ResolveProxyHost(registration.AppBindHost)
+	if err != nil {
+		return "", err
 	}
 
 	return FormatProxyAddress(host, registration.AppPort), nil
 }
 
 func syncHostRoute(host string, routesDirectoryPath string, settings *managedCaddyGlobalSettings) error {
-	registrations, error := readHostRegistrations(host, routesDirectoryPath)
-	if error != nil {
-		return error
+	registrations, err := readHostRegistrations(host, routesDirectoryPath)
+	if err != nil {
+		return err
 	}
 	hostRoutePath := getHostRoutePath(host, routesDirectoryPath)
 	if len(registrations) == 0 {
@@ -735,15 +735,15 @@ func syncHostRoute(host string, routesDirectoryPath string, settings *managedCad
 		effectiveSettings = *settings
 	} else {
 		paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
-		effectiveSettings, error = readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
-		if error != nil {
-			return error
+		effectiveSettings, err = readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
+		if err != nil {
+			return err
 		}
 	}
 
-	snippet, error := renderHostRouteSnippet(registrations, effectiveSettings.HTTPEnabled, effectiveSettings.HTTPPort, effectiveSettings.HTTPSPort, routesDirectoryPath)
-	if error != nil {
-		return error
+	snippet, err := renderHostRouteSnippet(registrations, effectiveSettings.HTTPEnabled, effectiveSettings.HTTPPort, effectiveSettings.HTTPSPort, routesDirectoryPath)
+	if err != nil {
+		return err
 	}
 
 	return os.WriteFile(hostRoutePath, []byte(snippet), 0o644)
@@ -751,9 +751,9 @@ func syncHostRoute(host string, routesDirectoryPath string, settings *managedCad
 
 func readHostRegistrations(host string, routesDirectoryPath string) ([]routeRegistration, error) {
 	registrationsDirectoryPath := filepath.Join(routesDirectoryPath, ".registrations")
-	entries, error := os.ReadDir(registrationsDirectoryPath)
-	if error != nil {
-		return nil, error
+	entries, err := os.ReadDir(registrationsDirectoryPath)
+	if err != nil {
+		return nil, err
 	}
 
 	registrations := []routeRegistration{}
@@ -763,13 +763,13 @@ func readHostRegistrations(host string, routesDirectoryPath string) ([]routeRegi
 		}
 
 		registrationPath := filepath.Join(registrationsDirectoryPath, entry.Name())
-		registrationText, error := os.ReadFile(registrationPath)
-		if error != nil {
-			return nil, error
+		registrationText, err := os.ReadFile(registrationPath)
+		if err != nil {
+			return nil, err
 		}
-		record, error := parseManagedRouteRecord(registrationText)
-		if error != nil {
-			return nil, error
+		record, err := parseManagedRouteRecord(registrationText)
+		if err != nil {
+			return nil, err
 		}
 		if record.IsLegacy || record.Host != host {
 			continue
@@ -811,8 +811,8 @@ func readRoutePriorityWeight(path string) int {
 
 func parseHostClaim(claimText []byte) (hostClaim, error) {
 	var value hostClaimJSON
-	if error := json.Unmarshal(claimText, &value); error != nil {
-		return hostClaim{}, error
+	if err := json.Unmarshal(claimText, &value); err != nil {
+		return hostClaim{}, err
 	}
 	if value.CreatedAt == nil || value.Host == nil || value.ManifestPath == nil || value.OwnerPID == nil {
 		return hostClaim{}, fmt.Errorf("Host claim is malformed.")
@@ -823,8 +823,8 @@ func parseHostClaim(claimText []byte) (hostClaim, error) {
 
 func parseFixedPortClaim(claimText []byte) (fixedPortClaim, error) {
 	var value fixedPortClaimJSON
-	if error := json.Unmarshal(claimText, &value); error != nil {
-		return fixedPortClaim{}, error
+	if err := json.Unmarshal(claimText, &value); err != nil {
+		return fixedPortClaim{}, err
 	}
 	if value.BindHost == nil || value.CreatedAt == nil || value.ManifestPath == nil || value.OwnerPID == nil || value.Port == nil {
 		return fixedPortClaim{}, fmt.Errorf("Fixed port claim is malformed.")
@@ -841,7 +841,7 @@ func parseFixedPortClaim(claimText []byte) (fixedPortClaim, error) {
 
 func parseManagedRouteRecord(registrationText []byte) (managedRouteRecord, error) {
 	var modernValue routeRegistrationJSON
-	if error := json.Unmarshal(registrationText, &modernValue); error == nil && isRouteRegistrationJSON(modernValue) {
+	if err := json.Unmarshal(registrationText, &modernValue); err == nil && isRouteRegistrationJSON(modernValue) {
 		record := managedRouteRecord{
 			AppBindHost:  *modernValue.AppBindHost,
 			AppPort:      *modernValue.AppPort,
@@ -881,7 +881,7 @@ func parseManagedRouteRecord(registrationText []byte) (managedRouteRecord, error
 	}
 
 	var legacyValue legacyRouteRegistrationJSON
-	if error := json.Unmarshal(registrationText, &legacyValue); error == nil && isLegacyRouteRegistrationJSON(legacyValue) {
+	if err := json.Unmarshal(registrationText, &legacyValue); err == nil && isLegacyRouteRegistrationJSON(legacyValue) {
 		path := "/"
 		if legacyValue.Path != nil {
 			path = normalizeRoutePath(*legacyValue.Path)
@@ -901,9 +901,9 @@ func parseManagedRouteRecord(registrationText []byte) (managedRouteRecord, error
 }
 
 func parseRouteRegistration(registrationText []byte) (routeRegistration, error) {
-	record, error := parseManagedRouteRecord(registrationText)
-	if error != nil {
-		return routeRegistration{}, error
+	record, err := parseManagedRouteRecord(registrationText)
+	if err != nil {
+		return routeRegistration{}, err
 	}
 	if record.IsLegacy {
 		return routeRegistration{}, fmt.Errorf("Registration file is malformed.")
@@ -1002,12 +1002,12 @@ func formatFixedPortClaimConflict(options ClaimFixedPortOptions, claim fixedPort
 }
 
 func readListeningProcessLabel(port int) string {
-	if _, error := exec.LookPath("lsof"); error != nil {
+	if _, err := exec.LookPath("lsof"); err != nil {
 		return ""
 	}
 
-	result, error := exec.Command("lsof", "-nP", fmt.Sprintf("-iTCP:%d", port), "-sTCP:LISTEN", "-Fpc").Output()
-	if error != nil {
+	result, err := exec.Command("lsof", "-nP", fmt.Sprintf("-iTCP:%d", port), "-sTCP:LISTEN", "-Fpc").Output()
+	if err != nil {
 		return ""
 	}
 
@@ -1051,8 +1051,8 @@ func readProcessLabel(processID string) string {
 }
 
 func readProcessCommandLine(processID string) []string {
-	result, error := os.ReadFile(filepath.Join("/proc", processID, "cmdline"))
-	if error != nil || len(result) == 0 {
+	result, err := os.ReadFile(filepath.Join("/proc", processID, "cmdline"))
+	if err != nil || len(result) == 0 {
 		return nil
 	}
 
@@ -1073,12 +1073,12 @@ func readProcessCommandLine(processID string) []string {
 }
 
 func readProcessArgs(processID string) string {
-	if _, error := exec.LookPath("ps"); error != nil {
+	if _, err := exec.LookPath("ps"); err != nil {
 		return ""
 	}
 
-	result, error := exec.Command("ps", "-o", "args=", "-p", processID).Output()
-	if error != nil {
+	result, err := exec.Command("ps", "-o", "args=", "-p", processID).Output()
+	if err != nil {
 		return ""
 	}
 
@@ -1162,9 +1162,9 @@ func isFixedPortClaimStale(claim fixedPortClaim) bool {
 }
 
 func assertHostIsAvailable(options ClaimHostOptions) error {
-	entries, error := os.ReadDir(options.RegistrationsDirectoryPath)
-	if error != nil {
-		return error
+	entries, err := os.ReadDir(options.RegistrationsDirectoryPath)
+	if err != nil {
+		return err
 	}
 
 	for _, entry := range entries {
@@ -1173,13 +1173,13 @@ func assertHostIsAvailable(options ClaimHostOptions) error {
 		}
 
 		registrationPath := filepath.Join(options.RegistrationsDirectoryPath, entry.Name())
-		registrationText, error := os.ReadFile(registrationPath)
-		if error != nil {
-			return error
+		registrationText, err := os.ReadFile(registrationPath)
+		if err != nil {
+			return err
 		}
-		registration, error := parseManagedRouteRecord(registrationText)
-		if error != nil {
-			return error
+		registration, err := parseManagedRouteRecord(registrationText)
+		if err != nil {
+			return err
 		}
 		if registration.Host != options.Host || !routeMutationIsProcessAlive(registration.OwnerPID) {
 			continue
@@ -1209,9 +1209,9 @@ func assertHostIsAvailable(options ClaimHostOptions) error {
 }
 
 func cleanupStaleHostClaims(hostClaimsDirectoryPath string) error {
-	entries, error := os.ReadDir(hostClaimsDirectoryPath)
-	if error != nil {
-		return error
+	entries, err := os.ReadDir(hostClaimsDirectoryPath)
+	if err != nil {
+		return err
 	}
 
 	for _, entry := range entries {
@@ -1220,20 +1220,20 @@ func cleanupStaleHostClaims(hostClaimsDirectoryPath string) error {
 		}
 
 		claimPath := filepath.Join(hostClaimsDirectoryPath, entry.Name())
-		claimText, error := os.ReadFile(claimPath)
-		if error != nil {
-			return error
+		claimText, err := os.ReadFile(claimPath)
+		if err != nil {
+			return err
 		}
-		claim, error := parseHostClaim(claimText)
-		if error != nil {
-			return error
+		claim, err := parseHostClaim(claimText)
+		if err != nil {
+			return err
 		}
 		if !isHostClaimStale(claim) {
 			continue
 		}
 
-		if error := removeIfExists(claimPath); error != nil {
-			return error
+		if err := removeIfExists(claimPath); err != nil {
+			return err
 		}
 	}
 
@@ -1250,9 +1250,9 @@ func didManagedCaddyGlobalSettingsChange(previousSettings managedCaddyGlobalSett
 
 func syncManagedCaddyGlobalState(routesDirectoryPath string, settings managedCaddyGlobalSettings) error {
 	paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
-	entries, error := os.ReadDir(paths.RegistrationsDirectoryPath)
-	if error != nil {
-		return error
+	entries, err := os.ReadDir(paths.RegistrationsDirectoryPath)
+	if err != nil {
+		return err
 	}
 
 	hostsByName := map[string]struct{}{}
@@ -1263,13 +1263,13 @@ func syncManagedCaddyGlobalState(routesDirectoryPath string, settings managedCad
 		}
 
 		registrationPath := filepath.Join(paths.RegistrationsDirectoryPath, entry.Name())
-		registrationText, error := os.ReadFile(registrationPath)
-		if error != nil {
-			return error
+		registrationText, err := os.ReadFile(registrationPath)
+		if err != nil {
+			return err
 		}
-		registration, error := parseManagedRouteRecord(registrationText)
-		if error != nil {
-			return error
+		registration, err := parseManagedRouteRecord(registrationText)
+		if err != nil {
+			return err
 		}
 		if registration.IsLegacy {
 			continue
@@ -1282,7 +1282,7 @@ func syncManagedCaddyGlobalState(routesDirectoryPath string, settings managedCad
 		hosts = append(hosts, registration.Host)
 	}
 
-	caddyfile, error := renderManagedCaddyfile(renderManagedCaddyfileOptions{
+	caddyfile, err := renderManagedCaddyfile(renderManagedCaddyfileOptions{
 		AdminAddress: settings.AdminAddress,
 		BindHost:     settings.BindHost,
 		EnableHTTP:   settings.HTTPEnabled,
@@ -1291,15 +1291,15 @@ func syncManagedCaddyGlobalState(routesDirectoryPath string, settings managedCad
 		Paths:        paths,
 		RuntimeOS:    runtime.GOOS,
 	})
-	if error != nil {
-		return error
+	if err != nil {
+		return err
 	}
-	if error := os.WriteFile(paths.CaddyfilePath, []byte(caddyfile), 0o644); error != nil {
-		return error
+	if err := os.WriteFile(paths.CaddyfilePath, []byte(caddyfile), 0o644); err != nil {
+		return err
 	}
 	for _, host := range hosts {
-		if error := syncHostRoute(host, routesDirectoryPath, &settings); error != nil {
-			return error
+		if err := syncHostRoute(host, routesDirectoryPath, &settings); err != nil {
+			return err
 		}
 	}
 
@@ -1310,11 +1310,11 @@ func reloadManagedCaddy(adminAddress string, routesDirectoryPath string, outputW
 	paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
 	result := routeMutationRunManagedCaddyCommand(paths, []string{"reload"}, ManagedCaddyCommandOptions{AdminAddress: adminAddress})
 	if result.Success {
-		if error := writeSuccessfulCommandOutput(outputWriters.StderrWriter, result.Stderr); error != nil {
-			return fmt.Errorf("write caddy reload stderr: %w", error)
+		if err := writeSuccessfulCommandOutput(outputWriters.StderrWriter, result.Stderr); err != nil {
+			return fmt.Errorf("write caddy reload stderr: %w", err)
 		}
-		if error := writeSuccessfulCommandOutput(outputWriters.StdoutWriter, result.Stdout); error != nil {
-			return fmt.Errorf("write caddy reload stdout: %w", error)
+		if err := writeSuccessfulCommandOutput(outputWriters.StdoutWriter, result.Stdout); err != nil {
+			return fmt.Errorf("write caddy reload stdout: %w", err)
 		}
 
 		return nil
@@ -1328,8 +1328,8 @@ func writeSuccessfulCommandOutput(writer io.Writer, output []byte) error {
 		return nil
 	}
 
-	_, error := writer.Write(output)
-	return error
+	_, err := writer.Write(output)
+	return err
 }
 
 func formatRouteMutationTimestamp(value time.Time) string {
@@ -1337,33 +1337,33 @@ func formatRouteMutationTimestamp(value time.Time) string {
 }
 
 func removeIfExists(path string) error {
-	error := os.Remove(path)
-	if error != nil && !errors.Is(error, os.ErrNotExist) {
-		return error
+	err := os.Remove(path)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
 	}
 
 	return nil
 }
 
 func writeFileExclusive(path string, text string) error {
-	file, error := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
-	if error != nil {
-		return error
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
 	}
-	if _, error := file.WriteString(text); error != nil {
+	if _, err := file.WriteString(text); err != nil {
 		_ = file.Close() // best-effort close after write failure.
-		return error
+		return err
 	}
 
 	return file.Close()
 }
 
 func isManagedProcessAlive(processID int) bool {
-	process, error := os.FindProcess(processID)
-	if error != nil {
+	process, err := os.FindProcess(processID)
+	if err != nil {
 		return false
 	}
 
-	error = process.Signal(syscall.Signal(0))
-	return error == nil || errors.Is(error, syscall.EPERM)
+	err = process.Signal(syscall.Signal(0))
+	return err == nil || errors.Is(err, syscall.EPERM)
 }

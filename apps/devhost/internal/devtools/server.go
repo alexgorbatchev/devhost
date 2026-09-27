@@ -476,9 +476,9 @@ func (s *ControlServer) PublishHealthResponse() error {
 		return nil
 	}
 
-	healthMessage, error := s.resolveHealthMessage()
-	if error != nil || healthMessage == "" {
-		return error
+	healthMessage, err := s.resolveHealthMessage()
+	if err != nil || healthMessage == "" {
+		return err
 	}
 
 	s.mu.Lock()
@@ -736,7 +736,7 @@ func (s *ControlServer) handleRestartService(writer http.ResponseWriter, request
 	}
 
 	var payload restartServiceRequest
-	if error := json.NewDecoder(request.Body).Decode(&payload); error != nil {
+	if err := json.NewDecoder(request.Body).Decode(&payload); err != nil {
 		http.Error(writer, "Invalid restart service payload.", http.StatusBadRequest)
 		return
 	}
@@ -756,8 +756,8 @@ func (s *ControlServer) handleRestartService(writer http.ResponseWriter, request
 		return
 	}
 
-	if error := s.restartService(serviceNames); error != nil {
-		http.Error(writer, error.Error(), http.StatusInternalServerError)
+	if err := s.restartService(serviceNames); err != nil {
+		http.Error(writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -766,13 +766,13 @@ func (s *ControlServer) handleRestartService(writer http.ResponseWriter, request
 }
 
 func (s *ControlServer) handleHealthWebsocket(writer http.ResponseWriter, request *http.Request) {
-	client, error := s.upgrade(writer, request)
-	if error != nil {
+	client, err := s.upgrade(writer, request)
+	if err != nil {
 		return
 	}
 
-	healthMessage, error := s.resolveHealthMessage()
-	if error != nil {
+	healthMessage, err := s.resolveHealthMessage()
+	if err != nil {
 		client.close()
 		return
 	}
@@ -781,7 +781,7 @@ func (s *ControlServer) handleHealthWebsocket(writer http.ResponseWriter, reques
 		s.lastPublishedHealth = healthMessage
 		s.healthClients[client] = struct{}{}
 		s.mu.Unlock()
-		if error := client.write(websocket.TextMessage, []byte(healthMessage)); error != nil {
+		if err := client.write(websocket.TextMessage, []byte(healthMessage)); err != nil {
 			s.removeHealthClient(client)
 			return
 		}
@@ -795,8 +795,8 @@ func (s *ControlServer) handleHealthWebsocket(writer http.ResponseWriter, reques
 }
 
 func (s *ControlServer) handleLogsWebsocket(writer http.ResponseWriter, request *http.Request) {
-	client, error := s.upgrade(writer, request)
-	if error != nil {
+	client, err := s.upgrade(writer, request)
+	if err != nil {
 		return
 	}
 
@@ -806,7 +806,7 @@ func (s *ControlServer) handleLogsWebsocket(writer http.ResponseWriter, request 
 	s.mu.Unlock()
 
 	message, _ := json.Marshal(serviceLogSnapshotMessage{Entries: snapshot, Type: "snapshot"})
-	if error := client.write(websocket.TextMessage, message); error != nil {
+	if err := client.write(websocket.TextMessage, message); err != nil {
 		s.removeLogsClient(client)
 		return
 	}
@@ -826,7 +826,7 @@ func (s *ControlServer) handleReactHighlightCursor(writer http.ResponseWriter, r
 	}
 
 	var payload reactHighlightCursorRequest
-	if error := json.NewDecoder(request.Body).Decode(&payload); error != nil {
+	if err := json.NewDecoder(request.Body).Decode(&payload); err != nil {
 		http.Error(writer, "Invalid React Highlight cursor payload.", http.StatusBadRequest)
 		return
 	}
@@ -835,14 +835,14 @@ func (s *ControlServer) handleReactHighlightCursor(writer http.ResponseWriter, r
 		return
 	}
 
-	message, error := json.Marshal(reactHighlightCursorMessage{
+	message, err := json.Marshal(reactHighlightCursorMessage{
 		Kind:        "cursor",
 		Locator:     payload.Locator,
 		ProjectRoot: s.projectRootPath,
 		StackName:   s.stackName,
 		Timestamp:   time.Now().UnixMilli(),
 	})
-	if error != nil {
+	if err != nil {
 		http.Error(writer, "Failed to encode React Highlight cursor payload.", http.StatusInternalServerError)
 		return
 	}
@@ -864,8 +864,8 @@ func (s *ControlServer) handleReactHighlightWebsocket(writer http.ResponseWriter
 		return
 	}
 
-	client, error := s.upgrade(writer, request)
-	if error != nil {
+	client, err := s.upgrade(writer, request)
+	if err != nil {
 		return
 	}
 
@@ -877,23 +877,23 @@ func (s *ControlServer) handleReactHighlightWebsocket(writer http.ResponseWriter
 }
 
 func (s *ControlServer) resolveHealthMessage() (string, error) {
-	healthResponse, error := s.getHealth()
-	if error != nil {
-		return "", error
+	healthResponse, err := s.getHealth()
+	if err != nil {
+		return "", err
 	}
 
-	message, error := json.Marshal(healthResponse)
-	if error != nil {
-		return "", error
+	message, err := json.Marshal(healthResponse)
+	if err != nil {
+		return "", err
 	}
 
 	return string(message), nil
 }
 
 func (s *ControlServer) upgrade(writer http.ResponseWriter, request *http.Request) (*websocketClient, error) {
-	connection, error := s.upgrader.Upgrade(writer, request, nil)
-	if error != nil {
-		return nil, error
+	connection, err := s.upgrader.Upgrade(writer, request, nil)
+	if err != nil {
+		return nil, err
 	}
 
 	s.tracker.IncrementActive()
@@ -902,7 +902,7 @@ func (s *ControlServer) upgrade(writer http.ResponseWriter, request *http.Reques
 
 func (s *ControlServer) readUntilClosed(client *websocketClient, remove func(*websocketClient)) {
 	for {
-		if _, _, error := client.conn.ReadMessage(); error != nil {
+		if _, _, err := client.conn.ReadMessage(); err != nil {
 			remove(client)
 			return
 		}
@@ -911,7 +911,7 @@ func (s *ControlServer) readUntilClosed(client *websocketClient, remove func(*we
 
 func (s *ControlServer) broadcast(clients []*websocketClient, message string, remove func(*websocketClient)) {
 	for _, client := range clients {
-		if error := client.write(websocket.TextMessage, []byte(message)); error != nil {
+		if err := client.write(websocket.TextMessage, []byte(message)); err != nil {
 			remove(client)
 		}
 	}
@@ -969,8 +969,8 @@ func (c *websocketClient) close() {
 
 func createControlToken() (string, error) {
 	bytes := make([]byte, 16)
-	if _, error := rand.Read(bytes); error != nil {
-		return "", error
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
 	}
 
 	return hex.EncodeToString(bytes), nil
