@@ -296,23 +296,19 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 
 	routedServices := collectRoutedServiceIdentities(manifest.Services)
 	if devtoolsEnabled && len(routedServices) > 0 {
-		devAssetsDir := environment["DEVHOST_DEV_ASSETS_DIR"]
-		if devAssetsDir == "" {
-			devAssetsDir = os.Getenv("DEVHOST_DEV_ASSETS_DIR")
+		devSource, err := loadDevSourceCheckout(environment, manifest.ManifestDirectoryPath)
+		if err != nil {
+			return 0, joinCleanupError(err, cleanupError)
 		}
-		if devAssetsDir != "" && !filepath.IsAbs(devAssetsDir) {
-			devAssetsDir = filepath.Join(manifest.ManifestDirectoryPath, devAssetsDir)
-		}
-
-		if devAssetsDir != "" {
-			writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("Using on-demand dynamic devtools assets from: %s", devAssetsDir))
+		if devSource != nil {
+			writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("Rebuilding devtools assets on demand from source checkout: %s", devSource.RootPath()))
 		}
 
 		controlServer, err := startDevtoolsControlServer(devtools.StartControlServerOptions{
 			AnnotationActions:         manifest.Annotation.Actions,
 			AnnotationDefaultActionID: manifest.Annotation.DefaultActionID,
 			ComponentEditor:           manifest.Devtools.Editor.IDE,
-			DevAssetsDir:              devAssetsDir,
+			DevSource:                 devSource,
 			FeatureToggles:            runtimeDevtoolsFeatures,
 			GetHealthResponse: func() (devtools.HealthResponse, error) {
 				manifestMu.RLock()
