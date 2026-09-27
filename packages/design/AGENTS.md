@@ -6,9 +6,9 @@ Single source of the devhost design tokens (colors, radii, host markers, termina
 
 - Check package-local validations (TypeScript, tests including the `tokens.css` freshness check): `just design check`
 - Regenerate `tokens.css` from `src/constants.ts`: `just design write-tokens`
-- Open the devtools UI design reference (from the repo root): `just design-devtools`
-- Open the docs site design reference (from the repo root): `just design-docs`
-- Open the general design reference document (from the repo root): `just design-system`
+- Open the devtools UI design reference (from the repo root): `just design devtools`
+- Open the docs site design reference (from the repo root): `just design docs`
+- Open the general design reference document (from the repo root): `just design system`
 
 ## Local conventions
 

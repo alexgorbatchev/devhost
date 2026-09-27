@@ -18,47 +18,15 @@ fix:
     bun --bun oxfmt --write .
     gofmt -w apps/devhost
 
-# Ensure Playwright Chromium is available for Storybook workflows
-install-browser: ui::install-browser
-
-# Refresh the generated embedded devtools bundle
-build-devtools-bundle: devhost::build-devtools-bundle
-
-# Build devhost release tarballs
-build-release-artifacts *args:
-    just devhost build-release-artifacts {{args}}
-
-# Build the current-platform devhost binary
-compile: devhost::compile
-
 # Build and replace the devhost payload used by the dotfiles shim
 dev-bootstrap $dotfiles_dir=(env_var("HOME") / ".dotfiles"):
     revision="$(git rev-parse --short HEAD)" && just --justfile apps/devhost/justfile --set build-version "999.0.0-dev.$revision" compile
     bun run ./apps/devhost/scripts/devBootstrap.ts
 
 # Start the root devhost stack locally
-dev: build-devtools-bundle
+dev: devhost::build-devtools-bundle
     DEVHOST_DEV_ASSETS_DIR=apps/devhost/internal/devtools/dist apps/devhost/bin/devhost start --manifest devhost.toml
-
-# Start Storybook locally
-storybook: ui::storybook
-
-# Start Neovim with the playground project
-nvim *args:
-    just devhost nvim {{args}}
-
-# Run standalone React Highlight Neovim plugin tests
-test-nvim: devhost::test-nvim
 
 # Clean all node_modules directories across the repository
 clean:
     find . -name "node_modules" -type d -prune -exec rm -rf '{}' +
-
-# Open the injected devtools UI design reference in the default browser
-design-devtools: design::devtools
-
-# Open the general design reference document in the default browser
-design-system: design::system
-
-# Open the docs site design reference in the default browser
-design-docs: design::docs

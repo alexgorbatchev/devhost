@@ -4,7 +4,7 @@ Public Astro + Starlight docs workspace for `devhost`, published to GitHub Pages
 
 ## Commands
 
-- Open the docs site design reference in the default browser: `just design-docs`
+- Open the docs site design reference in the default browser: `just design docs`
 - Sync the generated landing page and manifest reference: `just docs sync`
 - Start the local docs server: `just docs` (or `just docs dev`)
 - Check package-local validations: `just docs check`
@@ -18,7 +18,7 @@ Public Astro + Starlight docs workspace for `devhost`, published to GitHub Pages
 - `src/content/docs/guides/**/*.md` is the source of truth for the Guides section.
 - `src/content/docs/architecture/**/*.md` is the source of truth for the Architecture section.
 - `sync.ts` only regenerates `src/content/docs/index.mdx` and `src/content/docs/reference/devhost-example.md` from the app README and manifest reference.
-- `../design/references/docs.html` (`just design-docs`) is the visual design reference for the docs site. Match its tokens, layout, and state treatments when changing docs styling, and update it in the same change when the design intentionally diverges.
+- `../design/references/docs.html` (`just design docs`) is the visual design reference for the docs site. Match its tokens, layout, and state treatments when changing docs styling, and update it in the same change when the design intentionally diverges.
 - Site styling lives in `src/styles/devhostTokens.css` (docs type scale and the Starlight `--sl-*` mapping), `src/styles/devhostChrome.css` (header, search, sidebar, table of contents, pagination), and `src/styles/devhostContent.css` (Markdown content, asides, code frames, diagrams). `src/starlight/SiteTitle.astro` overrides Starlight's `SiteTitle`.
 - Colors, radii, and markers come from `@alexgorbatchev/devhost-design` (`tokens.css` in Starlight `customCss`); `src/styles/devhostTokens.css` only adds the docs type scale and the Starlight `--sl-*` mapping. Code block syntax colors come from `src/theme/createDevhostCodeTheme.ts` with palettes derived from `DESIGN_TOKENS`.
 - Mermaid diagrams render as inline SVG themed by `MERMAID_CONFIG` in `src/theme/constants.ts` through `--dh-*` custom properties, so they follow the theme select; `src/markdown/rehypeWrapMermaidDiagrams.ts` wraps each one in a horizontally scrollable figure at its natural width.
