@@ -5,26 +5,26 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 ## Shared commands
 
 - Install all workspaces when `node_modules/` is missing: `bun install`
-- Ensure Playwright Chromium is available for Storybook workflows: `just install-browser`
+- Ensure Playwright Chromium is available for Storybook workflows: `just ui install-browser`
 - Check the full repo: `just check`
 - Repo-wide formatting command: `just fix` (`oxfmt` for the repo, `gofmt -w` for `apps/devhost`)
-- Refresh the generated embedded devtools bundle: `just build-devtools-bundle` (or `just devhost build-devtools-bundle`)
+- Refresh the generated embedded devtools bundle: `just devhost build-devtools-bundle`
 - Check `devhost` app-only validations: `just devhost check`
 - Run `devhost` from source in the current directory with agent-facing output: `just devhost run-ai <args>` (`just devhost run <args>` is the human-mode equivalent)
 - Run `devhost` Go tests only: `just devhost test`
-- Build `devhost` release tarballs: `just build-release-artifacts` (or `just devhost build-release-artifacts`)
-- Build the current-platform `devhost` binary: `just compile` (or `just devhost compile`)
+- Build `devhost` release tarballs: `just devhost build-release-artifacts`
+- Build the current-platform `devhost` binary: `just devhost compile`
 - Build and replace the `devhost` binary used by the `~/.dotfiles` shim, stamped `999.0.0-dev.<short git SHA>`: `just dev-bootstrap` (or `just dev-bootstrap /path/to/dotfiles`)
 - Check the shared design tokens package: `just design check`
 - Regenerate `packages/design/tokens.css` after editing `packages/design/src/constants.ts`: `just design write-tokens`
 - Check the injected devtools UI package: `just ui check`
 - Check the docs package-only validations: `just docs check`
-- Run standalone React Highlight Neovim plugin tests: `just test-nvim` (or `just devhost test-nvim`)
+- Run standalone React Highlight Neovim plugin tests: `just devhost test-nvim`
 - Start the root devhost stack locally: `just dev`
 - Start the docs site locally: `just docs` (or `just docs dev`)
-- Open the injected devtools UI design reference (`packages/design/references/devtools.html`) in the default browser: `just design-devtools`
-- Open the docs site design reference (`packages/design/references/docs.html`) in the default browser: `just design-docs`
-- Open the general design reference document (`packages/design/references/design-system.html`) in the default browser: `just design-system`
+- Open the injected devtools UI design reference (`packages/design/references/devtools.html`) in the default browser: `just design devtools`
+- Open the docs site design reference (`packages/design/references/docs.html`) in the default browser: `just design docs`
+- Open the general design reference document (`packages/design/references/design-system.html`) in the default browser: `just design system`
 
 ## Documentation policy
 
@@ -53,10 +53,10 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - `just docs check` runs `bun test`, the content sync, `astro check`, and `astro build`.
 - `just docs dev` (or `just docs`) binds Astro to `0.0.0.0` so the docs site can be reached from outside the current environment.
 - `packages/docs` allows all dev/preview hosts in `astro.config.mjs`, so the docs server should be treated as broadly reachable while it is running.
-- `just ui storybook` (or `just storybook`) starts the interactive Storybook dev server for manual inspection; it does not replace the automated coverage already included in the workspace `check` recipe.
-- `just test-nvim` is intentionally standalone and not part of root `just check` or CI; use it when changing the Neovim React Highlight plugin under `apps/devhost/internal/devtools/nvim/devhost-react-highlight.nvim/`.
-- `apps/devhost/internal/devtools/dist/` is generated for Go `//go:embed` and intentionally ignored; run `just build-devtools-bundle`, `just devhost check`, or `just compile` instead of committing those files.
-- Root `postinstall` runs `just install-browser`, which uses `playwright install chromium` without `--force` so existing Chromium binaries are reused instead of being re-downloaded on every `bun install`.
+- `just ui storybook` starts the interactive Storybook dev server for manual inspection; it does not replace the automated coverage already included in the workspace `check` recipe.
+- `just devhost test-nvim` is intentionally standalone and not part of root `just check` or CI; use it when changing the Neovim React Highlight plugin under `apps/devhost/internal/devtools/nvim/devhost-react-highlight.nvim/`.
+- `apps/devhost/internal/devtools/dist/` is generated for Go `//go:embed` and intentionally ignored; run `just devhost build-devtools-bundle`, `just devhost check`, or `just devhost compile` instead of committing those files.
+- Root `postinstall` runs `just ui install-browser`, which uses `playwright install chromium` without `--force` so existing Chromium binaries are reused instead of being re-downloaded on every `bun install`.
 - Keep a single root `bun.lock`. Do not add workspace-local lockfiles.
 
 ## Shipping

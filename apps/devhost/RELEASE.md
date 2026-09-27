@@ -17,9 +17,9 @@
 
 ```sh
 bun install --frozen-lockfile
-just install-browser
+just ui install-browser
 just check
-just build-release-artifacts
+just devhost build-release-artifacts
 ```
 
 The preflight is not optional. The publish workflow repeats the same validations before attaching binaries to the GitHub Release.
@@ -29,7 +29,7 @@ The preflight is not optional. The publish workflow repeats the same validations
 To build a native executable for the current platform:
 
 ```sh
-just compile
+just devhost compile
 ./apps/devhost/dist/devhost --version
 ```
 
@@ -49,7 +49,7 @@ This builds the current checkout and replaces the installed payload referenced b
 To build the full set of versioned release tarballs locally:
 
 ```sh
-just build-release-artifacts
+just devhost build-release-artifacts
 ```
 
 That writes these archives to `apps/devhost/dist/release/`:
@@ -90,9 +90,9 @@ The `Publish release binaries` workflow does the following:
 - derives `RELEASE_VERSION` from the tag name
 - verifies `apps/devhost/metadata.json` matches the tag version
 - installs dependencies with `bun install --frozen-lockfile`
-- installs Playwright Chromium with `just install-browser`
+- installs Playwright Chromium with `just ui install-browser`
 - runs `just check`
-- builds versioned release archives with `just build-release-artifacts`
+- builds versioned release archives with `just devhost build-release-artifacts`
 - creates a GitHub Release for the tag if one does not already exist
 - uploads `apps/devhost/dist/release/*.tar.gz` to that GitHub Release with clobber enabled for reruns
 
@@ -116,6 +116,6 @@ Replace `0.0.2` with the released version. The GitHub release assets must includ
 - the tag does not start with `v`
 - the tag version and `apps/devhost/metadata.json` version do not match
 - `just check` fails
-- `just build-release-artifacts` fails
+- `just devhost build-release-artifacts` fails
 - the publish workflow fails
 - GitHub Release state does not match the tag you pushed

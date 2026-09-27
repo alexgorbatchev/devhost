@@ -7,7 +7,7 @@
   ],
   "type": "module",
   "scripts": {
-    "postinstall": "just install-browser",
+    "postinstall": "just ui install-browser",
     "prepare": "husky"
   },
   "nano-staged": {

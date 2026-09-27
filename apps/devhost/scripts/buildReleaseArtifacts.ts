@@ -155,7 +155,7 @@ function isReleaseTarget(value: string): value is ReleaseTarget {
 }
 
 function printHelp(): void {
-  console.log(`Usage: just build-release-artifacts [--targets=<comma-separated targets>]`);
+  console.log(`Usage: just devhost build-release-artifacts [--targets=<comma-separated targets>]`);
   console.log(`Default targets: ${releaseTargets.join(", ")}`);
 }
 

@@ -59,7 +59,7 @@ Standalone Neovim integration tests live in `tests/` and are intentionally not p
 check path. Run them directly when changing plugin cursor resolution:
 
 ```sh
-just test-nvim
+just devhost test-nvim
 ```
 
 The test harness starts a local HTTP endpoint, launches headless Neovim, drives cursor movement through a TSX fixture,
