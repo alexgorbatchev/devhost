@@ -26,7 +26,7 @@ Each matching sub-manifest is parsed, prepared, and merged recursively into the 
 
 To support local solo development, a sub-manifest (such as `packages/app1/devhost.toml`) can define a complete standalone stack configuration (including its own `name`, local `caddy` port mappings, or `devtools` overlays).
 
-When a sub-manifest is run solo (by running `devhost` from its local package directory), it runs as a first-class standalone stack.
+When a sub-manifest is run solo (by running `devhost start` from its local package directory), it runs as a first-class standalone stack.
 
 However, when included in a root manifest:
 

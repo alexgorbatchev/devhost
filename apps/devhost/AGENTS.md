@@ -33,10 +33,16 @@ just dev-bootstrap /path/to/dotfiles
 
 The default target is `~/.dotfiles`. The command uses the app's `compile` recipe with a `999.0.0-dev.<short git SHA>` version override, reads the existing `.generated/bin/devhost` shim's literal `TOOL_EXECUTABLE` path, and atomically replaces that installed payload while retaining the shim. Dotfiles must already have installed `devhost`. Temporary files live under the target's `.tmp/`; a later dotfiles update can replace this development build. Plain `just compile` retains the metadata version.
 
-Run the app directly:
+Run the app from source in the current directory with agent-facing output (`AGENT=1`); `just devhost run` is the human-mode equivalent:
 
 ```bash
-go run ./cmd/devhost --help
+just devhost run-ai --help
+```
+
+Run the Go tests:
+
+```bash
+just devhost test
 ```
 
 Build a standalone executable for the current platform:
@@ -69,7 +75,7 @@ Run the app check suite:
 just devhost check
 ```
 
-The root `fix` recipe runs `oxfmt --write` for the repo using the shared root config and `gofmt -w` for this app; the pre-commit hook also formats staged files. `just devhost check` refreshes the generated embedded devtools bundle, then runs `just devhost lint` (fails on unformatted Go files, then `go vet ./...`, `go tool predeclared ./...`, and `go mod tidy -diff`) and the Bun script tests and `go test ./...` from this app. The injected UI checks and Storybook coverage now live in `packages/devhost-ui/`. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
+The root `fix` recipe runs `oxfmt --write` for the repo using the shared root config and `gofmt -w` for this app; the pre-commit hook also formats staged files. `just devhost check` refreshes the generated embedded devtools bundle, then runs `just devhost lint` (fails on unformatted Go files, then `go vet ./...`, `go tool predeclared ./...`, and `go mod tidy -diff`) and the Bun script tests and `just devhost test` from this app. `run` and `run-ai` use `[no-cd]` and the `bin/devhost` shim, so relative `--manifest` paths and manifest discovery resolve from the directory you call `just` in. The injected UI checks and Storybook coverage now live in `packages/devhost-ui/`. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
 
 `scripts/buildDevtoolsBundle.ts` refreshes the generated injected devtools assets under `internal/devtools/dist/` used by Go `//go:embed`. That `dist/` directory is intentionally ignored; do not commit its generated `devtools.js` or `xterm.css` files.
 
@@ -97,7 +103,7 @@ To speed up frontend UI development, you can configure the on-demand asset dev l
 - `cmd/devhost/main.go` — shipped CLI entrypoint
 - `bin/devhost` — local shell shim that launches the Go runtime for workspace scripts and source-checkout use
 - `internal/app/` — top-level Go CLI dispatch
-- `internal/cli/` — command parsing and help text
+- `internal/cli/` — command definitions (boa on top of cobra) and help screens; help is rendered by `cobra-help-tree/v2`, which documents positional arguments, environment variables, and quickstart examples from the catalog in `internal/cli/help.go` because cobra has no fields for them. Long descriptions print verbatim, so keep their lines at 60 columns or less.
 - `internal/manifest/` — manifest discovery, parsing, validation, and defaults
 - `internal/services/` — child process orchestration, health checks, port resolution, and cleanup
 - `internal/caddy/` — managed Caddy lifecycle, paths, config, and routing
@@ -133,8 +139,8 @@ To speed up frontend UI development, you can configure the on-demand asset dev l
 - Pre-manifest logs must fall back to the `devhost` label.
 - Child process logs must remain prefixed with `[service-name]`.
 - Generated managed Caddyfiles must discard the default Caddy runtime logger so background Caddy stderr never leaks into default stack output.
-- Do not print successful Caddy reload chatter during default `devhost` stack runs; only print it for `devhost --verbose` or explicit `devhost caddy ...` commands.
-- Surface Caddy output on failure, and surface successful reload output only for `devhost --verbose` or explicit `devhost caddy ...` commands.
+- Do not print successful Caddy reload chatter during default `devhost start` runs; only print it for `devhost start --debug` or explicit `devhost caddy ...` commands.
+- Surface Caddy output on failure, and surface successful reload output only for `devhost start --debug` or explicit `devhost caddy ...` commands.
 
 ## Devtools UI boundary
 

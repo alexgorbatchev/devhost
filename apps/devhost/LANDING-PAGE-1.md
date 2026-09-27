@@ -55,7 +55,7 @@ No more hardcoded ports. `devhost` automatically injects `PORT`, `DEVHOST_HOST`,
 Working on a full stack? Just run:
 
 ```bash
-devhost
+devhost start
 ```
 
 `devhost` will automatically find your `devhost.toml`, validate it, reserve public hosts, boot your services in order, and gracefully tear down processes and routes on exit.
@@ -64,4 +64,4 @@ devhost
 
 ## Start Building Better
 
-Download the archive for your platform from GitHub Releases, then run `devhost`. `devhost` requires either a global `caddy` on your `PATH` or a managed Caddy binary downloaded with `devhost caddy download`. Experience the fastest, most integrated local development workflow today.
+Download the archive for your platform from GitHub Releases, then run `devhost start`. `devhost` requires either a global `caddy` on your `PATH` or a managed Caddy binary downloaded with `devhost caddy download`. Experience the fastest, most integrated local development workflow today.

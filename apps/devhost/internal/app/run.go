@@ -13,24 +13,17 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cli"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/services"
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/version"
 )
 
 func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) int {
-	if cli.HasHelpFlag(rawArguments) {
-		_, _ = io.WriteString(stdout, cli.HelpText)
-		return 0
-	}
-
-	arguments, err := cli.ParseCommandLineArguments(rawArguments)
+	arguments, err := cli.ParseCommandLineArguments(rawArguments, stdout, stderr)
 	if err != nil {
 		_, _ = fmt.Fprintf(stderr, "failed: %s\n", err.Error())
 		return 1
 	}
 
 	switch arguments.Kind {
-	case cli.KindVersion:
-		_, _ = fmt.Fprintf(stdout, "%s\n", version.String())
+	case cli.KindHelp, cli.KindVersion:
 		return 0
 	case cli.KindStop:
 		manifestPath := arguments.ManifestPath
@@ -49,7 +42,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 		}
 
 		return 0
-	case cli.KindManifest:
+	case cli.KindStart:
 		manifestPath := arguments.ManifestPath
 		if manifestPath == nil {
 			resolvedPath, resolveError := manifest.ResolveManifestPath(cwd)
@@ -106,7 +99,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			ServiceStderrWriter: stderr,
 			IdleTimeout:         idleTimeout,
 		}
-		if arguments.Verbose {
+		if arguments.Debug {
 			startOptions.CaddyOutputWriters = caddy.RouteCommandOutputWriters{
 				StdoutWriter: stdout,
 				StderrWriter: stderr,

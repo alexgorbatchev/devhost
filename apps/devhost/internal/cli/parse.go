@@ -2,16 +2,21 @@ package cli
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/GiGurra/boa/pkg/boa"
 	"github.com/spf13/cobra"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/version"
 )
 
 type Kind string
 
 const (
-	KindManifest           Kind = "manifest"
+	KindStart Kind = "start"
+	// KindHelp and KindVersion mean the requested screen has already been written to stdout.
+	KindHelp               Kind = "help"
 	KindVersion            Kind = "version"
 	KindStop               Kind = "stop"
 	KindCaddyLifecycle     Kind = "caddy-lifecycle"
@@ -29,72 +34,155 @@ const (
 	CaddyPrivilegedPorts CaddyLifecycleAction = "privileged-ports"
 )
 
+const (
+	rootCommandName          = "devhost"
+	startCommandName         = "start"
+	stopCommandName          = "stop"
+	caddyCommandName         = "caddy"
+	caddyCommandPath         = rootCommandName + " " + caddyCommandName
+	printRootCertCommandName = "print-root-cert"
+	trustRemoteCommandName   = "trust-remote"
+	versionTemplate          = "{{.Version}}\n"
+	cobraVersionFlagName     = "version"
+)
+
 type CommandLineArguments struct {
 	Kind         Kind
 	ManifestPath *string
 	Action       CaddyLifecycleAction
 	SSHTarget    string
-	Verbose      bool
+	Debug        bool
 	IdleTimeout  string
 }
 
-const caddyActionListText = "start, stop, trust, download, privileged-ports, print-root-cert, or trust-remote"
+// ParseCommandLineArguments resolves rawArguments into the command to run. Help
+// and version screens are written to stdout and reported as KindHelp and
+// KindVersion; stderr receives cobra's diagnostics.
+func ParseCommandLineArguments(rawArguments []string, stdout io.Writer, stderr io.Writer) (CommandLineArguments, error) {
+	result := CommandLineArguments{}
 
-func ParseCommandLineArguments(rawArguments []string) (CommandLineArguments, error) {
-	if HasVersionFlag(rawArguments) {
-		return CommandLineArguments{Kind: KindVersion}, nil
+	rootDefinition := createRootCommand(&result)
+	rootDefinition.RawArgs = rawArguments
+	rootCommand, err := rootDefinition.ToCobraE()
+	if err != nil {
+		return CommandLineArguments{}, fmt.Errorf("building command line: %w", err)
 	}
 
-	result := CommandLineArguments{}
-	err := createRootCommand(&result).RunArgsE(rawArguments)
+	if err := installHelp(rootCommand, &result); err != nil {
+		return CommandLineArguments{}, fmt.Errorf("installing help screens: %w", err)
+	}
+
+	rootCommand.SetVersionTemplate(versionTemplate)
+	rootCommand.SetOut(stdout)
+	rootCommand.SetErr(stderr)
+	rootCommand.SilenceUsage = true
+	rootCommand.SilenceErrors = true
+
+	executedCommand, err := rootCommand.ExecuteC()
 	if err != nil {
 		return CommandLineArguments{}, normalizeParseError(err)
+	}
+
+	if printedVersion(executedCommand) {
+		return CommandLineArguments{Kind: KindVersion}, nil
 	}
 
 	return result, nil
 }
 
-type manifestOptions struct {
-	ManifestPath *string `descr:"Explicit path to devhost.toml." env:"DEVHOST_MANIFEST" name:"manifest"`
-	Verbose      bool    `descr:"Print managed Caddy command output while running a stack." name:"verbose"`
-	IdleTimeout  string  `descr:"Idle timeout duration (e.g. 30s, 1m) before the stack automatically shuts down." env:"DEVHOST_IDLE_TIMEOUT" name:"idle-timeout" optional:"true"`
+// printedVersion reports whether cobra handled --version, which it does
+// without running the command or any hook boa exposes.
+func printedVersion(command *cobra.Command) bool {
+	if command.Version == "" {
+		return false
+	}
+
+	requested, err := command.Flags().GetBool(cobraVersionFlagName)
+	return err == nil && requested
+}
+
+type startOptions struct {
+	ManifestOptions
+	Debug       bool   `descr:"Show Caddy's output while the stack runs." name:"debug"`
+	IdleTimeout string `descr:"Stop the stack after this long without traffic, e.g. 30s or 1m." env:"DEVHOST_IDLE_TIMEOUT" name:"idle-timeout" optional:"true"`
+}
+
+// ManifestOptions is for commands that only locate a manifest; they must not
+// accept stack flags they would ignore. It is exported because startOptions
+// embeds it and boa fills flags through reflection, which cannot set fields
+// reached through an unexported embedded struct.
+type ManifestOptions struct {
+	ManifestPath *string `descr:"Path to the devhost.toml file to use." env:"DEVHOST_MANIFEST" name:"manifest"`
 }
 
 type trustRemoteOptions struct {
-	SSHTarget string `descr:"SSH target used to fetch the remote managed Caddy root certificate." positional:"true" optional:"true"`
+	SSHTarget string `descr:"SSH host that runs devhost, e.g. devbox or user@devbox." positional:"true"`
 }
 
-func createRootCommand(result *CommandLineArguments) boa.CmdT[manifestOptions] {
-	return boa.CmdT[manifestOptions]{
-		Use:   "devhost",
-		Short: "Start a devhost stack or manage shared Caddy.",
-		Args:  cobra.NoArgs,
-		RunFuncE: func(options *manifestOptions, _ *cobra.Command, _ []string) error {
-			if err := validateManifestPath(options.ManifestPath); err != nil {
-				return err
-			}
-
-			*result = CommandLineArguments{
-				Kind:         KindManifest,
-				ManifestPath: options.ManifestPath,
-				Verbose:      options.Verbose,
-				IdleTimeout:  options.IdleTimeout,
-			}
-			return nil
-		},
+// createRootCommand has no run function of its own, so boa prints its help when
+// it is invoked without a subcommand and rejects unknown subcommands. The caddy group
+// follows the same rule.
+func createRootCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
+	return boa.CmdT[boa.NoParams]{
+		Use:     rootCommandName,
+		Short:   "Run your project's services behind local HTTPS hostnames",
+		Version: version.String(),
 		SubCmds: boa.SubCmds(
 			createCaddyCommand(result),
+			createStartCommand(result),
 			createStopCommand(result),
 		),
 	}
 }
 
-func createStopCommand(result *CommandLineArguments) boa.CmdT[manifestOptions] {
-	return boa.CmdT[manifestOptions]{
-		Use:   "stop",
-		Short: "Stop active processes for the current devhost stack.",
+func createStartCommand(result *CommandLineArguments) boa.CmdT[startOptions] {
+	return boa.CmdT[startOptions]{
+		Use:   startCommandName,
+		Short: "Start every service in devhost.toml",
+		Long:  startDescription,
 		Args:  cobra.NoArgs,
-		RunFuncE: func(options *manifestOptions, _ *cobra.Command, _ []string) error {
+		RunFuncE: func(options *startOptions, _ *cobra.Command, _ []string) error {
+			if err := validateManifestPath(options.ManifestPath); err != nil {
+				return err
+			}
+
+			*result = CommandLineArguments{
+				Kind:         KindStart,
+				ManifestPath: options.ManifestPath,
+				Debug:        options.Debug,
+				IdleTimeout:  options.IdleTimeout,
+			}
+			return nil
+		},
+	}
+}
+
+// Long descriptions are printed verbatim, so their lines are kept short enough
+// not to wrap in a 60-column terminal.
+const startDescription = `Start every service in devhost.toml behind local HTTPS
+hostnames. Routes are removed when the stack exits.
+
+Without --manifest, devhost uses the nearest devhost.toml in
+the current folder or a parent folder. Hostnames must
+already point to this machine; *.localhost names need no
+DNS setup.`
+
+const stopDescription = `Stop the running stack for this project.
+
+Processes that do not exit within 15 seconds are
+force-killed.`
+
+const caddyDescription = `devhost sends every stack through one shared Caddy server.
+Download and trust it once, then start it before running
+a stack.`
+
+func createStopCommand(result *CommandLineArguments) boa.CmdT[ManifestOptions] {
+	return boa.CmdT[ManifestOptions]{
+		Use:   stopCommandName,
+		Short: "Stop the running stack for this project",
+		Long:  stopDescription,
+		Args:  cobra.NoArgs,
+		RunFuncE: func(options *ManifestOptions, _ *cobra.Command, _ []string) error {
 			if err := validateManifestPath(options.ManifestPath); err != nil {
 				return err
 			}
@@ -107,30 +195,41 @@ func createStopCommand(result *CommandLineArguments) boa.CmdT[manifestOptions] {
 
 func createCaddyCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 	return boa.CmdT[boa.NoParams]{
-		Use:   "caddy",
-		Short: "Manage the shared devhost Caddy instance.",
-		Args:  cobra.NoArgs,
-		RunFuncE: func(_ *boa.NoParams, _ *cobra.Command, _ []string) error {
-			return fmt.Errorf("Expected a caddy action: %s.", caddyActionListText)
-		},
+		Use:   caddyCommandName,
+		Short: "Set up and control the shared HTTPS proxy",
+		Long:  caddyDescription,
 		SubCmds: boa.SubCmds(
-			createCaddyLifecycleCommand(result, CaddyStart),
-			createCaddyLifecycleCommand(result, CaddyStop),
-			createCaddyLifecycleCommand(result, CaddyTrust),
-			createCaddyNoArgsCommand(result, string(CaddyDownload), KindCaddyLifecycle, CaddyDownload),
-			createCaddyNoArgsCommand(result, string(CaddyPrivilegedPorts), KindCaddyLifecycle, CaddyPrivilegedPorts),
-			createCaddyNoArgsCommand(result, "print-root-cert", KindCaddyPrintRootCert, ""),
+			createCaddyLifecycleCommand(result, CaddyStart, "Start the shared Caddy server"),
+			createCaddyLifecycleCommand(result, CaddyStop, "Stop the shared Caddy server"),
+			createCaddyLifecycleCommand(result, CaddyTrust, "Trust Caddy's certificate on this machine (asks for your password)"),
+			createCaddyNoArgsCommand(result, caddyNoArgsCommand{
+				use:         string(CaddyDownload),
+				description: "Download the Caddy server devhost uses",
+				kind:        KindCaddyLifecycle,
+				action:      CaddyDownload,
+			}),
+			createCaddyNoArgsCommand(result, caddyNoArgsCommand{
+				use:         string(CaddyPrivilegedPorts),
+				description: "Let Caddy listen on low ports without root (Linux)",
+				kind:        KindCaddyLifecycle,
+				action:      CaddyPrivilegedPorts,
+			}),
+			createCaddyNoArgsCommand(result, caddyNoArgsCommand{
+				use:         printRootCertCommandName,
+				description: "Print Caddy's root certificate",
+				kind:        KindCaddyPrintRootCert,
+			}),
 			createTrustRemoteCommand(result),
 		),
 	}
 }
 
-func createCaddyLifecycleCommand(result *CommandLineArguments, action CaddyLifecycleAction) boa.CmdT[manifestOptions] {
-	return boa.CmdT[manifestOptions]{
+func createCaddyLifecycleCommand(result *CommandLineArguments, action CaddyLifecycleAction, description string) boa.CmdT[ManifestOptions] {
+	return boa.CmdT[ManifestOptions]{
 		Use:   string(action),
-		Short: fmt.Sprintf("Run `devhost caddy %s`.", action),
+		Short: description,
 		Args:  cobra.NoArgs,
-		RunFuncE: func(options *manifestOptions, _ *cobra.Command, _ []string) error {
+		RunFuncE: func(options *ManifestOptions, _ *cobra.Command, _ []string) error {
 			if err := validateManifestPath(options.ManifestPath); err != nil {
 				return err
 			}
@@ -139,42 +238,50 @@ func createCaddyLifecycleCommand(result *CommandLineArguments, action CaddyLifec
 				Kind:         KindCaddyLifecycle,
 				Action:       action,
 				ManifestPath: options.ManifestPath,
-				Verbose:      options.Verbose,
 			}
 			return nil
 		},
 	}
 }
 
-func createCaddyNoArgsCommand(
-	result *CommandLineArguments,
-	use string,
-	kind Kind,
-	action CaddyLifecycleAction,
-) boa.CmdT[boa.NoParams] {
+type caddyNoArgsCommand struct {
+	use         string
+	description string
+	kind        Kind
+	action      CaddyLifecycleAction
+}
+
+func createCaddyNoArgsCommand(result *CommandLineArguments, definition caddyNoArgsCommand) boa.CmdT[boa.NoParams] {
 	return boa.CmdT[boa.NoParams]{
-		Use:   use,
-		Short: fmt.Sprintf("Run `devhost caddy %s`.", use),
+		Use:   definition.use,
+		Short: definition.description,
 		Args:  cobra.NoArgs,
 		RunFunc: func(_ *boa.NoParams, _ *cobra.Command, _ []string) {
-			*result = CommandLineArguments{Kind: kind, Action: action}
+			*result = CommandLineArguments{Kind: definition.kind, Action: definition.action}
 		},
 	}
 }
 
 func createTrustRemoteCommand(result *CommandLineArguments) boa.CmdT[trustRemoteOptions] {
 	return boa.CmdT[trustRemoteOptions]{
-		Use:   "trust-remote <ssh-target>",
-		Short: "Trust the managed Caddy root certificate from a remote machine.",
-		RunFuncE: func(options *trustRemoteOptions, _ *cobra.Command, _ []string) error {
-			if options.SSHTarget == "" {
-				return fmt.Errorf("Expected an SSH target. Example: devhost caddy trust-remote devbox")
-			}
-
+		Use:   trustRemoteCommandName,
+		Short: "Trust another machine's Caddy certificate over SSH (macOS)",
+		Args:  requireSSHTarget,
+		RunFunc: func(options *trustRemoteOptions, _ *cobra.Command, _ []string) {
 			*result = CommandLineArguments{Kind: KindCaddyTrustRemote, SSHTarget: options.SSHTarget}
-			return nil
 		},
 	}
+}
+
+// requireSSHTarget replaces boa's positional count check, which boa only installs
+// when Args is unset, so that a missing target gets an example instead of a bare
+// argument count.
+func requireSSHTarget(command *cobra.Command, arguments []string) error {
+	if len(arguments) == 0 {
+		return fmt.Errorf("Expected an SSH target. Example: devhost caddy trust-remote devbox")
+	}
+
+	return cobra.ExactArgs(1)(command, arguments)
 }
 
 func validateManifestPath(manifestPath *string) error {
