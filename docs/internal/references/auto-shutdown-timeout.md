@@ -1,6 +1,6 @@
 ---
 created_on: 2026-06-03 12:00
-last_modified: 2026-06-03 19:05
+last_modified: 2026-09-27 09:39
 status: current
 ---
 
@@ -72,7 +72,7 @@ This design defines an automatic idle-timeout shutdown feature for individual, i
 
 ## 4. Exact architecture choice
 
-- Parse `--idle-timeout` (env: `DEVHOST_IDLE_TIMEOUT`) in `manifestOptions`.
+- Parse `devhost start --idle-timeout` (env: `DEVHOST_IDLE_TIMEOUT`) in `startOptions`.
 - Parse `devtools.idleTimeout` in `devhost.toml` manifest file, permitting configuration directly inside the manifest. Priority of resolution: command-line flag (`--idle-timeout`) > environment variable (`DEVHOST_IDLE_TIMEOUT`) > manifest configuration (`devtools.idleTimeout`).
 - Configure Caddy via `routes.go` to log access events per site block to a stack-isolated file: `<caddy-paths>/logs/{{stack_name}}_access.log`.
 - Implement a thread-safe `ActivityTracker` struct in `apps/devhost/internal/devtools/tracker.go`:
@@ -163,12 +163,17 @@ func (a *ActivityTracker) IsIdle(timeout time.Duration) bool {
 
 ### CLI Options Structure Expansion (Go)
 
+`--idle-timeout` belongs to `devhost start` only (`apps/devhost/internal/cli/parse.go`); `stop` and `caddy start|stop|trust` take `ManifestOptions` alone:
+
 ```go
-type manifestOptions struct {
-	ManifestPath *string `descr:"Explicit path to devhost.toml." env:"DEVHOST_MANIFEST" name:"manifest"`
-	Verbose      bool    `descr:"Print managed Caddy command output while running a stack." name:"verbose"`
-	DevAssetsDir string  `descr:"Filesystem directory path to read devtools assets from dynamically." env:"DEVHOST_DEV_ASSETS_DIR" name:"dev-assets-dir" optional:"true"`
-	IdleTimeout  string  `descr:"Idle timeout duration (e.g. 30s, 1m) before the stack automatically shuts down." env:"DEVHOST_IDLE_TIMEOUT" name:"idle-timeout" optional:"true"`
+type startOptions struct {
+	ManifestOptions
+	Debug       bool   `descr:"Show Caddy's output while the stack runs." name:"debug"`
+	IdleTimeout string `descr:"Stop the stack after this long without traffic, e.g. 30s or 1m." env:"DEVHOST_IDLE_TIMEOUT" name:"idle-timeout" optional:"true"`
+}
+
+type ManifestOptions struct {
+	ManifestPath *string `descr:"Path to the devhost.toml file to use." env:"DEVHOST_MANIFEST" name:"manifest"`
 }
 ```
 
