@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -87,7 +86,7 @@ type StartControlServerOptions struct {
 	AnnotationDefaultActionID  string
 	AnnotationActions          []manifest.ValidatedAnnotationAction
 	ComponentEditor            string
-	DevAssetsDir               string
+	DevSource                  *DevSourceCheckout
 	FeatureToggles             FeatureToggles
 	GetHealthResponse          func() (HealthResponse, error)
 	IdleTerminalSessionTimeout time.Duration
@@ -123,12 +122,11 @@ type ControlServer struct {
 	neovimShellIntegration     *neovimPluginShellIntegrationFiles
 	tracker                    *ActivityTracker
 
-	devAssetsDir   string
-	configJSON     []byte
-	ctx            context.Context
-	cancel         context.CancelFunc
-	buildMu        sync.Mutex
-	disableRebuild bool
+	devSource  *DevSourceCheckout
+	configJSON []byte
+	ctx        context.Context
+	cancel     context.CancelFunc
+	buildMu    sync.Mutex
 
 	mu                     sync.Mutex
 	isStopped              bool
@@ -269,7 +267,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	controlServer := &ControlServer{
 		ctx:                        ctx,
 		cancel:                     cancel,
-		devAssetsDir:               options.DevAssetsDir,
+		devSource:                  options.DevSource,
 		configJSON:                 configJSON,
 		annotationActions:          annotationActions,
 		componentEditor:            options.ComponentEditor,
@@ -586,15 +584,11 @@ if (typeof document !== "undefined") {
 }
 
 func (s *ControlServer) checkAndBuildAssets() (string, bool) {
-	srcDir := filepath.Join(s.projectRootPath, "packages/devhost-ui/src/devtools")
-	compiledPath := filepath.Join(s.devAssetsDir, "devtools.js")
+	srcDir := s.devSource.sourceDirectoryPath
+	compiledPath := s.devSource.assetPath("devtools.js")
 
 	s.buildMu.Lock()
 	defer s.buildMu.Unlock()
-
-	if s.disableRebuild {
-		return "", false
-	}
 
 	var maxModTime time.Time
 	walkErr := filepath.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
@@ -654,8 +648,7 @@ func (s *ControlServer) checkAndBuildAssets() (string, bool) {
 
 	_, _ = fmt.Fprintln(os.Stderr, "[devhost] Changes detected in devtools UI source files. Rebuilding assets...")
 
-	cmd := exec.CommandContext(s.ctx, "bun", "run", "build:devtools-bundle:devhost")
-	cmd.Dir = s.projectRootPath
+	cmd := s.devSource.buildCommand(s.ctx)
 
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
@@ -672,11 +665,14 @@ func (s *ControlServer) checkAndBuildAssets() (string, bool) {
 		return jsError, true
 	}
 
+	// A build that exits cleanly without writing the bundle is reported like a
+	// failed one and retried on the next request. Builds are serialized by
+	// buildMu, so retrying per page load cannot pile up concurrent builds.
 	_, err = os.Stat(compiledPath)
 	if os.IsNotExist(err) {
-		_, _ = fmt.Fprintln(os.Stderr, "Error: compilation completed successfully, but devtools.js is still missing from disk.")
-		s.disableRebuild = true
-		return "", false
+		missingBundleMessage := fmt.Sprintf("The %s recipe finished without writing %s.", devtoolsBundleRecipe, compiledPath)
+		_, _ = fmt.Fprintf(os.Stderr, "[devhost] %s\n", missingBundleMessage)
+		return formatJSError(missingBundleMessage), true
 	}
 
 	content, err := os.ReadFile(compiledPath)
@@ -695,7 +691,7 @@ func (s *ControlServer) handleInjectedScript(writer http.ResponseWriter, _ *http
 	var script string
 	var ok bool
 
-	if s.devAssetsDir != "" {
+	if s.devSource != nil {
 		script, ok = s.checkAndBuildAssets()
 	}
 
@@ -711,8 +707,8 @@ func (s *ControlServer) handleXtermStylesheet(writer http.ResponseWriter, _ *htt
 	writer.Header().Set("cache-control", cacheControlNoStore)
 	writer.Header().Set("content-type", textCSSContentType)
 
-	if s.devAssetsDir != "" {
-		compiledPath := filepath.Join(s.devAssetsDir, "xterm.css")
+	if s.devSource != nil {
+		compiledPath := s.devSource.assetPath("xterm.css")
 		content, err := os.ReadFile(compiledPath)
 		if err == nil {
 			_, _ = writer.Write(content)

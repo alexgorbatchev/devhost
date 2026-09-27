@@ -263,10 +263,11 @@ That build refreshes the embedded injected devtools bundle and writes the CLI bi
 
 If you are modifying the injected browser devtools UI (`packages/devhost-ui/`) and want to test your changes instantly without manually rebuilding the Go app or restarting the service stack, you can use the built-in on-demand asset dev loop:
 
-1. Set the `DEVHOST_DEV_ASSETS_DIR` environment variable to your compiled asset directory (e.g. `apps/devhost/internal/devtools/dist` relative to the manifest directory).
-2. On every browser page refresh, `devhost` checks if any source files in `packages/devhost-ui/src/devtools/` are newer than the compiled `devtools.js` on disk.
-3. If changes are detected, `devhost` automatically serializes and triggers a background build via `just devhost build-devtools-bundle`, and blocks to serve the freshly built assets.
-4. If filesystem reads, walking checks, or background compilation fail, the server logs a warning and falls back seamlessly to serving the compile-time embedded assets.
+1. Set `DEVHOST_DEV_SOURCE_DIR` to the root of your devhost checkout. A relative path resolves against the manifest directory, so `DEVHOST_DEV_SOURCE_DIR=.` works for the repo-root `devhost.toml`; `just dev` sets it for you.
+2. On every browser page refresh, `devhost` checks whether any file under `packages/devhost-ui/src/devtools/` in that checkout is newer than `apps/devhost/internal/devtools/dist/devtools.js`.
+3. If so, it runs `just --justfile <checkout>/apps/devhost/justfile build-devtools-bundle`, one build at a time, and serves the fresh bundle once the build finishes.
+4. If the build fails, or finishes without writing `devtools.js`, the page shows a `DEVHOST COMPILATION ERROR` banner with the details, and the next reload tries again.
+5. If `DEVHOST_DEV_SOURCE_DIR` does not point at a devhost checkout, `devhost start` exits with an error naming the variable and the missing path.
 
 ## AI devhost skill
 
