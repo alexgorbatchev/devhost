@@ -46,9 +46,9 @@ func ParseCommandLineArguments(rawArguments []string) (CommandLineArguments, err
 	}
 
 	result := CommandLineArguments{}
-	error := createRootCommand(&result).RunArgsE(rawArguments)
-	if error != nil {
-		return CommandLineArguments{}, normalizeParseError(error)
+	err := createRootCommand(&result).RunArgsE(rawArguments)
+	if err != nil {
+		return CommandLineArguments{}, normalizeParseError(err)
 	}
 
 	return result, nil
@@ -70,8 +70,8 @@ func createRootCommand(result *CommandLineArguments) boa.CmdT[manifestOptions] {
 		Short: "Start a devhost stack or manage shared Caddy.",
 		Args:  cobra.NoArgs,
 		RunFuncE: func(options *manifestOptions, _ *cobra.Command, _ []string) error {
-			if error := validateManifestPath(options.ManifestPath); error != nil {
-				return error
+			if err := validateManifestPath(options.ManifestPath); err != nil {
+				return err
 			}
 
 			*result = CommandLineArguments{
@@ -95,8 +95,8 @@ func createStopCommand(result *CommandLineArguments) boa.CmdT[manifestOptions] {
 		Short: "Stop active processes for the current devhost stack.",
 		Args:  cobra.NoArgs,
 		RunFuncE: func(options *manifestOptions, _ *cobra.Command, _ []string) error {
-			if error := validateManifestPath(options.ManifestPath); error != nil {
-				return error
+			if err := validateManifestPath(options.ManifestPath); err != nil {
+				return err
 			}
 
 			*result = CommandLineArguments{Kind: KindStop, ManifestPath: options.ManifestPath}
@@ -131,8 +131,8 @@ func createCaddyLifecycleCommand(result *CommandLineArguments, action CaddyLifec
 		Short: fmt.Sprintf("Run `devhost caddy %s`.", action),
 		Args:  cobra.NoArgs,
 		RunFuncE: func(options *manifestOptions, _ *cobra.Command, _ []string) error {
-			if error := validateManifestPath(options.ManifestPath); error != nil {
-				return error
+			if err := validateManifestPath(options.ManifestPath); err != nil {
+				return err
 			}
 
 			*result = CommandLineArguments{
@@ -189,8 +189,8 @@ func validateManifestPath(manifestPath *string) error {
 	return nil
 }
 
-func normalizeParseError(error error) error {
-	message := error.Error()
+func normalizeParseError(err error) error {
+	message := err.Error()
 	if strings.HasPrefix(message, "unknown flag: ") {
 		return fmt.Errorf("unknown option: %s", strings.TrimPrefix(message, "unknown flag: "))
 	}
@@ -199,5 +199,5 @@ func normalizeParseError(error error) error {
 		return fmt.Errorf("option requires argument: %s", strings.TrimPrefix(message, "flag needs an argument: "))
 	}
 
-	return error
+	return err
 }

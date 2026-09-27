@@ -36,14 +36,14 @@ func DownloadCaddy(logWriter io.Writer, runtimeOS string, runtimeArch string, pa
 		chmod = os.Chmod
 	}
 
-	targetOS, error := resolveTargetOS(runtimeOS)
-	if error != nil {
-		return error
+	targetOS, err := resolveTargetOS(runtimeOS)
+	if err != nil {
+		return err
 	}
 
-	targetArch, error := resolveTargetArchitecture(runtimeArch)
-	if error != nil {
-		return error
+	targetArch, err := resolveTargetArchitecture(runtimeArch)
+	if err != nil {
+		return err
 	}
 
 	destinationPath := paths.ExecutablePath
@@ -52,17 +52,17 @@ func DownloadCaddy(logWriter io.Writer, runtimeOS string, runtimeArch string, pa
 	}
 
 	url := fmt.Sprintf("https://caddyserver.com/api/download?os=%s&arch=%s", targetOS, targetArch)
-	if error := logInfo(logWriter, fmt.Sprintf("Downloading Caddy for %s-%s from %s...", targetOS, targetArch, url)); error != nil {
-		return fmt.Errorf("log caddy download start: %w", error)
+	if err := logInfo(logWriter, fmt.Sprintf("Downloading Caddy for %s-%s from %s...", targetOS, targetArch, url)); err != nil {
+		return fmt.Errorf("log caddy download start: %w", err)
 	}
 
-	if error := mkdirAll(paths.CaddyDirectoryPath, 0o755); error != nil {
-		return fmt.Errorf("create caddy directory %s: %w", paths.CaddyDirectoryPath, error)
+	if err := mkdirAll(paths.CaddyDirectoryPath, 0o755); err != nil {
+		return fmt.Errorf("create caddy directory %s: %w", paths.CaddyDirectoryPath, err)
 	}
 
-	response, error := client.Get(url)
-	if error != nil {
-		return fmt.Errorf("download caddy: %w", error)
+	response, err := client.Get(url)
+	if err != nil {
+		return fmt.Errorf("download caddy: %w", err)
 	}
 	defer response.Body.Close()
 
@@ -70,23 +70,23 @@ func DownloadCaddy(logWriter io.Writer, runtimeOS string, runtimeArch string, pa
 		return fmt.Errorf("Failed to download Caddy: %d %s", response.StatusCode, response.Status)
 	}
 
-	binary, error := io.ReadAll(response.Body)
-	if error != nil {
-		return fmt.Errorf("read caddy download response: %w", error)
+	binary, err := io.ReadAll(response.Body)
+	if err != nil {
+		return fmt.Errorf("read caddy download response: %w", err)
 	}
 
-	if error := writeFile(destinationPath, binary, 0o755); error != nil {
-		return fmt.Errorf("write caddy binary %s: %w", destinationPath, error)
+	if err := writeFile(destinationPath, binary, 0o755); err != nil {
+		return fmt.Errorf("write caddy binary %s: %w", destinationPath, err)
 	}
 
 	if targetOS != "windows" {
-		if error := chmod(destinationPath, 0o755); error != nil {
-			return fmt.Errorf("chmod caddy binary %s: %w", destinationPath, error)
+		if err := chmod(destinationPath, 0o755); err != nil {
+			return fmt.Errorf("chmod caddy binary %s: %w", destinationPath, err)
 		}
 	}
 
-	if error := logInfo(logWriter, fmt.Sprintf("Caddy downloaded to %s", destinationPath)); error != nil {
-		return fmt.Errorf("log caddy download success: %w", error)
+	if err := logInfo(logWriter, fmt.Sprintf("Caddy downloaded to %s", destinationPath)); err != nil {
+		return fmt.Errorf("log caddy download success: %w", err)
 	}
 
 	return nil

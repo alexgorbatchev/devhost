@@ -14,8 +14,8 @@ func ResolveServiceOrder(value manifest.Manifest) ([]string, error) {
 
 	serviceNames := orderedServiceNames(value)
 	for _, serviceName := range serviceNames {
-		if error := visitService(serviceName, value.Services, visitingServices, visitedServices, &orderedServices, []string{}); error != nil {
-			return nil, error
+		if err := visitService(serviceName, value.Services, visitingServices, visitedServices, &orderedServices, []string{}); err != nil {
+			return nil, err
 		}
 	}
 
@@ -40,15 +40,15 @@ func visitService(
 
 	visitingServices[serviceName] = struct{}{}
 	for _, dependencyName := range services[serviceName].DependsOn {
-		if error := visitService(
+		if err := visitService(
 			dependencyName,
 			services,
 			visitingServices,
 			visitedServices,
 			orderedServices,
 			append(ancestry, serviceName),
-		); error != nil {
-			return error
+		); err != nil {
+			return err
 		}
 	}
 

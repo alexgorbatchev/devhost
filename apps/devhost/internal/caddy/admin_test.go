@@ -14,8 +14,8 @@ func TestEnsureManagedCaddyAdminAvailable(t *testing.T) {
 	}))
 	t.Cleanup(server.Close)
 
-	if error := EnsureManagedCaddyAdminAvailable(server.URL, AdminAvailabilityDependencies{HTTPClient: server.Client()}); error != nil {
-		t.Fatalf("EnsureManagedCaddyAdminAvailable(...) unexpected error = %v", error)
+	if err := EnsureManagedCaddyAdminAvailable(server.URL, AdminAvailabilityDependencies{HTTPClient: server.Client()}); err != nil {
+		t.Fatalf("EnsureManagedCaddyAdminAvailable(...) unexpected error = %v", err)
 	}
 
 	t.Run("renders non-2xx responses with TS-compatible HTTP detail", func(t *testing.T) {
@@ -26,10 +26,10 @@ func TestEnsureManagedCaddyAdminAvailable(t *testing.T) {
 		}))
 		t.Cleanup(failingServer.Close)
 
-		error := EnsureManagedCaddyAdminAvailable(failingServer.URL, AdminAvailabilityDependencies{HTTPClient: failingServer.Client()})
+		err := EnsureManagedCaddyAdminAvailable(failingServer.URL, AdminAvailabilityDependencies{HTTPClient: failingServer.Client()})
 		want := "Caddy admin API is not available. Run 'devhost caddy start' first.\ndetail: HTTP 503 Service Unavailable"
-		if error == nil || error.Error() != want {
-			t.Fatalf("EnsureManagedCaddyAdminAvailable(...) error = %v, want %q", error, want)
+		if err == nil || err.Error() != want {
+			t.Fatalf("EnsureManagedCaddyAdminAvailable(...) error = %v, want %q", err, want)
 		}
 	})
 }

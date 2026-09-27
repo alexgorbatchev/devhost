@@ -53,9 +53,9 @@ func TestReassignAutoPort(t *testing.T) {
 		},
 	}
 
-	updatedService, updatedManifest, error := ReassignAutoPort(manifestValue, "api")
-	if error != nil {
-		t.Fatalf("ReassignAutoPort(...) unexpected error = %v", error)
+	updatedService, updatedManifest, err := ReassignAutoPort(manifestValue, "api")
+	if err != nil {
+		t.Fatalf("ReassignAutoPort(...) unexpected error = %v", err)
 	}
 
 	if updatedService.Port == nil {

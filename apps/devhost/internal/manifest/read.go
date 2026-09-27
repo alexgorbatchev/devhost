@@ -464,22 +464,22 @@ func isValidEnvVarNameContinue(value byte) bool {
 	return isValidEnvVarNameStart(value) || value >= '0' && value <= '9'
 }
 
-func formatManifestParseError(manifestText string, error error) string {
-	duplicateTableMessage := getDuplicateTableMessage(manifestText, error)
+func formatManifestParseError(manifestText string, err error) string {
+	duplicateTableMessage := getDuplicateTableMessage(manifestText, err)
 	if duplicateTableMessage != "" {
 		return duplicateTableMessage
 	}
 
-	return error.Error()
+	return err.Error()
 }
 
-func getDuplicateTableMessage(manifestText string, error error) string {
-	errorMessage := error.Error()
+func getDuplicateTableMessage(manifestText string, err error) string {
+	errorMessage := err.Error()
 	if !duplicateTableIndicatorPattern.MatchString(errorMessage) {
 		return ""
 	}
 
-	lineNumber, ok := readParseErrorLine(error)
+	lineNumber, ok := readParseErrorLine(err)
 	if !ok {
 		return ""
 	}
@@ -502,13 +502,13 @@ func getDuplicateTableMessage(manifestText string, error error) string {
 	)
 }
 
-func readParseErrorLine(error error) (int, bool) {
+func readParseErrorLine(err error) (int, bool) {
 	var parseError toml.ParseError
-	if errors.As(error, &parseError) {
+	if errors.As(err, &parseError) {
 		return parseError.Position.Line, true
 	}
 
-	match := parseErrorLinePattern.FindStringSubmatch(error.Error())
+	match := parseErrorLinePattern.FindStringSubmatch(err.Error())
 	if match == nil {
 		return 0, false
 	}

@@ -76,9 +76,9 @@ func ResolveServicePorts(value manifest.Manifest) (ResolvedManifest, error) {
 		portSource := "none"
 		if service.Port != nil {
 			if service.Port.Auto {
-				port, error := reserveAutoPort(service.BindHost, excludedPorts)
-				if error != nil {
-					return ResolvedManifest{}, error
+				port, err := reserveAutoPort(service.BindHost, excludedPorts)
+				if err != nil {
+					return ResolvedManifest{}, err
 				}
 				resolvedPort = &port
 				excludedPorts[port] = struct{}{}
@@ -91,9 +91,9 @@ func ResolveServicePorts(value manifest.Manifest) (ResolvedManifest, error) {
 			}
 		}
 
-		health, error := resolveHealthConfig(service, resolvedPort)
-		if error != nil {
-			return ResolvedManifest{}, error
+		health, err := resolveHealthConfig(service, resolvedPort)
+		if err != nil {
+			return ResolvedManifest{}, err
 		}
 
 		if resolvedPort != nil && hasRuntimeBindPortConflict(service.BindHost, *resolvedPort, resolvedServices) {
@@ -250,9 +250,9 @@ func collectFixedPorts(services map[string]manifest.ValidatedService) map[string
 }
 
 func reserveAutoPort(bindHost string, excludedPorts map[int]struct{}) (int, error) {
-	listener, error := net.Listen("tcp", net.JoinHostPort(bindHost, "0"))
-	if error != nil {
-		return 0, fmt.Errorf("reserve auto port for %s: %w", bindHost, error)
+	listener, err := net.Listen("tcp", net.JoinHostPort(bindHost, "0"))
+	if err != nil {
+		return 0, fmt.Errorf("reserve auto port for %s: %w", bindHost, err)
 	}
 	defer listener.Close()
 

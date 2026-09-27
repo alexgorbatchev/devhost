@@ -90,14 +90,14 @@ func TestFixedPortClaims(t *testing.T) {
 		Port:                    3000,
 		PortClaimsDirectoryPath: paths.PortClaimsDirectoryPath,
 	}
-	if error := ClaimFixedPort(claimOptions); error != nil {
-		t.Fatalf("ClaimFixedPort(...) unexpected error = %v", error)
+	if err := ClaimFixedPort(claimOptions); err != nil {
+		t.Fatalf("ClaimFixedPort(...) unexpected error = %v", err)
 	}
 
 	claimPath := filepath.Join(paths.PortClaimsDirectoryPath, "ipv4_3000.json")
-	claimText, error := os.ReadFile(claimPath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) error = %v", error)
+	claimText, err := os.ReadFile(claimPath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) error = %v", err)
 	}
 	want := strings.Join([]string{
 		"{",
@@ -113,45 +113,45 @@ func TestFixedPortClaims(t *testing.T) {
 	}
 
 	writeRegistration(t, claimPath, strings.ReplaceAll(string(claimText), `"ownerPid": 4321`, `"ownerPid": 999999`))
-	if error := CleanupStaleFixedPortClaims(paths.PortClaimsDirectoryPath); error != nil {
-		t.Fatalf("CleanupStaleFixedPortClaims(...) unexpected error = %v", error)
+	if err := CleanupStaleFixedPortClaims(paths.PortClaimsDirectoryPath); err != nil {
+		t.Fatalf("CleanupStaleFixedPortClaims(...) unexpected error = %v", err)
 	}
-	if _, error := os.Stat(claimPath); !errors.Is(error, os.ErrNotExist) {
-		t.Fatalf("stat stale fixed port claim error = %v, want not-exist", error)
+	if _, err := os.Stat(claimPath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("stat stale fixed port claim error = %v, want not-exist", err)
 	}
 
-	if error := ClaimFixedPort(claimOptions); error != nil {
-		t.Fatalf("ClaimFixedPort(...) after stale cleanup unexpected error = %v", error)
+	if err := ClaimFixedPort(claimOptions); err != nil {
+		t.Fatalf("ClaimFixedPort(...) after stale cleanup unexpected error = %v", err)
 	}
-	if error := ClaimFixedPort(claimOptions); error == nil || !strings.Contains(error.Error(), "127.0.0.1:3000 is already in use by `bun dev` via /tmp/project/devhost.toml.") {
-		t.Fatalf("ClaimFixedPort(...) same-manifest error = %v", error)
+	if err := ClaimFixedPort(claimOptions); err == nil || !strings.Contains(err.Error(), "127.0.0.1:3000 is already in use by `bun dev` via /tmp/project/devhost.toml.") {
+		t.Fatalf("ClaimFixedPort(...) same-manifest error = %v", err)
 	}
-	if error := ClaimFixedPort(ClaimFixedPortOptions{
+	if err := ClaimFixedPort(ClaimFixedPortOptions{
 		BindHost:                "0.0.0.0",
 		ManifestPath:            "/tmp/other/devhost.toml",
 		Port:                    3000,
 		PortClaimsDirectoryPath: paths.PortClaimsDirectoryPath,
-	}); error == nil || !strings.Contains(error.Error(), "0.0.0.0:3000 is already in use by `bun dev` via /tmp/project/devhost.toml.") {
-		t.Fatalf("ClaimFixedPort(...) overlapping error = %v", error)
+	}); err == nil || !strings.Contains(err.Error(), "0.0.0.0:3000 is already in use by `bun dev` via /tmp/project/devhost.toml.") {
+		t.Fatalf("ClaimFixedPort(...) overlapping error = %v", err)
 	}
 
-	if error := ReleaseFixedPortClaim(ClaimFixedPortOptions{
+	if err := ReleaseFixedPortClaim(ClaimFixedPortOptions{
 		BindHost:                "127.0.0.1",
 		ManifestPath:            "/tmp/other/devhost.toml",
 		Port:                    3000,
 		PortClaimsDirectoryPath: paths.PortClaimsDirectoryPath,
-	}); error != nil {
-		t.Fatalf("ReleaseFixedPortClaim(...) wrong manifest unexpected error = %v", error)
+	}); err != nil {
+		t.Fatalf("ReleaseFixedPortClaim(...) wrong manifest unexpected error = %v", err)
 	}
-	if _, error := os.Stat(claimPath); error != nil {
-		t.Fatalf("stat fixed port claim after ignored release error = %v", error)
+	if _, err := os.Stat(claimPath); err != nil {
+		t.Fatalf("stat fixed port claim after ignored release error = %v", err)
 	}
 
-	if error := ReleaseFixedPortClaim(claimOptions); error != nil {
-		t.Fatalf("ReleaseFixedPortClaim(...) unexpected error = %v", error)
+	if err := ReleaseFixedPortClaim(claimOptions); err != nil {
+		t.Fatalf("ReleaseFixedPortClaim(...) unexpected error = %v", err)
 	}
-	if _, error := os.Stat(claimPath); !errors.Is(error, os.ErrNotExist) {
-		t.Fatalf("stat released fixed port claim error = %v, want not-exist", error)
+	if _, err := os.Stat(claimPath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("stat released fixed port claim error = %v, want not-exist", err)
 	}
 }
 
@@ -189,17 +189,17 @@ func TestClaimHost(t *testing.T) {
 		ManifestPath:               "/tmp/project/devhost.toml",
 		RegistrationsDirectoryPath: paths.RegistrationsDirectoryPath,
 	}
-	if error := ClaimHost(claimOptions); error != nil {
-		t.Fatalf("ClaimHost(...) unexpected error = %v", error)
+	if err := ClaimHost(claimOptions); err != nil {
+		t.Fatalf("ClaimHost(...) unexpected error = %v", err)
 	}
-	if error := ClaimHost(claimOptions); error != nil {
-		t.Fatalf("ClaimHost(...) same manifest unexpected error = %v", error)
+	if err := ClaimHost(claimOptions); err != nil {
+		t.Fatalf("ClaimHost(...) same manifest unexpected error = %v", err)
 	}
 
 	claimPath := filepath.Join(paths.HostClaimsDirectoryPath, "hello.localhost.json")
-	claimText, error := os.ReadFile(claimPath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) error = %v", error)
+	claimText, err := os.ReadFile(claimPath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) error = %v", err)
 	}
 	want := strings.Join([]string{
 		"{",
@@ -225,16 +225,16 @@ func TestClaimHost(t *testing.T) {
 		`  "serviceName": "api"`,
 		"}",
 	}, "\n"))
-	if error := ClaimHost(ClaimHostOptions{
+	if err := ClaimHost(ClaimHostOptions{
 		Host:                       "hello.localhost",
 		ManifestPath:               "/tmp/project/devhost.toml",
 		RegistrationsDirectoryPath: paths.RegistrationsDirectoryPath,
-	}); error == nil || !strings.Contains(error.Error(), "hello.localhost is already claimed by PID 4321 from /tmp/other/devhost.toml.") {
-		t.Fatalf("ClaimHost(...) live registration error = %v", error)
+	}); err == nil || !strings.Contains(err.Error(), "hello.localhost is already claimed by PID 4321 from /tmp/other/devhost.toml.") {
+		t.Fatalf("ClaimHost(...) live registration error = %v", err)
 	}
 
-	if error := removeIfExists(filepath.Join(paths.RegistrationsDirectoryPath, "hello.localhost_api_2f6170692f2a.json")); error != nil {
-		t.Fatalf("removeIfExists(...) error = %v", error)
+	if err := removeIfExists(filepath.Join(paths.RegistrationsDirectoryPath, "hello.localhost_api_2f6170692f2a.json")); err != nil {
+		t.Fatalf("removeIfExists(...) error = %v", err)
 	}
 	writeRegistration(t, filepath.Join(paths.RegistrationsDirectoryPath, "hello.localhost_legacy_2f.json"), strings.Join([]string{
 		"{",
@@ -244,30 +244,30 @@ func TestClaimHost(t *testing.T) {
 		`  "port": 3000`,
 		"}",
 	}, "\n"))
-	if error := ClaimHost(ClaimHostOptions{
+	if err := ClaimHost(ClaimHostOptions{
 		Host:                       "hello.localhost",
 		ManifestPath:               "/tmp/project/devhost.toml",
 		RegistrationsDirectoryPath: paths.RegistrationsDirectoryPath,
-	}); error == nil || !strings.Contains(error.Error(), "hello.localhost is already claimed by PID 4321 on port 3000.") {
-		t.Fatalf("ClaimHost(...) legacy registration error = %v", error)
+	}); err == nil || !strings.Contains(err.Error(), "hello.localhost is already claimed by PID 4321 on port 3000.") {
+		t.Fatalf("ClaimHost(...) legacy registration error = %v", err)
 	}
 
-	if error := ReleaseHostClaim(ClaimHostOptions{
+	if err := ReleaseHostClaim(ClaimHostOptions{
 		Host:                       "hello.localhost",
 		ManifestPath:               "/tmp/other/devhost.toml",
 		RegistrationsDirectoryPath: paths.RegistrationsDirectoryPath,
-	}); error != nil {
-		t.Fatalf("ReleaseHostClaim(...) wrong manifest unexpected error = %v", error)
+	}); err != nil {
+		t.Fatalf("ReleaseHostClaim(...) wrong manifest unexpected error = %v", err)
 	}
-	if _, error := os.Stat(claimPath); error != nil {
-		t.Fatalf("stat host claim after ignored release error = %v", error)
+	if _, err := os.Stat(claimPath); err != nil {
+		t.Fatalf("stat host claim after ignored release error = %v", err)
 	}
 
-	if error := ReleaseHostClaim(claimOptions); error != nil {
-		t.Fatalf("ReleaseHostClaim(...) unexpected error = %v", error)
+	if err := ReleaseHostClaim(claimOptions); err != nil {
+		t.Fatalf("ReleaseHostClaim(...) unexpected error = %v", err)
 	}
-	if _, error := os.Stat(claimPath); !errors.Is(error, os.ErrNotExist) {
-		t.Fatalf("stat released host claim error = %v, want not-exist", error)
+	if _, err := os.Stat(claimPath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("stat released host claim error = %v, want not-exist", err)
 	}
 }
 
@@ -299,25 +299,25 @@ func TestClaimHostKillZombies(t *testing.T) {
 	var buf bytes.Buffer
 
 	// Try to claim the host without KillZombies (should fail)
-	if error := ClaimHost(ClaimHostOptions{
+	if err := ClaimHost(ClaimHostOptions{
 		Host:                       "hello.localhost",
 		ManifestPath:               "/tmp/project/devhost.toml",
 		RegistrationsDirectoryPath: paths.RegistrationsDirectoryPath,
 		KillZombies:                false,
 		LogWriter:                  &buf,
-	}); error == nil || !strings.Contains(error.Error(), "hello.localhost is already claimed by PID 9999") {
-		t.Fatalf("ClaimHost(...) without KillZombies expected failure, got = %v", error)
+	}); err == nil || !strings.Contains(err.Error(), "hello.localhost is already claimed by PID 9999") {
+		t.Fatalf("ClaimHost(...) without KillZombies expected failure, got = %v", err)
 	}
 
 	// Try to claim with KillZombies (should succeed and log)
-	if error := ClaimHost(ClaimHostOptions{
+	if err := ClaimHost(ClaimHostOptions{
 		Host:                       "hello.localhost",
 		ManifestPath:               "/tmp/project/devhost.toml",
 		RegistrationsDirectoryPath: paths.RegistrationsDirectoryPath,
 		KillZombies:                true,
 		LogWriter:                  &buf,
-	}); error != nil {
-		t.Fatalf("ClaimHost(...) with KillZombies unexpected error = %v", error)
+	}); err != nil {
+		t.Fatalf("ClaimHost(...) with KillZombies unexpected error = %v", err)
 	}
 
 	if !strings.Contains(buf.String(), "Killing zombie PID 9999 claiming hello.localhost") {
@@ -354,27 +354,27 @@ func TestClaimFixedPortKillZombies(t *testing.T) {
 	var buf bytes.Buffer
 
 	// Try to claim the port without KillZombies (should fail)
-	if error := ClaimFixedPort(ClaimFixedPortOptions{
+	if err := ClaimFixedPort(ClaimFixedPortOptions{
 		BindHost:                "127.0.0.1",
 		ManifestPath:            "/tmp/project/devhost.toml",
 		Port:                    3000,
 		PortClaimsDirectoryPath: paths.PortClaimsDirectoryPath,
 		KillZombies:             false,
 		LogWriter:               &buf,
-	}); error == nil {
+	}); err == nil {
 		t.Fatalf("ClaimFixedPort(...) without KillZombies expected failure")
 	}
 
 	// Try to claim with KillZombies (should succeed and log)
-	if error := ClaimFixedPort(ClaimFixedPortOptions{
+	if err := ClaimFixedPort(ClaimFixedPortOptions{
 		BindHost:                "127.0.0.1",
 		ManifestPath:            "/tmp/project/devhost.toml",
 		Port:                    3000,
 		PortClaimsDirectoryPath: paths.PortClaimsDirectoryPath,
 		KillZombies:             true,
 		LogWriter:               &buf,
-	}); error != nil {
-		t.Fatalf("ClaimFixedPort(...) with KillZombies unexpected error = %v", error)
+	}); err != nil {
+		t.Fatalf("ClaimFixedPort(...) with KillZombies unexpected error = %v", err)
 	}
 
 	if !strings.Contains(buf.String(), "Killing zombie PID 9999 claiming port 3000") {
@@ -405,9 +405,9 @@ func TestResolveProxyHost(t *testing.T) {
 		{bindHost: "::", want: "::1"},
 	}
 	for _, tt := range tests {
-		got, error := ResolveProxyHost(tt.bindHost)
-		if error != nil {
-			t.Fatalf("ResolveProxyHost(%q) unexpected error = %v", tt.bindHost, error)
+		got, err := ResolveProxyHost(tt.bindHost)
+		if err != nil {
+			t.Fatalf("ResolveProxyHost(%q) unexpected error = %v", tt.bindHost, err)
 		}
 		if got != tt.want {
 			t.Fatalf("ResolveProxyHost(%q) = %q, want %q", tt.bindHost, got, tt.want)
@@ -420,8 +420,8 @@ func TestResolveProxyHost(t *testing.T) {
 	if got := FormatProxyAddress("::1", 3000); got != "[::1]:3000" {
 		t.Fatalf("FormatProxyAddress(...) = %q, want %q", got, "[::1]:3000")
 	}
-	if _, error := ResolveProxyHost("192.168.1.10"); error == nil || error.Error() != "Unsupported bind host: 192.168.1.10" {
-		t.Fatalf("ResolveProxyHost(...) error = %v, want %q", error, "Unsupported bind host: 192.168.1.10")
+	if _, err := ResolveProxyHost("192.168.1.10"); err == nil || err.Error() != "Unsupported bind host: 192.168.1.10" {
+		t.Fatalf("ResolveProxyHost(...) error = %v, want %q", err, "Unsupported bind host: 192.168.1.10")
 	}
 }
 
@@ -459,9 +459,9 @@ func TestRenderHostRouteSnippet(t *testing.T) {
 		}, "/tmp/project/devhost.toml")),
 	}
 
-	snippet, error := renderHostRouteSnippet(registrations, true, 8080, 4443, t.TempDir())
-	if error != nil {
-		t.Fatalf("renderHostRouteSnippet(...) unexpected error = %v", error)
+	snippet, err := renderHostRouteSnippet(registrations, true, 8080, 4443, t.TempDir())
+	if err != nil {
+		t.Fatalf("renderHostRouteSnippet(...) unexpected error = %v", err)
 	}
 	if !strings.Contains(snippet, "http://hello.localhost:8080 {") || !strings.Contains(snippet, "https://hello.localhost:4443 {") {
 		t.Fatalf("renderHostRouteSnippet(...) ports output = %q", snippet)
@@ -476,15 +476,15 @@ func TestRenderHostRouteSnippet(t *testing.T) {
 		t.Fatalf("renderHostRouteSnippet(...) missing root reverse proxy = %q", snippet)
 	}
 
-	missingRootSnippet, error := renderHostRouteSnippet([]routeRegistration{mustParseRouteRegistration(t, createRouteRegistrationText(ActivateRouteOptions{
+	missingRootSnippet, err := renderHostRouteSnippet([]routeRegistration{mustParseRouteRegistration(t, createRouteRegistrationText(ActivateRouteOptions{
 		AppBindHost: "127.0.0.1",
 		AppPort:     3001,
 		Host:        "hello.localhost",
 		Path:        "/api/*",
 		ServiceName: "api",
 	}, "/tmp/project/devhost.toml"))}, false, 0, 0, t.TempDir())
-	if error != nil {
-		t.Fatalf("renderHostRouteSnippet(...) missing-root unexpected error = %v", error)
+	if err != nil {
+		t.Fatalf("renderHostRouteSnippet(...) missing-root unexpected error = %v", err)
 	}
 	if !strings.Contains(missingRootSnippet, "    error 404") {
 		t.Fatalf("renderHostRouteSnippet(...) missing root fallback = %q", missingRootSnippet)
@@ -505,9 +505,9 @@ func TestRenderHostRouteSnippetWithStackName(t *testing.T) {
 
 	tempDir := t.TempDir()
 	routesDirectoryPath := filepath.Join(tempDir, "caddy", "routes")
-	snippet, error := renderHostRouteSnippet(registrations, true, 8080, 4443, routesDirectoryPath)
-	if error != nil {
-		t.Fatalf("renderHostRouteSnippet(...) unexpected error = %v", error)
+	snippet, err := renderHostRouteSnippet(registrations, true, 8080, 4443, routesDirectoryPath)
+	if err != nil {
+		t.Fatalf("renderHostRouteSnippet(...) unexpected error = %v", err)
 	}
 
 	// Verify the log block exists and points to the correct location
@@ -556,13 +556,13 @@ func TestSyncHostRouteOrdersRegistrations(t *testing.T) {
 		ServiceName: "web",
 	}, "/tmp/project/devhost.toml"))
 
-	if error := syncHostRoute("hello.localhost", paths.RoutesDirectoryPath, &managedCaddyGlobalSettings{AdminAddress: DefaultManagedCaddyAdminAddress, BindHost: defaultManagedCaddyBindHost, HTTPPort: defaultManagedCaddyHTTPPort, HTTPSPort: defaultManagedCaddyHTTPSPort}); error != nil {
-		t.Fatalf("syncHostRoute(...) unexpected error = %v", error)
+	if err := syncHostRoute("hello.localhost", paths.RoutesDirectoryPath, &managedCaddyGlobalSettings{AdminAddress: DefaultManagedCaddyAdminAddress, BindHost: defaultManagedCaddyBindHost, HTTPPort: defaultManagedCaddyHTTPPort, HTTPSPort: defaultManagedCaddyHTTPSPort}); err != nil {
+		t.Fatalf("syncHostRoute(...) unexpected error = %v", err)
 	}
 
-	hostRouteText, error := os.ReadFile(filepath.Join(paths.RoutesDirectoryPath, "hello.localhost.caddy"))
-	if error != nil {
-		t.Fatalf("ReadFile(...) host route error = %v", error)
+	hostRouteText, err := os.ReadFile(filepath.Join(paths.RoutesDirectoryPath, "hello.localhost.caddy"))
+	if err != nil {
+		t.Fatalf("ReadFile(...) host route error = %v", err)
 	}
 	rendered := string(hostRouteText)
 	accountsIndex := strings.Index(rendered, "    handle /api/users {\n        reverse_proxy 127.0.0.1:3003")
@@ -594,24 +594,24 @@ func TestActivateRoute(t *testing.T) {
 		}
 	})
 
-	if error := ActivateRoute(ActivateRouteOptions{
+	if err := ActivateRoute(ActivateRouteOptions{
 		AppBindHost: "127.0.0.1",
 		AppPort:     3000,
 		Host:        "hello.localhost",
 		Path:        "/",
 		ServiceName: "web",
-	}, "/tmp/project/devhost.toml", paths.RoutesDirectoryPath); error != nil {
-		t.Fatalf("ActivateRoute(...) unexpected error = %v", error)
+	}, "/tmp/project/devhost.toml", paths.RoutesDirectoryPath); err != nil {
+		t.Fatalf("ActivateRoute(...) unexpected error = %v", err)
 	}
 
 	registrationPath := filepath.Join(paths.RegistrationsDirectoryPath, "hello.localhost_web_2f.json")
-	if _, error := os.Stat(registrationPath); error != nil {
-		t.Fatalf("stat registration error = %v", error)
+	if _, err := os.Stat(registrationPath); err != nil {
+		t.Fatalf("stat registration error = %v", err)
 	}
 	hostRoutePath := filepath.Join(paths.RoutesDirectoryPath, "hello.localhost.caddy")
-	hostRouteText, error := os.ReadFile(hostRoutePath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) host route error = %v", error)
+	hostRouteText, err := os.ReadFile(hostRoutePath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) host route error = %v", err)
 	}
 	if !strings.Contains(string(hostRouteText), "https://hello.localhost {") || !strings.Contains(string(hostRouteText), "reverse_proxy 127.0.0.1:3000") {
 		t.Fatalf("host route text = %q, want synced route", string(hostRouteText))
@@ -643,7 +643,7 @@ func TestActivateRouteRollbackOnReloadFailure(t *testing.T) {
 		}
 	})
 
-	error := ActivateRoute(ActivateRouteOptions{
+	err = ActivateRoute(ActivateRouteOptions{
 		AppBindHost:    "127.0.0.1",
 		AppPort:        3000,
 		CaddyHTTPSPort: 4443,
@@ -651,8 +651,8 @@ func TestActivateRouteRollbackOnReloadFailure(t *testing.T) {
 		Path:           "/",
 		ServiceName:    "web",
 	}, "/tmp/project/devhost.toml", paths.RoutesDirectoryPath)
-	if error == nil || error.Error() != "Caddy reload failed. Is Caddy already running?\nstderr line\nstdout line" {
-		t.Fatalf("ActivateRoute(...) error = %v, want exact reload failure", error)
+	if err == nil || err.Error() != "Caddy reload failed. Is Caddy already running?\nstderr line\nstdout line" {
+		t.Fatalf("ActivateRoute(...) error = %v, want exact reload failure", err)
 	}
 	if reloadCallCount != 1 {
 		t.Fatalf("reload call count = %d, want 1", reloadCallCount)
@@ -664,18 +664,18 @@ func TestActivateRouteRollbackOnReloadFailure(t *testing.T) {
 		t.Fatalf("stat rolled-back host route error = %v, want not-exist", statError)
 	}
 
-	caddyfileText, error := os.ReadFile(paths.CaddyfilePath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) caddyfile error = %v", error)
+	caddyfileText, err := os.ReadFile(paths.CaddyfilePath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) caddyfile error = %v", err)
 	}
 	if !bytes.Equal(caddyfileText, previousCaddyfile) {
 		t.Fatalf("caddyfile text = %q, want previous global settings after rollback", string(caddyfileText))
 	}
 
 	notFoundPagePath := createManagedCaddyNotFoundSitePaths(paths.CaddyDirectoryPath).PagePath
-	pageText, error := os.ReadFile(notFoundPagePath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) not-found page error = %v", error)
+	pageText, err := os.ReadFile(notFoundPagePath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) not-found page error = %v", err)
 	}
 	if !strings.Contains(string(pageText), "No devhost hostnames are active right now.") {
 		t.Fatalf("not-found page = %q, want rollback resync", string(pageText))
@@ -770,25 +770,25 @@ func TestActivateRouteSuccessfulReloadOutput(t *testing.T) {
 	})
 
 	t.Run("suppresses output without writers", func(t *testing.T) {
-		if error := ActivateRoute(ActivateRouteOptions{
+		if err := ActivateRoute(ActivateRouteOptions{
 			AppBindHost: "127.0.0.1",
 			AppPort:     3000,
 			Host:        "quiet.localhost",
 			Path:        "/",
 			ServiceName: "web",
-		}, "/tmp/project/devhost.toml", paths.RoutesDirectoryPath); error != nil {
-			t.Fatalf("ActivateRoute(...) unexpected error = %v", error)
+		}, "/tmp/project/devhost.toml", paths.RoutesDirectoryPath); err != nil {
+			t.Fatalf("ActivateRoute(...) unexpected error = %v", err)
 		}
 
-		if _, error := os.Stat(filepath.Join(paths.RegistrationsDirectoryPath, "quiet.localhost_web_2f.json")); error != nil {
-			t.Fatalf("stat registration error = %v", error)
+		if _, err := os.Stat(filepath.Join(paths.RegistrationsDirectoryPath, "quiet.localhost_web_2f.json")); err != nil {
+			t.Fatalf("stat registration error = %v", err)
 		}
 	})
 
 	t.Run("prints output with verbose writers", func(t *testing.T) {
 		var stdout strings.Builder
 		var stderr strings.Builder
-		if error := ActivateRoute(ActivateRouteOptions{
+		if err := ActivateRoute(ActivateRouteOptions{
 			AppBindHost: "127.0.0.1",
 			AppPort:     3000,
 			Host:        "verbose.localhost",
@@ -798,8 +798,8 @@ func TestActivateRouteSuccessfulReloadOutput(t *testing.T) {
 				StdoutWriter: &stdout,
 				StderrWriter: &stderr,
 			},
-		}, "/tmp/project/devhost.toml", paths.RoutesDirectoryPath); error != nil {
-			t.Fatalf("ActivateRoute(...) unexpected error = %v", error)
+		}, "/tmp/project/devhost.toml", paths.RoutesDirectoryPath); err != nil {
+			t.Fatalf("ActivateRoute(...) unexpected error = %v", err)
 		}
 
 		if stdout.String() != "noisy stdout\n" {
@@ -810,8 +810,8 @@ func TestActivateRouteSuccessfulReloadOutput(t *testing.T) {
 		}
 	})
 
-	if _, error := os.Stat(filepath.Join(paths.RegistrationsDirectoryPath, "verbose.localhost_web_2f.json")); error != nil {
-		t.Fatalf("stat verbose registration error = %v", error)
+	if _, err := os.Stat(filepath.Join(paths.RegistrationsDirectoryPath, "verbose.localhost_web_2f.json")); err != nil {
+		t.Fatalf("stat verbose registration error = %v", err)
 	}
 }
 
@@ -829,8 +829,8 @@ func TestUnregisterRoute(t *testing.T) {
 		Path:        "/",
 		ServiceName: "web",
 	}, "/tmp/project/devhost.toml"))
-	if error := syncHostRoute("hello.localhost", paths.RoutesDirectoryPath, &managedCaddyGlobalSettings{AdminAddress: DefaultManagedCaddyAdminAddress, BindHost: defaultManagedCaddyBindHost, HTTPPort: defaultManagedCaddyHTTPPort, HTTPSPort: defaultManagedCaddyHTTPSPort}); error != nil {
-		t.Fatalf("syncHostRoute(...) unexpected error = %v", error)
+	if err := syncHostRoute("hello.localhost", paths.RoutesDirectoryPath, &managedCaddyGlobalSettings{AdminAddress: DefaultManagedCaddyAdminAddress, BindHost: defaultManagedCaddyBindHost, HTTPPort: defaultManagedCaddyHTTPPort, HTTPSPort: defaultManagedCaddyHTTPSPort}); err != nil {
+		t.Fatalf("syncHostRoute(...) unexpected error = %v", err)
 	}
 
 	var reloadCalls int
@@ -844,24 +844,24 @@ func TestUnregisterRoute(t *testing.T) {
 		}
 	})
 
-	if error := UnregisterRoute("web", "hello.localhost", "/", "/tmp/other/devhost.toml", paths.RegistrationsDirectoryPath, RouteCommandOutputWriters{}); error != nil {
-		t.Fatalf("UnregisterRoute(...) wrong manifest unexpected error = %v", error)
+	if err := UnregisterRoute("web", "hello.localhost", "/", "/tmp/other/devhost.toml", paths.RegistrationsDirectoryPath, RouteCommandOutputWriters{}); err != nil {
+		t.Fatalf("UnregisterRoute(...) wrong manifest unexpected error = %v", err)
 	}
 	if reloadCalls != 0 {
 		t.Fatalf("reload calls after ignored unregister = %d, want 0", reloadCalls)
 	}
 
-	if error := UnregisterRoute("web", "hello.localhost", "/", "/tmp/project/devhost.toml", paths.RegistrationsDirectoryPath, RouteCommandOutputWriters{}); error != nil {
-		t.Fatalf("UnregisterRoute(...) unexpected error = %v", error)
+	if err := UnregisterRoute("web", "hello.localhost", "/", "/tmp/project/devhost.toml", paths.RegistrationsDirectoryPath, RouteCommandOutputWriters{}); err != nil {
+		t.Fatalf("UnregisterRoute(...) unexpected error = %v", err)
 	}
 	if reloadCalls != 1 {
 		t.Fatalf("reload calls after unregister = %d, want 1", reloadCalls)
 	}
-	if _, error := os.Stat(filepath.Join(paths.RegistrationsDirectoryPath, "hello.localhost_web_2f.json")); !errors.Is(error, os.ErrNotExist) {
-		t.Fatalf("stat unregistered registration error = %v, want not-exist", error)
+	if _, err := os.Stat(filepath.Join(paths.RegistrationsDirectoryPath, "hello.localhost_web_2f.json")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("stat unregistered registration error = %v, want not-exist", err)
 	}
-	if _, error := os.Stat(filepath.Join(paths.RoutesDirectoryPath, "hello.localhost.caddy")); !errors.Is(error, os.ErrNotExist) {
-		t.Fatalf("stat unregistered host route error = %v, want not-exist", error)
+	if _, err := os.Stat(filepath.Join(paths.RoutesDirectoryPath, "hello.localhost.caddy")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("stat unregistered host route error = %v, want not-exist", err)
 	}
 }
 
@@ -903,8 +903,8 @@ func TestCleanupStaleRegistrations(t *testing.T) {
 		`  "ownerPid": 999999`,
 		"}",
 	}, "\n"))
-	if error := syncHostRoute("live.localhost", paths.RoutesDirectoryPath, &managedCaddyGlobalSettings{AdminAddress: DefaultManagedCaddyAdminAddress, BindHost: defaultManagedCaddyBindHost, HTTPPort: defaultManagedCaddyHTTPPort, HTTPSPort: defaultManagedCaddyHTTPSPort}); error != nil {
-		t.Fatalf("syncHostRoute(...) unexpected error = %v", error)
+	if err := syncHostRoute("live.localhost", paths.RoutesDirectoryPath, &managedCaddyGlobalSettings{AdminAddress: DefaultManagedCaddyAdminAddress, BindHost: defaultManagedCaddyBindHost, HTTPPort: defaultManagedCaddyHTTPPort, HTTPSPort: defaultManagedCaddyHTTPSPort}); err != nil {
+		t.Fatalf("syncHostRoute(...) unexpected error = %v", err)
 	}
 
 	routeMutationRunManagedCaddyCommand = func(paths Paths, arguments []string, options ManagedCaddyCommandOptions) CommandResult {
@@ -917,8 +917,8 @@ func TestCleanupStaleRegistrations(t *testing.T) {
 		}
 	})
 
-	if error := CleanupStaleRegistrations(paths.RegistrationsDirectoryPath); error != nil {
-		t.Fatalf("CleanupStaleRegistrations(...) unexpected error = %v", error)
+	if err := CleanupStaleRegistrations(paths.RegistrationsDirectoryPath); err != nil {
+		t.Fatalf("CleanupStaleRegistrations(...) unexpected error = %v", err)
 	}
 	for _, stalePath := range []string{
 		filepath.Join(paths.RegistrationsDirectoryPath, "hello.localhost_web_2f.json"),
@@ -926,14 +926,14 @@ func TestCleanupStaleRegistrations(t *testing.T) {
 		filepath.Join(paths.RoutesDirectoryPath, "legacy.localhost_legacy_2f.caddy"),
 		filepath.Join(paths.HostClaimsDirectoryPath, "hello.localhost.json"),
 	} {
-		if _, error := os.Stat(stalePath); !errors.Is(error, os.ErrNotExist) {
-			t.Fatalf("stat stale cleanup path %q error = %v, want not-exist", stalePath, error)
+		if _, err := os.Stat(stalePath); !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("stat stale cleanup path %q error = %v, want not-exist", stalePath, err)
 		}
 	}
 
-	liveHostRouteText, error := os.ReadFile(filepath.Join(paths.RoutesDirectoryPath, "live.localhost.caddy"))
-	if error != nil {
-		t.Fatalf("ReadFile(...) live host route error = %v", error)
+	liveHostRouteText, err := os.ReadFile(filepath.Join(paths.RoutesDirectoryPath, "live.localhost.caddy"))
+	if err != nil {
+		t.Fatalf("ReadFile(...) live host route error = %v", err)
 	}
 	if !strings.Contains(string(liveHostRouteText), "reverse_proxy 127.0.0.1:3001") {
 		t.Fatalf("live host route text = %q, want synced live route", string(liveHostRouteText))
@@ -987,8 +987,8 @@ func withRouteMutationTestHooks(t *testing.T, hooks routeMutationTestHooks) {
 func newManagedCaddyPaths(t *testing.T) Paths {
 	t.Helper()
 	paths := CreateManagedCaddyPaths(t.TempDir())
-	if error := ensureManagedCaddyConfig(paths, ManagedCaddyConfigFallback{RuntimeOS: "linux"}); error != nil {
-		t.Fatalf("ensureManagedCaddyConfig(...) unexpected error = %v", error)
+	if err := ensureManagedCaddyConfig(paths, ManagedCaddyConfigFallback{RuntimeOS: "linux"}); err != nil {
+		t.Fatalf("ensureManagedCaddyConfig(...) unexpected error = %v", err)
 	}
 
 	return paths
@@ -996,18 +996,18 @@ func newManagedCaddyPaths(t *testing.T) Paths {
 
 func mustParseRouteRegistration(t *testing.T, text string) routeRegistration {
 	t.Helper()
-	registration, error := parseRouteRegistration([]byte(text))
-	if error != nil {
-		t.Fatalf("parseRouteRegistration(...) unexpected error = %v", error)
+	registration, err := parseRouteRegistration([]byte(text))
+	if err != nil {
+		t.Fatalf("parseRouteRegistration(...) unexpected error = %v", err)
 	}
 
 	return registration
 }
 
 func TestReadAppTargetUnsupportedHost(t *testing.T) {
-	target, error := readAppTarget(routeRegistration{AppBindHost: "192.168.1.10", AppPort: 3000})
-	if error == nil || error.Error() != "Unsupported bind host: 192.168.1.10" {
-		t.Fatalf("readAppTarget(...) error = %v, want %q", error, "Unsupported bind host: 192.168.1.10")
+	target, err := readAppTarget(routeRegistration{AppBindHost: "192.168.1.10", AppPort: 3000})
+	if err == nil || err.Error() != "Unsupported bind host: 192.168.1.10" {
+		t.Fatalf("readAppTarget(...) error = %v, want %q", err, "Unsupported bind host: 192.168.1.10")
 	}
 	if target != "" {
 		t.Fatalf("readAppTarget(...) = %q, want empty target on error", target)

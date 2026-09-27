@@ -9,9 +9,9 @@ func TestRenderManagedCaddyfile(t *testing.T) {
 	t.Parallel()
 
 	paths := CreateManagedCaddyPaths("/tmp/devhost state")
-	macOSCaddyfile, error := renderManagedCaddyfile(renderManagedCaddyfileOptions{Paths: paths, RuntimeOS: "darwin"})
-	if error != nil {
-		t.Fatalf("renderManagedCaddyfile(...) unexpected error = %v", error)
+	macOSCaddyfile, err := renderManagedCaddyfile(renderManagedCaddyfileOptions{Paths: paths, RuntimeOS: "darwin"})
+	if err != nil {
+		t.Fatalf("renderManagedCaddyfile(...) unexpected error = %v", err)
 	}
 
 	if macOSCaddyfile != strings.Join([]string{
@@ -53,9 +53,9 @@ func TestRenderManagedCaddyfile(t *testing.T) {
 		t.Fatalf("renderManagedCaddyfile(...) macOS output = %q", macOSCaddyfile)
 	}
 
-	linuxCaddyfile, error := renderManagedCaddyfile(renderManagedCaddyfileOptions{Paths: paths, RuntimeOS: "linux"})
-	if error != nil {
-		t.Fatalf("renderManagedCaddyfile(...) unexpected error = %v", error)
+	linuxCaddyfile, err := renderManagedCaddyfile(renderManagedCaddyfileOptions{Paths: paths, RuntimeOS: "linux"})
+	if err != nil {
+		t.Fatalf("renderManagedCaddyfile(...) unexpected error = %v", err)
 	}
 	if !strings.Contains(linuxCaddyfile, "    default_bind 127.0.0.1 [::1]") {
 		t.Fatalf("renderManagedCaddyfile(...) linux output missing default bind directive: %q", linuxCaddyfile)
@@ -68,9 +68,9 @@ func TestRenderManagedCaddyfile(t *testing.T) {
 		t.Fatalf("renderManagedCaddyfile(...) linux output missing quiet managed caddy logger: %q", linuxCaddyfile)
 	}
 
-	httpCaddyfile, error := renderManagedCaddyfile(renderManagedCaddyfileOptions{EnableHTTP: true, HTTPPort: 8080, HTTPSPort: 4443, Paths: paths, RuntimeOS: "linux"})
-	if error != nil {
-		t.Fatalf("renderManagedCaddyfile(...) unexpected error = %v", error)
+	httpCaddyfile, err := renderManagedCaddyfile(renderManagedCaddyfileOptions{EnableHTTP: true, HTTPPort: 8080, HTTPSPort: 4443, Paths: paths, RuntimeOS: "linux"})
+	if err != nil {
+		t.Fatalf("renderManagedCaddyfile(...) unexpected error = %v", err)
 	}
 	if !strings.Contains(httpCaddyfile, "http://:8080 {") || !strings.Contains(httpCaddyfile, "https://:4443 {") {
 		t.Fatalf("renderManagedCaddyfile(...) custom port output = %q", httpCaddyfile)
@@ -79,9 +79,9 @@ func TestRenderManagedCaddyfile(t *testing.T) {
 		t.Fatalf("renderManagedCaddyfile(...) default admin missing from output = %q", httpCaddyfile)
 	}
 
-	customCaddyfile, error := renderManagedCaddyfile(renderManagedCaddyfileOptions{AdminAddress: "127.0.0.1:22000", BindHost: "0.0.0.0", Paths: paths, RuntimeOS: "linux"})
-	if error != nil {
-		t.Fatalf("renderManagedCaddyfile(...) unexpected error = %v", error)
+	customCaddyfile, err := renderManagedCaddyfile(renderManagedCaddyfileOptions{AdminAddress: "127.0.0.1:22000", BindHost: "0.0.0.0", Paths: paths, RuntimeOS: "linux"})
+	if err != nil {
+		t.Fatalf("renderManagedCaddyfile(...) unexpected error = %v", err)
 	}
 	if !strings.Contains(customCaddyfile, "    admin 127.0.0.1:22000") || !strings.Contains(customCaddyfile, "    default_bind 0.0.0.0 [::]") {
 		t.Fatalf("renderManagedCaddyfile(...) custom output = %q", customCaddyfile)

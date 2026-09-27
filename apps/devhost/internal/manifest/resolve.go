@@ -7,9 +7,9 @@ import (
 )
 
 func ResolveManifestPath(startDirectoryPath string) (string, error) {
-	currentDirectoryPath, error := filepath.Abs(startDirectoryPath)
-	if error != nil {
-		return "", fmt.Errorf("resolve start directory: %w", error)
+	currentDirectoryPath, err := filepath.Abs(startDirectoryPath)
+	if err != nil {
+		return "", fmt.Errorf("resolve start directory: %w", err)
 	}
 
 	for {
@@ -34,6 +34,6 @@ func ResolveManifestPath(startDirectoryPath string) (string, error) {
 }
 
 func pathExists(path string) bool {
-	_, error := os.Stat(path)
-	return error == nil
+	_, err := os.Stat(path)
+	return err == nil
 }

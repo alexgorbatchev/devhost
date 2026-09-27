@@ -15,24 +15,24 @@ func TestWaitForServiceHealth(t *testing.T) {
 	t.Run("accepts process health checks when child is still running", func(t *testing.T) {
 		t.Parallel()
 
-		error := WaitForServiceHealth(WaitForServiceHealthOptions{
+		err := WaitForServiceHealth(WaitForServiceHealthOptions{
 			Health: ResolvedHealthConfig{Kind: "process", Interval: 200, Timeout: 30000, Retries: 0},
 			ReadExitCode: func() *int {
 				return nil
 			},
 			ServiceName: "worker",
 		})
-		if error != nil {
-			t.Fatalf("WaitForServiceHealth(...) unexpected error = %v", error)
+		if err != nil {
+			t.Fatalf("WaitForServiceHealth(...) unexpected error = %v", err)
 		}
 	})
 
 	t.Run("waits for a tcp port to accept connections", func(t *testing.T) {
 		t.Parallel()
 
-		listener, error := net.Listen("tcp", "127.0.0.1:0")
-		if error != nil {
-			t.Fatalf("net.Listen(...) error = %v", error)
+		listener, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatalf("net.Listen(...) error = %v", err)
 		}
 		defer listener.Close()
 
@@ -47,15 +47,15 @@ func TestWaitForServiceHealth(t *testing.T) {
 
 		port := listener.Addr().(*net.TCPAddr).Port
 		host := "127.0.0.1"
-		error = WaitForServiceHealth(WaitForServiceHealthOptions{
+		err = WaitForServiceHealth(WaitForServiceHealthOptions{
 			Health: ResolvedHealthConfig{Kind: "tcp", Host: &host, Interval: 200, Port: &port, Retries: 0, Timeout: 30000},
 			ReadExitCode: func() *int {
 				return nil
 			},
 			ServiceName: "web",
 		})
-		if error != nil {
-			t.Fatalf("WaitForServiceHealth(...) unexpected error = %v", error)
+		if err != nil {
+			t.Fatalf("WaitForServiceHealth(...) unexpected error = %v", err)
 		}
 
 		<-acceptDone
@@ -69,15 +69,15 @@ func TestWaitForServiceHealth(t *testing.T) {
 		}))
 		defer server.Close()
 
-		error := WaitForServiceHealth(WaitForServiceHealthOptions{
+		err := WaitForServiceHealth(WaitForServiceHealthOptions{
 			Health: ResolvedHealthConfig{Kind: "http", Interval: 200, Retries: 0, Timeout: 30000, URL: &server.URL},
 			ReadExitCode: func() *int {
 				return nil
 			},
 			ServiceName: "api",
 		})
-		if error != nil {
-			t.Fatalf("WaitForServiceHealth(...) unexpected error = %v", error)
+		if err != nil {
+			t.Fatalf("WaitForServiceHealth(...) unexpected error = %v", err)
 		}
 	})
 
@@ -87,7 +87,7 @@ func TestWaitForServiceHealth(t *testing.T) {
 		exitCode := 2
 		host := "127.0.0.1"
 		port := 65534
-		error := waitForServiceHealth(WaitForServiceHealthOptions{
+		err := waitForServiceHealth(WaitForServiceHealthOptions{
 			Health: ResolvedHealthConfig{Kind: "tcp", Host: &host, Interval: 1, Port: &port, Retries: 0, Timeout: 100},
 			ReadExitCode: func() *int {
 				return &exitCode
@@ -100,8 +100,8 @@ func TestWaitForServiceHealth(t *testing.T) {
 			sleep:               func(duration time.Duration) {},
 		})
 		wantError := "Service web exited before passing its health check with code 2."
-		if error == nil || error.Error() != wantError {
-			t.Fatalf("WaitForServiceHealth(...) error = %v, want %q", error, wantError)
+		if err == nil || err.Error() != wantError {
+			t.Fatalf("WaitForServiceHealth(...) error = %v, want %q", err, wantError)
 		}
 	})
 
@@ -110,7 +110,7 @@ func TestWaitForServiceHealth(t *testing.T) {
 
 		checks := 0
 		currentTime := time.Unix(0, 0)
-		error := waitForServiceHealth(WaitForServiceHealthOptions{
+		err := waitForServiceHealth(WaitForServiceHealthOptions{
 			Health: ResolvedHealthConfig{Kind: "tcp", Interval: 10, Retries: 0, Timeout: 30, Host: stringPointer("127.0.0.1"), Port: intPointer(3000)},
 			ReadExitCode: func() *int {
 				return nil
@@ -130,8 +130,8 @@ func TestWaitForServiceHealth(t *testing.T) {
 			},
 		})
 		wantError := "Service web did not pass its health check within 30ms."
-		if error == nil || error.Error() != wantError {
-			t.Fatalf("WaitForServiceHealth(...) error = %v, want %q", error, wantError)
+		if err == nil || err.Error() != wantError {
+			t.Fatalf("WaitForServiceHealth(...) error = %v, want %q", err, wantError)
 		}
 		if checks != 3 {
 			t.Fatalf("WaitForServiceHealth(...) checks = %d, want 3", checks)
@@ -143,7 +143,7 @@ func TestWaitForServiceHealth(t *testing.T) {
 
 		checks := 0
 		currentTime := time.Unix(0, 0)
-		error := waitForServiceHealth(WaitForServiceHealthOptions{
+		err := waitForServiceHealth(WaitForServiceHealthOptions{
 			Health: ResolvedHealthConfig{Kind: "tcp", Interval: 10, Retries: 2, Timeout: 1000, Host: stringPointer("127.0.0.1"), Port: intPointer(3000)},
 			ReadExitCode: func() *int {
 				return nil
@@ -163,8 +163,8 @@ func TestWaitForServiceHealth(t *testing.T) {
 			},
 		})
 		wantError := "Service web failed its health check 3 consecutive times."
-		if error == nil || error.Error() != wantError {
-			t.Fatalf("WaitForServiceHealth(...) error = %v, want %q", error, wantError)
+		if err == nil || err.Error() != wantError {
+			t.Fatalf("WaitForServiceHealth(...) error = %v, want %q", err, wantError)
 		}
 		if checks != 3 {
 			t.Fatalf("WaitForServiceHealth(...) checks = %d, want 3", checks)
@@ -179,7 +179,7 @@ func TestWaitForServiceHealth(t *testing.T) {
 		var attemptsPassed int
 
 		currentTime := time.Unix(0, 0)
-		error := waitForServiceHealth(WaitForServiceHealthOptions{
+		err := waitForServiceHealth(WaitForServiceHealthOptions{
 			Health: ResolvedHealthConfig{Kind: "tcp", Interval: 10, Retries: 0, Timeout: 30, Host: stringPointer("127.0.0.1"), Port: intPointer(3000)},
 			ReadExitCode: func() *int {
 				return nil
@@ -204,8 +204,8 @@ func TestWaitForServiceHealth(t *testing.T) {
 		})
 
 		wantError := "Service web did not pass its health check within 30ms."
-		if error == nil || error.Error() != wantError {
-			t.Fatalf("WaitForServiceHealth(...) error = %v, want %q", error, wantError)
+		if err == nil || err.Error() != wantError {
+			t.Fatalf("WaitForServiceHealth(...) error = %v, want %q", err, wantError)
 		}
 		if progressCalls != 3 {
 			t.Fatalf("OnProgress called %d times, want 3", progressCalls)

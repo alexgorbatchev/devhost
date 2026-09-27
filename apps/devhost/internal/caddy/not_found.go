@@ -258,21 +258,21 @@ func createManagedCaddyNotFoundSitePaths(caddyDirectoryPath string) managedCaddy
 func syncManagedCaddyNotFoundSite(routesDirectoryPath string, httpsPort int) error {
 	caddyDirectoryPath := filepath.Join(routesDirectoryPath, "..")
 	sitePaths := createManagedCaddyNotFoundSitePaths(caddyDirectoryPath)
-	routeLinks, error := readActiveRouteLinks(routesDirectoryPath, httpsPort)
-	if error != nil {
-		return error
+	routeLinks, err := readActiveRouteLinks(routesDirectoryPath, httpsPort)
+	if err != nil {
+		return err
 	}
 
-	if error := os.MkdirAll(sitePaths.DirectoryPath, 0o755); error != nil {
-		return fmt.Errorf("create managed caddy not-found directory %s: %w", sitePaths.DirectoryPath, error)
+	if err := os.MkdirAll(sitePaths.DirectoryPath, 0o755); err != nil {
+		return fmt.Errorf("create managed caddy not-found directory %s: %w", sitePaths.DirectoryPath, err)
 	}
 
-	if error := os.WriteFile(sitePaths.PagePath, []byte(renderManagedCaddyNotFoundPage(routeLinks)), 0o644); error != nil {
-		return fmt.Errorf("write managed caddy not-found page %s: %w", sitePaths.PagePath, error)
+	if err := os.WriteFile(sitePaths.PagePath, []byte(renderManagedCaddyNotFoundPage(routeLinks)), 0o644); err != nil {
+		return fmt.Errorf("write managed caddy not-found page %s: %w", sitePaths.PagePath, err)
 	}
 
-	if error := os.WriteFile(sitePaths.StylesheetPath, []byte(managedCaddyNotFoundPageCSS), 0o644); error != nil {
-		return fmt.Errorf("write managed caddy not-found stylesheet %s: %w", sitePaths.StylesheetPath, error)
+	if err := os.WriteFile(sitePaths.StylesheetPath, []byte(managedCaddyNotFoundPageCSS), 0o644); err != nil {
+		return fmt.Errorf("write managed caddy not-found stylesheet %s: %w", sitePaths.StylesheetPath, err)
 	}
 
 	return nil
@@ -280,9 +280,9 @@ func syncManagedCaddyNotFoundSite(routesDirectoryPath string, httpsPort int) err
 
 func readActiveRouteLinks(routesDirectoryPath string, httpsPort int) ([]managedCaddyNotFoundRouteLink, error) {
 	registrationsDirectoryPath := filepath.Join(routesDirectoryPath, ".registrations")
-	entries, error := os.ReadDir(registrationsDirectoryPath)
-	if error != nil {
-		return nil, fmt.Errorf("read managed caddy registrations directory %s: %w", registrationsDirectoryPath, error)
+	entries, err := os.ReadDir(registrationsDirectoryPath)
+	if err != nil {
+		return nil, fmt.Errorf("read managed caddy registrations directory %s: %w", registrationsDirectoryPath, err)
 	}
 
 	routeLinksByHost := map[string]managedCaddyNotFoundRouteLink{}
@@ -292,19 +292,19 @@ func readActiveRouteLinks(routesDirectoryPath string, httpsPort int) ([]managedC
 		}
 
 		registrationPath := filepath.Join(registrationsDirectoryPath, entry.Name())
-		registrationText, error := os.ReadFile(registrationPath)
-		if error != nil {
-			return nil, fmt.Errorf("read managed route registration %s: %w", registrationPath, error)
+		registrationText, err := os.ReadFile(registrationPath)
+		if err != nil {
+			return nil, fmt.Errorf("read managed route registration %s: %w", registrationPath, err)
 		}
 
-		registration, error := parseManagedRouteLinkRegistration(registrationText)
-		if error != nil {
-			return nil, fmt.Errorf("parse managed route registration %s: %w", registrationPath, error)
+		registration, err := parseManagedRouteLinkRegistration(registrationText)
+		if err != nil {
+			return nil, fmt.Errorf("parse managed route registration %s: %w", registrationPath, err)
 		}
 
-		routeFilePath, error := readRouteFilePath(registration.Host, entry.Name(), routesDirectoryPath)
-		if error != nil {
-			return nil, error
+		routeFilePath, err := readRouteFilePath(registration.Host, entry.Name(), routesDirectoryPath)
+		if err != nil {
+			return nil, err
 		}
 		if !pathExists(routeFilePath) {
 			continue
@@ -398,8 +398,8 @@ func renderManagedRouteList(routeLinks []managedCaddyNotFoundRouteLink) string {
 
 func parseManagedRouteLinkRegistration(registrationText []byte) (managedRouteRecord, error) {
 	var value map[string]any
-	if error := json.Unmarshal(registrationText, &value); error != nil {
-		return managedRouteRecord{}, error
+	if err := json.Unmarshal(registrationText, &value); err != nil {
+		return managedRouteRecord{}, err
 	}
 
 	host, ok := value["host"].(string)
@@ -433,8 +433,8 @@ func readRouteFilePath(host string, registrationFileName string, routesDirectory
 }
 
 func pathExists(path string) bool {
-	_, error := os.Stat(path)
-	return error == nil
+	_, err := os.Stat(path)
+	return err == nil
 }
 
 func indentLines(text string, indent string) string {

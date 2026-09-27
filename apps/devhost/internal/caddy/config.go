@@ -37,21 +37,21 @@ func ensureManagedCaddyConfig(paths Paths, fallback ManagedCaddyConfigFallback) 
 		paths.StorageDirectoryPath,
 	}
 	for _, directoryPath := range directories {
-		if error := os.MkdirAll(directoryPath, 0o755); error != nil {
-			return fmt.Errorf("create managed caddy directory %s: %w", directoryPath, error)
+		if err := os.MkdirAll(directoryPath, 0o755); err != nil {
+			return fmt.Errorf("create managed caddy directory %s: %w", directoryPath, err)
 		}
 	}
 
-	globalSettings, error := readManagedCaddyGlobalSettings(paths, fallback)
-	if error != nil {
-		return error
+	globalSettings, err := readManagedCaddyGlobalSettings(paths, fallback)
+	if err != nil {
+		return err
 	}
 
-	if error := syncManagedCaddyNotFoundSite(paths.RoutesDirectoryPath, globalSettings.HTTPSPort); error != nil {
-		return error
+	if err := syncManagedCaddyNotFoundSite(paths.RoutesDirectoryPath, globalSettings.HTTPSPort); err != nil {
+		return err
 	}
 
-	caddyfile, error := renderManagedCaddyfile(renderManagedCaddyfileOptions{
+	caddyfile, err := renderManagedCaddyfile(renderManagedCaddyfileOptions{
 		AdminAddress: globalSettings.AdminAddress,
 		BindHost:     globalSettings.BindHost,
 		EnableHTTP:   globalSettings.HTTPEnabled,
@@ -60,12 +60,12 @@ func ensureManagedCaddyConfig(paths Paths, fallback ManagedCaddyConfigFallback) 
 		Paths:        paths,
 		RuntimeOS:    fallback.RuntimeOS,
 	})
-	if error != nil {
-		return error
+	if err != nil {
+		return err
 	}
 
-	if error := os.WriteFile(paths.CaddyfilePath, []byte(caddyfile), 0o644); error != nil {
-		return fmt.Errorf("write managed caddyfile %s: %w", paths.CaddyfilePath, error)
+	if err := os.WriteFile(paths.CaddyfilePath, []byte(caddyfile), 0o644); err != nil {
+		return fmt.Errorf("write managed caddyfile %s: %w", paths.CaddyfilePath, err)
 	}
 
 	return nil
@@ -76,9 +76,9 @@ func EnsureManagedCaddyConfig(paths Paths, fallback ManagedCaddyConfigFallback) 
 }
 
 func readManagedCaddyGlobalSettings(paths Paths, fallback ManagedCaddyConfigFallback) (managedCaddyGlobalSettings, error) {
-	entries, error := os.ReadDir(paths.RegistrationsDirectoryPath)
-	if error != nil {
-		return managedCaddyGlobalSettings{}, fmt.Errorf("read managed caddy registrations directory %s: %w", paths.RegistrationsDirectoryPath, error)
+	entries, err := os.ReadDir(paths.RegistrationsDirectoryPath)
+	if err != nil {
+		return managedCaddyGlobalSettings{}, fmt.Errorf("read managed caddy registrations directory %s: %w", paths.RegistrationsDirectoryPath, err)
 	}
 
 	httpEnabled := false
@@ -93,14 +93,14 @@ func readManagedCaddyGlobalSettings(paths Paths, fallback ManagedCaddyConfigFall
 		}
 
 		registrationPath := filepath.Join(paths.RegistrationsDirectoryPath, entry.Name())
-		registrationText, error := os.ReadFile(registrationPath)
-		if error != nil {
-			return managedCaddyGlobalSettings{}, fmt.Errorf("read managed caddy registration %s: %w", registrationPath, error)
+		registrationText, err := os.ReadFile(registrationPath)
+		if err != nil {
+			return managedCaddyGlobalSettings{}, fmt.Errorf("read managed caddy registration %s: %w", registrationPath, err)
 		}
 
 		var registration map[string]any
-		if error := json.Unmarshal(registrationText, &registration); error != nil {
-			return managedCaddyGlobalSettings{}, fmt.Errorf("parse managed caddy registration %s: %w", registrationPath, error)
+		if err := json.Unmarshal(registrationText, &registration); err != nil {
+			return managedCaddyGlobalSettings{}, fmt.Errorf("parse managed caddy registration %s: %w", registrationPath, err)
 		}
 
 		if _, ok := registration["appBindHost"].(string); !ok {

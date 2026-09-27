@@ -245,20 +245,20 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		RuntimeOS:    runtime.GOOS,
 	}
 
-	if error := caddy.EnsureManagedCaddyConfig(paths, fallback); error != nil {
-		return 0, joinCleanupError(error, cleanupError)
+	if err := caddy.EnsureManagedCaddyConfig(paths, fallback); err != nil {
+		return 0, joinCleanupError(err, cleanupError)
 	}
 
-	if error := caddy.CleanupStaleRegistrations(paths.RegistrationsDirectoryPath); error != nil {
-		return 0, joinCleanupError(error, cleanupError)
+	if err := caddy.CleanupStaleRegistrations(paths.RegistrationsDirectoryPath); err != nil {
+		return 0, joinCleanupError(err, cleanupError)
 	}
 
-	if error := caddy.CleanupStaleFixedPortClaims(paths.PortClaimsDirectoryPath); error != nil {
-		return 0, joinCleanupError(error, cleanupError)
+	if err := caddy.CleanupStaleFixedPortClaims(paths.PortClaimsDirectoryPath); err != nil {
+		return 0, joinCleanupError(err, cleanupError)
 	}
 
-	if error := caddy.EnsureManagedCaddyAdminAvailable(caddy.CreateCaddyAdminAPIURL(managedCaddyAdminAddress), caddy.AdminAvailabilityDependencies{}); error != nil {
-		return 0, joinCleanupError(error, cleanupError)
+	if err := caddy.EnsureManagedCaddyAdminAvailable(caddy.CreateCaddyAdminAPIURL(managedCaddyAdminAddress), caddy.AdminAvailabilityDependencies{}); err != nil {
+		return 0, joinCleanupError(err, cleanupError)
 	}
 
 	for _, service := range manifest.Services {
@@ -266,29 +266,29 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			continue
 		}
 
-		if error := caddy.ClaimFixedPort(caddy.ClaimFixedPortOptions{
+		if err := caddy.ClaimFixedPort(caddy.ClaimFixedPortOptions{
 			BindHost:                service.BindHost,
 			ManifestPath:            manifest.ManifestPath,
 			Port:                    *service.Port,
 			PortClaimsDirectoryPath: paths.PortClaimsDirectoryPath,
 			KillZombies:             manifest.KillZombies,
 			LogWriter:               options.LogWriter,
-		}); error != nil {
-			return 0, joinCleanupError(error, cleanupError)
+		}); err != nil {
+			return 0, joinCleanupError(err, cleanupError)
 		}
 
 		claimedFixedPorts = append(claimedFixedPorts, claimedFixedPort{bindHost: service.BindHost, port: *service.Port})
 	}
 
 	for _, host := range collectClaimedHosts(manifest.Services) {
-		if error := caddy.ClaimHost(caddy.ClaimHostOptions{
+		if err := caddy.ClaimHost(caddy.ClaimHostOptions{
 			Host:                       host,
 			ManifestPath:               manifest.ManifestPath,
 			RegistrationsDirectoryPath: paths.RegistrationsDirectoryPath,
 			KillZombies:                manifest.KillZombies,
 			LogWriter:                  options.LogWriter,
-		}); error != nil {
-			return 0, joinCleanupError(error, cleanupError)
+		}); err != nil {
+			return 0, joinCleanupError(err, cleanupError)
 		}
 
 		claimedHosts = append(claimedHosts, host)
@@ -308,7 +308,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("Using on-demand dynamic devtools assets from: %s", devAssetsDir))
 		}
 
-		controlServer, error := startDevtoolsControlServer(devtools.StartControlServerOptions{
+		controlServer, err := startDevtoolsControlServer(devtools.StartControlServerOptions{
 			AnnotationActions:         manifest.Annotation.Actions,
 			AnnotationDefaultActionID: manifest.Annotation.DefaultActionID,
 			ComponentEditor:           manifest.Devtools.Editor.IDE,
@@ -371,13 +371,13 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 						hadStartedDaemon := hasStartedDaemonLifecycleService(startedDaemonServices, serviceName)
 						startedDaemonServicesMu.Unlock()
 						if hadStartedDaemon {
-							if error := stopDaemonLifecycleService(*manifest, service, options, environment, devtoolsControlServer); error != nil {
-								return error
+							if err := stopDaemonLifecycleService(*manifest, service, options, environment, devtoolsControlServer); err != nil {
+								return err
 							}
 						}
 
-						if error := startDaemonLifecycleService(manifest, serviceName, options, environment, devtoolsControlServer); error != nil {
-							return error
+						if err := startDaemonLifecycleService(manifest, serviceName, options, environment, devtoolsControlServer); err != nil {
+							return err
 						}
 
 						startedDaemonServicesMu.Lock()
@@ -402,9 +402,9 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 						}
 
 						if targetStartedService != nil {
-							if error := stopStartedService(targetStartedService, gracePeriod); error != nil {
+							if err := stopStartedService(targetStartedService, gracePeriod); err != nil {
 								targetStartedService.setRestarting(false)
-								return error
+								return err
 							}
 						}
 
@@ -452,8 +452,8 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			StateDirectoryPath:      paths.StateDirectoryPath,
 			StackName:               manifest.Name,
 		})
-		if error != nil {
-			return 0, joinCleanupError(error, cleanupError)
+		if err != nil {
+			return 0, joinCleanupError(err, cleanupError)
 		}
 
 		devtoolsControlServer = controlServer
@@ -512,8 +512,8 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			path = *service.Path
 		}
 
-		if error := routes.activate(service); error != nil {
-			return 0, joinCleanupError(error, cleanupError)
+		if err := routes.activate(service); err != nil {
+			return 0, joinCleanupError(err, cleanupError)
 		}
 		for _, host := range service.Hosts {
 			activeRoutes = append(activeRoutes, activeRoute{host: host, path: path, serviceName: service.Name})
@@ -732,8 +732,8 @@ func readServiceURLs(service ResolvedService, httpsPort int) []string {
 		return nil
 	}
 
-	proxyHost, error := caddy.ResolveProxyHost(service.BindHost)
-	if error != nil {
+	proxyHost, err := caddy.ResolveProxyHost(service.BindHost)
+	if err != nil {
 		return nil
 	}
 
@@ -1098,24 +1098,24 @@ func startServiceProcess(manifest ResolvedManifest, service ResolvedService, opt
 	// The parent owns the read ends instead of using Cmd.StdoutPipe/StderrPipe: Cmd.Wait closes those as soon as the
 	// process exits, discarding output still buffered in the pipe (such as the bind-collision line an auto-port retry
 	// depends on). Wait never closes caller-provided files, so the readers drain every line to EOF.
-	stdout, error := newServiceOutputPipe()
-	if error != nil {
-		return nil, fmt.Errorf("create stdout pipe for service %s: %w", service.Name, error)
+	stdout, err := newServiceOutputPipe()
+	if err != nil {
+		return nil, fmt.Errorf("create stdout pipe for service %s: %w", service.Name, err)
 	}
 
-	stderr, error := newServiceOutputPipe()
-	if error != nil {
+	stderr, err := newServiceOutputPipe()
+	if err != nil {
 		stdout.close()
-		return nil, fmt.Errorf("create stderr pipe for service %s: %w", service.Name, error)
+		return nil, fmt.Errorf("create stderr pipe for service %s: %w", service.Name, err)
 	}
 
 	command.Stdout = stdout.writer
 	command.Stderr = stderr.writer
 
-	if error := prepareServiceContainment(); error != nil {
+	if err := prepareServiceContainment(); err != nil {
 		stdout.close()
 		stderr.close()
-		return nil, fmt.Errorf("prepare service %s containment: %w", service.Name, error)
+		return nil, fmt.Errorf("prepare service %s containment: %w", service.Name, err)
 	}
 
 	startError := command.Start()
@@ -1129,13 +1129,13 @@ func startServiceProcess(manifest ResolvedManifest, service ResolvedService, opt
 		return nil, fmt.Errorf("start service %s: cannot launch executable %q in working directory %q: %w", service.Name, command.Path, service.Cwd, startError)
 	}
 
-	containment, error := startServiceContainment(command.Process.Pid, serviceContainmentToken)
-	if error != nil {
+	containment, err := startServiceContainment(command.Process.Pid, serviceContainmentToken)
+	if err != nil {
 		serviceSignalSender(command, syscall.Signal(9))
 		_ = command.Wait()
 		stdout.close()
 		stderr.close()
-		return nil, fmt.Errorf("start service %s containment: %w", service.Name, error)
+		return nil, fmt.Errorf("start service %s containment: %w", service.Name, err)
 	}
 
 	startedService := &startedService{
@@ -1299,8 +1299,8 @@ func pipeProcessOutput(reader io.Reader, prefix string, writer io.Writer, attemp
 		}
 	}
 
-	if error := scanner.Err(); error != nil {
-		attemptOutput.append(prefix + error.Error())
+	if err := scanner.Err(); err != nil {
+		attemptOutput.append(prefix + err.Error())
 	}
 }
 
@@ -1701,7 +1701,7 @@ func sendSignal(command *exec.Cmd, signal os.Signal) {
 	}
 
 	if signalValue, ok := signal.(syscall.Signal); ok && command.Process.Pid > 0 {
-		if error := syscall.Kill(-command.Process.Pid, signalValue); error == nil {
+		if err := syscall.Kill(-command.Process.Pid, signalValue); err == nil {
 			return
 		}
 	}
@@ -1710,12 +1710,12 @@ func sendSignal(command *exec.Cmd, signal os.Signal) {
 }
 
 func (s *startedService) waitForExit() {
-	error := s.cmd.Wait()
+	err := s.cmd.Wait()
 	exitCode := -1
 	if s.cmd.ProcessState != nil {
 		exitCode = s.cmd.ProcessState.ExitCode()
 	}
-	if error != nil && s.cmd.ProcessState == nil {
+	if err != nil && s.cmd.ProcessState == nil {
 		exitCode = 1
 	}
 
@@ -1830,7 +1830,7 @@ func (s *startedService) handleLateListeners() {
 		if pid == os.Getpid() {
 			continue
 		}
-		if error := syscall.Kill(pid, signalValue); error != nil && error != syscall.ESRCH {
+		if err := syscall.Kill(pid, signalValue); err != nil && err != syscall.ESRCH {
 			continue
 		}
 	}

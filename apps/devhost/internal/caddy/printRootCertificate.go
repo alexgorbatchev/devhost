@@ -8,17 +8,17 @@ import (
 )
 
 func PrintManagedCaddyRootCertificate(stdout io.Writer, paths Paths) (int, error) {
-	certificate, error := os.ReadFile(paths.RootCertificatePath)
-	if error != nil {
-		if errors.Is(error, os.ErrNotExist) {
+	certificate, err := os.ReadFile(paths.RootCertificatePath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
 			return 0, fmt.Errorf("Managed Caddy root certificate not found at %s. Run 'devhost caddy start' first.", paths.RootCertificatePath)
 		}
 
-		return 0, error
+		return 0, err
 	}
 
-	if _, error := stdout.Write(certificate); error != nil {
-		return 0, fmt.Errorf("write managed caddy root certificate: %w", error)
+	if _, err := stdout.Write(certificate); err != nil {
+		return 0, fmt.Errorf("write managed caddy root certificate: %w", err)
 	}
 
 	return 0, nil

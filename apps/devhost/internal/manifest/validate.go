@@ -773,8 +773,8 @@ func resolveConstrainedPath(fieldPath string, candidatePath string, manifestDire
 		return filepath.Clean(candidatePath)
 	}
 	resolvedPath := filepath.Join(manifestDirectoryPath, candidatePath)
-	relativePath, error := filepath.Rel(manifestDirectoryPath, resolvedPath)
-	if error != nil {
+	relativePath, err := filepath.Rel(manifestDirectoryPath, resolvedPath)
+	if err != nil {
 		*validationIssues = append(*validationIssues, fmt.Sprintf("%s must stay within %s.", fieldPath, manifestDirectoryPath))
 		return resolvedPath
 	}
@@ -787,8 +787,8 @@ func resolveConstrainedPath(fieldPath string, candidatePath string, manifestDire
 }
 
 func validateHealthHTTP(serviceName string, rawURL string, validationIssues *[]string) {
-	parsedURL, error := url.Parse(rawURL)
-	if error != nil || !parsedURL.IsAbs() || parsedURL.Host == "" {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil || !parsedURL.IsAbs() || parsedURL.Host == "" {
 		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.health.http must be an absolute URL, received: %s", serviceName, rawURL))
 		return
 	}

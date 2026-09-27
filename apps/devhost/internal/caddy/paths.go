@@ -46,8 +46,8 @@ func ResolveManagedCaddyAdminAddress(manifestAdminAddress string) string {
 func ResolveDevhostStateDirectoryPath(environment map[string]string) (string, error) {
 	homeDirectoryPath := strings.TrimSpace(environment["HOME"])
 	if homeDirectoryPath == "" {
-		resolvedHomeDirectoryPath, error := os.UserHomeDir()
-		if error == nil {
+		resolvedHomeDirectoryPath, err := os.UserHomeDir()
+		if err == nil {
 			homeDirectoryPath = strings.TrimSpace(resolvedHomeDirectoryPath)
 		}
 	}
@@ -101,9 +101,9 @@ func CreateManagedCaddyPaths(stateDirectoryPath string) Paths {
 }
 
 func CreateManagedCaddyPathsFromEnvironment(environment map[string]string) (Paths, error) {
-	stateDirectoryPath, error := ResolveDevhostStateDirectoryPath(environment)
-	if error != nil {
-		return Paths{}, error
+	stateDirectoryPath, err := ResolveDevhostStateDirectoryPath(environment)
+	if err != nil {
+		return Paths{}, err
 	}
 
 	return CreateManagedCaddyPaths(stateDirectoryPath), nil

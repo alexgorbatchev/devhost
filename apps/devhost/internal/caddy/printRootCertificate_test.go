@@ -12,19 +12,19 @@ func TestPrintManagedCaddyRootCertificateWritesRawCertificate(t *testing.T) {
 
 	temporaryDirectoryPath := t.TempDir()
 	paths := CreateManagedCaddyPaths(temporaryDirectoryPath)
-	if error := os.MkdirAll(filepath.Dir(paths.RootCertificatePath), 0o755); error != nil {
-		t.Fatalf("MkdirAll(...) error = %v", error)
+	if err := os.MkdirAll(filepath.Dir(paths.RootCertificatePath), 0o755); err != nil {
+		t.Fatalf("MkdirAll(...) error = %v", err)
 	}
 
 	certificate := []byte("-----BEGIN CERTIFICATE-----\nhello\n")
-	if error := os.WriteFile(paths.RootCertificatePath, certificate, 0o644); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
+	if err := os.WriteFile(paths.RootCertificatePath, certificate, 0o644); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 
 	var stdout bytes.Buffer
-	exitCode, error := PrintManagedCaddyRootCertificate(&stdout, paths)
-	if error != nil {
-		t.Fatalf("PrintManagedCaddyRootCertificate(...) unexpected error = %v", error)
+	exitCode, err := PrintManagedCaddyRootCertificate(&stdout, paths)
+	if err != nil {
+		t.Fatalf("PrintManagedCaddyRootCertificate(...) unexpected error = %v", err)
 	}
 
 	if exitCode != 0 {
@@ -42,13 +42,13 @@ func TestPrintManagedCaddyRootCertificateExplainsMissingCertificate(t *testing.T
 	paths := CreateManagedCaddyPaths(t.TempDir())
 	var stdout bytes.Buffer
 
-	_, error := PrintManagedCaddyRootCertificate(&stdout, paths)
-	if error == nil {
+	_, err := PrintManagedCaddyRootCertificate(&stdout, paths)
+	if err == nil {
 		t.Fatal("PrintManagedCaddyRootCertificate(...) error = nil, want missing root certificate error")
 	}
 
 	want := "Managed Caddy root certificate not found at " + paths.RootCertificatePath + ". Run 'devhost caddy start' first."
-	if error.Error() != want {
-		t.Fatalf("PrintManagedCaddyRootCertificate(...) error = %q, want %q", error.Error(), want)
+	if err.Error() != want {
+		t.Fatalf("PrintManagedCaddyRootCertificate(...) error = %q, want %q", err.Error(), want)
 	}
 }

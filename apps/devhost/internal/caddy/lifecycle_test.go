@@ -121,7 +121,7 @@ func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 			var gotOptions []ManagedCaddyCommandOptions
 			removedPidFile := false
 
-			exitCode, error := RunManagedCaddyLifecycleCommand(tc.action, &logOutput, paths, ManagedCaddyConfigFallback{AdminAddress: "127.0.0.1:22000"}, ManagedCaddyLifecycleDependencies{
+			exitCode, err := RunManagedCaddyLifecycleCommand(tc.action, &logOutput, paths, ManagedCaddyConfigFallback{AdminAddress: "127.0.0.1:22000"}, ManagedCaddyLifecycleDependencies{
 				EnsureManagedCaddyConfig: func() error {
 					callOrder = append(callOrder, "ensure")
 					return nil
@@ -149,15 +149,15 @@ func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 			})
 
 			if tc.wantError != "" {
-				if error == nil {
+				if err == nil {
 					t.Fatalf("RunManagedCaddyLifecycleCommand(...) error = nil, want %q", tc.wantError)
 				}
-				if error.Error() != tc.wantError {
-					t.Fatalf("RunManagedCaddyLifecycleCommand(...) error = %q, want %q", error.Error(), tc.wantError)
+				if err.Error() != tc.wantError {
+					t.Fatalf("RunManagedCaddyLifecycleCommand(...) error = %q, want %q", err.Error(), tc.wantError)
 				}
 			} else {
-				if error != nil {
-					t.Fatalf("RunManagedCaddyLifecycleCommand(...) unexpected error = %v", error)
+				if err != nil {
+					t.Fatalf("RunManagedCaddyLifecycleCommand(...) unexpected error = %v", err)
 				}
 				if exitCode != tc.wantExitCode {
 					t.Fatalf("RunManagedCaddyLifecycleCommand(...) exit code = %d, want %d", exitCode, tc.wantExitCode)

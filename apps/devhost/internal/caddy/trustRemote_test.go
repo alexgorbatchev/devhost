@@ -32,13 +32,13 @@ func TestTrustManagedCaddyRemoteCertificate(t *testing.T) {
 			t.Parallel()
 
 			var logOutput bytes.Buffer
-			_, error := TrustManagedCaddyRemoteCertificate("devbox", &logOutput, tc.runtimeOS, TrustRemoteDependencies{})
-			if error == nil {
+			_, err := TrustManagedCaddyRemoteCertificate("devbox", &logOutput, tc.runtimeOS, TrustRemoteDependencies{})
+			if err == nil {
 				t.Fatalf("TrustManagedCaddyRemoteCertificate(...) error = nil, want %q", tc.wantError)
 			}
 
-			if error.Error() != tc.wantError {
-				t.Fatalf("TrustManagedCaddyRemoteCertificate(...) error = %q, want %q", error.Error(), tc.wantError)
+			if err.Error() != tc.wantError {
+				t.Fatalf("TrustManagedCaddyRemoteCertificate(...) error = %q, want %q", err.Error(), tc.wantError)
 			}
 		})
 	}
@@ -51,7 +51,7 @@ func TestTrustManagedCaddyRemoteCertificate(t *testing.T) {
 		removedPath := ""
 		var logOutput bytes.Buffer
 
-		exitCode, error := TrustManagedCaddyRemoteCertificate("devbox", &logOutput, "darwin", TrustRemoteDependencies{
+		exitCode, err := TrustManagedCaddyRemoteCertificate("devbox", &logOutput, "darwin", TrustRemoteDependencies{
 			CreateTemporaryCertificateFile: func(remoteCertificate []byte) (string, error) {
 				if string(remoteCertificate) != string(certificate) {
 					t.Fatalf("remote certificate = %q, want %q", string(remoteCertificate), string(certificate))
@@ -72,8 +72,8 @@ func TestTrustManagedCaddyRemoteCertificate(t *testing.T) {
 			},
 		})
 
-		if error != nil {
-			t.Fatalf("TrustManagedCaddyRemoteCertificate(...) unexpected error = %v", error)
+		if err != nil {
+			t.Fatalf("TrustManagedCaddyRemoteCertificate(...) unexpected error = %v", err)
 		}
 
 		if exitCode != 0 {
@@ -106,14 +106,14 @@ func TestReadRemoteManagedCaddyRootCertificate(t *testing.T) {
 		commands := [][]string{}
 		certificate := []byte("cert")
 
-		got, error := ReadRemoteManagedCaddyRootCertificate("devbox", TrustRemoteDependencies{
+		got, err := ReadRemoteManagedCaddyRootCertificate("devbox", TrustRemoteDependencies{
 			RunCommand: func(arguments []string, options RunCommandOptions) CommandResult {
 				commands = append(commands, arguments)
 				return CommandResult{Stdout: certificate, Success: true}
 			},
 		})
-		if error != nil {
-			t.Fatalf("ReadRemoteManagedCaddyRootCertificate(...) unexpected error = %v", error)
+		if err != nil {
+			t.Fatalf("ReadRemoteManagedCaddyRootCertificate(...) unexpected error = %v", err)
 		}
 
 		if string(got) != string(certificate) {
@@ -128,18 +128,18 @@ func TestReadRemoteManagedCaddyRootCertificate(t *testing.T) {
 	t.Run("includes remote command output on failure", func(t *testing.T) {
 		t.Parallel()
 
-		_, error := ReadRemoteManagedCaddyRootCertificate("devbox", TrustRemoteDependencies{
+		_, err := ReadRemoteManagedCaddyRootCertificate("devbox", TrustRemoteDependencies{
 			RunCommand: func(arguments []string, options RunCommandOptions) CommandResult {
 				return CommandResult{Stderr: []byte("ssh: Could not resolve hostname devbox"), Success: false}
 			},
 		})
 		wantError := "Failed to fetch the managed Caddy root certificate from devbox. Check SSH access and confirm 'devhost' is installed on the remote host.\nssh: Could not resolve hostname devbox"
-		if error == nil {
+		if err == nil {
 			t.Fatalf("ReadRemoteManagedCaddyRootCertificate(...) error = nil, want %q", wantError)
 		}
 
-		if error.Error() != wantError {
-			t.Fatalf("ReadRemoteManagedCaddyRootCertificate(...) error = %q, want %q", error.Error(), wantError)
+		if err.Error() != wantError {
+			t.Fatalf("ReadRemoteManagedCaddyRootCertificate(...) error = %q, want %q", err.Error(), wantError)
 		}
 	})
 }
@@ -151,7 +151,7 @@ func TestInstallTrustedMacOSCertificate(t *testing.T) {
 		t.Parallel()
 
 		commands := [][]string{}
-		error := installTrustedMacOSCertificate("/tmp/root.crt", TrustRemoteDependencies{
+		err := installTrustedMacOSCertificate("/tmp/root.crt", TrustRemoteDependencies{
 			IsRootUser: func() bool {
 				return false
 			},
@@ -160,8 +160,8 @@ func TestInstallTrustedMacOSCertificate(t *testing.T) {
 				return CommandResult{Success: true}
 			},
 		})
-		if error != nil {
-			t.Fatalf("installTrustedMacOSCertificate(...) unexpected error = %v", error)
+		if err != nil {
+			t.Fatalf("installTrustedMacOSCertificate(...) unexpected error = %v", err)
 		}
 
 		want := []string{"sudo", "security", "add-trusted-cert", "-d", "-r", "trustRoot", "-k", "/Library/Keychains/System.keychain", "/tmp/root.crt"}
@@ -174,7 +174,7 @@ func TestInstallTrustedMacOSCertificate(t *testing.T) {
 		t.Parallel()
 
 		commands := [][]string{}
-		error := installTrustedMacOSCertificate("/tmp/root.crt", TrustRemoteDependencies{
+		err := installTrustedMacOSCertificate("/tmp/root.crt", TrustRemoteDependencies{
 			IsRootUser: func() bool {
 				return true
 			},
@@ -184,8 +184,8 @@ func TestInstallTrustedMacOSCertificate(t *testing.T) {
 			},
 			SystemKeychainPath: "/custom.keychain",
 		})
-		if error != nil {
-			t.Fatalf("installTrustedMacOSCertificate(...) unexpected error = %v", error)
+		if err != nil {
+			t.Fatalf("installTrustedMacOSCertificate(...) unexpected error = %v", err)
 		}
 
 		want := []string{"security", "add-trusted-cert", "-d", "-r", "trustRoot", "-k", "/custom.keychain", "/tmp/root.crt"}

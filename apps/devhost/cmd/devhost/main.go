@@ -10,9 +10,9 @@ import (
 func main() {
 	cwd := os.Getenv("DEVHOST_SHIM_CWD")
 	if cwd == "" {
-		resolvedCwd, error := os.Getwd()
-		if error != nil {
-			fmt.Fprintf(os.Stderr, "failed: read current working directory: %v\n", error)
+		resolvedCwd, err := os.Getwd()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed: read current working directory: %v\n", err)
 			os.Exit(1)
 		}
 		cwd = resolvedCwd

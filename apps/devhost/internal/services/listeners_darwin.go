@@ -11,12 +11,12 @@ import (
 )
 
 func readListeningProcessIDsForBindHost(bindHost string, port int) []int {
-	if _, error := exec.LookPath("lsof"); error != nil {
+	if _, err := exec.LookPath("lsof"); err != nil {
 		return nil
 	}
 
-	result, error := exec.Command("lsof", "-nP", fmt.Sprintf("-iTCP@%s:%d", bindHost, port), "-sTCP:LISTEN", "-Fp").Output()
-	if error != nil {
+	result, err := exec.Command("lsof", "-nP", fmt.Sprintf("-iTCP@%s:%d", bindHost, port), "-sTCP:LISTEN", "-Fp").Output()
+	if err != nil {
 		return nil
 	}
 
@@ -27,8 +27,8 @@ func readListeningProcessIDsForBindHost(bindHost string, port int) []int {
 			continue
 		}
 
-		pid, error := strconv.Atoi(line[1:])
-		if error != nil {
+		pid, err := strconv.Atoi(line[1:])
+		if err != nil {
 			continue
 		}
 		if _, ok := seen[pid]; ok {

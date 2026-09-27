@@ -109,8 +109,8 @@ func TestRunExplicitManifestBypassesUpwardDiscovery(t *testing.T) {
 	manifestPath := writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath, adminAddress)
 
 	cwd := filepath.Join(t.TempDir(), "nested", "workspace")
-	if error := os.MkdirAll(cwd, 0o755); error != nil {
-		t.Fatalf("MkdirAll(...) error = %v", error)
+	if err := os.MkdirAll(cwd, 0o755); err != nil {
+		t.Fatalf("MkdirAll(...) error = %v", err)
 	}
 
 	var stdout strings.Builder
@@ -141,8 +141,8 @@ func TestRunManifestFromEnvironmentBypassesUpwardDiscovery(t *testing.T) {
 	t.Setenv("DEVHOST_MANIFEST", manifestPath)
 
 	cwd := filepath.Join(t.TempDir(), "nested", "workspace")
-	if error := os.MkdirAll(cwd, 0o755); error != nil {
-		t.Fatalf("MkdirAll(...) error = %v", error)
+	if err := os.MkdirAll(cwd, 0o755); err != nil {
+		t.Fatalf("MkdirAll(...) error = %v", err)
 	}
 
 	var stdout strings.Builder
@@ -231,20 +231,20 @@ func TestRunManifestModeReportsExistingSameManifestFixedPortClaim(t *testing.T) 
 		`command = "bun run dev"`,
 		"port = 3000",
 	}, "\n")
-	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
+	if err := os.WriteFile(manifestPath, []byte(manifestText), 0o644); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
-	if error := caddy.EnsureManagedCaddyConfig(paths, caddy.ManagedCaddyConfigFallback{AdminAddress: adminAddress}); error != nil {
-		t.Fatalf("EnsureManagedCaddyConfig(...) error = %v", error)
+	if err := caddy.EnsureManagedCaddyConfig(paths, caddy.ManagedCaddyConfigFallback{AdminAddress: adminAddress}); err != nil {
+		t.Fatalf("EnsureManagedCaddyConfig(...) error = %v", err)
 	}
-	if error := caddy.ClaimFixedPort(caddy.ClaimFixedPortOptions{
+	if err := caddy.ClaimFixedPort(caddy.ClaimFixedPortOptions{
 		BindHost:                "127.0.0.1",
 		ManifestPath:            manifestPath,
 		Port:                    3000,
 		PortClaimsDirectoryPath: paths.PortClaimsDirectoryPath,
-	}); error != nil {
-		t.Fatalf("ClaimFixedPort(...) error = %v", error)
+	}); err != nil {
+		t.Fatalf("ClaimFixedPort(...) error = %v", err)
 	}
 
 	var stdout strings.Builder
@@ -266,13 +266,13 @@ func TestRunPrintRootCertificateWritesRawCertificate(t *testing.T) {
 	temporaryDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", temporaryDirectoryPath)
 	rootCertificatePath := filepath.Join(temporaryDirectoryPath, "caddy", "storage", "pki", "authorities", "local", "root.crt")
-	if error := os.MkdirAll(filepath.Dir(rootCertificatePath), 0o755); error != nil {
-		t.Fatalf("MkdirAll(...) error = %v", error)
+	if err := os.MkdirAll(filepath.Dir(rootCertificatePath), 0o755); err != nil {
+		t.Fatalf("MkdirAll(...) error = %v", err)
 	}
 
 	certificate := "-----BEGIN CERTIFICATE-----\nhello\n"
-	if error := os.WriteFile(rootCertificatePath, []byte(certificate), 0o644); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
+	if err := os.WriteFile(rootCertificatePath, []byte(certificate), 0o644); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 
 	var stdout strings.Builder
@@ -316,11 +316,11 @@ func TestRunCaddyPrivilegedPortsUsesLifecyclePath(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
 	managedCaddyPath := filepath.Join(stateDirectoryPath, "caddy", "caddy")
-	if error := os.MkdirAll(filepath.Dir(managedCaddyPath), 0o755); error != nil {
-		t.Fatalf("MkdirAll(...) error = %v", error)
+	if err := os.MkdirAll(filepath.Dir(managedCaddyPath), 0o755); err != nil {
+		t.Fatalf("MkdirAll(...) error = %v", err)
 	}
-	if error := os.WriteFile(managedCaddyPath, []byte("#!/bin/sh\nexit 0\n"), 0o755); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
+	if err := os.WriteFile(managedCaddyPath, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 
 	binDirectoryPath := t.TempDir()
@@ -346,9 +346,9 @@ func TestRunCaddyPrivilegedPortsUsesLifecyclePath(t *testing.T) {
 		t.Fatalf("Run(...) stderr = %q, want privileged-port success log", stderr.String())
 	}
 
-	arguments, error := os.ReadFile(argumentsPath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) error = %v", error)
+	arguments, err := os.ReadFile(argumentsPath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) error = %v", err)
 	}
 	if string(arguments) != strings.Join([]string{"setcap", "cap_net_bind_service=+ep", managedCaddyPath, ""}, "\n") {
 		t.Fatalf("sudo arguments = %q", string(arguments))
@@ -387,17 +387,17 @@ func TestRunCaddyStartUsesManifestAdminAddress(t *testing.T) {
 	}
 
 	caddyfilePath := filepath.Join(stateDirectoryPath, "caddy", "Caddyfile")
-	caddyfile, error := os.ReadFile(caddyfilePath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) error = %v", error)
+	caddyfile, err := os.ReadFile(caddyfilePath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) error = %v", err)
 	}
 	if !strings.Contains(string(caddyfile), "    admin "+adminAddress) {
 		t.Fatalf("Caddyfile = %q, want manifest admin address", string(caddyfile))
 	}
 
-	arguments, error := os.ReadFile(argumentsPath)
-	if error != nil {
-		t.Fatalf("ReadFile(...) error = %v", error)
+	arguments, err := os.ReadFile(argumentsPath)
+	if err != nil {
+		t.Fatalf("ReadFile(...) error = %v", err)
 	}
 	if string(arguments) != strings.Join([]string{"start", "--pidfile", filepath.Join(stateDirectoryPath, "caddy", "caddy.pid"), "--config", caddyfilePath, "--adapter", "caddyfile", ""}, "\n") {
 		t.Fatalf("caddy arguments = %q", string(arguments))
@@ -483,20 +483,20 @@ func TestRunPreservesSignalExitCodes(t *testing.T) {
 				"DEVHOST_RUN_HELPER_CWD="+manifestDirectoryPath,
 				"DEVHOST_STATE_DIR="+stateDirectoryPath,
 			)
-			if error := command.Start(); error != nil {
-				t.Fatalf("Start(...) error = %v", error)
+			if err := command.Start(); err != nil {
+				t.Fatalf("Start(...) error = %v", err)
 			}
 
 			waitForFile(t, startTracePath)
 
-			if error := command.Process.Signal(tc.signal); error != nil {
-				t.Fatalf("Signal(...) error = %v", error)
+			if err := command.Process.Signal(tc.signal); err != nil {
+				t.Fatalf("Signal(...) error = %v", err)
 			}
 
-			error := command.Wait()
-			exitError, ok := error.(*exec.ExitError)
+			err := command.Wait()
+			exitError, ok := err.(*exec.ExitError)
 			if !ok {
-				t.Fatalf("Wait(...) error = %v, want exit error", error)
+				t.Fatalf("Wait(...) error = %v, want exit error", err)
 			}
 			if exitError.ExitCode() != tc.wantExitCode {
 				t.Fatalf("ExitCode() = %d, want %d", exitError.ExitCode(), tc.wantExitCode)
@@ -533,8 +533,8 @@ func TestRunSignalServiceHelperProcess(t *testing.T) {
 
 func writeExecutable(t *testing.T, path string, text string) {
 	t.Helper()
-	if error := os.WriteFile(path, []byte(text), 0o755); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
+	if err := os.WriteFile(path, []byte(text), 0o755); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 }
 
@@ -551,8 +551,8 @@ func writeManifestWithAdminAddress(t *testing.T, directoryPath string, adminAddr
 		`command = "bun run dev"`,
 		"port = 3000",
 	}, "\n")
-	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
+	if err := os.WriteFile(manifestPath, []byte(manifestText), 0o644); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 
 	return manifestPath
@@ -602,8 +602,8 @@ func writeSignalProcessManifest(
 		"[services.worker.health]",
 		"process = true",
 	}, "\n")
-	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
+	if err := os.WriteFile(manifestPath, []byte(manifestText), 0o644); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 
 	return manifestPath
@@ -637,8 +637,8 @@ func writeDevtoolsDisabledProcessManifest(t *testing.T, directoryPath string, ad
 		"[services.worker.health]",
 		"process = true",
 	}, "\n")
-	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
+	if err := os.WriteFile(manifestPath, []byte(manifestText), 0o644); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 
 	return manifestPath
@@ -672,13 +672,13 @@ func assertServiceExitOutput(t *testing.T, output string) {
 
 func reserveUnusedAdminAddress(t *testing.T) string {
 	t.Helper()
-	listener, error := net.Listen("tcp", "127.0.0.1:0")
-	if error != nil {
-		t.Fatalf("Listen(...) error = %v", error)
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen(...) error = %v", err)
 	}
 	address := listener.Addr().String()
-	if error := listener.Close(); error != nil {
-		t.Fatalf("Close(...) error = %v", error)
+	if err := listener.Close(); err != nil {
+		t.Fatalf("Close(...) error = %v", err)
 	}
 
 	return address
@@ -687,9 +687,9 @@ func reserveUnusedAdminAddress(t *testing.T) string {
 func startTestAdminServer(t *testing.T) (string, func()) {
 	t.Helper()
 
-	listener, error := net.Listen("tcp", "127.0.0.1:0")
-	if error != nil {
-		t.Fatalf("Listen(...) error = %v", error)
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen(...) error = %v", err)
 	}
 
 	server := &http.Server{Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -710,7 +710,7 @@ func waitForFile(t *testing.T, filePath string) {
 	t.Helper()
 	deadline := time.Now().Add(5 * time.Second)
 	for time.Now().Before(deadline) {
-		if _, error := os.Stat(filePath); error == nil {
+		if _, err := os.Stat(filePath); err == nil {
 			return
 		}
 		time.Sleep(10 * time.Millisecond)
@@ -720,12 +720,12 @@ func waitForFile(t *testing.T, filePath string) {
 }
 
 func appendRunHelperTrace(filePath string, value string) {
-	file, error := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
-	if error != nil {
-		panic(error)
+	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
+		panic(err)
 	}
 	defer file.Close()
-	if _, error := file.WriteString(value + "\n"); error != nil {
-		panic(error)
+	if _, err := file.WriteString(value + "\n"); err != nil {
+		panic(err)
 	}
 }

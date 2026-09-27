@@ -13,9 +13,9 @@ import (
 func TestBundledDevtoolsLayersStackInOrder(t *testing.T) {
 	t.Parallel()
 
-	devtoolsScript, error := readBundledDevtoolsScript()
-	if error != nil {
-		t.Fatalf("readBundledDevtoolsScript() error = %v", error)
+	devtoolsScript, err := readBundledDevtoolsScript()
+	if err != nil {
+		t.Fatalf("readBundledDevtoolsScript() error = %v", err)
 	}
 
 	layersBottomToTop := []string{"overlay", "dock", "popover", "modal", "edge"}
@@ -26,9 +26,9 @@ func TestBundledDevtoolsLayersStackInOrder(t *testing.T) {
 		if match == nil {
 			t.Fatalf("bundled stylesheet does not declare --devhost-z-%s", layer)
 		}
-		value, error := strconv.ParseInt(match[1], 10, 64)
-		if error != nil {
-			t.Fatalf("parse --devhost-z-%s value %q: %v", layer, match[1], error)
+		value, err := strconv.ParseInt(match[1], 10, 64)
+		if err != nil {
+			t.Fatalf("parse --devhost-z-%s value %q: %v", layer, match[1], err)
 		}
 		if value <= previousValue {
 			t.Fatalf("--devhost-z-%s = %d, want above --devhost-z-%s = %d", layer, value, previousLayer, previousValue)
@@ -41,17 +41,17 @@ func TestBundledDevtoolsLayersStackInOrder(t *testing.T) {
 func TestBundledDevtoolsAssetsAreEmbedded(t *testing.T) {
 	t.Parallel()
 
-	devtoolsScript, error := readBundledDevtoolsScript()
-	if error != nil {
-		t.Fatalf("readBundledDevtoolsScript() error = %v", error)
+	devtoolsScript, err := readBundledDevtoolsScript()
+	if err != nil {
+		t.Fatalf("readBundledDevtoolsScript() error = %v", err)
 	}
 	if !strings.Contains(devtoolsScript, "__DEVHOST__") {
 		t.Fatalf("readBundledDevtoolsScript() did not include the bundled devtools runtime")
 	}
 
-	xtermStylesheet, error := readXtermStylesheet()
-	if error != nil {
-		t.Fatalf("readXtermStylesheet() error = %v", error)
+	xtermStylesheet, err := readXtermStylesheet()
+	if err != nil {
+		t.Fatalf("readXtermStylesheet() error = %v", err)
 	}
 	if !strings.Contains(xtermStylesheet, ".xterm") {
 		t.Fatalf("readXtermStylesheet() did not include xterm styles")

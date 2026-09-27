@@ -11,9 +11,9 @@ func TestReadManifestParsesFixtureShape(t *testing.T) {
 	t.Parallel()
 
 	manifestPath := filepath.Join("..", "..", "devhost.example.toml")
-	rawManifest, error := ReadManifest(manifestPath)
-	if error != nil {
-		t.Fatalf("ReadManifest(...) unexpected error = %v", error)
+	rawManifest, err := ReadManifest(manifestPath)
+	if err != nil {
+		t.Fatalf("ReadManifest(...) unexpected error = %v", err)
 	}
 
 	name, ok := rawManifest.value["name"].(string)
@@ -40,17 +40,17 @@ func TestReadManifestWrapsParseFailures(t *testing.T) {
 
 	temporaryDirectoryPath := t.TempDir()
 	manifestPath := filepath.Join(temporaryDirectoryPath, "devhost.toml")
-	if error := os.WriteFile(manifestPath, []byte("name = [\n"), 0o644); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
+	if err := os.WriteFile(manifestPath, []byte("name = [\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 
-	_, error := ReadManifest(manifestPath)
-	if error == nil {
+	_, err := ReadManifest(manifestPath)
+	if err == nil {
 		t.Fatal("ReadManifest(...) error = nil, want parse error")
 	}
 
-	if !strings.HasPrefix(error.Error(), "Failed to parse "+manifestPath+":") {
-		t.Fatalf("ReadManifest(...) error = %q, want prefix %q", error.Error(), "Failed to parse "+manifestPath+":")
+	if !strings.HasPrefix(err.Error(), "Failed to parse "+manifestPath+":") {
+		t.Fatalf("ReadManifest(...) error = %q, want prefix %q", err.Error(), "Failed to parse "+manifestPath+":")
 	}
 }
 
@@ -69,18 +69,18 @@ func TestReadManifestExplainsDuplicateTables(t *testing.T) {
 		"primary = true",
 		`command = "bun dev"`,
 	}, "\n")
-	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
+	if err := os.WriteFile(manifestPath, []byte(manifestText), 0o644); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 
-	_, error := ReadManifest(manifestPath)
-	if error == nil {
+	_, err := ReadManifest(manifestPath)
+	if err == nil {
 		t.Fatal("ReadManifest(...) error = nil, want duplicate table error")
 	}
 
 	want := "Failed to parse " + manifestPath + ": TOML table [services.devhost-www] is declared more than once (lines 1 and 6). Merge those settings into a single table instead of repeating the header."
-	if error.Error() != want {
-		t.Fatalf("ReadManifest(...) error = %q, want %q", error.Error(), want)
+	if err.Error() != want {
+		t.Fatalf("ReadManifest(...) error = %q, want %q", err.Error(), want)
 	}
 }
 
@@ -125,13 +125,13 @@ func TestReadManifestInterpolatesEnvironmentVariablesInAllStringFields(t *testin
 		"[services.web.health]",
 		`http = "http://{{ env.HEALTH_HOST }}:{{ env.HEALTH_PORT }}/healthz"`,
 	}, "\n")
-	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
+	if err := os.WriteFile(manifestPath, []byte(manifestText), 0o644); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 
-	rawManifest, error := ReadManifest(manifestPath)
-	if error != nil {
-		t.Fatalf("ReadManifest(...) unexpected error = %v", error)
+	rawManifest, err := ReadManifest(manifestPath)
+	if err != nil {
+		t.Fatalf("ReadManifest(...) unexpected error = %v", err)
 	}
 
 	name, ok := rawManifest.value["name"].(string)
@@ -209,17 +209,17 @@ func TestReadManifestRejectsUndefinedEnvironmentVariables(t *testing.T) {
 		`host = "{{ env.MISSING_PUBLIC_HOST }}"`,
 		`port = 3000`,
 	}, "\n")
-	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
+	if err := os.WriteFile(manifestPath, []byte(manifestText), 0o644); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 
-	_, error := ReadManifest(manifestPath)
-	if error == nil {
+	_, err := ReadManifest(manifestPath)
+	if err == nil {
 		t.Fatal("ReadManifest(...) error = nil, want undefined variable error")
 	}
 
-	if !strings.Contains(error.Error(), "undefined environment variables: MISSING_PUBLIC_HOST") {
-		t.Fatalf("ReadManifest(...) error = %q, want undefined variable detail", error.Error())
+	if !strings.Contains(err.Error(), "undefined environment variables: MISSING_PUBLIC_HOST") {
+		t.Fatalf("ReadManifest(...) error = %q, want undefined variable detail", err.Error())
 	}
 }
 
@@ -236,13 +236,13 @@ func TestReadManifestPreservesUnsupportedInterpolationSequences(t *testing.T) {
 		`host = "{{ env.PUBLIC_HOST }}"`,
 		`port = 3000`,
 	}, "\n")
-	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
+	if err := os.WriteFile(manifestPath, []byte(manifestText), 0o644); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 
-	rawManifest, error := ReadManifest(manifestPath)
-	if error != nil {
-		t.Fatalf("ReadManifest(...) unexpected error = %v", error)
+	rawManifest, err := ReadManifest(manifestPath)
+	if err != nil {
+		t.Fatalf("ReadManifest(...) unexpected error = %v", err)
 	}
 
 	servicesValue, ok := rawManifest.value["services"].(map[string]any)
@@ -281,13 +281,13 @@ func TestReadManifestAllowsDefinedEmptyEnvironmentVariables(t *testing.T) {
 		`path = "/{{ env.STACK_SUFFIX }}api/*"`,
 		`port = 3000`,
 	}, "\n")
-	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
+	if err := os.WriteFile(manifestPath, []byte(manifestText), 0o644); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 
-	rawManifest, error := ReadManifest(manifestPath)
-	if error != nil {
-		t.Fatalf("ReadManifest(...) unexpected error = %v", error)
+	rawManifest, err := ReadManifest(manifestPath)
+	if err != nil {
+		t.Fatalf("ReadManifest(...) unexpected error = %v", err)
 	}
 
 	if rawManifest.value["name"] != "hello-stack" {
@@ -319,13 +319,13 @@ func TestReadManifestContinuesAfterUnterminatedInterpolationSequence(t *testing.
 		`host = "{{ env.PUBLIC_HOST }}"`,
 		`port = 3000`,
 	}, "\n")
-	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
+	if err := os.WriteFile(manifestPath, []byte(manifestText), 0o644); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 
-	rawManifest, error := ReadManifest(manifestPath)
-	if error != nil {
-		t.Fatalf("ReadManifest(...) unexpected error = %v", error)
+	rawManifest, err := ReadManifest(manifestPath)
+	if err != nil {
+		t.Fatalf("ReadManifest(...) unexpected error = %v", err)
 	}
 
 	servicesValue, ok := rawManifest.value["services"].(map[string]any)
@@ -360,13 +360,13 @@ func TestReadManifestContinuesAfterMalformedInterpolationSequenceBeforeLaterClos
 		`host = "{{ env.PUBLIC_HOST }}"`,
 		`port = 3000`,
 	}, "\n")
-	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
+	if err := os.WriteFile(manifestPath, []byte(manifestText), 0o644); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 
-	rawManifest, error := ReadManifest(manifestPath)
-	if error != nil {
-		t.Fatalf("ReadManifest(...) unexpected error = %v", error)
+	rawManifest, err := ReadManifest(manifestPath)
+	if err != nil {
+		t.Fatalf("ReadManifest(...) unexpected error = %v", err)
 	}
 
 	servicesValue, ok := rawManifest.value["services"].(map[string]any)
@@ -401,13 +401,13 @@ func TestReadManifestContinuesAfterMalformedInterpolationSequenceBeforeNestedPla
 		`host = "{{ env.PUBLIC_HOST }}"`,
 		`port = 3000`,
 	}, "\n")
-	if error := os.WriteFile(manifestPath, []byte(manifestText), 0o644); error != nil {
-		t.Fatalf("WriteFile(...) error = %v", error)
+	if err := os.WriteFile(manifestPath, []byte(manifestText), 0o644); err != nil {
+		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 
-	rawManifest, error := ReadManifest(manifestPath)
-	if error != nil {
-		t.Fatalf("ReadManifest(...) unexpected error = %v", error)
+	rawManifest, err := ReadManifest(manifestPath)
+	if err != nil {
+		t.Fatalf("ReadManifest(...) unexpected error = %v", err)
 	}
 
 	servicesValue, ok := rawManifest.value["services"].(map[string]any)

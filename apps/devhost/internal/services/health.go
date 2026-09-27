@@ -66,8 +66,8 @@ func waitForServiceHealth(options WaitForServiceHealthOptions, dependencies heal
 			return fmt.Errorf("Service %s failed its health check %d consecutive times.", options.ServiceName, consecutiveFailures)
 		}
 
-		if error := throwIfExited(options.ReadExitCode, options.ServiceName); error != nil {
-			return error
+		if err := throwIfExited(options.ReadExitCode, options.ServiceName); err != nil {
+			return err
 		}
 
 		if options.OnProgress != nil {
@@ -103,8 +103,8 @@ func checkServiceHealth(health ResolvedHealthConfig, dependencies healthDependen
 			return false
 		}
 
-		resolvedHost, error := caddy.ResolveProxyHost(*health.Host)
-		if error != nil {
+		resolvedHost, err := caddy.ResolveProxyHost(*health.Host)
+		if err != nil {
 			return false
 		}
 
@@ -119,8 +119,8 @@ func checkServiceHealth(health ResolvedHealthConfig, dependencies healthDependen
 }
 
 func canConnectToPort(host string, port int) bool {
-	connection, error := net.DialTimeout("tcp", net.JoinHostPort(host, strconv.Itoa(port)), pollIntervalDuration)
-	if error != nil {
+	connection, err := net.DialTimeout("tcp", net.JoinHostPort(host, strconv.Itoa(port)), pollIntervalDuration)
+	if err != nil {
 		return false
 	}
 	defer connection.Close()
@@ -136,8 +136,8 @@ func isReadyHTTPEndpoint(url string) bool {
 		Timeout: pollIntervalDuration,
 	}
 
-	response, error := client.Get(url)
-	if error != nil {
+	response, err := client.Get(url)
+	if err != nil {
 		return false
 	}
 	defer response.Body.Close()

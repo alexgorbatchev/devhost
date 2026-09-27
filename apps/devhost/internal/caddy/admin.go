@@ -24,14 +24,14 @@ func EnsureManagedCaddyAdminAvailable(adminAPIURL string, dependencies AdminAvai
 	requestContext, cancel := context.WithTimeout(context.Background(), caddyAdminTimeout)
 	defer cancel()
 
-	request, error := http.NewRequestWithContext(requestContext, http.MethodGet, adminAPIURL, nil)
-	if error != nil {
-		return errors.New(CreateManagedCaddyAdminUnavailableErrorMessage(error.Error()))
+	request, err := http.NewRequestWithContext(requestContext, http.MethodGet, adminAPIURL, nil)
+	if err != nil {
+		return errors.New(CreateManagedCaddyAdminUnavailableErrorMessage(err.Error()))
 	}
 
-	response, error := httpClient.Do(request)
-	if error != nil {
-		return errors.New(CreateManagedCaddyAdminUnavailableErrorMessage(error.Error()))
+	response, err := httpClient.Do(request)
+	if err != nil {
+		return errors.New(CreateManagedCaddyAdminUnavailableErrorMessage(err.Error()))
 	}
 	defer response.Body.Close()
 

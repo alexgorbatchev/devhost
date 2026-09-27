@@ -72,10 +72,10 @@ func TestConfigureManagedCaddyPrivilegedPorts(t *testing.T) {
 			commands := [][]string{}
 			var logOutput bytes.Buffer
 
-			exitCode, error := ConfigureManagedCaddyPrivilegedPorts(&logOutput, tc.runtimeOS, tc.runtimeArch, paths, PrivilegedPortsDependencies{
+			exitCode, err := ConfigureManagedCaddyPrivilegedPorts(&logOutput, tc.runtimeOS, tc.runtimeArch, paths, PrivilegedPortsDependencies{
 				DownloadCaddy: func(logWriter io.Writer, runtimeOS string, runtimeArch string, paths Paths, dependencies DownloadDependencies) error {
-					_, error := io.WriteString(logWriter, "[devhost] download invoked\n")
-					return error
+					_, err := io.WriteString(logWriter, "[devhost] download invoked\n")
+					return err
 				},
 				HasManagedCaddyBinary: func(string) bool {
 					return tc.managedBinary
@@ -90,18 +90,18 @@ func TestConfigureManagedCaddyPrivilegedPorts(t *testing.T) {
 			})
 
 			if tc.wantError != "" {
-				if error == nil {
+				if err == nil {
 					t.Fatalf("ConfigureManagedCaddyPrivilegedPorts(...) error = nil, want %q", tc.wantError)
 				}
 
-				if error.Error() != tc.wantError {
-					t.Fatalf("ConfigureManagedCaddyPrivilegedPorts(...) error = %q, want %q", error.Error(), tc.wantError)
+				if err.Error() != tc.wantError {
+					t.Fatalf("ConfigureManagedCaddyPrivilegedPorts(...) error = %q, want %q", err.Error(), tc.wantError)
 				}
 				return
 			}
 
-			if error != nil {
-				t.Fatalf("ConfigureManagedCaddyPrivilegedPorts(...) unexpected error = %v", error)
+			if err != nil {
+				t.Fatalf("ConfigureManagedCaddyPrivilegedPorts(...) unexpected error = %v", err)
 			}
 
 			if exitCode != 0 {
