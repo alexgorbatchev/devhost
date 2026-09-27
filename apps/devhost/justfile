@@ -10,6 +10,20 @@ compile: build-devtools-bundle
     mkdir -p ./dist
     go build -trimpath -ldflags "-X {{build-version-variable}}={{build-version}}" -o ./dist/devhost ./cmd/devhost
 
+# Run devhost from source in the calling directory
+[no-cd]
+run *args: build-devtools-bundle
+    {{source_directory()}}/bin/devhost {{args}}
+
+# Run devhost from source in the calling directory with agent-facing output
+[no-cd]
+run-ai *args: build-devtools-bundle
+    AGENT=1 {{source_directory()}}/bin/devhost {{args}}
+
+# Run Go tests
+test: build-devtools-bundle
+    go test ./...
+
 # Fail on unformatted Go files, go vet findings, shadowed built-ins such as a variable named error, and module drift
 lint: build-devtools-bundle
     #!/usr/bin/env bash
@@ -25,9 +39,8 @@ lint: build-devtools-bundle
     go mod tidy -diff
 
 # Run Go formatting, vetting, module hygiene, and tests
-check: lint
+check: lint test
     bun test ./scripts/__tests__
-    go test ./...
 
 # Build versioned release archives
 build-release-artifacts *args: build-devtools-bundle

@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cli"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/version"
 )
@@ -68,8 +67,29 @@ func TestRunHelpShortCircuitsInvalidArguments(t *testing.T) {
 		t.Fatalf("Run(...) exit code = %d, want 0", exitCode)
 	}
 
-	if stdout.String() != cli.HelpText {
-		t.Fatalf("Run(...) stdout = %q, want %q", stdout.String(), cli.HelpText)
+	if !strings.Contains(stdout.String(), "╰─ trust-remote <ssh-target>") {
+		t.Fatalf("Run(...) stdout = %q, want the caddy command tree", stdout.String())
+	}
+
+	if stderr.String() != "" {
+		t.Fatalf("Run(...) stderr = %q, want empty", stderr.String())
+	}
+}
+
+func TestRunWithoutArgumentsPrintsHelp(t *testing.T) {
+	t.Parallel()
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	exitCode := Run([]string{}, "/tmp", &stdout, &stderr)
+
+	if exitCode != 0 {
+		t.Fatalf("Run(...) exit code = %d, want 0", exitCode)
+	}
+
+	if !strings.Contains(stdout.String(), "├─ start") {
+		t.Fatalf("Run(...) stdout = %q, want the root command tree", stdout.String())
 	}
 
 	if stderr.String() != "" {
@@ -116,7 +136,7 @@ func TestRunExplicitManifestBypassesUpwardDiscovery(t *testing.T) {
 	var stdout strings.Builder
 	var stderr strings.Builder
 
-	exitCode := runUntilServiceExit(t, []string{"--manifest", manifestPath}, cwd, &stdout, &stderr)
+	exitCode := runUntilServiceExit(t, []string{"start", "--manifest", manifestPath}, cwd, &stdout, &stderr)
 
 	if exitCode != 143 {
 		t.Fatalf("Run(...) exit code = %d, want 143 with stderr %q", exitCode, stderr.String())
@@ -148,7 +168,7 @@ func TestRunManifestFromEnvironmentBypassesUpwardDiscovery(t *testing.T) {
 	var stdout strings.Builder
 	var stderr strings.Builder
 
-	exitCode := runUntilServiceExit(t, []string{}, cwd, &stdout, &stderr)
+	exitCode := runUntilServiceExit(t, []string{"start"}, cwd, &stdout, &stderr)
 
 	if exitCode != 143 {
 		t.Fatalf("Run(...) exit code = %d, want 143 with stderr %q", exitCode, stderr.String())
@@ -174,7 +194,7 @@ func TestRunManifestModeStartsStackWhenDevtoolsDisabled(t *testing.T) {
 	var stdout strings.Builder
 	var stderr strings.Builder
 
-	exitCode := runUntilServiceExit(t, []string{"--manifest", manifestPath}, manifestDirectoryPath, &stdout, &stderr)
+	exitCode := runUntilServiceExit(t, []string{"start", "--manifest", manifestPath}, manifestDirectoryPath, &stdout, &stderr)
 	if exitCode != 143 {
 		t.Fatalf("Run(...) exit code = %d, want 143 with stderr %q", exitCode, stderr.String())
 	}
@@ -199,7 +219,7 @@ func TestRunManifestModeStartsStackWithoutExplicitManifestPath(t *testing.T) {
 	var stdout strings.Builder
 	var stderr strings.Builder
 
-	exitCode := runUntilServiceExit(t, []string{}, manifestDirectoryPath, &stdout, &stderr)
+	exitCode := runUntilServiceExit(t, []string{"start"}, manifestDirectoryPath, &stdout, &stderr)
 	if exitCode != 143 {
 		t.Fatalf("Run(...) exit code = %d, want 143 with stderr %q", exitCode, stderr.String())
 	}
@@ -250,7 +270,7 @@ func TestRunManifestModeReportsExistingSameManifestFixedPortClaim(t *testing.T) 
 	var stdout strings.Builder
 	var stderr strings.Builder
 
-	exitCode := Run([]string{"--manifest", manifestPath}, manifestDirectoryPath, &stdout, &stderr)
+	exitCode := Run([]string{"start", "--manifest", manifestPath}, manifestDirectoryPath, &stdout, &stderr)
 	if exitCode != 1 {
 		t.Fatalf("Run(...) exit code = %d, want 1", exitCode)
 	}
@@ -514,7 +534,7 @@ func TestRunSignalProcessHelper(t *testing.T) {
 
 	manifestPath := os.Getenv("DEVHOST_RUN_HELPER_MANIFEST")
 	cwd := os.Getenv("DEVHOST_RUN_HELPER_CWD")
-	exitCode := Run([]string{"--manifest", manifestPath}, cwd, os.Stdout, os.Stderr)
+	exitCode := Run([]string{"start", "--manifest", manifestPath}, cwd, os.Stdout, os.Stderr)
 	os.Exit(exitCode)
 }
 

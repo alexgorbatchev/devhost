@@ -46,7 +46,7 @@ the same plugin, token, and project root as the browser-launched editor.
 
 ### Minimal example
 
-Configure your stack in `devhost.toml`, then run it through `devhost`.
+Configure your stack in `devhost.toml`, then start it with `devhost start`.
 
 ```toml
 name = "hello-stack"
@@ -69,12 +69,12 @@ host = "api.foo.localhost"
 health = { http = "http://127.0.0.1:4000/healthz" }
 ```
 
-Most projects should add `devhost` to the relevant `package.json` so you can run it through the usual dev script from the directory that contains the manifest:
+Most projects should add `devhost start` to the relevant `package.json` so you can run it through the usual dev script from the directory that contains the manifest:
 
 ```json
 {
   "scripts": {
-    "dev": "devhost"
+    "dev": "devhost start"
   }
 }
 ```

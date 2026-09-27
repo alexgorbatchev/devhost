@@ -38,7 +38,7 @@ dev-bootstrap $dotfiles_dir=(env_var("HOME") / ".dotfiles"):
 
 # Start the root devhost stack locally
 dev: build-devtools-bundle
-    DEVHOST_DEV_ASSETS_DIR=apps/devhost/internal/devtools/dist apps/devhost/bin/devhost --manifest devhost.toml
+    DEVHOST_DEV_ASSETS_DIR=apps/devhost/internal/devtools/dist apps/devhost/bin/devhost start --manifest devhost.toml
 
 # Start Storybook locally
 storybook: ui::storybook

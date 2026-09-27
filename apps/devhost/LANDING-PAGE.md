@@ -80,7 +80,7 @@ When one process is not enough, `devhost.toml` lets you describe your local stac
 - dependency order
 - health checks
 
-Run `devhost`, and it starts the stack in dependency order, resolves ports, waits for readiness, and activates routes as services come online.
+Run `devhost start`, and it starts the stack in dependency order, resolves ports, waits for readiness, and activates routes as services come online.
 
 ### 5. Health-gated routing, not wishful thinking
 
@@ -148,7 +148,7 @@ From manifest to working local domain in one flow
 ### Steps
 
 1. Define your services in `devhost.toml` or run a single service directly.
-2. Start `devhost`.
+2. Run `devhost start`.
 3. `devhost` validates config, resolves ports, and reserves routed hosts.
 4. Services start in dependency order.
 5. Each route is activated only after its health check passes.

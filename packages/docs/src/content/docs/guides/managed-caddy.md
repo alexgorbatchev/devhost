@@ -51,7 +51,7 @@ If you want `devhost caddy start`, `stop`, or `trust` to honor a manifest-define
 devhost caddy start --manifest ./devhost.toml
 ```
 
-You can also set `DEVHOST_MANIFEST=./devhost.toml` as the environment-backed equivalent of `--manifest` for `devhost` and for `devhost caddy start|stop|trust`. If both are set for the same command, the CLI flag wins.
+You can also set `DEVHOST_MANIFEST=./devhost.toml` as the environment-backed equivalent of `--manifest` for `devhost start`, `devhost stop`, and `devhost caddy start|stop|trust`. If both are set for the same command, the CLI flag wins.
 
 Stop it when you are done with all stacks:
 

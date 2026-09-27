@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"io"
 	"testing"
 )
 
@@ -42,6 +43,16 @@ func TestParseCommandLineArguments(t *testing.T) {
 				ManifestPath: &manifestPath,
 			},
 			comparePath: true,
+		},
+		{
+			name:      "rejects stack-only flags on stop",
+			rawArgs:   []string{"stop", "--debug"},
+			wantError: "unknown option: --debug",
+		},
+		{
+			name:      "rejects stack-only flags on caddy lifecycle commands",
+			rawArgs:   []string{"caddy", "start", "--idle-timeout", "1m"},
+			wantError: "unknown option: --idle-timeout",
 		},
 		{
 			name:      "rejects invalid stop manifest suffix",
@@ -99,34 +110,34 @@ func TestParseCommandLineArguments(t *testing.T) {
 			},
 		},
 		{
-			name:    "parses implicit manifest mode",
-			rawArgs: []string{},
+			name:    "parses start command",
+			rawArgs: []string{"start"},
 			want: CommandLineArguments{
-				Kind: KindManifest,
+				Kind: KindStart,
 			},
 		},
 		{
-			name:    "parses explicit manifest mode",
-			rawArgs: []string{"--manifest", manifestPath},
+			name:    "parses start command with explicit manifest",
+			rawArgs: []string{"start", "--manifest", manifestPath},
 			want: CommandLineArguments{
-				Kind:         KindManifest,
+				Kind:         KindStart,
 				ManifestPath: &manifestPath,
 			},
 			comparePath: true,
 		},
 		{
-			name:    "parses verbose manifest mode",
-			rawArgs: []string{"--verbose"},
+			name:    "parses debug start",
+			rawArgs: []string{"start", "--debug"},
 			want: CommandLineArguments{
-				Kind:    KindManifest,
-				Verbose: true,
+				Kind:  KindStart,
+				Debug: true,
 			},
 		},
 		{
 			name:    "parses idle-timeout flag",
-			rawArgs: []string{"--idle-timeout", "1h"},
+			rawArgs: []string{"start", "--idle-timeout", "1h"},
 			want: CommandLineArguments{
-				Kind:        KindManifest,
+				Kind:        KindStart,
 				IdleTimeout: "1h",
 			},
 		},
@@ -135,19 +146,20 @@ func TestParseCommandLineArguments(t *testing.T) {
 			env: map[string]string{
 				"DEVHOST_IDLE_TIMEOUT": "30s",
 			},
-			rawArgs: []string{},
+			rawArgs: []string{"start"},
 			want: CommandLineArguments{
-				Kind:        KindManifest,
+				Kind:        KindStart,
 				IdleTimeout: "30s",
 			},
 		},
 		{
-			name: "parses manifest from environment",
+			name:    "parses manifest from environment",
+			rawArgs: []string{"start"},
 			env: map[string]string{
 				"DEVHOST_MANIFEST": manifestPath,
 			},
 			want: CommandLineArguments{
-				Kind:         KindManifest,
+				Kind:         KindStart,
 				ManifestPath: &manifestPath,
 			},
 			comparePath: true,
@@ -167,12 +179,12 @@ func TestParseCommandLineArguments(t *testing.T) {
 		},
 		{
 			name:    "cli manifest overrides environment",
-			rawArgs: []string{"--manifest", "./cli-devhost.toml"},
+			rawArgs: []string{"start", "--manifest", "./cli-devhost.toml"},
 			env: map[string]string{
 				"DEVHOST_MANIFEST": manifestPath,
 			},
 			want: CommandLineArguments{
-				Kind:         KindManifest,
+				Kind:         KindStart,
 				ManifestPath: pointerToString("./cli-devhost.toml"),
 			},
 			comparePath: true,
@@ -181,11 +193,6 @@ func TestParseCommandLineArguments(t *testing.T) {
 			name:      "rejects removed skill command",
 			rawArgs:   []string{"skill"},
 			wantError: "unknown command \"skill\" for \"devhost\"",
-		},
-		{
-			name:      "rejects missing caddy action",
-			rawArgs:   []string{"caddy"},
-			wantError: "Expected a caddy action: start, stop, trust, download, privileged-ports, print-root-cert, or trust-remote.",
 		},
 		{
 			name:      "rejects unsupported caddy action",
@@ -210,7 +217,7 @@ func TestParseCommandLineArguments(t *testing.T) {
 		{
 			name:      "rejects extra trust remote arguments",
 			rawArgs:   []string{"caddy", "trust-remote", "devbox", "extra"},
-			wantError: "accepts between 0 and 1 arg(s), received 2",
+			wantError: "accepts 1 arg(s), received 2",
 		},
 		{
 			name:      "rejects extra print root cert arguments",
@@ -218,17 +225,22 @@ func TestParseCommandLineArguments(t *testing.T) {
 			wantError: "unknown command \"now\" for \"devhost caddy print-root-cert\"",
 		},
 		{
-			name:      "rejects invalid manifest suffix",
-			rawArgs:   []string{"--manifest", "./other.toml"},
+			name:      "rejects invalid start manifest suffix",
+			rawArgs:   []string{"start", "--manifest", "./other.toml"},
 			wantError: "--manifest must point to a file named devhost.toml, received: ./other.toml",
 		},
 		{
-			name:      "rejects manifest mode child command",
-			rawArgs:   []string{"--manifest", manifestPath, "bun"},
-			wantError: "unknown command \"bun\" for \"devhost\"",
+			name:      "rejects start positional arguments",
+			rawArgs:   []string{"start", "--manifest", manifestPath, "bun"},
+			wantError: "unknown command \"bun\" for \"devhost start\"",
 		},
 		{
-			name:      "rejects implicit manifest positional quirk",
+			name:      "rejects stack flags on the root command",
+			rawArgs:   []string{"--manifest", manifestPath},
+			wantError: "unknown option: --manifest",
+		},
+		{
+			name:      "rejects unknown root command",
 			rawArgs:   []string{"bun"},
 			wantError: "unknown command \"bun\" for \"devhost\"",
 		},
@@ -245,7 +257,7 @@ func TestParseCommandLineArguments(t *testing.T) {
 				t.Setenv(key, value)
 			}
 
-			got, err := ParseCommandLineArguments(tc.rawArgs)
+			got, err := ParseCommandLineArguments(tc.rawArgs, io.Discard, io.Discard)
 			if tc.wantError != "" {
 				if err == nil {
 					t.Fatalf("ParseCommandLineArguments(%q) error = nil, want %q", tc.rawArgs, tc.wantError)
@@ -262,7 +274,7 @@ func TestParseCommandLineArguments(t *testing.T) {
 				t.Fatalf("ParseCommandLineArguments(%q) unexpected error = %v", tc.rawArgs, err)
 			}
 
-			if got.Kind != tc.want.Kind || got.Action != tc.want.Action || got.SSHTarget != tc.want.SSHTarget || got.Verbose != tc.want.Verbose || got.IdleTimeout != tc.want.IdleTimeout {
+			if got.Kind != tc.want.Kind || got.Action != tc.want.Action || got.SSHTarget != tc.want.SSHTarget || got.Debug != tc.want.Debug || got.IdleTimeout != tc.want.IdleTimeout {
 				t.Fatalf("ParseCommandLineArguments(%q) = %#v, want %#v", tc.rawArgs, got, tc.want)
 			}
 

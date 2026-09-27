@@ -53,7 +53,7 @@ This is highly useful for preventing background resource leaks (CPU, RAM, batter
 
 You can configure the idle timeout in three ways, with the following priority of resolution:
 
-1. Command-line flag: `--idle-timeout <duration>` (e.g. `--idle-timeout 1h`, `--idle-timeout 30s`)
+1. Command-line flag: `devhost start --idle-timeout <duration>` (e.g. `--idle-timeout 1h`, `--idle-timeout 30s`)
 2. Environment variable: `DEVHOST_IDLE_TIMEOUT`
 3. Manifest configuration: `devtools.idleTimeout` in `devhost.toml`
 

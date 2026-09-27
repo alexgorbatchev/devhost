@@ -10,6 +10,8 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Repo-wide formatting command: `just fix` (`oxfmt` for the repo, `gofmt -w` for `apps/devhost`)
 - Refresh the generated embedded devtools bundle: `just build-devtools-bundle` (or `just devhost build-devtools-bundle`)
 - Check `devhost` app-only validations: `just devhost check`
+- Run `devhost` from source in the current directory with agent-facing output: `just devhost run-ai <args>` (`just devhost run <args>` is the human-mode equivalent)
+- Run `devhost` Go tests only: `just devhost test`
 - Build `devhost` release tarballs: `just build-release-artifacts` (or `just devhost build-release-artifacts`)
 - Build the current-platform `devhost` binary: `just compile` (or `just devhost compile`)
 - Build and replace the `devhost` binary used by the `~/.dotfiles` shim, stamped `999.0.0-dev.<short git SHA>`: `just dev-bootstrap` (or `just dev-bootstrap /path/to/dotfiles`)
