@@ -181,8 +181,31 @@ adapter = "claude-code"
 args = ["--thinking", "high"]
 ```
 
-Supported agent adapters are `"pi"`, `"claude-code"`, and `"opencode"`. Built-in adapters accept an optional `args` string array to pass harness flags (such as a model, thinking level, or permission mode) while keeping status reporting, hooks, and prompt file arguments intact.
+Supported agent adapters are `"pi"`, `"claude-code"`, `"opencode"`, and `"codex"`. Built-in adapters accept an optional `args` string array to pass harness flags (such as a model, thinking level, or permission mode) while keeping status reporting, hooks, and prompt file arguments intact.
 For a custom agent action, omit `adapter` and set `command` plus `displayName` inside `[annotation.actions.agent]`; the parent `label` is the action label shown in the composer, and `displayName` remains the agent display name exposed through the agent command environment (`args` is valid only with `adapter`).
+
+For Codex, install and sign in to the [Codex CLI](https://learn.chatgpt.com/docs/cli), then use:
+
+```toml
+[[annotation.actions]]
+id = "ask-codex"
+label = "Ask Codex"
+kind = "agent"
+
+[annotation.actions.agent]
+adapter = "codex"
+args = ["-c", "model_reasoning_effort=high"]
+```
+
+The Codex adapter requires a CLI version supporting `--no-daemon` and lifecycle hooks and is validated
+against 0.159.2. It launches an independent interactive session, keeps your authentication and
+permission settings, and passes an instruction to read the annotation prompt file.
+Use `/hooks` in the embedded Codex terminal to review and trust the devhost status hooks.
+Codex skips untrusted hooks, so queues cannot drain until those hooks are trusted and enabled.
+A managed-hooks-only policy also prevents these session hooks from running. Devhost does not
+bypass hook trust or change that policy. See [Codex hooks](https://learn.chatgpt.com/docs/hooks).
+If the initial annotation finishes before hook review, send another prompt after trusting the
+hooks so Codex can report readiness and drain waiting annotations.
 
 Generic command actions run directly in a `devhost` terminal and receive the annotation through context files:
 
@@ -293,12 +316,14 @@ All built-in adapters integrate terminal OSC sequences to reflect working and id
 - `pi` leverages an injected extension to capture `agent_start` and `agent_end` hooks
 - `claude-code` utilizes its `--settings` API mapping commands to its native session and user prompt hooks
 - `opencode` integrates via an inline `--config` plugin listening for `session.status` events
+- `codex` uses session-local config overrides for `SessionStart`, `UserPromptSubmit`, `Stop`, `Interrupt`, and `SessionEnd`; trusted hooks write status to that session's PTY instead of captured hook stdout
 
-Agent sessions render inside the devtools terminal, so built-in adapters follow the devtools color scheme (`light` or `dark`) instead of guessing from terminal queries:
+Agent sessions render inside the devtools terminal. Theme handling depends on the adapter:
 
 - `pi` is launched with `--use-theme light` or `--use-theme dark`
 - `claude-code` receives `"theme": "light"` or `"theme": "dark"` in its generated `--settings` file, which overrides the user's own theme for that session
 - `opencode` runs as `opencode run`, which has no interactive theme to set
+- `codex` retains your configured syntax theme; set `tui.theme` through `args` if you want a session-specific override
 
 Queued work keeps the color scheme it was submitted with. Resuming a paused queue relaunches the agent with the color scheme the devtools show at that moment.
 

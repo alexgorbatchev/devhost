@@ -72,7 +72,7 @@ kind = "agent"
 
 [annotation.actions.agent]
 adapter = "claude-code"
-# Built-in adapters ("pi", "claude-code", "opencode") support an optional `args` string array:
+# Built-in adapters ("pi", "claude-code", "opencode", "codex") support an optional `args` string array:
 args = ["--thinking", "high"]
 
 [[annotation.actions]]

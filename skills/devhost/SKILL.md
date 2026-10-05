@@ -64,4 +64,4 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 
 - **Full Manifest Example**: To read or copy a comprehensive, production-ready configuration illustrating every available feature and key, refer to the [Full Manifest Example](references/manifest-example.md).
 - **Vite & Storybook**: For modern frontend setups involving dynamic ports, IPv6 loopback bindings, or host verification security, refer to the [Vite & Storybook Manifest Integration guide](references/vite-storybook-integration.md).
-- **Annotation Actions & Agents**: Before configuring any `[annotation]` or action adapters, refer to the [Agent Adapters guide](references/agent-adapters.md).
+- **Annotation Actions & Agents**: Before configuring any `[annotation]` or action adapters (Pi, Claude Code, OpenCode, or Codex), refer to the [Agent Adapters guide](references/agent-adapters.md), including Codex hook trust requirements for queues.

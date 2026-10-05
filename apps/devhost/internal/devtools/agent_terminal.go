@@ -114,6 +114,11 @@ func createAgentTerminalCommand(action manifest.ValidatedAnnotationAction, proje
 		}
 		command = append(command, agent.Args...)
 		command = append(command, fmt.Sprintf("Please read the annotation details from %s and address the requested change.", sessionFiles.env["DEVHOST_AGENT_PROMPT_FILE"]))
+	case "codex":
+		env[codexStatusTTYEnvironmentName] = ""
+		command = codexTerminalCommand()
+		command = append(command, agent.Args...)
+		command = append(command, fmt.Sprintf("Please read the annotation details from %s and address the requested change.", sessionFiles.env["DEVHOST_AGENT_PROMPT_FILE"]))
 	case "configured":
 		command = append([]string{}, agent.Command...)
 		cwd = agent.Cwd

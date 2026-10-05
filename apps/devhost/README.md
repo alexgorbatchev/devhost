@@ -184,6 +184,37 @@ configured parent and other sessions intact. Directory creation failures are rep
 without falling back to another location. Empty values are invalid. This setting does
 not change durable queue storage.
 
+### Annotation agents
+
+Browser annotations can launch Pi, Claude Code, OpenCode, or Codex in the embedded devtools terminal.
+For Codex, install and sign in to the [Codex CLI](https://learn.chatgpt.com/docs/cli), then configure:
+
+```toml
+[annotation]
+defaultAction = "ask-codex"
+
+[[annotation.actions]]
+id = "ask-codex"
+label = "Ask Codex"
+kind = "agent"
+
+[annotation.actions.agent]
+adapter = "codex"
+args = ["-c", "model_reasoning_effort=high"]
+```
+
+Use a Codex CLI version that supports `--no-daemon` and lifecycle hooks; the adapter is validated
+against 0.159.2. Devhost hands off the annotation prompt and launches an independent interactive
+session with working/finished hooks. Review and trust those hooks using `/hooks` inside the Codex
+terminal. Queued annotations wait until the hooks report readiness; they cannot drain while the
+hooks are untrusted, disabled, or restricted by a managed-hooks-only policy. Codex retains your
+authentication, sandbox, approval, and syntax theme settings. Optional `args` pass Codex CLI flags.
+If the initial annotation finishes before you trust the hooks, send another prompt after trusting
+them so Codex can report readiness and drain waiting annotations.
+
+See the [annotation guide](https://alexgorbatchev.github.io/devhost/guides/annotations/) for other
+adapters, custom commands, and durable queues.
+
 ### Service Commands
 
 Service commands are executed directly, not through an implicit shell. In practice that means
