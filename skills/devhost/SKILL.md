@@ -2,6 +2,10 @@
 name: devhost
 description: Use anytime devhost.toml is involved, including reading, writing, making changes, bootstrapping, and running dev host. Start with repository discovery to identify runnable services, commands, ports, health checks, and the correct manifest location. Propose or update configurations, including routing and annotation agent commands. If first drafting, ask the user to choose a base domain with *.localhost as the default suggestion.
 author: alexgorbatchev
+metadata:
+  created_on: 2026-06-26 14:23
+  last_modified: 2026-10-05 13:44
+  status: current
 ---
 
 # Devhost
@@ -27,6 +31,8 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 ### Top-Level Configurations
 
 - **killZombies Option**: Optional boolean (default `true`) at the top level of `devhost.toml`. When `true`, devhost automatically finds, terminates, and reclaims zombie processes claiming the same ports or hosts from the same manifest path. Set `killZombies = false` to disable automatic recovery and report a standard collision error instead.
+
+- **Annotation temporary files**: Set `[annotation].tempDir` in the root manifest to a non-empty path for all annotation actions. Resolve relative paths against devhost's startup working directory, independently of the manifest location and action `cwd`. Omit the key to use the system temp directory. See the [Agent Adapters guide](references/agent-adapters.md) for file lifecycle details.
 
 ### Service Configuration Constraints
 

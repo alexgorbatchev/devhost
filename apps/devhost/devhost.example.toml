@@ -164,6 +164,14 @@ restartServices = "alt+ctrl+r"
 #
 # [annotation]
 # defaultAction = "fix"
+# Optional parent for annotation JSON, prompts, and agent support files for all actions.
+# Omit to use the system temp directory ($TMPDIR on Unix, otherwise /tmp).
+# Relative paths resolve against devhost's startup cwd, not the manifest or action cwd.
+# Absolute paths are accepted; empty strings are invalid. Configure in the root manifest.
+# Missing parents are created; failures are reported without a fallback.
+# Each session gets a unique private subdirectory removed during session cleanup.
+# The parent directory and durable queue storage are unaffected by cleanup.
+# tempDir = ".tmp/annotations"
 #
 # [[annotation.actions]]
 # id = "fix"

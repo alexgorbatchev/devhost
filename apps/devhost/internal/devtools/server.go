@@ -358,6 +358,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 				controlServer.mu.Unlock()
 
 				sessionFiles, err := createAgentSessionFiles(agentSessionFilesOptions{
+					tempDir:          action.TempDir,
 					actionID:         action.ID,
 					actionLabel:      action.DisplayName,
 					agentDisplayName: action.Agent.DisplayName,

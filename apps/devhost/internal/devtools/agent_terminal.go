@@ -70,6 +70,7 @@ func findAnnotationAction(actions []manifest.ValidatedAnnotationAction, actionID
 func createAgentTerminalCommand(action manifest.ValidatedAnnotationAction, projectRootPath string, annotation annotationSubmitDetail, colorScheme agentColorScheme, stackName string) (*terminalSessionCommand, error) {
 	agent := action.Agent
 	sessionFiles, err := createAgentSessionFiles(agentSessionFilesOptions{
+		tempDir:          action.TempDir,
 		actionID:         action.ID,
 		actionLabel:      action.DisplayName,
 		agentDisplayName: agent.DisplayName,
@@ -134,7 +135,16 @@ func createAgentTerminalCommand(action manifest.ValidatedAnnotationAction, proje
 
 func createCommandAnnotationTerminalCommand(action manifest.ValidatedAnnotationAction, projectRootPath string, annotation annotationSubmitDetail, stackName string) (*terminalSessionCommand, error) {
 	prompt := createAnnotationAgentPrompt(annotation)
-	sessionFiles, err := createAnnotationActionSessionFiles(annotation, action.ID, action.Kind, action.DisplayName, projectRootPath, prompt, stackName)
+	sessionFiles, err := createAnnotationActionSessionFiles(annotationActionSessionFilesOptions{
+		annotation:      annotation,
+		actionID:        action.ID,
+		actionKind:      action.Kind,
+		actionLabel:     action.DisplayName,
+		projectRootPath: projectRootPath,
+		prompt:          prompt,
+		stackName:       stackName,
+		tempDir:         action.TempDir,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -155,8 +165,30 @@ type annotationActionSessionFiles struct {
 	env     map[string]string
 }
 
-func createAnnotationActionSessionFiles(annotation annotationSubmitDetail, actionID string, actionKind string, actionLabel string, projectRootPath string, prompt string, stackName string) (*annotationActionSessionFiles, error) {
-	sessionDirectoryPath, err := os.MkdirTemp("", annotationActionDirectoryPrefix)
+type annotationActionSessionFilesOptions struct {
+	annotation      annotationSubmitDetail
+	actionID        string
+	actionKind      string
+	actionLabel     string
+	projectRootPath string
+	prompt          string
+	stackName       string
+	tempDir         *string
+}
+
+func createAnnotationSessionDirectory(tempDir *string, prefix string) (string, error) {
+	base := ""
+	if tempDir != nil {
+		base = *tempDir
+		if err := os.MkdirAll(base, 0o700); err != nil {
+			return "", fmt.Errorf("create annotation temp directory %q: %w", base, err)
+		}
+	}
+	return os.MkdirTemp(base, prefix)
+}
+
+func createAnnotationActionSessionFiles(options annotationActionSessionFilesOptions) (*annotationActionSessionFiles, error) {
+	sessionDirectoryPath, err := createAnnotationSessionDirectory(options.tempDir, annotationActionDirectoryPrefix)
 	if err != nil {
 		return nil, fmt.Errorf("create annotation action session directory: %w", err)
 	}
@@ -166,7 +198,7 @@ func createAnnotationActionSessionFiles(annotation annotationSubmitDetail, actio
 
 	annotationFilePath := filepath.Join(sessionDirectoryPath, annotationActionFileName)
 	promptFilePath := filepath.Join(sessionDirectoryPath, annotationActionPromptFileName)
-	annotationJSON, err := json.MarshalIndent(annotation, "", "  ")
+	annotationJSON, err := json.MarshalIndent(options.annotation, "", "  ")
 	if err != nil {
 		cleanup()
 		return nil, fmt.Errorf("marshal annotation action file: %w", err)
@@ -175,7 +207,7 @@ func createAnnotationActionSessionFiles(annotation annotationSubmitDetail, actio
 		cleanup()
 		return nil, fmt.Errorf("write annotation action file: %w", err)
 	}
-	if err := os.WriteFile(promptFilePath, []byte(prompt), 0o600); err != nil {
+	if err := os.WriteFile(promptFilePath, []byte(options.prompt), 0o600); err != nil {
 		cleanup()
 		return nil, fmt.Errorf("write annotation action prompt file: %w", err)
 	}
@@ -183,15 +215,15 @@ func createAnnotationActionSessionFiles(annotation annotationSubmitDetail, actio
 	return &annotationActionSessionFiles{
 		cleanup: cleanup,
 		env: map[string]string{
-			"DEVHOST_ANNOTATION_ACTION_ID":    actionID,
-			"DEVHOST_ANNOTATION_ACTION_KIND":  actionKind,
-			"DEVHOST_ANNOTATION_ACTION_LABEL": actionLabel,
-			"DEVHOST_ANNOTATION_DISPLAY_NAME": actionLabel,
+			"DEVHOST_ANNOTATION_ACTION_ID":    options.actionID,
+			"DEVHOST_ANNOTATION_ACTION_KIND":  options.actionKind,
+			"DEVHOST_ANNOTATION_ACTION_LABEL": options.actionLabel,
+			"DEVHOST_ANNOTATION_DISPLAY_NAME": options.actionLabel,
 			"DEVHOST_ANNOTATION_FILE":         annotationFilePath,
 			"DEVHOST_ANNOTATION_PROMPT_FILE":  promptFilePath,
 			"DEVHOST_ANNOTATION_TRANSPORT":    agentTransportMode,
-			"DEVHOST_PROJECT_ROOT":            projectRootPath,
-			"DEVHOST_STACK_NAME":              stackName,
+			"DEVHOST_PROJECT_ROOT":            options.projectRootPath,
+			"DEVHOST_STACK_NAME":              options.stackName,
 		},
 	}, nil
 }
@@ -203,6 +235,7 @@ type agentSessionFiles struct {
 }
 
 type agentSessionFilesOptions struct {
+	tempDir          *string
 	actionID         string
 	actionLabel      string
 	agentDisplayName string
@@ -216,7 +249,7 @@ type agentSessionFilesOptions struct {
 
 func createAgentSessionFiles(options agentSessionFilesOptions) (*agentSessionFiles, error) {
 	annotation := options.annotation
-	sessionDirectoryPath, err := os.MkdirTemp("", agentSessionDirectoryPrefix)
+	sessionDirectoryPath, err := createAnnotationSessionDirectory(options.tempDir, agentSessionDirectoryPrefix)
 	if err != nil {
 		return nil, fmt.Errorf("create agent session directory: %w", err)
 	}

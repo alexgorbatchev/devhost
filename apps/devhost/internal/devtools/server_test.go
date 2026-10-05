@@ -775,6 +775,7 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 	t.Parallel()
 
 	stateDirectoryPath := t.TempDir()
+	tempDir := filepath.Join(t.TempDir(), "annotations")
 	firstStarter := newTestTerminalStarter()
 	firstServer, err := StartControlServer(StartControlServerOptions{
 		AnnotationActions: []manifest.ValidatedAnnotationAction{{
@@ -841,6 +842,7 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 	secondStarter := newTestTerminalStarter()
 	secondServer, err := StartControlServer(StartControlServerOptions{
 		AnnotationActions: []manifest.ValidatedAnnotationAction{{
+			TempDir:     &tempDir,
 			Agent:       manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"},
 			DisplayName: "Pi",
 			ID:          defaultAnnotationActionID,
@@ -898,6 +900,23 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 		writes := secondStarter.sessions[0].writesSnapshot()
 		return len(writes) == 1 && strings.Contains(writes[0], "prompt.txt")
 	})
+	files, err := filepath.Glob(filepath.Join(tempDir, agentSessionDirectoryPrefix+"*", agentAnnotationFileName))
+	if err != nil || len(files) != 1 {
+		t.Fatalf("queued annotation files = %v, error = %v", files, err)
+	}
+	data, err := os.ReadFile(files[0])
+	if err != nil || !strings.Contains(string(data), "Second annotation") {
+		t.Fatalf("queued annotation = %s, error = %v", data, err)
+	}
+	if err := secondServer.Stop(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Dir(files[0])); !os.IsNotExist(err) {
+		t.Fatalf("queued handoff directory remains after shutdown: %v", err)
+	}
+	if _, err := os.Stat(tempDir); err != nil {
+		t.Fatalf("configured parent removed: %v", err)
+	}
 }
 
 func TestControlServerTerminalSessionsRetainTailAndIdleCleanup(t *testing.T) {

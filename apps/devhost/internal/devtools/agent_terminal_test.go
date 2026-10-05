@@ -3,11 +3,95 @@ package devtools
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
+
+func TestAnnotationSessionTempDir(t *testing.T) {
+	for _, kind := range []string{"agent", "command"} {
+		for _, configured := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/configured=%t", kind, configured), func(t *testing.T) {
+				base := filepath.Join(t.TempDir(), "nested", "annotations")
+				action := manifest.ValidatedAnnotationAction{
+					ID: "fix", Kind: kind, DisplayName: "Fix", Command: []string{"true"},
+					Agent: manifest.ValidatedAgent{Kind: "pi", DisplayName: "Pi"},
+				}
+				if configured {
+					action.TempDir = &base
+				} else {
+					base = t.TempDir()
+					t.Setenv("TMPDIR", base)
+				}
+				create := func() *terminalSessionCommand {
+					t.Helper()
+					var cmd *terminalSessionCommand
+					var err error
+					if kind == "agent" {
+						cmd, err = createAgentTerminalCommand(action, "/project", annotationSubmitDetail{Comment: "fix"}, "", "stack")
+					} else {
+						cmd, err = createCommandAnnotationTerminalCommand(action, "/project", annotationSubmitDetail{Comment: "fix"}, "stack")
+					}
+					if err != nil {
+						t.Fatal(err)
+					}
+					t.Cleanup(cmd.cleanup)
+					return cmd
+				}
+				first, second := create(), create()
+				firstDir := filepath.Dir(first.env["DEVHOST_ANNOTATION_FILE"])
+				secondDir := filepath.Dir(second.env["DEVHOST_ANNOTATION_FILE"])
+				if filepath.Dir(firstDir) != base || filepath.Dir(secondDir) != base || firstDir == secondDir {
+					t.Fatalf("session directories = %q %q, base = %q", firstDir, secondDir, base)
+				}
+				data, err := os.ReadFile(first.env["DEVHOST_ANNOTATION_FILE"])
+				if err != nil || !strings.Contains(string(data), "fix") {
+					t.Fatalf("annotation = %s, error = %v", data, err)
+				}
+				for _, path := range []string{firstDir, first.env["DEVHOST_ANNOTATION_FILE"], first.env["DEVHOST_ANNOTATION_PROMPT_FILE"]} {
+					info, err := os.Stat(path)
+					if err != nil || info.Mode().Perm()&0o077 != 0 {
+						t.Fatalf("permissions for %q: info=%v error=%v", path, info, err)
+					}
+				}
+				first.cleanup()
+				if _, err := os.Stat(firstDir); !os.IsNotExist(err) {
+					t.Fatalf("session remains: %v", err)
+				}
+				if _, err := os.Stat(second.env["DEVHOST_ANNOTATION_FILE"]); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := os.Stat(base); err != nil {
+					t.Fatal(err)
+				}
+			})
+		}
+	}
+}
+
+func TestAnnotationSessionTempDirFailure(t *testing.T) {
+	base := filepath.Join(t.TempDir(), "file")
+	if err := os.WriteFile(base, []byte("keep"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, kind := range []string{"agent", "command"} {
+		t.Run(kind, func(t *testing.T) {
+			action := manifest.ValidatedAnnotationAction{TempDir: &base, ID: "fix", Kind: kind, Agent: manifest.ValidatedAgent{Kind: "pi"}}
+			var err error
+			if kind == "agent" {
+				_, err = createAgentTerminalCommand(action, "/project", annotationSubmitDetail{}, "", "stack")
+			} else {
+				_, err = createCommandAnnotationTerminalCommand(action, "/project", annotationSubmitDetail{}, "stack")
+			}
+			if err == nil || !strings.Contains(err.Error(), base) {
+				t.Fatalf("error = %v, want configured directory failure", err)
+			}
+		})
+	}
+}
 
 func TestAgentTerminalCommandAdapters(t *testing.T) {
 	t.Parallel()

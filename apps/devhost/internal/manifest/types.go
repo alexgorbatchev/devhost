@@ -19,11 +19,14 @@ type Manifest struct {
 }
 
 type ValidatedAnnotation struct {
+	TempDir         *string
 	Actions         []ValidatedAnnotationAction
 	DefaultActionID string
 }
 
 type ValidatedAnnotationAction struct {
+	// TempDir is inherited from the stack's annotation configuration.
+	TempDir     *string
 	Agent       ValidatedAgent
 	Command     []string
 	Cwd         string
