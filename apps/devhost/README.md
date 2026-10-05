@@ -105,7 +105,7 @@ After startup, `devhost` prints one line per reachable service URL using the for
 
 Before launching a foreground service, `devhost` checks that its working directory exists and is a directory. If that check fails, the error identifies `services.<name>.cwd`, shows the resolved path, and asks you to check the configured path. Other launch failures show the executable and working directory alongside the underlying operating-system error.
 
-Service and annotation action `cwd` values accept absolute paths or paths relative to the manifest directory. Absolute paths are used directly, and both forms must stay within the manifest directory.
+Service and annotation action `cwd` values accept absolute paths or paths relative to the manifest directory. Absolute paths are used directly and may point outside the manifest directory. Relative paths resolve against the manifest directory and must stay within it.
 
 ### Zombie Process Recovery (killZombies)
 

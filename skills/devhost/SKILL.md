@@ -4,7 +4,7 @@ description: Use anytime devhost.toml is involved, including reading, writing, m
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-05 13:44
+  last_modified: 2026-10-05 14:31
   status: current
 ---
 
@@ -55,6 +55,7 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 
 - **Bind Host Constraints**: `bindHost` can only be one of the following: `127.0.0.1` (default), `0.0.0.0`, `::1`, `::`.
 - **Command Syntax**: `command` is best written as a string array to preserve argument boundaries exactly.
+- **Working Directories**: Use an absolute `cwd` for any directory, including outside the manifest directory, in services and custom annotation actions. Resolve relative `cwd` values against the manifest directory and keep them within it. Do not prepend the manifest directory to an absolute `cwd`.
 - **Environment Interpolation**: String values support standard environment interpolation using `{{ env.NAME }}` placeholders. Placeholder names must start with a letter/underscore and only contain alphanumeric characters or underscores. Referencing an undefined valid placeholder is a manifest load error.
 
 ### Reference Guides
