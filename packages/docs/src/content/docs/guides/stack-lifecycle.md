@@ -20,8 +20,13 @@ When you run `devhost`, it:
 5. reserves fixed numeric bind ports before starting any service that uses them
 6. reserves every public hostname before starting any service
 7. starts managed services in dependency order, using either a foreground `command` or daemon `lifecycle.start`, and evaluates unmanaged services in the same dependency graph
-8. waits for each managed service health check before routing it, while unmanaged routed services claim their routes immediately once dependencies are satisfied
-9. removes routes and reservations on shutdown or startup failure, forwards shutdown signals to managed foreground services through the service-containment backend for the current platform, and runs daemon `lifecycle.stop` commands for managed daemon services
+8. waits for each managed service health check before routing it; a foreground service that exits during startup keeps its route available for recovery, while unmanaged routed services claim their routes immediately once dependencies are satisfied
+9. keeps the stack, sibling services, routes, and devtools running after foreground service exits, including exit code `0`, so you can inspect retained logs and restart the exited service
+10. removes routes and reservations on explicit shutdown, idle timeout, or fatal startup errors, forwards shutdown signals to managed foreground services through the service-containment backend for the current platform, and runs daemon `lifecycle.stop` commands for managed daemon services
+
+Foreground services restart only when requested. With status devtools enabled, exited services appear in a full-screen recovery overlay with their exit code, retained stdout/stderr logs, and a restart button. Failed attempts remain retryable. Executable launch errors and startup health timeouts remain fatal startup errors; daemon lifecycle and external services report health separately from foreground process exits.
+
+Foreground restart success requires both a healthy replacement and refreshed routes. Auto-port collision retries update Caddy and the document-injection backend to the final port without replacing devtools listeners. Health remains pending until routing completes. If routing fails, devhost restores the previous route registration, configuration, and document backend, stops the replacement, and leaves recovery available for another attempt. The restart response and retained service logs include routing and restoration errors.
 
 `devhost`-owned logs use the manifest `name` when available and fall back to `[devhost]`. Child service logs remain prefixed with `[service-name]`.
 

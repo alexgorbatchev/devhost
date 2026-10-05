@@ -101,7 +101,13 @@ devhost stop --manifest path/to/devhost.toml
 
 This scans active registrations and host/port claims, targets the matching running processes, signals them with SIGTERM, waits for them to stop, and falls back to a force-kill if they do not stop within 15 seconds.
 
-After startup, `devhost` prints one line per reachable service URL using the format `service-name: url`.
+After startup, `devhost` prints one line per configured service URL using the format `service-name: url`.
+
+If a foreground service exits, including with exit code `0` or before its startup health check passes, `devhost` keeps running. Other services, routes, retained logs, and restart controls remain available. Services restart only when requested; use `devhost stop`, a shutdown signal, or the configured idle timeout to stop the stack.
+
+With `[devtools.status].enabled = true`, an exited service opens a full-screen recovery overlay in pages with injected devtools. The overlay shows its exit code, retained stdout/stderr logs, and a **Restart** button. Failed restarts keep the overlay open with an error and allow another attempt. Refreshing a root-compatible routed app while its backend is unavailable returns a recovery page with the same devtools; a successful restart reloads that page. Daemon lifecycle services and external services report health without foreground process exit codes. Executable launch errors and health timeouts still fail startup.
+
+A foreground restart completes after the replacement passes its health check and its routes refresh. If a bind collision moves an automatic port, both Caddy and the document-injection proxy use the final port while devtools listeners remain available. A routing failure restores the previous route registration, configuration, and document backend, stops the replacement, and keeps recovery retryable. The restart response and retained service logs include the error; restoration failures are also reported.
 
 Before launching a foreground service, `devhost` checks that its working directory exists and is a directory. If that check fails, the error identifies `services.<name>.cwd`, shows the resolved path, and asks you to check the configured path. Other launch failures show the executable and working directory alongside the underlying operating-system error.
 

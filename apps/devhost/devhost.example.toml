@@ -132,6 +132,8 @@ enabled = true
 enabled = true
 
 [devtools.status]
+# Exited foreground services open a full-screen log view with a restart button.
+# devhost and sibling services keep running after service exits, including exit code 0.
 # `enabled` controls whether service status is shown in the devtools toolbar.
 # - `true` (default): show service state and the services panel in the toolbar.
 # - `false`: hide service status.
@@ -265,6 +267,7 @@ cwd = "./app"
 # - integer `1..65535`: use the exact port you provide.
 # - `"auto"`: allocate a best-effort free port before spawn and inject it as `PORT`.
 #   devhost retries on clear bind collisions, but v1 does not provide a cross-process global auto-port allocator.
+#   Foreground restarts refresh both proxy targets before reporting recovery on a new auto port.
 port = 3000
 # `injectPort` controls whether devhost exports `PORT` to the child process.
 # - `true` (default): inject `PORT` when `port` is set.

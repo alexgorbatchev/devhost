@@ -22,7 +22,9 @@ type DocumentInjectionServer struct {
 	listener net.Listener
 	server   *http.Server
 
-	serverWG sync.WaitGroup
+	serverWG       sync.WaitGroup
+	backendMu      sync.RWMutex
+	backendAddress string
 }
 
 func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (*DocumentInjectionServer, error) {
@@ -31,12 +33,15 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 		return nil, fmt.Errorf("start document injection listener: %w", listenError)
 	}
 
-	backendAddress := net.JoinHostPort(options.BackendHost, strconv.Itoa(options.BackendPort))
+	documentServer := &DocumentInjectionServer{listener: listener}
+	documentServer.SetBackend(options.BackendHost, options.BackendPort)
 	proxy := &httputil.ReverseProxy{
 		Director: func(request *http.Request) {
 			requestHost := request.Host
 			request.URL.Scheme = "http"
-			request.URL.Host = backendAddress
+			documentServer.backendMu.RLock()
+			request.URL.Host = documentServer.backendAddress
+			documentServer.backendMu.RUnlock()
 			request.Host = ""
 			request.Header.Del("Accept-Encoding")
 			request.Header.Del("Host")
@@ -63,10 +68,18 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 			response.Header.Del("content-length")
 			return nil
 		},
+		ErrorHandler: func(writer http.ResponseWriter, request *http.Request, err error) {
+			writer.Header().Set("cache-control", "no-store")
+			writer.Header().Set("content-type", "text/html; charset=utf-8")
+			writer.WriteHeader(http.StatusBadGateway)
+			// Keep the injected control UI available when a document's backend is down.
+			// A disconnected browser cannot receive the recovery response, so delivery is best-effort.
+			_, _ = io.WriteString(writer, injectDevtoolsScript(`<!doctype html><html><head><meta charset="utf-8"><title>Service unavailable · devhost</title></head><body data-devhost-recovery><p>Service unavailable. Use devhost to view logs and restart it.</p></body></html>`))
+		},
 	}
 
 	server := &http.Server{Handler: proxy}
-	documentServer := &DocumentInjectionServer{listener: listener, server: server}
+	documentServer.server = server
 	documentServer.serverWG.Add(1)
 	go func() {
 		defer documentServer.serverWG.Done()
@@ -76,6 +89,12 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 	}()
 
 	return documentServer, nil
+}
+
+func (s *DocumentInjectionServer) SetBackend(host string, port int) {
+	s.backendMu.Lock()
+	defer s.backendMu.Unlock()
+	s.backendAddress = net.JoinHostPort(host, strconv.Itoa(port))
 }
 
 func (s *DocumentInjectionServer) Port() int {

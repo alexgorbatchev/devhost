@@ -416,21 +416,46 @@ func ActivateRoute(options ActivateRouteOptions, manifestPath string, routesDire
 	if err != nil {
 		return err
 	}
+	previousRegistration, err := os.ReadFile(routeRegistrationPath)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("read previous route registration: %w", err)
+	}
+	hadRegistration := err == nil
+	reloadAttempted := false
 
 	rollback := func(originalError error) error {
-		if removeError := removeIfExists(routeRegistrationPath); removeError != nil {
-			return removeError
+		var restoreError error
+		if hadRegistration {
+			restoreError = os.WriteFile(routeRegistrationPath, previousRegistration, 0o644)
+		} else {
+			restoreError = removeIfExists(routeRegistrationPath)
+		}
+		if restoreError != nil {
+			return errors.Join(originalError, fmt.Errorf("restore route registration: %w", restoreError))
 		}
 
-		nextSettings, settingsError := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
+		// Re-read the registrations so rollback retains other stacks' current routes.
+		fallback := ManagedCaddyConfigFallback{
+			AdminAddress: previousSettings.AdminAddress, BindHost: previousSettings.BindHost,
+			HTTPEnabled: previousSettings.HTTPEnabled, HTTPPort: previousSettings.HTTPPort, HTTPSPort: previousSettings.HTTPSPort,
+		}
+		nextSettings, settingsError := readManagedCaddyGlobalSettings(paths, fallback)
 		if settingsError != nil {
-			return settingsError
+			return errors.Join(originalError, fmt.Errorf("read restored route settings: %w", settingsError))
+		}
+		if syncError := syncManagedCaddyGlobalState(routesDirectoryPath, nextSettings); syncError != nil {
+			return errors.Join(originalError, fmt.Errorf("restore managed Caddy configuration: %w", syncError))
 		}
 		if syncError := syncHostRoute(options.Host, routesDirectoryPath, &nextSettings); syncError != nil {
-			return syncError
+			return errors.Join(originalError, fmt.Errorf("restore host route: %w", syncError))
 		}
 		if syncError := syncManagedCaddyNotFoundSite(routesDirectoryPath, nextSettings.HTTPSPort); syncError != nil {
-			return syncError
+			return errors.Join(originalError, fmt.Errorf("restore not-found site: %w", syncError))
+		}
+		if hadRegistration && reloadAttempted {
+			if reloadError := reloadManagedCaddy(nextSettings.AdminAddress, routesDirectoryPath, options.CaddyOutputWriters); reloadError != nil {
+				return errors.Join(originalError, fmt.Errorf("reload restored Caddy configuration: %w", reloadError))
+			}
 		}
 
 		return originalError
@@ -456,6 +481,7 @@ func ActivateRoute(options ActivateRouteOptions, manifestPath string, routesDire
 	if error := syncManagedCaddyNotFoundSite(routesDirectoryPath, nextSettings.HTTPSPort); error != nil {
 		return rollback(error)
 	}
+	reloadAttempted = true
 	if error := reloadManagedCaddy(nextSettings.AdminAddress, routesDirectoryPath, options.CaddyOutputWriters); error != nil {
 		return rollback(error)
 	}

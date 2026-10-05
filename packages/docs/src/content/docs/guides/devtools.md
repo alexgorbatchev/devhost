@@ -22,6 +22,10 @@ The injected overlay is a single compact toolbar docked to the right edge of the
 
 The services panel lists every service with its state. Routed services become links automatically, and clicking one opens that service URL in a new browser tab or window by default. Externally owned services are tagged `external`; only `devhost`-managed services expose restart controls. Services with watched file changes are marked `changed` until they restart.
 
+When a managed foreground service exits and status devtools are enabled, a full-screen recovery dialog shows the service's exit code, retained stdout/stderr logs, and a **Restart** button. The supervisor and other services keep running. Logs continue updating during recovery; a failed restart displays its error and allows another attempt. The dialog closes when the service recovers. Intentional restarts, failed health probes, and lost control connections alone do not trigger the crash dialog.
+
+Refreshing a root-compatible routed app while its backend is unavailable returns a recovery page with injected devtools. Its restart button works while the app is down, and a successful restart reloads the original URL. Daemon lifecycle and externally managed services use health status instead of foreground exit recovery.
+
 When `[devtools.externalToolbars].enabled = true` (the default), `devhost` also detects supported third-party devtools buttons on the host page, hides the native controls, and re-renders them as toggles in the toolbar. The native panels themselves stay owned by the host tools.
 
 Terminal sessions (annotation agents, annotation commands, and Neovim) appear as chips in the toolbar. Clicking a chip opens its terminal window; minimizing returns it to the chip while the session keeps running and reporting its status. When the chips no longer fit, the rest collapse into a `+N` button that lists every session. Terminal windows open fullscreen; when the log minimap is shown, the window stops at the minimap strip, and hovering the minimap widens it over the terminal with the usual log preview.

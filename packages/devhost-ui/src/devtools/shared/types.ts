@@ -7,6 +7,7 @@ export type ServiceHealth = {
   url?: string;
   dirty?: boolean; // Indicates file changes have been detected
   restarting?: boolean; // Indicates service is actively in process of restarting
+  exitCode?: number;
 };
 
 export type HealthResponse = {

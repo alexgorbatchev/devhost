@@ -44,6 +44,8 @@ enabled = true
 
 [devtools.status]
 # `enabled` controls whether the injected service-status panel is shown (default: true).
+# It also shows exited foreground services in a full-screen log view with a restart button.
+# devhost and sibling services keep running after service exits, including exit code 0.
 enabled = true
 # `position` selects where the status panel is anchored ("top-right", "bottom-right").
 position = "bottom-right"
@@ -177,6 +179,7 @@ retries = 10
 
 [services.db]
 # `port = "auto"` automatically allocates a free port, but explicit `health` must be omitted in v1.
+# Foreground restarts refresh both proxy targets before reporting recovery on a new auto port.
 command = ["bun", "run", "db:dev"]
 cwd = "./db"
 port = "auto"

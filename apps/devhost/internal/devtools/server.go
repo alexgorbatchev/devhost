@@ -62,6 +62,7 @@ type ServiceHealth struct {
 	URL        *string `json:"url,omitempty"`
 	Dirty      bool    `json:"dirty,omitempty"`
 	Restarting bool    `json:"restarting,omitempty"`
+	ExitCode   *int    `json:"exitCode,omitempty"`
 }
 
 type HealthResponse struct {

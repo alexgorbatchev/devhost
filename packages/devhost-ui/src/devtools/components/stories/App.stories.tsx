@@ -62,6 +62,29 @@ export const App: Story = {
   },
 };
 
+export const ServiceCrashRecovery: Story = {
+  parameters: { serviceRecovery: true },
+  render: () => renderInDevtoolsStoryShadowRoot(<DevtoolsApp />),
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    await expect(await canvas.findByRole("button", { name: "Services: 1 of 1 up" })).toBeVisible();
+    await expect(canvas.queryByRole("dialog")).toBeNull();
+    await userEvent.click(within(canvasElement).getByRole("button", { name: "Crash api" }));
+    const dialog = await canvas.findByRole("dialog", { name: "Service exited" });
+    await expect(within(dialog).getByRole("region", { name: "api logs" })).toHaveTextContent(
+      "stdout: [api] readystderr: [api] fatal error",
+    );
+    await userEvent.click(within(dialog).getByRole("button", { name: "Restart api" }));
+    await expect(await canvas.findByRole("alert")).toHaveTextContent(
+      "Failed to restart api: Service api exited before passing its health check with code 1.",
+    );
+    await expect(canvas.getByRole("heading", { name: "api (exit code 1)" })).toBeVisible();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Restart api" }));
+    await waitFor(() => expect(canvas.queryByRole("dialog", { name: "Service exited" })).toBeNull());
+    await expect(canvas.getByRole("button", { name: "Services: 1 of 1 up" })).toBeVisible();
+  },
+};
+
 /**
  * Mounts the production devtools host under aggressive host-page CSS and a shrunken root font size. The devtools
  * UI must stay unaffected: shadow-DOM styles plus `:host { all: initial !important }` cut inherited host styles,

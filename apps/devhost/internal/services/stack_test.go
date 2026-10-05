@@ -266,7 +266,7 @@ func TestCollectServicesHealthIncludesUnmanagedServices(t *testing.T) {
 	}
 }
 
-func TestStartStackCleanupReleasesClaimsAfterStartupFailure(t *testing.T) {
+func TestStartStackKeepsStartupCrashUntilExplicitShutdown(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
 	adminAddress, stopAdmin := startTestAdminServer(t)
@@ -294,7 +294,7 @@ func TestStartStackCleanupReleasesClaimsAfterStartupFailure(t *testing.T) {
 		PortSource: "fixed",
 	}
 
-	_, error := StartStack(&manifestValue, []string{"web"}, StartStackOptions{
+	exitCode, error := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           ioDiscard{},
@@ -302,13 +302,35 @@ func TestStartStackCleanupReleasesClaimsAfterStartupFailure(t *testing.T) {
 		ServiceStderrWriter: ioDiscard{},
 		ShutdownGracePeriod: 100 * time.Millisecond,
 	})
-	if error == nil || error.Error() != "Service web exited before passing its health check with code 1." {
-		t.Fatalf("StartStack(...) error = %v, want startup health failure", error)
+	if error != nil || exitCode != 143 {
+		t.Fatalf("StartStack(...) = (%d, %v), want explicit SIGTERM shutdown", exitCode, error)
 	}
 
 	assertDirectoryEntries(t, paths.HostClaimsDirectoryPath, nil)
 	assertDirectoryEntries(t, paths.PortClaimsDirectoryPath, nil)
 	assertDirectoryEntries(t, paths.RegistrationsDirectoryPath, nil)
+	assertRouteDirectoryEmpty(t, paths.RoutesDirectoryPath)
+}
+
+func TestStartStackFailsStartupHealthTimeoutAndReleasesClaims(t *testing.T) {
+	statePath := t.TempDir()
+	paths := caddy.CreateManagedCaddyPaths(statePath)
+	admin, stopAdmin := startTestAdminServer(t)
+	defer stopAdmin()
+	m := newResolvedManifest(t.TempDir(), admin)
+	port := mustReservePort(t)
+	m.Services["web"] = ResolvedService{
+		Name: "web", BindHost: "127.0.0.1", Cwd: t.TempDir(), Command: helperCommandWithMode("graceful-signal-waiter"),
+		Env:    map[string]string{"GO_WANT_HELPER_PROCESS": "1", "STOP_TRACE_PATH": filepath.Join(t.TempDir(), "stopped"), "STOP_TRACE_VALUE": "stopped"},
+		Health: ResolvedHealthConfig{Kind: "tcp", Host: stringPointer("127.0.0.1"), Port: intPointer(port), Interval: 10, Timeout: 100},
+		Port:   intPointer(port), PortSource: "fixed", Host: stringPointer("timeout.localhost"),
+	}
+	_, err := StartStack(&m, []string{"web"}, StartStackOptions{CaddyPaths: paths, Environment: map[string]string{"DEVHOST_STATE_DIR": statePath}, LogWriter: ioDiscard{}, ServiceStdoutWriter: ioDiscard{}, ServiceStderrWriter: ioDiscard{}, ShutdownGracePeriod: 100 * time.Millisecond})
+	if err == nil || err.Error() != "Service web did not pass its health check within 100ms." {
+		t.Fatalf("startup error = %v, want health timeout", err)
+	}
+	assertDirectoryEntries(t, paths.HostClaimsDirectoryPath, nil)
+	assertDirectoryEntries(t, paths.PortClaimsDirectoryPath, nil)
 	assertRouteDirectoryEmpty(t, paths.RoutesDirectoryPath)
 }
 
@@ -344,7 +366,7 @@ func TestStartStackRetriesAutoPortAndPrefixesOutput(t *testing.T) {
 		PortSource: "auto",
 	}
 
-	exitCode, error := StartStack(&manifestValue, []string{"web"}, StartStackOptions{
+	exitCode, error := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           &infoLog,
@@ -356,8 +378,8 @@ func TestStartStackRetriesAutoPortAndPrefixesOutput(t *testing.T) {
 		t.Fatalf("StartStack(...) error = %v", error)
 	}
 
-	if exitCode != 0 {
-		t.Fatalf("StartStack(...) exit code = %d, want 0", exitCode)
+	if exitCode != 143 {
+		t.Fatalf("StartStack(...) exit code = %d, want 143", exitCode)
 	}
 
 	finalPort := manifestValue.Services["web"].Port
@@ -378,14 +400,17 @@ func TestStartStackRetriesAutoPortAndPrefixesOutput(t *testing.T) {
 	}
 
 	infoLines := nonEmptyLines(infoLog.String())
-	if len(infoLines) != 2 {
-		t.Fatalf("info lines = %#v, want two lines", infoLines)
+	if len(infoLines) != 3 {
+		t.Fatalf("info lines = %#v, want three lines", infoLines)
 	}
 	if infoLines[0] != "[retry-stack] retrying web with a new auto port after a bind collision." {
 		t.Fatalf("retry log = %q", infoLines[0])
 	}
 	if infoLines[1] != fmt.Sprintf("[retry-stack] web (primary): http://127.0.0.1:%d", *finalPort) {
 		t.Fatalf("service URL log = %q", infoLines[1])
+	}
+	if infoLines[2] != "[retry-stack] web exited with code 0; devhost is waiting for a restart." {
+		t.Fatalf("service exit log = %q", infoLines[2])
 	}
 }
 
@@ -431,7 +456,7 @@ func TestStartStackVerifiesManagedCaddyAdminBeforeServiceStartup(t *testing.T) {
 	}
 }
 
-func TestStartStackStartsServicesInDependencyOrderAndEndsOnFirstChildExit(t *testing.T) {
+func TestStartStackStartsServicesInDependencyOrderAndStopsOnSignalAfterChildExit(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
 	adminAddress, stopAdmin := startTestAdminServer(t)
@@ -498,7 +523,7 @@ func TestStartStackStartsServicesInDependencyOrderAndEndsOnFirstChildExit(t *tes
 		PortSource: "fixed",
 	}
 
-	exitCode, error := StartStack(&manifestValue, serviceOrder, StartStackOptions{
+	exitCode, error := startStackUntilServiceExit(t, &manifestValue, serviceOrder, StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           ioDiscard{},
@@ -509,8 +534,8 @@ func TestStartStackStartsServicesInDependencyOrderAndEndsOnFirstChildExit(t *tes
 	if error != nil {
 		t.Fatalf("StartStack(...) error = %v", error)
 	}
-	if exitCode != 0 {
-		t.Fatalf("StartStack(...) exit code = %d, want 0", exitCode)
+	if exitCode != 143 {
+		t.Fatalf("StartStack(...) exit code = %d, want 143", exitCode)
 	}
 
 	startTrace, readError := os.ReadFile(startTracePath)
@@ -530,7 +555,7 @@ func TestStartStackStartsServicesInDependencyOrderAndEndsOnFirstChildExit(t *tes
 	}
 }
 
-func TestStartStackActivatesRoutesAndCleansUpAfterExit(t *testing.T) {
+func TestStartStackActivatesRoutesAndCleansUpAfterShutdown(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
 	adminAddress, stopAdmin := startTestAdminServer(t)
@@ -566,7 +591,7 @@ func TestStartStackActivatesRoutesAndCleansUpAfterExit(t *testing.T) {
 		PortSource: "fixed",
 	}
 
-	exitCode, error := StartStack(&manifestValue, []string{"web"}, StartStackOptions{
+	exitCode, error := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           &infoLog,
@@ -577,8 +602,8 @@ func TestStartStackActivatesRoutesAndCleansUpAfterExit(t *testing.T) {
 	if error != nil {
 		t.Fatalf("StartStack(...) error = %v", error)
 	}
-	if exitCode != 0 {
-		t.Fatalf("StartStack(...) exit code = %d, want 0", exitCode)
+	if exitCode != 143 {
+		t.Fatalf("StartStack(...) exit code = %d, want 143", exitCode)
 	}
 
 	traceText, error := os.ReadFile(tracePath)
@@ -599,7 +624,7 @@ func TestStartStackActivatesRoutesAndCleansUpAfterExit(t *testing.T) {
 		t.Fatalf("trace = %q", trace)
 	}
 
-	if lines := nonEmptyLines(infoLog.String()); len(lines) != 1 || lines[0] != "[route-stack] web (primary): https://hello.localhost" {
+	if lines := nonEmptyLines(infoLog.String()); !stringSlicesEqual(lines, []string{"[route-stack] web (primary): https://hello.localhost", "[route-stack] web exited with code 0; devhost is waiting for a restart."}) {
 		t.Fatalf("info lines = %#v", lines)
 	}
 
@@ -647,7 +672,7 @@ func TestStartStackActivatesDevtoolsRoutesForRootCompatibleServices(t *testing.T
 		PortSource: "fixed",
 	}
 
-	exitCode, error := StartStack(&manifestValue, []string{"web"}, StartStackOptions{
+	exitCode, error := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           ioDiscard{},
@@ -658,8 +683,8 @@ func TestStartStackActivatesDevtoolsRoutesForRootCompatibleServices(t *testing.T
 	if error != nil {
 		t.Fatalf("StartStack(...) error = %v", error)
 	}
-	if exitCode != 0 {
-		t.Fatalf("StartStack(...) exit code = %d, want 0", exitCode)
+	if exitCode != 143 {
+		t.Fatalf("StartStack(...) exit code = %d, want 143", exitCode)
 	}
 
 	traceText, error := os.ReadFile(tracePath)
@@ -708,7 +733,7 @@ func TestStartStackSkipsDocumentInjectionForNonRootRoutes(t *testing.T) {
 		PortSource: "fixed",
 	}
 
-	exitCode, error := StartStack(&manifestValue, []string{"web"}, StartStackOptions{
+	exitCode, error := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           ioDiscard{},
@@ -719,8 +744,8 @@ func TestStartStackSkipsDocumentInjectionForNonRootRoutes(t *testing.T) {
 	if error != nil {
 		t.Fatalf("StartStack(...) error = %v", error)
 	}
-	if exitCode != 0 {
-		t.Fatalf("StartStack(...) exit code = %d, want 0", exitCode)
+	if exitCode != 143 {
+		t.Fatalf("StartStack(...) exit code = %d, want 143", exitCode)
 	}
 
 	traceText, error := os.ReadFile(tracePath)
@@ -772,7 +797,7 @@ func TestStartStackLeavesDevtoolsRoutesUnmountedWhenAllFeaturesAreDisabled(t *te
 		PortSource: "fixed",
 	}
 
-	exitCode, error := StartStack(&manifestValue, []string{"web"}, StartStackOptions{
+	exitCode, error := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           ioDiscard{},
@@ -783,8 +808,8 @@ func TestStartStackLeavesDevtoolsRoutesUnmountedWhenAllFeaturesAreDisabled(t *te
 	if error != nil {
 		t.Fatalf("StartStack(...) error = %v", error)
 	}
-	if exitCode != 0 {
-		t.Fatalf("StartStack(...) exit code = %d, want 0", exitCode)
+	if exitCode != 143 {
+		t.Fatalf("StartStack(...) exit code = %d, want 143", exitCode)
 	}
 
 	traceText, error := os.ReadFile(tracePath)
@@ -851,7 +876,7 @@ func TestStartStackStopsDevtoolsServersDuringCleanup(t *testing.T) {
 		PortSource: "fixed",
 	}
 
-	exitCode, error := StartStack(&manifestValue, []string{"web"}, StartStackOptions{
+	exitCode, error := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           ioDiscard{},
@@ -862,8 +887,8 @@ func TestStartStackStopsDevtoolsServersDuringCleanup(t *testing.T) {
 	if error != nil {
 		t.Fatalf("StartStack(...) error = %v", error)
 	}
-	if exitCode != 0 {
-		t.Fatalf("StartStack(...) exit code = %d, want 0", exitCode)
+	if exitCode != 143 {
+		t.Fatalf("StartStack(...) exit code = %d, want 143", exitCode)
 	}
 	if controlPort == 0 {
 		t.Fatal("control port = 0, want started devtools control server")
@@ -1402,7 +1427,7 @@ func TestStartStackActivatesRoutesOnlyAfterHealthPasses(t *testing.T) {
 		PortSource: "fixed",
 	}
 
-	exitCode, error := StartStack(&manifestValue, []string{"web"}, StartStackOptions{
+	exitCode, error := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           ioDiscard{},
@@ -1413,8 +1438,8 @@ func TestStartStackActivatesRoutesOnlyAfterHealthPasses(t *testing.T) {
 	if error != nil {
 		t.Fatalf("StartStack(...) error = %v", error)
 	}
-	if exitCode != 0 {
-		t.Fatalf("StartStack(...) exit code = %d, want 0", exitCode)
+	if exitCode != 143 {
+		t.Fatalf("StartStack(...) exit code = %d, want 143", exitCode)
 	}
 
 	traceText, readError := os.ReadFile(tracePath)

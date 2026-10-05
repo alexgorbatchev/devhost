@@ -1,10 +1,12 @@
 package devtools
 
 import (
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"sync"
 	"testing"
 )
 
@@ -107,5 +109,94 @@ func TestDocumentInjectionServerRewritesHTMLDocuments(t *testing.T) {
 	defer cssResponse.Body.Close()
 	if cssBody := readResponseText(t, cssResponse); cssBody != "body{color:red}" {
 		t.Fatalf("css response body = %q, want raw upstream css", cssBody)
+	}
+}
+
+func TestDocumentInjectionBackendCanChangeDuringRequests(t *testing.T) {
+	t.Parallel()
+	backend := func(text string) *httptest.Server {
+		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("content-type", "text/html")
+			_, _ = w.Write([]byte(text))
+		}))
+	}
+	first, second := backend("first"), backend("second")
+	defer first.Close()
+	defer second.Close()
+	firstAddress, secondAddress := first.Listener.Addr().(*net.TCPAddr), second.Listener.Addr().(*net.TCPAddr)
+	server, err := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{BackendHost: firstAddress.IP.String(), BackendPort: firstAddress.Port})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer server.Stop()
+	url := serverURL(server.Port(), "/")
+	var wg sync.WaitGroup
+	for range 4 {
+		wg.Go(func() {
+			for range 20 {
+				response, err := http.Get(url)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				data, err := io.ReadAll(response.Body)
+				response.Body.Close()
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				body := string(data)
+				if response.StatusCode != http.StatusOK || (body != injectDevtoolsScript("first") && body != injectDevtoolsScript("second")) {
+					t.Errorf("unexpected proxy response: %d %q", response.StatusCode, body)
+				}
+			}
+		})
+	}
+	for range 40 {
+		server.SetBackend(secondAddress.IP.String(), secondAddress.Port)
+		server.SetBackend(firstAddress.IP.String(), firstAddress.Port)
+	}
+	wg.Wait()
+	server.SetBackend(secondAddress.IP.String(), secondAddress.Port)
+	response, err := http.Get(url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	if body := readResponseText(t, response); body != injectDevtoolsScript("second") {
+		t.Fatalf("updated backend response = %q", body)
+	}
+}
+
+func TestDocumentInjectionServerServesRecoveryPageWhenBackendExits(t *testing.T) {
+	t.Parallel()
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("content-type", "text/html")
+		_, _ = w.Write([]byte("<html><body>app</body></html>"))
+	}))
+	address := backend.Listener.Addr().(*net.TCPAddr)
+	server, err := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{BackendHost: address.IP.String(), BackendPort: address.Port})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = server.Stop() })
+	backend.Close()
+	response, err := http.Get(serverURL(server.Port(), "/deep/link?value=1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusBadGateway {
+		t.Fatalf("status = %d, want 502", response.StatusCode)
+	}
+	if response.Header.Get("cache-control") != "no-store" {
+		t.Fatalf("cache-control = %q", response.Header.Get("cache-control"))
+	}
+	if response.Header.Get("content-type") != "text/html; charset=utf-8" {
+		t.Fatalf("content-type = %q", response.Header.Get("content-type"))
+	}
+	want := `<!doctype html><html><head><meta charset="utf-8"><title>Service unavailable · devhost</title></head><body data-devhost-recovery><p>Service unavailable. Use devhost to view logs and restart it.</p><script type="module" src="/__devhost__/inject.js"></script></body></html>`
+	if body := readResponseText(t, response); body != want {
+		t.Fatalf("recovery body = %q", body)
 	}
 }

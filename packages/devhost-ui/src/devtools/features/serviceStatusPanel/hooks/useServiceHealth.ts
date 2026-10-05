@@ -104,6 +104,7 @@ function isHealthResponse(value: unknown): value is HealthResponse {
     const url: unknown = Reflect.get(service, "url");
     const dirty: unknown = Reflect.get(service, "dirty");
     const restarting: unknown = Reflect.get(service, "restarting");
+    const exitCode: unknown = Reflect.get(service, "exitCode");
 
     return (
       typeof Reflect.get(service, "managed") === "boolean" &&
@@ -111,7 +112,8 @@ function isHealthResponse(value: unknown): value is HealthResponse {
       typeof Reflect.get(service, "status") === "boolean" &&
       (typeof url === "string" || url === undefined) &&
       (typeof dirty === "boolean" || dirty === undefined) &&
-      (typeof restarting === "boolean" || restarting === undefined)
+      (typeof restarting === "boolean" || restarting === undefined) &&
+      (typeof exitCode === "number" || exitCode === undefined)
     );
   });
 }

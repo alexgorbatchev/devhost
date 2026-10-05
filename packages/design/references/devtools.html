@@ -499,6 +499,7 @@
         <label><input type="checkbox" id="pc-queue-error" /> Queue error</label>
         <label><input type="checkbox" id="pc-submit-fail" /> Annotation submit fails</label>
         <button type="button" id="pc-dirty">Mark api + web changed</button>
+        <button type="button" id="pc-crash">Crash api</button>
         <button type="button" id="pc-add-agent">+ agent session</button>
         <button type="button" id="pc-add-editor">+ Neovim session</button>
         <button type="button" id="pc-finish">Finish running sessions</button>
@@ -1507,6 +1508,66 @@
         .mm-preview li.stderr.focus {
           background: color-mix(in srgb, var(--dh-danger) 28%, transparent);
         }
+        .crash {
+          pointer-events: auto;
+          position: fixed;
+          inset: 0;
+          margin: 0;
+          width: 100vw;
+          height: 100dvh;
+          max-width: none;
+          max-height: none;
+          box-sizing: border-box;
+          border: 0;
+          padding: 16px;
+          background: var(--dh-surface);
+          color: var(--dh-fg);
+          font: 13px/1.4 var(--dh-font);
+          overflow: auto;
+        }
+        .crash[open] {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .crash h1,
+        .crash h2,
+        .crash p {
+          margin: 0;
+          font-size: inherit;
+        }
+        .crash h1 {
+          color: var(--dh-danger);
+        }
+        .crash section {
+          display: flex;
+          flex: 1;
+          min-height: 160px;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .crash header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
+        .crash ol {
+          flex: 1;
+          overflow: auto;
+          margin: 0;
+          padding: 8px;
+          list-style: none;
+          border: 1px solid var(--dh-line);
+          background: var(--dh-surface-2);
+        }
+        .crash li {
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+        }
+        .crash .stderr {
+          color: var(--dh-danger);
+        }
       </style>
     </template>
 
@@ -1775,10 +1836,12 @@
         </div>
         <div data-region="minimap"></div>
         <div class="backdrop fade" data-surface="backdrop" data-action="session-minimize" hidden></div>
-        <section class="term frame fade" data-surface="term" role="dialog" hidden></section>`;
+        <section class="term frame fade" data-surface="term" role="dialog" hidden></section>
+        <dialog class="crash" data-surface="crash" aria-label="Service exited"></dialog>`;
       shadow.appendChild(rootElement);
       const region = (name) => rootElement.querySelector(`[data-region="${name}"]`);
       const surface = (name) => rootElement.querySelector(`[data-surface="${name}"]`);
+      surface("crash").addEventListener("cancel", (event) => event.preventDefault());
 
       // `inert` drops a fading-out surface from focus, pointer and a11y trees
       // immediately, while CSS keeps it painted until the fade completes.
@@ -1821,6 +1884,35 @@
         renderComposer();
         renderOverlay();
         renderMinimap();
+        renderCrashOverlay();
+      }
+
+      function renderCrashOverlay() {
+        const dialog = surface("crash");
+        const exitedServices = state.services.filter((service) => !service.status && service.exitCode !== undefined);
+        if (exitedServices.length === 0) {
+          if (dialog.open) dialog.close();
+          return;
+        }
+        patch(
+          dialog,
+          `<h1>Service exited</h1><p class="muted">devhost is running. Review the service logs and restart when ready.</p>
+          ${state.serviceError ? renderNotice(state.serviceError, null) : ""}
+          ${exitedServices
+            .map(
+              (service) => `<section aria-label="${esc(service.name)} recovery">
+            <header><h2>${esc(service.name)} <span class="muted">(exit code ${service.exitCode})</span></h2>
+              <button class="btn primary" type="button" data-action="restart" data-name="${esc(service.name)}" ${service.restarting ? "disabled" : ""}>
+                ${icon("restart")}${service.restarting ? "Restarting" : "Restart"} ${esc(service.name)}</button></header>
+            <ol aria-label="${esc(service.name)} logs">${logEntries
+              .filter((entry) => entry.serviceName === service.name)
+              .map((entry) => `<li class="${entry.stream}">${esc(entry.line)}</li>`)
+              .join("")}</ol>
+          </section>`,
+            )
+            .join("")}`,
+        );
+        if (!dialog.open) dialog.showModal();
       }
 
       function serviceDotClass(service) {
@@ -2442,11 +2534,12 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
           if (!state.failRestart) {
             s.status = true;
             s.dirty = false;
+            delete s.exitCode;
           }
         });
         state.serviceError = state.failRestart
           ? `Failed to restart ${names.join(", ")}: exit status 1 (see logs)`
-          : state.serviceError;
+          : null;
         render();
       }
 
@@ -2809,6 +2902,18 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
       bind("pc-dirty", "click", () => {
         state.services.forEach((s) => {
           if (s.name === "api" || s.name === "web") s.dirty = true;
+        });
+        render();
+      });
+      bind("pc-crash", "click", () => {
+        const service = state.services.find((item) => item.name === "api");
+        service.status = false;
+        service.exitCode = 7;
+        logEntries.push({
+          id: logEntries.length,
+          serviceName: "api",
+          stream: "stderr",
+          line: "Fatal: database connection lost",
         });
         render();
       });

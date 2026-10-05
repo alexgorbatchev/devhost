@@ -59,7 +59,7 @@ export const Default: Story = {
       await expect(restartFetch).toHaveBeenCalledWith(
         RESTART_SERVICE_PATH,
         expect.objectContaining({
-          body: JSON.stringify({ serviceName: "api" }),
+          body: JSON.stringify({ serviceNames: ["api"] }),
           headers: expect.objectContaining({
             [DEVTOOLS_CONTROL_TOKEN_HEADER_NAME]: readInjectedDevtoolsConfig().controlToken,
             "content-type": "application/json",

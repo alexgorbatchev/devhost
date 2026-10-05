@@ -70,6 +70,7 @@ Its vital that when devtools are injected into the user's web application, CSS t
 
 ## Implementation intent
 
+- With status devtools enabled, foreground service exit codes trigger a full-screen recovery dialog with retained service logs and restart controls. Keep the dialog open during recovery and failed attempts; remove it after healthy recovery. Health-probe failures and control-stream disconnects alone are not process exit events.
 - Keep the theme small and explicit.
 - Prefer stable semantic names over raw color names.
 - Treat the injected UI like a self-contained widget system, not like page-local markup.
