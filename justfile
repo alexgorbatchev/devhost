@@ -30,6 +30,11 @@ build-release-artifacts *args:
 # Build the current-platform devhost binary
 compile: devhost::compile
 
+# Build and replace the devhost payload used by the dotfiles shim
+dev-bootstrap $dotfiles_dir=(env_var("HOME") / ".dotfiles"):
+    revision="$(git rev-parse --short HEAD)" && just --justfile apps/devhost/justfile --set build-version "999.0.0-dev.$revision" compile
+    bun run ./apps/devhost/scripts/devBootstrap.ts
+
 # Start the root devhost stack locally
 dev: build-devtools-bundle
     DEVHOST_DEV_ASSETS_DIR=apps/devhost/internal/devtools/dist apps/devhost/bin/devhost --manifest devhost.toml

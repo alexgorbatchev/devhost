@@ -12,6 +12,7 @@ compile: build-devtools-bundle
 
 # Run Go vetting and tests
 check: build-devtools-bundle
+    bun test ./scripts/__tests__
     go vet ./...
     go test ./...
 
