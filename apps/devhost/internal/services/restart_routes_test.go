@@ -53,7 +53,7 @@ func TestRestartRefreshesRoutesAfterAutoPortCollision(t *testing.T) {
 				Command: []string{os.Args[0], "-test.run=TestRecoveryServiceHelperProcess", "--"},
 				Env:     map[string]string{"DEVHOST_RECOVERY_HELPER": "1", "EXIT_PATH": trigger, "PID_PATH": pidPath, "EXIT_CODE": "7", "COLLISION_PATH": collisionPath},
 				Health:  ResolvedHealthConfig{Kind: "http", URL: stringPointer(serverURL(oldPort, "/health")), Timeout: 2000, Interval: 20},
-				Host:    stringPointer("recover.localhost"), Port: intPointer(oldPort), PortSource: "auto", InjectPort: true,
+				Hosts:   []string{"recover.localhost", "alias.recover.localhost"}, Port: intPointer(oldPort), PortSource: "auto", InjectPort: true,
 			}
 			done := make(chan error, 1)
 			go func() {
@@ -77,6 +77,11 @@ func TestRestartRefreshesRoutesAfterAutoPortCollision(t *testing.T) {
 			registrationPath := filepath.Join(paths.RegistrationsDirectoryPath, "recover.localhost_web_2f.json")
 			waitForCondition(t, 5*time.Second, func() bool { _, err := os.Stat(registrationPath); return err == nil })
 			registration := readRestartRoute(t, registrationPath)
+			aliasPath := filepath.Join(paths.RegistrationsDirectoryPath, "alias.recover.localhost_web_2f.json")
+			alias := readRestartRoute(t, aliasPath)
+			if alias.AppPort != oldPort || alias.DocumentInjectionPort != registration.DocumentInjectionPort {
+				t.Fatalf("alias registration = %#v", alias)
+			}
 			documentPort := registration.DocumentInjectionPort
 			assertRestartResponse(t, serverURL(documentPort, "/"), fmt.Sprintf("ready on %d", oldPort))
 			if err := os.WriteFile(trigger, nil, 0o600); err != nil {
@@ -106,6 +111,9 @@ func TestRestartRefreshesRoutesAfterAutoPortCollision(t *testing.T) {
 				if route := readRestartRoute(t, registrationPath); route.AppPort != oldPort || route.DocumentInjectionPort != documentPort {
 					t.Fatalf("failed update changed registration: %#v", route)
 				}
+				if alias := readRestartRoute(t, aliasPath); alias.AppPort != oldPort || alias.DocumentInjectionPort != documentPort {
+					t.Fatalf("failed update changed alias: %#v", alias)
+				}
 				waitForRestartLog(t, logs, "reload rejected")
 				writeFakeCaddyExecutable(t, paths.ExecutablePath)
 				if err := os.WriteFile(collisionPath, nil, 0o600); err != nil {
@@ -116,6 +124,10 @@ func TestRestartRefreshesRoutesAfterAutoPortCollision(t *testing.T) {
 				t.Fatal(err)
 			}
 			registration = readRestartRoute(t, registrationPath)
+			alias = readRestartRoute(t, aliasPath)
+			if alias.AppPort != registration.AppPort || alias.DocumentInjectionPort != documentPort {
+				t.Fatalf("alias did not follow restart: %#v", alias)
+			}
 			if registration.AppPort == oldPort {
 				t.Fatal("proxy route retained the collided port")
 			}

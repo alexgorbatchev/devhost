@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
@@ -35,13 +36,19 @@ func TestStackRoutesRestoresDocumentBackendOnReloadFailure(t *testing.T) {
 	oldBackend, newBackend := backend("original"), backend("replacement")
 	defer oldBackend.Close()
 	defer newBackend.Close()
-	service := ResolvedService{Name: "web", Host: stringPointer("recover.localhost"), BindHost: "127.0.0.1", Port: intPointer(oldBackend.Listener.Addr().(*net.TCPAddr).Port)}
+	service := ResolvedService{Name: "web", Hosts: []string{"recover.localhost", "alias.recover.localhost"}, BindHost: "127.0.0.1", Port: intPointer(oldBackend.Listener.Addr().(*net.TCPAddr).Port)}
 	if err := routes.activate(service); err != nil {
 		t.Fatal(err)
 	}
 	document := routes.documentServers[service.Name]
 	defer document.Stop()
 	assertRestartResponse(t, serverURL(document.Port(), "/"), "original")
+	for _, host := range service.Hosts {
+		registration := readRestartRoute(t, filepath.Join(paths.RegistrationsDirectoryPath, host+"_web_2f.json"))
+		if registration.AppPort != *service.Port {
+			t.Fatalf("initial registration = %#v", registration)
+		}
+	}
 	service.Port = intPointer(newBackend.Listener.Addr().(*net.TCPAddr).Port)
 	if err := os.WriteFile(paths.ExecutablePath, []byte("#!/bin/sh\nexit 1\n"), 0o755); err != nil {
 		t.Fatal(err)
@@ -53,4 +60,10 @@ func TestStackRoutesRestoresDocumentBackendOnReloadFailure(t *testing.T) {
 		t.Fatal("route refresh replaced the document listener")
 	}
 	assertRestartResponse(t, serverURL(document.Port(), "/"), "original")
+	for _, host := range service.Hosts {
+		registration := readRestartRoute(t, filepath.Join(paths.RegistrationsDirectoryPath, host+"_web_2f.json"))
+		if registration.AppPort != oldBackend.Listener.Addr().(*net.TCPAddr).Port {
+			t.Fatalf("failed update changed registration = %#v", registration)
+		}
+	}
 }

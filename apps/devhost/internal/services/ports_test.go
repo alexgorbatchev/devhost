@@ -182,7 +182,7 @@ func TestResolveServicePorts(t *testing.T) {
 				"db": {
 					Name:     "db",
 					BindHost: "127.0.0.1",
-					Host:     &routedHost,
+					Hosts:    []string{routedHost},
 					Port:     dbPort,
 				},
 				"api": {

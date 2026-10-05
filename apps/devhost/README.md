@@ -109,6 +109,23 @@ With `[devtools.status].enabled = true`, an exited service opens a full-screen r
 
 A foreground restart completes after the replacement passes its health check and its routes refresh. If a bind collision moves an automatic port, both Caddy and the document-injection proxy use the final port while devtools listeners remain available. A routing failure restores the previous route registration, configuration, and document backend, stops the replacement, and keeps recovery retryable. The restart response and retained service logs include the error; restoration failures are also reported.
 
+### Multiple Domains for One Service
+
+Set `host` to an array to route several domains to the same service process:
+
+```toml
+[services.web]
+command = ["bun", "run", "dev"]
+port = 3000
+host = ["app.localhost", "alias.localhost"]
+```
+
+Each hostname uses the same port and `path`. The array must contain at least one valid, unique hostname, and every hostname must resolve to the machine running `devhost`. A single string, such as `host = "app.localhost"`, is also accepted.
+
+The first hostname supplies `DEVHOST_HOST`, `{{ services.web.host }}`, and the devtools service link. Startup logs list every routed URL. Annotations from any of the service's domains share its agent queue for the selected annotation action.
+
+All domains follow the service's port when it restarts. If a route refresh fails, `devhost` restores the previous routes for every domain and keeps recovery available in devtools.
+
 Before launching a foreground service, `devhost` checks that its working directory exists and is a directory. If that check fails, the error identifies `services.<name>.cwd`, shows the resolved path, and asks you to check the configured path. Other launch failures show the executable and working directory alongside the underlying operating-system error.
 
 Service and annotation action `cwd` values accept absolute paths or paths relative to the manifest directory. Absolute paths are used directly and may point outside the manifest directory. Relative paths resolve against the manifest directory and must stay within it.

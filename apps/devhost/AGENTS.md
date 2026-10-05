@@ -107,6 +107,8 @@ To speed up frontend UI development, you can configure the on-demand asset dev l
 
 ## Manifest configuration and casing rules
 
+- Normalize `host` strings and arrays into one ordered hostname list. Keep one process, port, and document injection server per service. Claim and clean up each hostname independently; publish all service routes with one Caddy reload and restore the entire group on failure. Use the first hostname for single-value service references and metadata.
+
 - **MANDATORY camelCase rule:** All keys across the entire TOML manifest must use standard `camelCase` naming conventions. Never introduce kebab-case (hyphenated), snake_case, or mixed casing for properties in the manifest.
 - This rule applies to both top-level tables and nested keys, including (but not limited to) `idleTimeout`, `externalToolbars`, `bindHost`, `httpPort`, `httpsPort`, `adminAddress`, `defaultAction`, `injectPort`, `dependsOn`, `primary`, `managed`, `restartServices`, etc.
 - When defining or updating schema validation logic or structs in Go (e.g., `validate.go` or `types.go`), always ensure allowed-keys lists, parsed fields, struct members, and serialization tags explicitly enforce and respect `camelCase`.

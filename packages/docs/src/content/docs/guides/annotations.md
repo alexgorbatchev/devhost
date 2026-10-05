@@ -14,7 +14,7 @@ Annotations build on top of the injected devtools UI. For the overlay and routin
 - write a comment that references markers like `#1` and `#2`
 - click `Submit` or press `⌘ ↵` / `Ctrl + Enter` to start the selected annotation action with the draft
 - when `Append to active session queue` is enabled, the draft is added to the matching routed service's active agent queue instead of being injected immediately into a busy terminal
-- queued annotations are grouped by routed service host and path and survive browser reloads and `devhost` restarts
+- queued annotations are grouped by service name and annotation action, shared across the service's domains, and survive browser reloads and `devhost` restarts
 - queued annotations drain automatically when the agent emits `OSC 1337;SetAgentStatus=finished`
 - by default, the queue stays collapsed into a compact progress summary until you expand it to edit or delete queued or paused items
 - click `Cancel` or press `Escape` to discard the draft

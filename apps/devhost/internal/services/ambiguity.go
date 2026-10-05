@@ -30,7 +30,7 @@ func ReadLoopbackBindHostAmbiguityWarning(service ResolvedService, httpsPort int
 }
 
 func readLoopbackBindHostAmbiguityWarning(service ResolvedService, httpsPort int, dependencies loopbackWarningDependencies) string {
-	if service.Host == nil || service.Port == nil {
+	if len(service.Hosts) == 0 || service.Port == nil {
 		return ""
 	}
 
@@ -70,7 +70,7 @@ func readLoopbackBindHostAmbiguityWarning(service ResolvedService, httpsPort int
 		recommendation = fmt.Sprintf(" Consider setting services.%s.bindHost = %q.", service.Name, preferredBindHost)
 	}
 
-	managedCaddyURL := strings.TrimSuffix(caddy.CreateManagedCaddyURL("https", *service.Host, httpsPort, "/"), "/")
+	managedCaddyURL := strings.TrimSuffix(caddy.CreateManagedCaddyURL("https", service.Hosts[0], httpsPort, "/"), "/")
 	return fmt.Sprintf(
 		"services.%s.port = %d is ambiguous: http://localhost:%d/ responded differently than http://%s/. devhost routes %s through %s:%d, so a localhost URL may hit a different loopback listener on this machine.%s",
 		service.Name,

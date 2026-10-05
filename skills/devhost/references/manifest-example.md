@@ -107,8 +107,11 @@ port = 3000
 injectPort = true
 # `bindHost` sets the socket interface the child process should bind to (default: "127.0.0.1").
 bindHost = "127.0.0.1"
-# `host` sets the public routed hostname.
+# `host` accepts one hostname or a non-empty array of unique hostnames.
+# All domains share the service process, port, path, and annotation queues.
+# The first supplies DEVHOST_HOST, services.<name>.host references, and the devtools link.
 host = "hello.local.test"
+# host = ["hello.local.test", "alias.local.test"]
 # `path` sets a subpath for mounting (e.g. "/api/*"). Defaults to "/".
 path = "/"
 # `dependsOn` declares services that must start before this service.

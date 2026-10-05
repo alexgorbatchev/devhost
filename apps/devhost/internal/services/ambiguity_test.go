@@ -58,7 +58,7 @@ func TestReadLoopbackBindHostAmbiguityWarning(t *testing.T) {
 		t.Parallel()
 
 		service := createRoutedResolvedService()
-		service.Host = nil
+		service.Hosts = nil
 		warning := readLoopbackBindHostAmbiguityWarning(service, 443, loopbackWarningDependencies{probeHTTPResponse: createProbe(map[string]*loopbackProbe{})})
 		if warning != "" {
 			t.Fatalf("ReadLoopbackBindHostAmbiguityWarning(...) = %q, want empty", warning)
@@ -74,7 +74,7 @@ func createRoutedResolvedService() ResolvedService {
 		DependsOn:  []string{},
 		Env:        map[string]string{},
 		Health:     ResolvedHealthConfig{Host: stringPointer("127.0.0.1"), Interval: 200, Kind: "tcp", Port: intPointer(5173), Retries: 0, Timeout: 30000},
-		Host:       stringPointer("test.localhost"),
+		Hosts:      []string{"test.localhost"},
 		Name:       "toolbar-test",
 		Path:       stringPointer("/"),
 		Port:       intPointer(5173),

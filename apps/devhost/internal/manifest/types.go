@@ -95,7 +95,7 @@ type ValidatedService struct {
 	DependsOn  []string
 	Env        map[string]string
 	Health     *HealthConfig
-	Host       *string
+	Hosts      []string
 	InjectPort bool
 	Lifecycle  ServiceLifecycleConfig
 	Managed    bool

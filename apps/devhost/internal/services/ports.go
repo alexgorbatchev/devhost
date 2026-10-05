@@ -34,7 +34,7 @@ type ResolvedService struct {
 	DependsOn  []string
 	Env        map[string]string
 	Health     ResolvedHealthConfig
-	Host       *string
+	Hosts      []string
 	InjectPort bool
 	Lifecycle  ResolvedServiceLifecycle
 	Managed    bool
@@ -107,7 +107,7 @@ func ResolveServicePorts(value manifest.Manifest) (ResolvedManifest, error) {
 			DependsOn:  service.DependsOn,
 			Env:        service.Env,
 			Health:     health,
-			Host:       service.Host,
+			Hosts:      append([]string{}, service.Hosts...),
 			InjectPort: service.InjectPort,
 			Lifecycle: ResolvedServiceLifecycle{
 				Mode:   service.Lifecycle.Mode,
@@ -202,8 +202,8 @@ func interpolateServiceTemplates(val string, resolvedServices map[string]Resolve
 					}
 					resolvedValue = fmt.Sprintf("%d", *targetService.Port)
 				case "host":
-					if targetService.Host != nil {
-						resolvedValue = *targetService.Host
+					if len(targetService.Hosts) > 0 {
+						resolvedValue = targetService.Hosts[0]
 					} else {
 						resolvedValue = targetService.BindHost
 					}

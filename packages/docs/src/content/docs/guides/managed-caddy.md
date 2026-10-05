@@ -70,6 +70,23 @@ For custom domains, that means loopback resolution, such as exact `A` / `AAAA` r
 
 Good out-of-the-box choices are `localhost` and subdomains under `*.localhost`, such as `foo.localhost` and `api.foo.localhost`, because they work without additional DNS configuration.
 
+## Multiple hostnames for one service
+
+Use an array in `host` to route several hostnames to one service process:
+
+```toml
+[services.web]
+command = ["bun", "run", "dev"]
+port = 3000
+host = ["app.localhost", "alias.localhost"]
+```
+
+Every hostname uses the same backend port and `path`, and must resolve to the machine running `devhost`. The array must contain at least one valid, unique hostname. Each hostname is claimed independently, so a conflict on any domain prevents startup and releases the claims already acquired.
+
+The first hostname supplies `DEVHOST_HOST`, `{{ services.web.host }}`, and the devtools service link. Startup logs show every routed URL. All domains share the service's annotation queues for each annotation action.
+
+All domains follow the service's port on restart, including after an automatic port retry. Route updates publish together; a failed refresh restores every domain's previous route and leaves the service available for recovery in devtools.
+
 ## Shared multi-stack behavior
 
 Multiple projects can run against the same managed Caddy instance at the same time.

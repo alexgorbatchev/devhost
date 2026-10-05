@@ -107,8 +107,8 @@ func TestValidateManifestReturnsNormalizedDefaults(t *testing.T) {
 		t.Fatalf("service.Env = %#v, want empty", service.Env)
 	}
 
-	if service.Host == nil || *service.Host != "hello.local.test" {
-		t.Fatalf("service.Host = %#v, want %q", service.Host, "hello.local.test")
+	if len(service.Hosts) != 1 || service.Hosts[0] != "hello.local.test" {
+		t.Fatalf("service.Hosts = %#v, want %q", service.Hosts, "hello.local.test")
 	}
 
 	if service.Path == nil || *service.Path != "/" {

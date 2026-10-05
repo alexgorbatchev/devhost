@@ -53,7 +53,7 @@ sequenceDiagram
 
 ### Queue Creation and Granularity
 
-The queue is owned by the `devhost` control server (`internal/devtools/annotation_queue.go`) and is bucketed by the annotation action id plus the routed service identity (`host` + normalized `path`).
+The queue is owned by the `devhost` control server (`internal/devtools/annotation_queue.go`) and is bucketed by the annotation action id plus the service name. URL matching still uses the hostname and path to resolve that service, so all of its domains share one bucket.
 
 - If you submit an annotation targeting an existing agent session (e.g., via the "Append to active session queue" checkbox), it appends to that queue when the session belongs to the same routed service and the same annotation action id.
 - If you submit a new untargeted agent annotation from the same routed service and action id, the control server reuses that bucket's existing queue when one already exists.
