@@ -2365,9 +2365,9 @@
               <fieldset class="worktree-options"><legend class="sr-only">Choose a checkout for ${esc(repository.name)}</legend>${options}</fieldset>
             </div>
             <footer class="worktree-foot">
+              <p class="muted">Your choice is remembered across devhost restarts.</p>
               <dl class="worktree-preview">${services.map((service) => `<dt><span aria-hidden="true">$ </span>${esc(service.name)}</dt><dd>${esc(picker.path + "/" + repository.serviceDirectories[service.name])}</dd>`).join("")}</dl>
               ${isBusy ? `<p class="worktree-progress" role="status">${icon("restart", "spin")}${esc(repository.phase)}</p>` : ""}
-              <p class="muted">Your choice is remembered across devhost restarts.</p>
               <div class="worktree-actions">
                 <button class="btn primary" type="button" data-action="worktree-apply" data-focus-key="worktree-apply" ${canApply ? "" : "disabled"}>
                   ${repository.error && picker.path === repository.selectedPath ? "Retry" : `Switch and restart ${services.length} service${services.length === 1 ? "" : "s"}`}
