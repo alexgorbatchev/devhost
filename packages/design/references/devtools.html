@@ -1125,6 +1125,9 @@
           border-bottom: 1px solid var(--dh-line);
           cursor: pointer;
         }
+        .worktree-option:last-child {
+          border-bottom: 0;
+        }
         .worktree-option:has(:checked) {
           background: var(--dh-surface-2);
           box-shadow: inset 2px 0 var(--dh-accent);
@@ -1160,10 +1163,8 @@
           flex: none;
           flex-direction: column;
           gap: var(--dh-space-4);
-          margin-top: var(--dh-space-4);
-          padding: calc(var(--dh-space-4) + var(--dh-space-2)) var(--dh-space-4);
-          border-top: 1px solid var(--dh-line);
-          background: var(--dh-surface-2);
+          padding: var(--dh-space-4);
+          border-top: 3px solid var(--dh-line);
         }
         .worktree-foot p {
           margin: 0;
@@ -2364,17 +2365,16 @@
               <fieldset class="worktree-options"><legend class="sr-only">Choose a checkout for ${esc(repository.name)}</legend>${options}</fieldset>
             </div>
             <footer class="worktree-foot">
-              <p>Restarts <strong>${services.map((service) => esc(service.name)).join(", ")}</strong></p>
-              <dl class="worktree-preview">${services.map((service) => `<dt>${esc(service.name)}</dt><dd>${esc(picker.path + "/" + repository.serviceDirectories[service.name])}</dd>`).join("")}</dl>
+              <dl class="worktree-preview">${services.map((service) => `<dt><span aria-hidden="true">$ </span>${esc(service.name)}</dt><dd>${esc(picker.path + "/" + repository.serviceDirectories[service.name])}</dd>`).join("")}</dl>
               ${isBusy ? `<p class="worktree-progress" role="status">${icon("restart", "spin")}${esc(repository.phase)}</p>` : ""}
+              <p class="muted">Your choice is remembered across devhost restarts.</p>
               <div class="worktree-actions">
                 <button class="btn primary" type="button" data-action="worktree-apply" data-focus-key="worktree-apply" ${canApply ? "" : "disabled"}>
                   ${repository.error && picker.path === repository.selectedPath ? "Retry" : `Switch and restart ${services.length} service${services.length === 1 ? "" : "s"}`}
                 </button>
                 ${repository.error && repository.selectedPath !== repository.configuredPath ? `<button class="btn" type="button" data-action="worktree-return" ${isBusy ? "disabled" : ""}>Return to ${esc(worktreeLabel(repository, repository.configuredPath))}</button>` : ""}
-                <button class="btn ghost" type="button" data-action="worktree-back">${isBusy ? "Back to services" : "Cancel"}</button>
+                <button class="btn" type="button" data-action="worktree-back">${isBusy ? "Back to services" : "Cancel"}</button>
               </div>
-              <p class="muted">Your choice is remembered across devhost restarts.</p>
             </footer>`,
         };
       }
