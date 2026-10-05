@@ -760,7 +760,10 @@ func readPrimaryFallbackService(serviceOrder []string, serviceNames []string) st
 }
 
 func resolveConstrainedPath(fieldPath string, candidatePath string, manifestDirectoryPath string, validationIssues *[]string) string {
-	resolvedPath := filepath.Clean(filepath.Join(manifestDirectoryPath, candidatePath))
+	resolvedPath := filepath.Clean(candidatePath)
+	if !filepath.IsAbs(candidatePath) {
+		resolvedPath = filepath.Join(manifestDirectoryPath, candidatePath)
+	}
 	relativePath, error := filepath.Rel(manifestDirectoryPath, resolvedPath)
 	if error != nil {
 		*validationIssues = append(*validationIssues, fmt.Sprintf("%s must stay within %s.", fieldPath, manifestDirectoryPath))

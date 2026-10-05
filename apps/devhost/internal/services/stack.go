@@ -1039,6 +1039,15 @@ func startServiceProcess(manifest ResolvedManifest, service ResolvedService, opt
 	if len(service.Command) == 0 {
 		return nil, fmt.Errorf("service %s command is empty", service.Name)
 	}
+	if service.Cwd != "" {
+		info, err := os.Stat(service.Cwd)
+		if err != nil {
+			return nil, fmt.Errorf("start service %s: cannot access working directory %q (services.%s.cwd); check the configured cwd path: %w", service.Name, service.Cwd, service.Name, err)
+		}
+		if !info.IsDir() {
+			return nil, fmt.Errorf("start service %s: working directory %q (services.%s.cwd) is not a directory; set cwd to a directory", service.Name, service.Cwd, service.Name)
+		}
+	}
 
 	serviceContainmentToken := createServiceContainmentToken()
 	command := exec.Command(service.Command[0], service.Command[1:]...)
@@ -1082,7 +1091,7 @@ func startServiceProcess(manifest ResolvedManifest, service ResolvedService, opt
 	if startError != nil {
 		stdout.close()
 		stderr.close()
-		return nil, fmt.Errorf("start service %s: %w", service.Name, startError)
+		return nil, fmt.Errorf("start service %s: cannot launch executable %q in working directory %q: %w", service.Name, command.Path, service.Cwd, startError)
 	}
 
 	containment, error := startServiceContainment(command.Process.Pid, serviceContainmentToken)
