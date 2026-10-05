@@ -1032,8 +1032,9 @@ func TestStartStackRestartServiceDoesNotStallOnRedundantHealthLoop(t *testing.T)
 		if fn == nil {
 			return false
 		}
-		_, err := os.Stat(filepath.Join(paths.RoutesDirectoryPath, "restart-health.localhost.caddy"))
-		return err == nil
+		// Route files appear before startup completes. An empty request checks the
+		// restart readiness guard without restarting or probing any service.
+		return fn(nil) == nil
 	})
 
 	startTime := time.Now()
