@@ -27,8 +27,8 @@ func readListeningProcessIDsForBindHost(bindHost string, port int) []int {
 		return nil
 	}
 
-	inodes, error := readLinuxListeningSocketInodes(targetIP, port)
-	if error != nil || len(inodes) == 0 {
+	inodes, err := readLinuxListeningSocketInodes(targetIP, port)
+	if err != nil || len(inodes) == 0 {
 		return nil
 	}
 
@@ -52,9 +52,9 @@ func readLinuxListeningSocketInodes(targetIP net.IP, port int) (map[string]struc
 	paths := []string{"/proc/net/tcp", "/proc/net/tcp6"}
 	inodes := map[string]struct{}{}
 	for _, path := range paths {
-		sockets, error := readLinuxListeningSockets(path)
-		if error != nil {
-			return nil, error
+		sockets, err := readLinuxListeningSockets(path)
+		if err != nil {
+			return nil, err
 		}
 
 		for _, socket := range sockets {
@@ -70,9 +70,9 @@ func readLinuxListeningSocketInodes(targetIP net.IP, port int) (map[string]struc
 }
 
 func readLinuxListeningSockets(path string) ([]linuxListeningSocket, error) {
-	text, error := os.ReadFile(path)
-	if error != nil {
-		return nil, fmt.Errorf("read %s: %w", path, error)
+	text, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", path, err)
 	}
 
 	sockets := []linuxListeningSocket{}
@@ -86,8 +86,8 @@ func readLinuxListeningSockets(path string) ([]linuxListeningSocket, error) {
 			continue
 		}
 
-		localIP, port, error := parseLinuxSocketAddress(fields[1])
-		if error != nil {
+		localIP, port, err := parseLinuxSocketAddress(fields[1])
+		if err != nil {
 			continue
 		}
 
@@ -107,23 +107,23 @@ func parseLinuxSocketAddress(value string) (net.IP, int, error) {
 		return nil, 0, fmt.Errorf("parse linux socket address %q", value)
 	}
 
-	ip, error := parseLinuxSocketHexIP(parts[0])
-	if error != nil {
-		return nil, 0, error
+	ip, err := parseLinuxSocketHexIP(parts[0])
+	if err != nil {
+		return nil, 0, err
 	}
 
-	portValue, error := strconv.ParseInt(parts[1], 16, 32)
-	if error != nil {
-		return nil, 0, fmt.Errorf("parse linux socket port %q: %w", value, error)
+	portValue, err := strconv.ParseInt(parts[1], 16, 32)
+	if err != nil {
+		return nil, 0, fmt.Errorf("parse linux socket port %q: %w", value, err)
 	}
 
 	return ip, int(portValue), nil
 }
 
 func parseLinuxSocketHexIP(value string) (net.IP, error) {
-	bytes, error := hex.DecodeString(value)
-	if error != nil {
-		return nil, fmt.Errorf("decode linux socket IP %q: %w", value, error)
+	bytes, err := hex.DecodeString(value)
+	if err != nil {
+		return nil, fmt.Errorf("decode linux socket IP %q: %w", value, err)
 	}
 
 	switch len(bytes) {
@@ -144,8 +144,8 @@ func parseLinuxSocketHexIP(value string) (net.IP, error) {
 }
 
 func readLinuxListeningProcessIDsByInode(targetInodes map[string]struct{}) []int {
-	entries, error := os.ReadDir("/proc")
-	if error != nil {
+	entries, err := os.ReadDir("/proc")
+	if err != nil {
 		return nil
 	}
 
@@ -156,20 +156,20 @@ func readLinuxListeningProcessIDsByInode(targetInodes map[string]struct{}) []int
 			continue
 		}
 
-		pid, error := strconv.Atoi(entry.Name())
-		if error != nil {
+		pid, err := strconv.Atoi(entry.Name())
+		if err != nil {
 			continue
 		}
 
-		fdEntries, error := os.ReadDir(filepath.Join("/proc", entry.Name(), "fd"))
-		if error != nil {
+		fdEntries, err := os.ReadDir(filepath.Join("/proc", entry.Name(), "fd"))
+		if err != nil {
 			continue
 		}
 
 		matched := false
 		for _, fdEntry := range fdEntries {
-			target, error := os.Readlink(filepath.Join("/proc", entry.Name(), "fd", fdEntry.Name()))
-			if error != nil {
+			target, err := os.Readlink(filepath.Join("/proc", entry.Name(), "fd", fdEntry.Name()))
+			if err != nil {
 				continue
 			}
 
