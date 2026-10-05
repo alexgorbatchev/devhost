@@ -103,6 +103,10 @@ This scans active registrations and host/port claims, targets the matching runni
 
 After startup, `devhost` prints one line per reachable service URL using the format `service-name: url`.
 
+Before launching a foreground service, `devhost` checks that its working directory exists and is a directory. If that check fails, the error identifies `services.<name>.cwd`, shows the resolved path, and asks you to check the configured path. Other launch failures show the executable and working directory alongside the underlying operating-system error.
+
+Service and annotation action `cwd` values accept absolute paths or paths relative to the manifest directory. Absolute paths are used directly, and both forms must stay within the manifest directory.
+
 ### Zombie Process Recovery (killZombies)
 
 If a previous `devhost` run crashed, got aborted, or left behind dangling child processes (zombies) claiming the same port or public host, `devhost` will automatically clean them up.
