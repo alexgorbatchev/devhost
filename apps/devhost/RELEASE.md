@@ -42,7 +42,7 @@ To use that local build through an existing dotfiles installation, run from the 
 just dev-bootstrap
 ```
 
-This builds the current checkout and replaces the installed payload referenced by `~/.dotfiles/.generated/bin/devhost`, retaining the shim and reporting the destination. Pass a different dotfiles directory as the optional argument. The command requires an existing installation and a shim with a literal, absolute `TOOL_EXECUTABLE` path. Temporary files under the target's `.tmp/` are removed after the atomic replacement; the target and temporary directory must be on the same filesystem. The build reports `999.0.0-dev.<short git SHA>`; a subsequent dotfiles update can overwrite it. Plain `just compile` and release builds retain the metadata version.
+This builds the current checkout and replaces the installed payload referenced by `~/.dotfiles/.generated/bin/devhost`, retaining the shim and reporting the destination. Pass a different dotfiles directory as the optional argument. The command requires an existing installation and a shim with a literal, absolute `TOOL_EXECUTABLE` path. Temporary files under the target's `.tmp/` are removed after the atomic replacement; the target and temporary directory must be on the same filesystem. The build reports `999.0.0-dev.<short git SHA>`; a subsequent dotfiles update can overwrite it. Plain `just devhost compile` and release builds retain the metadata version.
 
 ## Local release artifacts
 
