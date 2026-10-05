@@ -36,6 +36,14 @@ just compile
 This first refreshes the embedded injected devtools assets under `internal/devtools/dist/`, then runs `go build` with linker flags that embed the current `apps/devhost/metadata.json` version into `devhost --version`.
 The generated binary is the same Go runtime that ships in the release archives.
 
+To use that local build through an existing dotfiles installation, run from the repository root:
+
+```sh
+just dev-bootstrap
+```
+
+This builds the current checkout and replaces the installed payload referenced by `~/.dotfiles/.generated/bin/devhost`, retaining the shim and reporting the destination. Pass a different dotfiles directory as the optional argument. The command requires an existing installation and a shim with a literal, absolute `TOOL_EXECUTABLE` path. Temporary files under the target's `.tmp/` are removed after the atomic replacement; the target and temporary directory must be on the same filesystem. The build reports `999.0.0-dev.<short git SHA>`; a subsequent dotfiles update can overwrite it. Plain `just compile` and release builds retain the metadata version.
+
 ## Local release artifacts
 
 To build the full set of versioned release tarballs locally:

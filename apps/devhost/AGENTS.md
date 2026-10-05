@@ -24,6 +24,15 @@ Local rules for the `devhost` Go app in `apps/devhost/`.
 
 ## Development workflow
 
+From the repository root, build and replace the installed payload used by the dotfiles-managed `devhost` shim:
+
+```bash
+just dev-bootstrap
+just dev-bootstrap /path/to/dotfiles
+```
+
+The default target is `~/.dotfiles`. The command uses the app's `compile` recipe with a `999.0.0-dev.<short git SHA>` version override, reads the existing `.generated/bin/devhost` shim's literal `TOOL_EXECUTABLE` path, and atomically replaces that installed payload while retaining the shim. Dotfiles must already have installed `devhost`. Temporary files live under the target's `.tmp/`; a later dotfiles update can replace this development build. Plain `just compile` retains the metadata version.
+
 Run the app directly:
 
 ```bash
@@ -60,7 +69,7 @@ Run the app check suite:
 just devhost check
 ```
 
-The `fix` recipe runs `oxfmt --write` for the repo using the shared root config; the pre-commit hook also formats staged files. `just devhost check` refreshes the generated embedded devtools bundle, then runs `go vet ./...` and `go test ./...` from this app. The injected UI checks and Storybook coverage now live in `packages/devhost-ui/`. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
+The `fix` recipe runs `oxfmt --write` for the repo using the shared root config; the pre-commit hook also formats staged files. `just devhost check` refreshes the generated embedded devtools bundle, runs the Bun script tests, then runs `go vet ./...` and `go test ./...` from this app. The injected UI checks and Storybook coverage now live in `packages/devhost-ui/`. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
 
 `scripts/buildDevtoolsBundle.ts` refreshes the generated injected devtools assets under `internal/devtools/dist/` used by Go `//go:embed`. That `dist/` directory is intentionally ignored; do not commit its generated `devtools.js` or `xterm.css` files.
 
