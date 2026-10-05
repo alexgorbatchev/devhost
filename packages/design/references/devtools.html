@@ -495,6 +495,13 @@
       </fieldset>
       <fieldset>
         <legend>Simulate</legend>
+        <label
+          >Services
+          <select id="pc-service-scenario">
+            <option value="multiple">Multiple services</option>
+            <option value="single">One managed service</option>
+          </select>
+        </label>
         <label><input type="checkbox" id="pc-svc-error" /> Health poll error</label>
         <label><input type="checkbox" id="pc-restart-fail" /> Restarts fail</label>
         <label><input type="checkbox" id="pc-worktree-fail" /> Worktree switch fails</label>
@@ -1750,6 +1757,7 @@
           },
           { name: "postgres", managed: false, status: true, dirty: false, restarting: false },
         ],
+        serviceScenario: "multiple",
         serviceError: null,
         failRestart: false,
         worktreesEnabled: true,
@@ -1819,6 +1827,9 @@
         sessionChipLimit: Infinity,
         panelAnchor: null,
       };
+
+      const MOCK_SERVICES = state.services;
+      const MOCK_REPOSITORIES = state.repositories;
 
       const MOCK_QUEUES = [
         {
@@ -2021,6 +2032,11 @@
       }
 
       function render() {
+        document.getElementById("pc-service-scenario").disabled = MOCK_SERVICES.some((service) => service.restarting);
+        document.getElementById("pc-dirty").textContent =
+          state.serviceScenario === "single" ? "Mark web changed" : "Mark api + web changed";
+        document.getElementById("pc-crash").textContent =
+          state.serviceScenario === "single" ? "Crash web" : "Crash api";
         hostElement.dataset.theme = resolveTheme();
         renderDockFitted();
         renderTerminal();
@@ -2253,9 +2269,14 @@
 
       function renderServicesPanel() {
         if (state.worktreesEnabled && state.worktreePicker !== null) return renderWorktreePicker();
+        const externalServices = state.services.filter(
+          (service) => !state.repositories.some((repo) => service.name in repo.serviceDirectories),
+        );
         const rows = state.worktreesEnabled
           ? state.repositories.map(renderRepositoryGroup).join("") +
-            `<section class="repo-group"><header class="repo-head"><span class="muted">External services</span></header>${renderServiceRows(state.services.filter((service) => !state.repositories.some((repo) => service.name in repo.serviceDirectories)))}</section>`
+            (externalServices.length > 0
+              ? `<section class="repo-group"><header class="repo-head"><span class="muted">External services</span></header>${renderServiceRows(externalServices)}</section>`
+              : "")
           : renderServiceRows(state.services);
         return {
           width: state.worktreesEnabled ? 380 : 300,
@@ -3208,6 +3229,26 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
       // Prototype controls wiring
       // ======================================================================
       const bind = (id, eventName, handler) => document.getElementById(id).addEventListener(eventName, handler);
+      bind("pc-service-scenario", "change", (event) => {
+        if (MOCK_SERVICES.some((service) => service.restarting)) {
+          event.target.value = state.serviceScenario;
+          return;
+        }
+        state.serviceScenario = event.target.value;
+        state.services =
+          state.serviceScenario === "single"
+            ? MOCK_SERVICES.filter((service) => service.name === "web")
+            : MOCK_SERVICES;
+        state.repositories =
+          state.serviceScenario === "single"
+            ? MOCK_REPOSITORIES.filter((repository) => repository.id === "shop")
+            : MOCK_REPOSITORIES;
+        state.worktreePicker = null;
+        state.openPanel = "services";
+        state.panelAnchor = "services";
+        state.dockCollapsed = false;
+        render();
+      });
       bind("pc-scene", "change", (e) => {
         document.body.dataset.scene = e.target.value;
         render();
@@ -3255,12 +3296,14 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
         render();
       });
       bind("pc-crash", "click", () => {
-        const service = state.services.find((item) => item.name === "api");
+        const service = state.services.find(
+          (item) => item.name === (state.serviceScenario === "single" ? "web" : "api"),
+        );
         service.status = false;
         service.exitCode = 7;
         logEntries.push({
           id: logEntries.length,
-          serviceName: "api",
+          serviceName: service.name,
           stream: "stderr",
           line: "Fatal: database connection lost",
         });
