@@ -17,16 +17,10 @@ export function normalizeRoutedServicePath(path: string | null | undefined): str
   return path;
 }
 
-export type ServiceIdentityPick = Pick<IRoutedServiceIdentity, "host" | "path">;
-
-export function createRoutedServiceKey(service: ServiceIdentityPick): string {
-  return `${service.host.toLowerCase()}|${normalizeRoutedServicePath(service.path)}`;
-}
-
 export function resolveRoutedServiceKeyForUrl(services: IRoutedServiceIdentity[], urlText: string): string | null {
   const matchedService = resolveRoutedServiceForUrl(services, urlText);
 
-  return matchedService === null ? null : createRoutedServiceKey(matchedService);
+  return matchedService?.serviceName ?? null;
 }
 
 export function resolveRoutedServiceForUrl(

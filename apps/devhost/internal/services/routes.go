@@ -18,7 +18,7 @@ type stackRoutes struct {
 }
 
 func (r *stackRoutes) activate(service ResolvedService) error {
-	if service.Host == nil || service.Port == nil {
+	if len(service.Hosts) == 0 || service.Port == nil {
 		return nil
 	}
 	options := r.options(service)
@@ -42,7 +42,13 @@ func (r *stackRoutes) activate(service ResolvedService) error {
 		options.DevtoolsControlPort = r.controlServer.Port()
 		options.DocumentInjectionPort = documentServer.Port()
 	}
-	if err := caddy.ActivateRoute(options, r.manifest.ManifestPath, r.paths.RoutesDirectoryPath); err != nil {
+	registrations := make([]caddy.ActivateRouteOptions, 0, len(service.Hosts))
+	for _, host := range service.Hosts {
+		registration := options
+		registration.Host = host
+		registrations = append(registrations, registration)
+	}
+	if err := caddy.ActivateRoutes(registrations, r.manifest.ManifestPath, r.paths.RoutesDirectoryPath); err != nil {
 		if hadRoute && documentServer != nil {
 			host, restoreError := caddy.ResolveProxyHost(previous.AppBindHost)
 			if restoreError != nil {
@@ -66,7 +72,7 @@ func (r *stackRoutes) options(service ResolvedService) caddy.ActivateRouteOption
 		CaddyAdminAddress: caddy.ResolveManagedCaddyAdminAddress(r.manifest.Caddy.Global.AdminAddress),
 		CaddyBindHost:     r.manifest.Caddy.Global.BindHost, CaddyOutputWriters: r.outputWriters,
 		CaddyHTTPPort: r.manifest.Caddy.Global.HTTPPort, CaddyHTTPSPort: r.manifest.Caddy.Global.HTTPSPort,
-		Host: *service.Host, HTTPEnabled: r.manifest.Caddy.Global.HTTP,
+		Host: service.Hosts[0], HTTPEnabled: r.manifest.Caddy.Global.HTTP,
 		Path: path, ServiceName: service.Name, StackName: r.manifest.Name,
 	}
 }

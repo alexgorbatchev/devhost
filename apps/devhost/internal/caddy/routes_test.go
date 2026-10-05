@@ -682,7 +682,7 @@ func TestActivateRouteRollbackOnReloadFailure(t *testing.T) {
 	}
 }
 
-func TestActivateRouteUpdateRestoresPreviousConfiguration(t *testing.T) {
+func TestActivateRoutesUpdateRestoresPreviousConfiguration(t *testing.T) {
 	for _, failure := range []string{"reload", "render"} {
 		t.Run(failure, func(t *testing.T) {
 			withRouteMutationTestHooks(t, routeMutationTestHooks{now: time.Date(2026, time.April, 19, 12, 34, 56, 0, time.UTC), processID: 4321})
@@ -696,6 +696,11 @@ func TestActivateRouteUpdateRestoresPreviousConfiguration(t *testing.T) {
 			if err := ActivateRoute(options, "/project/devhost.toml", paths.RoutesDirectoryPath); err != nil {
 				t.Fatal(err)
 			}
+			alias := options
+			alias.Host = "alias.localhost"
+			if err := ActivateRoute(alias, "/project/devhost.toml", paths.RoutesDirectoryPath); err != nil {
+				t.Fatal(err)
+			}
 			other := options
 			other.Host, other.ServiceName, other.AppPort = "other.localhost", "worker", 3002
 			other.CaddyHTTPSPort = 0
@@ -704,8 +709,10 @@ func TestActivateRouteUpdateRestoresPreviousConfiguration(t *testing.T) {
 			}
 			filePaths := []string{
 				getRouteRegistrationPath("web", "hello.localhost", "/", paths.RoutesDirectoryPath),
+				getRouteRegistrationPath("web", "alias.localhost", "/", paths.RoutesDirectoryPath),
 				getRouteRegistrationPath("worker", "other.localhost", "/", paths.RoutesDirectoryPath),
 				filepath.Join(paths.RoutesDirectoryPath, "hello.localhost.caddy"),
+				filepath.Join(paths.RoutesDirectoryPath, "alias.localhost.caddy"),
 				filepath.Join(paths.RoutesDirectoryPath, "other.localhost.caddy"),
 				paths.CaddyfilePath,
 				createManagedCaddyNotFoundSitePaths(paths.CaddyDirectoryPath).PagePath,
@@ -719,16 +726,19 @@ func TestActivateRouteUpdateRestoresPreviousConfiguration(t *testing.T) {
 				previous[path] = data
 			}
 			options.AppPort = 3001
-			options.CaddyHTTPSPort = 8443
 			if failure == "reload" {
+				options.CaddyHTTPSPort = 8443
 				routeMutationRunManagedCaddyCommand = func(Paths, []string, ManagedCaddyCommandOptions) CommandResult {
 					return CommandResult{Stderr: []byte("reload rejected"), Success: false}
 				}
 			} else {
 				options.AppBindHost = "invalid host"
 			}
-			if err := ActivateRoute(options, "/project/devhost.toml", paths.RoutesDirectoryPath); err == nil {
+			alias.AppPort, alias.CaddyHTTPSPort = options.AppPort, options.CaddyHTTPSPort
+			if err := ActivateRoutes([]ActivateRouteOptions{alias, options}, "/project/devhost.toml", paths.RoutesDirectoryPath); err == nil {
 				t.Fatal("route update unexpectedly succeeded")
+			} else if failure == "reload" && !strings.Contains(err.Error(), "reload rejected") {
+				t.Fatalf("failure did not reach Caddy reload: %v", err)
 			}
 			for _, path := range filePaths {
 				data, err := os.ReadFile(path)

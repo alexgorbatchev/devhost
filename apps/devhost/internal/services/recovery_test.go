@@ -60,7 +60,7 @@ func TestStartStackKeepsExitedServicesRestartable(t *testing.T) {
 				Command: []string{os.Args[0], "-test.run=TestRecoveryServiceHelperProcess", "--"},
 				Env:     map[string]string{"DEVHOST_RECOVERY_HELPER": "1", "EXIT_PATH": triggerPath, "PID_PATH": pidPath, "FAIL_PATH": failPath, "EXIT_CODE": strconv.Itoa(code)},
 				Health:  ResolvedHealthConfig{Kind: "tcp", Host: stringPointer("127.0.0.1"), Port: intPointer(servicePort), Timeout: 2000, Interval: 20},
-				Host:    stringPointer("recover.localhost"), Port: intPointer(servicePort), PortSource: "fixed", InjectPort: true,
+				Hosts:   []string{"recover.localhost"}, Port: intPointer(servicePort), PortSource: "fixed", InjectPort: true,
 			}
 			m.Services["worker"] = ResolvedService{Name: "worker", Cwd: t.TempDir(), Command: helperCommandWithMode("graceful-signal-waiter"), Env: map[string]string{"GO_WANT_HELPER_PROCESS": "1", "STOP_TRACE_PATH": filepath.Join(t.TempDir(), "worker-stop"), "STOP_TRACE_VALUE": "stopped"}, Health: ResolvedHealthConfig{Kind: "process"}}
 

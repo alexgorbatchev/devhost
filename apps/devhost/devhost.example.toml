@@ -295,8 +295,12 @@ port = 3000
 # - `"::1"`: IPv6 loopback only.
 # - `"::"`: all IPv6 interfaces.
 bindHost = "127.0.0.1"
-# `host` sets the public routed hostname.
+# `host` sets one public routed hostname or a non-empty array of unique hostnames.
+# Every hostname routes to the same service process, port, and path.
+# The first hostname is used for `DEVHOST_HOST`, `{{ services.<name>.host }}`,
+# and the devtools service link. Startup logs list every routed URL.
 host = "hello.local.test"
+# host = ["hello.local.test", "alias.local.test"]
 # `path` sets a subpath for mounting (e.g. "/api/*"). Defaults to `"/"`.
 # Use same-host composition only within one manifest, for example:
 # - `services.web.host = "hello.local.test"`, `services.web.path = "/"`

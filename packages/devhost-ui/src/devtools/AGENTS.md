@@ -56,6 +56,8 @@ Its vital that when devtools are injected into the user's web application, CSS t
 
 ## Annotation metadata
 
+- Resolve annotation URLs by routed hostname and path, then group sessions by service name so aliases share the same queue. Keep the browser key aligned with the Go control server.
+
 - Annotation capture may collect optional React development source metadata from host-page elements when the host app exposes it via React fiber debug/source fields.
 - When the raw React metadata points at generated JavaScript and the host serves fetchable source maps, devhost should attempt source-map symbolication before storing the annotation source location.
 - Treat source metadata capture as best-effort host introspection, not a guaranteed contract across all frameworks, bundlers, or production builds.

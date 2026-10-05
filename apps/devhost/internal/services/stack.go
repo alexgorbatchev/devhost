@@ -499,7 +499,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			}
 		}
 
-		if service.Host == nil || service.Port == nil {
+		if len(service.Hosts) == 0 || service.Port == nil {
 			continue
 		}
 
@@ -515,8 +515,9 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		if error := routes.activate(service); error != nil {
 			return 0, joinCleanupError(error, cleanupError)
 		}
-
-		activeRoutes = append(activeRoutes, activeRoute{host: *service.Host, path: path, serviceName: service.Name})
+		for _, host := range service.Hosts {
+			activeRoutes = append(activeRoutes, activeRoute{host: host, path: path, serviceName: service.Name})
+		}
 	}
 	LogServiceURLs(*manifest, options.LogWriter)
 
@@ -642,8 +643,8 @@ func CreateInjectedServiceEnvironment(manifest ResolvedManifest, service Resolve
 		environment["PORT"] = fmt.Sprintf("%d", *service.Port)
 	}
 
-	if service.Host != nil {
-		environment["DEVHOST_HOST"] = *service.Host
+	if len(service.Hosts) > 0 {
+		environment["DEVHOST_HOST"] = service.Hosts[0]
 	}
 
 	if service.Path != nil {
@@ -683,16 +684,13 @@ func LogServiceURLs(manifest ResolvedManifest, writer io.Writer) {
 			continue
 		}
 
-		serviceURL := readServiceURL(service, manifest.Caddy.Global.HTTPSPort)
-		if serviceURL == nil {
-			continue
-		}
-
 		displayName := service.Name
 		if service.Name == manifest.PrimaryService {
 			displayName = fmt.Sprintf("%s (primary)", service.Name)
 		}
-		writeLogLine(writer, manifest.Name, fmt.Sprintf("%s: %s", displayName, *serviceURL))
+		for _, serviceURL := range readServiceURLs(service, manifest.Caddy.Global.HTTPSPort) {
+			writeLogLine(writer, manifest.Name, fmt.Sprintf("%s: %s", displayName, serviceURL))
+		}
 	}
 }
 
@@ -725,9 +723,9 @@ func orderedManifestServiceNames(manifest ResolvedManifest) []string {
 	return append(orderedNames, remainingServiceNames...)
 }
 
-func readServiceURL(service ResolvedService, httpsPort int) *string {
-	if url := readManagedServiceURL(service, httpsPort); url != nil {
-		return url
+func readServiceURLs(service ResolvedService, httpsPort int) []string {
+	if urls := readManagedServiceURLs(service, httpsPort); len(urls) > 0 {
+		return urls
 	}
 
 	if service.Port == nil {
@@ -739,8 +737,7 @@ func readServiceURL(service ResolvedService, httpsPort int) *string {
 		return nil
 	}
 
-	url := fmt.Sprintf("http://%s", caddy.FormatProxyAddress(proxyHost, *service.Port))
-	return &url
+	return []string{fmt.Sprintf("http://%s", caddy.FormatProxyAddress(proxyHost, *service.Port))}
 }
 
 func startServiceWithRetries(
@@ -1358,16 +1355,13 @@ func collectClaimedHosts(services map[string]ResolvedService) []string {
 	hosts := []string{}
 
 	for _, service := range services {
-		if service.Host == nil {
-			continue
+		for _, host := range service.Hosts {
+			if _, ok := hostsByName[host]; ok {
+				continue
+			}
+			hostsByName[host] = struct{}{}
+			hosts = append(hosts, host)
 		}
-
-		if _, ok := hostsByName[*service.Host]; ok {
-			continue
-		}
-
-		hostsByName[*service.Host] = struct{}{}
-		hosts = append(hosts, *service.Host)
 	}
 
 	sort.Strings(hosts)
@@ -1413,7 +1407,7 @@ func hasEnabledRuntimeDevtools(features devtools.FeatureToggles) bool {
 func collectRoutedServiceIdentities(services map[string]ResolvedService) []devtools.RoutedServiceIdentity {
 	routedServices := []devtools.RoutedServiceIdentity{}
 	for _, service := range services {
-		if service.Host == nil {
+		if len(service.Hosts) == 0 {
 			continue
 		}
 
@@ -1422,11 +1416,13 @@ func collectRoutedServiceIdentities(services map[string]ResolvedService) []devto
 			path = *service.Path
 		}
 
-		routedServices = append(routedServices, devtools.RoutedServiceIdentity{
-			Host:        *service.Host,
-			Path:        path,
-			ServiceName: service.Name,
-		})
+		for _, host := range service.Hosts {
+			routedServices = append(routedServices, devtools.RoutedServiceIdentity{
+				Host:        host,
+				Path:        path,
+				ServiceName: service.Name,
+			})
+		}
 	}
 
 	sort.Slice(routedServices, func(left int, right int) bool {
@@ -1538,18 +1534,28 @@ func upsertStartedDaemonLifecycleService(startedServices []daemonLifecycleServic
 }
 
 func readManagedServiceURL(service ResolvedService, httpsPort int) *string {
-	if service.Host == nil || service.Path == nil {
+	urls := readManagedServiceURLs(service, httpsPort)
+	if len(urls) == 0 {
+		return nil
+	}
+	return &urls[0]
+}
+
+func readManagedServiceURLs(service ResolvedService, httpsPort int) []string {
+	if len(service.Hosts) == 0 || service.Path == nil {
 		return nil
 	}
 
 	normalizedPath := normalizeManagedServiceURLPath(*service.Path)
-	if normalizedPath == "/" {
-		url := caddy.FormatManagedCaddySiteAddress("https", httpsPort, *service.Host)
-		return &url
+	urls := make([]string, 0, len(service.Hosts))
+	for _, host := range service.Hosts {
+		if normalizedPath == "/" {
+			urls = append(urls, caddy.FormatManagedCaddySiteAddress("https", httpsPort, host))
+		} else {
+			urls = append(urls, caddy.CreateManagedCaddyURL("https", host, httpsPort, normalizedPath))
+		}
 	}
-
-	url := caddy.CreateManagedCaddyURL("https", *service.Host, httpsPort, normalizedPath)
-	return &url
+	return urls
 }
 
 func normalizeManagedServiceURLPath(path string) string {

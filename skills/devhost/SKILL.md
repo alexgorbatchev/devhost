@@ -4,7 +4,7 @@ description: Use anytime devhost.toml is involved, including reading, writing, m
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-05 15:20
+  last_modified: 2026-10-05 22:38
   status: current
 ---
 
@@ -43,6 +43,9 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
   - `primary = true` (default is `false`) can only be set on **one** service per manifest.
   - `managed = true` by default. If `managed = false` (externally managed process), the service **must omit** the `command`, `injectPort`, and `port = "auto"` fields. Unmanaged services may define explicit TCP or HTTP health checks, but must **not** use `health.process`.
 - **Routed Services (`host` specified)**:
+  - Set `host` to a hostname string or a non-empty array of unique hostname strings to route every domain to the same process, port, and path.
+  - Put the primary hostname first: `DEVHOST_HOST`, `{{ services.<name>.host }}`, and the devtools service link use that value. Ensure every hostname resolves to the machine running devhost.
+  - Treat all domains of one service as a single annotation queue bucket per annotation action.
   - Must define a companion `port` configuration.
   - Must **not** use `health.process` (process-based health check).
 - **Dynamic Ports (`port = "auto"`)**:

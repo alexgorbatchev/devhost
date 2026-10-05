@@ -951,7 +951,7 @@ func resolveRoutedServiceKeyForAnnotation(routedServices []RoutedServiceIdentity
 	if service == nil {
 		return nil
 	}
-	value := strings.ToLower(service.Host) + "|" + normalizeRoutedServicePath(service.Path)
+	value := service.ServiceName
 	return &value
 }
 

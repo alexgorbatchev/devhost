@@ -653,13 +653,18 @@ func validateService(
 		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must omit injectPort when managed = false.", serviceName))
 	}
 
-	host, hasHost := readOptionalString(value, "host", schemaIssues)
-	var normalizedHost *string
-	if hasHost {
-		normalizedHost = &host
+	hosts, hasHost := readServiceHosts(value, schemaIssues)
+	seenHosts := map[string]struct{}{}
+	for i, host := range hosts {
 		if !isValidHost(host) {
 			*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.host must be a valid hostname, received: %s", serviceName, host))
 		}
+		host = strings.ToLower(host)
+		if _, exists := seenHosts[host]; exists {
+			*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.host contains duplicate hostname: %s", serviceName, host))
+		}
+		seenHosts[host] = struct{}{}
+		hosts[i] = host
 	}
 
 	var normalizedPath *string
@@ -670,11 +675,13 @@ func validateService(
 		}
 		validatedPath := validateRoutePath(serviceName, rawPath, validationIssues)
 		if validatedPath != nil {
-			existingPaths := routedPathsByHost[host]
-			if conflictingPath := readConflictingRoutePath(existingPaths, *validatedPath); conflictingPath != "" {
-				*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.path overlaps another routed service on host %s: %s", serviceName, host, conflictingPath))
+			for _, host := range hosts {
+				existingPaths := routedPathsByHost[host]
+				if conflictingPath := readConflictingRoutePath(existingPaths, *validatedPath); conflictingPath != "" {
+					*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.path overlaps another routed service on host %s: %s", serviceName, host, conflictingPath))
+				}
+				routedPathsByHost[host] = append(existingPaths, *validatedPath)
 			}
-			routedPathsByHost[host] = append(existingPaths, *validatedPath)
 			normalizedPath = validatedPath
 		}
 		if !hasPort {
@@ -728,7 +735,7 @@ func validateService(
 		DependsOn:  dependsOn,
 		Env:        env,
 		Health:     health,
-		Host:       normalizedHost,
+		Hosts:      hosts,
 		InjectPort: injectPort,
 		Lifecycle:  lifecycle,
 		Managed:    managed,
@@ -1005,6 +1012,13 @@ func readOptionalPort(value map[string]any, key string, path string, schemaIssue
 	}
 
 	return portValue, true
+}
+
+func readServiceHosts(value map[string]any, schemaIssues *[]string) ([]string, bool) {
+	if host, ok := value["host"].(string); ok {
+		return []string{host}, true
+	}
+	return readOptionalStringArray(value, "host", schemaIssues)
 }
 
 func readOptionalStringArray(value map[string]any, key string, schemaIssues *[]string) ([]string, bool) {

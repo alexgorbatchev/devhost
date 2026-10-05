@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
 import {
-  createRoutedServiceKey,
   normalizeRoutedServicePath,
   resolveRoutedServiceForUrl,
   resolveRoutedServiceKeyForUrl,
@@ -47,8 +46,23 @@ describe("routedServices", () => {
   });
 
   test("creates stable routed service keys", () => {
-    expect(resolveRoutedServiceKeyForUrl(routedServices, "https://APP.localhost/api/users")).toBe(
-      createRoutedServiceKey({ host: "app.localhost", path: "/api/*" }),
+    expect(resolveRoutedServiceKeyForUrl(routedServices, "https://APP.localhost/api/users")).toBe("api");
+  });
+
+  test("groups aliases by service while keeping other services separate", () => {
+    const services: IRoutedServiceIdentity[] = [
+      ...routedServices,
+      { host: "alias.localhost", path: "/", serviceName: "web" },
+      { host: "alias.localhost", path: "/api/*", serviceName: "api" },
+    ];
+    expect(resolveRoutedServiceKeyForUrl(services, "https://alias.localhost/dashboard")).toBe(
+      resolveRoutedServiceKeyForUrl(services, "https://app.localhost/dashboard"),
+    );
+    expect(resolveRoutedServiceKeyForUrl(services, "https://alias.localhost/api/users")).toBe(
+      resolveRoutedServiceKeyForUrl(services, "https://app.localhost/api/users"),
+    );
+    expect(resolveRoutedServiceKeyForUrl(services, "https://alias.localhost/api/users")).not.toBe(
+      resolveRoutedServiceKeyForUrl(services, "https://alias.localhost/dashboard"),
     );
   });
 });
