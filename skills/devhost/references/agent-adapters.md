@@ -94,6 +94,18 @@ Rules:
 
 ## Runtime contract
 
+Set `tempDir = ".tmp/annotations"` inside the root manifest's `[annotation]` table
+to store annotation JSON, prompts, and agent support files beneath devhost's startup
+working directory. Absolute paths are accepted. Omit the key to use the system temp
+directory (`$TMPDIR` on Unix, otherwise `/tmp`); empty strings are invalid. This setting
+applies to both agent and command actions, including queued agent handoffs. Action
+`cwd` and the manifest directory do not affect resolution.
+
+Missing parents are created. Each session or queued handoff receives a unique private
+subdirectory; cleanup removes its files without deleting the configured parent or
+other sessions. Directory creation failures are reported without a fallback. Durable
+queue storage uses its existing state location.
+
 Devhost injects these environment variables for custom commands:
 
 - `DEVHOST_AGENT_ANNOTATION_FILE`: JSON annotation payload.

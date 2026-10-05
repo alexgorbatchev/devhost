@@ -152,6 +152,28 @@ includes = ["packages/*/devhost.toml", "apps/*/devhost.toml"]
 
 Included manifests are recursively parsed, and their services and annotation actions are merged into the root stack. Relative paths for `cwd` and `watch` folders are automatically resolved, and missing `cwd` keys default to the directory of the manifest they were defined in. See the [Manifest Includes Documentation](https://alexgorbatchev.github.io/devhost/guides/manifest-includes/) page for more details.
 
+### Annotation Temporary Files
+
+Set `tempDir` under `[annotation]` to choose the parent directory for annotation JSON,
+prompt files, and agent support files shared by all annotation actions:
+
+```toml
+[annotation]
+tempDir = ".tmp/annotations"
+```
+
+This setting belongs alongside your annotation actions. Omit `tempDir` to use the
+system temporary directory (`$TMPDIR` when set on Unix, otherwise `/tmp`). Relative
+paths resolve against the working directory where you start `devhost`, independently
+of the manifest location and action `cwd`; absolute paths are used directly. Set the
+option in the root manifest when using includes.
+
+`devhost` creates missing parent directories and a unique private directory for each
+session. Session cleanup removes that session's files and directory, leaving the
+configured parent and other sessions intact. Directory creation failures are reported
+without falling back to another location. Empty values are invalid. This setting does
+not change durable queue storage.
+
 ### Service Commands
 
 Service commands are executed directly, not through an implicit shell. In practice that means

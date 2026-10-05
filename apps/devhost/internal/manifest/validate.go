@@ -87,7 +87,11 @@ func validateAnnotation(rawValue any, manifestDirectoryPath string, schemaIssues
 	if !ok {
 		return ValidatedAnnotation{}
 	}
-	allowKeys(value, []string{"actions", "defaultAction"}, "annotation", schemaIssues)
+	allowKeys(value, []string{"actions", "defaultAction", "tempDir"}, "annotation", schemaIssues)
+	var tempDir *string
+	if configured, ok := readOptionalNonEmptyString(value, "tempDir", schemaIssues); ok {
+		tempDir = &configured
+	}
 	configuredDefaultActionID, hasConfiguredDefaultActionID := readOptionalNonEmptyString(value, "defaultAction", schemaIssues)
 
 	rawActions, ok := value["actions"]
@@ -119,6 +123,7 @@ func validateAnnotation(rawValue any, manifestDirectoryPath string, schemaIssues
 	actions := make([]ValidatedAnnotationAction, 0, len(actionsValue))
 	for index, actionValue := range actionsValue {
 		action := validateAnnotationAction(index, actionValue, manifestDirectoryPath, schemaIssues, validationIssues)
+		action.TempDir = tempDir
 		if action.ID == "" {
 			continue
 		}
@@ -141,7 +146,7 @@ func validateAnnotation(rawValue any, manifestDirectoryPath string, schemaIssues
 		}
 	}
 
-	return ValidatedAnnotation{Actions: actions, DefaultActionID: defaultActionID}
+	return ValidatedAnnotation{Actions: actions, DefaultActionID: defaultActionID, TempDir: tempDir}
 }
 
 func validateAnnotationAction(index int, value map[string]any, manifestDirectoryPath string, schemaIssues *[]string, validationIssues *[]string) ValidatedAnnotationAction {

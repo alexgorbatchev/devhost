@@ -6,6 +6,48 @@ import (
 	"testing"
 )
 
+func TestAnnotationTempDirValidation(t *testing.T) {
+	tests := []struct {
+		name      string
+		value     any
+		wantError bool
+	}{
+		{name: "omitted"},
+		{name: "relative", value: ".tmp/annotations"},
+		{name: "absolute", value: "/tmp/annotations"},
+		{name: "empty", value: "", wantError: true},
+		{name: "wrong type", value: true, wantError: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			annotation := map[string]any{"actions": []any{map[string]any{
+				"id": "fix", "label": "Fix", "kind": "agent", "agent": map[string]any{"adapter": "pi"},
+			}}}
+			if tc.value != nil {
+				annotation["tempDir"] = tc.value
+			}
+			var schemaIssues, validationIssues []string
+			got := validateAnnotation(annotation, t.TempDir(), &schemaIssues, &validationIssues)
+			if (len(schemaIssues) > 0 || len(validationIssues) > 0) != tc.wantError {
+				t.Fatalf("validation issues = %v %v", schemaIssues, validationIssues)
+			}
+			if tc.wantError {
+				return
+			}
+			if tc.value == nil {
+				if got.TempDir != nil {
+					t.Fatalf("tempDir = %v, want nil", got.TempDir)
+				}
+			} else if got.TempDir == nil || *got.TempDir != tc.value {
+				t.Fatalf("tempDir = %v, want %v", got.TempDir, tc.value)
+			}
+			if got.Actions[0].TempDir != got.TempDir {
+				t.Fatal("action did not inherit annotation tempDir")
+			}
+		})
+	}
+}
+
 func TestValidateManifestReturnsNormalizedDefaults(t *testing.T) {
 	t.Parallel()
 

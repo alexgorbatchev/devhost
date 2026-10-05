@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -68,6 +69,11 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 		validatedManifest, validateError := manifest.ValidateManifest(*manifestPath, rawManifest)
 		if validateError != nil {
 			_, _ = fmt.Fprintf(stderr, "failed: %s\n", validateError.Error())
+			return 1
+		}
+
+		if err := resolveAnnotationTempDir(validatedManifest.Annotation, cwd); err != nil {
+			_, _ = fmt.Fprintf(stderr, "failed: %s\n", err)
 			return 1
 		}
 
@@ -196,6 +202,23 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 		_, _ = fmt.Fprintf(stderr, "failed: unsupported command kind: %s\n", arguments.Kind)
 		return 1
 	}
+}
+
+func resolveAnnotationTempDir(annotation manifest.ValidatedAnnotation, cwd string) error {
+	if annotation.TempDir == nil {
+		return nil
+	}
+	dir := *annotation.TempDir
+	if !filepath.IsAbs(dir) {
+		dir = filepath.Join(cwd, dir)
+	}
+	resolved, err := filepath.Abs(dir)
+	if err != nil {
+		return fmt.Errorf("resolve annotation.tempDir: %w", err)
+	}
+	// Actions share this pointer so every file handoff uses the startup location.
+	*annotation.TempDir = resolved
+	return nil
 }
 
 func readEnvironment() map[string]string {

@@ -58,6 +58,10 @@ idleTimeout = "1h"
 # Annotation actions configuration
 [annotation]
 defaultAction = "fix"
+# Optional; omit to use the system temp directory ($TMPDIR on Unix, otherwise /tmp).
+# Relative to devhost's startup cwd, independent of the manifest and action cwd.
+# Missing parents are created; each session uses a private subdirectory cleaned up separately.
+# tempDir = ".tmp/annotations"
 
 [[annotation.actions]]
 id = "fix"
