@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -115,15 +116,13 @@ func TestRunExplicitManifestBypassesUpwardDiscovery(t *testing.T) {
 	var stdout strings.Builder
 	var stderr strings.Builder
 
-	exitCode := Run([]string{"--manifest", manifestPath}, cwd, &stdout, &stderr)
+	exitCode := runUntilServiceExit(t, []string{"--manifest", manifestPath}, cwd, &stdout, &stderr)
 
-	if exitCode != 0 {
-		t.Fatalf("Run(...) exit code = %d, want 0 with stderr %q", exitCode, stderr.String())
+	if exitCode != 143 {
+		t.Fatalf("Run(...) exit code = %d, want 143 with stderr %q", exitCode, stderr.String())
 	}
 
-	if stdout.String() != "" {
-		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
-	}
+	assertServiceExitOutput(t, stdout.String())
 
 	if stderr.String() != "" {
 		t.Fatalf("Run(...) stderr = %q, want empty", stderr.String())
@@ -149,15 +148,13 @@ func TestRunManifestFromEnvironmentBypassesUpwardDiscovery(t *testing.T) {
 	var stdout strings.Builder
 	var stderr strings.Builder
 
-	exitCode := Run([]string{}, cwd, &stdout, &stderr)
+	exitCode := runUntilServiceExit(t, []string{}, cwd, &stdout, &stderr)
 
-	if exitCode != 0 {
-		t.Fatalf("Run(...) exit code = %d, want 0 with stderr %q", exitCode, stderr.String())
+	if exitCode != 143 {
+		t.Fatalf("Run(...) exit code = %d, want 143 with stderr %q", exitCode, stderr.String())
 	}
 
-	if stdout.String() != "" {
-		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
-	}
+	assertServiceExitOutput(t, stdout.String())
 
 	if stderr.String() != "" {
 		t.Fatalf("Run(...) stderr = %q, want empty", stderr.String())
@@ -177,14 +174,12 @@ func TestRunManifestModeStartsStackWhenDevtoolsDisabled(t *testing.T) {
 	var stdout strings.Builder
 	var stderr strings.Builder
 
-	exitCode := Run([]string{"--manifest", manifestPath}, manifestDirectoryPath, &stdout, &stderr)
-	if exitCode != 0 {
-		t.Fatalf("Run(...) exit code = %d, want 0 with stderr %q", exitCode, stderr.String())
+	exitCode := runUntilServiceExit(t, []string{"--manifest", manifestPath}, manifestDirectoryPath, &stdout, &stderr)
+	if exitCode != 143 {
+		t.Fatalf("Run(...) exit code = %d, want 143 with stderr %q", exitCode, stderr.String())
 	}
 
-	if stdout.String() != "" {
-		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
-	}
+	assertServiceExitOutput(t, stdout.String())
 
 	if stderr.String() != "" {
 		t.Fatalf("Run(...) stderr = %q, want empty", stderr.String())
@@ -204,14 +199,12 @@ func TestRunManifestModeStartsStackWithoutExplicitManifestPath(t *testing.T) {
 	var stdout strings.Builder
 	var stderr strings.Builder
 
-	exitCode := Run([]string{}, manifestDirectoryPath, &stdout, &stderr)
-	if exitCode != 0 {
-		t.Fatalf("Run(...) exit code = %d, want 0 with stderr %q", exitCode, stderr.String())
+	exitCode := runUntilServiceExit(t, []string{}, manifestDirectoryPath, &stdout, &stderr)
+	if exitCode != 143 {
+		t.Fatalf("Run(...) exit code = %d, want 143 with stderr %q", exitCode, stderr.String())
 	}
 
-	if stdout.String() != "" {
-		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
-	}
+	assertServiceExitOutput(t, stdout.String())
 
 	if stderr.String() != "" {
 		t.Fatalf("Run(...) stderr = %q, want empty", stderr.String())
@@ -649,6 +642,32 @@ func writeDevtoolsDisabledProcessManifest(t *testing.T, directoryPath string, ad
 	}
 
 	return manifestPath
+}
+
+func runUntilServiceExit(t *testing.T, args []string, cwd string, stdout, stderr *strings.Builder) int {
+	t.Helper()
+	return Run(args, cwd, &serviceExitShutdownWriter{writer: stdout}, stderr)
+}
+
+type serviceExitShutdownWriter struct {
+	writer io.Writer
+}
+
+func (w *serviceExitShutdownWriter) Write(p []byte) (int, error) {
+	n, err := w.writer.Write(p)
+	if err == nil && strings.Contains(string(p), "exited with code") {
+		err = syscall.Kill(os.Getpid(), syscall.SIGTERM)
+	}
+	return n, err
+}
+
+func assertServiceExitOutput(t *testing.T, output string) {
+	t.Helper()
+	want := "[hello-stack] worker exited with code 0; devhost is waiting for a restart.\n"
+	startupCrash := "[hello-stack] Service worker exited before passing its health check with code 0.\n"
+	if output != want && output != startupCrash+want {
+		t.Fatalf("Run(...) stdout = %q, want service exit notification", output)
+	}
 }
 
 func reserveUnusedAdminAddress(t *testing.T) string {

@@ -628,6 +628,10 @@ func TestActivateRouteRollbackOnReloadFailure(t *testing.T) {
 	})
 
 	paths := newManagedCaddyPaths(t)
+	previousCaddyfile, err := os.ReadFile(paths.CaddyfilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
 	var reloadCallCount int
 	routeMutationRunManagedCaddyCommand = func(paths Paths, arguments []string, options ManagedCaddyCommandOptions) CommandResult {
 		reloadCallCount++
@@ -664,8 +668,8 @@ func TestActivateRouteRollbackOnReloadFailure(t *testing.T) {
 	if error != nil {
 		t.Fatalf("ReadFile(...) caddyfile error = %v", error)
 	}
-	if !strings.Contains(string(caddyfileText), "https://:4443 {") {
-		t.Fatalf("caddyfile text = %q, want activation-time global settings to remain after rollback", string(caddyfileText))
+	if !bytes.Equal(caddyfileText, previousCaddyfile) {
+		t.Fatalf("caddyfile text = %q, want previous global settings after rollback", string(caddyfileText))
 	}
 
 	notFoundPagePath := createManagedCaddyNotFoundSitePaths(paths.CaddyDirectoryPath).PagePath
@@ -675,6 +679,67 @@ func TestActivateRouteRollbackOnReloadFailure(t *testing.T) {
 	}
 	if !strings.Contains(string(pageText), "No devhost hostnames are active right now.") {
 		t.Fatalf("not-found page = %q, want rollback resync", string(pageText))
+	}
+}
+
+func TestActivateRouteUpdateRestoresPreviousConfiguration(t *testing.T) {
+	for _, failure := range []string{"reload", "render"} {
+		t.Run(failure, func(t *testing.T) {
+			withRouteMutationTestHooks(t, routeMutationTestHooks{now: time.Date(2026, time.April, 19, 12, 34, 56, 0, time.UTC), processID: 4321})
+			paths := newManagedCaddyPaths(t)
+			originalRun := routeMutationRunManagedCaddyCommand
+			t.Cleanup(func() { routeMutationRunManagedCaddyCommand = originalRun })
+			routeMutationRunManagedCaddyCommand = func(Paths, []string, ManagedCaddyCommandOptions) CommandResult {
+				return CommandResult{Success: true}
+			}
+			options := ActivateRouteOptions{AppBindHost: "127.0.0.1", AppPort: 3000, CaddyHTTPSPort: 4443, Host: "hello.localhost", Path: "/", ServiceName: "web"}
+			if err := ActivateRoute(options, "/project/devhost.toml", paths.RoutesDirectoryPath); err != nil {
+				t.Fatal(err)
+			}
+			other := options
+			other.Host, other.ServiceName, other.AppPort = "other.localhost", "worker", 3002
+			other.CaddyHTTPSPort = 0
+			if err := ActivateRoute(other, "/other/devhost.toml", paths.RoutesDirectoryPath); err != nil {
+				t.Fatal(err)
+			}
+			filePaths := []string{
+				getRouteRegistrationPath("web", "hello.localhost", "/", paths.RoutesDirectoryPath),
+				getRouteRegistrationPath("worker", "other.localhost", "/", paths.RoutesDirectoryPath),
+				filepath.Join(paths.RoutesDirectoryPath, "hello.localhost.caddy"),
+				filepath.Join(paths.RoutesDirectoryPath, "other.localhost.caddy"),
+				paths.CaddyfilePath,
+				createManagedCaddyNotFoundSitePaths(paths.CaddyDirectoryPath).PagePath,
+			}
+			previous := make(map[string][]byte)
+			for _, path := range filePaths {
+				data, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				previous[path] = data
+			}
+			options.AppPort = 3001
+			options.CaddyHTTPSPort = 8443
+			if failure == "reload" {
+				routeMutationRunManagedCaddyCommand = func(Paths, []string, ManagedCaddyCommandOptions) CommandResult {
+					return CommandResult{Stderr: []byte("reload rejected"), Success: false}
+				}
+			} else {
+				options.AppBindHost = "invalid host"
+			}
+			if err := ActivateRoute(options, "/project/devhost.toml", paths.RoutesDirectoryPath); err == nil {
+				t.Fatal("route update unexpectedly succeeded")
+			}
+			for _, path := range filePaths {
+				data, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !bytes.Equal(data, previous[path]) {
+					t.Errorf("failed update changed %s", path)
+				}
+			}
+		})
 	}
 }
 

@@ -5,7 +5,8 @@ import { Badge } from "../../../../components/ui/Badge";
 import { Kbd } from "../../../../components/ui/Kbd";
 import { cn } from "../../../../lib/utils";
 
-import { Button, DEVTOOLS_CONTROL_TOKEN_HEADER_NAME, InlineNotice, RESTART_SERVICE_PATH } from "../../../shared";
+import { Button, InlineNotice } from "../../../shared";
+import { restartServices } from "../../../shared/restartServices";
 import { ToolbarPopover } from "../../../shared/components/ToolbarPopover";
 import { DEFAULT_RESTART_SERVICES_SHORTCUT } from "../../../shared/constants";
 import { formatShortcutLabel } from "../../../shared/formatShortcutLabel";
@@ -137,7 +138,9 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
                   title={service.restarting === true ? "Restarting…" : `Restart ${service.name}`}
                   variant={isChanged ? "warning" : "default"}
                   onClick={(): void => {
-                    void restartService(service.name, controlToken, onSetErrorMessage);
+                    void restartServices([service.name], controlToken, fetch).then((message) =>
+                      onSetErrorMessage?.(message),
+                    );
                   }}
                 />
               ) : null}
@@ -189,41 +192,4 @@ function readServicesTriggerLabel(
   const errorSuffix: string = hasError ? ", error" : "";
 
   return `${summary}${changedSuffix}${errorSuffix}`;
-}
-
-async function restartService(
-  serviceName: string,
-  controlToken: string,
-  onSetErrorMessage: ((message: string | null) => void) | undefined,
-): Promise<void> {
-  try {
-    const response = await fetch(RESTART_SERVICE_PATH, {
-      body: JSON.stringify({ serviceName }),
-      headers: {
-        [DEVTOOLS_CONTROL_TOKEN_HEADER_NAME]: controlToken,
-        "content-type": "application/json",
-      },
-      method: "POST",
-    });
-
-    if (response.ok) {
-      onSetErrorMessage?.(null);
-      return;
-    }
-
-    const bodyText: string = await response.text();
-    let parsedError: string = bodyText;
-
-    try {
-      const parsed = JSON.parse(bodyText);
-      parsedError = parsed.error || parsed.message || bodyText;
-    } catch {}
-
-    onSetErrorMessage?.(`Failed to restart service ${serviceName}: ${parsedError}`);
-  } catch (error: unknown) {
-    console.error(`Failed to restart service ${serviceName}:`, error);
-    onSetErrorMessage?.(
-      `Failed to restart service ${serviceName}: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
 }

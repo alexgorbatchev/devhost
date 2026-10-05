@@ -1,0 +1,72 @@
+package services
+
+import (
+	"fmt"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
+)
+
+// stackRoutes is owned by startup and the serialized restart operation.
+type stackRoutes struct {
+	manifest        ResolvedManifest
+	paths           caddy.Paths
+	outputWriters   caddy.RouteCommandOutputWriters
+	controlServer   *devtools.ControlServer
+	documentServers map[string]*devtools.DocumentInjectionServer
+	active          map[string]caddy.ActivateRouteOptions
+}
+
+func (r *stackRoutes) activate(service ResolvedService) error {
+	if service.Host == nil || service.Port == nil {
+		return nil
+	}
+	options := r.options(service)
+	previous, hadRoute := r.active[service.Name]
+	var documentServer *devtools.DocumentInjectionServer
+	if r.controlServer != nil && isRootCompatibleServicePath(service.Path) {
+		host, err := caddy.ResolveProxyHost(service.BindHost)
+		if err != nil {
+			return err
+		}
+		documentServer = r.documentServers[service.Name]
+		if documentServer == nil {
+			documentServer, err = startDocumentInjectionServer(devtools.StartDocumentInjectionServerOptions{BackendHost: host, BackendPort: *service.Port})
+			if err != nil {
+				return err
+			}
+			r.documentServers[service.Name] = documentServer
+		} else {
+			documentServer.SetBackend(host, *service.Port)
+		}
+		options.DevtoolsControlPort = r.controlServer.Port()
+		options.DocumentInjectionPort = documentServer.Port()
+	}
+	if err := caddy.ActivateRoute(options, r.manifest.ManifestPath, r.paths.RoutesDirectoryPath); err != nil {
+		if hadRoute && documentServer != nil {
+			host, restoreError := caddy.ResolveProxyHost(previous.AppBindHost)
+			if restoreError != nil {
+				return fmt.Errorf("restore document backend after %v: %w", err, restoreError)
+			}
+			documentServer.SetBackend(host, previous.AppPort)
+		}
+		return fmt.Errorf("refresh route for service %s: %w", service.Name, err)
+	}
+	r.active[service.Name] = options
+	return nil
+}
+
+func (r *stackRoutes) options(service ResolvedService) caddy.ActivateRouteOptions {
+	path := "/"
+	if service.Path != nil {
+		path = *service.Path
+	}
+	return caddy.ActivateRouteOptions{
+		AppBindHost: service.BindHost, AppPort: *service.Port,
+		CaddyAdminAddress: caddy.ResolveManagedCaddyAdminAddress(r.manifest.Caddy.Global.AdminAddress),
+		CaddyBindHost:     r.manifest.Caddy.Global.BindHost, CaddyOutputWriters: r.outputWriters,
+		CaddyHTTPPort: r.manifest.Caddy.Global.HTTPPort, CaddyHTTPSPort: r.manifest.Caddy.Global.HTTPSPort,
+		Host: *service.Host, HTTPEnabled: r.manifest.Caddy.Global.HTTP,
+		Path: path, ServiceName: service.Name, StackName: r.manifest.Name,
+	}
+}

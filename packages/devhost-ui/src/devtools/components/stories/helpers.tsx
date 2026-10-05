@@ -1,6 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { JSX, ComponentType } from "react";
+import type { StoryContext } from "@storybook/react";
 import type { IInjectedDevtoolsConfig } from "../../shared/readInjectedDevtoolsConfig";
+import type { ServiceHealth } from "../../shared/types";
+import { readInjectedDevtoolsConfig } from "../../shared/readInjectedDevtoolsConfig";
 
 declare global {
   interface Window {
@@ -18,8 +21,125 @@ type MockWebSocketUrl = string | URL;
 type FetchRequestInput = Parameters<typeof fetch>[0];
 type FetchRequestInit = Parameters<typeof fetch>[1];
 
-export function withDevhostMock(Story: ComponentType): JSX.Element {
+export function withDevhostMock(Story: ComponentType, context: StoryContext): JSX.Element {
+  if (context.parameters.serviceRecovery === true) {
+    return <ServiceRecoveryMockDecorator Story={Story} />;
+  }
   return <DevhostMockDecorator Story={Story} />;
+}
+
+function ServiceRecoveryMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Element | null {
+  const [isReady, setIsReady] = useState(false);
+  const crashReference = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    const originalWebSocket = window.WebSocket;
+    const originalFetch = window.fetch;
+    const originalConfig = window.__DEVHOST_INJECTED_CONFIG__;
+    window.__DEVHOST_INJECTED_CONFIG__ = {
+      ...readInjectedDevtoolsConfig(),
+      annotationEnabled: false,
+      annotationQueueEnabled: false,
+      editorEnabled: false,
+      externalToolbarsEnabled: false,
+      minimapEnabled: false,
+      terminalEnabled: false,
+      statusEnabled: true,
+      controlToken: "recovery-token",
+    };
+    let services: ServiceHealth[] = [{ managed: true, name: "api", status: true }];
+    let shouldFailRestart = true;
+    const sockets: RecoveryWebSocket[] = [];
+
+    class RecoveryWebSocket extends EventTarget {
+      static readonly CONNECTING = 0;
+      static readonly OPEN = 1;
+      static readonly CLOSING = 2;
+      static readonly CLOSED = 3;
+      readyState = RecoveryWebSocket.CONNECTING;
+      readonly url: string;
+      constructor(url: MockWebSocketUrl) {
+        super();
+        this.url = String(url);
+        sockets.push(this);
+        queueMicrotask(() => {
+          if (this.readyState !== RecoveryWebSocket.CONNECTING) return;
+          this.readyState = RecoveryWebSocket.OPEN;
+          this.dispatchEvent(new Event("open"));
+          if (this.url.includes("/ws/health")) this.emit({ services });
+          if (this.url.includes("/ws/logs"))
+            this.emit({
+              type: "snapshot",
+              entries: [{ id: 1, serviceName: "api", stream: "stdout", line: "[api] ready" }],
+            });
+        });
+      }
+      close(): void {
+        this.readyState = RecoveryWebSocket.CLOSED;
+      }
+      emit(value: unknown): void {
+        if (this.readyState === RecoveryWebSocket.OPEN) {
+          this.dispatchEvent(new MessageEvent("message", { data: JSON.stringify(value) }));
+        }
+      }
+    }
+    const publishHealth = (): void => {
+      sockets.filter((socket) => socket.url.includes("/ws/health")).forEach((socket) => socket.emit({ services }));
+    };
+    crashReference.current = () => {
+      services = [{ managed: true, name: "api", status: false, exitCode: 7 }];
+      sockets
+        .filter((socket) => socket.url.includes("/ws/logs"))
+        .forEach((socket) =>
+          socket.emit({
+            type: "entry",
+            entry: { id: 2, serviceName: "api", stream: "stderr", line: "[api] fatal error" },
+          }),
+        );
+      publishHealth();
+    };
+    Reflect.set(window, "WebSocket", RecoveryWebSocket);
+    window.fetch = Object.assign(
+      async (input: FetchRequestInput, init?: FetchRequestInit): Promise<Response> => {
+        if (String(input).includes("/restart-service")) {
+          if (
+            init?.body !== '{"serviceNames":["api"]}' ||
+            new Headers(init.headers).get("x-devhost-control-token") !== "recovery-token"
+          ) {
+            return new Response("Invalid restart request", { status: 400 });
+          }
+          services = [{ managed: true, name: "api", status: false, exitCode: 7, restarting: true }];
+          publishHealth();
+          if (shouldFailRestart) {
+            shouldFailRestart = false;
+            services = [{ managed: true, name: "api", status: false, exitCode: 1 }];
+            publishHealth();
+            return new Response("Service api exited before passing its health check with code 1.", { status: 500 });
+          }
+          services = [{ managed: true, name: "api", status: true }];
+          publishHealth();
+          return new Response(null, { status: 204 });
+        }
+        return originalFetch(input, init);
+      },
+      { preconnect: originalFetch.preconnect },
+    );
+    setIsReady(true);
+    return () => {
+      Reflect.set(window, "WebSocket", originalWebSocket);
+      window.fetch = originalFetch;
+      window.__DEVHOST_INJECTED_CONFIG__ = originalConfig;
+    };
+  }, []);
+
+  return isReady ? (
+    <>
+      <button type="button" onClick={() => crashReference.current()}>
+        Crash api
+      </button>
+      <Story />
+    </>
+  ) : null;
 }
 
 function DevhostMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Element {

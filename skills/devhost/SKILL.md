@@ -4,7 +4,7 @@ description: Use anytime devhost.toml is involved, including reading, writing, m
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-05 14:31
+  last_modified: 2026-10-05 15:20
   status: current
 ---
 
@@ -36,6 +36,8 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 
 ### Service Configuration Constraints
 
+- **Foreground service recovery**: Keep `devhost` running after foreground service exits, including exit code `0` and startup crashes. Enable `[devtools.status]` to display a full-screen recovery overlay with retained stdout/stderr logs and a restart button. Retry failed restarts from the overlay. Refresh a root-compatible routed app to load the recovery page while its backend is down; successful recovery reloads it. Stop the stack with `devhost stop`, a shutdown signal, or the configured idle timeout. Treat executable launch errors and startup health timeouts as startup failures. Use daemon/external health status separately from foreground exit recovery.
+- **Restart routing**: Wait for foreground replacement health and route refresh before treating a restart as recovered. Auto-port collision retries update both Caddy and document proxy targets while preserving devtools listeners. Read routing or restoration errors in the restart response and retained service logs, then retry from recovery after addressing the failure. Failed route updates restore previous registrations, configuration, and document backends and stop the unrouted replacement.
 - **Core Requirements**: Every service table must define either `port` or `health`.
 - **Primary & Managed Fields**:
   - `primary = true` (default is `false`) can only be set on **one** service per manifest.

@@ -114,6 +114,8 @@ To speed up frontend UI development, you can configure the on-demand asset dev l
 
 ## Service supervision boundary
 
+- Keep the supervisor, sibling services, routes, and devtools alive after foreground service exits, including startup crashes and successful exits. Retain the exit code and logs for web UI recovery; shutdown remains explicit or driven by the configured idle timeout. Failed restart attempts must reset pending state and remain retryable.
+- Publish foreground restart recovery only after replacement health and route refresh succeed. Share route configuration between startup and restart; update document backends without replacing their listeners. Failed route updates must restore prior registrations and configuration, stop the unrouted replacement, preserve retryable recovery, and report rollback failures. Protect runtime manifest snapshots from concurrent health reads during auto-port retries.
 - Treat service cleanup as a generic containment contract with platform-specific backends; do not hardcode Linux-only assumptions into shared orchestration code.
 - Linux may use stronger containment primitives (currently child-subreaper setup, descendant tracking, and short post-signal managed-port monitoring). macOS and other platforms are best-effort and may have weaker guarantees.
 - Keep user-facing docs honest about those guarantee differences. Do not describe foreground-service shutdown as perfect or identical across platforms.

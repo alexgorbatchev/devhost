@@ -12,7 +12,8 @@ import { ExternalDevtoolsPanel, useExternalDevtoolsLaunchers } from "../features
 import { LogMinimap, useServiceLogs } from "../features/minimap";
 import { TerminalSessionChips, TerminalSessionHost, useTerminalSessions } from "../features/terminalSessions";
 import { useReactHighlightOverlay } from "../features/reactHighlight";
-import { ServiceStatusPanel, useServiceHealth } from "../features/serviceStatusPanel";
+import { ServiceCrashOverlay, ServiceStatusPanel, useServiceHealth } from "../features/serviceStatusPanel";
+import { restartServices } from "../shared/restartServices";
 import { readInjectedDevtoolsConfig } from "../shared/readInjectedDevtoolsConfig";
 import { DevtoolsToolbar } from "../shared/components/DevtoolsToolbar";
 import { useRetainedValue } from "../shared/hooks/useRetainedValue";
@@ -22,8 +23,6 @@ import {
   resolveRoutedServiceKeyForUrl,
   useDevtoolsColorScheme,
   useResolvedColorScheme,
-  RESTART_SERVICE_PATH,
-  DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
 } from "../shared";
 import { DEFAULT_RESTART_SERVICES_SHORTCUT } from "../shared/constants";
 
@@ -83,7 +82,10 @@ function AppContent(): JSX.Element {
   } = useTerminalSessions(colorScheme, terminalEnabled);
   const [isMinimapHovered, setIsMinimapHovered] = useState<boolean>(false);
   const [selectedAnnotationActionId, setSelectedAnnotationActionId] = useState<string>(annotationDefaultActionId);
-  const logEntries = useServiceLogs(isMinimapHovered);
+  const exitedServices = services.filter(
+    (service) => service.managed && !service.status && service.exitCode !== undefined,
+  );
+  const logEntries = useServiceLogs(isMinimapHovered && exitedServices.length === 0);
   useReactHighlightOverlay({
     controlToken,
     enabled: editorEnabled,
@@ -140,32 +142,7 @@ function AppContent(): JSX.Element {
         return;
       }
 
-      try {
-        const response = await fetch(RESTART_SERVICE_PATH, {
-          body: JSON.stringify({ serviceNames: targetServiceNames }),
-          headers: {
-            [DEVTOOLS_CONTROL_TOKEN_HEADER_NAME]: controlToken,
-            "content-type": "application/json",
-          },
-          method: "POST",
-        });
-
-        if (!response.ok) {
-          const bodyText = await response.text();
-          let parsedError = bodyText;
-          try {
-            const parsed = JSON.parse(bodyText);
-            parsedError = parsed.error || parsed.message || bodyText;
-          } catch {}
-          setErrorMessage(`Failed to restart service(s) ${targetServiceNames.join(", ")}: ${parsedError}`);
-        } else {
-          setErrorMessage(null);
-        }
-      } catch (error: unknown) {
-        console.error(`Failed to restart service(s) ${targetServiceNames.join(", ")}:`, error);
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        setErrorMessage(`Failed to restart service(s) ${targetServiceNames.join(", ")}: ${errorMsg}`);
-      }
+      setErrorMessage(await restartServices(targetServiceNames, controlToken, fetch));
     };
 
     document.addEventListener("keydown", handleKeyDown, true);
@@ -280,6 +257,9 @@ function AppContent(): JSX.Element {
       ) : null}
       {shouldRenderMinimap ? (
         <LogMinimap entries={logEntries} isHovered={isMinimapHovered} onHoveredChange={setIsMinimapHovered} />
+      ) : null}
+      {statusEnabled && exitedServices.length > 0 ? (
+        <ServiceCrashOverlay services={exitedServices} entries={logEntries} />
       ) : null}
     </div>
   );
