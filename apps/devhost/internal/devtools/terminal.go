@@ -682,7 +682,7 @@ func launchTerminalCommand(command []string, cwd string, extraEnvironment map[st
 	cmd.Dir = cwd
 	cmd.Env = stableEnvironmentSlice(createTerminalSessionEnvironment(mergedEnvironment))
 
-	ptyFile, err := pty.StartWithSize(cmd, &pty.Winsize{Cols: defaultTerminalColumns, Rows: defaultTerminalRows})
+	ptyFile, err := startTerminalProcess(cmd, extraEnvironment)
 	if err != nil {
 		return nil, fmt.Errorf("start terminal session: %w", err)
 	}

@@ -184,11 +184,25 @@ restartServices = "alt+ctrl+r"
 # adapter = "claude-code"
 # args = ["--thinking", "high"]
 #
-# Agent actions support the built-in adapters `"pi"`, `"claude-code"`, and `"opencode"`.
+# Agent actions support the built-in adapters `"pi"`, `"claude-code"`, `"opencode"`, and `"codex"`.
 # Built-in adapters accept an optional `args` string array to pass extra CLI flags (e.g. model,
 # thinking level, or permission modes) while preserving built-in status reporting and prompt handoff.
 # Custom agent actions omit `adapter` and use `displayName`, `command`, optional `cwd`, and optional `env`
 # inside `[annotation.actions.agent]` (`args` is valid only with `adapter`).
+#
+# Codex example (requires the Codex CLI on PATH with --no-daemon and lifecycle hooks):
+# [[annotation.actions]]
+# id = "ask-codex"
+# label = "Ask Codex"
+# kind = "agent"
+#
+# [annotation.actions.agent]
+# adapter = "codex"
+# args = ["-c", "model_reasoning_effort=high"]
+#
+# Codex runs interactively with session-local status hooks. Use /hooks in its terminal to
+# review and trust the devhost hooks; queues cannot drain until those hooks are trusted.
+# Codex sandbox, approval, authentication, and syntax theme settings remain user-controlled.
 #
 # [[annotation.actions]]
 # id = "jira"

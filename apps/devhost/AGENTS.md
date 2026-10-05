@@ -142,6 +142,8 @@ To speed up frontend UI development, you can configure the on-demand asset dev l
 
 ## Annotation action boundary
 
+- Built-in agent adapters are `pi`, `claude-code`, `opencode`, and `codex`. Codex hooks capture stdout and run detached, so status commands must address the session's PTY through `DEVHOST_CODEX_STATUS_TTY`, an internal variable populated before launch.
+- For Codex adapter changes, also run `DEVHOST_TEST_CODEX=1 go test ./internal/devtools -run TestCodex -count=1` from `apps/devhost/` with Codex CLI on PATH. The opt-in runtime test uses an isolated Codex home and blocks the prompt before inference; its hook-trust bypass is test-only. Production sessions require `/hooks` trust review.
 - Top-level `[agent]` manifest configuration is removed. Annotation submission must be configured through `[annotation]` and `[[annotation.actions]]` only.
 - The annotation manifest supports exactly two action kinds: `agent` and `command`.
 - Use `kind = "command"` for non-agent side effects such as creating Jira tickets, invoking a project-local CLI, or kicking off other local automation from an annotation.

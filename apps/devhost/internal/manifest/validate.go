@@ -261,8 +261,10 @@ func validateAgentActionFields(path string, value map[string]any, manifestDirect
 			return ValidatedAgent{Args: argsValue, DisplayName: readAdapterDisplayName("Claude Code", displayName, hasDisplayName), Kind: "claude-code"}
 		case "opencode":
 			return ValidatedAgent{Args: argsValue, DisplayName: readAdapterDisplayName("OpenCode", displayName, hasDisplayName), Kind: "opencode"}
+		case "codex":
+			return ValidatedAgent{Args: argsValue, DisplayName: readAdapterDisplayName("Codex", displayName, hasDisplayName), Kind: "codex"}
 		default:
-			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.adapter must be one of pi, claude-code, or opencode.", path))
+			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.adapter must be one of pi, claude-code, opencode, or codex.", path))
 			return ValidatedAgent{}
 		}
 	}

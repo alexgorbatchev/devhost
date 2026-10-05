@@ -4,7 +4,7 @@ Use this reference when a `devhost.toml` manifest needs an annotation `kind = "a
 
 ## Decision rules
 
-- Use `adapter` only for built-ins: `"pi"`, `"claude-code"`, or `"opencode"`.
+- Use `adapter` only for built-ins: `"pi"`, `"claude-code"`, `"opencode"`, or `"codex"`.
 - Built-in adapters accept an optional `args = ["..."]` string array to pass extra CLI flags (e.g., model, thinking level, or permission modes) while preserving built-in status reporting and prompt handoff. An empty array `args = []` is accepted when no extra arguments are passed.
 - `args` is only valid when `adapter` is configured; it cannot be used with custom command agents.
 - Do not invent project-local adapter names. A new `adapter = "..."` value requires devhost Go code changes and a release.
@@ -12,11 +12,12 @@ Use this reference when a `devhost.toml` manifest needs an annotation `kind = "a
 
 ## Built-in adapter form
 
-Built-in adapters provide zero-configuration terminal integration, automatic status reporting, and prompt handoff for supported coding agents:
+Built-in adapters provide terminal integration, status reporting, and prompt handoff for supported coding agents:
 
 - `"pi"`: launches `pi -e <extension> [args...] @<prompt-file>`
 - `"claude-code"`: launches `claude --settings <settings> [args...] <instruction>`
 - `"opencode"`: launches `opencode run [args...] <instruction>`
+- `"codex"`: launches `codex --no-daemon -c <status-hook-config> ... [args...] <instruction>`; review and trust the status hooks in `/hooks` before using durable queues
 
 ```toml
 [annotation]
@@ -60,10 +61,34 @@ args = ["--model", "gpt-4o"]
 
 Rules:
 
-- `adapter` must be one of `"pi"`, `"claude-code"`, or `"opencode"`.
+- `adapter` must be one of `"pi"`, `"claude-code"`, `"opencode"`, or `"codex"`.
 - `args` is optional. When specified, it must be an array of non-empty strings (e.g. `args = ["--model", "sonnet"]`) or an empty array `args = []`.
 - `args` is only supported when `adapter` is configured.
 - When `adapter` is configured, custom command fields (`command`, `cwd`, `env`) must be omitted.
+
+## Codex
+
+Install and sign in to the Codex CLI before selecting this adapter. Use a version supporting
+`--no-daemon` and lifecycle hooks; the adapter is validated against 0.159.2.
+
+```toml
+[[annotation.actions]]
+id = "ask-codex"
+label = "Ask Codex"
+kind = "agent"
+
+[annotation.actions.agent]
+adapter = "codex"
+args = ["-c", "model_reasoning_effort=high"]
+```
+
+Review and trust the devhost hooks using `/hooks` in the embedded Codex terminal. Leave those
+hooks enabled for queue draining. If trust is missing or an admin requires managed hooks only,
+report that queues cannot drain; do not bypass hook trust or alter admin policy.
+Keep Codex authentication, sandbox, approval, and syntax theme settings user-controlled.
+Pass optional model, reasoning, or theme overrides through `args`.
+If the initial annotation finishes before hook review, send another prompt after trusting the
+hooks to report readiness and drain waiting annotations.
 
 ## Custom command form
 
