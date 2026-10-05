@@ -21,8 +21,9 @@ func TestValidateManifestResolvesWorkingDirectories(t *testing.T) {
 		{name: "absolute child", cwd: child, want: child},
 		{name: "absolute cleaned child", cwd: child + string(filepath.Separator) + ".", want: child},
 		{name: "relative outside", cwd: "../outside", outside: true},
-		{name: "absolute outside", cwd: filepath.Join(filepath.Dir(root), "outside"), outside: true},
-		{name: "absolute sibling sharing prefix", cwd: root + "-other", outside: true},
+		{name: "absolute outside", cwd: filepath.Join(filepath.Dir(root), "outside"), want: filepath.Join(filepath.Dir(root), "outside")},
+		{name: "absolute sibling sharing prefix", cwd: root + "-other", want: root + "-other"},
+		{name: "absolute parent", cwd: root + string(filepath.Separator) + "..", want: filepath.Dir(root)},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

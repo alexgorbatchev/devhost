@@ -96,6 +96,8 @@ primary = true
 # `command` defines the child process command line. String arrays are recommended.
 command = ["bun", "run", "web:dev"]
 # `cwd` sets the working directory for the child process.
+# Absolute paths are used directly and may point outside the manifest directory.
+# Relative paths resolve against the manifest directory and must stay within it.
 cwd = "./app"
 # `port` sets the runtime listening port or requests automatic allocation.
 port = 3000

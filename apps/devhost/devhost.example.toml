@@ -258,6 +258,8 @@ primary = true
 command = ["bun", "run", "web:dev"]
 # command = "bun run web:dev"
 # `cwd` sets the working directory for the child process.
+# Absolute paths are used directly and may point outside the manifest directory.
+# Relative paths resolve against the manifest directory and must stay within it.
 cwd = "./app"
 # `port` sets the runtime listening port or requests automatic allocation.
 # - integer `1..65535`: use the exact port you provide.
