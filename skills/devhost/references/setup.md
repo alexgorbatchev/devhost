@@ -64,3 +64,9 @@ Worktree support is enabled by default. When configuring repository services or 
 6. If a repository contains a `managed = false` service, report that switches are blocked. Do not claim devhost can relocate an externally owned process. Existing terminal sessions keep their launch directories; resume a paused queue to launch an agent in the selected checkout.
 
 Relative watch paths use the selected service cwd. Absolute watch paths remain absolute. New browser editor and annotation launches remap configured paths inside the selected repository; directories outside it remain configured. The selected checkout's manifest is never loaded.
+
+## 5. Managed Caddy Startup
+
+Start the shared proxy before launching stacks. Pass `--manifest <path>` to `devhost caddy start` to generate its configuration using `caddy.global.adminAddress`, `bindHost`, `http`, `httpPort`, and `httpsPort`. `DEVHOST_MANIFEST` supplies the same path when the flag is omitted; an explicit flag wins. `devhost caddy stop` and `trust` accept the same manifest option.
+
+Active stack registrations take precedence for the shared admin address, bind host, and listener ports. Plain HTTP is enabled when the supplied manifest or any active stack sets `caddy.global.http = true`. Keep non-default global settings consistent across stacks sharing that proxy; do not treat them as isolated per-stack listeners.

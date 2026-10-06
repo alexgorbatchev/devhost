@@ -45,11 +45,13 @@ Start the shared managed Caddy instance before running one or more stacks:
 devhost caddy start
 ```
 
-If you want `devhost caddy start`, `stop`, or `trust` to honor a manifest-defined admin API address, pass the manifest explicitly on that subcommand:
+Pass the manifest explicitly to use its `caddy.global.adminAddress`, `bindHost`, `http`, `httpPort`, and `httpsPort` settings when generating the shared proxy configuration. This applies to `devhost caddy start`, `stop`, and `trust`:
 
 ```bash
 devhost caddy start --manifest ./devhost.toml
 ```
+
+Active stack registrations take precedence for the shared admin address, bind host, and listener ports. Plain HTTP is enabled when the supplied manifest or any active stack sets `caddy.global.http = true`.
 
 You can also set `DEVHOST_MANIFEST=./devhost.toml` as the environment-backed equivalent of `--manifest` for `devhost start`, `devhost stop`, and `devhost caddy start|stop|trust`. If both are set for the same command, the CLI flag wins.
 

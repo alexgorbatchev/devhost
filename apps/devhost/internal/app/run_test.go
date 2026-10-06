@@ -375,52 +375,89 @@ func TestRunCaddyPrivilegedPortsUsesLifecyclePath(t *testing.T) {
 	}
 }
 
-func TestRunCaddyStartUsesManifestAdminAddress(t *testing.T) {
-	stateDirectoryPath := t.TempDir()
-	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
+func TestRunCaddyStartUsesManifestGlobalSettings(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		globalOptions []string
+		want          []string
+		wantMissing   []string
+	}{
+		{
+			name:        "defaults",
+			want:        []string{"https:// {"},
+			wantMissing: []string{"http:// {"},
+		},
+		{
+			name:          "custom HTTPS listener",
+			globalOptions: []string{`bindHost = "::1"`, "httpPort = 18080", "httpsPort = 18443"},
+			want:          []string{"    default_bind [::1]", "https://:18443 {"},
+			wantMissing:   []string{"http://:18080 {", "https:// {"},
+		},
+		{
+			name:          "custom HTTP and HTTPS listeners",
+			globalOptions: []string{`bindHost = "0.0.0.0"`, "http = true", "httpPort = 18080", "httpsPort = 18443"},
+			want:          []string{"    default_bind 0.0.0.0 [::]", "http://:18080 {", "https://:18443 {"},
+			wantMissing:   []string{"http:// {", "https:// {"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			stateDirectoryPath := t.TempDir()
+			t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
 
-	binDirectoryPath := t.TempDir()
-	argumentsPath := filepath.Join(t.TempDir(), "caddy-args.txt")
-	t.Setenv("DEVHOST_TEST_ARGS_FILE", argumentsPath)
-	t.Setenv("PATH", binDirectoryPath+string(os.PathListSeparator)+os.Getenv("PATH"))
-	writeExecutable(t, filepath.Join(binDirectoryPath, "caddy"), strings.Join([]string{
-		"#!/bin/sh",
-		"printf '%s\\n' \"$@\" > \"$DEVHOST_TEST_ARGS_FILE\"",
-		"exit 0",
-	}, "\n"))
+			binDirectoryPath := t.TempDir()
+			argumentsPath := filepath.Join(t.TempDir(), "caddy-args.txt")
+			t.Setenv("DEVHOST_TEST_ARGS_FILE", argumentsPath)
+			t.Setenv("PATH", binDirectoryPath+string(os.PathListSeparator)+os.Getenv("PATH"))
+			writeExecutable(t, filepath.Join(binDirectoryPath, "caddy"), strings.Join([]string{
+				"#!/bin/sh",
+				"printf '%s\\n' \"$@\" > \"$DEVHOST_TEST_ARGS_FILE\"",
+				"exit 0",
+			}, "\n"))
 
-	manifestDirectoryPath := t.TempDir()
-	adminAddress := reserveUnusedAdminAddress(t)
-	manifestPath := writeManifestWithAdminAddress(t, manifestDirectoryPath, adminAddress)
+			manifestDirectoryPath := t.TempDir()
+			adminAddress := reserveUnusedAdminAddress(t)
+			manifestPath := writeManifestWithAdminAddress(t, manifestDirectoryPath, adminAddress, tc.globalOptions...)
 
-	var stdout strings.Builder
-	var stderr strings.Builder
-	exitCode := Run([]string{"--manifest", manifestPath, "caddy", "start"}, manifestDirectoryPath, &stdout, &stderr)
-	if exitCode != 0 {
-		t.Fatalf("Run(...) exit code = %d, want 0 with stderr %q", exitCode, stderr.String())
-	}
-	if stdout.String() != "" {
-		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
-	}
-	if !strings.Contains(stderr.String(), "[devhost] managed caddy started with ") {
-		t.Fatalf("Run(...) stderr = %q, want managed caddy start log", stderr.String())
-	}
+			var stdout strings.Builder
+			var stderr strings.Builder
+			exitCode := Run([]string{"--manifest", manifestPath, "caddy", "start"}, manifestDirectoryPath, &stdout, &stderr)
+			if exitCode != 0 {
+				t.Fatalf("Run(...) exit code = %d, want 0 with stderr %q", exitCode, stderr.String())
+			}
+			if stdout.String() != "" {
+				t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
+			}
+			if !strings.Contains(stderr.String(), "[devhost] managed caddy started with ") {
+				t.Fatalf("Run(...) stderr = %q, want managed caddy start log", stderr.String())
+			}
 
-	caddyfilePath := filepath.Join(stateDirectoryPath, "caddy", "Caddyfile")
-	caddyfile, err := os.ReadFile(caddyfilePath)
-	if err != nil {
-		t.Fatalf("ReadFile(...) error = %v", err)
-	}
-	if !strings.Contains(string(caddyfile), "    admin "+adminAddress) {
-		t.Fatalf("Caddyfile = %q, want manifest admin address", string(caddyfile))
-	}
+			caddyfilePath := filepath.Join(stateDirectoryPath, "caddy", "Caddyfile")
+			caddyfile, err := os.ReadFile(caddyfilePath)
+			if err != nil {
+				t.Fatalf("ReadFile(...) error = %v", err)
+			}
+			if !strings.Contains(string(caddyfile), "    admin "+adminAddress) {
+				t.Fatalf("Caddyfile = %q, want manifest admin address", string(caddyfile))
+			}
+			for _, want := range tc.want {
+				if !strings.Contains(string(caddyfile), want) {
+					t.Errorf("Caddyfile = %q, want %q", string(caddyfile), want)
+				}
+			}
+			for _, missing := range tc.wantMissing {
+				if strings.Contains(string(caddyfile), missing) {
+					t.Errorf("Caddyfile = %q, must not contain %q", string(caddyfile), missing)
+				}
+			}
 
-	arguments, err := os.ReadFile(argumentsPath)
-	if err != nil {
-		t.Fatalf("ReadFile(...) error = %v", err)
-	}
-	if string(arguments) != strings.Join([]string{"start", "--pidfile", filepath.Join(stateDirectoryPath, "caddy", "caddy.pid"), "--config", caddyfilePath, "--adapter", "caddyfile", ""}, "\n") {
-		t.Fatalf("caddy arguments = %q", string(arguments))
+			arguments, err := os.ReadFile(argumentsPath)
+			if err != nil {
+				t.Fatalf("ReadFile(...) error = %v", err)
+			}
+			if string(arguments) != strings.Join([]string{"start", "--pidfile", filepath.Join(stateDirectoryPath, "caddy", "caddy.pid"), "--config", caddyfilePath, "--adapter", "caddyfile", ""}, "\n") {
+				t.Fatalf("caddy arguments = %q", string(arguments))
+			}
+		})
 	}
 }
 
@@ -558,19 +595,23 @@ func writeExecutable(t *testing.T, path string, text string) {
 	}
 }
 
-func writeManifestWithAdminAddress(t *testing.T, directoryPath string, adminAddress string) string {
+func writeManifestWithAdminAddress(t *testing.T, directoryPath string, adminAddress string, globalOptions ...string) string {
 	t.Helper()
 	manifestPath := filepath.Join(directoryPath, "devhost.toml")
-	manifestText := strings.Join([]string{
+	lines := []string{
 		`name = "hello-stack"`,
 		"",
 		"[caddy.global]",
 		`adminAddress = "` + adminAddress + `"`,
+	}
+	lines = append(lines, globalOptions...)
+	lines = append(lines,
 		"",
 		"[services.web]",
 		`command = "bun run dev"`,
 		"port = 3000",
-	}, "\n")
+	)
+	manifestText := strings.Join(lines, "\n")
 	if err := os.WriteFile(manifestPath, []byte(manifestText), 0o644); err != nil {
 		t.Fatalf("WriteFile(...) error = %v", err)
 	}
