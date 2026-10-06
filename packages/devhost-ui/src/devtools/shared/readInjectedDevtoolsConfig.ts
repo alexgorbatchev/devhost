@@ -18,6 +18,7 @@ export interface IInjectedDevtoolsConfig {
   annotationDefaultActionId: string;
   componentEditor: DevtoolsComponentEditor;
   controlToken: string;
+  homeDirectoryPath: string;
   position: DevtoolsPosition;
   projectRootPath: string;
   routedServices: IRoutedServiceIdentity[];
@@ -38,6 +39,7 @@ const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
   annotationDefaultActionId: "",
   componentEditor: defaultDevtoolsComponentEditor,
   controlToken: "",
+  homeDirectoryPath: "",
   position: "bottom-right",
   projectRootPath: "",
   routedServices: [],
@@ -64,6 +66,7 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
   const annotationDefaultActionId: string = readAnnotationDefaultActionIdValue(injectedConfig, annotationActions);
   const componentEditor: DevtoolsComponentEditor = readComponentEditorValue(injectedConfig);
   const controlToken: string = readControlTokenValue(injectedConfig);
+  const homeDirectoryPath: unknown = Reflect.get(injectedConfig, "homeDirectoryPath");
   const position: DevtoolsPosition = readDevtoolsPositionValue(injectedConfig);
   const projectRootPath: string = readProjectRootPathValue(injectedConfig);
   const routedServices: IRoutedServiceIdentity[] = readRoutedServicesValue(injectedConfig);
@@ -93,6 +96,7 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
     annotationQueueEnabled,
     componentEditor,
     controlToken,
+    homeDirectoryPath: typeof homeDirectoryPath === "string" ? homeDirectoryPath : "",
     position,
     projectRootPath,
     routedServices,

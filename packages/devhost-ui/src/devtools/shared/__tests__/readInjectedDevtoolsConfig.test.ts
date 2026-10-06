@@ -10,6 +10,16 @@ afterEach(() => {
 });
 
 describe("readInjectedDevtoolsConfig", () => {
+  test("reads the home directory for path display", () => {
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, { homeDirectoryPath: "/home/alex" });
+    expect(readInjectedDevtoolsConfig().homeDirectoryPath).toBe("/home/alex");
+  });
+
+  test("ignores an invalid home directory", () => {
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, { homeDirectoryPath: 42 });
+    expect(readInjectedDevtoolsConfig().homeDirectoryPath).toBe("");
+  });
+
   test("returns defaults when the injected config is unavailable", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, undefined);
 
@@ -18,6 +28,7 @@ describe("readInjectedDevtoolsConfig", () => {
       annotationDefaultActionId: "",
       componentEditor: "vscode",
       controlToken: "",
+      homeDirectoryPath: "",
       position: "bottom-right",
       projectRootPath: "",
       routedServices: [],
@@ -40,6 +51,7 @@ describe("readInjectedDevtoolsConfig", () => {
       annotationDefaultActionId: "agent",
       componentEditor: "neovim",
       controlToken: "control-token",
+      homeDirectoryPath: "",
       position: "top-right",
       projectRootPath: "/tmp/project",
       routedServices: [{ host: "app.localhost", path: "/api/*", serviceName: "api" }],
@@ -51,6 +63,7 @@ describe("readInjectedDevtoolsConfig", () => {
       annotationDefaultActionId: "agent",
       componentEditor: "neovim",
       controlToken: "control-token",
+      homeDirectoryPath: "",
       position: "top-right",
       projectRootPath: "/tmp/project",
       routedServices: [{ host: "app.localhost", path: "/api/*", serviceName: "api" }],
@@ -77,6 +90,7 @@ describe("readInjectedDevtoolsConfig", () => {
       annotationDefaultActionId: "",
       componentEditor: "vscode",
       controlToken: "",
+      homeDirectoryPath: "",
       position: "bottom-right",
       projectRootPath: "",
       routedServices: [],
@@ -105,6 +119,7 @@ describe("readInjectedDevtoolsConfig", () => {
       annotationDefaultActionId: "",
       componentEditor: "vscode",
       controlToken: "",
+      homeDirectoryPath: "",
       position: "bottom-right",
       projectRootPath: "",
       routedServices: [],
@@ -138,6 +153,7 @@ describe("readInjectedDevtoolsConfig", () => {
       annotationDefaultActionId: "create-ticket",
       componentEditor: "vscode",
       controlToken: "",
+      homeDirectoryPath: "",
       position: "bottom-right",
       projectRootPath: "",
       routedServices: [],

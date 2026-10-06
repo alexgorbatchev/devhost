@@ -14,6 +14,7 @@ import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtools
 import type { ServiceHealth, WorktreeRepository } from "../../../shared/types";
 
 import { WorktreePicker } from "./WorktreePicker";
+import { formatWorktreePath } from "../formatWorktreePath";
 
 interface IServiceStatusPanelProps {
   errorMessage: string | null;
@@ -41,7 +42,7 @@ const serviceStateLabels: Record<ServiceDotState, string> = {
 };
 
 export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element | null {
-  const { controlToken, restartServicesShortcut } = readInjectedDevtoolsConfig();
+  const { controlToken, homeDirectoryPath, restartServicesShortcut } = readInjectedDevtoolsConfig();
   const [repositoryId, setRepositoryId] = useState<string | null>(null);
   const repositoryButtons = useRef<Map<string, HTMLButtonElement>>(new Map());
   const repositories = props.repositories ?? [];
@@ -148,7 +149,7 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
                       else repositoryButtons.current.set(repository.id, button);
                     }}
                     aria-label={"Choose worktree for " + repository.name}
-                    title={repository.selectedPath}
+                    title={formatWorktreePath(repository.selectedPath, homeDirectoryPath)}
                     disabled={props.onSwitchWorktree === undefined}
                     startEnhancer={<GitBranchIcon />}
                     endEnhancer={<ChevronDownIcon />}

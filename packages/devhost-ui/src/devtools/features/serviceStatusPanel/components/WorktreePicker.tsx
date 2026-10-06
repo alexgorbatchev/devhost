@@ -5,6 +5,8 @@ import { Badge } from "../../../../components/ui/Badge";
 import { cn } from "../../../../lib/utils";
 import { Button, InlineNotice } from "../../../shared";
 import type { IWorktree, WorktreeRepository } from "../../../shared/types";
+import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
+import { formatWorktreePath } from "../formatWorktreePath";
 
 interface IWorktreePickerProps {
   repository: WorktreeRepository;
@@ -21,6 +23,7 @@ export function WorktreePicker({
   onRefresh,
   onSwitch,
 }: IWorktreePickerProps): JSX.Element {
+  const { homeDirectoryPath } = readInjectedDevtoolsConfig();
   const name = useId();
   const [path, setPath] = useState<string>(repository.selectedPath);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -104,7 +107,7 @@ export function WorktreePicker({
             )}
           >
             <input
-              aria-label={`${worktreeLabel(entry)} ${entry.path}`}
+              aria-label={`${worktreeLabel(entry)} ${formatWorktreePath(entry.path, homeDirectoryPath)}`}
               className="mt-0.5 size-3.5 shrink-0 accent-primary"
               type="radio"
               name={name}
@@ -123,7 +126,9 @@ export function WorktreePicker({
                 {entry.path === repository.configuredPath ? <Badge>configured</Badge> : null}
                 {!entry.available ? <Badge variant="destructive">unavailable</Badge> : null}
               </span>
-              <span className="text-muted-foreground [overflow-wrap:anywhere]">{entry.path}</span>
+              <span className="text-muted-foreground [overflow-wrap:anywhere]">
+                {formatWorktreePath(entry.path, homeDirectoryPath)}
+              </span>
               {entry.reason !== undefined ? (
                 <span className="text-destructive [overflow-wrap:anywhere]">{entry.reason}</span>
               ) : null}
@@ -135,7 +140,11 @@ export function WorktreePicker({
         <p className="m-0 text-muted-foreground">Your choice is remembered across devhost restarts.</p>
         <dl className="m-0 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-1">
           {choice?.directories.map((directory) => (
-            <WorktreeCommand key={directory.name} name={directory.name} cwd={directory.cwd} />
+            <WorktreeCommand
+              key={directory.name}
+              name={directory.name}
+              cwd={formatWorktreePath(directory.cwd, homeDirectoryPath)}
+            />
           ))}
         </dl>
         {isLoading || isBusy ? (

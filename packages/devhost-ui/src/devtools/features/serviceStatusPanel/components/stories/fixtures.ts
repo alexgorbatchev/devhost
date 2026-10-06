@@ -58,3 +58,18 @@ export function factory_worktreeRepository(serviceNames: string[] = ["api", "web
     ],
   };
 }
+
+export function factory_homeWorktreeRepository(): WorktreeRepository {
+  const repository = factory_worktreeRepository();
+  return {
+    ...repository,
+    configuredPath: `/home/alex${repository.configuredPath}`,
+    selectedPath: `/home/alex${repository.selectedPath}`,
+    runningPath: `/home/alex${repository.runningPath}`,
+    worktrees: repository.worktrees.map((entry) => ({
+      ...entry,
+      path: `/home/alex${entry.path}`,
+      directories: entry.directories.map((directory) => ({ ...directory, cwd: `/home/alex${directory.cwd}` })),
+    })),
+  };
+}

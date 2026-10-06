@@ -9,7 +9,9 @@ import {
   StorybookThemeProvider,
 } from "../../../../shared/components/stories/helpers";
 import { WorktreePicker } from "../WorktreePicker";
-import { factory_worktreeRepository } from "./fixtures";
+import { DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "../../../../shared/constants";
+import { readInjectedDevtoolsConfig } from "../../../../shared/readInjectedDevtoolsConfig";
+import { factory_homeWorktreeRepository, factory_worktreeRepository } from "./fixtures";
 
 const meta: Meta<typeof WorktreePicker> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/serviceStatusPanel/components/WorktreePicker",
@@ -40,6 +42,32 @@ const meta: Meta<typeof WorktreePicker> = {
 };
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+export const HomeDirectoryPaths: Story = {
+  args: { repository: factory_homeWorktreeRepository() },
+  beforeEach: () => {
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
+      ...readInjectedDevtoolsConfig(),
+      homeDirectoryPath: "/home/alex",
+    });
+  },
+  play: async ({ args, canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Worktrees" }));
+    const main = canvas.getByRole("radio", { name: "main ~/projects/shop" });
+    await waitFor(() => expect(main).toBeEnabled());
+    await waitFor(() => {
+      expect(canvas.getByText("~/projects/shop")).toBeVisible();
+      expect(canvas.getByText("~/projects/shop/api")).toBeVisible();
+    });
+    const feature = canvas.getByRole("radio", { name: "feature/cart ~/worktrees/cart" });
+    await userEvent.click(feature);
+    await expect(feature).toBeChecked();
+    await expect(canvas.getByText("~/worktrees/cart/web")).toBeVisible();
+    await userEvent.click(canvas.getByRole("button", { name: "Switch and restart 2 services" }));
+    await expect(args.onSwitch).toHaveBeenCalledWith("shop", "/home/alex/worktrees/cart");
+  },
+};
 
 export const ChoicesAndPreview: Story = {
   play: async ({ args, canvasElement }): Promise<void> => {

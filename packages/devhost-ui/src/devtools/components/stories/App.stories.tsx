@@ -332,6 +332,7 @@ function DesignOverviewMockDecorator({ Story }: IDesignOverviewMockDecoratorProp
       annotationDefaultActionId: "agent",
       componentEditor: "vscode",
       controlToken: "mock-token-overview",
+      homeDirectoryPath: "/home/alex",
       position: "bottom-right",
       projectRootPath: "/overview-workspace",
       stackName: "overview-stack",
