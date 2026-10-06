@@ -267,25 +267,42 @@ func TestCollectServicesHealthIncludesUnmanagedServices(t *testing.T) {
 }
 
 func TestStartStackKeepsStartupCrashUntilExplicitShutdown(t *testing.T) {
-	t.Run("default", func(t *testing.T) { testStartupCrashRecovery(t, false) })
-	t.Run("worktrees-enabled-outside-git", func(t *testing.T) { testStartupCrashRecovery(t, true) })
+	for _, tc := range []struct {
+		name             string
+		worktreesEnabled bool
+		inRepository     bool
+	}{
+		{"default", false, false},
+		{"worktrees-enabled", true, false},
+		{"worktrees-enabled-repository", true, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) { testStartupCrashRecovery(t, tc.worktreesEnabled, tc.inRepository) })
+	}
 }
 
-func testStartupCrashRecovery(t *testing.T, worktreesEnabled bool) {
+func testStartupCrashRecovery(t *testing.T, worktreesEnabled, inRepository bool) {
+	t.Helper()
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
 	adminAddress, stopAdmin := startTestAdminServer(t)
 	defer stopAdmin()
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
+	projectRoot := t.TempDir()
+	serviceCwd := projectRoot
+	if inRepository {
+		projectRoot, _ = createWorktreeRepository(t)
+		serviceCwd = filepath.Join(projectRoot, "web")
+	}
 	servicePort := mustReservePort(t)
-	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
+	manifestValue := newResolvedManifest(projectRoot, adminAddress)
 	manifestValue.Worktrees.Enabled = worktreesEnabled
+	manifestValue.Devtools.Status.Enabled = true
 	manifestValue.PrimaryService = "web"
 	manifestValue.Services["web"] = ResolvedService{
 		BindHost:  "127.0.0.1",
 		Command:   helperCommand(),
-		Cwd:       t.TempDir(),
+		Cwd:       serviceCwd,
 		DependsOn: []string{},
 		Env: map[string]string{
 			"GO_WANT_HELPER_PROCESS": "1",
@@ -300,17 +317,95 @@ func testStartupCrashRecovery(t *testing.T, worktreesEnabled bool) {
 		PortSource: "fixed",
 	}
 
-	exitCode, err := startStackUntilServiceExit(t, &manifestValue, []string{"web"}, StartStackOptions{
+	repository, err := discoverGitRepository(serviceCwd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantGroupFailure := worktreesEnabled && repository.root != ""
+	originalStart, originalRegister, originalUnregister := startDevtoolsControlServer, registerProcessSignals, unregisterProcessSignals
+	defer func() {
+		startDevtoolsControlServer, registerProcessSignals, unregisterProcessSignals = originalStart, originalRegister, originalUnregister
+	}()
+	controls := make(chan devtools.StartControlServerOptions, 1)
+	signals := make(chan chan<- os.Signal, 1)
+	startDevtoolsControlServer = func(options devtools.StartControlServerOptions) (*devtools.ControlServer, error) {
+		server, err := devtools.StartControlServer(options)
+		if err == nil {
+			controls <- options
+		}
+		return server, err
+	}
+	registerProcessSignals = func(ch chan<- os.Signal) { signals <- ch }
+	unregisterProcessSignals = func(chan<- os.Signal) {}
+	type startupResult struct {
+		exitCode int
+		err      error
+	}
+	done := make(chan startupResult, 1)
+	options := StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
-		LogWriter:           ioDiscard{},
-		ServiceStdoutWriter: ioDiscard{},
-		ServiceStderrWriter: ioDiscard{},
+		LogWriter:           io.Discard,
+		ServiceStdoutWriter: io.Discard,
+		ServiceStderrWriter: io.Discard,
 		ShutdownGracePeriod: 100 * time.Millisecond,
-	})
-	if err != nil || exitCode != 143 {
-		t.Fatalf("StartStack(...) = (%d, %v), want explicit SIGTERM shutdown", exitCode, err)
 	}
+	go func() {
+		code, err := StartStack(&manifestValue, []string{"web"}, options)
+		done <- startupResult{code, err}
+	}()
+	var signalChannel chan<- os.Signal
+	select {
+	case signalChannel = <-signals:
+	case result := <-done:
+		t.Fatalf("stack exited before registering signals: %#v", result)
+	}
+	stopped := false
+	stop := func() {
+		if stopped {
+			return
+		}
+		stopped = true
+		signalChannel <- syscall.SIGTERM
+		select {
+		case result := <-done:
+			if result.err != nil || result.exitCode != 143 {
+				t.Errorf("StartStack(...) = (%d, %v), want explicit SIGTERM shutdown", result.exitCode, result.err)
+			}
+		case <-time.After(5 * time.Second):
+			t.Error("stack did not shut down after SIGTERM")
+		}
+	}
+	defer stop()
+	var control devtools.StartControlServerOptions
+	select {
+	case control = <-controls:
+	case result := <-done:
+		stopped = true
+		t.Fatalf("stack exited before starting devtools: %#v", result)
+	}
+	// Recovery is observable in health, independently of whether Git groups this cwd.
+	// A startup failure must leave the supervisor alive until we explicitly signal it.
+	waitForCondition(t, 5*time.Second, func() bool {
+		if control.RestartService(nil) != nil {
+			return false
+		}
+		health, err := control.GetHealthResponse()
+		if err != nil || len(health.Services) != 1 || health.Services[0].Status || health.Services[0].Restarting {
+			return false
+		}
+		if wantGroupFailure {
+			return len(health.Repositories) == 1 && !health.Repositories[0].Switching && health.Repositories[0].RunningPath == "" && strings.Contains(health.Repositories[0].Error, "code 1")
+		}
+		return len(health.Repositories) == 0 && health.Services[0].ExitCode != nil && *health.Services[0].ExitCode == 1
+	})
+	select {
+	case result := <-done:
+		stopped = true
+		t.Fatalf("stack exited after startup crash without a shutdown signal: %#v", result)
+	default:
+	}
+	stop()
 
 	assertDirectoryEntries(t, paths.HostClaimsDirectoryPath, nil)
 	assertDirectoryEntries(t, paths.PortClaimsDirectoryPath, nil)
