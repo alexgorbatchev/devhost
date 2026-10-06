@@ -42,7 +42,7 @@ const serviceStateLabels: Record<ServiceDotState, string> = {
 };
 
 export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element | null {
-  const { controlToken, homeDirectoryPath, restartServicesShortcut } = readInjectedDevtoolsConfig();
+  const { homeDirectoryPath, restartServicesShortcut } = readInjectedDevtoolsConfig();
   const [repositoryId, setRepositoryId] = useState<string | null>(null);
   const repositoryButtons = useRef<Map<string, HTMLButtonElement>>(new Map());
   const repositories = props.repositories ?? [];
@@ -163,7 +163,6 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
                 </header>
                 <ServiceRows
                   services={props.services.filter((service) => repository.serviceNames.includes(service.name))}
-                  controlToken={controlToken}
                   onSetErrorMessage={onSetErrorMessage}
                   isBlocked={repository.switching || repository.error !== undefined}
                 />
@@ -174,7 +173,6 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
             services={props.services.filter(
               (service) => !repositories.some((repository) => repository.serviceNames.includes(service.name)),
             )}
-            controlToken={controlToken}
             onSetErrorMessage={onSetErrorMessage}
             isBlocked={false}
           />
@@ -186,11 +184,10 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
 
 interface IServiceRowsProps {
   services: ServiceHealth[];
-  controlToken: string;
   onSetErrorMessage?: (message: string | null) => void;
   isBlocked: boolean;
 }
-function ServiceRows({ services, controlToken, onSetErrorMessage, isBlocked }: IServiceRowsProps): JSX.Element {
+function ServiceRows({ services, onSetErrorMessage, isBlocked }: IServiceRowsProps): JSX.Element {
   return (
     <ul className="m-0 list-none p-0" data-testid="ServiceStatusPanel--service-list">
       {services.map((service: ServiceHealth) => {
@@ -237,9 +234,7 @@ function ServiceRows({ services, controlToken, onSetErrorMessage, isBlocked }: I
                 title={service.restarting === true ? "Restarting…" : `Restart ${service.name}`}
                 variant={isChanged ? "warning" : "default"}
                 onClick={(): void => {
-                  void restartServices([service.name], controlToken, fetch).then((message) =>
-                    onSetErrorMessage?.(message),
-                  );
+                  void restartServices([service.name], fetch).then((message) => onSetErrorMessage?.(message));
                 }}
               />
             ) : null}

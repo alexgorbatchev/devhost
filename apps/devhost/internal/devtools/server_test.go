@@ -64,8 +64,8 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 	}
 	staticScriptText := readResponseText(t, injectedScriptResponse)
 	injectedScriptText := getControlServerText(t, controlServer, injectedConfigPath)
-	if strings.Contains(staticScriptText, controlServer.controlToken) {
-		t.Fatal("static script contains instance credentials")
+	if strings.Contains(staticScriptText, injectedScriptText) {
+		t.Fatal("static script contains instance configuration")
 	}
 	var config map[string]any
 	configText := injectedScriptText
@@ -79,8 +79,8 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 	if got := config["homeDirectoryPath"]; got != home {
 		t.Fatalf("injected home directory = %v, want %q", got, home)
 	}
-	if !strings.Contains(injectedScriptText, `"controlToken":"`) {
-		t.Fatalf("inject.js missing control token: %q", injectedScriptText)
+	if _, exists := config["controlToken"]; exists {
+		t.Fatal("configuration includes a removed control token")
 	}
 	if !strings.Contains(injectedScriptText, `"annotationEnabled":false`) {
 		t.Fatalf("inject.js missing annotation capability gate: %q", injectedScriptText)
@@ -103,22 +103,19 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 	if body := readResponseText(t, xtermResponse); !strings.Contains(body, ".xterm") {
 		t.Fatalf("xterm.css missing xterm styles")
 	}
-
-	controlToken := extractControlToken(t, injectedScriptText)
 	restartResponse, err := http.Post(serverURL(controlServer.Port(), restartServicePath), "application/json", strings.NewReader(`{"serviceName":"web"}`))
 	if err != nil {
 		t.Fatalf("Post(restart-service unauthenticated) error = %v", err)
 	}
 	defer restartResponse.Body.Close()
-	if restartResponse.StatusCode != http.StatusForbidden {
-		t.Fatalf("restart status = %d, want 403", restartResponse.StatusCode)
+	if restartResponse.StatusCode != http.StatusOK {
+		t.Fatalf("restart without credentials status = %d, want 200", restartResponse.StatusCode)
 	}
 
 	request, err := http.NewRequest(http.MethodPost, serverURL(controlServer.Port(), restartServicePath), strings.NewReader(`{"bad":true}`))
 	if err != nil {
 		t.Fatalf("NewRequest(...) error = %v", err)
 	}
-	request.Header.Set(controlTokenHeaderName, controlToken)
 	request.Header.Set("content-type", "application/json")
 	invalidResponse, err := http.DefaultClient.Do(request)
 	if err != nil {
@@ -133,7 +130,6 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewRequest(...) error = %v", err)
 	}
-	request.Header.Set(controlTokenHeaderName, controlToken)
 	request.Header.Set("content-type", "application/json")
 	successResponse, err := http.DefaultClient.Do(request)
 	if err != nil {
@@ -143,8 +139,8 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 	if successResponse.StatusCode != http.StatusOK {
 		t.Fatalf("restart success status = %d, want 200", successResponse.StatusCode)
 	}
-	if len(restartedServices) != 1 || restartedServices[0] != "api" {
-		t.Fatalf("restarted services = %#v, want [api]", restartedServices)
+	if len(restartedServices) != 2 || restartedServices[0] != "web" || restartedServices[1] != "api" {
+		t.Fatalf("restarted services = %#v, want [web api]", restartedServices)
 	}
 
 	unsupportedServer, unsupportedError := StartControlServer(StartControlServerOptions{
@@ -163,13 +159,10 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 	t.Cleanup(func() {
 		_ = unsupportedServer.Stop()
 	})
-
-	unsupportedToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(unsupportedServer.Port(), injectedConfigPath))))
 	request, err = http.NewRequest(http.MethodPost, serverURL(unsupportedServer.Port(), restartServicePath), strings.NewReader(`{"serviceName":"api"}`))
 	if err != nil {
 		t.Fatalf("NewRequest(...) error = %v", err)
 	}
-	request.Header.Set(controlTokenHeaderName, unsupportedToken)
 	request.Header.Set("content-type", "application/json")
 	unsupportedResponse, err := http.DefaultClient.Do(request)
 	if err != nil {
@@ -273,33 +266,15 @@ func TestControlServerReactHighlightCursorBroadcastIsInstanceScoped(t *testing.T
 	t.Cleanup(func() {
 		_ = secondServer.Stop()
 	})
-
-	firstToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(firstServer.Port(), injectedConfigPath))))
-	secondToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(secondServer.Port(), injectedConfigPath))))
-	firstSocket := mustDialWebsocket(t, reactHighlightWebsocketURL(firstServer.Port(), firstToken))
+	firstSocket := mustDialWebsocket(t, reactHighlightWebsocketURL(firstServer.Port()))
 	defer firstSocket.Close()
-	secondSocket := mustDialWebsocket(t, reactHighlightWebsocketURL(secondServer.Port(), secondToken))
+	secondSocket := mustDialWebsocket(t, reactHighlightWebsocketURL(secondServer.Port()))
 	defer secondSocket.Close()
-
-	crossTokenRequest, err := http.NewRequest(http.MethodPost, serverURL(secondServer.Port(), reactHighlightCursorPath), strings.NewReader(`{"locator":"src/App.tsx:1:1"}`))
-	if err != nil {
-		t.Fatalf("NewRequest(cross token) error = %v", err)
-	}
-	crossTokenRequest.Header.Set(controlTokenHeaderName, firstToken)
-	crossTokenResponse, err := http.DefaultClient.Do(crossTokenRequest)
-	if err != nil {
-		t.Fatalf("Do(cross token) error = %v", err)
-	}
-	defer crossTokenResponse.Body.Close()
-	if crossTokenResponse.StatusCode != http.StatusForbidden {
-		t.Fatalf("cross-token React Highlight status = %d, want 403", crossTokenResponse.StatusCode)
-	}
 
 	firstRequest, err := http.NewRequest(http.MethodPost, serverURL(firstServer.Port(), reactHighlightCursorPath), strings.NewReader(`{"locator":"src/App.tsx:10:5"}`))
 	if err != nil {
 		t.Fatalf("NewRequest(first cursor) error = %v", err)
 	}
-	firstRequest.Header.Set(controlTokenHeaderName, firstToken)
 	firstRequest.Header.Set("content-type", "application/json")
 	firstResponse, err := http.DefaultClient.Do(firstRequest)
 	if err != nil {
@@ -349,8 +324,8 @@ func TestControlServerWritesNeovimShellLauncher(t *testing.T) {
 		t.Fatalf("ReadFile(launcher) error = %v", err)
 	}
 	launcherScript := string(launcherPayload)
-	if !strings.Contains(launcherScript, fmt.Sprintf("export DEVHOST_REACT_HIGHLIGHT_URL='http://127.0.0.1:%d/__devhost__/react-highlight/cursor'", controlServer.Port())) || !strings.Contains(launcherScript, fmt.Sprintf("export DEVHOST_CONTROL_TOKEN='%s'", controlServer.controlToken)) {
-		t.Fatalf("launcher script missing instance endpoint/token:\n%s", launcherScript)
+	if !strings.Contains(launcherScript, fmt.Sprintf("export DEVHOST_REACT_HIGHLIGHT_URL='http://127.0.0.1:%d/__devhost__/react-highlight/cursor'", controlServer.Port())) {
+		t.Fatalf("launcher script missing instance endpoint:\n%s", launcherScript)
 	}
 
 	if err := controlServer.Stop(); err != nil {
@@ -391,22 +366,19 @@ func TestControlServerTerminalSessionsEditorOnlyLifecycle(t *testing.T) {
 	t.Cleanup(func() {
 		_ = controlServer.Stop()
 	})
-
-	controlToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(controlServer.Port(), injectedConfigPath))))
-	unauthorizedListResponse, err := http.Get(serverURL(controlServer.Port(), terminalSessionsPath))
+	initialListResponse, err := http.Get(serverURL(controlServer.Port(), terminalSessionsPath))
 	if err != nil {
 		t.Fatalf("Get(terminal-sessions unauthenticated) error = %v", err)
 	}
-	defer unauthorizedListResponse.Body.Close()
-	if unauthorizedListResponse.StatusCode != http.StatusForbidden {
-		t.Fatalf("unauthenticated terminal list status = %d, want 403", unauthorizedListResponse.StatusCode)
+	defer initialListResponse.Body.Close()
+	if initialListResponse.StatusCode != http.StatusOK {
+		t.Fatalf("terminal list without credentials status = %d, want 200", initialListResponse.StatusCode)
 	}
 
 	invalidRequest, err := http.NewRequest(http.MethodPost, serverURL(controlServer.Port(), terminalSessionsPath), strings.NewReader(`{"kind":"agent"}`))
 	if err != nil {
 		t.Fatalf("NewRequest(agent terminal) error = %v", err)
 	}
-	invalidRequest.Header.Set(controlTokenHeaderName, controlToken)
 	invalidRequest.Header.Set("content-type", "application/json")
 	invalidResponse, err := http.DefaultClient.Do(invalidRequest)
 	if err != nil {
@@ -421,7 +393,6 @@ func TestControlServerTerminalSessionsEditorOnlyLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewRequest(command terminal) error = %v", err)
 	}
-	commandRequest.Header.Set(controlTokenHeaderName, controlToken)
 	commandRequest.Header.Set("content-type", "application/json")
 	commandResponse, err := http.DefaultClient.Do(commandRequest)
 	if err != nil {
@@ -445,7 +416,6 @@ func TestControlServerTerminalSessionsEditorOnlyLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewRequest(editor terminal) error = %v", err)
 	}
-	createRequest.Header.Set(controlTokenHeaderName, controlToken)
 	createRequest.Header.Set("content-type", "application/json")
 	createResponse, err := http.DefaultClient.Do(createRequest)
 	if err != nil {
@@ -466,20 +436,29 @@ func TestControlServerTerminalSessionsEditorOnlyLifecycle(t *testing.T) {
 	if len(starter.sessions) != 2 {
 		t.Fatalf("started sessions = %d, want 2", len(starter.sessions))
 	}
-	if _, response, err := websocket.DefaultDialer.Dial(websocketURL(controlServer.Port(), terminalWebsocketPath)+"?sessionId="+created.SessionID, nil); err == nil || response == nil || response.StatusCode != http.StatusForbidden {
+	for _, tc := range []struct {
+		query  string
+		status int
+	}{
+		{query: "", status: http.StatusBadRequest},
+		{query: "?sessionId=unknown", status: http.StatusNotFound},
+	} {
+		connection, response, err := websocket.DefaultDialer.Dial(websocketURL(controlServer.Port(), terminalWebsocketPath)+tc.query, nil)
+		if connection != nil {
+			connection.Close()
+		}
 		if response != nil {
 			response.Body.Close()
 		}
-		t.Fatalf("unauthorized terminal websocket = (%v, %#v), want 403", err, response)
-	} else {
-		response.Body.Close()
+		if err == nil || response == nil || response.StatusCode != tc.status {
+			t.Fatalf("invalid terminal websocket %q = (%v, %#v), want %d", tc.query, err, response, tc.status)
+		}
 	}
 
 	listRequest, err := http.NewRequest(http.MethodGet, serverURL(controlServer.Port(), terminalSessionsPath), nil)
 	if err != nil {
 		t.Fatalf("NewRequest(list terminal sessions) error = %v", err)
 	}
-	listRequest.Header.Set(controlTokenHeaderName, controlToken)
 	listResponse, err := http.DefaultClient.Do(listRequest)
 	if err != nil {
 		t.Fatalf("Do(list terminal sessions) error = %v", err)
@@ -500,7 +479,7 @@ func TestControlServerTerminalSessionsEditorOnlyLifecycle(t *testing.T) {
 		t.Fatalf("listed request = %#v", listed.Sessions[0].Request)
 	}
 
-	terminalSocket := mustDialWebsocket(t, terminalWebsocketURL(controlServer.Port(), created.SessionID, controlToken))
+	terminalSocket := mustDialWebsocket(t, terminalWebsocketURL(controlServer.Port(), created.SessionID))
 	defer terminalSocket.Close()
 	if message := readWebsocketText(t, terminalSocket); message != `{"data":"","type":"snapshot"}` {
 		t.Fatalf("terminal snapshot = %q", message)
@@ -552,7 +531,7 @@ func TestControlServerTerminalSessionsEditorOnlyLifecycle(t *testing.T) {
 		t.Fatalf("exit message = %q", message)
 	}
 
-	lateSocket := mustDialWebsocket(t, terminalWebsocketURL(controlServer.Port(), created.SessionID, controlToken))
+	lateSocket := mustDialWebsocket(t, terminalWebsocketURL(controlServer.Port(), created.SessionID))
 	defer lateSocket.Close()
 	if message := readWebsocketText(t, lateSocket); message != `{"data":"hello from nvim\n","type":"snapshot"}` {
 		t.Fatalf("late snapshot = %q", message)
@@ -573,7 +552,6 @@ func TestControlServerTerminalSessionsEditorOnlyLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewRequest(list terminal sessions after close) error = %v", err)
 	}
-	listRequest.Header.Set(controlTokenHeaderName, controlToken)
 	listResponse, err = http.DefaultClient.Do(listRequest)
 	if err != nil {
 		t.Fatalf("Do(list terminal sessions after close) error = %v", err)
@@ -629,13 +607,10 @@ func TestControlServerAgentAnnotationQueuesLifecycle(t *testing.T) {
 	t.Cleanup(func() {
 		_ = controlServer.Stop()
 	})
-
-	controlToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(controlServer.Port(), injectedConfigPath))))
 	createRequest, err := http.NewRequest(http.MethodPost, serverURL(controlServer.Port(), terminalSessionsPath), strings.NewReader(`{"annotation":{"comment":"First annotation","markers":[],"stackName":"hello-stack","submittedAt":1,"title":"Example","url":"https://app.localhost/dashboard"},"colorScheme":"light","kind":"agent"}`))
 	if err != nil {
 		t.Fatalf("NewRequest(first agent) error = %v", err)
 	}
-	createRequest.Header.Set(controlTokenHeaderName, controlToken)
 	createRequest.Header.Set("content-type", "application/json")
 	createResponse, err := http.DefaultClient.Do(createRequest)
 	if err != nil {
@@ -648,19 +623,16 @@ func TestControlServerAgentAnnotationQueuesLifecycle(t *testing.T) {
 		t.Fatalf("Decode(first agent) error = %v", err)
 	}
 
-	queueSocket := mustDialWebsocket(t, annotationQueueWebsocketURL(controlServer.Port(), controlToken))
+	queueSocket := mustDialWebsocket(t, annotationQueueWebsocketURL(controlServer.Port()))
 	defer queueSocket.Close()
 	if message := readWebsocketText(t, queueSocket); !strings.Contains(message, `"status":"launching"`) || !strings.Contains(message, firstCreated.SessionID) {
 		t.Fatalf("initial queue snapshot = %q", message)
 	}
-	if _, response, err := websocket.DefaultDialer.Dial(websocketURL(controlServer.Port(), annotationQueuesWebsocketPath), nil); err == nil || response == nil || response.StatusCode != http.StatusForbidden {
-		if response != nil {
-			response.Body.Close()
-		}
-		t.Fatalf("unauthorized annotation queue websocket = (%v, %#v), want 403", err, response)
-	} else {
-		response.Body.Close()
+	secondQueueSocket := mustDialWebsocket(t, websocketURL(controlServer.Port(), annotationQueuesWebsocketPath))
+	if message := readWebsocketText(t, secondQueueSocket); !strings.Contains(message, firstCreated.SessionID) {
+		t.Fatalf("second queue client snapshot = %q", message)
 	}
+	secondQueueSocket.Close()
 
 	starter.sessions[0].emit("\x1b]1337;SetAgentStatus=working\x07")
 	if message := readWebsocketText(t, queueSocket); !strings.Contains(message, `"status":"working"`) {
@@ -672,7 +644,6 @@ func TestControlServerAgentAnnotationQueuesLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewRequest(second agent) error = %v", err)
 	}
-	queueRequest.Header.Set(controlTokenHeaderName, controlToken)
 	queueRequest.Header.Set("content-type", "application/json")
 	queueResponse, err := http.DefaultClient.Do(queueRequest)
 	if err != nil {
@@ -687,7 +658,6 @@ func TestControlServerAgentAnnotationQueuesLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewRequest(list queues) error = %v", err)
 	}
-	listRequest.Header.Set(controlTokenHeaderName, controlToken)
 	listResponse, err := http.DefaultClient.Do(listRequest)
 	if err != nil {
 		t.Fatalf("Do(list queues) error = %v", err)
@@ -703,7 +673,6 @@ func TestControlServerAgentAnnotationQueuesLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewRequest(patch queue) error = %v", err)
 	}
-	patchRequest.Header.Set(controlTokenHeaderName, controlToken)
 	patchRequest.Header.Set("content-type", "application/json")
 	patchResponse, err := http.DefaultClient.Do(patchRequest)
 	if err != nil {
@@ -721,7 +690,6 @@ func TestControlServerAgentAnnotationQueuesLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewRequest(delete queue) error = %v", err)
 	}
-	deleteRequest.Header.Set(controlTokenHeaderName, controlToken)
 	deleteResponse, err := http.DefaultClient.Do(deleteRequest)
 	if err != nil {
 		t.Fatalf("Do(delete queue) error = %v", err)
@@ -734,7 +702,7 @@ func TestControlServerAgentAnnotationQueuesLifecycle(t *testing.T) {
 		t.Fatalf("deleted snapshot still queued = %q", message)
 	}
 
-	terminalSocket := mustDialWebsocket(t, terminalWebsocketURL(controlServer.Port(), firstCreated.SessionID, controlToken))
+	terminalSocket := mustDialWebsocket(t, terminalWebsocketURL(controlServer.Port(), firstCreated.SessionID))
 	if message := readWebsocketText(t, terminalSocket); !strings.Contains(message, `"type":"snapshot"`) {
 		t.Fatalf("agent terminal snapshot = %q", message)
 	}
@@ -754,7 +722,6 @@ func TestControlServerAgentAnnotationQueuesLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewRequest(invalid resume queue) error = %v", err)
 	}
-	invalidResumeRequest.Header.Set(controlTokenHeaderName, controlToken)
 	invalidResumeRequest.Header.Set("content-type", "application/json")
 	invalidResumeResponse, err := http.DefaultClient.Do(invalidResumeRequest)
 	if err != nil {
@@ -769,7 +736,6 @@ func TestControlServerAgentAnnotationQueuesLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewRequest(resume queue) error = %v", err)
 	}
-	resumeRequest.Header.Set(controlTokenHeaderName, controlToken)
 	resumeRequest.Header.Set("content-type", "application/json")
 	resumeResponse, err := http.DefaultClient.Do(resumeRequest)
 	if err != nil {
@@ -821,13 +787,10 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("StartControlServer(first) error = %v", err)
 	}
-
-	controlToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(firstServer.Port(), injectedConfigPath))))
 	firstRequest, err := http.NewRequest(http.MethodPost, serverURL(firstServer.Port(), terminalSessionsPath), strings.NewReader(`{"annotation":{"comment":"First annotation","markers":[],"stackName":"hello-stack","submittedAt":1,"title":"Example","url":"https://app.localhost/dashboard"},"kind":"agent"}`))
 	if err != nil {
 		t.Fatalf("NewRequest(first agent) error = %v", err)
 	}
-	firstRequest.Header.Set(controlTokenHeaderName, controlToken)
 	firstRequest.Header.Set("content-type", "application/json")
 	firstResponse, err := http.DefaultClient.Do(firstRequest)
 	if err != nil {
@@ -844,7 +807,6 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewRequest(second agent) error = %v", err)
 	}
-	secondRequest.Header.Set(controlTokenHeaderName, controlToken)
 	secondRequest.Header.Set("content-type", "application/json")
 	secondResponse, err := http.DefaultClient.Do(secondRequest)
 	if err != nil {
@@ -891,13 +853,10 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 	if len(secondStarter.startedRequests) != 1 || secondStarter.startedRequests[0].Annotation == nil || secondStarter.startedRequests[0].Annotation.Comment != "First annotation" {
 		t.Fatalf("resumed requests = %#v", secondStarter.startedRequests)
 	}
-
-	secondToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(secondServer.Port(), injectedConfigPath))))
 	listRequest, err := http.NewRequest(http.MethodGet, serverURL(secondServer.Port(), annotationQueuesPath), nil)
 	if err != nil {
 		t.Fatalf("NewRequest(list queues) error = %v", err)
 	}
-	listRequest.Header.Set(controlTokenHeaderName, secondToken)
 	listResponse, err := http.DefaultClient.Do(listRequest)
 	if err != nil {
 		t.Fatalf("Do(list queues) error = %v", err)
@@ -962,13 +921,10 @@ func TestControlServerTerminalSessionsRetainTailAndIdleCleanup(t *testing.T) {
 	t.Cleanup(func() {
 		_ = controlServer.Stop()
 	})
-
-	controlToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(controlServer.Port(), injectedConfigPath))))
 	createRequest, err := http.NewRequest(http.MethodPost, serverURL(controlServer.Port(), terminalSessionsPath), strings.NewReader(`{"componentName":"SaveButton","kind":"editor","launcher":"neovim","source":{"fileName":"src/components/SaveButton.tsx","lineNumber":42},"sourceLabel":"src/components/SaveButton.tsx:42:1"}`))
 	if err != nil {
 		t.Fatalf("NewRequest(editor terminal) error = %v", err)
 	}
-	createRequest.Header.Set(controlTokenHeaderName, controlToken)
 	createRequest.Header.Set("content-type", "application/json")
 	createResponse, err := http.DefaultClient.Do(createRequest)
 	if err != nil {
@@ -986,7 +942,7 @@ func TestControlServerTerminalSessionsRetainTailAndIdleCleanup(t *testing.T) {
 	exitCode := 0
 	starter.sessions[0].exit(&exitCode, nil)
 
-	terminalSocket := mustDialWebsocket(t, terminalWebsocketURL(controlServer.Port(), created.SessionID, controlToken))
+	terminalSocket := mustDialWebsocket(t, terminalWebsocketURL(controlServer.Port(), created.SessionID))
 	snapshotMessage := readWebsocketText(t, terminalSocket)
 	var snapshot terminalSessionSnapshotMessage
 	if err := json.Unmarshal([]byte(snapshotMessage), &snapshot); err != nil {
@@ -1012,7 +968,6 @@ func TestControlServerTerminalSessionsRetainTailAndIdleCleanup(t *testing.T) {
 		if err != nil {
 			return false
 		}
-		listRequest.Header.Set(controlTokenHeaderName, controlToken)
 		listResponse, err := http.DefaultClient.Do(listRequest)
 		if err != nil {
 			return false
@@ -1038,32 +993,16 @@ func websocketURL(port int, path string) string {
 	return fmt.Sprintf("ws://127.0.0.1:%d%s", port, path)
 }
 
-func terminalWebsocketURL(port int, sessionID string, controlToken string) string {
-	return fmt.Sprintf("ws://127.0.0.1:%d%s?sessionId=%s&token=%s", port, terminalWebsocketPath, sessionID, controlToken)
+func terminalWebsocketURL(port int, sessionID string) string {
+	return fmt.Sprintf("ws://127.0.0.1:%d%s?sessionId=%s", port, terminalWebsocketPath, sessionID)
 }
 
-func annotationQueueWebsocketURL(port int, controlToken string) string {
-	return fmt.Sprintf("ws://127.0.0.1:%d%s?token=%s", port, annotationQueuesWebsocketPath, controlToken)
+func annotationQueueWebsocketURL(port int) string {
+	return fmt.Sprintf("ws://127.0.0.1:%d%s", port, annotationQueuesWebsocketPath)
 }
 
-func reactHighlightWebsocketURL(port int, controlToken string) string {
-	return fmt.Sprintf("ws://127.0.0.1:%d%s?token=%s", port, reactHighlightWebsocketPath, controlToken)
-}
-
-func extractControlToken(t *testing.T, injectedScript string) string {
-	t.Helper()
-
-	start := strings.Index(injectedScript, `"controlToken":"`)
-	if start == -1 {
-		t.Fatalf("inject.js missing control token: %q", injectedScript)
-	}
-	start += len(`"controlToken":"`)
-	end := strings.Index(injectedScript[start:], `"`)
-	if end == -1 {
-		t.Fatalf("inject.js missing closing control token quote: %q", injectedScript)
-	}
-
-	return injectedScript[start : start+end]
+func reactHighlightWebsocketURL(port int) string {
+	return fmt.Sprintf("ws://127.0.0.1:%d%s", port, reactHighlightWebsocketPath)
 }
 
 func mustGet(t *testing.T, url string) *http.Response {

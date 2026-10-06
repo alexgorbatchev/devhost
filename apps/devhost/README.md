@@ -42,12 +42,12 @@ devhost --version
 
 When Neovim editor integration is enabled, devhost loads a bundled `devhost-react-highlight.nvim` plugin for that
 devhost instance. The plugin streams TSX/JSX cursor locations back to the injected browser overlay through the
-instance's local control port and token, so multiple devhost stacks can run at the same time without sharing editor
+instance's local control port, so multiple devhost stacks can run at the same time without sharing editor
 state. Cursor highlights appear above page content, including existing popovers, without blocking page clicks.
 The browser overlay matches React fiber source metadata first and falls back to fetchable source maps for
 bundlers that do not expose fiber source locations. While the stack is running, devhost also writes an instance-scoped
 shell launcher at `.tmp/devhost/<stack-name>/nvim-shell/bin/devhost-nvim`; run it from the project to open Neovim with
-the same plugin, token, and project root as the browser-launched editor.
+the same plugin and project root as the browser-launched editor.
 
 ### Minimal example
 
@@ -309,9 +309,9 @@ That build refreshes the embedded injected devtools bundle and writes the CLI bi
 
 ## Frontend UI development
 
-Production devtools scripts, terminal styles, lazy terminal chunks, and font subsets are cached for one year at content-versioned URLs. The static entry loads fresh instance configuration and control tokens from an uncached endpoint before mounting. Font subsets download only when needed, and the terminal runtime loads when a session mounts.
+Production devtools scripts, terminal styles, lazy terminal chunks, and font subsets are cached for one year at content-versioned URLs. The static entry loads fresh instance configuration from an uncached endpoint before mounting. Font subsets download only when needed, and the terminal runtime loads when a session mounts.
 
-Each running stack generates its own control token for terminal, annotation, restart, worktree, and React Highlight requests. HTTP controls use the `x-devhost-control-token` header; protected WebSockets use `?token=`. Restarting the stack invalidates the previous token. The token is available through the devtools configuration endpoint, so it does not provide user authentication or restrict access to the routed host. See [Control token](https://alexgorbatchev.github.io/devhost/guides/devtools/#control-token) for the lifecycle, endpoint requirements, failure responses, and security limits.
+Devtools controls use no authentication token for trusted local development. Each stack has its own control server and routed hosts. See [Control API](https://alexgorbatchev.github.io/devhost/guides/devtools/#control-api) for instance configuration, endpoints, and failure responses.
 
 If you are modifying the injected browser devtools UI (`packages/devhost-ui/`) and want to test your changes instantly without manually rebuilding the Go app or restarting the service stack, you can use the built-in on-demand asset dev loop:
 

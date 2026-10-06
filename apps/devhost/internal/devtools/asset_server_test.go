@@ -194,12 +194,12 @@ func TestControlServerCachesStaticEntryAndSeparatesConfig(t *testing.T) {
 	}
 	firstScript := getControlServerText(t, first, injectedScriptPath)
 	secondScript := getControlServerText(t, second, injectedScriptPath)
-	if firstScript != secondScript || strings.Contains(firstScript, first.controlToken) {
+	if firstScript != secondScript || strings.Contains(firstScript, first.projectRootPath) {
 		t.Fatal("entry contains instance-specific configuration")
 	}
 	firstConfig := getControlServerText(t, first, "/__devhost__/config.json")
 	secondConfig := getControlServerText(t, second, "/__devhost__/config.json")
-	if firstConfig == secondConfig || !strings.Contains(firstConfig, first.controlToken) || !strings.Contains(secondConfig, second.controlToken) {
+	if firstConfig == secondConfig || !strings.Contains(firstConfig, first.projectRootPath) || !strings.Contains(secondConfig, second.projectRootPath) {
 		t.Fatal("configuration is not instance-isolated")
 	}
 	configResponse, err := http.Get(serverURL(first.Port(), injectedConfigPath))
@@ -233,7 +233,7 @@ func TestControlServerCachesStaticEntryAndSeparatesConfig(t *testing.T) {
 
 func startAssetTestServer(t *testing.T) *ControlServer {
 	t.Helper()
-	s, err := StartControlServer(StartControlServerOptions{StackName: t.Name(), GetHealthResponse: func() (HealthResponse, error) { return HealthResponse{}, nil }})
+	s, err := StartControlServer(StartControlServerOptions{ProjectRootPath: t.TempDir(), StackName: t.Name(), GetHealthResponse: func() (HealthResponse, error) { return HealthResponse{}, nil }})
 	if err != nil {
 		t.Fatal(err)
 	}

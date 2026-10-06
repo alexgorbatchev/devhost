@@ -83,7 +83,7 @@ describe("startDevtools", () => {
       expect(host.requests.filter((path) => path.includes("/assets/xterm-")).length).toBe(0);
       expect(host.requests.filter((path) => path.endsWith(".woff2")).length).toBeGreaterThan(0);
       const fontRequests: number = host.requests.filter((path) => path.endsWith(".woff2")).length;
-      host.setControlToken("second-instance");
+      host.setStackName("second-instance");
       host.restoreTerminal();
       await page.goto(`${host.url}second`);
       await page.getByTestId("TerminalSessionChip").getByRole("button").click();
@@ -92,13 +92,17 @@ describe("startDevtools", () => {
       await page.evaluate(() => document.fonts.ready);
       expect(
         await page.evaluate(() =>
-          String(Reflect.get(Reflect.get(globalThis, "__DEVHOST_INJECTED_CONFIG__"), "controlToken")),
+          String(Reflect.get(Reflect.get(globalThis, "__DEVHOST_INJECTED_CONFIG__"), "stackName")),
         ),
       ).toBe("second-instance");
       expect(host.requests.filter((path) => path === "/__devhost__/config.json").length).toBe(2);
       expect(host.requests.filter((path) => path === "/__devhost__/inject.js").length).toBe(1);
       expect(host.requests.filter((path) => path.endsWith(".woff2")).length).toBe(fontRequests);
       expect(host.requests.filter((path) => path.includes("/assets/xterm-")).length).toBe(1);
+      expect(host.requestUrls.filter((url) => url.startsWith("/__devhost__/ws/terminal"))).toEqual([
+        "/__devhost__/ws/terminal?sessionId=restored-session",
+      ]);
+      expect(host.requestHeaders.every((headers) => !headers.has("x-devhost-control-token"))).toBe(true);
       expect(errors).toEqual([]);
     } finally {
       await browser?.close();
@@ -109,12 +113,12 @@ describe("startDevtools", () => {
     const pending = Promise.withResolvers<Response>();
     const fetchConfiguration = mock(() => pending.promise);
     const mount = mock(() => {
-      expect(Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME)).toEqual({ controlToken: "fresh-token" });
+      expect(Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME)).toEqual({ stackName: "fresh-stack" });
     });
     const startup = startDevtools(fetchConfiguration, mount);
     expect(fetchConfiguration).toHaveBeenCalledWith("/__devhost__/config.json", { cache: "no-store" });
     expect(mount).not.toHaveBeenCalled();
-    pending.resolve(Response.json({ controlToken: "fresh-token" }));
+    pending.resolve(Response.json({ stackName: "fresh-stack" }));
     await startup;
     expect(mount).toHaveBeenCalledTimes(1);
   });
@@ -127,7 +131,7 @@ describe("startDevtools", () => {
     expect(mount).not.toHaveBeenCalled();
   });
 
-  test.each([null, {}, { controlToken: "" }, { controlToken: 42 }])(
+  test.each([null, {}, { stackName: "" }, { stackName: 42 }])(
     "rejects invalid configuration %j",
     async (configuration) => {
       const mount = mock();

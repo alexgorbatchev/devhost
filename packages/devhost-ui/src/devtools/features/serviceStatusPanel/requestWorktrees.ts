@@ -1,4 +1,4 @@
-import { DEVTOOLS_CONTROL_TOKEN_HEADER_NAME, CONTROL_PATH_PREFIX } from "../../shared/constants";
+import { CONTROL_PATH_PREFIX } from "../../shared/constants";
 import type { HealthResponse } from "../../shared/types";
 import { parseHealthResponse } from "./parseHealthResponse";
 
@@ -13,14 +13,13 @@ interface IWorktreeSelection {
 }
 
 export async function requestWorktrees(
-  controlToken: string,
   request: typeof fetch,
   selection?: IWorktreeSelection,
 ): Promise<IWorktreeRequestResult> {
   try {
     const response = await request(`${CONTROL_PATH_PREFIX}/worktrees`, {
       method: selection === undefined ? "GET" : "POST",
-      headers: { [DEVTOOLS_CONTROL_TOKEN_HEADER_NAME]: controlToken, "content-type": "application/json" },
+      headers: { "content-type": "application/json" },
       body: selection === undefined ? undefined : JSON.stringify(selection),
     });
     const text = await response.text();

@@ -23,7 +23,7 @@ export function useServiceHealth(): IUseServiceHealthResult {
   const [repositories, setRepositories] = useState<WorktreeRepository[]>([]);
   const [services, setServices] = useState<ServiceHealth[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { stackName: devtoolsStackName, controlToken } = readInjectedDevtoolsConfig();
+  const { stackName: devtoolsStackName } = readInjectedDevtoolsConfig();
 
   useEffect(() => {
     let websocket: WebSocket | null = null;
@@ -77,20 +77,20 @@ export function useServiceHealth(): IUseServiceHealthResult {
   }, [devtoolsStackName]);
 
   const refreshWorktrees = useCallback(async (): Promise<string | null> => {
-    const result = await requestWorktrees(controlToken, fetch);
+    const result = await requestWorktrees(fetch);
     if (result.health !== null) {
       setRepositories(result.health.repositories ?? []);
       setServices(result.health.services);
     }
     return result.error;
-  }, [controlToken]);
+  }, []);
   const switchWorktree = useCallback(
     async (repositoryId: string, path: string): Promise<string | null> => {
-      const result = await requestWorktrees(controlToken, fetch, { repositoryId, path });
+      const result = await requestWorktrees(fetch, { repositoryId, path });
       await refreshWorktrees();
       return result.error;
     },
-    [controlToken, refreshWorktrees],
+    [refreshWorktrees],
   );
   return {
     repositories,

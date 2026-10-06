@@ -76,19 +76,16 @@ describe("useAnnotationQueues", () => {
     expect(parseAnnotationQueuesServerMessage("{}")).toBeNull();
   });
 
-  test("attaches the control token to the annotation queue websocket URL", () => {
+  test("creates the annotation queue websocket URL without credentials", () => {
     expect(
-      createAnnotationQueuesWebSocketUrl(
-        {
-          host: "example.test",
-          protocol: "https:",
-        },
-        "secret-token",
-      ),
-    ).toBe("wss://example.test/__devhost__/ws/annotation-queues?token=secret-token");
+      createAnnotationQueuesWebSocketUrl({
+        host: "example.test",
+        protocol: "https:",
+      }),
+    ).toBe("wss://example.test/__devhost__/ws/annotation-queues");
   });
 
-  test("sends authenticated patch, delete, and resume requests", async () => {
+  test("sends patch, delete, and resume requests without credentials", async () => {
     const responses: Response[] = [
       Response.json({ success: true }),
       Response.json({ success: true }),
@@ -98,10 +95,10 @@ describe("useAnnotationQueues", () => {
       return responses.shift() ?? Response.json({ success: true });
     });
 
-    await updateAnnotationQueueEntry("entry-1", "Updated comment", fetchMock, "secret-token");
-    await deleteAnnotationQueueEntry("entry-2", fetchMock, "secret-token");
+    await updateAnnotationQueueEntry("entry-1", "Updated comment", fetchMock);
+    await deleteAnnotationQueueEntry("entry-2", fetchMock);
 
-    await expect(resumeAnnotationQueue("queue-1", "light", fetchMock, "secret-token")).resolves.toEqual({
+    await expect(resumeAnnotationQueue("queue-1", "light", fetchMock)).resolves.toEqual({
       sessionId: "session-2",
       success: true,
     });
@@ -120,15 +117,11 @@ describe("useAnnotationQueues", () => {
       body: JSON.stringify({ comment: "Updated comment" }),
       headers: {
         "content-type": "application/json",
-        "x-devhost-control-token": "secret-token",
       },
       method: "PATCH",
     });
     expect(secondCall[0]).toBe("/__devhost__/annotation-queues/entry-2");
     expect(secondCall[1]).toEqual({
-      headers: {
-        "x-devhost-control-token": "secret-token",
-      },
       method: "DELETE",
     });
     expect(thirdCall[0]).toBe("/__devhost__/annotation-queues/queue-1/resume");
@@ -136,7 +129,6 @@ describe("useAnnotationQueues", () => {
       body: JSON.stringify({ colorScheme: "light" }),
       headers: {
         "content-type": "application/json",
-        "x-devhost-control-token": "secret-token",
       },
       method: "POST",
     });

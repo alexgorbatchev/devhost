@@ -66,8 +66,8 @@ func TestControlServerDevSourceInjectedScript(t *testing.T) {
 			controlServer := startDevSourceControlServer(t, checkoutPath)
 			body := getControlServerText(t, controlServer, injectedScriptPath)
 
-			if strings.Contains(body, controlServer.controlToken) {
-				t.Fatal("development script contains instance credentials")
+			if strings.Contains(body, getControlServerText(t, controlServer, injectedConfigPath)) {
+				t.Fatal("development script contains instance configuration")
 			}
 
 			for _, want := range tc.wantContains {

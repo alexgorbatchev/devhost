@@ -7,11 +7,13 @@ import type { IStartEditorTerminalSessionRequest } from "../features/terminalSes
 interface IBuiltDevtoolsHost {
   close: () => Promise<void>;
   requests: string[];
+  requestUrls: string[];
+  requestHeaders: Headers[];
   delayTerminalRuntime: () => void;
   releaseTerminalRuntime: () => void;
   failTerminalRuntime: () => void;
   restoreTerminal: () => void;
-  setControlToken: (token: string) => void;
+  setStackName: (name: string) => void;
   url: string;
 }
 
@@ -26,7 +28,9 @@ export async function startBuiltDevtoolsHost(): Promise<IBuiltDevtoolsHost> {
     throw error;
   }
   const requests: string[] = [];
-  let controlToken: string = "first-instance";
+  const requestUrls: string[] = [];
+  const requestHeaders: Headers[] = [];
+  let stackName: string = "bundle-browser-test";
   let shouldRestoreTerminal: boolean = false;
   let shouldDelayTerminalRuntime: boolean = false;
   let shouldFailTerminalRuntime: boolean = false;
@@ -44,6 +48,8 @@ export async function startBuiltDevtoolsHost(): Promise<IBuiltDevtoolsHost> {
     async fetch(request, server): Promise<Response | undefined> {
       const url: URL = new URL(request.url);
       requests.push(url.pathname);
+      requestUrls.push(url.pathname + url.search);
+      requestHeaders.push(request.headers);
       if (url.pathname.startsWith("/__devhost__/assets/xterm-")) {
         if (shouldDelayTerminalRuntime) await runtimeGate.promise;
         if (shouldFailTerminalRuntime) return new Response(null, { status: 503 });
@@ -54,8 +60,7 @@ export async function startBuiltDevtoolsHost(): Promise<IBuiltDevtoolsHost> {
       if (url.pathname === "/__devhost__/config.json") {
         return Response.json(
           {
-            controlToken,
-            stackName: "bundle-browser-test",
+            stackName,
             terminalEnabled: true,
             annotationEnabled: false,
             annotationQueueEnabled: false,
@@ -105,9 +110,11 @@ export async function startBuiltDevtoolsHost(): Promise<IBuiltDevtoolsHost> {
   });
   return {
     requests,
+    requestUrls,
+    requestHeaders,
     url: server.url.toString(),
-    setControlToken: (token): void => {
-      controlToken = token;
+    setStackName: (name): void => {
+      stackName = name;
     },
     restoreTerminal: (): void => {
       shouldRestoreTerminal = true;

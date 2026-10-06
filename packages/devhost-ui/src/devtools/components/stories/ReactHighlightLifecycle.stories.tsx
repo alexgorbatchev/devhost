@@ -72,15 +72,12 @@ export const DisabledConnection: Story = {
 };
 
 export const ConnectionChanges: Story = {
-  args: { initialToken: "" },
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
-    expect(canvas.getByLabelText("Connections").textContent).toBe("0");
-    await userEvent.click(canvas.getByRole("button", { name: "Set token" }));
     await waitFor(() => expect(canvas.getByLabelText("Connections").textContent).toBe("1"));
     await userEvent.click(canvas.getByRole("button", { name: "Cursor with fallback root" }));
     await waitFor(() => expect(canvas.getByTestId("ReactHighlightLifecycleScene--overlay")).toBeVisible());
-    await userEvent.click(canvas.getByRole("button", { name: "Rotate token" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Switch project" }));
     await waitFor(() => {
       expect(canvas.getByLabelText("Connections").textContent).toBe("2");
       expect(canvas.getByLabelText("Closed connections").textContent).toBe("1");
@@ -88,11 +85,6 @@ export const ConnectionChanges: Story = {
     });
     await userEvent.click(canvas.getByRole("button", { name: "Old socket message" }));
     expect(canvas.getByLabelText("Request count").textContent).toBe("1");
-    await userEvent.click(canvas.getByRole("button", { name: "Switch project" }));
-    await waitFor(() => {
-      expect(canvas.getByLabelText("Connections").textContent).toBe("3");
-      expect(canvas.getByLabelText("Closed connections").textContent).toBe("2");
-    });
     await userEvent.click(canvas.getByRole("button", { name: "Cursor with fallback root" }));
     await waitFor(() => expect(canvas.getByTestId("ReactHighlightLifecycleScene--overlay")).toBeVisible());
     expect(canvas.getByLabelText("Highlight requests").textContent).toBe(
@@ -102,16 +94,12 @@ export const ConnectionChanges: Story = {
       ]),
     );
     const urls: string[] = JSON.parse(canvas.getByLabelText("Socket URLs").textContent ?? "[]");
-    expect(urls.map((url) => new URL(url).searchParams.get("token"))).toEqual(["token-one", "token-two", "token-two"]);
-    expect(urls.map((url) => new URL(url).host)).toEqual([
-      window.location.host,
-      window.location.host,
-      window.location.host,
-    ]);
-    await userEvent.click(canvas.getByRole("button", { name: "Clear token" }));
+    expect(urls.map((url) => new URL(url).search)).toEqual(["", ""]);
+    expect(urls.map((url) => new URL(url).host)).toEqual([window.location.host, window.location.host]);
+    await userEvent.click(canvas.getByRole("checkbox", { name: "Enabled" }));
     await waitFor(() => {
-      expect(canvas.getByLabelText("Connections").textContent).toBe("3");
-      expect(canvas.getByLabelText("Closed connections").textContent).toBe("3");
+      expect(canvas.getByLabelText("Connections").textContent).toBe("2");
+      expect(canvas.getByLabelText("Closed connections").textContent).toBe("2");
       expect(canvas.queryByTestId("ReactHighlightLifecycleScene--overlay")).toBeNull();
     });
   },

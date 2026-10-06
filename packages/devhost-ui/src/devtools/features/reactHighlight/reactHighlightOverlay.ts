@@ -6,7 +6,7 @@ import {
   type IReactFiberNode,
 } from "../../shared/reactSourceInspection";
 import { cleanSourcePath, type ISourceLocation } from "../../shared/sourceLocation";
-import { DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME, REACT_HIGHLIGHT_WEBSOCKET_PATH } from "../../shared/constants";
+import { REACT_HIGHLIGHT_WEBSOCKET_PATH } from "../../shared/constants";
 
 export interface IReactHighlightCursorMessage {
   kind: "cursor";
@@ -42,10 +42,9 @@ const reactHighlightOverlayClassName: string =
   "pointer-events-none fixed inset-auto z-(--devhost-z-overlay) m-0 box-border overflow-visible rounded-sm border-2 border-mark-alt bg-mark-alt/10 p-0 shadow-mark [&::backdrop]:pointer-events-none [&::backdrop]:bg-transparent";
 const sourceMapCache: Map<string, Promise<IReactHighlightSourceMap | undefined>> = new Map();
 
-export function createReactHighlightWebSocketUrl(location: Location, controlToken: string): string {
+export function createReactHighlightWebSocketUrl(location: Location): string {
   const protocol: string = location.protocol === "https:" ? "wss:" : "ws:";
   const url = new URL(REACT_HIGHLIGHT_WEBSOCKET_PATH, `${protocol}//${location.host}`);
-  url.searchParams.set(DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME, controlToken);
   return url.toString();
 }
 

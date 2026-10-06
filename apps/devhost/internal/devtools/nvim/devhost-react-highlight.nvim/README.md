@@ -8,7 +8,6 @@ When devhost opens Neovim from the injected browser UI, it prepares this plugin 
 
 ```sh
 DEVHOST_REACT_HIGHLIGHT_URL
-DEVHOST_CONTROL_TOKEN
 DEVHOST_PROJECT_ROOT
 DEVHOST_STACK_NAME
 ```
@@ -21,7 +20,7 @@ For direct shell testing while a devhost stack is running, use the generated pro
 .tmp/devhost/<stack-name>/nvim-shell/bin/devhost-nvim .
 ```
 
-That launcher sets the instance endpoint, control token, project root, stack name, and Neovim package path before
+That launcher sets the instance endpoint, project root, stack name, and Neovim package path before
 executing `nvim`.
 
 ## Standalone usage
@@ -31,14 +30,13 @@ Install this directory as a normal Neovim plugin, then either launch Neovim with
 ```lua
 require("devhost-react-highlight").setup({
   endpoint = "http://127.0.0.1:49152/__devhost__/react-highlight/cursor",
-  token = "devhost-control-token",
   project_root = vim.fn.getcwd(),
   stack_name = "hello-stack",
   debounce_ms = 150,
 })
 ```
 
-The endpoint and token must come from the devhost instance you want to target. Without them, the plugin stays idle.
+The endpoint must come from the devhost instance you want to target. Without it, the plugin stays idle. Cursor updates require no authentication token.
 
 The cursor must resolve to a concrete JSX tag or JSX child node. Leading whitespace before a nested opening or closing
 tag resolves to that tag's element instead of falling back to the parent element.

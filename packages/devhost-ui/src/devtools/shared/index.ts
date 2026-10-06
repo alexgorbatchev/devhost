@@ -1,11 +1,6 @@
 export { Button, type ButtonVariant } from "../../components/ui/Button";
 export { ColorSchemeProvider } from "./components/ColorSchemeProvider";
-export {
-  DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
-  DEVTOOLS_HOST_ID,
-  DEVTOOLS_ROOT_ID,
-  RESTART_SERVICE_PATH,
-} from "./constants";
+export { DEVTOOLS_HOST_ID, DEVTOOLS_ROOT_ID, RESTART_SERVICE_PATH } from "./constants";
 export {
   HighlightOverlay,
   type IHighlightOverlayItem,

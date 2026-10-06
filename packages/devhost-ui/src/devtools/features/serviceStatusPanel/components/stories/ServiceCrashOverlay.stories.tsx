@@ -51,7 +51,7 @@ export const Crashed: Story = {
       await userEvent.click(button);
       await expect(request).toHaveBeenCalledWith("/__devhost__/restart-service", {
         body: '{"serviceNames":["api"]}',
-        headers: { "content-type": "application/json", "x-devhost-control-token": "storybook-token" },
+        headers: { "content-type": "application/json" },
         method: "POST",
       });
     } finally {
