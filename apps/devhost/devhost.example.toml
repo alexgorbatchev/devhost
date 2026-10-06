@@ -123,7 +123,9 @@ name = "hello-stack"
 #
 # Important: this is a shared managed-Caddy setting, not an isolated per-stack listener.
 # If any active stack enables `caddy.global.http = true`, the shared Caddy instance serves
-# HTTP for all active stacks until the last opting-in stack stops.
+# HTTP for all active stacks. Retiring the last true voter disables HTTP while false/default
+# sibling registrations remain. Final-registration retirement retains the stack's captured
+# HTTP setting; stop shared Caddy manually with a matching manifest when done.
 # Active stacks must also agree on any non-default `adminAddress`, `bindHost`, `httpPort`, and `httpsPort` values.
 adminAddress = "127.0.0.1:20197"
 bindHost = "127.0.0.1"
