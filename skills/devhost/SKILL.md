@@ -4,13 +4,9 @@ description: Use anytime devhost.toml is involved, including reading, writing, m
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-06 04:19
+  last_modified: 2026-10-06 05:49
   status: current
 ---
-
-# Devhost
-
-This skill guides reading, writing, updating, or bootstrapping a `devhost.toml` manifest, as well as running the `devhost` daemon.
 
 ## Setup and Discovery
 
@@ -35,6 +31,12 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 - **Annotation temporary files**: Set `[annotation].tempDir` in the root manifest to a non-empty path for all annotation actions. Resolve relative paths against devhost's startup working directory, independently of the manifest location and action `cwd`. Omit the key to use the system temp directory. See the [Agent Adapters guide](references/agent-adapters.md) for file lifecycle details.
 
 - **Git worktrees**: Omit `[worktrees]` to use checkout selection, which is enabled by default. Set `[worktrees].enabled = false` only to disable discovery and saved-selection restore. Inspect `git worktree list --porcelain` and configure all service `cwd` values from one checkout per repository. Use the Services repository picker to switch every repository member together; do not set services from one repository to different checkouts. Follow the persistence and recovery procedure in [Setup](references/setup.md#4-git-worktree-selection). Worktree group startup failures remain recoverable instead of terminating the supervisor.
+
+### External Devtools Launchers
+
+- Enable `[devtools.externalToolbars].enabled` (default `true`) to aggregate host-mounted TanStack Query, TanStack Router, and React Hook Form inspectors.
+- For React Hook Form, mount `@hookform/devtools`' `DevTool control={control}` in the host application for each form. Keep form controls and native panel contents owned by the host and upstream library; do not mount inspectors or synthesize form state through devhost.
+- Use each **Form N** launcher to toggle its associated native inspector. Follow the [External Devtools setup guide](https://alexgorbatchev.github.io/devhost/architecture/external-devtools/) for tested versions, encounter-order panel identities, remount behavior, and disabling aggregation.
 
 ### Service Configuration Constraints
 

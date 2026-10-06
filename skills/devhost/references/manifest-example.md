@@ -44,6 +44,10 @@ ide = "vscode"
 
 [devtools.externalToolbars]
 # `enabled` controls whether devhost aggregates detected third-party devtools buttons (default: true).
+# Supported tools: host-mounted TanStack Query, TanStack Router, and React Hook Form inspectors.
+# For React Hook Form, mount @hookform/devtools DevTool with each form's control in your app.
+# devhost supplies separate Form N launchers; the host retains ownership of forms and native panels.
+# Tested versions, setup, and panel identification: https://alexgorbatchev.github.io/devhost/architecture/external-devtools/
 enabled = true
 
 [devtools.minimap]
