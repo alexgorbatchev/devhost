@@ -29,6 +29,7 @@ Its vital that when devtools are injected into the user's web application, CSS t
   - `shared/components/FloatingSurface` places a popup at viewport coordinates, `shared/components/PanelActions` aligns panel-level actions, and `Button` joins a neighbor through `joinedEdge`.
 - Exception: minimap ANSI fragments receive dynamic foreground/background colors from service logs. `LogAnsiFragment` measures the rendered background before paint and uses `use-color` to adjust only the foreground to 4.5:1; ANSI backgrounds stay opaque, and dimming affects only text. Recompute for theme and focused-row changes.
 - Any intentional document-level styling escape hatch must be narrowly justified at the use site because it breaks isolation guarantees.
+- Exception: the genuine Redux DevTools App owns its Emotion styles in its separate monitor window document. Keep the injected Redux launcher inside devhost's Shadow DOM; never load those native inspector styles into the host document or restyle the upstream panel.
 - The injected devtools UI must remain visually isolated from the host page.
 
 ## Theme tokens & Visual Design

@@ -2,7 +2,7 @@
 title: "External Devtools"
 ---
 
-The external devtools feature aggregates supported third-party launcher buttons into the injected `devhost` overlay without taking ownership of the third-party panels themselves. It is intentionally conservative: `devhost` proxies launcher actions, hides the native launcher chrome, and lets the host library keep rendering and managing its own panel state.
+The external devtools feature aggregates supported third-party launchers into the injected `devhost` overlay. Host-mounted integrations proxy native controls and hide only launcher chrome; the host library keeps its panels. The Redux integration opens the genuine upstream browser inspector in a separate owned window and connects explicitly registered real stores through upstream's public custom-transport seam.
 
 ## Architecture Flow
 
@@ -42,7 +42,7 @@ sequenceDiagram
 
 ### Adapter-Owned Host Knowledge
 
-Each supported third-party tool is modeled as an `IExternalDevtoolsAdapter` under `src/devtools/features/externalDevtoolsPanel/`. `externalDevtoolsDetectors.ts` registers the Query, Router, and unified TanStack shell adapters; the Form and Jotai detectors discover one adapter per mounted native inspector. `createVueDevtoolsDetector.ts` observes the existing Vue/Vite host. `createExternalDevtoolsDetector.ts` combines current adapters and exposes an owned subscription/disposer to the generic hook. The hook resolves a launcher ID against current adapters before dispatching an action. Form/Jotai encounter identities remain local to the detector session across effect cleanup/re-subscription.
+Each supported third-party tool is modeled as an `IExternalDevtoolsAdapter`. `externalDevtoolsDetectors.ts` registers the Query, Router, and unified TanStack shell adapters; the Form and Jotai detectors discover one adapter per mounted native inspector. `createVueDevtoolsDetector.ts` observes the existing Vue/Vite host. The feature-owned `reduxDevtools` detector observes explicit host registrations and its own native browser window/channel. `createExternalDevtoolsDetector.ts` combines current adapters and exposes an owned subscription/disposer to the generic hook. The hook resolves a launcher ID against current adapters before dispatching an action. Form/Jotai encounter identities remain local to the detector session across effect cleanup/re-subscription.
 
 - `isInstalled()` answers whether the host page appears to have mounted the tool.
 - `isOpen()` answers whether the native panel is currently expanded.
@@ -85,13 +85,122 @@ This keeps the UI purely declarative while the adapters own the imperative host 
 
 ### Safety Boundaries
 
-The feature is deliberately scoped to launchers, not panels.
+Host-mounted aggregation is scoped to launchers, not panels.
 
 - `devhost` may hide supported native launcher controls
 - `devhost` may proxy open/close interactions through the native controls
 - `devhost` must not reparent, restyle wholesale, or otherwise assume ownership of the native panel contents
 
 That boundary is what keeps the integration low-risk even when the host page includes multiple unrelated third-party toolbars.
+
+The separate Redux browser inspector uses the public upstream App unchanged. It owns its native panel layout and Emotion styles in its own document; no inspector stylesheet reaches the host page. Devhost owns only explicit producer registration, transport, setup feedback and its browser window lifecycle.
+
+## Redux Toolkit and Zustand
+
+The **Redux** toolbar entry opens full upstream Redux DevTools in a same-origin browser popup. Select registered store names to inspect live state and actions, use native history/time travel, and export state. It needs no desktop application, SocketCluster server, runtime Node service, or installed extension.
+
+### Tested upstream contract
+
+The browser frontend uses `@redux-devtools/app-core` **3.0.0** App with its documented caller-owned Redux store and custom transport, public `@redux-devtools/app` **8.0.0** `nonReduxDispatch`, React/ReactDOM **19.2.5**, React Redux **9.2.0**, Redux **5.0.1**, and native Emotion **11.14.0/11.14.1**. Host tests use Redux Toolkit **2.13.0**, instrument **3.0.0**, Zustand **5.0.15** with its unchanged devtools middleware, and browser extension **3.2.10** where installed. These are verified combinations; other releases require independent verification.
+
+The maintained [app-core transport/store seam](https://github.com/reduxjs/redux-devtools/blob/89ae6ee57c6879c0da39d1f03d6ad8de029c5390/packages/redux-devtools-app-core/README.md), [non-Redux wire protocol](https://github.com/reduxjs/redux-devtools/blob/89ae6ee57c6879c0da39d1f03d6ad8de029c5390/docs/Integrations/Remote.md), [instrument EnhancedStore contract](https://github.com/reduxjs/redux-devtools/blob/89ae6ee57c6879c0da39d1f03d6ad8de029c5390/packages/redux-devtools-instrument/src/instrument.ts), and [Zustand StoreApi](https://github.com/pmndrs/zustand/blob/v5.0.15/src/vanilla.ts) define the integration boundaries. The registration functions below are devhost APIs around those public capabilities, not upstream registrars or automatic discovery of private extension sessions.
+
+### Host registration
+
+Enable `[devtools.externalToolbars].enabled = true`, visit the app through its devhost route, and opt into the served development module `/__devhost__/redux.js`. Register stable, nonempty ids and human-readable names. Keep registration out of production builds. This native browser module does not require publishing/installing the private devhost UI package. Inside this repository, the typed source export is `@alexgorbatchev/devhost-ui/redux`.
+
+For a Toolkit host without existing native extension instrumentation, install `@redux-devtools/instrument@3.0.0` and instrument once. The following JavaScript setup targets a Vite development app:
+
+```js
+import { configureStore, createSlice } from "@reduxjs/toolkit";
+import { instrument } from "@redux-devtools/instrument";
+
+const counter = createSlice({
+  name: "counter",
+  initialState: { count: 0 },
+  reducers: {
+    increment: (state) => {
+      state.count += 1;
+    },
+  },
+});
+export const store = configureStore({
+  reducer: counter.reducer,
+  devTools: false,
+  enhancers: (defaults) => defaults().concat(instrument()),
+});
+
+if (import.meta.env.DEV) {
+  const moduleUrl = "/__devhost__/redux.js";
+  const { registerReduxDevtoolsStore } = await import(/* @vite-ignore */ moduleUrl);
+  const unregister = registerReduxDevtoolsStore({ id: "counter", name: "Counter", store });
+  import.meta.hot?.dispose(unregister);
+}
+```
+
+An existing Toolkit store configured with native extension DevTools can instead pass its actual returned store unchanged. The released **3.2.10** extension supplies the instrumented capability in the tested setup. Devhost verifies the real `liftedStore.getState/subscribe/dispatch` and lifted history before using it. Extension wrapper typings advertise a bare StoreEnhancer, so arbitrary extension versions are not guaranteed. Never add a second enhancer to an already instrumented store: upstream rejects double instrumentation. A plain store yields actionable setup feedback and is not replaced or recreated.
+
+For Zustand, pass the actual vanilla StoreApi or bound store API configured with native `devtools`. Project data explicitly and restore a validated partial value through the existing StoreApi; this preserves action functions and middleware:
+
+```js
+import { createStore } from "zustand/vanilla";
+import { devtools } from "zustand/middleware";
+
+export const counterStore = createStore()(
+  devtools(
+    (set) => ({
+      count: 0,
+      increment: () => set((state) => ({ count: state.count + 1 }), false, "counter/increment"),
+    }),
+    { name: "Counter", enabled: true },
+  ),
+);
+
+if (import.meta.env.DEV) {
+  const moduleUrl = "/__devhost__/redux.js";
+  const { registerZustandDevtoolsStore } = await import(/* @vite-ignore */ moduleUrl);
+  const unregister = registerZustandDevtoolsStore({
+    id: "counter",
+    name: "Counter",
+    store: counterStore,
+    snapshot: (state) => ({ count: state.count }),
+    restore: (snapshot) => {
+      if (
+        typeof snapshot !== "object" ||
+        snapshot === null ||
+        !("count" in snapshot) ||
+        typeof snapshot.count !== "number"
+      ) {
+        throw new Error("Counter replay requires numeric count.");
+      }
+      return { count: snapshot.count };
+    },
+  });
+  import.meta.hot?.dispose(unregister);
+}
+```
+
+Zustand's supplementary history begins at the current snapshot when this monitor connects. Real StoreApi updates appear as `zustand/setState`; its public subscription does not expose private middleware action labels or earlier native history. Reconnecting starts from the current state. Toolkit reads its actual existing lifted action history on attachment and reload.
+
+### Native controls and serialization
+
+Toolkit uses the same real lifted store for native jump/playback, reset, revert, commit, skip/sweep, reorder, lock, pause, export, and imported lifted history. Zustand supports native jump/playback, reset, revert, commit, and export of its projected history; unsupported optional skip/reorder/lock/pause/import controls are disabled by upstream feature configuration. No arbitrary action evaluation or JavaScript function reconstruction is offered.
+
+Upstream JSAN **3.1.14** serialization carries projected data, including tested Date, Map, Set, undefined, and cyclic references, over MessageChannel as strings. Snapshot/restore functions define each host's data boundary. Exclude executable functions and validate replay data before applying it. Redux imported state must be compatible with the real reducer; importing executable functions is unsupported. Snapshot or replay errors produce setup feedback without replacing host actions or throwing a snapshot error through an ordinary host state update. A later successful update or corrected registration recovers the connection.
+
+### Availability, sessions, and cleanup
+
+A hook-bearing or unrelated page with no explicit stores has no Redux entry. Registered missing capabilities show a setup message. The button's pressed state follows the actual owned Window; its title distinguishes a connected store count, a window awaiting transport, and unavailable setup or popup denial. Allow popups and compatible same-origin opener policies. CSP that blocks the host SDK or injected script prevents setup; sandbox popup denial yields an actionable message. Independently navigating to the native monitor shows setup guidance with no connected host instances. Browser policies that sever the opener are outside this delivery contract; devhost does not fabricate a connection or weaken them.
+
+Every registration has a unique native connection id. Re-registering a stable host id replaces its producer; an older unregister handle cannot remove the replacement. HMR should dispose its current handles. Disabling aggregation, unmounting, or host navigation closes the owned monitor, channels, timer and producer subscriptions. It preserves host stores, native middleware, extension hooks/listeners and other tools. React development StrictMode cleanup/re-subscription and positive remount recovery use the same real registration state. Reloading a monitor exchanges a fresh channel; browser closure and the owned close watcher reclaim it before reopening.
+
+Concurrent projects use their own routed origins, host windows, registrations, monitor windows and channels. Tests verify two actual devhost instances through native Caddy, including HTTPS and an app page under `/project-b/`; reserved control/module URLs remain at the origin root. That validation uses isolated Caddy storage, allocated listener/admin ports, the supported `skip_install_trust` option and an owned browser that ignores the fixture certificate. It proves routing, shipped injection/assets and native store connectivity, not system trust installation. Hosts must retain the normal devhost control-route mapping; arbitrary proxies that strip `/__devhost__/` are not covered.
+
+### Installed-extension boundaries
+
+The existing released extension continues recording and replaying before, during, and after devhost attachment. Devhost neither overwrites its hook/listeners nor calls shared disconnect or middleware cleanup. Each upstream monitor keeps its own cursor: the released [pageScript handler](https://github.com/reduxjs/redux-devtools/blob/1c5df1ee3275612c34e8ad37dd58537c83d5e885/extension/src/pageScript/index.ts) deliberately omits broadcast while time traveling, paused, or locked. Do not interpret another monitor's cursor as the current host state. Native extension controls continue to write the actual store; ordinary new actions update its history.
+
+Cold native Zustand metadata/history can be incomplete when the extension frontend opens after stores were created. The same limitation occurs with aggregation disabled. The verified coexistence sequence opens the genuine empty native frontend first, then creates the real stores; native names/history and replay work before, during, and after devhost attachment. This integration does not repair upstream cold history or claim private session enumeration.
 
 ## Vue DevTools
 

@@ -51,7 +51,7 @@ func (s *ControlServer) handleInjectedScript(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	if s.devSource != nil {
-		content, compressed, err := s.checkAndBuildAssets()
+		content, compressed, err := s.checkAndBuildAssets("devtools.js")
 		if err != nil {
 			content = []byte(formatJSError(err.Error()))
 			compressed = nil

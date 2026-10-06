@@ -4,7 +4,7 @@ description: Use anytime devhost.toml is involved, including reading, writing, m
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-07 03:25
+  last_modified: 2026-10-07 04:43
   status: current
 ---
 
@@ -43,6 +43,7 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 - Use each **Jotai N** launcher to toggle its associated native root; open the panel to identify its store. Follow the setup guide below for session identities, shared upstream persistence, and production/version boundaries.
 - Use each **Form N** launcher to toggle its associated native inspector. Follow the [External Devtools setup guide](https://alexgorbatchev.github.io/devhost/architecture/external-devtools/) for tested versions, encounter-order panel identities, remount behavior, and disabling aggregation.
 - For Vue, use the verified host combination `vite-plugin-vue-devtools@9.0.0-beta.1`, `vite@8.3.3`, Vue `3.5.43`, and `@vitejs/devtools@0.7.6` with `devtools: { apply: "serve" }`. Authorize the genuine native dock and mount a Vue app before expecting **Vue**. Hidden/passive hosts must be revealed through the native shortcut. Read the same setup guide for exact hub versions, native state and suppression ownership, title collisions, and project isolation. Do not synthesize a host context or Vue hooks, replace dock registrations, or upgrade unrelated repository dependencies to supply this host setup. Other Vue releases require independent verification.
+- For **Redux**, import the served `/__devhost__/redux.js` development module and register actual Toolkit or native-middleware Zustand stores. Use one public instrument `EnhancedStore.liftedStore` for Toolkit; supply real Zustand `StoreApi`, data snapshot and validated partial restoration functions. Follow the [Redux setup guide](https://alexgorbatchev.github.io/devhost/architecture/external-devtools/#redux-toolkit-and-zustand) for exact imports, versions, HMR disposal, browser policies, and serialization limits. The browser inspector needs no desktop application or extension. Its registration is explicit; an extension hook alone indicates no stores. Existing native extension controls keep their own cursor, and cold native Zustand history is limited. Disabling aggregation or unmounting closes only devhost's own monitor and subscriptions.
 
 ### Service Configuration Constraints
 
