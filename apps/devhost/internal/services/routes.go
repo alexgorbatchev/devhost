@@ -68,7 +68,8 @@ func (r *stackRoutes) options(service ResolvedService) caddy.ActivateRouteOption
 		path = *service.Path
 	}
 	return caddy.ActivateRouteOptions{
-		AppBindHost: service.BindHost, AppPort: *service.Port,
+		ProxyLocalOrigin: service.ProxyLocalOrigin,
+		AppBindHost:      service.BindHost, AppPort: *service.Port,
 		CaddyAdminAddress: caddy.ResolveManagedCaddyAdminAddress(r.manifest.Caddy.Global.AdminAddress),
 		CaddyBindHost:     r.manifest.Caddy.Global.BindHost, CaddyOutputWriters: r.outputWriters,
 		CaddyHTTPPort: r.manifest.Caddy.Global.HTTPPort, CaddyHTTPSPort: r.manifest.Caddy.Global.HTTPSPort,

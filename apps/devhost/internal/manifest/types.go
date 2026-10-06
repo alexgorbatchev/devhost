@@ -94,20 +94,21 @@ type ValidatedAgent struct {
 }
 
 type ValidatedService struct {
-	BindHost   string
-	Command    []string
-	Cwd        string
-	DependsOn  []string
-	Env        map[string]string
-	Health     *HealthConfig
-	Hosts      []string
-	InjectPort bool
-	Lifecycle  ServiceLifecycleConfig
-	Managed    bool
-	Name       string
-	Path       *string
-	Port       *PortConfig
-	Watch      []string
+	ProxyLocalOrigin bool
+	BindHost         string
+	Command          []string
+	Cwd              string
+	DependsOn        []string
+	Env              map[string]string
+	Health           *HealthConfig
+	Hosts            []string
+	InjectPort       bool
+	Lifecycle        ServiceLifecycleConfig
+	Managed          bool
+	Name             string
+	Path             *string
+	Port             *PortConfig
+	Watch            []string
 }
 
 type ServiceLifecycleConfig struct {

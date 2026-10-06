@@ -53,7 +53,7 @@ func TestRestartRefreshesRoutesAfterAutoPortCollision(t *testing.T) {
 				Command: []string{os.Args[0], "-test.run=TestRecoveryServiceHelperProcess", "--"},
 				Env:     map[string]string{"DEVHOST_RECOVERY_HELPER": "1", "EXIT_PATH": trigger, "PID_PATH": pidPath, "EXIT_CODE": "7", "COLLISION_PATH": collisionPath},
 				Health:  ResolvedHealthConfig{Kind: "http", URL: stringPointer(serverURL(oldPort, "/health")), Timeout: 2000, Interval: 20},
-				Hosts:   []string{"recover.localhost", "alias.recover.localhost"}, Port: intPointer(oldPort), PortSource: "auto", InjectPort: true,
+				Hosts:   []string{"recover.localhost", "alias.recover.localhost"}, Port: intPointer(oldPort), PortSource: "auto", InjectPort: true, ProxyLocalOrigin: true,
 			}
 			done := make(chan error, 1)
 			go func() {
@@ -79,6 +79,9 @@ func TestRestartRefreshesRoutesAfterAutoPortCollision(t *testing.T) {
 			registration := readRestartRoute(t, registrationPath)
 			aliasPath := filepath.Join(paths.RegistrationsDirectoryPath, "alias.recover.localhost_web_2f.json")
 			alias := readRestartRoute(t, aliasPath)
+			if !registration.ProxyLocalOrigin || !alias.ProxyLocalOrigin {
+				t.Fatal("startup lost local-origin routing")
+			}
 			if alias.AppPort != oldPort || alias.DocumentInjectionPort != registration.DocumentInjectionPort {
 				t.Fatalf("alias registration = %#v", alias)
 			}
@@ -108,10 +111,10 @@ func TestRestartRefreshesRoutesAfterAutoPortCollision(t *testing.T) {
 				if h.Services[0].Status || h.Services[0].Restarting || h.Services[0].ExitCode == nil {
 					t.Fatalf("routing failure dismissed recovery: %#v", h.Services[0])
 				}
-				if route := readRestartRoute(t, registrationPath); route.AppPort != oldPort || route.DocumentInjectionPort != documentPort {
+				if route := readRestartRoute(t, registrationPath); route.AppPort != oldPort || route.DocumentInjectionPort != documentPort || !route.ProxyLocalOrigin {
 					t.Fatalf("failed update changed registration: %#v", route)
 				}
-				if alias := readRestartRoute(t, aliasPath); alias.AppPort != oldPort || alias.DocumentInjectionPort != documentPort {
+				if alias := readRestartRoute(t, aliasPath); alias.AppPort != oldPort || alias.DocumentInjectionPort != documentPort || !alias.ProxyLocalOrigin {
 					t.Fatalf("failed update changed alias: %#v", alias)
 				}
 				waitForRestartLog(t, logs, "reload rejected")
@@ -125,6 +128,9 @@ func TestRestartRefreshesRoutesAfterAutoPortCollision(t *testing.T) {
 			}
 			registration = readRestartRoute(t, registrationPath)
 			alias = readRestartRoute(t, aliasPath)
+			if !registration.ProxyLocalOrigin || !alias.ProxyLocalOrigin {
+				t.Fatal("restart lost local-origin routing")
+			}
 			if alias.AppPort != registration.AppPort || alias.DocumentInjectionPort != documentPort {
 				t.Fatalf("alias did not follow restart: %#v", alias)
 			}
@@ -141,6 +147,9 @@ func TestRestartRefreshesRoutesAfterAutoPortCollision(t *testing.T) {
 			}
 			if !strings.Contains(string(routeText), fmt.Sprintf("reverse_proxy 127.0.0.1:%d", registration.AppPort)) {
 				t.Fatal("asset proxy retained old backend")
+			}
+			if !strings.Contains(string(routeText), fmt.Sprintf("header_up Host 127.0.0.1:%d", registration.AppPort)) || !strings.Contains(string(routeText), fmt.Sprintf(`header_up Origin "^.+$" "http://127.0.0.1:%d"`, registration.AppPort)) {
+				t.Fatal("local-origin headers retained the collided port")
 			}
 			assertRestartResponse(t, serverURL(registration.AppPort, "/asset.js"), fmt.Sprintf("ready on %d", registration.AppPort))
 			h, _ := options.GetHealthResponse()
@@ -206,9 +215,10 @@ func restartWithRoutingGate(t *testing.T, options devtools.StartControlServerOpt
 }
 
 type restartRoute struct {
-	AppPort               int `json:"appPort"`
-	DocumentInjectionPort int `json:"documentInjectionPort"`
-	DevtoolsControlPort   int `json:"devtoolsControlPort"`
+	ProxyLocalOrigin      bool `json:"proxyLocalOrigin"`
+	AppPort               int  `json:"appPort"`
+	DocumentInjectionPort int  `json:"documentInjectionPort"`
+	DevtoolsControlPort   int  `json:"devtoolsControlPort"`
 }
 
 func readRestartRoute(t *testing.T, path string) restartRoute {

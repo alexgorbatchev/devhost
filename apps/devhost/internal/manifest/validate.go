@@ -562,7 +562,7 @@ func validateService(
 	schemaIssues *[]string,
 	validationIssues *[]string,
 ) (ValidatedService, bool) {
-	allowKeys(value, []string{"bindHost", "command", "cwd", "dependsOn", "env", "health", "host", "injectPort", "lifecycle", "managed", "path", "port", "primary", "watch"}, fmt.Sprintf("services.%s", serviceName), schemaIssues)
+	allowKeys(value, []string{"bindHost", "command", "cwd", "dependsOn", "env", "health", "host", "injectPort", "lifecycle", "managed", "path", "port", "primary", "proxyLocalOrigin", "watch"}, fmt.Sprintf("services.%s", serviceName), schemaIssues)
 
 	watch := []string{}
 	if watchValues, ok := readOptionalStringArray(value, "watch", schemaIssues); ok {
@@ -672,6 +672,10 @@ func validateService(
 	}
 
 	hosts, hasHost := readServiceHosts(value, schemaIssues)
+	proxyLocalOrigin, _ := readOptionalBool(value, "proxyLocalOrigin", schemaIssues)
+	if proxyLocalOrigin && !hasHost {
+		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.proxyLocalOrigin requires host.", serviceName))
+	}
 	seenHosts := map[string]struct{}{}
 	for i, host := range hosts {
 		if !isValidHost(host) {
@@ -747,20 +751,21 @@ func validateService(
 	}
 
 	return ValidatedService{
-		BindHost:   bindHost,
-		Command:    command,
-		Cwd:        resolvedCwd,
-		DependsOn:  dependsOn,
-		Env:        env,
-		Health:     health,
-		Hosts:      hosts,
-		InjectPort: injectPort,
-		Lifecycle:  lifecycle,
-		Managed:    managed,
-		Name:       serviceName,
-		Path:       normalizedPath,
-		Port:       port,
-		Watch:      watch,
+		ProxyLocalOrigin: proxyLocalOrigin,
+		BindHost:         bindHost,
+		Command:          command,
+		Cwd:              resolvedCwd,
+		DependsOn:        dependsOn,
+		Env:              env,
+		Health:           health,
+		Hosts:            hosts,
+		InjectPort:       injectPort,
+		Lifecycle:        lifecycle,
+		Managed:          managed,
+		Name:             serviceName,
+		Path:             normalizedPath,
+		Port:             port,
+		Watch:            watch,
 	}, primary
 }
 

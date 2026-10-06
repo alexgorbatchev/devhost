@@ -120,6 +120,10 @@ bindHost = "127.0.0.1"
 # The first supplies DEVHOST_HOST, services.<name>.host references, and the devtools link.
 host = "hello.local.test"
 # host = ["hello.local.test", "alias.local.test"]
+# Enable only for dev servers requiring local Host/Origin, such as Bun HTML/HMR.
+# Requires host; defaults to false. Foreign/opaque/duplicate origins receive 403.
+# X-Forwarded-Host stays public; documents, assets, and WebSockets follow auto ports.
+# proxyLocalOrigin = true
 # `path` sets a subpath for mounting (e.g. "/api/*"). Defaults to "/".
 path = "/"
 # `dependsOn` declares services that must start before this service.

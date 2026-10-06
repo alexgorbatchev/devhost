@@ -39,9 +39,12 @@ path = "/api/*"
 [services.playground-frontend]
 command = ["just", "dev"]
 cwd = "packages/playground/frontend"
+bindHost = "127.0.0.1"
 port = "auto"
 host = "{{ env.DEVHOST_PLAYGROUND }}"
 path = "/"
+# Bun HTML/HMR requires Host and Origin to use bindHost plus the assigned port.
+proxyLocalOrigin = true
 watch = ["src/"]
 
 [services.playground-frontend.env]
