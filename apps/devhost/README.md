@@ -126,6 +126,23 @@ The first hostname supplies `DEVHOST_HOST`, `{{ services.web.host }}`, and the d
 
 All domains follow the service's port when it restarts. If a route refresh fails, `devhost` restores the previous routes for every domain and keeps recovery available in devtools.
 
+### Development Servers That Require a Local Origin
+
+For a development server such as Bun's HTML/HMR server that rejects the public hostname, enable `proxyLocalOrigin` on that service:
+
+```toml
+[services.web]
+command = ["bun", "src/index.ts"]
+bindHost = "127.0.0.1"
+port = "auto"
+host = "app.localhost"
+proxyLocalOrigin = true
+```
+
+The option defaults to `false` and requires `host`. When enabled, the backend receives its local socket address in `Host`. Requests with an `Origin` matching `http://` or `https://` plus the incoming public authority receive the local HTTP origin instead. Requests without `Origin` keep it absent; foreign, opaque, and duplicate origins receive `403` before reaching the service. This applies to documents, assets, subpath routes, and WebSocket upgrades, and follows automatic port changes. `X-Forwarded-Host` retains the public authority. Enable it only for services that require local-origin requests; services that use cross-origin API requests should leave it disabled.
+
+The local address comes from the service's `bindHost` and resolved `port`. `bindHost` defaults to `127.0.0.1`; wildcard addresses use loopback for proxy connections (`0.0.0.0` becomes `127.0.0.1`, and `::` becomes `::1`). With `port = "auto"`, the proxy uses the port devhost assigns and exports as `PORT` by default. The app must listen on that address and port. If the app explicitly selects another port, set the service's `port` to match; devhost does not discover the app's listener from its startup output.
+
 Before launching a foreground service, `devhost` checks that its working directory exists and is a directory. If that check fails, the error identifies `services.<name>.cwd`, shows the resolved path, and asks you to check the configured path. Other launch failures show the executable and working directory alongside the underlying operating-system error.
 
 Service and annotation action `cwd` values accept absolute paths or paths relative to the manifest directory. Absolute paths are used directly and may point outside the manifest directory. Relative paths resolve against the manifest directory and must stay within it.

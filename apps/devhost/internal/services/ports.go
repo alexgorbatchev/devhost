@@ -29,21 +29,22 @@ type ResolvedManifest struct {
 }
 
 type ResolvedService struct {
-	BindHost   string
-	Command    []string
-	Cwd        string
-	DependsOn  []string
-	Env        map[string]string
-	Health     ResolvedHealthConfig
-	Hosts      []string
-	InjectPort bool
-	Lifecycle  ResolvedServiceLifecycle
-	Managed    bool
-	Name       string
-	Path       *string
-	Port       *int
-	PortSource string
-	Watch      []string
+	ProxyLocalOrigin bool
+	BindHost         string
+	Command          []string
+	Cwd              string
+	DependsOn        []string
+	Env              map[string]string
+	Health           ResolvedHealthConfig
+	Hosts            []string
+	InjectPort       bool
+	Lifecycle        ResolvedServiceLifecycle
+	Managed          bool
+	Name             string
+	Path             *string
+	Port             *int
+	PortSource       string
+	Watch            []string
 }
 
 type ResolvedServiceLifecycle struct {
@@ -102,14 +103,15 @@ func ResolveServicePorts(value manifest.Manifest) (ResolvedManifest, error) {
 		}
 
 		resolvedServices[serviceName] = ResolvedService{
-			BindHost:   service.BindHost,
-			Command:    service.Command,
-			Cwd:        service.Cwd,
-			DependsOn:  service.DependsOn,
-			Env:        service.Env,
-			Health:     health,
-			Hosts:      append([]string{}, service.Hosts...),
-			InjectPort: service.InjectPort,
+			ProxyLocalOrigin: service.ProxyLocalOrigin,
+			BindHost:         service.BindHost,
+			Command:          service.Command,
+			Cwd:              service.Cwd,
+			DependsOn:        service.DependsOn,
+			Env:              service.Env,
+			Health:           health,
+			Hosts:            append([]string{}, service.Hosts...),
+			InjectPort:       service.InjectPort,
 			Lifecycle: ResolvedServiceLifecycle{
 				Mode:   service.Lifecycle.Mode,
 				Start:  append([]string{}, service.Lifecycle.Start...),

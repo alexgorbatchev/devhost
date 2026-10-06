@@ -4,7 +4,7 @@ description: Use anytime devhost.toml is involved, including reading, writing, m
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-06 03:45
+  last_modified: 2026-10-06 04:19
   status: current
 ---
 
@@ -50,6 +50,7 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
   - Treat all domains of one service as a single annotation queue bucket per annotation action.
   - Must define a companion `port` configuration.
   - Must **not** use `health.process` (process-based health check).
+  - Set `proxyLocalOrigin = true` only for servers requiring a local Host/Origin, such as Bun HTML/HMR. Omit it or set `false` otherwise. It requires `host`, translates Host to the assigned backend address and matching public HTTP/HTTPS Origin to the local HTTP origin, preserves absent Origin and public X-Forwarded-Host, and rejects foreign, opaque, or duplicate origins with 403. Verify documents, assets, and HMR after enabling it; do not enable it on services requiring cross-origin API requests.
 - **Dynamic Ports (`port = "auto"`)**:
   - Must **omit** any explicit `health` table (TCP health check is automatically applied on the resolved port).
   - Inter-service discovery must use late-binding template placeholders (e.g., `{{ services.db.bindHost }}:{{ services.db.port }}`) or query the auto-injected environment variable `DEVHOST_PORT_<SERVICE_NAME_UPPERCASE>`.

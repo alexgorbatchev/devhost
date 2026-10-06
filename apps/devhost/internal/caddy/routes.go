@@ -36,6 +36,7 @@ type ClaimHostOptions struct {
 }
 
 type ActivateRouteOptions struct {
+	ProxyLocalOrigin      bool
 	AppBindHost           string
 	AppPort               int
 	CaddyAdminAddress     string
@@ -73,6 +74,7 @@ type fixedPortClaim struct {
 }
 
 type routeRegistration struct {
+	ProxyLocalOrigin      bool    `json:"proxyLocalOrigin,omitempty"`
 	AppBindHost           string  `json:"appBindHost"`
 	AppPort               int     `json:"appPort"`
 	CreatedAt             string  `json:"createdAt"`
@@ -100,6 +102,7 @@ type legacyRouteRegistration struct {
 }
 
 type managedRouteRecord struct {
+	ProxyLocalOrigin      bool
 	AppBindHost           string
 	AppPort               int
 	CaddyAdminAddress     string
@@ -121,6 +124,7 @@ type managedRouteRecord struct {
 }
 
 type routeRegistrationJSON struct {
+	ProxyLocalOrigin      *bool   `json:"proxyLocalOrigin"`
 	AppBindHost           *string `json:"appBindHost"`
 	AppPort               *int    `json:"appPort"`
 	CreatedAt             *string `json:"createdAt"`
@@ -519,15 +523,16 @@ func createHostClaimText(host string, manifestPath string) string {
 
 func createRouteRegistrationText(options ActivateRouteOptions, manifestPath string) string {
 	registration := routeRegistration{
-		AppBindHost:  options.AppBindHost,
-		AppPort:      options.AppPort,
-		CreatedAt:    formatRouteMutationTimestamp(routeMutationNow()),
-		Host:         options.Host,
-		ManifestPath: manifestPath,
-		OwnerPID:     routeMutationProcessID(),
-		Path:         normalizeRoutePath(options.Path),
-		ServiceName:  options.ServiceName,
-		StackName:    options.StackName,
+		ProxyLocalOrigin: options.ProxyLocalOrigin,
+		AppBindHost:      options.AppBindHost,
+		AppPort:          options.AppPort,
+		CreatedAt:        formatRouteMutationTimestamp(routeMutationNow()),
+		Host:             options.Host,
+		ManifestPath:     manifestPath,
+		OwnerPID:         routeMutationProcessID(),
+		Path:             normalizeRoutePath(options.Path),
+		ServiceName:      options.ServiceName,
+		StackName:        options.StackName,
 	}
 	if options.DevtoolsControlPort != 0 {
 		registration.DevtoolsControlPort = &options.DevtoolsControlPort
@@ -652,7 +657,11 @@ func renderHostRouteSiteBlock(
 	}
 	if rootRegistration != nil {
 		if rootRegistration.DevtoolsControlPort != nil && rootRegistration.DocumentInjectionPort != nil {
-			lines = append(lines, renderNamedProxyHandleLines("@devhost_document header Sec-Fetch-Dest document", "@devhost_document", *rootRegistration.DocumentInjectionPort)...)
+			documentLines, err := renderDocumentProxyHandleLines(*rootRegistration)
+			if err != nil {
+				return nil, err
+			}
+			lines = append(lines, documentLines...)
 			lines = append(lines, "")
 		}
 		rootProxyHandleLines, err := renderRootProxyHandleLines(*rootRegistration)
@@ -683,11 +692,12 @@ func renderRootProxyHandleLines(registration routeRegistration) ([]string, error
 		return nil, err
 	}
 
-	return []string{
-		"handle {",
-		"    reverse_proxy " + target,
-		"}",
-	}, nil
+	proxyLines, err := renderServiceProxyLines(registration, target, true)
+	if err != nil {
+		return nil, err
+	}
+	lines := append([]string{"handle {"}, indentProxyLines(proxyLines, 4)...)
+	return append(lines, "}"), nil
 }
 
 func renderRootErrorHandleLines(statusCode int) []string {
@@ -704,11 +714,12 @@ func renderServiceHandle(registration routeRegistration) ([]string, error) {
 		return nil, err
 	}
 
-	return []string{
-		fmt.Sprintf("    handle %s {", registration.Path),
-		"        reverse_proxy " + target,
-		"    }",
-	}, nil
+	proxyLines, err := renderServiceProxyLines(registration, target, true)
+	if err != nil {
+		return nil, err
+	}
+	lines := append([]string{fmt.Sprintf("    handle %s {", registration.Path)}, indentProxyLines(proxyLines, 8)...)
+	return append(lines, "    }"), nil
 }
 
 func readAppTarget(registration routeRegistration) (string, error) {
@@ -876,6 +887,9 @@ func parseManagedRouteRecord(registrationText []byte) (managedRouteRecord, error
 		if modernValue.StackName != nil {
 			record.StackName = *modernValue.StackName
 		}
+		if modernValue.ProxyLocalOrigin != nil {
+			record.ProxyLocalOrigin = *modernValue.ProxyLocalOrigin
+		}
 
 		return record, nil
 	}
@@ -914,14 +928,15 @@ func parseRouteRegistration(registrationText []byte) (routeRegistration, error) 
 
 func routeRegistrationFromRecord(record managedRouteRecord) routeRegistration {
 	registration := routeRegistration{
-		AppBindHost:  record.AppBindHost,
-		AppPort:      record.AppPort,
-		CreatedAt:    record.CreatedAt,
-		Host:         record.Host,
-		ManifestPath: record.ManifestPath,
-		OwnerPID:     record.OwnerPID,
-		Path:         record.Path,
-		ServiceName:  record.ServiceName,
+		ProxyLocalOrigin: record.ProxyLocalOrigin,
+		AppBindHost:      record.AppBindHost,
+		AppPort:          record.AppPort,
+		CreatedAt:        record.CreatedAt,
+		Host:             record.Host,
+		ManifestPath:     record.ManifestPath,
+		OwnerPID:         record.OwnerPID,
+		Path:             record.Path,
+		ServiceName:      record.ServiceName,
 	}
 	if record.DevtoolsControlPort != 0 {
 		registration.DevtoolsControlPort = &record.DevtoolsControlPort

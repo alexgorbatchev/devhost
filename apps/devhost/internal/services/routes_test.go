@@ -10,7 +10,25 @@ import (
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
+
+func TestProxyLocalOriginResolution(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		value := manifest.Manifest{Services: map[string]manifest.ValidatedService{
+			"web": {Name: "web", BindHost: "127.0.0.1", Hosts: []string{"app.example.test"}, Port: &manifest.PortConfig{Number: 3000}, ProxyLocalOrigin: enabled},
+		}}
+		resolved, err := ResolveServicePorts(value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		routes := stackRoutes{manifest: resolved}
+		options := routes.options(resolved.Services["web"])
+		if options.ProxyLocalOrigin != enabled {
+			t.Fatalf("route proxyLocalOrigin = %v, want %v", options.ProxyLocalOrigin, enabled)
+		}
+	}
+}
 
 func TestStackRoutesRestoresDocumentBackendOnReloadFailure(t *testing.T) {
 	paths := caddy.CreateManagedCaddyPaths(t.TempDir())
@@ -36,7 +54,7 @@ func TestStackRoutesRestoresDocumentBackendOnReloadFailure(t *testing.T) {
 	oldBackend, newBackend := backend("original"), backend("replacement")
 	defer oldBackend.Close()
 	defer newBackend.Close()
-	service := ResolvedService{Name: "web", Hosts: []string{"recover.localhost", "alias.recover.localhost"}, BindHost: "127.0.0.1", Port: intPointer(oldBackend.Listener.Addr().(*net.TCPAddr).Port)}
+	service := ResolvedService{Name: "web", Hosts: []string{"recover.localhost", "alias.recover.localhost"}, BindHost: "127.0.0.1", Port: intPointer(oldBackend.Listener.Addr().(*net.TCPAddr).Port), ProxyLocalOrigin: true}
 	if err := routes.activate(service); err != nil {
 		t.Fatal(err)
 	}
@@ -47,6 +65,9 @@ func TestStackRoutesRestoresDocumentBackendOnReloadFailure(t *testing.T) {
 		registration := readRestartRoute(t, filepath.Join(paths.RegistrationsDirectoryPath, host+"_web_2f.json"))
 		if registration.AppPort != *service.Port {
 			t.Fatalf("initial registration = %#v", registration)
+		}
+		if !registration.ProxyLocalOrigin {
+			t.Fatal("route lost proxyLocalOrigin")
 		}
 	}
 	service.Port = intPointer(newBackend.Listener.Addr().(*net.TCPAddr).Port)
@@ -64,6 +85,9 @@ func TestStackRoutesRestoresDocumentBackendOnReloadFailure(t *testing.T) {
 		registration := readRestartRoute(t, filepath.Join(paths.RegistrationsDirectoryPath, host+"_web_2f.json"))
 		if registration.AppPort != oldBackend.Listener.Addr().(*net.TCPAddr).Port {
 			t.Fatalf("failed update changed registration = %#v", registration)
+		}
+		if !registration.ProxyLocalOrigin {
+			t.Fatal("rollback lost proxyLocalOrigin")
 		}
 	}
 }

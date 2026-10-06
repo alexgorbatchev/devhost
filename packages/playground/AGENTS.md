@@ -15,7 +15,7 @@ Placeholder Bun + React workspace split into frontend and backend apps, used to 
 
 ## Local gotchas
 
-- `devhost.toml` routes both services under `https://devhost-devbox.cvb.lol` (or `https://playground.localhost` at root): `/api/*` goes to the backend, and `/` goes to the frontend.
+- `devhost.toml` takes the shared hostname from `DEVHOST_PLAYGROUND`: `/api/*` goes to the backend, and `/` goes to the frontend. The frontend enables `proxyLocalOrigin` so Bun HTML assets and HMR accept the local upstream Host/Origin; keep the backend's default header handling.
 - The root `just dev` command starts the repo-root `devhost.toml`, which includes this playground split services and Storybook.
 - Shared `oxfmt` / `oxlint` enforcement runs from the repo root; do not add workspace-local lint or format config unless these packages intentionally diverge.
 

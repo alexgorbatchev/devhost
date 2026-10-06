@@ -313,6 +313,15 @@ bindHost = "127.0.0.1"
 # and the devtools service link. Startup logs list every routed URL.
 host = "hello.local.test"
 # host = ["hello.local.test", "alias.local.test"]
+# `proxyLocalOrigin` translates Host and matching public Origin to the local backend.
+# Enable for dev servers such as Bun HTML/HMR that reject public hostnames.
+# The local address uses this service's bindHost and resolved port.
+# Wildcard bindHost values use loopback: 0.0.0.0 -> 127.0.0.1; :: -> ::1.
+# The app must listen there: honor injected PORT for auto, or match a fixed port.
+# Defaults to false; requires host. Requests without Origin keep it absent.
+# Foreign, opaque, and duplicate origins receive 403. X-Forwarded-Host stays public.
+# Applies to documents, assets, subpaths, and WebSockets; follows automatic ports.
+# proxyLocalOrigin = true
 # `path` sets a subpath for mounting (e.g. "/api/*"). Defaults to `"/"`.
 # Use same-host composition only within one manifest, for example:
 # - `services.web.host = "hello.local.test"`, `services.web.path = "/"`
