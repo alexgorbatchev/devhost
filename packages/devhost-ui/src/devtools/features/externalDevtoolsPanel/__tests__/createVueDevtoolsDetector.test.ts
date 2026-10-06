@@ -2,7 +2,13 @@ import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
 
 import { fixture_visibilityModes } from "./fixtures/fixtures";
-import { authorizeNativeVueHost, revealNativeVueHost, startNativeVueHost, withNativeVueHosts } from "./helpers";
+import {
+  authorizeNativeVueHost,
+  revealNativeVueHost,
+  startNativeVueHost,
+  waitForNativeVueEntry,
+  withNativeVueHosts,
+} from "./helpers";
 import type { INativeVueHost } from "./helpers";
 
 test("native Vue authorization survives overlapping dependency optimization in independent hosts", async () => {
@@ -484,7 +490,31 @@ test("unchanged native metadata and inspection recover through StrictMode, disab
     expect((await fetch(host.controlUrl, { method: "POST", body: JSON.stringify({ action: "replace" }) })).status).toBe(
       200,
     );
-    await page.waitForFunction(() => window.nativeVueFixture.readVueEntry().badge === "Live");
+    await waitForNativeVueEntry(page);
+    expect((await fetch(host.controlUrl, { method: "POST", body: JSON.stringify({ action: "remove" }) })).status).toBe(
+      200,
+    );
+    await page.waitForFunction(
+      () => !window.nativeVueFixture.readContext().docks.entries.some((entry) => entry.id === "vue-devtools"),
+    );
+    expect(
+      await page.evaluate(() =>
+        window.nativeVueFixture.readContext().docks.entries.some((entry) => entry.id === "vue-devtools"),
+      ),
+    ).toBe(false);
+    await Promise.all([
+      waitForNativeVueEntry(page),
+      (async () => {
+        await page.waitForFunction(
+          () => !window.nativeVueFixture.readContext().docks.entries.some((entry) => entry.id === "vue-devtools"),
+        );
+        expect(
+          (await fetch(host.controlUrl, { method: "POST", body: JSON.stringify({ action: "restore" }) })).status,
+        ).toBe(200);
+      })(),
+    ]);
+    expect(await page.evaluate(() => window.nativeVueFixture.readVueEntry().badge)).toBe("Live");
+    expect(await page.evaluate(() => window.nativeVueFixture.readVueEntry().frameId)).toBe("vue-devtools");
     const native = page
       .locator("devframes-dock-embedded")
       .getByRole("button", { name: "Server-owned Vue inspector", exact: true });

@@ -229,6 +229,20 @@ export async function authorizeNativeVueHost(page: Page, host: INativeVueHost): 
   await page.getByRole("button", { name: "Settings", exact: true }).waitFor();
 }
 
+export async function waitForNativeVueEntry(page: Page): Promise<void> {
+  await page.waitForFunction(() =>
+    window.nativeVueFixture
+      ?.readContext()
+      ?.docks.entries.some(
+        (entry) =>
+          entry.id === "vue-devtools" &&
+          entry.type === "iframe" &&
+          entry.frameId === "vue-devtools" &&
+          entry.badge === "Live",
+      ),
+  );
+}
+
 export async function revealNativeVueHost(page: Page): Promise<void> {
   await page.waitForFunction(
     () =>
