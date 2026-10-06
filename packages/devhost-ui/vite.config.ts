@@ -16,6 +16,13 @@ export const optimizeDependencyEntries: string[] = [
   "@tanstack/react-router-devtools",
   "use-color/a11y",
   "use-color/core",
+  "@tanstack/react-devtools",
+  "@tanstack/react-form",
+  "@tanstack/react-form-devtools",
+  "@tanstack/react-table",
+  "@tanstack/react-table-devtools",
+  "@tanstack/pacer",
+  "@tanstack/react-pacer-devtools",
 ];
 
 export default defineConfig({

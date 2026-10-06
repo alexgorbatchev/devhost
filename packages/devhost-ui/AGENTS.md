@@ -19,6 +19,7 @@ Local React workspace for the injected `devhost` browser UI that gets embedded i
 
 - This package is the source of truth for the injected browser UI, but the Go app embeds a generated bundle from `apps/devhost/internal/devtools/dist/`. That directory is ignored; run `just devhost build-devtools-bundle`, `just devhost check`, or `just devhost compile` instead of committing generated bundle files.
 - Shared `oxfmt` / `oxlint` enforcement runs from the repo root, not from this workspace `check` recipe.
+- `just ui check` runs its browser suite with `NODE_ENV=development bun vitest run -c vitest.storybook.config.ts`. Native TanStack event clients and panels intentionally become no-ops under Vitest's default `NODE_ENV=test`; Vite's mode is separate. Preserve the command-scoped environment for targeted browser runs from this package, while Bun unit tests keep their usual runtime.
 - For styling, theme, and feature-layout rules under `src/devtools/`, follow `src/devtools/AGENTS.md` and `src/devtools/features/AGENTS.md`.
 
 ## Boundaries

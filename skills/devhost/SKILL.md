@@ -4,7 +4,7 @@ description: Use anytime devhost.toml is involved, including reading, writing, m
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-06 06:14
+  last_modified: 2026-10-06 07:47
   status: current
 ---
 
@@ -34,7 +34,8 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 
 ### External Devtools Launchers
 
-- Enable `[devtools.externalToolbars].enabled` (default `true`) to aggregate host-mounted TanStack Query, TanStack Router, React Hook Form, and Jotai inspectors.
+- Enable `[devtools.externalToolbars].enabled` (default `true`) to aggregate host-mounted TanStack Query, TanStack Router, the unified TanStack shell, React Hook Form, and Jotai inspectors.
+- For the unified TanStack shell, mount tested `@tanstack/react-devtools@0.10.13` with native Form/Table/Pacer plugins in a development runtime. Use the single **TanStack** launcher for attached shells sharing native state; keep plugin navigation upstream. Standalone Query/Router retain separate entries. Close a detached native popup to restore its parent toolbar entry. Read the setup guide below for exact plugin versions, shared-origin behavior, and lifecycle/production limits.
 - For React Hook Form, mount `@hookform/devtools`' `DevTool control={control}` in the host application for each form. Keep form controls and native panel contents owned by the host and upstream library; do not mount inspectors or synthesize form state through devhost.
 - For Jotai, use tested `jotai-devtools@0.14.0` with `jotai@2.20.3`; import devtools before creating custom stores, import its stylesheet in the host app, and pass the same store to `Provider` and `DevTools`. Do not patch declarations to use the broken 0.15.0 typed export, create inspectors through devhost, or replace native atom/history behavior.
 - Use each **Jotai N** launcher to toggle its associated native root; open the panel to identify its store. Follow the setup guide below for session identities, shared upstream persistence, and production/version boundaries.
