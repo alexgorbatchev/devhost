@@ -86,6 +86,7 @@ export const TanStackNativePlugins: Story = {
     await userEvent.type(canvas.getByRole("textbox", { name: "Form name" }), "Lovelace");
     await userEvent.click(await shell.findByText("devhost-form", { exact: true }));
     await expect(await shell.findAllByText('"Lovelace"', { exact: true })).toHaveLength(2);
+    const tableSelectionStartedAt = performance.now();
     await userEvent.click(shell.getByRole("button", { name: "TanStack Table" }));
     await userEvent.click(await shell.findByRole("button", { name: "State" }));
     await userEvent.click(canvas.getByRole("button", { name: "Toggle Ada selection" }));
@@ -94,6 +95,7 @@ export const TanStackNativePlugins: Story = {
       const selectedKeys = shell.getAllByText('"0":', { exact: true });
       expect(selectedKeys.map((key) => key.parentElement?.textContent?.trim())).toEqual(['"0": true', '"0": true']);
     });
+    await expect(readScriptRequestsSince(tableSelectionStartedAt)).toEqual([]);
     await userEvent.click(shell.getByRole("button", { name: "TanStack Pacer" }));
     await shell.findByRole("button", { name: "TANSTACK TanStack Pacer" });
     await userEvent.click(canvas.getByRole("button", { name: "Schedule debouncer" }));
