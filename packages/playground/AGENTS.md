@@ -1,10 +1,11 @@
 # playground
 
-Placeholder Bun + React workspace split into frontend and backend apps, used to exercise `devhost` against routed local services starting on different ports, with the backend mounted under `/api/*` on the same host.
+Bun + React workspace split into frontend and backend apps, used to exercise `devhost` routing and the overlay's supported TanStack Router and Query devtools, with the backend mounted under `/api/*` on the same host.
 
 ## Commands
 
 - Start the root devhost stack from the repo root: `just dev`
+- Run the frontend query request tests from the repo root: `bun test packages/playground/frontend/src/__tests__`
 
 ## Local conventions
 
@@ -12,6 +13,7 @@ Placeholder Bun + React workspace split into frontend and backend apps, used to 
 - `backend/src/index.ts` is the backend Bun server, serving `/api/hello` endpoints on port 3000 (or dynamic assigned port).
 - `frontend/src/index.ts` is the frontend Bun server, serving `frontend/src/index.html` on port 3001 (or dynamic assigned port).
 - `frontend/src/frontend.tsx` is the React browser entrypoint referenced by `frontend/src/index.html`.
+- Keep Router and Query floating devtools mounted so the overlay can detect their native launchers. The playground uses their production-capable exports to exercise the overlay in either server mode.
 
 ## Local gotchas
 
