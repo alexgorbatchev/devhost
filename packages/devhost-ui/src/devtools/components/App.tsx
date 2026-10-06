@@ -17,10 +17,10 @@ import { pristineFetch } from "../shared/pristineFetch";
 import { restartServices } from "../shared/restartServices";
 import { readInjectedDevtoolsConfig } from "../shared/readInjectedDevtoolsConfig";
 import { DevtoolsToolbar } from "../shared/components/DevtoolsToolbar";
+import { DevtoolsTopLayer } from "../shared/components/DevtoolsTopLayer";
 import { useRetainedValue } from "../shared/hooks/useRetainedValue";
 import {
   ColorSchemeProvider,
-  DEVTOOLS_ROOT_ID,
   resolveRoutedServiceKeyForUrl,
   useDevtoolsColorScheme,
   useResolvedColorScheme,
@@ -202,7 +202,7 @@ function AppContent(): JSX.Element {
     [annotationActions, annotationQueues, colorScheme, registerStartedSession, resumeQueue],
   );
   return (
-    <div id={DEVTOOLS_ROOT_ID} ref={appRootReference} data-devhost-devtools="" data-testid="AppContent">
+    <DevtoolsTopLayer ref={appRootReference} testId="AppContent">
       {annotationEnabled ? (
         <AnnotationComposer
           activeAgentSessionId={activeAgentSessionId}
@@ -281,7 +281,7 @@ function AppContent(): JSX.Element {
       {statusEnabled && exitedServices.length > 0 ? (
         <ServiceCrashOverlay services={exitedServices} entries={logEntries} />
       ) : null}
-    </div>
+    </DevtoolsTopLayer>
   );
 }
 

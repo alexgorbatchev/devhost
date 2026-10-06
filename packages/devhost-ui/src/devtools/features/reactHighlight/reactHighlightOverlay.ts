@@ -8,6 +8,7 @@ import {
 import { cleanSourcePath, type ISourceLocation } from "../../shared/sourceLocation";
 import { REACT_HIGHLIGHT_WEBSOCKET_PATH } from "../../shared/constants";
 import { pristineFetch } from "../../shared/pristineFetch";
+import { promoteDevtoolsTopLayer } from "../../shared/promoteDevtoolsTopLayer";
 
 export interface IReactHighlightCursorMessage {
   kind: "cursor";
@@ -40,7 +41,7 @@ interface IReactHighlightSourceMapElementLocator {
 
 const maximumFiberDepth: number = 50;
 const reactHighlightOverlayClassName: string =
-  "pointer-events-none fixed inset-auto z-(--devhost-z-overlay) m-0 box-border overflow-visible rounded-sm border-2 border-mark-alt bg-mark-alt/10 p-0 shadow-mark [&::backdrop]:pointer-events-none [&::backdrop]:bg-transparent";
+  "pointer-events-none fixed z-(--devhost-z-overlay) box-border rounded-sm border-2 border-mark-alt bg-mark-alt/10 shadow-mark";
 const sourceMapCache: Map<string, Promise<IReactHighlightSourceMap | undefined>> = new Map();
 
 export function createReactHighlightWebSocketUrl(location: Location): string {
@@ -159,12 +160,10 @@ export async function highlightReactElements(
     }),
   );
 
-  return effectiveMatchingElements.map((element: HTMLElement): IOverlayElement => {
+  const overlays: IOverlayElement[] = effectiveMatchingElements.map((element: HTMLElement): IOverlayElement => {
     const rect: DOMRect = element.getBoundingClientRect();
     const overlay: HTMLDivElement = overlayRoot.ownerDocument.createElement("div");
     overlay.setAttribute("data-devhost-react-highlight-overlay", "");
-    // A manual popover escapes host stacking/clipping without dismissing host popovers or intercepting clicks.
-    overlay.setAttribute("popover", "manual");
     // Same two-tone marker ring as annotation highlights, in the alternate (cyan) mark color; only the measured
     // geometry is set inline.
     overlay.className = reactHighlightOverlayClassName;
@@ -173,10 +172,17 @@ export async function highlightReactElements(
     overlay.style.width = `${rect.width}px`;
     overlay.style.height = `${rect.height}px`;
     overlayRoot.appendChild(overlay);
-    overlay.showPopover();
 
     return { overlay };
   });
+
+  if (overlays.length > 0) {
+    // Cursor targets can sit in host top-layer elements that emit no observable toggle event (popovers inside host
+    // shadow roots), so showing rectangles re-enters the top layer.
+    promoteDevtoolsTopLayer(overlayRoot);
+  }
+
+  return overlays;
 }
 
 export function clearReactHighlightOverlays(overlays: IOverlayElement[]): void {
