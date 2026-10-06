@@ -39,6 +39,7 @@ Local React workspace for the injected `devhost` browser UI that gets embedded i
 - Keep the explicit native host `cacheDir`: the copied host has no package manifest. The overlapping cold-load regression retains genuine module requests and authorization while exercising different public dependency optimizer inputs and checking both actual Vue launchers and iframe entries.
 
 - Native Redux browser regressions use the actual app-core inspector, Toolkit, Zustand middleware, and a checksum-pinned released extension in fresh owned Chromium profiles under root `.tmp/redux-native-host/`. The fixture bundler runs in its own Bun process; browser TMPDIR resolves to that same project `.tmp`. Preserve real native controls, extension ownership, CSP denial, cleanup, and positive recovery assertions. Public registration is exported as `@alexgorbatchev/devhost-ui/redux` inside this private workspace and delivered to external hosts as `/__devhost__/redux.js`; this is not a published SDK.
+- The Go-served Redux popup loads the emitted upstream `redux-monitor.css` in its own document. Preserve native CSS/font output, production content-versioned caching/gzip, and source rebuild failure responses without adding inspector styles to the injected host page.
 
 ## Boundaries
 

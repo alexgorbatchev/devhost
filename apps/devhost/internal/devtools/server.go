@@ -407,6 +407,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	mux.HandleFunc("GET "+reduxMonitorPath, controlServer.handleReduxMonitor)
 	mux.HandleFunc("GET "+reduxRegistrationScriptPath, controlServer.handleReduxRegistrationScript)
 	mux.HandleFunc("GET "+reduxMonitorScriptPath, controlServer.handleReduxMonitorScript)
+	mux.HandleFunc("GET "+reduxMonitorStylesheetPath, controlServer.handleReduxMonitorStylesheet)
 	mux.HandleFunc(restartServicePath, controlServer.handleRestartService)
 	mux.HandleFunc(restartStackPath, controlServer.handleRestartStack)
 	mux.HandleFunc(worktreesPath, controlServer.handleWorktrees)

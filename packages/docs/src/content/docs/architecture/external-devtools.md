@@ -99,6 +99,8 @@ The separate Redux browser inspector uses the public upstream App unchanged. It 
 
 The **Redux** toolbar entry opens full upstream Redux DevTools in a same-origin browser popup. Select registered store names to inspect live state and actions, use native history/time travel, and export state. It needs no desktop application, SocketCluster server, runtime Node service, or installed extension.
 
+The compiled Go app serves the registration module, inspector module, and emitted upstream inspector stylesheet. Unversioned production module/style requests redirect to content-versioned URLs with one-year immutable caching; source-checkout requests remain uncached and rebuild the requested asset. Failed source builds return HTTP 503. The inspector stylesheet and its native fonts belong to the separate popup document and never style the host page.
+
 ### Tested upstream contract
 
 The browser frontend uses `@redux-devtools/app-core` **3.0.0** App with its documented caller-owned Redux store and custom transport, public `@redux-devtools/app` **8.0.0** `nonReduxDispatch`, React/ReactDOM **19.2.5**, React Redux **9.2.0**, Redux **5.0.1**, and native Emotion **11.14.0/11.14.1**. Host tests use Redux Toolkit **2.13.0**, instrument **3.0.0**, Zustand **5.0.15** with its unchanged devtools middleware, and browser extension **3.2.10** where installed. These are verified combinations; other releases require independent verification.

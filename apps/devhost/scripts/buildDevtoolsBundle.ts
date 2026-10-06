@@ -61,7 +61,7 @@ export async function buildDevtoolsBundle(options: IBuildDevtoolsBundleOptions =
   for (const output of [...buildResult.outputs, ...reduxBuild.outputs, ...reduxMonitorBuild.outputs]) {
     const outputName: string = relative(outputDirectoryPath, output.path);
     outputNames.add(outputName);
-    if (output.path.endsWith(".js")) {
+    if (output.path.endsWith(".js") || output.path.endsWith(".css")) {
       const compressedPath: string = `${output.path}.gz`;
       await Bun.write(compressedPath, Bun.gzipSync(await output.arrayBuffer()));
       outputNames.add(`${outputName}.gz`);
@@ -98,7 +98,11 @@ async function buildReduxBrowserAsset(
     target: "browser",
     format: "esm",
     splitting: true,
-    naming: { entry: filename, chunk: "assets/[name]-[hash].[ext]", asset: "assets/[name]-[hash].[ext]" },
+    naming: {
+      entry: `${filename.slice(0, -3)}.[ext]`,
+      chunk: "assets/[name]-[hash].[ext]",
+      asset: "assets/[name]-[hash].[ext]",
+    },
     publicPath: "/__devhost__/",
     outdir: outputDirectoryPath,
     minify: true,

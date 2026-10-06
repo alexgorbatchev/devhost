@@ -25,13 +25,16 @@ func TestControlServerServesReduxBrowserInspector(t *testing.T) {
 	})
 
 	for _, tt := range []struct {
-		path        string
-		contentType string
-		content     string
+		path         string
+		contentType  string
+		content      string
+		cacheControl string
 	}{
-		{"/__devhost__/redux", "text/html; charset=utf-8", `<script type="module" src="/__devhost__/redux-monitor.js"></script>`},
-		{"/__devhost__/redux.js", "text/javascript; charset=utf-8", "registerReduxDevtoolsStore"},
-		{"/__devhost__/redux-monitor.js", "text/javascript; charset=utf-8", "DEVHOST_REDUX_HELLO"},
+		{"/__devhost__/redux", "text/html; charset=utf-8", `<script type="module" src="/__devhost__/redux-monitor.js"></script>`, cacheControlNoStore},
+		{"/__devhost__/redux", "text/html; charset=utf-8", `<link rel="stylesheet" href="/__devhost__/redux-monitor.css">`, cacheControlNoStore},
+		{"/__devhost__/redux.js", "text/javascript; charset=utf-8", "registerReduxDevtoolsStore", cacheControlImmutable},
+		{"/__devhost__/redux-monitor.js", "text/javascript; charset=utf-8", "DEVHOST_REDUX_HELLO", cacheControlImmutable},
+		{"/__devhost__/redux-monitor.css", textCSSContentType, "@font-face", cacheControlImmutable},
 	} {
 		t.Run(tt.path, func(t *testing.T) {
 			resp, err := http.Get(serverURL(s.Port(), tt.path))
@@ -45,8 +48,8 @@ func TestControlServerServesReduxBrowserInspector(t *testing.T) {
 			if got := resp.Header.Get("Content-Type"); got != tt.contentType {
 				t.Errorf("content type = %q, want %q", got, tt.contentType)
 			}
-			if got := resp.Header.Get("Cache-Control"); got != cacheControlNoStore {
-				t.Errorf("cache control = %q, want %q", got, cacheControlNoStore)
+			if got := resp.Header.Get("Cache-Control"); got != tt.cacheControl {
+				t.Errorf("cache control = %q, want %q", got, tt.cacheControl)
 			}
 			if body := readResponseText(t, resp); !strings.Contains(body, tt.content) {
 				t.Errorf("GET %s does not deliver the browser inspector entrypoint", tt.path)
@@ -57,7 +60,7 @@ func TestControlServerServesReduxBrowserInspector(t *testing.T) {
 
 func TestReduxSourceModulesRejectFailedBuildAndRecover(t *testing.T) {
 	t.Parallel()
-	for _, filename := range []string{"redux.js", "redux-monitor.js"} {
+	for _, filename := range []string{"redux.js", "redux-monitor.js", "redux-monitor.css"} {
 		t.Run(filename, func(t *testing.T) {
 			t.Parallel()
 			checkoutPath := writeDevSourceCheckout(t, failingBundleRecipe)
@@ -96,6 +99,43 @@ func TestReduxSourceModulesRejectFailedBuildAndRecover(t *testing.T) {
 			}
 			if body := readResponseText(t, recovered); body != "export const recovered = true;" {
 				t.Fatalf("recovered module = %q", body)
+			}
+		})
+	}
+}
+
+func TestReduxBrowserAssetsUseContentVersions(t *testing.T) {
+	t.Parallel()
+	first, second := startAssetTestServer(t), startAssetTestServer(t)
+	client := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	for _, path := range []string{reduxRegistrationScriptPath, reduxMonitorScriptPath, reduxMonitorStylesheetPath} {
+		t.Run(path, func(t *testing.T) {
+			var locations []string
+			for _, server := range []*ControlServer{first, second} {
+				response, err := client.Get(serverURL(server.Port(), path))
+				if err != nil {
+					t.Fatal(err)
+				}
+				response.Body.Close()
+				location := response.Header.Get("Location")
+				if response.StatusCode != http.StatusTemporaryRedirect || !strings.HasPrefix(location, path+"?v=") {
+					t.Fatalf("asset discovery did not return a content-versioned URL: status %d, location %q", response.StatusCode, location)
+				}
+				if response.Header.Get("Cache-Control") != cacheControlNoStore {
+					t.Fatal("asset discovery must remain uncached")
+				}
+				locations = append(locations, location)
+			}
+			if locations[0] != locations[1] {
+				t.Fatal("identical Redux assets have instance-dependent cache URLs")
+			}
+			response, err := http.Get(serverURL(first.Port(), path+"?v=unknown"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			response.Body.Close()
+			if response.StatusCode != http.StatusNotFound || response.Header.Get("Cache-Control") != cacheControlNoStore {
+				t.Fatal("an unknown Redux asset version was served or cached")
 			}
 		})
 	}
