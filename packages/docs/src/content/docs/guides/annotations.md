@@ -15,6 +15,7 @@ Annotations build on top of the injected devtools UI. For the overlay and routin
 - click `Submit` or press `⌘ ↵` / `Ctrl + Enter` to start the selected annotation action with the draft
 - when `Append to active session queue` is enabled, the draft is added to the matching routed service's active agent queue instead of being injected immediately into a busy terminal
 - queued annotations are grouped by service name and annotation action, shared across the service's domains, and survive browser reloads and `devhost` restarts
+- running agent and command annotation sessions continue across page reloads, closed tabs, and browser closure; reopening a routed page reconnects to existing sessions with retained terminal output
 - queued annotations drain automatically when the agent emits `OSC 1337;SetAgentStatus=finished`
 - by default, the queue stays collapsed into a compact progress summary until you expand it to edit or delete queued or paused items
 - click `Cancel` or press `Escape` to discard the draft
@@ -306,6 +307,7 @@ console.log("Mock Jira CLI would create ticket", {
 Replace the `console.log(...)` with your real Jira client or HTTP call. The important part is that the script reads the annotation from `DEVHOST_ANNOTATION_FILE` or `DEVHOST_ANNOTATION_PROMPT_FILE` rather than expecting `devhost` to provide a first-class Jira integration.
 
 Agent actions continue to support durable annotation queues. Command actions start standalone terminal sessions and are not queued.
+Running annotation sessions keep the stack alive through its idle timeout. Use the terminal's terminate action or stop `devhost` to end a running session.
 
 The injected config includes UI-safe action metadata as `annotationActions`, with each action exposing `id`, `displayName`, `kind`, and `queueEnabled`, plus `annotationDefaultActionId` for the selected default.
 

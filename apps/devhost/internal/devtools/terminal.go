@@ -164,14 +164,16 @@ type terminalSessionState struct {
 	agentCarry      string
 }
 
-type terminalSessionStarter func(request terminalSessionRequest, onData func([]byte)) (*launchedTerminalSession, error)
+type terminalSessionStarter func(request terminalSessionRequest) (*launchedTerminalSession, error)
 
 type launchedTerminalSession struct {
 	cleanup func()
 	close   func()
 	resize  func(cols int, rows int)
-	wait    func() terminalSessionExitStatus
-	write   func(data string)
+	// startOutput starts one asynchronous reader and must precede wait.
+	startOutput func(onData func([]byte))
+	wait        func() terminalSessionExitStatus
+	write       func(data string)
 }
 
 type terminalSessionRequestPayload struct {
@@ -667,16 +669,7 @@ func readCurrentEnvironmentMap() map[string]string {
 	return environment
 }
 
-func launchEditorTerminalSession(componentEditor string, projectRootPath string, request terminalSessionRequest, onData func([]byte)) (*launchedTerminalSession, error) {
-	command, err := createEditorTerminalCommand(componentEditor, request, projectRootPath, "", editorTerminalIntegration{})
-	if err != nil {
-		return nil, err
-	}
-
-	return launchTerminalCommand(command.command, command.cwd, command.env, onData, command.cleanup)
-}
-
-func launchTerminalCommand(command []string, cwd string, extraEnvironment map[string]string, onData func([]byte), cleanup func()) (*launchedTerminalSession, error) {
+func launchTerminalCommand(command []string, cwd string, extraEnvironment map[string]string, cleanup func()) (*launchedTerminalSession, error) {
 	if len(command) == 0 {
 		return nil, fmt.Errorf("terminal command is required")
 	}
@@ -697,21 +690,6 @@ func launchTerminalCommand(command []string, cwd string, extraEnvironment map[st
 
 	var closeOnce sync.Once
 	var readWG sync.WaitGroup
-	readWG.Add(1)
-	go func() {
-		defer readWG.Done()
-		buffer := make([]byte, 4096)
-		for {
-			count, readErr := ptyFile.Read(buffer)
-			if count > 0 {
-				chunk := append([]byte(nil), buffer[:count]...)
-				onData(chunk)
-			}
-			if readErr != nil {
-				return
-			}
-		}
-	}()
 
 	closeSession := func() {
 		closeOnce.Do(func() {
@@ -725,6 +703,21 @@ func launchTerminalCommand(command []string, cwd string, extraEnvironment map[st
 	return &launchedTerminalSession{
 		cleanup: cleanup,
 		close:   closeSession,
+		startOutput: func(onData func([]byte)) {
+			readWG.Go(func() {
+				buffer := make([]byte, 4096)
+				for {
+					count, readErr := ptyFile.Read(buffer)
+					if count > 0 {
+						chunk := append([]byte(nil), buffer[:count]...)
+						onData(chunk)
+					}
+					if readErr != nil {
+						return
+					}
+				}
+			})
+		},
 		resize: func(cols int, rows int) {
 			_ = pty.Setsize(ptyFile, &pty.Winsize{Cols: uint16(cols), Rows: uint16(rows)})
 		},

@@ -238,6 +238,11 @@ not change durable queue storage.
 ### Annotation agents
 
 Browser annotations can launch Pi, Claude Code, OpenCode, or Codex in the embedded devtools terminal.
+Agent and command annotation sessions keep running when you reload a page, close a tab, or close
+the browser. Reopening a routed page reconnects to existing sessions with retained terminal output.
+Running annotation sessions keep the stack alive through its idle timeout. Use the terminal's
+terminate action or stop `devhost` to end a running session.
+Terminal output is retained from process startup, including output from commands that exit quickly.
 For Codex, install and sign in to the [Codex CLI](https://learn.chatgpt.com/docs/cli), then configure:
 
 ```toml

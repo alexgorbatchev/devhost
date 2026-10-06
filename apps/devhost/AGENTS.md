@@ -153,6 +153,8 @@ The root `fix` recipe runs `oxfmt --write` for the repo using the shared root co
 
 ## Annotation action boundary
 
+- Register terminal session state before calling `startOutput`; terminal launchers start the process without reading its PTY. Start the asynchronous output reader before `wait`, which must join it before publishing process exit so startup and final agent status events reach the queue.
+- Annotation agent and command sessions belong to the stack, independently of browser connections. Keep running processes alive across reloads, closed tabs, and browser closure, including before the first terminal attachment and while an agent is idle between annotations. Retain terminal output for reconnection; apply disconnected-terminal cleanup only after annotation process exit. Explicit termination and stack shutdown still close sessions.
 - Built-in agent adapters are `pi`, `claude-code`, `opencode`, and `codex`. Codex hooks capture stdout and run detached, so status commands must address the session's PTY through `DEVHOST_CODEX_STATUS_TTY`, an internal variable populated before launch.
 - For Codex adapter changes, also run `DEVHOST_TEST_CODEX=1 go test ./internal/devtools -run TestCodex -count=1` from `apps/devhost/` with Codex CLI on PATH. The opt-in runtime test uses an isolated Codex home and blocks the prompt before inference; its hook-trust bypass is test-only. Production sessions require `/hooks` trust review.
 - Top-level `[agent]` manifest configuration is removed. Annotation submission must be configured through `[annotation]` and `[[annotation.actions]]` only.
