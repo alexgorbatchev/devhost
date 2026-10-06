@@ -6,6 +6,34 @@ import (
 	"testing"
 )
 
+func TestWorktreesConfiguration(t *testing.T) {
+	for _, tc := range []struct {
+		name               string
+		value              any
+		enabled, wantError bool
+	}{
+		{name: "omitted"},
+		{name: "enabled", value: map[string]any{"enabled": true}, enabled: true},
+		{name: "disabled", value: map[string]any{"enabled": false}},
+		{name: "invalid", value: map[string]any{"enabled": "yes"}, wantError: true},
+		{name: "unknown setting", value: map[string]any{"rememberSelection": true}, wantError: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			raw := RawManifest{value: map[string]any{"name": "shop", "services": map[string]any{"web": map[string]any{"command": []any{"server"}, "health": map[string]any{"process": true}}}}}
+			if tc.value != nil {
+				raw.value["worktrees"] = tc.value
+			}
+			got, err := ValidateManifest(filepath.Join(t.TempDir(), "devhost.toml"), raw)
+			if (err != nil) != tc.wantError {
+				t.Fatalf("validation = %v", err)
+			}
+			if !tc.wantError && got.Worktrees.Enabled != tc.enabled {
+				t.Fatalf("worktrees = %#v", got.Worktrees)
+			}
+		})
+	}
+}
+
 func TestAnnotationTempDirValidation(t *testing.T) {
 	tests := []struct {
 		name      string

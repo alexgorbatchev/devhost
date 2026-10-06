@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import type { JSX, ComponentType } from "react";
 import type { StoryContext } from "@storybook/react";
 import type { IInjectedDevtoolsConfig } from "../../shared/readInjectedDevtoolsConfig";
-import type { ServiceHealth } from "../../shared/types";
+import type { ServiceHealth, WorktreeRepository } from "../../shared/types";
 import { readInjectedDevtoolsConfig } from "../../shared/readInjectedDevtoolsConfig";
+import { factory_worktreeRepository } from "../../features/serviceStatusPanel/components/stories/fixtures";
 
 declare global {
   interface Window {
@@ -22,13 +23,23 @@ type FetchRequestInput = Parameters<typeof fetch>[0];
 type FetchRequestInit = Parameters<typeof fetch>[1];
 
 export function withDevhostMock(Story: ComponentType, context: StoryContext): JSX.Element {
+  if (context.parameters.worktreeRecovery === true) {
+    return <ServiceRecoveryMockDecorator Story={Story} hasWorktreeFailure />;
+  }
   if (context.parameters.serviceRecovery === true) {
     return <ServiceRecoveryMockDecorator Story={Story} />;
   }
   return <DevhostMockDecorator Story={Story} />;
 }
 
-function ServiceRecoveryMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Element | null {
+interface IServiceRecoveryMockDecoratorProps extends IDevhostMockDecoratorProps {
+  hasWorktreeFailure?: boolean;
+}
+
+function ServiceRecoveryMockDecorator({
+  Story,
+  hasWorktreeFailure = false,
+}: IServiceRecoveryMockDecoratorProps): JSX.Element | null {
   const [isReady, setIsReady] = useState(false);
   const crashReference = useRef<() => void>(() => {});
 
@@ -48,6 +59,18 @@ function ServiceRecoveryMockDecorator({ Story }: IDevhostMockDecoratorProps): JS
       controlToken: "recovery-token",
     };
     let services: ServiceHealth[] = [{ managed: true, name: "api", status: true }];
+    let repositories: WorktreeRepository[] = [];
+    if (hasWorktreeFailure) {
+      services = [{ managed: true, name: "api", status: false, exitCode: 7 }];
+      repositories = [
+        {
+          ...factory_worktreeRepository(["api"]),
+          selectedPath: "/worktrees/cart",
+          runningPath: "",
+          error: "Service api failed to start.",
+        },
+      ];
+    }
     let shouldFailRestart = true;
     const sockets: RecoveryWebSocket[] = [];
 
@@ -66,7 +89,7 @@ function ServiceRecoveryMockDecorator({ Story }: IDevhostMockDecoratorProps): JS
           if (this.readyState !== RecoveryWebSocket.CONNECTING) return;
           this.readyState = RecoveryWebSocket.OPEN;
           this.dispatchEvent(new Event("open"));
-          if (this.url.includes("/ws/health")) this.emit({ services });
+          if (this.url.includes("/ws/health")) this.emit({ services, repositories });
           if (this.url.includes("/ws/logs"))
             this.emit({
               type: "snapshot",
@@ -84,7 +107,9 @@ function ServiceRecoveryMockDecorator({ Story }: IDevhostMockDecoratorProps): JS
       }
     }
     const publishHealth = (): void => {
-      sockets.filter((socket) => socket.url.includes("/ws/health")).forEach((socket) => socket.emit({ services }));
+      sockets
+        .filter((socket) => socket.url.includes("/ws/health"))
+        .forEach((socket) => socket.emit({ services, repositories }));
     };
     crashReference.current = () => {
       services = [{ managed: true, name: "api", status: false, exitCode: 7 }];
@@ -101,6 +126,24 @@ function ServiceRecoveryMockDecorator({ Story }: IDevhostMockDecoratorProps): JS
     Reflect.set(window, "WebSocket", RecoveryWebSocket);
     window.fetch = Object.assign(
       async (input: FetchRequestInput, init?: FetchRequestInit): Promise<Response> => {
+        if (String(input).endsWith("/worktrees")) {
+          if (new Headers(init?.headers).get("x-devhost-control-token") !== "recovery-token")
+            return new Response("Forbidden", { status: 403 });
+          if (init?.method === "POST") {
+            if (init.body !== '{"repositoryId":"shop","path":"/projects/shop"}')
+              return new Response("Invalid selection", { status: 400 });
+            repositories = repositories.map((repository) => ({
+              ...repository,
+              selectedPath: "/projects/shop",
+              runningPath: "/projects/shop",
+              error: undefined,
+            }));
+            services = [{ managed: true, name: "api", status: true }];
+            publishHealth();
+            return new Response(null, { status: 204 });
+          }
+          return Response.json({ services, repositories });
+        }
         if (String(input).includes("/restart-service")) {
           if (
             init?.body !== '{"serviceNames":["api"]}' ||
@@ -130,11 +173,11 @@ function ServiceRecoveryMockDecorator({ Story }: IDevhostMockDecoratorProps): JS
       window.fetch = originalFetch;
       window.__DEVHOST_INJECTED_CONFIG__ = originalConfig;
     };
-  }, []);
+  }, [hasWorktreeFailure]);
 
   return isReady ? (
     <>
-      <button type="button" onClick={() => crashReference.current()}>
+      <button type="button" hidden={hasWorktreeFailure} onClick={() => crashReference.current()}>
         Crash api
       </button>
       <Story />

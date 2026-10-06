@@ -33,7 +33,7 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 	validationIssues := []string{}
 	manifestValue := rawManifest.value
 
-	allowKeys(manifestValue, []string{"annotation", "caddy", "devtools", "name", "services", "includes", "killZombies"}, "", &schemaIssues)
+	allowKeys(manifestValue, []string{"annotation", "caddy", "devtools", "worktrees", "name", "services", "includes", "killZombies"}, "", &schemaIssues)
 
 	name, ok := readRequiredNonEmptyString(manifestValue, "name", &schemaIssues)
 	if !ok {
@@ -48,6 +48,7 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 	validatedAnnotation := validateAnnotation(manifestValue["annotation"], manifestDirectoryPath, &schemaIssues, &validationIssues)
 	validatedCaddy := validateCaddy(manifestValue["caddy"], &schemaIssues)
 	validatedDevtools := validateDevtools(manifestValue["devtools"], &schemaIssues)
+	validatedWorktrees := validateWorktrees(manifestValue["worktrees"], &schemaIssues)
 	validatedServices, primaryService := validateServices(
 		manifestValue["services"],
 		rawManifest.serviceOrder,
@@ -68,6 +69,7 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 		Annotation:            validatedAnnotation,
 		Caddy:                 validatedCaddy,
 		Devtools:              validatedDevtools,
+		Worktrees:             validatedWorktrees,
 		ManifestDirectoryPath: manifestDirectoryPath,
 		ManifestPath:          manifestPath,
 		Name:                  name,
@@ -76,6 +78,19 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 		Services:              validatedServices,
 		KillZombies:           killZombies,
 	}, nil
+}
+
+func validateWorktrees(raw any, issues *[]string) WorktreesConfig {
+	if raw == nil {
+		return WorktreesConfig{}
+	}
+	value, ok := readMap(raw, "worktrees", issues)
+	if !ok {
+		return WorktreesConfig{}
+	}
+	allowKeys(value, []string{"enabled"}, "worktrees", issues)
+	enabled, _ := readOptionalBool(value, "enabled", issues)
+	return WorktreesConfig{Enabled: enabled}
 }
 
 func validateAnnotation(rawValue any, manifestDirectoryPath string, schemaIssues *[]string, validationIssues *[]string) ValidatedAnnotation {

@@ -10,6 +10,8 @@ import {
   StorybookThemeProvider,
 } from "@/devtools/shared/components/stories/helpers";
 import { ServiceStatusPanel } from "../ServiceStatusPanel";
+import { WorktreePanelHarness } from "./helpers";
+import { factory_worktreeRepository } from "./fixtures";
 
 const meta: Meta<typeof ServiceStatusPanel> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/serviceStatusPanel/components/ServiceStatusPanel",
@@ -18,7 +20,7 @@ const meta: Meta<typeof ServiceStatusPanel> = {
     renderInDevtoolsStoryShadowRoot(
       <StorybookThemeProvider globals={context.globals}>
         <DevtoolsToolbar collapsedIndicator={null} isMinimapVisible={false} position="bottom-right" stackName="demo">
-          <ServiceStatusPanel {...args} />
+          <WorktreePanelHarness {...args} />
         </DevtoolsToolbar>
       </StorybookThemeProvider>,
     ),
@@ -152,5 +154,61 @@ export const Empty: Story = {
 
     await expect(await shadowCanvas.findByRole("toolbar", { name: "devhost" })).toBeVisible();
     await expect(shadowCanvas.queryByRole("button", { name: /^Services/ })).toBeNull();
+  },
+};
+
+export const GroupedServices: Story = {
+  args: {
+    errorMessage: null,
+    services: [
+      { managed: true, name: "api", status: true },
+      { managed: true, name: "web", status: true, dirty: true },
+      { managed: false, name: "postgres", status: true },
+    ],
+    repositories: [factory_worktreeRepository()],
+    onRefreshWorktrees: fn(async () => null),
+    onSwitchWorktree: fn(async () => null),
+  },
+  play: async ({ args, canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Services: 3 of 3 up, 1 changed" }));
+    await waitFor(() => expect(canvas.getByRole("region", { name: "shop repository" })).toBeVisible());
+    await userEvent.click(canvas.getByRole("button", { name: "Choose worktree for shop" }));
+    const feature = canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" });
+    await waitFor(() => expect(feature).toBeEnabled());
+    await userEvent.click(feature);
+    await userEvent.click(canvas.getByRole("button", { name: "Switch and restart 2 services" }));
+    await expect(args.onSwitchWorktree).toHaveBeenCalledWith("shop", "/worktrees/cart");
+    await waitFor(() =>
+      expect(canvas.getByRole("button", { name: "Choose worktree for shop" })).toHaveTextContent("feature/cart"),
+    );
+    await expect(canvas.getByText("postgres")).toBeVisible();
+  },
+};
+
+export const SingleManagedServiceWithWorktrees: Story = {
+  args: {
+    errorMessage: null,
+    services: [{ managed: true, name: "web", status: true }],
+    repositories: [factory_worktreeRepository(["web"])],
+    onRefreshWorktrees: fn(async () => null),
+    onSwitchWorktree: fn(async () => null),
+  },
+  play: async ({ args, canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Services: 1 of 1 up" }));
+    const picker = canvas.getByRole("button", { name: "Choose worktree for shop" });
+    await userEvent.click(picker);
+    const feature = canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" });
+    await waitFor(() => expect(feature).toBeEnabled());
+    await userEvent.click(feature);
+    await expect(canvas.getByRole("button", { name: "Switch and restart 1 service" })).toBeEnabled();
+    await userEvent.click(canvas.getByRole("button", { name: "Cancel" }));
+    await expect(args.onSwitchWorktree).not.toHaveBeenCalled();
+    await waitFor(() => {
+      const button = canvas.getByRole("button", { name: "Choose worktree for shop" });
+      expect(Reflect.get(button.getRootNode(), "activeElement")).toBe(button);
+    });
+    await expect(canvas.getByRole("button", { name: "Choose worktree for shop" })).toHaveTextContent("main");
   },
 };

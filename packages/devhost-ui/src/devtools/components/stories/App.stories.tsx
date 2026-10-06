@@ -85,6 +85,25 @@ export const ServiceCrashRecovery: Story = {
   },
 };
 
+export const WorktreeRecovery: Story = {
+  parameters: { worktreeRecovery: true },
+  render: () => renderInDevtoolsStoryShadowRoot(<DevtoolsApp />),
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const services = await canvas.findByRole("button", { name: "Services: 0 of 1 up" });
+    await expect(canvas.queryByRole("dialog", { name: "Service exited" })).toBeNull();
+    await userEvent.click(services);
+    await userEvent.click(canvas.getByRole("button", { name: "Choose worktree for shop" }));
+    await expect(await canvas.findByRole("alert")).toHaveTextContent("Service api failed to start.");
+    const recover = canvas.getByRole("button", { name: "Return to configured checkout" });
+    await waitFor(() => expect(recover).toBeEnabled());
+    await userEvent.click(recover);
+    await expect(await canvas.findByRole("button", { name: "Services: 1 of 1 up" })).toBeVisible();
+    await expect(canvas.queryByRole("dialog", { name: "Service exited" })).toBeNull();
+    await expect(await canvas.findByRole("button", { name: "Choose worktree for shop" })).toHaveTextContent("main");
+  },
+};
+
 /**
  * Mounts the production devtools host under aggressive host-page CSS and a shrunken root font size. The devtools
  * UI must stay unaffected: shadow-DOM styles plus `:host { all: initial !important }` cut inherited host styles,

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../../shared/constants";
+import { resolveWorktreeSourcePath } from "../../../shared/resolveWorktreeSourcePath";
+import type { WorktreeRepository } from "../../../shared/types";
 import { readDevtoolsComponentEditorLabel, type DevtoolsComponentEditor } from "../../../shared";
 import { isEventTargetTerminalKeyboardInput } from "../../../shared/isEventTargetTerminalKeyboardInput";
 import { resolveAnnotationTarget } from "../../annotationComposer/resolveAnnotationTarget";
@@ -12,6 +14,7 @@ import type { ComponentSourceMenuItem, IComponentSourceMenuState, ISetComponentM
 type UseComponentSourceNavigationParams = {
   componentEditor: DevtoolsComponentEditor;
   projectRootPath: string;
+  worktreeRepository?: WorktreeRepository;
   startComponentSourceSession: (menuItem: ComponentSourceMenuItem) => Promise<ITerminalSessionStartResult>;
   enabled?: boolean;
 };
@@ -25,6 +28,7 @@ type UseComponentSourceNavigationResult = {
 export function useComponentSourceNavigation({
   componentEditor,
   projectRootPath,
+  worktreeRepository,
   startComponentSourceSession,
   enabled = true,
 }: UseComponentSourceNavigationParams): UseComponentSourceNavigationResult {
@@ -33,6 +37,10 @@ export function useComponentSourceNavigation({
   const closeComponentMenu = useCallback((): void => {
     setComponentMenu(null);
   }, []);
+
+  useEffect(() => {
+    closeComponentMenu();
+  }, [closeComponentMenu, worktreeRepository?.selectedPath, worktreeRepository?.switching, worktreeRepository?.error]);
 
   const setComponentMenuErrorMessage = useCallback((errorMessage: string): void => {
     setComponentMenu((currentMenu: IComponentSourceMenuState | null): IComponentSourceMenuState | null => {
@@ -115,6 +123,7 @@ export function useComponentSourceNavigation({
         componentEditor,
         projectRootPath,
         setComponentMenu,
+        worktreeRepository,
       );
     };
 
@@ -123,7 +132,7 @@ export function useComponentSourceNavigation({
     return () => {
       document.removeEventListener("contextmenu", handleContextMenu, true);
     };
-  }, [closeComponentMenu, componentEditor, projectRootPath, enabled]);
+  }, [closeComponentMenu, componentEditor, projectRootPath, enabled, worktreeRepository]);
 
   useEffect(() => {
     if (componentMenu === null) {
@@ -174,6 +183,7 @@ async function openComponentMenu(
   componentEditor: DevtoolsComponentEditor,
   projectRootPath: string,
   setComponentMenu: ISetComponentMenuFunction,
+  worktreeRepository: WorktreeRepository | undefined,
 ): Promise<void> {
   const inspectedComponents = await inspectComponentElement(targetElement);
 
@@ -184,9 +194,13 @@ async function openComponentMenu(
 
   setComponentMenu({
     items: inspectedComponents.map((inspection, index): ComponentSourceMenuItem => {
-      const sourceLabel: string = formatComponentSourcePath(inspection.source, projectRootPath);
+      const source = {
+        ...inspection.source,
+        fileName: resolveWorktreeSourcePath(inspection.source.fileName, worktreeRepository),
+      };
+      const sourceLabel: string = formatComponentSourcePath(source, projectRootPath);
 
-      return createMenuItem(inspection, index, sourceLabel, componentEditor, projectRootPath);
+      return createMenuItem({ ...inspection, source }, index, sourceLabel, componentEditor, projectRootPath);
     }),
     title: `Open in ${readDevtoolsComponentEditorLabel(componentEditor)}`,
     x,

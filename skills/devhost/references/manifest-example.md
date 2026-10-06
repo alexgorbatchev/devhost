@@ -14,6 +14,13 @@ killZombies = true
 # of sub-manifests to load and merge. Perfect for monorepos.
 includes = ["packages/*/devhost.toml", "apps/*/devhost.toml"]
 
+# Optional repository checkout picker. Disabled when omitted.
+# [worktrees]
+# enabled = true
+# All repository services share one saved choice across devhost restarts.
+# Repositories containing managed = false services cannot switch.
+# Missing checkouts and failed group launches remain stopped for explicit recovery.
+
 [caddy.global]
 # `http` also serves the same routed hosts and the shared fallback page on plain HTTP.
 # - `false` (default): serve through HTTPS only.
@@ -116,7 +123,8 @@ host = "hello.local.test"
 path = "/"
 # `dependsOn` declares services that must start before this service.
 dependsOn = ["api"]
-# `watch` lists relative paths to watch for file changes (restarts dirty states in UI).
+# Relative watch paths use the service cwd and follow its selected worktree.
+# Absolute watch paths stay absolute. Changes mark the service dirty in the UI.
 watch = ["src/"]
 
 [services.web.env]

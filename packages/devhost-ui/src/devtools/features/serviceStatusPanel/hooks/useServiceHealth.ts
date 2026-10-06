@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { HEALTH_WEBSOCKET_PATH } from "../../../shared/constants";
 import { createDevtoolsWebSocketUrl } from "../../../shared/createDevtoolsWebSocketUrl";
 import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
-import type { HealthResponse, ServiceHealth } from "../../../shared/types";
+import type { HealthResponse, ServiceHealth, WorktreeRepository } from "../../../shared/types";
+import { parseHealthResponse } from "../parseHealthResponse";
+import { requestWorktrees } from "../requestWorktrees";
 import { markServicesAsUnavailable } from "../markServicesAsUnavailable";
 
 const normalClosureCode: number = 1_000;
@@ -12,12 +14,16 @@ interface IUseServiceHealthResult {
   errorMessage: string | null;
   setErrorMessage: (message: string | null) => void;
   services: ServiceHealth[];
+  repositories: WorktreeRepository[];
+  refreshWorktrees: () => Promise<string | null>;
+  switchWorktree: (repositoryId: string, path: string) => Promise<string | null>;
 }
 
 export function useServiceHealth(): IUseServiceHealthResult {
+  const [repositories, setRepositories] = useState<WorktreeRepository[]>([]);
   const [services, setServices] = useState<ServiceHealth[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { stackName: devtoolsStackName } = readInjectedDevtoolsConfig();
+  const { stackName: devtoolsStackName, controlToken } = readInjectedDevtoolsConfig();
 
   useEffect(() => {
     let websocket: WebSocket | null = null;
@@ -41,6 +47,7 @@ export function useServiceHealth(): IUseServiceHealthResult {
       }
 
       setServices(healthResponse.services);
+      setRepositories(healthResponse.repositories ?? []);
       setErrorMessage(null);
     };
 
@@ -54,6 +61,7 @@ export function useServiceHealth(): IUseServiceHealthResult {
       setServices((currentServices: ServiceHealth[]): ServiceHealth[] => {
         return markServicesAsUnavailable(currentServices, devtoolsStackName);
       });
+      setRepositories([]);
       setErrorMessage(null);
     };
 
@@ -68,52 +76,28 @@ export function useServiceHealth(): IUseServiceHealthResult {
     };
   }, [devtoolsStackName]);
 
+  const refreshWorktrees = useCallback(async (): Promise<string | null> => {
+    const result = await requestWorktrees(controlToken, fetch);
+    if (result.health !== null) {
+      setRepositories(result.health.repositories ?? []);
+      setServices(result.health.services);
+    }
+    return result.error;
+  }, [controlToken]);
+  const switchWorktree = useCallback(
+    async (repositoryId: string, path: string): Promise<string | null> => {
+      const result = await requestWorktrees(controlToken, fetch, { repositoryId, path });
+      await refreshWorktrees();
+      return result.error;
+    },
+    [controlToken, refreshWorktrees],
+  );
   return {
+    repositories,
+    refreshWorktrees,
+    switchWorktree,
     errorMessage,
     setErrorMessage,
     services,
   };
-}
-
-function parseHealthResponse(message: string): HealthResponse | null {
-  try {
-    const value: unknown = JSON.parse(message);
-
-    return isHealthResponse(value) ? value : null;
-  } catch {
-    return null;
-  }
-}
-
-function isHealthResponse(value: unknown): value is HealthResponse {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  const services: unknown = Reflect.get(value, "services");
-
-  if (!Array.isArray(services)) {
-    return false;
-  }
-
-  return services.every((service: unknown): boolean => {
-    if (typeof service !== "object" || service === null) {
-      return false;
-    }
-
-    const url: unknown = Reflect.get(service, "url");
-    const dirty: unknown = Reflect.get(service, "dirty");
-    const restarting: unknown = Reflect.get(service, "restarting");
-    const exitCode: unknown = Reflect.get(service, "exitCode");
-
-    return (
-      typeof Reflect.get(service, "managed") === "boolean" &&
-      typeof Reflect.get(service, "name") === "string" &&
-      typeof Reflect.get(service, "status") === "boolean" &&
-      (typeof url === "string" || url === undefined) &&
-      (typeof dirty === "boolean" || dirty === undefined) &&
-      (typeof restarting === "boolean" || restarting === undefined) &&
-      (typeof exitCode === "number" || exitCode === undefined)
-    );
-  });
 }

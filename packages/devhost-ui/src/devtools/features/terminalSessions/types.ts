@@ -42,6 +42,7 @@ export interface IStartCommandTerminalSessionRequest {
 }
 
 export interface IStartEditorTerminalSessionRequest {
+  pageUrl?: string;
   componentName: string;
   kind: "editor";
   launcher: EditorTerminalLauncher;

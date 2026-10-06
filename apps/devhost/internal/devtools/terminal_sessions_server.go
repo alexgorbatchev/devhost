@@ -123,11 +123,20 @@ func (s *ControlServer) createTerminalSession(request terminalSessionRequest) (s
 	if request.Kind == terminalSessionRequestKindEditor && !s.featureToggles.EditorEnabled {
 		return "", fmt.Errorf("Terminal session launching is not configured.")
 	}
+	toolContext, err := s.toolContext(request)
+	if err != nil {
+		return "", err
+	}
+	if request.Source != nil && toolContext.ResolvePath != nil {
+		source := *request.Source
+		source.FileName = toolContext.ResolvePath(source.FileName)
+		request.Source = &source
+	}
 
 	starter := s.startTerminalSession
 	if starter == nil {
 		starter = func(request terminalSessionRequest, onData func([]byte)) (*launchedTerminalSession, error) {
-			command, err := createTerminalSessionCommand(s.annotationActions, s.componentEditor, s.projectRootPath, request, s.stackName, editorTerminalIntegration{
+			command, err := createTerminalSessionCommand(toolContext.AnnotationActions, s.componentEditor, toolContext.ProjectRootPath, request, s.stackName, editorTerminalIntegration{
 				controlToken: s.controlToken,
 				endpoint:     fmt.Sprintf("http://127.0.0.1:%d%s", s.Port(), reactHighlightCursorPath),
 			})
@@ -151,14 +160,15 @@ func (s *ControlServer) createTerminalSession(request terminalSessionRequest) (s
 	}
 
 	session := &terminalSessionState{
-		agentCarry: "",
-		close:      launchedSession.close,
-		clients:    map[*websocketClient]struct{}{},
-		cleanup:    launchedSession.cleanup,
-		request:    request,
-		resize:     launchedSession.resize,
-		write:      launchedSession.write,
-		wait:       launchedSession.wait,
+		projectRootPath: toolContext.ProjectRootPath,
+		agentCarry:      "",
+		close:           launchedSession.close,
+		clients:         map[*websocketClient]struct{}{},
+		cleanup:         launchedSession.cleanup,
+		request:         request,
+		resize:          launchedSession.resize,
+		write:           launchedSession.write,
+		wait:            launchedSession.wait,
 	}
 
 	s.mu.Lock()

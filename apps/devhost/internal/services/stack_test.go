@@ -267,6 +267,11 @@ func TestCollectServicesHealthIncludesUnmanagedServices(t *testing.T) {
 }
 
 func TestStartStackKeepsStartupCrashUntilExplicitShutdown(t *testing.T) {
+	t.Run("default", func(t *testing.T) { testStartupCrashRecovery(t, false) })
+	t.Run("worktrees-enabled-outside-git", func(t *testing.T) { testStartupCrashRecovery(t, true) })
+}
+
+func testStartupCrashRecovery(t *testing.T, worktreesEnabled bool) {
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
 	adminAddress, stopAdmin := startTestAdminServer(t)
@@ -275,6 +280,7 @@ func TestStartStackKeepsStartupCrashUntilExplicitShutdown(t *testing.T) {
 
 	servicePort := mustReservePort(t)
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
+	manifestValue.Worktrees.Enabled = worktreesEnabled
 	manifestValue.PrimaryService = "web"
 	manifestValue.Services["web"] = ResolvedService{
 		BindHost:  "127.0.0.1",
