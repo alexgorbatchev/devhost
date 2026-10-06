@@ -169,6 +169,14 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	}
 
 	managedCaddyAdminAddress := caddy.ResolveManagedCaddyAdminAddress(manifest.Caddy.Global.AdminAddress)
+	fallback := caddy.ManagedCaddyConfigFallback{
+		AdminAddress: manifest.Caddy.Global.AdminAddress,
+		BindHost:     manifest.Caddy.Global.BindHost,
+		HTTPEnabled:  manifest.Caddy.Global.HTTP,
+		HTTPPort:     manifest.Caddy.Global.HTTPPort,
+		HTTPSPort:    manifest.Caddy.Global.HTTPSPort,
+		RuntimeOS:    runtime.GOOS,
+	}
 	registerProcessSignals(signalExits)
 	defer unregisterProcessSignals(signalExits)
 
@@ -213,7 +221,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		}
 
 		for _, route := range routes.registrations() {
-			cleanupError = appendCleanupError(cleanupError, caddy.UnregisterRoute(route.ServiceName, route.Host, route.Path, manifest.ManifestPath, paths.RegistrationsDirectoryPath, options.CaddyOutputWriters))
+			cleanupError = appendCleanupError(cleanupError, caddy.UnregisterRoute(route.ServiceName, route.Host, route.Path, manifest.ManifestPath, paths.RegistrationsDirectoryPath, fallback, options.CaddyOutputWriters))
 		}
 
 		for _, host := range state.claimedHosts {
@@ -234,22 +242,20 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		}
 	}()
 
-	fallback := caddy.ManagedCaddyConfigFallback{
-		AdminAddress: manifest.Caddy.Global.AdminAddress,
-		BindHost:     manifest.Caddy.Global.BindHost,
-		HTTPEnabled:  manifest.Caddy.Global.HTTP,
-		HTTPPort:     manifest.Caddy.Global.HTTPPort,
-		HTTPSPort:    manifest.Caddy.Global.HTTPSPort,
-		RuntimeOS:    runtime.GOOS,
-	}
-
 	if err := caddy.EnsureManagedCaddyConfig(paths, fallback); err != nil {
 		return 0, joinCleanupError(err, cleanupError)
 	}
 
-	if err := caddy.CleanupStaleRegistrations(paths.RegistrationsDirectoryPath); err != nil {
+	if err := caddy.CleanupStaleRegistrations(paths.RegistrationsDirectoryPath, fallback); err != nil {
 		return 0, joinCleanupError(err, cleanupError)
 	}
+	settings, err := caddy.ReadManagedCaddyGlobalSettings(paths, fallback)
+	if err != nil {
+		return 0, joinCleanupError(err, cleanupError)
+	}
+	routes.settings = settings
+	managedCaddyAdminAddress = settings.AdminAddress
+	fallback = caddy.ManagedCaddyConfigFallback{AdminAddress: settings.AdminAddress, BindHost: settings.BindHost, HTTPEnabled: settings.HTTPEnabled, HTTPPort: settings.HTTPPort, HTTPSPort: settings.HTTPSPort, RuntimeOS: runtime.GOOS}
 
 	if err := caddy.CleanupStaleFixedPortClaims(paths.PortClaimsDirectoryPath); err != nil {
 		return 0, joinCleanupError(err, cleanupError)

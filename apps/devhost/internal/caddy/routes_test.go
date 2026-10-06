@@ -556,7 +556,7 @@ func TestSyncHostRouteOrdersRegistrations(t *testing.T) {
 		ServiceName: "web",
 	}, "/tmp/project/devhost.toml"))
 
-	if err := syncHostRoute("hello.localhost", paths.RoutesDirectoryPath, &managedCaddyGlobalSettings{AdminAddress: DefaultManagedCaddyAdminAddress, BindHost: defaultManagedCaddyBindHost, HTTPPort: defaultManagedCaddyHTTPPort, HTTPSPort: defaultManagedCaddyHTTPSPort}); err != nil {
+	if err := syncHostRoute("hello.localhost", paths.RoutesDirectoryPath, &ManagedCaddyGlobalSettings{AdminAddress: DefaultManagedCaddyAdminAddress, BindHost: defaultManagedCaddyBindHost, HTTPPort: defaultManagedCaddyHTTPPort, HTTPSPort: defaultManagedCaddyHTTPSPort}); err != nil {
 		t.Fatalf("syncHostRoute(...) unexpected error = %v", err)
 	}
 
@@ -829,7 +829,7 @@ func TestUnregisterRoute(t *testing.T) {
 		Path:        "/",
 		ServiceName: "web",
 	}, "/tmp/project/devhost.toml"))
-	if err := syncHostRoute("hello.localhost", paths.RoutesDirectoryPath, &managedCaddyGlobalSettings{AdminAddress: DefaultManagedCaddyAdminAddress, BindHost: defaultManagedCaddyBindHost, HTTPPort: defaultManagedCaddyHTTPPort, HTTPSPort: defaultManagedCaddyHTTPSPort}); err != nil {
+	if err := syncHostRoute("hello.localhost", paths.RoutesDirectoryPath, &ManagedCaddyGlobalSettings{AdminAddress: DefaultManagedCaddyAdminAddress, BindHost: defaultManagedCaddyBindHost, HTTPPort: defaultManagedCaddyHTTPPort, HTTPSPort: defaultManagedCaddyHTTPSPort}); err != nil {
 		t.Fatalf("syncHostRoute(...) unexpected error = %v", err)
 	}
 
@@ -844,14 +844,14 @@ func TestUnregisterRoute(t *testing.T) {
 		}
 	})
 
-	if err := UnregisterRoute("web", "hello.localhost", "/", "/tmp/other/devhost.toml", paths.RegistrationsDirectoryPath, RouteCommandOutputWriters{}); err != nil {
+	if err := UnregisterRoute("web", "hello.localhost", "/", "/tmp/other/devhost.toml", paths.RegistrationsDirectoryPath, ManagedCaddyConfigFallback{}, RouteCommandOutputWriters{}); err != nil {
 		t.Fatalf("UnregisterRoute(...) wrong manifest unexpected error = %v", err)
 	}
 	if reloadCalls != 0 {
 		t.Fatalf("reload calls after ignored unregister = %d, want 0", reloadCalls)
 	}
 
-	if err := UnregisterRoute("web", "hello.localhost", "/", "/tmp/project/devhost.toml", paths.RegistrationsDirectoryPath, RouteCommandOutputWriters{}); err != nil {
+	if err := UnregisterRoute("web", "hello.localhost", "/", "/tmp/project/devhost.toml", paths.RegistrationsDirectoryPath, ManagedCaddyConfigFallback{}, RouteCommandOutputWriters{}); err != nil {
 		t.Fatalf("UnregisterRoute(...) unexpected error = %v", err)
 	}
 	if reloadCalls != 1 {
@@ -903,7 +903,7 @@ func TestCleanupStaleRegistrations(t *testing.T) {
 		`  "ownerPid": 999999`,
 		"}",
 	}, "\n"))
-	if err := syncHostRoute("live.localhost", paths.RoutesDirectoryPath, &managedCaddyGlobalSettings{AdminAddress: DefaultManagedCaddyAdminAddress, BindHost: defaultManagedCaddyBindHost, HTTPPort: defaultManagedCaddyHTTPPort, HTTPSPort: defaultManagedCaddyHTTPSPort}); err != nil {
+	if err := syncHostRoute("live.localhost", paths.RoutesDirectoryPath, &ManagedCaddyGlobalSettings{AdminAddress: DefaultManagedCaddyAdminAddress, BindHost: defaultManagedCaddyBindHost, HTTPPort: defaultManagedCaddyHTTPPort, HTTPSPort: defaultManagedCaddyHTTPSPort}); err != nil {
 		t.Fatalf("syncHostRoute(...) unexpected error = %v", err)
 	}
 
@@ -917,7 +917,7 @@ func TestCleanupStaleRegistrations(t *testing.T) {
 		}
 	})
 
-	if err := CleanupStaleRegistrations(paths.RegistrationsDirectoryPath); err != nil {
+	if err := CleanupStaleRegistrations(paths.RegistrationsDirectoryPath, ManagedCaddyConfigFallback{}); err != nil {
 		t.Fatalf("CleanupStaleRegistrations(...) unexpected error = %v", err)
 	}
 	for _, stalePath := range []string{

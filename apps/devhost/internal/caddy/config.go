@@ -19,7 +19,7 @@ type ManagedCaddyConfigFallback struct {
 	RuntimeOS    string
 }
 
-type managedCaddyGlobalSettings struct {
+type ManagedCaddyGlobalSettings struct {
 	AdminAddress string
 	BindHost     string
 	HTTPEnabled  bool
@@ -42,7 +42,7 @@ func ensureManagedCaddyConfig(paths Paths, fallback ManagedCaddyConfigFallback) 
 		}
 	}
 
-	globalSettings, err := readManagedCaddyGlobalSettings(paths, fallback)
+	globalSettings, err := ReadManagedCaddyGlobalSettings(paths, fallback)
 	if err != nil {
 		return err
 	}
@@ -75,13 +75,17 @@ func EnsureManagedCaddyConfig(paths Paths, fallback ManagedCaddyConfigFallback) 
 	return ensureManagedCaddyConfig(paths, fallback)
 }
 
-func readManagedCaddyGlobalSettings(paths Paths, fallback ManagedCaddyConfigFallback) (managedCaddyGlobalSettings, error) {
+// ReadManagedCaddyGlobalSettings resolves shared active votes over the caller's
+// prepared settings. HTTP is voted only by active registrations; the fallback
+// supplies HTTP enablement when the runtime has no registrations.
+func ReadManagedCaddyGlobalSettings(paths Paths, fallback ManagedCaddyConfigFallback) (ManagedCaddyGlobalSettings, error) {
 	entries, err := os.ReadDir(paths.RegistrationsDirectoryPath)
 	if err != nil {
-		return managedCaddyGlobalSettings{}, fmt.Errorf("read managed caddy registrations directory %s: %w", paths.RegistrationsDirectoryPath, err)
+		return ManagedCaddyGlobalSettings{}, fmt.Errorf("read managed caddy registrations directory %s: %w", paths.RegistrationsDirectoryPath, err)
 	}
 
 	httpEnabled := false
+	hasActiveRegistrations := false
 	optedInAdminAddresses := map[string]struct{}{}
 	optedInBindHosts := map[string]struct{}{}
 	optedInHTTPPorts := map[int]struct{}{}
@@ -95,17 +99,18 @@ func readManagedCaddyGlobalSettings(paths Paths, fallback ManagedCaddyConfigFall
 		registrationPath := filepath.Join(paths.RegistrationsDirectoryPath, entry.Name())
 		registrationText, err := os.ReadFile(registrationPath)
 		if err != nil {
-			return managedCaddyGlobalSettings{}, fmt.Errorf("read managed caddy registration %s: %w", registrationPath, err)
+			return ManagedCaddyGlobalSettings{}, fmt.Errorf("read managed caddy registration %s: %w", registrationPath, err)
 		}
 
 		var registration map[string]any
 		if err := json.Unmarshal(registrationText, &registration); err != nil {
-			return managedCaddyGlobalSettings{}, fmt.Errorf("parse managed caddy registration %s: %w", registrationPath, err)
+			return ManagedCaddyGlobalSettings{}, fmt.Errorf("parse managed caddy registration %s: %w", registrationPath, err)
 		}
 
 		if _, ok := registration["appBindHost"].(string); !ok {
 			continue
 		}
+		hasActiveRegistrations = true
 
 		if enabled, ok := registration["httpEnabled"].(bool); ok && enabled {
 			httpEnabled = true
@@ -125,19 +130,19 @@ func readManagedCaddyGlobalSettings(paths Paths, fallback ManagedCaddyConfigFall
 	}
 
 	if len(optedInAdminAddresses) > 1 {
-		return managedCaddyGlobalSettings{}, fmt.Errorf("Managed Caddy admin address is inconsistent across active stacks: %s.", joinSortedStrings(optedInAdminAddresses))
+		return ManagedCaddyGlobalSettings{}, fmt.Errorf("Managed Caddy admin address is inconsistent across active stacks: %s.", joinSortedStrings(optedInAdminAddresses))
 	}
 	if len(optedInBindHosts) > 1 {
-		return managedCaddyGlobalSettings{}, fmt.Errorf("Managed Caddy bind host is inconsistent across active stacks: %s.", joinSortedStrings(optedInBindHosts))
+		return ManagedCaddyGlobalSettings{}, fmt.Errorf("Managed Caddy bind host is inconsistent across active stacks: %s.", joinSortedStrings(optedInBindHosts))
 	}
 	if len(optedInHTTPPorts) > 1 {
-		return managedCaddyGlobalSettings{}, fmt.Errorf("Managed Caddy HTTP port is inconsistent across active stacks: %s.", joinSortedInts(optedInHTTPPorts))
+		return ManagedCaddyGlobalSettings{}, fmt.Errorf("Managed Caddy HTTP port is inconsistent across active stacks: %s.", joinSortedInts(optedInHTTPPorts))
 	}
 	if len(optedInHTTPSPorts) > 1 {
-		return managedCaddyGlobalSettings{}, fmt.Errorf("Managed Caddy HTTPS port is inconsistent across active stacks: %s.", joinSortedInts(optedInHTTPSPorts))
+		return ManagedCaddyGlobalSettings{}, fmt.Errorf("Managed Caddy HTTPS port is inconsistent across active stacks: %s.", joinSortedInts(optedInHTTPSPorts))
 	}
 
-	settings := managedCaddyGlobalSettings{
+	settings := ManagedCaddyGlobalSettings{
 		AdminAddress: DefaultManagedCaddyAdminAddress,
 		BindHost:     defaultManagedCaddyBindHost,
 		HTTPEnabled:  httpEnabled,
@@ -164,7 +169,7 @@ func readManagedCaddyGlobalSettings(paths Paths, fallback ManagedCaddyConfigFall
 	} else if fallback.HTTPSPort != 0 {
 		settings.HTTPSPort = fallback.HTTPSPort
 	}
-	if !settings.HTTPEnabled && fallback.HTTPEnabled {
+	if !hasActiveRegistrations && fallback.HTTPEnabled {
 		settings.HTTPEnabled = true
 	}
 

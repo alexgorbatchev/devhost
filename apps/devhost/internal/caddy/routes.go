@@ -338,10 +338,10 @@ func ReleaseHostClaim(options ClaimHostOptions) error {
 	return removeIfExists(claimPath)
 }
 
-func CleanupStaleRegistrations(registrationsDirectoryPath string) error {
+func CleanupStaleRegistrations(registrationsDirectoryPath string, fallback ManagedCaddyConfigFallback) error {
 	routesDirectoryPath := filepath.Clean(filepath.Join(registrationsDirectoryPath, ".."))
 	paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
-	previousSettings, err := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
+	previousSettings, err := ReadManagedCaddyGlobalSettings(paths, fallback)
 	if err != nil {
 		return err
 	}
@@ -395,7 +395,7 @@ func CleanupStaleRegistrations(registrationsDirectoryPath string) error {
 		}
 	}
 
-	nextSettings, err := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
+	nextSettings, err := ReadManagedCaddyGlobalSettings(paths, fallback)
 	if err != nil {
 		return err
 	}
@@ -419,12 +419,13 @@ func UnregisterRoute(
 	path string,
 	manifestPath string,
 	registrationsDirectoryPath string,
+	fallback ManagedCaddyConfigFallback,
 	outputWriters RouteCommandOutputWriters,
 ) error {
 	routesDirectoryPath := filepath.Clean(filepath.Join(registrationsDirectoryPath, ".."))
 	paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
 	registrationPath := getRouteRegistrationPath(serviceName, host, path, routesDirectoryPath)
-	previousSettings, err := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
+	previousSettings, err := ReadManagedCaddyGlobalSettings(paths, fallback)
 	if err != nil {
 		return err
 	}
@@ -444,36 +445,23 @@ func UnregisterRoute(
 	if err := removeIfExists(registrationPath); err != nil {
 		return err
 	}
-	remaining, err := os.ReadDir(registrationsDirectoryPath)
+	nextSettings, err := ReadManagedCaddyGlobalSettings(paths, fallback)
 	if err != nil {
 		return err
-	}
-	// An empty instance keeps its listeners and admin endpoint. Resetting to
-	// defaults could reload a different Caddy instance during stack shutdown.
-	nextSettings := previousSettings
-	for _, entry := range remaining {
-		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".json" {
-			nextSettings, err = readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
-			if err != nil {
-				return err
-			}
-			break
-		}
 	}
 	if didManagedCaddyGlobalSettingsChange(previousSettings, nextSettings) {
 		if err := syncManagedCaddyGlobalState(routesDirectoryPath, nextSettings); err != nil {
 			return err
 		}
-	} else {
-		if err := syncHostRoute(host, routesDirectoryPath, &nextSettings); err != nil {
-			return err
-		}
+	}
+	if err := syncHostRoute(host, routesDirectoryPath, &nextSettings); err != nil {
+		return err
 	}
 	if err := syncManagedCaddyNotFoundSite(routesDirectoryPath, nextSettings.HTTPSPort); err != nil {
 		return err
 	}
 
-	return reloadManagedCaddy(nextSettings.AdminAddress, routesDirectoryPath, outputWriters)
+	return reloadManagedCaddy(previousSettings.AdminAddress, routesDirectoryPath, outputWriters)
 }
 
 func SyncManagedHostRoute(host string, adminAddress string, routesDirectoryPath string, outputWriters RouteCommandOutputWriters) error {
@@ -743,7 +731,7 @@ func readAppTarget(registration routeRegistration) (string, error) {
 	return FormatProxyAddress(host, registration.AppPort), nil
 }
 
-func syncHostRoute(host string, routesDirectoryPath string, settings *managedCaddyGlobalSettings) error {
+func syncHostRoute(host string, routesDirectoryPath string, settings *ManagedCaddyGlobalSettings) error {
 	registrations, err := readHostRegistrations(host, routesDirectoryPath)
 	if err != nil {
 		return err
@@ -753,12 +741,12 @@ func syncHostRoute(host string, routesDirectoryPath string, settings *managedCad
 		return removeIfExists(hostRoutePath)
 	}
 
-	effectiveSettings := managedCaddyGlobalSettings{}
+	effectiveSettings := ManagedCaddyGlobalSettings{}
 	if settings != nil {
 		effectiveSettings = *settings
 	} else {
 		paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
-		effectiveSettings, err = readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
+		effectiveSettings, err = ReadManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
 		if err != nil {
 			return err
 		}
@@ -1267,7 +1255,7 @@ func cleanupStaleHostClaims(hostClaimsDirectoryPath string) error {
 	return nil
 }
 
-func didManagedCaddyGlobalSettingsChange(previousSettings managedCaddyGlobalSettings, nextSettings managedCaddyGlobalSettings) bool {
+func didManagedCaddyGlobalSettingsChange(previousSettings ManagedCaddyGlobalSettings, nextSettings ManagedCaddyGlobalSettings) bool {
 	return previousSettings.AdminAddress != nextSettings.AdminAddress ||
 		previousSettings.BindHost != nextSettings.BindHost ||
 		previousSettings.HTTPEnabled != nextSettings.HTTPEnabled ||
@@ -1275,7 +1263,7 @@ func didManagedCaddyGlobalSettingsChange(previousSettings managedCaddyGlobalSett
 		previousSettings.HTTPSPort != nextSettings.HTTPSPort
 }
 
-func syncManagedCaddyGlobalState(routesDirectoryPath string, settings managedCaddyGlobalSettings) error {
+func syncManagedCaddyGlobalState(routesDirectoryPath string, settings ManagedCaddyGlobalSettings) error {
 	paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
 	entries, err := os.ReadDir(paths.RegistrationsDirectoryPath)
 	if err != nil {
