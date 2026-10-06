@@ -16,6 +16,16 @@ export default mergeConfig(
     cacheDir: "./.cache/vite",
     optimizeDeps: {
       include: optimizeDependencyEntries,
+      // Fetch Query's native rendering modules with its public entry, before play tests start.
+      // Preserve lazy module initialization when grouping its package's generated chunks.
+      rolldownOptions: {
+        output: {
+          strictExecutionOrder: true,
+          codeSplitting: {
+            groups: [{ name: "tanstack-query-devtools", test: /[/\\]@tanstack[/\\]query-devtools[/\\]/ }],
+          },
+        },
+      },
     },
     resolve: {
       alias: {

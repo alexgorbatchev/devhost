@@ -22,3 +22,13 @@ export function resetTanStackDevtoolsStorage(): RestoreStorage {
     }
   };
 }
+
+export function readScriptRequestsSince(startTime: number): string[] {
+  return performance
+    .getEntriesByType("resource")
+    .filter(
+      (entry) =>
+        entry instanceof PerformanceResourceTiming && entry.initiatorType === "script" && entry.startTime >= startTime,
+    )
+    .map((entry) => entry.name);
+}

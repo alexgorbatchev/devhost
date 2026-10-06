@@ -18,7 +18,7 @@ import { useExternalDevtoolsLaunchers } from "../../hooks/useExternalDevtoolsLau
 import { ReactHookFormHarness } from "../../../../../../.storybook/externalDevtools/ReactHookFormHarness";
 import { JotaiHarness } from "../../../../../../.storybook/externalDevtools/JotaiHarness";
 import { TanStackHarness } from "../../../../../../.storybook/externalDevtools/TanStackHarness";
-import { resetJotaiDevtoolsStorage, resetTanStackDevtoolsStorage } from "./helpers";
+import { readScriptRequestsSince, resetJotaiDevtoolsStorage, resetTanStackDevtoolsStorage } from "./helpers";
 
 const queryClient = new QueryClient();
 
@@ -190,8 +190,11 @@ export const TanStackEmbeddedPlugins: Story = {
     const launcher = await canvas.findByRole("button", { name: "TanStack" });
     await userEvent.click(launcher);
     const shell = within(within(document.body).getByTestId("tanstack-devtools-panel"));
-    await userEvent.click(await shell.findByRole("button", { name: "TanStack Query" }));
+    const queryPlugin = await shell.findByRole("button", { name: "TanStack Query" });
+    const querySelectionStartedAt = performance.now();
+    await userEvent.click(queryPlugin);
     await expect(await shell.findByRole("textbox", { name: "Filter queries by query key" })).toBeVisible();
+    await expect(readScriptRequestsSince(querySelectionStartedAt)).toEqual([]);
     await userEvent.click(await shell.findByRole("button", { name: "TanStack Router" }));
     await expect(await shell.findByText("TanStack Router", { exact: true })).toBeVisible();
     await expect(canvas.queryByRole("button", { name: "Query" })).toBeNull();
