@@ -201,6 +201,8 @@ test("native reorder, reset, revert, commit, lock, recording, skip, sweep and fi
       .getByRole("status")
       .getByText("Draggable item 2 was moved over droppable area 2.", { exact: true })
       .waitFor();
+    // Keyboard sorting reads native row geometry; press() does not wait for layout stability.
+    await action.scrollIntoViewIfNeeded();
     await action.press("ArrowUp");
     await monitor
       .getByRole("status")
