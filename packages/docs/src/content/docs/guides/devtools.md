@@ -56,6 +56,8 @@ Refreshing a root-compatible routed app while its backend is unavailable returns
 
 When `[devtools.externalToolbars].enabled = true` (the default), `devhost` also detects supported third-party devtools buttons on the host page, hides the native controls, and re-renders them as toggles in the toolbar. The native panels themselves stay owned by the host tools.
 
+Native React DevTools uses a separately configured, already running browser profile. Set `[devtools.browser].endpoint` explicitly, open **Browser**, and choose **Connect browser control**. When a uniquely identified mounted React host and original extension are detected, **React DevTools** opens native DevTools for that document; choose Components or Profiler in the upstream window. **Disconnect browser control** releases devhost resources while preserving that browser-owned window and profile. Collapsing the toolbar preserves the connection. Window presence does not certify live inspection, and native-session loss remains unavailable. Read [Native React DevTools](../architecture/external-devtools/#native-react-devtools) for exact versions, setup, route authority and recovery boundaries.
+
 Terminal sessions (annotation agents, annotation commands, and Neovim) appear as chips in the toolbar. Clicking a chip opens its terminal window; minimizing returns it to the chip while the session keeps running and reporting its status. When the chips no longer fit, the rest collapse into a `+N` button that lists every session. Terminal windows open fullscreen above the other injected surfaces; when the log minimap is shown, the window stops at the minimap strip. The minimap's hover preview stays beneath an open terminal window, so minimize the terminal to read it.
 
 Minimap log previews preserve ANSI backgrounds and text decorations. Foreground colors adjust automatically to maintain at least 4.5:1 contrast against the rendered background in either theme, including focused and stderr rows. Dim text is softened only as far as that contrast requirement permits.
@@ -99,9 +101,14 @@ Handlers still validate methods, payloads, enabled features, and session state. 
 /__devhost__/ws/react-highlight
 /__devhost__/ws/health
 /__devhost__/ws/logs
+/__devhost__/ws/native-browser
 ```
 
 Use the page's routed host with `ws://` for HTTP or `wss://` for HTTPS. The terminal connection requires the ID of an existing session: a missing `sessionId` produces `400`, and an unknown session produces `404` before the WebSocket upgrade. The injected UI constructs these URLs automatically.
+
+An active native browser-control WebSocket also keeps the stack from idle shutdown. Disconnecting releases that activity and restarts the normal idle buffer.
+
+Native browser control negotiates the nonsecret `devhost-native-browser.v1` codec and validates the current routed origin and exact instance/document binding. Fresh uncached configuration publishes only whether it is configured and its current instance identity; the private debugging endpoint is never included.
 
 The generated Neovim launcher supplies the instance's cursor-update endpoint through `DEVHOST_REACT_HIGHLIGHT_URL`, together with its project root, stack name, and plugin path. Stopping and starting devhost can change the local control port, so use the current launcher after starting a new instance. Manifest hot reload and **Restart stack with new ports** retain the control port and existing editor connections. See [React Highlight](../react-highlight/) for integration requirements.
 

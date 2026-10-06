@@ -14,6 +14,9 @@ import { TerminalSessionChips, TerminalSessionHost, useTerminalSessions } from "
 import { useReactHighlightOverlay } from "../features/reactHighlight";
 import { ServiceCrashOverlay, ServiceStatusPanel, useServiceHealth } from "../features/serviceStatusPanel";
 import { pristineFetch } from "../shared/pristineFetch";
+import { useNativeBrowserConnection } from "../shared/hooks/useNativeBrowserConnection";
+import { NativeBrowserConnectionPanel } from "../features/nativeBrowserConnection";
+import { ReactNativeAccessButton } from "../features/reactNativeDevtools";
 import { restartServices } from "../shared/restartServices";
 import { readInjectedDevtoolsConfig } from "../shared/readInjectedDevtoolsConfig";
 import { isEventTargetEditingSurface } from "../shared/isEventTargetEditingSurface";
@@ -42,6 +45,7 @@ function AppContent(): JSX.Element {
   const {
     annotationActions,
     annotationDefaultActionId,
+    nativeBrowserConfigured,
     annotationEnabled,
     annotationQueueEnabled,
     componentEditor,
@@ -58,6 +62,8 @@ function AppContent(): JSX.Element {
     primaryService,
   } = readInjectedDevtoolsConfig();
   const appRootReference = useRef<HTMLDivElement | null>(null);
+  const isNativeBrowserEnabled: boolean = externalToolbarsEnabled && nativeBrowserConfigured;
+  const nativeBrowser = useNativeBrowserConnection(isNativeBrowserEnabled);
   const colorScheme = useDevtoolsColorScheme();
   const { errorMessage, setErrorMessage, services, repositories, refreshWorktrees, switchWorktree } =
     useServiceHealth();
@@ -197,7 +203,10 @@ function AppContent(): JSX.Element {
     [annotationActions, annotationQueues, colorScheme, registerStartedSession, resumeQueue],
   );
   return (
-    <DevtoolsTopLayer ref={appRootReference}>
+    <DevtoolsTopLayer
+      ref={appRootReference}
+      nativeBrowserBinding={isNativeBrowserEnabled ? nativeBrowser.view.binding : null}
+    >
       {annotationEnabled ? (
         <AnnotationComposer
           activeAgentSessionId={activeAgentSessionId}
@@ -247,6 +256,20 @@ function AppContent(): JSX.Element {
               onSaveEntry={saveEntry}
               queues={annotationQueues}
             />
+          ) : null}
+          {isNativeBrowserEnabled ? (
+            <>
+              <NativeBrowserConnectionPanel
+                view={nativeBrowser.view}
+                onConnect={nativeBrowser.connect}
+                onDisconnect={nativeBrowser.disconnect}
+              />
+              <ReactNativeAccessButton
+                isAvailable={nativeBrowser.view.observation?.isReactAvailable === true}
+                isActionPending={nativeBrowser.view.isActionPending}
+                onOpen={nativeBrowser.openReact}
+              />
+            </>
           ) : null}
           {shouldRenderExternalDevtoolsPanel ? (
             <ExternalDevtoolsPanel launchers={externalDevtoolsLaunchers} onToggleLauncher={toggleLauncher} />

@@ -41,6 +41,8 @@ Local React workspace for the injected `devhost` browser UI that gets embedded i
 - Native Redux browser regressions use the actual app-core inspector, Toolkit, Zustand middleware, and a checksum-pinned released extension in fresh owned Chromium profiles under root `.tmp/redux-native-host/`. The fixture bundler runs in its own Bun process; browser TMPDIR resolves to that same project `.tmp`. Preserve real native controls, extension ownership, CSP denial, cleanup, and positive recovery assertions. Public registration is exported as `@alexgorbatchev/devhost-ui/redux` inside this private workspace and delivered to external hosts as `/__devhost__/redux.js`; this is not a published SDK.
 - The Go-served Redux popup loads the emitted upstream `redux-monitor.css` in its own document. Preserve native CSS/font output, production content-versioned caching/gzip, and source rebuild failure responses without adding inspector styles to the injected host page.
 
+- Native React access keeps its connection effect at the App lifetime, outside collapsed toolbar children. Use existing pristine fetch/WebSocket primitives and fresh uncached configuration; disabling aggregation or actual Root unmount disposes the client. DOM removal alone is not unmount. Keep Browser control connection, mounted host/extension availability and native-window presence distinct. The React action is a momentary native-window opener; no fake toggle/open state or inline backend.
+
 ## Boundaries
 
 - Always: update the Go-side bundle build in `apps/devhost/` when the devtools entrypoint, generated asset contract, or package export shape changes.
@@ -54,3 +56,11 @@ Local React workspace for the injected `devhost` browser UI that gets embedded i
 - `src/devtools/AGENTS.md`
 - `src/devtools/features/AGENTS.md`
 - `apps/devhost/scripts/buildDevtoolsBundle.ts`
+
+## Provisioned native React acceptance
+
+From the repository root, run `just devhost compile`, then set `DEVHOST_NATIVE_REACT_ASSETS` to an absolute JSON file containing `chromeArchivePath`, `reactCrxPath`, `caddyExecutablePath`, and `devhostExecutablePath` and run `just ui test-native-react`. Relative asset paths resolve from that root. Set `TMPDIR` to the absolute root `.tmp` directory. Only the owned Chrome subprocess uses relative `.tmp` with its fixed repository-root working directory: the absolute path exceeds Chromium’s Unix singleton-socket path limit in this worktree. The native command fails before browser resources start when provisioning is missing or mismatched.
+
+This additional command requires Linux x64, the checksum-pinned original Chrome for Testing 154.0.8037.92 ZIP and React Developer Tools 8.0.0 CRX, native Caddy, the freshly compiled binary, `unzip`, and agent-browser 0.34.0 on PATH. Tests extract the original assets into a unique run directory and own a fresh headless browser profile, two real Go stacks, and Caddy routes. The test-only Caddyfile uses `skip_install_trust`; Chromium ignores certificate errors for those owned TLS routes. These test dependencies are not shipped runtime dependencies. Physical headed behavior is unverified.
+
+Ordinary `just check` discovers the asset-verifier tests and typechecks every native script, but does not provision or run this additional native acceptance command. Both commands are required for changes to native React control. The native runner verifies original Components/Profiler, trusted Escape, actual App Root disposal, separate compiled injection, Go Stop/restart, project/document isolation and retained native-session loss. Preserve every assertion and stop all owned resources.

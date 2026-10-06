@@ -26,6 +26,8 @@ With `[devtools.externalToolbars].enabled = true`, the toolbar aggregates host-m
 
 The **Redux** entry opens the upstream Redux DevTools browser inspector for explicitly registered Redux Toolkit and native-middleware Zustand stores. Import `/__devhost__/redux.js` from a routed development page and register actual stores; Toolkit requires one upstream instrumented store, and Zustand requires data snapshot/restoration functions that preserve host actions. Store names, live state, actions, and supported replay controls stay in the upstream inspector. No desktop application or installed browser extension is required. An existing extension remains independent; its cursor and cold Zustand history have documented upstream limits. Closing, disabling, or unmounting devhost closes only its own monitor and subscriptions. The [setup guide](https://alexgorbatchev.github.io/devhost/architecture/external-devtools/#redux-toolkit-and-zustand) provides the supported versions, examples, and browser policy requirements.
 
+For native React inspection, configure `[devtools.browser].endpoint` for an already running dedicated local browser profile with the original React Developer Tools extension installed before your app loads. Open **Browser**, choose **Connect browser control**, then use **React DevTools** and select **Components** or **Profiler** in Chrome's native window. Connection status and window presence describe browser control, not proof of live inspection. Disconnecting, disabling aggregation, or unmounting devhost releases its connections while your browser and native inspector remain open. The [native React setup guide](https://alexgorbatchev.github.io/devhost/architecture/external-devtools/#native-react-devtools) covers exact versions, routing, ownership, and native-session loss limits.
+
 ## Quick start
 
 ### Installation
@@ -46,6 +48,7 @@ devhost --version
   - a global `caddy` on your `PATH`, or
   - a managed Caddy binary downloaded with `devhost caddy download`
 - `nvim` and `curl` when `[devtools.editor].ide = "neovim"`
+- an explicitly configured dedicated Chrome for Testing **154.0.8037.92** profile and original React Developer Tools **8.0.0** for optional native React access; the inspected host must contain mounted React DOM **19.2.5**. Install the extension before loading that host. The browser stays user-owned; `devhost` attaches to its literal-loopback debugging endpoint.
 
 Stopping the last stack removes its routes while retaining the running Caddy instance's configured admin address,
 bind host, and HTTP/HTTPS ports. Separate instances keep their own listeners through stack shutdown.

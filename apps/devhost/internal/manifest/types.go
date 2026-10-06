@@ -61,7 +61,13 @@ type CaddyGlobalConfig struct {
 	HTTPSPort    int
 }
 
+type DevtoolsBrowserConfig struct {
+	Endpoint         string
+	ReactExtensionID string
+}
+
 type DevtoolsConfig struct {
+	Browser          DevtoolsBrowserConfig
 	Editor           DevtoolsEditorConfig
 	ExternalToolbars DevtoolsToggleConfig
 	Minimap          DevtoolsMinimapConfig

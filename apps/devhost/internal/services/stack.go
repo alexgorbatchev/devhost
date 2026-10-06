@@ -315,6 +315,10 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			refreshWorktrees = state.refreshWorktrees
 		}
 		controlServer, err := startDevtoolsControlServer(devtools.StartControlServerOptions{
+			NativeBrowser: manifest.Devtools.Browser,
+			AllowsNativeBrowserURL: func(port int, href string) (bool, error) {
+				return caddy.AllowsDevtoolsURL(paths, caddy.DevtoolsRouteOwner{ManifestPath: manifest.ManifestPath, ControlPort: port}, href)
+			},
 			AnnotationActions:         manifest.Annotation.Actions,
 			AnnotationDefaultActionID: manifest.Annotation.DefaultActionID,
 			ComponentEditor:           manifest.Devtools.Editor.IDE,
