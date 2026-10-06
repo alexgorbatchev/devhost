@@ -292,6 +292,10 @@ is also subject to the manifest interpolation rules above.
 
 On Linux, run `devhost caddy privileged-ports` once before the first HTTPS start if you want Caddy to bind privileged ports without running the whole stack as root.
 
+Use `devhost caddy start --manifest ./devhost.toml` to start the shared proxy with the manifest's
+`caddy.global.adminAddress`, `bindHost`, `http`, `httpPort`, and `httpsPort` settings.
+Active stack registrations take precedence for the shared admin address, bind host, and listener ports.
+
 ## Build from source
 
 If you are working from this repository and want a current-platform binary instead of a release download:

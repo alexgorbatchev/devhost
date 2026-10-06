@@ -167,7 +167,13 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 				return 1
 			}
 
-			fallback.AdminAddress = validatedManifest.Caddy.Global.AdminAddress
+			fallback = caddy.ManagedCaddyConfigFallback{
+				AdminAddress: validatedManifest.Caddy.Global.AdminAddress,
+				BindHost:     validatedManifest.Caddy.Global.BindHost,
+				HTTPEnabled:  validatedManifest.Caddy.Global.HTTP,
+				HTTPPort:     validatedManifest.Caddy.Global.HTTPPort,
+				HTTPSPort:    validatedManifest.Caddy.Global.HTTPSPort,
+			}
 		}
 
 		exitCode, err := caddy.RunManagedCaddyLifecycleCommand(

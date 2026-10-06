@@ -68,6 +68,9 @@ name = "hello-stack"
 
 # Managed Caddy lifecycle is shared and manual.
 # Start it explicitly with `devhost caddy start` before running one or more stacks.
+# Pass `--manifest ./devhost.toml` to use this manifest's admin address, bind host,
+# HTTP enablement, and listener ports when generating the shared proxy configuration.
+# Active stack registrations take precedence for the admin address, bind host, and ports.
 # All stacks share the same managed Caddy instance and the same global 404 hostname list.
 
 # The `devtools.*` sections control the browser-side devhost overlay injected into

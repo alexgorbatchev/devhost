@@ -4,7 +4,7 @@ description: Use anytime devhost.toml is involved, including reading, writing, m
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-06 09:37
+  last_modified: 2026-10-06 10:06
   status: current
 ---
 
@@ -25,6 +25,8 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 - **Annotation Action IDs**: Action ids under `[[annotation.actions]]` must match the regex `^[a-z][a-z0-9-]*$` and must be unique.
 
 ### Top-Level Configurations
+
+- **Managed Caddy startup**: Use `devhost caddy start --manifest ./devhost.toml` when the manifest configures shared proxy listeners. Read [Setup](references/setup.md#5-managed-caddy-startup) for listener settings and active-stack precedence.
 
 - **killZombies Option**: Optional boolean (default `true`) at the top level of `devhost.toml`. When `true`, devhost automatically finds, terminates, and reclaims zombie processes claiming the same ports or hosts from the same manifest path. Set `killZombies = false` to disable automatic recovery and report a standard collision error instead.
 
