@@ -1,13 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
-import { parseReactHighlightCursorPayload } from "../../reactHighlightCursorPayload";
-import { useReactHighlightOverlay } from "../useReactHighlightOverlay";
+import { parseReactHighlightCursorPayload } from "../reactHighlightCursorPayload";
 
-describe("useReactHighlightOverlay", () => {
-  test("exports the React highlight overlay hook", () => {
-    expect(typeof useReactHighlightOverlay).toBe("function");
-  });
-
+describe("parseReactHighlightCursorPayload", () => {
   test("parses cursor payload JSON and rejects non-string data", () => {
     expect(
       parseReactHighlightCursorPayload(

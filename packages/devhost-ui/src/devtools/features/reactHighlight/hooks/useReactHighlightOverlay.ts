@@ -10,7 +10,9 @@ import { parseReactHighlightCursorPayload } from "../reactHighlightCursorPayload
 
 interface IUseReactHighlightOverlayParams {
   controlToken: string;
+  createWebSocket?: (url: string) => Pick<WebSocket, "addEventListener" | "removeEventListener" | "close">;
   enabled: boolean;
+  highlightElements?: typeof highlightReactElements;
   overlayRootReference: RefObject<HTMLElement | null>;
   projectRootPath: string;
 }
@@ -19,7 +21,9 @@ type ReactHighlightOverlayCleanup = () => void;
 
 export function useReactHighlightOverlay({
   controlToken,
+  createWebSocket = openReactHighlightWebSocket,
   enabled,
+  highlightElements = highlightReactElements,
   overlayRootReference,
   projectRootPath,
 }: IUseReactHighlightOverlayParams): void {
@@ -31,9 +35,9 @@ export function useReactHighlightOverlay({
     let overlays: Awaited<ReturnType<typeof highlightReactElements>> = [];
     let messageSequence: number = 0;
     let isDisposed: boolean = false;
-    const websocket = new WebSocket(createReactHighlightWebSocketUrl(window.location, controlToken));
+    const websocket = createWebSocket(createReactHighlightWebSocketUrl(window.location, controlToken));
 
-    websocket.addEventListener("message", (event: MessageEvent): void => {
+    const handleMessage = (event: MessageEvent): void => {
       const payload: unknown = parseReactHighlightCursorPayload(event.data);
 
       if (!isReactHighlightCursorMessage(payload)) {
@@ -55,7 +59,7 @@ export function useReactHighlightOverlay({
         return;
       }
 
-      void highlightReactElements(payload.locator, payload.projectRoot || projectRootPath, overlayRoot).then(
+      void highlightElements(payload.locator, payload.projectRoot || projectRootPath, overlayRoot).then(
         (nextOverlays: Awaited<ReturnType<typeof highlightReactElements>>): void => {
           if (isDisposed || currentMessageSequence !== messageSequence) {
             clearReactHighlightOverlays(nextOverlays);
@@ -66,12 +70,19 @@ export function useReactHighlightOverlay({
           overlays = nextOverlays;
         },
       );
-    });
+    };
+
+    websocket.addEventListener("message", handleMessage);
 
     return () => {
       isDisposed = true;
+      websocket.removeEventListener("message", handleMessage);
       clearReactHighlightOverlays(overlays);
       websocket.close();
     };
-  }, [controlToken, enabled, overlayRootReference, projectRootPath]);
+  }, [controlToken, createWebSocket, enabled, highlightElements, overlayRootReference, projectRootPath]);
+}
+
+function openReactHighlightWebSocket(url: string): WebSocket {
+  return new WebSocket(url);
 }

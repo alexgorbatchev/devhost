@@ -66,6 +66,7 @@ Its vital that when devtools are injected into the user's web application, CSS t
 
 ## React Highlight matching
 
+- Cursor hook lifecycle coverage lives in `components/stories/ReactHighlightLifecycle.stories.tsx` and mounts the real hook with injected socket and async renderer collaborators. Cleanup must detach the socket listener, close the connection, and remove current or late-resolving rectangles; newer cursor messages invalidate older results.
 - Neovim cursor rectangles use manual popovers inside the devtools Shadow DOM. Reset native popover margins, padding, and insets so their measured viewport geometry stays correct; keep rectangles and backdrops transparent to pointer events. Removing a cursor rectangle also removes it from the browser's top layer.
 - React Highlight browser matching must prefer React fiber source metadata and then fall back to fetchable script source maps when host fibers do not expose source locations.
 - Keep the browser diagnostic event `devhost:react-highlight` in sync with matching behavior; it should remain useful for distinguishing transport success from DOM match failure.
