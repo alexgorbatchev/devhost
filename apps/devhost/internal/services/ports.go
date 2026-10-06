@@ -14,6 +14,14 @@ const (
 	defaultHealthTimeout  = 30000
 )
 
+// HealthKind enumerates the supported service health-probe strategies.
+// Any value outside this set is treated as unhealthy by checkServiceHealth.
+const (
+	HealthKindProcess = "process"
+	HealthKindTCP     = "tcp"
+	HealthKindHTTP    = "http"
+)
+
 type ResolvedManifest struct {
 	Annotation            manifest.ValidatedAnnotation
 	Caddy                 manifest.CaddyConfig
@@ -274,15 +282,15 @@ func resolveHealthConfig(service manifest.ValidatedService, resolvedPort *int) (
 		if service.Health.TCP != nil {
 			host := service.BindHost
 			port := *service.Health.TCP
-			return ResolvedHealthConfig{Host: &host, Interval: valueOrDefault(service.Health.Interval, defaultHealthInterval), Kind: "tcp", Port: &port, Retries: valueOrDefault(service.Health.Retries, defaultHealthRetries), Timeout: valueOrDefault(service.Health.Timeout, defaultHealthTimeout)}, nil
+			return ResolvedHealthConfig{Host: &host, Interval: valueOrDefault(service.Health.Interval, defaultHealthInterval), Kind: HealthKindTCP, Port: &port, Retries: valueOrDefault(service.Health.Retries, defaultHealthRetries), Timeout: valueOrDefault(service.Health.Timeout, defaultHealthTimeout)}, nil
 		}
 
 		if service.Health.HTTP != nil {
 			url := *service.Health.HTTP
-			return ResolvedHealthConfig{Interval: valueOrDefault(service.Health.Interval, defaultHealthInterval), Kind: "http", Retries: valueOrDefault(service.Health.Retries, defaultHealthRetries), Timeout: valueOrDefault(service.Health.Timeout, defaultHealthTimeout), URL: &url}, nil
+			return ResolvedHealthConfig{Interval: valueOrDefault(service.Health.Interval, defaultHealthInterval), Kind: HealthKindHTTP, Retries: valueOrDefault(service.Health.Retries, defaultHealthRetries), Timeout: valueOrDefault(service.Health.Timeout, defaultHealthTimeout), URL: &url}, nil
 		}
 
-		return ResolvedHealthConfig{Interval: valueOrDefault(service.Health.Interval, defaultHealthInterval), Kind: "process", Retries: valueOrDefault(service.Health.Retries, defaultHealthRetries), Timeout: valueOrDefault(service.Health.Timeout, defaultHealthTimeout)}, nil
+		return ResolvedHealthConfig{Interval: valueOrDefault(service.Health.Interval, defaultHealthInterval), Kind: HealthKindProcess, Retries: valueOrDefault(service.Health.Retries, defaultHealthRetries), Timeout: valueOrDefault(service.Health.Timeout, defaultHealthTimeout)}, nil
 	}
 
 	if resolvedPort == nil {
@@ -290,7 +298,7 @@ func resolveHealthConfig(service manifest.ValidatedService, resolvedPort *int) (
 	}
 
 	host := service.BindHost
-	return ResolvedHealthConfig{Host: &host, Interval: baseHealth.Interval, Kind: "tcp", Port: resolvedPort, Retries: baseHealth.Retries, Timeout: baseHealth.Timeout}, nil
+	return ResolvedHealthConfig{Host: &host, Interval: baseHealth.Interval, Kind: HealthKindTCP, Port: resolvedPort, Retries: baseHealth.Retries, Timeout: baseHealth.Timeout}, nil
 }
 
 func hasRuntimeBindPortConflict(bindHost string, port int, resolvedServices map[string]ResolvedService) bool {

@@ -713,7 +713,7 @@ func startServiceWithRetries(
 						if altBindHost != "" {
 							proxyHost, err := caddy.ResolveProxyHost(altBindHost)
 							if err == nil && proxyHost != "" {
-								if canConnectToPort(proxyHost, *service.Health.Port) {
+								if canConnectToPort(proxyHost, *service.Health.Port, probeTimeoutFor(service.Health)) {
 									lastAmbiguityWarning = now
 									writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf(
 										"WARNING: Service %s is not responding on %s:%d, but accepted a connection on %s:%d! Consider setting services.%s.bindHost = %q in your manifest.",
@@ -829,7 +829,7 @@ func startDaemonLifecycleService(
 					if altBindHost != "" {
 						proxyHost, err := caddy.ResolveProxyHost(altBindHost)
 						if err == nil && proxyHost != "" {
-							if canConnectToPort(proxyHost, *service.Health.Port) {
+							if canConnectToPort(proxyHost, *service.Health.Port, probeTimeoutFor(service.Health)) {
 								lastAmbiguityWarning = now
 								writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf(
 									"WARNING: Service %s is not responding on %s:%d, but accepted a connection on %s:%d! Consider setting services.%s.bindHost = %q in your manifest.",
