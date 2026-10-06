@@ -16,8 +16,8 @@ export default mergeConfig(
     cacheDir: "./.cache/vite",
     optimizeDeps: {
       include: optimizeDependencyEntries,
-      // Fetch Query and Router rendering modules with their public entries before native interaction/mount.
-      // Preserve lazy module initialization when grouping its package's generated chunks.
+      // Fetch native Query/Router/Table rendering and shared mounting utilities with their public entries.
+      // Preserve lazy module initialization and the native mount/abort/disposal lifecycle.
       rolldownOptions: {
         output: {
           strictExecutionOrder: true,
@@ -25,6 +25,8 @@ export default mergeConfig(
             groups: [
               { name: "tanstack-query-devtools", test: /[/\\]@tanstack[/\\]query-devtools[/\\]/ },
               { name: "tanstack-router-devtools", test: /[/\\]@tanstack[/\\]router-devtools-core[/\\]/ },
+              { name: "tanstack-table-devtools", test: /[/\\]@tanstack[/\\]table-devtools[/\\]/ },
+              { name: "tanstack-devtools-utils", test: /[/\\]@tanstack[/\\]devtools-utils[/\\]/ },
             ],
           },
         },
