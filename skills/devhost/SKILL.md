@@ -26,7 +26,7 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 
 ### Top-Level Configurations
 
-- **Managed Caddy startup**: Use `devhost caddy start --manifest ./devhost.toml` when the manifest configures shared proxy listeners. Read [Setup](references/setup.md#5-managed-caddy-startup) for listener settings and active-stack precedence.
+- **Managed Caddy lifecycle**: Start the shared proxy with `devhost caddy start --manifest ./devhost.toml`; stop it manually with `devhost caddy stop --manifest ./devhost.toml`. Use matching custom management settings. Read [Setup](references/setup.md#5-managed-caddy-startup) before changing shared settings or starting after all stacks stop; follow its active HTTP votes, captured retirement, and empty-runtime rules.
 
 - **killZombies Option**: Optional boolean (default `true`) at the top level of `devhost.toml`. When `true`, devhost automatically finds, terminates, and reclaims zombie processes claiming the same ports or hosts from the same manifest path. Set `killZombies = false` to disable automatic recovery and report a standard collision error instead.
 

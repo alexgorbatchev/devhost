@@ -64,7 +64,9 @@ Pass the manifest explicitly to use its `caddy.global.adminAddress`, `bindHost`,
 devhost caddy start --manifest ./devhost.toml
 ```
 
-Active stack registrations take precedence for the shared admin address, bind host, and listener ports. Plain HTTP is enabled when the supplied manifest or any active stack sets `caddy.global.http = true`.
+Active stack registrations take precedence when generating the shared admin address, bind host, and listener ports. While registrations remain, plain HTTP is the OR of active stacks' `caddy.global.http` votes; a supplied manifest cannot enable HTTP over false/default active votes. Without active registrations, generated configuration uses the supplied manifest's settings, including HTTP.
+
+Lifecycle commands contact the admin endpoint selected by the supplied manifest, so use matching custom settings when managing a custom shared proxy. They do not discover an empty runtime's settings from its existing Caddyfile.
 
 You can also set `DEVHOST_MANIFEST=./devhost.toml` as the environment-backed equivalent of `--manifest` for `devhost start`, `devhost stop`, and `devhost caddy start|stop|trust`. If both are set for the same command, the CLI flag wins.
 
@@ -74,7 +76,17 @@ Stop it when you are done with all stacks:
 devhost caddy stop
 ```
 
+For a custom proxy, pass the matching manifest to stop it:
+
+```bash
+devhost caddy stop --manifest ./devhost.toml
+```
+
 Managed Caddy lifecycle is shared and manual. `devhost` stack startup requires the managed Caddy admin API to already be available.
+
+Each stack captures the resolved shared management settings after startup stale cleanup. Sparse/default route settings inherit that binding; explicit non-default conflicts still fail. Stack shutdown removes its host snippets and keeps the captured management endpoint and listeners. Live sibling registrations remain authoritative for HTTP: removing the last true voter disables HTTP while false/default siblings remain.
+
+Final-registration cleanup retains the retiring stack's captured settings, including HTTP, and leaves Caddy running for manual stop. Once no registrations remain, a newly started stack must supply matching custom settings in its manifest; it does not automatically discover the empty custom runtime. See [Shared managed Caddy settings](../shared-managed-caddy-settings/) for the shared-vote rules.
 
 ## Hostname and DNS expectations
 

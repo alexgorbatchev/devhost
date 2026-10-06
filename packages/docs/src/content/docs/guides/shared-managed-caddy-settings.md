@@ -24,7 +24,7 @@ To also serve the same routed hosts through plain HTTP, add this top-level setti
 http = true
 ```
 
-This is a global managed-Caddy toggle, not an isolated per-stack listener. If any active stack enables `caddy.global.http = true`, the shared Caddy instance serves HTTP for all active stacks until the last opting-in stack stops.
+This is a global managed-Caddy toggle, not an isolated per-stack listener. While stack registrations remain, HTTP is enabled if any active stack sets `caddy.global.http = true`. Removing the last true voter disables HTTP while false/default siblings remain; a supplied manifest's `http = true` does not override those active votes. With no active registrations, configuration uses the supplied manifest's HTTP setting.
 
 To move the shared managed Caddy listeners off the default privileged ports, set one or both listener ports:
 
@@ -54,5 +54,13 @@ adminAddress = "127.0.0.1:22000"
 ```
 
 Active stacks must agree on any non-default `caddy.global.adminAddress` value because they share one managed Caddy instance.
+
+## Stack retirement and an empty runtime
+
+Each stack captures the resolved shared admin address, bind host, listener ports, and HTTP setting after startup stale cleanup. Sparse/default route settings inherit that management binding; explicit non-default conflicts are still rejected. Route cleanup keeps the captured management endpoint and listener settings, removes the retiring host snippets, and preserves live siblings and their HTTP votes.
+
+When the final registration is removed, cleanup retains that stack's captured settings, including HTTP, and leaves the shared Caddy process running. Stop Caddy manually with `devhost caddy stop --manifest ./devhost.toml`, using a manifest that matches its custom management settings.
+
+A new stack or explicit Caddy lifecycle command does not discover an empty custom runtime from its existing configuration. Once all registrations are gone, supply matching custom settings in the manifest used for `devhost start` and `devhost caddy start|stop|trust`. See [Managed Caddy and routing](../managed-caddy/) for the manual lifecycle.
 
 For same-host composition within one manifest, use distinct paths such as `/api/*` and `/admin/*`, or combine one root-mounted fallback service with more specific subpath services on the same hostname.
