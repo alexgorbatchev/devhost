@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 
 import { InlineNotice } from "../InlineNotice";
 import { devtoolsStoryShadowRootHostTestId, readShadowRoot, renderInDevtoolsStoryShadowRoot } from "./helpers";
@@ -36,6 +36,62 @@ export const Default: Story = {
   },
 };
 
+export const Copyable: Story = {
+  args: {
+    children: "Could not reach devhost at http://127.0.0.1:4000.",
+    title: "Restart failed",
+    tone: "danger",
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const shadowCanvas = readInlineNoticeShadowCanvas(canvasElement);
+    const writeText = fn().mockResolvedValue(undefined);
+    const restore = stubClipboard({ writeText });
+
+    try {
+      const copyButton = shadowCanvas.getByTestId("InlineNotice--copy");
+      await expect(copyButton).toHaveAccessibleName("Copy to clipboard");
+      await expect(copyButton).toHaveAttribute("title", "Copy to clipboard");
+
+      await userEvent.click(copyButton);
+
+      await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+      await expect(writeText).toHaveBeenCalledWith(
+        "Restart failed\n\nCould not reach devhost at http://127.0.0.1:4000.",
+      );
+      await waitFor(() => expect(shadowCanvas.getByTestId("InlineNotice--copy")).toHaveAccessibleName("Copied"));
+    } finally {
+      restore();
+    }
+  },
+};
+
+export const CopyError: Story = {
+  args: {
+    children: "Could not reach devhost at http://127.0.0.1:4000.",
+    title: "Restart failed",
+    tone: "danger",
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const shadowCanvas = readInlineNoticeShadowCanvas(canvasElement);
+    const restore = stubClipboard(undefined);
+
+    try {
+      await userEvent.click(shadowCanvas.getByTestId("InlineNotice--copy"));
+
+      await waitFor(() =>
+        expect(shadowCanvas.getByTestId("InlineNotice--copyError")).toHaveTextContent(
+          "Clipboard unavailable (requires a secure context: https or localhost).",
+        ),
+      );
+      await expect(shadowCanvas.getByTestId("InlineNotice--copy")).toHaveAccessibleName(
+        /Copy failed: Clipboard unavailable/,
+      );
+    } finally {
+      restore();
+    }
+  },
+};
+
 export const Dismissible: Story = {
   args: {
     children: "Queue connection lost. Retrying…",
@@ -49,6 +105,20 @@ export const Dismissible: Story = {
     await expect(args.onDismiss).toHaveBeenCalledTimes(1);
   },
 };
+
+function stubClipboard(replacement: { writeText: (value: string) => Promise<void> } | undefined): () => void {
+  const descriptor = Object.getOwnPropertyDescriptor(Navigator.prototype, "clipboard");
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    get: () => replacement,
+  });
+  return () => {
+    delete (navigator as unknown as { clipboard?: unknown }).clipboard;
+    if (descriptor !== undefined) {
+      Object.defineProperty(Navigator.prototype, "clipboard", descriptor);
+    }
+  };
+}
 
 function readInlineNoticeShadowCanvas(canvasElement: HTMLElement): ReturnType<typeof within> {
   const canvas = within(canvasElement);
