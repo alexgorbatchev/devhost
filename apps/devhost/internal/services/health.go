@@ -10,7 +10,10 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 )
 
-const pollIntervalDuration = 200 * time.Millisecond
+// minProbeTimeout is the floor for the per-attempt network timeout so a
+// pathologically small (or zero) Interval cannot collapse the dial / HTTP
+// probe budget to zero. Matches the historical constant.
+const minProbeTimeout = 200 * time.Millisecond
 
 type WaitForServiceHealthOptions struct {
 	Health       ResolvedHealthConfig
@@ -20,10 +23,20 @@ type WaitForServiceHealthOptions struct {
 }
 
 type healthDependencies struct {
-	canConnectToPort    func(string, int) bool
-	isReadyHTTPEndpoint func(string) bool
+	canConnectToPort    func(host string, port int, timeout time.Duration) bool
+	isReadyHTTPEndpoint func(url string, timeout time.Duration) bool
 	now                 func() time.Time
 	sleep               func(time.Duration)
+}
+
+// probeTimeoutFor derives the per-attempt network timeout from the configured
+// Interval, floored by minProbeTimeout so each probe always has a usable budget.
+func probeTimeoutFor(health ResolvedHealthConfig) time.Duration {
+	interval := time.Duration(health.Interval) * time.Millisecond
+	if interval < minProbeTimeout {
+		return minProbeTimeout
+	}
+	return interval
 }
 
 func WaitForServiceHealth(options WaitForServiceHealthOptions) error {
@@ -43,7 +56,7 @@ func CheckServiceHealth(health ResolvedHealthConfig) bool {
 }
 
 func waitForServiceHealth(options WaitForServiceHealthOptions, dependencies healthDependencies) error {
-	if options.Health.Kind == "process" {
+	if options.Health.Kind == HealthKindProcess {
 		return throwIfExited(options.ReadExitCode, options.ServiceName)
 	}
 
@@ -62,6 +75,9 @@ func waitForServiceHealth(options WaitForServiceHealthOptions, dependencies heal
 
 		consecutiveFailures++
 		attempts++
+		// Retries == 0 (the default) is treated as "no explicit cap on
+		// consecutive failures" — only Timeout bounds the total wait. A
+		// positive Retries enables an early-exit cap.
 		if options.Health.Retries > 0 && consecutiveFailures > options.Health.Retries {
 			return fmt.Errorf("Service %s failed its health check %d consecutive times.", options.ServiceName, consecutiveFailures)
 		}
@@ -94,11 +110,13 @@ func throwIfExited(readExitCode func() *int, serviceName string) error {
 }
 
 func checkServiceHealth(health ResolvedHealthConfig, dependencies healthDependencies) bool {
-	if health.Kind == "process" {
-		return true
-	}
+	probeTimeout := probeTimeoutFor(health)
 
-	if health.Kind == "tcp" {
+	switch health.Kind {
+	case HealthKindProcess:
+		return true
+
+	case HealthKindTCP:
 		if health.Host == nil || health.Port == nil {
 			return false
 		}
@@ -108,18 +126,22 @@ func checkServiceHealth(health ResolvedHealthConfig, dependencies healthDependen
 			return false
 		}
 
-		return dependencies.canConnectToPort(resolvedHost, *health.Port)
-	}
+		return dependencies.canConnectToPort(resolvedHost, *health.Port, probeTimeout)
 
-	if health.URL == nil {
+	case HealthKindHTTP:
+		if health.URL == nil {
+			return false
+		}
+
+		return dependencies.isReadyHTTPEndpoint(*health.URL, probeTimeout)
+
+	default:
 		return false
 	}
-
-	return dependencies.isReadyHTTPEndpoint(*health.URL)
 }
 
-func canConnectToPort(host string, port int) bool {
-	connection, err := net.DialTimeout("tcp", net.JoinHostPort(host, strconv.Itoa(port)), pollIntervalDuration)
+func canConnectToPort(host string, port int, timeout time.Duration) bool {
+	connection, err := net.DialTimeout("tcp", net.JoinHostPort(host, strconv.Itoa(port)), timeout)
 	if err != nil {
 		return false
 	}
@@ -128,12 +150,12 @@ func canConnectToPort(host string, port int) bool {
 	return true
 }
 
-func isReadyHTTPEndpoint(url string) bool {
+func isReadyHTTPEndpoint(url string, timeout time.Duration) bool {
 	client := http.Client{
 		CheckRedirect: func(request *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
-		Timeout: pollIntervalDuration,
+		Timeout: timeout,
 	}
 
 	response, err := client.Get(url)

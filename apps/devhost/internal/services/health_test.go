@@ -94,8 +94,8 @@ func TestWaitForServiceHealth(t *testing.T) {
 			},
 			ServiceName: "web",
 		}, healthDependencies{
-			canConnectToPort:    func(host string, port int) bool { return false },
-			isReadyHTTPEndpoint: func(url string) bool { return false },
+			canConnectToPort:    func(host string, port int, timeout time.Duration) bool { return false },
+			isReadyHTTPEndpoint: func(url string, timeout time.Duration) bool { return false },
 			now:                 time.Now,
 			sleep:               func(duration time.Duration) {},
 		})
@@ -117,11 +117,11 @@ func TestWaitForServiceHealth(t *testing.T) {
 			},
 			ServiceName: "web",
 		}, healthDependencies{
-			canConnectToPort: func(host string, port int) bool {
+			canConnectToPort: func(host string, port int, timeout time.Duration) bool {
 				checks++
 				return false
 			},
-			isReadyHTTPEndpoint: func(url string) bool { return false },
+			isReadyHTTPEndpoint: func(url string, timeout time.Duration) bool { return false },
 			now: func() time.Time {
 				return currentTime
 			},
@@ -150,11 +150,11 @@ func TestWaitForServiceHealth(t *testing.T) {
 			},
 			ServiceName: "web",
 		}, healthDependencies{
-			canConnectToPort: func(host string, port int) bool {
+			canConnectToPort: func(host string, port int, timeout time.Duration) bool {
 				checks++
 				return false
 			},
-			isReadyHTTPEndpoint: func(url string) bool { return false },
+			isReadyHTTPEndpoint: func(url string, timeout time.Duration) bool { return false },
 			now: func() time.Time {
 				return currentTime
 			},
@@ -191,10 +191,10 @@ func TestWaitForServiceHealth(t *testing.T) {
 				elapsedPassed = elapsed
 			},
 		}, healthDependencies{
-			canConnectToPort: func(host string, port int) bool {
+			canConnectToPort: func(host string, port int, timeout time.Duration) bool {
 				return false
 			},
-			isReadyHTTPEndpoint: func(url string) bool { return false },
+			isReadyHTTPEndpoint: func(url string, timeout time.Duration) bool { return false },
 			now: func() time.Time {
 				return currentTime
 			},
@@ -237,11 +237,11 @@ func TestCheckServiceHealth(t *testing.T) {
 		port := 3000
 		calls := 0
 		result := checkServiceHealth(ResolvedHealthConfig{Kind: "tcp", Host: &host, Port: &port}, healthDependencies{
-			canConnectToPort: func(host string, port int) bool {
+			canConnectToPort: func(host string, port int, timeout time.Duration) bool {
 				calls++
 				return host == "127.0.0.1" && port == 3000
 			},
-			isReadyHTTPEndpoint: func(url string) bool { return false },
+			isReadyHTTPEndpoint: func(url string, timeout time.Duration) bool { return false },
 		})
 		if !result {
 			t.Fatal("checkServiceHealth(...) = false, want true")
@@ -256,8 +256,8 @@ func TestCheckServiceHealth(t *testing.T) {
 
 		url := "http://127.0.0.1/healthz"
 		result := checkServiceHealth(ResolvedHealthConfig{Kind: "http", URL: &url}, healthDependencies{
-			canConnectToPort: func(host string, port int) bool { return false },
-			isReadyHTTPEndpoint: func(url string) bool {
+			canConnectToPort: func(host string, port int, timeout time.Duration) bool { return false },
+			isReadyHTTPEndpoint: func(url string, timeout time.Duration) bool {
 				return true
 			},
 		})
@@ -272,11 +272,11 @@ func TestCheckServiceHealth(t *testing.T) {
 		host := "example.com"
 		port := 3000
 		result := checkServiceHealth(ResolvedHealthConfig{Kind: "tcp", Host: &host, Port: &port}, healthDependencies{
-			canConnectToPort: func(host string, port int) bool {
+			canConnectToPort: func(host string, port int, timeout time.Duration) bool {
 				t.Fatal("canConnectToPort should not be called for unsupported hosts")
 				return false
 			},
-			isReadyHTTPEndpoint: func(url string) bool { return false },
+			isReadyHTTPEndpoint: func(url string, timeout time.Duration) bool { return false },
 		})
 		if result {
 			t.Fatal("checkServiceHealth(...) = true, want false")
@@ -295,7 +295,7 @@ func TestIsReadyHTTPEndpoint(t *testing.T) {
 		}))
 		defer server.Close()
 
-		if isReadyHTTPEndpoint(server.URL) {
+		if isReadyHTTPEndpoint(server.URL, minProbeTimeout) {
 			t.Fatal("isReadyHTTPEndpoint(...) = true, want false")
 		}
 	})
@@ -303,7 +303,7 @@ func TestIsReadyHTTPEndpoint(t *testing.T) {
 	t.Run("network failures are not ready", func(t *testing.T) {
 		t.Parallel()
 
-		if isReadyHTTPEndpoint("http://127.0.0.1:1/healthz") {
+		if isReadyHTTPEndpoint("http://127.0.0.1:1/healthz", minProbeTimeout) {
 			t.Fatal("isReadyHTTPEndpoint(...) = true, want false")
 		}
 	})
@@ -338,7 +338,7 @@ func TestCanConnectToPort(t *testing.T) {
 	}()
 
 	port := listener.Addr().(*net.TCPAddr).Port
-	if !canConnectToPort("127.0.0.1", port) {
+	if !canConnectToPort("127.0.0.1", port, minProbeTimeout) {
 		t.Fatal("canConnectToPort(...) = false, want true")
 	}
 
@@ -347,7 +347,7 @@ func TestCanConnectToPort(t *testing.T) {
 		t.Fatalf("listener.Accept(...) error = %v", acceptError)
 	}
 
-	if canConnectToPort("127.0.0.1", 1) {
+	if canConnectToPort("127.0.0.1", 1, minProbeTimeout) {
 		t.Fatal("canConnectToPort(...) = true, want false")
 	}
 }

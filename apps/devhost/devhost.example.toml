@@ -393,8 +393,10 @@ interval = 500
 # `timeout` sets the maximum total wait time for this health check.
 # - integer `>= 1`; `30000` is the default.
 timeout = 5000
-# `retries` sets how many extra failed attempts are allowed.
-# - integer `>= 0`; `0` is the default.
+# `retries` caps consecutive failed attempts before giving up early.
+# - integer `>= 0`; `0` (the default) disables the cap, so only `timeout`
+#   bounds the total wait. Set a positive value to fail fast after N
+#   consecutive failures regardless of remaining timeout.
 retries = 20
 
 [services.preview]
@@ -444,8 +446,10 @@ interval = 250
 # `timeout` sets the maximum total wait time for this health check.
 # - integer `>= 1`; `30000` is the default.
 timeout = 3000
-# `retries` sets how many extra failed attempts are allowed.
-# - integer `>= 0`; `0` is the default.
+# `retries` caps consecutive failed attempts before giving up early.
+# - integer `>= 0`; `0` (the default) disables the cap, so only `timeout`
+#   bounds the total wait. Set a positive value to fail fast after N
+#   consecutive failures regardless of remaining timeout.
 retries = 10
 
 [services.db]
@@ -472,6 +476,8 @@ interval = 1000
 # `timeout` sets the maximum total wait time for this health check.
 # - integer `>= 1`; `30000` is the default.
 timeout = 1000
-# `retries` sets how many extra failed attempts are allowed.
-# - integer `>= 0`; `0` is the default.
+# `retries` caps consecutive failed attempts before giving up early.
+# - integer `>= 0`; `0` (the default) disables the cap, so only `timeout`
+#   bounds the total wait. Set a positive value to fail fast after N
+#   consecutive failures regardless of remaining timeout.
 retries = 0

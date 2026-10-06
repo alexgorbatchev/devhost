@@ -40,7 +40,7 @@ func ReassignAutoPort(value ResolvedManifest, serviceName string) (ResolvedServi
 	service.Health = ResolvedHealthConfig{
 		Host:     copyStringPointer(service.BindHost),
 		Interval: defaultHealthInterval,
-		Kind:     "tcp",
+		Kind:     HealthKindTCP,
 		Port:     copyIntPointer(nextPort),
 		Retries:  defaultHealthRetries,
 		Timeout:  defaultHealthTimeout,

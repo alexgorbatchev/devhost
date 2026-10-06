@@ -3092,7 +3092,7 @@ func runDaemonStopServerHelper() {
 func waitForDaemonPortToClose(port int) {
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {
-		if !canConnectToPort("127.0.0.1", port) {
+		if !canConnectToPort("127.0.0.1", port, minProbeTimeout) {
 			return
 		}
 		time.Sleep(10 * time.Millisecond)

@@ -266,7 +266,7 @@ func TestWorktreeDaemonStopUsesItsLaunchCheckout(t *testing.T) {
 	if string(cwd) != service.Cwd+"\n" {
 		t.Fatalf("stop cwd = %q, want %q", cwd, service.Cwd)
 	}
-	if canConnectToPort("127.0.0.1", port) {
+	if canConnectToPort("127.0.0.1", port, minProbeTimeout) {
 		t.Fatal("daemon remained alive after changing effective cwd")
 	}
 }
