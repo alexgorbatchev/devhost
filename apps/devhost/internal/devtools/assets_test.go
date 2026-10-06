@@ -9,7 +9,9 @@ import (
 
 // The bundle's CSS minifier rewrites numbers, so layer order is checked on the shipped script rather than the source
 // stylesheet: layers that collapse to one z-index fall back to DOM order, and a later-rendered surface such as the
-// minimap then paints over a fullscreen terminal.
+// minimap then paints over a terminal window.
+//
+// Bottom to top: page highlights, annotation drafts, the toolbar, the minimap, terminal windows.
 func TestBundledDevtoolsLayersStackInOrder(t *testing.T) {
 	t.Parallel()
 
@@ -19,7 +21,7 @@ func TestBundledDevtoolsLayersStackInOrder(t *testing.T) {
 	}
 	devtoolsScript := string(scriptBytes)
 
-	layersBottomToTop := []string{"overlay", "dock", "popover", "modal", "edge"}
+	layersBottomToTop := []string{"overlay", "popover", "dock", "edge", "modal"}
 	previousLayer := ""
 	previousValue := int64(-1)
 	for _, layer := range layersBottomToTop {

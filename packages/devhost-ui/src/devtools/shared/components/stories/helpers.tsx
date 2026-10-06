@@ -62,6 +62,36 @@ export function expectDevtoolsSurfaceOnTop(shadowRoot: ShadowRoot, surface: HTML
   }
 }
 
+/**
+ * Asserts that the browser paints `upperSurface` above `lowerSurface` where the two overlap. Passive overlays are
+ * excluded from native hit testing, so both surfaces opt in only while they are checked.
+ */
+export function expectDevtoolsSurfaceAbove(
+  shadowRoot: ShadowRoot,
+  upperSurface: HTMLElement,
+  lowerSurface: HTMLElement,
+): void {
+  const upperRectangle: DOMRect = upperSurface.getBoundingClientRect();
+  const lowerRectangle: DOMRect = lowerSurface.getBoundingClientRect();
+  const left: number = Math.max(upperRectangle.left, lowerRectangle.left);
+  const right: number = Math.min(upperRectangle.right, lowerRectangle.right);
+  const top: number = Math.max(upperRectangle.top, lowerRectangle.top);
+  const bottom: number = Math.min(upperRectangle.bottom, lowerRectangle.bottom);
+
+  // Paint order is only observable where the two surfaces overlap.
+  expect(right).toBeGreaterThan(left);
+  expect(bottom).toBeGreaterThan(top);
+
+  upperSurface.style.pointerEvents = "auto";
+  lowerSurface.style.pointerEvents = "auto";
+  try {
+    expect(upperSurface.contains(shadowRoot.elementFromPoint((left + right) / 2, (top + bottom) / 2))).toBe(true);
+  } finally {
+    upperSurface.style.removeProperty("pointer-events");
+    lowerSurface.style.removeProperty("pointer-events");
+  }
+}
+
 interface IHostShadowPopoverProps {
   children: ReactNode;
   openLabel: string;

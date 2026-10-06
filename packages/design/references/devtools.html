@@ -550,13 +550,14 @@
           --dh-control-h: 20px;
           --dh-row-h: 24px;
           --dh-bar-h: 26px;
-          /* At most six significant digits: the production CSS minifier rounds numbers to six, which would collapse
-             neighbouring layers. `edge` holds edge-docked surfaces (the minimap) that stay usable above terminals. */
+          /* Bottom to top: page highlights, annotation drafts and menus, the toolbar, edge-docked surfaces (the
+             minimap), terminal windows. At most six significant digits: the production CSS minifier rounds numbers
+             to six, which would collapse neighbouring layers. */
           --dh-z-overlay: 2147440000;
-          --dh-z-dock: 2147450000;
-          --dh-z-popover: 2147460000;
-          --dh-z-modal: 2147470000;
-          --dh-z-edge: 2147480000;
+          --dh-z-popover: 2147450000;
+          --dh-z-dock: 2147460000;
+          --dh-z-edge: 2147470000;
+          --dh-z-modal: 2147480000;
           --dh-minimap-collapsed-width: 12px;
           --dh-duration-fade: 120ms;
           --dh-color-scheme: dark;

@@ -20,6 +20,7 @@ import {
   SelectionLayeringScene,
   verifyReactHighlightLayering,
   verifySelectionLayering,
+  verifySurfaceOrder,
   withDevhostMock,
 } from "./helpers";
 import { registerAnnotationSelectionPlugin } from "../../features/annotationComposer";
@@ -73,6 +74,14 @@ export const SelectionHighlightsBelowDevtoolsSurfaces: Story = {
   render: () => <SelectionLayeringScene />,
   play: async ({ canvasElement }): Promise<void> => {
     await verifySelectionLayering(canvasElement);
+  },
+};
+
+/** Bottom to top: selection highlights, annotation drafts, the toolbar and minimap, terminal windows. */
+export const SurfacesStackInOrder: Story = {
+  render: () => <SelectionLayeringScene />,
+  play: async ({ canvasElement }): Promise<void> => {
+    await verifySurfaceOrder(canvasElement);
   },
 };
 

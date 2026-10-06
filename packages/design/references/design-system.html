@@ -2565,8 +2565,8 @@
         </div>
         <h3>Devtools layers</h3>
         <p>
-          Z-indices stay at six significant digits or fewer. The production CSS minifier rounds numbers to six
-          significant digits, which would merge neighbouring layers.
+          Layers are listed bottom to top. Z-indices stay at six significant digits or fewer. The production CSS
+          minifier rounds numbers to six significant digits, which would merge neighbouring layers.
         </p>
         <div class="table-wrap">
           <table>
@@ -2584,24 +2584,24 @@
                 <td>Host highlight boxes, badges, labels</td>
               </tr>
               <tr>
-                <td><code>--dh-z-dock</code></td>
-                <td>2147450000</td>
-                <td>Toolbar and its panels</td>
-              </tr>
-              <tr>
                 <td><code>--dh-z-popover</code></td>
-                <td>2147460000</td>
+                <td>2147450000</td>
                 <td>Hint, composer, component source menu</td>
               </tr>
               <tr>
-                <td><code>--dh-z-modal</code></td>
-                <td>2147470000</td>
-                <td>Terminal window and backdrop</td>
+                <td><code>--dh-z-dock</code></td>
+                <td>2147460000</td>
+                <td>Toolbar and its panels</td>
               </tr>
               <tr>
                 <td><code>--dh-z-edge</code></td>
+                <td>2147470000</td>
+                <td>Edge-docked minimap</td>
+              </tr>
+              <tr>
+                <td><code>--dh-z-modal</code></td>
                 <td>2147480000</td>
-                <td>Edge-docked minimap, kept usable above terminals</td>
+                <td>Terminal window and backdrop, above every other layer</td>
               </tr>
             </tbody>
           </table>
