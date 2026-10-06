@@ -166,6 +166,7 @@ type injectedConfig struct {
 	AnnotationActions         []injectedAnnotationAction `json:"annotationActions"`
 	ComponentEditor           string                     `json:"componentEditor"`
 	ControlToken              string                     `json:"controlToken"`
+	HomeDirectoryPath         string                     `json:"homeDirectoryPath"`
 	Position                  string                     `json:"position"`
 	ProjectRootPath           string                     `json:"projectRootPath"`
 	StackName                 string                     `json:"stackName"`
@@ -248,6 +249,11 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 
 	annotationActions := append([]manifest.ValidatedAnnotationAction{}, options.AnnotationActions...)
 	annotationDefaultActionID := normalizeAnnotationDefaultActionID(options.AnnotationDefaultActionID, annotationActions)
+	home, err := os.UserHomeDir()
+	if err != nil {
+		// Path abbreviation is optional; keep absolute paths when no home is available.
+		home = ""
+	}
 	config := injectedConfig{
 		AnnotationDefaultActionID: annotationDefaultActionID,
 		AnnotationActions:         createInjectedAnnotationActions(annotationActions),
@@ -255,6 +261,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		AnnotationQueueEnabled:    options.FeatureToggles.AnnotationQueueEnabled,
 		ComponentEditor:           options.ComponentEditor,
 		ControlToken:              controlToken,
+		HomeDirectoryPath:         home,
 		EditorEnabled:             options.FeatureToggles.EditorEnabled,
 		ExternalToolbarsEnabled:   options.FeatureToggles.ExternalToolbarsEnabled,
 		MinimapEnabled:            options.FeatureToggles.MinimapEnabled,

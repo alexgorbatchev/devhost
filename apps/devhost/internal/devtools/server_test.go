@@ -63,6 +63,18 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 		t.Fatalf("inject.js cache-control = %q, want %q", got, cacheControlNoStore)
 	}
 	injectedScriptText := readResponseText(t, injectedScriptResponse)
+	var config map[string]any
+	configText := strings.SplitN(strings.TrimPrefix(injectedScriptText, "globalThis.__DEVHOST_INJECTED_CONFIG__="), ";\n", 2)[0]
+	if err := json.Unmarshal([]byte(configText), &config); err != nil {
+		t.Fatalf("decode injected config: %v", err)
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := config["homeDirectoryPath"]; got != home {
+		t.Fatalf("injected home directory = %v, want %q", got, home)
+	}
 	if !strings.Contains(injectedScriptText, `"controlToken":"`) {
 		t.Fatalf("inject.js missing control token: %q", injectedScriptText)
 	}

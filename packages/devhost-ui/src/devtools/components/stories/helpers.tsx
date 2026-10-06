@@ -200,6 +200,7 @@ function DevhostMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Elemen
       annotationDefaultActionId: "agent",
       componentEditor: "vscode",
       controlToken: "mock-token",
+      homeDirectoryPath: "/home/alex",
       position: "bottom-right",
       projectRootPath: "/storybook-workspace",
       stackName: "storybook-stack",
