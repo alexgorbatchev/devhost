@@ -44,7 +44,7 @@ ide = "vscode"
 
 [devtools.externalToolbars]
 # `enabled` controls whether devhost aggregates detected third-party devtools buttons (default: true).
-# Supported tools: host-mounted TanStack Query, TanStack Router, the unified TanStack shell, React Hook Form, and Jotai inspectors.
+# Supported tools: host-mounted TanStack Query, TanStack Router, the unified TanStack shell, React Hook Form, Jotai, and Vue inspectors.
 # For the unified shell, mount @tanstack/react-devtools 0.10.13 with native Form/Table/Pacer plugins.
 # One TanStack entry controls attached shells sharing upstream state; detached windows use native controls.
 # This integration targets development runtimes; see the setup guide for plugin/version boundaries.
@@ -52,6 +52,9 @@ ide = "vscode"
 # For Jotai, mount jotai-devtools DevTools with each store; tested: 0.14.0 with jotai 2.20.3.
 # Import jotai-devtools before creating custom stores; its panel owns atoms and history.
 # devhost supplies separate Form N and Jotai N launchers; the host owns forms, stores, and native panels.
+# For Vue, use vite-plugin-vue-devtools 9.0.0-beta.1 with Vite 8.3.3, @vitejs/devtools 0.7.6,
+# and devtools.apply = "serve" in the host app; authorize and reveal the native dock.
+# The Vue entry requires a mounted Vue app. The inspector and other native docks remain host-owned.
 # Tested versions, setup, and panel identification: https://alexgorbatchev.github.io/devhost/architecture/external-devtools/
 enabled = true
 

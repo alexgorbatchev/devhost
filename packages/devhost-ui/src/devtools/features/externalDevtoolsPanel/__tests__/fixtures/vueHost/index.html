@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Vue native integration fixture</title>
+    <style>
+      #app {
+        position: fixed;
+        right: 8px;
+        top: 8px;
+        width: 180px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="devhost-fixture"></div>
+    <button id="unmount-app">Unmount Vue application</button>
+    <button id="mount-app">Mount Vue application</button>
+    <button id="replace-app">Replace Vue application</button>
+    <button id="unmount-devhost">Unmount devhost fixture</button>
+    <button id="mount-devhost">Mount devhost fixture</button>
+    <script type="module" src="/main.js"></script>
+    <script type="module" src="/launcher.js"></script>
+  </body>
+</html>

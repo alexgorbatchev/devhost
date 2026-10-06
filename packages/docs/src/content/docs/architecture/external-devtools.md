@@ -16,33 +16,37 @@ sequenceDiagram
     participant Tool as Native Devtools
 
     Hook->>Adapter: isInstalled() / isOpen()
-    Adapter->>Host: Query stable selectors
+    Adapter->>Host: Read current DOM or native host state
     Adapter-->>Hook: Installed adapters + open state
     Hook->>Style: Write selector-based hide rules
     Hook-->>UI: Launcher list snapshot
 
     Host->>Hook: MutationObserver(body subtree)
+    Tool->>Adapter: Native state/application/metadata events
+    Adapter->>Hook: Schedule synchronization
     Hook->>Adapter: Recompute installation/open state
     Hook->>Style: Update hide rules only if changed
     Hook-->>UI: Refresh button pressed state
 
     UI->>Hook: toggleLauncher(id)
     Hook->>Adapter: open() or close()
-    Adapter->>Tool: Click native launcher/minimize control
+    Adapter->>Tool: Native control or supported selection API
     Tool->>Host: Render or collapse native panel
     Host->>Hook: MutationObserver(body subtree)
     Hook-->>UI: Refresh button pressed state
+    Hook->>Adapter: Unsubscribe on disable/unmount
+    Adapter->>Host: Remove only owned observers/styles
 ```
 
 ## How it works
 
 ### Adapter-Owned Host Knowledge
 
-Each supported third-party tool is modeled as an `IExternalDevtoolsAdapter` under `src/devtools/features/externalDevtoolsPanel/`. `externalDevtoolsDetectors.ts` registers the Query, Router, and unified TanStack shell adapters; `createReactHookFormDevtoolsDetector.ts` and `createJotaiDevtoolsDetector.ts` discover one adapter per mounted native inspector. The hook combines those adapters on every synchronization and resolves a launcher ID against the current adapters before dispatching an action.
+Each supported third-party tool is modeled as an `IExternalDevtoolsAdapter` under `src/devtools/features/externalDevtoolsPanel/`. `externalDevtoolsDetectors.ts` registers the Query, Router, and unified TanStack shell adapters; the Form and Jotai detectors discover one adapter per mounted native inspector. `createVueDevtoolsDetector.ts` observes the existing Vue/Vite host. `createExternalDevtoolsDetector.ts` combines current adapters and exposes an owned subscription/disposer to the generic hook. The hook resolves a launcher ID against current adapters before dispatching an action. Form/Jotai encounter identities remain local to the detector session across effect cleanup/re-subscription.
 
 - `isInstalled()` answers whether the host page appears to have mounted the tool.
 - `isOpen()` answers whether the native panel is currently expanded.
-- `open()` and `close()` proxy the tool's own launcher or minimize controls.
+- `open()` and `close()` proxy native controls or supported native selection APIs.
 - `hideSelectors` lists the host selectors whose launcher chrome should be hidden while `devhost` is aggregating that tool.
 
 This keeps host-specific selectors and behavior in one place instead of spreading them through the panel component or the hook.
@@ -59,11 +63,15 @@ That approach is more resilient than mutating individual nodes because it surviv
 
 The native panel DOM remains untouched and fully owned by the third-party library.
 
+Vue9's launcher is inside the upstream dock's open ShadowRoot, which a document stylesheet cannot reach. Its feature detector owns a constructed `CSSStyleSheet` adopted into that root. It targets only verified native dock-entry launcher markup with the unique current Vue entry title, covering floating and edge layouts. It does not hide the dock, panel, or iframe. Cleanup removes only that exact sheet from the current sheet list, preserving existing and later foreign sheets. See the native [adoptedStyleSheets contract](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot/adoptedStyleSheets).
+
 ### Mutation Observation and Loop Prevention
 
 Because these integrations depend on host-page DOM state, the hook observes `document.body` for subtree changes and recomputes the installed launchers whenever the host UI changes.
 
 The observer intentionally avoids a full-document watch and batches recomputation behind `requestAnimationFrame`. It observes native open-state attributes, including the unified shell's `data-open`. The hide-style text is only rewritten when the selector set actually changes. Those guards prevent the injected feature from reacting to its own style updates and locking the page.
+
+Body observation cannot see internal shadow-tree mutations. The Vue feature separately subscribes to published native panel, connection, trust, application, and existing dock shared-state events; it observes its native shadow roots for launcher replacement/title changes. Generation checks discard asynchronous responses after context replacement or cleanup. Disable, unmount, and React development StrictMode cleanup release these resources; re-enable and remount subscribe to the genuine current host again.
 
 ### UI Contract
 
@@ -84,6 +92,51 @@ The feature is deliberately scoped to launchers, not panels.
 - `devhost` must not reparent, restyle wholesale, or otherwise assume ownership of the native panel contents
 
 That boundary is what keeps the integration low-risk even when the host page includes multiple unrelated third-party toolbars.
+
+## Vue DevTools
+
+Devhost supplies one **Vue** launcher for the host-installed Vue DevTools inspector. Components, live component state, page selection, settings, and other Vite tools remain in the native host. Devhost does not install Vue instrumentation, mount an inspector, or replace the host's dock registration.
+
+### Verified host setup
+
+The supported combination is `vite-plugin-vue-devtools` **9.0.0-beta.1**, Vue **3.5.43**, Vite **8.3.3**, `@vitejs/plugin-vue` **6.0.9**, and `@vitejs/devtools` / `@vitejs/devtools-kit` **0.7.6**, resolving `@devframes/hub`, `@devframes/hub-ui`, and `devframe` **1.2.2**. Vue9 is a beta release whose native host and markup can change. Other versions, including stable plugin 8.2.1's different overlay, need their own verification; they are outside this integration. This host setup does not change devhost's repository Vite **7.3.1** or require unrelated applications to upgrade.
+
+Install those packages in the Vue host and enable the genuine Vite DevTools host alongside the Vue plugin, following the [official Vue plugin setup](https://devtools.vuejs.org/guide/vite-plugin):
+
+```js
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
+import vueDevTools from "vite-plugin-vue-devtools";
+
+export default defineConfig({
+  plugins: [vue(), vueDevTools()],
+  devtools: { apply: "serve" },
+});
+```
+
+Enable `[devtools.externalToolbars].enabled = true` in `devhost.toml`. Reveal a passive/hidden native host with **Alt+Shift+D**, select its **Unauthorized** control, and enter the actual code printed by the host. Devhost does not bypass authorization. The **Vue** entry appears only after native trust, a visible embedded dock, a registered Vue iframe entry, and a real mounted Vue application are present. Merely installing Vite tools or loading their dock on an unrelated non-Vue page does not qualify.
+
+### Native state, ownership, and cleanup
+
+The detector uses published `getDevframeClientContext()` from `@devframes/hub/client`, the getter used by the verified host. Kit 0.7.6's `getDevToolsClientContext()` reads a different global and returns undefined in this host; devhost supplies no alias or fabricated context. Vue's existing runtime kit supplies application snapshots and lifecycle events. Devhost reads these objects without installing or disposing the host's kit or hooks.
+
+Open and close call native `docks.switchEntry("vue-devtools")` and `docks.switchEntry(null)`. Pressed state requires native panel state **open** and selected dock **vue-devtools**. Native Escape, selecting another tool, hiding/revealing the dock, and page component selection update that state through native events. Starting the page locator temporarily closes Vue; selecting the real page component restores the native inspector and toolbar state.
+
+The Vue launcher suppression sheet follows current entry title, native root replacement, and floating/edge layout changes. Server metadata replacement, field removal, entry removal/re-registration, client overrides, and later forced client registration remain upstream-owned. Cleanup restores native launcher visibility without reverting metadata, disposing registrations, changing the selected panel, or removing foreign sheets. Native Settings remains usable. Disabling/remounting devhost and StrictMode effect cleanup/re-subscription preserve these contracts and recover live inspection.
+
+The title must be unique among native dock entries for the verified launcher selector to identify Vue. A collision suppresses neither launcher and removes the aggregate Vue entry; a later unique title restores availability. Native `when`/`visibility` conditions, hidden dock state, missing roots, revoked trust, or application unmount likewise remove availability and the owned sheet. Recovery is observed from the real host. The button's title reports the native connection status; it is not inferred from iframe presence.
+
+Shared-state observation starts only when the host is trusted and `devframe:docks` already exists in its published cache. In devframe 1.2.2, requesting a missing state before authorization creates a deferred state object; initializing a competing object can leave the native UI holding stale metadata. Devhost never initializes that registry, overrides native listeners, or claims host registration ownership. Async subscriptions and application queries carry generation checks so cleanup cannot install a late listener or sheet.
+
+### Project and delivery boundaries
+
+Native browser regressions verify actual Components/live state/page selection, normal/passive/hidden hosts, unrelated pages, application mount/unmount, metadata replacement, title collision/recovery, native root/layout replacement, foreign sheets, and devhost disable/unmount/remount. Independent host servers on separate origins, including a `/project-b/` Vite base, preserve separate state and launcher selection. Use separate public project origins: the upstream host keeps geometry in origin local storage and selection in tab session storage; devhost does not rewrite upstream channels or preferences.
+
+The supported integration is the attached embedded host. Devhost does not control detached documents or advertise a standalone-only host as attached. Runtime state and resources stay local to the host document and active detector; no global project port or browser session is shared by devhost's detector.
+
+Compiled-bundle validation also verifies two simultaneously running devhost projects through separate public HTTP/HTTPS hostnames, including the Vite base path, native authorization, live Components state, and independent selection with `proxyLocalOrigin = true`. The fixture's manually rendered toolbar is removed for that check. The isolated validation Caddy uses supported test-only `skip_install_trust`, `http_port`, and `https_port` globals and a private browser that accepts its untrusted certificate. This proves native routing, injection, and inspection; it does not verify unmodified managed CA trust installation. No test override changes the app generator or the Vue host contract.
+
+Published native contracts are pinned in [Vue's host client and instrumentation](https://github.com/vuejs/devtools/blob/e69a502d2a800da79ded86cb9847b2bcb922aec5/packages/vite/src/client.ts), [hub getter](https://github.com/devframes/devframe/blob/56caf88d5498e60b46904441d20d28b533886d99/packages/hub/src/client/context.ts), [dock APIs](https://github.com/devframes/devframe/blob/56caf88d5498e60b46904441d20d28b533886d99/packages/hub/src/client/docks.ts), and [native launcher markup](https://github.com/devframes/devframe/blob/56caf88d5498e60b46904441d20d28b533886d99/packages/hub-ui/src/client/components/dock/DockEntry.vue).
 
 ## Unified TanStack shell
 

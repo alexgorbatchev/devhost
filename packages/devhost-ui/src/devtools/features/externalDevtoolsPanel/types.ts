@@ -15,3 +15,8 @@ export interface IExternalDevtoolsAdapter {
   open: () => void;
   title: string;
 }
+
+export interface IExternalDevtoolsDetector {
+  readAdapters: () => readonly IExternalDevtoolsAdapter[];
+  subscribe: (onChange: () => void) => () => void;
+}
