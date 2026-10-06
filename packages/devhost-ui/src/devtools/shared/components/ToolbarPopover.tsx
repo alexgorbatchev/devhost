@@ -55,13 +55,11 @@ export function ToolbarPopover({
         aria-expanded={isOpen}
         aria-label={triggerLabel}
         className={cn(
-          "flex shrink-0 items-center gap-1.5 whitespace-nowrap",
+          "flex shrink-0 items-center gap-1.5 whitespace-nowrap enabled:hover:bg-secondary",
           triggerAppearance === "segment"
             ? "border-l border-border px-2 aria-expanded:bg-accent aria-expanded:shadow-[inset_0_-2px_0_var(--primary)] group-data-[position=top-right]/toolbar:aria-expanded:shadow-[inset_0_2px_0_var(--primary)]"
             : "h-5 rounded-sm border border-border bg-secondary px-1.5 aria-expanded:border-primary aria-expanded:shadow-[inset_0_0_0_1px_var(--primary)]",
-          triggerTone === "alert"
-            ? "bg-destructive font-semibold text-destructive-foreground enabled:hover:brightness-110"
-            : "enabled:hover:bg-secondary",
+          triggerTone === "alert" && "font-semibold [&>svg]:text-destructive",
         )}
         data-devhost-instance-testid={testId}
         data-testid="ToolbarPopover--trigger"

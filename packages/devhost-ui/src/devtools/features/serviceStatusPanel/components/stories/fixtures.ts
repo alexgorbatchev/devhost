@@ -1,4 +1,16 @@
+import type { ComponentProps } from "react";
+
 import type { WorktreeRepository } from "../../../../shared/types";
+import type { ServiceStatusPanel } from "../ServiceStatusPanel";
+
+export const fixture_healthPollErrorServices: ComponentProps<typeof ServiceStatusPanel> = {
+  errorMessage: "Health check failed: devhost control server unreachable (ECONNREFUSED)",
+  services: [
+    { managed: true, name: "web", status: true },
+    { dirty: true, managed: true, name: "api", status: true },
+    { managed: true, name: "worker", status: false },
+  ],
+};
 
 export function factory_worktreeRepository(serviceNames: string[] = ["api", "web"]): WorktreeRepository {
   return {
