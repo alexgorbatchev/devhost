@@ -9,6 +9,7 @@ const buttonBaseClassName: string = [
   "inline-flex h-5 shrink-0 items-center justify-center gap-1 rounded-sm border text-md whitespace-nowrap select-none",
   "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
   "aria-pressed:border-transparent aria-pressed:bg-primary aria-pressed:font-semibold aria-pressed:text-primary-foreground",
+  "enabled:aria-pressed:hover:border-primary enabled:aria-pressed:hover:bg-primary-foreground enabled:aria-pressed:hover:text-primary",
   "disabled:cursor-not-allowed disabled:border-dashed disabled:border-border disabled:bg-transparent",
   "disabled:font-normal disabled:text-faint",
 ].join(" ");

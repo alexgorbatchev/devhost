@@ -730,9 +730,13 @@
           color: var(--dh-on-accent);
           font-weight: 600;
         }
-        .btn.primary:hover,
-        .btn[aria-pressed="true"]:hover {
+        .btn.primary:hover {
           filter: brightness(1.1);
+        }
+        .btn[aria-pressed="true"]:not(:disabled):hover {
+          background: var(--dh-on-accent);
+          border-color: var(--dh-accent);
+          color: var(--dh-accent);
         }
         .btn.warn {
           background: var(--dh-warn);
