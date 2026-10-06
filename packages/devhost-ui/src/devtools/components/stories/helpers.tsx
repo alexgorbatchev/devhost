@@ -9,6 +9,7 @@ import {
 } from "../../features/reactHighlight/reactHighlightOverlay";
 import {
   devtoolsStoryShadowRootHostTestId,
+  expectDevtoolsSurfaceAbove,
   expectDevtoolsSurfaceOnTop,
   HostShadowPopover,
   readDevtoolsStoryShadowCanvas,
@@ -462,9 +463,56 @@ export function SelectionLayeringScene(): JSX.Element {
       <button type="button" style={{ position: "fixed", inset: 0, border: 0, background: "white" }}>
         Viewport target
       </button>
+      {/* Sits in the toolbar's corner, so its annotation draft is placed over the toolbar. */}
+      <button type="button" style={{ position: "fixed", right: 0, bottom: 0, width: 160, height: 120 }}>
+        Corner target
+      </button>
       {renderInDevtoolsStoryShadowRoot(<DevtoolsApp />)}
     </>
   );
+}
+
+export async function verifySurfaceOrder(canvasElement: HTMLElement): Promise<void> {
+  const canvas = within(canvasElement);
+  const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+  const shadowRoot = readShadowRoot(
+    canvas.getByTestId(devtoolsStoryShadowRootHostTestId),
+    "Missing story shadow root.",
+  );
+  const toolbar = await shadowCanvas.findByRole("toolbar", { name: "devhost" });
+  const minimap = await shadowCanvas.findByTestId("LogMinimap");
+  await within(toolbar).findByRole("button", { name: /^Pi terminal, / });
+  const cornerTarget = canvas.getByRole("button", { name: "Corner target" });
+  const cornerRectangle = cornerTarget.getBoundingClientRect();
+  // One session keeps the Alt key state between calls, so releasing it dispatches the keyup that ends selection.
+  const user = userEvent.setup();
+
+  await user.keyboard("{Alt>}");
+  // Selection resolves its target from the pointer position, which a synthetic click only carries when given.
+  await user.pointer({
+    coords: {
+      clientX: cornerRectangle.left + cornerRectangle.width / 2,
+      clientY: cornerRectangle.top + cornerRectangle.height / 2,
+    },
+    keys: "[MouseLeft]",
+    target: cornerTarget,
+  });
+  await user.keyboard("{/Alt}");
+
+  const annotationDraft = await shadowCanvas.findByRole("dialog", { name: "Annotation draft" });
+  await waitFor(() => {
+    expectDevtoolsSurfaceAbove(shadowRoot, toolbar, annotationDraft);
+  });
+
+  await user.click(within(toolbar).getByRole("button", { name: /^Pi terminal, / }));
+  const terminal = await shadowCanvas.findByRole("dialog", { name: "Pi terminal" });
+  // Hovered, the minimap widens from its edge strip into the area a fullscreen terminal covers.
+  await user.hover(minimap);
+  await waitFor(() => {
+    expectDevtoolsSurfaceAbove(shadowRoot, terminal, annotationDraft);
+    expectDevtoolsSurfaceAbove(shadowRoot, terminal, toolbar);
+    expectDevtoolsSurfaceAbove(shadowRoot, terminal, minimap);
+  });
 }
 
 export async function verifySelectionLayering(canvasElement: HTMLElement): Promise<void> {
