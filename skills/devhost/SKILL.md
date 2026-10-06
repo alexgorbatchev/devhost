@@ -4,7 +4,7 @@ description: Use anytime devhost.toml is involved, including reading, writing, m
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-06 00:29
+  last_modified: 2026-10-06 03:45
   status: current
 ---
 
@@ -34,7 +34,7 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 
 - **Annotation temporary files**: Set `[annotation].tempDir` in the root manifest to a non-empty path for all annotation actions. Resolve relative paths against devhost's startup working directory, independently of the manifest location and action `cwd`. Omit the key to use the system temp directory. See the [Agent Adapters guide](references/agent-adapters.md) for file lifecycle details.
 
-- **Git worktrees**: Set `[worktrees].enabled = true` only when checkout selection is requested. Inspect `git worktree list --porcelain` and configure all service `cwd` values from one checkout per repository. Use the Services repository picker to switch every repository member together; do not set services from one repository to different checkouts. Follow the persistence and recovery procedure in [Setup](references/setup.md#4-git-worktree-selection). Worktree group startup failures remain recoverable instead of terminating the supervisor.
+- **Git worktrees**: Omit `[worktrees]` to use checkout selection, which is enabled by default. Set `[worktrees].enabled = false` only to disable discovery and saved-selection restore. Inspect `git worktree list --porcelain` and configure all service `cwd` values from one checkout per repository. Use the Services repository picker to switch every repository member together; do not set services from one repository to different checkouts. Follow the persistence and recovery procedure in [Setup](references/setup.md#4-git-worktree-selection). Worktree group startup failures remain recoverable instead of terminating the supervisor.
 
 ### Service Configuration Constraints
 

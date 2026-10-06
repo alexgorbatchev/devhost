@@ -12,7 +12,8 @@ func TestWorktreesConfiguration(t *testing.T) {
 		value              any
 		enabled, wantError bool
 	}{
-		{name: "omitted"},
+		{name: "omitted", enabled: true},
+		{name: "empty table", value: map[string]any{}, enabled: true},
 		{name: "enabled", value: map[string]any{"enabled": true}, enabled: true},
 		{name: "disabled", value: map[string]any{"enabled": false}},
 		{name: "invalid", value: map[string]any{"enabled": "yes"}, wantError: true},
