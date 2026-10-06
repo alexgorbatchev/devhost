@@ -1,6 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import type { JSX, ComponentType } from "react";
 import type { StoryContext } from "@storybook/react";
+import { expect, userEvent, within } from "storybook/test";
+import { App as DevtoolsApp } from "../App";
+import {
+  clearReactHighlightOverlays,
+  highlightReactElements,
+} from "../../features/reactHighlight/reactHighlightOverlay";
+import {
+  devtoolsStoryShadowRootHostTestId,
+  readDevtoolsStoryShadowCanvas,
+  readShadowRoot,
+  renderInDevtoolsStoryShadowRoot,
+} from "../../shared/components/stories/helpers";
 import type { IInjectedDevtoolsConfig } from "../../shared/readInjectedDevtoolsConfig";
 import type { ServiceHealth, WorktreeRepository } from "../../shared/types";
 import { readInjectedDevtoolsConfig } from "../../shared/readInjectedDevtoolsConfig";
@@ -446,4 +458,131 @@ function DevhostMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Elemen
   }, []);
 
   return <Story />;
+}
+
+interface IReactHighlightLayeringSceneProps {
+  isPopover?: boolean;
+}
+
+export function ReactHighlightLayeringScene({ isPopover = false }: IReactHighlightLayeringSceneProps): JSX.Element {
+  const panelId = useId();
+  const [clickCount, setClickCount] = useState<number>(0);
+  const cursorTargetsReference = useRef<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    const container = cursorTargetsReference.current;
+    if (container === null) {
+      return;
+    }
+
+    // Real host DOM nodes with source metadata fixtures; their geometry and popover behavior come from the browser.
+    const targets = ["First cursor target", "Second cursor target"].map((name) => {
+      const target = container.ownerDocument.createElement("button");
+      target.type = "button";
+      target.textContent = name;
+      Reflect.set(target, "__reactFiber$cursorStory", {
+        _debugSource: { fileName: "/storybook-workspace/src/CursorTargets.tsx", lineNumber: 10, columnNumber: 5 },
+        memoizedProps: {},
+        type: { name: "CursorTarget" },
+      });
+      target.addEventListener("click", () => setClickCount((value) => value + 1));
+      container.append(target);
+      return target;
+    });
+
+    return () => targets.forEach((target) => target.remove());
+  }, []);
+
+  return (
+    <>
+      {isPopover ? (
+        <button type="button" popoverTarget={panelId}>
+          Open cursor target popover
+        </button>
+      ) : null}
+      <section
+        id={panelId}
+        popover={isPopover ? "auto" : undefined}
+        aria-label="Cursor targets"
+        style={{ position: "fixed", inset: 100, margin: 0, padding: 40, background: "white", zIndex: 2147483647 }}
+      >
+        <div ref={cursorTargetsReference} style={{ display: "grid", gap: 20 }} />
+        <output aria-label="Host clicks">{clickCount}</output>
+      </section>
+      <div style={{ position: "relative", zIndex: 0, transform: "translateZ(0)", contain: "paint", height: 1 }}>
+        {renderInDevtoolsStoryShadowRoot(<DevtoolsApp />)}
+      </div>
+    </>
+  );
+}
+
+export async function verifyReactHighlightLayering(canvasElement: HTMLElement): Promise<void> {
+  const canvas = within(canvasElement);
+  const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+  const appRoot = await shadowCanvas.findByTestId("AppContent");
+  const shadowRoot = readShadowRoot(
+    canvas.getByTestId(devtoolsStoryShadowRootHostTestId),
+    "Missing story shadow root.",
+  );
+  const targets = [
+    canvas.getByRole("button", { name: "First cursor target" }),
+    canvas.getByRole("button", { name: "Second cursor target" }),
+  ];
+  const diagnostics: unknown[] = [];
+  const recordDiagnostic = (event: Event): void => {
+    diagnostics.push(Reflect.get(event, "detail"));
+  };
+  window.addEventListener("devhost:react-highlight", recordDiagnostic);
+
+  try {
+    const overlays = await highlightReactElements("src/CursorTargets.tsx:10:5", "/storybook-workspace", appRoot);
+    try {
+      expect(overlays).toHaveLength(2);
+      expect(diagnostics).toEqual([{ locator: "src/CursorTargets.tsx:10:5", matchedCount: 2 }]);
+
+      const readRectangle = (element: HTMLElement): Pick<DOMRect, "x" | "y" | "width" | "height"> => {
+        const { x, y, width, height } = element.getBoundingClientRect();
+        return { x, y, width, height };
+      };
+      const targetRectangles = targets.map(readRectangle).sort((a, b) => a.y - b.y);
+      const overlayRectangles = overlays.map(({ overlay }) => readRectangle(overlay)).sort((a, b) => a.y - b.y);
+      expect(overlayRectangles).toEqual(targetRectangles);
+
+      for (const { overlay } of overlays) {
+        expect(overlay.parentElement).toBe(appRoot);
+        const rectangle = overlay.getBoundingClientRect();
+        // Include the passive rectangle in native hit testing only while checking the browser's paint order.
+        overlay.style.pointerEvents = "auto";
+        try {
+          expect(shadowRoot.elementFromPoint(rectangle.left + rectangle.width / 2, rectangle.top + 1)).toBe(overlay);
+        } finally {
+          overlay.style.removeProperty("pointer-events");
+        }
+        expect(overlay.matches(":popover-open")).toBe(true);
+      }
+
+      await userEvent.click(canvas.getByRole("button", { name: "First cursor target" }));
+      expect(canvas.getByRole("status", { name: "Host clicks" })).toHaveTextContent("1");
+      expect(document.activeElement).toBe(canvas.getByRole("button", { name: "First cursor target" }));
+    } finally {
+      clearReactHighlightOverlays(overlays);
+    }
+
+    for (const { overlay } of overlays) {
+      expect(overlay.isConnected).toBe(false);
+      expect(overlay.matches(":popover-open")).toBe(false);
+    }
+    clearReactHighlightOverlays(overlays);
+    const nextOverlays = await highlightReactElements("src/CursorTargets.tsx:10:5", "/storybook-workspace", appRoot);
+    try {
+      expect(nextOverlays).toHaveLength(2);
+      for (const { overlay } of nextOverlays) {
+        expect(overlay.matches(":popover-open")).toBe(true);
+      }
+    } finally {
+      clearReactHighlightOverlays(nextOverlays);
+    }
+  } finally {
+    window.removeEventListener("devhost:react-highlight", recordDiagnostic);
+  }
 }

@@ -66,6 +66,7 @@ export function HighlightOverlay({
   rootTestId = "HighlightOverlay",
 }: IHighlightOverlayProps): JSX.Element {
   const portalAnchorReference = useRef<HTMLSpanElement | null>(null);
+  const overlayReference = useRef<HTMLDivElement | null>(null);
   const scheduledFrameReference = useRef<number | null>(null);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const [, setLayoutVersion] = useState<number>(0);
@@ -178,9 +179,33 @@ export function HighlightOverlay({
     },
   );
 
+  const hasVisibleHighlights: boolean = renderModels.some((highlight) => highlight.isVisible);
+
+  useLayoutEffect(() => {
+    const overlayElement: HTMLDivElement | null = overlayReference.current;
+
+    if (overlayElement === null || !hasVisibleHighlights) {
+      return;
+    }
+
+    // The top layer escapes host stacking contexts and clipping. Manual mode leaves host popovers open.
+    overlayElement.showPopover();
+
+    return () => {
+      if (overlayElement.isConnected && overlayElement.matches(":popover-open")) {
+        overlayElement.hidePopover();
+      }
+    };
+  }, [hasVisibleHighlights, highlights, portalTarget]);
+
   const overlayRootTestId: string | undefined = rootTestId === "HighlightOverlay" ? undefined : rootTestId;
   const overlay = (
-    <div data-testid={overlayRootTestId} className="pointer-events-none fixed inset-0">
+    <div
+      data-testid={overlayRootTestId}
+      ref={overlayReference}
+      popover="manual"
+      className="pointer-events-none fixed inset-0 m-0 size-auto overflow-visible border-0 bg-transparent p-0 [&::backdrop]:pointer-events-none [&::backdrop]:bg-transparent"
+    >
       {renderModels.map((highlight: IHighlightOverlayRenderModel) => {
         if (!highlight.isVisible) {
           return null;

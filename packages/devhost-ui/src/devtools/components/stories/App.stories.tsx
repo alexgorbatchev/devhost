@@ -13,7 +13,7 @@ import {
   renderInDevtoolsStoryShadowRoot,
 } from "../../shared/components/stories/helpers";
 import { StoryContainer } from "@/devtools/shared/components/stories/helpers";
-import { withDevhostMock } from "./helpers";
+import { ReactHighlightLayeringScene, verifyReactHighlightLayering, withDevhostMock } from "./helpers";
 import { registerAnnotationSelectionPlugin } from "../../features/annotationComposer";
 
 const meta: Meta<typeof DevtoolsApp> = {
@@ -25,6 +25,23 @@ const meta: Meta<typeof DevtoolsApp> = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+export const ReactHighlightsAboveHostStackingContext: Story = {
+  render: () => <ReactHighlightLayeringScene />,
+  play: async ({ canvasElement }): Promise<void> => {
+    await verifyReactHighlightLayering(canvasElement);
+  },
+};
+
+export const ReactHighlightsAboveHostPopover: Story = {
+  render: () => <ReactHighlightLayeringScene isPopover />,
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Open cursor target popover" }));
+    await verifyReactHighlightLayering(canvasElement);
+    expect(canvas.getByRole("region", { name: "Cursor targets" }).matches(":popover-open")).toBe(true);
+  },
+};
 
 export const App: Story = {
   render: () =>
