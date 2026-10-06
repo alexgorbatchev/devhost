@@ -30,6 +30,9 @@ starlight-menu-button button:hover {
   background-color: var(--dh-surface-3);
   color: var(--dh-fg);
 }
+starlight-theme-select select {
+  border-color: var(--dh-input-line);
+}
 
 site-search button[data-open-modal] {
   justify-content: center;
@@ -43,7 +46,6 @@ site-search button > kbd {
   border-radius: var(--dh-radius-sm);
   background: transparent;
   font-size: var(--dh-doc-text-xs);
-  opacity: 0.8;
 }
 @media (min-width: 50rem) {
   site-search button[data-open-modal] {
@@ -132,7 +134,7 @@ site-search dialog::backdrop {
   --pagefind-ui-primary: var(--dh-accent);
   --pagefind-ui-text: var(--dh-fg);
   --pagefind-ui-background: var(--dh-surface-2);
-  --pagefind-ui-border: var(--dh-line);
+  --pagefind-ui-border: var(--dh-input-line);
   --pagefind-ui-border-radius: var(--dh-radius-sm);
   --pagefind-ui-tag: var(--dh-surface-3);
 }

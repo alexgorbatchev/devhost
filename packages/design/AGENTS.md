@@ -18,6 +18,8 @@ Single source of the devhost design tokens (colors, radii, host markers, termina
 - Consumers: `packages/devhost-ui/src/devtools/shared/devtools.css` imports `tokens.css` and maps its shadcn-style names onto `--dh-*`; `packages/docs` registers `tokens.css` in Starlight `customCss` and derives Expressive Code palettes from `DESIGN_TOKENS`; `references/*.html` link `../tokens.css`.
 - `references/devtools.html` and `references/docs.html` are the visual design references for the devtools UI and the docs site. Keep them in sync with the product when the design intentionally changes.
 - Product-specific sizing (devtools px type scale, docs rem type scale, layout metrics) stays in each consumer, not here.
+- `--dh-input-line` identifies form-control boundaries; `--dh-line` remains a decorative separator. Readable faint text meets 4.5:1 on all three neutral surfaces and the terminal background in both themes.
+- Contrast regressions measure rendered foregrounds, backgrounds, and opacity through the shared `test-support/readContrastRatio.ts` browser helper. Assert minimum ratios instead of exact colors or stylesheets.
 
 ## Boundaries
 

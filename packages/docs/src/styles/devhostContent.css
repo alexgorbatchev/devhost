@@ -41,7 +41,7 @@ h1#_top {
 .sl-markdown-content a:not(.sl-anchor-link):not(:where(.not-content *)) {
   color: var(--dh-fg);
   text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--dh-accent) 55%, transparent);
+  text-decoration-color: var(--dh-accent);
   text-underline-offset: 3px;
 }
 .sl-markdown-content a:not(.sl-anchor-link):hover:not(:where(.not-content *)) {

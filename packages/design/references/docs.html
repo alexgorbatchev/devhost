@@ -199,7 +199,6 @@
         border-radius: var(--dh-radius-sm);
         font-size: var(--dh-doc-text-xs);
         line-height: 1;
-        opacity: 0.8;
       }
       .tag {
         display: inline-flex;
@@ -257,7 +256,7 @@
         width: 100%;
         height: 36px;
         padding: 0 10px;
-        border: 1px solid var(--dh-line);
+        border: 1px solid var(--dh-input-line);
         border-radius: var(--dh-radius-sm);
         background: var(--dh-surface-2);
         color: var(--dh-fg);
@@ -348,7 +347,7 @@
         appearance: none;
         height: var(--dh-control-h);
         padding: 0 24px 0 28px;
-        border: 1px solid var(--dh-line);
+        border: 1px solid var(--dh-input-line);
         border-radius: var(--dh-radius-sm);
         background: var(--dh-surface-2);
         color: var(--dh-fg);
@@ -656,7 +655,7 @@
       .prose a:not(.anchor, .btn) {
         color: var(--dh-fg);
         text-decoration: underline;
-        text-decoration-color: color-mix(in srgb, var(--dh-accent) 55%, transparent);
+        text-decoration-color: var(--dh-accent);
         text-underline-offset: 3px;
       }
       .prose a:not(.anchor, .btn):hover {

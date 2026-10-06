@@ -7,6 +7,7 @@ import { DEVTOOLS_FONT_FAMILY } from "../../shared/constants";
 export interface ITerminalTheme {
   fontFamily: string;
   fontSize: number;
+  minimumContrastRatio: number;
   theme: NonNullable<ConstructorParameters<typeof Terminal>[0]>["theme"];
 }
 
@@ -26,6 +27,7 @@ export function readTerminalTheme(colorScheme: DevtoolsColorScheme): ITerminalTh
   return {
     fontFamily: sharedFontFamily,
     fontSize: 13,
+    minimumContrastRatio: 4.5,
     theme: TERMINAL_PALETTES[colorScheme],
   };
 }

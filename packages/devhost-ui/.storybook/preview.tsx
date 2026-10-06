@@ -107,7 +107,11 @@ class MockStorybookWebSocket extends EventTarget {
     }
 
     if (requestUrl.pathname === TERMINAL_SESSION_WEBSOCKET_PATH) {
-      this.emitMessage(JSON.stringify({ data: "$ echo ready\r\nready\r\n", type: "snapshot" }));
+      const data =
+        requestUrl.searchParams.get(TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME) === "session-contrast"
+          ? "\u001b[30mX\u001b[0m \u001b[92mG\u001b[0m \u001b[93mY\u001b[0m \u001b[96mC\u001b[0m \u001b[97mW\u001b[0m"
+          : "$ echo ready\r\nready\r\n";
+      this.emitMessage(JSON.stringify({ data, type: "snapshot" }));
 
       if (requestUrl.searchParams.get(TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME) === "session-finished") {
         queueMicrotask((): void => {

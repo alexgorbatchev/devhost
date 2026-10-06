@@ -15,8 +15,9 @@
   --dh-surface-3: #282c33;
   --dh-fg: #eceff3;
   --dh-fg-muted: #a3abb6;
-  --dh-fg-faint: #6f7783;
+  --dh-fg-faint: #929ba7;
   --dh-line: #353b44;
+  --dh-input-line: #6f7783;
   --dh-edge: rgb(255 255 255 / 0.24);
   --dh-halo: rgb(0 0 0 / 0.92);
   --dh-shadow: 0 6px 22px rgb(0 0 0 / 0.5);
@@ -41,8 +42,9 @@
   --dh-surface-3: #e0e4ea;
   --dh-fg: #0c0e11;
   --dh-fg-muted: #4b535e;
-  --dh-fg-faint: #7c8490;
+  --dh-fg-faint: #5b6470;
   --dh-line: #c7ccd4;
+  --dh-input-line: #747c88;
   --dh-edge: rgb(0 0 0 / 0.42);
   --dh-halo: rgb(255 255 255 / 0.95);
   --dh-shadow: 0 6px 22px rgb(0 0 0 / 0.3);
