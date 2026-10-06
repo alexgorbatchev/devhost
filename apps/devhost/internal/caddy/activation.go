@@ -30,7 +30,7 @@ func ReplaceRoutes(previous, options []ActivateRouteOptions, manifestPath string
 		return nil
 	}
 	paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
-	previousSettings, err := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
+	previousSettings, err := ReadManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,11 @@ func ReplaceRoutes(previous, options []ActivateRouteOptions, manifestPath string
 			return errors.Join(originalError, restoreError)
 		}
 		// Re-read registrations so rollback retains other stacks' current routes.
-		nextSettings, settingsError := readManagedCaddyGlobalSettings(paths, fallback)
+		fallback := ManagedCaddyConfigFallback{
+			AdminAddress: previousSettings.AdminAddress, BindHost: previousSettings.BindHost,
+			HTTPEnabled: previousSettings.HTTPEnabled, HTTPPort: previousSettings.HTTPPort, HTTPSPort: previousSettings.HTTPSPort,
+		}
+		nextSettings, settingsError := ReadManagedCaddyGlobalSettings(paths, fallback)
 		if settingsError != nil {
 			return errors.Join(originalError, fmt.Errorf("read restored route settings: %w", settingsError))
 		}
@@ -104,7 +108,7 @@ func ReplaceRoutes(previous, options []ActivateRouteOptions, manifestPath string
 			return rollback(err)
 		}
 	}
-	nextSettings, err := readManagedCaddyGlobalSettings(paths, fallback)
+	nextSettings, err := ReadManagedCaddyGlobalSettings(paths, fallback)
 	if err != nil {
 		return rollback(err)
 	}
@@ -160,7 +164,7 @@ func restoreRouteRegistrations(snapshots []routeRegistrationSnapshot) error {
 	return result
 }
 
-func syncActivatedHostRoutes(options []ActivateRouteOptions, routesDirectoryPath string, settings managedCaddyGlobalSettings) error {
+func syncActivatedHostRoutes(options []ActivateRouteOptions, routesDirectoryPath string, settings ManagedCaddyGlobalSettings) error {
 	seenHosts := map[string]struct{}{}
 	for _, route := range options {
 		if _, seen := seenHosts[route.Host]; seen {

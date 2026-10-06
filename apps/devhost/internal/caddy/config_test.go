@@ -115,12 +115,12 @@ func TestReadManagedCaddyGlobalSettingsRejectsConflicts(t *testing.T) {
 			writeRegistration(t, filepath.Join(paths.RegistrationsDirectoryPath, "one.json"), tc.first)
 			writeRegistration(t, filepath.Join(paths.RegistrationsDirectoryPath, "two.json"), tc.second)
 
-			_, err := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
+			_, err := ReadManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
 			if err == nil {
-				t.Fatalf("readManagedCaddyGlobalSettings(...) error = nil, want %q", tc.wantError)
+				t.Fatalf("ReadManagedCaddyGlobalSettings(...) error = nil, want %q", tc.wantError)
 			}
 			if err.Error() != tc.wantError {
-				t.Fatalf("readManagedCaddyGlobalSettings(...) error = %q, want %q", err.Error(), tc.wantError)
+				t.Fatalf("ReadManagedCaddyGlobalSettings(...) error = %q, want %q", err.Error(), tc.wantError)
 			}
 		})
 	}

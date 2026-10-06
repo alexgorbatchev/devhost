@@ -79,6 +79,11 @@ name = "hello-stack"
 # HTTP enablement, and listener ports when generating the shared proxy configuration.
 # Active stack registrations take precedence for the admin address, bind host, and ports.
 # All stacks share the same managed Caddy instance and the same global 404 hostname list.
+# Stacks retain the resolved management binding for updates and retirement. Default/sparse
+# siblings inherit non-default bindings while active; explicit non-default conflicts fail.
+# Final retirement keeps the captured listener settings and leaves Caddy running.
+# Use matching custom settings when a manifest may start with no active stacks; an empty
+# runtime does not discover a custom endpoint from a different manifest.
 
 # The `devtools.*` sections control the browser-side devhost overlay injected into
 # routed HTML document navigations. If all devtools features are disabled, routed

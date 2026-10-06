@@ -320,6 +320,13 @@ On Linux, run `devhost caddy privileged-ports` once before the first HTTPS start
 Use `devhost caddy start --manifest ./devhost.toml` to start the shared proxy with the manifest's
 `caddy.global.adminAddress`, `bindHost`, `http`, `httpPort`, and `httpsPort` settings.
 Active stack registrations take precedence for the shared admin address, bind host, and listener ports.
+Each running stack retains that resolved management binding for route updates and cleanup. Sparse/default
+siblings inherit its non-default settings; explicit conflicting non-default requests still fail. Removing
+the last HTTP-enabled stack disables HTTP while false/default siblings remain. When the final registration
+is removed, cleanup retains the retiring stack's captured listener settings and removes its host snippets;
+it leaves the shared Caddy process running until `devhost caddy stop --manifest ./devhost.toml`.
+Configure the same custom management settings in manifests that may start after all stacks have stopped;
+an empty runtime does not discover a custom endpoint from another manifest.
 
 ## Build from source
 

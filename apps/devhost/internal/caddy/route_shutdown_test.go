@@ -15,7 +15,7 @@ func TestUnregisterLastRouteRetainsIsolatedCaddy(t *testing.T) {
 	}
 	manifestPath := filepath.Join(paths.StateDirectoryPath, "devhost.toml")
 	writeRegistration(t, getRouteRegistrationPath(route.ServiceName, route.Host, route.Path, paths.RoutesDirectoryPath), createRouteRegistrationText(route, manifestPath))
-	initial, err := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
+	initial, err := ReadManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,13 +29,13 @@ func TestUnregisterLastRouteRetainsIsolatedCaddy(t *testing.T) {
 		reloadAddress = options.AdminAddress
 		return CommandResult{Success: true}
 	}
-	if err := UnregisterRoute(route.ServiceName, route.Host, route.Path, manifestPath, paths.RegistrationsDirectoryPath, RouteCommandOutputWriters{}); err != nil {
+	if err := UnregisterRoute(route.ServiceName, route.Host, route.Path, manifestPath, paths.RegistrationsDirectoryPath, ManagedCaddyConfigFallback{AdminAddress: route.CaddyAdminAddress, BindHost: route.CaddyBindHost, HTTPEnabled: route.HTTPEnabled, HTTPPort: route.CaddyHTTPPort, HTTPSPort: route.CaddyHTTPSPort}, RouteCommandOutputWriters{}); err != nil {
 		t.Fatal(err)
 	}
 	if reloadAddress != route.CaddyAdminAddress {
 		t.Fatalf("reload targets %q, want isolated admin %q", reloadAddress, route.CaddyAdminAddress)
 	}
-	settings, err := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{AdminAddress: route.CaddyAdminAddress, BindHost: route.CaddyBindHost, HTTPEnabled: route.HTTPEnabled, HTTPPort: route.CaddyHTTPPort, HTTPSPort: route.CaddyHTTPSPort})
+	settings, err := ReadManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{AdminAddress: route.CaddyAdminAddress, BindHost: route.CaddyBindHost, HTTPEnabled: route.HTTPEnabled, HTTPPort: route.CaddyHTTPPort, HTTPSPort: route.CaddyHTTPSPort})
 	if err != nil {
 		t.Fatal(err)
 	}
