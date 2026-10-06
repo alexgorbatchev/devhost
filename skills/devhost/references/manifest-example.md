@@ -44,9 +44,11 @@ ide = "vscode"
 
 [devtools.externalToolbars]
 # `enabled` controls whether devhost aggregates detected third-party devtools buttons (default: true).
-# Supported tools: host-mounted TanStack Query, TanStack Router, and React Hook Form inspectors.
+# Supported tools: host-mounted TanStack Query, TanStack Router, React Hook Form, and Jotai inspectors.
 # For React Hook Form, mount @hookform/devtools DevTool with each form's control in your app.
-# devhost supplies separate Form N launchers; the host retains ownership of forms and native panels.
+# For Jotai, mount jotai-devtools DevTools with each store; tested: 0.14.0 with jotai 2.20.3.
+# Import jotai-devtools before creating custom stores; its panel owns atoms and history.
+# devhost supplies separate Form N and Jotai N launchers; the host owns forms, stores, and native panels.
 # Tested versions, setup, and panel identification: https://alexgorbatchev.github.io/devhost/architecture/external-devtools/
 enabled = true
 

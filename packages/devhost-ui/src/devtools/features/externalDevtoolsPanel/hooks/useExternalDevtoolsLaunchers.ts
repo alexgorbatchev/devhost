@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { externalDevtoolsDetectors } from "../externalDevtoolsDetectors";
 import { createReactHookFormDevtoolsDetector } from "../createReactHookFormDevtoolsDetector";
+import { createJotaiDevtoolsDetector } from "../createJotaiDevtoolsDetector";
 import {
   areExternalDevtoolsLaunchersEqual,
   readExternalDevtoolsLauncherStyleText,
@@ -25,7 +26,8 @@ export function useExternalDevtoolsLaunchers(enabled: boolean): IExternalDevtool
   const styleElementRef = useRef<HTMLStyleElement | null>(null);
   const readAdapters = useMemo<ReadAdapters>(() => {
     const readFormAdapters = createReactHookFormDevtoolsDetector(document);
-    return () => [...externalDevtoolsDetectors, ...readFormAdapters()];
+    const readJotaiAdapters = createJotaiDevtoolsDetector(document);
+    return () => [...externalDevtoolsDetectors, ...readFormAdapters(), ...readJotaiAdapters()];
   }, []);
 
   useEffect(() => {

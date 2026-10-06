@@ -43,6 +43,8 @@
     "@types/react-dom": "^19.2.3",
     "@typescript/native-preview": "^7.0.0-dev.20260408.1",
     "@vitest/browser-playwright": "4.1.4",
+    "jotai": "2.20.3",
+    "jotai-devtools": "0.14.0",
     "playwright": "1.59.1",
     "react-hook-form": "7.89.0",
     "storybook": "10.3.5",
