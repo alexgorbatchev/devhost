@@ -14,7 +14,9 @@ export function readInstalledExternalDevtoolsLaunchers(
 }
 
 export function readExternalDevtoolsLauncherStyleText(adapters: readonly IExternalDevtoolsAdapter[]): string {
-  const selectors = adapters.flatMap((adapter) => adapter.hideSelectors).filter((selector) => selector.length > 0);
+  const selectors = [
+    ...new Set(adapters.flatMap((adapter) => adapter.hideSelectors).filter((selector) => selector.length > 0)),
+  ];
 
   return selectors.length === 0 ? "" : `${selectors.join(", ")} { display: none !important; }`;
 }

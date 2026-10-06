@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { externalDevtoolsDetectors } from "../externalDevtoolsDetectors";
+import { createReactHookFormDevtoolsDetector } from "../createReactHookFormDevtoolsDetector";
 import {
   areExternalDevtoolsLaunchersEqual,
   readExternalDevtoolsLauncherStyleText,
@@ -14,6 +15,7 @@ interface IExternalDevtoolsLaunchersResult {
 }
 
 type SynchronizeLaunchers = () => void;
+type ReadAdapters = () => readonly IExternalDevtoolsAdapter[];
 
 export function useExternalDevtoolsLaunchers(enabled: boolean): IExternalDevtoolsLaunchersResult {
   const [launchers, setLaunchers] = useState<IExternalDevtoolsLauncher[]>([]);
@@ -21,7 +23,10 @@ export function useExternalDevtoolsLaunchers(enabled: boolean): IExternalDevtool
   const launcherSyncFrameIdRef = useRef<number | null>(null);
   const synchronizeLaunchersRef = useRef<SynchronizeLaunchers | null>(null);
   const styleElementRef = useRef<HTMLStyleElement | null>(null);
-  const adapters = useMemo<readonly IExternalDevtoolsAdapter[]>(() => externalDevtoolsDetectors, []);
+  const readAdapters = useMemo<ReadAdapters>(() => {
+    const readFormAdapters = createReactHookFormDevtoolsDetector(document);
+    return () => [...externalDevtoolsDetectors, ...readFormAdapters()];
+  }, []);
 
   useEffect(() => {
     const styleElement = styleElementRef.current ?? createHiddenLauncherStyleElement();
@@ -36,7 +41,7 @@ export function useExternalDevtoolsLaunchers(enabled: boolean): IExternalDevtool
     }
 
     const synchronizeLaunchers = (): void => {
-      const installedAdapters = adapters.filter((adapter) => adapter.isInstalled());
+      const installedAdapters = readAdapters().filter((adapter) => adapter.isInstalled());
       const nextLaunchers = readInstalledExternalDevtoolsLaunchers(installedAdapters);
 
       setLaunchers((currentLaunchers) =>
@@ -92,10 +97,10 @@ export function useExternalDevtoolsLaunchers(enabled: boolean): IExternalDevtool
       styleElementRef.current = null;
       synchronizeLaunchersRef.current = null;
     };
-  }, [enabled, adapters]);
+  }, [enabled, readAdapters]);
 
   function toggleLauncher(launcherId: string): void {
-    const adapter = adapters.find((candidate) => candidate.id === launcherId);
+    const adapter = readAdapters().find((candidate) => candidate.id === launcherId);
 
     if (adapter === undefined) {
       return;
