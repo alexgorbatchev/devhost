@@ -10,6 +10,8 @@ export const optimizeDependencyEntries: string[] = [
   "@storybook/react-dom-shim",
   "@tanstack/react-query-devtools/production",
   "@tanstack/react-router-devtools",
+  "use-color/a11y",
+  "use-color/core",
 ];
 
 export default defineConfig({

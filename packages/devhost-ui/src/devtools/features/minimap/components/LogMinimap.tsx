@@ -1,4 +1,4 @@
-import type { CSSProperties, JSX } from "react";
+import type { JSX } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "../../../../lib/utils";
@@ -14,6 +14,7 @@ import { resolveHoveredLogRowIndex } from "../resolveHoveredLogRowIndex";
 import { resolveLogPreviewLayout } from "../resolveLogPreviewLayout";
 import { resolveLogPreviewOverlay } from "../resolveLogPreviewOverlay";
 import type { IRenderCanvasFunction } from "../types";
+import { LogAnsiFragment } from "./LogAnsiFragment";
 
 interface ILogMinimapProps {
   entries: ServiceLogEntry[];
@@ -196,19 +197,11 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
                       ? row.text
                       : row.fragments.map((fragment: ILogAnsiFragment, fragmentIndex: number) => {
                           return (
-                            <span
+                            <LogAnsiFragment
                               key={`${row.id}-${row.top}-${fragmentIndex}`}
-                              className={cn(
-                                fragment.isBold ? "font-semibold" : null,
-                                fragment.isDim ? "opacity-70" : null,
-                                fragment.isItalic ? "italic" : null,
-                                fragment.isStrikethrough ? "line-through" : null,
-                                fragment.isUnderline ? "underline" : null,
-                              )}
-                              style={resolveAnsiFragmentStyle(fragment)}
-                            >
-                              {fragment.text}
-                            </span>
+                              fragment={fragment}
+                              isFocusedRow={isFocusedRow}
+                            />
                           );
                         })}
                   </span>
@@ -225,14 +218,3 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
 const logPreviewPadding: number = 4;
 const logPreviewRowHeight: number = 18;
 const logPreviewViewportPadding: number = 10;
-
-function resolveAnsiFragmentStyle(fragment: ILogAnsiFragment): CSSProperties | undefined {
-  if (fragment.backgroundColor === null && fragment.foregroundColor === null) {
-    return undefined;
-  }
-
-  return {
-    backgroundColor: fragment.backgroundColor ?? undefined,
-    color: fragment.foregroundColor ?? undefined,
-  };
-}
