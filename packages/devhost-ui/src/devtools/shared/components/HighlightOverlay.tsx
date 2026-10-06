@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState, type JSX, type ReactNode } from "rea
 import { createPortal } from "react-dom";
 
 import { cn } from "../../../lib/utils";
+import { promoteDevtoolsTopLayer } from "../promoteDevtoolsTopLayer";
 import { resolveDevtoolsPortalContainer } from "../resolveDevtoolsPortalContainer";
 
 interface IHighlightFrame {
@@ -66,7 +67,6 @@ export function HighlightOverlay({
   rootTestId = "HighlightOverlay",
 }: IHighlightOverlayProps): JSX.Element {
   const portalAnchorReference = useRef<HTMLSpanElement | null>(null);
-  const overlayReference = useRef<HTMLDivElement | null>(null);
   const scheduledFrameReference = useRef<number | null>(null);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const [, setLayoutVersion] = useState<number>(0);
@@ -182,30 +182,19 @@ export function HighlightOverlay({
   const hasVisibleHighlights: boolean = renderModels.some((highlight) => highlight.isVisible);
 
   useLayoutEffect(() => {
-    const overlayElement: HTMLDivElement | null = overlayReference.current;
-
-    if (overlayElement === null || !hasVisibleHighlights) {
+    if (portalTarget === null || !hasVisibleHighlights) {
       return;
     }
 
-    // The top layer escapes host stacking contexts and clipping. Manual mode leaves host popovers open.
-    overlayElement.showPopover();
-
-    return () => {
-      if (overlayElement.isConnected && overlayElement.matches(":popover-open")) {
-        overlayElement.hidePopover();
-      }
-    };
-  }, [hasVisibleHighlights, highlights, portalTarget]);
+    // Highlights mark host content, which can sit in host top-layer elements that emit no observable toggle event
+    // (popovers inside host shadow roots). Showing highlights therefore re-enters the top layer.
+    promoteDevtoolsTopLayer(portalTarget);
+  }, [hasVisibleHighlights, portalTarget]);
 
   const overlayRootTestId: string | undefined = rootTestId === "HighlightOverlay" ? undefined : rootTestId;
+  // `position: fixed` creates a stacking context, so the layer token lives on this element, not on its children.
   const overlay = (
-    <div
-      data-testid={overlayRootTestId}
-      ref={overlayReference}
-      popover="manual"
-      className="pointer-events-none fixed inset-0 m-0 size-auto overflow-visible border-0 bg-transparent p-0 [&::backdrop]:pointer-events-none [&::backdrop]:bg-transparent"
-    >
+    <div data-testid={overlayRootTestId} className="pointer-events-none fixed inset-0 z-(--devhost-z-overlay)">
       {renderModels.map((highlight: IHighlightOverlayRenderModel) => {
         if (!highlight.isVisible) {
           return null;
@@ -215,7 +204,7 @@ export function HighlightOverlay({
           <div key={highlight.id}>
             <div
               className={cn(
-                "pointer-events-none fixed z-(--devhost-z-overlay) box-border rounded-sm border-2 border-mark shadow-mark",
+                "pointer-events-none fixed box-border rounded-sm border-2 border-mark shadow-mark",
                 appearance === "hover" ? "border-dashed" : "bg-mark/10",
               )}
               data-appearance={appearance}
@@ -230,7 +219,7 @@ export function HighlightOverlay({
             {highlight.badge !== undefined ? (
               <div
                 className={[
-                  "pointer-events-none fixed z-(--devhost-z-overlay) grid h-4.5 min-w-4.5 place-items-center rounded-full",
+                  "pointer-events-none fixed grid h-4.5 min-w-4.5 place-items-center rounded-full",
                   "bg-mark px-1 text-sm font-bold text-mark-foreground shadow-mark-badge",
                 ].join(" ")}
                 data-testid={badgeTestId}
@@ -245,7 +234,7 @@ export function HighlightOverlay({
             {highlight.label !== undefined ? (
               <div
                 className={[
-                  "pointer-events-none fixed z-(--devhost-z-overlay) h-4.5 max-w-105 truncate rounded-sm border",
+                  "pointer-events-none fixed h-4.5 max-w-105 truncate rounded-sm border",
                   "border-mark bg-mark-halo-outer px-1.5 text-sm/4 text-mark-halo-inner",
                 ].join(" ")}
                 data-testid={labelTestId}

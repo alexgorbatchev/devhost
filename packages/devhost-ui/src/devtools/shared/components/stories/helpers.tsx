@@ -1,7 +1,7 @@
-import React, { type JSX, type ReactNode } from "react";
+import React, { type CSSProperties, type JSX, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useLayoutEffect, useRef, useState } from "react";
-import { within } from "storybook/test";
+import { expect, within } from "storybook/test";
 
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../constants";
 import type { DevtoolsColorScheme } from "../../DevtoolsColorScheme";
@@ -41,6 +41,81 @@ export function readShadowRoot(hostElement: HTMLElement, errorMessage: string): 
   }
 
   return shadowRoot;
+}
+
+/**
+ * Asserts that the browser paints a devtools surface above everything else at its center, including host content
+ * outside the story shadow root. Passive overlays are excluded from native hit testing, so the surface opts in only
+ * while it is checked.
+ */
+export function expectDevtoolsSurfaceOnTop(shadowRoot: ShadowRoot, surface: HTMLElement): void {
+  const rectangle: DOMRect = surface.getBoundingClientRect();
+  const x: number = rectangle.left + rectangle.width / 2;
+  const y: number = rectangle.top + rectangle.height / 2;
+
+  surface.style.pointerEvents = "auto";
+  try {
+    expect(shadowRoot.ownerDocument.elementFromPoint(x, y)).toBe(shadowRoot.host);
+    expect(surface.contains(shadowRoot.elementFromPoint(x, y))).toBe(true);
+  } finally {
+    surface.style.removeProperty("pointer-events");
+  }
+}
+
+interface IHostShadowPopoverProps {
+  children: ReactNode;
+  openLabel: string;
+  style: CSSProperties;
+  testId: string;
+}
+
+/**
+ * A host popover built like a web component: light-DOM children are slotted into a manual popover inside a shadow
+ * root. Its toggle events never reach the document, so devtools cannot observe it opening.
+ */
+export function HostShadowPopover({ children, openLabel, style, testId }: IHostShadowPopoverProps): JSX.Element {
+  const ownerElementReference = useRef<HTMLDivElement | null>(null);
+  const [shadowRoot, setShadowRoot] = useState<ShadowRoot | null>(null);
+  const [popoverElement, setPopoverElement] = useState<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    const ownerElement: HTMLDivElement | null = ownerElementReference.current;
+
+    if (ownerElement === null) {
+      return;
+    }
+
+    setShadowRoot(ownerElement.shadowRoot ?? ownerElement.attachShadow({ mode: "open" }));
+  }, []);
+
+  return (
+    <>
+      <button type="button" onClick={() => popoverElement?.showPopover()}>
+        {openLabel}
+      </button>
+      <div data-testid={testId} ref={ownerElementReference}>
+        {children}
+        {shadowRoot === null
+          ? null
+          : createPortal(
+              <div popover="manual" ref={setPopoverElement} style={style}>
+                <slot />
+              </div>,
+              shadowRoot,
+            )}
+      </div>
+    </>
+  );
+}
+
+export function readHostShadowPopover(ownerElement: HTMLElement): HTMLElement {
+  const popoverElement: HTMLElement | null = ownerElement.shadowRoot?.querySelector<HTMLElement>("[popover]") ?? null;
+
+  if (popoverElement === null) {
+    throw new Error("The host shadow popover is not mounted.");
+  }
+
+  return popoverElement;
 }
 
 function DevtoolsStoryShadowRoot(props: IDevtoolsStoryShadowRootProps): JSX.Element {

@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
-import type { JSX, ComponentType } from "react";
+import type { CSSProperties, JSX, ComponentType } from "react";
 import type { StoryContext } from "@storybook/react";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import { App as DevtoolsApp } from "../App";
 import {
   clearReactHighlightOverlays,
@@ -9,6 +9,8 @@ import {
 } from "../../features/reactHighlight/reactHighlightOverlay";
 import {
   devtoolsStoryShadowRootHostTestId,
+  expectDevtoolsSurfaceOnTop,
+  HostShadowPopover,
   readDevtoolsStoryShadowCanvas,
   readShadowRoot,
   renderInDevtoolsStoryShadowRoot,
@@ -453,11 +455,85 @@ function DevhostMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Elemen
   return <Story />;
 }
 
-interface IReactHighlightLayeringSceneProps {
-  isPopover?: boolean;
+export function SelectionLayeringScene(): JSX.Element {
+  return (
+    <>
+      {/* Covers the viewport, so its selection highlight overlaps every devtools surface. */}
+      <button type="button" style={{ position: "fixed", inset: 0, border: 0, background: "white" }}>
+        Viewport target
+      </button>
+      {renderInDevtoolsStoryShadowRoot(<DevtoolsApp />)}
+    </>
+  );
 }
 
-export function ReactHighlightLayeringScene({ isPopover = false }: IReactHighlightLayeringSceneProps): JSX.Element {
+export async function verifySelectionLayering(canvasElement: HTMLElement): Promise<void> {
+  const canvas = within(canvasElement);
+  const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+  const shadowRoot = readShadowRoot(
+    canvas.getByTestId(devtoolsStoryShadowRootHostTestId),
+    "Missing story shadow root.",
+  );
+  const toolbar = await shadowCanvas.findByRole("toolbar", { name: "devhost" });
+  const minimap = await shadowCanvas.findByTestId("LogMinimap");
+  await within(toolbar).findByRole("button", { name: /^Pi terminal, / });
+  // One session keeps the Alt key state between calls, so releasing it dispatches the keyup that ends selection.
+  const user = userEvent.setup();
+
+  await user.keyboard("{Alt>}");
+  await user.click(canvas.getByRole("button", { name: "Viewport target" }));
+  await user.keyboard("{/Alt}");
+
+  const annotationDraft = await shadowCanvas.findByRole("dialog", { name: "Annotation draft" });
+  const selectionHighlight = await shadowCanvas.findByTestId("AnnotationComposer--selection-highlight");
+  const expectAboveSelection = (surface: HTMLElement): void => {
+    const rectangle = surface.getBoundingClientRect();
+    // Include the passive highlight in native hit testing only while checking the browser's paint order.
+    selectionHighlight.style.pointerEvents = "auto";
+    try {
+      const topElement = shadowRoot.elementFromPoint(
+        rectangle.left + rectangle.width / 2,
+        rectangle.top + rectangle.height / 2,
+      );
+      expect(surface.contains(topElement)).toBe(true);
+    } finally {
+      selectionHighlight.style.removeProperty("pointer-events");
+    }
+  };
+
+  await waitFor(() => {
+    expectAboveSelection(annotationDraft);
+    expectAboveSelection(toolbar);
+    expectAboveSelection(minimap);
+  });
+
+  await user.click(within(toolbar).getByRole("button", { name: /^Pi terminal, / }));
+  const terminal = await shadowCanvas.findByRole("dialog", { name: "Pi terminal" });
+  await waitFor(() => {
+    expectAboveSelection(terminal);
+  });
+  expect(selectionHighlight).toBeVisible();
+}
+
+type ReactHighlightHostLayer = "popover" | "shadow-popover" | "stacking-context";
+
+interface IReactHighlightLayeringSceneProps {
+  hostLayer?: ReactHighlightHostLayer;
+}
+
+const cursorTargetLayerStyle: CSSProperties = {
+  background: "white",
+  inset: 100,
+  margin: 0,
+  padding: 40,
+  position: "fixed",
+  zIndex: 2147483647,
+};
+export const cursorTargetShadowPopoverTestId: string = "CursorTargetShadowPopover";
+
+export function ReactHighlightLayeringScene({
+  hostLayer = "stacking-context",
+}: IReactHighlightLayeringSceneProps): JSX.Element {
   const panelId = useId();
   const [clickCount, setClickCount] = useState<number>(0);
   const cursorTargetsReference = useRef<HTMLDivElement | null>(null);
@@ -486,22 +562,40 @@ export function ReactHighlightLayeringScene({ isPopover = false }: IReactHighlig
     return () => targets.forEach((target) => target.remove());
   }, []);
 
+  const cursorTargets = (
+    <>
+      <div ref={cursorTargetsReference} style={{ display: "grid", gap: 20 }} />
+      <output aria-label="Host clicks">{clickCount}</output>
+    </>
+  );
+
   return (
     <>
-      {isPopover ? (
-        <button type="button" popoverTarget={panelId}>
-          Open cursor target popover
-        </button>
-      ) : null}
-      <section
-        id={panelId}
-        popover={isPopover ? "auto" : undefined}
-        aria-label="Cursor targets"
-        style={{ position: "fixed", inset: 100, margin: 0, padding: 40, background: "white", zIndex: 2147483647 }}
-      >
-        <div ref={cursorTargetsReference} style={{ display: "grid", gap: 20 }} />
-        <output aria-label="Host clicks">{clickCount}</output>
-      </section>
+      {hostLayer === "shadow-popover" ? (
+        <HostShadowPopover
+          openLabel="Open cursor target popover"
+          style={cursorTargetLayerStyle}
+          testId={cursorTargetShadowPopoverTestId}
+        >
+          <section aria-label="Cursor targets">{cursorTargets}</section>
+        </HostShadowPopover>
+      ) : (
+        <>
+          {hostLayer === "popover" ? (
+            <button type="button" popoverTarget={panelId}>
+              Open cursor target popover
+            </button>
+          ) : null}
+          <section
+            id={panelId}
+            popover={hostLayer === "popover" ? "auto" : undefined}
+            aria-label="Cursor targets"
+            style={cursorTargetLayerStyle}
+          >
+            {cursorTargets}
+          </section>
+        </>
+      )}
       <div style={{ position: "relative", zIndex: 0, transform: "translateZ(0)", contain: "paint", height: 1 }}>
         {renderInDevtoolsStoryShadowRoot(<DevtoolsApp />)}
       </div>
@@ -543,15 +637,7 @@ export async function verifyReactHighlightLayering(canvasElement: HTMLElement): 
 
       for (const { overlay } of overlays) {
         expect(overlay.parentElement).toBe(appRoot);
-        const rectangle = overlay.getBoundingClientRect();
-        // Include the passive rectangle in native hit testing only while checking the browser's paint order.
-        overlay.style.pointerEvents = "auto";
-        try {
-          expect(shadowRoot.elementFromPoint(rectangle.left + rectangle.width / 2, rectangle.top + 1)).toBe(overlay);
-        } finally {
-          overlay.style.removeProperty("pointer-events");
-        }
-        expect(overlay.matches(":popover-open")).toBe(true);
+        expectDevtoolsSurfaceOnTop(shadowRoot, overlay);
       }
 
       await userEvent.click(canvas.getByRole("button", { name: "First cursor target" }));
@@ -563,14 +649,13 @@ export async function verifyReactHighlightLayering(canvasElement: HTMLElement): 
 
     for (const { overlay } of overlays) {
       expect(overlay.isConnected).toBe(false);
-      expect(overlay.matches(":popover-open")).toBe(false);
     }
     clearReactHighlightOverlays(overlays);
     const nextOverlays = await highlightReactElements("src/CursorTargets.tsx:10:5", "/storybook-workspace", appRoot);
     try {
       expect(nextOverlays).toHaveLength(2);
       for (const { overlay } of nextOverlays) {
-        expect(overlay.matches(":popover-open")).toBe(true);
+        expectDevtoolsSurfaceOnTop(shadowRoot, overlay);
       }
     } finally {
       clearReactHighlightOverlays(nextOverlays);

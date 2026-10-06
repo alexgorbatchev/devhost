@@ -9,11 +9,19 @@ import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../shared/constants";
 import {
   devtoolsStoryShadowRootHostTestId,
   readDevtoolsStoryShadowCanvas,
+  readHostShadowPopover,
   readShadowRoot,
   renderInDevtoolsStoryShadowRoot,
 } from "../../shared/components/stories/helpers";
 import { StoryContainer } from "@/devtools/shared/components/stories/helpers";
-import { ReactHighlightLayeringScene, verifyReactHighlightLayering, withDevhostMock } from "./helpers";
+import {
+  cursorTargetShadowPopoverTestId,
+  ReactHighlightLayeringScene,
+  SelectionLayeringScene,
+  verifyReactHighlightLayering,
+  verifySelectionLayering,
+  withDevhostMock,
+} from "./helpers";
 import { registerAnnotationSelectionPlugin } from "../../features/annotationComposer";
 
 const meta: Meta<typeof DevtoolsApp> = {
@@ -34,12 +42,37 @@ export const ReactHighlightsAboveHostStackingContext: Story = {
 };
 
 export const ReactHighlightsAboveHostPopover: Story = {
-  render: () => <ReactHighlightLayeringScene isPopover />,
+  render: () => <ReactHighlightLayeringScene hostLayer="popover" />,
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Open cursor target popover" }));
     await verifyReactHighlightLayering(canvasElement);
     expect(canvas.getByRole("region", { name: "Cursor targets" }).matches(":popover-open")).toBe(true);
+  },
+};
+
+/**
+ * Web-component dialogs slot page content into a popover inside their shadow root. The document cannot observe
+ * that popover opening, so cursor rectangles bring devtools above it when they appear.
+ */
+export const ReactHighlightsAboveHostShadowPopover: Story = {
+  render: () => <ReactHighlightLayeringScene hostLayer="shadow-popover" />,
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Open cursor target popover" }));
+    const shadowPopover = readHostShadowPopover(canvas.getByTestId(cursorTargetShadowPopoverTestId));
+    await waitFor(() => {
+      expect(shadowPopover.matches(":popover-open")).toBe(true);
+    });
+    await verifyReactHighlightLayering(canvasElement);
+    expect(shadowPopover.matches(":popover-open")).toBe(true);
+  },
+};
+
+export const SelectionHighlightsBelowDevtoolsSurfaces: Story = {
+  render: () => <SelectionLayeringScene />,
+  play: async ({ canvasElement }): Promise<void> => {
+    await verifySelectionLayering(canvasElement);
   },
 };
 

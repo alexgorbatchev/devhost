@@ -73,7 +73,7 @@ When devhost accepts a cursor update, Neovim places a `->` sign on the resolved 
 
 ## Browser Matching
 
-Cursor highlight rectangles appear above page content, including existing popovers, without blocking page clicks. Cursor updates replace the previous rectangles; clearing the cursor removes them.
+Cursor highlight rectangles appear above page content, including existing popovers, and beneath the other injected devtools surfaces, without blocking page clicks. Cursor updates replace the previous rectangles; clearing the cursor removes them.
 
 Disabling editor devtools or removing the injected overlay closes its cursor connection and removes its highlights. Updates from a previous connection and matching results that finish after a newer cursor update or cleanup are discarded.
 
