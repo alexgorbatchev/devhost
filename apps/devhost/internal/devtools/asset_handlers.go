@@ -40,7 +40,10 @@ func (s *ControlServer) readAsset(name string) ([]byte, []byte, error) {
 }
 
 func (s *ControlServer) handleInjectedConfig(w http.ResponseWriter, r *http.Request) {
-	serveAsset(w, r, assetResponse{name: "config.json", contentType: "application/json; charset=utf-8", cacheControl: cacheControlNoStore, content: s.configJSON})
+	s.mu.Lock()
+	configJSON := s.configJSON
+	s.mu.Unlock()
+	serveAsset(w, r, assetResponse{name: "config.json", contentType: "application/json; charset=utf-8", cacheControl: cacheControlNoStore, content: configJSON})
 }
 
 func (s *ControlServer) handleInjectedScript(w http.ResponseWriter, r *http.Request) {

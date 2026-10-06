@@ -206,6 +206,11 @@ func TestRecoveryServiceHelperProcess(t *testing.T) {
 			// Force a real bind collision for exactly one startup attempt.
 			_, collisionError := net.Listen("tcp", listener.Addr().String())
 			fmt.Fprintln(os.Stderr, collisionError)
+			// Release the socket before the race runtime's exit delay can make
+			// this failed startup appear healthy to the TCP probe.
+			if err := listener.Close(); err != nil {
+				panic(err)
+			}
 			if err := os.Remove(path); err != nil {
 				os.Exit(3)
 			}

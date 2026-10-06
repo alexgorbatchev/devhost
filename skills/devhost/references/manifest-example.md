@@ -3,6 +3,9 @@
 Below is a complete, production-grade `devhost.toml` manifest illustrating every available feature, configuration table, environment placeholder, routing schema, health check type, and annotation action in detail.
 
 ```toml
+# Service changes and include-file additions/removals reload while devhost runs.
+# Invalid edits leave the stack running. Changes to name, killZombies, Caddy,
+# devtools, annotation, or worktree enablement require restarting devhost.
 # `name` identifies the stack in logs, state, and injected metadata.
 name = "hello-stack"
 
@@ -207,7 +210,8 @@ retries = 10
 
 [services.db]
 # `port = "auto"` automatically allocates a free port, but explicit `health` must be omitted in v1.
-# Foreground restarts refresh both proxy targets before reporting recovery on a new auto port.
+# Individual restarts keep the assigned port; use "Restart stack with new ports" for automatic-port conflicts.
+# Stack restart rebuilds port references and refreshes routes before reporting recovery.
 command = ["bun", "run", "db:dev"]
 cwd = "./db"
 port = "auto"

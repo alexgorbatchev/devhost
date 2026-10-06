@@ -28,14 +28,20 @@ This applies to:
 ## Example
 
 ```toml
-[services.postgres]
+[services.api]
+command = ["bun", "run", "api:dev"]
 bindHost = "127.0.0.1"
 port = "auto"
 
-[services.poc-backend]
-command = ["node", "server.js"]
-health = { tcp = 8080 }
-env = { DATABASE_URL = "postgres://postgres:postgres@{{ services.postgres.bindHost }}:{{ services.postgres.port }}/postgres?sslmode=disable" }
+[services.web]
+command = ["bun", "run", "web:dev"]
+port = "auto"
+dependsOn = ["api"]
+env = { API_URL = "http://{{ services.api.bindHost }}:{{ services.api.port }}" }
 ```
 
-In this example, both the `bindHost` and the dynamic `port` of the `postgres` database service are automatically resolved and injected into the backend's `DATABASE_URL` environment variable at startup, with zero manual coordination or hardcoded ports.
+In this example, the API's bind host and assigned port are resolved into the web service's `API_URL` at startup. The `api:dev` and `web:dev` scripts must launch servers that listen on their injected `PORT` values.
+
+## References after reload or restart
+
+A configuration reload resolves command and environment templates against the accepted service configuration and restarts affected consumers. Individual service restarts preserve their assigned automatic port. **Restart stack with new ports** reassigns automatic ports and rebuilds references before relaunching all managed services, so consumers receive the current port values. See [Stack lifecycle](./stack-lifecycle/) for recovery and restoration behavior.

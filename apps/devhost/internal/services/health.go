@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -23,10 +24,10 @@ type WaitForServiceHealthOptions struct {
 }
 
 type healthDependencies struct {
-	canConnectToPort    func(host string, port int, timeout time.Duration) bool
-	isReadyHTTPEndpoint func(url string, timeout time.Duration) bool
+	canConnectToPort    func(context.Context, string, int, time.Duration) bool
+	isReadyHTTPEndpoint func(context.Context, string, time.Duration) bool
 	now                 func() time.Time
-	sleep               func(time.Duration)
+	sleep               func(context.Context, time.Duration) error
 }
 
 // probeTimeoutFor derives the per-attempt network timeout from the configured
@@ -39,23 +40,26 @@ func probeTimeoutFor(health ResolvedHealthConfig) time.Duration {
 	return interval
 }
 
-func WaitForServiceHealth(options WaitForServiceHealthOptions) error {
-	return waitForServiceHealth(options, healthDependencies{
+func WaitForServiceHealth(ctx context.Context, options WaitForServiceHealthOptions) error {
+	return waitForServiceHealth(ctx, options, healthDependencies{
 		canConnectToPort:    canConnectToPort,
 		isReadyHTTPEndpoint: isReadyHTTPEndpoint,
 		now:                 time.Now,
-		sleep:               time.Sleep,
+		sleep:               sleepForHealth,
 	})
 }
 
 func CheckServiceHealth(health ResolvedHealthConfig) bool {
-	return checkServiceHealth(health, healthDependencies{
+	return checkServiceHealth(context.Background(), health, healthDependencies{
 		canConnectToPort:    canConnectToPort,
 		isReadyHTTPEndpoint: isReadyHTTPEndpoint,
 	})
 }
 
-func waitForServiceHealth(options WaitForServiceHealthOptions, dependencies healthDependencies) error {
+func waitForServiceHealth(ctx context.Context, options WaitForServiceHealthOptions, dependencies healthDependencies) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if options.Health.Kind == HealthKindProcess {
 		return throwIfExited(options.ReadExitCode, options.ServiceName)
 	}
@@ -68,7 +72,14 @@ func waitForServiceHealth(options WaitForServiceHealthOptions, dependencies heal
 	attempts := 0
 
 	for dependencies.now().Before(deadline) {
-		if checkServiceHealth(options.Health, dependencies) {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		healthy := checkServiceHealth(ctx, options.Health, dependencies)
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if healthy {
 			consecutiveFailures = 0
 			return nil
 		}
@@ -90,10 +101,23 @@ func waitForServiceHealth(options WaitForServiceHealthOptions, dependencies heal
 			options.OnProgress(attempts, dependencies.now().Sub(startTime))
 		}
 
-		dependencies.sleep(interval)
+		if err := dependencies.sleep(ctx, interval); err != nil {
+			return err
+		}
 	}
 
 	return fmt.Errorf("Service %s did not pass its health check within %dms.", options.ServiceName, options.Health.Timeout)
+}
+
+func sleepForHealth(ctx context.Context, interval time.Duration) error {
+	timer := time.NewTimer(interval)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
 }
 
 func throwIfExited(readExitCode func() *int, serviceName string) error {
@@ -109,7 +133,7 @@ func throwIfExited(readExitCode func() *int, serviceName string) error {
 	return fmt.Errorf("Service %s exited before passing its health check with code %d.", serviceName, *exitCode)
 }
 
-func checkServiceHealth(health ResolvedHealthConfig, dependencies healthDependencies) bool {
+func checkServiceHealth(ctx context.Context, health ResolvedHealthConfig, dependencies healthDependencies) bool {
 	probeTimeout := probeTimeoutFor(health)
 
 	switch health.Kind {
@@ -126,22 +150,23 @@ func checkServiceHealth(health ResolvedHealthConfig, dependencies healthDependen
 			return false
 		}
 
-		return dependencies.canConnectToPort(resolvedHost, *health.Port, probeTimeout)
+		return dependencies.canConnectToPort(ctx, resolvedHost, *health.Port, probeTimeout)
 
 	case HealthKindHTTP:
 		if health.URL == nil {
 			return false
 		}
 
-		return dependencies.isReadyHTTPEndpoint(*health.URL, probeTimeout)
+		return dependencies.isReadyHTTPEndpoint(ctx, *health.URL, probeTimeout)
 
 	default:
 		return false
 	}
 }
 
-func canConnectToPort(host string, port int, timeout time.Duration) bool {
-	connection, err := net.DialTimeout("tcp", net.JoinHostPort(host, strconv.Itoa(port)), timeout)
+func canConnectToPort(ctx context.Context, host string, port int, timeout time.Duration) bool {
+	dialer := net.Dialer{Timeout: timeout}
+	connection, err := dialer.DialContext(ctx, "tcp", net.JoinHostPort(host, strconv.Itoa(port)))
 	if err != nil {
 		return false
 	}
@@ -150,7 +175,7 @@ func canConnectToPort(host string, port int, timeout time.Duration) bool {
 	return true
 }
 
-func isReadyHTTPEndpoint(url string, timeout time.Duration) bool {
+func isReadyHTTPEndpoint(ctx context.Context, url string, timeout time.Duration) bool {
 	client := http.Client{
 		CheckRedirect: func(request *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
@@ -158,7 +183,11 @@ func isReadyHTTPEndpoint(url string, timeout time.Duration) bool {
 		Timeout: timeout,
 	}
 
-	response, err := client.Get(url)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return false
+	}
+	response, err := client.Do(request)
 	if err != nil {
 		return false
 	}

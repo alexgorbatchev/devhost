@@ -9,6 +9,7 @@ import { Button, InlineNotice } from "../../../shared";
 import { pristineFetch } from "../../../shared/pristineFetch";
 import { restartServices } from "../../../shared/restartServices";
 import { ToolbarPopover } from "../../../shared/components/ToolbarPopover";
+import { RestartStackButton } from "../../../shared/components/RestartStackButton";
 import { DEFAULT_RESTART_SERVICES_SHORTCUT } from "../../../shared/constants";
 import { formatShortcutLabel } from "../../../shared/formatShortcutLabel";
 import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
@@ -45,6 +46,7 @@ const serviceStateLabels: Record<ServiceDotState, string> = {
 export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element | null {
   const { homeDirectoryPath, restartServicesShortcut } = readInjectedDevtoolsConfig();
   const [repositoryId, setRepositoryId] = useState<string | null>(null);
+  const [isStackRestarting, setIsStackRestarting] = useState<boolean>(false);
   const repositoryButtons = useRef<Map<string, HTMLButtonElement>>(new Map());
   const repositories = props.repositories ?? [];
   const selectedRepository = repositories.find((repository) => repository.id === repositoryId);
@@ -165,7 +167,7 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
                 <ServiceRows
                   services={props.services.filter((service) => repository.serviceNames.includes(service.name))}
                   onSetErrorMessage={onSetErrorMessage}
-                  isBlocked={repository.switching || repository.error !== undefined}
+                  isBlocked={isStackRestarting || repository.switching || repository.error !== undefined}
                 />
               </section>
             );
@@ -175,8 +177,17 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
               (service) => !repositories.some((repository) => repository.serviceNames.includes(service.name)),
             )}
             onSetErrorMessage={onSetErrorMessage}
-            isBlocked={false}
+            isBlocked={isStackRestarting}
           />
+          {props.services.some((service) => service.managed) ? (
+            <RestartStackButton
+              isDisabled={
+                props.services.some((service) => service.restarting === true) ||
+                repositories.some((repository) => repository.switching)
+              }
+              onPendingChange={setIsStackRestarting}
+            />
+          ) : null}
         </>
       )}
     </ToolbarPopover>

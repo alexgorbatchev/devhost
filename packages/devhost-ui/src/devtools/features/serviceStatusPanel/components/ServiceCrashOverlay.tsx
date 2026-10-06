@@ -6,6 +6,7 @@ import { cn } from "../../../../lib/utils";
 import { Button, InlineNotice } from "../../../shared";
 import { pristineFetch } from "../../../shared/pristineFetch";
 import { restartServices } from "../../../shared/restartServices";
+import { RestartStackButton } from "../../../shared/components/RestartStackButton";
 import type { ServiceHealth, ServiceLogEntry } from "../../../shared/types";
 
 interface IServiceCrashOverlayProps {
@@ -17,6 +18,7 @@ export function ServiceCrashOverlay({ services, entries }: IServiceCrashOverlayP
   const dialogReference = useRef<HTMLDialogElement | null>(null);
   const titleId = useId();
   const [pendingServices, setPendingServices] = useState<string[]>([]);
+  const [isStackRestarting, setIsStackRestarting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -65,7 +67,7 @@ export function ServiceCrashOverlay({ services, entries }: IServiceCrashOverlayP
                 {service.name} <span className="text-muted-foreground">(exit code {service.exitCode})</span>
               </h2>
               <Button
-                disabled={isRestarting}
+                disabled={isRestarting || isStackRestarting}
                 startEnhancer={<RotateCwIcon />}
                 variant="primary"
                 onClick={() => {
@@ -100,6 +102,10 @@ export function ServiceCrashOverlay({ services, entries }: IServiceCrashOverlayP
           </section>
         );
       })}
+      <RestartStackButton
+        isDisabled={pendingServices.length > 0 || services.some((service) => service.restarting === true)}
+        onPendingChange={setIsStackRestarting}
+      />
     </dialog>
   );
 }

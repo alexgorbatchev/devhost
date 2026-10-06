@@ -1,4 +1,5 @@
 import type { IStandardSourceShape } from "./reactSourceInspection";
+import type { IRoutedServiceIdentity } from "./routedServices";
 
 export type ServiceHealth = {
   managed: boolean;
@@ -12,9 +13,15 @@ export type ServiceHealth = {
 };
 
 export type HealthResponse = {
+  routing?: IRoutingConfig;
   services: ServiceHealth[];
   repositories?: WorktreeRepository[];
 };
+
+export interface IRoutingConfig {
+  primaryService: string;
+  routedServices: IRoutedServiceIdentity[];
+}
 
 export interface IWorktreeDirectory {
   name: string;

@@ -23,6 +23,8 @@ const (
 )
 
 type ResolvedManifest struct {
+	// Retain unresolved templates so automatic-port retries can bind them again.
+	configuration         *manifest.Manifest
 	Annotation            manifest.ValidatedAnnotation
 	Caddy                 manifest.CaddyConfig
 	Devtools              manifest.DevtoolsConfig
@@ -73,7 +75,32 @@ type ResolvedHealthConfig struct {
 }
 
 func ResolveServicePorts(value manifest.Manifest) (ResolvedManifest, error) {
+	return resolveServicePorts(value, portResolutionOptions{})
+}
+
+type portResolutionOptions struct {
+	Preserved map[string]int
+	Excluded  map[string]map[int]struct{}
+}
+
+func resolveServicePorts(value manifest.Manifest, options portResolutionOptions) (ResolvedManifest, error) {
+	preserved := options.Preserved
 	excludedPortsByHost := collectFixedPorts(value.Services)
+	for host, ports := range options.Excluded {
+		if excludedPortsByHost[host] == nil {
+			excludedPortsByHost[host] = map[int]struct{}{}
+		}
+		for port := range ports {
+			excludedPortsByHost[host][port] = struct{}{}
+		}
+	}
+	for name, port := range preserved {
+		host := value.Services[name].BindHost
+		if excludedPortsByHost[host] == nil {
+			excludedPortsByHost[host] = map[int]struct{}{}
+		}
+		excludedPortsByHost[host][port] = struct{}{}
+	}
 	resolvedServices := map[string]ResolvedService{}
 
 	for serviceName, service := range value.Services {
@@ -86,9 +113,13 @@ func ResolveServicePorts(value manifest.Manifest) (ResolvedManifest, error) {
 		portSource := "none"
 		if service.Port != nil {
 			if service.Port.Auto {
-				port, err := reserveAutoPort(service.BindHost, excludedPorts)
-				if err != nil {
-					return ResolvedManifest{}, err
+				port, ok := preserved[serviceName]
+				if !ok {
+					var err error
+					port, err = reserveAutoPort(service.BindHost, excludedPorts)
+					if err != nil {
+						return ResolvedManifest{}, err
+					}
 				}
 				resolvedPort = &port
 				excludedPorts[port] = struct{}{}
@@ -160,6 +191,7 @@ func ResolveServicePorts(value manifest.Manifest) (ResolvedManifest, error) {
 	}
 
 	return ResolvedManifest{
+		configuration:         &value,
 		Annotation:            value.Annotation,
 		Caddy:                 value.Caddy,
 		Devtools:              value.Devtools,

@@ -18,14 +18,15 @@ var parseErrorLinePattern = regexp.MustCompile(`line (\d+)`)
 
 func ReadManifest(manifestPath string) (RawManifest, error) {
 	visited := map[string]bool{}
-	manifestValue, serviceOrder, err := loadAndMergeManifests(manifestPath, "", visited)
+	inputs := Inputs{}
+	manifestValue, serviceOrder, err := loadAndMergeManifests(manifestPath, "", visited, &inputs)
 	if err != nil {
-		return RawManifest{}, err
+		return RawManifest{Inputs: inputs}, err
 	}
 
 	interpolatedManifestValue, undefinedVariables := interpolateManifestValue(manifestValue)
 	if len(undefinedVariables) > 0 {
-		return RawManifest{}, fmt.Errorf("Failed to read %s: undefined environment variables: %s", manifestPath, strings.Join(undefinedVariables, ", "))
+		return RawManifest{Inputs: inputs}, fmt.Errorf("Failed to read %s: undefined environment variables: %s", manifestPath, strings.Join(undefinedVariables, ", "))
 	}
 	manifestMap, ok := interpolatedManifestValue.(map[string]any)
 	if !ok {
@@ -33,12 +34,13 @@ func ReadManifest(manifestPath string) (RawManifest, error) {
 	}
 
 	return RawManifest{
+		Inputs:       inputs,
 		serviceOrder: serviceOrder,
 		value:        manifestMap,
 	}, nil
 }
 
-func loadAndMergeManifests(manifestPath string, rootManifestDir string, visited map[string]bool) (map[string]any, []string, error) {
+func loadAndMergeManifests(manifestPath string, rootManifestDir string, visited map[string]bool, inputs *Inputs) (map[string]any, []string, error) {
 	absPath, err := filepath.Abs(manifestPath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("resolve manifest absolute path: %w", err)
@@ -48,6 +50,7 @@ func loadAndMergeManifests(manifestPath string, rootManifestDir string, visited 
 		return map[string]any{}, nil, nil
 	}
 	visited[absPath] = true
+	inputs.Files = append(inputs.Files, absPath)
 
 	manifestBytes, err := os.ReadFile(absPath)
 	if err != nil {
@@ -90,6 +93,7 @@ func loadAndMergeManifests(manifestPath string, rootManifestDir string, visited 
 			if !filepath.IsAbs(pattern) {
 				globPattern = filepath.Join(manifestDir, pattern)
 			}
+			inputs.Patterns = append(inputs.Patterns, globPattern)
 
 			matches, err := filepath.Glob(globPattern)
 			if err != nil {
@@ -104,7 +108,7 @@ func loadAndMergeManifests(manifestPath string, rootManifestDir string, visited 
 					return nil, nil, fmt.Errorf("resolve include absolute path: %w", err)
 				}
 
-				subManifest, subServiceOrder, err := loadAndMergeManifests(matchAbs, rootManifestDir, visited)
+				subManifest, subServiceOrder, err := loadAndMergeManifests(matchAbs, rootManifestDir, visited, inputs)
 				if err != nil {
 					return nil, nil, err
 				}

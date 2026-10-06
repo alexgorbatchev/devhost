@@ -26,6 +26,10 @@ The injected overlay is a single compact toolbar docked to the right edge of the
 
 The services panel lists every service with its state. Routed services become links automatically, and clicking one opens that service URL in a new browser tab or window by default. Externally owned services are tagged `external`; only `devhost`-managed services expose restart controls. Services with watched file changes are marked `changed` until they restart.
 
+Repository services also share a checkout picker. Opening it or pressing **Refresh** discovers added and deleted Git worktrees. Selecting a checkout restarts that repository's managed services together; repositories containing externally managed services cannot switch checkouts. If the running checkout disappears, its services remain stopped until you select an available checkout; other repositories keep running.
+
+Individual service restarts retain their assigned automatic ports. If a port is occupied, use **Restart stack with new ports** in the Services panel or recovery dialog. It restarts all managed services with fresh automatic ports and rebuilt port references and environments, while retaining fixed ports, selected checkouts, control listeners, and terminal sessions. External processes keep running. Failures display an error and allow another attempt. See [Stack lifecycle](./stack-lifecycle/) for hot reload, restart ordering, and restoration behavior.
+
 When a managed foreground service exits and status devtools are enabled, a full-screen recovery dialog shows the service's exit code, retained stdout/stderr logs, and a **Restart** button. The supervisor and other services keep running. Logs continue updating during recovery; a failed restart displays its error and allows another attempt. The dialog closes when the service recovers. Intentional restarts, failed health probes, and lost control connections alone do not trigger the crash dialog.
 
 Refreshing a root-compatible routed app while its backend is unavailable returns a recovery page with injected devtools. Its restart button works while the app is down, and a successful restart reloads the original URL. Daemon lifecycle and externally managed services use health status instead of foreground exit recovery.
@@ -61,6 +65,7 @@ All paths below are relative to the routed app's origin. Requests with JSON bodi
 | `/__devhost__/annotation-queues/<entry-id>`        | `PATCH`, `DELETE` | Edit or delete a queued annotation                           |
 | `/__devhost__/annotation-queues/<queue-id>/resume` | `POST`            | Resume an annotation queue                                   |
 | `/__devhost__/restart-service`                     | `POST`            | Restart managed services                                     |
+| `/__devhost__/restart-stack`                       | `POST`            | Restart all managed services with fresh automatic ports      |
 | `/__devhost__/worktrees`                           | `GET`, `POST`     | Refresh worktree state or switch the selected checkout       |
 | `/__devhost__/react-highlight/cursor`              | `POST`            | Publish an editor cursor update                              |
 
@@ -78,7 +83,7 @@ Handlers still validate methods, payloads, enabled features, and session state. 
 
 Use the page's routed host with `ws://` for HTTP or `wss://` for HTTPS. The terminal connection requires the ID of an existing session: a missing `sessionId` produces `400`, and an unknown session produces `404` before the WebSocket upgrade. The injected UI constructs these URLs automatically.
 
-The generated Neovim launcher supplies the instance's cursor-update endpoint through `DEVHOST_REACT_HIGHLIGHT_URL`, together with its project root, stack name, and plugin path. Restarting the stack can change the local control port, so use the current launcher after each restart. See [React Highlight](../react-highlight/) for integration requirements.
+The generated Neovim launcher supplies the instance's cursor-update endpoint through `DEVHOST_REACT_HIGHLIGHT_URL`, together with its project root, stack name, and plugin path. Stopping and starting devhost can change the local control port, so use the current launcher after starting a new instance. Manifest hot reload and **Restart stack with new ports** retain the control port and existing editor connections. See [React Highlight](../react-highlight/) for integration requirements.
 
 Authentication configured by an upstream proxy remains separate. Clients must satisfy that proxy's requirements; a sign-in redirect can prevent a WebSocket connection from reaching devhost.
 

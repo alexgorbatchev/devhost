@@ -19,7 +19,14 @@ func ActivateRoute(options ActivateRouteOptions, manifestPath string, routesDire
 // ActivateRoutes publishes a service's routes with one reload and restores all
 // registrations together if writing, rendering, or reloading fails.
 func ActivateRoutes(options []ActivateRouteOptions, manifestPath string, routesDirectoryPath string) error {
-	if len(options) == 0 {
+	return ReplaceRoutes(nil, options, manifestPath, routesDirectoryPath)
+}
+
+// ReplaceRoutes publishes additions, updates, and removals with one reload.
+// Rollback touches only these registrations and retains other stacks' routes.
+func ReplaceRoutes(previous, options []ActivateRouteOptions, manifestPath string, routesDirectoryPath string) error {
+	affected := append(append([]ActivateRouteOptions{}, options...), previous...)
+	if len(affected) == 0 {
 		return nil
 	}
 	paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
@@ -27,7 +34,11 @@ func ActivateRoutes(options []ActivateRouteOptions, manifestPath string, routesD
 	if err != nil {
 		return err
 	}
-	snapshots, err := snapshotRouteRegistrations(options, routesDirectoryPath)
+	fallback := ManagedCaddyConfigFallback{
+		AdminAddress: previousSettings.AdminAddress, BindHost: previousSettings.BindHost,
+		HTTPPort: previousSettings.HTTPPort, HTTPSPort: previousSettings.HTTPSPort,
+	}
+	snapshots, err := snapshotRouteRegistrations(affected, routesDirectoryPath)
 	if err != nil {
 		return err
 	}
@@ -37,10 +48,6 @@ func ActivateRoutes(options []ActivateRouteOptions, manifestPath string, routesD
 			return errors.Join(originalError, restoreError)
 		}
 		// Re-read registrations so rollback retains other stacks' current routes.
-		fallback := ManagedCaddyConfigFallback{
-			AdminAddress: previousSettings.AdminAddress, BindHost: previousSettings.BindHost,
-			HTTPEnabled: previousSettings.HTTPEnabled, HTTPPort: previousSettings.HTTPPort, HTTPSPort: previousSettings.HTTPSPort,
-		}
 		nextSettings, settingsError := readManagedCaddyGlobalSettings(paths, fallback)
 		if settingsError != nil {
 			return errors.Join(originalError, fmt.Errorf("read restored route settings: %w", settingsError))
@@ -48,7 +55,7 @@ func ActivateRoutes(options []ActivateRouteOptions, manifestPath string, routesD
 		if syncError := syncManagedCaddyGlobalState(routesDirectoryPath, nextSettings); syncError != nil {
 			return errors.Join(originalError, fmt.Errorf("restore managed Caddy configuration: %w", syncError))
 		}
-		if syncError := syncActivatedHostRoutes(options, routesDirectoryPath, nextSettings); syncError != nil {
+		if syncError := syncActivatedHostRoutes(affected, routesDirectoryPath, nextSettings); syncError != nil {
 			return errors.Join(originalError, fmt.Errorf("restore host routes: %w", syncError))
 		}
 		if syncError := syncManagedCaddyNotFoundSite(routesDirectoryPath, nextSettings.HTTPSPort); syncError != nil {
@@ -57,7 +64,7 @@ func ActivateRoutes(options []ActivateRouteOptions, manifestPath string, routesD
 		if reloadAttempted {
 			for _, snapshot := range snapshots {
 				if snapshot.existed {
-					if reloadError := reloadManagedCaddy(nextSettings.AdminAddress, routesDirectoryPath, options[0].CaddyOutputWriters); reloadError != nil {
+					if reloadError := reloadManagedCaddy(nextSettings.AdminAddress, routesDirectoryPath, affected[0].CaddyOutputWriters); reloadError != nil {
 						return errors.Join(originalError, fmt.Errorf("reload restored Caddy configuration: %w", reloadError))
 					}
 					break
@@ -66,12 +73,38 @@ func ActivateRoutes(options []ActivateRouteOptions, manifestPath string, routesD
 		}
 		return originalError
 	}
-	for i, route := range options {
-		if err := os.WriteFile(snapshots[i].path, []byte(createRouteRegistrationText(route, manifestPath)), 0o644); err != nil {
+	desired := map[string]bool{}
+	for _, route := range options {
+		path := getRouteRegistrationPath(route.ServiceName, route.Host, route.Path, routesDirectoryPath)
+		desired[path] = true
+		if err := os.WriteFile(path, []byte(createRouteRegistrationText(route, manifestPath)), 0o644); err != nil {
 			return rollback(err)
 		}
 	}
-	nextSettings, err := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
+	for _, route := range previous {
+		path := getRouteRegistrationPath(route.ServiceName, route.Host, route.Path, routesDirectoryPath)
+		if desired[path] {
+			continue
+		}
+		text, err := os.ReadFile(path)
+		if os.IsNotExist(err) {
+			continue
+		}
+		if err != nil {
+			return rollback(err)
+		}
+		registration, err := parseRouteRegistration(text)
+		if err != nil {
+			return rollback(err)
+		}
+		if registration.ManifestPath != manifestPath || registration.OwnerPID != routeMutationProcessID() {
+			return rollback(fmt.Errorf("route %s is owned by another stack", path))
+		}
+		if err := removeIfExists(path); err != nil {
+			return rollback(err)
+		}
+	}
+	nextSettings, err := readManagedCaddyGlobalSettings(paths, fallback)
 	if err != nil {
 		return rollback(err)
 	}
@@ -79,14 +112,15 @@ func ActivateRoutes(options []ActivateRouteOptions, manifestPath string, routesD
 		if err := syncManagedCaddyGlobalState(routesDirectoryPath, nextSettings); err != nil {
 			return rollback(err)
 		}
-	} else if err := syncActivatedHostRoutes(options, routesDirectoryPath, nextSettings); err != nil {
+	}
+	if err := syncActivatedHostRoutes(affected, routesDirectoryPath, nextSettings); err != nil {
 		return rollback(err)
 	}
 	if err := syncManagedCaddyNotFoundSite(routesDirectoryPath, nextSettings.HTTPSPort); err != nil {
 		return rollback(err)
 	}
 	reloadAttempted = true
-	if err := reloadManagedCaddy(nextSettings.AdminAddress, routesDirectoryPath, options[0].CaddyOutputWriters); err != nil {
+	if err := reloadManagedCaddy(nextSettings.AdminAddress, routesDirectoryPath, affected[0].CaddyOutputWriters); err != nil {
 		return rollback(err)
 	}
 	return nil
@@ -94,8 +128,13 @@ func ActivateRoutes(options []ActivateRouteOptions, manifestPath string, routesD
 
 func snapshotRouteRegistrations(options []ActivateRouteOptions, routesDirectoryPath string) ([]routeRegistrationSnapshot, error) {
 	snapshots := make([]routeRegistrationSnapshot, 0, len(options))
+	seen := map[string]bool{}
 	for _, route := range options {
 		path := getRouteRegistrationPath(route.ServiceName, route.Host, route.Path, routesDirectoryPath)
+		if seen[path] {
+			continue
+		}
+		seen[path] = true
 		contents, err := os.ReadFile(path)
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
 			return nil, fmt.Errorf("read previous route registration: %w", err)

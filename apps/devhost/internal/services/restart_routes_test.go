@@ -8,75 +8,26 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
 
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/gorilla/websocket"
 )
 
-func TestRestartRefreshesRoutesAfterAutoPortCollision(t *testing.T) {
+func TestStackRestartRefreshesRoutesAfterAutoPortCollision(t *testing.T) {
 	for _, failReload := range []bool{false, true} {
 		t.Run(fmt.Sprintf("reloadFailure=%t", failReload), func(t *testing.T) {
-			statePath := t.TempDir()
-			paths := caddy.CreateManagedCaddyPaths(statePath)
-			admin, stopAdmin := startTestAdminServer(t)
-			defer stopAdmin()
-			writeFakeCaddyExecutable(t, paths.ExecutablePath)
-			originalStart, originalRegister, originalUnregister := startDevtoolsControlServer, registerProcessSignals, unregisterProcessSignals
-			defer func() {
-				startDevtoolsControlServer, registerProcessSignals, unregisterProcessSignals = originalStart, originalRegister, originalUnregister
-			}()
-			signals := make(chan chan<- os.Signal, 1)
-			registerProcessSignals = func(ch chan<- os.Signal) { signals <- ch }
-			unregisterProcessSignals = func(chan<- os.Signal) {}
-			control := make(chan devtools.StartControlServerOptions, 1)
-			controlPorts := make(chan int, 1)
-			startDevtoolsControlServer = func(options devtools.StartControlServerOptions) (*devtools.ControlServer, error) {
-				server, err := devtools.StartControlServer(options)
-				if err == nil {
-					control <- options
-					controlPorts <- server.Port()
-				}
-				return server, err
-			}
 			trigger := filepath.Join(t.TempDir(), "exit")
 			pidPath := filepath.Join(t.TempDir(), "pid")
 			collisionPath := filepath.Join(t.TempDir(), "collision")
-			oldPort := mustReservePort(t)
-			m := newResolvedManifest(t.TempDir(), admin)
-			m.PrimaryService, m.ServiceOrder, m.Devtools.Status.Enabled = "web", []string{"web"}, true
-			m.Services["web"] = ResolvedService{
-				Name: "web", BindHost: "127.0.0.1", Cwd: t.TempDir(),
-				Command: []string{os.Args[0], "-test.run=TestRecoveryServiceHelperProcess", "--"},
-				Env:     map[string]string{"DEVHOST_RECOVERY_HELPER": "1", "EXIT_PATH": trigger, "PID_PATH": pidPath, "EXIT_CODE": "7", "COLLISION_PATH": collisionPath},
-				Health:  ResolvedHealthConfig{Kind: "http", URL: stringPointer(serverURL(oldPort, "/health")), Timeout: 2000, Interval: 20},
-				Hosts:   []string{"recover.localhost", "alias.recover.localhost"}, Port: intPointer(oldPort), PortSource: "auto", InjectPort: true, ProxyLocalOrigin: true,
-			}
-			done := make(chan error, 1)
-			go func() {
-				_, err := StartStack(&m, m.ServiceOrder, StartStackOptions{CaddyPaths: paths, Environment: map[string]string{"DEVHOST_STATE_DIR": statePath}, LogWriter: io.Discard, ServiceStdoutWriter: io.Discard, ServiceStderrWriter: io.Discard, ShutdownGracePeriod: 100 * time.Millisecond})
-				done <- err
-			}()
-			signalChannel := <-signals
-			defer func() {
-				writeFakeCaddyExecutable(t, paths.ExecutablePath)
-				signalChannel <- syscall.SIGTERM
-				select {
-				case err := <-done:
-					if err != nil {
-						t.Errorf("shutdown: %v", err)
-					}
-				case <-time.After(5 * time.Second):
-					t.Error("shutdown timed out")
-				}
-			}()
-			options, controlPort := <-control, <-controlPorts
+			body := fmt.Sprintf("[services.web]\nprimary = true\ncommand = [%q, \"-test.run=TestRecoveryServiceHelperProcess\", \"--\"]\nport = \"auto\"\nhost = [\"recover.localhost\", \"alias.recover.localhost\"]\nproxyLocalOrigin = true\n[services.web.env]\nDEVHOST_RECOVERY_HELPER = \"1\"\nEXIT_PATH = %q\nPID_PATH = %q\nEXIT_CODE = \"7\"\nCOLLISION_PATH = %q\n", os.Args[0], trigger, pidPath, collisionPath)
+			f := startReloadStack(t, body)
+			paths, options, controlPort := f.paths, f.control, f.controlPort
 			registrationPath := filepath.Join(paths.RegistrationsDirectoryPath, "recover.localhost_web_2f.json")
 			waitForCondition(t, 5*time.Second, func() bool { _, err := os.Stat(registrationPath); return err == nil })
 			registration := readRestartRoute(t, registrationPath)
+			oldPort := registration.AppPort
 			aliasPath := filepath.Join(paths.RegistrationsDirectoryPath, "alias.recover.localhost_web_2f.json")
 			alias := readRestartRoute(t, aliasPath)
 			if !registration.ProxyLocalOrigin || !alias.ProxyLocalOrigin {
@@ -109,7 +60,7 @@ func TestRestartRefreshesRoutesAfterAutoPortCollision(t *testing.T) {
 				}
 				h, _ := options.GetHealthResponse()
 				if h.Services[0].Status || h.Services[0].Restarting || h.Services[0].ExitCode == nil {
-					t.Fatalf("routing failure dismissed recovery: %#v", h.Services[0])
+					t.Fatalf("routing and restoration failures dismissed recovery: %#v", h.Services[0])
 				}
 				if route := readRestartRoute(t, registrationPath); route.AppPort != oldPort || route.DocumentInjectionPort != documentPort || !route.ProxyLocalOrigin {
 					t.Fatalf("failed update changed registration: %#v", route)
@@ -179,7 +130,7 @@ func restartWithRoutingGate(t *testing.T, options devtools.StartControlServerOpt
 		t.Fatal(err)
 	}
 	done := make(chan error, 1)
-	go func() { done <- options.RestartService([]string{"web"}) }()
+	go func() { done <- options.RestartStack() }()
 	waitForCondition(t, 5*time.Second, func() bool { _, err := os.Stat(entered); return err == nil })
 	select {
 	case err := <-done:
@@ -190,7 +141,7 @@ func restartWithRoutingGate(t *testing.T, options devtools.StartControlServerOpt
 	if err != nil {
 		t.Fatal(err)
 	}
-	if health.Services[0].Status || !health.Services[0].Restarting || health.Services[0].ExitCode == nil {
+	if health.Services[0].Status || !health.Services[0].Restarting {
 		t.Fatalf("recovery cleared before routing: %#v", health.Services[0])
 	}
 	// Documents already target the healthy replacement, while health remains pending.

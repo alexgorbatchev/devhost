@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { HEALTH_WEBSOCKET_PATH } from "../../../shared/constants";
+import { HEALTH_WEBSOCKET_PATH, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "../../../shared/constants";
 import { createDevtoolsWebSocketUrl } from "../../../shared/createDevtoolsWebSocketUrl";
 import { pristineFetch, pristineWebSocket } from "../../../shared/pristineFetch";
 import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
@@ -8,6 +8,7 @@ import type { HealthResponse, ServiceHealth, WorktreeRepository } from "../../..
 import { parseHealthResponse } from "../parseHealthResponse";
 import { requestWorktrees } from "../requestWorktrees";
 import { markServicesAsUnavailable } from "../markServicesAsUnavailable";
+import { updateInjectedRouting } from "../updateInjectedRouting";
 
 const normalClosureCode: number = 1_000;
 
@@ -25,6 +26,12 @@ export function useServiceHealth(): IUseServiceHealthResult {
   const [services, setServices] = useState<ServiceHealth[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { stackName: devtoolsStackName } = readInjectedDevtoolsConfig();
+
+  const updateHealth = useCallback((health: HealthResponse): void => {
+    updateInjectedRouting(health.routing, Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME));
+    setServices(health.services);
+    setRepositories(health.repositories ?? []);
+  }, []);
 
   useEffect(() => {
     let websocket: WebSocket | null = null;
@@ -47,8 +54,7 @@ export function useServiceHealth(): IUseServiceHealthResult {
         return;
       }
 
-      setServices(healthResponse.services);
-      setRepositories(healthResponse.repositories ?? []);
+      updateHealth(healthResponse);
       setErrorMessage(null);
     };
 
@@ -75,16 +81,15 @@ export function useServiceHealth(): IUseServiceHealthResult {
       isDisposed = true;
       websocket?.close(normalClosureCode, "devtools unmounted");
     };
-  }, [devtoolsStackName]);
+  }, [devtoolsStackName, updateHealth]);
 
   const refreshWorktrees = useCallback(async (): Promise<string | null> => {
     const result = await requestWorktrees(pristineFetch);
     if (result.health !== null) {
-      setRepositories(result.health.repositories ?? []);
-      setServices(result.health.services);
+      updateHealth(result.health);
     }
     return result.error;
-  }, []);
+  }, [updateHealth]);
   const switchWorktree = useCallback(
     async (repositoryId: string, path: string): Promise<string | null> => {
       const result = await requestWorktrees(pristineFetch, { repositoryId, path });

@@ -6,6 +6,7 @@ import {
   DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME,
   HEALTH_WEBSOCKET_PATH,
   LOGS_WEBSOCKET_PATH,
+  RESTART_STACK_PATH,
   TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME,
   TERMINAL_SESSION_START_PATH,
   TERMINAL_SESSION_WEBSOCKET_PATH,
@@ -145,6 +146,8 @@ function createStorybookFetch(): typeof fetch {
   const storybookFetch: typeof fetch = Object.assign(
     async (input: FetchRequestInput, _init?: FetchRequestInit): Promise<Response> => {
       const requestUrl: URL = readRequestUrl(input);
+
+      if (requestUrl.pathname === RESTART_STACK_PATH) return new Response(null, { status: 204 });
 
       if (requestUrl.pathname === TERMINAL_SESSION_START_PATH) {
         return new Response(JSON.stringify({ sessionId: "storybook-session" }), {

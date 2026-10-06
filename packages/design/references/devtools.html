@@ -1760,6 +1760,7 @@
         serviceScenario: "multiple",
         serviceError: null,
         failRestart: false,
+        isStackRestarting: false,
         worktreesEnabled: true,
         failWorktreeSwitch: false,
         worktreePicker: null,
@@ -2071,7 +2072,7 @@
               .join("")}</ol>
           </section>`,
             )
-            .join("")}`,
+            .join("")}${renderStackRestart()}`,
         );
         if (!dialog.open) dialog.showModal();
       }
@@ -2287,7 +2288,7 @@
               <span class="muted" style="font-weight:400" title="Restart changed services (or the primary service)"><span class="kbd">⌃⌥R</span></span>
             </header>
             ${state.serviceError ? renderNotice(state.serviceError, "dismiss-service-error") : ""}
-            <div class="panel-body">${rows}</div>`,
+            <div class="panel-body">${rows}${renderStackRestart()}</div>`,
         };
       }
 
@@ -2780,14 +2781,26 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
       // ======================================================================
       // Behavior
       // ======================================================================
-      async function restartServices(names) {
+      function renderStackRestart() {
+        if (!state.services.some((service) => service.managed)) return "";
+        const disabled =
+          state.services.some((service) => service.restarting) || state.repositories.some((repo) => repo.phase);
+        return `<section class="panel-body" aria-label="Stack recovery">
+          <button class="btn" type="button" data-action="restart-stack" ${disabled ? "disabled" : ""}>
+            ${icon("restart")}${state.isStackRestarting ? "Restarting stack…" : "Restart stack with new ports"}
+          </button><p class="muted">Restarts all managed services and reassigns automatic ports.</p></section>`;
+      }
+
+      async function restartServices(names, isStackRestart = false) {
         if (
+          !isStackRestart &&
           state.repositories.some(
             (repo) => (repo.phase || repo.error) && names.some((name) => name in repo.serviceDirectories),
           )
         )
           return;
         const targets = state.services.filter((s) => names.includes(s.name) && s.managed);
+        state.isStackRestarting = isStackRestart;
         targets.forEach((s) => (s.restarting = true));
         render();
         await new Promise((resolve) => setTimeout(resolve, 1600));
@@ -2800,8 +2813,10 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
           }
         });
         state.serviceError = state.failRestart
-          ? `Failed to restart ${names.join(", ")}: exit status 1 (see logs)`
+          ? `Failed to restart ${isStackRestart ? "stack" : names.join(", ")}: exit status 1 (see logs)`
           : null;
+        state.isStackRestarting = false;
+        if (isStackRestart && !state.failRestart) state.repositories.forEach((repo) => (repo.error = null));
         render();
       }
 
@@ -3002,6 +3017,12 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
           }
           case "restart":
             restartServices([name]);
+            return;
+          case "restart-stack":
+            restartServices(
+              state.services.filter((service) => service.managed).map((service) => service.name),
+              true,
+            );
             return;
           case "dismiss-service-error":
             state.serviceError = null;

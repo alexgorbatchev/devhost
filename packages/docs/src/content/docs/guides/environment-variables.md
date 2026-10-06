@@ -17,7 +17,8 @@ Undocumented `DEVHOST_*` variables are reserved for internal supervision and may
 - `PORT`
   - the listening port selected by `devhost`
   - injected when the service defines `port`, including foreground services with `port = "auto"`, unless `injectPort = false`
-  - for `port = "auto"`, the selected port is best-effort and may be retried if the child reports a clear bind collision during startup
+  - for `port = "auto"`, startup and configuration reload may retry a clear bind collision; individual service restarts retain the assigned port
+  - **Restart stack with new ports** reassigns automatic ports and relaunches all managed services with refreshed port variables
   - not injected for services that do not define `port` or for unmanaged services
   - injection only adds `PORT` to the child process environment; it does not make `"$PORT"` expand inside a manifest `command`
   - `command = ["storybook", "dev", "--port", "$PORT"]` passes literal `$PORT`; use an explicit shell only when you intentionally need shell expansion
@@ -48,10 +49,12 @@ Undocumented `DEVHOST_*` variables are reserved for internal supervision and may
 
 To simplify service discovery without requiring manual template references, `devhost` also automatically injects the resolved port of **every** service with a port as an environment variable into all child processes using the format `DEVHOST_PORT_<SERVICE_NAME_UPPERCASE>`. Non-alphanumeric characters in the service name are replaced with underscores (e.g., `postgres-db` becomes `DEVHOST_PORT_POSTGRES_DB`).
 
-For example, using our `postgres` service from above running on dynamically-allocated port `5433`, **every** service process in the stack will automatically receive:
+For example, if a `postgres` service has resolved port `5433`, every managed service command receives:
 
 ```sh
 DEVHOST_PORT_POSTGRES=5433
 ```
 
 This allows programs to dynamically query ports directly from the environment at startup.
+
+These values are snapshots for each process invocation. A configuration reload restarts services whose injected port variables change, including otherwise unchanged consumers. **Restart stack with new ports** rebuilds these variables for every managed service. Individual restarts keep their assigned port, so other running services retain valid port references. Existing terminal sessions keep their launch environment. See [Stack lifecycle](./stack-lifecycle/) for recovery behavior.

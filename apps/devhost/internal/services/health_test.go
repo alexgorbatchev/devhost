@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"net"
 	"net/http"
@@ -15,7 +16,7 @@ func TestWaitForServiceHealth(t *testing.T) {
 	t.Run("accepts process health checks when child is still running", func(t *testing.T) {
 		t.Parallel()
 
-		err := WaitForServiceHealth(WaitForServiceHealthOptions{
+		err := WaitForServiceHealth(context.Background(), WaitForServiceHealthOptions{
 			Health: ResolvedHealthConfig{Kind: "process", Interval: 200, Timeout: 30000, Retries: 0},
 			ReadExitCode: func() *int {
 				return nil
@@ -47,7 +48,7 @@ func TestWaitForServiceHealth(t *testing.T) {
 
 		port := listener.Addr().(*net.TCPAddr).Port
 		host := "127.0.0.1"
-		err = WaitForServiceHealth(WaitForServiceHealthOptions{
+		err = WaitForServiceHealth(context.Background(), WaitForServiceHealthOptions{
 			Health: ResolvedHealthConfig{Kind: "tcp", Host: &host, Interval: 200, Port: &port, Retries: 0, Timeout: 30000},
 			ReadExitCode: func() *int {
 				return nil
@@ -69,7 +70,7 @@ func TestWaitForServiceHealth(t *testing.T) {
 		}))
 		defer server.Close()
 
-		err := WaitForServiceHealth(WaitForServiceHealthOptions{
+		err := WaitForServiceHealth(context.Background(), WaitForServiceHealthOptions{
 			Health: ResolvedHealthConfig{Kind: "http", Interval: 200, Retries: 0, Timeout: 30000, URL: &server.URL},
 			ReadExitCode: func() *int {
 				return nil
@@ -87,17 +88,17 @@ func TestWaitForServiceHealth(t *testing.T) {
 		exitCode := 2
 		host := "127.0.0.1"
 		port := 65534
-		err := waitForServiceHealth(WaitForServiceHealthOptions{
+		err := waitForServiceHealth(context.Background(), WaitForServiceHealthOptions{
 			Health: ResolvedHealthConfig{Kind: "tcp", Host: &host, Interval: 1, Port: &port, Retries: 0, Timeout: 100},
 			ReadExitCode: func() *int {
 				return &exitCode
 			},
 			ServiceName: "web",
 		}, healthDependencies{
-			canConnectToPort:    func(host string, port int, timeout time.Duration) bool { return false },
-			isReadyHTTPEndpoint: func(url string, timeout time.Duration) bool { return false },
+			canConnectToPort:    func(ctx context.Context, host string, port int, timeout time.Duration) bool { return false },
+			isReadyHTTPEndpoint: func(ctx context.Context, url string, timeout time.Duration) bool { return false },
 			now:                 time.Now,
-			sleep:               func(duration time.Duration) {},
+			sleep:               func(context.Context, time.Duration) error { return nil },
 		})
 		wantError := "Service web exited before passing its health check with code 2."
 		if err == nil || err.Error() != wantError {
@@ -110,23 +111,24 @@ func TestWaitForServiceHealth(t *testing.T) {
 
 		checks := 0
 		currentTime := time.Unix(0, 0)
-		err := waitForServiceHealth(WaitForServiceHealthOptions{
+		err := waitForServiceHealth(context.Background(), WaitForServiceHealthOptions{
 			Health: ResolvedHealthConfig{Kind: "tcp", Interval: 10, Retries: 0, Timeout: 30, Host: stringPointer("127.0.0.1"), Port: intPointer(3000)},
 			ReadExitCode: func() *int {
 				return nil
 			},
 			ServiceName: "web",
 		}, healthDependencies{
-			canConnectToPort: func(host string, port int, timeout time.Duration) bool {
+			canConnectToPort: func(ctx context.Context, host string, port int, timeout time.Duration) bool {
 				checks++
 				return false
 			},
-			isReadyHTTPEndpoint: func(url string, timeout time.Duration) bool { return false },
+			isReadyHTTPEndpoint: func(ctx context.Context, url string, timeout time.Duration) bool { return false },
 			now: func() time.Time {
 				return currentTime
 			},
-			sleep: func(duration time.Duration) {
+			sleep: func(_ context.Context, duration time.Duration) error {
 				currentTime = currentTime.Add(duration)
+				return nil
 			},
 		})
 		wantError := "Service web did not pass its health check within 30ms."
@@ -143,23 +145,24 @@ func TestWaitForServiceHealth(t *testing.T) {
 
 		checks := 0
 		currentTime := time.Unix(0, 0)
-		err := waitForServiceHealth(WaitForServiceHealthOptions{
+		err := waitForServiceHealth(context.Background(), WaitForServiceHealthOptions{
 			Health: ResolvedHealthConfig{Kind: "tcp", Interval: 10, Retries: 2, Timeout: 1000, Host: stringPointer("127.0.0.1"), Port: intPointer(3000)},
 			ReadExitCode: func() *int {
 				return nil
 			},
 			ServiceName: "web",
 		}, healthDependencies{
-			canConnectToPort: func(host string, port int, timeout time.Duration) bool {
+			canConnectToPort: func(ctx context.Context, host string, port int, timeout time.Duration) bool {
 				checks++
 				return false
 			},
-			isReadyHTTPEndpoint: func(url string, timeout time.Duration) bool { return false },
+			isReadyHTTPEndpoint: func(ctx context.Context, url string, timeout time.Duration) bool { return false },
 			now: func() time.Time {
 				return currentTime
 			},
-			sleep: func(duration time.Duration) {
+			sleep: func(_ context.Context, duration time.Duration) error {
 				currentTime = currentTime.Add(duration)
+				return nil
 			},
 		})
 		wantError := "Service web failed its health check 3 consecutive times."
@@ -179,7 +182,7 @@ func TestWaitForServiceHealth(t *testing.T) {
 		var attemptsPassed int
 
 		currentTime := time.Unix(0, 0)
-		err := waitForServiceHealth(WaitForServiceHealthOptions{
+		err := waitForServiceHealth(context.Background(), WaitForServiceHealthOptions{
 			Health: ResolvedHealthConfig{Kind: "tcp", Interval: 10, Retries: 0, Timeout: 30, Host: stringPointer("127.0.0.1"), Port: intPointer(3000)},
 			ReadExitCode: func() *int {
 				return nil
@@ -191,15 +194,16 @@ func TestWaitForServiceHealth(t *testing.T) {
 				elapsedPassed = elapsed
 			},
 		}, healthDependencies{
-			canConnectToPort: func(host string, port int, timeout time.Duration) bool {
+			canConnectToPort: func(ctx context.Context, host string, port int, timeout time.Duration) bool {
 				return false
 			},
-			isReadyHTTPEndpoint: func(url string, timeout time.Duration) bool { return false },
+			isReadyHTTPEndpoint: func(ctx context.Context, url string, timeout time.Duration) bool { return false },
 			now: func() time.Time {
 				return currentTime
 			},
-			sleep: func(duration time.Duration) {
+			sleep: func(_ context.Context, duration time.Duration) error {
 				currentTime = currentTime.Add(duration)
+				return nil
 			},
 		})
 
@@ -219,6 +223,61 @@ func TestWaitForServiceHealth(t *testing.T) {
 	})
 }
 
+func TestWaitForServiceHealthCancellationInterruptsLongInterval(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+	started := time.Now()
+	err := WaitForServiceHealth(ctx, WaitForServiceHealthOptions{
+		Health:      ResolvedHealthConfig{Kind: "http", Interval: 2000, Timeout: 5000, URL: &server.URL},
+		ServiceName: "web",
+		OnProgress:  func(int, time.Duration) { cancel() },
+	})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("health polling did not preserve cancellation: %v", err)
+	}
+	if elapsed := time.Since(started); elapsed >= time.Second {
+		t.Fatalf("cancellation waited for the polling interval: %s", elapsed)
+	}
+}
+
+func TestWaitForServiceHealthCancellationInterruptsInFlightHTTPProbe(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	entered := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		close(entered)
+		<-request.Context().Done()
+	}))
+	defer server.Close()
+	result := make(chan error, 1)
+	go func() {
+		result <- WaitForServiceHealth(ctx, WaitForServiceHealthOptions{
+			Health:      ResolvedHealthConfig{Kind: HealthKindHTTP, Interval: 3000, Timeout: 5000, URL: &server.URL},
+			ServiceName: "web",
+		})
+	}()
+	select {
+	case <-entered:
+	case <-time.After(time.Second):
+		t.Fatal("health request did not reach the server")
+	}
+	cancel()
+	select {
+	case err := <-result:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("health polling did not preserve cancellation: %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("shutdown cancellation did not interrupt the in-flight health request")
+	}
+}
+
 func TestCheckServiceHealth(t *testing.T) {
 	t.Parallel()
 
@@ -236,12 +295,12 @@ func TestCheckServiceHealth(t *testing.T) {
 		host := "0.0.0.0"
 		port := 3000
 		calls := 0
-		result := checkServiceHealth(ResolvedHealthConfig{Kind: "tcp", Host: &host, Port: &port}, healthDependencies{
-			canConnectToPort: func(host string, port int, timeout time.Duration) bool {
+		result := checkServiceHealth(context.Background(), ResolvedHealthConfig{Kind: "tcp", Host: &host, Port: &port}, healthDependencies{
+			canConnectToPort: func(ctx context.Context, host string, port int, timeout time.Duration) bool {
 				calls++
 				return host == "127.0.0.1" && port == 3000
 			},
-			isReadyHTTPEndpoint: func(url string, timeout time.Duration) bool { return false },
+			isReadyHTTPEndpoint: func(ctx context.Context, url string, timeout time.Duration) bool { return false },
 		})
 		if !result {
 			t.Fatal("checkServiceHealth(...) = false, want true")
@@ -255,9 +314,9 @@ func TestCheckServiceHealth(t *testing.T) {
 		t.Parallel()
 
 		url := "http://127.0.0.1/healthz"
-		result := checkServiceHealth(ResolvedHealthConfig{Kind: "http", URL: &url}, healthDependencies{
-			canConnectToPort: func(host string, port int, timeout time.Duration) bool { return false },
-			isReadyHTTPEndpoint: func(url string, timeout time.Duration) bool {
+		result := checkServiceHealth(context.Background(), ResolvedHealthConfig{Kind: "http", URL: &url}, healthDependencies{
+			canConnectToPort: func(ctx context.Context, host string, port int, timeout time.Duration) bool { return false },
+			isReadyHTTPEndpoint: func(ctx context.Context, url string, timeout time.Duration) bool {
 				return true
 			},
 		})
@@ -271,12 +330,12 @@ func TestCheckServiceHealth(t *testing.T) {
 
 		host := "example.com"
 		port := 3000
-		result := checkServiceHealth(ResolvedHealthConfig{Kind: "tcp", Host: &host, Port: &port}, healthDependencies{
-			canConnectToPort: func(host string, port int, timeout time.Duration) bool {
+		result := checkServiceHealth(context.Background(), ResolvedHealthConfig{Kind: "tcp", Host: &host, Port: &port}, healthDependencies{
+			canConnectToPort: func(ctx context.Context, host string, port int, timeout time.Duration) bool {
 				t.Fatal("canConnectToPort should not be called for unsupported hosts")
 				return false
 			},
-			isReadyHTTPEndpoint: func(url string, timeout time.Duration) bool { return false },
+			isReadyHTTPEndpoint: func(ctx context.Context, url string, timeout time.Duration) bool { return false },
 		})
 		if result {
 			t.Fatal("checkServiceHealth(...) = true, want false")
@@ -295,7 +354,7 @@ func TestIsReadyHTTPEndpoint(t *testing.T) {
 		}))
 		defer server.Close()
 
-		if isReadyHTTPEndpoint(server.URL, minProbeTimeout) {
+		if isReadyHTTPEndpoint(context.Background(), server.URL, minProbeTimeout) {
 			t.Fatal("isReadyHTTPEndpoint(...) = true, want false")
 		}
 	})
@@ -303,7 +362,7 @@ func TestIsReadyHTTPEndpoint(t *testing.T) {
 	t.Run("network failures are not ready", func(t *testing.T) {
 		t.Parallel()
 
-		if isReadyHTTPEndpoint("http://127.0.0.1:1/healthz", minProbeTimeout) {
+		if isReadyHTTPEndpoint(context.Background(), "http://127.0.0.1:1/healthz", minProbeTimeout) {
 			t.Fatal("isReadyHTTPEndpoint(...) = true, want false")
 		}
 	})
@@ -338,7 +397,7 @@ func TestCanConnectToPort(t *testing.T) {
 	}()
 
 	port := listener.Addr().(*net.TCPAddr).Port
-	if !canConnectToPort("127.0.0.1", port, minProbeTimeout) {
+	if !canConnectToPort(context.Background(), "127.0.0.1", port, minProbeTimeout) {
 		t.Fatal("canConnectToPort(...) = false, want true")
 	}
 
@@ -347,7 +406,13 @@ func TestCanConnectToPort(t *testing.T) {
 		t.Fatalf("listener.Accept(...) error = %v", acceptError)
 	}
 
-	if canConnectToPort("127.0.0.1", 1, minProbeTimeout) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if canConnectToPort(ctx, "127.0.0.1", port, minProbeTimeout) {
+		t.Fatal("cancelled probe connected to a listening port")
+	}
+
+	if canConnectToPort(context.Background(), "127.0.0.1", 1, minProbeTimeout) {
 		t.Fatal("canConnectToPort(...) = true, want false")
 	}
 }

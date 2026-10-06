@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -92,6 +93,23 @@ func TestStackSwitchesWholeRepositoryAndRecoversFailedSwitch(t *testing.T) {
 		t.Fatal(err)
 	}
 	id := health.Repositories[0].ID
+	added := filepath.Join(t.TempDir(), "new-checkout")
+	runWorktreeGit(t, root, "worktree", "add", "-b", "feature/new", added)
+	if err := options.RefreshWorktrees(); err != nil {
+		t.Fatal(err)
+	}
+	health, _ = options.GetHealthResponse()
+	if len(health.Repositories[0].Worktrees) != 3 {
+		t.Fatalf("refresh missed added checkout: %#v", health.Repositories)
+	}
+	runWorktreeGit(t, root, "worktree", "remove", added)
+	if err := options.RefreshWorktrees(); err != nil {
+		t.Fatal(err)
+	}
+	health, _ = options.GetHealthResponse()
+	if len(health.Repositories[0].Worktrees) != 2 || health.Repositories[0].RunningPath != root {
+		t.Fatalf("inactive deletion disturbed selection: %#v", health.Repositories)
+	}
 	if err := os.RemoveAll(filepath.Join(linked, "api")); err != nil {
 		t.Fatal(err)
 	}
@@ -156,11 +174,26 @@ func TestStackSwitchesWholeRepositoryAndRecoversFailedSwitch(t *testing.T) {
 	if health.Repositories[0].SelectedPath != linked || health.Services[1].ProjectRootPath != linked {
 		t.Fatalf("restart lost selected checkout: %#v", health)
 	}
-	stop()
-	stop = nil
 	if err := os.RemoveAll(linked); err != nil {
 		t.Fatal(err)
 	}
+	if err := options.RefreshWorktrees(); err != nil {
+		t.Fatal(err)
+	}
+	health, _ = options.GetHealthResponse()
+	if health.Repositories[0].SelectedPath != linked || health.Repositories[0].RunningPath != "" || health.Repositories[0].Error == "" {
+		t.Fatalf("active deletion did not enter recovery: %#v", health.Repositories)
+	}
+	for _, service := range health.Services {
+		if service.Status || service.Restarting || canConnectToPort(context.Background(), "127.0.0.1", *m.Services[service.Name].Port, minProbeTimeout) {
+			t.Fatalf("deleted checkout left a service running: %#v", service)
+		}
+	}
+	if _, err := options.GetToolContext("web"); err == nil {
+		t.Fatal("deleted checkout still accepts tool launches")
+	}
+	stop()
+	stop = nil
 	m = configured
 	options, stop = launch()
 	health, _ = options.GetHealthResponse()
@@ -242,7 +275,7 @@ func TestWorktreeDaemonStopUsesItsLaunchCheckout(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	if err := runtime.start("api", false); err != nil {
+	if err := runtime.start(context.Background(), "api", runtimeStartOptions{AllowPortReassignment: true}); err != nil {
 		t.Fatal(err)
 	}
 	assertRestartResponse(t, serverURL(port, "/"), "ok")
@@ -266,7 +299,7 @@ func TestWorktreeDaemonStopUsesItsLaunchCheckout(t *testing.T) {
 	if string(cwd) != service.Cwd+"\n" {
 		t.Fatalf("stop cwd = %q, want %q", cwd, service.Cwd)
 	}
-	if canConnectToPort("127.0.0.1", port, minProbeTimeout) {
+	if canConnectToPort(context.Background(), "127.0.0.1", port, minProbeTimeout) {
 		t.Fatal("daemon remained alive after changing effective cwd")
 	}
 }

@@ -27,6 +27,7 @@ const (
 	reactHighlightWebsocketPath      = controlPathPrefix + "/ws/react-highlight"
 	xtermStylesheetPath              = controlPathPrefix + "/xterm.css"
 	restartServicePath               = controlPathPrefix + "/restart-service"
+	restartStackPath                 = controlPathPrefix + "/restart-stack"
 	healthWebsocketPath              = controlPathPrefix + "/ws/health"
 	logsWebsocketPath                = controlPathPrefix + "/ws/logs"
 	maximumRetainedLogEntries        = 512
@@ -65,6 +66,7 @@ type ServiceHealth struct {
 }
 
 type HealthResponse struct {
+	Routing      *RoutingConfig       `json:"routing,omitempty"`
 	Services     []ServiceHealth      `json:"services"`
 	Repositories []WorktreeRepository `json:"repositories,omitempty"`
 }
@@ -96,6 +98,7 @@ type StartControlServerOptions struct {
 	ProjectRootPath            string
 	PrimaryService             string
 	RestartService             func([]string) error
+	RestartStack               func() error
 	SwitchWorktree             func(string, string) error
 	RefreshWorktrees           func() error
 	GetToolContext             func(string) (ToolContext, error)
@@ -113,6 +116,7 @@ type ControlServer struct {
 	featureToggles             FeatureToggles
 	idleTerminalSessionTimeout time.Duration
 	restartService             func([]string) error
+	restartStack               func() error
 	switchWorktree             func(string, string) error
 	refreshWorktrees           func() error
 	getToolContext             func(string) (ToolContext, error)
@@ -275,6 +279,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		projectRootPath:            options.ProjectRootPath,
 		reactHighlightClients:      map[*websocketClient]struct{}{},
 		restartService:             options.RestartService,
+		restartStack:               options.RestartStack,
 		switchWorktree:             options.SwitchWorktree,
 		refreshWorktrees:           options.RefreshWorktrees,
 		getToolContext:             options.GetToolContext,
@@ -404,6 +409,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	mux.HandleFunc(reactHighlightWebsocketPath, controlServer.handleReactHighlightWebsocket)
 	mux.HandleFunc(xtermStylesheetPath, controlServer.handleXtermStylesheet)
 	mux.HandleFunc(restartServicePath, controlServer.handleRestartService)
+	mux.HandleFunc(restartStackPath, controlServer.handleRestartStack)
 	mux.HandleFunc(worktreesPath, controlServer.handleWorktrees)
 	mux.HandleFunc(healthWebsocketPath, controlServer.handleHealthWebsocket)
 	mux.HandleFunc(logsWebsocketPath, controlServer.handleLogsWebsocket)

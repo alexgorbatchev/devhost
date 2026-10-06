@@ -52,6 +52,7 @@ var signalExitCodes = map[syscall.Signal]int{
 }
 
 type StartStackOptions struct {
+	Configuration       *manifest.Manifest
 	CaddyOutputWriters  caddy.RouteCommandOutputWriters
 	CaddyPaths          caddy.Paths
 	Environment         map[string]string
@@ -84,12 +85,6 @@ type startedService struct {
 type claimedFixedPort struct {
 	bindHost string
 	port     int
-}
-
-type activeRoute struct {
-	host        string
-	path        string
-	serviceName string
 }
 
 type serviceExitResult struct {
@@ -142,14 +137,15 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	}
 	initial, blocked := worktrees.restore(*manifest)
 	*manifest = initial
+	lifecycleCtx, cancelLifecycle := context.WithCancel(context.Background())
+	defer cancelLifecycle()
 	state := &stackRuntime{
-		manifest: manifest, order: append([]string{}, serviceOrder...), options: options, environment: environment,
+		configured: options.Configuration,
+		routing:    devtools.RoutingConfig{RoutedServices: collectRoutedServiceIdentities(initial.Services), PrimaryService: initial.PrimaryService},
+		manifest:   manifest, order: append([]string{}, serviceOrder...), options: options, environment: environment,
 		gracePeriod: gracePeriod, worktrees: worktrees, blocked: blocked, failedRoutes: map[string]*startedService{},
 		exits: make(chan serviceExitResult, len(serviceOrder)),
 	}
-	claimedFixedPorts := []claimedFixedPort{}
-	claimedHosts := []string{}
-	activeRoutes := []activeRoute{}
 	signalExits := make(chan os.Signal, 1)
 	documentInjectionServers := map[string]*devtools.DocumentInjectionServer{}
 	var devtoolsControlServer *devtools.ControlServer
@@ -177,6 +173,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	defer unregisterProcessSignals(signalExits)
 
 	defer func() {
+		cancelLifecycle()
 		state.operationMu.Lock()
 		state.shuttingDown = true
 		state.operationMu.Unlock()
@@ -207,7 +204,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			cleanupError = appendCleanupError(cleanupError, devtoolsControlServer.Stop())
 		}
 
-		for _, host := range claimedHosts {
+		for _, host := range state.claimedHosts {
 			cleanupError = appendCleanupError(cleanupError, caddy.ReleaseHostClaim(caddy.ClaimHostOptions{
 				Host:                       host,
 				ManifestPath:               manifest.ManifestPath,
@@ -215,15 +212,15 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			}))
 		}
 
-		for _, route := range activeRoutes {
-			cleanupError = appendCleanupError(cleanupError, caddy.UnregisterRoute(route.serviceName, route.host, route.path, manifest.ManifestPath, paths.RegistrationsDirectoryPath, options.CaddyOutputWriters))
+		for _, route := range routes.registrations() {
+			cleanupError = appendCleanupError(cleanupError, caddy.UnregisterRoute(route.ServiceName, route.Host, route.Path, manifest.ManifestPath, paths.RegistrationsDirectoryPath, options.CaddyOutputWriters))
 		}
 
-		for _, host := range claimedHosts {
+		for _, host := range state.claimedHosts {
 			cleanupError = appendCleanupError(cleanupError, caddy.SyncManagedHostRoute(host, managedCaddyAdminAddress, paths.RoutesDirectoryPath, options.CaddyOutputWriters))
 		}
 
-		for _, claim := range claimedFixedPorts {
+		for _, claim := range state.claimedFixedPorts {
 			cleanupError = appendCleanupError(cleanupError, caddy.ReleaseFixedPortClaim(caddy.ClaimFixedPortOptions{
 				BindHost:                claim.bindHost,
 				ManifestPath:            manifest.ManifestPath,
@@ -278,7 +275,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			return 0, joinCleanupError(err, cleanupError)
 		}
 
-		claimedFixedPorts = append(claimedFixedPorts, claimedFixedPort{bindHost: service.BindHost, port: *service.Port})
+		state.claimedFixedPorts = append(state.claimedFixedPorts, claimedFixedPort{bindHost: service.BindHost, port: *service.Port})
 	}
 
 	for _, host := range collectClaimedHosts(manifest.Services) {
@@ -292,11 +289,11 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			return 0, joinCleanupError(err, cleanupError)
 		}
 
-		claimedHosts = append(claimedHosts, host)
+		state.claimedHosts = append(state.claimedHosts, host)
 	}
 
 	routedServices := collectRoutedServiceIdentities(manifest.Services)
-	if devtoolsEnabled && len(routedServices) > 0 {
+	if devtoolsEnabled {
 		devSource, err := loadDevSourceCheckout(environment, manifest.ManifestDirectoryPath)
 		if err != nil {
 			return 0, joinCleanupError(err, cleanupError)
@@ -308,7 +305,8 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		var switchWorktree func(string, string) error
 		var refreshWorktrees func() error
 		if worktrees != nil {
-			switchWorktree, refreshWorktrees = state.switchWorktree, worktrees.refresh
+			switchWorktree = func(id, path string) error { return state.switchWorktree(lifecycleCtx, id, path) }
+			refreshWorktrees = state.refreshWorktrees
 		}
 		controlServer, err := startDevtoolsControlServer(devtools.StartControlServerOptions{
 			AnnotationActions:         manifest.Annotation.Actions,
@@ -321,10 +319,11 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			Position:                  manifest.Devtools.Status.Position,
 			ProjectRootPath:           manifest.ManifestDirectoryPath,
 			PrimaryService:            manifest.PrimaryService,
-			RestartService:            state.restart,
+			RestartService:            func(names []string) error { return state.restart(lifecycleCtx, names) },
+			RestartStack:              func() error { return state.restartStack(lifecycleCtx) },
 			SwitchWorktree:            switchWorktree,
 			RefreshWorktrees:          refreshWorktrees,
-			GetToolContext:            func(name string) (devtools.ToolContext, error) { return worktrees.toolContext(initial, name) },
+			GetToolContext:            state.toolContext,
 			RestartServicesShortcut:   manifest.Devtools.Shortcuts.RestartServices,
 			RoutedServices:            routedServices,
 			StateDirectoryPath:        paths.StateDirectoryPath,
@@ -355,14 +354,14 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 
 		if isManagedService(service) && blocked[serviceName] == "" {
 			if groupedServices[serviceName] {
-				if err := state.start(serviceName, false); err != nil {
+				if err := state.start(lifecycleCtx, serviceName, runtimeStartOptions{AllowPortReassignment: true}); err != nil {
 					if err := state.failWorktreeStartup(serviceName, err); err != nil {
 						return 0, err
 					}
 				}
 				service = manifest.Services[serviceName]
 			} else if usesDaemonLifecycle(service) {
-				if err := startDaemonLifecycleService(manifest, serviceName, options, environment, devtoolsControlServer); err != nil {
+				if err := startDaemonLifecycleService(lifecycleCtx, manifest, serviceName, options, environment, devtoolsControlServer); err != nil {
 					return 0, joinCleanupError(err, cleanupError)
 				}
 
@@ -373,7 +372,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 				service = manifest.Services[serviceName]
 			} else {
 				attemptManifest := *manifest
-				started, err := startServiceWithRetries(&attemptManifest, serviceName, state.exits, options, environment, devtoolsControlServer)
+				started, err := startServiceWithRetries(lifecycleCtx, &attemptManifest, serviceStartOptions{ServiceName: serviceName, Exits: state.exits, Stack: options, Environment: environment, Control: devtoolsControlServer, AllowPortReassignment: true})
 				if err != nil {
 					if started == nil || started.ReadExitCode() == nil {
 						return 0, joinCleanupError(err, cleanupError)
@@ -401,16 +400,8 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			writeLogLine(options.LogWriter, manifest.Name, warning)
 		}
 
-		path := "/"
-		if service.Path != nil {
-			path = *service.Path
-		}
-
 		if err := routes.activate(service); err != nil {
 			return 0, joinCleanupError(err, cleanupError)
-		}
-		for _, host := range service.Hosts {
-			activeRoutes = append(activeRoutes, activeRoute{host: host, path: path, serviceName: service.Name})
 		}
 	}
 	for _, repo := range worktrees.snapshot() {
@@ -512,21 +503,67 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		}()
 	}
 
+	var manifestEvents <-chan error
+	var manifestWatch *manifestWatcher
+	if state.configured != nil {
+		manifestWatch, err = state.watchManifest()
+		if err != nil {
+			return 0, err
+		}
+		defer func() { returnedError = errors.Join(returnedError, manifestWatch.close()) }()
+		manifestEvents = manifestWatch.events
+	}
 	state.operationMu.Lock()
 	state.ready = true
 	state.operationMu.Unlock()
+	lastReloadError := ""
+	stackName := manifest.Name
+	var reloadResults <-chan error
+	defer func() {
+		cancelLifecycle()
+		if reloadResults != nil {
+			<-reloadResults
+		}
+	}()
+	if manifestWatch != nil {
+		// Configuration may have changed while the initial services started.
+		manifestWatch.notify(nil)
+	}
 	for {
 		select {
+		case err := <-manifestEvents:
+			completed := make(chan error, 1)
+			reloadResults = completed
+			manifestEvents = nil
+			go func() {
+				if err == nil {
+					err = state.reloadFromDisk(lifecycleCtx, manifestWatch)
+				}
+				completed <- err
+			}()
+		case err := <-reloadResults:
+			reloadResults = nil
+			manifestEvents = manifestWatch.events
+			if err != nil {
+				if message := err.Error(); message != lastReloadError {
+					writeLogLine(options.LogWriter, stackName, fmt.Sprintf("configuration reload rejected: %v", err))
+					lastReloadError = message
+				}
+			} else {
+				lastReloadError = ""
+			}
 		case result := <-state.exits:
-			writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("%s exited with code %d; devhost is waiting for a restart.", result.serviceName, result.exitCode))
+			writeLogLine(options.LogWriter, stackName, fmt.Sprintf("%s exited with code %d; devhost is waiting for a restart.", result.serviceName, result.exitCode))
 		case receivedSignal := <-signalExits:
+			cancelLifecycle()
 			state.startedMu.Lock()
 			startedServicesSnapshot := append([]*startedService{}, state.started...)
 			state.startedMu.Unlock()
 			forwardStartedServicesSignal(startedServicesSnapshot, receivedSignal)
 			return readSignalExitCode(receivedSignal), nil
 		case <-idleShutdownChan:
-			writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("Idle timeout of %s reached. Automatically shutting down the stack...", finalIdleTimeout))
+			cancelLifecycle()
+			writeLogLine(options.LogWriter, stackName, fmt.Sprintf("Idle timeout of %s reached. Automatically shutting down the stack...", finalIdleTimeout))
 			state.startedMu.Lock()
 			startedServicesSnapshot := append([]*startedService{}, state.started...)
 			state.startedMu.Unlock()
@@ -644,14 +681,17 @@ func readServiceURLs(service ResolvedService, httpsPort int) []string {
 	return []string{fmt.Sprintf("http://%s", caddy.FormatProxyAddress(proxyHost, *service.Port))}
 }
 
-func startServiceWithRetries(
-	manifest *ResolvedManifest,
-	serviceName string,
-	serviceExits chan<- serviceExitResult,
-	options StartStackOptions,
-	environment map[string]string,
-	devtoolsControlServer *devtools.ControlServer,
-) (*startedService, error) {
+type serviceStartOptions struct {
+	ServiceName           string
+	Exits                 chan<- serviceExitResult
+	Stack                 StartStackOptions
+	Environment           map[string]string
+	Control               *devtools.ControlServer
+	AllowPortReassignment bool
+}
+
+func startServiceWithRetries(ctx context.Context, manifest *ResolvedManifest, start serviceStartOptions) (*startedService, error) {
+	serviceName, serviceExits, options, environment, devtoolsControlServer := start.ServiceName, start.Exits, start.Stack, start.Environment, start.Control
 	service, ok := manifest.Services[serviceName]
 	if !ok {
 		return nil, fmt.Errorf("unknown service: %s", serviceName)
@@ -663,9 +703,22 @@ func startServiceWithRetries(
 	retryCount := 0
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		service, ok := manifest.Services[serviceName]
 		if !ok {
 			return nil, fmt.Errorf("unknown service: %s", serviceName)
+		}
+		if err := validateAssignedAutoPort(service); err != nil {
+			if !start.AllowPortReassignment || !ShouldRetryAutoPortStartup(service, err, nil, retryCount) {
+				return nil, err
+			}
+			retryCount++
+			if err := reassignStartupAutoPort(manifest, serviceName, options.LogWriter); err != nil {
+				return nil, err
+			}
+			continue
 		}
 
 		attemptOutput := &attemptOutputLines{}
@@ -692,7 +745,7 @@ func startServiceWithRetries(
 		var lastProgressLog time.Time
 		var lastAmbiguityWarning time.Time
 
-		err = WaitForServiceHealth(WaitForServiceHealthOptions{
+		err = WaitForServiceHealth(ctx, WaitForServiceHealthOptions{
 			Health:       service.Health,
 			ReadExitCode: started.ReadExitCode,
 			ServiceName:  service.Name,
@@ -713,7 +766,7 @@ func startServiceWithRetries(
 						if altBindHost != "" {
 							proxyHost, err := caddy.ResolveProxyHost(altBindHost)
 							if err == nil && proxyHost != "" {
-								if canConnectToPort(proxyHost, *service.Health.Port, probeTimeoutFor(service.Health)) {
+								if canConnectToPort(ctx, proxyHost, *service.Health.Port, probeTimeoutFor(service.Health)) {
 									lastAmbiguityWarning = now
 									writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf(
 										"WARNING: Service %s is not responding on %s:%d, but accepted a connection on %s:%d! Consider setting services.%s.bindHost = %q in your manifest.",
@@ -762,7 +815,11 @@ func startServiceWithRetries(
 			_ = devtoolsControlServer.PublishHealthResponse()
 		}
 
-		if !ShouldRetryAutoPortStartup(service, err, attemptOutput.snapshot(), retryCount) {
+		isBindCollision := ShouldRetryAutoPortStartup(service, err, attemptOutput.snapshot(), retryCount)
+		if isBindCollision && !start.AllowPortReassignment {
+			return nil, assignedAutoPortConflict(service, err)
+		}
+		if !isBindCollision {
 			if exitedBeforeCleanup {
 				return started, err
 			}
@@ -770,18 +827,24 @@ func startServiceWithRetries(
 		}
 
 		retryCount += 1
-		writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("retrying %s with a new auto port after a bind collision.", service.Name))
-
-		_, nextManifest, retryError := ReassignAutoPort(*manifest, serviceName)
-		if retryError != nil {
-			return nil, retryError
+		if err := reassignStartupAutoPort(manifest, serviceName, options.LogWriter); err != nil {
+			return nil, err
 		}
-
-		*manifest = nextManifest
 	}
 }
 
+func reassignStartupAutoPort(m *ResolvedManifest, serviceName string, logWriter io.Writer) error {
+	writeLogLine(logWriter, m.Name, fmt.Sprintf("retrying %s with a new auto port after a bind collision.", serviceName))
+	_, next, err := ReassignAutoPort(*m, serviceName)
+	if err != nil {
+		return err
+	}
+	*m = next
+	return nil
+}
+
 func startDaemonLifecycleService(
+	ctx context.Context,
 	manifest *ResolvedManifest,
 	serviceName string,
 	options StartStackOptions,
@@ -796,12 +859,12 @@ func startDaemonLifecycleService(
 		return fmt.Errorf("service %s does not use daemon lifecycle", serviceName)
 	}
 
-	running, err := readDaemonLifecycleStatus(*manifest, service, environment, options, devtoolsControlServer)
+	running, err := readDaemonLifecycleStatus(ctx, *manifest, service, environment, options, devtoolsControlServer)
 	if err != nil {
 		return err
 	}
 	if !running {
-		if err := runServiceCommand(*manifest, service, service.Lifecycle.Start, "daemon start", environment, options, devtoolsControlServer); err != nil {
+		if err := runServiceCommand(ctx, *manifest, service, service.Lifecycle.Start, "daemon start", environment, options, devtoolsControlServer); err != nil {
 			return err
 		}
 	}
@@ -809,7 +872,7 @@ func startDaemonLifecycleService(
 	var lastProgressLog time.Time
 	var lastAmbiguityWarning time.Time
 
-	err = WaitForServiceHealth(WaitForServiceHealthOptions{
+	err = WaitForServiceHealth(ctx, WaitForServiceHealthOptions{
 		Health:      service.Health,
 		ServiceName: service.Name,
 		OnProgress: func(attempts int, elapsed time.Duration) {
@@ -829,7 +892,7 @@ func startDaemonLifecycleService(
 					if altBindHost != "" {
 						proxyHost, err := caddy.ResolveProxyHost(altBindHost)
 						if err == nil && proxyHost != "" {
-							if canConnectToPort(proxyHost, *service.Health.Port, probeTimeoutFor(service.Health)) {
+							if canConnectToPort(ctx, proxyHost, *service.Health.Port, probeTimeoutFor(service.Health)) {
 								lastAmbiguityWarning = now
 								writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf(
 									"WARNING: Service %s is not responding on %s:%d, but accepted a connection on %s:%d! Consider setting services.%s.bindHost = %q in your manifest.",
@@ -863,7 +926,7 @@ func stopDaemonLifecycleService(
 	}
 
 	if len(service.Lifecycle.Status) > 0 {
-		running, err := readDaemonLifecycleStatus(manifest, service, environment, options, devtoolsControlServer)
+		running, err := readDaemonLifecycleStatus(context.Background(), manifest, service, environment, options, devtoolsControlServer)
 		if err != nil {
 			return err
 		}
@@ -872,7 +935,7 @@ func stopDaemonLifecycleService(
 		}
 	}
 
-	if err := runServiceCommand(manifest, service, service.Lifecycle.Stop, "daemon stop", environment, options, devtoolsControlServer); err != nil {
+	if err := runServiceCommand(context.Background(), manifest, service, service.Lifecycle.Stop, "daemon stop", environment, options, devtoolsControlServer); err != nil {
 		return err
 	}
 	if devtoolsControlServer != nil {
@@ -898,6 +961,7 @@ func stopDaemonLifecycleServices(
 }
 
 func readDaemonLifecycleStatus(
+	ctx context.Context,
 	manifest ResolvedManifest,
 	service ResolvedService,
 	environment map[string]string,
@@ -908,7 +972,7 @@ func readDaemonLifecycleStatus(
 		return false, nil
 	}
 
-	err := runServiceCommand(manifest, service, service.Lifecycle.Status, "daemon status", environment, options, devtoolsControlServer)
+	err := runServiceCommand(ctx, manifest, service, service.Lifecycle.Status, "daemon status", environment, options, devtoolsControlServer)
 	if err == nil {
 		return true, nil
 	}
@@ -922,6 +986,7 @@ func readDaemonLifecycleStatus(
 }
 
 func runServiceCommand(
+	ctx context.Context,
 	manifest ResolvedManifest,
 	service ResolvedService,
 	commandArgs []string,
@@ -934,10 +999,16 @@ func runServiceCommand(
 		return fmt.Errorf("service %s %s command is empty", service.Name, commandLabel)
 	}
 
-	command := exec.Command(commandArgs[0], commandArgs[1:]...)
+	command := exec.CommandContext(ctx, commandArgs[0], commandArgs[1:]...)
 	command.Dir = service.Cwd
 	command.Env = createChildEnvironment(environment, service.Env, CreateInjectedServiceEnvironment(manifest, service))
 	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	command.Cancel = func() error {
+		if err := syscall.Kill(-command.Process.Pid, syscall.SIGTERM); err == nil {
+			return nil
+		}
+		return command.Process.Signal(syscall.SIGTERM)
+	}
 
 	stdoutWriter := newLifecycleCommandOutputWriter(
 		fmt.Sprintf("[%s] ", service.Name),
@@ -980,14 +1051,8 @@ func startServiceProcess(manifest ResolvedManifest, service ResolvedService, opt
 	if len(service.Command) == 0 {
 		return nil, fmt.Errorf("service %s command is empty", service.Name)
 	}
-	if service.Cwd != "" {
-		info, err := os.Stat(service.Cwd)
-		if err != nil {
-			return nil, fmt.Errorf("start service %s: cannot access working directory %q (services.%s.cwd); check the configured cwd path: %w", service.Name, service.Cwd, service.Name, err)
-		}
-		if !info.IsDir() {
-			return nil, fmt.Errorf("start service %s: working directory %q (services.%s.cwd) is not a directory; set cwd to a directory", service.Name, service.Cwd, service.Name)
-		}
+	if err := validateServiceWorkingDirectory(service); err != nil {
+		return nil, err
 	}
 
 	serviceContainmentToken := createServiceContainmentToken()
@@ -1664,7 +1729,7 @@ func (s *startedService) shutdownFailure() error {
 	}
 
 	if s.service.Port != nil {
-		listenerPIDs := readListeningProcessIDs(s.service.BindHost, *s.service.Port)
+		listenerPIDs := s.ownedListenerPIDs()
 		if len(listenerPIDs) > 0 {
 			problems = append(problems, fmt.Sprintf("listener still active on %s (pids: %s)", formatServiceListenerAddress(s.service.BindHost, *s.service.Port), formatShutdownPIDList(listenerPIDs)))
 		}
@@ -1724,10 +1789,9 @@ func (s *startedService) handleLateListeners() {
 	}
 	s.lastLateListenerCheckAt = now
 	signalValue := s.shutdownWith
-	port := *s.service.Port
 	s.shutdownMu.Unlock()
 
-	listenerPIDs := readListeningProcessIDs(s.service.BindHost, port)
+	listenerPIDs := s.ownedListenerPIDs()
 	if len(listenerPIDs) == 0 {
 		return
 	}
@@ -1740,6 +1804,28 @@ func (s *startedService) handleLateListeners() {
 			continue
 		}
 	}
+}
+
+func (s *startedService) ownedListenerPIDs() []int {
+	if s.service.Port == nil {
+		return nil
+	}
+	owned := map[int]bool{}
+	if s.ReadExitCode() == nil && s.cmd != nil && s.cmd.Process != nil {
+		owned[s.cmd.Process.Pid] = true
+	}
+	if s.containment != nil {
+		for _, pid := range s.containment.tracker.liveDescendantPIDs() {
+			owned[pid] = true
+		}
+	}
+	var result []int
+	for _, pid := range readListeningProcessIDs(s.service.BindHost, *s.service.Port) {
+		if owned[pid] {
+			result = append(result, pid)
+		}
+	}
+	return result
 }
 
 func (s *startedService) lateListenerMonitorSatisfied() bool {

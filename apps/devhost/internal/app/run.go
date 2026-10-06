@@ -93,6 +93,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 		}
 
 		startOptions := services.StartStackOptions{
+			Configuration:       &validatedManifest,
 			Environment:         readEnvironment(),
 			LogWriter:           stdout,
 			ServiceStdoutWriter: stdout,

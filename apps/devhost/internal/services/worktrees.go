@@ -34,6 +34,10 @@ type savedWorktree struct {
 }
 
 func newStackWorktrees(m ResolvedManifest, stateDir string) (*stackWorktrees, error) {
+	return buildStackWorktrees(m, stateDir, nil)
+}
+
+func buildStackWorktrees(m ResolvedManifest, stateDir string, previous *stackWorktrees) (*stackWorktrees, error) {
 	if !m.Worktrees.Enabled {
 		return nil, nil
 	}
@@ -44,7 +48,7 @@ func newStackWorktrees(m ResolvedManifest, stateDir string) (*stackWorktrees, er
 	w := &stackWorktrees{stateDir: filepath.Join(stateDir, "worktrees", worktreeKey(manifestPath))}
 	for _, name := range orderedManifestServiceNames(m) {
 		s := m.Services[name]
-		repo, err := discoverGitRepository(s.Cwd)
+		repo, cwd, err := configuredWorktreeRepository(s.Cwd, previous)
 		if err != nil {
 			return nil, fmt.Errorf("discover repository for service %s: %w", name, err)
 		}
@@ -60,10 +64,6 @@ func newStackWorktrees(m ResolvedManifest, stateDir string) (*stackWorktrees, er
 		}
 		if repo.root != g.repository.root {
 			return nil, fmt.Errorf("services in repository %s have cwd values in different checkouts; configure one checkout before enabling worktrees", g.view.Name)
-		}
-		cwd, err := filepath.EvalSymlinks(s.Cwd)
-		if err != nil {
-			return nil, err
 		}
 		offset, err := filepath.Rel(repo.root, cwd)
 		if err != nil {
@@ -92,6 +92,44 @@ func newStackWorktrees(m ResolvedManifest, stateDir string) (*stackWorktrees, er
 		}
 	}
 	return w, nil
+}
+
+func configuredWorktreeRepository(cwd string, previous *stackWorktrees) (gitRepository, string, error) {
+	repo, err := discoverGitRepository(cwd)
+	if err == nil {
+		if repo.root == "" {
+			return repo, cwd, nil
+		}
+		resolved, err := filepath.EvalSymlinks(cwd)
+		return repo, resolved, err
+	}
+	if previous == nil {
+		return repo, "", err
+	}
+	abs, absErr := filepath.Abs(cwd)
+	if absErr != nil {
+		return repo, "", absErr
+	}
+	previous.mu.RLock()
+	defer previous.mu.RUnlock()
+	var known gitRepository
+	for _, group := range previous.groups {
+		if _, within := pathWithin(group.repository.root, abs); !within {
+			continue
+		}
+		if _, statErr := os.Stat(group.repository.root); !errors.Is(statErr, os.ErrNotExist) {
+			continue
+		}
+		if len(group.repository.root) > len(known.root) {
+			known = group.repository
+		}
+	}
+	if known.root != "" {
+		// The configured checkout is gone, but the known common directory and
+		// offset still identify this service. Restore validates its selected cwd.
+		return known, abs, nil
+	}
+	return repo, "", err
 }
 
 func worktreeKey(value string) string {
@@ -139,7 +177,7 @@ func (w *stackWorktrees) refresh() error {
 }
 
 func (g *worktreeGroup) refresh() error {
-	entries, err := listGitWorktrees(g.repository.root)
+	entries, err := listGitWorktrees(g.repository.commonDir)
 	if err != nil {
 		return err
 	}

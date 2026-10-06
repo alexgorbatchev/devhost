@@ -16,9 +16,11 @@ func (s *ControlServer) toolContext(request terminalSessionRequest) (ToolContext
 	if request.Annotation != nil {
 		pageURL = request.Annotation.URL
 	}
+	s.mu.Lock()
 	name := s.primaryService
 	if route := resolveRoutedServiceForURL(s.routedServices, pageURL); route != nil {
 		name = route.ServiceName
 	}
+	s.mu.Unlock()
 	return s.getToolContext(name)
 }

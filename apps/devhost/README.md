@@ -11,7 +11,10 @@ What it does well:
 - routes local services onto HTTPS hostnames through managed Caddy
 - starts one service or a full stack from `devhost.toml`, including optional externally managed backends
 - waits for health checks before exposing managed routes
-- optionally injects browser devtools for logs, service status, annotations, browser-hosted Neovim sessions, hotkey-driven parallel restarts, and aggregated third-party launcher buttons
+- hot-reloads `devhost.toml` and included manifests, adding or removing services and applying configuration edits without restarting devhost
+- switches Git worktrees and refreshes added or deleted checkouts from the browser
+- recovers services from the browser, with stable ports for individual restarts and **Restart stack with new ports** for automatic-port conflicts
+- optionally injects browser devtools for logs, service status, annotations, browser-hosted Neovim sessions, hotkey-driven restarts, and aggregated third-party launcher buttons
 
 The injected log minimap is intentionally a compact preview: each log entry stays on a single row and clips horizontally instead of wrapping into a full log viewer.
 
@@ -108,11 +111,25 @@ This scans active registrations and host/port claims, targets the matching runni
 
 After startup, `devhost` prints one line per configured service URL using the format `service-name: url`.
 
-If a foreground service exits, including with exit code `0` or before its startup health check passes, `devhost` keeps running. Other services, routes, retained logs, and restart controls remain available. Services restart only when requested; use `devhost stop`, a shutdown signal, or the configured idle timeout to stop the stack.
+If a foreground service exits, including with exit code `0` or before its startup health check passes, `devhost` keeps running. Other services, routes, retained logs, and restart controls remain available. Exited services remain stopped until you request recovery or apply a configuration edit affecting them; use `devhost stop`, a shutdown signal, or the configured idle timeout to stop the stack.
 
 With `[devtools.status].enabled = true`, an exited service opens a full-screen recovery overlay in pages with injected devtools. The overlay shows its exit code, retained stdout/stderr logs, and a **Restart** button. Failed restarts keep the overlay open with an error and allow another attempt. Refreshing a root-compatible routed app while its backend is unavailable returns a recovery page with the same devtools; a successful restart reloads that page. Daemon lifecycle services and external services report health without foreground process exit codes. Executable launch errors and health timeouts still fail startup.
 
-A foreground restart completes after the replacement passes its health check and its routes refresh. If a bind collision moves an automatic port, both Caddy and the document-injection proxy use the final port while devtools listeners remain available. A routing failure restores the previous route registration, configuration, and document backend, stops the replacement, and keeps recovery retryable. The restart response and retained service logs include the error; restoration failures are also reported.
+A foreground restart preserves its assigned automatic port and completes after the replacement passes its health check and its routes refresh. If the port is occupied, the service remains stopped and the error points to **Restart stack with new ports**. A routing failure restores the previous route registration, configuration, and document backend, stops the replacement, and keeps recovery retryable. The restart response and retained service logs include the error; restoration failures are also reported.
+
+Before launching a foreground service, devhost checks whether its assigned automatic port is available. Startup, manifest reload, and **Restart stack with new ports** retry detected bind collisions with another automatic port, up to three times. Individual restarts retain their assigned port and report a conflict instead.
+
+Use **Restart stack with new ports** in the Services panel or recovery overlay to reassign every managed automatic port. Devhost stops all managed services in reverse dependency order, rebuilds their port references and injected environments, and starts them in dependency order before refreshing routes. Fixed ports, selected worktrees, devtools listeners, and existing terminal sessions are retained; externally managed processes keep running. This action uses the last accepted manifest, so an invalid edit on disk does not block recovery. Launch or routing failures attempt to restore the previous stack and report any restoration errors; another stack restart remains available. Fixed-port conflicts require freeing the configured port or changing its manifest setting.
+
+### Configuration Hot Reload
+
+While `devhost start` is running, saving `devhost.toml` or an included manifest reloads service configuration. Adding or deleting a file matching an `includes` pattern adds or removes its services. Editor saves that replace a file are supported. Unrelated file writes do not trigger or delay a reload. The complete configuration must parse and validate before running services are changed; invalid edits leave the current stack running and print `configuration reload rejected` with the reason.
+
+Service additions, removals, commands, environment, working directories, health checks, dependencies, routes, watch paths, and primary-service selection can reload. Devhost preserves existing automatic ports when the bind address and automatic-port setting remain compatible. It restarts affected services and their dependents in dependency order, stopping them in reverse order first. Services in an affected Git repository restart together in its selected checkout. Changes to the ports exported through `DEVHOST_PORT_*` can require restarting otherwise unchanged services.
+
+Routes and reservations follow the accepted configuration, and open devtools connections and terminal sessions remain available. A failed replacement launch or route update triggers restoration of the previous services and routing. Restoration failures are reported and remain available for explicit recovery; unrelated edits retain stopped services' recovery state. A successful reload prints `configuration reloaded`. Shutdown signals interrupt replacement health waits, stop the replacement, and clean up the stack without launching restoration services.
+
+Changes to `name`, `killZombies`, `[caddy]`, `[devtools]`, `[annotation]`, or `[worktrees].enabled` require stopping and restarting devhost. An edit changing any of these settings is rejected as a whole, including any service changes in that edit. Selecting a worktree continues to use the original manifest and its includes.
 
 ### Multiple Domains for One Service
 
@@ -164,6 +181,8 @@ enabled = false
 Configure service `cwd` values in one checkout per repository. All services in that repository share its selection; other repositories choose independently, and services outside Git keep their configured directories. For example, selecting `/worktrees/cart` for a service configured at `/projects/shop/packages/web` runs it from `/worktrees/cart/packages/web`.
 
 Open **Services**, select the repository's branch button, and choose a checkout. The picker previews every service directory before **Switch and restart**. Paths inside your home directory are displayed with `~/`. Devhost validates all target directories before stopping anything, stops the group in reverse dependency order, and starts it in dependency order. Relative file watches follow the new service directories; absolute watch paths stay absolute. Routes, service names, commands, environment configuration, and the original manifest remain in use. Devhost does not load the selected checkout's manifest.
+
+Opening the picker or pressing **Refresh** discovers added and removed worktrees without editing the manifest. Deleting an inactive checkout does not disturb running services. If the deleted checkout contained the configured service directories, manifest reload retains the known repository and applies their directory offsets in the selected checkout. The original manifest and its includes must remain accessible. If the running checkout disappears, refresh stops its repository's services, retains the selected path with a recovery error, and blocks new editor and annotation launches for that repository until you choose an available checkout. Other repositories stay running.
 
 Selections are stored locally per manifest path and Git repository, shared across browser tabs, and restored before services start on the next devhost run. With no saved choice, devhost uses the checkout containing the configured directories. A missing saved checkout leaves the group stopped with an explicit error; choose another available checkout or **Return to configured checkout**. A failed group launch also leaves the group stopped and retains the selected path. Fix the cause and **Retry**, or return to the configured checkout. Enable `[devtools.status]` and refresh a routed app to access recovery while its backend is down. Refresh the app after a successful switch to load the selected checkout's page.
 
