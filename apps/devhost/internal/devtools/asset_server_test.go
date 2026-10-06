@@ -15,7 +15,7 @@ func TestControlServerAssetCompression(t *testing.T) {
 	s := startAssetTestServer(t)
 	client := &http.Client{Transport: &http.Transport{DisableCompression: true}}
 	t.Cleanup(client.CloseIdleConnections)
-	for _, path := range []string{injectedScriptPath, xtermStylesheetPath} {
+	for _, path := range []string{injectedScriptPath, xtermStylesheetPath, reduxRegistrationScriptPath, reduxMonitorScriptPath, reduxMonitorStylesheetPath} {
 		plain := getControlServerText(t, s, path)
 		for _, tc := range []struct {
 			name, method, accept, encoding string

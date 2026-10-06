@@ -334,7 +334,7 @@ That build refreshes the embedded injected devtools bundle and writes the CLI bi
 
 ## Frontend UI development
 
-Production devtools scripts, terminal styles, lazy terminal chunks, and font subsets are cached for one year at content-versioned URLs. The static entry loads fresh instance configuration from an uncached endpoint before mounting. Font subsets download only when needed, and the terminal runtime loads when a session mounts.
+Production devtools scripts, native Redux inspector styles, terminal styles, lazy terminal chunks, and font subsets are cached for one year at content-versioned URLs. The static entry loads fresh instance configuration from an uncached endpoint before mounting. Font subsets download only when needed, and the terminal runtime loads when a session mounts. The Redux inspector loads its upstream stylesheet in its separate browser window, preserving host-page style isolation.
 
 Devtools controls use no authentication token for trusted local development. Each stack has its own control server and routed hosts. See [Control API](https://alexgorbatchev.github.io/devhost/guides/devtools/#control-api) for instance configuration, endpoints, and failure responses.
 

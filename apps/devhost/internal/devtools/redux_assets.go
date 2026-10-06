@@ -6,9 +6,10 @@ const (
 	reduxMonitorPath            = controlPathPrefix + "/redux"
 	reduxRegistrationScriptPath = controlPathPrefix + "/redux.js"
 	reduxMonitorScriptPath      = controlPathPrefix + "/redux-monitor.js"
+	reduxMonitorStylesheetPath  = controlPathPrefix + "/redux-monitor.css"
 	textJavascriptContentType   = "text/javascript; charset=utf-8"
 	textHTMLContentType         = "text/html; charset=utf-8"
-	reduxMonitorDocument        = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Redux DevTools</title><style>html,body,#redux-monitor{height:100%;margin:0}</style></head><body><div id="redux-monitor"></div><script type="module" src="/__devhost__/redux-monitor.js"></script></body></html>`
+	reduxMonitorDocument        = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Redux DevTools</title><link rel="stylesheet" href="/__devhost__/redux-monitor.css"><style>html,body,#redux-monitor{height:100%;margin:0}</style></head><body><div id="redux-monitor"></div><script type="module" src="/__devhost__/redux-monitor.js"></script></body></html>`
 )
 
 func (s *ControlServer) handleReduxMonitor(w http.ResponseWriter, _ *http.Request) {
@@ -18,14 +19,19 @@ func (s *ControlServer) handleReduxMonitor(w http.ResponseWriter, _ *http.Reques
 }
 
 func (s *ControlServer) handleReduxRegistrationScript(w http.ResponseWriter, r *http.Request) {
-	s.serveReduxScript(w, r, "redux.js")
+	s.serveReduxAsset(w, r, "redux.js", textJavascriptContentType)
 }
 
 func (s *ControlServer) handleReduxMonitorScript(w http.ResponseWriter, r *http.Request) {
-	s.serveReduxScript(w, r, "redux-monitor.js")
+	s.serveReduxAsset(w, r, "redux-monitor.js", textJavascriptContentType)
 }
 
-func (s *ControlServer) serveReduxScript(w http.ResponseWriter, r *http.Request, filename string) {
+func (s *ControlServer) handleReduxMonitorStylesheet(w http.ResponseWriter, r *http.Request) {
+	s.serveReduxAsset(w, r, "redux-monitor.css", textCSSContentType)
+}
+
+func (s *ControlServer) serveReduxAsset(w http.ResponseWriter, r *http.Request, filename, contentType string) {
+	w.Header().Set("Cache-Control", cacheControlNoStore)
 	if !allowAssetMethod(w, r) {
 		return
 	}
@@ -36,13 +42,13 @@ func (s *ControlServer) serveReduxScript(w http.ResponseWriter, r *http.Request,
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 			return
 		}
-		serveAsset(w, r, assetResponse{name: filename, contentType: textJavascriptContentType, cacheControl: cacheControlNoStore, content: content, compressed: compressed})
+		serveAsset(w, r, assetResponse{name: filename, contentType: contentType, cacheControl: cacheControlNoStore, content: content, compressed: compressed})
 		return
 	}
 	content, compressed, err := s.readAsset(filename)
 	if err != nil {
-		http.Error(w, "Redux script unavailable", http.StatusInternalServerError)
+		http.Error(w, "Redux asset unavailable", http.StatusInternalServerError)
 		return
 	}
-	serveVersionedAsset(w, r, assetResponse{name: filename, contentType: textJavascriptContentType, content: content, compressed: compressed})
+	serveVersionedAsset(w, r, assetResponse{name: filename, contentType: contentType, content: content, compressed: compressed})
 }

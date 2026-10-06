@@ -28,6 +28,13 @@ describe("buildDevtoolsBundle", () => {
       expect(script.includes("Invalid hook call. Hooks can only be called")).toBe(hasDevelopmentDiagnostics);
       expect(script.includes("xterm-viewport")).toBe(false);
       expect(script.includes("data:font/woff2;base64,")).toBe(false);
+      const registration: string = await Bun.file(resolve(directoryPath, "redux.js")).text();
+      const monitor: string = await Bun.file(resolve(directoryPath, "redux-monitor.js")).text();
+      expect(registration.includes("registerReduxDevtoolsStore")).toBe(true);
+      expect(registration.includes("registerZustandDevtoolsStore")).toBe(true);
+      expect(monitor.includes("DEVHOST_REDUX_HELLO")).toBe(true);
+      expect(monitor.includes("Invalid hook call. Hooks can only be called")).toBe(hasDevelopmentDiagnostics);
+      expect((await Bun.file(resolve(directoryPath, "redux-monitor.css")).bytes()).byteLength).toBeGreaterThan(0);
       const imports = [...script.matchAll(/import\("\/__devhost__\/([^"?]+\.js)"\)/g)];
       expect(imports.length).toBeGreaterThan(0);
       for (const match of imports)
