@@ -70,5 +70,7 @@ func (c *DevSourceCheckout) assetPath(name string) string {
 // the directory of the justfile passed with --justfile, which is where the
 // recipe expects to be.
 func (c *DevSourceCheckout) buildCommand(ctx context.Context) *exec.Cmd {
-	return exec.CommandContext(ctx, "just", "--justfile", c.justfilePath, devtoolsBundleRecipe)
+	cmd := exec.CommandContext(ctx, "just", "--justfile", c.justfilePath, devtoolsBundleRecipe)
+	cmd.Env = append(os.Environ(), "DEVHOST_DEVTOOLS_DEVELOPMENT=1")
+	return cmd
 }

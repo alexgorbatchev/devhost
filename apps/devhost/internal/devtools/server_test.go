@@ -59,12 +59,16 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 		t.Fatalf("Get(inject.js) error = %v", err)
 	}
 	defer injectedScriptResponse.Body.Close()
-	if got := injectedScriptResponse.Header.Get("cache-control"); got != cacheControlNoStore {
-		t.Fatalf("inject.js cache-control = %q, want %q", got, cacheControlNoStore)
+	if got := injectedScriptResponse.Header.Get("cache-control"); got != cacheControlImmutable {
+		t.Fatalf("inject.js cache-control = %q, want %q", got, cacheControlImmutable)
 	}
-	injectedScriptText := readResponseText(t, injectedScriptResponse)
+	staticScriptText := readResponseText(t, injectedScriptResponse)
+	injectedScriptText := getControlServerText(t, controlServer, injectedConfigPath)
+	if strings.Contains(staticScriptText, controlServer.controlToken) {
+		t.Fatal("static script contains instance credentials")
+	}
 	var config map[string]any
-	configText := strings.SplitN(strings.TrimPrefix(injectedScriptText, "globalThis.__DEVHOST_INJECTED_CONFIG__="), ";\n", 2)[0]
+	configText := injectedScriptText
 	if err := json.Unmarshal([]byte(configText), &config); err != nil {
 		t.Fatalf("decode injected config: %v", err)
 	}
@@ -93,8 +97,8 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 		t.Fatalf("Get(xterm.css) error = %v", err)
 	}
 	defer xtermResponse.Body.Close()
-	if got := xtermResponse.Header.Get("cache-control"); got != cacheControlNoStore {
-		t.Fatalf("xterm.css cache-control = %q, want %q", got, cacheControlNoStore)
+	if got := xtermResponse.Header.Get("cache-control"); got != cacheControlImmutable {
+		t.Fatalf("xterm.css cache-control = %q, want %q", got, cacheControlImmutable)
 	}
 	if body := readResponseText(t, xtermResponse); !strings.Contains(body, ".xterm") {
 		t.Fatalf("xterm.css missing xterm styles")
@@ -160,7 +164,7 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 		_ = unsupportedServer.Stop()
 	})
 
-	unsupportedToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(unsupportedServer.Port(), injectedScriptPath))))
+	unsupportedToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(unsupportedServer.Port(), injectedConfigPath))))
 	request, err = http.NewRequest(http.MethodPost, serverURL(unsupportedServer.Port(), restartServicePath), strings.NewReader(`{"serviceName":"api"}`))
 	if err != nil {
 		t.Fatalf("NewRequest(...) error = %v", err)
@@ -270,8 +274,8 @@ func TestControlServerReactHighlightCursorBroadcastIsInstanceScoped(t *testing.T
 		_ = secondServer.Stop()
 	})
 
-	firstToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(firstServer.Port(), injectedScriptPath))))
-	secondToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(secondServer.Port(), injectedScriptPath))))
+	firstToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(firstServer.Port(), injectedConfigPath))))
+	secondToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(secondServer.Port(), injectedConfigPath))))
 	firstSocket := mustDialWebsocket(t, reactHighlightWebsocketURL(firstServer.Port(), firstToken))
 	defer firstSocket.Close()
 	secondSocket := mustDialWebsocket(t, reactHighlightWebsocketURL(secondServer.Port(), secondToken))
@@ -388,7 +392,7 @@ func TestControlServerTerminalSessionsEditorOnlyLifecycle(t *testing.T) {
 		_ = controlServer.Stop()
 	})
 
-	controlToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(controlServer.Port(), injectedScriptPath))))
+	controlToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(controlServer.Port(), injectedConfigPath))))
 	unauthorizedListResponse, err := http.Get(serverURL(controlServer.Port(), terminalSessionsPath))
 	if err != nil {
 		t.Fatalf("Get(terminal-sessions unauthenticated) error = %v", err)
@@ -626,7 +630,7 @@ func TestControlServerAgentAnnotationQueuesLifecycle(t *testing.T) {
 		_ = controlServer.Stop()
 	})
 
-	controlToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(controlServer.Port(), injectedScriptPath))))
+	controlToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(controlServer.Port(), injectedConfigPath))))
 	createRequest, err := http.NewRequest(http.MethodPost, serverURL(controlServer.Port(), terminalSessionsPath), strings.NewReader(`{"annotation":{"comment":"First annotation","markers":[],"stackName":"hello-stack","submittedAt":1,"title":"Example","url":"https://app.localhost/dashboard"},"colorScheme":"light","kind":"agent"}`))
 	if err != nil {
 		t.Fatalf("NewRequest(first agent) error = %v", err)
@@ -818,7 +822,7 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 		t.Fatalf("StartControlServer(first) error = %v", err)
 	}
 
-	controlToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(firstServer.Port(), injectedScriptPath))))
+	controlToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(firstServer.Port(), injectedConfigPath))))
 	firstRequest, err := http.NewRequest(http.MethodPost, serverURL(firstServer.Port(), terminalSessionsPath), strings.NewReader(`{"annotation":{"comment":"First annotation","markers":[],"stackName":"hello-stack","submittedAt":1,"title":"Example","url":"https://app.localhost/dashboard"},"kind":"agent"}`))
 	if err != nil {
 		t.Fatalf("NewRequest(first agent) error = %v", err)
@@ -888,7 +892,7 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 		t.Fatalf("resumed requests = %#v", secondStarter.startedRequests)
 	}
 
-	secondToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(secondServer.Port(), injectedScriptPath))))
+	secondToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(secondServer.Port(), injectedConfigPath))))
 	listRequest, err := http.NewRequest(http.MethodGet, serverURL(secondServer.Port(), annotationQueuesPath), nil)
 	if err != nil {
 		t.Fatalf("NewRequest(list queues) error = %v", err)
@@ -959,7 +963,7 @@ func TestControlServerTerminalSessionsRetainTailAndIdleCleanup(t *testing.T) {
 		_ = controlServer.Stop()
 	})
 
-	controlToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(controlServer.Port(), injectedScriptPath))))
+	controlToken := extractControlToken(t, readResponseText(t, mustGet(t, serverURL(controlServer.Port(), injectedConfigPath))))
 	createRequest, err := http.NewRequest(http.MethodPost, serverURL(controlServer.Port(), terminalSessionsPath), strings.NewReader(`{"componentName":"SaveButton","kind":"editor","launcher":"neovim","source":{"fileName":"src/components/SaveButton.tsx","lineNumber":42},"sourceLabel":"src/components/SaveButton.tsx:42:1"}`))
 	if err != nil {
 		t.Fatalf("NewRequest(editor terminal) error = %v", err)

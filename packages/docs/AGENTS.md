@@ -35,6 +35,7 @@ Public Astro + Starlight docs workspace for `devhost`, published to GitHub Pages
 - The site ships from GitHub Pages at `/devhost`, so content should rely on relative links or Starlight routing instead of hard-coded root-relative `/...` paths.
 - `src/content/docs/index.mdx` and `src/content/docs/reference/devhost-example.md` are generated outputs; edit `apps/devhost/README.md` and `apps/devhost/devhost.example.toml` instead.
 - Do not add docs tests that snapshot whole static CSS files or literal font/theme declarations when the real contract is config registration or successful build integration.
+- The public devtools asset/configuration contract lives in `src/content/docs/guides/devtools.md`: static production scripts, lazy terminal chunks, and fonts are cached by content version; instance configuration is uncached. Keep that guide aligned with the Go server and browser entry.
 - Astro caches rendered Markdown in `node_modules/.astro/data-store.json` and only invalidates it when `astro.config.mjs` itself changes. After editing a module the config imports (rehype plugins, Mermaid or code theme constants), delete that file before `just docs build`, or the build reuses stale content.
 - Starlight ships its CSS inside `@layer`, so the unlayered stylesheets override it without `!important`. They target Starlight 0.38 markup (for example `.sidebar-content .top-level`, `starlight-toc`, `site-search`); recheck the site visually after Starlight upgrades.
 

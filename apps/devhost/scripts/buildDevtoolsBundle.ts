@@ -1,4 +1,5 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
+import { relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { BunPlugin } from "bun";
 import tailwindPlugin from "bun-plugin-tailwind";
@@ -11,25 +12,30 @@ const devtoolsStylesheetPath: string = fileURLToPath(
 );
 const devtoolsStylesheetTextModuleImportPath: string = "./devtoolsCssText";
 const assetOutputDirectoryPath: string = fileURLToPath(new URL("../internal/devtools/dist/", import.meta.url));
-const devtoolsScriptOutputPath: string = fileURLToPath(
-  new URL("../internal/devtools/dist/devtools.js", import.meta.url),
-);
 const tsconfigPath: string = fileURLToPath(new URL("../../../packages/devhost-ui/tsconfig.json", import.meta.url));
 const xtermStylesheetPath: string = fileURLToPath(
   new URL("../../../packages/devhost-ui/node_modules/@xterm/xterm/css/xterm.css", import.meta.url),
 );
-const xtermStylesheetOutputPath: string = fileURLToPath(
-  new URL("../internal/devtools/dist/xterm.css", import.meta.url),
-);
 
-export async function buildDevtoolsBundle(): Promise<void> {
+interface IBuildDevtoolsBundleOptions {
+  isProduction?: boolean;
+  outputDirectoryPath?: string;
+}
+
+export async function buildDevtoolsBundle(options: IBuildDevtoolsBundleOptions = {}): Promise<void> {
+  const outputDirectoryPath: string = options.outputDirectoryPath ?? assetOutputDirectoryPath;
+  const isProduction: boolean = options.isProduction ?? true;
   const devtoolsStylesheetText: string = await buildDevtoolsStylesheet();
   const buildResult = await Bun.build({
+    define: { "process.env.NODE_ENV": JSON.stringify(isProduction ? "production" : "development") },
     entrypoints: [devtoolsEntrypointPath],
     format: "esm",
+    naming: { entry: "devtools.js", chunk: "assets/[name]-[hash].[ext]", asset: "assets/[name]-[hash].[ext]" },
     minify: true,
-    plugins: [createInlineDevtoolsStylesheetPlugin(devtoolsStylesheetText), createInlineFontPlugin()],
-    splitting: false,
+    outdir: outputDirectoryPath,
+    plugins: [createInlineDevtoolsStylesheetPlugin(devtoolsStylesheetText)],
+    publicPath: "/__devhost__/",
+    splitting: true,
     target: "browser",
     throw: false,
     tsconfig: tsconfigPath,
@@ -41,18 +47,31 @@ export async function buildDevtoolsBundle(): Promise<void> {
     throw new Error(`Failed to build devtools script:\n${logMessages}`);
   }
 
-  const scriptOutput = buildResult.outputs.at(0);
-
-  if (scriptOutput === undefined) {
-    throw new Error("Failed to build devtools script: no output was generated.");
+  await mkdir(outputDirectoryPath, { recursive: true });
+  const outputNames = new Set<string>();
+  for (const output of buildResult.outputs) {
+    const outputName: string = relative(outputDirectoryPath, output.path);
+    outputNames.add(outputName);
+    if (output.path.endsWith(".js")) {
+      const compressedPath: string = `${output.path}.gz`;
+      await Bun.write(compressedPath, Bun.gzipSync(await output.arrayBuffer()));
+      outputNames.add(`${outputName}.gz`);
+    }
   }
+  await Bun.write(resolve(outputDirectoryPath, "xterm.css"), Bun.file(xtermStylesheetPath));
+  outputNames.add("xterm.css");
+  await Bun.write(
+    resolve(outputDirectoryPath, "xterm.css.gz"),
+    Bun.gzipSync(await Bun.file(xtermStylesheetPath).bytes()),
+  );
+  outputNames.add("xterm.css.gz");
 
-  const scriptText: string = await scriptOutput.text();
-  const xtermStylesheetText: string = await readFile(xtermStylesheetPath, "utf8");
-
-  await mkdir(assetOutputDirectoryPath, { recursive: true });
-  await writeFile(devtoolsScriptOutputPath, scriptText);
-  await writeFile(xtermStylesheetOutputPath, xtermStylesheetText);
+  // Source-mode tabs may still request chunks from a previous page load. Release builds embed only the current graph.
+  if (isProduction) {
+    for await (const name of new Bun.Glob("**/*").scan(outputDirectoryPath)) {
+      if (!outputNames.has(name)) await Bun.file(resolve(outputDirectoryPath, name)).delete();
+    }
+  }
 }
 
 async function buildDevtoolsStylesheet(): Promise<string> {
@@ -106,24 +125,6 @@ function createInlineDevtoolsStylesheetPlugin(stylesheetText: string): BunPlugin
   };
 }
 
-// Fonts ship inside devtools.js as data URLs: the Go server embeds and serves only devtools.js and xterm.css,
-// and Bun's default `file` loader would emit separate font files that nothing serves.
-function createInlineFontPlugin(): BunPlugin {
-  return {
-    name: "devhost-inline-font",
-    setup(build): void {
-      build.onLoad({ filter: /\.woff2$/ }, async ({ path }) => {
-        const fontBase64: string = Buffer.from(await readFile(path)).toString("base64");
-
-        return {
-          contents: `export default ${JSON.stringify(`data:font/woff2;base64,${fontBase64}`)};`,
-          loader: "js",
-        };
-      });
-    },
-  };
-}
-
 if (import.meta.main) {
-  await buildDevtoolsBundle();
+  await buildDevtoolsBundle({ isProduction: Bun.env.DEVHOST_DEVTOOLS_DEVELOPMENT !== "1" });
 }
