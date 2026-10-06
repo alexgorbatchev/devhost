@@ -1,5 +1,6 @@
 import React from "react";
 import type { Decorator, Preview } from "@storybook/react";
+import { configure } from "storybook/test";
 
 import "../src/devtools/shared/devtools.css";
 import {
@@ -27,6 +28,8 @@ type FetchPreconnect = typeof fetch.preconnect;
 type StorybookWebSocketProtocols = ConstructorParameters<typeof WebSocket>[1];
 type StorybookWebSocketSendData = Parameters<WebSocket["send"]>[0];
 type StorybookWebSocketUrl = ConstructorParameters<typeof WebSocket>[0];
+
+const storybookAsyncUtilTimeoutMs: number = 5000;
 
 const storybookInjectedConfig: IInjectedDevtoolsConfig = {
   annotationActions: [],
@@ -204,6 +207,11 @@ const withDevtoolsColorScheme: Decorator = (Story, context) => {
 };
 
 const preview: Preview = {
+  beforeAll() {
+    // Native devtools lazy-load their panels while browser stories run in parallel.
+    // Keep polling observable state instead of treating one second as a startup deadline.
+    configure({ asyncUtilTimeout: storybookAsyncUtilTimeoutMs });
+  },
   decorators: [withDevtoolsColorScheme],
   globalTypes: {
     [storybookDevtoolsThemeGlobalName]: {

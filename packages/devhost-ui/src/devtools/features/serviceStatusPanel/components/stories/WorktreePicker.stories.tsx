@@ -55,7 +55,10 @@ export const HomeDirectoryPaths: Story = {
     const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
     await userEvent.click(await canvas.findByRole("button", { name: "Worktrees" }));
     const main = canvas.getByRole("radio", { name: "main ~/projects/shop" });
-    await waitFor(() => expect(main).toBeEnabled());
+    await waitFor(() => {
+      expect(main).toBeEnabled();
+      expect(main).toBeVisible();
+    });
     await waitFor(() => {
       expect(canvas.getByText("~/projects/shop")).toBeVisible();
       expect(canvas.getByText("~/projects/shop/api")).toBeVisible();
@@ -63,7 +66,7 @@ export const HomeDirectoryPaths: Story = {
     const feature = canvas.getByRole("radio", { name: "feature/cart ~/worktrees/cart" });
     await userEvent.click(feature);
     await expect(feature).toBeChecked();
-    await expect(canvas.getByText("~/worktrees/cart/web")).toBeVisible();
+    await waitFor(() => expect(canvas.getByText("~/worktrees/cart/web")).toBeVisible());
     await userEvent.click(canvas.getByRole("button", { name: "Switch and restart 2 services" }));
     await expect(args.onSwitch).toHaveBeenCalledWith("shop", "/home/alex/worktrees/cart");
   },
@@ -74,13 +77,16 @@ export const ChoicesAndPreview: Story = {
     const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
     await userEvent.click(await canvas.findByRole("button", { name: "Worktrees" }));
     const main = canvas.getByRole("radio", { name: "main /projects/shop" });
-    await waitFor(() => expect(main).toBeEnabled());
+    await waitFor(() => {
+      expect(main).toBeEnabled();
+      expect(main).toBeVisible();
+    });
     await expect(main).toBeChecked();
     await expect(canvas.getByRole("button", { name: "Switch and restart 2 services" })).toBeDisabled();
     await userEvent.click(main);
     await userEvent.click(canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" }));
     await expect(canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" })).toBeChecked();
-    await expect(canvas.getByText("/worktrees/cart/web")).toBeVisible();
+    await waitFor(() => expect(canvas.getByText("/worktrees/cart/web")).toBeVisible());
     await expect(canvas.getByRole("radio", { name: "feature/missing /worktrees/missing" })).toBeDisabled();
     await userEvent.click(canvas.getByRole("button", { name: "Switch and restart 2 services" }));
     await expect(args.onSwitch).toHaveBeenCalledWith("shop", "/worktrees/cart");
