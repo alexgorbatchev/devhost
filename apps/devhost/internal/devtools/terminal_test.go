@@ -132,16 +132,16 @@ func TestLaunchTerminalCommandUsesPTYAndTerminalEnvironment(t *testing.T) {
 			"GO_WANT_TERMINAL_HELPER_PROCESS": "1",
 			"DEVHOST_TERMINAL_HELPER_MODE":    "print-terminal-env",
 		},
-		func(data []byte) {
-			mu.Lock()
-			defer mu.Unlock()
-			chunks = append(chunks, string(data))
-		},
 		func() {},
 	)
 	if err != nil {
 		t.Fatalf("launchTerminalCommand(...) error = %v", err)
 	}
+	launchedSession.startOutput(func(data []byte) {
+		mu.Lock()
+		defer mu.Unlock()
+		chunks = append(chunks, string(data))
+	})
 
 	exitStatus := launchedSession.wait()
 	if exitStatus.ExitCode == nil || *exitStatus.ExitCode != 0 || exitStatus.SignalCode != nil {

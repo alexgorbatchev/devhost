@@ -63,11 +63,15 @@ The queue is owned by the `devhost` control server (`internal/devtools/annotatio
 ### Durability and Recovery
 
 Every state transition (enqueue, finish, delete, edit, pause) is written to a JSON file in the `devhost` state directory **before** any action is taken. Persisted queue entries store the action id and the devtools color scheme so recovery resumes the same agent action, rendered for the same theme, that originally received the annotation. A manual resume request may carry a new `colorScheme` in its body, which replaces the stored one for the current entry.
-If you close your browser or completely restart `devhost`, the server automatically resumes the paused queues and replays the current "head" annotation into a fresh terminal session. It relies on at-least-once replay to ensure pending work is never lost.
+Browser connections do not own annotation processes. Agent and command annotation sessions keep running through page reloads, closed tabs, and browser closure, including when no browser has attached yet. Agent queues continue draining from PTY status events without a browser. Reopening a routed page reconnects to the same sessions with retained output. Running annotation sessions prevent stack idle shutdown; explicit terminal termination or stopping `devhost` still closes them. Disconnected sessions whose processes have exited are cleaned up after the terminal retention timeout.
+
+Restarting `devhost` starts fresh terminal sessions for persisted queues except those explicitly terminated by the user. Recovery replays the current "head" annotation and uses at-least-once delivery. An unexpected agent process exit pauses its queue for explicit resume.
 
 ### Automatic Draining via OSC Hooks
 
 The core requirement is to avoid interrupting an agent while it is thinking.
+Terminal launchers start the process without reading its PTY. The control server registers the session, starts its asynchronous output reader, and joins that reader before publishing process exit. Output emitted before registration stays in the PTY until the reader starts, preserving initial and final agent status events even for fast processes.
+
 The server actively parses the raw output stream of the pseudo-terminal (PTY) using an incremental parser (`internal/devtools/agent_status_osc.go`). It specifically listens for the terminal escape sequences:
 
 - `OSC 1337;SetAgentStatus=working`

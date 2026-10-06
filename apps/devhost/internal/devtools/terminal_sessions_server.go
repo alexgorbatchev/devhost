@@ -135,7 +135,7 @@ func (s *ControlServer) createTerminalSession(request terminalSessionRequest) (s
 
 	starter := s.startTerminalSession
 	if starter == nil {
-		starter = func(request terminalSessionRequest, onData func([]byte)) (*launchedTerminalSession, error) {
+		starter = func(request terminalSessionRequest) (*launchedTerminalSession, error) {
 			command, err := createTerminalSessionCommand(toolContext.AnnotationActions, s.componentEditor, toolContext.ProjectRootPath, request, s.stackName, editorTerminalIntegration{
 				controlToken: s.controlToken,
 				endpoint:     fmt.Sprintf("http://127.0.0.1:%d%s", s.Port(), reactHighlightCursorPath),
@@ -143,7 +143,7 @@ func (s *ControlServer) createTerminalSession(request terminalSessionRequest) (s
 			if err != nil {
 				return nil, err
 			}
-			return launchTerminalCommand(command.command, command.cwd, command.env, onData, command.cleanup)
+			return launchTerminalCommand(command.command, command.cwd, command.env, command.cleanup)
 		}
 	}
 
@@ -152,9 +152,7 @@ func (s *ControlServer) createTerminalSession(request terminalSessionRequest) (s
 		return "", err
 	}
 
-	launchedSession, err := starter(request, func(data []byte) {
-		s.appendTerminalSessionOutput(sessionID, data)
-	})
+	launchedSession, err := starter(request)
 	if err != nil {
 		return "", err
 	}
@@ -174,6 +172,9 @@ func (s *ControlServer) createTerminalSession(request terminalSessionRequest) (s
 	s.mu.Lock()
 	s.terminalSessions[sessionID] = session
 	s.terminalSessionOrder = append(s.terminalSessionOrder, sessionID)
+	launchedSession.startOutput(func(data []byte) {
+		s.appendTerminalSessionOutput(sessionID, data)
+	})
 	s.scheduleIdleTerminalSessionShutdownLocked(sessionID, session)
 	s.mu.Unlock()
 
@@ -412,6 +413,11 @@ func (s *ControlServer) createTerminalSessionListResponse() listTerminalSessions
 
 func (s *ControlServer) scheduleIdleTerminalSessionShutdownLocked(sessionID string, session *terminalSessionState) {
 	s.cancelIdleTerminalSessionShutdownLocked(session)
+	// Annotation work belongs to the stack and continues without a browser. Only
+	// exited annotation processes use the disconnected-terminal retention timer.
+	if session.exited == nil && (session.request.Kind == terminalSessionRequestKindAgent || session.request.Kind == terminalSessionRequestKindCommand) {
+		return
+	}
 	session.idleTimer = time.AfterFunc(s.idleTerminalSessionTimeout, func() {
 		if s.annotationQueueStore != nil {
 			_ = s.annotationQueueStore.handleSessionExited(sessionID)

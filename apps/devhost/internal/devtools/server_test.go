@@ -1131,10 +1131,9 @@ func newTestTerminalStarter() *testTerminalStarter {
 	return &testTerminalStarter{}
 }
 
-func (s *testTerminalStarter) start(request terminalSessionRequest, onData func([]byte)) (*launchedTerminalSession, error) {
+func (s *testTerminalStarter) start(request terminalSessionRequest) (*launchedTerminalSession, error) {
 	session := &testTerminalSession{
-		onData: onData,
-		waits:  make(chan terminalSessionExitStatus, 1),
+		waits: make(chan terminalSessionExitStatus, 1),
 	}
 
 	s.mu.Lock()
@@ -1146,6 +1145,9 @@ func (s *testTerminalStarter) start(request terminalSessionRequest, onData func(
 		cleanup: func() {},
 		close:   session.close,
 		resize:  session.resize,
+		startOutput: func(onData func([]byte)) {
+			session.onData = onData
+		},
 		wait: func() terminalSessionExitStatus {
 			status := <-session.waits
 			return status

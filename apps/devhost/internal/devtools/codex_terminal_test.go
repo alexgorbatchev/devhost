@@ -175,12 +175,13 @@ func TestCodexInstalledHookRuntime(t *testing.T) {
 func runCodexTerminalTestCommand(t *testing.T, args []string, cwd string, env map[string]string) string {
 	t.Helper()
 	var chunks []string
-	session, err := launchTerminalCommand(args, cwd, env, func(data []byte) {
-		chunks = append(chunks, string(data))
-	}, func() {})
+	session, err := launchTerminalCommand(args, cwd, env, func() {})
 	if err != nil {
 		t.Fatal(err)
 	}
+	session.startOutput(func(data []byte) {
+		chunks = append(chunks, string(data))
+	})
 	defer session.close()
 	timer := time.AfterFunc(15*time.Second, session.close)
 	defer timer.Stop()
