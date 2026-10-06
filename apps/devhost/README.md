@@ -17,7 +17,7 @@ The injected log minimap is intentionally a compact preview: each log entry stay
 
 When selecting page nodes with Alt, the selection rectangle and node label appear above page content, including existing popovers, without blocking page clicks.
 
-With `[devtools.externalToolbars].enabled = true`, the toolbar aggregates host-mounted TanStack Query, TanStack Router, and React Hook Form inspectors. Mount `@hookform/devtools` with each form's control to get separate **Form 1**, **Form 2**, and subsequent launchers. Each controls its own native inspector; disabling aggregation restores native launcher buttons. See [External Devtools](https://alexgorbatchev.github.io/devhost/architecture/external-devtools/) for tested versions, setup, and panel identification.
+With `[devtools.externalToolbars].enabled = true`, the toolbar aggregates host-mounted TanStack Query, TanStack Router, React Hook Form, and Jotai inspectors. Mount `@hookform/devtools` with each form's control to get separate **Form 1**, **Form 2**, and subsequent launchers. Mount `jotai-devtools` with each custom store to get separate **Jotai N** launchers with native live atom and history inspection. Each controls its own native inspector; disabling aggregation restores native launcher buttons. See [External Devtools](https://alexgorbatchev.github.io/devhost/architecture/external-devtools/) for tested versions, setup, and panel identification.
 
 ## Quick start
 

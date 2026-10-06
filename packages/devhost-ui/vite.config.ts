@@ -9,6 +9,8 @@ const dirname: string = path.dirname(fileURLToPath(import.meta.url));
 export const optimizeDependencyEntries: string[] = [
   "@hookform/devtools",
   "react-hook-form",
+  "jotai",
+  "jotai-devtools",
   "@storybook/react-dom-shim",
   "@tanstack/react-query-devtools/production",
   "@tanstack/react-router-devtools",

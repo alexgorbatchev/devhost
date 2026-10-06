@@ -4,7 +4,7 @@ description: Use anytime devhost.toml is involved, including reading, writing, m
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-06 05:49
+  last_modified: 2026-10-06 06:14
   status: current
 ---
 
@@ -34,8 +34,10 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 
 ### External Devtools Launchers
 
-- Enable `[devtools.externalToolbars].enabled` (default `true`) to aggregate host-mounted TanStack Query, TanStack Router, and React Hook Form inspectors.
+- Enable `[devtools.externalToolbars].enabled` (default `true`) to aggregate host-mounted TanStack Query, TanStack Router, React Hook Form, and Jotai inspectors.
 - For React Hook Form, mount `@hookform/devtools`' `DevTool control={control}` in the host application for each form. Keep form controls and native panel contents owned by the host and upstream library; do not mount inspectors or synthesize form state through devhost.
+- For Jotai, use tested `jotai-devtools@0.14.0` with `jotai@2.20.3`; import devtools before creating custom stores, import its stylesheet in the host app, and pass the same store to `Provider` and `DevTools`. Do not patch declarations to use the broken 0.15.0 typed export, create inspectors through devhost, or replace native atom/history behavior.
+- Use each **Jotai N** launcher to toggle its associated native root; open the panel to identify its store. Follow the setup guide below for session identities, shared upstream persistence, and production/version boundaries.
 - Use each **Form N** launcher to toggle its associated native inspector. Follow the [External Devtools setup guide](https://alexgorbatchev.github.io/devhost/architecture/external-devtools/) for tested versions, encounter-order panel identities, remount behavior, and disabling aggregation.
 
 ### Service Configuration Constraints
