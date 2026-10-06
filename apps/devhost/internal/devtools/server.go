@@ -404,6 +404,9 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	mux.HandleFunc(annotationQueuesWebsocketPath, controlServer.handleAnnotationQueueWebsocket)
 	mux.HandleFunc(reactHighlightWebsocketPath, controlServer.handleReactHighlightWebsocket)
 	mux.HandleFunc(xtermStylesheetPath, controlServer.handleXtermStylesheet)
+	mux.HandleFunc("GET "+reduxMonitorPath, controlServer.handleReduxMonitor)
+	mux.HandleFunc("GET "+reduxRegistrationScriptPath, controlServer.handleReduxRegistrationScript)
+	mux.HandleFunc("GET "+reduxMonitorScriptPath, controlServer.handleReduxMonitorScript)
 	mux.HandleFunc(restartServicePath, controlServer.handleRestartService)
 	mux.HandleFunc(restartStackPath, controlServer.handleRestartStack)
 	mux.HandleFunc(worktreesPath, controlServer.handleWorktrees)
@@ -590,9 +593,9 @@ if (typeof document !== "undefined") {
 }`, errLog, errLog)
 }
 
-func (s *ControlServer) checkAndBuildAssets() ([]byte, []byte, error) {
+func (s *ControlServer) checkAndBuildAssets(filename string) ([]byte, []byte, error) {
 	srcDir := s.devSource.sourceDirectoryPath
-	compiledPath := s.devSource.assetPath("devtools.js")
+	compiledPath := s.devSource.assetPath(filename)
 
 	s.buildMu.Lock()
 	defer s.buildMu.Unlock()
@@ -643,7 +646,7 @@ func (s *ControlServer) checkAndBuildAssets() ([]byte, []byte, error) {
 	}
 
 	if !needsBuild {
-		return s.readAsset("devtools.js")
+		return s.readAsset(filename)
 	}
 
 	_, _ = fmt.Fprintln(os.Stderr, "[devhost] Changes detected in devtools UI source files. Rebuilding assets...")
@@ -674,7 +677,7 @@ func (s *ControlServer) checkAndBuildAssets() ([]byte, []byte, error) {
 		return nil, nil, fmt.Errorf("%s", missingBundleMessage)
 	}
 
-	return s.readAsset("devtools.js")
+	return s.readAsset(filename)
 }
 
 func (s *ControlServer) handleRestartService(writer http.ResponseWriter, request *http.Request) {

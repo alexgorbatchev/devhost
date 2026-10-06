@@ -58,6 +58,9 @@ ide = "vscode"
 # For Vue, use vite-plugin-vue-devtools 9.0.0-beta.1 with Vite 8.3.3, @vitejs/devtools 0.7.6,
 # and devtools.apply = "serve" in the host app; authorize and reveal the native dock.
 # The Vue entry requires a mounted Vue app. The inspector and other native docks remain host-owned.
+# For Redux Toolkit and native-middleware Zustand, opt into /__devhost__/redux.js on the routed development page.
+# Toolkit requires one public instrument EnhancedStore; Zustand requires actual StoreApi plus snapshot/restore.
+# The Redux entry opens the upstream browser inspector; disabling closes its owned monitor/subscriptions only.
 # Tested versions, setup, and panel identification: https://alexgorbatchev.github.io/devhost/architecture/external-devtools/
 enabled = true
 

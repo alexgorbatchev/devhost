@@ -22,6 +22,8 @@ interface IBuildDevtoolsBundleOptions {
   outputDirectoryPath?: string;
 }
 
+type BrowserBuildResult = Awaited<ReturnType<typeof Bun.build>>;
+
 export async function buildDevtoolsBundle(options: IBuildDevtoolsBundleOptions = {}): Promise<void> {
   const outputDirectoryPath: string = options.outputDirectoryPath ?? assetOutputDirectoryPath;
   const isProduction: boolean = options.isProduction ?? true;
@@ -47,9 +49,16 @@ export async function buildDevtoolsBundle(options: IBuildDevtoolsBundleOptions =
     throw new Error(`Failed to build devtools script:\n${logMessages}`);
   }
 
+  const reduxBuild = await buildReduxBrowserAsset("index.ts", "redux.js", outputDirectoryPath, isProduction);
+  const reduxMonitorBuild = await buildReduxBrowserAsset(
+    "startReduxDevtoolsMonitor.ts",
+    "redux-monitor.js",
+    outputDirectoryPath,
+    isProduction,
+  );
   await mkdir(outputDirectoryPath, { recursive: true });
   const outputNames = new Set<string>();
-  for (const output of buildResult.outputs) {
+  for (const output of [...buildResult.outputs, ...reduxBuild.outputs, ...reduxMonitorBuild.outputs]) {
     const outputName: string = relative(outputDirectoryPath, output.path);
     outputNames.add(outputName);
     if (output.path.endsWith(".js")) {
@@ -72,6 +81,33 @@ export async function buildDevtoolsBundle(options: IBuildDevtoolsBundleOptions =
       if (!outputNames.has(name)) await Bun.file(resolve(outputDirectoryPath, name)).delete();
     }
   }
+}
+
+async function buildReduxBrowserAsset(
+  entrypoint: string,
+  filename: string,
+  outputDirectoryPath: string,
+  isProduction: boolean,
+): Promise<BrowserBuildResult> {
+  const sourcePath: string = fileURLToPath(
+    new URL(`../../../packages/devhost-ui/src/devtools/features/reduxDevtools/${entrypoint}`, import.meta.url),
+  );
+  const result = await Bun.build({
+    define: { "process.env.NODE_ENV": JSON.stringify(isProduction ? "production" : "development") },
+    entrypoints: [sourcePath],
+    target: "browser",
+    format: "esm",
+    splitting: true,
+    naming: { entry: filename, chunk: "assets/[name]-[hash].[ext]", asset: "assets/[name]-[hash].[ext]" },
+    publicPath: "/__devhost__/",
+    outdir: outputDirectoryPath,
+    minify: true,
+    throw: false,
+    tsconfig: tsconfigPath,
+  });
+  if (!result.success || result.outputs.length === 0)
+    throw new Error(`Failed to build ${filename}: ${result.logs.map(String).join("\n")}`);
+  return result;
 }
 
 async function buildDevtoolsStylesheet(): Promise<string> {
