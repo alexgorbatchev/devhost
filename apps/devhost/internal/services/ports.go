@@ -18,6 +18,7 @@ type ResolvedManifest struct {
 	Annotation            manifest.ValidatedAnnotation
 	Caddy                 manifest.CaddyConfig
 	Devtools              manifest.DevtoolsConfig
+	Worktrees             manifest.WorktreesConfig
 	ManifestDirectoryPath string
 	ManifestPath          string
 	Name                  string
@@ -152,6 +153,7 @@ func ResolveServicePorts(value manifest.Manifest) (ResolvedManifest, error) {
 		Annotation:            value.Annotation,
 		Caddy:                 value.Caddy,
 		Devtools:              value.Devtools,
+		Worktrees:             value.Worktrees,
 		ManifestDirectoryPath: value.ManifestDirectoryPath,
 		ManifestPath:          value.ManifestPath,
 		Name:                  value.Name,

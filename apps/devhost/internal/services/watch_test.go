@@ -27,6 +27,47 @@ func TestDirtyTracker(t *testing.T) {
 	}
 }
 
+func TestWatchManagerMovesServiceToAnotherCheckout(t *testing.T) {
+	old, next := t.TempDir(), t.TempDir()
+	tracker := NewDirtyTracker()
+	events := make(chan string, 10)
+	w := NewWatchManager(tracker, func(name string) { events <- name }, nil, "")
+	defer w.StopAll()
+	if err := w.StartWatching("web", []string{"."}, old); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(old, "queued.txt"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	w.StopWatching("web")
+	tracker.SetDirty("web", false)
+	if err := w.StartWatching("web", []string{"."}, next); err != nil {
+		t.Fatal(err)
+	}
+	if w.IsWatchingPath("web", old) || !w.IsWatchingPath("web", next) {
+		t.Fatal("watcher retained original checkout")
+	}
+	if err := os.WriteFile(filepath.Join(old, "ignored.txt"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-events:
+		t.Fatal("old checkout marked dirty after watcher stopped")
+	case <-time.After(300 * time.Millisecond):
+	}
+	if err := os.WriteFile(filepath.Join(next, "source.txt"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-events:
+		if !tracker.IsDirty("web") {
+			t.Fatal("new checkout failed to mark dirty")
+		}
+	case <-time.After(time.Second):
+		t.Fatal("new checkout change was not observed")
+	}
+}
+
 func TestWatchManagerDebounceAndDynamicDir(t *testing.T) {
 	tmpDir := t.TempDir()
 

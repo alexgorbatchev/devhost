@@ -130,6 +130,23 @@ Before launching a foreground service, `devhost` checks that its working directo
 
 Service and annotation action `cwd` values accept absolute paths or paths relative to the manifest directory. Absolute paths are used directly and may point outside the manifest directory. Relative paths resolve against the manifest directory and must stay within it.
 
+### Git Worktrees
+
+Enable checkout selection in the Services panel:
+
+```toml
+[worktrees]
+enabled = true
+```
+
+Worktree support is disabled by default and requires Git on `PATH`. Configure service `cwd` values in one checkout per repository. All services in that repository share its selection; other repositories choose independently, and services outside Git keep their configured directories. For example, selecting `/worktrees/cart` for a service configured at `/projects/shop/packages/web` runs it from `/worktrees/cart/packages/web`.
+
+Open **Services**, select the repository's branch button, and choose a checkout. The picker previews every service directory before **Switch and restart**. Devhost validates all target directories before stopping anything, stops the group in reverse dependency order, and starts it in dependency order. Relative file watches follow the new service directories; absolute watch paths stay absolute. Routes, service names, commands, environment configuration, and the original manifest remain in use. Devhost does not load the selected checkout's manifest.
+
+Selections are stored locally per manifest path and Git repository, shared across browser tabs, and restored before services start on the next devhost run. With no saved choice, devhost uses the checkout containing the configured directories. A missing saved checkout leaves the group stopped with an explicit error; choose another available checkout or **Return to configured checkout**. A failed group launch also leaves the group stopped and retains the selected path. Fix the cause and **Retry**, or return to the configured checkout. Enable `[devtools.status]` and refresh a routed app to access recovery while its backend is down. Refresh the app after a successful switch to load the selected checkout's page.
+
+A repository containing a `managed = false` service cannot switch because devhost does not own that service's process. New browser-launched editors and annotation actions use the selected checkout, remapping configured action directories inside that repository. Existing terminal sessions retain their original directories. A queued handoff to a session from another checkout pauses with an error; resume the queue to launch a session in the selected checkout.
+
 ### Zombie Process Recovery (killZombies)
 
 If a previous `devhost` run crashed, got aborted, or left behind dangling child processes (zombies) claiming the same port or public host, `devhost` will automatically clean them up.

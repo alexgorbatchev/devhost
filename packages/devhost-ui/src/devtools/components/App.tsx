@@ -48,7 +48,7 @@ function AppContent(): JSX.Element {
     externalToolbarsEnabled,
     minimapEnabled,
     position: devtoolsPosition,
-    projectRootPath,
+    projectRootPath: configuredProjectRootPath,
     routedServices,
     stackName,
     statusEnabled,
@@ -58,7 +58,14 @@ function AppContent(): JSX.Element {
   } = readInjectedDevtoolsConfig();
   const appRootReference = useRef<HTMLDivElement | null>(null);
   const colorScheme = useDevtoolsColorScheme();
-  const { errorMessage, setErrorMessage, services } = useServiceHealth();
+  const { errorMessage, setErrorMessage, services, repositories, refreshWorktrees, switchWorktree } =
+    useServiceHealth();
+  const currentRoutedServiceKey = resolveRoutedServiceKeyForUrl(routedServices, window.location.href);
+  const currentRepository = repositories.find(
+    (repository) => currentRoutedServiceKey !== null && repository.serviceNames.includes(currentRoutedServiceKey),
+  );
+  const projectRootPath =
+    services.find((service) => service.name === currentRoutedServiceKey)?.projectRootPath ?? configuredProjectRootPath;
   const {
     errorMessage: annotationQueueErrorMessage,
     isEntryMutationPending,
@@ -83,7 +90,14 @@ function AppContent(): JSX.Element {
   const [isMinimapHovered, setIsMinimapHovered] = useState<boolean>(false);
   const [selectedAnnotationActionId, setSelectedAnnotationActionId] = useState<string>(annotationDefaultActionId);
   const exitedServices = services.filter(
-    (service) => service.managed && !service.status && service.exitCode !== undefined,
+    (service) =>
+      service.managed &&
+      !service.status &&
+      service.exitCode !== undefined &&
+      !repositories.some(
+        (repository) =>
+          repository.serviceNames.includes(service.name) && (repository.switching || repository.error !== undefined),
+      ),
   );
   const logEntries = useServiceLogs(isMinimapHovered && exitedServices.length === 0);
   useReactHighlightOverlay({
@@ -96,7 +110,8 @@ function AppContent(): JSX.Element {
     componentEditor,
     projectRootPath,
     startComponentSourceSession,
-    enabled: editorEnabled,
+    worktreeRepository: currentRepository,
+    enabled: editorEnabled && currentRepository?.switching !== true && currentRepository?.error === undefined,
   });
   // The menu stays mounted while it fades out, showing its last contents.
   const displayedComponentMenu = useRetainedValue(componentMenu, componentMenu !== null);
@@ -155,7 +170,6 @@ function AppContent(): JSX.Element {
   const shouldRenderToolbar: boolean =
     statusEnabled || annotationQueueEnabled || externalToolbarsEnabled || terminalEnabled;
   const shouldRenderMinimap: boolean = minimapEnabled && logEntries.length > 0;
-  const currentRoutedServiceKey: string | null = resolveRoutedServiceKeyForUrl(routedServices, window.location.href);
   const selectedAnnotationAction: IAnnotationAction | null = annotationEnabled
     ? resolveSelectedAnnotationAction(annotationActions, selectedAnnotationActionId)
     : null;
@@ -220,7 +234,14 @@ function AppContent(): JSX.Element {
           stackName={stackName}
         >
           {shouldRenderPanel ? (
-            <ServiceStatusPanel errorMessage={errorMessage} services={services} onSetErrorMessage={setErrorMessage} />
+            <ServiceStatusPanel
+              errorMessage={errorMessage}
+              services={services}
+              repositories={repositories}
+              onRefreshWorktrees={refreshWorktrees}
+              onSwitchWorktree={switchWorktree}
+              onSetErrorMessage={setErrorMessage}
+            />
           ) : null}
           {annotationQueueEnabled ? (
             <AnnotationQueuePanel

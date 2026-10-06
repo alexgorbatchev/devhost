@@ -1,5 +1,5 @@
-import type { JSX } from "react";
-import { RotateCwIcon, TriangleAlertIcon } from "lucide-react";
+import { useRef, useState, type JSX } from "react";
+import { ArrowLeftIcon, ChevronDownIcon, GitBranchIcon, RotateCwIcon, TriangleAlertIcon } from "lucide-react";
 
 import { Badge } from "../../../../components/ui/Badge";
 import { Kbd } from "../../../../components/ui/Kbd";
@@ -11,12 +11,17 @@ import { ToolbarPopover } from "../../../shared/components/ToolbarPopover";
 import { DEFAULT_RESTART_SERVICES_SHORTCUT } from "../../../shared/constants";
 import { formatShortcutLabel } from "../../../shared/formatShortcutLabel";
 import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
-import type { ServiceHealth } from "../../../shared/types";
+import type { ServiceHealth, WorktreeRepository } from "../../../shared/types";
+
+import { WorktreePicker } from "./WorktreePicker";
 
 interface IServiceStatusPanelProps {
   errorMessage: string | null;
   onSetErrorMessage?: (message: string | null) => void;
   services: ServiceHealth[];
+  repositories?: WorktreeRepository[];
+  onRefreshWorktrees?: () => Promise<string | null>;
+  onSwitchWorktree?: (repositoryId: string, path: string) => Promise<string | null>;
 }
 
 type ServiceDotState = "down" | "dirty" | "ok" | "restarting";
@@ -37,6 +42,16 @@ const serviceStateLabels: Record<ServiceDotState, string> = {
 
 export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element | null {
   const { controlToken, restartServicesShortcut } = readInjectedDevtoolsConfig();
+  const [repositoryId, setRepositoryId] = useState<string | null>(null);
+  const repositoryButtons = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const repositories = props.repositories ?? [];
+  const selectedRepository = repositories.find((repository) => repository.id === repositoryId);
+  const onBack = (): void => {
+    setRepositoryId(null);
+    requestAnimationFrame(() => {
+      if (repositoryId !== null) repositoryButtons.current.get(repositoryId)?.focus();
+    });
+  };
   const hasError: boolean = props.errorMessage !== null;
 
   if (!hasError && props.services.length === 0) {
@@ -52,9 +67,13 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
   return (
     <ToolbarPopover
       headerEndEnhancer={
-        <Kbd title="Restart changed services, or the primary service when none changed">
-          {formatShortcutLabel(restartServicesShortcut ?? DEFAULT_RESTART_SERVICES_SHORTCUT)}
-        </Kbd>
+        selectedRepository === undefined ? (
+          <Kbd title="Restart changed services, or the primary service when none changed">
+            {formatShortcutLabel(restartServicesShortcut ?? DEFAULT_RESTART_SERVICES_SHORTCUT)}
+          </Kbd>
+        ) : (
+          <Button aria-label="Back to services" variant="ghost" startEnhancer={<ArrowLeftIcon />} onClick={onBack} />
+        )
       }
       notice={
         props.errorMessage !== null ? (
@@ -73,8 +92,8 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
           </InlineNotice>
         ) : undefined
       }
-      panelLabel="Services"
-      panelWidth="sm"
+      panelLabel={selectedRepository === undefined ? "Services" : selectedRepository.name + " · Worktrees"}
+      panelWidth={selectedRepository === undefined ? (repositories.length > 0 ? "md" : "sm") : "lg"}
       testId="ServiceStatusPanel"
       triggerContent={
         <>
@@ -93,62 +112,140 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
       triggerLabel={readServicesTriggerLabel(upCount, props.services.length, changedCount, hasError)}
       triggerTone={hasError ? "alert" : "default"}
     >
-      <ul className="m-0 list-none p-0" data-testid="ServiceStatusPanel--service-list">
-        {props.services.map((service: ServiceHealth) => {
-          const dotState: ServiceDotState = readServiceDotState(service);
-          const isChanged: boolean = dotState === "dirty";
-
-          return (
-            <li
-              key={service.name}
-              className="flex min-h-6 items-center gap-1.5 py-0.5 pr-1 pl-2 not-first:border-t hover:bg-secondary"
-              data-testid="ServiceStatusPanel--service"
-            >
-              <ServiceStatusDot service={service} />
-              <span className="sr-only">{serviceStateLabels[dotState]}</span>
-              {service.url === undefined ? (
-                <span className={cn("min-w-0 flex-1 truncate", !service.status && "font-semibold text-destructive")}>
-                  {service.name}
-                </span>
-              ) : (
-                <a
-                  className={cn(
-                    "min-w-0 flex-1 truncate underline decoration-faint underline-offset-2 hover:text-primary hover:decoration-primary",
-                    service.status ? "text-foreground" : "font-semibold text-destructive",
-                  )}
-                  href={service.url}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                  title={`Open ${service.name} in a new window`}
-                >
-                  {service.name}
-                </a>
-              )}
-              {service.managed ? null : <Badge title="Not managed by devhost; cannot restart">external</Badge>}
-              {isChanged ? <Badge variant="warning">changed</Badge> : null}
-              {service.managed ? (
-                <Button
-                  aria-label={`Restart ${service.name}`}
-                  disabled={service.restarting === true}
-                  startEnhancer={
-                    <span className={cn("flex", service.restarting === true && "animate-spin")}>
-                      <RotateCwIcon />
-                    </span>
-                  }
-                  title={service.restarting === true ? "Restarting…" : `Restart ${service.name}`}
-                  variant={isChanged ? "warning" : "default"}
-                  onClick={(): void => {
-                    void restartServices([service.name], controlToken, fetch).then((message) =>
-                      onSetErrorMessage?.(message),
-                    );
-                  }}
+      {selectedRepository !== undefined &&
+      props.onRefreshWorktrees !== undefined &&
+      props.onSwitchWorktree !== undefined ? (
+        <WorktreePicker
+          key={selectedRepository.id}
+          repository={selectedRepository}
+          hasRestartingService={props.services.some(
+            (service) => selectedRepository.serviceNames.includes(service.name) && service.restarting === true,
+          )}
+          onBack={onBack}
+          onRefresh={props.onRefreshWorktrees}
+          onSwitch={props.onSwitchWorktree}
+        />
+      ) : (
+        <>
+          {repositories.map((repository) => {
+            const selected = repository.worktrees.find((entry) => entry.path === repository.selectedPath);
+            return (
+              <section
+                key={repository.id}
+                aria-label={repository.name + " repository"}
+                className="not-first:border-t-2"
+              >
+                <header className="flex items-center gap-1.5 border-b bg-secondary px-2 py-1">
+                  <strong className="min-w-0 flex-1 truncate">{repository.name}</strong>
+                  {repository.switching ? (
+                    <Badge variant="warning">switching</Badge>
+                  ) : repository.error !== undefined ? (
+                    <Badge variant="destructive">stopped</Badge>
+                  ) : null}
+                  <Button
+                    ref={(button): void => {
+                      if (button === null) repositoryButtons.current.delete(repository.id);
+                      else repositoryButtons.current.set(repository.id, button);
+                    }}
+                    aria-label={"Choose worktree for " + repository.name}
+                    title={repository.selectedPath}
+                    disabled={props.onSwitchWorktree === undefined}
+                    startEnhancer={<GitBranchIcon />}
+                    endEnhancer={<ChevronDownIcon />}
+                    onClick={(): void => {
+                      setRepositoryId(repository.id);
+                    }}
+                  >
+                    {selected?.branch ||
+                      (selected?.detached === true ? "Detached " + selected.head.slice(0, 7) : "Unavailable worktree")}
+                  </Button>
+                </header>
+                <ServiceRows
+                  services={props.services.filter((service) => repository.serviceNames.includes(service.name))}
+                  controlToken={controlToken}
+                  onSetErrorMessage={onSetErrorMessage}
+                  isBlocked={repository.switching || repository.error !== undefined}
                 />
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
+              </section>
+            );
+          })}
+          <ServiceRows
+            services={props.services.filter(
+              (service) => !repositories.some((repository) => repository.serviceNames.includes(service.name)),
+            )}
+            controlToken={controlToken}
+            onSetErrorMessage={onSetErrorMessage}
+            isBlocked={false}
+          />
+        </>
+      )}
     </ToolbarPopover>
+  );
+}
+
+interface IServiceRowsProps {
+  services: ServiceHealth[];
+  controlToken: string;
+  onSetErrorMessage?: (message: string | null) => void;
+  isBlocked: boolean;
+}
+function ServiceRows({ services, controlToken, onSetErrorMessage, isBlocked }: IServiceRowsProps): JSX.Element {
+  return (
+    <ul className="m-0 list-none p-0" data-testid="ServiceStatusPanel--service-list">
+      {services.map((service: ServiceHealth) => {
+        const dotState: ServiceDotState = readServiceDotState(service);
+        const isChanged: boolean = dotState === "dirty";
+
+        return (
+          <li
+            key={service.name}
+            className="flex min-h-6 items-center gap-1.5 py-0.5 pr-1 pl-2 not-first:border-t hover:bg-secondary"
+            data-testid="ServiceStatusPanel--service"
+          >
+            <ServiceStatusDot service={service} />
+            <span className="sr-only">{serviceStateLabels[dotState]}</span>
+            {service.url === undefined ? (
+              <span className={cn("min-w-0 flex-1 truncate", !service.status && "font-semibold text-destructive")}>
+                {service.name}
+              </span>
+            ) : (
+              <a
+                className={cn(
+                  "min-w-0 flex-1 truncate underline decoration-faint underline-offset-2 hover:text-primary hover:decoration-primary",
+                  service.status ? "text-foreground" : "font-semibold text-destructive",
+                )}
+                href={service.url}
+                rel="noopener noreferrer"
+                target="_blank"
+                title={`Open ${service.name} in a new window`}
+              >
+                {service.name}
+              </a>
+            )}
+            {service.managed ? null : <Badge title="Not managed by devhost; cannot restart">external</Badge>}
+            {isChanged ? <Badge variant="warning">changed</Badge> : null}
+            {service.managed ? (
+              <Button
+                aria-label={`Restart ${service.name}`}
+                disabled={service.restarting === true || isBlocked}
+                startEnhancer={
+                  <span className={cn("flex", service.restarting === true && "animate-spin")}>
+                    <RotateCwIcon />
+                  </span>
+                }
+                title={service.restarting === true ? "Restarting…" : `Restart ${service.name}`}
+                variant={isChanged ? "warning" : "default"}
+                onClick={(): void => {
+                  void restartServices([service.name], controlToken, fetch).then((message) =>
+                    onSetErrorMessage?.(message),
+                  );
+                }}
+              />
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

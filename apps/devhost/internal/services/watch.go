@@ -41,6 +41,7 @@ func (d *DirtyTracker) IsDirty(serviceName string) bool {
 type WatchManager struct {
 	tracker          *DirtyTracker
 	watchers         map[string]*fsnotify.Watcher
+	watcherDone      map[string]chan struct{}
 	watchersMu       sync.RWMutex
 	debounceTimers   map[string]*time.Timer
 	timersMu         sync.Mutex
@@ -55,6 +56,7 @@ func NewWatchManager(tracker *DirtyTracker, onDirty func(string), logWriter io.W
 	return &WatchManager{
 		tracker:          tracker,
 		watchers:         make(map[string]*fsnotify.Watcher),
+		watcherDone:      make(map[string]chan struct{}),
 		debounceTimers:   make(map[string]*time.Timer),
 		onDirty:          onDirty,
 		logWriter:        logWriter,
@@ -174,6 +176,7 @@ func containsAny(s string, sub ...string) bool {
 }
 
 func (wm *WatchManager) StartWatching(serviceName string, watchPaths []string, baseDir string) error {
+	wm.StopWatching(serviceName)
 	if len(watchPaths) == 0 {
 		return nil
 	}
@@ -183,12 +186,12 @@ func (wm *WatchManager) StartWatching(serviceName string, watchPaths []string, b
 		return fmt.Errorf("create fsnotify watcher: %w", err)
 	}
 
-	wm.watchersMu.Lock()
-	wm.watchers[serviceName] = watcher
-	wm.watchersMu.Unlock()
-
 	for _, p := range watchPaths {
-		absPath := filepath.Clean(filepath.Join(baseDir, p))
+		absPath := p
+		if !filepath.IsAbs(p) {
+			absPath = filepath.Join(baseDir, p)
+		}
+		absPath = filepath.Clean(absPath)
 		info, err := os.Stat(absPath)
 		if err != nil {
 			wm.writeLog(fmt.Sprintf("WARNING: watch path %q for service %s does not exist", absPath, serviceName))
@@ -210,8 +213,14 @@ func (wm *WatchManager) StartWatching(serviceName string, watchPaths []string, b
 			return fmt.Errorf("add watch path %q: %w", absPath, err)
 		}
 	}
+	done := make(chan struct{})
+	wm.watchersMu.Lock()
+	wm.watchers[serviceName] = watcher
+	wm.watcherDone[serviceName] = done
+	wm.watchersMu.Unlock()
 
 	go func() {
+		defer close(done)
 		for {
 			select {
 			case event, ok := <-watcher.Events:
@@ -264,7 +273,13 @@ func (wm *WatchManager) handleEvent(serviceName string, event fsnotify.Event) {
 
 	var timer *time.Timer
 	timer = time.AfterFunc(duration, func() {
+		wm.timersMu.Lock()
+		if wm.debounceTimers[serviceName] != timer {
+			wm.timersMu.Unlock()
+			return
+		}
 		wm.tracker.SetDirty(serviceName, true)
+		wm.timersMu.Unlock()
 		if wm.onDirty != nil {
 			wm.onDirty(serviceName)
 		}
@@ -280,6 +295,19 @@ func (wm *WatchManager) handleEvent(serviceName string, event fsnotify.Event) {
 	wm.debounceTimers[serviceName] = timer
 }
 
+func (wm *WatchManager) StopWatching(serviceName string) {
+	wm.watchersMu.Lock()
+	watcher, done := wm.watchers[serviceName], wm.watcherDone[serviceName]
+	delete(wm.watchers, serviceName)
+	delete(wm.watcherDone, serviceName)
+	wm.watchersMu.Unlock()
+	if watcher != nil {
+		_ = watcher.Close()
+		<-done
+	}
+	wm.CancelTimer(serviceName)
+}
+
 func (wm *WatchManager) CancelTimer(serviceName string) {
 	wm.timersMu.Lock()
 	defer wm.timersMu.Unlock()
@@ -290,12 +318,15 @@ func (wm *WatchManager) CancelTimer(serviceName string) {
 }
 
 func (wm *WatchManager) StopAll() {
-	wm.watchersMu.Lock()
-	for _, watcher := range wm.watchers {
-		_ = watcher.Close()
+	wm.watchersMu.RLock()
+	names := make([]string, 0, len(wm.watchers))
+	for name := range wm.watchers {
+		names = append(names, name)
 	}
-	wm.watchers = make(map[string]*fsnotify.Watcher)
-	wm.watchersMu.Unlock()
+	wm.watchersMu.RUnlock()
+	for _, name := range names {
+		wm.StopWatching(name)
+	}
 
 	wm.timersMu.Lock()
 	for _, timer := range wm.debounceTimers {

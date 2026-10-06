@@ -55,17 +55,19 @@ type RoutedServiceIdentity struct {
 }
 
 type ServiceHealth struct {
-	Managed    bool    `json:"managed"`
-	Name       string  `json:"name"`
-	Status     bool    `json:"status"`
-	URL        *string `json:"url,omitempty"`
-	Dirty      bool    `json:"dirty,omitempty"`
-	Restarting bool    `json:"restarting,omitempty"`
-	ExitCode   *int    `json:"exitCode,omitempty"`
+	Managed         bool    `json:"managed"`
+	Name            string  `json:"name"`
+	Status          bool    `json:"status"`
+	URL             *string `json:"url,omitempty"`
+	Dirty           bool    `json:"dirty,omitempty"`
+	Restarting      bool    `json:"restarting,omitempty"`
+	ExitCode        *int    `json:"exitCode,omitempty"`
+	ProjectRootPath string  `json:"projectRootPath,omitempty"`
 }
 
 type HealthResponse struct {
-	Services []ServiceHealth `json:"services"`
+	Services     []ServiceHealth      `json:"services"`
+	Repositories []WorktreeRepository `json:"repositories,omitempty"`
 }
 
 type ServiceLogStream string
@@ -95,6 +97,9 @@ type StartControlServerOptions struct {
 	ProjectRootPath            string
 	PrimaryService             string
 	RestartService             func([]string) error
+	SwitchWorktree             func(string, string) error
+	RefreshWorktrees           func() error
+	GetToolContext             func(string) (ToolContext, error)
 	RestartServicesShortcut    string
 	RoutedServices             []RoutedServiceIdentity
 	StateDirectoryPath         string
@@ -113,6 +118,11 @@ type ControlServer struct {
 	idleTerminalSessionTimeout time.Duration
 	xtermStylesheet            string
 	restartService             func([]string) error
+	switchWorktree             func(string, string) error
+	refreshWorktrees           func() error
+	getToolContext             func(string) (ToolContext, error)
+	routedServices             []RoutedServiceIdentity
+	primaryService             string
 	getHealth                  func() (HealthResponse, error)
 	annotationActions          []manifest.ValidatedAnnotationAction
 	projectRootPath            string
@@ -284,6 +294,11 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		projectRootPath:            options.ProjectRootPath,
 		reactHighlightClients:      map[*websocketClient]struct{}{},
 		restartService:             options.RestartService,
+		switchWorktree:             options.SwitchWorktree,
+		refreshWorktrees:           options.RefreshWorktrees,
+		getToolContext:             options.GetToolContext,
+		routedServices:             append([]RoutedServiceIdentity{}, options.RoutedServices...),
+		primaryService:             options.PrimaryService,
 		stackName:                  options.StackName,
 		startTerminalSession:       options.StartTerminalSession,
 		terminalSessions:           map[string]*terminalSessionState{},
@@ -345,11 +360,19 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 				if !ok || action.Kind != terminalSessionRequestKindAgent {
 					return fmt.Errorf("Annotation action %s is not available.", actionID)
 				}
+				toolContext, err := controlServer.toolContext(terminalSessionRequest{Annotation: &annotation})
+				if err != nil {
+					return err
+				}
 				controlServer.mu.Lock()
 				session := controlServer.terminalSessions[sessionID]
 				if session == nil || session.closed || session.exited != nil || session.request.Kind != terminalSessionRequestKindAgent || session.request.ActionID != actionID {
 					controlServer.mu.Unlock()
 					return fmt.Errorf("Agent terminal session %s is not available.", sessionID)
+				}
+				if session.projectRootPath != toolContext.ProjectRootPath {
+					controlServer.mu.Unlock()
+					return fmt.Errorf("Agent session belongs to the previous checkout; resume the queue to start a session in the selected worktree.")
 				}
 				session.request.Annotation = &annotation
 				write := session.write
@@ -363,7 +386,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 					agentDisplayName: action.Agent.DisplayName,
 					annotation:       annotation,
 					colorScheme:      colorScheme,
-					projectRootPath:  options.ProjectRootPath,
+					projectRootPath:  toolContext.ProjectRootPath,
 					prompt:           createAnnotationAgentPrompt(annotation),
 					stackName:        options.StackName,
 				})
@@ -400,6 +423,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	mux.HandleFunc(reactHighlightWebsocketPath, controlServer.handleReactHighlightWebsocket)
 	mux.HandleFunc(xtermStylesheetPath, controlServer.handleXtermStylesheet)
 	mux.HandleFunc(restartServicePath, controlServer.handleRestartService)
+	mux.HandleFunc(worktreesPath, controlServer.handleWorktrees)
 	mux.HandleFunc(healthWebsocketPath, controlServer.handleHealthWebsocket)
 	mux.HandleFunc(logsWebsocketPath, controlServer.handleLogsWebsocket)
 	controlServer.server = &http.Server{Handler: controlServer.trackerMiddleware(mux)}

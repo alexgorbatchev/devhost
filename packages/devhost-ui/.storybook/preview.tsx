@@ -91,7 +91,7 @@ class MockStorybookWebSocket extends EventTarget {
     const requestUrl: URL = new URL(this.url, window.location.href);
 
     if (requestUrl.pathname === HEALTH_WEBSOCKET_PATH) {
-      this.emitMessage(JSON.stringify({ services: [{ name: "api", status: true }] }));
+      this.emitMessage(JSON.stringify({ services: [{ name: "api", managed: true, status: true }] }));
       return;
     }
 

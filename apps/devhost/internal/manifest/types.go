@@ -9,6 +9,7 @@ type Manifest struct {
 	Annotation            ValidatedAnnotation
 	Caddy                 CaddyConfig
 	Devtools              DevtoolsConfig
+	Worktrees             WorktreesConfig
 	ManifestDirectoryPath string
 	ManifestPath          string
 	Name                  string
@@ -16,6 +17,10 @@ type Manifest struct {
 	ServiceOrder          []string
 	Services              map[string]ValidatedService
 	KillZombies           bool
+}
+
+type WorktreesConfig struct {
+	Enabled bool
 }
 
 type ValidatedAnnotation struct {

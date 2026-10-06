@@ -8,11 +8,41 @@ export type ServiceHealth = {
   dirty?: boolean; // Indicates file changes have been detected
   restarting?: boolean; // Indicates service is actively in process of restarting
   exitCode?: number;
+  projectRootPath?: string;
 };
 
 export type HealthResponse = {
   services: ServiceHealth[];
+  repositories?: WorktreeRepository[];
 };
+
+export interface IWorktreeDirectory {
+  name: string;
+  cwd: string;
+}
+
+export interface IWorktree {
+  path: string;
+  branch: string;
+  head: string;
+  detached: boolean;
+  available: boolean;
+  reason?: string;
+  directories: IWorktreeDirectory[];
+}
+
+export interface WorktreeRepository {
+  id: string;
+  name: string;
+  configuredPath: string;
+  selectedPath: string;
+  runningPath: string;
+  serviceNames: string[];
+  worktrees: IWorktree[];
+  switching: boolean;
+  error?: string;
+  blockedReason?: string;
+}
 
 export type ServiceLogStream = "stdout" | "stderr";
 

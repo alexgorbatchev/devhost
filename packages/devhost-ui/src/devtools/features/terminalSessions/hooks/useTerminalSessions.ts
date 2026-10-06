@@ -156,6 +156,7 @@ export function useTerminalSessions(
   const startComponentSourceSession = useCallback(
     async (menuItem: ComponentSourceMenuItem): Promise<ITerminalSessionStartResult> => {
       return await startSession({
+        pageUrl: window.location.href,
         componentName: menuItem.displayName,
         kind: "editor",
         launcher: "neovim",

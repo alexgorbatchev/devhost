@@ -7,6 +7,7 @@
 # - `name` (required)
 # - `killZombies` (optional; boolean to automatically kill zombie processes from the same manifest, default `true`)
 # - `includes` (optional; string or string array of file glob patterns to merge multiple sub-manifests)
+# - `[worktrees]` (optional; Git checkout selection for repository service groups)
 # - `[caddy.global]` (optional)
 # - `[devtools]` (optional)
 # - `[devtools.editor]` (optional)
@@ -72,6 +73,16 @@ name = "hello-stack"
 # The `devtools.*` sections control the browser-side devhost overlay injected into
 # routed HTML document navigations. If all devtools features are disabled, routed
 # services proxy directly to the app without the overlay.
+
+# Optional: enable the repository worktree picker in the Services panel.
+# [worktrees]
+# enabled = true
+# Choices are remembered per manifest path and repository across devhost restarts.
+# All services in a repository share one checkout, preserving their cwd offsets.
+# Missing saved checkouts and failed launches keep the group stopped for recovery.
+# Repositories containing managed = false services cannot switch.
+# Keep configured cwd values in one checkout per repository. The original manifest
+# remains authoritative; selecting a checkout does not load another manifest.
 
 [caddy.global]
 # `http` also serves the same routed hosts and the shared fallback page on plain HTTP.
@@ -308,7 +319,8 @@ host = "hello.local.test"
 # path = "/api/*"
 # `dependsOn` declares services that must start before this service.
 dependsOn = ["api"]
-# `watch` lists relative paths within the manifest directory to watch for file changes.
+# `watch` lists paths to watch for file changes; relative paths use the service cwd.
+# Relative watches follow a selected worktree; absolute watch paths remain unchanged.
 # - string array (e.g. ["src/"]): when files change, the service is marked `changed` (dirty) in the devtools toolbar.
 # - All folders are watched recursively. Heavy paths (e.g., node_modules, .git, .workspaces, .tmp) are automatically ignored.
 # - Rapid concurrent modifications are debounced by 200ms automatically.

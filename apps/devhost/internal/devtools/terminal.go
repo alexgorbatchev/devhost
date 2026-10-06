@@ -92,6 +92,7 @@ const (
 )
 
 type terminalSessionRequest struct {
+	PageURL       string                  `json:"pageUrl,omitempty"`
 	ActionID      string                  `json:"actionId,omitempty"`
 	Annotation    *annotationSubmitDetail `json:"annotation,omitempty"`
 	ColorScheme   agentColorScheme        `json:"colorScheme,omitempty"`
@@ -144,22 +145,23 @@ type terminalSessionSnapshotMessage struct {
 }
 
 type terminalSessionState struct {
-	close         func()
-	clients       map[*websocketClient]struct{}
-	exited        *terminalSessionExitStatus
-	idleTimer     *time.Timer
-	output        string
-	pendingOutput []byte
-	request       terminalSessionRequest
-	resize        func(cols int, rows int)
-	write         func(data string)
-	cleanup       func()
-	cleanupOnce   sync.Once
-	closed        bool
-	closeOnce     sync.Once
-	wait          func() terminalSessionExitStatus
-	agentStatus   *agentSessionStatus
-	agentCarry    string
+	projectRootPath string
+	close           func()
+	clients         map[*websocketClient]struct{}
+	exited          *terminalSessionExitStatus
+	idleTimer       *time.Timer
+	output          string
+	pendingOutput   []byte
+	request         terminalSessionRequest
+	resize          func(cols int, rows int)
+	write           func(data string)
+	cleanup         func()
+	cleanupOnce     sync.Once
+	closed          bool
+	closeOnce       sync.Once
+	wait            func() terminalSessionExitStatus
+	agentStatus     *agentSessionStatus
+	agentCarry      string
 }
 
 type terminalSessionStarter func(request terminalSessionRequest, onData func([]byte)) (*launchedTerminalSession, error)
@@ -173,6 +175,7 @@ type launchedTerminalSession struct {
 }
 
 type terminalSessionRequestPayload struct {
+	PageURL       *string                 `json:"pageUrl"`
 	ActionID      *string                 `json:"actionId"`
 	Annotation    *annotationSubmitDetail `json:"annotation"`
 	ColorScheme   *string                 `json:"colorScheme"`
@@ -266,7 +269,12 @@ func parseTerminalSessionRequest(payload terminalSessionRequestPayload) (termina
 			return terminalSessionRequest{}, nil, false
 		}
 
+		pageURL := ""
+		if payload.PageURL != nil {
+			pageURL = *payload.PageURL
+		}
 		return terminalSessionRequest{
+			PageURL:       pageURL,
 			ComponentName: *payload.ComponentName,
 			Kind:          terminalSessionRequestKindEditor,
 			Launcher:      *payload.Launcher,

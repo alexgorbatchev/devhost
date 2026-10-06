@@ -136,19 +136,20 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 
 	runtimeDevtoolsFeatures := resolveSupportedDevtoolsFeatures(manifest.Devtools, manifest.Annotation)
 	devtoolsEnabled := hasEnabledDevtools(manifest.Devtools) && hasEnabledRuntimeDevtools(runtimeDevtoolsFeatures)
-	startedServices := []*startedService{}
-	startedDaemonServices := []daemonLifecycleService{}
-	failedRouteServices := map[string]*startedService{}
-	var startedServicesMu sync.Mutex
-	var startedDaemonServicesMu sync.Mutex
+	worktrees, err := newStackWorktrees(*manifest, paths.StateDirectoryPath)
+	if err != nil {
+		return 0, err
+	}
+	initial, blocked := worktrees.restore(*manifest)
+	*manifest = initial
+	state := &stackRuntime{
+		manifest: manifest, order: append([]string{}, serviceOrder...), options: options, environment: environment,
+		gracePeriod: gracePeriod, worktrees: worktrees, blocked: blocked, failedRoutes: map[string]*startedService{},
+		exits: make(chan serviceExitResult, len(serviceOrder)),
+	}
 	claimedFixedPorts := []claimedFixedPort{}
 	claimedHosts := []string{}
 	activeRoutes := []activeRoute{}
-	serviceExits := make(chan serviceExitResult, len(serviceOrder))
-	var restartServicesMu sync.Mutex
-	isShuttingDown := false
-	stackReady := false
-	var manifestMu sync.RWMutex
 	signalExits := make(chan os.Signal, 1)
 	documentInjectionServers := map[string]*devtools.DocumentInjectionServer{}
 	var devtoolsControlServer *devtools.ControlServer
@@ -157,14 +158,14 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 
 	dirtyTracker := NewDirtyTracker()
 	onDirty := func(serviceName string) {
-		if devtoolsControlServer != nil {
-			_ = devtoolsControlServer.PublishHealthResponse()
-		}
+		state.publish()
 	}
 	watchManager := NewWatchManager(dirtyTracker, onDirty, options.LogWriter, manifest.Name)
+	state.watcher, state.dirty, state.routes = watchManager, dirtyTracker, &routes
 
+	defer watchManager.StopAll()
 	for _, s := range manifest.Services {
-		if len(s.Watch) > 0 {
+		if len(s.Watch) > 0 && blocked[s.Name] == "" {
 			if err := watchManager.StartWatching(s.Name, s.Watch, s.Cwd); err != nil {
 				return 0, fmt.Errorf("failed to start watching for service %s: %w", s.Name, err)
 			}
@@ -176,22 +177,22 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	defer unregisterProcessSignals(signalExits)
 
 	defer func() {
-		restartServicesMu.Lock()
-		isShuttingDown = true
-		restartServicesMu.Unlock()
+		state.operationMu.Lock()
+		state.shuttingDown = true
+		state.operationMu.Unlock()
 		if watchManager != nil {
 			watchManager.StopAll()
 		}
 
-		startedServicesMu.Lock()
-		startedServicesSnapshot := append([]*startedService{}, startedServices...)
-		startedServicesMu.Unlock()
-		for _, failed := range failedRouteServices {
+		state.startedMu.Lock()
+		startedServicesSnapshot := append([]*startedService{}, state.started...)
+		state.startedMu.Unlock()
+		for _, failed := range state.failedRoutes {
 			startedServicesSnapshot = append(startedServicesSnapshot, failed)
 		}
-		startedDaemonServicesMu.Lock()
-		startedDaemonServicesSnapshot := append([]daemonLifecycleService{}, startedDaemonServices...)
-		startedDaemonServicesMu.Unlock()
+		state.daemonMu.Lock()
+		startedDaemonServicesSnapshot := append([]daemonLifecycleService{}, state.daemons...)
+		state.daemonMu.Unlock()
 		cleanupError = appendCleanupError(cleanupError, stopStartedServices(startedServicesSnapshot, gracePeriod))
 		cleanupError = appendCleanupError(cleanupError, stopDaemonLifecycleServices(*manifest, startedDaemonServicesSnapshot, options, environment, devtoolsControlServer))
 
@@ -304,192 +305,89 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("Rebuilding devtools assets on demand from source checkout: %s", devSource.RootPath()))
 		}
 
+		var switchWorktree func(string, string) error
+		var refreshWorktrees func() error
+		if worktrees != nil {
+			switchWorktree, refreshWorktrees = state.switchWorktree, worktrees.refresh
+		}
 		controlServer, err := startDevtoolsControlServer(devtools.StartControlServerOptions{
 			AnnotationActions:         manifest.Annotation.Actions,
 			AnnotationDefaultActionID: manifest.Annotation.DefaultActionID,
 			ComponentEditor:           manifest.Devtools.Editor.IDE,
 			DevSource:                 devSource,
 			FeatureToggles:            runtimeDevtoolsFeatures,
-			GetHealthResponse: func() (devtools.HealthResponse, error) {
-				manifestMu.RLock()
-				manifestSnapshot := *manifest
-				startedServicesMu.Lock()
-				startedServicesSnapshot := append([]*startedService{}, startedServices...)
-				startedServicesMu.Unlock()
-				manifestMu.RUnlock()
-				return collectServicesHealth(manifestSnapshot, startedServicesSnapshot, dirtyTracker), nil
-			},
-			ManifestPath:    manifest.ManifestPath,
-			Position:        manifest.Devtools.Status.Position,
-			ProjectRootPath: manifest.ManifestDirectoryPath,
-			PrimaryService:  manifest.PrimaryService,
-			RestartService: func(serviceNames []string) error {
-				restartServicesMu.Lock()
-				defer restartServicesMu.Unlock()
-				if isShuttingDown {
-					return fmt.Errorf("devhost is shutting down")
-				}
-				if !stackReady {
-					return fmt.Errorf("devhost is still starting the stack")
-				}
-				// Sort requested list based on their positions in serviceOrder
-				orderMap := make(map[string]int)
-				for i, name := range serviceOrder {
-					orderMap[name] = i
-				}
-				sort.Slice(serviceNames, func(i, j int) bool {
-					return orderMap[serviceNames[i]] < orderMap[serviceNames[j]]
-				})
-
-				for _, serviceName := range serviceNames {
-					service, ok := manifest.Services[serviceName]
-					if !ok {
-						return fmt.Errorf("unknown service: %s", serviceName)
-					}
-					if !isManagedService(service) {
-						return fmt.Errorf("service %s is unmanaged and cannot be restarted by devhost", serviceName)
-					}
-
-					writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("restarting service: %s", serviceName))
-
-					// Immediately reset dirty status and cancel timers
-					dirtyTracker.SetDirty(serviceName, false)
-					if watchManager != nil {
-						watchManager.CancelTimer(serviceName)
-					}
-
-					if usesDaemonLifecycle(service) {
-						if devtoolsControlServer != nil {
-							_ = devtoolsControlServer.PublishHealthResponse()
-						}
-
-						startedDaemonServicesMu.Lock()
-						hadStartedDaemon := hasStartedDaemonLifecycleService(startedDaemonServices, serviceName)
-						startedDaemonServicesMu.Unlock()
-						if hadStartedDaemon {
-							if err := stopDaemonLifecycleService(*manifest, service, options, environment, devtoolsControlServer); err != nil {
-								return err
-							}
-						}
-
-						if err := startDaemonLifecycleService(manifest, serviceName, options, environment, devtoolsControlServer); err != nil {
-							return err
-						}
-
-						startedDaemonServicesMu.Lock()
-						startedDaemonServices = upsertStartedDaemonLifecycleService(startedDaemonServices, manifest.Services[serviceName])
-						startedDaemonServicesMu.Unlock()
-					} else {
-						if failed := failedRouteServices[serviceName]; failed != nil {
-							if err := stopStartedService(failed, gracePeriod); err != nil {
-								return fmt.Errorf("clean up previous unrouted replacement: %w", err)
-							}
-							delete(failedRouteServices, serviceName)
-						}
-						startedServicesMu.Lock()
-						targetStartedService := findStartedService(startedServices, serviceName)
-						if targetStartedService != nil {
-							targetStartedService.setRestarting(true)
-						}
-						startedServicesMu.Unlock()
-
-						if devtoolsControlServer != nil {
-							_ = devtoolsControlServer.PublishHealthResponse()
-						}
-
-						if targetStartedService != nil {
-							if err := stopStartedService(targetStartedService, gracePeriod); err != nil {
-								targetStartedService.setRestarting(false)
-								return err
-							}
-						}
-
-						// Port retries mutate a private manifest until health and routing are ready.
-						attemptManifest := *manifest
-						restartedService, restartError := startServiceWithRetries(&attemptManifest, serviceName, serviceExits, options, environment, devtoolsControlServer)
-						if restartError == nil {
-							restartError = routes.activate(restartedService.service)
-							if restartError != nil {
-								restartedService.setRestarting(true)
-								if stopError := stopStartedService(restartedService, gracePeriod); stopError != nil {
-									failedRouteServices[serviceName] = restartedService
-									restartError = joinCleanupError(restartError, stopError)
-								}
-								restartedService = nil
-							}
-						}
-						manifestMu.Lock()
-						startedServicesMu.Lock()
-						if restartedService != nil {
-							manifest.Services = attemptManifest.Services
-							startedServices = removeStartedService(startedServices, targetStartedService)
-							startedServices = append(startedServices, restartedService)
-						} else if targetStartedService != nil {
-							targetStartedService.setRestarting(false)
-						}
-						startedServicesMu.Unlock()
-						manifestMu.Unlock()
-						if devtoolsControlServer != nil {
-							_ = devtoolsControlServer.PublishHealthResponse()
-						}
-						if restartError != nil {
-							writeLogLine(options.LogWriter, manifest.Name, restartError.Error())
-							if devtoolsControlServer != nil {
-								devtoolsControlServer.PublishLogEntry(serviceName, devtools.ServiceLogStreamStderr, restartError.Error())
-							}
-							return restartError
-						}
-					}
-				}
-				return nil
-			},
-			RestartServicesShortcut: manifest.Devtools.Shortcuts.RestartServices,
-			RoutedServices:          routedServices,
-			StateDirectoryPath:      paths.StateDirectoryPath,
-			StackName:               manifest.Name,
+			GetHealthResponse:         state.health,
+			ManifestPath:              manifest.ManifestPath,
+			Position:                  manifest.Devtools.Status.Position,
+			ProjectRootPath:           manifest.ManifestDirectoryPath,
+			PrimaryService:            manifest.PrimaryService,
+			RestartService:            state.restart,
+			SwitchWorktree:            switchWorktree,
+			RefreshWorktrees:          refreshWorktrees,
+			GetToolContext:            func(name string) (devtools.ToolContext, error) { return worktrees.toolContext(initial, name) },
+			RestartServicesShortcut:   manifest.Devtools.Shortcuts.RestartServices,
+			RoutedServices:            routedServices,
+			StateDirectoryPath:        paths.StateDirectoryPath,
+			StackName:                 manifest.Name,
 		})
 		if err != nil {
 			return 0, joinCleanupError(err, cleanupError)
 		}
 
 		devtoolsControlServer = controlServer
+		state.controlMu.Lock()
+		state.control = controlServer
+		state.controlMu.Unlock()
 		routes.controlServer = controlServer
 	}
 
+	groupedServices := map[string]bool{}
+	for _, repo := range worktrees.snapshot() {
+		for _, name := range repo.ServiceNames {
+			groupedServices[name] = true
+		}
+	}
 	for _, serviceName := range serviceOrder {
 		service, ok := manifest.Services[serviceName]
 		if !ok {
 			return 0, joinCleanupError(fmt.Errorf("unknown service: %s", serviceName), cleanupError)
 		}
 
-		if isManagedService(service) {
-			if usesDaemonLifecycle(service) {
+		if isManagedService(service) && blocked[serviceName] == "" {
+			if groupedServices[serviceName] {
+				if err := state.start(serviceName, false); err != nil {
+					if err := state.failWorktreeStartup(serviceName, err); err != nil {
+						return 0, err
+					}
+				}
+				service = manifest.Services[serviceName]
+			} else if usesDaemonLifecycle(service) {
 				if err := startDaemonLifecycleService(manifest, serviceName, options, environment, devtoolsControlServer); err != nil {
 					return 0, joinCleanupError(err, cleanupError)
 				}
 
-				startedDaemonServicesMu.Lock()
-				startedDaemonServices = append(startedDaemonServices, daemonLifecycleService{service: manifest.Services[serviceName]})
-				startedDaemonServicesMu.Unlock()
+				state.daemonMu.Lock()
+				state.daemons = append(state.daemons, daemonLifecycleService{service: manifest.Services[serviceName]})
+				state.daemonMu.Unlock()
 
 				service = manifest.Services[serviceName]
 			} else {
 				attemptManifest := *manifest
-				started, err := startServiceWithRetries(&attemptManifest, serviceName, serviceExits, options, environment, devtoolsControlServer)
+				started, err := startServiceWithRetries(&attemptManifest, serviceName, state.exits, options, environment, devtoolsControlServer)
 				if err != nil {
 					if started == nil || started.ReadExitCode() == nil {
 						return 0, joinCleanupError(err, cleanupError)
 					}
 					writeLogLine(options.LogWriter, manifest.Name, err.Error())
-					serviceExits <- serviceExitResult{exitCode: started.exitCodeValue(), serviceName: serviceName}
+					state.exits <- serviceExitResult{exitCode: started.exitCodeValue(), serviceName: serviceName}
 				}
 
-				manifestMu.Lock()
+				state.manifestMu.Lock()
 				manifest.Services = attemptManifest.Services
-				startedServicesMu.Lock()
-				startedServices = append(startedServices, started)
-				startedServicesMu.Unlock()
-				manifestMu.Unlock()
+				state.startedMu.Lock()
+				state.started = append(state.started, started)
+				state.startedMu.Unlock()
+				state.manifestMu.Unlock()
 
 				service = started.service
 			}
@@ -514,6 +412,16 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		for _, host := range service.Hosts {
 			activeRoutes = append(activeRoutes, activeRoute{host: host, path: path, serviceName: service.Name})
 		}
+	}
+	for _, repo := range worktrees.snapshot() {
+		var groupError error
+		for _, name := range repo.ServiceNames {
+			if blocked[name] != "" {
+				groupError = fmt.Errorf("%s", blocked[name])
+				break
+			}
+		}
+		worktrees.finish(repo.ID, groupError)
 	}
 	LogServiceURLs(*manifest, options.LogWriter)
 
@@ -604,24 +512,24 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		}()
 	}
 
-	restartServicesMu.Lock()
-	stackReady = true
-	restartServicesMu.Unlock()
+	state.operationMu.Lock()
+	state.ready = true
+	state.operationMu.Unlock()
 	for {
 		select {
-		case result := <-serviceExits:
+		case result := <-state.exits:
 			writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("%s exited with code %d; devhost is waiting for a restart.", result.serviceName, result.exitCode))
 		case receivedSignal := <-signalExits:
-			startedServicesMu.Lock()
-			startedServicesSnapshot := append([]*startedService{}, startedServices...)
-			startedServicesMu.Unlock()
+			state.startedMu.Lock()
+			startedServicesSnapshot := append([]*startedService{}, state.started...)
+			state.startedMu.Unlock()
 			forwardStartedServicesSignal(startedServicesSnapshot, receivedSignal)
 			return readSignalExitCode(receivedSignal), nil
 		case <-idleShutdownChan:
 			writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("Idle timeout of %s reached. Automatically shutting down the stack...", finalIdleTimeout))
-			startedServicesMu.Lock()
-			startedServicesSnapshot := append([]*startedService{}, startedServices...)
-			startedServicesMu.Unlock()
+			state.startedMu.Lock()
+			startedServicesSnapshot := append([]*startedService{}, state.started...)
+			state.startedMu.Unlock()
 			forwardStartedServicesSignal(startedServicesSnapshot, syscall.SIGTERM)
 			return 0, nil
 		}
@@ -954,12 +862,14 @@ func stopDaemonLifecycleService(
 		return nil
 	}
 
-	running, err := readDaemonLifecycleStatus(manifest, service, environment, options, devtoolsControlServer)
-	if err != nil {
-		return err
-	}
-	if !running {
-		return nil
+	if len(service.Lifecycle.Status) > 0 {
+		running, err := readDaemonLifecycleStatus(manifest, service, environment, options, devtoolsControlServer)
+		if err != nil {
+			return err
+		}
+		if !running {
+			return nil
+		}
 	}
 
 	if err := runServiceCommand(manifest, service, service.Lifecycle.Stop, "daemon stop", environment, options, devtoolsControlServer); err != nil {
