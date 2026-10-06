@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { HEALTH_WEBSOCKET_PATH } from "../../../shared/constants";
 import { createDevtoolsWebSocketUrl } from "../../../shared/createDevtoolsWebSocketUrl";
+import { pristineFetch, pristineWebSocket } from "../../../shared/pristineFetch";
 import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
 import type { HealthResponse, ServiceHealth, WorktreeRepository } from "../../../shared/types";
 import { parseHealthResponse } from "../parseHealthResponse";
@@ -65,7 +66,7 @@ export function useServiceHealth(): IUseServiceHealthResult {
       setErrorMessage(null);
     };
 
-    websocket = new WebSocket(createDevtoolsWebSocketUrl(HEALTH_WEBSOCKET_PATH, window.location));
+    websocket = pristineWebSocket(createDevtoolsWebSocketUrl(HEALTH_WEBSOCKET_PATH, window.location));
     websocket.addEventListener("open", handleOpen);
     websocket.addEventListener("message", handleMessage);
     websocket.addEventListener("close", handleClose);
@@ -77,7 +78,7 @@ export function useServiceHealth(): IUseServiceHealthResult {
   }, [devtoolsStackName]);
 
   const refreshWorktrees = useCallback(async (): Promise<string | null> => {
-    const result = await requestWorktrees(fetch);
+    const result = await requestWorktrees(pristineFetch);
     if (result.health !== null) {
       setRepositories(result.health.repositories ?? []);
       setServices(result.health.services);
@@ -86,7 +87,7 @@ export function useServiceHealth(): IUseServiceHealthResult {
   }, []);
   const switchWorktree = useCallback(
     async (repositoryId: string, path: string): Promise<string | null> => {
-      const result = await requestWorktrees(fetch, { repositoryId, path });
+      const result = await requestWorktrees(pristineFetch, { repositoryId, path });
       await refreshWorktrees();
       return result.error;
     },

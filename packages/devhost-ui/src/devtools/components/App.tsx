@@ -13,6 +13,7 @@ import { LogMinimap, useServiceLogs } from "../features/minimap";
 import { TerminalSessionChips, TerminalSessionHost, useTerminalSessions } from "../features/terminalSessions";
 import { useReactHighlightOverlay } from "../features/reactHighlight";
 import { ServiceCrashOverlay, ServiceStatusPanel, useServiceHealth } from "../features/serviceStatusPanel";
+import { pristineFetch } from "../shared/pristineFetch";
 import { restartServices } from "../shared/restartServices";
 import { readInjectedDevtoolsConfig } from "../shared/readInjectedDevtoolsConfig";
 import { DevtoolsToolbar } from "../shared/components/DevtoolsToolbar";
@@ -155,7 +156,7 @@ function AppContent(): JSX.Element {
         return;
       }
 
-      setErrorMessage(await restartServices(targetServiceNames, fetch));
+      setErrorMessage(await restartServices(targetServiceNames, pristineFetch));
     };
 
     document.addEventListener("keydown", handleKeyDown, true);

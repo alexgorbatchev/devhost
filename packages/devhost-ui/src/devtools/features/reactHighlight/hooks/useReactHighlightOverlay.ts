@@ -7,6 +7,7 @@ import {
   isReactHighlightCursorMessage,
 } from "../reactHighlightOverlay";
 import { parseReactHighlightCursorPayload } from "../reactHighlightCursorPayload";
+import { pristineWebSocket } from "../../../shared/pristineFetch";
 
 interface IUseReactHighlightOverlayParams {
   createWebSocket?: (url: string) => Pick<WebSocket, "addEventListener" | "removeEventListener" | "close">;
@@ -82,5 +83,5 @@ export function useReactHighlightOverlay({
 }
 
 function openReactHighlightWebSocket(url: string): WebSocket {
-  return new WebSocket(url);
+  return pristineWebSocket(url);
 }

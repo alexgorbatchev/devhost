@@ -9,6 +9,7 @@ import { cn } from "../../../../lib/utils";
 
 import { Button, InlineNotice, useDevtoolsColorScheme } from "../../../shared";
 import { createDevtoolsWebSocketUrl } from "../../../shared/createDevtoolsWebSocketUrl";
+import { pristineWebSocket } from "../../../shared/pristineFetch";
 import {
   TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME,
   TERMINAL_SESSION_WEBSOCKET_PATH,
@@ -155,7 +156,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
       });
       const fitAddon = new FitAddon();
       const websocketUrl: URL = new URL(createDevtoolsWebSocketUrl(TERMINAL_SESSION_WEBSOCKET_PATH, window.location));
-      const websocket = new WebSocket(appendTerminalSessionParameters(websocketUrl, session.sessionId).toString());
+      const websocket = pristineWebSocket(appendTerminalSessionParameters(websocketUrl, session.sessionId).toString());
 
       fitAddonReference.current = fitAddon;
       terminalReference.current = terminal;

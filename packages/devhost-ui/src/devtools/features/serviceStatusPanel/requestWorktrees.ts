@@ -1,4 +1,5 @@
 import { CONTROL_PATH_PREFIX } from "../../shared/constants";
+import type { FetchFunction } from "../../shared/pristineFetch";
 import type { HealthResponse } from "../../shared/types";
 import { parseHealthResponse } from "./parseHealthResponse";
 
@@ -13,7 +14,7 @@ interface IWorktreeSelection {
 }
 
 export async function requestWorktrees(
-  request: typeof fetch,
+  request: FetchFunction,
   selection?: IWorktreeSelection,
 ): Promise<IWorktreeRequestResult> {
   try {

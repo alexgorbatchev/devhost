@@ -1,6 +1,7 @@
 import { RESTART_SERVICE_PATH } from "./constants";
+import type { FetchFunction } from "./pristineFetch";
 
-export async function restartServices(serviceNames: string[], request: typeof fetch): Promise<string | null> {
+export async function restartServices(serviceNames: string[], request: FetchFunction): Promise<string | null> {
   try {
     const response = await request(RESTART_SERVICE_PATH, {
       body: JSON.stringify({ serviceNames }),

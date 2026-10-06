@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import type { DevtoolsColorScheme } from "../../../shared/DevtoolsColorScheme";
+import { pristineFetch, pristineWebSocket } from "../../../shared/pristineFetch";
 import {
   createAnnotationQueuesWebSocketUrl,
   deleteAnnotationQueueEntry,
@@ -36,7 +37,7 @@ export function useAnnotationQueues(enabled: boolean = true): IUseAnnotationQueu
     }
 
     let isDisposed: boolean = false;
-    const websocket = new WebSocket(createAnnotationQueuesWebSocketUrl(window.location));
+    const websocket = pristineWebSocket(createAnnotationQueuesWebSocketUrl(window.location));
 
     const handleOpen = (): void => {
       setErrorMessage(null);
@@ -82,7 +83,7 @@ export function useAnnotationQueues(enabled: boolean = true): IUseAnnotationQueu
       }
 
       return await runEntryMutation(entryId, setEntryMutationIds, setErrorMessage, async (): Promise<boolean> => {
-        await updateAnnotationQueueEntry(entryId, comment, fetch);
+        await updateAnnotationQueueEntry(entryId, comment, pristineFetch);
         return true;
       });
     },
@@ -96,7 +97,7 @@ export function useAnnotationQueues(enabled: boolean = true): IUseAnnotationQueu
       }
 
       return await runEntryMutation(entryId, setEntryMutationIds, setErrorMessage, async (): Promise<boolean> => {
-        await deleteAnnotationQueueEntry(entryId, fetch);
+        await deleteAnnotationQueueEntry(entryId, pristineFetch);
         return true;
       });
     },
@@ -112,7 +113,7 @@ export function useAnnotationQueues(enabled: boolean = true): IUseAnnotationQueu
       setQueueResumeIds((currentIds: string[]): string[] => appendPendingId(currentIds, queueId));
 
       try {
-        const response = await resumeAnnotationQueue(queueId, colorScheme, fetch);
+        const response = await resumeAnnotationQueue(queueId, colorScheme, pristineFetch);
 
         setErrorMessage(null);
         return response.sessionId;

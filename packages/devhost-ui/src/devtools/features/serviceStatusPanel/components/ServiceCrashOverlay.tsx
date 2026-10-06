@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, type JSX } from "react";
 
 import { cn } from "../../../../lib/utils";
 import { Button, InlineNotice } from "../../../shared";
+import { pristineFetch } from "../../../shared/pristineFetch";
 import { restartServices } from "../../../shared/restartServices";
 import type { ServiceHealth, ServiceLogEntry } from "../../../shared/types";
 
@@ -27,7 +28,7 @@ export function ServiceCrashOverlay({ services, entries }: IServiceCrashOverlayP
   const handleRestart = async (serviceName: string): Promise<void> => {
     setPendingServices((current) => [...current, serviceName]);
     setErrorMessage(null);
-    const error = await restartServices([serviceName], fetch);
+    const error = await restartServices([serviceName], pristineFetch);
     setErrorMessage(error);
     setPendingServices((current) => current.filter((name) => name !== serviceName));
     if (error === null && document.body.hasAttribute("data-devhost-recovery")) {

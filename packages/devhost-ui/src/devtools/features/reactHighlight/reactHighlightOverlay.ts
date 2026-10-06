@@ -7,6 +7,7 @@ import {
 } from "../../shared/reactSourceInspection";
 import { cleanSourcePath, type ISourceLocation } from "../../shared/sourceLocation";
 import { REACT_HIGHLIGHT_WEBSOCKET_PATH } from "../../shared/constants";
+import { pristineFetch } from "../../shared/pristineFetch";
 
 export interface IReactHighlightCursorMessage {
   kind: "cursor";
@@ -407,7 +408,7 @@ function isScriptSourceElement(value: unknown): value is IScriptSourceElement {
 
 async function fetchReactHighlightSourceMap(scriptUrl: string): Promise<IReactHighlightSourceMap | undefined> {
   try {
-    const scriptResponse: Response = await fetch(scriptUrl);
+    const scriptResponse: Response = await pristineFetch(scriptUrl);
 
     if (!scriptResponse.ok) {
       return undefined;
@@ -419,7 +420,7 @@ async function fetchReactHighlightSourceMap(scriptUrl: string): Promise<IReactHi
       return undefined;
     }
 
-    const sourceMapResponse: Response = await fetch(sourceMapUrl);
+    const sourceMapResponse: Response = await pristineFetch(sourceMapUrl);
 
     if (!sourceMapResponse.ok) {
       return undefined;
