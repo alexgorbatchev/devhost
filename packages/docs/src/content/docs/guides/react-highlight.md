@@ -72,6 +72,8 @@ When devhost accepts a cursor update, Neovim places a `->` sign on the resolved 
 
 ## Browser Matching
 
+Cursor highlight rectangles appear above page content, including existing popovers, without blocking page clicks. Cursor updates replace the previous rectangles; clearing the cursor removes them.
+
 The browser overlay matches received locators in two passes:
 
 1. React fiber source metadata from the host page.

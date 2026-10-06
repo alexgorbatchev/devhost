@@ -39,7 +39,7 @@ interface IReactHighlightSourceMapElementLocator {
 
 const maximumFiberDepth: number = 50;
 const reactHighlightOverlayClassName: string =
-  "pointer-events-none fixed z-(--devhost-z-overlay) box-border rounded-sm border-2 border-mark-alt bg-mark-alt/10 shadow-mark";
+  "pointer-events-none fixed inset-auto z-(--devhost-z-overlay) m-0 box-border overflow-visible rounded-sm border-2 border-mark-alt bg-mark-alt/10 p-0 shadow-mark [&::backdrop]:pointer-events-none [&::backdrop]:bg-transparent";
 const sourceMapCache: Map<string, Promise<IReactHighlightSourceMap | undefined>> = new Map();
 
 export function createReactHighlightWebSocketUrl(location: Location, controlToken: string): string {
@@ -163,6 +163,8 @@ export async function highlightReactElements(
     const rect: DOMRect = element.getBoundingClientRect();
     const overlay: HTMLDivElement = overlayRoot.ownerDocument.createElement("div");
     overlay.setAttribute("data-devhost-react-highlight-overlay", "");
+    // A manual popover escapes host stacking/clipping without dismissing host popovers or intercepting clicks.
+    overlay.setAttribute("popover", "manual");
     // Same two-tone marker ring as annotation highlights, in the alternate (cyan) mark color; only the measured
     // geometry is set inline.
     overlay.className = reactHighlightOverlayClassName;
@@ -171,6 +173,7 @@ export async function highlightReactElements(
     overlay.style.width = `${rect.width}px`;
     overlay.style.height = `${rect.height}px`;
     overlayRoot.appendChild(overlay);
+    overlay.showPopover();
 
     return { overlay };
   });
