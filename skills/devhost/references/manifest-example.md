@@ -14,9 +14,10 @@ killZombies = true
 # of sub-manifests to load and merge. Perfect for monorepos.
 includes = ["packages/*/devhost.toml", "apps/*/devhost.toml"]
 
-# Optional repository checkout picker. Disabled when omitted.
+# Repository checkout picker: enabled by default, requires Git on PATH.
+# Set enabled = false to disable discovery and saved-selection restore.
 # [worktrees]
-# enabled = true
+# enabled = false
 # All repository services share one saved choice across devhost restarts.
 # Repositories containing managed = false services cannot switch.
 # Missing checkouts and failed group launches remain stopped for explicit recovery.

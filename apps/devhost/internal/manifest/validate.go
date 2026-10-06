@@ -81,16 +81,19 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 }
 
 func validateWorktrees(raw any, issues *[]string) WorktreesConfig {
+	config := WorktreesConfig{Enabled: true}
 	if raw == nil {
-		return WorktreesConfig{}
+		return config
 	}
 	value, ok := readMap(raw, "worktrees", issues)
 	if !ok {
-		return WorktreesConfig{}
+		return config
 	}
 	allowKeys(value, []string{"enabled"}, "worktrees", issues)
-	enabled, _ := readOptionalBool(value, "enabled", issues)
-	return WorktreesConfig{Enabled: enabled}
+	if enabled, ok := readOptionalBool(value, "enabled", issues); ok {
+		config.Enabled = enabled
+	}
+	return config
 }
 
 func validateAnnotation(rawValue any, manifestDirectoryPath string, schemaIssues *[]string, validationIssues *[]string) ValidatedAnnotation {

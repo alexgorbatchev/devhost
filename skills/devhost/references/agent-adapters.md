@@ -142,7 +142,7 @@ Devhost injects these environment variables for custom commands:
 
 The custom agent must read `DEVHOST_AGENT_PROMPT_FILE` or `DEVHOST_AGENT_ANNOTATION_FILE` and handle the requested change.
 
-With `[worktrees].enabled = true`, new browser-launched actions use the selected checkout. Configured action directories inside the service repository are remapped with their relative offsets; directories outside it remain unchanged. Existing sessions retain their launch directory. Devhost rejects queued handoffs into a session from another checkout and pauses the queue; resume it to start an agent in the selected checkout. Do not dispatch new work into an old-checkout session.
+Worktree support is enabled by default. While enabled, new browser-launched actions use the selected checkout. Configured action directories inside the service repository are remapped with their relative offsets; directories outside it remain unchanged. Existing sessions retain their launch directory. Devhost rejects queued handoffs into a session from another checkout and pauses the queue; resume it to start an agent in the selected checkout. Do not dispatch new work into an old-checkout session.
 
 ## Queue status contract
 

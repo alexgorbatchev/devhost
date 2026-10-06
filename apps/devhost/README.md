@@ -132,14 +132,14 @@ Service and annotation action `cwd` values accept absolute paths or paths relati
 
 ### Git Worktrees
 
-Enable checkout selection in the Services panel:
+Checkout selection in the Services panel is enabled by default and requires Git on `PATH`. To disable discovery and saved-selection restore:
 
 ```toml
 [worktrees]
-enabled = true
+enabled = false
 ```
 
-Worktree support is disabled by default and requires Git on `PATH`. Configure service `cwd` values in one checkout per repository. All services in that repository share its selection; other repositories choose independently, and services outside Git keep their configured directories. For example, selecting `/worktrees/cart` for a service configured at `/projects/shop/packages/web` runs it from `/worktrees/cart/packages/web`.
+Configure service `cwd` values in one checkout per repository. All services in that repository share its selection; other repositories choose independently, and services outside Git keep their configured directories. For example, selecting `/worktrees/cart` for a service configured at `/projects/shop/packages/web` runs it from `/worktrees/cart/packages/web`.
 
 Open **Services**, select the repository's branch button, and choose a checkout. The picker previews every service directory before **Switch and restart**. Devhost validates all target directories before stopping anything, stops the group in reverse dependency order, and starts it in dependency order. Relative file watches follow the new service directories; absolute watch paths stay absolute. Routes, service names, commands, environment configuration, and the original manifest remain in use. Devhost does not load the selected checkout's manifest.
 

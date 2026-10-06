@@ -9,6 +9,57 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
 
+func TestWorktreeDefaultDiscoversAndRestoresUnlessDisabled(t *testing.T) {
+	root, linked := createWorktreeRepository(t)
+	path := filepath.Join(root, "devhost.toml")
+	state := t.TempDir()
+	load := func(config string) ResolvedManifest {
+		t.Helper()
+		text := "name = \"shop\"\n" + config + "\n[services.web]\ncwd = \"web\"\ncommand = [\"server\"]\nhealth.process = true\n"
+		if err := os.WriteFile(path, []byte(text), 0600); err != nil {
+			t.Fatal(err)
+		}
+		raw, err := manifest.ReadManifest(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		validated, err := manifest.ValidateManifest(path, raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resolved, err := ResolveServicePorts(validated)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return resolved
+	}
+	m := load("")
+	w, err := newStackWorktrees(m, state)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w == nil || len(w.snapshot()) != 1 {
+		t.Fatal("omitted worktrees configuration did not discover the repository")
+	}
+	if _, err := w.prepare(w.snapshot()[0].ID, linked, m); err != nil {
+		t.Fatal(err)
+	}
+	restarted := load("")
+	w, err = newStackWorktrees(restarted, state)
+	if err != nil {
+		t.Fatal(err)
+	}
+	effective, blocked := w.restore(restarted)
+	if len(blocked) != 0 || effective.Services["web"].Cwd != filepath.Join(linked, "web") {
+		t.Fatalf("default did not restore selected checkout: %#v, %#v", effective.Services, blocked)
+	}
+	disabled := load("[worktrees]\nenabled = false\n")
+	w, err = newStackWorktrees(disabled, state)
+	if err != nil || w != nil || disabled.Services["web"].Cwd != filepath.Join(root, "web") {
+		t.Fatalf("opt-out discovered or restored a checkout: %#v, %v", w, err)
+	}
+}
+
 func TestWorktreeSelectionGroupsServicesAndSurvivesRestart(t *testing.T) {
 	root, linked := createWorktreeRepository(t)
 	m := worktreeTestManifest(root)

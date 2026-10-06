@@ -7,7 +7,7 @@
 # - `name` (required)
 # - `killZombies` (optional; boolean to automatically kill zombie processes from the same manifest, default `true`)
 # - `includes` (optional; string or string array of file glob patterns to merge multiple sub-manifests)
-# - `[worktrees]` (optional; Git checkout selection for repository service groups)
+# - `[worktrees]` (optional; Git checkout selection for repository service groups, enabled by default)
 # - `[caddy.global]` (optional)
 # - `[devtools]` (optional)
 # - `[devtools.editor]` (optional)
@@ -74,9 +74,10 @@ name = "hello-stack"
 # routed HTML document navigations. If all devtools features are disabled, routed
 # services proxy directly to the app without the overlay.
 
-# Optional: enable the repository worktree picker in the Services panel.
+# The repository worktree picker is enabled by default and requires Git on PATH.
+# Set enabled = false to disable discovery and saved-selection restore.
 # [worktrees]
-# enabled = true
+# enabled = false
 # Choices are remembered per manifest path and repository across devhost restarts.
 # All services in a repository share one checkout, preserving their cwd offsets.
 # Missing saved checkouts and failed launches keep the group stopped for recovery.
