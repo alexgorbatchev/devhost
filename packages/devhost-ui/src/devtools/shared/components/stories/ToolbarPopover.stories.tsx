@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { TriangleAlertIcon } from "lucide-react";
 import { expect, userEvent, waitFor } from "storybook/test";
 
 import { DevtoolsToolbar } from "../DevtoolsToolbar";
@@ -32,7 +33,12 @@ function renderToolbarWithPopovers(position: DevtoolsPosition, globals: Partial<
           panelLabel="Annotation queues"
           panelWidth="lg"
           testId="ToolbarPopoverStory--queues"
-          triggerContent="3"
+          triggerContent={
+            <>
+              <TriangleAlertIcon aria-hidden="true" className="size-3.5" />
+              <span>3</span>
+            </>
+          }
           triggerLabel="Annotation queues"
           triggerTone="alert"
         >

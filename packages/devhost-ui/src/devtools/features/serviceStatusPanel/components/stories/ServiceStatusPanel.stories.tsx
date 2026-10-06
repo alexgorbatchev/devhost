@@ -4,14 +4,15 @@ import { expect, fn, userEvent, waitFor } from "storybook/test";
 import { DEVTOOLS_CONTROL_TOKEN_HEADER_NAME, RESTART_SERVICE_PATH } from "../../../../shared";
 import { DevtoolsToolbar } from "../../../../shared/components/DevtoolsToolbar";
 import { readInjectedDevtoolsConfig } from "../../../../shared/readInjectedDevtoolsConfig";
+import { storybookDevtoolsThemeGlobalName } from "../../../../shared/storybookTheme";
 import {
   readDevtoolsStoryShadowCanvas,
   renderInDevtoolsStoryShadowRoot,
   StorybookThemeProvider,
 } from "@/devtools/shared/components/stories/helpers";
 import { ServiceStatusPanel } from "../ServiceStatusPanel";
-import { WorktreePanelHarness } from "./helpers";
-import { factory_worktreeRepository } from "./fixtures";
+import { exerciseHealthPollErrorContrast, WorktreePanelHarness } from "./helpers";
+import { factory_worktreeRepository, fixture_healthPollErrorServices } from "./fixtures";
 
 const meta: Meta<typeof ServiceStatusPanel> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/serviceStatusPanel/components/ServiceStatusPanel",
@@ -154,6 +155,22 @@ export const Empty: Story = {
 
     await expect(await shadowCanvas.findByRole("toolbar", { name: "devhost" })).toBeVisible();
     await expect(shadowCanvas.queryByRole("button", { name: /^Services/ })).toBeNull();
+  },
+};
+
+export const HealthPollErrorWithServices: Story = {
+  args: fixture_healthPollErrorServices,
+  globals: { [storybookDevtoolsThemeGlobalName]: "dark" },
+  play: async ({ args, canvasElement }): Promise<void> => {
+    await exerciseHealthPollErrorContrast(canvasElement, args);
+  },
+};
+
+export const LightHealthPollErrorWithServices: Story = {
+  args: fixture_healthPollErrorServices,
+  globals: { [storybookDevtoolsThemeGlobalName]: "light" },
+  play: async ({ args, canvasElement }): Promise<void> => {
+    await exerciseHealthPollErrorContrast(canvasElement, args);
   },
 };
 
