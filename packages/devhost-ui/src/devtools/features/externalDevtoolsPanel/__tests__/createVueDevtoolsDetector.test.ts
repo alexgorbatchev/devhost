@@ -23,6 +23,7 @@ test("native Vue authorization survives overlapping dependency optimization in i
     pageA.on("pageerror", (error) => errors.push(error));
     pageB.on("pageerror", (error) => errors.push(error));
     const release = Promise.withResolvers<void>();
+    // The pinned native hub client imports this generated utility; continue the genuine request after the overlap.
     await pageA.route(
       /\/deps\/nanoid-[^/]+\.js/,
       async (route) => {
@@ -46,6 +47,16 @@ test("native Vue authorization survives overlapping dependency optimization in i
       }, coldModuleUrl.href);
       release.resolve();
       await authorizeNativeVueHost(pageA, first);
+      await pageA
+        .getByRole("group", { name: "External devtools", exact: true })
+        .getByRole("button", { name: "Vue", exact: true })
+        .waitFor();
+      await pageB
+        .getByRole("group", { name: "External devtools", exact: true })
+        .getByRole("button", { name: "Vue", exact: true })
+        .waitFor();
+      expect(await pageA.evaluate(() => window.nativeVueFixture.readVueEntry().frameId)).toBe("vue-devtools");
+      expect(await pageB.evaluate(() => window.nativeVueFixture.readVueEntry().frameId)).toBe("vue-devtools");
       expect(await pageA.evaluate(() => window.nativeVueFixture.readContext().connection.status)).toBe("connected");
       expect(await pageB.evaluate(() => window.nativeVueFixture.readContext().connection.status)).toBe("connected");
       expect(errors).toEqual([]);
