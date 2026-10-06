@@ -14,6 +14,7 @@ export interface INativeVueHost {
 
 export interface INativeVueHostOptions {
   base?: string;
+  optimizedDependencies?: string[];
   visibility?: "normal" | "passive" | "hidden";
 }
 

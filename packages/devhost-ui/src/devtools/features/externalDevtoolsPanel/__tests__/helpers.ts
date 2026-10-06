@@ -75,6 +75,7 @@ export async function startNativeVueHost(options: INativeVueHostOptions = {}): P
       ...process.env,
       NODE_ENV: "development",
       NATIVE_VUE_BASE: options.base,
+      NATIVE_VUE_OPTIMIZE_DEPS: JSON.stringify(options.optimizedDependencies ?? []),
       NATIVE_VUE_VISIBILITY: options.visibility,
     },
   });

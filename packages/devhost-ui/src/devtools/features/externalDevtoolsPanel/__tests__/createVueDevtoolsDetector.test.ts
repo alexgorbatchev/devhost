@@ -2,7 +2,53 @@ import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
 
 import { fixture_visibilityModes } from "./fixtures";
-import { authorizeNativeVueHost, revealNativeVueHost, withNativeVueHosts } from "./helpers";
+import { authorizeNativeVueHost, revealNativeVueHost, startNativeVueHost, withNativeVueHosts } from "./helpers";
+import type { INativeVueHost } from "./fixtures/types";
+
+test("native Vue authorization survives overlapping dependency optimization in independent hosts", async () => {
+  await withNativeVueHosts([{}], async ([first], browser) => {
+    assert(first);
+    let second: INativeVueHost | undefined;
+    const pageA = await browser.newPage();
+    const pageB = await browser.newPage();
+    pageA.setDefaultTimeout(5000);
+    pageB.setDefaultTimeout(5000);
+    const errors: Error[] = [];
+    pageA.on("pageerror", (error) => errors.push(error));
+    pageB.on("pageerror", (error) => errors.push(error));
+    const release = Promise.withResolvers<void>();
+    await pageA.route(
+      /\/deps\/nanoid-[^/]+\.js/,
+      async (route) => {
+        await release.promise;
+        await route.continue();
+      },
+      { times: 1 },
+    );
+    try {
+      const pendingModule = pageA.waitForRequest(/\/deps\/nanoid-[^/]+\.js/);
+      await pageA.goto(first.url, { waitUntil: "commit" });
+      const moduleRequest = await pendingModule;
+      second = await startNativeVueHost({ base: "/project-b/", optimizedDependencies: ["devframe/client"] });
+      await pageB.goto(second.url);
+      await authorizeNativeVueHost(pageB, second);
+      // Exercise a cold module load instead of letting Vite's transform cache mask a deleted optimizer artifact.
+      const coldModuleUrl = new URL(moduleRequest.url());
+      coldModuleUrl.searchParams.set("cold_request", "true");
+      await pageA.evaluate(async (url) => {
+        await import(url);
+      }, coldModuleUrl.href);
+      release.resolve();
+      await authorizeNativeVueHost(pageA, first);
+      expect(await pageA.evaluate(() => window.nativeVueFixture.readContext().connection.status)).toBe("connected");
+      expect(await pageB.evaluate(() => window.nativeVueFixture.readContext().connection.status)).toBe("connected");
+      expect(errors).toEqual([]);
+    } finally {
+      release.resolve();
+      await second?.close();
+    }
+  });
+}, 120000);
 
 test("the real Vue host opens its native Components inspector through devhost", async () => {
   await withNativeVueHosts([{}], async ([host], browser) => {
