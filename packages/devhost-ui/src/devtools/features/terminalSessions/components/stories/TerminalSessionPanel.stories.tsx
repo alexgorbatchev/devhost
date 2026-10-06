@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, fn, userEvent, waitFor } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import { useState, type ComponentProps, type JSX } from "react";
 
 import {
@@ -70,7 +70,9 @@ export const Expanded: Story = {
     await expect(shadowCanvas.getByTestId("TerminalSessionPanel--backdrop")).toBeVisible();
     await waitFor(() => expect(args.onStatusChange).toHaveBeenCalledWith("running", null));
 
-    await userEvent.click(shadowCanvas.getByRole("button", { name: "Minimize" }));
+    const minimizeButton = shadowCanvas.getByRole("button", { name: "Minimize" });
+    await expect(within(minimizeButton).getByText("Minimize")).toBeVisible();
+    await userEvent.click(minimizeButton);
     await expect(args.onMinimize).toHaveBeenCalledTimes(1);
 
     await userEvent.click(shadowCanvas.getByRole("button", { name: "Terminate" }));
@@ -82,13 +84,18 @@ export const FullscreenExpanded: Story = {
   args: {
     session: fixture_fullscreenAgentSession,
   },
-  play: async ({ canvasElement }): Promise<void> => {
+  play: async ({ args, canvasElement }): Promise<void> => {
     const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
     const dialog = await shadowCanvas.findByRole("dialog", { name: "Pi terminal" });
 
     await waitFor(() => expect(dialog).toBeVisible());
     await expect(dialog.getBoundingClientRect().width).toBe(window.innerWidth);
     await expect(shadowCanvas.getByTestId("TerminalSessionPanel--backdrop")).not.toBeVisible();
+
+    const minimizeButton = shadowCanvas.getByRole("button", { name: "Minimize" });
+    await expect(within(minimizeButton).getByText("Minimize")).toBeVisible();
+    await userEvent.click(minimizeButton);
+    await expect(args.onMinimize).toHaveBeenCalledTimes(1);
   },
 };
 
