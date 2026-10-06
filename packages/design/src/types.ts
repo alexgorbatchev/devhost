@@ -9,6 +9,7 @@ export interface ISchemePalette {
   fgMuted: string;
   fgFaint: string;
   line: string;
+  inputLine: string;
   edge: string;
   halo: string;
   shadow: string;

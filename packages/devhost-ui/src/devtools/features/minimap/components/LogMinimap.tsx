@@ -184,8 +184,8 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
                   className={cn(
                     "flex h-4.5 gap-2 overflow-hidden px-2 leading-4.5 whitespace-pre",
                     row.stream === "stderr" &&
-                      "bg-destructive/15 text-destructive shadow-[inset_2px_0_0_var(--destructive)]",
-                    isFocusedRow && (row.stream === "stderr" ? "bg-destructive/30" : "bg-accent"),
+                      "bg-destructive/5 text-destructive shadow-[inset_2px_0_0_var(--destructive)]",
+                    isFocusedRow && (row.stream === "stderr" ? "bg-destructive/10" : "bg-accent"),
                   )}
                 >
                   <span className="w-[7ch] shrink-0 truncate text-faint" data-testid="LogMinimap--preview-service">

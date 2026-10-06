@@ -1,3 +1,5 @@
+import { DESIGN_TOKENS } from "@alexgorbatchev/devhost-design";
+
 import type { DevtoolsColorScheme } from "../../shared";
 
 export interface ILogMinimapPalette {
@@ -5,18 +7,11 @@ export interface ILogMinimapPalette {
   stdout: string;
 }
 
-// Canvas marks are painted from JavaScript, so these mirror the `--faint` (stdout) and `--destructive` (stderr)
-// tokens in shared/devtools.css.
+// Canvas requires literal colors, so read the same shared palette that supplies its surrounding CSS.
 export function readLogMinimapPalette(colorScheme: DevtoolsColorScheme): ILogMinimapPalette {
-  if (colorScheme === "dark") {
-    return {
-      stderr: "#ff6159",
-      stdout: "#6f7783",
-    };
-  }
-
+  const palette = DESIGN_TOKENS.schemes[colorScheme];
   return {
-    stderr: "#cc1f1f",
-    stdout: "#7c8490",
+    stderr: palette.danger,
+    stdout: palette.fgFaint,
   };
 }

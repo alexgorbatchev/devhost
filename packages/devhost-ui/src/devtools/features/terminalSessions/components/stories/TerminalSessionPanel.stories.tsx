@@ -11,11 +11,13 @@ import { TerminalSessionPanel } from "../TerminalSessionPanel";
 import type { TerminalSession, TerminalSessionStatus } from "../../types";
 import {
   fixture_agentSession,
+  fixture_contrastSession,
   fixture_commandSession,
   fixture_editorSession,
   fixture_finishedAgentSession,
   fixture_fullscreenAgentSession,
 } from "./fixtures";
+import { readContrastRatio } from "../../../../../../../../test-support/readContrastRatio";
 
 const meta: Meta<typeof TerminalSessionPanel> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/terminalSessions/components/TerminalSessionPanel",
@@ -149,5 +151,33 @@ export const Finished: Story = {
 
     await userEvent.click(await shadowCanvas.findByRole("button", { name: "Close" }));
     await expect(args.onRemove).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const ContrastDark: Story = {
+  globals: { devhostTheme: "dark" },
+  args: { session: fixture_contrastSession },
+  play: async ({ canvasElement }): Promise<void> => {
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    await waitFor(() => {
+      const blackText = shadowCanvas.getByText("X");
+      expect(blackText).toBeVisible();
+      expect(readContrastRatio(blackText)).toBeGreaterThanOrEqual(4.5);
+    });
+  },
+};
+
+export const ContrastLight: Story = {
+  globals: { devhostTheme: "light" },
+  args: { session: fixture_contrastSession },
+  play: async ({ canvasElement }): Promise<void> => {
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    for (const character of ["G", "Y", "C", "W"]) {
+      await waitFor(() => {
+        const text = shadowCanvas.getByText(character);
+        expect(text).toBeVisible();
+        expect(readContrastRatio(text)).toBeGreaterThanOrEqual(4.5);
+      });
+    }
   },
 };

@@ -27,6 +27,11 @@ export const fixture_finishedAgentSession: TerminalSession = {
   sessionId: "session-finished",
 };
 
+export const fixture_contrastSession: TerminalSession = {
+  ...fixture_agentSession,
+  sessionId: "session-contrast",
+};
+
 export const fixture_fullscreenAgentSession: TerminalSession = {
   ...fixture_agentSession,
   behavior: { defaultIsExpanded: false, isFullscreenExpanded: true, shouldAutoRemoveOnExit: false },

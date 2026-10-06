@@ -28,6 +28,8 @@ Public Astro + Starlight docs workspace for `devhost`, published to GitHub Pages
 - This workspace uses the repo-root `bun.lock`. Do not add a package-local lockfile.
 - Shared `oxfmt` / `oxlint` enforcement runs from the repo root, not from this workspace `check` recipe.
 - `just docs check` runs `bun test`, content sync, `astro check`, and `astro build`.
+- The style tests render real CSS in Playwright Chromium to verify prose link indicators and search shortcuts. Chromium is installed by root `bun install`; use `just ui install-browser` if its cached binary is missing.
+- Prose link underlines use opaque `--dh-accent` because their text matches surrounding prose. Keep search shortcut text opaque and use `--dh-input-line` for form-control boundaries.
 - `just docs dev`, `just docs start`, and `just docs preview` bind the Astro server to `0.0.0.0` so the site is reachable from outside the current environment.
 - `astro.config.mjs` allows all dev/preview hosts for this workspace; treat the docs server as broadly reachable while it is running.
 - The site ships from GitHub Pages at `/devhost`, so content should rely on relative links or Starlight routing instead of hard-coded root-relative `/...` paths.

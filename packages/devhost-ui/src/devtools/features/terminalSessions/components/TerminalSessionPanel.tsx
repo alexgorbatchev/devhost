@@ -146,6 +146,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
       disableStdin: !isExpandedReference.current,
       fontFamily: currentTheme.fontFamily,
       fontSize: currentTheme.fontSize,
+      minimumContrastRatio: currentTheme.minimumContrastRatio,
       rows: 80,
       scrollback: 2_000,
       theme: currentTheme.theme,

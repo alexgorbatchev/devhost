@@ -143,7 +143,7 @@
   --warning: var(--dh-warn);
   --warning-foreground: var(--dh-on-warn);
   --border: var(--dh-line);
-  --input: var(--dh-line);
+  --input: var(--dh-input-line);
   --ring: var(--dh-accent);
   --edge: var(--dh-edge);
   --halo: var(--dh-halo);

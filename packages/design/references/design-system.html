@@ -327,7 +327,6 @@
         border-radius: var(--dh-radius-sm);
         font-size: var(--small-text);
         line-height: 1;
-        opacity: 0.8;
       }
       .tag {
         display: inline-flex;
@@ -389,7 +388,7 @@
         width: 100%;
         height: 36px;
         padding: 0 10px;
-        border: 1px solid var(--dh-line);
+        border: 1px solid var(--dh-input-line);
         border-radius: var(--dh-radius-sm);
         background: var(--dh-surface-2);
         color: var(--dh-fg);
@@ -443,7 +442,7 @@
         appearance: none;
         height: var(--dh-control-h);
         padding: 0 24px 0 28px;
-        border: 1px solid var(--dh-line);
+        border: 1px solid var(--dh-input-line);
         border-radius: var(--dh-radius-sm);
         background: var(--dh-surface-2);
         color: var(--dh-fg);
@@ -665,7 +664,7 @@
       .spec a:not(.btn, .site-title, .anchor) {
         color: var(--dh-fg);
         text-decoration: underline;
-        text-decoration-color: color-mix(in srgb, var(--dh-accent) 55%, transparent);
+        text-decoration-color: var(--dh-accent);
         text-underline-offset: 3px;
       }
       .spec a:not(.btn, .site-title, .anchor):hover {
@@ -1304,14 +1303,14 @@
       }
       .mm-preview li.stderr {
         color: var(--dh-danger);
-        background: var(--dh-danger-soft);
+        background: color-mix(in srgb, var(--dh-danger) 5%, transparent);
         box-shadow: inset 2px 0 0 var(--dh-danger);
       }
       .mm-preview li.focus {
         background: var(--dh-surface-3);
       }
       .mm-preview li.stderr.focus {
-        background: color-mix(in srgb, var(--dh-danger) 28%, transparent);
+        background: color-mix(in srgb, var(--dh-danger) 10%, transparent);
       }
       .mm-strip {
         position: relative;
@@ -2133,7 +2132,7 @@
             </thead>
             <tbody>
               <tr>
-                <td><code>accent 55%</code> → transparent</td>
+                <td><code>accent</code></td>
                 <td>Prose link underline (docs)</td>
               </tr>
               <tr>
@@ -2149,8 +2148,8 @@
                 <td>Annotation / React highlight box fill (devtools)</td>
               </tr>
               <tr>
-                <td><code>danger 28%</code> → transparent</td>
-                <td>Focused stderr line in the minimap preview (devtools)</td>
+                <td><code>danger 5%</code> / <code>danger 10%</code> → transparent</td>
+                <td>Normal / focused stderr line in the minimap preview (devtools)</td>
               </tr>
               <tr>
                 <td><code>on-accent 35%</code> → transparent</td>
@@ -2181,7 +2180,9 @@
         <p class="desc">
           xterm takes literal colors, so it reads from <code>TERMINAL_PALETTES</code> instead of custom properties. Its
           background matches <code>--dh-term-bg</code>, and its cursor matches <code>--dh-accent</code>. Code frames and
-          diagrams on the docs site also sit on <code>--dh-term-bg</code>.
+          diagrams on the docs site also sit on <code>--dh-term-bg</code>. The terminal sets
+          <code>minimumContrastRatio</code> to <code>4.5</code>, so xterm adjusts ANSI foreground colors against their
+          actual backgrounds while preserving the palette's background colors.
         </p>
         <h3>Chrome colors</h3>
         <ul class="ansi" data-ansi="chrome"></ul>
@@ -2877,8 +2878,8 @@
           Default tags are outlined in <code>fg-muted</code>. Filled tags are 600 on the matching
           <code>--dh-on-*</code>. On the docs site they map to Starlight <code>&lt;Badge&gt;</code> variants
           <code>default</code>, <code>note</code>, <code>success</code>, <code>caution</code>, and <code>danger</code>.
-          Keys draw a <code>currentColor</code> outline at 0.8 opacity with no fill, so they adapt to whatever surface
-          they sit on, including primary buttons.
+          Keys draw an opaque <code>currentColor</code> outline with no fill, so they adapt to whatever surface they sit
+          on, including primary buttons.
         </p>
         <h3>Inputs</h3>
         <div class="split-2">
@@ -2912,10 +2913,10 @@
           </div>
         </div>
         <p>
-          Inputs sit on <code>surface-2</code> with a <code>line</code> border and <code>fg-faint</code> placeholder
-          text. On focus the border becomes <code>accent</code> and a 1px <code>accent</code> ring is added, which
-          replaces the global outline. Checkboxes are native, tinted with <code>accent-color</code>. Selects are native
-          with <code>appearance: none</code> and icon overlays.
+          Inputs sit on <code>surface-2</code> with an <code>input-line</code> border and
+          <code>fg-faint</code> placeholder text. On focus the border becomes <code>accent</code> and a 1px
+          <code>accent</code> ring is added, which replaces the global outline. Checkboxes are native, tinted with
+          <code>accent-color</code>. Selects are native with <code>appearance: none</code> and icon overlays.
         </p>
         <h3>Icons</h3>
         <p>
@@ -3753,6 +3754,7 @@
         ],
         lines: [
           ["line", "1px rules, row separators, in-flow borders, disabled dashes"],
+          ["input-line", "Form-control boundaries; stronger than decorative rules"],
           ["edge", "Frame border; opposite lightness to the surface so frames separate on dark pages"],
           ["halo", "1px outer ring around frames; separates frames on light pages"],
           ["shadow", "Frame elevation"],
@@ -3817,7 +3819,7 @@
           magenta: "#ff5cd6",
           cyan: "#39d0e6",
           white: "#a3abb6",
-          brightBlack: "#6f7783",
+          brightBlack: "#929ba7",
           brightRed: "#ff8a84",
           brightGreen: "#6ee7a8",
           brightYellow: "#ffd27a",
@@ -3847,7 +3849,7 @@
           brightBlue: "#1f6feb",
           brightMagenta: "#c52aa0",
           brightCyan: "#0a8a9c",
-          brightWhite: "#7c8490",
+          brightWhite: "#5b6470",
         },
       };
       const CHROME_KEYS = ["background", "foreground", "cursor", "cursorAccent", "selectionBackground"];

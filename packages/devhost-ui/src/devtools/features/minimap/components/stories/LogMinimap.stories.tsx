@@ -5,6 +5,7 @@ import { StoryContainer } from "@/devtools/shared/components/stories/helpers";
 import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
 import { LogMinimap } from "../LogMinimap";
 import type { ServiceLogEntry } from "../../../../shared/types";
+import { readContrastRatio } from "../../../../../../../../test-support/readContrastRatio";
 
 const mockEntries: ServiceLogEntry[] = Array.from({ length: 50 }).map((_, i) => ({
   id: i + 1,
@@ -176,4 +177,25 @@ export const Empty: Story = {
 
     await expect(canvas.queryByTestId("LogMinimap")).not.toBeInTheDocument();
   },
+};
+
+export const FocusedErrorDark: Story = {
+  globals: { devhostTheme: "dark" },
+  args: {
+    entries: [{ id: 1, line: "Database connection failed", serviceName: "api", stream: "stderr" }],
+    isHovered: true,
+    onHoveredChange: fn(),
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    await assertHoveredPreview(canvas);
+    await expect(canvas.getByTestId("LogMinimap--preview-line")).toHaveTextContent("Database connection failed");
+    await expect(readContrastRatio(canvas.getByTestId("LogMinimap--preview-line"))).toBeGreaterThanOrEqual(4.5);
+    await expect(readContrastRatio(canvas.getByTestId("LogMinimap--preview-service"))).toBeGreaterThanOrEqual(4.5);
+  },
+};
+
+export const FocusedErrorLight: Story = {
+  ...FocusedErrorDark,
+  globals: { devhostTheme: "light" },
 };
