@@ -9,12 +9,13 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsInProd as TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, within, waitFor } from "storybook/test";
+import { expect, userEvent, within, waitFor } from "storybook/test";
 
 import { DevtoolsToolbar } from "@/devtools/shared/components/DevtoolsToolbar";
 import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
 import { ExternalDevtoolsPanel } from "../ExternalDevtoolsPanel";
 import { useExternalDevtoolsLaunchers } from "../../hooks/useExternalDevtoolsLaunchers";
+import { ReactHookFormHarness } from "./fixtures/ReactHookFormHarness";
 
 const queryClient = new QueryClient();
 
@@ -203,8 +204,102 @@ const sharedPlayTest = async ({ canvasElement }: ISharedPlayTestArgs): Promise<v
   await waitForToolbarsToBeHidden(["footer.TanStackRouterDevtools > button"]);
 };
 
-const Default: Story = {
+export const Default: Story = {
   play: sharedPlayTest,
 };
 
-export { Default as ExternalDevtoolsPanel };
+export const ReactHookForm: Story = {
+  render: (_args, context) => <ReactHookFormHarness globals={context.globals} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const launcher = await canvas.findByRole("button", { name: "Form 1" });
+    await expect(launcher).toHaveAttribute("aria-pressed", "false");
+    await userEvent.click(launcher);
+    await waitFor(() => expect(launcher).toHaveAttribute("aria-pressed", "true"));
+    const inspector = within(canvas.getByTestId("ReactHookFormHarness--profile-inspector"));
+    await expect(inspector.getByText("email", { exact: true })).toBeVisible();
+    await userEvent.click(inspector.getByTitle("Toggle entire fields"));
+    await expect(inspector.getByTestId("email-field-value")).toHaveTextContent("first@example.test");
+    await userEvent.clear(canvas.getByRole("textbox", { name: "Email" }));
+    await expect(await inspector.findByText("Email required", { exact: true })).toBeVisible();
+    await userEvent.type(canvas.getByRole("textbox", { name: "Email" }), "updated@example.test");
+    await waitFor(() => expect(inspector.getByTestId("email-field-value")).toHaveTextContent("updated@example.test"));
+    await waitFor(() => expect(inspector.queryByText("Email required", { exact: true })).toBeNull());
+    await userEvent.click(inspector.getByTitle("Toggle entire fields"));
+    await userEvent.click(inspector.getByTitle("Close dev panel"));
+    await waitFor(() => expect(launcher).toHaveAttribute("aria-pressed", "false"));
+    await waitFor(() => expect(inspector.getByTitle("Show dev panel")).not.toBeVisible());
+    await userEvent.click(launcher);
+    await waitFor(() => expect(launcher).toHaveAttribute("aria-pressed", "true"));
+    await userEvent.click(launcher);
+    await waitFor(() => expect(launcher).toHaveAttribute("aria-pressed", "false"));
+  },
+};
+
+export const ReactHookFormMultipleInspectors: Story = {
+  render: (_args, context) => <ReactHookFormHarness globals={context.globals} hasSecondForm />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const profileLauncher = await canvas.findByRole("button", { name: "Form 1" });
+    const accountLauncher = await canvas.findByRole("button", { name: "Form 2" });
+    const profile = within(canvas.getByTestId("ReactHookFormHarness--profile-inspector"));
+    const account = within(canvas.getByTestId("ReactHookFormHarness--account-inspector"));
+    await userEvent.click(accountLauncher);
+    await waitFor(() => expect(accountLauncher).toHaveAttribute("aria-pressed", "true"));
+    await expect(profileLauncher).toHaveAttribute("aria-pressed", "false");
+    await expect(account.getByText("username", { exact: true })).toBeVisible();
+    await waitFor(() => expect(profile.getByTitle("Show dev panel")).not.toBeVisible());
+    await userEvent.click(profileLauncher);
+    await waitFor(() => expect(profileLauncher).toHaveAttribute("aria-pressed", "true"));
+    await expect(accountLauncher).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(profile.getByTitle("Close dev panel"));
+    await waitFor(() => expect(profileLauncher).toHaveAttribute("aria-pressed", "false"));
+    await expect(accountLauncher).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(accountLauncher);
+    await waitFor(() => expect(accountLauncher).toHaveAttribute("aria-pressed", "false"));
+    await userEvent.click(canvas.getByRole("button", { name: "Remount profile inspector" }));
+    const replacementLauncher = await canvas.findByRole("button", { name: "Form 3" });
+    await expect(canvas.queryByRole("button", { name: "Form 1" })).toBeNull();
+    await expect(canvas.getByRole("button", { name: "Form 2" })).toHaveAttribute("aria-pressed", "false");
+    await userEvent.click(replacementLauncher);
+    await waitFor(() => expect(replacementLauncher).toHaveAttribute("aria-pressed", "true"));
+    await expect(accountLauncher).toHaveAttribute("aria-pressed", "false");
+    await userEvent.click(replacementLauncher);
+    await waitFor(() => expect(replacementLauncher).toHaveAttribute("aria-pressed", "false"));
+    await userEvent.click(canvas.getByRole("button", { name: "Toggle profile inspector" }));
+    await waitFor(() => expect(canvas.queryByRole("button", { name: "Form 3" })).toBeNull());
+    await expect(accountLauncher).toHaveAttribute("aria-pressed", "false");
+  },
+};
+
+export const ReactHookFormLifecycle: Story = {
+  render: (_args, context) => <ReactHookFormHarness globals={context.globals} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByRole("button", { name: "Form 1" });
+    const inspector = within(canvas.getByTestId("ReactHookFormHarness--profile-inspector"));
+    await waitFor(() => expect(inspector.getByTitle("Show dev panel")).not.toBeVisible());
+    await userEvent.click(canvas.getByRole("button", { name: "Remount profile inspector" }));
+    await canvas.findByRole("button", { name: "Form 2" });
+    await waitFor(() => expect(inspector.getByTitle("Show dev panel")).not.toBeVisible());
+    await userEvent.click(canvas.getByRole("button", { name: "Toggle aggregation" }));
+    await waitFor(() => expect(inspector.getByTitle("Show dev panel")).toBeVisible());
+    await expect(canvas.queryByRole("group", { name: "External devtools" })).toBeNull();
+    await userEvent.click(inspector.getByLabelText("React Hook Form Logo", { selector: "svg" }));
+    await waitFor(() => expect(inspector.queryByTitle("Show dev panel")).toBeNull());
+    await userEvent.click(canvas.getByRole("button", { name: "Toggle aggregation" }));
+    const openLauncher = await canvas.findByRole("button", { name: "Form 2" });
+    await expect(openLauncher).toHaveAttribute("aria-pressed", "true");
+    await expect(inspector.getByText("email", { exact: true })).toBeVisible();
+    await userEvent.click(inspector.getByTitle("Close dev panel"));
+    await waitFor(() => expect(openLauncher).toHaveAttribute("aria-pressed", "false"));
+    await waitFor(() => expect(inspector.getByTitle("Show dev panel")).not.toBeVisible());
+    await userEvent.click(canvas.getByRole("button", { name: "Toggle toolbar mount" }));
+    await waitFor(() => expect(inspector.getByTitle("Show dev panel")).toBeVisible());
+    await expect(canvas.queryByRole("group", { name: "External devtools" })).toBeNull();
+    await userEvent.click(inspector.getByLabelText("React Hook Form Logo", { selector: "svg" }));
+    await waitFor(() => expect(inspector.queryByTitle("Show dev panel")).toBeNull());
+    await userEvent.click(inspector.getByTitle("Close dev panel"));
+    await waitFor(() => expect(inspector.getByTitle("Show dev panel")).toBeVisible());
+  },
+};

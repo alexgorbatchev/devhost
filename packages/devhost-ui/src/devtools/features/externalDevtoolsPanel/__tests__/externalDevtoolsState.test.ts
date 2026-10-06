@@ -56,6 +56,15 @@ describe("externalDevtoolsState", () => {
       ),
     ).toBe(false);
   });
+
+  test("multiple installed instances suppress shared launcher selectors only once", () => {
+    expect(
+      readExternalDevtoolsLauncherStyleText([
+        createAdapter({ id: "form-1", hideSelectors: ["button.native-form-launcher"] }),
+        createAdapter({ id: "form-2", hideSelectors: ["button.native-form-launcher"] }),
+      ]),
+    ).toBe("button.native-form-launcher { display: none !important; }");
+  });
 });
 
 function createAdapter({

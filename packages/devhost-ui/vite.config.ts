@@ -7,6 +7,8 @@ import { defineConfig } from "vite";
 const dirname: string = path.dirname(fileURLToPath(import.meta.url));
 
 export const optimizeDependencyEntries: string[] = [
+  "@hookform/devtools",
+  "react-hook-form",
   "@storybook/react-dom-shim",
   "@tanstack/react-query-devtools/production",
   "@tanstack/react-router-devtools",

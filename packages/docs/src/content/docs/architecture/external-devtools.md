@@ -38,7 +38,7 @@ sequenceDiagram
 
 ### Adapter-Owned Host Knowledge
 
-Each supported third-party tool is modeled as an `IExternalDevtoolsAdapter` in `src/devtools/features/externalDevtoolsPanel/externalDevtoolsDetectors.ts`.
+Each supported third-party tool is modeled as an `IExternalDevtoolsAdapter` under `src/devtools/features/externalDevtoolsPanel/`. `externalDevtoolsDetectors.ts` registers the Query and Router adapters; `createReactHookFormDevtoolsDetector.ts` discovers one adapter per mounted form inspector. The hook combines those adapters on every synchronization and resolves a launcher ID against the current adapters before dispatching an action.
 
 - `isInstalled()` answers whether the host page appears to have mounted the tool.
 - `isOpen()` answers whether the native panel is currently expanded.
@@ -84,3 +84,52 @@ The feature is deliberately scoped to launchers, not panels.
 - `devhost` must not reparent, restyle wholesale, or otherwise assume ownership of the native panel contents
 
 That boundary is what keeps the integration low-risk even when the host page includes multiple unrelated third-party toolbars.
+
+## React Hook Form
+
+The integration is browser-tested against `@hookform/devtools` **4.4.0** with `react-hook-form` **7.89.0**. The upstream panel stays in the host page; `devhost` supplies only its toolbar launcher. Other devtools versions and the React Hook Form browser extension are outside this tested integration.
+
+### Host setup
+
+Install `react-hook-form` and `@hookform/devtools` in your application, then mount the upstream `DevTool` with your form's `control`. Enable `[devtools.externalToolbars]` in `devhost.toml`:
+
+```toml
+[devtools.externalToolbars]
+enabled = true
+```
+
+```tsx
+import { DevTool } from "@hookform/devtools";
+import { useForm } from "react-hook-form";
+
+export function ProfileForm() {
+  const { control, register } = useForm({
+    mode: "onChange",
+    defaultValues: { email: "" },
+  });
+
+  return (
+    <>
+      <form aria-label="Profile">
+        <label>
+          Email
+          <input {...register("email", { required: "Email required" })} />
+        </label>
+      </form>
+      <DevTool control={control} placement="top-right" />
+    </>
+  );
+}
+```
+
+### Multiple inspectors and lifecycle
+
+Each mounted inspector gets a separate **Form 1**, **Form 2**, and subsequent launcher, in the order its panel is first discovered by the active `devhost` hook. The number identifies that panel instance; it is not a form name or the upstream `DevTool`'s `id` prop, which upstream uses for its browser extension. Open an inspector to see which form's fields it contains. Choose different upstream `placement` values when mounting multiple inspectors so their native panels do not overlap.
+
+Each launcher opens or closes only its associated inspector. Native close-button clicks update that launcher's pressed state. Panel identities are stored in a hook-local weak map without modifying host attributes or retaining native launcher elements. Actions re-query live panels by identity. Reordering existing panels preserves their numbers; replacing or remounting a panel assigns a fresh number, and a removed identity cannot target the replacement. Unmounting the `devhost` hook ends that numbering session.
+
+The 4.4.0 panel remains mounted while collapsed. Detection requires its React Hook Form header, native close control, field filter, and field expansion control together. Opening clicks that panel's sibling logo SVG, where 4.4.0 installs its native handler; closing clicks its native close button. Only native open buttons containing the React Hook Form logo are suppressed. Close buttons, inspector contents, live field values, and validation remain under upstream ownership.
+
+Disabling aggregation or unmounting `devhost` removes the suppression style and restores native launchers without changing inspector state. Remounted native buttons continue to match the suppression selector while aggregation is enabled. If the React Hook Form browser extension makes `DevTool` render no panel, `devhost` exposes no form launcher.
+
+See the [upstream setup reference](https://github.com/react-hook-form/devtools#quickstart) and the pinned [panel lifecycle](https://github.com/react-hook-form/devtools/blob/0486f0e6dd73a203600fc00611aebb6ac79b6e07/src/devToolUI.tsx), [open handler](https://github.com/react-hook-form/devtools/blob/0486f0e6dd73a203600fc00611aebb6ac79b6e07/src/logo.tsx), and [close control](https://github.com/react-hook-form/devtools/blob/0486f0e6dd73a203600fc00611aebb6ac79b6e07/src/header.tsx).
