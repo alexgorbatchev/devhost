@@ -1,19 +1,6 @@
 package devtools
 
-import _ "embed"
+import "embed"
 
-var (
-	//go:embed dist/devtools.js
-	bundledDevtoolsScript string
-
-	//go:embed dist/xterm.css
-	bundledXtermStylesheet string
-)
-
-func readBundledDevtoolsScript() (string, error) {
-	return bundledDevtoolsScript, nil
-}
-
-func readXtermStylesheet() (string, error) {
-	return bundledXtermStylesheet, nil
-}
+//go:embed dist
+var bundledAssets embed.FS

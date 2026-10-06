@@ -66,8 +66,8 @@ func TestControlServerDevSourceInjectedScript(t *testing.T) {
 			controlServer := startDevSourceControlServer(t, checkoutPath)
 			body := getControlServerText(t, controlServer, injectedScriptPath)
 
-			if !strings.HasPrefix(body, "globalThis.__DEVHOST_INJECTED_CONFIG__=") {
-				t.Fatalf("inject.js does not start with the injected config: %q", body)
+			if strings.Contains(body, controlServer.controlToken) {
+				t.Fatal("development script contains instance credentials")
 			}
 
 			for _, want := range tc.wantContains {

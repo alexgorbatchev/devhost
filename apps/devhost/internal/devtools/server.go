@@ -113,10 +113,8 @@ type ControlServer struct {
 
 	controlToken               string
 	componentEditor            string
-	devtoolsScript             string
 	featureToggles             FeatureToggles
 	idleTerminalSessionTimeout time.Duration
-	xtermStylesheet            string
 	restartService             func([]string) error
 	switchWorktree             func(string, string) error
 	refreshWorktrees           func() error
@@ -236,17 +234,6 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		return nil, fmt.Errorf("create devtools control token: %w", err)
 	}
 
-	devtoolsScript, err := readBundledDevtoolsScript()
-	if err != nil {
-		_ = listener.Close()
-		return nil, err
-	}
-	xtermStylesheet, err := readXtermStylesheet()
-	if err != nil {
-		_ = listener.Close()
-		return nil, err
-	}
-
 	annotationActions := append([]manifest.ValidatedAnnotationAction{}, options.AnnotationActions...)
 	annotationDefaultActionID := normalizeAnnotationDefaultActionID(options.AnnotationDefaultActionID, annotationActions)
 	home, err := os.UserHomeDir()
@@ -289,7 +276,6 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		annotationActions:          annotationActions,
 		componentEditor:            options.ComponentEditor,
 		controlToken:               controlToken,
-		devtoolsScript:             fmt.Sprintf("globalThis.__DEVHOST_INJECTED_CONFIG__=%s;\n%s", string(configJSON), devtoolsScript),
 		featureToggles:             options.FeatureToggles,
 		annotationQueueClients:     map[*websocketClient]struct{}{},
 		getHealth:                  options.GetHealthResponse,
@@ -309,7 +295,6 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		stackName:                  options.StackName,
 		startTerminalSession:       options.StartTerminalSession,
 		terminalSessions:           map[string]*terminalSessionState{},
-		xtermStylesheet:            xtermStylesheet,
 		tracker:                    NewActivityTracker(),
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(*http.Request) bool {
@@ -421,6 +406,8 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 
 	mux := http.NewServeMux()
 	mux.HandleFunc(injectedScriptPath, controlServer.handleInjectedScript)
+	mux.HandleFunc(injectedConfigPath, controlServer.handleInjectedConfig)
+	mux.HandleFunc(devtoolsAssetsPath, controlServer.handleDevtoolsAsset)
 	mux.HandleFunc(terminalSessionsPath, controlServer.handleTerminalSessions)
 	mux.HandleFunc(annotationQueuesPath, controlServer.handleAnnotationQueues)
 	mux.HandleFunc(annotationQueuesPath+"/", controlServer.handleAnnotationQueues)
@@ -614,7 +601,7 @@ if (typeof document !== "undefined") {
 }`, errLog, errLog)
 }
 
-func (s *ControlServer) checkAndBuildAssets() (string, bool) {
+func (s *ControlServer) checkAndBuildAssets() ([]byte, []byte, error) {
 	srcDir := s.devSource.sourceDirectoryPath
 	compiledPath := s.devSource.assetPath("devtools.js")
 
@@ -653,8 +640,7 @@ func (s *ControlServer) checkAndBuildAssets() (string, bool) {
 	})
 
 	if walkErr != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Warning: failed to walk source assets directory: %v\n", walkErr)
-		return "", false
+		return nil, nil, fmt.Errorf("walk source assets: %w", walkErr)
 	}
 
 	var needsBuild bool
@@ -662,19 +648,13 @@ func (s *ControlServer) checkAndBuildAssets() (string, bool) {
 	if os.IsNotExist(err) {
 		needsBuild = true
 	} else if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Warning: failed to stat compiled assets: %v\n", err)
-		return "", false
+		return nil, nil, fmt.Errorf("stat compiled assets: %w", err)
 	} else if maxModTime.After(compiledInfo.ModTime()) {
 		needsBuild = true
 	}
 
 	if !needsBuild {
-		content, err := os.ReadFile(compiledPath)
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Warning: failed to read compiled assets from disk: %v\n", err)
-			return "", false
-		}
-		return string(content), true
+		return s.readAsset("devtools.js")
 	}
 
 	_, _ = fmt.Fprintln(os.Stderr, "[devhost] Changes detected in devtools UI source files. Rebuilding assets...")
@@ -692,8 +672,7 @@ func (s *ControlServer) checkAndBuildAssets() (string, bool) {
 		}
 		_, _ = fmt.Fprintf(os.Stderr, "[devhost] Compilation failed:\n%s\n", errLog)
 
-		jsError := formatJSError(errLog)
-		return jsError, true
+		return nil, nil, fmt.Errorf("build devtools assets: %s", errLog)
 	}
 
 	// A build that exits cleanly without writing the bundle is reported like a
@@ -703,52 +682,10 @@ func (s *ControlServer) checkAndBuildAssets() (string, bool) {
 	if os.IsNotExist(err) {
 		missingBundleMessage := fmt.Sprintf("The %s recipe finished without writing %s.", devtoolsBundleRecipe, compiledPath)
 		_, _ = fmt.Fprintf(os.Stderr, "[devhost] %s\n", missingBundleMessage)
-		return formatJSError(missingBundleMessage), true
+		return nil, nil, fmt.Errorf("%s", missingBundleMessage)
 	}
 
-	content, err := os.ReadFile(compiledPath)
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Warning: failed to read newly compiled assets: %v\n", err)
-		return "", false
-	}
-
-	return string(content), true
-}
-
-func (s *ControlServer) handleInjectedScript(writer http.ResponseWriter, _ *http.Request) {
-	writer.Header().Set("cache-control", cacheControlNoStore)
-	writer.Header().Set("content-type", applicationJavascriptContentType)
-
-	var script string
-	var ok bool
-
-	if s.devSource != nil {
-		script, ok = s.checkAndBuildAssets()
-	}
-
-	if ok {
-		fullScript := fmt.Sprintf("globalThis.__DEVHOST_INJECTED_CONFIG__=%s;\n%s", string(s.configJSON), script)
-		_, _ = writer.Write([]byte(fullScript))
-	} else {
-		_, _ = writer.Write([]byte(s.devtoolsScript))
-	}
-}
-
-func (s *ControlServer) handleXtermStylesheet(writer http.ResponseWriter, _ *http.Request) {
-	writer.Header().Set("cache-control", cacheControlNoStore)
-	writer.Header().Set("content-type", textCSSContentType)
-
-	if s.devSource != nil {
-		compiledPath := s.devSource.assetPath("xterm.css")
-		content, err := os.ReadFile(compiledPath)
-		if err == nil {
-			_, _ = writer.Write(content)
-			return
-		}
-		_, _ = fmt.Fprintf(os.Stderr, "Warning: failed to read xterm.css from disk: %v\n", err)
-	}
-
-	_, _ = writer.Write([]byte(s.xtermStylesheet))
+	return s.readAsset("devtools.js")
 }
 
 func (s *ControlServer) handleRestartService(writer http.ResponseWriter, request *http.Request) {

@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { FitAddon } from "@xterm/addon-fit";
-import { Terminal } from "@xterm/xterm";
+import type { FitAddon } from "@xterm/addon-fit";
+import type { Terminal } from "@xterm/xterm";
 import { CodeIcon, MinusIcon, TerminalIcon, XIcon } from "lucide-react";
 
 import { Badge } from "../../../../components/ui/Badge";
@@ -136,122 +136,135 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
       return;
     }
 
-    ensureXtermStylesheet(terminalContainer.getRootNode());
+    let isDisposed: boolean = false;
+    let dispose: (() => void) | undefined;
+    const initializeTerminal = async (): Promise<void> => {
+      const [{ Terminal }, { FitAddon }] = await Promise.all([import("@xterm/xterm"), import("@xterm/addon-fit")]);
+      if (isDisposed) return;
+      ensureXtermStylesheet(terminalContainer.getRootNode());
 
-    const currentTheme: ITerminalTheme = terminalThemeReference.current;
-    const terminal = new Terminal({
-      allowTransparency: true,
-      cols: 120,
-      cursorBlink: true,
-      disableStdin: !isExpandedReference.current,
-      fontFamily: currentTheme.fontFamily,
-      fontSize: currentTheme.fontSize,
-      minimumContrastRatio: currentTheme.minimumContrastRatio,
-      rows: 80,
-      scrollback: 2_000,
-      theme: currentTheme.theme,
-    });
-    const fitAddon = new FitAddon();
-    const websocketUrl: URL = new URL(createDevtoolsWebSocketUrl(TERMINAL_SESSION_WEBSOCKET_PATH, window.location));
-    const websocket = new WebSocket(
-      appendTerminalSessionParameters(websocketUrl, session.sessionId, controlToken).toString(),
-    );
-
-    fitAddonReference.current = fitAddon;
-    terminalReference.current = terminal;
-    websocketReference.current = websocket;
-    terminal.loadAddon(fitAddon);
-    terminal.open(terminalContainer);
-
-    const resizeObserver = new ResizeObserver((): void => {
-      scheduleTerminalResize();
-    });
-    const oscListener = terminal.parser.registerOscHandler(1337, (data: string): boolean => {
-      if (data === "SetAgentStatus=working") {
-        reportStatus("working");
-        return true;
-      }
-
-      if (data === "SetAgentStatus=finished") {
-        reportStatus("idle");
-        return true;
-      }
-
-      return false;
-    });
-    const dataListener = terminal.onData((data: string): void => {
-      sendClientMessage(websocket, {
-        data,
-        type: "input",
+      const currentTheme: ITerminalTheme = terminalThemeReference.current;
+      const terminal = new Terminal({
+        allowTransparency: true,
+        cols: 120,
+        cursorBlink: true,
+        disableStdin: !isExpandedReference.current,
+        fontFamily: currentTheme.fontFamily,
+        fontSize: currentTheme.fontSize,
+        minimumContrastRatio: currentTheme.minimumContrastRatio,
+        rows: 80,
+        scrollback: 2_000,
+        theme: currentTheme.theme,
       });
-    });
-    const handleOpen = (): void => {
-      reportStatus("running");
+      const fitAddon = new FitAddon();
+      const websocketUrl: URL = new URL(createDevtoolsWebSocketUrl(TERMINAL_SESSION_WEBSOCKET_PATH, window.location));
+      const websocket = new WebSocket(
+        appendTerminalSessionParameters(websocketUrl, session.sessionId, controlToken).toString(),
+      );
+
+      fitAddonReference.current = fitAddon;
+      terminalReference.current = terminal;
+      websocketReference.current = websocket;
+
+      const resizeObserver = new ResizeObserver((): void => {
+        scheduleTerminalResize();
+      });
+      const oscListener = terminal.parser.registerOscHandler(1337, (data: string): boolean => {
+        if (data === "SetAgentStatus=working") {
+          reportStatus("working");
+          return true;
+        }
+
+        if (data === "SetAgentStatus=finished") {
+          reportStatus("idle");
+          return true;
+        }
+
+        return false;
+      });
+      const dataListener = terminal.onData((data: string): void => {
+        sendClientMessage(websocket, {
+          data,
+          type: "input",
+        });
+      });
+      const handleOpen = (): void => {
+        reportStatus("running");
+        scheduleTerminalResize();
+
+        if (isExpandedReference.current) {
+          terminal.focus();
+        }
+      };
+      const handleClose = (): void => {
+        if (!hasExitedReference.current) {
+          reportStatus("disconnected");
+        }
+      };
+      const handleError = (): void => {
+        reportStatus("error", "The terminal websocket failed.");
+      };
+      const handleMessage = (event: MessageEvent<string>): void => {
+        const message: TerminalSessionServerMessage | null = parseTerminalSessionServerMessage(event.data);
+
+        if (message === null) {
+          reportStatus("error", "Received an invalid terminal message.");
+          return;
+        }
+
+        if (message.type === "snapshot" || message.type === "output") {
+          terminal.write(message.data);
+          return;
+        }
+
+        if (message.type === "exit") {
+          hasExitedReference.current = true;
+          reportStatus("exited");
+          return;
+        }
+
+        reportStatus("error", message.message);
+      };
+
+      websocket.addEventListener("open", handleOpen);
+      websocket.addEventListener("close", handleClose);
+      websocket.addEventListener("error", handleError);
+      websocket.addEventListener("message", handleMessage);
+      dispose = () => {
+        resizeObserver.disconnect();
+        dataListener.dispose();
+        oscListener.dispose();
+        websocket.removeEventListener("open", handleOpen);
+        websocket.removeEventListener("close", handleClose);
+        websocket.removeEventListener("error", handleError);
+        websocket.removeEventListener("message", handleMessage);
+
+        if (resizeAnimationFrameReference.current !== null) {
+          window.cancelAnimationFrame(resizeAnimationFrameReference.current);
+          resizeAnimationFrameReference.current = null;
+        }
+
+        if (websocket.readyState !== WebSocket.CLOSED) {
+          websocket.close(normalClosureCode, "devtools panel closed");
+        }
+
+        terminal.dispose();
+        fitAddonReference.current = null;
+        terminalReference.current = null;
+        websocketReference.current = null;
+      };
+      terminal.loadAddon(fitAddon);
+      terminal.open(terminalContainer);
+      resizeObserver.observe(terminalViewport);
       scheduleTerminalResize();
-
-      if (isExpandedReference.current) {
-        terminal.focus();
-      }
     };
-    const handleClose = (): void => {
-      if (!hasExitedReference.current) {
-        reportStatus("disconnected");
-      }
-    };
-    const handleError = (): void => {
-      reportStatus("error", "The terminal websocket failed.");
-    };
-    const handleMessage = (event: MessageEvent<string>): void => {
-      const message: TerminalSessionServerMessage | null = parseTerminalSessionServerMessage(event.data);
-
-      if (message === null) {
-        reportStatus("error", "Received an invalid terminal message.");
-        return;
-      }
-
-      if (message.type === "snapshot" || message.type === "output") {
-        terminal.write(message.data);
-        return;
-      }
-
-      if (message.type === "exit") {
-        hasExitedReference.current = true;
-        reportStatus("exited");
-        return;
-      }
-
-      reportStatus("error", message.message);
-    };
-
-    websocket.addEventListener("open", handleOpen);
-    websocket.addEventListener("close", handleClose);
-    websocket.addEventListener("error", handleError);
-    websocket.addEventListener("message", handleMessage);
-    resizeObserver.observe(terminalViewport);
-    scheduleTerminalResize();
-
+    void initializeTerminal().catch((error: unknown): void => {
+      dispose?.();
+      if (!isDisposed) reportStatus("error", error instanceof Error ? error.message : "Failed to load the terminal.");
+    });
     return () => {
-      resizeObserver.disconnect();
-      dataListener.dispose();
-      oscListener.dispose();
-      websocket.removeEventListener("open", handleOpen);
-      websocket.removeEventListener("close", handleClose);
-      websocket.removeEventListener("error", handleError);
-      websocket.removeEventListener("message", handleMessage);
-
-      if (resizeAnimationFrameReference.current !== null) {
-        window.cancelAnimationFrame(resizeAnimationFrameReference.current);
-        resizeAnimationFrameReference.current = null;
-      }
-
-      if (websocket.readyState !== WebSocket.CLOSED) {
-        websocket.close(normalClosureCode, "devtools panel closed");
-      }
-
-      terminal.dispose();
-      fitAddonReference.current = null;
-      terminalReference.current = null;
-      websocketReference.current = null;
+      isDisposed = true;
+      dispose?.();
     };
   }, [controlToken, scheduleTerminalResize, session.sessionId]);
 

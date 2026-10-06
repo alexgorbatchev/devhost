@@ -1,3 +1,4 @@
 import { renderDevtools } from "./renderDevtools";
+import { startDevtools } from "./startDevtools";
 
-renderDevtools();
+await startDevtools(fetch, renderDevtools);

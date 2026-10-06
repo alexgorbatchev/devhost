@@ -13,10 +13,11 @@ import (
 func TestBundledDevtoolsLayersStackInOrder(t *testing.T) {
 	t.Parallel()
 
-	devtoolsScript, err := readBundledDevtoolsScript()
+	scriptBytes, err := bundledAssets.ReadFile("dist/devtools.js")
 	if err != nil {
-		t.Fatalf("readBundledDevtoolsScript() error = %v", err)
+		t.Fatalf("read bundled script: %v", err)
 	}
+	devtoolsScript := string(scriptBytes)
 
 	layersBottomToTop := []string{"overlay", "dock", "popover", "modal", "edge"}
 	previousLayer := ""
@@ -41,19 +42,19 @@ func TestBundledDevtoolsLayersStackInOrder(t *testing.T) {
 func TestBundledDevtoolsAssetsAreEmbedded(t *testing.T) {
 	t.Parallel()
 
-	devtoolsScript, err := readBundledDevtoolsScript()
+	scriptBytes, err := bundledAssets.ReadFile("dist/devtools.js")
 	if err != nil {
-		t.Fatalf("readBundledDevtoolsScript() error = %v", err)
+		t.Fatalf("read bundled script: %v", err)
 	}
-	if !strings.Contains(devtoolsScript, "__DEVHOST__") {
-		t.Fatalf("readBundledDevtoolsScript() did not include the bundled devtools runtime")
+	if !strings.Contains(string(scriptBytes), "__DEVHOST__") {
+		t.Fatal("embedded script did not include the bundled devtools runtime")
 	}
 
-	xtermStylesheet, err := readXtermStylesheet()
+	stylesheetBytes, err := bundledAssets.ReadFile("dist/xterm.css")
 	if err != nil {
-		t.Fatalf("readXtermStylesheet() error = %v", err)
+		t.Fatalf("read terminal stylesheet: %v", err)
 	}
-	if !strings.Contains(xtermStylesheet, ".xterm") {
-		t.Fatalf("readXtermStylesheet() did not include xterm styles")
+	if !strings.Contains(string(stylesheetBytes), ".xterm") {
+		t.Fatal("embedded stylesheet did not include xterm styles")
 	}
 }
