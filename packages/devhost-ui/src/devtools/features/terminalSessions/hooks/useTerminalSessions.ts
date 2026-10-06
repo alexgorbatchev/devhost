@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { DEVTOOLS_CONTROL_TOKEN_HEADER_NAME, TERMINAL_SESSION_START_PATH } from "../../../shared/constants";
-import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
+import { TERMINAL_SESSION_START_PATH } from "../../../shared/constants";
 import type { DevtoolsColorScheme } from "../../../shared/DevtoolsColorScheme";
 import type { IAnnotationAction } from "../../../shared/devtoolsConfig";
 import type { IAnnotationSubmitDetail } from "../../annotationComposer/types";
@@ -45,7 +44,6 @@ export function useTerminalSessions(
   colorScheme: DevtoolsColorScheme,
   enabled: boolean = true,
 ): IUseTerminalSessionsResult {
-  const { controlToken } = readInjectedDevtoolsConfig();
   const [terminalSessions, setTerminalSessions] = useState<TerminalSession[]>([]);
 
   useEffect((): void => {
@@ -54,8 +52,8 @@ export function useTerminalSessions(
       return;
     }
 
-    void restoreActiveTerminalSessions(setTerminalSessions, controlToken);
-  }, [controlToken, enabled]);
+    void restoreActiveTerminalSessions(setTerminalSessions);
+  }, [enabled]);
 
   const expandSession = useCallback((sessionId: string): void => {
     setTerminalSessions((currentSessions: TerminalSession[]): TerminalSession[] => {
@@ -104,7 +102,6 @@ export function useTerminalSessions(
           body: JSON.stringify(request),
           headers: {
             "content-type": "application/json",
-            [DEVTOOLS_CONTROL_TOKEN_HEADER_NAME]: controlToken,
           },
           method: "POST",
         });
@@ -137,7 +134,7 @@ export function useTerminalSessions(
         };
       }
     },
-    [controlToken, enabled, registerStartedSession],
+    [enabled, registerStartedSession],
   );
 
   const submitAnnotation = useCallback(
@@ -181,15 +178,9 @@ export function useTerminalSessions(
 
 type SetTerminalSessionsCallback = (value: (currentSessions: TerminalSession[]) => TerminalSession[]) => void;
 
-async function restoreActiveTerminalSessions(
-  setTerminalSessions: SetTerminalSessionsCallback,
-  controlToken: string,
-): Promise<void> {
+async function restoreActiveTerminalSessions(setTerminalSessions: SetTerminalSessionsCallback): Promise<void> {
   try {
     const response = await fetch(TERMINAL_SESSION_START_PATH, {
-      headers: {
-        [DEVTOOLS_CONTROL_TOKEN_HEADER_NAME]: controlToken,
-      },
       method: "GET",
     });
 

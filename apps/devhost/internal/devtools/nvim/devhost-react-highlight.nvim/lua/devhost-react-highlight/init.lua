@@ -16,7 +16,6 @@ local function merge_config(options)
 
   return {
     endpoint = options.endpoint or vim.env.DEVHOST_REACT_HIGHLIGHT_URL or "",
-    token = options.token or vim.env.DEVHOST_CONTROL_TOKEN or "",
     project_root = options.project_root or vim.env.DEVHOST_PROJECT_ROOT or vim.fn.getcwd(),
     stack_name = options.stack_name or vim.env.DEVHOST_STACK_NAME or "",
     debounce_ms = options.debounce_ms or 150,
@@ -202,8 +201,6 @@ local function post_payload(locator_result)
     "POST",
     "--header",
     "content-type: application/json",
-    "--header",
-    "x-devhost-control-token: " .. state.config.token,
     "--data",
     body,
     state.config.endpoint,
@@ -253,7 +250,7 @@ end
 function M.setup(options)
   state.config = merge_config(options)
 
-  if state.config.endpoint == "" or state.config.token == "" then
+  if state.config.endpoint == "" then
     return
   end
 

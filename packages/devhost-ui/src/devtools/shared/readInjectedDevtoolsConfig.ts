@@ -17,7 +17,6 @@ export interface IInjectedDevtoolsConfig {
   annotationActions: IAnnotationAction[];
   annotationDefaultActionId: string;
   componentEditor: DevtoolsComponentEditor;
-  controlToken: string;
   homeDirectoryPath: string;
   position: DevtoolsPosition;
   projectRootPath: string;
@@ -38,7 +37,6 @@ const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
   annotationActions: [],
   annotationDefaultActionId: "",
   componentEditor: defaultDevtoolsComponentEditor,
-  controlToken: "",
   homeDirectoryPath: "",
   position: "bottom-right",
   projectRootPath: "",
@@ -65,7 +63,6 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
   const annotationActions: IAnnotationAction[] = readAnnotationActionsValue(injectedConfig);
   const annotationDefaultActionId: string = readAnnotationDefaultActionIdValue(injectedConfig, annotationActions);
   const componentEditor: DevtoolsComponentEditor = readComponentEditorValue(injectedConfig);
-  const controlToken: string = readControlTokenValue(injectedConfig);
   const homeDirectoryPath: unknown = Reflect.get(injectedConfig, "homeDirectoryPath");
   const position: DevtoolsPosition = readDevtoolsPositionValue(injectedConfig);
   const projectRootPath: string = readProjectRootPathValue(injectedConfig);
@@ -95,7 +92,6 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
     annotationDefaultActionId,
     annotationQueueEnabled,
     componentEditor,
-    controlToken,
     homeDirectoryPath: typeof homeDirectoryPath === "string" ? homeDirectoryPath : "",
     position,
     projectRootPath,
@@ -177,12 +173,6 @@ function readComponentEditorValue(injectedConfig: object): DevtoolsComponentEdit
   const componentEditor: unknown = Reflect.get(injectedConfig, "componentEditor");
 
   return readDevtoolsComponentEditorValue(componentEditor);
-}
-
-function readControlTokenValue(injectedConfig: object): string {
-  const controlToken: unknown = Reflect.get(injectedConfig, "controlToken");
-
-  return typeof controlToken === "string" ? controlToken : defaultInjectedDevtoolsConfig.controlToken;
 }
 
 function readDevtoolsPositionValue(injectedConfig: object): DevtoolsPosition {

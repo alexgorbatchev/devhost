@@ -5,7 +5,6 @@ import { ReactHighlightLifecycleController } from "./ReactHighlightLifecycleCont
 
 interface IReactHighlightLifecycleSceneProps {
   initialEnabled?: boolean;
-  initialToken?: string;
   isDeferred?: boolean;
 }
 
@@ -18,14 +17,12 @@ function ReactHighlightHookProbe(props: ReactHighlightHookProbeProps): null {
 
 export function ReactHighlightLifecycleScene({
   initialEnabled = true,
-  initialToken = "token-one",
   isDeferred = false,
 }: IReactHighlightLifecycleSceneProps): JSX.Element {
   const [controller] = useState(() => new ReactHighlightLifecycleController(isDeferred));
   const [isEnabled, setIsEnabled] = useState<boolean>(initialEnabled);
   const [isMounted, setIsMounted] = useState<boolean>(true);
   const [hasOverlayRoot, setHasOverlayRoot] = useState<boolean>(true);
-  const [controlToken, setControlToken] = useState<string>(initialToken);
   const [projectRootPath, setProjectRootPath] = useState<string>("/configured-project");
   const overlayRootReference = useRef<HTMLDivElement | null>(null);
   const missingRootReference = useRef<HTMLElement | null>(null);
@@ -33,7 +30,6 @@ export function ReactHighlightLifecycleScene({
 
   const probe = isMounted ? (
     <ReactHighlightHookProbe
-      controlToken={controlToken}
       createWebSocket={controller.createWebSocket}
       enabled={isEnabled}
       highlightElements={controller.highlightElements}
@@ -48,15 +44,6 @@ export function ReactHighlightLifecycleScene({
         <input type="checkbox" checked={isEnabled} onChange={(event) => setIsEnabled(event.target.checked)} />
         Enabled
       </label>
-      <button type="button" onClick={() => setControlToken("token-one")}>
-        Set token
-      </button>
-      <button type="button" onClick={() => setControlToken("")}>
-        Clear token
-      </button>
-      <button type="button" onClick={() => setControlToken("token-two")}>
-        Rotate token
-      </button>
       <button type="button" onClick={() => setProjectRootPath("/other-project")}>
         Switch project
       </button>

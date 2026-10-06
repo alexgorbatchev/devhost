@@ -14,7 +14,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func TestWorktreesEndpointAuthenticatesAndPublishesSelectionToAllClients(t *testing.T) {
+func TestWorktreesEndpointPublishesSelectionToAllClients(t *testing.T) {
 	var mu sync.Mutex
 	repo := WorktreeRepository{ID: "shop", Name: "shop", ConfiguredPath: "/main", SelectedPath: "/main", RunningPath: "/main", ServiceNames: []string{"web"}, Worktrees: []Worktree{}}
 	var server *ControlServer
@@ -46,17 +46,15 @@ func TestWorktreesEndpointAuthenticatesAndPublishesSelectionToAllClients(t *test
 		}
 	})
 	for _, tc := range []struct {
-		name, method, body, token string
-		status                    int
+		name, method, body string
+		status             int
 	}{
-		{name: "missing token", method: http.MethodGet, status: http.StatusForbidden},
-		{name: "wrong token", method: http.MethodPost, body: `{"repositoryId":"shop","path":"/feature"}`, token: "wrong", status: http.StatusForbidden},
-		{name: "wrong method", method: http.MethodDelete, token: server.controlToken, status: http.StatusMethodNotAllowed},
-		{name: "invalid payload", method: http.MethodPost, body: `{"repositoryId":"shop"}`, token: server.controlToken, status: http.StatusBadRequest},
-		{name: "unknown fields", method: http.MethodPost, body: `{"repositoryId":"shop","path":"/feature","command":["unsafe"]}`, token: server.controlToken, status: http.StatusBadRequest},
+		{name: "wrong method", method: http.MethodDelete, status: http.StatusMethodNotAllowed},
+		{name: "invalid payload", method: http.MethodPost, body: `{"repositoryId":"shop"}`, status: http.StatusBadRequest},
+		{name: "unknown fields", method: http.MethodPost, body: `{"repositoryId":"shop","path":"/feature","command":["unsafe"]}`, status: http.StatusBadRequest},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			r := worktreeHTTPResponse(t, server, tc.method, tc.body, tc.token)
+			r := worktreeHTTPResponse(t, server, tc.method, tc.body)
 			defer r.Body.Close()
 			if r.StatusCode != tc.status {
 				t.Fatalf("status = %d, want %d", r.StatusCode, tc.status)
@@ -64,7 +62,7 @@ func TestWorktreesEndpointAuthenticatesAndPublishesSelectionToAllClients(t *test
 		})
 	}
 	if refreshes != 0 {
-		t.Fatal("unauthorized request reached worktree discovery")
+		t.Fatal("invalid request reached worktree discovery")
 	}
 	clients := make([]*websocket.Conn, 2)
 	for i := range clients {
@@ -85,7 +83,7 @@ func TestWorktreesEndpointAuthenticatesAndPublishesSelectionToAllClients(t *test
 			t.Fatal("initial selection missing")
 		}
 	}
-	response := worktreeHTTPResponse(t, server, http.MethodPost, `{"repositoryId":"shop","path":"/feature"}`, server.controlToken)
+	response := worktreeHTTPResponse(t, server, http.MethodPost, `{"repositoryId":"shop","path":"/feature"}`)
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("switch status = %d", response.StatusCode)
@@ -99,7 +97,7 @@ func TestWorktreesEndpointAuthenticatesAndPublishesSelectionToAllClients(t *test
 			t.Fatalf("client retained stale checkout: %#v", updated)
 		}
 	}
-	response = worktreeHTTPResponse(t, server, http.MethodGet, "", server.controlToken)
+	response = worktreeHTTPResponse(t, server, http.MethodGet, "")
 	defer response.Body.Close()
 	var refreshed HealthResponse
 	if err := json.NewDecoder(response.Body).Decode(&refreshed); err != nil {
@@ -110,13 +108,12 @@ func TestWorktreesEndpointAuthenticatesAndPublishesSelectionToAllClients(t *test
 	}
 }
 
-func worktreeHTTPResponse(t *testing.T, server *ControlServer, method, body, token string) *http.Response {
+func worktreeHTTPResponse(t *testing.T, server *ControlServer, method, body string) *http.Response {
 	t.Helper()
 	r, err := http.NewRequest(method, serverURL(server.Port(), worktreesPath), strings.NewReader(body))
 	if err != nil {
 		t.Fatal(err)
 	}
-	r.Header.Set(controlTokenHeaderName, token)
 	response, err := http.DefaultClient.Do(r)
 	if err != nil {
 		t.Fatal(err)
@@ -127,10 +124,9 @@ func worktreeHTTPResponse(t *testing.T, server *ControlServer, method, body, tok
 func TestWorktreesEndpointReportsDiscoveryAndSwitchFailures(t *testing.T) {
 	for _, method := range []string{http.MethodGet, http.MethodPost} {
 		t.Run(method, func(t *testing.T) {
-			s := &ControlServer{controlToken: "token", refreshWorktrees: func() error { return fmt.Errorf("Git unavailable") }, switchWorktree: func(string, string) error { return fmt.Errorf("Service web failed") }}
+			s := &ControlServer{refreshWorktrees: func() error { return fmt.Errorf("Git unavailable") }, switchWorktree: func(string, string) error { return fmt.Errorf("Service web failed") }}
 			response := httptest.NewRecorder()
 			r := httptest.NewRequest(method, worktreesPath, strings.NewReader(`{"repositoryId":"shop","path":"/feature"}`))
-			r.Header.Set(controlTokenHeaderName, "token")
 			s.handleWorktrees(response, r)
 			if response.Code != http.StatusInternalServerError {
 				t.Fatalf("failure status=%d", response.Code)

@@ -18,7 +18,7 @@ The injected `devtools` UI mounts inside its own Shadow DOM container so its run
 
 Browsers ignore `@font-face` rules inside a Shadow DOM, so the devtools register their monospace font with the page's font set through the `FontFace` API under a `devhost`-prefixed family name. Font subsets are served separately and downloaded only when needed. This adds no stylesheet to the host document and cannot collide with fonts the host page declares.
 
-The production `inject.js` script contains no instance configuration or control token. Before mounting, it fetches fresh configuration from `/__devhost__/config.json`, which uses `Cache-Control: no-store`. JavaScript and terminal styles are gzip-compressed when the browser accepts gzip. The terminal runtime loads only when a terminal session mounts; minimized sessions stay connected after loading.
+The production `inject.js` script contains no instance configuration. Before mounting, it fetches fresh configuration from `/__devhost__/config.json`, which uses `Cache-Control: no-store`. JavaScript and terminal styles are gzip-compressed when the browser accepts gzip. The terminal runtime loads only when a terminal session mounts; minimized sessions stay connected after loading.
 
 Production entry scripts, terminal styles, content-hashed JavaScript chunks, and fonts use one-year immutable browser caching. Unversioned entry and terminal-style URLs redirect without caching to their current content version, so upgrades select fresh assets while unchanged bundles can be reused across stack restarts. In the source-checkout development loop, the entry script stays uncached so page reloads pick up edits.
 
@@ -40,31 +40,19 @@ When all devtools features are disabled, `devhost` does not mount these control 
 
 For annotation workflows, action configuration, and queue behavior, see [Annotations](./annotations/).
 
-## Control token
+## Control API
 
-The control token authorizes requests to the running stack's terminal, annotation queue, service restart, worktree, and React Highlight controls. A client must present the current token before these handlers accept a request. It is a bearer credential: possession of the token grants access to the protected controls, subject to the stack's enabled features.
+Devtools controls are designed for trusted local development. HTTP requests and WebSocket connections use no authentication token. Independent stacks stay isolated through their own control servers, routed hosts, project roots, and terminal session IDs.
 
-### Lifecycle and delivery
+### Instance configuration
 
-Each control server generates a cryptographically random 128-bit token, encoded as 32 hexadecimal characters, at startup. The token belongs to that running instance; it is shared by its routed services, browser tabs, and editor integration. Independent stacks generate independent tokens. There are no per-user tokens or permission levels.
+Before mounting, the browser entry fetches `GET /__devhost__/config.json` from the page's origin with `cache: "no-store"`. The response includes the stack name, project root, enabled features, and UI settings, and uses `Cache-Control: no-store`. The entry rejects unsuccessful responses and configurations with a missing or empty stack name.
 
-The token stays valid for the lifetime of the control server, without a separate expiration timer. Restarting the stack generates a fresh token; tokens retained from the previous instance do not authorize the replacement server. Browser clients should reload the routed page after a stack restart, and editor clients should use the current generated launcher.
-
-Before mounting, the browser entry fetches `GET /__devhost__/config.json` from the page's origin with `cache: "no-store"`. The response includes `controlToken` and uses `Cache-Control: no-store`. Configuration retrieval itself does not require a control token. The entry rejects unsuccessful responses and configurations with a missing or empty token.
-
-The generated Neovim launcher supplies the same credential through `DEVHOST_CONTROL_TOKEN`; the plugin uses it when posting cursor updates. See [React Highlight](../react-highlight/) for the launcher and integration requirements.
-
-The token is kept out of `inject.js`, lazy JavaScript chunks, fonts, and terminal styles. Those static assets do not need a token. Their content version parameter, `?v=`, identifies a cacheable asset version; it does not authorize control requests. Never add instance tokens to static asset URLs or cache the configuration response.
+Instance configuration is kept out of `inject.js`, lazy JavaScript chunks, fonts, and terminal styles. Content-versioned entry and stylesheet URLs use `?v=` for browser caching. Configuration stays uncached so page reloads pick up the running instance's settings.
 
 ### HTTP requests
 
-Protected HTTP endpoints require the token in the `x-devhost-control-token` request header:
-
-```text
-x-devhost-control-token: <instance-control-token>
-```
-
-All paths below are relative to the routed app's origin:
+All paths below are relative to the routed app's origin. Requests with JSON bodies use `Content-Type: application/json`.
 
 | Endpoint                                           | Methods           | Purpose                                                      |
 | -------------------------------------------------- | ----------------- | ------------------------------------------------------------ |
@@ -76,37 +64,23 @@ All paths below are relative to the routed app's origin:
 | `/__devhost__/worktrees`                           | `GET`, `POST`     | Refresh worktree state or switch the selected checkout       |
 | `/__devhost__/react-highlight/cursor`              | `POST`            | Publish an editor cursor update                              |
 
-The HTTP handlers do not accept `?token=` in place of the header. A valid token does not bypass method, payload, feature, or session validation.
+Handlers still validate methods, payloads, enabled features, and session state. Malformed requests can produce `400 Bad Request`, unsupported methods produce `405 Method Not Allowed`, and unavailable controls can produce `501 Not Implemented`.
 
 ### WebSocket connections
 
-Protected WebSockets require the token in the opening request's `token` query parameter:
-
 ```text
-/__devhost__/ws/terminal?token=<instance-control-token>&sessionId=<session-id>
-/__devhost__/ws/annotation-queues?token=<instance-control-token>
-/__devhost__/ws/react-highlight?token=<instance-control-token>
+/__devhost__/ws/terminal?sessionId=<session-id>
+/__devhost__/ws/annotation-queues
+/__devhost__/ws/react-highlight
+/__devhost__/ws/health
+/__devhost__/ws/logs
 ```
 
-The terminal connection also needs the ID of an existing session. Use the page's routed host with `ws://` for HTTP or `wss://` for HTTPS. The injected UI constructs these URLs and supplies the token automatically.
+Use the page's routed host with `ws://` for HTTP or `wss://` for HTTPS. The terminal connection requires the ID of an existing session: a missing `sessionId` produces `400`, and an unknown session produces `404` before the WebSocket upgrade. The injected UI constructs these URLs automatically.
 
-The browser's [WebSocket constructor](https://websockets.spec.whatwg.org/#the-websocket-interface) accepts a URL and optional subprotocols, with no option for arbitrary request headers. This is why these connections carry the credential in the URL instead of the HTTP control header. These WebSocket handlers check the query parameter; supplying only `x-devhost-control-token` does not authorize them.
+The generated Neovim launcher supplies the instance's cursor-update endpoint through `DEVHOST_REACT_HIGHLIGHT_URL`, together with its project root, stack name, and plugin path. Restarting the stack can change the local control port, so use the current launcher after each restart. See [React Highlight](../react-highlight/) for integration requirements.
 
-### Failures and troubleshooting
-
-A missing, incorrect, or stale token produces `403 Forbidden` on protected HTTP endpoints. Protected WebSocket handlers perform the same check before upgrading the connection, so an invalid token produces an HTTP `403` instead of a successful WebSocket handshake.
-
-For a `403`, reload the page to fetch the current configuration or relaunch Neovim using the current stack launcher. Check that the client addresses the intended running stack and puts the token in the required header or query parameter. For a valid terminal token, a missing `sessionId` produces `400`; an unknown session produces `404`.
-
-Authentication configured by an upstream proxy is separate. Clients must satisfy that proxy's authentication as well as devhost's token check. A sign-in redirect can prevent a WebSocket connection from reaching devhost at all.
-
-### Security boundary
-
-The control token is not a user login or a restriction on who can read the configuration. Anyone who can retrieve `/__devhost__/config.json` can obtain the token and use the protected controls. Scripts running in the routed page can also read it. The control server listens on loopback, but Caddy exposes its `/__devhost__/*` routes through the routed app host, so loopback binding alone does not restrict access to those proxied routes.
-
-Static assets, configuration, and the `/__devhost__/ws/health` and `/__devhost__/ws/logs` streams do not require the control token. The control server's WebSocket upgrader accepts any Origin; the token checks on protected connections are separate from origin validation. Treat the routed devtools surface as accessible to anyone allowed to reach it, including its configuration and service logs. Use devtools with trusted local apps and restrict access to the routed host when it is reachable by other users or networks.
-
-Treat tokens and WebSocket URLs containing them as credentials. Redact them from shared logs, screenshots, and bug reports. Stop and restart the stack to invalidate a disclosed token for subsequent connections, and reload browser clients or relaunch editor clients against the replacement instance.
+Authentication configured by an upstream proxy remains separate. Clients must satisfy that proxy's requirements; a sign-in redirect can prevent a WebSocket connection from reaching devhost.
 
 ## Open component source
 

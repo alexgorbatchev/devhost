@@ -11,11 +11,6 @@ import (
 )
 
 func (s *ControlServer) handleTerminalSessions(writer http.ResponseWriter, request *http.Request) {
-	if request.Header.Get(controlTokenHeaderName) != s.controlToken {
-		http.Error(writer, "Forbidden", http.StatusForbidden)
-		return
-	}
-
 	switch request.Method {
 	case http.MethodGet:
 		writer.Header().Set("content-type", "application/json")
@@ -60,11 +55,6 @@ func (s *ControlServer) handleTerminalSessions(writer http.ResponseWriter, reque
 
 func (s *ControlServer) handleTerminalWebsocket(writer http.ResponseWriter, request *http.Request) {
 	query := request.URL.Query()
-	if query.Get(terminalSessionWebsocketQueryToken) != s.controlToken {
-		http.Error(writer, "Forbidden", http.StatusForbidden)
-		return
-	}
-
 	sessionID := query.Get(terminalSessionWebsocketQuerySession)
 	if sessionID == "" {
 		http.Error(writer, "Missing sessionId query parameter.", http.StatusBadRequest)
@@ -137,8 +127,7 @@ func (s *ControlServer) createTerminalSession(request terminalSessionRequest) (s
 	if starter == nil {
 		starter = func(request terminalSessionRequest) (*launchedTerminalSession, error) {
 			command, err := createTerminalSessionCommand(toolContext.AnnotationActions, s.componentEditor, toolContext.ProjectRootPath, request, s.stackName, editorTerminalIntegration{
-				controlToken: s.controlToken,
-				endpoint:     fmt.Sprintf("http://127.0.0.1:%d%s", s.Port(), reactHighlightCursorPath),
+				endpoint: fmt.Sprintf("http://127.0.0.1:%d%s", s.Port(), reactHighlightCursorPath),
 			})
 			if err != nil {
 				return nil, err
@@ -147,7 +136,7 @@ func (s *ControlServer) createTerminalSession(request terminalSessionRequest) (s
 		}
 	}
 
-	sessionID, err := createControlToken()
+	sessionID, err := createRandomID()
 	if err != nil {
 		return "", err
 	}

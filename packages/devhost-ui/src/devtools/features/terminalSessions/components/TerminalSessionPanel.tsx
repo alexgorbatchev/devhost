@@ -10,12 +10,10 @@ import { cn } from "../../../../lib/utils";
 import { Button, InlineNotice, useDevtoolsColorScheme } from "../../../shared";
 import { createDevtoolsWebSocketUrl } from "../../../shared/createDevtoolsWebSocketUrl";
 import {
-  DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME,
   TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME,
   TERMINAL_SESSION_WEBSOCKET_PATH,
   XTERM_STYLESHEET_PATH,
 } from "../../../shared/constants";
-import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
 import { readTerminalSessionPrimaryAction } from "../readTerminalSessionPrimaryAction";
 import { readTerminalSessionStatusLabel } from "../readTerminalSessionStatusLabel";
 import { readTerminalTheme, type ITerminalTheme } from "../readTerminalTheme";
@@ -57,7 +55,6 @@ const xtermStylesheetId: string = "devhost-xterm-stylesheet";
  * persist and the session keeps reporting status to its toolbar chip; expanding only reveals it.
  */
 export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Element {
-  const { controlToken } = readInjectedDevtoolsConfig();
   const colorScheme = useDevtoolsColorScheme();
   const terminalTheme: ITerminalTheme = useMemo((): ITerminalTheme => {
     return readTerminalTheme(colorScheme);
@@ -158,9 +155,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
       });
       const fitAddon = new FitAddon();
       const websocketUrl: URL = new URL(createDevtoolsWebSocketUrl(TERMINAL_SESSION_WEBSOCKET_PATH, window.location));
-      const websocket = new WebSocket(
-        appendTerminalSessionParameters(websocketUrl, session.sessionId, controlToken).toString(),
-      );
+      const websocket = new WebSocket(appendTerminalSessionParameters(websocketUrl, session.sessionId).toString());
 
       fitAddonReference.current = fitAddon;
       terminalReference.current = terminal;
@@ -266,7 +261,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
       isDisposed = true;
       dispose?.();
     };
-  }, [controlToken, scheduleTerminalResize, session.sessionId]);
+  }, [scheduleTerminalResize, session.sessionId]);
 
   useEffect(() => {
     const terminal: Terminal | null = terminalReference.current;
@@ -369,8 +364,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
   );
 }
 
-function appendTerminalSessionParameters(websocketUrl: URL, sessionId: string, controlToken: string): URL {
-  websocketUrl.searchParams.set(DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME, controlToken);
+function appendTerminalSessionParameters(websocketUrl: URL, sessionId: string): URL {
   websocketUrl.searchParams.set(TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME, sessionId);
 
   return websocketUrl;

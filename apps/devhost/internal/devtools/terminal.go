@@ -29,11 +29,9 @@ const (
 	terminalSessionLauncherNeovim         = "neovim"
 	terminalSessionRequestKindEditor      = "editor"
 	terminalSessionWebsocketQuerySession  = "sessionId"
-	terminalSessionWebsocketQueryToken    = "token"
 	neovimSitePathEnvironmentName         = "DEVHOST_NVIM_SITE_PATH"
 	neovimReactHighlightPackageName       = "dhr.nvim"
 	reactHighlightEndpointEnvironmentName = "DEVHOST_REACT_HIGHLIGHT_URL"
-	controlTokenEnvironmentName           = "DEVHOST_CONTROL_TOKEN"
 	projectRootEnvironmentName            = "DEVHOST_PROJECT_ROOT"
 	stackNameEnvironmentName              = "DEVHOST_STACK_NAME"
 )
@@ -197,8 +195,7 @@ type sourceLocationPayload struct {
 }
 
 type editorTerminalIntegration struct {
-	controlToken string
-	endpoint     string
+	endpoint string
 }
 
 type neovimPluginSessionFiles struct {
@@ -415,7 +412,6 @@ func createEditorTerminalCommand(componentEditor string, request terminalSession
 		cleanup = sessionFiles.cleanup
 		env[neovimSitePathEnvironmentName] = sessionFiles.sitePath
 		env[reactHighlightEndpointEnvironmentName] = integration.endpoint
-		env[controlTokenEnvironmentName] = integration.controlToken
 		env[projectRootEnvironmentName] = projectRootPath
 		env[stackNameEnvironmentName] = stackName
 	}
@@ -494,15 +490,12 @@ func createNeovimPluginSessionFiles(projectRootPath string, stackName string) (*
 	}, nil
 }
 
-func createNeovimPluginShellIntegrationFiles(projectRootPath string, stackName string, endpoint string, controlToken string) (*neovimPluginShellIntegrationFiles, error) {
+func createNeovimPluginShellIntegrationFiles(projectRootPath string, stackName string, endpoint string) (*neovimPluginShellIntegrationFiles, error) {
 	if projectRootPath == "" {
 		return nil, fmt.Errorf("project root path is required to prepare the devhost Neovim plugin")
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("react highlight endpoint is required to prepare the devhost Neovim launcher")
-	}
-	if controlToken == "" {
-		return nil, fmt.Errorf("control token is required to prepare the devhost Neovim launcher")
 	}
 
 	integrationDirectoryPath := filepath.Join(projectRootPath, ".tmp", "devhost", sanitizeNeovimSessionName(stackName), "nvim-shell")
@@ -521,11 +514,10 @@ func createNeovimPluginShellIntegrationFiles(projectRootPath string, stackName s
 
 	launcherPath := filepath.Join(binDirectoryPath, "devhost-nvim")
 	launcherScript := createNeovimShellLauncherScript(neovimShellLauncherScriptOptions{
-		controlToken: controlToken,
-		endpoint:     endpoint,
-		projectRoot:  projectRootPath,
-		sitePath:     sitePath,
-		stackName:    stackName,
+		endpoint:    endpoint,
+		projectRoot: projectRootPath,
+		sitePath:    sitePath,
+		stackName:   stackName,
 	})
 	if err := os.WriteFile(launcherPath, []byte(launcherScript), 0o755); err != nil {
 		_ = os.RemoveAll(integrationDirectoryPath)
@@ -542,11 +534,10 @@ func createNeovimPluginShellIntegrationFiles(projectRootPath string, stackName s
 }
 
 type neovimShellLauncherScriptOptions struct {
-	controlToken string
-	endpoint     string
-	projectRoot  string
-	sitePath     string
-	stackName    string
+	endpoint    string
+	projectRoot string
+	sitePath    string
+	stackName   string
 }
 
 func createNeovimShellLauncherScript(options neovimShellLauncherScriptOptions) string {
@@ -555,7 +546,6 @@ func createNeovimShellLauncherScript(options neovimShellLauncherScriptOptions) s
 		"set -eu",
 		fmt.Sprintf("export %s=%s", neovimSitePathEnvironmentName, shellSingleQuote(options.sitePath)),
 		fmt.Sprintf("export %s=%s", reactHighlightEndpointEnvironmentName, shellSingleQuote(options.endpoint)),
-		fmt.Sprintf("export %s=%s", controlTokenEnvironmentName, shellSingleQuote(options.controlToken)),
 		fmt.Sprintf("export %s=%s", projectRootEnvironmentName, shellSingleQuote(options.projectRoot)),
 		fmt.Sprintf("export %s=%s", stackNameEnvironmentName, shellSingleQuote(options.stackName)),
 		fmt.Sprintf("cd %s", shellSingleQuote(options.projectRoot)),

@@ -14,10 +14,6 @@ const (
 )
 
 func (s *ControlServer) handleAnnotationQueues(writer http.ResponseWriter, request *http.Request) {
-	if request.Header.Get(controlTokenHeaderName) != s.controlToken {
-		http.Error(writer, "Forbidden", http.StatusForbidden)
-		return
-	}
 	if s.annotationQueueStore == nil {
 		http.Error(writer, "Annotation queues are not configured.", http.StatusNotImplemented)
 		return
@@ -112,10 +108,6 @@ func (s *ControlServer) handleAnnotationQueueResume(writer http.ResponseWriter, 
 }
 
 func (s *ControlServer) handleAnnotationQueueWebsocket(writer http.ResponseWriter, request *http.Request) {
-	if request.URL.Query().Get(terminalSessionWebsocketQueryToken) != s.controlToken {
-		http.Error(writer, "Forbidden", http.StatusForbidden)
-		return
-	}
 	if s.annotationQueueStore == nil {
 		http.Error(writer, "Annotation queues are not configured.", http.StatusNotImplemented)
 		return

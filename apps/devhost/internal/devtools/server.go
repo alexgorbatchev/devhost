@@ -29,7 +29,6 @@ const (
 	restartServicePath               = controlPathPrefix + "/restart-service"
 	healthWebsocketPath              = controlPathPrefix + "/ws/health"
 	logsWebsocketPath                = controlPathPrefix + "/ws/logs"
-	controlTokenHeaderName           = "x-devhost-control-token"
 	maximumRetainedLogEntries        = 512
 	healthPollInterval               = time.Second
 	defaultIdleTerminalSessionPeriod = 10 * time.Second
@@ -108,10 +107,8 @@ type StartControlServerOptions struct {
 }
 
 type ControlServer struct {
-	listener net.Listener
-	server   *http.Server
-
-	controlToken               string
+	listener                   net.Listener
+	server                     *http.Server
 	componentEditor            string
 	featureToggles             FeatureToggles
 	idleTerminalSessionTimeout time.Duration
@@ -163,7 +160,6 @@ type injectedConfig struct {
 	AnnotationDefaultActionID string                     `json:"annotationDefaultActionId"`
 	AnnotationActions         []injectedAnnotationAction `json:"annotationActions"`
 	ComponentEditor           string                     `json:"componentEditor"`
-	ControlToken              string                     `json:"controlToken"`
 	HomeDirectoryPath         string                     `json:"homeDirectoryPath"`
 	Position                  string                     `json:"position"`
 	ProjectRootPath           string                     `json:"projectRootPath"`
@@ -228,12 +224,6 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		return nil, fmt.Errorf("start devtools control listener: %w", err)
 	}
 
-	controlToken, err := createControlToken()
-	if err != nil {
-		_ = listener.Close()
-		return nil, fmt.Errorf("create devtools control token: %w", err)
-	}
-
 	annotationActions := append([]manifest.ValidatedAnnotationAction{}, options.AnnotationActions...)
 	annotationDefaultActionID := normalizeAnnotationDefaultActionID(options.AnnotationDefaultActionID, annotationActions)
 	home, err := os.UserHomeDir()
@@ -247,7 +237,6 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		AnnotationEnabled:         options.FeatureToggles.AnnotationEnabled,
 		AnnotationQueueEnabled:    options.FeatureToggles.AnnotationQueueEnabled,
 		ComponentEditor:           options.ComponentEditor,
-		ControlToken:              controlToken,
 		HomeDirectoryPath:         home,
 		EditorEnabled:             options.FeatureToggles.EditorEnabled,
 		ExternalToolbarsEnabled:   options.FeatureToggles.ExternalToolbarsEnabled,
@@ -275,7 +264,6 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		configJSON:                 configJSON,
 		annotationActions:          annotationActions,
 		componentEditor:            options.ComponentEditor,
-		controlToken:               controlToken,
 		featureToggles:             options.FeatureToggles,
 		annotationQueueClients:     map[*websocketClient]struct{}{},
 		getHealth:                  options.GetHealthResponse,
@@ -310,7 +298,6 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 			options.ProjectRootPath,
 			options.StackName,
 			fmt.Sprintf("http://127.0.0.1:%d%s", controlServer.Port(), reactHighlightCursorPath),
-			controlToken,
 		)
 		if err != nil {
 			_ = listener.Close()
@@ -689,11 +676,6 @@ func (s *ControlServer) checkAndBuildAssets() ([]byte, []byte, error) {
 }
 
 func (s *ControlServer) handleRestartService(writer http.ResponseWriter, request *http.Request) {
-	if request.Header.Get(controlTokenHeaderName) != s.controlToken {
-		http.Error(writer, "Forbidden", http.StatusForbidden)
-		return
-	}
-
 	if request.Method != http.MethodPost {
 		http.Error(writer, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -779,11 +761,6 @@ func (s *ControlServer) handleLogsWebsocket(writer http.ResponseWriter, request 
 }
 
 func (s *ControlServer) handleReactHighlightCursor(writer http.ResponseWriter, request *http.Request) {
-	if request.Header.Get(controlTokenHeaderName) != s.controlToken {
-		http.Error(writer, "Forbidden", http.StatusForbidden)
-		return
-	}
-
 	if request.Method != http.MethodPost {
 		http.Error(writer, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -823,11 +800,6 @@ func (s *ControlServer) handleReactHighlightCursor(writer http.ResponseWriter, r
 }
 
 func (s *ControlServer) handleReactHighlightWebsocket(writer http.ResponseWriter, request *http.Request) {
-	if request.URL.Query().Get(terminalSessionWebsocketQueryToken) != s.controlToken {
-		http.Error(writer, "Forbidden", http.StatusForbidden)
-		return
-	}
-
 	client, err := s.upgrade(writer, request)
 	if err != nil {
 		return
@@ -931,7 +903,7 @@ func (c *websocketClient) close() {
 	})
 }
 
-func createControlToken() (string, error) {
+func createRandomID() (string, error) {
 	bytes := make([]byte, 16)
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err

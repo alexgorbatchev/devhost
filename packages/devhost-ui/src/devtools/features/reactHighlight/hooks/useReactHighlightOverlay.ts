@@ -9,7 +9,6 @@ import {
 import { parseReactHighlightCursorPayload } from "../reactHighlightCursorPayload";
 
 interface IUseReactHighlightOverlayParams {
-  controlToken: string;
   createWebSocket?: (url: string) => Pick<WebSocket, "addEventListener" | "removeEventListener" | "close">;
   enabled: boolean;
   highlightElements?: typeof highlightReactElements;
@@ -20,7 +19,6 @@ interface IUseReactHighlightOverlayParams {
 type ReactHighlightOverlayCleanup = () => void;
 
 export function useReactHighlightOverlay({
-  controlToken,
   createWebSocket = openReactHighlightWebSocket,
   enabled,
   highlightElements = highlightReactElements,
@@ -28,14 +26,14 @@ export function useReactHighlightOverlay({
   projectRootPath,
 }: IUseReactHighlightOverlayParams): void {
   useEffect((): ReactHighlightOverlayCleanup | undefined => {
-    if (!enabled || controlToken.length === 0) {
+    if (!enabled) {
       return undefined;
     }
 
     let overlays: Awaited<ReturnType<typeof highlightReactElements>> = [];
     let messageSequence: number = 0;
     let isDisposed: boolean = false;
-    const websocket = createWebSocket(createReactHighlightWebSocketUrl(window.location, controlToken));
+    const websocket = createWebSocket(createReactHighlightWebSocketUrl(window.location));
 
     const handleMessage = (event: MessageEvent): void => {
       const payload: unknown = parseReactHighlightCursorPayload(event.data);
@@ -80,7 +78,7 @@ export function useReactHighlightOverlay({
       clearReactHighlightOverlays(overlays);
       websocket.close();
     };
-  }, [controlToken, createWebSocket, enabled, highlightElements, overlayRootReference, projectRootPath]);
+  }, [createWebSocket, enabled, highlightElements, overlayRootReference, projectRootPath]);
 }
 
 function openReactHighlightWebSocket(url: string): WebSocket {

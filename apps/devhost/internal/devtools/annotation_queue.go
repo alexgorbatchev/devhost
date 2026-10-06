@@ -1023,7 +1023,7 @@ func stringPointer(value string) *string {
 }
 
 func mustCreateID() string {
-	value, err := createControlToken()
+	value, err := createRandomID()
 	if err == nil {
 		return value
 	}

@@ -13,10 +13,6 @@ type switchWorktreeRequest struct {
 }
 
 func (s *ControlServer) handleWorktrees(writer http.ResponseWriter, request *http.Request) {
-	if request.Header.Get(controlTokenHeaderName) != s.controlToken {
-		http.Error(writer, "Forbidden", http.StatusForbidden)
-		return
-	}
 	if request.Method != http.MethodGet && request.Method != http.MethodPost {
 		writer.Header().Set("Allow", "GET, POST")
 		http.Error(writer, "Method not allowed", http.StatusMethodNotAllowed)

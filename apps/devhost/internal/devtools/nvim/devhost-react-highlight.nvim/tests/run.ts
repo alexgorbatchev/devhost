@@ -24,11 +24,6 @@ const server = Bun.serve({
       return new Response("not found", { status: 404 });
     }
 
-    const token: string | null = request.headers.get("x-devhost-control-token");
-    if (token !== "test-token") {
-      return new Response("forbidden", { status: 403 });
-    }
-
     const payload: unknown = await request.json();
     if (!isCursorPayload(payload)) {
       return new Response("bad request", { status: 400 });
@@ -50,7 +45,6 @@ const timeout = setTimeout((): void => {
 const nvimProcess = Bun.spawn(["nvim", "--headless", "-n", fixturePath, "-S", scriptPath], {
   env: {
     ...process.env,
-    DEVHOST_CONTROL_TOKEN: "test-token",
     DEVHOST_PROJECT_ROOT: pluginRootPath,
     DEVHOST_REACT_HIGHLIGHT_PLUGIN_ROOT: pluginRootPath,
     DEVHOST_REACT_HIGHLIGHT_URL: `http://127.0.0.1:${server.port}/cursor`,

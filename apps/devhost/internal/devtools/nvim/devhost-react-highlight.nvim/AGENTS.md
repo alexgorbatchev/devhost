@@ -12,8 +12,8 @@ Bundled Neovim plugin loaded by `devhost` to send TSX/JSX cursor locators to the
 ## Local conventions
 
 - Keep plugin code in plain Lua with no external Neovim plugin dependencies.
-- The plugin is idle unless `DEVHOST_REACT_HIGHLIGHT_URL` and `DEVHOST_CONTROL_TOKEN` are set or equivalent setup options are passed.
-- Cursor payloads must stay instance-scoped through the injected endpoint, token, project root, and stack name; do not introduce global files or shared ports.
+- The plugin is idle unless `DEVHOST_REACT_HIGHLIGHT_URL` is set or equivalent setup options are passed.
+- Cursor payloads must stay instance-scoped through the injected endpoint, project root, and stack name; do not introduce global files or shared ports.
 - The `->` sign means Neovim resolved a JSX locator and devhost accepted the POST. It must not imply that the browser matched a DOM node.
 - Locator emission is intentionally de-duplicated by locator so moving within the same JSX element does not spam the browser.
 

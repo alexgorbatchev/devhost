@@ -28,12 +28,10 @@ type ScriptElementReplacement = Element & {
 };
 
 describe("reactHighlightOverlay", () => {
-  test("creates an instance-token websocket URL for the current routed page", () => {
+  test("creates a websocket URL without credentials for the current routed page", () => {
     const location: Location = new URL("https://app.localhost/dashboard") as unknown as Location;
 
-    expect(createReactHighlightWebSocketUrl(location, "instance-token")).toBe(
-      "wss://app.localhost/__devhost__/ws/react-highlight?token=instance-token",
-    );
+    expect(createReactHighlightWebSocketUrl(location)).toBe("wss://app.localhost/__devhost__/ws/react-highlight");
   });
 
   test("reads project-relative owner-chain locators from a React host element", () => {

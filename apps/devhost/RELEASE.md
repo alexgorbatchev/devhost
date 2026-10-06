@@ -34,7 +34,7 @@ just devhost compile
 ```
 
 This first refreshes the embedded injected devtools assets under `internal/devtools/dist/`, then runs `go build` with linker flags that embed the current `apps/devhost/metadata.json` version into `devhost --version`.
-The asset build explicitly selects production mode and embeds the static entry, lazy terminal chunks, separate font subsets, terminal stylesheet, and precompressed gzip representations. Obsolete generated assets are removed from production builds. Instance configuration and control tokens are served separately and are not baked into the static entry.
+The asset build explicitly selects production mode and embeds the static entry, lazy terminal chunks, separate font subsets, terminal stylesheet, and precompressed gzip representations. Obsolete generated assets are removed from production builds. Instance configuration is served separately and is not baked into the static entry.
 The generated binary is the same Go runtime that ships in the release archives.
 
 To use that local build through an existing dotfiles installation, run from the repository root:

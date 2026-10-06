@@ -29,7 +29,7 @@ func TestAnnotationSessionsSurviveBrowserDisconnect(t *testing.T) {
 			// Submission must survive even when the browser never attaches a terminal.
 			time.Sleep(3 * server.idleTerminalSessionTimeout)
 			assertAnnotationLifecycleSession(t, server, sessionID)
-			socket := mustDialWebsocket(t, terminalWebsocketURL(server.Port(), sessionID, server.controlToken))
+			socket := mustDialWebsocket(t, terminalWebsocketURL(server.Port(), sessionID))
 			defer socket.Close()
 			if snapshot := readWebsocketText(t, socket); !strings.Contains(snapshot, "SetAgentStatus=working") {
 				t.Fatalf("initial terminal snapshot = %q, want working output", snapshot)
@@ -76,7 +76,7 @@ func TestAnnotationSessionsSurviveBrowserDisconnect(t *testing.T) {
 				})
 			}
 
-			reconnected := mustDialWebsocket(t, terminalWebsocketURL(server.Port(), sessionID, server.controlToken))
+			reconnected := mustDialWebsocket(t, terminalWebsocketURL(server.Port(), sessionID))
 			defer reconnected.Close()
 			if snapshot := readWebsocketText(t, reconnected); !strings.Contains(snapshot, "SetAgentStatus=working") {
 				t.Fatalf("restored snapshot = %q, want retained working output", snapshot)
@@ -110,7 +110,7 @@ func TestAnnotationSessionsExplicitShutdown(t *testing.T) {
 				sessionID := startAnnotationLifecycleSession(t, server, kind, annotation)
 				pauseReason := annotationQueuePauseReasonShutdown
 				if termination == "terminate" {
-					socket := mustDialWebsocket(t, terminalWebsocketURL(server.Port(), sessionID, server.controlToken))
+					socket := mustDialWebsocket(t, terminalWebsocketURL(server.Port(), sessionID))
 					defer socket.Close()
 					readWebsocketText(t, socket)
 					if err := socket.WriteJSON(map[string]string{"type": "close"}); err != nil {
@@ -177,7 +177,6 @@ func startAnnotationLifecycleSession(t *testing.T, server *ControlServer, kind s
 	if err != nil {
 		t.Fatal(err)
 	}
-	request.Header.Set(controlTokenHeaderName, server.controlToken)
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
 		t.Fatal(err)

@@ -1,12 +1,7 @@
 import type { DevtoolsColorScheme } from "../../shared/DevtoolsColorScheme";
 import type { ILocationHostProtocol } from "../../shared/types";
 import { createDevtoolsWebSocketUrl } from "../../shared/createDevtoolsWebSocketUrl";
-import {
-  ANNOTATION_QUEUES_PATH,
-  ANNOTATION_QUEUES_WEBSOCKET_PATH,
-  DEVTOOLS_CONTROL_TOKEN_HEADER_NAME,
-  DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME,
-} from "../../shared/constants";
+import { ANNOTATION_QUEUES_PATH, ANNOTATION_QUEUES_WEBSOCKET_PATH } from "../../shared/constants";
 import type {
   IAnnotationQueueServerMessage,
   IAnnotationQueueSnapshot,
@@ -16,12 +11,8 @@ import type {
 
 export type FetchImplementation = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
-export function createAnnotationQueuesWebSocketUrl(location: ILocationHostProtocol, controlToken: string): string {
-  const websocketUrl = new URL(createDevtoolsWebSocketUrl(ANNOTATION_QUEUES_WEBSOCKET_PATH, location));
-
-  websocketUrl.searchParams.set(DEVTOOLS_CONTROL_TOKEN_QUERY_PARAMETER_NAME, controlToken);
-
-  return websocketUrl.toString();
+export function createAnnotationQueuesWebSocketUrl(location: ILocationHostProtocol): string {
+  return createDevtoolsWebSocketUrl(ANNOTATION_QUEUES_WEBSOCKET_PATH, location);
 }
 
 export function parseAnnotationQueuesServerMessage(messageText: string): IAnnotationQueueServerMessage | null {
@@ -38,7 +29,6 @@ export async function updateAnnotationQueueEntry(
   entryId: string,
   comment: string,
   fetchImplementation: FetchImplementation,
-  controlToken: string,
 ): Promise<void> {
   await expectSuccessfulMutationResponse(
     `${ANNOTATION_QUEUES_PATH}/${encodeURIComponent(entryId)}`,
@@ -46,7 +36,6 @@ export async function updateAnnotationQueueEntry(
       body: JSON.stringify({ comment }),
       headers: {
         "content-type": "application/json",
-        [DEVTOOLS_CONTROL_TOKEN_HEADER_NAME]: controlToken,
       },
       method: "PATCH",
     },
@@ -57,14 +46,10 @@ export async function updateAnnotationQueueEntry(
 export async function deleteAnnotationQueueEntry(
   entryId: string,
   fetchImplementation: FetchImplementation,
-  controlToken: string,
 ): Promise<void> {
   await expectSuccessfulMutationResponse(
     `${ANNOTATION_QUEUES_PATH}/${encodeURIComponent(entryId)}`,
     {
-      headers: {
-        [DEVTOOLS_CONTROL_TOKEN_HEADER_NAME]: controlToken,
-      },
       method: "DELETE",
     },
     fetchImplementation,
@@ -76,13 +61,11 @@ export async function resumeAnnotationQueue(
   queueId: string,
   colorScheme: DevtoolsColorScheme,
   fetchImplementation: FetchImplementation,
-  controlToken: string,
 ): Promise<IResumeAnnotationQueueResponse> {
   const response = await fetchImplementation(`${ANNOTATION_QUEUES_PATH}/${encodeURIComponent(queueId)}/resume`, {
     body: JSON.stringify({ colorScheme }),
     headers: {
       "content-type": "application/json",
-      [DEVTOOLS_CONTROL_TOKEN_HEADER_NAME]: controlToken,
     },
     method: "POST",
   });

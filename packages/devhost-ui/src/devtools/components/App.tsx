@@ -43,7 +43,6 @@ function AppContent(): JSX.Element {
     annotationEnabled,
     annotationQueueEnabled,
     componentEditor,
-    controlToken,
     editorEnabled,
     externalToolbarsEnabled,
     minimapEnabled,
@@ -101,7 +100,6 @@ function AppContent(): JSX.Element {
   );
   const logEntries = useServiceLogs(isMinimapHovered && exitedServices.length === 0);
   useReactHighlightOverlay({
-    controlToken,
     enabled: editorEnabled,
     overlayRootReference: appRootReference,
     projectRootPath,
@@ -157,14 +155,14 @@ function AppContent(): JSX.Element {
         return;
       }
 
-      setErrorMessage(await restartServices(targetServiceNames, controlToken, fetch));
+      setErrorMessage(await restartServices(targetServiceNames, fetch));
     };
 
     document.addEventListener("keydown", handleKeyDown, true);
     return () => {
       document.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [restartServicesShortcut, services, primaryService, controlToken, setErrorMessage]);
+  }, [restartServicesShortcut, services, primaryService, setErrorMessage]);
   const shouldRenderPanel: boolean = statusEnabled && (errorMessage !== null || services.length > 0);
   const shouldRenderExternalDevtoolsPanel: boolean = externalToolbarsEnabled && externalDevtoolsLaunchers.length > 0;
   const shouldRenderToolbar: boolean =

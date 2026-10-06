@@ -11,8 +11,8 @@ export async function startDevtools(fetchConfiguration: FetchConfiguration, moun
   if (
     typeof configuration !== "object" ||
     configuration === null ||
-    typeof Reflect.get(configuration, "controlToken") !== "string" ||
-    Reflect.get(configuration, "controlToken") === ""
+    typeof Reflect.get(configuration, "stackName") !== "string" ||
+    Reflect.get(configuration, "stackName") === ""
   ) {
     throw new Error("Received invalid devhost configuration.");
   }

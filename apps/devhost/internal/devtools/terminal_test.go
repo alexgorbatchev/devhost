@@ -29,8 +29,7 @@ func TestCreateEditorTerminalCommandMatchesNeovimContract(t *testing.T) {
 	}
 
 	command, err := createEditorTerminalCommand("neovim", request, projectRootPath, "hello-stack", editorTerminalIntegration{
-		controlToken: "control-token",
-		endpoint:     "http://127.0.0.1:49152/__devhost__/react-highlight/cursor",
+		endpoint: "http://127.0.0.1:49152/__devhost__/react-highlight/cursor",
 	})
 	if err != nil {
 		t.Fatalf("createEditorTerminalCommand(...) error = %v", err)
@@ -50,7 +49,7 @@ func TestCreateEditorTerminalCommandMatchesNeovimContract(t *testing.T) {
 	if got, want := strings.Join(command.command, "\x00"), strings.Join(wantCommand, "\x00"); got != want {
 		t.Fatalf("command = %#v, want %#v", command.command, wantCommand)
 	}
-	if command.cwd != projectRootPath || command.env[reactHighlightEndpointEnvironmentName] != "http://127.0.0.1:49152/__devhost__/react-highlight/cursor" || command.env[controlTokenEnvironmentName] != "control-token" || command.env[projectRootEnvironmentName] != projectRootPath || command.env[stackNameEnvironmentName] != "hello-stack" || command.env[neovimSitePathEnvironmentName] == "" {
+	if command.cwd != projectRootPath || command.env[reactHighlightEndpointEnvironmentName] != "http://127.0.0.1:49152/__devhost__/react-highlight/cursor" || command.env[projectRootEnvironmentName] != projectRootPath || command.env[stackNameEnvironmentName] != "hello-stack" || command.env[neovimSitePathEnvironmentName] == "" {
 		t.Fatalf("command cwd/env = %q %#v", command.cwd, command.env)
 	}
 	if _, err := os.Stat(filepath.Join(command.env[neovimSitePathEnvironmentName], "pack", "devhost", "start", "dhr.nvim", "plugin", "devhost-react-highlight.lua")); err != nil {
@@ -72,7 +71,7 @@ func TestCreateNeovimPluginShellIntegrationFilesWritesLauncher(t *testing.T) {
 	t.Parallel()
 
 	projectRootPath := t.TempDir()
-	files, err := createNeovimPluginShellIntegrationFiles(projectRootPath, "hello stack", "http://127.0.0.1:49152/__devhost__/react-highlight/cursor", "token'with-quote")
+	files, err := createNeovimPluginShellIntegrationFiles(projectRootPath, "hello stack", "http://127.0.0.1:49152/__devhost__/react-highlight/cursor")
 	if err != nil {
 		t.Fatalf("createNeovimPluginShellIntegrationFiles(...) error = %v", err)
 	}
@@ -104,7 +103,6 @@ func TestCreateNeovimPluginShellIntegrationFilesWritesLauncher(t *testing.T) {
 	launcherScript := string(launcherPayload)
 	for _, want := range []string{
 		"export DEVHOST_REACT_HIGHLIGHT_URL='http://127.0.0.1:49152/__devhost__/react-highlight/cursor'",
-		"export DEVHOST_CONTROL_TOKEN='token'\"'\"'with-quote'",
 		fmt.Sprintf("export DEVHOST_PROJECT_ROOT='%s'", projectRootPath),
 		"export DEVHOST_STACK_NAME='hello stack'",
 		"exec nvim -c \"execute 'set packpath^=' . fnameescape(\\$DEVHOST_NVIM_SITE_PATH)\" -c \"packadd dhr.nvim\" \"$@\"",

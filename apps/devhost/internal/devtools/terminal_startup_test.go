@@ -83,7 +83,7 @@ func TestTerminalSessionRetainsOutputBeforeLauncherReturns(t *testing.T) {
 					defer server.mu.Unlock()
 					return server.terminalSessions[id].output == expectedOutput
 				})
-				socket := mustDialWebsocket(t, terminalWebsocketURL(server.Port(), id, server.controlToken))
+				socket := mustDialWebsocket(t, terminalWebsocketURL(server.Port(), id))
 				defer socket.Close()
 				var snapshot terminalSessionSnapshotMessage
 				if err := json.Unmarshal([]byte(readWebsocketText(t, socket)), &snapshot); err != nil {

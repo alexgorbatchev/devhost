@@ -68,7 +68,6 @@ function ServiceRecoveryMockDecorator({
       minimapEnabled: false,
       terminalEnabled: false,
       statusEnabled: true,
-      controlToken: "recovery-token",
     };
     let services: ServiceHealth[] = [{ managed: true, name: "api", status: true }];
     let repositories: WorktreeRepository[] = [];
@@ -139,8 +138,6 @@ function ServiceRecoveryMockDecorator({
     window.fetch = Object.assign(
       async (input: FetchRequestInput, init?: FetchRequestInit): Promise<Response> => {
         if (String(input).endsWith("/worktrees")) {
-          if (new Headers(init?.headers).get("x-devhost-control-token") !== "recovery-token")
-            return new Response("Forbidden", { status: 403 });
           if (init?.method === "POST") {
             if (init.body !== '{"repositoryId":"shop","path":"/projects/shop"}')
               return new Response("Invalid selection", { status: 400 });
@@ -157,10 +154,7 @@ function ServiceRecoveryMockDecorator({
           return Response.json({ services, repositories });
         }
         if (String(input).includes("/restart-service")) {
-          if (
-            init?.body !== '{"serviceNames":["api"]}' ||
-            new Headers(init.headers).get("x-devhost-control-token") !== "recovery-token"
-          ) {
+          if (init?.body !== '{"serviceNames":["api"]}') {
             return new Response("Invalid restart request", { status: 400 });
           }
           services = [{ managed: true, name: "api", status: false, exitCode: 7, restarting: true }];
@@ -211,7 +205,6 @@ function DevhostMockDecorator({ Story }: IDevhostMockDecoratorProps): JSX.Elemen
       annotationActions: [{ displayName: "Pi", id: "agent", kind: "agent", queueEnabled: true }],
       annotationDefaultActionId: "agent",
       componentEditor: "vscode",
-      controlToken: "mock-token",
       homeDirectoryPath: "/home/alex",
       position: "bottom-right",
       projectRootPath: "/storybook-workspace",
