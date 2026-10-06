@@ -2,7 +2,7 @@
 title: "External Devtools"
 ---
 
-The external devtools feature aggregates supported third-party launchers into the injected `devhost` overlay. Host-mounted integrations proxy native controls and hide only launcher chrome; the host library keeps its panels. The Redux integration opens the genuine upstream browser inspector in a separate owned window and connects explicitly registered real stores through upstream's public custom-transport seam.
+The external devtools feature aggregates supported third-party launchers into the injected `devhost` overlay. Host-mounted integrations proxy native controls and hide only launcher chrome; the host library keeps its panels. The Redux integration opens the genuine upstream browser inspector in a separate owned window and connects explicitly registered real stores through upstream's public custom-transport seam. Native React access attaches to an explicitly configured user-owned browser and opens its genuine extension inspector; devhost owns only the browser-control connection.
 
 ## Architecture Flow
 
@@ -94,6 +94,52 @@ Host-mounted aggregation is scoped to launchers, not panels.
 That boundary is what keeps the integration low-risk even when the host page includes multiple unrelated third-party toolbars.
 
 The separate Redux browser inspector uses the public upstream App unchanged. It owns its native panel layout and Emotion styles in its own document; no inspector stylesheet reaches the host page. Devhost owns only explicit producer registration, transport, setup feedback and its browser window lifecycle.
+
+## Native React DevTools
+
+The **Browser** control connects to an already running dedicated browser profile. After a uniquely bound host and original extension are observed, **React DevTools** opens native Chrome DevTools for that exact document. Select the upstream **Components** or **Profiler** tab there to inspect actual props, state, and render commits. Devhost does not install another React backend, render an inline inspector, select private extension panels, or modify React hooks.
+
+### Setup and version boundary
+
+Use Chrome for Testing **154.0.8037.92**, original React Developer Tools **8.0.0**, and React/React DOM **19.2.5**. Install the genuine [React browser extension](https://react.dev/learn/react-developer-tools) before loading the app in the dedicated profile. Enable its site access for the project's routed hosts. Other versions and late backend injection require independent native verification; ordinary window or hook presence is insufficient.
+
+Configure the browser's loopback remote-debugging endpoint explicitly. The browser and profile remain yours: devhost does not launch them, inspect other profiles, choose a default port, or ship a Node runtime. Chrome requires a separate profile for remote debugging; see its [remote debugging profile policy](https://developer.chrome.com/blog/remote-debugging-port).
+
+```toml
+[devtools.externalToolbars]
+enabled = true
+
+[devtools.browser]
+endpoint = "http://127.0.0.1:9222"
+reactExtensionId = "fmkadmapgofadopljbjfkapdkoienihi"
+```
+
+Replace `9222` with your explicitly provisioned browser port. The extension ID defaults to the official Chrome Web Store ID above; an original unpacked extension can have another ID, which must be supplied explicitly and verified. An empty endpoint disables native access and allocates no browser connection. The endpoint accepts a literal-loopback HTTP root with an explicit nonzero port or a full loopback `ws://.../devtools/browser/<id>` URL. DNS names, remote/wildcard addresses, credentials, query/fragment parameters, redirects, TLS discovery, and page-target WebSockets are rejected. HTTP discovery reads only `/json/version`, within two seconds and 64 KiB, and accepts an advertised browser WebSocket only at the configured address and port.
+
+Visit the host through its actual devhost route, open **Browser**, and choose **Connect browser control**. Choose **React DevTools** when it appears, then select the genuine native tab. The button opens the native window; it is a momentary action, not a toggle claiming that the React inspector is connected. It cannot close a user-owned native window.
+
+### State and lifetime
+
+The Browser panel reports distinct observations:
+
+- **Browser control is connected** means devhost's own control connection is active.
+- **React host and extension detected** requires at least one mounted supported host root and the configured extension's published manifest. Devhost's own React tree and a hook without a host do not qualify.
+- **A native DevTools window is present** means Chrome reports an actual native window for that document. It does not certify the selected tab, backend activity, live props/state, or profiling.
+- Unbound, ambiguous, unsupported, missing/disabled/suspended extension, transport failure, and native-session loss remain explicit unavailable states. No target is selected when identity is ambiguous.
+
+**Disconnect browser control** releases devhost's sockets, attached targets, contexts, timers, and browser connection. Native windows, extension backends, browser tabs and profile remain browser-owned. Disabling external devtools or actually unmounting the App root performs the same owned cleanup; collapsing the toolbar preserves its connection. Removing a DOM node is not a React unmount. A compiled injected document releases its connection on document disposal; the rendering entry currently does not expose a retained React Root handle.
+
+Devhost observes native window closure or replacement as a session loss and withholds React access for that mounted App lifetime. Controller reconnect does not clear that loss or certify inspection recovery. Native manual close/reopen produced a Loading/empty tree on Chrome 147 and 154 in isolated probes; its cause and backend recovery remain unverified. This integration uses connect/disconnect with a preserved native window and does not substitute an automatic reload or an additional manual repair step for genuine live inspection.
+
+### Authority and ownership
+
+The Go control server retains the debugging endpoint privately. Uncached configuration publishes only whether native access is configured and a fresh instance identity. The browser uses the existing pristine fetch/WebSocket primitives and its current origin, negotiating `devhost-native-browser.v1` as a nonsecret codec identifier. Controls remain token-free for trusted local development; instance and document identities constrain targeting, not authentication.
+
+Each action rechecks the effective managed Caddy scheme/port, current root-route owner and actual service-path precedence. Host aliases are read from current registrations; a route owned by another project cannot control this document. Forwarded headers and manifest fallback ports do not supply authority. Hosts whose registrations contain escaped matcher literals or repeated slashes withhold native access rather than approximate Caddy's special path matching. Native requests reject missing/duplicate/foreign Origin, incorrect Host or protocol, stale instance identities and foreign document bindings before browser discovery.
+
+The owned App supplies a random document identity. Go resolves the live native page list and requires the complete current URL plus that exact instance/document marker; duplicate URL tabs with different identities remain separate. Every observation rechecks current targets and host roots. Maintained hook/Fiber fields (`getFiberRoots`, renderer version, `containerInfo`) identify genuine mounted Element/ShadowRoot hosts while excluding marked devhost roots; this is a [pinned upstream internal contract](https://github.com/facebook/react/blob/278794d7dee9cd2a3a2aaf9f0b2a4b8b747d74ee/packages/react-devtools-shared/src/hook.js), not a stable public discovery SDK.
+
+The Go-only connection uses maintained chromedp **0.20.0**, its remote allocator **0.2.0**, and typed CDP **0.157.8** with public detach-on-cancel. Chrome's experimental `Target.getDevToolsTarget`/`Target.openDevTools` identify and open the native window. Their documented panel IDs cover built-ins, so devhost leaves extension-tab selection to the user. There is no `CloseTarget`, profile disposal, hook mutation, private panel activation, or second frontend/backend in the connection lifetime.
 
 ## Redux Toolkit and Zustand
 
@@ -409,3 +455,11 @@ Only native launcher buttons are suppressed. Native minimize controls, atom view
 Upstream uses fixed root/shell IDs and shared local-storage preferences, including its initial open state. Devhost scopes actions to individual roots despite those duplicate IDs; it does not rewrite IDs or storage. A remounted inspector can inherit the most recently persisted native open preference. The toolbar reports that observed state. Native panels can overlap when several are open; close one through its toolbar button to use another. Devhost does not reposition native panels or isolate upstream persistence/theme settings.
 
 See the [official setup guide](https://jotai.org/docs/tools/devtools), and the npm release's pinned [provider and root lifecycle](https://github.com/jotaijs/jotai-devtools/blob/1de78d7536d5d2e1dd97bb2a9e66bd10a76fc068/src/DevTools/DevTools.tsx), [shell](https://github.com/jotaijs/jotai-devtools/blob/1de78d7536d5d2e1dd97bb2a9e66bd10a76fc068/src/DevTools/Extension/components/Shell/Shell.tsx), and [snapshot restoration](https://github.com/jotaijs/jotai-devtools/blob/1de78d7536d5d2e1dd97bb2a9e66bd10a76fc068/src/DevTools/Extension/components/Shell/components/TimeTravel/components/SnapshotDetail/components/DisplaySnapshotDetails/components/SnapshotActions.tsx).
+
+## Native React contributor validation
+
+From the repository root, run `just devhost compile`, then set `DEVHOST_NATIVE_REACT_ASSETS` to an absolute JSON file containing `chromeArchivePath`, `reactCrxPath`, `caddyExecutablePath`, and `devhostExecutablePath` and run `just ui test-native-react`. Relative asset paths resolve from that root. Set `TMPDIR` to the absolute root `.tmp` directory. Only the owned Chrome subprocess uses relative `.tmp` with its fixed repository-root working directory: the absolute path exceeds Chromium’s Unix singleton-socket path limit in this worktree. The native command fails before browser resources start when provisioning is missing or mismatched.
+
+This additional command requires Linux x64, the checksum-pinned original Chrome for Testing 154.0.8037.92 ZIP and React Developer Tools 8.0.0 CRX, native Caddy, the freshly compiled binary, `unzip`, and agent-browser 0.34.0 on PATH. Tests extract the original assets into a unique run directory and own a fresh headless browser profile, two real Go stacks, and Caddy routes. The test-only Caddyfile uses `skip_install_trust`; Chromium ignores certificate errors for those owned TLS routes. These test dependencies are not shipped runtime dependencies. Physical headed behavior is unverified.
+
+Ordinary `just check` discovers the asset-verifier tests and typechecks every native script, but does not provision or run this additional native acceptance command. Both commands are required for changes to native React control. The native runner verifies original Components/Profiler, trusted Escape, actual App Root disposal, separate compiled injection, Go Stop/restart, project/document isolation and retained native-session loss. Preserve every assertion and stop all owned resources.

@@ -383,6 +383,7 @@ func validateCaddy(rawValue any, schemaIssues *[]string) CaddyConfig {
 
 func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 	result := DevtoolsConfig{
+		Browser:          DevtoolsBrowserConfig{ReactExtensionID: defaultReactExtensionID},
 		Editor:           DevtoolsEditorConfig{Enabled: true, IDE: defaultDevtoolsEditor},
 		ExternalToolbars: DevtoolsToggleConfig{Enabled: true},
 		Minimap:          DevtoolsMinimapConfig{Enabled: true},
@@ -399,7 +400,9 @@ func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 		return result
 	}
 
-	allowKeys(value, []string{"editor", "externalToolbars", "idleTimeout", "minimap", "status", "shortcuts"}, "devtools", schemaIssues)
+	allowKeys(value, []string{"browser", "editor", "externalToolbars", "idleTimeout", "minimap", "status", "shortcuts"}, "devtools", schemaIssues)
+
+	result.Browser = validateNativeBrowser(value["browser"], schemaIssues)
 
 	if rawEditor := value["editor"]; rawEditor != nil {
 		editorValue, ok := readMap(rawEditor, "devtools.editor", schemaIssues)

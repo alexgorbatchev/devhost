@@ -19,6 +19,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Regenerate `packages/design/tokens.css` after editing `packages/design/src/constants.ts`: `just design write-tokens`
 - Check the injected devtools UI package: `just ui check`
 - Check the docs package-only validations: `just docs check`
+- Run provisioned native React acceptance from the repository root: `just ui test-native-react` (see `packages/devhost-ui/AGENTS.md` for mandatory assets and additional coverage)
 - Run standalone React Highlight Neovim plugin tests: `just devhost test-nvim`
 - Record the utility demo on Linux: `just demo record` (or `just demo record annotations` for one scene); follow `docs/internal/references/demo-recording.md` for prerequisites and refresh instructions.
 - Run recording workflow unit tests: `just demo test` (also included in `just ui check`).

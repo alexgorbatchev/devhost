@@ -1,10 +1,12 @@
 import { useLayoutEffect, useRef, type JSX, type ReactNode, type RefObject } from "react";
 
 import { DEVTOOLS_ROOT_ID, TOP_LAYER_ELEMENT_SELECTOR } from "../constants";
+import type { INativeBrowserBinding } from "../nativeBrowser/types";
 import { promoteDevtoolsTopLayer } from "../promoteDevtoolsTopLayer";
 
 interface IDevtoolsTopLayerProps {
   children: ReactNode;
+  nativeBrowserBinding?: INativeBrowserBinding | null;
   ref?: RefObject<HTMLDivElement | null>;
 }
 
@@ -16,7 +18,7 @@ interface IDevtoolsTopLayerProps {
  *
  * Host popovers and modal dialogs opened later enter the top layer above the root, so it re-enters after each one.
  */
-export function DevtoolsTopLayer({ children, ref }: IDevtoolsTopLayerProps): JSX.Element {
+export function DevtoolsTopLayer({ children, nativeBrowserBinding, ref }: IDevtoolsTopLayerProps): JSX.Element {
   const ownReference = useRef<HTMLDivElement | null>(null);
   const topLayerReference: RefObject<HTMLDivElement | null> = ref ?? ownReference;
 
@@ -69,6 +71,8 @@ export function DevtoolsTopLayer({ children, ref }: IDevtoolsTopLayerProps): JSX
       // Resets every property of the user-agent `[popover]` rule; the surfaces inside position themselves.
       className="pointer-events-none fixed inset-0 m-0 size-auto overflow-visible border-0 bg-transparent p-0 text-foreground"
       data-devhost-devtools=""
+      data-devhost-native-instance={nativeBrowserBinding?.instanceId}
+      data-devhost-native-document={nativeBrowserBinding?.documentId}
       data-testid="DevtoolsTopLayer"
       popover="manual"
     >

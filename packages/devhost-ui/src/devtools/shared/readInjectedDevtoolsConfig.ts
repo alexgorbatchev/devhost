@@ -14,6 +14,8 @@ import {
 import { normalizeRoutedServicePath, type IRoutedServiceIdentity } from "./routedServices";
 
 export interface IInjectedDevtoolsConfig {
+  nativeBrowserConfigured: boolean;
+  nativeBrowserInstanceId: string;
   annotationActions: IAnnotationAction[];
   annotationDefaultActionId: string;
   componentEditor: DevtoolsComponentEditor;
@@ -34,6 +36,8 @@ export interface IInjectedDevtoolsConfig {
 }
 
 const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
+  nativeBrowserConfigured: false,
+  nativeBrowserInstanceId: "",
   annotationActions: [],
   annotationDefaultActionId: "",
   componentEditor: defaultDevtoolsComponentEditor,
@@ -78,6 +82,7 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
 }
 
 function parseInjectedDevtoolsConfig(injectedConfig: object): IInjectedDevtoolsConfig {
+  const nativeBrowserInstanceId: unknown = Reflect.get(injectedConfig, "nativeBrowserInstanceId");
   const annotationActions: IAnnotationAction[] = readAnnotationActionsValue(injectedConfig);
   const annotationDefaultActionId: string = readAnnotationDefaultActionIdValue(injectedConfig, annotationActions);
   const componentEditor: DevtoolsComponentEditor = readComponentEditorValue(injectedConfig);
@@ -105,6 +110,11 @@ function parseInjectedDevtoolsConfig(injectedConfig: object): IInjectedDevtoolsC
   const primaryService: string = readPrimaryServiceValue(injectedConfig);
 
   return {
+    nativeBrowserConfigured: readBooleanValue(injectedConfig, "nativeBrowserConfigured", false),
+    nativeBrowserInstanceId:
+      typeof nativeBrowserInstanceId === "string" && /^[a-f0-9]{32}$/.test(nativeBrowserInstanceId)
+        ? nativeBrowserInstanceId
+        : "",
     annotationActions,
     annotationEnabled,
     annotationDefaultActionId,

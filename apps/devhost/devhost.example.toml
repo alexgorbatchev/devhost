@@ -17,6 +17,7 @@
 # - `[worktrees]` (optional; Git checkout selection for repository service groups, enabled by default)
 # - `[caddy.global]` (optional)
 # - `[devtools]` (optional)
+# - `[devtools.browser]` (optional; explicitly configured native browser control)
 # - `[devtools.editor]` (optional)
 # - `[devtools.externalToolbars]` (optional)
 # - `[devtools.minimap]` (optional)
@@ -147,8 +148,28 @@ enabled = true
 #   Devhost loads its bundled Neovim plugin for that terminal session so cursor movement in TSX/JSX buffers can
 #   highlight the matching React component in the routed browser page for the same devhost instance.
 #   While the stack runs, `.tmp/devhost/<stack-name>/nvim-shell/bin/devhost-nvim` launches Neovim from a shell with
-#   the same instance token and plugin path.
+#   the same instance cursor endpoint, project root, and plugin path.
 ide = "vscode"
+
+[devtools.browser]
+# Native React DevTools uses an already running dedicated browser/profile owned by you.
+# Install the original React Developer Tools extension before loading your React app.
+# Required version contract: Chrome for Testing 154.0.8037.92, extension 8.0.0,
+# and a mounted React DOM 19.2.5 Element/ShadowRoot host; other combinations need verification.
+# Empty endpoint (default) disables native browser access and starts no browser connection.
+# Set an explicit literal-loopback HTTP discovery endpoint with a nonzero port,
+# or a complete ws:// loopback /devtools/browser/<id> URL. DNS, remote addresses,
+# credentials, redirects, query/fragment parameters, and page WebSockets are rejected.
+# devhost never launches a browser, scans profiles, or closes your native windows.
+# Through the routed page, choose Browser > Connect browser control, then React DevTools.
+# Select Components or Profiler in the genuine native window yourself.
+# Disconnect releases devhost's connections; it preserves your native window and browser.
+# Controller connection/window presence does not certify live inspection or recovery.
+# Native window closure/replacement withholds React access; recovery remains unverified.
+# See https://alexgorbatchev.github.io/devhost/architecture/external-devtools/#native-react-devtools
+endpoint = ""
+# Official Chrome Web Store ID. Set the actual ID only for a verified original unpacked extension.
+reactExtensionId = "fmkadmapgofadopljbjfkapdkoienihi"
 
 [devtools.externalToolbars]
 # `enabled` controls whether devhost aggregates detected third-party devtools launcher buttons.
@@ -170,6 +191,7 @@ ide = "vscode"
 # Toolkit requires one public instrument EnhancedStore; Zustand requires actual StoreApi plus snapshot/restore.
 # The Redux entry opens the upstream browser inspector; disabling closes its owned monitor/subscriptions only.
 # Inspector modules/styles are content-versioned in compiled builds; its stylesheet stays in the popup document.
+# Configured native React access shares this enabled gate; disabling releases only devhost browser control.
 # Tested versions, setup, and panel identification: https://alexgorbatchev.github.io/devhost/architecture/external-devtools/
 enabled = true
 

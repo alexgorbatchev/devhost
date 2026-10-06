@@ -24,6 +24,8 @@ describe("readInjectedDevtoolsConfig", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, undefined);
 
     expect(readInjectedDevtoolsConfig()).toEqual({
+      nativeBrowserConfigured: false,
+      nativeBrowserInstanceId: "",
       annotationActions: [],
       annotationDefaultActionId: "",
       componentEditor: "vscode",
@@ -57,6 +59,8 @@ describe("readInjectedDevtoolsConfig", () => {
     });
 
     expect(readInjectedDevtoolsConfig()).toEqual({
+      nativeBrowserConfigured: false,
+      nativeBrowserInstanceId: "",
       annotationActions: [{ id: "agent", kind: "agent", label: "Claude Code", queueEnabled: true }],
       annotationDefaultActionId: "agent",
       componentEditor: "neovim",
@@ -83,6 +87,8 @@ describe("readInjectedDevtoolsConfig", () => {
     });
 
     expect(readInjectedDevtoolsConfig()).toEqual({
+      nativeBrowserConfigured: false,
+      nativeBrowserInstanceId: "",
       annotationActions: [],
       annotationDefaultActionId: "",
       componentEditor: "vscode",
@@ -111,6 +117,8 @@ describe("readInjectedDevtoolsConfig", () => {
     });
 
     expect(readInjectedDevtoolsConfig()).toEqual({
+      nativeBrowserConfigured: false,
+      nativeBrowserInstanceId: "",
       annotationActions: [],
       annotationDefaultActionId: "",
       componentEditor: "vscode",
@@ -141,6 +149,8 @@ describe("readInjectedDevtoolsConfig", () => {
     });
 
     expect(readInjectedDevtoolsConfig()).toEqual({
+      nativeBrowserConfigured: false,
+      nativeBrowserInstanceId: "",
       annotationActions: [
         { id: "ask-agent", kind: "agent", label: "Pi", queueEnabled: true },
         { id: "create-ticket", kind: "command", label: "Create Ticket", queueEnabled: false },

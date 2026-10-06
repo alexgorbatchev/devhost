@@ -86,6 +86,8 @@ type ServiceLogEntry struct {
 }
 
 type StartControlServerOptions struct {
+	NativeBrowser              manifest.DevtoolsBrowserConfig
+	AllowsNativeBrowserURL     func(int, string) (bool, error)
 	AnnotationDefaultActionID  string
 	AnnotationActions          []manifest.ValidatedAnnotationAction
 	ComponentEditor            string
@@ -110,6 +112,9 @@ type StartControlServerOptions struct {
 }
 
 type ControlServer struct {
+	nativeBrowser              manifest.DevtoolsBrowserConfig
+	nativeBrowserInstanceID    string
+	allowsNativeBrowserURL     func(int, string) (bool, error)
 	listener                   net.Listener
 	server                     *http.Server
 	componentEditor            string
@@ -161,6 +166,8 @@ type websocketClient struct {
 }
 
 type injectedConfig struct {
+	NativeBrowserConfigured   bool                       `json:"nativeBrowserConfigured"`
+	NativeBrowserInstanceID   string                     `json:"nativeBrowserInstanceId"`
 	AnnotationDefaultActionID string                     `json:"annotationDefaultActionId"`
 	AnnotationActions         []injectedAnnotationAction `json:"annotationActions"`
 	ComponentEditor           string                     `json:"componentEditor"`
@@ -235,7 +242,14 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		// Path abbreviation is optional; keep absolute paths when no home is available.
 		home = ""
 	}
+	instanceID, err := createRandomID()
+	if err != nil {
+		_ = listener.Close() // The identity error is authoritative; no listener is retained.
+		return nil, fmt.Errorf("create native browser instance identity: %w", err)
+	}
 	config := injectedConfig{
+		NativeBrowserConfigured:   options.NativeBrowser.Endpoint != "",
+		NativeBrowserInstanceID:   instanceID,
 		AnnotationDefaultActionID: annotationDefaultActionID,
 		AnnotationActions:         createInjectedAnnotationActions(annotationActions),
 		AnnotationEnabled:         options.FeatureToggles.AnnotationEnabled,
@@ -262,6 +276,9 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 
 	ctx, cancel := context.WithCancel(context.Background())
 	controlServer := &ControlServer{
+		nativeBrowser:              options.NativeBrowser,
+		nativeBrowserInstanceID:    instanceID,
+		allowsNativeBrowserURL:     options.AllowsNativeBrowserURL,
 		ctx:                        ctx,
 		cancel:                     cancel,
 		devSource:                  options.DevSource,
@@ -393,6 +410,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	}
 
 	mux := http.NewServeMux()
+	mux.HandleFunc(nativeBrowserWebsocketPath, controlServer.handleNativeBrowserWebsocket)
 	mux.HandleFunc(injectedScriptPath, controlServer.handleInjectedScript)
 	mux.HandleFunc(injectedConfigPath, controlServer.handleInjectedConfig)
 	mux.HandleFunc(devtoolsAssetsPath, controlServer.handleDevtoolsAsset)

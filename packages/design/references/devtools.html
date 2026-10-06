@@ -506,6 +506,10 @@
         <label><input type="checkbox" id="pc-restart-fail" /> Restarts fail</label>
         <label><input type="checkbox" id="pc-worktree-fail" /> Worktree switch fails</label>
         <button type="button" id="pc-devhost-restart">Restart devhost (restore worktrees)</button>
+        <label
+          ><input type="checkbox" id="pc-native-react-host" checked /> Native React host/extension detected
+          (preview)</label
+        >
         <label><input type="checkbox" id="pc-queue-error" /> Queue error</label>
         <label><input type="checkbox" id="pc-submit-fail" /> Annotation submit fails</label>
         <button type="button" id="pc-dirty">Mark api + web changed</button>
@@ -1825,6 +1829,10 @@
           { id: "router", label: "Router", title: "Toggle TanStack Router devtools", isOpen: false },
           { id: "query", label: "Query", title: "Toggle TanStack Query devtools", isOpen: true },
         ],
+        // Presentation-only native-control preview; no browser or inspector backend.
+        isBrowserControlConnected: false,
+        isReactHostDetected: true,
+        nativeBrowserNotice: null,
         sessions: [],
         expandedSessionId: null,
         minimap: true,
@@ -2161,6 +2169,14 @@
             </span>`);
         }
 
+        segments.push(`<button class="seg" type="button" data-action="panel" data-panel="browser"
+          aria-expanded="${panelOpen("browser")}" aria-label="Native browser connection">Browser</button>`);
+        if (state.isBrowserControlConnected && state.isReactHostDetected) {
+          segments.push(`<span class="seg tight" role="group" aria-label="React native devtools">
+            <button class="btn" type="button" data-action="native-react"
+              title="Open native DevTools for this React host; select Components or Profiler there">React DevTools</button></span>`);
+        }
+
         if (sessions.length > 0) {
           const visible = pickVisibleSessions(sessions, state.sessionChipLimit);
           const hidden = sessions.filter((s) => !visible.includes(s));
@@ -2184,7 +2200,26 @@
         if (state.openPanel === "services") return renderServicesPanel();
         if (state.openPanel === "queues") return renderQueuesPanel();
         if (state.openPanel === "sessions") return renderSessionsPanel();
+        if (state.openPanel === "browser") return renderNativeBrowserPanel();
         return null;
+      }
+
+      function renderNativeBrowserPanel() {
+        return {
+          width: 320,
+          label: "Native browser connection",
+          html: `<div class="panel-body"><p role="status">Browser control is ${state.isBrowserControlConnected ? "connected" : "disconnected"}.</p>
+            <p>${
+              state.isBrowserControlConnected
+                ? state.isReactHostDetected
+                  ? "React host and extension detected. Select Components or Profiler in native DevTools."
+                  : "React Developer Tools is missing, disabled, suspended, or unverified."
+                : "Native DevTools stays open when you disconnect."
+            }</p>
+            <p class="muted">Design preview only: no live browser or inspector is connected.</p>
+            ${state.nativeBrowserNotice ? renderNotice(state.nativeBrowserNotice, null) : ""}
+            <button class="btn" type="button" data-action="native-connect">${state.isBrowserControlConnected ? "Disconnect" : "Connect"} browser control</button></div>`,
+        };
       }
 
       // The panel keeps its last content while hidden so it can fade out.
@@ -3026,6 +3061,15 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
             switchWorktree(repository, repository.configuredPath);
             return;
           }
+          case "native-connect":
+            state.isBrowserControlConnected = !state.isBrowserControlConnected;
+            state.nativeBrowserNotice = null;
+            break;
+          case "native-react":
+            state.nativeBrowserNotice = "The design reference has no native browser-control backend.";
+            state.openPanel = "browser";
+            state.panelAnchor = "browser";
+            break;
           case "tool": {
             const tool = state.tools.find((t) => t.id === id);
             tool.isOpen = !tool.isOpen;
@@ -3319,6 +3363,10 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
       bind("pc-worktrees", "change", (e) => {
         state.worktreesEnabled = e.target.checked;
         state.worktreePicker = null;
+        render();
+      });
+      bind("pc-native-react-host", "change", (event) => {
+        state.isReactHostDetected = event.target.checked;
         render();
       });
       bind("pc-queue-error", "change", (e) => {

@@ -60,6 +60,8 @@ export function factory_appStack(): IDevhostStoryStack {
       },
     ],
     config: {
+      nativeBrowserConfigured: false,
+      nativeBrowserInstanceId: "",
       annotationActions: [{ id: "agent", kind: "agent", label: "Pi", queueEnabled: true }],
       annotationDefaultActionId: "agent",
       componentEditor: "vscode",
@@ -162,6 +164,8 @@ export function factory_designOverviewStack(): IDevhostStoryStack {
       },
     ],
     config: {
+      nativeBrowserConfigured: false,
+      nativeBrowserInstanceId: "",
       annotationActions: [
         { id: "agent", kind: "agent", label: "Pi", queueEnabled: true },
         { id: "cmd", kind: "command", label: "Audit", queueEnabled: false },

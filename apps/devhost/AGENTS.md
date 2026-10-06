@@ -89,6 +89,10 @@ The same existing browser build embeds `redux.js` (public host registration), `r
 
 `just devhost compile` refreshes that bundle, embeds the current `metadata.json` version into `devhost --version`, then writes the current-platform executable to `apps/devhost/dist/devhost`.
 
+Native React access is attach-only. `[devtools.browser].endpoint` explicitly names an already running user-owned loopback browser; retain it only in Go configuration. The injected config exposes a fresh instance identity and configured flag, never the endpoint. `internal/nativebrowser/` owns maintained typed CDP connections and target observers; cancellation detaches and joins them without closing browser windows, tabs or profiles. Keep persistent target initialization on its owning context rather than a disposable per-call timeout.
+
+The token-free native browser WebSocket requires the exact current Origin/Host, codec, instance/document binding and live Caddy route authority. `internal/caddy/devtools_origin.go` reads effective shared settings and actual registration/path ownership; forwarded headers and manifest fallback ports are not authority. Preserve explicit unavailable states, native-session-loss limits and host-root discrimination from the injected React tree. Browser/version/extension detection is not a live Components or Profiler test.
+
 ## Release workflow
 
 - Follow `RELEASE.md`; it is the authoritative runbook for the tag-driven GitHub Release binary flow.
@@ -111,6 +115,7 @@ The same existing browser build embeds `redux.js` (public host registration), `r
 - `internal/manifest/` — manifest discovery, parsing, validation, and defaults
 - `internal/services/` — child process orchestration, health checks, port resolution, and cleanup
 - `internal/caddy/` — managed Caddy lifecycle, paths, config, and routing
+- `internal/nativebrowser/` — attach-only typed CDP observation and native window access for explicitly configured user-owned browsers
 - `internal/devtools/` — Go devtools control servers plus embedded browser assets
 - `internal/devtools/nvim/devhost-react-highlight.nvim/` — bundled Neovim plugin; follow its nested `AGENTS.md`
 - `scripts/buildDevtoolsBundle.ts` — generates the production entry, lazy chunks, fonts, terminal stylesheet, and gzip representations under ignored `internal/devtools/dist/` for `go:embed`
