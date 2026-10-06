@@ -40,6 +40,74 @@ When all devtools features are disabled, `devhost` does not mount these control 
 
 For annotation workflows, action configuration, and queue behavior, see [Annotations](./annotations/).
 
+## Control token
+
+The control token authorizes requests to the running stack's terminal, annotation queue, service restart, worktree, and React Highlight controls. A client must present the current token before these handlers accept a request. It is a bearer credential: possession of the token grants access to the protected controls, subject to the stack's enabled features.
+
+### Lifecycle and delivery
+
+Each control server generates a cryptographically random 128-bit token, encoded as 32 hexadecimal characters, at startup. The token belongs to that running instance; it is shared by its routed services, browser tabs, and editor integration. Independent stacks generate independent tokens. There are no per-user tokens or permission levels.
+
+The token stays valid for the lifetime of the control server, without a separate expiration timer. Restarting the stack generates a fresh token; tokens retained from the previous instance do not authorize the replacement server. Browser clients should reload the routed page after a stack restart, and editor clients should use the current generated launcher.
+
+Before mounting, the browser entry fetches `GET /__devhost__/config.json` from the page's origin with `cache: "no-store"`. The response includes `controlToken` and uses `Cache-Control: no-store`. Configuration retrieval itself does not require a control token. The entry rejects unsuccessful responses and configurations with a missing or empty token.
+
+The generated Neovim launcher supplies the same credential through `DEVHOST_CONTROL_TOKEN`; the plugin uses it when posting cursor updates. See [React Highlight](../react-highlight/) for the launcher and integration requirements.
+
+The token is kept out of `inject.js`, lazy JavaScript chunks, fonts, and terminal styles. Those static assets do not need a token. Their content version parameter, `?v=`, identifies a cacheable asset version; it does not authorize control requests. Never add instance tokens to static asset URLs or cache the configuration response.
+
+### HTTP requests
+
+Protected HTTP endpoints require the token in the `x-devhost-control-token` request header:
+
+```text
+x-devhost-control-token: <instance-control-token>
+```
+
+All paths below are relative to the routed app's origin:
+
+| Endpoint                                           | Methods           | Purpose                                                      |
+| -------------------------------------------------- | ----------------- | ------------------------------------------------------------ |
+| `/__devhost__/terminal-sessions`                   | `GET`, `POST`     | List terminal sessions or start an annotation/editor session |
+| `/__devhost__/annotation-queues`                   | `GET`             | List annotation queues                                       |
+| `/__devhost__/annotation-queues/<entry-id>`        | `PATCH`, `DELETE` | Edit or delete a queued annotation                           |
+| `/__devhost__/annotation-queues/<queue-id>/resume` | `POST`            | Resume an annotation queue                                   |
+| `/__devhost__/restart-service`                     | `POST`            | Restart managed services                                     |
+| `/__devhost__/worktrees`                           | `GET`, `POST`     | Refresh worktree state or switch the selected checkout       |
+| `/__devhost__/react-highlight/cursor`              | `POST`            | Publish an editor cursor update                              |
+
+The HTTP handlers do not accept `?token=` in place of the header. A valid token does not bypass method, payload, feature, or session validation.
+
+### WebSocket connections
+
+Protected WebSockets require the token in the opening request's `token` query parameter:
+
+```text
+/__devhost__/ws/terminal?token=<instance-control-token>&sessionId=<session-id>
+/__devhost__/ws/annotation-queues?token=<instance-control-token>
+/__devhost__/ws/react-highlight?token=<instance-control-token>
+```
+
+The terminal connection also needs the ID of an existing session. Use the page's routed host with `ws://` for HTTP or `wss://` for HTTPS. The injected UI constructs these URLs and supplies the token automatically.
+
+The browser's [WebSocket constructor](https://websockets.spec.whatwg.org/#the-websocket-interface) accepts a URL and optional subprotocols, with no option for arbitrary request headers. This is why these connections carry the credential in the URL instead of the HTTP control header. These WebSocket handlers check the query parameter; supplying only `x-devhost-control-token` does not authorize them.
+
+### Failures and troubleshooting
+
+A missing, incorrect, or stale token produces `403 Forbidden` on protected HTTP endpoints. Protected WebSocket handlers perform the same check before upgrading the connection, so an invalid token produces an HTTP `403` instead of a successful WebSocket handshake.
+
+For a `403`, reload the page to fetch the current configuration or relaunch Neovim using the current stack launcher. Check that the client addresses the intended running stack and puts the token in the required header or query parameter. For a valid terminal token, a missing `sessionId` produces `400`; an unknown session produces `404`.
+
+Authentication configured by an upstream proxy is separate. Clients must satisfy that proxy's authentication as well as devhost's token check. A sign-in redirect can prevent a WebSocket connection from reaching devhost at all.
+
+### Security boundary
+
+The control token is not a user login or a restriction on who can read the configuration. Anyone who can retrieve `/__devhost__/config.json` can obtain the token and use the protected controls. Scripts running in the routed page can also read it. The control server listens on loopback, but Caddy exposes its `/__devhost__/*` routes through the routed app host, so loopback binding alone does not restrict access to those proxied routes.
+
+Static assets, configuration, and the `/__devhost__/ws/health` and `/__devhost__/ws/logs` streams do not require the control token. The control server's WebSocket upgrader accepts any Origin; the token checks on protected connections are separate from origin validation. Treat the routed devtools surface as accessible to anyone allowed to reach it, including its configuration and service logs. Use devtools with trusted local apps and restrict access to the routed host when it is reachable by other users or networks.
+
+Treat tokens and WebSocket URLs containing them as credentials. Redact them from shared logs, screenshots, and bug reports. Stop and restart the stack to invalidate a disclosed token for subsequent connections, and reload browser clients or relaunch editor clients against the replacement instance.
+
 ## Open component source
 
 The shipped Go runtime supports `Alt` + `right-click` component-source navigation whenever `[devtools.editor].enabled = true`.

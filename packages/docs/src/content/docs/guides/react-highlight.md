@@ -6,7 +6,7 @@ sidebar:
 
 React Highlight mirrors the active JSX cursor position from Neovim into the routed browser page. It is part of the injected devtools overlay and uses the same instance-scoped control server as the rest of the devtools runtime.
 
-For the injected overlay and routing model, see [Devtools](./devtools/).
+For the injected overlay and routing model, see [Devtools](../devtools/).
 
 ## Requirements
 
@@ -43,6 +43,8 @@ bun nvim
 ```
 
 The launcher is tied to one running devhost stack. Restarting the stack can change the local control port and token, so use the current generated launcher after each stack restart.
+
+`DEVHOST_CONTROL_TOKEN` authorizes this instance's controls. The Neovim plugin sends it in the `x-devhost-control-token` header on cursor-update HTTP requests; browser cursor WebSockets send it as `?token=`. Missing or stale credentials produce `403 Forbidden`. For token generation, delivery, protected endpoints, and security limits, see [Control token](../devtools/#control-token).
 
 ## Cursor Updates
 

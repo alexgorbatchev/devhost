@@ -311,6 +311,8 @@ That build refreshes the embedded injected devtools bundle and writes the CLI bi
 
 Production devtools scripts, terminal styles, lazy terminal chunks, and font subsets are cached for one year at content-versioned URLs. The static entry loads fresh instance configuration and control tokens from an uncached endpoint before mounting. Font subsets download only when needed, and the terminal runtime loads when a session mounts.
 
+Each running stack generates its own control token for terminal, annotation, restart, worktree, and React Highlight requests. HTTP controls use the `x-devhost-control-token` header; protected WebSockets use `?token=`. Restarting the stack invalidates the previous token. The token is available through the devtools configuration endpoint, so it does not provide user authentication or restrict access to the routed host. See [Control token](https://alexgorbatchev.github.io/devhost/guides/devtools/#control-token) for the lifecycle, endpoint requirements, failure responses, and security limits.
+
 If you are modifying the injected browser devtools UI (`packages/devhost-ui/`) and want to test your changes instantly without manually rebuilding the Go app or restarting the service stack, you can use the built-in on-demand asset dev loop:
 
 1. Set `DEVHOST_DEV_SOURCE_DIR` to the root of your devhost checkout. A relative path resolves against the manifest directory, so `DEVHOST_DEV_SOURCE_DIR=.` works for the repo-root `devhost.toml`; `just dev` sets it for you.
