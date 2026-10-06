@@ -2539,7 +2539,7 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
               <strong>${esc(session.title)}</strong>
               <span class="muted trunc grow">${session.meta.map(esc).join(" · ")}</span>
               ${statusTag}
-              <button class="btn icon" type="button" data-action="session-minimize" data-id="${session.id}" title="Minimize to toolbar" aria-label="Minimize">${icon("minus")}</button>
+              <button class="btn" type="button" data-action="session-minimize" data-id="${session.id}" title="Minimize to toolbar">${icon("minus")}Minimize</button>
               ${primary}
             </header>
             <pre class="term-body">${lines}</pre>`;

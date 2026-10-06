@@ -321,12 +321,13 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
           <span className="min-w-0 flex-1 truncate text-muted-foreground">{session.summary.meta.join(" · ")}</span>
           <Badge variant={statusBadgeVariants[session.status]}>{readTerminalSessionStatusLabel(session.status)}</Badge>
           <Button
-            aria-label="Minimize"
             startEnhancer={<MinusIcon />}
             testId="TerminalSessionPanel--minimize"
             title="Minimize to toolbar"
             onClick={props.onMinimize}
-          />
+          >
+            Minimize
+          </Button>
           <Button
             startEnhancer={<XIcon />}
             testId={primaryAction.testId}
