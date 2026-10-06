@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { externalDevtoolsDetectors } from "../externalDevtoolsDetectors";
-import { createReactHookFormDevtoolsDetector } from "../createReactHookFormDevtoolsDetector";
-import { createJotaiDevtoolsDetector } from "../createJotaiDevtoolsDetector";
+import { createExternalDevtoolsDetector } from "../createExternalDevtoolsDetector";
 import {
   areExternalDevtoolsLaunchersEqual,
   readExternalDevtoolsLauncherStyleText,
@@ -16,7 +14,6 @@ interface IExternalDevtoolsLaunchersResult {
 }
 
 type SynchronizeLaunchers = () => void;
-type ReadAdapters = () => readonly IExternalDevtoolsAdapter[];
 
 export function useExternalDevtoolsLaunchers(enabled: boolean): IExternalDevtoolsLaunchersResult {
   const [launchers, setLaunchers] = useState<IExternalDevtoolsLauncher[]>([]);
@@ -24,11 +21,8 @@ export function useExternalDevtoolsLaunchers(enabled: boolean): IExternalDevtool
   const launcherSyncFrameIdRef = useRef<number | null>(null);
   const synchronizeLaunchersRef = useRef<SynchronizeLaunchers | null>(null);
   const styleElementRef = useRef<HTMLStyleElement | null>(null);
-  const readAdapters = useMemo<ReadAdapters>(() => {
-    const readFormAdapters = createReactHookFormDevtoolsDetector(document);
-    const readJotaiAdapters = createJotaiDevtoolsDetector(document);
-    return () => [...externalDevtoolsDetectors, ...readFormAdapters(), ...readJotaiAdapters()];
-  }, []);
+  const detector = useMemo(() => createExternalDevtoolsDetector(document), []);
+  const { readAdapters } = detector;
 
   useEffect(() => {
     const styleElement = styleElementRef.current ?? createHiddenLauncherStyleElement();
@@ -69,6 +63,7 @@ export function useExternalDevtoolsLaunchers(enabled: boolean): IExternalDevtool
       document.head.append(styleElement);
     }
 
+    const unsubscribe = detector.subscribe(scheduleSynchronizeLaunchers);
     synchronizeLaunchers();
 
     const observer = new MutationObserver(() => {
@@ -84,6 +79,7 @@ export function useExternalDevtoolsLaunchers(enabled: boolean): IExternalDevtool
 
     return (): void => {
       observer.disconnect();
+      unsubscribe();
 
       if (frameIdRef.current !== null) {
         cancelAnimationFrame(frameIdRef.current);
@@ -99,7 +95,7 @@ export function useExternalDevtoolsLaunchers(enabled: boolean): IExternalDevtool
       styleElementRef.current = null;
       synchronizeLaunchersRef.current = null;
     };
-  }, [enabled, readAdapters]);
+  }, [enabled, detector, readAdapters]);
 
   function toggleLauncher(launcherId: string): void {
     const adapter = readAdapters().find((candidate) => candidate.id === launcherId);
