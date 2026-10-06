@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type JSX } from "react";
+import { useEffect, useId, useState, type JSX } from "react";
 import { ChevronDownIcon } from "lucide-react";
 
 import {
@@ -33,9 +33,10 @@ export function AnnotationActionSplitButton({
   onRun,
 }: IAnnotationActionSplitButtonProps): JSX.Element {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
-  const rootReference = useRef<HTMLDivElement | null>(null);
+  // The menu portals into this element so it stays inside the devtools shadow root. State, not a ref: the element is
+  // read while rendering.
+  const [rootElement, setRootElement] = useState<HTMLDivElement | null>(null);
   const menuId: string = useId();
-  const portalContainer: HTMLDivElement | null = rootReference.current;
 
   useEffect(() => {
     if (!isActionMenuDisabled || !isMenuOpen) {
@@ -47,7 +48,7 @@ export function AnnotationActionSplitButton({
 
   return (
     <div
-      ref={rootReference}
+      ref={setRootElement}
       className="relative inline-flex [&>button:first-child]:rounded-r-none"
       data-testid="AnnotationActionSplitButton"
     >
@@ -75,7 +76,7 @@ export function AnnotationActionSplitButton({
           align="end"
           aria-label="Annotation actions"
           variant="wide"
-          container={portalContainer}
+          container={rootElement}
           id={menuId}
         >
           <DropdownMenuRadioGroup value={selectedAction.id}>

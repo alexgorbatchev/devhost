@@ -3,6 +3,7 @@ import { useMemo, useState, type JSX, type ReactNode, type RefCallback } from "r
 import { expect, waitFor, within } from "storybook/test";
 
 import { ColorSchemeProvider, type DevtoolsColorScheme } from "../../../../shared";
+import { DevtoolsTopLayer } from "@/devtools/shared/components/DevtoolsTopLayer";
 import { StoryContainer } from "@/devtools/shared/components/stories/helpers";
 import { readStorybookDevtoolsColorScheme } from "@/devtools/shared/storybookTheme";
 import {
@@ -281,11 +282,9 @@ function AnnotationSelectionOverlayPositioningScene({
           </div>
         </section>
 
-        <div data-devhost-devtools="">
-          <ColorSchemeProvider colorScheme={colorScheme}>
-            <AnnotationSelectionOverlay selectedTargets={selectedTargets} />
-          </ColorSchemeProvider>
-        </div>
+        <ColorSchemeProvider colorScheme={colorScheme}>
+          <AnnotationSelectionOverlay selectedTargets={selectedTargets} />
+        </ColorSchemeProvider>
       </div>
     </AnnotationSelectionOverlayStoryFrame>
   );
@@ -316,6 +315,8 @@ function AnnotationSelectionOverlayPositioningPreview({
     >
       <AnnotationSelectionOverlayContainedStageSingleTargetPreview />
       <AnnotationSelectionOverlayPositioningScene colorScheme={colorScheme} />
+      {/* The root both overlays portal into. As in production, it sits outside the content being marked. */}
+      <DevtoolsTopLayer>{null}</DevtoolsTopLayer>
     </section>
   );
 }
@@ -366,11 +367,9 @@ function AnnotationSelectionOverlaySingleTargetScene({
       >
         single contained stage target
       </button>
-      <div data-devhost-devtools="">
-        <ColorSchemeProvider colorScheme={colorScheme}>
-          <AnnotationSelectionOverlay selectedTargets={selectedTargets} testIdPrefix="ContainedStageSelectionOverlay" />
-        </ColorSchemeProvider>
-      </div>
+      <ColorSchemeProvider colorScheme={colorScheme}>
+        <AnnotationSelectionOverlay selectedTargets={selectedTargets} testIdPrefix="ContainedStageSelectionOverlay" />
+      </ColorSchemeProvider>
     </div>
   );
 }

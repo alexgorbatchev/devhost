@@ -14,7 +14,7 @@ import {
   readDevtoolsStoryShadowCanvas,
   readHostShadowPopover,
   readShadowRoot,
-  renderInDevtoolsStoryShadowRoot,
+  renderDevtoolsInStoryShadowRoot,
   StorybookThemeProvider,
 } from "./helpers";
 
@@ -211,7 +211,7 @@ function TopLayerScene({
       {isShadowMounted ? (
         // A host ancestor that traps z-index and clips fixed descendants; only the top layer escapes it.
         <div style={{ position: "relative", zIndex: 0, transform: "translateZ(0)", contain: "paint", height: 1 }}>
-          {renderInDevtoolsStoryShadowRoot(devtools)}
+          {renderDevtoolsInStoryShadowRoot(devtools)}
         </div>
       ) : (
         devtools

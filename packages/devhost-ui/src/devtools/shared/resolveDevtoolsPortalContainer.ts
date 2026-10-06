@@ -1,35 +1,20 @@
-import { DEVTOOLS_ROOT_ATTRIBUTE_NAME, DEVTOOLS_ROOT_ID } from "./constants";
+import { DEVTOOLS_ROOT_ID } from "./constants";
 
+type DevtoolsTree = Document | ShadowRoot;
+
+/**
+ * Finds the devtools root (`DevtoolsTopLayer`) in the tree `anchorElement` is rendered in: the devtools shadow root
+ * in production. Portaling anywhere else would leak devtools markup into the host page, so a missing root is an
+ * error.
+ */
 export function resolveDevtoolsPortalContainer(anchorElement: HTMLElement): HTMLElement {
   const rootNode: Node = anchorElement.getRootNode();
+  const tree: DevtoolsTree = rootNode instanceof ShadowRoot ? rootNode : anchorElement.ownerDocument;
+  const devtoolsRoot: HTMLElement | null = tree.getElementById(DEVTOOLS_ROOT_ID);
 
-  if (rootNode instanceof ShadowRoot) {
-    const shadowAppRoot: HTMLElement | null = rootNode.querySelector<HTMLElement>(`#${DEVTOOLS_ROOT_ID}`);
-
-    if (shadowAppRoot !== null) {
-      return shadowAppRoot;
-    }
-
-    const shadowRootFallback: HTMLElement | null = rootNode.querySelector<HTMLElement>(
-      `[${DEVTOOLS_ROOT_ATTRIBUTE_NAME}]`,
-    );
-
-    if (shadowRootFallback !== null) {
-      return shadowRootFallback;
-    }
+  if (devtoolsRoot === null) {
+    throw new Error("Devtools overlays must render in the same tree as the devtools root.");
   }
 
-  const documentAppRoot: HTMLElement | null = anchorElement.ownerDocument.getElementById(DEVTOOLS_ROOT_ID);
-
-  if (documentAppRoot !== null) {
-    return documentAppRoot;
-  }
-
-  const documentBody: HTMLElement | null = anchorElement.ownerDocument.body;
-
-  if (documentBody !== null) {
-    return documentBody;
-  }
-
-  return anchorElement;
+  return devtoolsRoot;
 }

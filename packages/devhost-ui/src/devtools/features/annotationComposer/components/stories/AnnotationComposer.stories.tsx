@@ -2,8 +2,8 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { useState, type ComponentProps, type JSX, type ReactNode } from "react";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 
-import { StoryContainer } from "@/devtools/shared/components/stories/helpers";
-import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
+import { DevtoolsTopLayer } from "@/devtools/shared/components/DevtoolsTopLayer";
+import { StoryContainer, StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
 import { AnnotationComposer } from "../AnnotationComposer";
 
 const agentAction = {
@@ -25,14 +25,25 @@ interface IAnnotationComposerStoryFrameProps {
 }
 
 function AnnotationComposerStoryFrame({ children, globals }: IAnnotationComposerStoryFrameProps): JSX.Element {
+  const [hostClickCount, setHostClickCount] = useState<number>(0);
+
   return (
     <StoryContainer align="center">
-      <button type="button" data-testid="host-action-target" style={{ padding: "20px", background: "red" }}>
+      <button
+        type="button"
+        data-testid="host-action-target"
+        style={{ padding: "20px", background: "red" }}
+        onClick={(): void => {
+          setHostClickCount((currentCount: number): number => currentCount + 1);
+        }}
+      >
         Host action target
       </button>
-      <div data-devhost-devtools="">
-        <StorybookThemeProvider globals={globals}>{children}</StorybookThemeProvider>
-      </div>
+      <output aria-label="Host clicks">{hostClickCount}</output>
+      <input aria-label="Host field" type="text" />
+      <StorybookThemeProvider globals={globals}>
+        <DevtoolsTopLayer>{children}</DevtoolsTopLayer>
+      </StorybookThemeProvider>
     </StoryContainer>
   );
 }
@@ -84,12 +95,14 @@ interface IAnnotationComposerStoryQueries {
 
 async function createAnnotationDraft({ canvas, page }: IAnnotationComposerStoryQueries): Promise<void> {
   const targetButton = canvas.getByTestId("host-action-target");
+  // One session keeps the Alt key state between calls, so releasing it dispatches the keyup that ends selection.
+  const user = userEvent.setup();
 
-  await userEvent.keyboard("{Alt>}");
+  await user.keyboard("{Alt>}");
   await expect(await canvas.findByRole("status", { name: "Annotation selection" })).toHaveTextContent(
     "Annotateclick to mark elementsEsc",
   );
-  await userEvent.hover(targetButton);
+  await user.hover(targetButton);
 
   await waitFor(() => {
     expect(page.getByTestId("AnnotationComposer--hover-highlight")).toBeInTheDocument();
@@ -97,7 +110,7 @@ async function createAnnotationDraft({ canvas, page }: IAnnotationComposerStoryQ
     expect(page.getByTestId("AnnotationComposer--hover-label")).toBeVisible();
   });
 
-  await userEvent.click(targetButton);
+  await user.click(targetButton);
 
   await waitFor(() => {
     expect(canvas.getByRole("dialog", { name: "Annotation draft" })).toBeVisible();
@@ -106,7 +119,7 @@ async function createAnnotationDraft({ canvas, page }: IAnnotationComposerStoryQ
   });
 
   await expect(canvas.getByRole("dialog", { name: "Annotation draft" })).toHaveTextContent("1 marker");
-  await userEvent.keyboard("{/Alt}");
+  await user.keyboard("{/Alt}");
 }
 
 async function expectDraftToReset({ canvas, page }: IAnnotationComposerStoryQueries): Promise<void> {
@@ -155,6 +168,63 @@ export const Default: Story = {
     });
 
     await expectDraftToReset({ canvas, page });
+  },
+};
+
+export const SelectionEndsWhenAltIsReleased: Story = {
+  args: {
+    annotationActions: [agentAction],
+    onSubmit: fn(async () => {
+      return { success: true };
+    }),
+    onSelectedActionIdChange: fn(),
+    selectedActionId: "agent",
+    stackName: "story-stack",
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+
+    await createAnnotationDraft({ canvas, page });
+
+    // Selection mode kept the marking click from the page.
+    await expect(canvas.getByRole("status", { name: "Host clicks" })).toHaveTextContent("0");
+
+    await userEvent.click(canvas.getByTestId("host-action-target"));
+
+    await expect(canvas.getByRole("status", { name: "Host clicks" })).toHaveTextContent("1");
+    await expect(canvas.getByRole("dialog", { name: "Annotation draft" })).toHaveTextContent("1 marker");
+  },
+};
+
+/** Alt pressed while typing belongs to the field, so it does not start selection. */
+export const AltWhileTypingDoesNotSelect: Story = {
+  args: {
+    annotationActions: [agentAction],
+    onSubmit: fn(async () => {
+      return { success: true };
+    }),
+    onSelectedActionIdChange: fn(),
+    selectedActionId: "agent",
+    stackName: "story-stack",
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    // One session keeps the Alt key state between calls, so releasing it dispatches the keyup that ends selection.
+    const user = userEvent.setup();
+
+    await user.click(canvas.getByRole("textbox", { name: "Host field" }));
+    await user.keyboard("{Alt>}");
+    expect(canvas.queryByRole("status", { name: "Annotation selection" })).toBeNull();
+    await user.keyboard("{/Alt}");
+
+    await user.click(canvas.getByTestId("host-action-target"));
+    await user.keyboard("{Alt>}");
+    await expect(await canvas.findByRole("status", { name: "Annotation selection" })).toBeInTheDocument();
+    await user.keyboard("{/Alt}");
+    await waitFor(() => {
+      expect(canvas.queryByRole("status", { name: "Annotation selection" })).toBeNull();
+    });
   },
 };
 

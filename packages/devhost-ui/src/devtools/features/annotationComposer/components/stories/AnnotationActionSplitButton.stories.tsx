@@ -3,7 +3,11 @@ import { useState, type JSX } from "react";
 import { expect, fn, userEvent, within } from "storybook/test";
 
 import { type IAnnotationAction } from "../../../../shared";
-import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
+import {
+  readDevtoolsStoryShadowCanvas,
+  renderInDevtoolsStoryShadowRoot,
+  StorybookThemeProvider,
+} from "@/devtools/shared/components/stories/helpers";
 import { AnnotationActionSplitButton } from "../AnnotationActionSplitButton";
 
 const agentAction: IAnnotationAction = {
@@ -105,6 +109,34 @@ export const Default: Story = {
 
     await userEvent.click(canvas.getByRole("button", { name: /Run Create Ticket/ }));
     await expect(args.onRun).toHaveBeenCalledTimes(1);
+  },
+};
+
+/** The action menu portals into the split button, so it stays inside the devtools shadow root with its styles. */
+export const MenuStaysInsideShadowRoot: Story = {
+  args: {
+    actions: [agentAction, ticketAction],
+    initialSelectedActionId: "agent",
+    isActionMenuDisabled: false,
+    isRunDisabled: false,
+    onActionSelect: fn(),
+    onRun: fn(),
+  },
+  render: (args, context) => {
+    return renderInDevtoolsStoryShadowRoot(<AnnotationActionSplitButtonStory {...args} globals={context.globals} />);
+  },
+  play: async ({ args, canvasElement }): Promise<void> => {
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+
+    await userEvent.click(await shadowCanvas.findByRole("button", { name: /Select annotation action/ }));
+
+    const menu = await shadowCanvas.findByRole("menu");
+
+    await expect(shadowCanvas.getByTestId("AnnotationActionSplitButton")).toContainElement(menu);
+    await userEvent.click(within(menu).getByRole("menuitemradio", { name: "Create Ticket" }));
+
+    await expect(args.onActionSelect).toHaveBeenCalledWith("create-ticket");
+    await expect(shadowCanvas.getByRole("button", { name: /Run Create Ticket/ })).toBeInTheDocument();
   },
 };
 

@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 
-import { isEventTargetTerminalKeyboardInput } from "../../../shared/isEventTargetTerminalKeyboardInput";
+import { isEventTargetEditingSurface } from "../../../shared/isEventTargetEditingSurface";
 
 import { popupWidth, selectionCursorStyleId, type ISelectedAnnotationTarget } from "../annotationComposerModels";
 import { readActiveAnnotationSelectionPlugin } from "../annotationSelectionPluginRegistry";
 import { resolvePopupCoordinates, type IPopupCoordinates } from "../resolvePopupCoordinates";
 import type { IRectSnapshot } from "../types";
 import {
-  doesEventTargetAcceptTextInput,
   isInteractionInsideDevtools,
   removeSelectionCursorStyle,
   resolveAnnotationSelectionCandidate,
@@ -214,12 +213,11 @@ export function useAnnotationSelectionDraft({
 
   useEffect(() => {
     const handleAltKeyDown = (event: KeyboardEvent): void => {
-      const target = event.composedPath()[0] || event.target;
-      if (isEventTargetTerminalKeyboardInput(target) || event.key !== "Alt") {
+      if (event.key !== "Alt") {
         return;
       }
 
-      if (isSubmitting || doesEventTargetAcceptTextInput(target)) {
+      if (isSubmitting || isEventTargetEditingSurface(event.composedPath().at(0) ?? event.target)) {
         return;
       }
 
