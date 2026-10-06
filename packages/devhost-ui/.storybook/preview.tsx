@@ -13,6 +13,10 @@ import {
   TERMINAL_SESSION_WEBSOCKET_PATH,
   XTERM_STYLESHEET_PATH,
 } from "../src/devtools/shared/constants";
+import type {
+  ITerminalSessionExitMessage,
+  ITerminalSessionSnapshotMessage,
+} from "../src/devtools/features/terminalSessions/types";
 import type { DevtoolsColorScheme } from "../src/devtools/shared";
 import type { IInjectedDevtoolsConfig } from "../src/devtools/shared/readInjectedDevtoolsConfig";
 import { registerDevtoolsFonts } from "../src/devtools/shared/registerDevtoolsFonts";
@@ -21,13 +25,12 @@ import {
   readStorybookDevtoolsColorScheme,
   storybookDevtoolsThemeGlobalName,
 } from "../src/devtools/shared/storybookTheme";
+import type { HealthResponse, ServiceLogSnapshotMessage } from "../src/devtools/shared/types";
+import { createMockWebSocket, type IMockWebSocketConnection } from "./createMockWebSocket";
 
 type FetchRequestInput = Parameters<typeof fetch>[0];
 type FetchRequestInit = Parameters<typeof fetch>[1];
 type FetchPreconnect = typeof fetch.preconnect;
-type StorybookWebSocketProtocols = ConstructorParameters<typeof WebSocket>[1];
-type StorybookWebSocketSendData = Parameters<WebSocket["send"]>[0];
-type StorybookWebSocketUrl = ConstructorParameters<typeof WebSocket>[0];
 
 const storybookAsyncUtilTimeoutMs: number = 5000;
 
@@ -49,89 +52,43 @@ const storybookInjectedConfig: IInjectedDevtoolsConfig = {
   terminalEnabled: true,
 };
 
-class MockStorybookWebSocket extends EventTarget {
-  static readonly CONNECTING: number = 0;
-  static readonly OPEN: number = 1;
-  static readonly CLOSING: number = 2;
-  static readonly CLOSED: number = 3;
+function sendStorybookSnapshot(connection: IMockWebSocketConnection): void {
+  if (connection.url.pathname === HEALTH_WEBSOCKET_PATH) {
+    const health: HealthResponse = { services: [{ name: "api", managed: true, status: true }] };
 
-  readonly url: string;
-  binaryType: BinaryType = "blob";
-  bufferedAmount: number = 0;
-  extensions: string = "";
-  protocol: string = "";
-  readyState: number = MockStorybookWebSocket.CONNECTING;
-
-  constructor(url: StorybookWebSocketUrl, _protocols?: StorybookWebSocketProtocols) {
-    super();
-
-    this.url = String(url);
-
-    queueMicrotask((): void => {
-      this.openConnection();
-    });
+    connection.send(health);
+    return;
   }
 
-  close(code: number = 1000, reason: string = ""): void {
-    if (this.readyState === MockStorybookWebSocket.CLOSING || this.readyState === MockStorybookWebSocket.CLOSED) {
-      return;
-    }
+  if (connection.url.pathname === LOGS_WEBSOCKET_PATH) {
+    const logs: ServiceLogSnapshotMessage = {
+      entries: [{ id: 1, line: "ready", serviceName: "api", stream: "stdout" }],
+      type: "snapshot",
+    };
 
-    this.readyState = MockStorybookWebSocket.CLOSING;
-
-    queueMicrotask((): void => {
-      this.readyState = MockStorybookWebSocket.CLOSED;
-      this.dispatchEvent(new CloseEvent("close", { code, reason }));
-    });
+    connection.send(logs);
+    return;
   }
 
-  send(_data: StorybookWebSocketSendData): void {}
-
-  private emitMessage(data: string): void {
-    this.dispatchEvent(new MessageEvent<string>("message", { data }));
-  }
-
-  private emitSnapshotMessages(): void {
-    const requestUrl: URL = new URL(this.url, window.location.href);
-
-    if (requestUrl.pathname === HEALTH_WEBSOCKET_PATH) {
-      this.emitMessage(JSON.stringify({ services: [{ name: "api", managed: true, status: true }] }));
-      return;
-    }
-
-    if (requestUrl.pathname === LOGS_WEBSOCKET_PATH) {
-      this.emitMessage(
-        JSON.stringify({
-          entries: [{ id: 1, line: "ready", serviceName: "api", stream: "stdout" }],
-          type: "snapshot",
-        }),
-      );
-      return;
-    }
-
-    if (requestUrl.pathname === TERMINAL_SESSION_WEBSOCKET_PATH) {
-      const data =
-        requestUrl.searchParams.get(TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME) === "session-contrast"
+  if (connection.url.pathname === TERMINAL_SESSION_WEBSOCKET_PATH) {
+    const sessionId: string | null = connection.url.searchParams.get(TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME);
+    const terminal: ITerminalSessionSnapshotMessage = {
+      data:
+        sessionId === "session-contrast"
           ? "\u001b[30mX\u001b[0m \u001b[92mG\u001b[0m \u001b[93mY\u001b[0m \u001b[96mC\u001b[0m \u001b[97mW\u001b[0m"
-          : "$ echo ready\r\nready\r\n";
-      this.emitMessage(JSON.stringify({ data, type: "snapshot" }));
+          : "$ echo ready\r\nready\r\n",
+      type: "snapshot",
+    };
 
-      if (requestUrl.searchParams.get(TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME) === "session-finished") {
-        queueMicrotask((): void => {
-          this.emitMessage(JSON.stringify({ exitCode: 0, signalCode: null, type: "exit" }));
-        });
-      }
+    connection.send(terminal);
+
+    if (sessionId === "session-finished") {
+      const exit: ITerminalSessionExitMessage = { exitCode: 0, signalCode: null, type: "exit" };
+
+      queueMicrotask((): void => {
+        connection.send(exit);
+      });
     }
-  }
-
-  private openConnection(): void {
-    if (this.readyState !== MockStorybookWebSocket.CONNECTING) {
-      return;
-    }
-
-    this.readyState = MockStorybookWebSocket.OPEN;
-    this.dispatchEvent(new Event("open"));
-    this.emitSnapshotMessages();
   }
 }
 
@@ -231,7 +188,7 @@ const preview: Preview = {
     registerDevtoolsFonts(document.fonts);
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, storybookInjectedConfig);
     Reflect.set(globalThis, "fetch", createStorybookFetch());
-    Reflect.set(globalThis, "WebSocket", MockStorybookWebSocket);
+    Reflect.set(globalThis, "WebSocket", createMockWebSocket(sendStorybookSnapshot));
 
     return (): void => {
       Reflect.deleteProperty(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME);

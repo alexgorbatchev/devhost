@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useLayoutEffect, useRef, useState } from "react";
 import { expect, within } from "storybook/test";
 
-import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../constants";
+import { DEVTOOLS_ROOT_ID } from "../../constants";
 import type { DevtoolsColorScheme } from "../../DevtoolsColorScheme";
 import { installDevtoolsStyles } from "../../devtoolsStyles";
 import { readStorybookDevtoolsColorScheme } from "../../storybookTheme";
@@ -14,9 +14,27 @@ interface IDevtoolsStoryShadowRootProps {
 }
 
 export const devtoolsStoryShadowRootHostTestId: string = "DevtoolsStoryShadowRoot";
+// The mount node carries no marker, like the one `renderDevtools` creates, so stories find it through this map.
+const storyMountNodes = new WeakMap<ShadowRoot, HTMLElement>();
 
+/**
+ * Renders a devtools component on its own inside a shadow root. In production every component sits in a surface of
+ * the devtools root, so the component is wrapped in a stand-in for that root.
+ */
 export function renderInDevtoolsStoryShadowRoot(children: ReactNode): JSX.Element {
-  return <DevtoolsStoryShadowRoot>{children}</DevtoolsStoryShadowRoot>;
+  return (
+    <DevtoolsStoryShadowRoot>
+      <DevtoolsStoryRoot>{children}</DevtoolsStoryRoot>
+    </DevtoolsStoryShadowRoot>
+  );
+}
+
+/**
+ * Renders a tree that brings its own `DevtoolsTopLayer`, such as the app, inside a shadow root built like the one
+ * `renderDevtools` builds.
+ */
+export function renderDevtoolsInStoryShadowRoot(devtools: ReactNode): JSX.Element {
+  return <DevtoolsStoryShadowRoot>{devtools}</DevtoolsStoryShadowRoot>;
 }
 
 // Queries are scoped to the mount element rather than the ShadowRoot itself: testing-library cannot format a
@@ -24,9 +42,9 @@ export function renderInDevtoolsStoryShadowRoot(children: ReactNode): JSX.Elemen
 export async function readDevtoolsStoryShadowCanvas(canvasElement: HTMLElement): Promise<ReturnType<typeof within>> {
   const hostElement: HTMLElement = await within(canvasElement).findByTestId(devtoolsStoryShadowRootHostTestId);
   const shadowRoot: ShadowRoot = readShadowRoot(hostElement, "The story did not attach a devtools shadow root.");
-  const mountElement: HTMLElement | null = shadowRoot.querySelector<HTMLElement>(`[${DEVTOOLS_ROOT_ATTRIBUTE_NAME}]`);
+  const mountElement: HTMLElement | undefined = storyMountNodes.get(shadowRoot);
 
-  if (mountElement === null) {
+  if (mountElement === undefined) {
     throw new Error("The story shadow root has no devtools mount element.");
   }
 
@@ -162,24 +180,41 @@ function DevtoolsStoryShadowRoot(props: IDevtoolsStoryShadowRootProps): JSX.Elem
     const shadowRoot: ShadowRoot = hostElement.shadowRoot ?? hostElement.attachShadow({ mode: "open" });
     const mountNode: HTMLDivElement = document.createElement("div");
 
-    mountNode.setAttribute(DEVTOOLS_ROOT_ATTRIBUTE_NAME, "");
-    // The shadow host inherits `pointer-events: none` from `:host` (production surfaces opt back in on their own
-    // roots); stories render components outside those surfaces, so the story mount node opts back in instead.
-    mountNode.style.pointerEvents = "auto";
     shadowRoot.append(mountNode);
+    storyMountNodes.set(shadowRoot, mountNode);
 
     installDevtoolsStyles(shadowRoot);
     setShadowMountNode(mountNode);
 
     return () => {
       setShadowMountNode(null);
+      storyMountNodes.delete(shadowRoot);
       mountNode.remove();
     };
   }, []);
 
   return (
-    <div data-testid={devtoolsStoryShadowRootHostTestId} ref={hostElementReference}>
+    // Marked like the production host in `renderDevtools`: events leaving the shadow root are retargeted to this
+    // element, which is how page-level listeners recognize a devtools interaction.
+    <div data-devhost-devtools="" data-testid={devtoolsStoryShadowRootHostTestId} ref={hostElementReference}>
       {shadowMountNode ? createPortal(props.children, shadowMountNode) : null}
+    </div>
+  );
+}
+
+interface IDevtoolsStoryRootProps {
+  children: ReactNode;
+}
+
+/**
+ * Stands in for `DevtoolsTopLayer` around a component rendered on its own: it carries the root's id and marker,
+ * stays in normal flow so the story keeps its layout, and opts back in to pointer events as surfaces do (the shadow
+ * host sets `pointer-events: none`).
+ */
+function DevtoolsStoryRoot({ children }: IDevtoolsStoryRootProps): JSX.Element {
+  return (
+    <div id={DEVTOOLS_ROOT_ID} className="pointer-events-auto" data-devhost-devtools="" data-testid="DevtoolsStoryRoot">
+      {children}
     </div>
   );
 }

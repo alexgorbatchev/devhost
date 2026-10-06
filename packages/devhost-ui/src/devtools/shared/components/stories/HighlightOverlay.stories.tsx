@@ -3,8 +3,8 @@ import { useMemo, useState, type JSX } from "react";
 import { expect, waitFor, within } from "storybook/test";
 
 import { HighlightOverlay } from "../../index";
-import { StoryContainer } from "./helpers";
-import { StorybookThemeProvider } from "./helpers";
+import { DevtoolsTopLayer } from "../DevtoolsTopLayer";
+import { StoryContainer, StorybookThemeProvider } from "./helpers";
 
 interface IHighlightOnlySceneProps {
   appearance?: "hover" | "selected";
@@ -41,7 +41,9 @@ function HighlightOnlyScene({ appearance, label }: IHighlightOnlySceneProps): JS
         >
           highlight only target
         </button>
-        <HighlightOverlay appearance={appearance} highlights={highlights} />
+        <DevtoolsTopLayer>
+          <HighlightOverlay appearance={appearance} highlights={highlights} />
+        </DevtoolsTopLayer>
       </div>
     </StoryContainer>
   );
@@ -98,7 +100,9 @@ function BadgedHighlightsScene(): JSX.Element {
         >
           second badged target
         </button>
-        <HighlightOverlay highlights={highlights} />
+        <DevtoolsTopLayer>
+          <HighlightOverlay highlights={highlights} />
+        </DevtoolsTopLayer>
       </div>
     </StoryContainer>
   );

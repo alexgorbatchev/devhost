@@ -27,19 +27,6 @@ export function isInteractionInsideDevtools(target: EventTarget | null): boolean
   return target.closest(`[${DEVTOOLS_ROOT_ATTRIBUTE_NAME}], #${DEVTOOLS_ROOT_ID}`) !== null;
 }
 
-export function doesEventTargetAcceptTextInput(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-
-  return (
-    target instanceof HTMLInputElement ||
-    target instanceof HTMLSelectElement ||
-    target instanceof HTMLTextAreaElement ||
-    target.isContentEditable
-  );
-}
-
 export function removeSelectionCursorStyle(styleId: string): void {
   document.getElementById(styleId)?.remove();
 }

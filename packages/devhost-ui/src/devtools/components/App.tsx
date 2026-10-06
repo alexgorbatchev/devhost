@@ -16,6 +16,7 @@ import { ServiceCrashOverlay, ServiceStatusPanel, useServiceHealth } from "../fe
 import { pristineFetch } from "../shared/pristineFetch";
 import { restartServices } from "../shared/restartServices";
 import { readInjectedDevtoolsConfig } from "../shared/readInjectedDevtoolsConfig";
+import { isEventTargetEditingSurface } from "../shared/isEventTargetEditingSurface";
 import { DevtoolsToolbar } from "../shared/components/DevtoolsToolbar";
 import { DevtoolsTopLayer } from "../shared/components/DevtoolsTopLayer";
 import { useRetainedValue } from "../shared/hooks/useRetainedValue";
@@ -121,17 +122,8 @@ function AppContent(): JSX.Element {
         return;
       }
 
-      const target = (event.composedPath()?.[0] || event.target) as HTMLElement;
-      if (target) {
-        const tagName = target.tagName?.toLowerCase();
-        const isInput =
-          tagName === "input" ||
-          tagName === "textarea" ||
-          tagName === "select" ||
-          target.isContentEditable ||
-          target.closest?.(".xterm") !== null ||
-          target.closest?.("[contenteditable]") !== null;
-        if (isInput) return;
+      if (isEventTargetEditingSurface(event.composedPath().at(0) ?? event.target)) {
+        return;
       }
 
       event.preventDefault();
@@ -325,7 +317,7 @@ function resolveSelectedAnnotationAction(
 ): IAnnotationAction | null {
   return (
     annotationActions.find((action: IAnnotationAction): boolean => action.id === selectedAnnotationActionId) ??
-    (annotationActions[0] as IAnnotationAction | undefined) ??
+    annotationActions.at(0) ??
     null
   );
 }

@@ -13,7 +13,7 @@ export const DEVHOST_SERVICE_NAME: string = "devhost";
 export const TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME: string = "sessionId";
 export const DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME: string = "__DEVHOST_INJECTED_CONFIG__";
 export const DEVTOOLS_HOST_ID: string = "devhost-devtools-host";
-export const DEVTOOLS_ROOT_ID: string = "devhost-services-panel";
+export const DEVTOOLS_ROOT_ID: string = "devhost-devtools-root";
 export const DEVTOOLS_ROOT_ATTRIBUTE_NAME: string = "data-devhost-devtools";
 // Matches elements the browser renders in its top layer: open popovers and modal dialogs.
 export const TOP_LAYER_ELEMENT_SELECTOR: string = ":popover-open, :modal";
