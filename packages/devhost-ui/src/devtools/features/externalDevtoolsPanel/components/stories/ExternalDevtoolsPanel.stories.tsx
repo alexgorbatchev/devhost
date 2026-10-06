@@ -388,6 +388,10 @@ interface ISharedPlayTestArgs {
   canvasElement: HTMLElement;
 }
 
+interface IStoryRenderPlayTestArgs extends ISharedPlayTestArgs {
+  id: string;
+}
+
 type LauncherButtonReader = () => HTMLElement;
 
 async function waitForToolbarsToBeHidden(selectors: string[]): Promise<void> {
@@ -512,8 +516,9 @@ async function runRouterLauncherCycle(
   await waitForRouterPanelToBeClosed();
 }
 
-const sharedPlayTest = async ({ canvasElement }: ISharedPlayTestArgs): Promise<void> => {
+const sharedPlayTest = async ({ canvasElement, id }: IStoryRenderPlayTestArgs): Promise<void> => {
   const { readQueryLauncherButton, readRouterLauncherButton } = await setupSharedPlayTest({ canvasElement });
+  await expect(readScriptRequestsSince(performance.measure(id, { start: id }).startTime)).toEqual([]);
 
   await runQueryLauncherCycle(readQueryLauncherButton);
   await runRouterLauncherCycle(readRouterLauncherButton, readQueryLauncherButton);
@@ -521,6 +526,16 @@ const sharedPlayTest = async ({ canvasElement }: ISharedPlayTestArgs): Promise<v
 };
 
 export const Default: Story = {
+  beforeEach:
+    ({ id }) =>
+    () => {
+      performance.clearMarks(id);
+      performance.clearMeasures(id);
+    },
+  render: (_args, context) => {
+    performance.mark(context.id);
+    return <IntegratedPanel globals={context.globals} />;
+  },
   play: sharedPlayTest,
 };
 
