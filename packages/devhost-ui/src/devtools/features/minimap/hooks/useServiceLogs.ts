@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { LOGS_WEBSOCKET_PATH, maximumRetainedLogEntries } from "../../../shared/constants";
 import { createDevtoolsWebSocketUrl } from "../../../shared/createDevtoolsWebSocketUrl";
+import { pristineWebSocket } from "../../../shared/pristineFetch";
 import type { ServiceLogEntry, ServiceLogMessage } from "../../../shared/types";
 
 const normalClosureCode: number = 1_000;
@@ -42,7 +43,7 @@ export function useServiceLogs(isPaused: boolean): ServiceLogEntry[] {
       applyIncomingEntries(nextEntries);
     };
 
-    websocket = new WebSocket(createDevtoolsWebSocketUrl(LOGS_WEBSOCKET_PATH, window.location));
+    websocket = pristineWebSocket(createDevtoolsWebSocketUrl(LOGS_WEBSOCKET_PATH, window.location));
     websocket.addEventListener("message", handleMessage);
 
     return () => {

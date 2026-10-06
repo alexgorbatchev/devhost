@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { TERMINAL_SESSION_START_PATH } from "../../../shared/constants";
 import type { DevtoolsColorScheme } from "../../../shared/DevtoolsColorScheme";
+import { pristineFetch } from "../../../shared/pristineFetch";
 import type { IAnnotationAction } from "../../../shared/devtoolsConfig";
 import type { IAnnotationSubmitDetail } from "../../annotationComposer/types";
 import type { ComponentSourceMenuItem } from "../../componentSourceNavigation/types";
@@ -98,7 +99,7 @@ export function useTerminalSessions(
       }
 
       try {
-        const response = await fetch(TERMINAL_SESSION_START_PATH, {
+        const response = await pristineFetch(TERMINAL_SESSION_START_PATH, {
           body: JSON.stringify(request),
           headers: {
             "content-type": "application/json",
@@ -180,7 +181,7 @@ type SetTerminalSessionsCallback = (value: (currentSessions: TerminalSession[]) 
 
 async function restoreActiveTerminalSessions(setTerminalSessions: SetTerminalSessionsCallback): Promise<void> {
   try {
-    const response = await fetch(TERMINAL_SESSION_START_PATH, {
+    const response = await pristineFetch(TERMINAL_SESSION_START_PATH, {
       method: "GET",
     });
 

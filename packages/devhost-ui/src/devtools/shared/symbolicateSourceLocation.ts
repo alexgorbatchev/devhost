@@ -1,5 +1,6 @@
 import { TraceMap, originalPositionFor } from "@jridgewell/trace-mapping";
 
+import { pristineFetch } from "./pristineFetch";
 import type { ISourceLocation } from "./sourceLocation";
 
 const sourceTextCache: Map<string, Promise<string | null>> = new Map();
@@ -92,7 +93,7 @@ async function fetchText(url: string): Promise<string | null> {
 
 async function fetchTextFromUrl(url: string): Promise<string | null> {
   try {
-    const response: Response = await fetch(url);
+    const response: Response = await pristineFetch(url);
 
     if (!response.ok) {
       return null;

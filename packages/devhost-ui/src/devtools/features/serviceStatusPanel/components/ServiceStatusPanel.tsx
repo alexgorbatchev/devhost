@@ -6,6 +6,7 @@ import { Kbd } from "../../../../components/ui/Kbd";
 import { cn } from "../../../../lib/utils";
 
 import { Button, InlineNotice } from "../../../shared";
+import { pristineFetch } from "../../../shared/pristineFetch";
 import { restartServices } from "../../../shared/restartServices";
 import { ToolbarPopover } from "../../../shared/components/ToolbarPopover";
 import { DEFAULT_RESTART_SERVICES_SHORTCUT } from "../../../shared/constants";
@@ -234,7 +235,7 @@ function ServiceRows({ services, onSetErrorMessage, isBlocked }: IServiceRowsPro
                 title={service.restarting === true ? "Restarting…" : `Restart ${service.name}`}
                 variant={isChanged ? "warning" : "default"}
                 onClick={(): void => {
-                  void restartServices([service.name], fetch).then((message) => onSetErrorMessage?.(message));
+                  void restartServices([service.name], pristineFetch).then((message) => onSetErrorMessage?.(message));
                 }}
               />
             ) : null}
