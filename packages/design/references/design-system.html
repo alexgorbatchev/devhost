@@ -963,9 +963,10 @@
         box-shadow: inset 0 -2px 0 var(--dh-accent);
       }
       .seg.alert {
-        background: var(--dh-danger);
-        color: var(--dh-on-danger);
         font-weight: 600;
+      }
+      .seg.alert > .ic {
+        color: var(--dh-danger);
       }
       .seg.tight {
         gap: var(--dh-space-2);
@@ -3033,8 +3034,10 @@
         <p>
           Errors get louder with scope. A panel-wide failure is a <code>.notice</code> (filled <code>danger</code>). A
           per-item cause is a <code>.reason</code> (<code>danger</code> text on <code>danger-soft</code>). An inline
-          destructive confirmation is a <code>.confirm</code> strip. An error on a toolbar segment turns the whole
-          segment <code>danger</code> (<code>.seg.alert</code>).
+          destructive confirmation is a <code>.confirm</code> strip. An error on a toolbar segment uses a
+          <code>danger</code> warning icon and semibold text (<code>.seg.alert</code>). The segment keeps its neutral
+          surface and normal foreground through hover and open states so the count and service status dots stay
+          readable.
         </p>
       </section>
 
