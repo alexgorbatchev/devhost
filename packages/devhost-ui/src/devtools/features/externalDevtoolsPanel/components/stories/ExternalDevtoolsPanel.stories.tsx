@@ -17,7 +17,8 @@ import { ExternalDevtoolsPanel } from "../ExternalDevtoolsPanel";
 import { useExternalDevtoolsLaunchers } from "../../hooks/useExternalDevtoolsLaunchers";
 import { ReactHookFormHarness } from "./fixtures/ReactHookFormHarness";
 import { JotaiHarness } from "./fixtures/JotaiHarness";
-import { resetJotaiDevtoolsStorage } from "./helpers";
+import { TanStackHarness } from "./fixtures/TanStackHarness";
+import { resetJotaiDevtoolsStorage, resetTanStackDevtoolsStorage } from "./helpers";
 
 const queryClient = new QueryClient();
 
@@ -69,6 +70,316 @@ const meta: Meta<typeof ExternalDevtoolsPanel> = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+export const TanStackNativePlugins: Story = {
+  beforeEach: resetTanStackDevtoolsStorage,
+  render: (_args, context) => <TanStackHarness globals={context.globals} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const launcher = await canvas.findByRole("button", { name: "TanStack" });
+    await expect(launcher).toHaveAttribute("aria-pressed", "false");
+    await userEvent.click(launcher);
+    await waitFor(() => expect(launcher).toHaveAttribute("aria-pressed", "true"));
+    const shell = within(await within(document.body).findByTestId("tanstack-devtools-panel"));
+    await userEvent.click(await shell.findByRole("button", { name: "TanStack Form" }));
+    await userEvent.clear(canvas.getByRole("textbox", { name: "Form name" }));
+    await userEvent.type(canvas.getByRole("textbox", { name: "Form name" }), "Lovelace");
+    await userEvent.click(await shell.findByText("devhost-form", { exact: true }));
+    await expect(await shell.findAllByText('"Lovelace"', { exact: true })).toHaveLength(2);
+    await userEvent.click(shell.getByRole("button", { name: "TanStack Table" }));
+    await userEvent.click(await shell.findByRole("button", { name: "State" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Toggle Ada selection" }));
+    await expect(canvas.getByRole("status", { name: "Table selection" })).toHaveTextContent('{"0":true}');
+    await waitFor(() => {
+      const selectedKeys = shell.getAllByText('"0":', { exact: true });
+      expect(selectedKeys.map((key) => key.parentElement?.textContent?.trim())).toEqual(['"0": true', '"0": true']);
+    });
+    await userEvent.click(shell.getByRole("button", { name: "TanStack Pacer" }));
+    await shell.findByRole("button", { name: "TANSTACK TanStack Pacer" });
+    await userEvent.click(canvas.getByRole("button", { name: "Schedule debouncer" }));
+    await userEvent.click(await shell.findByText("devhost-debouncer", { exact: true }));
+    await userEvent.click(await shell.findByRole("button", { name: "Flush" }));
+    await waitFor(() => expect(canvas.getByRole("status", { name: "Debounced result" })).toHaveTextContent("executed"));
+    await userEvent.click(launcher);
+    await waitFor(() => expect(launcher).toHaveAttribute("aria-pressed", "false"));
+  },
+};
+
+export const TanStackLifecycle: Story = {
+  beforeEach: resetTanStackDevtoolsStorage,
+  render: (_args, context) => <TanStackHarness globals={context.globals} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+    const launcher = await canvas.findByRole("button", { name: "TanStack" });
+    const root = body.getByTestId("tanstack_devtools");
+    await expect(within(root).getByLabelText("Open TanStack Devtools")).not.toBeVisible();
+    await userEvent.click(launcher);
+    await waitFor(() => expect(body.getByTestId("tanstack-devtools-panel")).toHaveAttribute("data-open", "true"));
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(launcher).toHaveAttribute("aria-pressed", "false"));
+    await userEvent.click(canvas.getByRole("button", { name: "Toggle aggregation" }));
+    await waitFor(() => expect(canvas.queryByRole("button", { name: "TanStack" })).toBeNull());
+    const nativeOpen = within(root).getByRole("button", { name: "Open TanStack Devtools" });
+    await expect(nativeOpen).toBeVisible();
+    await userEvent.click(nativeOpen);
+    await waitFor(() => expect(body.getByTestId("tanstack-devtools-panel")).toHaveAttribute("data-open", "true"));
+    await userEvent.click(canvas.getByRole("button", { name: "Toggle aggregation" }));
+    await waitFor(() =>
+      expect(canvas.getByRole("button", { name: "TanStack" })).toHaveAttribute("aria-pressed", "true"),
+    );
+    await expect(within(root).getByLabelText("Close TanStack Devtools")).not.toBeVisible();
+    await userEvent.click(canvas.getByRole("button", { name: "Remount shell" }));
+    await waitFor(() => expect(root.isConnected).toBe(false));
+    await waitFor(() =>
+      expect(canvas.getByRole("button", { name: "TanStack" })).toHaveAttribute("aria-pressed", "true"),
+    );
+    await expect(body.getByTestId("tanstack-devtools-panel")).toHaveAttribute("data-open", "true");
+    await userEvent.click(canvas.getByRole("button", { name: "TanStack" }));
+    await waitFor(() =>
+      expect(canvas.getByRole("button", { name: "TanStack" })).toHaveAttribute("aria-pressed", "false"),
+    );
+    await userEvent.click(canvas.getByRole("button", { name: "Toggle toolbar mount" }));
+    await waitFor(() => expect(document.querySelector("[data-devhost-external-devtools-style]")).toBeNull());
+    await expect(body.getByRole("button", { name: "Open TanStack Devtools" })).toBeVisible();
+    await userEvent.click(canvas.getByRole("button", { name: "Toggle toolbar mount" }));
+    await canvas.findByRole("button", { name: "TanStack" });
+    await userEvent.click(canvas.getByRole("button", { name: "Toggle shell" }));
+    await waitFor(() => expect(canvas.queryByRole("button", { name: "TanStack" })).toBeNull());
+    await expect(body.queryByTestId("tanstack_devtools")).toBeNull();
+    await userEvent.click(canvas.getByRole("button", { name: "Toggle shell" }));
+    await expect(await canvas.findByRole("button", { name: "TanStack" })).toHaveAttribute("aria-pressed", "false");
+    await expect(body.getByLabelText("Open TanStack Devtools")).not.toBeVisible();
+  },
+};
+
+export const TanStackSharedShells: Story = {
+  beforeEach: resetTanStackDevtoolsStorage,
+  render: (_args, context) => <TanStackHarness globals={context.globals} hasSecondShell />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const launcher = await canvas.findByRole("button", { name: "TanStack" });
+    await waitFor(() => expect(document.querySelectorAll('[data-testid="tanstack-devtools-panel"]')).toHaveLength(2));
+    await expect(canvas.getAllByRole("button", { name: "TanStack" })).toHaveLength(1);
+    await userEvent.click(launcher);
+    await waitFor(() => {
+      expect(
+        [...document.querySelectorAll('[data-testid="tanstack-devtools-panel"]')].map((panel) =>
+          panel.getAttribute("data-open"),
+        ),
+      ).toEqual(["true", "true"]);
+      expect(launcher).toHaveAttribute("aria-pressed", "true");
+    });
+    await userEvent.click(launcher);
+    await waitFor(() => {
+      expect(
+        [...document.querySelectorAll('[data-testid="tanstack-devtools-panel"]')].map((panel) =>
+          panel.getAttribute("data-open"),
+        ),
+      ).toEqual(["false", "false"]);
+      expect(launcher).toHaveAttribute("aria-pressed", "false");
+    });
+  },
+};
+
+export const TanStackEmbeddedPlugins: Story = {
+  beforeEach: resetTanStackDevtoolsStorage,
+  render: (_args, context) => <TanStackHarness globals={context.globals} hasEmbeddedTools />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const launcher = await canvas.findByRole("button", { name: "TanStack" });
+    await userEvent.click(launcher);
+    const shell = within(within(document.body).getByTestId("tanstack-devtools-panel"));
+    await userEvent.click(await shell.findByRole("button", { name: "TanStack Query" }));
+    await expect(await shell.findByRole("textbox", { name: "Filter queries by query key" })).toBeVisible();
+    await userEvent.click(await shell.findByRole("button", { name: "TanStack Router" }));
+    await expect(await shell.findByText("TanStack Router", { exact: true })).toBeVisible();
+    await expect(canvas.queryByRole("button", { name: "Query" })).toBeNull();
+    await expect(canvas.queryByRole("button", { name: "Router" })).toBeNull();
+    await expect(canvas.getByRole("group", { name: "External devtools" }).textContent).toBe("TanStack");
+    await expect(shell.getByRole("button", { name: "Close Tanstack query devtools" })).toBeVisible();
+    await userEvent.click(launcher);
+    await waitFor(() => expect(launcher).toHaveAttribute("aria-pressed", "false"));
+  },
+};
+
+export const TanStackStandaloneCoexistence: Story = {
+  beforeEach: resetTanStackDevtoolsStorage,
+  render: (_args, context) => <TanStackHarness globals={context.globals} hasEmbeddedTools hasStandaloneTools />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const shellLauncher = await canvas.findByRole("button", { name: "TanStack" });
+    const queryLauncher = await canvas.findByRole("button", { name: "Query" });
+    const routerLauncher = await canvas.findByRole("button", { name: "Router" });
+    await userEvent.click(shellLauncher);
+    const shell = within(within(document.body).getByTestId("tanstack-devtools-panel"));
+    await userEvent.click(await shell.findByRole("button", { name: "TanStack Query" }));
+    await shell.findByRole("textbox", { name: "Filter queries by query key" });
+    await userEvent.click(await shell.findByRole("button", { name: "TanStack Router" }));
+    await shell.findByText("TanStack Router", { exact: true });
+    await expect(queryLauncher).toHaveAttribute("aria-pressed", "false");
+    await expect(routerLauncher).toHaveAttribute("aria-pressed", "false");
+    await userEvent.click(queryLauncher);
+    await waitFor(() => expect(queryLauncher).toHaveAttribute("aria-pressed", "true"));
+    await userEvent.click(queryLauncher);
+    await waitFor(() => expect(queryLauncher).toHaveAttribute("aria-pressed", "false"));
+    await expect(shell.getByRole("textbox", { name: "Filter queries by query key" })).toBeVisible();
+    await userEvent.click(routerLauncher);
+    await waitFor(() => expect(routerLauncher).toHaveAttribute("aria-pressed", "true"));
+    await userEvent.click(routerLauncher);
+    await waitFor(() => expect(routerLauncher).toHaveAttribute("aria-pressed", "false"));
+    await expect(shellLauncher).toHaveAttribute("aria-pressed", "true");
+    await expect(shell.getByRole("button", { name: "Close Tanstack query devtools" })).toBeVisible();
+    await userEvent.click(shellLauncher);
+    await waitFor(() => expect(shellLauncher).toHaveAttribute("aria-pressed", "false"));
+  },
+};
+
+export const TanStackUrlGated: Story = {
+  beforeEach: resetTanStackDevtoolsStorage,
+  render: (_args, context) => <TanStackHarness globals={context.globals} shouldRequireUrlFlag />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await within(document.body).findByTestId("tanstack_devtools");
+    await expect(within(document.body).queryByTestId("tanstack-devtools-panel")).toBeNull();
+    await expect(canvas.queryByRole("group", { name: "External devtools" })).toBeNull();
+    await expect(document.querySelector("[data-devhost-external-devtools-style]")?.textContent).toBe("");
+    await userEvent.click(canvas.getByRole("button", { name: "Remove URL gate" }));
+    const launcher = await canvas.findByRole("button", { name: "TanStack" });
+    await expect(launcher).toHaveAttribute("aria-pressed", "false");
+    await userEvent.click(launcher);
+    await waitFor(() =>
+      expect(within(document.body).getByTestId("tanstack-devtools-panel")).toHaveAttribute("data-open", "true"),
+    );
+    await userEvent.click(launcher);
+    await waitFor(() => expect(launcher).toHaveAttribute("aria-pressed", "false"));
+  },
+};
+
+export const TanStackHiddenTrigger: Story = {
+  beforeEach: resetTanStackDevtoolsStorage,
+  render: (_args, context) => <TanStackHarness globals={context.globals} shouldHideTrigger />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await within(document.body).findByTestId("tanstack-devtools-panel");
+    await expect(within(document.body).getByTestId("tanstack-devtools-panel")).toHaveAttribute("data-open", "false");
+    await expect(canvas.queryByRole("group", { name: "External devtools" })).toBeNull();
+    await expect(
+      within(document.body).queryByRole("button", { name: "Open TanStack Devtools", hidden: true }),
+    ).toBeNull();
+    await userEvent.click(canvas.getByRole("button", { name: "Toggle native libraries" }));
+    await userEvent.keyboard("{Control>}~{/Control}");
+    await waitFor(() =>
+      expect(within(document.body).getByTestId("tanstack-devtools-panel")).toHaveAttribute("data-open", "true"),
+    );
+    await expect(canvas.queryByRole("group", { name: "External devtools" })).toBeNull();
+    await userEvent.click(await within(document.body).findByRole("button", { name: "Close TanStack Devtools" }));
+    await waitFor(() =>
+      expect(within(document.body).getByTestId("tanstack-devtools-panel")).toHaveAttribute("data-open", "false"),
+    );
+    await userEvent.keyboard("{Control>}~{/Control}");
+    await userEvent.click(await within(document.body).findByRole("button", { name: "Settings" }));
+    await userEvent.click(
+      await within(document.body).findByRole("checkbox", {
+        name: "Completely hide trigger Completely removes the trigger from the DOM (you can still open it with the hotkey)",
+      }),
+    );
+    const launcher = await canvas.findByRole("button", { name: "TanStack" });
+    await expect(launcher).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(launcher);
+    await waitFor(() => expect(launcher).toHaveAttribute("aria-pressed", "false"));
+    await userEvent.click(launcher);
+    await waitFor(() => expect(launcher).toHaveAttribute("aria-pressed", "true"));
+    await userEvent.click(launcher);
+    await waitFor(() => expect(launcher).toHaveAttribute("aria-pressed", "false"));
+  },
+};
+
+export const TanStackUnrelatedMarkup: Story = {
+  beforeEach: resetTanStackDevtoolsStorage,
+  render: (_args, context) => <TanStackHarness globals={context.globals} hasUnrelatedMarkup />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const documentation = canvas.getByRole("button", { name: "Open TanStack Devtools" });
+    await userEvent.click(documentation);
+    await expect(documentation).toHaveAttribute("aria-expanded", "true");
+    await expect(canvas.getByText("TanStack plugin setup documentation")).toBeVisible();
+    await expect(canvas.queryByRole("group", { name: "External devtools" })).toBeNull();
+    await expect(document.querySelector("[data-devhost-external-devtools-style]")?.textContent).toBe("");
+    await userEvent.click(documentation);
+    await expect(documentation).toHaveAttribute("aria-expanded", "false");
+    await userEvent.click(canvas.getByRole("button", { name: "Toggle shell" }));
+    const launcher = await canvas.findByRole("button", { name: "TanStack" });
+    await userEvent.click(launcher);
+    await waitFor(() => expect(launcher).toHaveAttribute("aria-pressed", "true"));
+    await userEvent.click(launcher);
+    await waitFor(() => expect(launcher).toHaveAttribute("aria-pressed", "false"));
+  },
+};
+
+export const TanStackNativeCleanup: Story = {
+  beforeEach: resetTanStackDevtoolsStorage,
+  render: (_args, context) => <TanStackHarness globals={context.globals} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const launcher = await canvas.findByRole("button", { name: "TanStack" });
+    await userEvent.click(launcher);
+    const shell = within(await within(document.body).findByTestId("tanstack-devtools-panel"));
+    await userEvent.click(await shell.findByRole("button", { name: "TanStack Form" }));
+    await userEvent.type(canvas.getByRole("textbox", { name: "Form name" }), " cleanup");
+    await shell.findByText("devhost-form", { exact: true });
+    await userEvent.click(shell.getByRole("button", { name: "TanStack Table" }));
+    await shell.findByRole("button", { name: "State" });
+    await userEvent.click(shell.getByRole("button", { name: "TanStack Pacer" }));
+    await shell.findByRole("button", { name: "TANSTACK TanStack Pacer" });
+    await userEvent.click(canvas.getByRole("button", { name: "Schedule debouncer" }));
+    await userEvent.click(await shell.findByText("devhost-debouncer", { exact: true }));
+    await shell.findByText("pending", { exact: true });
+    await userEvent.click(canvas.getByRole("button", { name: "Toggle native libraries" }));
+    await expect(canvas.queryByRole("region", { name: "Native TanStack libraries" })).toBeNull();
+    await waitFor(() => expect(shell.queryByText("devhost-form", { exact: true })).toBeNull());
+    await shell.findByText("No table is connected. Register a table with TanStack Table Devtools to inspect it here.", {
+      exact: true,
+    });
+    await shell.findByText("idle", { exact: true });
+    await expect(shell.getAllByText("devhost-debouncer", { exact: true })).toHaveLength(2);
+    await userEvent.click(launcher);
+    await waitFor(() => expect(launcher).toHaveAttribute("aria-pressed", "false"));
+  },
+};
+
+export const TanStackDetachedWindow: Story = {
+  beforeEach: resetTanStackDevtoolsStorage,
+  render: (_args, context) => <TanStackHarness globals={context.globals} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const launcher = await canvas.findByRole("button", { name: "TanStack" });
+    await userEvent.click(launcher);
+    await userEvent.click(await within(document.body).findByRole("button", { name: "Detach TanStack Devtools" }));
+    await waitFor(() => {
+      expect(document.querySelector('[data-testid="tanstack_devtools"]')).toBeNull();
+      expect(canvas.queryByRole("button", { name: "TanStack" })).toBeNull();
+    });
+    // Reacquire the upstream-named popup through the standard browser API; no host state is patched.
+    const popup = window.open("", "TSDT-Devtools-Panel");
+    await expect(popup).not.toBeNull();
+    try {
+      await waitFor(() =>
+        expect(
+          popup?.document.querySelector('[data-testid="tanstack-devtools-panel"]')?.getAttribute("data-open"),
+        ).toBe("true"),
+      );
+      await expect(popup?.document.querySelector('[data-testid="tsd-close-button"]')).toBeNull();
+    } finally {
+      popup?.close();
+    }
+    await expect(await canvas.findByRole("button", { name: "TanStack" })).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(canvas.getByRole("button", { name: "TanStack" }));
+    await waitFor(() =>
+      expect(canvas.getByRole("button", { name: "TanStack" })).toHaveAttribute("aria-pressed", "false"),
+    );
+  },
+};
 
 interface ISharedPlayTestArgs {
   canvasElement: HTMLElement;
@@ -171,13 +482,13 @@ async function waitForLaunchersToStayInsideViewport(readLauncherButtons: Launche
 async function runQueryLauncherCycle(readQueryLauncherButton: LauncherButtonReader): Promise<void> {
   await waitForQueryPanelToBeClosed();
 
-  readQueryLauncherButton().click();
+  await userEvent.click(readQueryLauncherButton());
   await waitForQueryPanelToBeOpen();
   await waitFor(() => {
     expect(readQueryLauncherButton()).toHaveAttribute("aria-pressed", "true");
   });
 
-  readQueryLauncherButton().click();
+  await userEvent.click(readQueryLauncherButton());
   await waitForQueryPanelToBeClosed();
   await waitFor(() => {
     expect(readQueryLauncherButton()).toHaveAttribute("aria-pressed", "false");

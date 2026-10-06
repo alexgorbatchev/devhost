@@ -3,7 +3,7 @@ check:
     bun tsgo --noEmit -p tsconfig.json
     bun --bun x ts-unused tsconfig.json
     bun test --coverage
-    bun vitest run -c vitest.storybook.config.ts
+    NODE_ENV=development bun vitest run -c vitest.storybook.config.ts
 
 # Ensure Playwright Chromium is available for Storybook
 install-browser:

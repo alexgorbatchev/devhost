@@ -63,5 +63,6 @@ When modifying or adding new UI dependencies on the Go supervisor, always update
 
 Storybook play tests are executed in a headless browser via Playwright and Vitest browser mode. 
 
+- **Native development runtime**: Run browser checks with `NODE_ENV=development bun vitest run -c vitest.storybook.config.ts` from `packages/devhost-ui/`, as the checked-in `just ui check` recipe does. Vitest defaults `NODE_ENV` to `test`; native TanStack event clients and panels select no-ops outside development. Preserve this command-scoped environment for targeted browser tests. Vite `--mode` is independent of `NODE_ENV`; see [Vite's environment/mode documentation](https://vite.dev/guide/env-and-mode#node-env-and-modes). Keep every browser assertion and normal package check enabled.
 - **Pre-bundling**: To avoid bundling/compilation delays during high-speed tests, pre-bundle key dependencies in `optimizeDeps.include` in both `vite.config.ts` and `vitest.storybook.config.ts`.
 - **Test Port Isolation**: Vitest starts a temporary Storybook server on a dedicated isolated port (`process.env.DEVHOST_UI_STORYBOOK_TEST_PORT` defaulting to `6106`) with `--ci` to avoid port clashing with developers' dev servers.

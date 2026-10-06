@@ -1,11 +1,16 @@
 ---
 name: storybook
 description: Use when creating or changing Storybook stories in this repository, especially `*.stories.*` files. Applies to story coverage, `play` tests, and shared Storybook setup. Use `storybook-review` for review-only tasks.
+author: alexgorbatchev
+metadata:
+  created_on: 2026-04-15 11:15
+  last_modified: 2026-10-06 07:47
+  status: current
 ---
 
 # Storybook
 
-Use `packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/stories/ExternalDevtoolsPanel.stories.tsx` as the reference model for shared setup helpers and behavior-focused `play` tests.
+Use `packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/components/stories/ExternalDevtoolsPanel.stories.tsx` as the reference model for shared setup helpers and behavior-focused `play` tests.
 
 For Storybook review-only tasks, use `.agents/skills/storybook-review/SKILL.md`.
 

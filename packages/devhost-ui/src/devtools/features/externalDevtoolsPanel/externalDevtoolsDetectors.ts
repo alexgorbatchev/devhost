@@ -1,8 +1,9 @@
 import type { IExternalDevtoolsAdapter } from "./types";
+import { tanStackDevtoolsAdapter } from "./tanStackDevtoolsAdapter";
 
 const tanStackRouterDevtoolsAdapter: IExternalDevtoolsAdapter = {
   close: closeTanStackRouterDevtools,
-  hideSelectors: ["footer.TanStackRouterDevtools > button"],
+  hideSelectors: ['footer.TanStackRouterDevtools > button:not([data-testid="tanstack_devtools"] *)'],
   id: "tanstack-router",
   isInstalled: isTanStackRouterDevtoolsInstalled,
   isOpen: isTanStackRouterDevtoolsOpen,
@@ -13,7 +14,11 @@ const tanStackRouterDevtoolsAdapter: IExternalDevtoolsAdapter = {
 
 const tanStackQueryDevtoolsAdapter: IExternalDevtoolsAdapter = {
   close: closeTanStackQueryDevtools,
-  hideSelectors: [".tsqd-open-btn-container", ".tsqd-open-btn", ".tsqd-minimize-btn"],
+  hideSelectors: [
+    '.tsqd-open-btn-container:not([data-testid="tanstack_devtools"] *)',
+    '.tsqd-open-btn:not([data-testid="tanstack_devtools"] *)',
+    '.tsqd-minimize-btn:not([data-testid="tanstack_devtools"] *)',
+  ],
   id: "tanstack-query",
   isInstalled: isTanStackQueryDevtoolsInstalled,
   isOpen: isTanStackQueryDevtoolsOpen,
@@ -25,16 +30,17 @@ const tanStackQueryDevtoolsAdapter: IExternalDevtoolsAdapter = {
 export const externalDevtoolsDetectors: readonly IExternalDevtoolsAdapter[] = [
   tanStackRouterDevtoolsAdapter,
   tanStackQueryDevtoolsAdapter,
+  tanStackDevtoolsAdapter,
 ];
 
 function isTanStackRouterDevtoolsInstalled(): boolean {
   return (
-    readTanStackRouterDevtoolsToggleButton() !== null || document.querySelector(".TanStackRouterDevtoolsPanel") !== null
+    readTanStackRouterDevtoolsToggleButton() !== null || readStandaloneElement(".TanStackRouterDevtoolsPanel") !== null
   );
 }
 
 function isTanStackRouterDevtoolsOpen(): boolean {
-  const panelElement: HTMLElement | null = document.querySelector(".TanStackRouterDevtoolsPanel");
+  const panelElement = readStandaloneElement(".TanStackRouterDevtoolsPanel");
 
   if (panelElement === null) {
     return false;
@@ -52,23 +58,23 @@ function closeTanStackRouterDevtools(): void {
 }
 
 function readTanStackRouterDevtoolsToggleButton(): HTMLElement | null {
-  return document.querySelector("footer.TanStackRouterDevtools > button");
+  return readStandaloneElement("footer.TanStackRouterDevtools > button");
 }
 
 function readTanStackRouterDevtoolsCloseButton(): HTMLElement | null {
-  return document.querySelector(".TanStackRouterDevtoolsPanel > button");
+  return readStandaloneElement(".TanStackRouterDevtoolsPanel > button");
 }
 
 function isTanStackQueryDevtoolsInstalled(): boolean {
   return (
-    document.querySelector(".tsqd-open-btn") !== null ||
-    document.querySelector(".tsqd-minimize-btn") !== null ||
-    document.querySelector(".tsqd-main-panel") !== null
+    readStandaloneElement(".tsqd-open-btn") !== null ||
+    readStandaloneElement(".tsqd-minimize-btn") !== null ||
+    readStandaloneElement(".tsqd-main-panel") !== null
   );
 }
 
 function isTanStackQueryDevtoolsOpen(): boolean {
-  return document.querySelector(".tsqd-main-panel") !== null;
+  return readStandaloneElement(".tsqd-main-panel") !== null;
 }
 
 function openTanStackQueryDevtools(): void {
@@ -80,17 +86,25 @@ function closeTanStackQueryDevtools(): void {
 }
 
 function readTanStackQueryOpenButton(): HTMLElement | null {
-  const openButton = document.querySelector<HTMLElement>(".tsqd-open-btn");
+  const openButton = readStandaloneElement(".tsqd-open-btn");
 
   if (openButton !== null) {
     return openButton;
   }
 
-  return document.querySelector<HTMLElement>('.tsqd-main-panel button[aria-label="Open Tanstack query devtools"]');
+  return readStandaloneElement('.tsqd-main-panel button[aria-label="Open Tanstack query devtools"]');
 }
 
 function readTanStackQueryCloseButton(): HTMLElement | null {
-  return document.querySelector(
+  return readStandaloneElement(
     '.tsqd-minimize-btn, .tsqd-main-panel button[aria-label="Close tanstack query devtools"]',
+  );
+}
+
+function readStandaloneElement(selector: string): HTMLElement | null {
+  return (
+    [...document.querySelectorAll<HTMLElement>(selector)].find(
+      (element) => element.closest('[data-testid="tanstack_devtools"]') === null,
+    ) ?? null
   );
 }

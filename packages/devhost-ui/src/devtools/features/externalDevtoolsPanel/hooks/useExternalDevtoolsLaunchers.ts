@@ -79,7 +79,7 @@ export function useExternalDevtoolsLaunchers(enabled: boolean): IExternalDevtool
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["class", "style", "data-state", "hidden"],
+      attributeFilter: ["class", "style", "data-state", "data-open", "hidden"],
     });
 
     return (): void => {
