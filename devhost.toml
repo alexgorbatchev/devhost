@@ -19,6 +19,30 @@ kind = "agent"
 [annotation.actions.agent]
 adapter = "pi"
 
+[[annotation.actions]]
+id = "ask-claude-code"
+label = "Ask Claude Code"
+kind = "agent"
+
+[annotation.actions.agent]
+adapter = "claude-code"
+
+[[annotation.actions]]
+id = "ask-opencode"
+label = "Ask OpenCode"
+kind = "agent"
+
+[annotation.actions.agent]
+adapter = "opencode"
+
+[[annotation.actions]]
+id = "ask-codex"
+label = "Ask Codex"
+kind = "agent"
+
+[annotation.actions.agent]
+adapter = "codex"
+
 [services.storybook]
 primary = true
 command = ["sh", "-c", "exec ./node_modules/.bin/storybook dev --ci --port \"$PORT\""]
