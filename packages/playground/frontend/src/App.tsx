@@ -1,23 +1,27 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools/production";
+import { createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
+import { useState, type JSX } from "react";
 import { APITester } from "./APITester";
+import { PlaygroundLayout } from "./components/PlaygroundLayout";
+import { QueryPlayground } from "./components/QueryPlayground";
 import "./index.css";
 
-import logo from "./logo.svg";
-import reactLogo from "./react.svg";
+export function App(): JSX.Element {
+  const [queryClient] = useState(() => new QueryClient());
+  const [router] = useState(() => {
+    const rootRoute = createRootRoute({ component: PlaygroundLayout });
+    const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", component: APITester });
+    const queryRoute = createRoute({ getParentRoute: () => rootRoute, path: "/query", component: QueryPlayground });
 
-export function App() {
+    return createRouter({ routeTree: rootRoute.addChildren([indexRoute, queryRoute]) });
+  });
+
   return (
-    <div className="app">
-      <div className="logo-container">
-        <img src={logo} alt="Bun Logo" className="logo bun-logo" />
-        <img src={reactLogo} alt="React Logo" className="logo react-logo" />
-      </div>
-
-      <h1>Bun + React</h1>
-      <p>
-        Edit <code>src/App.tsx</code> and save to test HMR
-      </p>
-      <APITester />
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
 }
 

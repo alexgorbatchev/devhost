@@ -96,6 +96,44 @@ code {
   flex-direction: column;
   gap: 1rem;
 }
+.playground-navigation {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.playground-navigation a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border: 2px solid #fbf0df;
+  border-radius: 8px;
+  background: #1a1a1a;
+  color: #fbf0df;
+  text-decoration: none;
+}
+.playground-navigation a:hover,
+.playground-navigation a:focus-visible {
+  background: #f3d5a3;
+  color: #1a1a1a;
+}
+.playground-navigation a[aria-current="page"] {
+  background: #fbf0df;
+  color: #1a1a1a;
+  font-weight: 700;
+}
+.query-playground {
+  margin: 2rem auto 0;
+  max-width: 600px;
+  text-align: left;
+}
+.query-playground pre {
+  overflow-x: auto;
+  padding: 0.75rem;
+  background: #1a1a1a;
+  border-radius: 12px;
+}
 .endpoint-row {
   display: flex;
   align-items: center;

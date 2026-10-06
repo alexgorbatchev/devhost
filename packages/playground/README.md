@@ -1,9 +1,9 @@
 # Playground
 
-This workspace contains two Bun + React apps for exercising `devhost` against routed local services starting on different ports:
+This workspace exercises `devhost` routing and the injected overlay, including the supported TanStack Router and TanStack Query devtools:
 
-- **Frontend**: A React app starting on port 3001, mounted at `/` (root path) on the routed host.
-- **Backend**: A Bun API server starting on port 3000, mounted at `/api/*` on the exact same routed host.
+- **Frontend**: A React app mounted at `/` (root path) on the routed host.
+- **Backend**: A Bun API server mounted at `/api/*` on the exact same routed host.
 
 Because they are routed on the same host using `devhost`'s managed Caddy routing, they share the same origin, avoiding CORS issues and allowing simple relative `/api/hello` requests from the frontend to the backend.
 
@@ -15,7 +15,17 @@ Start the root devhost stack from the repository root:
 just dev
 ```
 
-The manifest routes `/api/*` to the backend on port `3000` and `/` to the frontend on port `3001`, and enables the injected devtools overlay.
+The root manifest assigns each service an available port, routes `/api/*` to the backend and `/` to the frontend, and enables the injected devtools overlay.
+
+## Testing external devtools
+
+Open the playground host configured by `DEVHOST_PLAYGROUND`. The overlay includes **Router** and **Query** toggles that open and close the native TanStack panels; the overlay hides their original floating launcher buttons.
+
+- **API tester** (`/`): Send GET or PUT requests to the backend.
+- **Query demo** (`/query`): Fetch `/api/hello` through TanStack Query. Click **Refetch query** to repeat the request and inspect `["playground", "hello"]` in Query devtools. Navigate back to the API tester to see the query become inactive.
+- Open **Router** and switch between the pages to inspect the route matches and current location.
+
+Both devtools remain mounted across route changes and are included in development and production playground runs.
 
 ## Project layout
 
@@ -24,8 +34,9 @@ The manifest routes `/api/*` to the backend on port `3000` and `/` to the fronte
 - `frontend/` — Frontend React app
   - `src/index.ts` — Frontend static server.
   - `src/frontend.tsx` — React browser entrypoint.
-  - `src/App.tsx` — placeholder React app.
-- `devhost.toml` — local `devhost` manifest for the playground stack.
+  - `src/App.tsx` — Query provider and Router setup.
+  - `src/components/` — playground layout and Query demo.
+- `../../devhost.toml` — repository-root manifest for the playground stack.
 
 ## Notes
 
