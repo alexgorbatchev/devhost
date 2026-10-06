@@ -1,5 +1,6 @@
 import { configureStore, createSlice } from "@reduxjs/toolkit";
 import { instrument } from "@redux-devtools/instrument";
+import { create } from "zustand";
 import { createStore } from "zustand/vanilla";
 import { devtools } from "zustand/middleware";
 import type { IZustandDevtoolsRegistrationOptions } from "../types";
@@ -79,6 +80,36 @@ export function factory_richZustandRegistration(): IZustandDevtoolsRegistrationO
       };
       snapshot.self = snapshot;
       return snapshot;
+    },
+  };
+}
+
+export function factory_boundZustandRegistration(): IZustandDevtoolsRegistrationOptions<
+  ICounterFixtureState,
+  ICounterFixtureSnapshot
+> {
+  return {
+    id: "bound-zustand",
+    name: "Bound Zustand counter",
+    store: create<ICounterFixtureState>()(
+      devtools(
+        (set) => ({
+          count: 0,
+          increment: () => set((state) => ({ count: state.count + 1 }), false, "counter/increment"),
+        }),
+        { name: "Native bound Zustand", enabled: true },
+      ),
+    ),
+    snapshot: (state) => ({ count: state.count }),
+    restore: (snapshot) => {
+      if (
+        typeof snapshot !== "object" ||
+        snapshot === null ||
+        !("count" in snapshot) ||
+        typeof snapshot.count !== "number"
+      )
+        throw new Error("Counter snapshot must have a numeric count.");
+      return { count: snapshot.count };
     },
   };
 }

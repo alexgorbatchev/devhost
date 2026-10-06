@@ -31,15 +31,18 @@ export interface IReduxFixture {
   store: EnhancedStore<ICounterFixtureSnapshot, Action<string>, unknown>;
   increment: () => Action<string>;
 }
+export interface INativeReduxFixtureReadResult {
+  toolkit: number[];
+  zustand: number[];
+  hasActions: boolean[];
+  isHookUnchanged: boolean;
+  hasNativeZustandMiddleware: boolean[];
+  toolkitActionIds: number[][];
+  isZustandBoundStore: boolean[];
+  hasOriginalActions: boolean[];
+}
 export interface INativeReduxFixture {
-  read: () => {
-    toolkit: number[];
-    zustand: number[];
-    hasActions: boolean[];
-    isHookUnchanged: boolean;
-    hasNativeZustandMiddleware: boolean[];
-    toolkitActionIds: number[][];
-  };
+  read: () => INativeReduxFixtureReadResult;
   register: () => void;
   unregister: () => void;
   registerInvalid: () => void;

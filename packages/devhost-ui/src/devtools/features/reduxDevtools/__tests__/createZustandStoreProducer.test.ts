@@ -3,11 +3,43 @@ import { expect, test } from "bun:test";
 import { parse } from "jsan";
 import { createZustandStoreProducer } from "../createZustandStoreProducer";
 import {
+  factory_boundZustandRegistration,
   factory_failingSnapshotRegistration,
   factory_richZustandRegistration,
   factory_zustandRegistration,
 } from "./fixtures";
 import type { ProducerMessage } from "../types";
+
+test("records callable native Zustand bound stores, replays their data and releases only producer subscriptions", () => {
+  const registration = factory_boundZustandRegistration();
+  const increment = registration.store.getState().increment;
+  const subscribe = registration.store.subscribe;
+  const setState = registration.store.setState;
+  expect(typeof registration.store).toBe("function");
+  const producer = createZustandStoreProducer(registration, "bound");
+  const messages: ProducerMessage[] = [];
+  const unsubscribe = producer.subscribe((message) => messages.push(message));
+  registration.store.getState().increment();
+  const recorded = messages[1];
+  assert(recorded?.type === "ACTION");
+  expect(parse(String(recorded.payload))).toEqual({ count: 1 });
+  producer.receive({
+    type: "DISPATCH",
+    instanceId: "bound",
+    action: { type: "JUMP_TO_STATE", index: 0 },
+    state: '{"count":0}',
+    isToAll: false,
+  });
+  expect(registration.store.getState().count).toBe(0);
+  expect(registration.store.getState().increment).toBe(increment);
+  expect(registration.store.subscribe).toBe(subscribe);
+  expect(registration.store.setState).toBe(setState);
+  expect(messages.length).toBe(2);
+  unsubscribe();
+  registration.store.getState().increment();
+  expect(registration.store.getState().count).toBe(1);
+  expect(messages.length).toBe(2);
+});
 
 test("records real native-middleware Zustand updates and restores data without replacing host actions", () => {
   const registration = factory_zustandRegistration();
