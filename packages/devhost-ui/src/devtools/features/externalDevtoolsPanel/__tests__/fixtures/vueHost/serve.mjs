@@ -1,4 +1,5 @@
 import { createServer } from "vite";
+import { resolve } from "node:path";
 import vue from "@vitejs/plugin-vue";
 import vueDevTools from "vite-plugin-vue-devtools";
 
@@ -30,7 +31,9 @@ const fixturePlugin = {
 const server = await createServer({
   configFile: false,
   root: import.meta.dirname,
+  cacheDir: resolve(import.meta.dirname, "../.vite"),
   base: process.env.NATIVE_VUE_BASE ?? "/",
+  optimizeDeps: { include: JSON.parse(process.env.NATIVE_VUE_OPTIMIZE_DEPS ?? "[]") },
   plugins: [vue(), vueDevTools(), fixturePlugin],
   devtools: { apply: "serve", port: 0, embeddedVisibility: process.env.NATIVE_VUE_VISIBILITY ?? "normal" },
   server: { host: "127.0.0.1", port: 0, strictPort: true },
