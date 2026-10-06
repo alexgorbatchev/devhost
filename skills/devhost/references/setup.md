@@ -1,3 +1,9 @@
+---
+created_on: 2026-06-26 21:23
+last_modified: 2026-10-06 23:26
+status: current
+---
+
 # Repo Discovery and Manifest Setup
 
 When initializing, drafting, or setting up a `devhost.toml` manifest for a repository, follow these procedures to discover service parameters and establish correct configurations.
@@ -71,7 +77,11 @@ Open the checkout picker or press **Refresh** to discover worktree additions and
 
 Start the shared proxy before launching stacks. Pass `--manifest <path>` to `devhost caddy start` to generate its configuration using `caddy.global.adminAddress`, `bindHost`, `http`, `httpPort`, and `httpsPort`. `DEVHOST_MANIFEST` supplies the same path when the flag is omitted; an explicit flag wins. `devhost caddy stop` and `trust` accept the same manifest option.
 
-Active stack registrations take precedence for the shared admin address, bind host, and listener ports. Plain HTTP is enabled when the supplied manifest or any active stack sets `caddy.global.http = true`. Keep non-default global settings consistent across stacks sharing that proxy; do not treat them as isolated per-stack listeners.
+Keep non-default global settings consistent across stacks sharing the proxy; explicit conflicts fail. Active registrations take precedence when generating the shared admin address, bind host, and listener ports. While registrations remain, enable HTTP only through active stacks' `caddy.global.http` votes: any true voter enables HTTP, and retiring the last true voter disables it while false/default siblings remain. A supplied manifest's true HTTP fallback does not override those active votes. With no active registrations, generated configuration uses the supplied manifest's settings, including HTTP.
+
+Preserve each stack's captured shared management binding after startup stale cleanup. Sparse/default route settings inherit that binding. Stack retirement removes its host snippets, keeps the captured admin/listeners, and preserves live siblings and their HTTP votes. Final-registration cleanup retains the retiring stack's captured settings, including HTTP; it leaves Caddy running.
+
+Stop the shared proxy manually with `devhost caddy stop --manifest ./devhost.toml` after its stacks stop. Use a manifest with matching custom admin and listener settings for Caddy lifecycle commands and for any new stack starting after all registrations are gone. Lifecycle commands contact the manifest-selected admin endpoint; neither they nor a new stack discover an empty custom runtime from its Caddyfile. Keep that manual shared lifecycle explicit when configuring multiple projects.
 
 ## 6. Configuration Hot Reload
 
