@@ -56,7 +56,7 @@ func TestResolveAnnotationTempDir(t *testing.T) {
 }
 
 func TestRunHelpShortCircuitsInvalidArguments(t *testing.T) {
-	t.Parallel()
+	t.Setenv("AGENT", "0")
 
 	var stdout strings.Builder
 	var stderr strings.Builder
@@ -77,7 +77,7 @@ func TestRunHelpShortCircuitsInvalidArguments(t *testing.T) {
 }
 
 func TestRunWithoutArgumentsPrintsHelp(t *testing.T) {
-	t.Parallel()
+	t.Setenv("AGENT", "0")
 
 	var stdout strings.Builder
 	var stderr strings.Builder

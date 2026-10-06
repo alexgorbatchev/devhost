@@ -9,7 +9,7 @@ import (
 )
 
 func TestParseCommandLineArgumentsRendersTreeHelp(t *testing.T) {
-	t.Parallel()
+	t.Setenv("AGENT", "0")
 
 	tests := []struct {
 		name        string
@@ -91,8 +91,6 @@ func TestParseCommandLineArgumentsRendersTreeHelp(t *testing.T) {
 	for _, tt := range tests {
 		tc := tt
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
 			var stdout strings.Builder
 			var stderr strings.Builder
 
@@ -150,6 +148,7 @@ func TestParseCommandLineArgumentsRendersAgentHelp(t *testing.T) {
 
 func TestParseCommandLineArgumentsTrimsHelpToTerminalWidth(t *testing.T) {
 	const terminalWidth = 60
+	t.Setenv("AGENT", "0")
 	t.Setenv("COLUMNS", "60")
 
 	screens := []struct {
