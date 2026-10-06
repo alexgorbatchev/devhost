@@ -7,7 +7,7 @@ export function createZustandStoreProducer<State, Snapshot>(
   instanceId: string,
 ): IReduxDevtoolsProducer {
   if (
-    typeof options.store !== "object" ||
+    (typeof options.store !== "object" && typeof options.store !== "function") ||
     options.store === null ||
     typeof options.store.getState !== "function" ||
     typeof options.store.getInitialState !== "function" ||

@@ -1,5 +1,6 @@
 import { configureStore, createSlice } from "@reduxjs/toolkit";
 import { instrument } from "@redux-devtools/instrument";
+import { create } from "zustand";
 import { createStore } from "zustand/vanilla";
 import { devtools } from "zustand/middleware";
 import { registerReduxDevtoolsStore, registerZustandDevtoolsStore } from "../../index";
@@ -28,9 +29,11 @@ const toolkit = [1, 2].map((number) => ({
     enhancers: (defaults) => (initialHook === undefined ? defaults().concat(instrument()) : defaults()),
   }),
 }));
+const createZustandStore =
+  parameters.get("zustand") === "bound" ? create<ICounterFixtureState>() : createStore<ICounterFixtureState>();
 const zustand = [1, 2].map((number) => ({
   name: `${project} Zustand${number}`,
-  store: createStore<ICounterFixtureState>()(
+  store: createZustandStore(
     devtools(
       (set) => ({
         count: 0,
@@ -40,6 +43,7 @@ const zustand = [1, 2].map((number) => ({
     ),
   ),
 }));
+const zustandActions = zustand.map((entry) => entry.store.getState().increment);
 let unregisters: (() => void)[] = [];
 const unregister = (): void => {
   unregisters.forEach((remove) => remove());
@@ -76,6 +80,8 @@ const fixture: INativeReduxFixture = {
   read: () => ({
     toolkit: toolkit.map((entry) => entry.store.getState().count),
     zustand: zustand.map((entry) => entry.store.getState().count),
+    isZustandBoundStore: zustand.map((entry) => typeof entry.store === "function"),
+    hasOriginalActions: zustand.map((entry, index) => entry.store.getState().increment === zustandActions[index]),
     hasActions: zustand.map((entry) => typeof entry.store.getState().increment === "function"),
     hasNativeZustandMiddleware: zustand.map((entry) => typeof entry.store.devtools?.cleanup === "function"),
     toolkitActionIds: toolkit.map((entry) => readNativeHistory(entry.store).stagedActionIds),

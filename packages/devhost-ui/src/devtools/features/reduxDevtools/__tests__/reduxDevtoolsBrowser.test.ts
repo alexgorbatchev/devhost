@@ -1,6 +1,60 @@
 import { expect, test } from "bun:test";
 import { openNativeReduxExtension, selectReduxStore, waitForReduxHistoryIndex, withNativeReduxHost } from "./helpers";
 
+test("callable Zustand bound stores retain genuine extension replay through registration and producer cleanup", async () => {
+  await withNativeReduxHost({ isExtensionEnabled: true }, async (host, browser) => {
+    const page = await browser.newPage();
+    await page.goto(`${host.url}unrelated`);
+    const native = await openNativeReduxExtension(page, browser);
+    await native.getByText("No store found. Make sure to follow", { exact: false }).waitFor();
+    await page.goto(`${host.url}?zustand=bound`);
+    await page.getByRole("button", { name: "Increment A Zustand1", exact: true }).click();
+    await page.getByRole("button", { name: "Increment A Zustand1", exact: true }).click();
+    expect(await page.evaluate(() => window.reduxNativeFixture.read().isZustandBoundStore)).toEqual([true, true]);
+    await selectReduxStore(native, "A Zustand1");
+    await native.getByRole("button", { name: "Go back", exact: true }).click();
+    await page.waitForFunction(() => window.reduxNativeFixture.read().zustand[0] === 1);
+    await native.getByRole("button", { name: "Play", exact: true }).click();
+    await page.waitForFunction(() => window.reduxNativeFixture.read().zustand[0] === 2);
+    const launcher = page.getByRole("button", { name: "Redux", exact: true });
+    const opened = page.waitForEvent("popup");
+    await launcher.click();
+    const monitor = await opened;
+    await selectReduxStore(monitor, "A Zustand1");
+    await page.getByRole("button", { name: "Increment A Zustand1", exact: true }).click();
+    await monitor.getByRole("button", { name: "Go back", exact: true }).click();
+    await page.waitForFunction(() => window.reduxNativeFixture.read().zustand[0] === 2);
+    await monitor.getByRole("button", { name: "Play", exact: true }).click();
+    await page.waitForFunction(() => window.reduxNativeFixture.read().zustand[0] === 3);
+    expect(await launcher.getAttribute("title")).toBe("Close Redux DevTools: connected to 4 registered host stores");
+    expect(await page.evaluate(() => window.reduxNativeFixture.read().hasOriginalActions)).toEqual([true, true]);
+    expect(await page.evaluate(() => window.reduxNativeFixture.read().hasNativeZustandMiddleware)).toEqual([
+      true,
+      true,
+    ]);
+    expect(await page.evaluate(() => window.reduxNativeFixture.read().isHookUnchanged)).toBe(true);
+    await Bun.write(`${host.rootPath}/bound-native-inspector.snapshot`, await monitor.locator("body").ariaSnapshot());
+    const closed = monitor.waitForEvent("close");
+    await page.getByRole("button", { name: "Unregister stores", exact: true }).click();
+    await closed;
+    await launcher.waitFor({ state: "detached" });
+    expect(await launcher.count()).toBe(0);
+    await selectReduxStore(native, "A Zustand1");
+    await page.getByRole("button", { name: "Increment A Zustand1", exact: true }).click();
+    await page.getByRole("button", { name: "Increment A Zustand1", exact: true }).click();
+    await native.getByRole("button", { name: "Go back", exact: true }).click();
+    await page.waitForFunction(() => window.reduxNativeFixture.read().zustand[0] === 4);
+    expect(await page.evaluate(() => window.reduxNativeFixture.read().zustand)).toEqual([4, 0]);
+    expect(await page.evaluate(() => window.reduxNativeFixture.read().hasOriginalActions)).toEqual([true, true]);
+    expect(await page.evaluate(() => window.reduxNativeFixture.read().hasNativeZustandMiddleware)).toEqual([
+      true,
+      true,
+    ]);
+    expect(await page.evaluate(() => window.reduxNativeFixture.read().isHookUnchanged)).toBe(true);
+    await Bun.write(`${host.rootPath}/bound-native-extension.snapshot`, await native.locator("body").ariaSnapshot());
+  });
+}, 60000);
+
 test("the production toolbar opens genuine Redux DevTools and replays real Toolkit and Zustand stores", async () => {
   await withNativeReduxHost({}, async (host, browser) => {
     const page = await browser.newPage();
