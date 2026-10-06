@@ -4,7 +4,7 @@ description: Use anytime devhost.toml is involved, including reading, writing, m
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-06 10:06
+  last_modified: 2026-10-06 10:19
   status: current
 ---
 
@@ -46,8 +46,10 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 
 ### Service Configuration Constraints
 
+- **Configuration hot reload**: Save the root manifest or an include to apply service changes; matching include-file additions and deletions also reload. Keep `name`, `killZombies`, Caddy, devtools, annotation, and worktree enablement unchanged when applying a live edit; changing any of these rejects the entire edit and requires restarting devhost. Read `configuration reload rejected` errors before claiming an edit applied; `configuration reloaded` confirms acceptance. Use the [Setup reload procedure](references/setup.md#6-configuration-hot-reload) for port, checkout, and recovery behavior.
+
 - **Foreground service recovery**: Keep `devhost` running after foreground service exits, including exit code `0` and startup crashes. Enable `[devtools.status]` to display a full-screen recovery overlay with retained stdout/stderr logs and a restart button. Retry failed restarts from the overlay. Refresh a root-compatible routed app to load the recovery page while its backend is down; successful recovery reloads it. Stop the stack with `devhost stop`, a shutdown signal, or the configured idle timeout. Treat executable launch errors and startup health timeouts as startup failures. Use daemon/external health status separately from foreground exit recovery.
-- **Restart routing**: Wait for foreground replacement health and route refresh before treating a restart as recovered. Auto-port collision retries update both Caddy and document proxy targets while preserving devtools listeners. Read routing or restoration errors in the restart response and retained service logs, then retry from recovery after addressing the failure. Failed route updates restore previous registrations, configuration, and document backends and stop the unrouted replacement.
+- **Restart routing**: Wait for foreground replacement health and route refresh before treating a restart as recovered. Preserve the assigned automatic port for individual restarts; do not recommend changing one port while sibling services keep their previous environment. On an assigned-port conflict, use **Restart stack with new ports** in Services or recovery to relaunch all managed services with fresh automatic ports and rebuilt templates/environments. This uses the last accepted manifest, retains fixed ports and selected checkouts, and leaves external processes running. Read restart or restoration errors before claiming recovery; retry the stack action after addressing launch failures. Free or reconfigure conflicting fixed ports because the stack action does not reassign them.
 - **Core Requirements**: Every service table must define either `port` or `health`.
 - **Primary & Managed Fields**:
   - `primary = true` (default is `false`) can only be set on **one** service per manifest.

@@ -37,6 +37,11 @@ describe("parseHealthResponse", () => {
     JSON.stringify({ services: [{ name: "web", managed: true, status: "up" }] }),
     JSON.stringify({ services: [], repositories: [{ id: "shop" }] }),
     JSON.stringify({ services: [], repositories: "shop" }),
+    JSON.stringify({ services: [], routing: { primaryService: "web", routedServices: "invalid" } }),
+    JSON.stringify({
+      services: [],
+      routing: { primaryService: "web", routedServices: [{ host: "app.localhost", path: "/", serviceName: 42 }] },
+    }),
   ])("rejects malformed health data: %s", (message) => {
     expect(parseHealthResponse(message)).toBeNull();
   });

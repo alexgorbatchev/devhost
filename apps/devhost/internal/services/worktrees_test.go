@@ -232,6 +232,28 @@ func TestMissingSavedWorktreeBlocksStartupWithoutFallback(t *testing.T) {
 	}
 }
 
+func TestWorktreeRefreshSurvivesDeletionOfConfiguredLinkedCheckout(t *testing.T) {
+	root, linked := createWorktreeRepository(t)
+	m := worktreeTestManifest(linked)
+	w, err := newStackWorktrees(m, t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := w.snapshot()[0].ID
+	if _, err := w.prepare(id, root, m); err != nil {
+		t.Fatal(err)
+	}
+	w.finish(id, nil)
+	runWorktreeGit(t, root, "worktree", "remove", linked)
+	if err := w.refresh(); err != nil {
+		t.Fatalf("inactive configured checkout deletion prevented discovery: %v", err)
+	}
+	view := w.snapshot()[0]
+	if view.RunningPath != root || len(view.Worktrees) != 1 || !view.Worktrees[0].Available {
+		t.Fatalf("inactive configured deletion disturbed selected checkout: %#v", view)
+	}
+}
+
 func TestWorktreeDiscoveryHandlesDetachedAndLockedPaths(t *testing.T) {
 	root, linked := createWorktreeRepository(t)
 	runWorktreeGit(t, root, "worktree", "lock", "--reason", "keep this checkout", linked)

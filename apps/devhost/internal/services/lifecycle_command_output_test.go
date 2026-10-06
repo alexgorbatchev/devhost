@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -90,7 +91,7 @@ func TestRunServiceCommandKeepsOutputWrittenBeforeExit(t *testing.T) {
 		"HANDSHAKE_FIFO_PATH": fifoPath,
 		"HELPER_PID_PATH":     pidPath,
 	})
-	err := runServiceCommand(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), service, helperCommand(), "daemon start",
+	err := runServiceCommand(context.Background(), newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), service, helperCommand(), "daemon start",
 		map[string]string{}, StartStackOptions{ServiceStdoutWriter: ioDiscard{}, ServiceStderrWriter: stderrWriter}, nil)
 	if err != nil {
 		t.Fatalf("runServiceCommand(...) error = %v", err)
@@ -116,7 +117,7 @@ func TestRunServiceCommandReturnsWhenADescendantKeepsTheOutputPipeOpen(t *testin
 		"CHILD_PID_PATH":      childPIDPath,
 	})
 	// A regression here hangs until the `go test` deadline instead of returning.
-	err := runServiceCommand(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), service, helperCommand(), "daemon start",
+	err := runServiceCommand(context.Background(), newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), service, helperCommand(), "daemon start",
 		map[string]string{}, StartStackOptions{ServiceStdoutWriter: ioDiscard{}, ServiceStderrWriter: &stderr}, nil)
 	if err != nil {
 		t.Fatalf("runServiceCommand(...) error = %v, want nil for a command that exited successfully", err)

@@ -69,6 +69,10 @@ export const Default: Story = {
           method: "POST",
         }),
       );
+      await userEvent.click(shadowCanvas.getByRole("button", { name: "Restart stack with new ports" }));
+      await expect(restartFetch).toHaveBeenLastCalledWith("/__devhost__/restart-stack", {
+        method: "POST",
+      });
     } finally {
       Reflect.set(globalThis, "fetch", originalFetch);
     }
@@ -105,6 +109,7 @@ export const RestartingService: Story = {
     await userEvent.click(await shadowCanvas.findByRole("button", { name: "Services: 1 of 1 up" }));
     await waitFor(() => expect(shadowCanvas.getByRole("region", { name: "Services" })).toBeVisible());
     await expect(shadowCanvas.getByRole("button", { name: "Restart api" })).toBeDisabled();
+    await expect(shadowCanvas.getByRole("button", { name: "Restart stack with new ports" })).toBeDisabled();
   },
 };
 

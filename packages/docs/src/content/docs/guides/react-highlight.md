@@ -41,7 +41,7 @@ Repository checkouts can also expose a package script that points at the generat
 bun nvim
 ```
 
-The launcher is tied to one running devhost stack. Restarting the stack can change the local control port, so use the current generated launcher after each stack restart.
+The launcher is tied to one running devhost instance. Stopping and starting devhost can change the local control port, so use the current generated launcher after starting a new instance. Manifest hot reload and **Restart stack with new ports** retain that instance's control port; existing editor sessions remain connected.
 
 The Neovim plugin posts cursor updates to this instance's endpoint; browser clients receive them over the React Highlight WebSocket. These requests require no control token. See [Control API](../devtools/#control-api) for endpoints and failure responses.
 

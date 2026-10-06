@@ -1,44 +1,55 @@
 package services
 
 import (
+	"context"
 	"fmt"
+	"maps"
 	"sort"
 	"sync"
 	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
 
 // stackRuntime owns process state. Startup and lifecycle operations are serialized;
 // the health stream reads snapshots while commands and probes run outside these locks.
 type stackRuntime struct {
-	manifest     *ResolvedManifest
-	manifestMu   sync.RWMutex
-	started      []*startedService
-	startedMu    sync.Mutex
-	daemons      []daemonLifecycleService
-	daemonMu     sync.Mutex
-	failedRoutes map[string]*startedService
-	operationMu  sync.Mutex
-	shuttingDown bool
-	ready        bool
-	order        []string
-	exits        chan serviceExitResult
-	options      StartStackOptions
-	environment  map[string]string
-	gracePeriod  time.Duration
-	control      *devtools.ControlServer
-	controlMu    sync.RWMutex
-	routes       *stackRoutes
-	watcher      *WatchManager
-	dirty        *DirtyTracker
-	worktrees    *stackWorktrees
-	blocked      map[string]string
+	configured        *manifest.Manifest
+	pendingReload     map[string]devtools.ServiceHealth
+	routing           devtools.RoutingConfig
+	claimedFixedPorts []claimedFixedPort
+	claimedHosts      []string
+	manifest          *ResolvedManifest
+	manifestMu        sync.RWMutex
+	started           []*startedService
+	startedMu         sync.Mutex
+	daemons           []daemonLifecycleService
+	daemonMu          sync.Mutex
+	failedRoutes      map[string]*startedService
+	operationMu       sync.Mutex
+	shuttingDown      bool
+	ready             bool
+	order             []string
+	exits             chan serviceExitResult
+	options           StartStackOptions
+	environment       map[string]string
+	gracePeriod       time.Duration
+	control           *devtools.ControlServer
+	controlMu         sync.RWMutex
+	routes            *stackRoutes
+	watcher           *WatchManager
+	dirty             *DirtyTracker
+	worktrees         *stackWorktrees
+	blocked           map[string]string
 }
 
 func (r *stackRuntime) health() (devtools.HealthResponse, error) {
 	r.manifestMu.RLock()
 	m := *r.manifest
+	worktrees := r.worktrees
+	pending := maps.Clone(r.pendingReload)
+	routing := r.routing
 	r.startedMu.Lock()
 	started := append([]*startedService{}, r.started...)
 	r.startedMu.Unlock()
@@ -48,9 +59,13 @@ func (r *stackRuntime) health() (devtools.HealthResponse, error) {
 	}
 	r.manifestMu.RUnlock()
 	h := collectServicesHealth(m, started, r.dirty)
-	h.Repositories = r.worktrees.snapshot()
+	h.Repositories = worktrees.snapshot()
+	h.Routing = &routing
 	for i := range h.Services {
 		s := &h.Services[i]
+		if previous, exists := pending[s.Name]; exists {
+			s.Status, s.Restarting, s.ExitCode = false, true, previous.ExitCode
+		}
 		if blocked[s.Name] != "" {
 			s.Status = false
 		}
@@ -58,7 +73,7 @@ func (r *stackRuntime) health() (devtools.HealthResponse, error) {
 			for _, name := range repo.ServiceNames {
 				if name == s.Name {
 					s.Restarting = s.Restarting || repo.Switching
-					s.ProjectRootPath = r.worktrees.projectRoot(m.ManifestDirectoryPath, name)
+					s.ProjectRootPath = worktrees.projectRoot(m.ManifestDirectoryPath, name)
 				}
 			}
 		}
@@ -85,9 +100,12 @@ func (r *stackRuntime) checkReady() error {
 	return nil
 }
 
-func (r *stackRuntime) restart(serviceNames []string) error {
+func (r *stackRuntime) restart(ctx context.Context, serviceNames []string) error {
 	r.operationMu.Lock()
 	defer r.operationMu.Unlock()
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if err := r.checkReady(); err != nil {
 		return err
 	}
@@ -113,7 +131,7 @@ func (r *stackRuntime) restart(serviceNames []string) error {
 			}
 			for _, member := range repo.ServiceNames {
 				if member == name {
-					return r.switchWorktreeLocked(repo.ID, repo.SelectedPath)
+					return r.switchWorktreeLocked(ctx, repo.ID, repo.SelectedPath)
 				}
 			}
 		}
@@ -124,11 +142,22 @@ func (r *stackRuntime) restart(serviceNames []string) error {
 			r.clearRestarting(name)
 			return err
 		}
-		if err := r.start(name, true); err != nil {
+		if r.blocked[name] != "" {
+			service := r.manifest.Services[name]
+			if err := r.watcher.StartWatching(name, service.Watch, service.Cwd); err != nil {
+				r.clearRestarting(name)
+				return err
+			}
+		}
+		if err := r.start(ctx, name, runtimeStartOptions{RefreshRoute: true}); err != nil {
 			r.clearRestarting(name)
 			r.logFailure(name, err)
 			return err
 		}
+		r.manifestMu.Lock()
+		delete(r.blocked, name)
+		r.manifestMu.Unlock()
+		r.publish()
 	}
 	return nil
 }
@@ -177,17 +206,25 @@ func (r *stackRuntime) stop(name string) error {
 	return nil
 }
 
-func (r *stackRuntime) start(name string, refreshRoute bool) error {
+type runtimeStartOptions struct {
+	RefreshRoute          bool
+	AllowPortReassignment bool
+}
+
+func (r *stackRuntime) start(ctx context.Context, name string, options runtimeStartOptions) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	attempt := *r.manifest
 	s := attempt.Services[name]
 	if usesDaemonLifecycle(s) {
 		r.daemonMu.Lock()
 		r.daemons = upsertStartedDaemonLifecycleService(r.daemons, s)
 		r.daemonMu.Unlock()
-		if err := startDaemonLifecycleService(&attempt, name, r.options, r.environment, r.control); err != nil {
+		if err := startDaemonLifecycleService(ctx, &attempt, name, r.options, r.environment, r.control); err != nil {
 			return joinCleanupError(err, r.stop(name))
 		}
-		if refreshRoute {
+		if options.RefreshRoute {
 			if err := r.routes.activate(s); err != nil {
 				return joinCleanupError(err, r.stop(name))
 			}
@@ -195,8 +232,8 @@ func (r *stackRuntime) start(name string, refreshRoute bool) error {
 		r.publish()
 		return nil
 	}
-	started, err := startServiceWithRetries(&attempt, name, r.exits, r.options, r.environment, r.control)
-	if err == nil && refreshRoute {
+	started, err := startServiceWithRetries(ctx, &attempt, serviceStartOptions{ServiceName: name, Exits: r.exits, Stack: r.options, Environment: r.environment, Control: r.control, AllowPortReassignment: options.AllowPortReassignment})
+	if err == nil && options.RefreshRoute {
 		err = r.routes.activate(started.service)
 		if err != nil {
 			started.setRestarting(true)
@@ -236,16 +273,19 @@ func (r *stackRuntime) logFailure(name string, err error) {
 	}
 }
 
-func (r *stackRuntime) switchWorktree(id, path string) error {
+func (r *stackRuntime) switchWorktree(ctx context.Context, id, path string) error {
 	r.operationMu.Lock()
 	defer r.operationMu.Unlock()
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if err := r.checkReady(); err != nil {
 		return err
 	}
-	return r.switchWorktreeLocked(id, path)
+	return r.switchWorktreeLocked(ctx, id, path)
 }
 
-func (r *stackRuntime) switchWorktreeLocked(id, path string) (returnedError error) {
+func (r *stackRuntime) switchWorktreeLocked(ctx context.Context, id, path string) (returnedError error) {
 	next, err := r.worktrees.prepare(id, path, *r.manifest)
 	if err != nil {
 		return err
@@ -279,7 +319,7 @@ func (r *stackRuntime) switchWorktreeLocked(id, path string) (returnedError erro
 			returnedError = err
 			break
 		}
-		if err := r.start(name, true); err != nil {
+		if err := r.start(ctx, name, runtimeStartOptions{RefreshRoute: true}); err != nil {
 			returnedError = err
 			r.logFailure(name, err)
 			break

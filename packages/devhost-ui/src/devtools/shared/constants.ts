@@ -5,6 +5,7 @@ export const ANNOTATION_QUEUES_PATH: string = `${CONTROL_PATH_PREFIX}/annotation
 export const HEALTH_WEBSOCKET_PATH: string = `${CONTROL_PATH_PREFIX}/ws/health`;
 export const LOGS_WEBSOCKET_PATH: string = `${CONTROL_PATH_PREFIX}/ws/logs`;
 export const RESTART_SERVICE_PATH: string = `${CONTROL_PATH_PREFIX}/restart-service`;
+export const RESTART_STACK_PATH: string = `${CONTROL_PATH_PREFIX}/restart-stack`;
 export const TERMINAL_SESSION_WEBSOCKET_PATH: string = `${CONTROL_PATH_PREFIX}/ws/terminal`;
 export const REACT_HIGHLIGHT_WEBSOCKET_PATH: string = `${CONTROL_PATH_PREFIX}/ws/react-highlight`;
 export const ANNOTATION_QUEUES_WEBSOCKET_PATH: string = `${CONTROL_PATH_PREFIX}/ws/annotation-queues`;

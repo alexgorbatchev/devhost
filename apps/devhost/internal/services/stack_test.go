@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -1723,6 +1724,7 @@ func TestStopStartedServiceStopsDescendantsSpawnedDuringSignalHandling(t *testin
 
 	servicePort := mustReservePort(t)
 	childPidPath := filepath.Join(t.TempDir(), "child.pid")
+	readyPath := filepath.Join(t.TempDir(), "ready")
 	t.Cleanup(func() {
 		childPidText, err := os.ReadFile(childPidPath)
 		if err != nil {
@@ -1743,6 +1745,7 @@ func TestStopStartedServiceStopsDescendantsSpawnedDuringSignalHandling(t *testin
 			"GO_WANT_HELPER_PROCESS": "1",
 			"DEVHOST_HELPER_MODE":    "spawn-detached-child-server-on-term-and-exit",
 			"CHILD_PID_PATH":         childPidPath,
+			"READY_FILE_PATH":        readyPath,
 			"PORT":                   strconv.Itoa(servicePort),
 		},
 		Health:     ResolvedHealthConfig{Kind: "process"},
@@ -1753,6 +1756,11 @@ func TestStopStartedServiceStopsDescendantsSpawnedDuringSignalHandling(t *testin
 		t.Fatalf("startServiceProcess(...) error = %v", err)
 	}
 
+	waitForCondition(t, 5*time.Second, func() bool {
+		_, err := os.Stat(readyPath)
+		return err == nil
+	})
+
 	if err := stopStartedService(startedService, 250*time.Millisecond); err != nil {
 		t.Fatalf("stopStartedService(...) error = %v", err)
 	}
@@ -1761,6 +1769,16 @@ func TestStopStartedServiceStopsDescendantsSpawnedDuringSignalHandling(t *testin
 		_, err := os.Stat(childPidPath)
 		return err == nil
 	})
+
+	childPIDText, err := os.ReadFile(childPidPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	childPID, err := strconv.Atoi(strings.TrimSpace(string(childPIDText)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	waitForCondition(t, 5*time.Second, func() bool { return !processExists(childPID) })
 
 	waitForCondition(t, 5*time.Second, func() bool {
 		conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
@@ -1833,7 +1851,7 @@ func TestStopStartedServiceStopsDetachedDescendantsExitedDuringStartup(t *testin
 	})
 }
 
-func TestStopStartedServiceStopsLateExternalPortRespawns(t *testing.T) {
+func TestStopStartedServicePreservesLateExternalPortRespawns(t *testing.T) {
 	servicePort := mustReservePort(t)
 	tempDirectory := t.TempDir()
 	childPIDPath := filepath.Join(tempDirectory, "child.pid")
@@ -1856,6 +1874,7 @@ func TestStopStartedServiceStopsLateExternalPortRespawns(t *testing.T) {
 		if coordinator.Process != nil {
 			_ = syscall.Kill(-coordinator.Process.Pid, syscall.SIGKILL)
 		}
+		_ = coordinator.Wait()
 		childPIDText, err := os.ReadFile(childPIDPath)
 		if err != nil {
 			return
@@ -1898,10 +1917,10 @@ func TestStopStartedServiceStopsLateExternalPortRespawns(t *testing.T) {
 	waitForCondition(t, 5*time.Second, func() bool {
 		conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
 		if err != nil {
-			return true
+			return false
 		}
 		_ = conn.Close()
-		return false
+		return true
 	})
 }
 
@@ -1939,7 +1958,7 @@ func TestStopStartedServicePassesBindHostToLateListenerReader(t *testing.T) {
 	}
 }
 
-func TestStopStartedServiceReturnsShutdownFailureDetails(t *testing.T) {
+func TestStopStartedServiceIgnoresUnownedListener(t *testing.T) {
 	originalReadListeningProcessIDs := readListeningProcessIDs
 	defer func() {
 		readListeningProcessIDs = originalReadListeningProcessIDs
@@ -1969,18 +1988,12 @@ func TestStopStartedServiceReturnsShutdownFailureDetails(t *testing.T) {
 	startedService.shutdownMu.Unlock()
 
 	err := stopStartedService(startedService, 50*time.Millisecond)
-	if err == nil {
-		t.Fatal("stopStartedService(...) error = nil, want shutdown failure")
-	}
-	if !strings.Contains(err.Error(), "failed to shut down service web after SIGTERM and SIGKILL") {
-		t.Fatalf("stopStartedService(...) error = %q, want shutdown failure summary", err)
-	}
-	if !strings.Contains(err.Error(), "listener still active on 127.0.0.1:3010 (pids: 4321)") {
-		t.Fatalf("stopStartedService(...) error = %q, want surviving listener details", err)
+	if err != nil {
+		t.Fatalf("stopStartedService(...) = %v; unrelated listener must not prevent cleanup", err)
 	}
 }
 
-func TestStopStartedServicesAggregatesShutdownFailures(t *testing.T) {
+func TestStopStartedServicesIgnoresUnownedListeners(t *testing.T) {
 	originalReadListeningProcessIDs := readListeningProcessIDs
 	defer func() {
 		readListeningProcessIDs = originalReadListeningProcessIDs
@@ -2016,20 +2029,8 @@ func TestStopStartedServicesAggregatesShutdownFailures(t *testing.T) {
 		newExitedService("api", firstPort),
 		newExitedService("web", secondPort),
 	}, 50*time.Millisecond)
-	if err == nil {
-		t.Fatal("stopStartedServices(...) error = nil, want aggregated shutdown failure")
-	}
-	if !strings.Contains(err.Error(), "failed to shut down service api after SIGTERM and SIGKILL") {
-		t.Fatalf("stopStartedServices(...) error = %q, want api shutdown failure", err)
-	}
-	if !strings.Contains(err.Error(), "failed to shut down service web after SIGTERM and SIGKILL") {
-		t.Fatalf("stopStartedServices(...) error = %q, want web shutdown failure", err)
-	}
-	if !strings.Contains(err.Error(), "listener still active on 127.0.0.1:3011 (pids: 4001)") {
-		t.Fatalf("stopStartedServices(...) error = %q, want first listener details", err)
-	}
-	if !strings.Contains(err.Error(), "listener still active on 127.0.0.1:3012 (pids: 4002)") {
-		t.Fatalf("stopStartedServices(...) error = %q, want second listener details", err)
+	if err != nil {
+		t.Fatalf("stopStartedServices(...) = %v; unrelated listeners must not prevent cleanup", err)
 	}
 }
 
@@ -2882,6 +2883,11 @@ func runSpawnDetachedChildServerAndExitHelper() {
 func runSpawnDetachedChildServerOnTermAndExitHelper() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.Signal(15))
+	if path := os.Getenv("READY_FILE_PATH"); path != "" {
+		if err := os.WriteFile(path, []byte("ready"), 0o644); err != nil {
+			panic(err)
+		}
+	}
 	<-signals
 
 	command := exec.Command(os.Args[0], "-test.run=TestServiceHelperProcess", "--")
@@ -2893,6 +2899,10 @@ func runSpawnDetachedChildServerOnTermAndExitHelper() {
 	)
 	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	if err := command.Start(); err != nil {
+		panic(err)
+	}
+	// Cleanup may terminate the child before its Go runtime reaches main.
+	if err := os.WriteFile(os.Getenv("CHILD_PID_PATH"), []byte(strconv.Itoa(command.Process.Pid)), 0o644); err != nil {
 		panic(err)
 	}
 
@@ -3092,7 +3102,7 @@ func runDaemonStopServerHelper() {
 func waitForDaemonPortToClose(port int) {
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {
-		if !canConnectToPort("127.0.0.1", port, minProbeTimeout) {
+		if !canConnectToPort(context.Background(), "127.0.0.1", port, minProbeTimeout) {
 			return
 		}
 		time.Sleep(10 * time.Millisecond)

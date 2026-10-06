@@ -76,6 +76,10 @@ Its vital that when devtools are injected into the user's web application, CSS t
 
 ## Implementation intent
 
+- Keep **Restart stack with new ports** available in both Services and the crash recovery dialog. Use the dedicated stack endpoint, disable duplicate/conflicting restart actions while pending, report failures, and reload a recovery page after successful recovery. Individual service restart preserves its assigned port.
+
+- Apply validated `health.routing` metadata to the injected configuration on both health-stream updates and worktree refresh responses so open panels follow service and route reloads. Retain the existing control token, connections, terminal sessions, and other injected settings.
+
 - With status devtools enabled, foreground service exit codes trigger a full-screen recovery dialog with retained service logs and restart controls. Keep the dialog open during recovery and failed attempts; remove it after healthy recovery. Health-probe failures and control-stream disconnects alone are not process exit events.
 - Keep the theme small and explicit.
 - Prefer stable semantic names over raw color names.

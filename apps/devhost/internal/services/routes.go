@@ -21,33 +21,12 @@ func (r *stackRoutes) activate(service ResolvedService) error {
 	if len(service.Hosts) == 0 || service.Port == nil {
 		return nil
 	}
-	options := r.options(service)
 	previous, hadRoute := r.active[service.Name]
-	var documentServer *devtools.DocumentInjectionServer
-	if r.controlServer != nil && isRootCompatibleServicePath(service.Path) {
-		host, err := caddy.ResolveProxyHost(service.BindHost)
-		if err != nil {
-			return err
-		}
-		documentServer = r.documentServers[service.Name]
-		if documentServer == nil {
-			documentServer, err = startDocumentInjectionServer(devtools.StartDocumentInjectionServerOptions{BackendHost: host, BackendPort: *service.Port})
-			if err != nil {
-				return err
-			}
-			r.documentServers[service.Name] = documentServer
-		} else {
-			documentServer.SetBackend(host, *service.Port)
-		}
-		options.DevtoolsControlPort = r.controlServer.Port()
-		options.DocumentInjectionPort = documentServer.Port()
+	options, documentServer, err := r.prepare(service)
+	if err != nil {
+		return err
 	}
-	registrations := make([]caddy.ActivateRouteOptions, 0, len(service.Hosts))
-	for _, host := range service.Hosts {
-		registration := options
-		registration.Host = host
-		registrations = append(registrations, registration)
-	}
+	registrations := serviceRouteRegistrations(service, options)
 	if err := caddy.ActivateRoutes(registrations, r.manifest.ManifestPath, r.paths.RoutesDirectoryPath); err != nil {
 		if hadRoute && documentServer != nil {
 			host, restoreError := caddy.ResolveProxyHost(previous.AppBindHost)
@@ -60,6 +39,40 @@ func (r *stackRoutes) activate(service ResolvedService) error {
 	}
 	r.active[service.Name] = options
 	return nil
+}
+
+func (r *stackRoutes) prepare(service ResolvedService) (caddy.ActivateRouteOptions, *devtools.DocumentInjectionServer, error) {
+	options := r.options(service)
+	var documentServer *devtools.DocumentInjectionServer
+	if r.controlServer != nil && isRootCompatibleServicePath(service.Path) {
+		host, err := caddy.ResolveProxyHost(service.BindHost)
+		if err != nil {
+			return options, nil, err
+		}
+		documentServer = r.documentServers[service.Name]
+		if documentServer == nil {
+			documentServer, err = startDocumentInjectionServer(devtools.StartDocumentInjectionServerOptions{BackendHost: host, BackendPort: *service.Port})
+			if err != nil {
+				return options, nil, err
+			}
+			r.documentServers[service.Name] = documentServer
+		} else {
+			documentServer.SetBackend(host, *service.Port)
+		}
+		options.DevtoolsControlPort = r.controlServer.Port()
+		options.DocumentInjectionPort = documentServer.Port()
+	}
+	return options, documentServer, nil
+}
+
+func serviceRouteRegistrations(service ResolvedService, options caddy.ActivateRouteOptions) []caddy.ActivateRouteOptions {
+	registrations := make([]caddy.ActivateRouteOptions, 0, len(service.Hosts))
+	for _, host := range service.Hosts {
+		registration := options
+		registration.Host = host
+		registrations = append(registrations, registration)
+	}
+	return registrations
 }
 
 func (r *stackRoutes) options(service ResolvedService) caddy.ActivateRouteOptions {

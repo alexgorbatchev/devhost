@@ -65,8 +65,22 @@ Worktree support is enabled by default. When configuring repository services or 
 
 Relative watch paths use the selected service cwd. Absolute watch paths remain absolute. New browser editor and annotation launches remap configured paths inside the selected repository; directories outside it remain configured. The selected checkout's manifest is never loaded.
 
+Open the checkout picker or press **Refresh** to discover worktree additions and deletions. If the running checkout disappears, refresh stops only its repository group and blocks new tool launches there. Retain the missing selection and choose an available checkout for recovery; do not silently substitute another checkout.
+
 ## 5. Managed Caddy Startup
 
 Start the shared proxy before launching stacks. Pass `--manifest <path>` to `devhost caddy start` to generate its configuration using `caddy.global.adminAddress`, `bindHost`, `http`, `httpPort`, and `httpsPort`. `DEVHOST_MANIFEST` supplies the same path when the flag is omitted; an explicit flag wins. `devhost caddy stop` and `trust` accept the same manifest option.
 
 Active stack registrations take precedence for the shared admin address, bind host, and listener ports. Plain HTTP is enabled when the supplied manifest or any active stack sets `caddy.global.http = true`. Keep non-default global settings consistent across stacks sharing that proxy; do not treat them as isolated per-stack listeners.
+
+## 6. Configuration Hot Reload
+
+For manual recovery, restart an individual service to reuse its assigned port. If an automatic port is occupied, choose **Restart stack with new ports** in Services or the recovery overlay. This relaunches all managed services using the last accepted manifest, refreshes automatic ports and their injected references, and retains fixed ports, selected checkouts, control listeners, and terminal sessions. External processes keep running. Check the response and retained logs for launch, routing, or restoration failures before claiming recovery, then retry the action after addressing the failure. A fixed-port conflict requires freeing the port or changing its manifest setting.
+
+Save service changes to the original root manifest or an included manifest while devhost is running. Files added or deleted under an `includes` glob also change the stack. Wait for `configuration reloaded`; invalid, conflicting, or restart-required edits print `configuration reload rejected` and do not apply.
+
+Keep stack `name`, `killZombies`, Caddy settings, devtools settings, annotation settings, and `[worktrees].enabled` unchanged in a live edit. Stop and restart devhost to apply those settings. An edit changing one of them rejects its service changes as well.
+
+Expect affected services, their dependents, and affected repository groups to restart in dependency order after stopping in reverse order. Compatible automatic ports and saved checkout selections are retained. Changing ports exported through `DEVHOST_PORT_*` can restart otherwise unchanged services. Existing terminal sessions and control connections remain available.
+
+Read launch, routing, and restoration errors when a reload fails. Devhost attempts to restore the previous services and routes. Recover stopped services explicitly if restoration also fails; repair the manifest and save again to retry the desired configuration. Continue using the original manifest when selecting another checkout.

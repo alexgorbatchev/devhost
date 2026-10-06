@@ -1,31 +1,22 @@
 ---
 created_on: 2026-06-03 12:00
-last_modified: 2026-09-22 23:32
+last_modified: 2026-10-06 10:04
 status: current
 ---
 
-# Multi-Service File Watching & Hotkey-Driven Parallel Restarts
+# Multi-Service File Watching & Hotkey-Driven Restarts
 
-This is the maintained internal reference for the implemented multi-service file watching & hotkey-driven parallel restarts lifecycle contract.
-
-## Implementation Record
-
-The features outlined in the original design have been successfully implemented and merged into `main` via git merge of commit `0191ab3` (branch `multi-service-watch-hotkey`) on June 03, 2026.
-
-Key commits and branches:
-
-- Branch: `multi-service-watch-hotkey`
-- Merge commit: `0191ab3` (merged cleanly into `main`)
+This is the maintained internal reference for the multi-service file watching and hotkey restart lifecycle contract.
 
 ## Conceptual Architecture
 
-The multi-service file watching and parallel hotkey restart system is divided into a high-performance Go backend and a highly responsive React frontend.
+The multi-service file watching and hotkey restart system has a Go backend and React frontend.
 
 ### Go Backend
 
 1. **Manifest Configuration (`internal/manifest`)**:
-   - Extended `types.go` and `validate.go` to support `watch = [...]` string arrays on service tables and the `[devtools.shortcuts]` configuration.
-   - Built a robust layout-independent shortcut validator (`isValidShortcut`) defaulting invalid shortcut strings to `"alt+ctrl+r"`.
+   - `types.go` and `validate.go` support `watch = [...]` string arrays on service tables and the `[devtools.shortcuts]` configuration.
+   - The layout-independent shortcut validator (`isValidShortcut`) defaults invalid shortcut strings to `"alt+ctrl+r"`.
 
 2. **FSNotify Watcher (`internal/services/watch.go`)**:
    - Implements native filesystem watching utilizing `github.com/fsnotify/fsnotify`.
@@ -46,12 +37,20 @@ The multi-service file watching and parallel hotkey restart system is divided in
    - Observes `service.dirty` and `service.restarting` boolean fields.
    - Summarizes changed services on the toolbar trigger (`N changed`), marks each changed service with a `changed` badge and an amber `"warning"` restart button, disables the button during active restarts, and applies a continuous `animate-spin` on the `RotateCwIcon`.
    - Shows the configured `restartServicesShortcut` in the panel header.
-   - Incorporates robust, non-blocking error handling for non-200 responses, parsing structured JSON or plain text errors from the Go backend.
+   - Handles unsuccessful HTTP responses, parsing structured JSON or plain text errors from the Go backend.
 
 2. **Global Hotkey Listener (`App.tsx`)**:
    - Registers a document-level event listener bypassing Shadow DOM retargeting using `event.composedPath()[0] || event.target`.
    - Integrates text input lockout, automatically ignoring hotkey triggers when the user focuses on inputs, textareas, selects, or terminal emulator frames (`.xterm`).
    - Uses physical `event.code` mapping for hardware and layout-independent hotkey sequences.
+
+## Configuration reload and recovery
+
+Service file watches mark services changed; they do not restart them automatically. A separate manifest watcher reloads service configuration and include-glob membership. Reloads, service restarts, checkout refresh/switch operations, and full-stack restarts share the runtime operation lock.
+
+Individual manual or hotkey restarts preserve assigned automatic ports. An occupied automatic port leaves the service stopped with an error pointing to **Restart stack with new ports**. That action stops all managed services before relaunching them with fresh automatic ports, rebuilt command/environment references, and updated routes. Fixed ports, selected worktrees, control/document listeners, and terminal sessions are retained. External processes remain untouched, including unrelated listeners on an old service port.
+
+The full-stack action uses the last accepted manifest, attempts restoration after launch or routing failure, and remains retryable if restoration fails. A missing selected checkout must be recovered through the picker before the stack can restart. See the [stack lifecycle guide](../../../packages/docs/src/content/docs/guides/stack-lifecycle.md) for reload boundaries and recovery guarantees.
 
 ## Validation Requirements
 
@@ -59,16 +58,17 @@ Future engineers changing or extending this behavior must verify their changes a
 
 ### Backend Validation
 
+Run the targeted Go commands below from `apps/devhost/`:
+
 - **Manifest parsing tests**: Verify syntax and fallback defaults by running `go test -v ./internal/manifest/...`
 - **FSNotify, Dirty state, and debouncer tests**: Execute `go test -v ./internal/services/...` (asserting `TestWatchManagerDebounceAndDynamicDir`, `TestDirtyTracker`, etc.)
 - **Devtools and server mock tests**: Run `go test -v ./internal/devtools/...`
-- **Full Backend Vet suite**: Run `bun run check:devhost` to execute `go vet` and full tests.
+- **Full Backend checks**: Run `just devhost check` from the repository root for formatting, vetting, module hygiene, and app tests.
 
 ### Frontend Validation
 
-- **TypeScript & Unit tests**: Validate frontend compilation and tests via `bun run --cwd packages/devhost-ui check`
-- **Storybook / Vitest stories**: Run story play assertions with Vitest inside packages/devhost-ui.
+- **TypeScript, unit tests, and Storybook interactions**: Run `just ui check` from the repository root.
 
 ### Complete Repository check
 
-- **Repo-wide format, lints, and build validation**: Execute `bun run check` at the repository root. All files must conform to `oxfmt` standards. If needed, format changes with `bun run fix`.
+- **Repo-wide formatting, policy, and workspace validation**: Run `just check` from the repository root. Format changes with `just fix`.

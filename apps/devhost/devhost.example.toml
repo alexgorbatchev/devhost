@@ -2,6 +2,13 @@
 #
 # This file is meant to be read as documentation first and copied second.
 # Rename it to `devhost.toml` in your project root when you actually want to use it.
+# Saving this file or its includes hot-reloads service configuration. Invalid edits
+# leave the current stack running. Include glob additions and removals are observed.
+# Changes to name, killZombies, caddy, devtools, annotation, or worktrees.enabled
+# require restarting devhost; an edit containing those changes is rejected in full.
+# Single-service restart keeps its assigned automatic port. If that port is occupied,
+# use "Restart stack with new ports" in Services or recovery to restart all managed
+# services with fresh auto ports and rebuilt port references. Fixed ports are retained.
 #
 # Top-level sections:
 # - `name` (required)
@@ -82,6 +89,8 @@ name = "hello-stack"
 # [worktrees]
 # enabled = false
 # Choices are remembered per manifest path and repository across devhost restarts.
+# Open the picker or press Refresh to discover added and deleted worktrees.
+# If the running checkout disappears, Refresh stops its services for explicit recovery.
 # All services in a repository share one checkout, preserving their cwd offsets.
 # Missing saved checkouts and failed launches keep the group stopped for recovery.
 # Repositories containing managed = false services cannot switch.
@@ -308,8 +317,9 @@ cwd = "./app"
 # `port` sets the runtime listening port or requests automatic allocation.
 # - integer `1..65535`: use the exact port you provide.
 # - `"auto"`: allocate a best-effort free port before spawn and inject it as `PORT`.
-#   devhost retries on clear bind collisions, but v1 does not provide a cross-process global auto-port allocator.
-#   Foreground restarts refresh both proxy targets before reporting recovery on a new auto port.
+#   Startup and configuration reload retry clear bind collisions; individual restarts keep the assigned port.
+#   "Restart stack with new ports" reassigns automatic ports and rebuilds references across all managed services.
+#   Automatic allocation is best-effort, without a cross-process global auto-port allocator.
 port = 3000
 # `injectPort` controls whether devhost exports `PORT` to the child process.
 # - `true` (default): inject `PORT` when `port` is set.

@@ -1,34 +1,14 @@
 import { RESTART_SERVICE_PATH } from "./constants";
 import type { FetchFunction } from "./pristineFetch";
+import { postControlAction } from "./postControlAction";
 
 export async function restartServices(serviceNames: string[], request: FetchFunction): Promise<string | null> {
-  try {
-    const response = await request(RESTART_SERVICE_PATH, {
+  return postControlAction(
+    {
+      path: RESTART_SERVICE_PATH,
       body: JSON.stringify({ serviceNames }),
-      headers: {
-        "content-type": "application/json",
-      },
-      method: "POST",
-    });
-    if (response.ok) {
-      return null;
-    }
-
-    const bodyText = await response.text();
-    let detail = bodyText.trim();
-    try {
-      const payload: unknown = JSON.parse(bodyText);
-      if (typeof payload === "object" && payload !== null) {
-        const message: unknown = Reflect.get(payload, "error") ?? Reflect.get(payload, "message");
-        if (typeof message === "string") {
-          detail = message;
-        }
-      }
-    } catch {
-      // The supervisor also returns plain-text HTTP errors.
-    }
-    return `Failed to restart ${serviceNames.join(", ")}: ${detail || response.statusText}`;
-  } catch (error: unknown) {
-    return `Failed to restart ${serviceNames.join(", ")}: ${error instanceof Error ? error.message : String(error)}`;
-  }
+      failureLabel: `Failed to restart ${serviceNames.join(", ")}`,
+    },
+    request,
+  );
 }

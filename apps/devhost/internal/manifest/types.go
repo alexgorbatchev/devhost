@@ -1,8 +1,16 @@
 package manifest
 
 type RawManifest struct {
+	Inputs       Inputs
 	serviceOrder []string
 	value        map[string]any
+}
+
+// Inputs records files and include globs even when loading fails, so callers
+// can observe repairs and changes to the membership of an include glob.
+type Inputs struct {
+	Files    []string
+	Patterns []string
 }
 
 type Manifest struct {
