@@ -3356,7 +3356,9 @@
           The minimap is an opaque 12px strip on the right edge that widens to 96px on hover. stdout lines are drawn in
           <code>fg-faint</code> and stderr lines in <code>danger</code>. Hovering shows a framed 15-line preview
           centered on the hovered line. The viewport window is an <code>accent</code> 18% tint with an
-          <code>accent</code> inset ring.
+          <code>accent</code> inset ring. Preview text preserves ANSI backgrounds and decorations. ANSI foregrounds are
+          adjusted against the rendered background to meet 4.5:1 in both themes, including focused and stderr rows. Dim
+          text is softened only as far as that contrast requirement permits.
         </p>
         <div class="dt-stage dt">
           <div class="mm-demo">

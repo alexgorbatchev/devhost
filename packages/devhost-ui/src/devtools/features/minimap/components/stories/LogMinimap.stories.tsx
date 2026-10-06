@@ -1,11 +1,17 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 
-import { StoryContainer } from "@/devtools/shared/components/stories/helpers";
-import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
+import {
+  readDevtoolsStoryShadowCanvas,
+  renderInDevtoolsStoryShadowRoot,
+  StoryContainer,
+  StorybookThemeProvider,
+} from "@/devtools/shared/components/stories/helpers";
 import { LogMinimap } from "../LogMinimap";
 import type { ServiceLogEntry } from "../../../../shared/types";
 import { readContrastRatio } from "../../../../../../../../test-support/readContrastRatio";
+import { fixture_ansiContrastEntries } from "./fixtures";
+import { LogMinimapThemeChangeHarness } from "./helpers";
 
 const mockEntries: ServiceLogEntry[] = Array.from({ length: 50 }).map((_, i) => ({
   id: i + 1,
@@ -198,4 +204,90 @@ export const FocusedErrorDark: Story = {
 export const FocusedErrorLight: Story = {
   ...FocusedErrorDark,
   globals: { devhostTheme: "light" },
+};
+
+export const AnsiContrastDark: Story = {
+  globals: { devhostTheme: "dark" },
+  render: (args, context) =>
+    renderInDevtoolsStoryShadowRoot(
+      <StorybookThemeProvider globals={context.globals}>
+        <LogMinimap {...args} />
+      </StorybookThemeProvider>,
+    ),
+  args: { entries: fixture_ansiContrastEntries, isHovered: true, onHoveredChange: fn() },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    await assertHoveredPreview(canvas);
+    await expect(readPreviewRowTexts(canvas)).toEqual([
+      "Standard black",
+      "Bright white",
+      "Indexed dark",
+      "Truecolor dark",
+      "Truecolor light",
+      "Same-color pair",
+      "Inherited on white",
+      "Inherited on black",
+      "Dim inherited",
+      "Dim color pair",
+      "Readable decorated",
+      "Saturated pair",
+    ]);
+    for (const text of readPreviewRowTexts(canvas)) {
+      await expect(readContrastRatio(canvas.getByText(text))).toBeGreaterThanOrEqual(4.5);
+    }
+    await expect(getComputedStyle(canvas.getByText("Same-color pair")).backgroundColor).toBe("rgb(128, 128, 128)");
+    await expect(getComputedStyle(canvas.getByText("Dim color pair")).backgroundColor).toBe("rgb(128, 128, 128)");
+    await expect(getComputedStyle(canvas.getByText("Readable decorated")).color).toBe("rgb(51, 255, 51)");
+    await expect(getComputedStyle(canvas.getByText("Readable decorated")).fontStyle).toBe("italic");
+    await expect(getComputedStyle(canvas.getByText("Readable decorated")).textDecorationLine).toBe(
+      "underline line-through",
+    );
+    const firstRow = canvas.getAllByTestId("LogMinimap--preview-service")[0].parentElement!;
+    const focusedBackground = getComputedStyle(firstRow).backgroundColor;
+    const minimap = canvas.getByTestId("LogMinimap");
+    const bounds = minimap.getBoundingClientRect();
+    await userEvent.pointer({ target: minimap, coords: { clientX: bounds.right - 1, clientY: bounds.bottom - 1 } });
+    await waitFor(() => expect(getComputedStyle(firstRow).backgroundColor).not.toBe(focusedBackground));
+    for (const text of readPreviewRowTexts(canvas)) {
+      await expect(readContrastRatio(canvas.getByText(text))).toBeGreaterThanOrEqual(4.5);
+    }
+  },
+};
+
+export const AnsiContrastLight: Story = { ...AnsiContrastDark, globals: { devhostTheme: "light" } };
+
+export const AnsiErrorContrastDark: Story = {
+  ...AnsiContrastDark,
+  args: {
+    ...AnsiContrastDark.args,
+    entries: fixture_ansiContrastEntries.map((entry) => ({ ...entry, stream: "stderr" })),
+  },
+};
+
+export const AnsiErrorContrastLight: Story = { ...AnsiErrorContrastDark, globals: { devhostTheme: "light" } };
+
+export const AnsiContrastThemeChange: Story = {
+  render: () => <LogMinimapThemeChangeHarness />,
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    await userEvent.tab();
+    await expect(canvas.getByRole("button", { name: "Switch to light" })).toHaveFocus();
+    await assertHoveredPreview(canvas);
+    const darkText = canvas.getByText("Truecolor dark");
+    const darkForeground = getComputedStyle(darkText).color;
+    await expect(readContrastRatio(darkText)).toBeGreaterThanOrEqual(4.5);
+    await userEvent.keyboard("{Enter}");
+    await expect(canvas.getByRole("button", { name: "Switch to dark" })).toBeInTheDocument();
+    await expect(canvas.getByText("Truecolor dark")).toBe(darkText);
+    await waitFor(() => expect(getComputedStyle(darkText).color).not.toBe(darkForeground));
+    for (const text of readPreviewRowTexts(canvas)) {
+      await expect(readContrastRatio(canvas.getByText(text))).toBeGreaterThanOrEqual(4.5);
+    }
+    await userEvent.keyboard("{Enter}");
+    await expect(canvas.getByRole("button", { name: "Switch to light" })).toBeInTheDocument();
+    await waitFor(() => expect(getComputedStyle(darkText).color).toBe(darkForeground));
+    for (const text of readPreviewRowTexts(canvas)) {
+      await expect(readContrastRatio(canvas.getByText(text))).toBeGreaterThanOrEqual(4.5);
+    }
+  },
 };

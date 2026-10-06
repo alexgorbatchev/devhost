@@ -30,6 +30,8 @@ When `[devtools.externalToolbars].enabled = true` (the default), `devhost` also 
 
 Terminal sessions (annotation agents, annotation commands, and Neovim) appear as chips in the toolbar. Clicking a chip opens its terminal window; minimizing returns it to the chip while the session keeps running and reporting its status. When the chips no longer fit, the rest collapse into a `+N` button that lists every session. Terminal windows open fullscreen; when the log minimap is shown, the window stops at the minimap strip, and hovering the minimap widens it over the terminal with the usual log preview.
 
+Minimap log previews preserve ANSI backgrounds and text decorations. Foreground colors adjust automatically to maintain at least 4.5:1 contrast against the rendered background in either theme, including focused and stderr rows. Dim text is softened only as far as that contrast requirement permits.
+
 When all devtools features are disabled, `devhost` does not mount these control routes for that stack.
 
 For annotation workflows, action configuration, and queue behavior, see [Annotations](./annotations/).
