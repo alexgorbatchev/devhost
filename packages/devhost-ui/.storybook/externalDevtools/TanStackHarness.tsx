@@ -18,10 +18,7 @@ import { tableDevtoolsPlugin, useTanStackTableDevtools } from "@tanstack/react-t
 import type { JSX } from "react";
 import { useEffect, useState } from "react";
 
-import { DevtoolsToolbar } from "@/devtools/shared/components/DevtoolsToolbar";
-import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
-import { useExternalDevtoolsLaunchers } from "@/devtools/features/externalDevtoolsPanel/hooks/useExternalDevtoolsLaunchers";
-import { ExternalDevtoolsPanel } from "@/devtools/features/externalDevtoolsPanel/components/ExternalDevtoolsPanel";
+import { ExternalDevtoolsToolbar } from "./ExternalDevtoolsToolbar";
 
 const features = tableFeatures({ rowSelectionFeature });
 const columns = [{ accessorKey: "name", header: "Name" }];
@@ -35,22 +32,6 @@ interface ITanStackHarnessProps {
   shouldHideTrigger?: boolean;
   shouldRequireUrlFlag?: boolean;
   hasUnrelatedMarkup?: boolean;
-}
-
-interface ITanStackToolbarProps {
-  globals: Partial<Record<string, unknown>>;
-  isEnabled: boolean;
-}
-
-function TanStackToolbar({ globals, isEnabled }: ITanStackToolbarProps): JSX.Element {
-  const { launchers, toggleLauncher } = useExternalDevtoolsLaunchers(isEnabled);
-  return (
-    <StorybookThemeProvider globals={globals}>
-      <DevtoolsToolbar collapsedIndicator={null} isMinimapVisible={false} position="bottom-right" stackName="tanstack">
-        <ExternalDevtoolsPanel launchers={launchers} onToggleLauncher={toggleLauncher} />
-      </DevtoolsToolbar>
-    </StorybookThemeProvider>
-  );
 }
 
 function TanStackLibraries(): JSX.Element {
@@ -189,7 +170,9 @@ export function TanStackHarness({
           />
         ) : null}
         {hasSecondShell ? <TanStackDevtools plugins={plugins} /> : null}
-        {isToolbarMounted ? <TanStackToolbar globals={globals} isEnabled={isEnabled} /> : null}
+        {isToolbarMounted ? (
+          <ExternalDevtoolsToolbar globals={globals} isEnabled={isEnabled} stackName="tanstack" />
+        ) : null}
       </div>
     </QueryClientProvider>
   );
