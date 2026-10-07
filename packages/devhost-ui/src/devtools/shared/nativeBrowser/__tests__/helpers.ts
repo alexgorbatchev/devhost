@@ -1,4 +1,4 @@
-import type { NativeBrowserListener, NativeBrowserViewPredicate } from "../types";
+import type { NativeBrowserListener } from "../types";
 import assert from "node:assert/strict";
 import { z } from "zod";
 import type { ServerWebSocket } from "bun";
@@ -11,6 +11,7 @@ const requestSchema = z.strictObject({
   binding: z.strictObject({ instanceId: z.string(), documentId: z.string(), href: z.string() }),
 });
 type ControlRequest = z.infer<typeof requestSchema>;
+type NativeBrowserViewPredicate = (view: INativeBrowserView) => boolean;
 
 interface ITransportHarness {
   client: INativeBrowserClient;
