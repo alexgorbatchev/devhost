@@ -899,55 +899,21 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 	}
 }
 
-func TestControlServerTerminalSessionsRetainTailAndIdleCleanup(t *testing.T) {
+func TestControlServerTerminalSessionsRetainTail(t *testing.T) {
 	t.Parallel()
 
 	starter := newTestTerminalStarter()
-	projectRootPath := t.TempDir()
-	controlServer, err := StartControlServer(StartControlServerOptions{
-		ComponentEditor: "neovim",
-		FeatureToggles: FeatureToggles{
-			EditorEnabled:   true,
-			StatusEnabled:   true,
-			TerminalEnabled: true,
-		},
-		GetHealthResponse: func() (HealthResponse, error) {
-			return HealthResponse{Services: []ServiceHealth{}}, nil
-		},
-		IdleTerminalSessionTimeout: 100 * time.Millisecond,
-		Position:                   "bottom-right",
-		ProjectRootPath:            projectRootPath,
-		StackName:                  "hello-stack",
-		StartTerminalSession:       starter.start,
-	})
-	if err != nil {
-		t.Fatalf("StartControlServer(...) error = %v", err)
-	}
-	t.Cleanup(func() {
-		_ = controlServer.Stop()
-	})
-	createRequest, err := http.NewRequest(http.MethodPost, serverURL(controlServer.Port(), terminalSessionsPath), strings.NewReader(`{"componentName":"SaveButton","kind":"editor","launcher":"neovim","source":{"fileName":"src/components/SaveButton.tsx","lineNumber":42},"sourceLabel":"src/components/SaveButton.tsx:42:1"}`))
-	if err != nil {
-		t.Fatalf("NewRequest(editor terminal) error = %v", err)
-	}
-	createRequest.Header.Set("content-type", "application/json")
-	createResponse, err := http.DefaultClient.Do(createRequest)
-	if err != nil {
-		t.Fatalf("Do(editor terminal) error = %v", err)
-	}
-	defer createResponse.Body.Close()
-
-	var created startTerminalSessionResponse
-	if err := json.NewDecoder(createResponse.Body).Decode(&created); err != nil {
-		t.Fatalf("Decode(start terminal response) error = %v", err)
-	}
+	// Idle cleanup must not run while this test attaches, so the timeout is out of reach.
+	controlServer := startTerminalTestControlServer(t, starter, time.Hour)
+	sessionID := startTerminalTestSession(t, controlServer, editorTerminalTestRequest)
 
 	outputPrefix := strings.Repeat("a", maximumRetainedTerminalOutputLength+32)
 	starter.sessions[0].emit(outputPrefix)
 	exitCode := 0
 	starter.sessions[0].exit(&exitCode, nil)
 
-	terminalSocket := mustDialWebsocket(t, terminalWebsocketURL(controlServer.Port(), created.SessionID))
+	terminalSocket := mustDialWebsocket(t, terminalWebsocketURL(controlServer.Port(), sessionID))
+	defer terminalSocket.Close()
 	snapshotMessage := readWebsocketText(t, terminalSocket)
 	var snapshot terminalSessionSnapshotMessage
 	if err := json.Unmarshal([]byte(snapshotMessage), &snapshot); err != nil {
@@ -964,26 +930,154 @@ func TestControlServerTerminalSessionsRetainTailAndIdleCleanup(t *testing.T) {
 		t.Fatalf("snapshot tail mismatch")
 	}
 	if message := readWebsocketText(t, terminalSocket); message != `{"exitCode":0,"signalCode":null,"type":"exit"}` {
-		t.Fatalf("idle cleanup exit = %q", message)
+		t.Fatalf("exit message = %q", message)
+	}
+}
+
+// The browser replaces its terminal buffer with the snapshot, so a live message delivered first would be lost.
+func TestControlServerTerminalClientReceivesSnapshotBeforeLiveOutput(t *testing.T) {
+	t.Parallel()
+
+	starter := newTestTerminalStarter()
+	controlServer := startTerminalTestControlServer(t, starter, time.Hour)
+	sessionID := startTerminalTestSession(t, controlServer, editorTerminalTestRequest)
+	// A full buffer makes the snapshot slow to encode, which is when live output used to overtake it.
+	starter.sessions[0].emit(strings.Repeat("a", maximumRetainedTerminalOutputLength))
+
+	stopOutput := make(chan struct{})
+	outputStopped := make(chan struct{})
+	go func() {
+		defer close(outputStopped)
+		for {
+			select {
+			case <-stopOutput:
+				return
+			default:
+				starter.sessions[0].emit("b")
+			}
+		}
+	}()
+	defer func() {
+		close(stopOutput)
+		<-outputStopped
+	}()
+
+	for attempt := range 100 {
+		terminalSocket := mustDialWebsocket(t, terminalWebsocketURL(controlServer.Port(), sessionID))
+		var first terminalSessionSnapshotMessage
+		if err := json.Unmarshal([]byte(readWebsocketText(t, terminalSocket)), &first); err != nil {
+			t.Fatalf("Unmarshal(first message) error = %v", err)
+		}
+		terminalSocket.Close()
+		if first.Type != "snapshot" {
+			t.Fatalf("attach %d: first message type = %q, want snapshot", attempt, first.Type)
+		}
+	}
+}
+
+func TestControlServerClosesIdleTerminalSession(t *testing.T) {
+	t.Parallel()
+
+	starter := newTestTerminalStarter()
+	controlServer := startTerminalTestControlServer(t, starter, 20*time.Millisecond)
+	// An editor session with no attached client is idle from the start.
+	startTerminalTestSession(t, controlServer, editorTerminalTestRequest)
+
+	waitForTerminalTestSessionsClosed(t, controlServer, starter)
+}
+
+func TestControlServerClosesExitedAnnotationSessionAfterLastClientDisconnects(t *testing.T) {
+	t.Parallel()
+
+	starter := newTestTerminalStarter()
+	controlServer := startTerminalTestControlServer(t, starter, 20*time.Millisecond)
+	// A running annotation session has no idle timer, so attaching never races the cleanup.
+	sessionID := startTerminalTestSession(t, controlServer, commandTerminalTestRequest)
+
+	terminalSocket := mustDialWebsocket(t, terminalWebsocketURL(controlServer.Port(), sessionID))
+	if message := readWebsocketText(t, terminalSocket); message != `{"data":"","type":"snapshot"}` {
+		t.Fatalf("snapshot = %q", message)
+	}
+	exitCode := 0
+	starter.sessions[0].exit(&exitCode, nil)
+	if message := readWebsocketText(t, terminalSocket); message != `{"exitCode":0,"signalCode":null,"type":"exit"}` {
+		t.Fatalf("exit message = %q", message)
+	}
+	if sessions := controlServer.createTerminalSessionListResponse().Sessions; len(sessions) != 1 {
+		t.Fatalf("sessions with an attached client = %#v, want the exited session retained", sessions)
 	}
 	terminalSocket.Close()
 
-	waitForCondition(t, 5*time.Second, func() bool {
-		listRequest, err := http.NewRequest(http.MethodGet, serverURL(controlServer.Port(), terminalSessionsPath), nil)
-		if err != nil {
-			return false
-		}
-		listResponse, err := http.DefaultClient.Do(listRequest)
-		if err != nil {
-			return false
-		}
-		defer listResponse.Body.Close()
+	waitForTerminalTestSessionsClosed(t, controlServer, starter)
+}
 
-		var listed listTerminalSessionsResponse
-		if err := json.NewDecoder(listResponse.Body).Decode(&listed); err != nil {
-			return false
-		}
-		return len(listed.Sessions) == 0
+const (
+	editorTerminalTestRequest  = `{"componentName":"SaveButton","kind":"editor","launcher":"neovim","source":{"fileName":"src/components/SaveButton.tsx","lineNumber":42},"sourceLabel":"src/components/SaveButton.tsx:42:1"}`
+	commandTerminalTestRequest = `{"actionId":"lint","annotation":{"comment":"Check lint.","markers":[],"stackName":"hello-stack","submittedAt":1,"title":"Buttons","url":"https://hello.test/buttons"},"kind":"command"}`
+)
+
+func startTerminalTestControlServer(t *testing.T, starter *testTerminalStarter, idleTimeout time.Duration) *ControlServer {
+	t.Helper()
+
+	controlServer, err := StartControlServer(StartControlServerOptions{
+		AnnotationActions: []manifest.ValidatedAnnotationAction{
+			{Command: []string{"bun", "run", "lint"}, Cwd: "/tmp/project", ID: "lint", Kind: "command", Label: "Run lint"},
+		},
+		AnnotationDefaultActionID: "lint",
+		ComponentEditor:           "neovim",
+		FeatureToggles: FeatureToggles{
+			AnnotationEnabled: true,
+			EditorEnabled:     true,
+			StatusEnabled:     true,
+			TerminalEnabled:   true,
+		},
+		GetHealthResponse: func() (HealthResponse, error) {
+			return HealthResponse{Services: []ServiceHealth{}}, nil
+		},
+		IdleTerminalSessionTimeout: idleTimeout,
+		Position:                   "bottom-right",
+		ProjectRootPath:            t.TempDir(),
+		StackName:                  "hello-stack",
+		StartTerminalSession:       starter.start,
+	})
+	if err != nil {
+		t.Fatalf("StartControlServer(...) error = %v", err)
+	}
+	t.Cleanup(func() {
+		_ = controlServer.Stop()
+	})
+	return controlServer
+}
+
+func startTerminalTestSession(t *testing.T, controlServer *ControlServer, requestBody string) string {
+	t.Helper()
+
+	request, err := http.NewRequest(http.MethodPost, serverURL(controlServer.Port(), terminalSessionsPath), strings.NewReader(requestBody))
+	if err != nil {
+		t.Fatalf("NewRequest(terminal session) error = %v", err)
+	}
+	request.Header.Set("content-type", "application/json")
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatalf("Do(terminal session) error = %v", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("start terminal session status = %d: %s", response.StatusCode, readResponseText(t, response))
+	}
+
+	var created startTerminalSessionResponse
+	if err := json.NewDecoder(response.Body).Decode(&created); err != nil {
+		t.Fatalf("Decode(start terminal response) error = %v", err)
+	}
+	return created.SessionID
+}
+
+func waitForTerminalTestSessionsClosed(t *testing.T, controlServer *ControlServer, starter *testTerminalStarter) {
+	t.Helper()
+
+	waitForCondition(t, 5*time.Second, func() bool {
+		return len(controlServer.createTerminalSessionListResponse().Sessions) == 0
 	})
 	waitForCondition(t, 5*time.Second, func() bool {
 		return starter.sessions[0].closeCountValue() == 1

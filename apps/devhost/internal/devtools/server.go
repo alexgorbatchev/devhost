@@ -894,6 +894,20 @@ func (c *websocketClient) write(messageType int, payload []byte) error {
 	return c.conn.WriteMessage(messageType, payload)
 }
 
+// writeJSONMessagesLocked writes values as consecutive text frames. The caller holds writeMu.
+func (c *websocketClient) writeJSONMessagesLocked(values []any) error {
+	for _, value := range values {
+		payload, err := json.Marshal(value)
+		if err != nil {
+			return err
+		}
+		if err := c.conn.WriteMessage(websocket.TextMessage, payload); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (c *websocketClient) close() {
 	c.writeMu.Lock()
 	defer c.writeMu.Unlock()

@@ -88,19 +88,19 @@ func (s *ControlServer) handleTerminalWebsocket(writer http.ResponseWriter, requ
 		session.clients = map[*websocketClient]struct{}{}
 	}
 	session.clients[client] = struct{}{}
-	snapshot := session.output
-	exitStatus := session.exited
+	initialMessages := []any{createTerminalSessionSnapshotMessage(session.output)}
+	if session.exited != nil {
+		initialMessages = append(initialMessages, session.exited)
+	}
+	// The client is now reachable by output and exit broadcasts. Taking its write lock before releasing the server
+	// lock makes them wait, so the snapshot they build on always arrives first.
+	client.writeMu.Lock()
 	s.mu.Unlock()
-
-	if err := writeJSONMessage(client, createTerminalSessionSnapshotMessage(snapshot)); err != nil {
+	err = client.writeJSONMessagesLocked(initialMessages)
+	client.writeMu.Unlock()
+	if err != nil {
 		s.handleTerminalClientClosed(sessionID, client)
 		return
-	}
-	if exitStatus != nil {
-		if err := writeJSONMessage(client, exitStatus); err != nil {
-			s.handleTerminalClientClosed(sessionID, client)
-			return
-		}
 	}
 
 	go s.readTerminalMessages(sessionID, client)
