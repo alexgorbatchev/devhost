@@ -1,9 +1,14 @@
-# Run package-local checks (TypeScript, unused exports, unit tests with coverage, Storybook vitest tests)
+# Run package-local checks (TypeScript, unused exports, unit tests with coverage, hook and Storybook tests in Chromium)
 check:
     bun tsgo --noEmit -p tsconfig.json
     bun --bun x ts-unused tsconfig.json
     bun test --coverage
+    bun vitest run -c vitest.hooks.config.ts
     NODE_ENV=development bun vitest run -c vitest.storybook.config.ts
+
+# Run hook tests in Chromium, optionally limited to matching paths
+test-hooks *args:
+    bun vitest run -c vitest.hooks.config.ts {{args}}
 
 # Ensure Playwright Chromium is available for Storybook
 install-browser:

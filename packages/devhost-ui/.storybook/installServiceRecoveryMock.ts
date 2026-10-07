@@ -15,7 +15,7 @@ import type {
   ServiceLogUpdateMessage,
   IWorktreeRepository,
 } from "../src/devtools/shared/types";
-import { createMockWebSocket, type IMockWebSocketConnection } from "./createMockWebSocket";
+import { createMockWebSocket, type IMockWebSocketConnection } from "../test-support/createMockWebSocket";
 
 type FetchRequestInput = Parameters<typeof fetch>[0];
 type FetchRequestInit = Parameters<typeof fetch>[1];
