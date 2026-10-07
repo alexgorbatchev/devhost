@@ -1,8 +1,8 @@
 import { mkdir, symlink } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import type { DemoRuntime } from "./types";
+import type { IDemoRuntime } from "./types";
 
-export async function createDemoPlayground(runtime: DemoRuntime): Promise<void> {
+export async function createDemoPlayground(runtime: IDemoRuntime): Promise<void> {
   const baseline: Record<string, string> = {};
   for (const app of ["frontend", "backend"]) {
     const sourcePath = join(runtime.repositoryPath, "packages/playground", app);

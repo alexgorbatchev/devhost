@@ -3,9 +3,9 @@ import { join } from "node:path";
 import { createCaptions } from "./createCaptions";
 import { readMediaInfo } from "./readMediaInfo";
 import { runCommand } from "./runCommand";
-import type { RecordedClip } from "./types";
+import type { IRecordedClip } from "./types";
 
-export async function assembleDemo(directoryPath: string, clips: readonly RecordedClip[]): Promise<string> {
+export async function assembleDemo(directoryPath: string, clips: readonly IRecordedClip[]): Promise<string> {
   assert(clips.length > 0, "No demo clips were recorded");
   const outputPath = join(directoryPath, "devhost-demo.mp4");
   const filter =

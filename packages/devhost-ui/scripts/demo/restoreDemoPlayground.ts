@@ -1,7 +1,7 @@
 import { join } from "node:path";
-import type { DemoRuntime } from "./types";
+import type { IDemoRuntime } from "./types";
 
-export async function restoreDemoPlayground(runtime: DemoRuntime): Promise<void> {
+export async function restoreDemoPlayground(runtime: IDemoRuntime): Promise<void> {
   const baseline: Record<string, string> = await Bun.file(
     join(runtime.directoryPath, "playground-baseline.json"),
   ).json();

@@ -1,6 +1,9 @@
-import type { Page } from "playwright";
+import type { Page, Screencast } from "playwright";
 
-export interface CommandOptions {
+export type ScreencastAction = "start" | "stop";
+export type ScreencastControls = Pick<Screencast, ScreencastAction>;
+
+export interface ICommandOptions {
   cwd?: string;
   env?: NodeJS.ProcessEnv;
   timeoutMs?: number;
@@ -8,12 +11,12 @@ export interface CommandOptions {
   logPath?: string;
 }
 
-export interface CaptionClip {
+export interface ICaptionClip {
   caption: string;
   duration: number;
 }
 
-export interface DemoRuntime {
+export interface IDemoRuntime {
   directoryPath: string;
   repositoryPath: string;
   manifestPath: string;
@@ -23,32 +26,51 @@ export interface DemoRuntime {
   env: NodeJS.ProcessEnv;
 }
 
-export interface BrowserScene {
+export interface IBrowserScene {
   id: string;
   caption: string;
-  record: (page: Page, runtime: DemoRuntime, signal: AbortSignal, changeCaption: ChangeCaption) => Promise<void>;
+  record: (page: Page, runtime: IDemoRuntime, signal: AbortSignal, changeCaption: ChangeCaption) => Promise<void>;
 }
 
 export type ChangeCaption = (caption: string) => Promise<void>;
 
-export interface RecordedSourceClip {
+export interface IRecordedSourceClip {
   id: string;
   path: string;
   caption: string;
 }
 
-export interface CaptionRecording {
+export interface ICaptionRecording {
   changeCaption: ChangeCaption;
-  stop: () => Promise<RecordedSourceClip[]>;
+  stop: () => Promise<IRecordedSourceClip[]>;
 }
 
-export interface RecordedClip extends CaptionClip {
+export interface IRecordedClip extends ICaptionClip {
   id: string;
   path: string;
 }
 
-export interface MediaInfo {
+export interface IMediaInfo {
   duration: number;
   width: number;
   height: number;
+}
+
+export interface IGuideTerminalStep {
+  command: string;
+  waitPattern: string;
+  holdMs?: number;
+  shouldWaitForStack?: boolean;
+}
+
+export interface IGuideTerminalScene {
+  slug: string;
+  caption: string;
+  steps: IGuideTerminalStep[];
+  manifest: string;
+  files?: Record<string, string>;
+  isPrivateCaddy?: boolean;
+  isDocker?: boolean;
+  daemonPort?: number;
+  dockerPort?: number;
 }

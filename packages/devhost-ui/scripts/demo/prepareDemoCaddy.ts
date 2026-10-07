@@ -1,8 +1,8 @@
 import { join } from "node:path";
 import { runCommand } from "./runCommand";
-import type { DemoRuntime } from "./types";
+import type { IDemoRuntime } from "./types";
 
-export async function prepareDemoCaddy(runtime: DemoRuntime, signal: AbortSignal): Promise<void> {
+export async function prepareDemoCaddy(runtime: IDemoRuntime, signal: AbortSignal): Promise<void> {
   try {
     const response = await fetch(`http://${runtime.adminAddress}/config/`, {
       signal: AbortSignal.any([signal, AbortSignal.timeout(2_000)]),
@@ -22,7 +22,7 @@ export async function prepareDemoCaddy(runtime: DemoRuntime, signal: AbortSignal
   } catch (error) {
     signal.throwIfAborted();
     throw new Error(
-      "Recording requires the managed Caddy listening on HTTPS port 443. Run 'devhost caddy start' before recording.",
+      `Recording requires managed Caddy at ${runtime.url}, with its admin endpoint at ${runtime.adminAddress}. Run 'devhost caddy start' before recording.`,
       { cause: error },
     );
   }

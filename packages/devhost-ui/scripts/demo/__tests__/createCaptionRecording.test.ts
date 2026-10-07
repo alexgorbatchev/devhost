@@ -1,5 +1,5 @@
 import { expect, it, mock } from "bun:test";
-import type { Screencast } from "playwright";
+import type { ScreencastControls } from "../types";
 import { createCaptionRecording } from "../createCaptionRecording";
 
 it("retains each event caption with its own completed video segment", async () => {
@@ -8,7 +8,7 @@ it("retains each event caption with its own completed video segment", async () =
     [Symbol.asyncDispose]: async (): Promise<void> => {},
   }));
   const stop = mock(async (): Promise<void> => {});
-  const screencast: Pick<Screencast, "start" | "stop"> = { start, stop };
+  const screencast: ScreencastControls = { start, stop };
   const recording = await createCaptionRecording(screencast, "/recording", "annotations", "Describe the change.");
   await recording.changeCaption("Pi is working.");
   await recording.changeCaption("The heading updated live.");
@@ -22,7 +22,7 @@ it("retains each event caption with its own completed video segment", async () =
 });
 
 it("preserves a single caption for scenes without a transition", async () => {
-  const screencast: Pick<Screencast, "start" | "stop"> = {
+  const screencast: ScreencastControls = {
     start: async () => ({
       dispose: async (): Promise<void> => {},
       [Symbol.asyncDispose]: async (): Promise<void> => {},

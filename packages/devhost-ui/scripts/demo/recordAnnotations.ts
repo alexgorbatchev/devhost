@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { join } from "node:path";
 import type { Page } from "playwright";
 import { clickWithIndicator } from "./clickWithIndicator";
-import type { ChangeCaption, DemoRuntime } from "./types";
+import type { ChangeCaption, IDemoRuntime } from "./types";
 
 export async function recordAnnotations(
   page: Page,
-  runtime: DemoRuntime,
+  runtime: IDemoRuntime,
   signal: AbortSignal,
   changeCaption: ChangeCaption,
 ): Promise<void> {
@@ -29,7 +29,7 @@ export async function recordAnnotations(
   );
   await page.waitForTimeout(2_000);
   await page.screenshot({ path: join(runtime.directoryPath, "annotation-draft.png") });
-  await clickWithIndicator(page, page.getByRole("button", { name: "Run Pi", exact: true }));
+  await clickWithIndicator(page, page.getByRole("button", { name: "Pi", exact: true }));
   await clickWithIndicator(page, page.getByRole("button", { name: /^Pi terminal, / }));
   await page.getByTestId("TerminalSessionPanel--content").waitFor();
   await page

@@ -4,6 +4,19 @@ sidebar:
   order: 1
 ---
 
+<!-- guide-demo -->
+<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/managed-caddy.webp" aria-label="managed caddy demo">
+  <source src="https://alexgorbatchev.github.io/devhost/demos/managed-caddy.mp4" type="video/mp4">
+  <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/managed-caddy.vtt" srclang="en" label="English">
+  <a href="https://alexgorbatchev.github.io/devhost/demos/managed-caddy.mp4">Watch the demo video</a>.
+</video>
+
+<details>
+<summary>Demo transcript</summary>
+<p>One proxy. Local HTTPS domains. Route each service by path.</p>
+</details>
+<!-- /guide-demo -->
+
 `devhost` routes local apps through one shared managed Caddy instance.
 
 ## Prepare Caddy

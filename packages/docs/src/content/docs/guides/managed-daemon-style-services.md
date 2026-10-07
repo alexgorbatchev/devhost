@@ -4,6 +4,19 @@ sidebar:
   order: 6
 ---
 
+<!-- guide-demo -->
+<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/managed-daemon-style-services.webp" aria-label="managed daemon style services demo">
+  <source src="https://alexgorbatchev.github.io/devhost/demos/managed-daemon-style-services.mp4" type="video/mp4">
+  <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/managed-daemon-style-services.vtt" srclang="en" label="English">
+  <a href="https://alexgorbatchev.github.io/devhost/demos/managed-daemon-style-services.mp4">Watch the demo video</a>.
+</video>
+
+<details>
+<summary>Demo transcript</summary>
+<p>Own a background service through explicit start, status, and stop commands.</p>
+</details>
+<!-- /guide-demo -->
+
 Use daemon lifecycle mode when `devhost` should own a service, but the service runs in the background or is managed through explicit `start` / `stop` commands rather than one long-lived foreground process.
 
 This is the correct mode for services that intentionally daemonize, re-exec into detached workers, or otherwise cannot guarantee that their long-lived process tree will stay attached to the foreground `command` that `devhost` started.

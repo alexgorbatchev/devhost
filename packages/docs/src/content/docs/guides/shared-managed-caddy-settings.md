@@ -4,6 +4,19 @@ sidebar:
   order: 4
 ---
 
+<!-- guide-demo -->
+<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/shared-managed-caddy-settings.webp" aria-label="shared managed caddy settings demo">
+  <source src="https://alexgorbatchev.github.io/devhost/demos/shared-managed-caddy-settings.mp4" type="video/mp4">
+  <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/shared-managed-caddy-settings.vtt" srclang="en" label="English">
+  <a href="https://alexgorbatchev.github.io/devhost/demos/shared-managed-caddy-settings.mp4">Watch the demo video</a>.
+</video>
+
+<details>
+<summary>Demo transcript</summary>
+<p>Shared listener settings serve the same routed service over HTTP and HTTPS.</p>
+</details>
+<!-- /guide-demo -->
+
 To also serve the same routed hosts through plain HTTP, add this top-level setting:
 
 ```toml

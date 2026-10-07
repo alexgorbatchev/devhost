@@ -1,0 +1,4 @@
+WEBVTT
+
+00:00.000 --> 00:40.200
+A rejected manifest leaves the running stack intact. Correct it and save again.

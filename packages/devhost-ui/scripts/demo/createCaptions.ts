@@ -1,6 +1,6 @@
-import type { CaptionClip } from "./types";
+import type { ICaptionClip } from "./types";
 
-export function createCaptions(clips: readonly CaptionClip[]): string {
+export function createCaptions(clips: readonly ICaptionClip[]): string {
   let elapsed = 0;
   return clips
     .map((clip, index) => {

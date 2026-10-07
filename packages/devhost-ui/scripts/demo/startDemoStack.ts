@@ -1,9 +1,9 @@
 import { join } from "node:path";
 import type { Subprocess } from "bun";
-import type { DemoRuntime } from "./types";
+import type { IDemoRuntime } from "./types";
 import { stopProcess } from "./stopProcess";
 
-export async function startDemoStack(runtime: DemoRuntime, signal: AbortSignal): Promise<Subprocess> {
+export async function startDemoStack(runtime: IDemoRuntime, signal: AbortSignal): Promise<Subprocess> {
   const certificate = await Bun.file(runtime.certificatePath).text();
   const subprocess = Bun.spawn([join(runtime.repositoryPath, "apps/devhost/dist/devhost"), "start"], {
     cwd: runtime.directoryPath,

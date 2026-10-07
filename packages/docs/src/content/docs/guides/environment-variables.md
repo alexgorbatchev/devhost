@@ -4,6 +4,19 @@ sidebar:
   order: 7
 ---
 
+<!-- guide-demo -->
+<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/environment-variables.webp" aria-label="environment variables demo">
+  <source src="https://alexgorbatchev.github.io/devhost/demos/environment-variables.mp4" type="video/mp4">
+  <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/environment-variables.vtt" srclang="en" label="English">
+  <a href="https://alexgorbatchev.github.io/devhost/demos/environment-variables.mp4">Watch the demo video</a>.
+</video>
+
+<details>
+<summary>Demo transcript</summary>
+<p>Automatic bind inputs and service context reach your application.</p>
+</details>
+<!-- /guide-demo -->
+
 `devhost` injects environment variables into each managed service command invocation.
 Only `DEVHOST_BIND_HOST` and `PORT` are operational bind inputs.
 The remaining variables are context metadata and must not be used as socket bind targets.

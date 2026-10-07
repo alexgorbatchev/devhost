@@ -2,15 +2,15 @@ import assert from "node:assert/strict";
 import { join } from "node:path";
 import type { Page, Request } from "playwright";
 import { createCaptionRecording } from "./createCaptionRecording";
-import type { BrowserScene, DemoRuntime, RecordedSourceClip } from "./types";
+import type { IBrowserScene, IDemoRuntime, IRecordedSourceClip } from "./types";
 
 export async function recordBrowserScene(
   page: Page,
-  scene: BrowserScene,
-  runtime: DemoRuntime,
+  scene: IBrowserScene,
+  runtime: IDemoRuntime,
   signal: AbortSignal,
-): Promise<RecordedSourceClip[]> {
-  let clips: RecordedSourceClip[] = [];
+): Promise<IRecordedSourceClip[]> {
+  let clips: IRecordedSourceClip[] = [];
   const errors: string[] = [];
   const navigations: string[] = [];
   const onPageError = (error: Error): void => {

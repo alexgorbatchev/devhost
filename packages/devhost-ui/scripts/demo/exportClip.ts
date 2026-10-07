@@ -3,14 +3,14 @@ import { viewport, captionBandHeight } from "./constants";
 import { createCaptions } from "./createCaptions";
 import { readMediaInfo } from "./readMediaInfo";
 import { runCommand } from "./runCommand";
-import type { RecordedClip } from "./types";
+import type { IRecordedClip } from "./types";
 
 export async function exportClip(
   directoryPath: string,
   id: string,
   sourcePath: string,
   caption: string,
-): Promise<RecordedClip> {
+): Promise<IRecordedClip> {
   const source = await readMediaInfo(sourcePath);
   await Bun.write(join(directoryPath, `${id}.srt`), createCaptions([{ caption, duration: source.duration }]));
   const outputPath = join(directoryPath, `clips/${id}.mp4`);

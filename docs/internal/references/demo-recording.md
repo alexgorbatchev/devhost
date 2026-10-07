@@ -1,12 +1,12 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-06 22:00
+last_modified: 2026-10-07 03:45
 status: current
 ---
 
 # Refreshing the devhost demo
 
-Run the recording from the checkout whose UI you want to demonstrate. The recorder rebuilds the CLI and embedded UI, starts the real playground through devhost, and exports a captioned H.264 MP4. The scene scripts remain in Git; generated media stays local until someone deliberately publishes it.
+Run the recording from the checkout whose UI you want to demonstrate. The recorder rebuilds the CLI and embedded UI, starts real services through devhost, and exports captioned H.264 MP4 videos. The general utility recording stays in `.tmp/demos/`; guide recordings also update reviewed, tracked site media.
 
 ## Prerequisites
 
@@ -53,6 +53,27 @@ The browser loads the playground and waits for the toolbar and fonts before capt
 
 A single-scene run exports that scene as `devhost-demo.mp4`. Run the full command after reviewing the scene to refresh the complete video. `DEVHOST_DEMO_HOST` can override the default `demo.localhost`; it must remain a `.localhost` hostname. Concurrent runs must use distinct hostnames. Existing host claims are protected by `killZombies = false`. Backend services still receive automatic ports behind the proxy; public URLs use standard HTTPS without a port suffix.
 
+## Public guide demos
+
+Record all twelve guides or refresh one by its documentation slug:
+
+```bash
+just demo guides
+just demo guides annotations
+just demo guides react-highlight
+just demo guides service-references
+```
+
+The command discovers guide Markdown files, renders each corresponding real workflow, and copies its MP4, WebP poster, and English WebVTT captions to `packages/docs/public/demos/<slug>.*`. It replaces the guide's `guide-demo` block with a native video player at the top and a collapsed text transcript. The prose remains untouched. Assets use full `https://alexgorbatchev.github.io/devhost/demos/` URLs and ship through the existing Pages build; no additional upload service or release is involved. Players use `preload="none"` and play only when requested.
+
+Browser guides cover the minimap, toolbar, worktrees and Query; real Pi annotation/live fixes; and React Highlight. The React Highlight scene launches the stack's generated `devhost-nvim` with a clean headless Neovim configuration, loads its native start packages with `packloadall!`, starts a real TSX Tree-sitter highlighter, moves its actual JSX cursor, and waits for a matching native browser diagnostic and overlay. Set `DEVHOST_DEMO_TSX_PARSER` to an installed `tsx.so` when it is not at the normal `nvim/site/parser/tsx.so` under the host's XDG data directory.
+
+Routing guides capture native VHS terminal sessions and verify real HTTP responses. Docker uses a per-run BusyBox 1.37.0 container with a published loopback port and an unmanaged devhost service; stopping devhost leaves Docker running, then the demo removes its owned container. Daemon mode uses cooperative start/status/stop scripts and checks that its listener disappears. Troubleshooting records a rejected manifest edit, a still-working route, and a corrected live reload. The shared-listener guide owns a separate Caddy state directory, admin endpoint, and allocated HTTP/HTTPS ports, demonstrates both protocols, and stops only that Caddy. Its explicitly configured listener ports are intentionally visible; the other guides use portless HTTPS.
+
+Guide rendering also needs `curl` and `setsid`; Docker needs a working local daemon and permission to pull the tiny public image. Rendering runs serially because guides use `demo.localhost`. Source files are `createGuideTerminalScene.ts`, `createGuideTape.ts`, `recordGuideTerminal.ts`, `recordReactHighlight.ts`, `recordGuides.ts`, and `publishGuideDemo.ts`. Native publication tests use FFmpeg/ffprobe, which CI installs before `just check`.
+
+Review the new media, transcript, and Markdown changes before committing. A push of docs assets to `main` uses `.github/workflows/docs.yml` to deploy them. Agent consumers can follow the HTTPS guide links in `skills/devhost/SKILL.md` and read prose/transcripts without loading binary media.
+
 ## Editing the sequence
 
 Sources live in `packages/devhost-ui/scripts/demo/`:
@@ -80,8 +101,8 @@ The copied playground has its own local Git repository on `main` and a real `ui-
 
 Each directory contains the final MP4, `devhost-demo.srt`, `poster.png`, measured `clips.json`, tool/revision metadata in `versions.json`, per-scene screenshots and SRT files, normalized `clips/*.mp4`, and raw VHS/Playwright videos. Each browser scene writes `<scene>-navigations.json` with captured full-page requests; successful scenes contain an empty array. Annotation screenshots include the draft, Pi terminal, and live fix. `pi-changes.json` preserves the edited source for review; `playground-baseline.json` records the original copy. Pi sessions and annotation prompts stay under the run’s `.tmp`. Logs include `vhs.log`, browser-stack logs, `cleanup.log`, and `recording-error.log` on failures.
 
-Browser profiles, artifacts, a copy of the public Caddy root certificate, and the runtime manifest are isolated under that directory. Caddy state and its privileged HTTPS listener are shared with normal devhost stacks; routes belong to the recording manifest. Editor integration is disabled; worktrees are enabled for the copied Git fixture. Temporary Chromium paths use a relative `.tmp` inside the recording directory to fit Linux's Unix socket path limit in deep worktrees.
+Browser profiles, artifacts, a copy of the public Caddy root certificate, and the runtime manifest are isolated under that directory. Caddy state and its privileged HTTPS listener are shared with normal devhost stacks; routes belong to the recording manifest. Editor integration is enabled only for the React Highlight guide; worktrees are enabled for the copied Git fixture. Temporary Chromium paths use a relative `.tmp` inside the recording directory to fit Linux's Unix socket path limit in deep worktrees.
 
 The recorder closes its browser, stops its stack, and runs manifest-scoped `devhost stop` to collect a terminal scene's stack and remove only its routes. It restores the copied playground after stopping Pi, preserving the actual edits in `pi-changes.json`. Checkout source files are never edited or reset. It leaves the shared Caddy running. SIGINT/SIGTERM request cleanup; a forced SIGKILL cannot execute it. Failed runs retain their logs and media for diagnosis. Remove a run directory only after its processes have stopped. Publish only the reviewed media, not runtime logs and configuration.
 
-There is no automatic upload, release change, or scheduled refresh. Publish the MP4 and optional poster/SRT through the desired channel after reviewing them.
+There is no automatic upload, release change, or scheduled refresh. `just demo record` retains its media locally; `just demo guides` prepares tracked docs assets for the existing Pages deployment after review and an authorized push.

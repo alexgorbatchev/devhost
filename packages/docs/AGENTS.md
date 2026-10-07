@@ -10,12 +10,14 @@ Public Astro + Starlight docs workspace for `devhost`, published to GitHub Pages
 - Check package-local validations: `just docs check`
 - Build the static site: `just docs build`
 - Preview the production build: `just docs preview`
+- Refresh all guide videos: `just demo guides`; refresh one: `just demo guides <guide-slug>`. See `../../docs/internal/references/demo-recording.md` for recording prerequisites.
 
 ## Local conventions
 
 - `apps/devhost/README.md` is the source of truth for the landing page.
 - `apps/devhost/devhost.example.toml` is the source of truth for the manifest reference page.
 - `src/content/docs/guides/**/*.md` is the source of truth for the Guides section.
+- Every guide starts with a native video player and collapsed text transcript. Keep controls, inline playback, and `preload="none"`; use full HTTPS URLs under `https://alexgorbatchev.github.io/devhost/demos/` for its MP4, WebP poster, and English VTT captions. The recorder replaces only the `guide-demo` block and updates tracked `public/demos/` assets. Guide prose remains usable by agents without watching videos.
 - `src/content/docs/architecture/**/*.md` is the source of truth for the Architecture section.
 - `sync.ts` only regenerates `src/content/docs/index.mdx` and `src/content/docs/reference/devhost-example.md` from the app README and manifest reference.
 - `../design/references/docs.html` (`just design docs`) is the visual design reference for the docs site. Match its tokens, layout, and state treatments when changing docs styling, and update it in the same change when the design intentionally diverges.

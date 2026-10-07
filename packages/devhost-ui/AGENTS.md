@@ -7,6 +7,7 @@ Local React workspace for the injected `devhost` browser UI that gets embedded i
 - Check package-local validations: `just ui check`
 - Storybook: `just ui storybook`
 - Record the real utility demo: `just demo record`; recording tests: `just demo test`. See `../../docs/internal/references/demo-recording.md` for prerequisites, scene refreshes, and artifact locations.
+- Refresh every public guide video: `just demo guides` (or `just demo guides <guide-slug>`). Publication tests require FFmpeg/ffprobe; full rendering also needs VHS/ttyd. Docker and React Highlight guides need real Docker and Neovim/TSX Tree-sitter.
 - Open the design reference in the default browser (from the repo root): `just design devtools`
 
 ## Local conventions
@@ -19,6 +20,7 @@ Local React workspace for the injected `devhost` browser UI that gets embedded i
 - Annotation recordings use real Pi and HMR against a copied playground under the recording directory. Keep its edit guard and restoration; never edit or reset the checkout's playground for recordings. Request reduced motion to freeze the playground background and logo. Use recording click rings without action text labels.
 - Keep the browser sequence minimap → toolbar/worktrees → annotation/Pi/live fix → TanStack Query → minimize Query and end. Worktrees belong to the copied Git fixture. Change captions on observed Pi working and heading-update events, using native video segments and measured durations rather than guessed timestamps.
 - Load the playground and wait for UI/fonts before starting capture. Reuse that page across browser scenes, preserve its live state, and reject full-page navigations during capture. Keep real HMR and client-side Query navigation visible.
+- Guide recordings exercise real CLI routing, dependency injection, manifest includes/reload, Docker, daemon lifecycle, and the bundled Neovim plugin. Keep the shared-listener guide on its own Caddy state/admin/ports and stop that instance after recording; leave the user's shared Caddy running. Publish only MP4/poster/captions and human-readable transcript blocks, with complete HTTPS docs asset URLs.
 - `../design/references/devtools.html` (`just design devtools`) is the visual design reference for the injected UI: a standalone page that mounts every devtools surface in a Shadow DOM over switchable host backgrounds. Match its tokens, layout, and state treatments when changing devtools components, and update it in the same change when the design intentionally diverges.
 
 ## Local gotchas

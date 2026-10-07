@@ -4,6 +4,19 @@ sidebar:
   order: 8
 ---
 
+<!-- guide-demo -->
+<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/service-references.webp" aria-label="service references demo">
+  <source src="https://alexgorbatchev.github.io/devhost/demos/service-references.mp4" type="video/mp4">
+  <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/service-references.vtt" srclang="en" label="English">
+  <a href="https://alexgorbatchev.github.io/devhost/demos/service-references.mp4">Watch the demo video</a>.
+</video>
+
+<details>
+<summary>Demo transcript</summary>
+<p>Resolve the API&#x27;s assigned port before starting its consumer.</p>
+</details>
+<!-- /guide-demo -->
+
 `devhost` supports late-binding/runtime service references using `{{ services.<name>.<property> }}` placeholders. This allows services to dynamically discover configuration from other services in the stack (such as auto-allocated ports or bind hosts) right before they are launched.
 
 This is particularly useful in multi-service monorepos where databases or backend services run on dynamically allocated ports (`port = "auto"`), and consuming services need to discover those ports to establish a network connection.

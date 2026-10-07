@@ -1,11 +1,11 @@
 import { mkdir, mkdtemp } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import type { DemoRuntime } from "./types";
+import type { IDemoRuntime } from "./types";
 import { createDemoPlayground } from "./createDemoPlayground";
 import { createPiDemoFiles } from "./createPiDemoFiles";
 import { createDemoWorktrees } from "./createDemoWorktrees";
 
-export async function createDemoRuntime(repositoryPath: string, host: string): Promise<DemoRuntime> {
+export async function createDemoRuntime(repositoryPath: string, host: string): Promise<IDemoRuntime> {
   if (!/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+localhost$/.test(host)) {
     throw new Error("Recording hostname must be a .localhost hostname");
   }
@@ -34,7 +34,7 @@ export async function createDemoRuntime(repositoryPath: string, host: string): P
   };
   delete env.DEVHOST_DEV_SOURCE_DIR;
   delete env.DEVHOST_IDLE_TIMEOUT;
-  const runtime: DemoRuntime = {
+  const runtime: IDemoRuntime = {
     directoryPath,
     repositoryPath,
     manifestPath,

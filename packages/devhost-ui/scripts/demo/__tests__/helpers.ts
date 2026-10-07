@@ -5,7 +5,7 @@ import { chromium, type Browser } from "playwright";
 import { createDemoPage } from "../createDemoPage";
 import { createDemoRuntime } from "../createDemoRuntime";
 import { recordBrowserScene } from "../recordBrowserScene";
-import type { DemoRuntime } from "../types";
+import type { IDemoRuntime } from "../types";
 
 let documentRequests = 0;
 const server = Bun.serve({
@@ -21,7 +21,7 @@ const server = Bun.serve({
 });
 const fixtureRuntime = await createDemoRuntime(resolve(import.meta.dir, "../../../../.."), "recording-test.localhost");
 const directoryPath = fixtureRuntime.directoryPath;
-const runtime: DemoRuntime = {
+const runtime: IDemoRuntime = {
   ...fixtureRuntime,
   url: server.url.href,
 };

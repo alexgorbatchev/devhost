@@ -1,7 +1,7 @@
 import { runCommand } from "./runCommand";
-import type { MediaInfo } from "./types";
+import type { IMediaInfo } from "./types";
 
-export async function readMediaInfo(path: string): Promise<MediaInfo> {
+export async function readMediaInfo(path: string): Promise<IMediaInfo> {
   const output = await runCommand([
     "ffprobe",
     "-v",

@@ -1,9 +1,9 @@
 import { join } from "node:path";
 import { runCommand } from "./runCommand";
-import type { DemoRuntime } from "./types";
+import type { IDemoRuntime } from "./types";
 import { restoreDemoPlayground } from "./restoreDemoPlayground";
 
-export async function cleanupDemoRuntime(runtime: DemoRuntime): Promise<void> {
+export async function cleanupDemoRuntime(runtime: IDemoRuntime): Promise<void> {
   await runCommand(
     [join(runtime.repositoryPath, "apps/devhost/dist/devhost"), "stop", "--manifest", runtime.manifestPath],
     {
