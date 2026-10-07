@@ -186,14 +186,21 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
       const resizeObserver = new ResizeObserver((): void => {
         scheduleTerminalResize();
       });
+      // The terminal reads its output after the session's messages have arrived, so a finished session's retained
+      // output is read after its exit. What the agent reported while it ran must not replace "finished".
+      const reportAgentStatus = (status: TerminalSessionStatus): void => {
+        if (!hasExitedReference.current) {
+          reportStatus(status);
+        }
+      };
       const oscListener = terminal.parser.registerOscHandler(1337, (data: string): boolean => {
         if (data === "SetAgentStatus=working") {
-          reportStatus("working");
+          reportAgentStatus("working");
           return true;
         }
 
         if (data === "SetAgentStatus=finished") {
-          reportStatus("idle");
+          reportAgentStatus("idle");
           return true;
         }
 
