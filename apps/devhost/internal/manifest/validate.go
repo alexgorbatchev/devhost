@@ -187,15 +187,16 @@ func validateAnnotationAction(index int, value map[string]any, manifestDirectory
 	}
 
 	actionLabel, hasLabel := readOptionalNonEmptyString(value, "label", schemaIssues)
-	if !hasLabel {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("annotation.actions.%s.label Expected a non-empty string.", actionID))
-		return ValidatedAnnotationAction{ID: actionID, Kind: actionKind}
-	}
 
 	switch actionKind {
 	case "agent":
 		return validateAgentAnnotationAction(actionID, actionLabel, value, manifestDirectoryPath, schemaIssues, validationIssues)
 	case "command":
+		// A command has no name to fall back on, unlike an agent.
+		if !hasLabel {
+			*schemaIssues = append(*schemaIssues, fmt.Sprintf("annotation.actions.%s.label Expected a non-empty string.", actionID))
+			return ValidatedAnnotationAction{ID: actionID, Kind: actionKind}
+		}
 		return validateCommandAnnotationAction(actionID, actionLabel, value, manifestDirectoryPath, schemaIssues, validationIssues)
 	default:
 		*schemaIssues = append(*schemaIssues, fmt.Sprintf("annotation.actions.%s.kind must be one of agent or command.", actionID))
@@ -253,7 +254,11 @@ func validateCommandAnnotationAction(actionID string, actionLabel string, value 
 	}
 }
 
+// createAgentAnnotationAction labels the action with the agent's display name when the manifest sets no label.
 func createAgentAnnotationAction(actionID string, actionLabel string, agent ValidatedAgent) ValidatedAnnotationAction {
+	if actionLabel == "" {
+		actionLabel = agent.DisplayName
+	}
 	return ValidatedAnnotationAction{Agent: agent, DisplayName: actionLabel, ID: actionID, Kind: "agent"}
 }
 

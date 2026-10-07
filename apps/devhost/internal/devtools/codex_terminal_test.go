@@ -24,7 +24,7 @@ func TestCodexTerminalCommand(t *testing.T) {
 			root := t.TempDir()
 			action := manifest.ValidatedAnnotationAction{
 				Agent: manifest.ValidatedAgent{Kind: "codex", DisplayName: "Codex", Args: args},
-				ID:    "ask-codex", DisplayName: "Ask Codex", Kind: "agent",
+				ID:    "ask-codex", DisplayName: "Codex", Kind: "agent",
 			}
 			annotation := annotationSubmitDetail{Comment: "Fix spacing", StackName: "test", URL: "https://app.localhost"}
 			cmd, err := createAgentTerminalCommand(action, root, annotation, agentColorSchemeLight, "test")

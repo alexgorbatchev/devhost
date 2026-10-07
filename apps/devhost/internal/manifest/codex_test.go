@@ -17,7 +17,7 @@ func TestValidateCodexAnnotationAction(t *testing.T) {
 			}
 			raw := rawManifestWithServices(map[string]any{
 				"annotation": map[string]any{"actions": []any{map[string]any{
-					"agent": agent, "id": "ask-codex", "kind": "agent", "label": "Ask Codex",
+					"agent": agent, "id": "ask-codex", "kind": "agent",
 				}}},
 			})
 			m, err := ValidateManifest(filepath.Join(t.TempDir(), "devhost.toml"), raw)
@@ -25,7 +25,7 @@ func TestValidateCodexAnnotationAction(t *testing.T) {
 				t.Fatal(err)
 			}
 			action := m.Annotation.Actions[0]
-			if action.Agent.Kind != "codex" || action.Agent.DisplayName != "Codex" || action.ID != m.Annotation.DefaultActionID {
+			if action.Agent.Kind != "codex" || action.Agent.DisplayName != "Codex" || action.DisplayName != "Codex" || action.ID != m.Annotation.DefaultActionID {
 				t.Fatalf("normalized Codex action = %#v, default = %q", action, m.Annotation.DefaultActionID)
 			}
 			want := make([]string, len(args))

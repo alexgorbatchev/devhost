@@ -469,7 +469,7 @@ func TestCreateAgentSessionFilesWritesExpectedSupportFiles(t *testing.T) {
 
 	files, err := createAgentSessionFiles(agentSessionFilesOptions{
 		actionID:         defaultAnnotationActionID,
-		actionLabel:      "Ask Pi",
+		actionLabel:      "Pi",
 		agentDisplayName: "Pi",
 		annotation: annotationSubmitDetail{
 			Comment:     "Fix it",

@@ -9,6 +9,7 @@ Use this reference when a `devhost.toml` manifest needs an annotation `kind = "a
 - `args` is only valid when `adapter` is configured; it cannot be used with custom command agents.
 - Do not invent project-local adapter names. A new `adapter = "..."` value requires devhost Go code changes and a release.
 - Use a custom command for user-provided or project-local agent integrations. Custom agent actions omit `adapter` and use `displayName`, `command`, optional `cwd`, and optional `env` inside `[annotation.actions.agent]`.
+- Omit `label` on agent actions. It defaults to the agent's name: `Pi`, `Claude Code`, `OpenCode`, or `Codex` for a built-in adapter, or the custom `displayName`. Set `label` only to tell apart actions that share an agent. Command actions require `label`.
 
 ## Built-in adapter form
 
@@ -25,7 +26,6 @@ defaultAction = "fix"
 
 [[annotation.actions]]
 id = "fix"
-label = "Ask Claude"
 kind = "agent"
 
 [annotation.actions.agent]
@@ -38,7 +38,6 @@ Example with `pi`:
 ```toml
 [[annotation.actions]]
 id = "fix-pi"
-label = "Ask Pi"
 kind = "agent"
 
 [annotation.actions.agent]
@@ -51,7 +50,6 @@ Example with `opencode`:
 ```toml
 [[annotation.actions]]
 id = "fix-opencode"
-label = "Ask OpenCode"
 kind = "agent"
 
 [annotation.actions.agent]
@@ -74,7 +72,6 @@ Install and sign in to the Codex CLI before selecting this adapter. Use a versio
 ```toml
 [[annotation.actions]]
 id = "ask-codex"
-label = "Ask Codex"
 kind = "agent"
 
 [annotation.actions.agent]
@@ -98,7 +95,6 @@ defaultAction = "fix"
 
 [[annotation.actions]]
 id = "fix"
-label = "Ask My Agent"
 kind = "agent"
 
 [annotation.actions.agent]

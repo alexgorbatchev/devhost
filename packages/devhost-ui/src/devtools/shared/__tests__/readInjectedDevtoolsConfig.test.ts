@@ -134,7 +134,7 @@ describe("readInjectedDevtoolsConfig", () => {
   test("reads annotation actions from the injected config", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
       annotationActions: [
-        { displayName: "Ask Agent", id: "ask-agent", kind: "agent", queueEnabled: true },
+        { displayName: "Pi", id: "ask-agent", kind: "agent", queueEnabled: true },
         { displayName: "Create Ticket", id: "create-ticket", kind: "command", queueEnabled: false },
       ],
       annotationDefaultActionId: "create-ticket",
@@ -142,7 +142,7 @@ describe("readInjectedDevtoolsConfig", () => {
 
     expect(readInjectedDevtoolsConfig()).toEqual({
       annotationActions: [
-        { displayName: "Ask Agent", id: "ask-agent", kind: "agent", queueEnabled: true },
+        { displayName: "Pi", id: "ask-agent", kind: "agent", queueEnabled: true },
         { displayName: "Create Ticket", id: "create-ticket", kind: "command", queueEnabled: false },
       ],
       annotationDefaultActionId: "create-ticket",

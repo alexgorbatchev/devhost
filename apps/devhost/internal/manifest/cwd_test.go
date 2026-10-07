@@ -36,7 +36,7 @@ func TestValidateManifestResolvesWorkingDirectories(t *testing.T) {
 					map[string]any{"id": "run", "label": "Run", "kind": "command", "command": map[string]any{
 						"command": []any{"tool"}, "cwd": tt.cwd,
 					}},
-					map[string]any{"id": "ask", "label": "Ask", "kind": "agent", "agent": map[string]any{
+					map[string]any{"id": "ask", "kind": "agent", "agent": map[string]any{
 						"command": []any{"agent"}, "displayName": "Agent", "cwd": tt.cwd,
 					}},
 				}},
