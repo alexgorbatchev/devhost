@@ -80,10 +80,27 @@ export async function exerciseNativeReactLifecycle(options: INativeReactLifecycl
   await connectNativeReactControl(host);
   await host.getByRole("button", { name: "React DevTools", exact: true }).click();
   await inspector.assertWindowPreserved();
+  const appRoot = host.getByTestId("DevtoolsTopLayer");
+  await appRoot.waitFor({ state: "visible" });
+  assert.equal(await appRoot.count(), 1, "The actual App root must exist before unmount.");
+  const originalAppRoot = await appRoot.elementHandle();
+  assert(originalAppRoot);
+  assert.equal(
+    await originalAppRoot.evaluate(
+      (element) =>
+        element.isConnected &&
+        element ===
+          document.getElementById("devhost-devtools-host")?.shadowRoot?.querySelector("[data-testid=DevtoolsTopLayer]"),
+    ),
+    true,
+    "The positive root must belong to this fixture App owner.",
+  );
   await activateNativeReactFixtureControl(host, "Unmount actual App root", options.outputPath);
   await command.waitFor({ state: "detached" });
-  await host.getByTestId("AppContent").waitFor({ state: "detached" });
-  assert.equal(await host.getByTestId("AppContent").count(), 0);
+  await appRoot.waitFor({ state: "detached" });
+  assert.equal(await appRoot.count(), 0);
+  assert.equal(await originalAppRoot.evaluate((element) => element.isConnected), false);
+  await originalAppRoot.dispose();
   await readout.waitFor({ state: "detached" });
   await assertHostIncrement(host, project.name, 6);
   await inspector.assertComponents(6);

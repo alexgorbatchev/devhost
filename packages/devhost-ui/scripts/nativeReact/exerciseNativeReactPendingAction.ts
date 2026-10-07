@@ -141,7 +141,7 @@ export async function exerciseNativeReactPendingAction(options: INativeReactPend
     await connectNativeReactControl(page);
     const binding = await readNativeReactBinding(page);
     originalDocument = await page.evaluateHandle(() => document);
-    originalApp = await page.getByTestId("AppContent").elementHandle();
+    originalApp = await page.getByTestId("DevtoolsTopLayer").elementHandle();
     assert(originalApp);
     const initialTarget: unknown = await hostSession.send("Target.getTargetInfo");
     const originalTargetId = targetIdentitySchema.parse(initialTarget).targetInfo.targetId;
@@ -207,7 +207,9 @@ export async function exerciseNativeReactPendingAction(options: INativeReactPend
       hasOriginalRoot:
         element.isConnected &&
         element ===
-          document.getElementById("devhost-devtools-host")?.shadowRoot?.querySelector('[data-testid="AppContent"]'),
+          document
+            .getElementById("devhost-devtools-host")
+            ?.shadowRoot?.querySelector('[data-testid="DevtoolsTopLayer"]'),
       instanceId: element.getAttribute("data-devhost-native-instance"),
       documentId: element.getAttribute("data-devhost-native-document"),
     }));
@@ -224,7 +226,7 @@ export async function exerciseNativeReactPendingAction(options: INativeReactPend
     failure = error;
     const snapshots = await Promise.allSettled([
       page.locator("body").ariaSnapshot(),
-      page.getByTestId("AppContent").ariaSnapshot(),
+      page.getByTestId("DevtoolsTopLayer").ariaSnapshot(),
       page.getByRole("button", { name: "Connect browser control", exact: true }).isVisible(),
       page.getByRole("button", { name: "Native browser connection", exact: true }).isVisible(),
     ]);
