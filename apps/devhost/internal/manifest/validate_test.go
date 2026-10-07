@@ -496,6 +496,15 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 			wantError: "annotation.actions.test.label Expected a non-empty string.",
 		},
 		{
+			name: "rejects annotation agent adapter with displayName",
+			manifest: rawManifestWithServices(map[string]any{
+				"annotation": map[string]any{"actions": []any{
+					map[string]any{"agent": map[string]any{"adapter": "pi", "displayName": "My Pi"}, "id": "fix", "kind": "agent"},
+				}},
+			}),
+			wantError: "annotation.actions.fix.agent must define either adapter or custom command fields, not both.",
+		},
+		{
 			name: "rejects empty annotation agent action label",
 			manifest: rawManifestWithServices(map[string]any{
 				"annotation": map[string]any{"actions": []any{

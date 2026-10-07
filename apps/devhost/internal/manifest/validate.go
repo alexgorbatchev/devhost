@@ -214,7 +214,7 @@ func validateAgentAnnotationAction(actionID string, actionLabel string, value ma
 		return ValidatedAnnotationAction{DisplayName: actionLabel, ID: actionID, Kind: "agent"}
 	}
 	allowKeys(agentValue, []string{"adapter", "args", "command", "cwd", "displayName", "env"}, "annotation.actions."+actionID+".agent", schemaIssues)
-	agent := validateAgentActionFields("annotation.actions."+actionID+".agent", agentValue, manifestDirectoryPath, schemaIssues, validationIssues, false)
+	agent := validateAgentActionFields("annotation.actions."+actionID+".agent", agentValue, manifestDirectoryPath, schemaIssues, validationIssues)
 	if agent.DisplayName == "" || agent.Kind == "" {
 		return ValidatedAnnotationAction{DisplayName: actionLabel, ID: actionID, Kind: "agent"}
 	}
@@ -262,7 +262,7 @@ func createAgentAnnotationAction(actionID string, actionLabel string, agent Vali
 	return ValidatedAnnotationAction{Agent: agent, DisplayName: actionLabel, ID: actionID, Kind: "agent"}
 }
 
-func validateAgentActionFields(path string, value map[string]any, manifestDirectoryPath string, schemaIssues *[]string, validationIssues *[]string, allowAdapterDisplayName bool) ValidatedAgent {
+func validateAgentActionFields(path string, value map[string]any, manifestDirectoryPath string, schemaIssues *[]string, validationIssues *[]string) ValidatedAgent {
 
 	adapterValue, hasAdapter := readOptionalString(value, "adapter", schemaIssues)
 	argsValue, hasArgs := readOptionalStringArrayAllowEmpty(value, "args", schemaIssues)
@@ -272,20 +272,20 @@ func validateAgentActionFields(path string, value map[string]any, manifestDirect
 	envValue, hasEnv := readOptionalStringMap(value, "env", schemaIssues)
 
 	if hasAdapter {
-		if hasCommand || (!allowAdapterDisplayName && hasDisplayName) || hasCwd || hasEnv {
+		if hasCommand || hasDisplayName || hasCwd || hasEnv {
 			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must define either adapter or custom command fields, not both.", path))
 			return ValidatedAgent{}
 		}
 
 		switch adapterValue {
 		case "pi":
-			return ValidatedAgent{Args: argsValue, DisplayName: readAdapterDisplayName("Pi", displayName, hasDisplayName), Kind: "pi"}
+			return ValidatedAgent{Args: argsValue, DisplayName: "Pi", Kind: "pi"}
 		case "claude-code":
-			return ValidatedAgent{Args: argsValue, DisplayName: readAdapterDisplayName("Claude Code", displayName, hasDisplayName), Kind: "claude-code"}
+			return ValidatedAgent{Args: argsValue, DisplayName: "Claude Code", Kind: "claude-code"}
 		case "opencode":
-			return ValidatedAgent{Args: argsValue, DisplayName: readAdapterDisplayName("OpenCode", displayName, hasDisplayName), Kind: "opencode"}
+			return ValidatedAgent{Args: argsValue, DisplayName: "OpenCode", Kind: "opencode"}
 		case "codex":
-			return ValidatedAgent{Args: argsValue, DisplayName: readAdapterDisplayName("Codex", displayName, hasDisplayName), Kind: "codex"}
+			return ValidatedAgent{Args: argsValue, DisplayName: "Codex", Kind: "codex"}
 		default:
 			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.adapter must be one of pi, claude-code, opencode, or codex.", path))
 			return ValidatedAgent{}
@@ -320,13 +320,6 @@ func validateAgentActionFields(path string, value map[string]any, manifestDirect
 		Env:         validatedEnv,
 		Kind:        "configured",
 	}
-}
-
-func readAdapterDisplayName(defaultValue string, displayName string, hasDisplayName bool) string {
-	if hasDisplayName {
-		return displayName
-	}
-	return defaultValue
 }
 
 func validateCaddy(rawValue any, schemaIssues *[]string) CaddyConfig {
