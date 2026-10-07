@@ -207,15 +207,7 @@ export const HostileHostPage: Story = {
   },
   render: (_args, context) => <InjectedMountScene devtools={readInjectedDevtoolsStory(context)} hasControls={false} />,
   play: async (): Promise<void> => {
-    const toolbar: HTMLElement = await waitFor(() => {
-      const hostElement: HTMLElement | null = document.getElementById(DEVTOOLS_HOST_ID);
-      const toolbarBar: HTMLElement | null =
-        hostElement?.shadowRoot?.querySelector<HTMLElement>("[data-testid='DevtoolsToolbar--bar']") ?? null;
-
-      expect(toolbarBar).not.toBeNull();
-
-      return toolbarBar as HTMLElement;
-    });
+    const toolbar: HTMLElement = await waitFor(() => readInjectedToolbarBar());
     const toolbarStyle: CSSStyleDeclaration = getComputedStyle(toolbar);
 
     await expect(toolbarStyle.letterSpacing).toBe("normal");
@@ -233,14 +225,8 @@ export const HostileHostPage: Story = {
 export const ShadowRootWithoutDocumentStyles: Story = {
   render: () => <ShadowRootWithoutDocumentStylesStory />,
   play: async ({ canvasElement }): Promise<void> => {
-    const frame: HTMLElement = await waitFor(() => {
-      const frameElement: HTMLDivElement | null = readIsolatedFrameProbe(canvasElement);
-
-      expect(frameElement).not.toBeNull();
-
-      return frameElement as HTMLDivElement;
-    });
-    const frameStyle: CSSStyleDeclaration = frame.ownerDocument.defaultView!.getComputedStyle(frame);
+    const frame: HTMLElement = await waitFor(() => readIsolatedFrameProbe(canvasElement));
+    const frameStyle: CSSStyleDeclaration = readOwnerWindow(frame).getComputedStyle(frame);
 
     await expect(frameStyle.borderTopStyle).toBe("solid");
     await expect(frameStyle.borderTopWidth).toBe("1px");
@@ -410,11 +396,42 @@ function ShadowRootWithoutDocumentStylesStory(): JSX.Element {
   );
 }
 
-function readIsolatedFrameProbe(canvasElement: HTMLElement): HTMLDivElement | null {
+/** Reads the toolbar that `renderDevtools` mounted in the document. Throws until it has rendered. */
+function readInjectedToolbarBar(): HTMLElement {
+  const toolbarBar: HTMLElement | null =
+    document
+      .getElementById(DEVTOOLS_HOST_ID)
+      ?.shadowRoot?.querySelector<HTMLElement>("[data-testid='DevtoolsToolbar--bar']") ?? null;
+
+  if (toolbarBar === null) {
+    throw new Error("The injected devtools toolbar has not rendered.");
+  }
+
+  return toolbarBar;
+}
+
+/** Reads the styled probe inside the isolated frame's shadow root. Throws until the frame has rendered it. */
+function readIsolatedFrameProbe(canvasElement: HTMLElement): HTMLDivElement {
   const frameElement: HTMLIFrameElement | null = canvasElement.querySelector(`[data-testid='${isolatedFrameTestId}']`);
   const hostElement: Element | null = frameElement?.contentDocument?.body.firstElementChild ?? null;
+  const probeElement: HTMLDivElement | null =
+    hostElement?.shadowRoot?.querySelector<HTMLDivElement>(`[data-testid='${isolatedFrameProbeTestId}']`) ?? null;
 
-  return hostElement?.shadowRoot?.querySelector<HTMLDivElement>(`[data-testid='${isolatedFrameProbeTestId}']`) ?? null;
+  if (probeElement === null) {
+    throw new Error("The isolated frame has not rendered its probe.");
+  }
+
+  return probeElement;
+}
+
+function readOwnerWindow(element: Element): Window {
+  const ownerWindow: Window | null = element.ownerDocument.defaultView;
+
+  if (ownerWindow === null) {
+    throw new Error("The element's document is not attached to a window.");
+  }
+
+  return ownerWindow;
 }
 
 async function readStoryShadowRoot(canvasElement: HTMLElement): Promise<ShadowRoot> {
