@@ -93,12 +93,11 @@ type DevtoolsStatusConfig struct {
 }
 
 type ValidatedAgent struct {
-	Args        []string
-	Command     []string
-	Cwd         string
-	DisplayName string
-	Env         map[string]string
-	Kind        string
+	Args    []string
+	Command []string
+	Cwd     string
+	Env     map[string]string
+	Kind    string
 }
 
 type ValidatedService struct {

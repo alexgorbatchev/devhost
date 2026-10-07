@@ -223,11 +223,11 @@ restartServices = "alt+ctrl+r"
 # Agent actions support the built-in adapters `"pi"`, `"claude-code"`, `"opencode"`, and `"codex"`.
 # Built-in adapters accept an optional `args` string array to pass extra CLI flags (e.g. model,
 # thinking level, or permission modes) while preserving built-in status reporting and prompt handoff.
-# Custom agent actions omit `adapter` and use `displayName`, `command`, optional `cwd`, and optional `env`
+# Custom agent actions omit `adapter` and use `command`, optional `cwd`, and optional `env`
 # inside `[annotation.actions.agent]` (`args` is valid only with `adapter`).
-# `label` names an action in the annotation composer. Agent actions default it to the agent's name:
-# "Pi", "Claude Code", "OpenCode", or "Codex" for a built-in adapter, or the custom `displayName`.
-# Set `label` on an agent action to tell apart actions that share an agent. Command actions require it.
+# `label` names an action in the annotation composer. Built-in adapters default it to their name:
+# "Pi", "Claude Code", "OpenCode", or "Codex". Set `label` to tell apart actions that share an adapter.
+# Custom agent actions and command actions require `label`.
 #
 # Codex example (requires the Codex CLI on PATH with --no-daemon and lifecycle hooks):
 # [[annotation.actions]]
