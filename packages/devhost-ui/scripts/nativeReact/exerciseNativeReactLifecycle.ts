@@ -3,6 +3,8 @@ import { resolve } from "node:path";
 import type { Page } from "playwright";
 import type { NativeReactInspector } from "./NativeReactInspector";
 import type { INativeReactProject } from "./types";
+import { exerciseNativeReactCommands } from "./exerciseNativeReactCommands";
+import { activateNativeReactFixtureControl } from "./activateNativeReactFixtureControl";
 
 interface INativeReactLifecycleOptions {
   host: Page;
@@ -14,9 +16,6 @@ interface INativeReactLifecycleOptions {
 }
 
 export async function connectNativeReactControl(page: Page): Promise<void> {
-  const trigger = page.getByRole("button", { name: "Native browser connection", exact: true });
-  await trigger.waitFor();
-  if ((await trigger.getAttribute("aria-expanded")) !== "true") await trigger.click();
   await page.getByRole("button", { name: "Connect browser control", exact: true }).click();
   await page.getByRole("status").filter({ hasText: "Browser control is connected." }).waitFor();
   assert.equal(
@@ -27,8 +26,6 @@ export async function connectNativeReactControl(page: Page): Promise<void> {
 }
 
 export async function disconnectNativeReactControl(page: Page): Promise<void> {
-  const trigger = page.getByRole("button", { name: "Native browser connection", exact: true });
-  if ((await trigger.getAttribute("aria-expanded")) !== "true") await trigger.click();
   await page.getByRole("button", { name: "Disconnect browser control", exact: true }).click();
   await page.getByRole("button", { name: "Connect browser control", exact: true }).waitFor();
   assert.equal(await page.getByRole("button", { name: "React DevTools", exact: true }).count(), 0);
@@ -46,26 +43,16 @@ async function assertHostIncrement(page: Page, project: string, count: number): 
 export async function exerciseNativeReactLifecycle(options: INativeReactLifecycleOptions): Promise<void> {
   const { host, inspector, project, sibling, siblingInspector } = options;
   await host.getByRole("status").filter({ hasText: "Browser control is connected." }).waitFor();
-  const trigger = host.getByRole("button", { name: "Native browser connection", exact: true });
-  await host.getByRole("button", { name: "Disconnect browser control", exact: true }).focus();
-  await host.keyboard.press("Escape");
-  await host.waitForFunction(
-    () =>
-      document
-        .getElementById("devhost-devtools-host")
-        ?.shadowRoot?.querySelector('button[aria-label="Native browser connection"]')
-        ?.getAttribute("aria-expanded") === "false",
-  );
-  assert.equal(await trigger.getAttribute("aria-expanded"), "false");
-  assert.equal(
-    await trigger.evaluate((element) => {
-      const root = element.getRootNode();
-      return root instanceof ShadowRoot && element === root.activeElement;
-    }),
-    true,
-  );
+  const command = host.getByRole("button", { name: "Disconnect browser control", exact: true });
+  const readout = host.getByRole("region", { name: "Native browser control status", exact: true });
   await host.getByRole("button", { name: "React DevTools", exact: true }).click();
   await inspector.assertWindowPreserved();
+  const commandEvidence = await exerciseNativeReactCommands({
+    host,
+    inspector,
+    project,
+    outputPath: options.outputPath,
+  });
   await assertHostIncrement(host, project.name, 1);
   await inspector.assertComponents(1);
   await inspector.startRecording();
@@ -77,25 +64,30 @@ export async function exerciseNativeReactLifecycle(options: INativeReactLifecycl
   await siblingInspector.assertComponents(1);
   await connectNativeReactControl(host);
   await host.getByRole("button", { name: "Collapse devhost toolbar", exact: true }).click();
-  assert.equal(await host.getByRole("button", { name: "Native browser connection", exact: true }).count(), 0);
+  assert.equal(await command.count(), 0);
+  assert.equal(await readout.count(), 0);
   await assertHostIncrement(host, project.name, 4);
   await inspector.assertComponents(4);
   await host.getByRole("button", { name: "Expand devhost toolbar", exact: true }).click();
-  await trigger.click();
   await host.getByRole("button", { name: "Disconnect browser control", exact: true }).waitFor();
+  await readout.waitFor();
   await host.getByRole("button", { name: "Disable external tools", exact: true }).click();
-  await trigger.waitFor({ state: "detached" });
+  await command.waitFor({ state: "detached" });
+  await readout.waitFor({ state: "detached" });
   await assertHostIncrement(host, project.name, 5);
   await inspector.assertComponents(5);
   await host.getByRole("button", { name: "Enable external tools", exact: true }).click();
   await connectNativeReactControl(host);
   await host.getByRole("button", { name: "React DevTools", exact: true }).click();
   await inspector.assertWindowPreserved();
-  await host.getByRole("button", { name: "Unmount actual App root", exact: true }).click();
-  await trigger.waitFor({ state: "detached" });
+  await activateNativeReactFixtureControl(host, "Unmount actual App root", options.outputPath);
+  await command.waitFor({ state: "detached" });
+  await host.getByTestId("AppContent").waitFor({ state: "detached" });
+  assert.equal(await host.getByTestId("AppContent").count(), 0);
+  await readout.waitFor({ state: "detached" });
   await assertHostIncrement(host, project.name, 6);
   await inspector.assertComponents(6);
-  await host.getByRole("button", { name: "Mount actual App root", exact: true }).click();
+  await activateNativeReactFixtureControl(host, "Mount actual App root", options.outputPath);
   await connectNativeReactControl(host);
   await assertHostIncrement(host, project.name, 7);
   await inspector.assertComponents(7);
@@ -111,9 +103,9 @@ export async function exerciseNativeReactLifecycle(options: INativeReactLifecycl
   await assertHostIncrement(host, project.name, 9);
   await inspector.assertComponents(9);
   await inspector.finishRecording(8);
-  await host.getByRole("button", { name: "Unmount host root", exact: true }).click();
+  await activateNativeReactFixtureControl(host, "Unmount host root", options.outputPath);
   await host.getByRole("button", { name: "React DevTools", exact: true }).waitFor({ state: "detached" });
-  await host.getByRole("button", { name: "Mount host root", exact: true }).click();
+  await activateNativeReactFixtureControl(host, "Mount host root", options.outputPath);
   await host.getByRole("button", { name: "React DevTools", exact: true }).waitFor();
   await inspector.assertComponents(0);
   await inspector.startRecording();
@@ -128,7 +120,7 @@ export async function exerciseNativeReactLifecycle(options: INativeReactLifecycl
     resolve(options.outputPath, "lifecycle-assertions.json"),
     JSON.stringify(
       {
-        isTrustedEscapeExercised: true,
+        directCommandEvidence: commandEvidence,
         hasActualAppRootUnmount: true,
         hasDisabledPositiveRecovery: true,
         hasStrictModePositiveRecovery: true,

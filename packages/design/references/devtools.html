@@ -906,7 +906,7 @@
           bottom: 8px;
           z-index: var(--dh-z-dock);
           display: flex;
-          flex-direction: column;
+          flex-direction: column-reverse;
           align-items: flex-end;
           gap: var(--dh-space-3);
           max-width: calc(100vw - 16px);
@@ -914,10 +914,40 @@
         .dock[data-position="top-right"] {
           top: 8px;
           bottom: auto;
+          flex-direction: column;
         }
         .dock[data-minimap="true"] {
           right: calc(var(--dh-minimap-collapsed-width) + 8px);
           max-width: calc(100vw - var(--dh-minimap-collapsed-width) - 16px);
+        }
+        .native-readout {
+          display: flex;
+          flex-direction: column;
+          gap: var(--dh-space-2);
+          width: 384px;
+          max-width: 100%;
+          max-height: calc(100vh - 48px);
+          overflow: auto;
+        }
+        .native-readout[hidden] {
+          display: none;
+        }
+        .native-command {
+          padding: var(--dh-space-2);
+        }
+        .native-status {
+          display: flex;
+          flex-direction: column;
+          gap: var(--dh-space-2);
+          padding: var(--dh-space-4);
+          font-size: var(--dh-text-md);
+          overflow-wrap: anywhere;
+        }
+        .native-status p {
+          margin: 0;
+        }
+        .native-status .notice {
+          flex-wrap: wrap;
         }
         .bar {
           display: flex;
@@ -2011,6 +2041,12 @@
         <section class="cmenu frame fade" data-surface="cmenu" aria-label="Open component source" hidden></section>
         <div class="dock" data-surface="dock">
           <div class="bar frame" data-surface="bar" role="toolbar" aria-label="devhost"></div>
+          <div class="native-readout" data-surface="native-readout">
+            <div class="native-command frame" role="group" aria-label="Native browser control">
+              <button class="btn" type="button" data-action="native-connect" data-surface="native-command" aria-describedby="native-browser-status">Connect browser control</button>
+            </div>
+            <section class="native-status frame" id="native-browser-status" data-surface="native-status" aria-label="Native browser control status"></section>
+          </div>
           <!-- Must follow the bar: an anchor has to be laid out before the element anchored to it. -->
           <section class="panel frame fade" data-surface="panel" hidden></section>
         </div>
@@ -2134,6 +2170,9 @@
           segments.push(
             `<span class="seg tight"><span class="dot ${worst}"></span><span class="sr-only">stack ${worst}</span></span>`,
           );
+          segments.push(
+            `<span class="seg tight" role="status">Browser ${state.isBrowserControlConnected ? "connected" : "disconnected"}</span>`,
+          );
           return segments.join("");
         }
 
@@ -2169,8 +2208,6 @@
             </span>`);
         }
 
-        segments.push(`<button class="seg" type="button" data-action="panel" data-panel="browser"
-          aria-expanded="${panelOpen("browser")}" aria-label="Native browser connection">Browser</button>`);
         if (state.isBrowserControlConnected && state.isReactHostDetected) {
           segments.push(`<span class="seg tight" role="group" aria-label="React native devtools">
             <button class="btn" type="button" data-action="native-react"
@@ -2200,26 +2237,27 @@
         if (state.openPanel === "services") return renderServicesPanel();
         if (state.openPanel === "queues") return renderQueuesPanel();
         if (state.openPanel === "sessions") return renderSessionsPanel();
-        if (state.openPanel === "browser") return renderNativeBrowserPanel();
         return null;
       }
 
-      function renderNativeBrowserPanel() {
-        return {
-          width: 320,
-          label: "Native browser connection",
-          html: `<div class="panel-body"><p role="status">Browser control is ${state.isBrowserControlConnected ? "connected" : "disconnected"}.</p>
-            <p>${
-              state.isBrowserControlConnected
-                ? state.isReactHostDetected
-                  ? "React host and extension detected. Select Components or Profiler in native DevTools."
-                  : "React Developer Tools is missing, disabled, suspended, or unverified."
-                : "Native DevTools stays open when you disconnect."
-            }</p>
-            <p class="muted">Design preview only: no live browser or inspector is connected.</p>
-            ${state.nativeBrowserNotice ? renderNotice(state.nativeBrowserNotice, null) : ""}
-            <button class="btn" type="button" data-action="native-connect">${state.isBrowserControlConnected ? "Disconnect" : "Connect"} browser control</button></div>`,
-        };
+      function renderNativeBrowserReadout() {
+        setSurfaceVisible(surface("native-readout"), !state.dockCollapsed);
+        surface("native-command").textContent = state.isBrowserControlConnected
+          ? "Disconnect browser control"
+          : "Connect browser control";
+        patch(
+          surface("native-status"),
+          `<p role="status">Browser control is ${state.isBrowserControlConnected ? "connected" : "disconnected"}.</p>
+          <p>${
+            state.isBrowserControlConnected
+              ? state.isReactHostDetected
+                ? "React host and extension detected. Select Components or Profiler in native DevTools."
+                : "React Developer Tools is missing, disabled, suspended, or unverified."
+              : "Connect to the browser configured for this project. Native DevTools stays open when you disconnect."
+          }</p>
+          <p class="muted">Design preview only: no live browser or inspector is connected.</p>
+          ${state.nativeBrowserNotice ? `<div class="notice" role="alert">${icon("alert")}<span class="grow">${esc(state.nativeBrowserNotice)}</span><button class="btn" type="button" data-action="native-copy">Copy</button></div>` : ""}`,
+        );
       }
 
       // The panel keeps its last content while hidden so it can fade out.
@@ -2271,6 +2309,7 @@
         // closing panel fades out in place instead of losing its anchor.
         bar.querySelector(`[data-panel="${state.panelAnchor}"]`)?.setAttribute("data-panel-anchor", "");
         renderDockPanel();
+        renderNativeBrowserReadout();
       }
 
       function renderSessionsPanel() {
@@ -3067,9 +3106,17 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
             break;
           case "native-react":
             state.nativeBrowserNotice = "The design reference has no native browser-control backend.";
-            state.openPanel = "browser";
-            state.panelAnchor = "browser";
             break;
+          case "native-copy":
+            navigator.clipboard.writeText(state.nativeBrowserNotice).then(
+              () => {
+                trigger.textContent = "Copied";
+              },
+              () => {
+                trigger.textContent = "Copy failed";
+              },
+            );
+            return;
           case "tool": {
             const tool = state.tools.find((t) => t.id === id);
             tool.isOpen = !tool.isOpen;

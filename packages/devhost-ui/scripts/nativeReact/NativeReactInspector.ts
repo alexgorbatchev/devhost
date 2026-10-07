@@ -16,7 +16,7 @@ interface INativeReactInspectorOptions {
 
 type NativeReactPanel = "Components" | "Profiler";
 const targetInfoSchema = z.object({ targetInfo: z.object({ targetId: z.string() }) });
-const nativeWindowSchema = z.object({ targetId: z.string() });
+const nativeWindowSchema = z.object({ targetId: z.string().optional() });
 
 export class NativeReactInspector {
   readonly options: INativeReactInspectorOptions;
@@ -35,8 +35,12 @@ export class NativeReactInspector {
       const hostId = targetInfoSchema.parse(hostInfo).targetInfo.targetId;
       await waitForNativeReactCondition("native window opened by actual App", async () => {
         const value: unknown = await session.send("Target.getDevToolsTarget", { targetId: hostId });
+        console.info("Native window lookup:", JSON.stringify({ hostId, response: value }));
         const current = nativeWindowSchema.parse(value).targetId;
-        if (current.length === 0) return false;
+        if (current === undefined || current.length === 0) {
+          assert.equal(this.windowId, "", "Previously bound browser-owned native window is absent.");
+          return false;
+        }
         if (this.windowId.length > 0) assert.equal(current, this.windowId, "Browser-owned native window changed.");
         this.windowId = current;
         return true;
@@ -49,6 +53,20 @@ export class NativeReactInspector {
 
   async selectPanel(panel: NativeReactPanel): Promise<string> {
     await this.assertWindowPreserved();
+    await this.options.automation.run(this.windowId, `${panel}-window-before-activation`, [
+      "eval",
+      'JSON.stringify({visibility:document.visibilityState,hasFocus:document.hasFocus(),selected:Array.from(document.querySelectorAll("[role=tab][aria-selected=true]")).map(tab=>tab.textContent)})',
+    ]);
+    const activation = await this.options.browser.newBrowserCDPSession();
+    try {
+      await activation.send("Target.activateTarget", { targetId: this.windowId });
+    } finally {
+      await activation.detach();
+    }
+    await this.options.automation.run(this.windowId, `${panel}-window-after-activation`, [
+      "eval",
+      'JSON.stringify({visibility:document.visibilityState,hasFocus:document.hasFocus(),selected:Array.from(document.querySelectorAll("[role=tab][aria-selected=true]")).map(tab=>tab.textContent)})',
+    ]);
     const label: string = `${panel} ⚛`;
     let isSelected: boolean = false;
     for (let index = 0; index < 13; index++) {
@@ -92,24 +110,82 @@ export class NativeReactInspector {
       "eval",
       'Array.from(document.querySelectorAll("[data-testname=ComponentTreeListItem]")).map(element => ({text:element.textContent, innerText:element.innerText, width:element.getBoundingClientRect().width, height:element.getBoundingClientRect().height, display:getComputedStyle(element).display, visibility:getComputedStyle(element).visibility}))',
     ]);
-    const hostRowResult = await this.options.automation.run(targetId, "native-unique-HostApp-row", [
+    const wrapperExpression: string = `(() => {
+        const rows = Array.from(document.querySelectorAll("[data-testname=ComponentTreeListItem]"));
+        const matches = rows.filter(row => row.textContent === "HostApp");
+        if (matches.length !== 1) return null;
+        const row = matches[0];
+        const wrapper = row?.firstElementChild;
+        if (!(row instanceof HTMLElement) || !(wrapper instanceof HTMLElement) || row.parentElement === null) return null;
+        const childIndex = Array.from(row.parentElement.children).indexOf(row) + 1;
+        const scrollSelector = '[data-testname=ComponentTreeListItem]:nth-child(' + childIndex + ') > div';
+        const bounds = wrapper.getBoundingClientRect();
+        const rowBounds = row.getBoundingClientRect();
+        const x = bounds.left + bounds.width / 2;
+        const y = bounds.top + bounds.height / 2;
+        const hit = document.elementFromPoint(x, y);
+        const clips = [];
+        for (let parent = wrapper.parentElement; parent !== null; parent = parent.parentElement) {
+          const style = getComputedStyle(parent);
+          if ([style.overflowX, style.overflowY].some(value => ["auto", "scroll", "hidden", "clip"].includes(value))) {
+            const rect = parent.getBoundingClientRect();
+            clips.push({left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom,overflowX:style.overflowX,overflowY:style.overflowY});
+          }
+        }
+        return {text:row.textContent,index:rows.indexOf(row),scrollSelector,selectorMatches:document.querySelectorAll(scrollSelector).length,
+          row:{left:rowBounds.left,top:rowBounds.top,right:rowBounds.right,bottom:rowBounds.bottom},
+          wrapper:{left:bounds.left,top:bounds.top,right:bounds.right,bottom:bounds.bottom},
+          viewport:{width:innerWidth,height:innerHeight},clips,hit:hit?.outerHTML.slice(0,300),
+          isVisibleHit:bounds.width>0 && bounds.height>0 && row.contains(hit)};
+      })()`;
+    const beforeScroll = await this.options.automation.run(targetId, "native-HostApp-wrapper-before-scroll", [
       "eval",
-      'Array.from(document.querySelectorAll("[data-testname=ComponentTreeListItem]")).flatMap((element,index) => element.textContent === "HostApp" ? [index] : [])',
+      wrapperExpression,
     ]);
-    const rowIndices = z.array(z.number().int().nonnegative()).parse(JSON.parse(hostRowResult));
-    assert.equal(rowIndices.length, 1, "Native HostApp row is not unique.");
-    const rowIndex = rowIndices[0];
-    assert(rowIndex !== undefined);
-    await this.options.automation.run(targetId, "select-native-HostApp", [
+    const scrollTarget = z
+      .object({ text: z.literal("HostApp"), scrollSelector: z.string(), selectorMatches: z.literal(1) })
+      .parse(JSON.parse(beforeScroll));
+    await this.options.automation.run(targetId, "scroll-native-HostApp-label-into-view", [
+      "scrollintoview",
+      scrollTarget.scrollSelector,
+    ]);
+    await this.options.automation.run(targetId, "wait-native-HostApp-visible-label-hit", [
+      "wait",
+      "--fn",
+      `(${wrapperExpression})?.isVisibleHit === true`,
+    ]);
+    const wrapperResult = await this.options.automation.run(targetId, "native-HostApp-visible-wrapper", [
+      "eval",
+      wrapperExpression,
+    ]);
+    const wrapper = z
+      .object({ text: z.literal("HostApp"), index: z.number().int().nonnegative(), isVisibleHit: z.literal(true) })
+      .parse(JSON.parse(wrapperResult));
+    assert.equal(wrapper.isVisibleHit, true);
+    await this.options.automation.run(targetId, "select-native-HostApp-visible-label", [
       "find",
       "nth",
-      String(rowIndex),
-      "[data-testname=ComponentTreeListItem]",
+      String(wrapper.index),
+      "[data-testname=ComponentTreeListItem] > div",
       "click",
     ]);
     const projectValue: string = JSON.stringify(this.options.projectName);
     const expression: string = `Array.from(document.querySelectorAll("input")).some(input => input.value === ${JSON.stringify(projectValue)}) && Array.from(document.querySelectorAll("input")).some(input => input.value === ${JSON.stringify(String(count))})`;
-    await this.options.automation.run(targetId, `native-props-state-${count}`, ["wait", "--fn", expression]);
+    try {
+      await this.options.automation.run(targetId, `native-props-state-${count}`, ["wait", "--fn", expression]);
+    } catch (error) {
+      const captures = await Promise.allSettled([
+        this.options.automation.run(targetId, `native-failed-Components-${count}`, ["snapshot"]),
+        this.options.automation.run(targetId, `native-failed-visibility-state-${count}`, [
+          "eval",
+          'JSON.stringify({visibility:document.visibilityState,hasFocus:document.hasFocus(),inputs:Array.from(document.querySelectorAll("input")).map(input=>({value:input.value,label:input.getAttribute("aria-label")}))})',
+        ]),
+      ]);
+      const failures = captures.flatMap((result) => (result.status === "rejected" ? [result.reason] : []));
+      if (failures.length > 0)
+        throw new AggregateError([error, ...failures], "Native inspection failed; readonly capture also failed.");
+      throw error;
+    }
     await this.options.automation.run(targetId, `native-Components-${count}`, ["snapshot"]);
   }
 

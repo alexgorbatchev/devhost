@@ -6,6 +6,7 @@ import type { DevtoolsPosition } from "../devtoolsConfig";
 interface IDevtoolsToolbarProps {
   children: ReactNode;
   collapsedIndicator: ReactNode;
+  readout?: ReactNode;
   isMinimapVisible: boolean;
   position: DevtoolsPosition;
   stackName: string;
@@ -22,7 +23,8 @@ export function DevtoolsToolbar(props: IDevtoolsToolbarProps): JSX.Element {
   return (
     <div
       className={cn(
-        "group/toolbar pointer-events-auto fixed z-(--devhost-z-dock) flex",
+        "group/toolbar pointer-events-auto fixed z-(--devhost-z-dock) flex items-end gap-1",
+        props.position === "top-right" ? "flex-col" : "flex-col-reverse",
         props.position === "top-right" ? "top-2" : "bottom-2",
         props.isMinimapVisible
           ? "right-[calc(var(--devhost-minimap-collapsed-width)+var(--spacing)*2)] max-w-[calc(100vw-var(--devhost-minimap-collapsed-width)-var(--spacing)*4)]"
@@ -33,7 +35,7 @@ export function DevtoolsToolbar(props: IDevtoolsToolbarProps): JSX.Element {
     >
       <div
         aria-label="devhost"
-        className="flex h-6.5 max-w-full items-stretch overflow-hidden rounded-md border border-edge bg-card text-card-foreground shadow-frame"
+        className="flex h-6.5 items-stretch overflow-hidden rounded-md border border-edge bg-card text-card-foreground shadow-frame"
         data-testid="DevtoolsToolbar--bar"
         role="toolbar"
       >
@@ -67,6 +69,14 @@ export function DevtoolsToolbar(props: IDevtoolsToolbarProps): JSX.Element {
           props.children
         )}
       </div>
+      {!isCollapsed && props.readout !== undefined ? (
+        <div
+          className="flex max-h-[calc(100vh-var(--spacing)*12)] w-96 max-w-full flex-col gap-1 overflow-auto rounded-md"
+          data-testid="DevtoolsToolbar--readout"
+        >
+          {props.readout}
+        </div>
+      ) : null}
     </div>
   );
 }

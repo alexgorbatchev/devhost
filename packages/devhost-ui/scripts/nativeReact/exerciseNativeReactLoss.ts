@@ -20,10 +20,11 @@ export async function exerciseNativeReactLoss(options: INativeReactLossOptions):
     .waitFor();
   assert.equal(await host.getByRole("button", { name: "React DevTools", exact: true }).count(), 0);
   await host.getByRole("button", { name: "Disable external tools", exact: true }).click();
-  await host.getByRole("button", { name: "Native browser connection", exact: true }).waitFor({ state: "detached" });
+  await host.getByRole("button", { name: "Disconnect browser control", exact: true }).waitFor({ state: "detached" });
+  await host
+    .getByText("The native React session was lost. Inspection recovery remains unverified.", { exact: true })
+    .waitFor({ state: "detached" });
   await host.getByRole("button", { name: "Enable external tools", exact: true }).click();
-  const trigger = host.getByRole("button", { name: "Native browser connection", exact: true });
-  await trigger.click();
   await host.getByRole("button", { name: "Connect browser control", exact: true }).click();
   await host
     .getByText("The native React session was lost. Inspection recovery remains unverified.", { exact: true })

@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
-import { chmod, mkdir } from "node:fs/promises";
+import { chmod, lstat, mkdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { stopNativeReactProcess } from "./stopNativeReactProcess";
 import { waitForNativeReactCondition } from "./waitForNativeReactCondition";
 import type { INativeReactProject, INativeReactProvisioning, INativeReactStack } from "./types";
 import type { Subprocess } from "bun";
+import { Glob } from "bun";
+import { z } from "zod";
+import { isNativeReactOwnedProcessAlive, readNativeReactOwnedProcesses } from "./readNativeReactOwnedProcesses";
 
 interface INativeReactStackOptions {
   provisioning: INativeReactProvisioning;
@@ -13,6 +16,8 @@ interface INativeReactStackOptions {
   browserEndpoint: string;
   extensionId: string;
 }
+
+const routeOwnerSchema = z.object({ manifestPath: z.string(), ownerPid: z.number().int().positive() });
 
 function allocatePort(): number {
   const listener = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: () => new Response(null, { status: 404 }) });
@@ -50,8 +55,21 @@ export async function startNativeReactStack(options: INativeReactStackOptions): 
     AGENT: "1",
     DEVHOST_STATE_DIR: statePath,
     TMPDIR: resolve(process.cwd(), ".tmp"),
+    XDG_CONFIG_HOME: resolve(statePath, "config"),
+    XDG_CACHE_HOME: resolve(statePath, "cache"),
+    XDG_DATA_HOME: resolve(statePath, "data"),
+    XDG_STATE_HOME: resolve(statePath, "xdg-state"),
   };
+  await Promise.all(
+    [
+      environment.XDG_CONFIG_HOME,
+      environment.XDG_CACHE_HOME,
+      environment.XDG_DATA_HOME,
+      environment.XDG_STATE_HOME,
+    ].map((path) => mkdir(path, { recursive: true, mode: 0o700 })),
+  );
   const projects: INativeReactProject[] = [];
+  const projectPids = new Set<number>();
   let isCaddyStarted: boolean = false;
   const run = async (argumentsList: string[], label: string): Promise<void> => {
     const log = Bun.file(resolve(options.outputPath, `${label}.log`));
@@ -74,6 +92,14 @@ export async function startNativeReactStack(options: INativeReactStackOptions): 
     assert.equal(await child.exited, 0, await log.text());
   };
   const stop = async (): Promise<void> => {
+    const processes = await readNativeReactOwnedProcesses([
+      statePath,
+      ...projects.map((project) => project.manifestPath),
+    ]);
+    await Bun.write(
+      resolve(options.outputPath, "stack-processes-before-stop.json"),
+      JSON.stringify({ processes, projectPids: Array.from(projectPids) }, null, 2),
+    );
     const results = await Promise.allSettled(projects.map((project) => project.stop()));
     const first = projects[0];
     if (isCaddyStarted && first !== undefined) {
@@ -91,6 +117,13 @@ export async function startNativeReactStack(options: INativeReactStackOptions): 
       assert.equal(await child.exited, 0, await new Response(child.stderr).text());
       isCaddyStarted = false;
     }
+    await waitForNativeReactCondition("owned Go and Caddy processes joined", async () =>
+      [...projectPids, ...processes.map((process) => process.pid)].every((pid) => !isNativeReactOwnedProcessAlive(pid)),
+    );
+    const hasCaddyPid = await Bun.file(resolve(caddyDirectoryPath, "caddy.pid")).exists();
+    assert.equal(hasCaddyPid, false, "Actual Caddy shutdown must remove its PID marker.");
+    await rm(statePath, { recursive: true, force: true });
+    await assert.rejects(lstat(statePath), { code: "ENOENT" });
     await Bun.write(
       resolve(options.outputPath, "stack-cleanup.json"),
       JSON.stringify(
@@ -100,7 +133,10 @@ export async function startNativeReactStack(options: INativeReactStackOptions): 
           httpPort,
           httpsPort,
           adminPort,
-          hasCaddyPid: await Bun.file(resolve(caddyDirectoryPath, "caddy.pid")).exists(),
+          hasCaddyPid,
+          isStateDirectoryAbsent: true,
+          processes: processes.map((process) => ({ ...process, isAlive: isNativeReactOwnedProcessAlive(process.pid) })),
+          projectPids: Array.from(projectPids, (pid) => ({ pid, isAlive: isNativeReactOwnedProcessAlive(pid) })),
         },
         null,
         2,
@@ -120,7 +156,7 @@ export async function startNativeReactStack(options: INativeReactStackOptions): 
       const manifestPath = resolve(projectPath, "devhost.toml");
       await Bun.write(
         manifestPath,
-        `name = "React native ${name}"\nkillZombies = false\n[worktrees]\nenabled = false\n[caddy.global]\nadminAddress = "127.0.0.1:${adminPort}"\nbindHost = "127.0.0.1"\nhttp = true\nhttpPort = ${httpPort}\nhttpsPort = ${httpsPort}\n[devtools.editor]\nenabled = false\n[devtools.minimap]\nenabled = false\n[devtools.status]\nenabled = false\n[devtools.browser]\nendpoint = ${JSON.stringify(options.browserEndpoint)}\nreactExtensionId = ${JSON.stringify(options.extensionId)}\n[services.web]\nmanaged = false\nprimary = true\nport = ${fixturePort}\nbindHost = "127.0.0.1"\nhost = [${JSON.stringify(host)}, ${JSON.stringify(alias)}]\nproxyLocalOrigin = true\n`,
+        `name = "React native ${name}"\nkillZombies = false\n[worktrees]\nenabled = false\n[caddy.global]\nadminAddress = "127.0.0.1:${adminPort}"\nbindHost = "127.0.0.1"\nhttp = true\nhttpPort = ${httpPort}\nhttpsPort = ${httpsPort}\n[devtools.editor]\nenabled = false\n[devtools.minimap]\nenabled = false\n[devtools.status]\nenabled = false\nposition = ${JSON.stringify(name === "A" ? "top-right" : "bottom-right")}\n[devtools.browser]\nendpoint = ${JSON.stringify(options.browserEndpoint)}\nreactExtensionId = ${JSON.stringify(options.extensionId)}\n[services.web]\nmanaged = false\nprimary = true\nport = ${fixturePort}\nbindHost = "127.0.0.1"\nhost = [${JSON.stringify(host)}, ${JSON.stringify(alias)}]\nproxyLocalOrigin = true\n`,
       );
       let child: Subprocess | null = null;
       let generation: number = 0;
@@ -140,6 +176,7 @@ export async function startNativeReactStack(options: INativeReactStackOptions): 
             stderr: Bun.file(resolve(options.outputPath, `devhost-${name}-${generation}.stderr.log`)),
           });
           const current = child;
+          projectPids.add(current.pid);
           await Bun.write(
             resolve(options.outputPath, `devhost-${name}-${generation}.command.json`),
             JSON.stringify({ command, pid: current.pid, cwd: process.cwd() }, null, 2),
@@ -159,12 +196,55 @@ export async function startNativeReactStack(options: INativeReactStackOptions): 
         stop: async (): Promise<void> => {
           if (child === null) return;
           const current = child;
+          const isRunningBeforeStop: boolean = current.exitCode === null;
+          assert.equal(isRunningBeforeStop, true, "Project exited before its owned SIGTERM shutdown.");
           child = null;
           const exit = await stopNativeReactProcess(current);
+          const response = await fetch(`http://127.0.0.1:${adminPort}/config/`, { signal: AbortSignal.timeout(1000) });
+          assert.equal(response.status, 200);
+          const effectiveConfiguration: unknown = await response.json();
+          const configurationText = JSON.stringify(effectiveConfiguration);
+          assert.equal(
+            configurationText.includes(JSON.stringify(host)),
+            false,
+            "Stopped host remains in actual Caddy routing.",
+          );
+          assert.equal(
+            configurationText.includes(JSON.stringify(alias)),
+            false,
+            "Stopped alias remains in actual Caddy routing.",
+          );
+          const registrations: unknown[] = [];
+          for await (const relativePath of new Glob("*.json").scan({
+            cwd: resolve(caddyDirectoryPath, "routes/.registrations"),
+            onlyFiles: true,
+          })) {
+            const registration = routeOwnerSchema.parse(
+              await Bun.file(resolve(caddyDirectoryPath, "routes/.registrations", relativePath)).json(),
+            );
+            registrations.push(registration);
+            assert.notEqual(registration.manifestPath, manifestPath, "Stopped project's route registration remains.");
+            assert.notEqual(registration.ownerPid, current.pid, "Stopped process still owns a Caddy registration.");
+          }
+          const isProcessAlive = isNativeReactOwnedProcessAlive(current.pid);
+          assert.equal(isProcessAlive, false);
           await Bun.write(
             resolve(options.outputPath, `devhost-${name}-${generation}.shutdown.json`),
-            JSON.stringify({ pid: current.pid, exit }),
+            JSON.stringify({
+              pid: current.pid,
+              exit,
+              signal: "SIGTERM",
+              isRunningBeforeStop,
+              effectiveConfiguration,
+              registrations,
+              hasWithdrawnHosts: true,
+              isProcessAlive,
+            }),
           );
+          // Current CLI intentionally preserves 128+SIGTERM (stack.go and
+          // TestRunPreservesSignalExitCodes). Route/PID withdrawal above is the
+          // independent correctness proof; historical routing exit1 still fails.
+          assert.equal(exit, 143, `Actual project ${name} must preserve its successful SIGTERM exit status.`);
         },
       };
       projects.push(project);
@@ -213,7 +293,11 @@ export async function startNativeReactStack(options: INativeReactStackOptions): 
     );
     return { projects, stop };
   } catch (error) {
-    await stop();
+    try {
+      await stop();
+    } catch (cleanupError) {
+      throw new AggregateError([error, cleanupError], "Owned native stack startup and cleanup failed.");
+    }
     throw error;
   }
 }

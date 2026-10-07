@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { cn } from "../../lib/utils";
 
@@ -15,7 +15,7 @@ import { useReactHighlightOverlay } from "../features/reactHighlight";
 import { ServiceCrashOverlay, ServiceStatusPanel, useServiceHealth } from "../features/serviceStatusPanel";
 import { pristineFetch } from "../shared/pristineFetch";
 import { useNativeBrowserConnection } from "../shared/hooks/useNativeBrowserConnection";
-import { NativeBrowserConnectionPanel } from "../features/nativeBrowserConnection";
+import { NativeBrowserConnectionControl, NativeBrowserConnectionStatus } from "../features/nativeBrowserConnection";
 import { ReactNativeAccessButton } from "../features/reactNativeDevtools";
 import { restartServices } from "../shared/restartServices";
 import { readInjectedDevtoolsConfig } from "../shared/readInjectedDevtoolsConfig";
@@ -64,6 +64,7 @@ function AppContent(): JSX.Element {
   const appRootReference = useRef<HTMLDivElement | null>(null);
   const isNativeBrowserEnabled: boolean = externalToolbarsEnabled && nativeBrowserConfigured;
   const nativeBrowser = useNativeBrowserConnection(isNativeBrowserEnabled);
+  const nativeBrowserStatusId: string = useId();
   const colorScheme = useDevtoolsColorScheme();
   const { errorMessage, setErrorMessage, services, repositories, refreshWorktrees, switchWorktree } =
     useServiceHealth();
@@ -231,7 +232,25 @@ function AppContent(): JSX.Element {
       ) : null}
       {shouldRenderToolbar ? (
         <DevtoolsToolbar
-          collapsedIndicator={<StackHealthIndicator errorMessage={errorMessage} services={services} />}
+          collapsedIndicator={
+            <>
+              <StackHealthIndicator errorMessage={errorMessage} services={services} />
+              {isNativeBrowserEnabled ? <NativeBrowserConnectionStatus view={nativeBrowser.view} compact /> : null}
+            </>
+          }
+          readout={
+            isNativeBrowserEnabled ? (
+              <>
+                <NativeBrowserConnectionControl
+                  view={nativeBrowser.view}
+                  statusId={nativeBrowserStatusId}
+                  onConnect={nativeBrowser.connect}
+                  onDisconnect={nativeBrowser.disconnect}
+                />
+                <NativeBrowserConnectionStatus view={nativeBrowser.view} id={nativeBrowserStatusId} />
+              </>
+            ) : undefined
+          }
           isMinimapVisible={shouldRenderMinimap}
           position={devtoolsPosition}
           stackName={stackName}
@@ -258,18 +277,11 @@ function AppContent(): JSX.Element {
             />
           ) : null}
           {isNativeBrowserEnabled ? (
-            <>
-              <NativeBrowserConnectionPanel
-                view={nativeBrowser.view}
-                onConnect={nativeBrowser.connect}
-                onDisconnect={nativeBrowser.disconnect}
-              />
-              <ReactNativeAccessButton
-                isAvailable={nativeBrowser.view.observation?.isReactAvailable === true}
-                isActionPending={nativeBrowser.view.isActionPending}
-                onOpen={nativeBrowser.openReact}
-              />
-            </>
+            <ReactNativeAccessButton
+              isAvailable={nativeBrowser.view.observation?.isReactAvailable === true}
+              isActionPending={nativeBrowser.view.isActionPending}
+              onOpen={nativeBrowser.openReact}
+            />
           ) : null}
           {shouldRenderExternalDevtoolsPanel ? (
             <ExternalDevtoolsPanel launchers={externalDevtoolsLaunchers} onToggleLauncher={toggleLauncher} />

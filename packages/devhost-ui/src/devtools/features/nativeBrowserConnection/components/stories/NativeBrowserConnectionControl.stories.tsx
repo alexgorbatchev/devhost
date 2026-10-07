@@ -1,19 +1,58 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, fn, userEvent, within, waitFor } from "storybook/test";
-import { NativeBrowserConnectionPanel } from "../NativeBrowserConnectionPanel";
+import { expect, fn, userEvent } from "storybook/test";
+import { NativeBrowserConnectionControl } from "../NativeBrowserConnectionControl";
 import { createNativeBrowserView } from "../../../../shared/nativeBrowser/createNativeBrowserView";
 import { factory_nativeBrowserView } from "./fixtures";
-import { openNativeBrowserConnectionPanel } from "./helpers";
+import { NativeBrowserConnectionStatus } from "../NativeBrowserConnectionStatus";
+import { DevtoolsToolbar } from "../../../../shared/components/DevtoolsToolbar";
+import {
+  readDevtoolsStoryShadowCanvas,
+  renderInDevtoolsStoryShadowRoot,
+  StorybookThemeProvider,
+} from "../../../../shared/components/stories/helpers";
+import { exerciseNarrowNativeBrowserReadout, renderNarrowNativeBrowserConnection } from "./helpers";
 
 const onConnect = fn(async (): Promise<void> => {});
 const onDisconnect = fn();
-const meta: Meta<typeof NativeBrowserConnectionPanel> = {
-  title: "@alexgorbatchev/devhost-ui/devtools/features/nativeBrowserConnection/components/NativeBrowserConnectionPanel",
-  component: NativeBrowserConnectionPanel,
-  args: { view: createNativeBrowserView(), onConnect, onDisconnect },
+const onOpen = fn();
+const meta: Meta<typeof NativeBrowserConnectionControl> = {
+  title:
+    "@alexgorbatchev/devhost-ui/devtools/features/nativeBrowserConnection/components/NativeBrowserConnectionControl",
+  component: NativeBrowserConnectionControl,
+  args: { view: createNativeBrowserView(), statusId: "native-browser-story-status", onConnect, onDisconnect },
+  render: (args, context) =>
+    renderInDevtoolsStoryShadowRoot(
+      <StorybookThemeProvider globals={context.globals}>
+        <DevtoolsToolbar
+          children={null}
+          position="bottom-right"
+          stackName="native-story"
+          isMinimapVisible={false}
+          collapsedIndicator={<NativeBrowserConnectionStatus view={args.view} compact />}
+          readout={
+            <>
+              <NativeBrowserConnectionControl {...args} />
+              <NativeBrowserConnectionStatus view={args.view} id={args.statusId} />
+            </>
+          }
+        ></DevtoolsToolbar>
+      </StorybookThemeProvider>,
+    ),
+  parameters: {
+    viewport: {
+      options: {
+        nativeNarrow: {
+          name: "Native browser dock (360 × 480)",
+          styles: { width: "360px", height: "480px" },
+          type: "mobile",
+        },
+      },
+    },
+  },
   beforeEach: () => {
     onConnect.mockClear();
     onDisconnect.mockClear();
+    onOpen.mockClear();
   },
 };
 export default meta;
@@ -21,25 +60,19 @@ type Story = StoryObj<typeof meta>;
 
 export const Disconnected: Story = {
   play: async ({ canvasElement }) => {
-    const panel = await openNativeBrowserConnectionPanel(canvasElement);
+    const panel = await readDevtoolsStoryShadowCanvas(canvasElement);
     await expect(panel.getByRole("status")).toHaveTextContent("Browser control is disconnected.");
     await userEvent.click(panel.getByRole("button", { name: "Connect browser control" }));
     await expect(onConnect).toHaveBeenCalledTimes(1);
     await expect(onDisconnect).not.toHaveBeenCalled();
-    // Native light-dismiss requires trusted input; the native acceptance runner covers Escape.
-    await userEvent.click(within(canvasElement).getByRole("button", { name: "Native browser connection" }));
-    await waitFor(() =>
-      expect(within(canvasElement).getByRole("button", { name: "Native browser connection" })).toHaveAttribute(
-        "aria-expanded",
-        "false",
-      ),
-    );
+    await expect(panel.getByRole("button", { name: "Connect browser control" })).not.toHaveAttribute("aria-expanded");
+    await expect(panel.queryByRole("button", { name: "Native browser connection" })).toBeNull();
   },
 };
 export const Connecting: Story = {
   args: { view: { ...createNativeBrowserView(), connectionStatus: "connecting" } },
   play: async ({ canvasElement }) => {
-    const panel = await openNativeBrowserConnectionPanel(canvasElement);
+    const panel = await readDevtoolsStoryShadowCanvas(canvasElement);
     await expect(panel.getByRole("status")).toHaveTextContent("Connecting to the configured browser…");
     await userEvent.click(panel.getByRole("button", { name: "Disconnect browser control" }));
     await expect(onDisconnect).toHaveBeenCalledTimes(1);
@@ -49,7 +82,7 @@ export const Connecting: Story = {
 export const ExtensionUnverified: Story = {
   args: { view: factory_nativeBrowserView({}) },
   play: async ({ canvasElement }) => {
-    const panel = await openNativeBrowserConnectionPanel(canvasElement);
+    const panel = await readDevtoolsStoryShadowCanvas(canvasElement);
     await expect(panel.getByRole("status")).toHaveTextContent("Browser control is connected.");
     await expect(
       panel.getByText("React Developer Tools 8.0.0 is missing, disabled, suspended, or unverified in this browser.", {
@@ -68,7 +101,7 @@ export const UnboundDocument: Story = {
     }),
   },
   play: async ({ canvasElement }) => {
-    const panel = await openNativeBrowserConnectionPanel(canvasElement);
+    const panel = await readDevtoolsStoryShadowCanvas(canvasElement);
     await expect(
       panel.getByText("The exact project document is not present in the configured browser.", { exact: true }),
     ).toBeVisible();
@@ -84,7 +117,7 @@ export const AmbiguousDocument: Story = {
     }),
   },
   play: async ({ canvasElement }) => {
-    const panel = await openNativeBrowserConnectionPanel(canvasElement);
+    const panel = await readDevtoolsStoryShadowCanvas(canvasElement);
     await expect(
       panel.getByText("More than one browser page has this exact document identity. No native target was selected.", {
         exact: true,
@@ -104,7 +137,7 @@ export const NativeWindowPresent: Story = {
     }),
   },
   play: async ({ canvasElement }) => {
-    const panel = await openNativeBrowserConnectionPanel(canvasElement);
+    const panel = await readDevtoolsStoryShadowCanvas(canvasElement);
     await expect(
       panel.getByText(
         "A native DevTools window is present. Its selected panel and live inspection state are shown there.",
@@ -123,7 +156,7 @@ export const NativeSessionLost: Story = {
     }),
   },
   play: async ({ canvasElement }) => {
-    const panel = await openNativeBrowserConnectionPanel(canvasElement);
+    const panel = await readDevtoolsStoryShadowCanvas(canvasElement);
     await expect(
       panel.getByText("The native React session was lost. Inspection recovery remains unverified.", { exact: true }),
     ).toBeVisible();
@@ -139,14 +172,51 @@ export const ConnectionError: Story = {
     },
   },
   play: async ({ canvasElement }) => {
-    const panel = await openNativeBrowserConnectionPanel(canvasElement);
+    const panel = await readDevtoolsStoryShadowCanvas(canvasElement);
     await expect(
-      within(canvasElement).getByText(
+      panel.getByText(
         "Browser discovery failed. Check the configured loopback endpoint and running dedicated profile.",
         { exact: true },
       ),
     ).toBeVisible();
     await userEvent.click(panel.getByRole("button", { name: "Connect browser control" }));
     await expect(onConnect).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const NarrowBottomRightDark: Story = {
+  args: { view: factory_nativeBrowserView({ isReactAvailable: true, isNativeWindowOpen: true }) },
+  globals: { devhostTheme: "dark", viewport: { value: "nativeNarrow", isRotated: false } },
+  render: (args, context) => renderNarrowNativeBrowserConnection(args, context.globals, "bottom-right", false, onOpen),
+  play: async ({ canvasElement }) => {
+    await exerciseNarrowNativeBrowserReadout(canvasElement);
+    await expect(onOpen).toHaveBeenCalledTimes(1);
+  },
+};
+export const NarrowTopRightLight: Story = {
+  args: { view: factory_nativeBrowserView({ isReactAvailable: true, isNativeWindowOpen: true }) },
+  globals: { devhostTheme: "light", viewport: { value: "nativeNarrow", isRotated: false } },
+  render: (args, context) => renderNarrowNativeBrowserConnection(args, context.globals, "top-right", true, onOpen),
+  play: async ({ canvasElement }) => {
+    await exerciseNarrowNativeBrowserReadout(canvasElement);
+    await expect(onOpen).toHaveBeenCalledTimes(1);
+  },
+};
+export const NarrowBottomRightLight: Story = {
+  args: { view: factory_nativeBrowserView({ isReactAvailable: true, isNativeWindowOpen: true }) },
+  globals: { devhostTheme: "light", viewport: { value: "nativeNarrow", isRotated: false } },
+  render: (args, context) => renderNarrowNativeBrowserConnection(args, context.globals, "bottom-right", true, onOpen),
+  play: async ({ canvasElement }) => {
+    await exerciseNarrowNativeBrowserReadout(canvasElement);
+    await expect(onOpen).toHaveBeenCalledTimes(1);
+  },
+};
+export const NarrowTopRightDark: Story = {
+  args: { view: factory_nativeBrowserView({ isReactAvailable: true, isNativeWindowOpen: true }) },
+  globals: { devhostTheme: "dark", viewport: { value: "nativeNarrow", isRotated: false } },
+  render: (args, context) => renderNarrowNativeBrowserConnection(args, context.globals, "top-right", false, onOpen),
+  play: async ({ canvasElement }) => {
+    await exerciseNarrowNativeBrowserReadout(canvasElement);
+    await expect(onOpen).toHaveBeenCalledTimes(1);
   },
 };

@@ -25,7 +25,7 @@ func AllowsDevtoolsURL(paths Paths, owner DevtoolsRouteOwner, text string) (bool
 	if u.User != nil || u.Opaque != "" || u.Hostname() == "" || (u.Scheme != "http" && u.Scheme != "https") {
 		return false, nil
 	}
-	settings, err := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
+	settings, err := ReadManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
 	if err != nil {
 		return false, fmt.Errorf("read native browser route settings: %w", err)
 	}
