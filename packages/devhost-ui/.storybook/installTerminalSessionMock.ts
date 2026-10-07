@@ -2,6 +2,7 @@ import { TERMINAL_SESSION_START_PATH } from "../src/devtools/shared/constants";
 import type {
   ActiveTerminalSessionSnapshot,
   IListTerminalSessionsResponse,
+  ITerminalSessionExitMessage,
   ITerminalSessionSnapshotMessage,
 } from "../src/devtools/features/terminalSessions/types";
 import { createMockWebSocket, type IMockWebSocketConnection } from "../test-support/createMockWebSocket";
@@ -16,6 +17,8 @@ export interface ITerminalSessionMock {
   connections: IMockWebSocketConnection[];
   /** Once true, devhost no longer lists the session and turns its sockets away. */
   hasEnded: boolean;
+  /** Once true, the session's process is over: a connection receives the exit right after its snapshot. */
+  hasExited: boolean;
   /** What the session has printed. A connection receives it as its snapshot when it attaches. */
   output: string;
   uninstall: () => void;
@@ -35,6 +38,7 @@ export function installTerminalSessionMock(
     attemptCount: 0,
     connections: [],
     hasEnded: false,
+    hasExited: false,
     output,
     uninstall: (): void => {
       Reflect.set(globalThis, "WebSocket", originalWebSocket);
@@ -51,6 +55,11 @@ export function installTerminalSessionMock(
 
         mock.connections.push(connection);
         connection.send(terminal);
+        if (mock.hasExited) {
+          const exit: ITerminalSessionExitMessage = { exitCode: 0, signalCode: null, type: "exit" };
+
+          connection.send(exit);
+        }
       },
       (): boolean => {
         mock.attemptCount += 1;

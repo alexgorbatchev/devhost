@@ -236,6 +236,35 @@ export const SessionEndedWhileDisconnected: Story = {
   },
 };
 
+/**
+ * A finished agent session whose retained output still carries the status the agent last reported. The session
+ * stays finished: what an agent reported while it ran does not bring it back.
+ */
+export const FinishedAfterReportingWork: Story = {
+  beforeEach: (): ITerminalSessionMock["uninstall"] => {
+    terminalSessionMock = installTerminalSessionMock(
+      fixture_agentSessionSnapshot,
+      "\u001b]1337;SetAgentStatus=working\u0007reviewed the change\r\n",
+    );
+    terminalSessionMock.hasExited = true;
+
+    return terminalSessionMock.uninstall;
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const dialog = await shadowCanvas.findByRole("dialog", { name: "Pi terminal" });
+    const terminal = within(dialog).getByTestId("TerminalSessionPanel--terminal");
+
+    await waitFor(() => expect(dialog).toBeVisible());
+    // The terminal has read the retained output by now, the agent's status report included.
+    await within(terminal).findByText("reviewed the change");
+
+    await expect(within(dialog).getByText("finished")).toBeVisible();
+    await expect(within(dialog).queryByText("working")).toBeNull();
+    await expect(within(dialog).getByRole("button", { name: "Close" })).toBeVisible();
+  },
+};
+
 export const ContrastDark: Story = {
   globals: { devhostTheme: "dark" },
   args: { session: fixture_contrastSession },
