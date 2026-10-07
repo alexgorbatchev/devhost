@@ -82,3 +82,8 @@ export interface IConnectedReduxDevtoolsProducer {
   producer: IReduxDevtoolsProducer;
   unsubscribe: () => void;
 }
+
+export type ReduxDevtoolsDispose = () => void;
+export type ReduxDevtoolsListener = () => void;
+export type SendProducerMessage = (message: ProducerMessage) => void;
+export type SendMonitorDispatch = (message: IMonitorDispatch) => void;

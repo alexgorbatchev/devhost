@@ -24,7 +24,6 @@ const meta: Meta<typeof NativeBrowserConnectionControl> = {
     renderInDevtoolsStoryShadowRoot(
       <StorybookThemeProvider globals={context.globals}>
         <DevtoolsToolbar
-          children={null}
           position="bottom-right"
           stackName="native-story"
           isMinimapVisible={false}
@@ -35,7 +34,9 @@ const meta: Meta<typeof NativeBrowserConnectionControl> = {
               <NativeBrowserConnectionStatus view={args.view} id={args.statusId} />
             </>
           }
-        ></DevtoolsToolbar>
+        >
+          {null}
+        </DevtoolsToolbar>
       </StorybookThemeProvider>,
     ),
   parameters: {

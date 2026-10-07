@@ -3,7 +3,7 @@ import * as React from "react";
 import { cn } from "../../lib/utils";
 import { buttonVariants } from "./constants";
 
-export type ButtonVariant = "danger" | "default" | "ghost" | "primary" | "warning";
+export type ButtonVariant = "danger" | "default" | "ghost" | "primary" | "surface" | "warning";
 type ButtonJoinedEdge = "end" | "none" | "start";
 
 export interface IButtonProps extends React.ComponentProps<"button"> {

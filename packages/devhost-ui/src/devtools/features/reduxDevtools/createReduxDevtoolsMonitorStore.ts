@@ -1,14 +1,12 @@
+import type { SendMonitorDispatch } from "./types";
 import { coreReducers, getActiveInstance, LIFTED_ACTION, middlewares } from "@redux-devtools/app-core";
 import { nonReduxDispatch } from "@redux-devtools/app";
 import { applyMiddleware, combineReducers, createStore } from "redux";
 import { createReduxDevtoolsSchemas } from "./createReduxDevtoolsSchemas";
 import type { CoreStoreAction, CoreStoreState } from "@redux-devtools/app-core";
 import type { Middleware, Store } from "redux";
-import type { IMonitorDispatch } from "./types";
 
-export function createReduxDevtoolsMonitorStore(
-  send: (message: IMonitorDispatch) => void,
-): Store<CoreStoreState, CoreStoreAction> {
+export function createReduxDevtoolsMonitorStore(send: SendMonitorDispatch): Store<CoreStoreState, CoreStoreAction> {
   const schemas = createReduxDevtoolsSchemas();
   const transport: Middleware<object, CoreStoreState> = (api) => (next) => (action) => {
     const previous = api.getState().instances;

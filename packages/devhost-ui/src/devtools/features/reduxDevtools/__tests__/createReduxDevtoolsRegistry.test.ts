@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { createReduxDevtoolsRegistry } from "../createReduxDevtoolsRegistry";
 import { createReduxStoreProducer } from "../createReduxStoreProducer";
-import { factory_reduxStore } from "./fixtures";
+import { factory_reduxStore } from "./fixtures/fixtures";
 
 test("replaces the actual registration without allowing an old HMR cleanup to remove its successor", () => {
   const registry = createReduxDevtoolsRegistry();

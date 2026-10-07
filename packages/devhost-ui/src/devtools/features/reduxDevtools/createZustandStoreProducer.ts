@@ -1,6 +1,7 @@
+import type { SendProducerMessage } from "./types";
 import { stringifyJSON } from "@redux-devtools/app-core";
 import { parse } from "jsan";
-import type { IReduxDevtoolsProducer, IZustandDevtoolsRegistrationOptions, ProducerMessage } from "./types";
+import type { IReduxDevtoolsProducer, IZustandDevtoolsRegistrationOptions } from "./types";
 
 export function createZustandStoreProducer<State, Snapshot>(
   options: IZustandDevtoolsRegistrationOptions<State, Snapshot>,
@@ -17,7 +18,7 @@ export function createZustandStoreProducer<State, Snapshot>(
     typeof options.restore !== "function"
   )
     throw new Error("Zustand DevTools requires a real StoreApi and explicit snapshot/restore functions.");
-  let send: ((message: ProducerMessage) => void) | undefined;
+  let send: SendProducerMessage | undefined;
   let nextActionId = 2;
   let isReplaying = false;
   const initialize = (): void => {

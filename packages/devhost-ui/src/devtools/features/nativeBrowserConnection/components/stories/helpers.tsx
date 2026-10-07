@@ -1,3 +1,4 @@
+type NativeBrowserOpen = () => void;
 import type { ComponentProps, JSX } from "react";
 import { expect, userEvent, waitFor } from "storybook/test";
 import { NativeBrowserConnectionControl } from "../NativeBrowserConnectionControl";
@@ -16,7 +17,7 @@ export function renderNarrowNativeBrowserConnection(
   globals: Partial<Record<string, unknown>>,
   position: DevtoolsPosition,
   isMinimapVisible: boolean,
-  onOpen: () => void,
+  onOpen: NativeBrowserOpen,
 ): JSX.Element {
   return renderInDevtoolsStoryShadowRoot(
     <StorybookThemeProvider globals={globals}>

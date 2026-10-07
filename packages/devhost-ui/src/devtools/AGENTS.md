@@ -87,7 +87,7 @@ Its vital that when devtools are injected into the user's web application, CSS t
 
 - Keep **Restart stack with new ports** available in both Services and the crash recovery dialog. Use the dedicated stack endpoint, disable duplicate/conflicting restart actions while pending, report failures, and reload a recovery page after successful recovery. Individual service restart preserves its assigned port.
 
-- Apply validated `health.routing` metadata to the injected configuration on both health-stream updates and worktree refresh responses so open panels follow service and route reloads. Retain the existing control token, connections, terminal sessions, and other injected settings.
+- Apply validated `health.routing` metadata to the injected configuration on both health-stream updates and worktree refresh responses so open panels follow service and route reloads. Retain the existing instance routing, connections, terminal sessions, and other injected settings.
 - Read the injected configuration with `readInjectedDevtoolsConfig()`. It parses each injected object once, so components get the same object and arrays on every render until the configuration changes. Change the configuration by replacing the injected object, as `updateInjectedRouting` does; an edit in place is invisible to readers.
 - The control server lists each annotation session with the label its action had at launch. Build sessions from that snapshot shape with `createTerminalSession`; never derive a session label from the browser's own configuration. `isListTerminalSessionsResponse` must accept exactly what the server sends.
 

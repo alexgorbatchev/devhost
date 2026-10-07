@@ -1,14 +1,15 @@
+import type { SendProducerMessage } from "./types";
 import { stringifyJSON } from "@redux-devtools/app-core";
 import { parse } from "jsan";
 import { REDUX_INSTRUMENTATION_ERROR } from "./constants";
 import { createReduxDevtoolsSchemas } from "./createReduxDevtoolsSchemas";
 import { isInstrumentedReduxStore } from "./isInstrumentedReduxStore";
-import type { IReduxDevtoolsProducer, ProducerMessage } from "./types";
+import type { IReduxDevtoolsProducer } from "./types";
 
 export function createReduxStoreProducer(store: unknown, instanceId: string, name: string): IReduxDevtoolsProducer {
   if (!isInstrumentedReduxStore(store)) throw new Error(REDUX_INSTRUMENTATION_ERROR);
   const schemas = createReduxDevtoolsSchemas();
-  const publish = (send: (message: ProducerMessage) => void): void => {
+  const publish = (send: SendProducerMessage): void => {
     const state = store.liftedStore.getState();
     send({
       type: "STATE",

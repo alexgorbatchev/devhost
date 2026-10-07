@@ -2,7 +2,7 @@ import { cva } from "class-variance-authority";
 
 type ButtonJoinedEdge = "end" | "none" | "start";
 type ButtonShape = "default" | "icon";
-type ButtonVariant = "danger" | "default" | "ghost" | "primary" | "warning";
+type ButtonVariant = "danger" | "default" | "ghost" | "primary" | "surface" | "warning";
 type BadgeVariant = "default" | "destructive" | "primary" | "success" | "warning";
 
 // Hover styles are scoped with `enabled:` so the disabled treatment (dashed, hollow, faint) always wins.
@@ -33,6 +33,8 @@ const buttonVariantClassNames: Record<ButtonVariant, string> = {
   ghost:
     "border-transparent bg-transparent text-muted-foreground enabled:hover:bg-accent enabled:hover:text-foreground",
   primary: "border-transparent bg-primary font-semibold text-primary-foreground enabled:hover:brightness-110",
+  surface:
+    "pointer-events-auto h-7 min-w-0 rounded-md border-edge bg-card px-2 text-card-foreground shadow-frame enabled:hover:bg-accent",
   warning: "border-transparent bg-warning font-semibold text-warning-foreground enabled:hover:brightness-110",
 };
 

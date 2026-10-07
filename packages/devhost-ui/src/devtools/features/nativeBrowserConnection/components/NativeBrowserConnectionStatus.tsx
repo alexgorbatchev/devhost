@@ -15,7 +15,7 @@ export function NativeBrowserConnectionStatus({
 }: INativeBrowserConnectionStatusProps): JSX.Element {
   if (compact) {
     return (
-      <span className="ml-1 text-md" role="status">
+      <span data-testid="NativeBrowserConnectionStatus" className="ml-1 text-md" role="status">
         Browser {view.connectionStatus}
         {view.errorMessage !== null
           ? " · error"
@@ -27,6 +27,7 @@ export function NativeBrowserConnectionStatus({
   }
   return (
     <section
+      data-testid="NativeBrowserConnectionStatus"
       aria-label="Native browser control status"
       className="pointer-events-auto flex min-w-0 flex-col gap-1 rounded-md border border-edge bg-card p-2 text-card-foreground shadow-frame wrap-anywhere"
       id={id}

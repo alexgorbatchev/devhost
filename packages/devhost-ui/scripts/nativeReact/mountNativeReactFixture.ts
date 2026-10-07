@@ -1,3 +1,4 @@
+import { jsx } from "react/jsx-runtime";
 import { StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { App } from "../../src/devtools/components/App";
@@ -18,7 +19,7 @@ export async function mountNativeReactFixture(): Promise<void> {
   const mountHost = (): void => {
     if (hostRoot !== null) return;
     hostRoot = createRoot(hostContainer);
-    hostRoot.render(<HostApp projectName={projectName} />);
+    hostRoot.render(jsx(HostApp, { projectName }));
   };
   if (url.searchParams.get("host") !== "none") mountHost();
   if (url.searchParams.get("owner") !== "fixture") return;
@@ -41,11 +42,7 @@ export async function mountNativeReactFixture(): Promise<void> {
   const mountDevhost = (): void => {
     if (devhostRoot !== null) return;
     devhostRoot = createRoot(mountContainer);
-    devhostRoot.render(
-      <StrictMode>
-        <App />
-      </StrictMode>,
-    );
+    devhostRoot.render(jsx(StrictMode, { children: jsx(App, {}) }));
   };
   const controls: INativeReactFixtureControls = {
     mountDevhost,
@@ -67,11 +64,7 @@ export async function mountNativeReactFixture(): Promise<void> {
           isEnabled: Reflect.get(activeConfiguration, "externalToolbarsEnabled"),
         }),
       );
-      devhostRoot?.render(
-        <StrictMode>
-          <App />
-        </StrictMode>,
-      );
+      devhostRoot?.render(jsx(StrictMode, { children: jsx(App, {}) }));
     },
     mountHost,
     unmountHost: (): void => {
@@ -81,7 +74,7 @@ export async function mountNativeReactFixture(): Promise<void> {
   };
   const controlsContainer = document.getElementById("fixture-controls");
   if (controlsContainer === null) throw new Error("Native fixture controls container is missing.");
-  createRoot(controlsContainer).render(<NativeReactFixtureControls {...controls} />);
+  createRoot(controlsContainer).render(jsx(NativeReactFixtureControls, controls));
   mountDevhost();
 }
 

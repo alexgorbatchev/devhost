@@ -18,23 +18,18 @@ export function NativeBrowserConnectionControl({
 }: INativeBrowserConnectionControlProps): JSX.Element {
   const isDisconnected: boolean = view.connectionStatus === "disconnected";
   return (
-    <div
-      aria-label="Native browser control"
-      className="pointer-events-auto flex min-w-0 items-center rounded-md border border-edge bg-card p-1 text-card-foreground shadow-frame"
-      role="group"
+    <Button
+      aria-describedby={statusId}
+      variant="surface"
+      onClick={(): void => {
+        if (isDisconnected) {
+          void onConnect();
+        } else {
+          onDisconnect();
+        }
+      }}
     >
-      <Button
-        aria-describedby={statusId}
-        onClick={(): void => {
-          if (isDisconnected) {
-            void onConnect();
-          } else {
-            onDisconnect();
-          }
-        }}
-      >
-        {isDisconnected ? "Connect browser control" : "Disconnect browser control"}
-      </Button>
-    </div>
+      {isDisconnected ? "Connect browser control" : "Disconnect browser control"}
+    </Button>
   );
 }

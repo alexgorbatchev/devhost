@@ -1,3 +1,4 @@
+import type { ElementHandle } from "playwright";
 export interface INativeReactAssetProof {
   path: string;
   bytes: number;
@@ -52,3 +53,7 @@ export interface INativeReactFixtureControls {
   unmountHost: () => void;
   mountHost: () => void;
 }
+
+export type NativeReactCondition = () => Promise<boolean>;
+export type NativeReactDispose = () => void;
+export type NativeReactElementHandle = ElementHandle<HTMLElement | SVGElement>;

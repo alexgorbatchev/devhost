@@ -1,3 +1,4 @@
+import type { ReduxDevtoolsDispose, ReduxDevtoolsListener } from "./types";
 import { REDUX_MONITOR_PATH } from "./constants";
 import { createReduxDevtoolsSchemas } from "./createReduxDevtoolsSchemas";
 import type {
@@ -11,7 +12,7 @@ export function createReduxDevtoolsSession(
   hostWindow: Window,
   registry: IReduxDevtoolsRegistry,
 ): IReduxDevtoolsSession {
-  const listeners = new Set<() => void>();
+  const listeners = new Set<ReduxDevtoolsListener>();
   const connected = new Map<string, IConnectedReduxDevtoolsProducer>();
   const errors = new Map<string, string>();
   const schemas = createReduxDevtoolsSchemas();
@@ -19,7 +20,7 @@ export function createReduxDevtoolsSession(
   let port: MessagePort | undefined;
   let sessionId: string | undefined;
   let closeWatcher: number | undefined;
-  let unsubscribeRegistry: (() => void) | undefined;
+  let unsubscribeRegistry: ReduxDevtoolsDispose | undefined;
   let isStarted = false;
   let popupError: string | undefined;
   const emit = (): void => {

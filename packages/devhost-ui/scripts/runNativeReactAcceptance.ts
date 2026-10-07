@@ -294,11 +294,11 @@ export async function runNativeReactAcceptance(): Promise<void> {
       .filter((result) => result.status === "rejected")
       .map((result) => result.reason);
     if (cleanupErrors.length > 0)
-      throw new AggregateError(
+      failure = new AggregateError(
         failure === undefined ? cleanupErrors : [failure, ...cleanupErrors],
         "Native acceptance resource cleanup failed.",
       );
-    await removeNativeReactAssets(assetsPath, outputPath);
+    else await removeNativeReactAssets(assetsPath, outputPath);
   }
   if (failure !== undefined) throw failure;
 }
