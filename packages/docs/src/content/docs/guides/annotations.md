@@ -203,7 +203,7 @@ For Codex, install and sign in to the [Codex CLI](https://learn.chatgpt.com/docs
 
 ```toml
 [[annotation.actions]]
-id = "ask-codex"
+id = "fix-codex"
 kind = "agent"
 
 [annotation.actions.agent]
@@ -323,7 +323,7 @@ Running annotation sessions keep the stack alive through its idle timeout. Use t
 
 The injected config includes UI-safe action metadata as `annotationActions`, with each action exposing `id`, `kind`, `label`, and `queueEnabled`, plus `annotationDefaultActionId` for the selected default.
 
-`devhost` executes custom agent commands directly, not through a shell string. For configured commands, `devhost` writes the annotation JSON and rendered prompt to temp files and injects their paths as `DEVHOST_ANNOTATION_FILE` and `DEVHOST_ANNOTATION_PROMPT_FILE`. Agent commands receive every variable listed for command actions; `DEVHOST_ANNOTATION_ACTION_LABEL` carries the action's label. Built-in adapters receive the rendered prompt natively via command-line arguments.
+`devhost` executes custom agent commands directly, not through a shell string. For configured commands, `devhost` writes the annotation JSON and rendered prompt to temp files and injects their paths as `DEVHOST_ANNOTATION_FILE` and `DEVHOST_ANNOTATION_PROMPT_FILE`. Agent commands receive every variable listed for command actions; `DEVHOST_ANNOTATION_ACTION_LABEL` carries the action's label. Built-in adapters receive the rendered prompt natively via command-line arguments. Devhost writes adapter support files, such as hook and settings files, only for the built-in adapter an action selects. A custom agent receives the annotation JSON and prompt files and nothing else.
 
 All built-in adapters integrate terminal OSC sequences to reflect working and idle states during embedded session execution, and the durable annotation queue uses those same status events to decide when to drain queued work:
 

@@ -19,21 +19,21 @@ kind = "agent"
 adapter = "pi"
 
 [[annotation.actions]]
-id = "ask-claude-code"
+id = "fix-claude-code"
 kind = "agent"
 
 [annotation.actions.agent]
 adapter = "claude-code"
 
 [[annotation.actions]]
-id = "ask-opencode"
+id = "fix-opencode"
 kind = "agent"
 
 [annotation.actions.agent]
 adapter = "opencode"
 
 [[annotation.actions]]
-id = "ask-codex"
+id = "fix-codex"
 kind = "agent"
 
 [annotation.actions.agent]

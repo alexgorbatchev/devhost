@@ -71,7 +71,7 @@ Install and sign in to the Codex CLI before selecting this adapter. Use a versio
 
 ```toml
 [[annotation.actions]]
-id = "ask-codex"
+id = "fix-codex"
 kind = "agent"
 
 [annotation.actions.agent]
@@ -137,7 +137,7 @@ Devhost injects these environment variables for custom commands:
 - `DEVHOST_PROJECT_ROOT`: manifest project root, remapped into the selected repository checkout when worktree support is enabled.
 - `DEVHOST_STACK_NAME`: devhost stack name.
 
-The custom agent must read `DEVHOST_ANNOTATION_PROMPT_FILE` or `DEVHOST_ANNOTATION_FILE` and handle the requested change.
+The custom agent must read `DEVHOST_ANNOTATION_PROMPT_FILE` or `DEVHOST_ANNOTATION_FILE` and handle the requested change. Devhost writes adapter support files, such as hook and settings files, only for the built-in adapter an action selects. A custom agent receives the annotation JSON and prompt files and nothing else.
 
 Worktree support is enabled by default. While enabled, new browser-launched actions use the selected checkout. Configured action directories inside the service repository are remapped with their relative offsets; directories outside it remain unchanged. Existing sessions retain their launch directory. Devhost rejects queued handoffs into a session from another checkout and pauses the queue; resume it to start an agent in the selected checkout. Do not dispatch new work into an old-checkout session.
 

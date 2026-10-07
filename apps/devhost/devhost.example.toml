@@ -268,7 +268,7 @@ restartServices = "alt+ctrl+r"
 #
 # Codex example (requires the Codex CLI on PATH with --no-daemon and lifecycle hooks):
 # [[annotation.actions]]
-# id = "ask-codex"
+# id = "fix-codex"
 # kind = "agent"
 #
 # [annotation.actions.agent]
