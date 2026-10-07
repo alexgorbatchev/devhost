@@ -44,6 +44,7 @@ Local React workspace for the injected `devhost` browser UI that gets embedded i
 - The Go-served Redux popup loads the emitted upstream `redux-monitor.css` in its own document. Preserve native CSS/font output, production content-versioned caching/gzip, and source rebuild failure responses without adding inspector styles to the injected host page.
 
 - Native React access keeps its connection effect at the App lifetime, outside collapsed toolbar children. Use existing pristine fetch/WebSocket primitives and fresh uncached configuration; disabling aggregation or actual Root unmount disposes the client. DOM removal alone is not unmount. Keep browser-control connection, mounted host/extension availability and native-window presence distinct. The direct Connect/Disconnect button stays mounted and actionable while connecting; show complete status/setup/error/Copy in the ordinary dock readout, separate from the original 26px command bar and momentary React opener. Collapse removes these controls and retains a compact status without disposing the client. Preserve native focus through state changes; no operation popup, false toggle state or inline backend.
+- Playwright `waitForFunction` fails as soon as its predicate throws; it does not poll again. A predicate that waits for the Vue entry must not call the fixture's `readVueEntry()`, which throws until the entry is registered. Wait with `waitForNativeVueEntry(page)`, or read `readContext().docks.entries` in the predicate.
 
 ## Boundaries
 

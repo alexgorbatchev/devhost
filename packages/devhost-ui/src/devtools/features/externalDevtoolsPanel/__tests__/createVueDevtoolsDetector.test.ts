@@ -435,7 +435,7 @@ test("Vue suppression follows genuine server metadata replacement, removal and r
       await page.evaluate(() => JSON.stringify(window.nativeVueFixture.readContext().docks.entries)),
     );
     try {
-      await page.waitForFunction(() => window.nativeVueFixture.readVueEntry().badge === "Live");
+      await waitForNativeVueEntry(page);
     } finally {
       await Bun.write(
         `${host.rootPath}/browser-shared-state.json`,
@@ -460,7 +460,11 @@ test("Vue suppression follows genuine server metadata replacement, removal and r
     expect(
       (await fetch(host.controlUrl, { method: "POST", body: JSON.stringify({ action: "remove-field" }) })).status,
     ).toBe(200);
-    await page.waitForFunction(() => !Object.hasOwn(window.nativeVueFixture.readVueEntry(), "badge"));
+    await page.waitForFunction(() =>
+      window.nativeVueFixture
+        .readContext()
+        .docks.entries.some((entry) => entry.id === "vue-devtools" && !Object.hasOwn(entry, "badge")),
+    );
     expect(await launcher.getAttribute("aria-pressed")).toBe("true");
     expect((await fetch(host.controlUrl, { method: "POST", body: JSON.stringify({ action: "remove" }) })).status).toBe(
       200,
