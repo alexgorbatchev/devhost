@@ -115,7 +115,7 @@ The token-free native browser WebSocket requires the exact current Origin/Host, 
 - `internal/manifest/` — manifest discovery, parsing, validation, and defaults
 - `internal/services/` — child process orchestration, health checks, port resolution, and cleanup
 - `internal/caddy/` — managed Caddy lifecycle, paths, config, and routing
-- `internal/caddy/caddytest/`, `internal/nettest/` — test support: stand-ins for Caddy's admin endpoint, and reserved loopback ports
+- `internal/caddy/caddytest/`, `internal/nettest/`, `internal/testenv/` — test support: stand-ins for Caddy's admin endpoint, reserved loopback ports, and the test process environment
 - `internal/nativebrowser/` — attach-only typed CDP observation and native window access for explicitly configured user-owned browsers
 - `internal/devtools/` — Go devtools control servers plus embedded browser assets
 - `internal/devtools/nvim/devhost-react-highlight.nvim/` — bundled Neovim plugin; follow its nested `AGENTS.md`
@@ -193,6 +193,8 @@ The token-free native browser WebSocket requires the exact current Origin/Host, 
 - `internal/nettest` reserves through `github.com/hashicorp/consul/sdk/freeport`: the ports lie outside the range the kernel assigns to `:0` listeners, and each one returns to the pool when the test ends. It calls `freeport.Take`, not `freeport.GetOne` or `freeport.GetN`, which write two lines to stderr for every reservation. Call freeport only through `internal/nettest`.
 - A test that needs a Caddy admin endpoint uses `caddytest.StartAdminServer(t)` (`internal/caddy/caddytest`), or `caddytest.UnusedAdminAddress(t)` for a Caddy that is not running. Both clean up when the test ends.
 - Do not make a test beat a timer. Use an unreachable timeout while a test attaches or inspects, a short one only where the test waits for the timer to fire, and read scheduled state directly instead of sleeping to prove that nothing happened.
+- Git and the shell report physical paths, and tests compare them with paths built from `t.TempDir()`. On macOS the temporary directory sits behind the `/var` symbolic link, so a package with such tests calls `testenv.UsePhysicalTempDir()` from `TestMain`, as `internal/services` and `internal/devtools` do. Reproduce a failure of this kind on Linux by running the tests with `TMPDIR` set to a symbolic link.
+- Route changes render the Caddyfile for `runtime.GOOS`, and macOS omits `default_bind` for the default bind host. A Caddy test fixture that route code later rewrites, or an expectation compared with what it wrote, renders for `runtime.GOOS` too; a literal operating system belongs only in tests of the rendering itself.
 
 ## Go naming rule
 

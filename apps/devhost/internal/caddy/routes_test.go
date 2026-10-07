@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"testing"
@@ -1036,7 +1037,8 @@ func withRouteMutationTestHooks(t *testing.T, hooks routeMutationTestHooks) {
 func newManagedCaddyPaths(t *testing.T) Paths {
 	t.Helper()
 	paths := CreateManagedCaddyPaths(t.TempDir())
-	if err := ensureManagedCaddyConfig(paths, ManagedCaddyConfigFallback{RuntimeOS: "linux"}); err != nil {
+	// Route changes render the Caddyfile for the operating system they run on, so the starting point does too.
+	if err := ensureManagedCaddyConfig(paths, ManagedCaddyConfigFallback{RuntimeOS: runtime.GOOS}); err != nil {
 		t.Fatalf("ensureManagedCaddyConfig(...) unexpected error = %v", err)
 	}
 
