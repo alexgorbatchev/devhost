@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 
 import type { DevtoolsColorScheme } from "../../../shared/DevtoolsColorScheme";
-import { pristineFetch, pristineWebSocket } from "../../../shared/pristineFetch";
+import { openReconnectingWebSocket } from "../../../shared/openReconnectingWebSocket";
+import { pristineFetch } from "../../../shared/pristineFetch";
 import {
   createAnnotationQueuesWebSocketUrl,
   deleteAnnotationQueueEntry,
@@ -10,8 +11,6 @@ import {
   updateAnnotationQueueEntry,
 } from "../client";
 import type { IAnnotationQueueSnapshot } from "../types";
-
-const normalClosureCode: number = 1_000;
 
 interface IUseAnnotationQueuesResult {
   errorMessage: string | null;
@@ -36,12 +35,6 @@ export function useAnnotationQueues(enabled: boolean = true): IUseAnnotationQueu
       return;
     }
 
-    let isDisposed: boolean = false;
-    const websocket = pristineWebSocket(createAnnotationQueuesWebSocketUrl(window.location));
-
-    const handleOpen = (): void => {
-      setErrorMessage(null);
-    };
     const handleMessage = (event: MessageEvent): void => {
       if (typeof event.data !== "string") {
         setErrorMessage("devhost annotation queue stream sent a non-text message.");
@@ -58,22 +51,16 @@ export function useAnnotationQueues(enabled: boolean = true): IUseAnnotationQueu
       setQueues(serverMessage.queues);
       setErrorMessage(null);
     };
-    const handleClose = (event: CloseEvent): void => {
-      if (isDisposed || event.code === normalClosureCode) {
-        return;
-      }
 
-      setErrorMessage("devhost annotation queue stream disconnected.");
-    };
-
-    websocket.addEventListener("open", handleOpen);
-    websocket.addEventListener("message", handleMessage);
-    websocket.addEventListener("close", handleClose);
-
-    return () => {
-      isDisposed = true;
-      websocket.close(normalClosureCode, "devtools unmounted");
-    };
+    return openReconnectingWebSocket(createAnnotationQueuesWebSocketUrl(window.location), {
+      onDisconnect: (): void => {
+        setErrorMessage("devhost annotation queue stream disconnected.");
+      },
+      onMessage: handleMessage,
+      onOpen: (): void => {
+        setErrorMessage(null);
+      },
+    });
   }, [enabled]);
 
   const saveEntry = useCallback(

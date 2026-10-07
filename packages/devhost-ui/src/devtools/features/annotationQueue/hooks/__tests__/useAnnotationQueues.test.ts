@@ -1,5 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
-import { afterEach, assert, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, assert, beforeEach, describe, expect, test, vi } from "vitest";
 
 import type { IMockWebSocketConnection } from "../../../../../../test-support/createMockWebSocket";
 import { installMockFetch, type IInstalledMockFetch } from "../../../../../../test-support/installMockFetch";
@@ -75,6 +75,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   webSocket.restore();
   mockFetch.restore();
 });
@@ -124,6 +125,37 @@ describe("useAnnotationQueues", () => {
     expect(hook.result.current.queues).toEqual([queue]);
   });
 
+  test("reopens the stream a second after it drops and clears the report once it is back", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const { connection, hook } = await connectQueues();
+
+    await settle(() => connection.close(1006));
+    expect(hook.result.current.errorMessage).toBe("devhost annotation queue stream disconnected.");
+
+    await settle(() => vi.advanceTimersByTime(1_000));
+    expect(hook.result.current.errorMessage).toBeNull();
+
+    const reopened: IMockWebSocketConnection | undefined = webSocket.connections.at(1);
+
+    assert(reopened !== undefined);
+    expect(reopened.url.href).toBe(connection.url.href);
+
+    await settle(() => reopened.send({ queues: [queue], type: "snapshot" }));
+    expect(hook.result.current.queues).toEqual([queue]);
+  });
+
+  test("does not reopen a dropped stream once it is disabled", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const { connection, hook } = await connectQueues();
+
+    await settle(() => connection.close(1006));
+    hook.rerender({ enabled: false });
+    await settle(() => vi.advanceTimersByTime(60_000));
+
+    expect(webSocket.attemptCount).toBe(1);
+    expect(hook.result.current.errorMessage).toBeNull();
+  });
+
   test("reports nothing when the server closes the stream normally", async () => {
     const { connection, hook } = await connectQueues();
 
@@ -160,6 +192,8 @@ describe("useAnnotationQueues", () => {
     await settle(() => connection.sendFrame("{"));
 
     hook.rerender({ enabled: false });
+    // A snapshot that was already on its way reaches the closing socket and must not bring the queues back.
+    await settle(() => connection.send({ queues: [queue], type: "snapshot" }));
     expect(hook.result.current.queues).toEqual([]);
     expect(hook.result.current.errorMessage).toBeNull();
     expect(connection.readClientClosure()).toEqual({ code: 1000, reason: "devtools unmounted" });

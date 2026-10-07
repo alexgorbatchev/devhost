@@ -30,13 +30,20 @@ export interface IMockWebSocketConnection {
 
 export type MockWebSocketConnectHandler = (connection: IMockWebSocketConnection) => void;
 
+/** Decides whether the server accepts a socket the client has just made. */
+export type MockWebSocketAcceptHandler = () => boolean;
+
 export type MockWebSocketConstructor = new (url: MockWebSocketUrl, protocols?: MockWebSocketProtocols) => EventTarget;
 
 /**
  * Creates a `WebSocket` replacement for stories and unit tests. Each socket opens in a microtask, after the client
- * has attached its listeners, and then hands the connection to `onConnect`, which plays the server.
+ * has attached its listeners, and then hands the connection to `onConnect`, which plays the server. A socket that
+ * `acceptsConnection` turns away fails the way it does when nothing listens: an error, then an abnormal close.
  */
-export function createMockWebSocket(onConnect: MockWebSocketConnectHandler): MockWebSocketConstructor {
+export function createMockWebSocket(
+  onConnect: MockWebSocketConnectHandler,
+  acceptsConnection: MockWebSocketAcceptHandler = (): boolean => true,
+): MockWebSocketConstructor {
   return class MockWebSocket extends EventTarget {
     static readonly CONNECTING: number = 0;
     static readonly OPEN: number = 1;
@@ -100,6 +107,13 @@ export function createMockWebSocket(onConnect: MockWebSocketConnectHandler): Moc
 
     private openConnection(): void {
       if (this.readyState !== MockWebSocket.CONNECTING) {
+        return;
+      }
+
+      if (!acceptsConnection()) {
+        this.readyState = MockWebSocket.CLOSED;
+        this.dispatchEvent(new Event("error"));
+        this.dispatchEvent(new CloseEvent("close", { code: 1006 }));
         return;
       }
 

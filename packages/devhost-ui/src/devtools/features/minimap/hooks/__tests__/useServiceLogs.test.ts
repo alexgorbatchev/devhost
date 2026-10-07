@@ -1,5 +1,5 @@
 import { act, renderHook, type RenderHookResult } from "@testing-library/react";
-import { afterEach, assert, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, assert, beforeEach, describe, expect, test, vi } from "vitest";
 
 import type { IMockWebSocketConnection } from "../../../../../../test-support/createMockWebSocket";
 import {
@@ -61,6 +61,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   webSocket.restore();
 });
 
@@ -147,6 +148,25 @@ describe("useServiceLogs", () => {
     expect(hook.result.current).toEqual([logEntry(1)]);
   });
 
+  test("keeps its entries while the stream is down and takes the snapshot of the reopened stream", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const { connection, hook } = await connectServiceLogs();
+
+    await settle(() => connection.send({ entries: [logEntry(1), logEntry(2)], type: "snapshot" }));
+    await settle(() => connection.close(1006));
+    expect(readEntryIds(hook)).toEqual([1, 2]);
+
+    await settle(() => vi.advanceTimersByTime(1_000));
+
+    const reopened: IMockWebSocketConnection | undefined = webSocket.connections.at(1);
+
+    assert(reopened !== undefined);
+    expect(reopened.url.href).toBe(connection.url.href);
+
+    await settle(() => reopened.send({ entries: [logEntry(2), logEntry(3)], type: "snapshot" }));
+    expect(readEntryIds(hook)).toEqual([2, 3]);
+  });
+
   test("closes the stream when it unmounts", async () => {
     const { connection, hook } = await connectServiceLogs();
 
@@ -159,9 +179,12 @@ describe("useServiceLogs", () => {
   test("leaves a stream the server already closed alone when it unmounts", async () => {
     const { connection, hook } = await connectServiceLogs();
 
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     await settle(() => connection.close(1006));
     hook.unmount();
+    await settle(() => vi.advanceTimersByTime(60_000));
 
     expect(connection.readClientClosure()).toBeNull();
+    expect(webSocket.attemptCount).toBe(1);
   });
 });
