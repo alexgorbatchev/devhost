@@ -1401,6 +1401,21 @@
           border-bottom-left-radius: 0;
           border-left: 1px solid color-mix(in srgb, var(--dh-on-accent) 35%, transparent);
         }
+        /* A disabled first half passes its hollow, dashed outline to the caret, and its right border is the divider.
+           The caret keeps an enabled color while its menu still opens. */
+        .split > .btn:first-child:disabled + .btn.caret {
+          background: transparent;
+          border: 1px dashed var(--dh-line);
+          border-left: 0;
+          color: var(--dh-fg);
+          filter: none;
+        }
+        .split > .btn:first-child:disabled + .btn.caret:not(:disabled):hover {
+          background: var(--dh-surface-3);
+        }
+        .split > .btn:first-child:disabled + .btn.caret:disabled {
+          color: var(--dh-fg-faint);
+        }
         .menu {
           position: absolute;
           left: 0;
@@ -1725,7 +1740,7 @@
       // Mock state
       // ======================================================================
       const ANNOTATION_ACTIONS = [
-        { id: "claude", displayName: "Claude", kind: "agent", queueEnabled: true },
+        { id: "claude", displayName: "Claude Code", kind: "agent", queueEnabled: true },
         { id: "codex", displayName: "Codex", kind: "agent", queueEnabled: false },
         { id: "lint", displayName: "Lint fix", kind: "command", queueEnabled: false },
       ];
@@ -2591,7 +2606,7 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
                     ANNOTATION_ACTIONS.length > 1
                       ? `<span class="split">
                           <button class="btn primary" type="button" data-action="composer-run" data-run ${state.comment.trim() === "" || state.submitting ? "disabled" : ""}>
-                            Run ${esc(action.displayName)} <span class="kbd">⌘↵</span></button>
+                            ${esc(action.displayName)} <span class="kbd">⌘↵</span></button>
                           <button class="btn primary caret" type="button" data-action="composer-menu" aria-haspopup="menu" aria-expanded="${state.actionMenuOpen}"
                             aria-label="Choose action. Current: ${esc(action.displayName)}" ${state.submitting ? "disabled" : ""}>${icon("chevDown")}</button>
                           ${
@@ -2911,7 +2926,7 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
         await new Promise((resolve) => setTimeout(resolve, 700));
         state.submitting = false;
         if (state.failSubmit) {
-          state.composerError = "Failed to start the Claude action: agent command not found on PATH";
+          state.composerError = "Failed to start the Claude Code action: agent command not found on PATH";
           render();
           return;
         }

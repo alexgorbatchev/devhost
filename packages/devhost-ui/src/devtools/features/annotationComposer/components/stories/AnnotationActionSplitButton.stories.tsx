@@ -53,7 +53,7 @@ function StoryHarness({
         actions={actions}
         isActionMenuDisabled={isActionMenuDisabled}
         isRunDisabled={isRunDisabled}
-        runLabel={`Run ${selectedAction.displayName}`}
+        runLabel={selectedAction.displayName}
         selectedAction={selectedAction}
         onActionSelect={(actionId: string): void => {
           setSelectedAction(resolveSelectedAction(actions, actionId));
@@ -105,9 +105,9 @@ export const Default: Story = {
     await userEvent.click(page.getByRole("menuitemradio", { name: "Create Ticket" }));
 
     await expect(args.onActionSelect).toHaveBeenCalledWith("create-ticket");
-    await expect(canvas.getByRole("button", { name: /Run Create Ticket/ })).toBeInTheDocument();
+    await expect(canvas.getByRole("button", { name: "Create Ticket" })).toBeInTheDocument();
 
-    await userEvent.click(canvas.getByRole("button", { name: /Run Create Ticket/ }));
+    await userEvent.click(canvas.getByRole("button", { name: "Create Ticket" }));
     await expect(args.onRun).toHaveBeenCalledTimes(1);
   },
 };
@@ -136,7 +136,7 @@ export const MenuStaysInsideShadowRoot: Story = {
     await userEvent.click(within(menu).getByRole("menuitemradio", { name: "Create Ticket" }));
 
     await expect(args.onActionSelect).toHaveBeenCalledWith("create-ticket");
-    await expect(shadowCanvas.getByRole("button", { name: /Run Create Ticket/ })).toBeInTheDocument();
+    await expect(shadowCanvas.getByRole("button", { name: "Create Ticket" })).toBeInTheDocument();
   },
 };
 
@@ -153,14 +153,55 @@ export const CanSelectActionWhileRunDisabled: Story = {
     const canvas = within(canvasElement);
     const page = within(canvasElement.ownerDocument.body);
 
-    await expect(canvas.getByRole("button", { name: /Run Pi/ })).toBeDisabled();
-    await expect(canvas.getByRole("button", { name: /Select annotation action/ })).toBeEnabled();
+    const runButton = canvas.getByRole("button", { name: "Pi" });
+    const menuToggle = canvas.getByRole("button", { name: /Select annotation action/ });
 
-    await userEvent.click(canvas.getByRole("button", { name: /Select annotation action/ }));
+    await expect(runButton).toBeDisabled();
+    await expect(menuToggle).toBeEnabled();
+
+    // The toggle continues the disabled run button's hollow outline, so the pair reads as one control. Its chevron
+    // keeps a different color because the menu still opens.
+    const runButtonStyle: CSSStyleDeclaration = getComputedStyle(runButton);
+    const menuToggleStyle: CSSStyleDeclaration = getComputedStyle(menuToggle);
+
+    await expect(menuToggleStyle.backgroundColor).toBe(runButtonStyle.backgroundColor);
+    await expect(menuToggleStyle.borderTopStyle).toBe(runButtonStyle.borderTopStyle);
+    await expect(menuToggleStyle.borderTopColor).toBe(runButtonStyle.borderTopColor);
+    await expect(menuToggleStyle.color).not.toBe(runButtonStyle.color);
+
+    await userEvent.click(menuToggle);
     await userEvent.click(page.getByRole("menuitemradio", { name: "Create Ticket" }));
 
     await expect(args.onActionSelect).toHaveBeenCalledWith("create-ticket");
-    await expect(canvas.getByRole("button", { name: /Run Create Ticket/ })).toBeDisabled();
+    await expect(canvas.getByRole("button", { name: "Create Ticket" })).toBeDisabled();
     await expect(args.onRun).toHaveBeenCalledTimes(0);
+  },
+};
+
+export const DisabledWhileSubmitting: Story = {
+  args: {
+    actions: [agentAction, ticketAction],
+    initialSelectedActionId: "agent",
+    isActionMenuDisabled: true,
+    isRunDisabled: true,
+    onActionSelect: fn(),
+    onRun: fn(),
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    const runButton = canvas.getByRole("button", { name: "Pi" });
+    const menuToggle = canvas.getByRole("button", { name: /Select annotation action/ });
+
+    await expect(runButton).toBeDisabled();
+    await expect(menuToggle).toBeDisabled();
+
+    // Both halves are disabled, so the toggle takes the run button's whole treatment, chevron included.
+    const runButtonStyle: CSSStyleDeclaration = getComputedStyle(runButton);
+    const menuToggleStyle: CSSStyleDeclaration = getComputedStyle(menuToggle);
+
+    await expect(menuToggleStyle.backgroundColor).toBe(runButtonStyle.backgroundColor);
+    await expect(menuToggleStyle.borderTopStyle).toBe(runButtonStyle.borderTopStyle);
+    await expect(menuToggleStyle.borderTopColor).toBe(runButtonStyle.borderTopColor);
+    await expect(menuToggleStyle.color).toBe(runButtonStyle.color);
   },
 };
