@@ -56,7 +56,13 @@ export function mountNativeReactStoryRoots(): NativeReactDispose {
     mountDevhost,
     unmountDevhost,
     setExternalToolbarsEnabled: (isEnabled): void => {
-      configuration.externalToolbarsEnabled = isEnabled;
+      const activeConfiguration: unknown = Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME);
+      if (typeof activeConfiguration !== "object" || activeConfiguration === null)
+        throw new Error("The actual story App configuration is missing.");
+      Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
+        ...activeConfiguration,
+        externalToolbarsEnabled: isEnabled,
+      });
       devhostRoot?.render(renderDevtoolsInStoryShadowRoot(<App />));
     },
   };
