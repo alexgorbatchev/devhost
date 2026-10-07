@@ -263,7 +263,7 @@ function getEventTargetElement(event: Event): HTMLElement | null {
 function isEventInsideComponentMenu(event: Event): boolean {
   const targetElement: HTMLElement | null = getEventTargetElement(event);
 
-  return targetElement?.closest("[data-component-source-menu]") !== null;
+  return targetElement !== null && targetElement.closest("[data-component-source-menu]") !== null;
 }
 
 function isEventInsideDevtools(event: Event): boolean {
