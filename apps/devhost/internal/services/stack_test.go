@@ -419,6 +419,9 @@ func TestStartStackFailsStartupHealthTimeoutAndReleasesClaims(t *testing.T) {
 	statePath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(statePath)
 	admin := caddytest.StartAdminServer(t)
+	// Releasing the claims reloads Caddy. Without this the reload runs whatever caddy is on PATH, or fails where
+	// none is installed.
+	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 	m := newResolvedManifest(t.TempDir(), admin)
 	port := nettest.ReservePort(t)
 	m.Services["web"] = ResolvedService{
