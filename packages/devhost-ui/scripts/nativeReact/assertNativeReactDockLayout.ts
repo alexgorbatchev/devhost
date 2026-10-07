@@ -17,9 +17,12 @@ export async function assertNativeReactDockLayout(page: Page): Promise<INativeRe
   await readout.waitFor();
   const viewport = page.viewportSize();
   assert(viewport);
-  const controls = page.getByRole("group", { name: "Native browser control", exact: true });
+  const command = page
+    .getByTestId("DevtoolsToolbar--readout")
+    .getByRole("button", { name: /^(?:Connect|Disconnect) browser control$/ });
+  assert.equal(await command.count(), 1, "The dock must own one native browser connection command.");
   const elements = [
-    controls.getByRole("button"),
+    command,
     page.getByTestId("DevtoolsToolbar--bar"),
     readout,
     ...(await readout.locator("p").all()),
