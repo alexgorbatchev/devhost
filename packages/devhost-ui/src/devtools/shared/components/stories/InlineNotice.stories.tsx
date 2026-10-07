@@ -79,7 +79,7 @@ export const CopyError: Story = {
       await userEvent.click(shadowCanvas.getByTestId("InlineNotice--copy"));
 
       await waitFor(() =>
-        expect(shadowCanvas.getByTestId("InlineNotice--copyError")).toHaveTextContent(
+        expect(shadowCanvas.getByTestId("InlineNotice--copy-error")).toHaveTextContent(
           "Clipboard unavailable (requires a secure context: https or localhost).",
         ),
       );
@@ -106,14 +106,20 @@ export const Dismissible: Story = {
   },
 };
 
-function stubClipboard(replacement: { writeText: (value: string) => Promise<void> } | undefined): () => void {
+interface IClipboardStub {
+  writeText: (value: string) => Promise<void>;
+}
+
+type RestoreClipboard = () => void;
+
+function stubClipboard(replacement: IClipboardStub | undefined): RestoreClipboard {
   const descriptor = Object.getOwnPropertyDescriptor(Navigator.prototype, "clipboard");
   Object.defineProperty(navigator, "clipboard", {
     configurable: true,
     get: () => replacement,
   });
   return () => {
-    delete (navigator as unknown as { clipboard?: unknown }).clipboard;
+    Reflect.deleteProperty(navigator, "clipboard");
     if (descriptor !== undefined) {
       Object.defineProperty(Navigator.prototype, "clipboard", descriptor);
     }

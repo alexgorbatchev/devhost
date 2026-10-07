@@ -20,8 +20,8 @@ import { useEffect, useState } from "react";
 
 import { DevtoolsToolbar } from "@/devtools/shared/components/DevtoolsToolbar";
 import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
-import { useExternalDevtoolsLaunchers } from "../../../hooks/useExternalDevtoolsLaunchers";
-import { ExternalDevtoolsPanel } from "../../ExternalDevtoolsPanel";
+import { useExternalDevtoolsLaunchers } from "@/devtools/features/externalDevtoolsPanel/hooks/useExternalDevtoolsLaunchers";
+import { ExternalDevtoolsPanel } from "@/devtools/features/externalDevtoolsPanel/components/ExternalDevtoolsPanel";
 
 const features = tableFeatures({ rowSelectionFeature });
 const columns = [{ accessorKey: "name", header: "Name" }];

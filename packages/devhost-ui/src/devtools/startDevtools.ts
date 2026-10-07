@@ -1,7 +1,9 @@
 import { DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "./shared/constants";
 import type { FetchFunction } from "./shared/pristineFetch";
 
-export async function startDevtools(fetchConfiguration: FetchFunction, mount: () => void): Promise<void> {
+export type MountDevtools = () => void;
+
+export async function startDevtools(fetchConfiguration: FetchFunction, mount: MountDevtools): Promise<void> {
   const response: Response = await fetchConfiguration("/__devhost__/config.json", { cache: "no-store" });
   if (!response.ok) {
     throw new Error(`Failed to load devhost configuration (${response.status}).`);

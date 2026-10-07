@@ -118,7 +118,7 @@ export const App: Story = {
     const shadowRoot = await readStoryShadowRoot(canvasElement);
     const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
 
-    expect(shadowRoot.querySelector("[data-testid='AppContent']")).not.toBeNull();
+    expect(shadowRoot.querySelector("[data-testid='DevtoolsTopLayer']")).not.toBeNull();
 
     const toolbar = await shadowCanvas.findByRole("toolbar", { name: "devhost" });
 
@@ -242,7 +242,7 @@ export const InjectedMount: Story = {
       expect(hostElement).not.toBeNull();
       expect(hostElement?.getAttribute(DEVTOOLS_ROOT_ATTRIBUTE_NAME)).toBe("");
       expect(hostElement?.shadowRoot).not.toBeNull();
-      expect(hostElement?.shadowRoot?.querySelector("[data-testid='AppContent']")).not.toBeNull();
+      expect(hostElement?.shadowRoot?.querySelector("[data-testid='DevtoolsTopLayer']")).not.toBeNull();
     });
   },
 };

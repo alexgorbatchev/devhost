@@ -1,15 +1,18 @@
 import { useEffect, useId, useRef, useState, type JSX } from "react";
 import { RotateCwIcon } from "lucide-react";
 
+import { Icon } from "../../../../components/ui/Icon";
+
 import { Badge } from "../../../../components/ui/Badge";
 import { cn } from "../../../../lib/utils";
 import { Button, InlineNotice } from "../../../shared";
-import type { IWorktree, WorktreeRepository } from "../../../shared/types";
+import { PanelActions } from "../../../shared/components/PanelActions";
+import type { IWorktree, IWorktreeRepository } from "../../../shared/types";
 import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
 import { formatWorktreePath } from "../formatWorktreePath";
 
 interface IWorktreePickerProps {
-  repository: WorktreeRepository;
+  repository: IWorktreeRepository;
   hasRestartingService: boolean;
   onBack: () => void;
   onRefresh: () => Promise<string | null>;
@@ -80,11 +83,11 @@ export function WorktreePicker({
       {repository.blockedReason !== undefined ? (
         <InlineNotice tone="danger">{repository.blockedReason}</InlineNotice>
       ) : null}
-      <div className="flex justify-end px-2 py-1">
+      <PanelActions>
         <Button
           aria-label="Refresh worktrees"
           disabled={isLoading || isBusy}
-          startEnhancer={<RotateCwIcon />}
+          startEnhancer={<Icon glyph={RotateCwIcon} />}
           onClick={(): void => {
             setIsLoading(true);
             void onRefresh().then((message) => {
@@ -96,7 +99,7 @@ export function WorktreePicker({
         >
           Refresh
         </Button>
-      </div>
+      </PanelActions>
       <fieldset ref={formReference} className="m-0 min-w-0 border-0 p-0" disabled={isBusy || isLoading || !isLoaded}>
         <legend className="sr-only">Choose a checkout for {repository.name}</legend>
         {repository.worktrees.map((entry) => (
@@ -149,7 +152,7 @@ export function WorktreePicker({
         </dl>
         {isLoading || isBusy ? (
           <p className="m-0 flex items-center gap-1.5 text-warning" role="status">
-            <RotateCwIcon aria-hidden="true" className="size-3.5 animate-spin" />
+            <Icon glyph={RotateCwIcon} isSpinning />
             {isLoading ? "Loading worktrees…" : "Switching and restarting services…"}
           </p>
         ) : null}

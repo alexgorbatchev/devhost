@@ -1,7 +1,7 @@
 import type { DevtoolsColorScheme } from "../../shared/DevtoolsColorScheme";
 import type { IAnnotationAction } from "../../shared/devtoolsConfig";
 import type { IAnnotationSubmitDetail } from "../annotationComposer/types";
-import type { IStartAgentTerminalSessionRequest, IStartCommandTerminalSessionRequest } from "./types";
+import type { StartAnnotationTerminalSessionRequest } from "./types";
 
 interface ICreateAnnotationTerminalSessionRequestOptions {
   action: IAnnotationAction;
@@ -16,9 +16,7 @@ export function createAnnotationTerminalSessionRequest({
   annotation,
   colorScheme,
   targetSessionId,
-}: ICreateAnnotationTerminalSessionRequestOptions):
-  | IStartAgentTerminalSessionRequest
-  | IStartCommandTerminalSessionRequest {
+}: ICreateAnnotationTerminalSessionRequestOptions): StartAnnotationTerminalSessionRequest {
   if (action.kind === "agent") {
     return {
       actionId: action.id,

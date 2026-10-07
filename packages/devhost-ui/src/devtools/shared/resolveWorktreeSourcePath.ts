@@ -1,7 +1,7 @@
 import { cleanSourcePath } from "./sourceLocation";
-import type { WorktreeRepository } from "./types";
+import type { IWorktreeRepository } from "./types";
 
-export function resolveWorktreeSourcePath(rawFileName: string, repository: WorktreeRepository | undefined): string {
+export function resolveWorktreeSourcePath(rawFileName: string, repository: IWorktreeRepository | undefined): string {
   const path = cleanSourcePath(rawFileName).replace(/\\/g, "/");
   if (repository === undefined) return path;
   const selected = repository.selectedPath.replace(/\\/g, "/").replace(/\/+$/, "");

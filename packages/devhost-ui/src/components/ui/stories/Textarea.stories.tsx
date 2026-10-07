@@ -50,6 +50,7 @@ export const Dark: Story = {
 export const Light: Story = {
   ...Dark,
   globals: { devhostTheme: "light" },
+  play: Dark.play,
 };
 
 export const EnteredDark: Story = {
@@ -70,4 +71,5 @@ export const EnteredDark: Story = {
 export const EnteredLight: Story = {
   ...EnteredDark,
   globals: { devhostTheme: "light" },
+  play: EnteredDark.play,
 };

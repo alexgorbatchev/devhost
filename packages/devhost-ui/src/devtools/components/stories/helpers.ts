@@ -187,7 +187,7 @@ export async function verifyRestartShortcut(canvasElement: HTMLElement): Promise
 export async function verifyReactHighlightLayering(canvasElement: HTMLElement): Promise<void> {
   const canvas = within(canvasElement);
   const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
-  const appRoot = await shadowCanvas.findByTestId("AppContent");
+  const appRoot = await shadowCanvas.findByTestId("DevtoolsTopLayer");
   const shadowRoot = readShadowRoot(
     canvas.getByTestId(devtoolsStoryShadowRootHostTestId),
     "Missing story shadow root.",

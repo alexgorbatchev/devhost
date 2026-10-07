@@ -1,6 +1,8 @@
 import { useRef, useState, type JSX } from "react";
 import { ArrowLeftIcon, ChevronDownIcon, GitBranchIcon, RotateCwIcon, TriangleAlertIcon } from "lucide-react";
 
+import { Icon } from "../../../../components/ui/Icon";
+
 import { Badge } from "../../../../components/ui/Badge";
 import { Kbd } from "../../../../components/ui/Kbd";
 import { cn } from "../../../../lib/utils";
@@ -13,7 +15,7 @@ import { RestartStackButton } from "../../../shared/components/RestartStackButto
 import { DEFAULT_RESTART_SERVICES_SHORTCUT } from "../../../shared/constants";
 import { formatShortcutLabel } from "../../../shared/formatShortcutLabel";
 import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
-import type { ServiceHealth, WorktreeRepository } from "../../../shared/types";
+import type { ServiceHealth, IWorktreeRepository } from "../../../shared/types";
 
 import { WorktreePicker } from "./WorktreePicker";
 import { formatWorktreePath } from "../formatWorktreePath";
@@ -22,7 +24,7 @@ interface IServiceStatusPanelProps {
   errorMessage: string | null;
   onSetErrorMessage?: (message: string | null) => void;
   services: ServiceHealth[];
-  repositories?: WorktreeRepository[];
+  repositories?: IWorktreeRepository[];
   onRefreshWorktrees?: () => Promise<string | null>;
   onSwitchWorktree?: (repositoryId: string, path: string) => Promise<string | null>;
 }
@@ -76,7 +78,12 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
             {formatShortcutLabel(restartServicesShortcut ?? DEFAULT_RESTART_SERVICES_SHORTCUT)}
           </Kbd>
         ) : (
-          <Button aria-label="Back to services" variant="ghost" startEnhancer={<ArrowLeftIcon />} onClick={onBack} />
+          <Button
+            aria-label="Back to services"
+            variant="ghost"
+            startEnhancer={<Icon glyph={ArrowLeftIcon} />}
+            onClick={onBack}
+          />
         )
       }
       notice={
@@ -101,7 +108,7 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
       testId="ServiceStatusPanel"
       triggerContent={
         <>
-          {hasError ? <TriangleAlertIcon aria-hidden="true" className="size-3.5" /> : null}
+          {hasError ? <Icon glyph={TriangleAlertIcon} tone="destructive" /> : null}
           <span aria-hidden="true" className="flex gap-[3px]">
             {props.services.map((service: ServiceHealth) => (
               <ServiceStatusDot key={service.name} service={service} />
@@ -154,8 +161,8 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
                     aria-label={"Choose worktree for " + repository.name}
                     title={formatWorktreePath(repository.selectedPath, homeDirectoryPath)}
                     disabled={props.onSwitchWorktree === undefined}
-                    startEnhancer={<GitBranchIcon />}
-                    endEnhancer={<ChevronDownIcon />}
+                    startEnhancer={<Icon glyph={GitBranchIcon} />}
+                    endEnhancer={<Icon glyph={ChevronDownIcon} />}
                     onClick={(): void => {
                       setRepositoryId(repository.id);
                     }}
@@ -201,7 +208,7 @@ interface IServiceRowsProps {
 }
 function ServiceRows({ services, onSetErrorMessage, isBlocked }: IServiceRowsProps): JSX.Element {
   return (
-    <ul className="m-0 list-none p-0" data-testid="ServiceStatusPanel--service-list">
+    <ul className="m-0 list-none p-0" data-testid="ServiceRows">
       {services.map((service: ServiceHealth) => {
         const dotState: ServiceDotState = readServiceDotState(service);
         const isChanged: boolean = dotState === "dirty";
@@ -210,7 +217,7 @@ function ServiceRows({ services, onSetErrorMessage, isBlocked }: IServiceRowsPro
           <li
             key={service.name}
             className="flex min-h-6 items-center gap-1.5 py-0.5 pr-1 pl-2 not-first:border-t hover:bg-secondary"
-            data-testid="ServiceStatusPanel--service"
+            data-testid="ServiceRows--service"
           >
             <ServiceStatusDot service={service} />
             <span className="sr-only">{serviceStateLabels[dotState]}</span>
@@ -238,11 +245,7 @@ function ServiceRows({ services, onSetErrorMessage, isBlocked }: IServiceRowsPro
               <Button
                 aria-label={`Restart ${service.name}`}
                 disabled={service.restarting === true || isBlocked}
-                startEnhancer={
-                  <span className={cn("flex", service.restarting === true && "animate-spin")}>
-                    <RotateCwIcon />
-                  </span>
-                }
+                startEnhancer={<Icon glyph={RotateCwIcon} isSpinning={service.restarting === true} />}
                 title={service.restarting === true ? "Restarting…" : `Restart ${service.name}`}
                 variant={isChanged ? "warning" : "default"}
                 onClick={(): void => {

@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 
 import { resolveWorktreeSourcePath } from "../resolveWorktreeSourcePath";
-import { factory_worktreeRepository } from "../../features/serviceStatusPanel/components/stories/fixtures";
+import { factory_worktreeRepository } from "./fixtures";
 
 test("moves source metadata from previous checkouts into the selected checkout", () => {
   const repository = { ...factory_worktreeRepository(), selectedPath: "/worktrees/cart" };

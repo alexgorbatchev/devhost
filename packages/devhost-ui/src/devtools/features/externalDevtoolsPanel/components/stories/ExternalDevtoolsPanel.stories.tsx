@@ -15,9 +15,9 @@ import { DevtoolsToolbar } from "@/devtools/shared/components/DevtoolsToolbar";
 import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
 import { ExternalDevtoolsPanel } from "../ExternalDevtoolsPanel";
 import { useExternalDevtoolsLaunchers } from "../../hooks/useExternalDevtoolsLaunchers";
-import { ReactHookFormHarness } from "./fixtures/ReactHookFormHarness";
-import { JotaiHarness } from "./fixtures/JotaiHarness";
-import { TanStackHarness } from "./fixtures/TanStackHarness";
+import { ReactHookFormHarness } from "../../../../../../.storybook/externalDevtools/ReactHookFormHarness";
+import { JotaiHarness } from "../../../../../../.storybook/externalDevtools/JotaiHarness";
+import { TanStackHarness } from "../../../../../../.storybook/externalDevtools/TanStackHarness";
 import { resetJotaiDevtoolsStorage, resetTanStackDevtoolsStorage } from "./helpers";
 
 const queryClient = new QueryClient();

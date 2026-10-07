@@ -6,7 +6,6 @@ import { promoteDevtoolsTopLayer } from "../promoteDevtoolsTopLayer";
 interface IDevtoolsTopLayerProps {
   children: ReactNode;
   ref?: RefObject<HTMLDivElement | null>;
-  testId?: string;
 }
 
 /**
@@ -17,7 +16,7 @@ interface IDevtoolsTopLayerProps {
  *
  * Host popovers and modal dialogs opened later enter the top layer above the root, so it re-enters after each one.
  */
-export function DevtoolsTopLayer({ children, ref, testId = "DevtoolsTopLayer" }: IDevtoolsTopLayerProps): JSX.Element {
+export function DevtoolsTopLayer({ children, ref }: IDevtoolsTopLayerProps): JSX.Element {
   const ownReference = useRef<HTMLDivElement | null>(null);
   const topLayerReference: RefObject<HTMLDivElement | null> = ref ?? ownReference;
 
@@ -70,7 +69,7 @@ export function DevtoolsTopLayer({ children, ref, testId = "DevtoolsTopLayer" }:
       // Resets every property of the user-agent `[popover]` rule; the surfaces inside position themselves.
       className="pointer-events-none fixed inset-0 m-0 size-auto overflow-visible border-0 bg-transparent p-0 text-foreground"
       data-devhost-devtools=""
-      data-testid={testId}
+      data-testid="DevtoolsTopLayer"
       popover="manual"
     >
       {children}

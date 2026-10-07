@@ -1,5 +1,7 @@
 import Anser from "anser";
 import { RotateCwIcon } from "lucide-react";
+
+import { Icon } from "../../../../components/ui/Icon";
 import { useEffect, useId, useRef, useState, type JSX } from "react";
 
 import { cn } from "../../../../lib/utils";
@@ -68,7 +70,7 @@ export function ServiceCrashOverlay({ services, entries }: IServiceCrashOverlayP
               </h2>
               <Button
                 disabled={isRestarting || isStackRestarting}
-                startEnhancer={<RotateCwIcon />}
+                startEnhancer={<Icon glyph={RotateCwIcon} />}
                 variant="primary"
                 onClick={() => {
                   void handleRestart(service.name);

@@ -1,5 +1,6 @@
 import { cva } from "class-variance-authority";
 
+type ButtonJoinedEdge = "end" | "none" | "start";
 type ButtonShape = "default" | "icon";
 type ButtonVariant = "danger" | "default" | "ghost" | "primary" | "warning";
 type BadgeVariant = "default" | "destructive" | "primary" | "success" | "warning";
@@ -7,12 +8,18 @@ type BadgeVariant = "default" | "destructive" | "primary" | "success" | "warning
 // Hover styles are scoped with `enabled:` so the disabled treatment (dashed, hollow, faint) always wins.
 const buttonBaseClassName: string = [
   "inline-flex h-5 shrink-0 items-center justify-center gap-1 rounded-sm border text-md whitespace-nowrap select-none",
-  "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
   "aria-pressed:border-transparent aria-pressed:bg-primary aria-pressed:font-semibold aria-pressed:text-primary-foreground",
   "enabled:aria-pressed:hover:border-primary enabled:aria-pressed:hover:bg-primary-foreground enabled:aria-pressed:hover:text-primary",
   "disabled:cursor-not-allowed disabled:border-dashed disabled:border-border disabled:bg-transparent",
   "disabled:font-normal disabled:text-faint",
 ].join(" ");
+
+// A button joined to a neighbor on one edge drops its rounding there, so the pair reads as one control.
+const buttonJoinedEdgeClassNames: Record<ButtonJoinedEdge, string> = {
+  end: "rounded-r-none",
+  none: "",
+  start: "rounded-l-none",
+};
 
 const buttonShapeClassNames: Record<ButtonShape, string> = {
   default: "px-1.5",
@@ -31,10 +38,12 @@ const buttonVariantClassNames: Record<ButtonVariant, string> = {
 
 export const buttonVariants = cva(buttonBaseClassName, {
   defaultVariants: {
+    joinedEdge: "none",
     shape: "default",
     variant: "default",
   },
   variants: {
+    joinedEdge: buttonJoinedEdgeClassNames,
     shape: buttonShapeClassNames,
     variant: buttonVariantClassNames,
   },
@@ -49,7 +58,7 @@ const badgeVariantClassNames: Record<BadgeVariant, string> = {
 };
 
 export const badgeVariants = cva(
-  "inline-flex h-4 w-fit shrink-0 items-center gap-1 rounded-sm border px-1 text-sm whitespace-nowrap [&>svg]:pointer-events-none [&>svg]:size-3",
+  "inline-flex h-4 w-fit shrink-0 items-center gap-1 rounded-sm border px-1 text-sm whitespace-nowrap",
   {
     defaultVariants: {
       variant: "default",

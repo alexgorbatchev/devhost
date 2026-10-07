@@ -4,20 +4,17 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils";
 
 // Errors are a solid strip rather than tinted text so they read on any theme and any host background.
-const alertVariants = cva(
-  "flex w-full items-center gap-1.5 px-2 py-1 text-left text-md [&>svg]:size-3.5 [&>svg]:shrink-0 [&>svg]:text-current",
-  {
-    variants: {
-      variant: {
-        default: "border-y border-border bg-secondary text-foreground",
-        destructive: "bg-destructive font-semibold text-destructive-foreground",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
+const alertVariants = cva("flex w-full items-center gap-1.5 px-2 py-1 text-left text-md", {
+  variants: {
+    variant: {
+      default: "border-y border-border bg-secondary text-foreground",
+      destructive: "bg-destructive font-semibold text-destructive-foreground",
     },
   },
-);
+  defaultVariants: {
+    variant: "default",
+  },
+});
 
 type AlertProps = React.ComponentProps<"div"> & VariantProps<typeof alertVariants>;
 

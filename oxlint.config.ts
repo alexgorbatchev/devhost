@@ -6,6 +6,5 @@ export default createOxlintConfig(() => ({
     "apps/devhost/internal/devtools/dist/**",
     "apps/devhost/internal/devtools/nvim/devhost-react-highlight.nvim/tests/**",
     "packages/playground/**",
-    "packages/devhost-ui/**",
   ],
 }));

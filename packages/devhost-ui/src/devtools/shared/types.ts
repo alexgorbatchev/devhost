@@ -15,7 +15,7 @@ export type ServiceHealth = {
 export type HealthResponse = {
   routing?: IRoutingConfig;
   services: ServiceHealth[];
-  repositories?: WorktreeRepository[];
+  repositories?: IWorktreeRepository[];
 };
 
 export interface IRoutingConfig {
@@ -38,7 +38,7 @@ export interface IWorktree {
   directories: IWorktreeDirectory[];
 }
 
-export interface WorktreeRepository {
+export interface IWorktreeRepository {
   id: string;
   name: string;
   configuredPath: string;

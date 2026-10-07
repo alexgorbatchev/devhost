@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react";
 
-import type { WorktreeRepository } from "../../../../shared/types";
+import type { IWorktreeRepository } from "../../../../shared/types";
 import type { ServiceStatusPanel } from "../ServiceStatusPanel";
 
 export const fixture_healthPollErrorServices: ComponentProps<typeof ServiceStatusPanel> = {
@@ -12,7 +12,7 @@ export const fixture_healthPollErrorServices: ComponentProps<typeof ServiceStatu
   ],
 };
 
-export function factory_worktreeRepository(serviceNames: string[] = ["api", "web"]): WorktreeRepository {
+export function factory_worktreeRepository(serviceNames: string[] = ["api", "web"]): IWorktreeRepository {
   return {
     id: "shop",
     name: "shop",
@@ -59,7 +59,7 @@ export function factory_worktreeRepository(serviceNames: string[] = ["api", "web
   };
 }
 
-export function factory_homeWorktreeRepository(): WorktreeRepository {
+export function factory_homeWorktreeRepository(): IWorktreeRepository {
   const repository = factory_worktreeRepository();
   return {
     ...repository,

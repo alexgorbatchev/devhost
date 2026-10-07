@@ -81,6 +81,12 @@
   }
 }
 
+@keyframes devhost-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /*
  * Outer-document rules that target the host element (for example `* { letter-spacing: .1em !important }`)
  * beat plain :host rules and then inherit into the shadow tree. Per the CSS cascade "context" rule, an
@@ -188,6 +194,29 @@
   }
 }
 
+/*
+ * `Icon` renders third-party SVG components, which are styled through their own props instead of classes. It
+ * marks the glyph with data attributes and these rules supply the rest.
+ */
+@layer components {
+  [data-slot="icon"] {
+    flex-shrink: 0;
+    pointer-events: none;
+  }
+
+  [data-slot="icon"][data-tone="destructive"] {
+    color: var(--destructive);
+  }
+
+  [data-slot="icon"][data-tone="success"] {
+    color: var(--success);
+  }
+
+  [data-slot="icon"][data-spinning="true"] {
+    animation: devhost-spin 1s linear infinite;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring;
@@ -226,7 +255,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .animate-spin,
-    .animate-devhost-pulse {
+    .animate-devhost-pulse,
+    [data-slot="icon"][data-spinning="true"] {
       animation: none;
     }
   }

@@ -1,10 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
+import type { FetchFunction } from "../../../shared/pristineFetch";
 import { requestWorktrees } from "../requestWorktrees";
 
-function createFetch(
-  handler: (input: Parameters<typeof fetch>[0], init: Parameters<typeof fetch>[1]) => Promise<Response>,
-): typeof fetch {
+function createFetch(handler: FetchFunction): typeof fetch {
   return Object.assign(handler, { preconnect: (): void => {} });
 }
 
@@ -41,13 +40,10 @@ describe("requestWorktrees", () => {
       health: null,
       error: "Git failed",
     });
-    expect(
-      await requestWorktrees(
-        createFetch(async () => {
-          throw new Error("Network unavailable");
-        }),
-      ),
-    ).toEqual({ health: null, error: "Network unavailable" });
+    expect(await requestWorktrees(createFetch(() => Promise.reject(new Error("Network unavailable"))))).toEqual({
+      health: null,
+      error: "Network unavailable",
+    });
     expect(await requestWorktrees(createFetch(async () => Response.json({ services: "invalid" })))).toEqual({
       health: null,
       error: "devhost returned malformed worktree data.",
