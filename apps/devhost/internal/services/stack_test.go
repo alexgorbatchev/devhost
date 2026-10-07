@@ -1916,14 +1916,7 @@ func TestStopStartedServicePreservesLateExternalPortRespawns(t *testing.T) {
 		return err == nil
 	})
 
-	waitForCondition(t, 5*time.Second, func() bool {
-		conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
-		if err != nil {
-			return false
-		}
-		_ = conn.Close()
-		return true
-	})
+	waitForChildServer(t, servicePort, childPIDPath)
 }
 
 func TestStopStartedServicePassesBindHostToLateListenerReader(t *testing.T) {
@@ -2535,6 +2528,59 @@ func waitForCondition(t *testing.T, timeout time.Duration, condition func() bool
 	t.Fatal("condition was not satisfied before timeout")
 }
 
+// waitForChildServer waits until the child HTTP server whose pid is recorded in pidPath answers on port. Helper
+// processes discard their output, so a failure reports what is known about the child, including a listen error.
+func waitForChildServer(t *testing.T, port int, pidPath string) {
+	t.Helper()
+
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		if childServerAnswers(port) {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	t.Fatalf("child server does not answer on port %d: %s", port, describeChildServer(port, pidPath))
+}
+
+func childServerAnswers(port int) bool {
+	client := http.Client{Timeout: 200 * time.Millisecond}
+	response, err := client.Get(serverURL(port, "/"))
+	if err != nil {
+		return false
+	}
+	defer response.Body.Close()
+
+	body, err := io.ReadAll(response.Body)
+	return err == nil && string(body) == "ok"
+}
+
+func describeChildServer(port int, pidPath string) string {
+	pidText, err := os.ReadFile(pidPath)
+	if err != nil {
+		return fmt.Sprintf("no pid file: %v", err)
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(pidText)))
+	if err != nil {
+		return fmt.Sprintf("unreadable pid file %q", pidText)
+	}
+
+	listenError := "none recorded"
+	if text, err := os.ReadFile(childServerErrorPath(pidPath)); err == nil {
+		listenError = string(text)
+	}
+
+	return fmt.Sprintf(
+		"child pid %d, alive %t, listen error %q, pids listening on the port %v",
+		pid, processExists(pid), listenError, readListeningProcessIDs("127.0.0.1", port),
+	)
+}
+
+func childServerErrorPath(pidPath string) string {
+	return pidPath + ".error"
+}
+
 func writeFakeCaddyExecutable(t *testing.T, executablePath string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(executablePath), 0o755); err != nil {
@@ -2983,6 +3029,8 @@ func runChildHTTPServerHelper() {
 		_, _ = writer.Write([]byte("ok"))
 	})}
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		// Helper output is discarded, so leave the reason where the test that started this server can read it.
+		_ = os.WriteFile(childServerErrorPath(os.Getenv("CHILD_PID_PATH")), []byte(err.Error()), 0o644) // best effort; the panic below still ends the helper
 		panic(err)
 	}
 }
