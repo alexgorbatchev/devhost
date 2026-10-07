@@ -6,10 +6,7 @@ import type { PrimitiveAtom } from "jotai";
 import type { JSX } from "react";
 import { useState } from "react";
 
-import { DevtoolsToolbar } from "@/devtools/shared/components/DevtoolsToolbar";
-import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
-import { useExternalDevtoolsLaunchers } from "@/devtools/features/externalDevtoolsPanel/hooks/useExternalDevtoolsLaunchers";
-import { ExternalDevtoolsPanel } from "@/devtools/features/externalDevtoolsPanel/components/ExternalDevtoolsPanel";
+import { ExternalDevtoolsToolbar } from "./ExternalDevtoolsToolbar";
 
 const firstCount = atom(0);
 firstCount.debugLabel = "firstCount";
@@ -19,22 +16,6 @@ secondCount.debugLabel = "secondCount";
 interface IJotaiHarnessProps {
   globals: Partial<Record<string, unknown>>;
   hasSecondStore?: boolean;
-}
-
-interface IJotaiToolbarProps {
-  globals: Partial<Record<string, unknown>>;
-  isEnabled: boolean;
-}
-
-function JotaiToolbar({ globals, isEnabled }: IJotaiToolbarProps): JSX.Element {
-  const { launchers, toggleLauncher } = useExternalDevtoolsLaunchers(isEnabled);
-  return (
-    <StorybookThemeProvider globals={globals}>
-      <DevtoolsToolbar collapsedIndicator={null} isMinimapVisible={false} position="bottom-right" stackName="atoms">
-        <ExternalDevtoolsPanel launchers={launchers} onToggleLauncher={toggleLauncher} />
-      </DevtoolsToolbar>
-    </StorybookThemeProvider>
-  );
 }
 
 interface ICounterProps {
@@ -100,7 +81,7 @@ export function JotaiHarness({ globals, hasSecondStore = false }: IJotaiHarnessP
           </div>
         </>
       ) : null}
-      {isToolbarMounted ? <JotaiToolbar globals={globals} isEnabled={isEnabled} /> : null}
+      {isToolbarMounted ? <ExternalDevtoolsToolbar globals={globals} isEnabled={isEnabled} stackName="atoms" /> : null}
     </div>
   );
 }

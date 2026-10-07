@@ -3,30 +3,11 @@ import type { JSX } from "react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
-import { DevtoolsToolbar } from "@/devtools/shared/components/DevtoolsToolbar";
-import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
-import { useExternalDevtoolsLaunchers } from "@/devtools/features/externalDevtoolsPanel/hooks/useExternalDevtoolsLaunchers";
-import { ExternalDevtoolsPanel } from "@/devtools/features/externalDevtoolsPanel/components/ExternalDevtoolsPanel";
+import { ExternalDevtoolsToolbar } from "./ExternalDevtoolsToolbar";
 
 interface IReactHookFormHarnessProps {
   globals: Partial<Record<string, unknown>>;
   hasSecondForm?: boolean;
-}
-
-interface IFormToolbarProps {
-  globals: Partial<Record<string, unknown>>;
-  isEnabled: boolean;
-}
-
-function FormToolbar({ globals, isEnabled }: IFormToolbarProps): JSX.Element {
-  const { launchers, toggleLauncher } = useExternalDevtoolsLaunchers(isEnabled);
-  return (
-    <StorybookThemeProvider globals={globals}>
-      <DevtoolsToolbar collapsedIndicator={null} isMinimapVisible={false} position="bottom-right" stackName="forms">
-        <ExternalDevtoolsPanel launchers={launchers} onToggleLauncher={toggleLauncher} />
-      </DevtoolsToolbar>
-    </StorybookThemeProvider>
-  );
 }
 
 export function ReactHookFormHarness({ globals, hasSecondForm = false }: IReactHookFormHarnessProps): JSX.Element {
@@ -80,7 +61,7 @@ export function ReactHookFormHarness({ globals, hasSecondForm = false }: IReactH
           </div>
         </>
       ) : null}
-      {isToolbarMounted ? <FormToolbar globals={globals} isEnabled={isEnabled} /> : null}
+      {isToolbarMounted ? <ExternalDevtoolsToolbar globals={globals} isEnabled={isEnabled} stackName="forms" /> : null}
     </div>
   );
 }
