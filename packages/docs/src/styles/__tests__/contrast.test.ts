@@ -1,18 +1,27 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { join, resolve } from "node:path";
 import { chromium } from "playwright";
 import type { Browser } from "playwright";
 
+import { createOwnedBrowserEnvironment } from "../../../../../test-support/createOwnedBrowserEnvironment";
 import { readContrastRatio } from "../../../../../test-support/readContrastRatio";
 import type { IContrastTarget } from "../../../../../test-support/types";
 
 let browser: Browser;
+let runDirectoryPath: string;
 
 beforeAll(async () => {
-  browser = await chromium.launch();
+  const parentPath: string = resolve(import.meta.dir, "../../../../../.tmp/docs-contrast-tests");
+
+  await mkdir(parentPath, { recursive: true });
+  runDirectoryPath = await mkdtemp(join(parentPath, "browser-"));
+  browser = await chromium.launch({ env: await createOwnedBrowserEnvironment(runDirectoryPath) });
 });
 
 afterAll(async () => {
   await browser.close();
+  await rm(runDirectoryPath, { recursive: true, force: true });
 });
 
 describe("docs contrast", () => {

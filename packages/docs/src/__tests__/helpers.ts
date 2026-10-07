@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { join, resolve } from "node:path";
 import { chromium } from "playwright";
 
+import { createOwnedBrowserEnvironment } from "../../../../test-support/createOwnedBrowserEnvironment";
+
 const packagePath = resolve(import.meta.dir, "../..");
 const guidePath = join(packagePath, "src/content/docs/guides");
 const guideFiles = await Array.fromAsync(new Bun.Glob("*.md").scan({ cwd: guidePath, onlyFiles: true }));
@@ -35,7 +37,8 @@ const server = Bun.serve({
     return new Response("Not found", { status: 404 });
   },
 });
-const browser = await chromium.launch();
+// The test that runs this script gives it a working directory of its own.
+const browser = await chromium.launch({ env: await createOwnedBrowserEnvironment(process.cwd()) });
 let guidesPlayed = 0;
 let captionsLoaded = 0;
 let transcriptsAvailable = 0;

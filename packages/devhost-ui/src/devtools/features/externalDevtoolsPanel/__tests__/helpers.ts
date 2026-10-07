@@ -8,7 +8,7 @@ import { chromium } from "playwright";
 import type { BrowserContext } from "playwright";
 import tailwindPlugin from "bun-plugin-tailwind";
 
-import { createOwnedBrowserEnvironment } from "../../../../../test-support/createOwnedBrowserEnvironment";
+import { createOwnedBrowserEnvironment } from "../../../../../../../test-support/createOwnedBrowserEnvironment";
 
 export type NativeVueHostTest = (hosts: readonly INativeVueHost[], browser: BrowserContext) => Promise<void>;
 
