@@ -6,14 +6,8 @@ globalThis.MouseEvent = class MouseEvent {} as unknown as typeof MouseEvent;
 
 import { externalDevtoolsDetectors } from "../externalDevtoolsDetectors";
 import type { IExternalDevtoolsAdapter } from "../types";
-
-type DispatchEventFn = (event: Event) => boolean;
-
-interface IShellFixture {
-  root: HTMLElement;
-  openButton: ReturnType<typeof mock<DispatchEventFn>>;
-  closeButton: ReturnType<typeof mock<DispatchEventFn>>;
-}
+import { factory_tanStackShell } from "./fixtures/fixtures";
+import type { DispatchEventFn } from "./helpers";
 
 interface IFakeElement {
   dispatchEvent: ReturnType<typeof mock<DispatchEventFn>>;
@@ -117,7 +111,7 @@ describe("externalDevtoolsDetectors", () => {
   });
 
   test("unified shell reads native data-open instead of persistent panel presence", () => {
-    const shell = createShellFixture(false);
+    const shell = factory_tanStackShell(false);
     mockShellDocument([shell.root]);
     const adapter = readAdapter("tanstack-devtools");
     expect(adapter.isInstalled()).toBe(true);
@@ -131,8 +125,8 @@ describe("externalDevtoolsDetectors", () => {
   });
 
   test("unified shell re-queries replaced roots for actions and drops stale roots", () => {
-    const original = createShellFixture(false);
-    const replacement = createShellFixture(false);
+    const original = factory_tanStackShell(false);
+    const replacement = factory_tanStackShell(false);
     mockShellDocument([original.root]);
     const adapter = readAdapter("tanstack-devtools");
     expect(adapter.isInstalled()).toBe(true);
@@ -148,16 +142,16 @@ describe("externalDevtoolsDetectors", () => {
   });
 
   test("unified shell needs the verified panel and native opening control together", () => {
-    mockShellDocument([createShellFixture(false, false).root]);
+    mockShellDocument([factory_tanStackShell(false, false).root]);
     const adapter = readAdapter("tanstack-devtools");
     expect(adapter.isInstalled()).toBe(false);
-    mockShellDocument([createShellFixture(false, true, false).root]);
+    mockShellDocument([factory_tanStackShell(false, true, false).root]);
     expect(adapter.isInstalled()).toBe(false);
   });
 
   test("one unified shell adapter opens a closed root and closes an open root", () => {
-    const closed = createShellFixture(false);
-    const open = createShellFixture(true);
+    const closed = factory_tanStackShell(false);
+    const open = factory_tanStackShell(true);
     mockShellDocument([closed.root, open.root]);
     const adapter = readAdapter("tanstack-devtools");
     expect(adapter.isOpen()).toBe(true);
@@ -169,31 +163,6 @@ describe("externalDevtoolsDetectors", () => {
     expect(open.openButton).not.toHaveBeenCalled();
   });
 });
-
-function createShellFixture(isOpen: boolean, hasTrigger = true, hasPanel = true): IShellFixture {
-  const panel = { getAttribute: () => String(isOpen) };
-  const openButton = mock<DispatchEventFn>(() => {
-    isOpen = true;
-    return true;
-  });
-  const closeButton = mock<DispatchEventFn>(() => {
-    isOpen = false;
-    return true;
-  });
-  const elementsBySelector = new Map<string, unknown>([
-    [
-      'button[data-tsd-control][aria-label^="Open TanStack Devtools"]',
-      hasTrigger ? { dispatchEvent: openButton } : null,
-    ],
-    ['button[data-testid="tsd-close-button"]', { dispatchEvent: closeButton }],
-    ['[data-testid="tanstack-devtools-panel"]', hasPanel ? panel : null],
-  ]);
-  return {
-    root: { querySelector: (selector: string) => elementsBySelector.get(selector) ?? null } as unknown as HTMLElement,
-    openButton,
-    closeButton,
-  };
-}
 
 function mockShellDocument(roots: HTMLElement[]): void {
   globalThis.document = {

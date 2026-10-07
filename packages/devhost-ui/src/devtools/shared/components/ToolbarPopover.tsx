@@ -50,7 +50,7 @@ export function ToolbarPopover({
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
   return (
-    <>
+    <span className="contents" data-testid="ToolbarPopover">
       <button
         aria-expanded={isOpen}
         aria-label={triggerLabel}
@@ -59,7 +59,7 @@ export function ToolbarPopover({
           triggerAppearance === "segment"
             ? "border-l border-border px-2 aria-expanded:bg-accent aria-expanded:shadow-[inset_0_-2px_0_var(--primary)] group-data-[position=top-right]/toolbar:aria-expanded:shadow-[inset_0_2px_0_var(--primary)]"
             : "h-5 rounded-sm border border-border bg-secondary px-1.5 aria-expanded:border-primary aria-expanded:shadow-[inset_0_0_0_1px_var(--primary)]",
-          triggerTone === "alert" && "font-semibold [&>svg]:text-destructive",
+          triggerTone === "alert" && "font-semibold",
         )}
         data-devhost-instance-testid={testId}
         data-testid="ToolbarPopover--trigger"
@@ -91,10 +91,10 @@ export function ToolbarPopover({
           {headerEndEnhancer}
         </header>
         {notice}
-        <div className="min-h-0 overflow-auto">
-          <toolbarPopoverIdContext.Provider value={panelId}>{children}</toolbarPopoverIdContext.Provider>
-        </div>
+        <toolbarPopoverIdContext.Provider value={panelId}>
+          <div className="min-h-0 overflow-auto">{children}</div>
+        </toolbarPopoverIdContext.Provider>
       </section>
-    </>
+    </span>
   );
 }

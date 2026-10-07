@@ -9,10 +9,12 @@
 
 export type FetchFunction = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 export type WebSocketConstructor = typeof WebSocket;
+type WebSocketUrl = ConstructorParameters<WebSocketConstructor>[0];
+type WebSocketProtocols = ConstructorParameters<WebSocketConstructor>[1];
+type WebSocketFactory = (url: WebSocketUrl, protocols?: WebSocketProtocols) => WebSocket;
 
 let fetchStrategy: FetchFunction = (input, init) => globalThis.fetch(input, init);
-let webSocketStrategy: (url: string | URL, protocols?: string | string[]) => WebSocket = (url, protocols) =>
-  new globalThis.WebSocket(url, protocols);
+let webSocketStrategy: WebSocketFactory = (url, protocols) => new globalThis.WebSocket(url, protocols);
 
 export function activatePristineFetch(): void {
   if (typeof document === "undefined" || typeof document.createElement !== "function" || !document.body) {
@@ -37,6 +39,6 @@ export function activatePristineFetch(): void {
 
 export const pristineFetch: FetchFunction = (input, init) => fetchStrategy(input, init);
 
-export function pristineWebSocket(url: string | URL, protocols?: string | string[]): WebSocket {
+export function pristineWebSocket(url: WebSocketUrl, protocols?: WebSocketProtocols): WebSocket {
   return webSocketStrategy(url, protocols);
 }

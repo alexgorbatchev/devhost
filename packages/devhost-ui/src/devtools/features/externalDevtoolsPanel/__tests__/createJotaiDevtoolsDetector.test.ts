@@ -1,54 +1,13 @@
 import assert from "node:assert/strict";
-import { describe, expect, mock, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 
 import { createJotaiDevtoolsDetector } from "../createJotaiDevtoolsDetector";
-
-interface IInspectorFixture {
-  root: HTMLElement;
-  open: ReturnType<typeof mock>;
-  close: ReturnType<typeof mock>;
-  replaceLauncher: () => ReturnType<typeof mock>;
-}
-
-function createInspector(isNative = true): IInspectorFixture {
-  let isOpen = false;
-  const open = mock(() => {
-    isOpen = true;
-  });
-  const close = mock(() => {
-    isOpen = false;
-  });
-  let launcher = { click: open };
-  const shell = {
-    querySelector: () => ({ click: close }),
-    querySelectorAll: () => [{ textContent: "Atom Viewer" }, { textContent: "Time travel" }],
-  };
-  const root = {
-    querySelector: (selector: string) => {
-      if (!isNative) return null;
-      if (selector.startsWith("button.internal-jotai-devtools-trigger-button")) return isOpen ? null : launcher;
-      if (selector === ".internal-jotai-devtools-shell.jotai-devtools-shell") return isOpen ? shell : null;
-      return null;
-    },
-  } as unknown as HTMLElement;
-  return {
-    root,
-    open,
-    close,
-    replaceLauncher: () => {
-      const replacement = mock(() => {
-        isOpen = true;
-      });
-      launcher = { click: replacement };
-      return replacement;
-    },
-  };
-}
+import { factory_jotaiInspector } from "./fixtures/fixtures";
 
 describe("createJotaiDevtoolsDetector", () => {
   test("targets each persistent native root across open state and document reordering", () => {
-    const first = createInspector();
-    const second = createInspector();
+    const first = factory_jotaiInspector();
+    const second = factory_jotaiInspector();
     let roots = [first.root, second.root];
     const read = createJotaiDevtoolsDetector({ querySelectorAll: () => roots } as unknown as Document);
     const [firstAdapter, secondAdapter] = read();
@@ -69,8 +28,8 @@ describe("createJotaiDevtoolsDetector", () => {
   });
 
   test("requeries replaced launchers and gives remounted roots new identities", () => {
-    const original = createInspector();
-    const replacement = createInspector();
+    const original = factory_jotaiInspector();
+    const replacement = factory_jotaiInspector();
     let roots = [original.root];
     const read = createJotaiDevtoolsDetector({ querySelectorAll: () => roots } as unknown as Document);
     const [removed] = read();
@@ -95,8 +54,8 @@ describe("createJotaiDevtoolsDetector", () => {
   });
 
   test("ignores unrelated roots while discovering the real inspector", () => {
-    const unrelated = createInspector(false);
-    const native = createInspector();
+    const unrelated = factory_jotaiInspector(false);
+    const native = factory_jotaiInspector();
     const read = createJotaiDevtoolsDetector({
       querySelectorAll: () => [unrelated.root, native.root],
     } as unknown as Document);

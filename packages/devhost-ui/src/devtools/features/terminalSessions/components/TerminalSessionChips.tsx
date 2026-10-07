@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type JSX } from "react";
 import { CheckIcon, CodeIcon, TerminalIcon, XIcon } from "lucide-react";
 
+import { Icon } from "../../../../components/ui/Icon";
+
 import { cn } from "../../../../lib/utils";
 
 import { ToolbarPopover } from "../../../shared/components/ToolbarPopover";
@@ -68,7 +70,7 @@ export function TerminalSessionChips(props: ITerminalSessionChipsProps): JSX.Ele
     }
 
     setVisibleLimit(visibleSessions.length - 1);
-  });
+  }, [props.sessions, viewportWidth, visibleSessions.length]);
 
   if (props.sessions.length === 0) {
     return null;
@@ -149,13 +151,13 @@ function TerminalSessionChip({ onRemove, onToggle, session }: ITerminalSessionCh
       </button>
       {hasExited ? (
         <button
-          aria-label={`Close ${session.summary.chipLabel} session`}
-          className="grid h-5 w-5 place-items-center rounded-r-sm border border-l-0 border-success bg-secondary enabled:hover:bg-accent [&_svg]:size-3.5"
+          className="grid h-5 w-5 place-items-center rounded-r-sm border border-l-0 border-success bg-secondary enabled:hover:bg-accent"
           title={`Close ${session.summary.chipLabel} session`}
           type="button"
           onClick={onRemove}
         >
-          <XIcon aria-hidden="true" />
+          <Icon glyph={XIcon} />
+          <span className="sr-only">{`Close ${session.summary.chipLabel} session`}</span>
         </button>
       ) : null}
     </span>
@@ -172,7 +174,7 @@ function TerminalSessionList(props: ITerminalSessionListProps): JSX.Element {
   const popoverId: string | undefined = useToolbarPopoverId();
 
   return (
-    <ul className="m-0 list-none p-0" data-testid="TerminalSessionChips--session-list">
+    <ul className="m-0 list-none p-0" data-testid="TerminalSessionList">
       {props.sessions.map((session: TerminalSession) => {
         const hasExited: boolean = session.status === "exited";
         const detail: string = session.summary.meta
@@ -192,22 +194,25 @@ function TerminalSessionList(props: ITerminalSessionListProps): JSX.Element {
             <button
               aria-label={`Open ${session.summary.chipLabel} terminal`}
               aria-pressed={session.isExpanded}
-              className="min-w-0 flex-1 truncate text-left hover:[&>strong]:text-primary hover:[&>strong]:underline aria-pressed:[&>strong]:text-primary"
+              className="group min-w-0 flex-1 truncate text-left"
               popoverTarget={popoverId}
               popoverTargetAction="hide"
               type="button"
               onClick={(): void => props.onExpandSession(session.sessionId)}
             >
-              <strong>{session.summary.chipLabel}</strong> <span className="text-muted-foreground">{detail}</span>
+              <strong className="group-hover:text-primary group-hover:underline group-aria-pressed:text-primary">
+                {session.summary.chipLabel}
+              </strong>{" "}
+              <span className="text-muted-foreground">{detail}</span>
             </button>
             {hasExited ? (
               <button
-                aria-label={`Close ${session.summary.chipLabel} session`}
-                className="grid size-5 place-items-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground [&_svg]:size-3.5"
+                className="grid size-5 place-items-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground"
                 type="button"
                 onClick={(): void => props.onRemoveSession(session.sessionId)}
               >
-                <XIcon aria-hidden="true" />
+                <Icon glyph={XIcon} />
+                <span className="sr-only">{`Close ${session.summary.chipLabel} session`}</span>
               </button>
             ) : null}
           </li>
@@ -223,7 +228,7 @@ interface ITerminalSessionStatusIndicatorProps {
 
 function TerminalSessionStatusIndicator({ status }: ITerminalSessionStatusIndicatorProps): JSX.Element {
   if (status === "exited") {
-    return <CheckIcon aria-hidden="true" className="size-3.5 shrink-0 text-success" />;
+    return <Icon glyph={CheckIcon} tone="success" />;
   }
 
   return <span aria-hidden="true" className={cn("size-1.5 shrink-0 rounded-full", statusDotClassNames[status])} />;
@@ -234,9 +239,5 @@ interface ITerminalSessionKindIconProps {
 }
 
 function TerminalSessionKindIcon({ session }: ITerminalSessionKindIconProps): JSX.Element {
-  return session.kind === "editor" ? (
-    <CodeIcon aria-hidden="true" className="size-3.5 shrink-0" />
-  ) : (
-    <TerminalIcon aria-hidden="true" className="size-3.5 shrink-0" />
-  );
+  return session.kind === "editor" ? <Icon glyph={CodeIcon} /> : <Icon glyph={TerminalIcon} />;
 }

@@ -1,7 +1,11 @@
-import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type JSX } from "react";
+import { useId, useLayoutEffect, useRef, useState, type JSX } from "react";
 
 import { App as DevtoolsApp } from "../src/devtools/components/App";
-import { HostShadowPopover, renderDevtoolsInStoryShadowRoot } from "../src/devtools/shared/components/stories/helpers";
+import {
+  hostLayerStyles,
+  HostShadowPopover,
+  renderDevtoolsInStoryShadowRoot,
+} from "../src/devtools/shared/components/stories/helpers";
 
 type ReactHighlightHostLayer = "popover" | "shadow-popover" | "stacking-context";
 
@@ -9,14 +13,6 @@ interface IReactHighlightLayeringSceneProps {
   hostLayer?: ReactHighlightHostLayer;
 }
 
-const cursorTargetLayerStyle: CSSProperties = {
-  background: "white",
-  inset: 100,
-  margin: 0,
-  padding: 40,
-  position: "fixed",
-  zIndex: 2147483647,
-};
 export const cursorTargetShadowPopoverTestId: string = "CursorTargetShadowPopover";
 
 export function ReactHighlightLayeringScene({
@@ -61,8 +57,8 @@ export function ReactHighlightLayeringScene({
     <>
       {hostLayer === "shadow-popover" ? (
         <HostShadowPopover
+          coverage="inset"
           openLabel="Open cursor target popover"
-          style={cursorTargetLayerStyle}
           testId={cursorTargetShadowPopoverTestId}
         >
           <section aria-label="Cursor targets">{cursorTargets}</section>
@@ -78,7 +74,7 @@ export function ReactHighlightLayeringScene({
             id={panelId}
             popover={hostLayer === "popover" ? "auto" : undefined}
             aria-label="Cursor targets"
-            style={cursorTargetLayerStyle}
+            style={hostLayerStyles.inset}
           >
             {cursorTargets}
           </section>

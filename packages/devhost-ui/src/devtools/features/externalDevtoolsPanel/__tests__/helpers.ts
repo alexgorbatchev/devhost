@@ -1,12 +1,58 @@
 import assert from "node:assert/strict";
 import { mkdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
+import type { Mock } from "bun:test";
+import type { DevframeViewIframe } from "@devframes/hub";
+import type { DevframeClientContext } from "@devframes/hub/client";
 import type { Page } from "playwright";
 import { chromium } from "playwright";
 import type { BrowserContext } from "playwright";
 import tailwindPlugin from "bun-plugin-tailwind";
 
-import type { INativeVueHost, INativeVueHostOptions, NativeVueHostTest } from "./fixtures/types";
+export type NativeVueHostTest = (hosts: readonly INativeVueHost[], browser: BrowserContext) => Promise<void>;
+
+export interface INativeVueHost {
+  url: string;
+  rootPath: string;
+  controlUrl: string;
+  readAuthorizationCode: () => Promise<string>;
+  close: () => Promise<void>;
+}
+
+export interface INativeVueHostOptions {
+  base?: string;
+  optimizedDependencies?: string[];
+  visibility?: "normal" | "passive" | "hidden";
+}
+
+interface IVueNativeFixture {
+  readContext: () => DevframeClientContext;
+  readVueEntry: () => DevframeViewIframe;
+  replaceDock: () => void;
+}
+
+declare global {
+  interface Window {
+    nativeVueFixture: IVueNativeFixture;
+  }
+}
+
+export type JotaiInspectorAction = () => void;
+
+export interface IJotaiInspectorFixture {
+  root: HTMLElement;
+  open: Mock<JotaiInspectorAction>;
+  close: Mock<JotaiInspectorAction>;
+  replaceLauncher: () => Mock<JotaiInspectorAction>;
+}
+
+export type DispatchEventFn = (event: Event) => boolean;
+
+export interface ITanStackShellFixture {
+  root: HTMLElement;
+  openButton: Mock<DispatchEventFn>;
+  closeButton: Mock<DispatchEventFn>;
+}
 
 const repositoryRoot = resolve(import.meta.dir, "../../../../../../..");
 

@@ -13,7 +13,7 @@ import type {
   ServiceHealth,
   ServiceLogSnapshotMessage,
   ServiceLogUpdateMessage,
-  WorktreeRepository,
+  IWorktreeRepository,
 } from "../src/devtools/shared/types";
 import { createMockWebSocket, type IMockWebSocketConnection } from "./createMockWebSocket";
 
@@ -48,7 +48,7 @@ export function installServiceRecoveryMock(hasWorktreeFailure: boolean): IServic
   };
   const connections: IMockWebSocketConnection[] = [];
   let services: ServiceHealth[] = [{ managed: true, name: "api", status: true }];
-  let repositories: WorktreeRepository[] = [];
+  let repositories: IWorktreeRepository[] = [];
   let shouldFailRestart: boolean = true;
 
   if (hasWorktreeFailure) {
@@ -101,7 +101,7 @@ export function installServiceRecoveryMock(hasWorktreeFailure: boolean): IServic
             return new Response("Invalid selection", { status: 400 });
           }
 
-          repositories = repositories.map((repository: WorktreeRepository): WorktreeRepository => {
+          repositories = repositories.map((repository: IWorktreeRepository): IWorktreeRepository => {
             return { ...repository, selectedPath: "/projects/shop", runningPath: "/projects/shop", error: undefined };
           });
           services = [{ managed: true, name: "api", status: true }];

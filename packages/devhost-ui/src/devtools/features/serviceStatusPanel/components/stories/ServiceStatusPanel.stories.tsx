@@ -3,7 +3,6 @@ import { expect, fn, userEvent, waitFor } from "storybook/test";
 
 import { RESTART_SERVICE_PATH } from "../../../../shared";
 import { DevtoolsToolbar } from "../../../../shared/components/DevtoolsToolbar";
-import { readInjectedDevtoolsConfig } from "../../../../shared/readInjectedDevtoolsConfig";
 import { storybookDevtoolsThemeGlobalName } from "../../../../shared/storybookTheme";
 import {
   readDevtoolsStoryShadowCanvas,

@@ -100,8 +100,19 @@ export const Default: Story = {
     const canvas = within(canvasElement);
     const page = within(canvasElement.ownerDocument.body);
 
+    const menuToggle = canvas.getByRole("button", { name: /Select annotation action/ });
+
     await expect(canvas.getByTestId("AnnotationActionSplitButton")).toBeInTheDocument();
-    await userEvent.click(canvas.getByRole("button", { name: /Select annotation action/ }));
+
+    // The halves meet on a shared edge without rounding and keep it on the outside, so the pair reads as one control.
+    const runButtonStyle: CSSStyleDeclaration = getComputedStyle(canvas.getByRole("button", { name: "Pi" }));
+    const menuToggleStyle: CSSStyleDeclaration = getComputedStyle(menuToggle);
+
+    await expect(runButtonStyle.borderTopRightRadius).toBe(menuToggleStyle.borderTopLeftRadius);
+    await expect(runButtonStyle.borderTopLeftRadius).toBe(menuToggleStyle.borderTopRightRadius);
+    await expect(runButtonStyle.borderTopRightRadius).not.toBe(runButtonStyle.borderTopLeftRadius);
+
+    await userEvent.click(menuToggle);
     await userEvent.click(page.getByRole("menuitemradio", { name: "Create Ticket" }));
 
     await expect(args.onActionSelect).toHaveBeenCalledWith("create-ticket");

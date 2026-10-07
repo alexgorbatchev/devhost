@@ -193,7 +193,7 @@ function AppContent(): JSX.Element {
     [annotationActions, annotationQueues, colorScheme, registerStartedSession, resumeQueue],
   );
   return (
-    <DevtoolsTopLayer ref={appRootReference} testId="AppContent">
+    <DevtoolsTopLayer ref={appRootReference}>
       {annotationEnabled ? (
         <AnnotationComposer
           activeAgentSessionId={activeAgentSessionId}

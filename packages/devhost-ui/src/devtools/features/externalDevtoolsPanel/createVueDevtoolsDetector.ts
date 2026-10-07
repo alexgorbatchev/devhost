@@ -3,9 +3,16 @@ import { getDevframeClientContext } from "@devframes/hub/client";
 import type { DevframeClientContext } from "@devframes/hub/client";
 import { evaluateWhen } from "devframe/utils/when";
 
-import type { IExternalDevtoolsAdapter, IExternalDevtoolsDetector } from "./types";
+import type {
+  ExternalDevtoolsChangeListener,
+  ExternalDevtoolsUnsubscribe,
+  IExternalDevtoolsAdapter,
+  IExternalDevtoolsDetector,
+} from "./types";
 import { readHostVueDevtoolsKit } from "./vueDevtools/readHostVueDevtoolsKit";
 import type { IHostVueDevtoolsKit, IVueLauncherSuppression } from "./vueDevtools/types";
+
+type DisposeSubscription = () => void;
 
 /** Native Vue9/Vite8 host integration. All registrations, metadata and panels stay upstream-owned. */
 export function createVueDevtoolsDetector(hostDocument: Document): IExternalDevtoolsDetector {
@@ -15,8 +22,8 @@ export function createVueDevtoolsDetector(hostDocument: Document): IExternalDevt
   let hasApps = false;
   let isQueryPending = false;
   let isMetadataSubscribed = false;
-  let onChange: (() => void) | undefined;
-  let disposers: (() => void)[] = [];
+  let onChange: ExternalDevtoolsChangeListener | undefined;
+  let disposers: DisposeSubscription[] = [];
   let generation = 0;
 
   function releaseSuppression(root: ShadowRoot): void {
@@ -206,7 +213,7 @@ export function createVueDevtoolsDetector(hostDocument: Document): IExternalDevt
 
   return {
     readAdapters,
-    subscribe: (listener): (() => void) => {
+    subscribe: (listener): ExternalDevtoolsUnsubscribe => {
       onChange = listener;
       return (): void => {
         onChange = undefined;

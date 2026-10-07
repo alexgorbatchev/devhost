@@ -10,7 +10,19 @@ interface IRecordedFontFace {
   source: string;
 }
 
-function createRecordingFontFaceSet(): { addedFontFaces: FontFace[]; fontFaceSet: Pick<FontFaceSet, "add"> } {
+interface IRecordingFontFaceSet {
+  addedFontFaces: FontFace[];
+  fontFaceSet: Pick<FontFaceSet, "add">;
+}
+
+type CreateFontFace = (family: string, source: string, descriptors: FontFaceDescriptors) => FontFace;
+
+interface IRecordingFontFaceFactory {
+  createFontFace: CreateFontFace;
+  recordedFontFaces: IRecordedFontFace[];
+}
+
+function createRecordingFontFaceSet(): IRecordingFontFaceSet {
   const addedFontFaces: FontFace[] = [];
   const fontFaceSet: Pick<FontFaceSet, "add"> = {
     add: (fontFace: FontFace): FontFaceSet => {
@@ -22,10 +34,7 @@ function createRecordingFontFaceSet(): { addedFontFaces: FontFace[]; fontFaceSet
   return { addedFontFaces, fontFaceSet };
 }
 
-function createRecordingFontFaceFactory(): {
-  createFontFace: (family: string, source: string, descriptors: FontFaceDescriptors) => FontFace;
-  recordedFontFaces: IRecordedFontFace[];
-} {
+function createRecordingFontFaceFactory(): IRecordingFontFaceFactory {
   const recordedFontFaces: IRecordedFontFace[] = [];
 
   return {

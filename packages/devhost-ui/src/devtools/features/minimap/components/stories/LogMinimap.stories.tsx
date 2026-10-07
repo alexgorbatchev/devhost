@@ -204,6 +204,7 @@ export const FocusedErrorDark: Story = {
 export const FocusedErrorLight: Story = {
   ...FocusedErrorDark,
   globals: { devhostTheme: "light" },
+  play: FocusedErrorDark.play,
 };
 
 export const AnsiContrastDark: Story = {
@@ -254,7 +255,11 @@ export const AnsiContrastDark: Story = {
   },
 };
 
-export const AnsiContrastLight: Story = { ...AnsiContrastDark, globals: { devhostTheme: "light" } };
+export const AnsiContrastLight: Story = {
+  ...AnsiContrastDark,
+  globals: { devhostTheme: "light" },
+  play: AnsiContrastDark.play,
+};
 
 export const AnsiErrorContrastDark: Story = {
   ...AnsiContrastDark,
@@ -262,9 +267,14 @@ export const AnsiErrorContrastDark: Story = {
     ...AnsiContrastDark.args,
     entries: fixture_ansiContrastEntries.map((entry) => ({ ...entry, stream: "stderr" })),
   },
+  play: AnsiContrastDark.play,
 };
 
-export const AnsiErrorContrastLight: Story = { ...AnsiErrorContrastDark, globals: { devhostTheme: "light" } };
+export const AnsiErrorContrastLight: Story = {
+  ...AnsiErrorContrastDark,
+  globals: { devhostTheme: "light" },
+  play: AnsiErrorContrastDark.play,
+};
 
 export const AnsiContrastThemeChange: Story = {
   render: () => <LogMinimapThemeChangeHarness />,

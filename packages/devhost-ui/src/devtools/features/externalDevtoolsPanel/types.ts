@@ -16,7 +16,11 @@ export interface IExternalDevtoolsAdapter {
   title: string;
 }
 
+export type ExternalDevtoolsChangeListener = () => void;
+
+export type ExternalDevtoolsUnsubscribe = () => void;
+
 export interface IExternalDevtoolsDetector {
   readAdapters: () => readonly IExternalDevtoolsAdapter[];
-  subscribe: (onChange: () => void) => () => void;
+  subscribe: (onChange: ExternalDevtoolsChangeListener) => ExternalDevtoolsUnsubscribe;
 }

@@ -5,6 +5,7 @@ import { Badge } from "../../../../components/ui/Badge";
 import { Card, CardHeader, CardTitle } from "../../../../components/ui/Card";
 
 import { InlineNotice } from "../../../shared";
+import { FloatingSurface } from "../../../shared/components/FloatingSurface";
 import type { ComponentSourceMenuItem } from "../types";
 
 interface IComponentSourceMenuProps {
@@ -62,14 +63,14 @@ export function ComponentSourceMenu({
   }
 
   return (
-    <section
+    <FloatingSurface
       aria-label={title}
-      className="devhost-fade pointer-events-auto fixed z-(--devhost-z-popover) w-100 max-w-[calc(100vw-20px)]"
       data-component-source-menu=""
       data-testid="ComponentSourceMenu"
-      hidden={!isOpen}
-      inert={!isOpen}
-      style={{ left: menuPosition.left, top: menuPosition.top }}
+      isOpen={isOpen}
+      left={menuPosition.left}
+      top={menuPosition.top}
+      width="md"
     >
       <Card>
         <CardHeader>
@@ -107,6 +108,6 @@ export function ComponentSourceMenu({
           })}
         </div>
       </Card>
-    </section>
+    </FloatingSurface>
   );
 }

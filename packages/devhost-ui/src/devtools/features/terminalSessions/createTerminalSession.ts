@@ -4,9 +4,8 @@ import type {
   IAgentTerminalSession,
   ICommandTerminalSession,
   IEditorTerminalSession,
-  IStartAgentTerminalSessionRequest,
-  IStartCommandTerminalSessionRequest,
   IStartEditorTerminalSessionRequest,
+  StartAnnotationTerminalSessionRequest,
   StartTerminalSessionRequest,
   TerminalSession,
   ITerminalSessionBehavior,
@@ -88,7 +87,7 @@ export function createTerminalSession(
 }
 
 function createAnnotationTerminalSummary(
-  request: IStartAgentTerminalSessionRequest | IStartCommandTerminalSessionRequest,
+  request: StartAnnotationTerminalSessionRequest,
   annotationActions: IAnnotationAction[],
 ): ITerminalSessionSummary {
   const actionLabel: string =
@@ -112,9 +111,7 @@ function createEditorTerminalSummary(request: IStartEditorTerminalSessionRequest
   };
 }
 
-function createAnnotationSummaryMeta(
-  request: IStartAgentTerminalSessionRequest | IStartCommandTerminalSessionRequest,
-): string[] {
+function createAnnotationSummaryMeta(request: StartAnnotationTerminalSessionRequest): string[] {
   return [
     `${request.annotation.markers.length} initial markers`,
     request.annotation.title,

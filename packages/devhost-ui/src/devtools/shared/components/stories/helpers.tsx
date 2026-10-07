@@ -110,10 +110,35 @@ export function expectDevtoolsSurfaceAbove(
   }
 }
 
+type HostLayerCoverage = "inset" | "viewport";
+
+/** Host-page layers at the highest z-index a page can use: across the viewport, or leaving a margin around it. */
+export const hostLayerStyles: Record<HostLayerCoverage, CSSProperties> = {
+  inset: {
+    background: "white",
+    inset: 100,
+    margin: 0,
+    padding: 40,
+    position: "fixed",
+    zIndex: 2147483647,
+  },
+  viewport: {
+    background: "white",
+    border: 0,
+    height: "auto",
+    inset: 0,
+    margin: 0,
+    padding: 40,
+    position: "fixed",
+    width: "auto",
+    zIndex: 2147483647,
+  },
+};
+
 interface IHostShadowPopoverProps {
   children: ReactNode;
+  coverage: HostLayerCoverage;
   openLabel: string;
-  style: CSSProperties;
   testId: string;
 }
 
@@ -121,7 +146,7 @@ interface IHostShadowPopoverProps {
  * A host popover built like a web component: light-DOM children are slotted into a manual popover inside a shadow
  * root. Its toggle events never reach the document, so devtools cannot observe it opening.
  */
-export function HostShadowPopover({ children, openLabel, style, testId }: IHostShadowPopoverProps): JSX.Element {
+export function HostShadowPopover({ children, coverage, openLabel, testId }: IHostShadowPopoverProps): JSX.Element {
   const ownerElementReference = useRef<HTMLDivElement | null>(null);
   const [shadowRoot, setShadowRoot] = useState<ShadowRoot | null>(null);
   const [popoverElement, setPopoverElement] = useState<HTMLDivElement | null>(null);
@@ -146,7 +171,7 @@ export function HostShadowPopover({ children, openLabel, style, testId }: IHostS
         {shadowRoot === null
           ? null
           : createPortal(
-              <div popover="manual" ref={setPopoverElement} style={style}>
+              <div popover="manual" ref={setPopoverElement} style={hostLayerStyles[coverage]}>
                 <slot />
               </div>,
               shadowRoot,

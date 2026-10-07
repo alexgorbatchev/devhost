@@ -3,7 +3,7 @@ import type {
   IWorktree,
   IWorktreeDirectory,
   ServiceHealth,
-  WorktreeRepository,
+  IWorktreeRepository,
   IRoutingConfig,
 } from "../../shared/types";
 import type { IRoutedServiceIdentity } from "../../shared/routedServices";
@@ -60,7 +60,7 @@ function isServiceHealth(value: unknown): value is ServiceHealth {
   );
 }
 
-function isRepository(value: unknown): value is WorktreeRepository {
+function isRepository(value: unknown): value is IWorktreeRepository {
   if (typeof value !== "object" || value === null) return false;
   const names: unknown = Reflect.get(value, "serviceNames");
   const worktrees: unknown = Reflect.get(value, "worktrees");

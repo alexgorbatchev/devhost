@@ -1,4 +1,6 @@
 import { RotateCwIcon } from "lucide-react";
+
+import { Icon } from "../../../components/ui/Icon";
 import { useState, type JSX } from "react";
 
 import { Button } from "../../../components/ui/Button";
@@ -33,7 +35,7 @@ export function RestartStackButton({ isDisabled, onPendingChange }: IRestartStac
     >
       <Button
         disabled={isDisabled || isPending}
-        startEnhancer={<RotateCwIcon />}
+        startEnhancer={<Icon glyph={RotateCwIcon} />}
         onClick={() => {
           void handleRestart();
         }}

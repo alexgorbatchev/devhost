@@ -1,7 +1,7 @@
 import { useCallback, useState, type ComponentProps, type JSX } from "react";
 import { expect, userEvent, waitFor } from "storybook/test";
 
-import type { WorktreeRepository } from "../../../../shared/types";
+import type { IWorktreeRepository } from "../../../../shared/types";
 import { readDevtoolsStoryShadowCanvas } from "../../../../shared/components/stories/helpers";
 import { ServiceStatusPanel } from "../ServiceStatusPanel";
 
@@ -70,10 +70,11 @@ function readContrastRatio(first: number, second: number): number {
 }
 
 export function WorktreePanelHarness(args: ServiceStatusPanelProps): JSX.Element {
-  const [repositories, setRepositories] = useState<WorktreeRepository[]>(args.repositories ?? []);
+  const [repositories, setRepositories] = useState<IWorktreeRepository[]>(args.repositories ?? []);
+  const { onSwitchWorktree } = args;
   const onSwitch = useCallback(
     async (id: string, path: string): Promise<string | null> => {
-      const error = (await args.onSwitchWorktree?.(id, path)) ?? null;
+      const error = (await onSwitchWorktree?.(id, path)) ?? null;
       setRepositories((current) =>
         current.map((repository) =>
           repository.id === id
@@ -83,7 +84,7 @@ export function WorktreePanelHarness(args: ServiceStatusPanelProps): JSX.Element
       );
       return error;
     },
-    [args.onSwitchWorktree],
+    [onSwitchWorktree],
   );
   return <ServiceStatusPanel {...args} repositories={repositories} onSwitchWorktree={onSwitch} />;
 }

@@ -4,8 +4,10 @@ import { cn } from "../../lib/utils";
 import { buttonVariants } from "./constants";
 
 export type ButtonVariant = "danger" | "default" | "ghost" | "primary" | "warning";
+type ButtonJoinedEdge = "end" | "none" | "start";
 
 export interface IButtonProps extends React.ComponentProps<"button"> {
+  joinedEdge?: ButtonJoinedEdge;
   variant?: ButtonVariant;
   startEnhancer?: React.ReactNode;
   endEnhancer?: React.ReactNode;
@@ -14,6 +16,7 @@ export interface IButtonProps extends React.ComponentProps<"button"> {
 
 export function Button({
   className,
+  joinedEdge = "none",
   variant = "default",
   startEnhancer,
   endEnhancer,
@@ -31,7 +34,7 @@ export function Button({
       data-variant={variant}
       data-testid="Button"
       data-devhost-instance-testid={testId}
-      className={cn(buttonVariants({ className, shape: isIcon ? "icon" : "default", variant }))}
+      className={cn(buttonVariants({ className, joinedEdge, shape: isIcon ? "icon" : "default", variant }))}
       type={type}
       {...props}
     >

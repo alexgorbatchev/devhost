@@ -9,6 +9,8 @@ import {
   TriangleAlertIcon,
 } from "lucide-react";
 
+import { Icon } from "../../../../components/ui/Icon";
+
 import { Badge } from "../../../../components/ui/Badge";
 import { Textarea } from "../../../../components/ui/Textarea";
 
@@ -91,11 +93,7 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
       testId="AnnotationQueuePanel"
       triggerContent={
         <>
-          {hasError ? (
-            <TriangleAlertIcon aria-hidden="true" className="size-3.5" />
-          ) : (
-            <ListOrderedIcon aria-hidden="true" className="size-3.5" />
-          )}
+          {hasError ? <Icon glyph={TriangleAlertIcon} tone="destructive" /> : <Icon glyph={ListOrderedIcon} />}
           <span aria-hidden="true">{entryCount}</span>
           {pausedCount > 0 && !hasError ? (
             <Badge aria-hidden="true" variant="destructive">{`${pausedCount} paused`}</Badge>
@@ -117,7 +115,7 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
                 <Button
                   aria-expanded={queueIsExpanded}
                   aria-label={queueIsExpanded ? "Hide annotations" : "Show annotations"}
-                  startEnhancer={queueIsExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
+                  startEnhancer={queueIsExpanded ? <Icon glyph={ChevronDownIcon} /> : <Icon glyph={ChevronRightIcon} />}
                   testId="AnnotationQueuePanel--queue-toggle"
                   variant="ghost"
                   onClick={(): void => {
@@ -134,7 +132,7 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
                 {queueIsPaused ? (
                   <Button
                     disabled={props.isQueueResumePending(queue.queueId)}
-                    startEnhancer={<PlayIcon />}
+                    startEnhancer={<Icon glyph={PlayIcon} />}
                     testId="AnnotationQueuePanel--resume"
                     variant="primary"
                     onClick={(): void => {
@@ -184,7 +182,7 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
                                 <Button
                                   aria-label="Edit annotation"
                                   disabled={entryIsPending}
-                                  startEnhancer={<PencilIcon />}
+                                  startEnhancer={<Icon glyph={PencilIcon} />}
                                   testId="AnnotationQueuePanel--edit"
                                   title="Edit annotation"
                                   variant="ghost"
@@ -198,7 +196,7 @@ export function AnnotationQueuePanel(props: IAnnotationQueuePanelProps): JSX.Ele
                                 <Button
                                   aria-label="Delete annotation"
                                   disabled={entryIsPending}
-                                  startEnhancer={<Trash2Icon />}
+                                  startEnhancer={<Icon glyph={Trash2Icon} />}
                                   testId="AnnotationQueuePanel--remove"
                                   title="Delete annotation"
                                   variant="ghost"

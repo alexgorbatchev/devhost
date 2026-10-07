@@ -4,6 +4,8 @@ import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { cn } from "../../lib/utils";
 import { CheckIcon, ChevronRightIcon } from "lucide-react";
 
+import { Icon } from "./Icon";
+
 type OmitKeys = "className" | "style";
 
 type DropdownMenuContentProps = Omit<React.ComponentProps<typeof DropdownMenuPrimitive.Content>, OmitKeys> & {
@@ -87,7 +89,7 @@ export function DropdownMenuItem({ inset, variant = "default", ...props }: Dropd
     >
       <div
         className={cn(
-          "group/dropdown-menu-item relative flex h-6 cursor-default items-center gap-1.5 px-2 text-md outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:text-faint [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5 data-inset:pl-6 data-[variant=destructive]:text-destructive data-[variant=destructive]:data-highlighted:bg-destructive data-[variant=destructive]:data-highlighted:text-destructive-foreground",
+          "group/dropdown-menu-item relative flex h-6 cursor-default items-center gap-1.5 px-2 text-md outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:text-faint data-inset:pl-6 data-[variant=destructive]:text-destructive data-[variant=destructive]:data-highlighted:bg-destructive data-[variant=destructive]:data-highlighted:text-destructive-foreground",
         )}
       >
         {props.children}
@@ -107,20 +109,35 @@ export function DropdownMenuCheckboxItem({ children, checked, inset, ...props }:
     >
       <div
         className={cn(
-          "relative flex h-6 cursor-default items-center gap-1.5 pr-2 pl-6 text-md outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:text-faint [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+          "relative flex h-6 cursor-default items-center gap-1.5 pr-2 pl-6 text-md outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:text-faint",
         )}
       >
-        <span
-          className="pointer-events-none absolute left-2 flex items-center justify-center text-primary"
-          data-slot="dropdown-menu-checkbox-item-indicator"
-        >
+        <DropdownMenuItemIndicatorSlot slot="dropdown-menu-checkbox-item-indicator">
           <DropdownMenuPrimitive.ItemIndicator>
-            <CheckIcon />
+            <Icon glyph={CheckIcon} />
           </DropdownMenuPrimitive.ItemIndicator>
-        </span>
+        </DropdownMenuItemIndicatorSlot>
         {children}
       </div>
     </DropdownMenuPrimitive.CheckboxItem>
+  );
+}
+
+interface IDropdownMenuItemIndicatorSlotProps {
+  children: React.ReactNode;
+  slot: string;
+}
+
+// The leading column of a checkbox or radio item, where its check mark appears.
+function DropdownMenuItemIndicatorSlot({ children, slot }: IDropdownMenuItemIndicatorSlotProps) {
+  return (
+    <span
+      className="pointer-events-none absolute left-2 flex items-center justify-center text-primary"
+      data-slot={slot}
+      data-testid="DropdownMenuItemIndicatorSlot"
+    >
+      {children}
+    </span>
   );
 }
 
@@ -133,17 +150,14 @@ export function DropdownMenuRadioItem({ children, inset, ...props }: DropdownMen
     <DropdownMenuPrimitive.RadioItem data-slot="dropdown-menu-radio-item" data-inset={inset} asChild {...props}>
       <div
         className={cn(
-          "relative flex h-6 cursor-default items-center gap-1.5 pr-2 pl-6 text-md outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:text-faint [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+          "relative flex h-6 cursor-default items-center gap-1.5 pr-2 pl-6 text-md outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:text-faint",
         )}
       >
-        <span
-          className="pointer-events-none absolute left-2 flex items-center justify-center text-primary"
-          data-slot="dropdown-menu-radio-item-indicator"
-        >
+        <DropdownMenuItemIndicatorSlot slot="dropdown-menu-radio-item-indicator">
           <DropdownMenuPrimitive.ItemIndicator>
-            <CheckIcon />
+            <Icon glyph={CheckIcon} />
           </DropdownMenuPrimitive.ItemIndicator>
-        </span>
+        </DropdownMenuItemIndicatorSlot>
         {children}
       </div>
     </DropdownMenuPrimitive.RadioItem>
@@ -186,13 +200,11 @@ export function DropdownMenuSubTrigger({ inset, children, ...props }: DropdownMe
     <DropdownMenuPrimitive.SubTrigger data-slot="dropdown-menu-sub-trigger" data-inset={inset} asChild {...props}>
       <div
         className={cn(
-          "relative flex h-6 cursor-default items-center gap-1.5 px-2 text-md outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:text-faint [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5 data-inset:pl-6 data-open:bg-accent",
+          "relative flex h-6 cursor-default items-center gap-1.5 px-2 text-md outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:text-faint data-inset:pl-6 data-open:bg-accent",
         )}
       >
-        {children}
-        <span className="ml-auto">
-          <ChevronRightIcon />
-        </span>
+        <span className="flex min-w-0 flex-1 items-center gap-1.5">{children}</span>
+        <Icon glyph={ChevronRightIcon} />
       </div>
     </DropdownMenuPrimitive.SubTrigger>
   );

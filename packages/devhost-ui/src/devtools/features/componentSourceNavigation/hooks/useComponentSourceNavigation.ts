@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../../shared/constants";
 import { resolveWorktreeSourcePath } from "../../../shared/resolveWorktreeSourcePath";
-import type { WorktreeRepository } from "../../../shared/types";
+import type { IWorktreeRepository } from "../../../shared/types";
 import { readDevtoolsComponentEditorLabel, type DevtoolsComponentEditor } from "../../../shared";
 import { isEventTargetTerminalKeyboardInput } from "../../../shared/isEventTargetTerminalKeyboardInput";
 import { resolveAnnotationTarget } from "../../annotationComposer/resolveAnnotationTarget";
@@ -14,7 +14,7 @@ import type { ComponentSourceMenuItem, IComponentSourceMenuState, ISetComponentM
 type UseComponentSourceNavigationParams = {
   componentEditor: DevtoolsComponentEditor;
   projectRootPath: string;
-  worktreeRepository?: WorktreeRepository;
+  worktreeRepository?: IWorktreeRepository;
   startComponentSourceSession: (menuItem: ComponentSourceMenuItem) => Promise<ITerminalSessionStartResult>;
   enabled?: boolean;
 };
@@ -183,7 +183,7 @@ async function openComponentMenu(
   componentEditor: DevtoolsComponentEditor,
   projectRootPath: string,
   setComponentMenu: ISetComponentMenuFunction,
-  worktreeRepository: WorktreeRepository | undefined,
+  worktreeRepository: IWorktreeRepository | undefined,
 ): Promise<void> {
   const inspectedComponents = await inspectComponentElement(targetElement);
 

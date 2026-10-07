@@ -11,6 +11,7 @@ import {
   devtoolsStoryShadowRootHostTestId,
   expectDevtoolsSurfaceOnTop,
   HostShadowPopover,
+  hostLayerStyles,
   readDevtoolsStoryShadowCanvas,
   readHostShadowPopover,
   readShadowRoot,
@@ -21,17 +22,7 @@ import {
 type HostLayerKind = "auto-popover" | "manual-popover" | "shadow-popover" | "stacking-context";
 
 // Covers the viewport at the highest z-index a page can use, so every devtools surface overlaps it.
-const hostLayerStyle: CSSProperties = {
-  background: "white",
-  border: 0,
-  height: "auto",
-  inset: 0,
-  margin: 0,
-  padding: 40,
-  position: "fixed",
-  width: "auto",
-  zIndex: 2147483647,
-};
+const hostLayerStyle: CSSProperties = hostLayerStyles.viewport;
 const hostLayerTestId: string = "HostLayer";
 const hostLayerShortcutKey: string = "F2";
 
@@ -66,7 +57,7 @@ function HostLayer({ children, kind }: IHostLayerProps): JSX.Element {
 
   if (kind === "shadow-popover") {
     return (
-      <HostShadowPopover openLabel="Open host layer" style={hostLayerStyle} testId={hostLayerTestId}>
+      <HostShadowPopover coverage="viewport" openLabel="Open host layer" testId={hostLayerTestId}>
         {children}
       </HostShadowPopover>
     );

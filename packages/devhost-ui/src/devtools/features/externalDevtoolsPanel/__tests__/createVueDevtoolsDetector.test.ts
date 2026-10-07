@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
 
-import { fixture_visibilityModes } from "./fixtures";
+import { fixture_visibilityModes } from "./fixtures/fixtures";
 import { authorizeNativeVueHost, revealNativeVueHost, startNativeVueHost, withNativeVueHosts } from "./helpers";
-import type { INativeVueHost } from "./fixtures/types";
+import type { INativeVueHost } from "./helpers";
 
 test("native Vue authorization survives overlapping dependency optimization in independent hosts", async () => {
   await withNativeVueHosts([{}], async ([first], browser) => {

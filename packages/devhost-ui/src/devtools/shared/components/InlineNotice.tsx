@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type JSX, type ReactNode } from "react";
 import { AlertCircleIcon, CheckIcon, CopyIcon, TriangleAlertIcon, XIcon } from "lucide-react";
 
+import { Icon } from "../../../components/ui/Icon";
+
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "../../../components/ui/Alert";
 
 type InlineNoticeTone = "default" | "danger";
@@ -77,26 +79,26 @@ export function InlineNotice({
   let copyIcon: JSX.Element;
   let copyLabel: string;
   if (copyState.kind === "copied") {
-    copyIcon = <CheckIcon aria-hidden="true" />;
+    copyIcon = <Icon glyph={CheckIcon} />;
     copyLabel = "Copied";
   } else if (copyState.kind === "error") {
-    copyIcon = <AlertCircleIcon aria-hidden="true" />;
+    copyIcon = <Icon glyph={AlertCircleIcon} />;
     copyLabel = `Copy failed: ${copyState.message}`;
   } else {
-    copyIcon = <CopyIcon aria-hidden="true" />;
+    copyIcon = <Icon glyph={CopyIcon} />;
     copyLabel = "Copy to clipboard";
   }
 
   return (
     <Alert data-testid={testId} variant={tone === "danger" ? "destructive" : "default"}>
-      {tone === "danger" ? <TriangleAlertIcon aria-hidden="true" /> : null}
+      {tone === "danger" ? <Icon glyph={TriangleAlertIcon} /> : null}
       {title !== undefined ? <AlertTitle ref={titleReference}>{title}</AlertTitle> : null}
       <AlertDescription ref={descriptionReference}>
         {children}
         {copyState.kind === "error" ? (
           <span
             className="mt-0.5 block text-sm font-normal opacity-90"
-            data-testid="InlineNotice--copyError"
+            data-testid="InlineNotice--copy-error"
             role="status"
           >
             {copyState.message}
@@ -109,7 +111,7 @@ export function InlineNotice({
           {showCopy ? (
             <button
               aria-label={copyLabel}
-              className="grid size-5 place-items-center rounded-sm text-current hover:bg-black/15 [&_svg]:size-3.5"
+              className="grid size-5 place-items-center rounded-sm text-current hover:bg-black/15"
               data-testid="InlineNotice--copy"
               title={copyLabel}
               type="button"
@@ -123,14 +125,14 @@ export function InlineNotice({
           {onDismiss !== undefined ? (
             // Inherits the notice color so the control stays legible on the solid danger strip.
             <button
-              aria-label="Dismiss"
-              className="grid size-5 place-items-center rounded-sm text-current hover:bg-black/15 [&_svg]:size-3.5"
+              className="grid size-5 place-items-center rounded-sm text-current hover:bg-black/15"
               data-testid="InlineNotice--dismiss"
               title="Dismiss"
               type="button"
               onClick={onDismiss}
             >
-              <XIcon aria-hidden="true" />
+              <Icon glyph={XIcon} />
+              <span className="sr-only">Dismiss</span>
             </button>
           ) : null}
         </AlertAction>

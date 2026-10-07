@@ -1,4 +1,6 @@
-export function resetJotaiDevtoolsStorage(): () => void {
+type RestoreStorage = () => void;
+
+export function resetJotaiDevtoolsStorage(): RestoreStorage {
   const saved = Object.entries(localStorage).filter(([key]) => key.startsWith("jotai-devtools-"));
   for (const [key] of saved) localStorage.removeItem(key);
 
@@ -9,7 +11,7 @@ export function resetJotaiDevtoolsStorage(): () => void {
   };
 }
 
-export function resetTanStackDevtoolsStorage(): () => void {
+export function resetTanStackDevtoolsStorage(): RestoreStorage {
   const keys = ["tanstack_devtools_state", "tanstack_devtools_settings", "pip_open"];
   const saved = new Map(keys.map((key) => [key, localStorage.getItem(key)]));
   for (const key of keys) localStorage.removeItem(key);

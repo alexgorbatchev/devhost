@@ -48,10 +48,11 @@ export interface IStartEditorTerminalSessionRequest {
   sourceLabel: string;
 }
 
-export type StartTerminalSessionRequest =
+export type StartAnnotationTerminalSessionRequest =
   | IStartAgentTerminalSessionRequest
-  | IStartCommandTerminalSessionRequest
-  | IStartEditorTerminalSessionRequest;
+  | IStartCommandTerminalSessionRequest;
+
+export type StartTerminalSessionRequest = StartAnnotationTerminalSessionRequest | IStartEditorTerminalSessionRequest;
 
 export interface IStartTerminalSessionResponse {
   sessionId: string;

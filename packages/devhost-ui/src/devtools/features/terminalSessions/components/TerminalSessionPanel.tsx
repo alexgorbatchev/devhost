@@ -4,6 +4,8 @@ import type { FitAddon } from "@xterm/addon-fit";
 import type { Terminal } from "@xterm/xterm";
 import { CodeIcon, MinusIcon, TerminalIcon, XIcon } from "lucide-react";
 
+import { Icon } from "../../../../components/ui/Icon";
+
 import { Badge } from "../../../../components/ui/Badge";
 import { cn } from "../../../../lib/utils";
 
@@ -37,6 +39,7 @@ interface ITerminalSessionPanelProps {
 }
 
 type StatusBadgeVariant = "default" | "destructive" | "primary" | "success";
+type DisposeTerminal = () => void;
 
 const statusBadgeVariants: Record<TerminalSessionStatus, StatusBadgeVariant> = {
   connecting: "default",
@@ -135,7 +138,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
     }
 
     let isDisposed: boolean = false;
-    let dispose: (() => void) | undefined;
+    let dispose: DisposeTerminal | undefined;
     const initializeTerminal = async (): Promise<void> => {
       const [{ Terminal }, { FitAddon }] = await Promise.all([import("@xterm/xterm"), import("@xterm/addon-fit")]);
       if (isDisposed) return;
@@ -322,16 +325,12 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
           className="flex h-6.5 min-w-0 items-center gap-1.5 border-b border-border pr-1 pl-2"
           data-testid="TerminalSessionPanel--header"
         >
-          {session.kind === "editor" ? (
-            <CodeIcon aria-hidden="true" className="size-3.5 shrink-0" />
-          ) : (
-            <TerminalIcon aria-hidden="true" className="size-3.5 shrink-0" />
-          )}
+          {session.kind === "editor" ? <Icon glyph={CodeIcon} /> : <Icon glyph={TerminalIcon} />}
           <strong className="shrink-0">{session.summary.title}</strong>
           <span className="min-w-0 flex-1 truncate text-muted-foreground">{session.summary.meta.join(" · ")}</span>
           <Badge variant={statusBadgeVariants[session.status]}>{readTerminalSessionStatusLabel(session.status)}</Badge>
           <Button
-            startEnhancer={<MinusIcon />}
+            startEnhancer={<Icon glyph={MinusIcon} />}
             testId="TerminalSessionPanel--minimize"
             title="Minimize to toolbar"
             onClick={props.onMinimize}
@@ -339,7 +338,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
             Minimize
           </Button>
           <Button
-            startEnhancer={<XIcon />}
+            startEnhancer={<Icon glyph={XIcon} />}
             testId={primaryAction.testId}
             title={primaryAction.title}
             variant={primaryAction.variant}

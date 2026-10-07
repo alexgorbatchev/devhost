@@ -30,7 +30,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const Default: Story = {
+export const Default: Story = {
   play: async ({ canvasElement }): Promise<void> => {
     const shadowCanvas = readKbdShadowCanvas(canvasElement);
 
@@ -38,8 +38,6 @@ const Default: Story = {
     await expect(shadowCanvas.getByText("Enter")).toBeInTheDocument();
   },
 };
-
-export { Default as Kbd };
 
 export const LightOnPrimary: Story = {
   globals: { devhostTheme: "light" },

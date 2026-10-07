@@ -2,11 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "rea
 
 import { XIcon } from "lucide-react";
 
+import { Icon } from "../../../../components/ui/Icon";
+
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/Card";
 import { Kbd } from "../../../../components/ui/Kbd";
 import { Textarea } from "../../../../components/ui/Textarea";
 
 import { Button, InlineNotice, type IAnnotationAction } from "../../../shared";
+import { FloatingSurface } from "../../../shared/components/FloatingSurface";
 import { useRetainedValue } from "../../../shared/hooks/useRetainedValue";
 import { isEventTargetTerminalKeyboardInput } from "../../../shared/isEventTargetTerminalKeyboardInput";
 import type { ITerminalSessionStartResult } from "../../terminalSessions/types";
@@ -217,15 +220,15 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
       />
       <AnnotationSelectionHint isVisible={isSelectionMode && selectedTargets.length === 0} />
       {displayedCoordinates !== null ? (
-        <section
+        <FloatingSurface
           ref={popupReference}
           aria-label="Annotation draft"
-          className="devhost-fade pointer-events-auto fixed z-(--devhost-z-popover) w-80 max-w-[calc(100vw-20px)]"
           data-testid="AnnotationComposer--popup"
-          hidden={!isPopupOpen}
-          inert={!isPopupOpen}
+          isOpen={isPopupOpen}
+          left={displayedCoordinates.left}
           role="dialog"
-          style={{ left: displayedCoordinates.left, top: displayedCoordinates.top }}
+          top={displayedCoordinates.top}
+          width="sm"
           onClick={(event: React.MouseEvent<HTMLElement>): void => {
             event.stopPropagation();
           }}
@@ -244,7 +247,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
               <Button
                 aria-label="Cancel annotation"
                 disabled={isSubmitting}
-                startEnhancer={<XIcon />}
+                startEnhancer={<Icon glyph={XIcon} />}
                 testId="AnnotationComposer--close"
                 title="Cancel (Esc)"
                 variant="ghost"
@@ -322,7 +325,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
               </div>
             </CardContent>
           </Card>
-        </section>
+        </FloatingSurface>
       ) : null}
     </div>
   );

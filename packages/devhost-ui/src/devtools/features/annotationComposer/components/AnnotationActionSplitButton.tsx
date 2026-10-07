@@ -1,6 +1,8 @@
 import { useEffect, useId, useState, type JSX } from "react";
 import { ChevronDownIcon } from "lucide-react";
 
+import { Icon } from "../../../../components/ui/Icon";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,8 +45,9 @@ export function AnnotationActionSplitButton({
   const menuToggleClassName: string = cn(
     buttonVariants({
       className: isRunDisabled
-        ? "rounded-l-none border-l-0 border-dashed border-border text-foreground"
-        : "rounded-l-none border-l border-l-primary-foreground/35",
+        ? "border-l-0 border-dashed border-border text-foreground"
+        : "border-l border-l-primary-foreground/35",
+      joinedEdge: "start",
       shape: "icon",
       variant: isRunDisabled ? "ghost" : "primary",
     }),
@@ -59,25 +62,21 @@ export function AnnotationActionSplitButton({
   }, [isActionMenuDisabled, isMenuOpen]);
 
   return (
-    <div
-      ref={setRootElement}
-      className="relative inline-flex [&>button:first-child]:rounded-r-none"
-      data-testid="AnnotationActionSplitButton"
-    >
-      <Button disabled={isRunDisabled} endEnhancer={<Kbd>⌘↵</Kbd>} variant="primary" onClick={onRun}>
+    <div ref={setRootElement} className="relative inline-flex" data-testid="AnnotationActionSplitButton">
+      <Button disabled={isRunDisabled} endEnhancer={<Kbd>⌘↵</Kbd>} joinedEdge="end" variant="primary" onClick={onRun}>
         {runLabel}
       </Button>
       <DropdownMenu modal={false} open={isMenuOpen} onOpenChange={setIsMenuOpen}>
         <DropdownMenuTrigger asChild>
           <button
             aria-controls={isMenuOpen ? menuId : undefined}
-            aria-label={`Select annotation action. Current: ${selectedAction.label}`}
             className={menuToggleClassName}
             data-testid="AnnotationActionSplitButton--action-menu-toggle"
             disabled={isActionMenuDisabled}
             type="button"
           >
-            <ChevronDownIcon aria-hidden="true" />
+            <Icon glyph={ChevronDownIcon} />
+            <span className="sr-only">{`Select annotation action. Current: ${selectedAction.label}`}</span>
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent

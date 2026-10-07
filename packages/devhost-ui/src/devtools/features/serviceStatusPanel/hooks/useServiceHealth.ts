@@ -4,7 +4,7 @@ import { HEALTH_WEBSOCKET_PATH, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "../
 import { createDevtoolsWebSocketUrl } from "../../../shared/createDevtoolsWebSocketUrl";
 import { pristineFetch, pristineWebSocket } from "../../../shared/pristineFetch";
 import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
-import type { HealthResponse, ServiceHealth, WorktreeRepository } from "../../../shared/types";
+import type { HealthResponse, ServiceHealth, IWorktreeRepository } from "../../../shared/types";
 import { parseHealthResponse } from "../parseHealthResponse";
 import { requestWorktrees } from "../requestWorktrees";
 import { markServicesAsUnavailable } from "../markServicesAsUnavailable";
@@ -16,13 +16,13 @@ interface IUseServiceHealthResult {
   errorMessage: string | null;
   setErrorMessage: (message: string | null) => void;
   services: ServiceHealth[];
-  repositories: WorktreeRepository[];
+  repositories: IWorktreeRepository[];
   refreshWorktrees: () => Promise<string | null>;
   switchWorktree: (repositoryId: string, path: string) => Promise<string | null>;
 }
 
 export function useServiceHealth(): IUseServiceHealthResult {
-  const [repositories, setRepositories] = useState<WorktreeRepository[]>([]);
+  const [repositories, setRepositories] = useState<IWorktreeRepository[]>([]);
   const [services, setServices] = useState<ServiceHealth[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { stackName: devtoolsStackName } = readInjectedDevtoolsConfig();
