@@ -1,0 +1,7 @@
+# Record all scenes, or one of startup/overview/annotations/query
+record scene="all":
+    DEVHOST_DEMO_SCENE={{quote(scene)}} bun run ./recordDemo.ts
+
+# Run the recording workflow's behavioral tests
+test:
+    bun test ./__tests__

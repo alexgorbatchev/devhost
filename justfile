@@ -2,6 +2,7 @@ mod devhost 'apps/devhost/justfile'
 mod design 'packages/design/justfile'
 mod ui 'packages/devhost-ui/justfile'
 mod docs 'packages/docs/justfile'
+mod demo 'packages/devhost-ui/scripts/demo/justfile'
 
 # Run full repo formatting, policy, and package checks
 check:

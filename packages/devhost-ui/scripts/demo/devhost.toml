@@ -1,0 +1,58 @@
+name = "Devhost demo"
+killZombies = false
+
+[caddy.global]
+adminAddress = "{{ env.DEVHOST_DEMO_ADMIN }}"
+
+[worktrees]
+enabled = true
+
+[devtools.editor]
+enabled = false
+
+[annotation]
+defaultAction = "fix"
+tempDir = "{{ env.DEVHOST_DEMO_RUNTIME }}/.tmp/annotations"
+
+[[annotation.actions]]
+id = "fix"
+label = "Pi"
+kind = "agent"
+
+[annotation.actions.agent]
+adapter = "pi"
+args = [
+  "--no-skills",
+  "--no-context-files",
+  "--no-prompt-templates",
+  "--no-approve",
+  "--tools",
+  "read,edit",
+  "--thinking",
+  "low",
+  "--session-dir",
+  "{{ env.DEVHOST_DEMO_RUNTIME }}/.tmp/pi-sessions",
+  "--append-system-prompt",
+  "{{ env.DEVHOST_DEMO_RUNTIME }}/pi-demo-instructions.md",
+  "-e",
+  "{{ env.DEVHOST_DEMO_RUNTIME }}/pi-demo-guard.js",
+]
+
+[services.api]
+command = ["bun", "run", "src/index.ts"]
+cwd = "{{ env.DEVHOST_DEMO_RUNTIME }}/playground/backend"
+port = "auto"
+host = "{{ env.DEVHOST_DEMO_HOST }}"
+path = "/api/*"
+
+[services.web]
+primary = true
+command = ["bun", "run", "src/index.ts"]
+cwd = "{{ env.DEVHOST_DEMO_RUNTIME }}/playground/frontend"
+port = "auto"
+host = "{{ env.DEVHOST_DEMO_HOST }}"
+path = "/"
+proxyLocalOrigin = true
+
+[services.web.env]
+NODE_ENV = "development"
