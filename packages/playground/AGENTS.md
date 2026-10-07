@@ -19,7 +19,7 @@ Bun + React workspace split into frontend and backend apps, used to exercise `de
 
 - `devhost.toml` takes the shared hostname from `DEVHOST_PLAYGROUND`: `/api/*` goes to the backend, and `/` goes to the frontend. The frontend enables `proxyLocalOrigin` so Bun HTML assets and HMR accept the local upstream Host/Origin; keep the backend's default header handling.
 - The root `just dev` command starts the repo-root `devhost.toml`, which includes this playground split services and Storybook.
-- Shared `oxfmt` / `oxlint` enforcement runs from the repo root; do not add workspace-local lint or format config unless these packages intentionally diverge.
+- The root `oxfmt` and `oxlint` configs ignore `packages/playground/**`: this dev harness is intentionally excluded from shared lint and format enforcement (see the root `AGENTS.md`), so `just check` and `just fix` do not touch it. Do not add workspace-local lint or format config.
 
 ## Boundaries
 
