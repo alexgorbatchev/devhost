@@ -5,6 +5,10 @@ const originalConsoleError = console.error;
 const originalConsoleWarn = console.warn;
 const unmountWarnings: unknown[][] = [];
 const jotaiDeprecationWarnings: unknown[][] = [];
+const emotionServerRenderingNotices: unknown[][] = [];
+// What Emotion's development build logs for a selector that breaks when styles are rendered on a server.
+const emotionServerRenderingNoticePattern: RegExp =
+  /^The pseudo class ":(first|nth|nth-last)-child" is potentially unsafe when doing server-side rendering\. /;
 
 vi.spyOn(console, "error").mockImplementation((...args: unknown[]): void => {
   originalConsoleError(...args);
@@ -13,6 +17,9 @@ vi.spyOn(console, "error").mockImplementation((...args: unknown[]): void => {
     "Attempted to synchronously unmount a root while React was already rendering. React cannot finish unmounting the root until the current render has completed, which may lead to a race condition."
   ) {
     unmountWarnings.push(args);
+  }
+  if (typeof args[0] === "string" && emotionServerRenderingNoticePattern.test(args[0])) {
+    emotionServerRenderingNotices.push(args);
   }
 });
 
@@ -29,4 +36,5 @@ vi.spyOn(console, "warn").mockImplementation((...args: unknown[]): void => {
 afterEach(() => {
   assert.deepEqual(unmountWarnings.splice(0), []);
   assert.deepEqual(jotaiDeprecationWarnings.splice(0), []);
+  assert.deepEqual(emotionServerRenderingNotices.splice(0), []);
 });
