@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "../../../../components/ui/DropdownMenu";
 import { Kbd } from "../../../../components/ui/Kbd";
+import { cn } from "../../../../lib/utils";
 import { buttonVariants } from "@/components/ui/constants";
 
 import { Button, type IAnnotationAction } from "../../../shared";
@@ -37,6 +38,17 @@ export function AnnotationActionSplitButton({
   // read while rendering.
   const [rootElement, setRootElement] = useState<HTMLDivElement | null>(null);
   const menuId: string = useId();
+  // A disabled run button is hollow and dashed. The toggle continues that outline and uses the run button's right
+  // border as the divider, so the pair reads as one control; its chevron keeps an enabled color while the menu opens.
+  const menuToggleClassName: string = cn(
+    buttonVariants({
+      className: isRunDisabled
+        ? "rounded-l-none border-l-0 border-dashed border-border text-foreground"
+        : "rounded-l-none border-l border-l-primary-foreground/35",
+      shape: "icon",
+      variant: isRunDisabled ? "ghost" : "primary",
+    }),
+  );
 
   useEffect(() => {
     if (!isActionMenuDisabled || !isMenuOpen) {
@@ -60,11 +72,7 @@ export function AnnotationActionSplitButton({
           <button
             aria-controls={isMenuOpen ? menuId : undefined}
             aria-label={`Select annotation action. Current: ${selectedAction.displayName}`}
-            className={buttonVariants({
-              className: "rounded-l-none border-l border-l-primary-foreground/35",
-              shape: "icon",
-              variant: "primary",
-            })}
+            className={menuToggleClassName}
             data-testid="AnnotationActionSplitButton--action-menu-toggle"
             disabled={isActionMenuDisabled}
             type="button"

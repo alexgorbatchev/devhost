@@ -204,7 +204,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
   const displayedTargets: ISelectedAnnotationTarget[] = useRetainedValue(selectedTargets, isPopupOpen);
   const displayedCoordinates = useRetainedValue(popupCoordinates, isPopupOpen);
   const displayedComment: string = useRetainedValue(comment, isPopupOpen);
-  const runLabel: string = isSubmitting ? "Submitting…" : `Run ${selectedAction.displayName}`;
+  const runLabel: string = isSubmitting ? "Submitting…" : selectedAction.displayName;
   const markerCountLabel: string = `${displayedTargets.length} ${displayedTargets.length === 1 ? "marker" : "markers"}`;
 
   return (

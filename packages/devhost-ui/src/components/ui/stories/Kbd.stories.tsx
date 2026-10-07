@@ -47,7 +47,7 @@ export const LightOnPrimary: Story = {
     renderInDevtoolsStoryShadowRoot(
       <StorybookThemeProvider globals={context.globals}>
         <Button variant="primary" endEnhancer={<Kbd>⌘↵</Kbd>}>
-          Run Claude
+          Claude Code
         </Button>
       </StorybookThemeProvider>,
     ),

@@ -148,7 +148,7 @@ export const Default: Story = {
     const commentInput = await canvas.findByTestId("AnnotationComposer--comment");
     await userEvent.type(commentInput, "Fix the red button");
 
-    const submitButton = canvas.getByRole("button", { name: /Run Pi/ });
+    const submitButton = canvas.getByRole("button", { name: "Pi" });
     await userEvent.click(submitButton);
 
     await waitFor(() => {
@@ -250,7 +250,7 @@ export const WithActiveSession: Story = {
 
     await expect(canvas.getByLabelText("Append to active Pi queue")).toBeChecked();
 
-    const submitButton = canvas.getByRole("button", { name: /Run Pi/ });
+    const submitButton = canvas.getByRole("button", { name: "Pi" });
     await userEvent.click(submitButton);
 
     await waitFor(() => {
@@ -288,7 +288,7 @@ export const WithSubmitError: Story = {
     await createAnnotationDraft({ canvas, page });
 
     await userEvent.type(await canvas.findByTestId("AnnotationComposer--comment"), "Retry the submit flow");
-    await userEvent.click(canvas.getByRole("button", { name: /Run Pi/ }));
+    await userEvent.click(canvas.getByRole("button", { name: "Pi" }));
 
     await waitFor(() => {
       expect(canvas.getByTestId("AnnotationComposer--error")).toHaveTextContent("Failed to start the Pi session.");
@@ -343,7 +343,7 @@ export const WithMultipleActions: Story = {
 
     await expect(canvas.queryByRole("combobox")).not.toBeInTheDocument();
     await expect(canvas.queryByLabelText("Append to active Create Ticket queue")).not.toBeInTheDocument();
-    await expect(canvas.getByRole("button", { name: /Run Create Ticket/ })).toBeDisabled();
+    await expect(canvas.getByRole("button", { name: "Create Ticket" })).toBeDisabled();
 
     await userEvent.click(canvas.getByRole("button", { name: /Select annotation action/ }));
     await expect(page.getByRole("menu", { name: /Select annotation action/ })).toBeInTheDocument();
@@ -351,13 +351,13 @@ export const WithMultipleActions: Story = {
     await userEvent.click(page.getByRole("menuitemradio", { name: "Pi" }));
 
     await waitFor(() => {
-      expect(canvas.getByRole("button", { name: /Run Pi/ })).toBeInTheDocument();
+      expect(canvas.getByRole("button", { name: "Pi" })).toBeInTheDocument();
     });
 
     await expect(canvas.getByLabelText("Append to active Pi queue")).toBeChecked();
 
     await userEvent.type(await canvas.findByTestId("AnnotationComposer--comment"), "Open a ticket for this state");
-    await userEvent.click(canvas.getByRole("button", { name: /Run Pi/ }));
+    await userEvent.click(canvas.getByRole("button", { name: "Pi" }));
 
     await waitFor(() => {
       expect(args.onSubmit).toHaveBeenCalledWith(

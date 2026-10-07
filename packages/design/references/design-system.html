@@ -318,6 +318,21 @@
         border-bottom-left-radius: 0;
         border-left: 1px solid color-mix(in srgb, var(--dh-on-accent) 35%, transparent);
       }
+      /* A disabled first half passes its hollow, dashed outline to the caret, and its right border is the divider.
+         The caret keeps an enabled color while its menu still opens. */
+      .split > .btn:first-child:disabled + .btn.caret {
+        background: transparent;
+        border: 1px dashed var(--dh-line);
+        border-left: 0;
+        color: var(--dh-fg);
+        filter: none;
+      }
+      .split > .btn:first-child:disabled + .btn.caret:not(:disabled):hover {
+        background: var(--dh-surface-3);
+      }
+      .split > .btn:first-child:disabled + .btn.caret:disabled {
+        color: var(--dh-fg-faint);
+      }
       .kbd {
         display: inline-flex;
         align-items: center;
@@ -2759,7 +2774,13 @@
                 </svg>
               </button>
               <span class="split">
-                <button class="btn primary" type="button">Run Claude <span class="kbd">⌘↵</span></button>
+                <button class="btn primary" type="button">Claude Code <span class="kbd">⌘↵</span></button>
+                <button class="btn primary caret" type="button" aria-haspopup="menu" aria-label="Choose action">
+                  <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                </button>
+              </span>
+              <span class="split">
+                <button class="btn primary" type="button" disabled>Claude Code <span class="kbd">⌘↵</span></button>
                 <button class="btn primary caret" type="button" aria-haspopup="menu" aria-label="Choose action">
                   <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
                 </button>
@@ -2837,6 +2858,12 @@
                 <td>Transparent, 1px dashed <code>line</code>, <code>fg-faint</code>, 400</td>
                 <td>No change</td>
                 <td>Structurally different, not just dimmer</td>
+              </tr>
+              <tr>
+                <td><code>.split</code> caret beside a <code>:disabled</code> first half</td>
+                <td>Transparent, continues the 1px dashed <code>line</code> outline, <code>fg</code></td>
+                <td><code>surface-3</code></td>
+                <td>The split button stays one hollow control while its menu still opens (devtools)</td>
               </tr>
               <tr>
                 <td><code>.icon</code></td>
@@ -3258,7 +3285,7 @@
               ></textarea>
               <div class="composer-foot">
                 <span class="split">
-                  <button class="btn primary" type="button">Run Claude <span class="kbd">⌘↵</span></button>
+                  <button class="btn primary" type="button">Claude Code <span class="kbd">⌘↵</span></button>
                   <button
                     class="btn primary caret"
                     type="button"
