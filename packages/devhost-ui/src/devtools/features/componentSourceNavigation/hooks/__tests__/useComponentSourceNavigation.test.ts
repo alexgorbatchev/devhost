@@ -170,6 +170,11 @@ describe("useComponentSourceNavigation", () => {
     await inspect(saveButton);
     fireEvent.mouseDown(saveButton);
     expect(hook.result.current.componentMenu).toBeNull();
+
+    // A press that reaches the document without passing through any element is outside the menu too.
+    await inspect(saveButton);
+    fireEvent.mouseDown(document);
+    expect(hook.result.current.componentMenu).toBeNull();
   });
 
   test("closes the menu when the selected worktree changes", async () => {
