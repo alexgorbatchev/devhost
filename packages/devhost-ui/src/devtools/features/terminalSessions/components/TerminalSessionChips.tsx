@@ -36,6 +36,8 @@ export function TerminalSessionChips(props: ITerminalSessionChipsProps): JSX.Ele
   const segmentReference = useRef<HTMLDivElement | null>(null);
   const [visibleLimit, setVisibleLimit] = useState<number>(Number.POSITIVE_INFINITY);
   const [viewportWidth, setViewportWidth] = useState<number>(() => window.innerWidth);
+  const [segmentWidth, setSegmentWidth] = useState<number>(0);
+  const hasSessions: boolean = props.sessions.length > 0;
   const visibleSessions: TerminalSession[] = pickVisibleTerminalSessions(props.sessions, visibleLimit);
   const hiddenSessions: TerminalSession[] = props.sessions.filter(
     (session: TerminalSession): boolean => !visibleSessions.includes(session),
@@ -56,6 +58,26 @@ export function TerminalSessionChips(props: ITerminalSessionChipsProps): JSX.Ele
     };
   }, []);
 
+  // The segment loses width when a neighbouring segment grows, which renders nothing here. The segment exists only
+  // while there are sessions.
+  useLayoutEffect(() => {
+    const segment: HTMLDivElement | null = segmentReference.current;
+
+    if (segment === null) {
+      return;
+    }
+
+    const resizeObserver = new ResizeObserver((): void => {
+      setSegmentWidth(segment.clientWidth);
+    });
+
+    resizeObserver.observe(segment);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [hasSessions]);
+
   // Start from "everything visible" whenever the chip set or the viewport changes, then shrink below.
   useLayoutEffect(() => {
     setVisibleLimit(Number.POSITIVE_INFINITY);
@@ -70,9 +92,9 @@ export function TerminalSessionChips(props: ITerminalSessionChipsProps): JSX.Ele
     }
 
     setVisibleLimit(visibleSessions.length - 1);
-  }, [props.sessions, viewportWidth, visibleSessions.length]);
+  }, [props.sessions, segmentWidth, visibleSessions.length]);
 
-  if (props.sessions.length === 0) {
+  if (!hasSessions) {
     return null;
   }
 
