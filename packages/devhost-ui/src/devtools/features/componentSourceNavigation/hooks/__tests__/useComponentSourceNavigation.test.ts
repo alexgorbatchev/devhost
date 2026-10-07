@@ -1,7 +1,8 @@
-import { act, fireEvent, renderHook } from "@testing-library/react";
-import { afterEach, assert, beforeEach, describe, expect, test, vi, type Mock } from "vitest";
+import { act, renderHook } from "@testing-library/react";
+import { afterEach, assert, beforeEach, describe, expect, onTestFinished, test, vi, type Mock } from "vitest";
+import { userEvent } from "vitest/browser";
 
-import { addDevtoolsButton, addHostButton, readCenter } from "../../../../../../test-support/hostPageUtils";
+import { addDevtoolsButton, addHostButton, placeElement } from "../../../../../../test-support/hostPageUtils";
 import type { IWorktreeRepository } from "../../../../shared/types";
 import type { ITerminalSessionStartResult } from "../../../terminalSessions/types";
 import type { ComponentSourceMenuItem } from "../../types";
@@ -11,6 +12,7 @@ import { addComponentMenuItem, addInspectableButton, captureNavigations } from "
 type NavigationParams = Parameters<typeof useComponentSourceNavigation>[0];
 type StartComponentSourceSession = NavigationParams["startComponentSourceSession"];
 type WriteClipboardText = Clipboard["writeText"];
+type CanceledEventType = "contextmenu" | "keydown";
 
 // The stack runs from `/projects/shop`, where the page's source metadata points.
 const repository: IWorktreeRepository = {
@@ -43,16 +45,53 @@ function renderNavigation(overrides: Partial<NavigationParams> = {}) {
   });
 }
 
-/** Alt+right-clicks the center of `element` and reports whether the browser would still show its own menu. */
-async function inspect(element: Element): Promise<boolean> {
-  let isDefaultAllowed: boolean = true;
+// The pointer and the keyboard are the browser's own: the page receives what a person's input produces. Component
+// inspection resolves through promises, so each input runs inside `act`.
 
-  // Component inspection resolves through promises, so the menu appears after the event.
+/** Alt+right-clicks the center of `element`, the gesture that inspects a component. */
+async function inspect(element: Element): Promise<void> {
   await act(async (): Promise<void> => {
-    isDefaultAllowed = fireEvent.contextMenu(element, { altKey: true, ...readCenter(element) });
+    await userEvent.click(element, { button: "right", modifiers: ["Alt"] });
   });
+}
 
-  return isDefaultAllowed;
+async function rightClick(element: Element): Promise<void> {
+  await act(async (): Promise<void> => {
+    await userEvent.click(element, { button: "right" });
+  });
+}
+
+async function click(element: Element): Promise<void> {
+  await act(async (): Promise<void> => {
+    await userEvent.click(element);
+  });
+}
+
+async function pressKey(key: string): Promise<void> {
+  await act(async (): Promise<void> => {
+    await userEvent.keyboard(`{${key}}`);
+  });
+}
+
+/**
+ * Records, for each `type` event from now on, whether the hook kept the browser from acting on it: showing its own
+ * menu for a right-click, or handling a key. The page listens where the hook does, after it, so call this once the
+ * hook's listener for `type` is in place.
+ */
+function recordCancellations(type: CanceledEventType): boolean[] {
+  const cancellations: boolean[] = [];
+  const listening = new AbortController();
+
+  document.addEventListener(
+    type,
+    (event: Event): void => {
+      cancellations.push(event.defaultPrevented);
+    },
+    { capture: true, signal: listening.signal },
+  );
+  onTestFinished((): void => listening.abort());
+
+  return cancellations;
 }
 
 beforeEach(() => {
@@ -71,9 +110,11 @@ afterEach(() => {
 describe("useComponentSourceNavigation", () => {
   test("opens a menu of the component and its owners for the element under an Alt+right-click", async () => {
     const hook = renderNavigation();
+    const cancellations: boolean[] = recordCancellations("contextmenu");
 
     expect(hook.result.current.componentMenu).toBeNull();
-    expect(await inspect(saveButton)).toBe(false);
+    await inspect(saveButton);
+    expect(cancellations).toEqual([true]);
 
     expect(hook.result.current.componentMenu).toEqual({
       items: [
@@ -119,10 +160,20 @@ describe("useComponentSourceNavigation", () => {
   test("leaves a right-click without Alt to the page and closes an open menu", async () => {
     const hook = renderNavigation();
 
+    const cancellations: boolean[] = recordCancellations("contextmenu");
+
     await inspect(saveButton);
     expect(hook.result.current.componentMenu).not.toBeNull();
 
-    expect(fireEvent.contextMenu(saveButton, readCenter(saveButton))).toBe(true);
+    await rightClick(saveButton);
+    expect(cancellations).toEqual([true, false]);
+    expect(hook.result.current.componentMenu).toBeNull();
+
+    // The menu key asks for the browser's menu without a press on anything.
+    await inspect(saveButton);
+    expect(hook.result.current.componentMenu).not.toBeNull();
+    await pressKey("ContextMenu");
+    expect(cancellations).toEqual([true, false, true, false]);
     expect(hook.result.current.componentMenu).toBeNull();
   });
 
@@ -130,23 +181,30 @@ describe("useComponentSourceNavigation", () => {
     const devtoolsButton: HTMLButtonElement = addDevtoolsButton({ height: 20, width: 60, x: 400, y: 300 });
     const plainButton: HTMLButtonElement = addHostButton("plain", "Plain", { height: 20, width: 60, x: 600, y: 300 });
     const hook = renderNavigation();
+    const cancellations: boolean[] = recordCancellations("contextmenu");
 
-    expect(await inspect(devtoolsButton)).toBe(true);
+    await inspect(devtoolsButton);
+    expect(cancellations).toEqual([false]);
     expect(hook.result.current.componentMenu).toBeNull();
 
-    expect(await inspect(plainButton)).toBe(false);
+    await inspect(plainButton);
+    expect(cancellations).toEqual([false, true]);
     expect(hook.result.current.componentMenu).toBeNull();
 
     // Nothing but the page itself is under the pointer here.
+    Object.assign(document.body.style, { margin: "0", minHeight: "100vh" });
+    onTestFinished((): void => document.body.removeAttribute("style"));
     await act(async (): Promise<void> => {
-      fireEvent.contextMenu(document.body, { altKey: true, clientX: 20, clientY: 700 });
+      await userEvent.click(document.body, { button: "right", modifiers: ["Alt"], position: { x: 20, y: 700 } });
     });
+    expect(cancellations).toEqual([false, true, true]);
     expect(hook.result.current.componentMenu).toBeNull();
 
     hook.unmount();
     const disabledHook = renderNavigation({ enabled: false });
 
-    expect(await inspect(saveButton)).toBe(true);
+    await inspect(saveButton);
+    expect(cancellations).toEqual([false, true, true, false]);
     expect(disabledHook.result.current.componentMenu).toBeNull();
   });
 
@@ -156,24 +214,38 @@ describe("useComponentSourceNavigation", () => {
     const hook = renderNavigation();
 
     terminalInput.className = "xterm-helper-textarea";
+    placeElement(terminalInput, { height: 40, width: 200, x: 600, y: 400 });
     document.body.append(terminalInput);
 
     await inspect(saveButton);
-    fireEvent.mouseDown(menuItem);
-    fireEvent.keyDown(document, { key: "Enter" });
-    fireEvent.keyDown(terminalInput, { key: "Escape" });
+
+    const cancellations: boolean[] = recordCancellations("keydown");
+
+    await click(menuItem);
+    await pressKey("Enter");
+    // A terminal takes the focus without a press, and Escape belongs to the program running in it.
+    terminalInput.focus();
+    await pressKey("Escape");
+    expect(cancellations).toEqual([false, false]);
     expect(hook.result.current.componentMenu).not.toBeNull();
 
-    expect(fireEvent.keyDown(document, { key: "Escape" })).toBe(false);
+    terminalInput.blur();
+    await pressKey("Escape");
+    expect(cancellations).toEqual([false, false, true]);
     expect(hook.result.current.componentMenu).toBeNull();
 
     await inspect(saveButton);
-    fireEvent.mouseDown(saveButton);
+    expect(hook.result.current.componentMenu).not.toBeNull();
+    await click(saveButton);
     expect(hook.result.current.componentMenu).toBeNull();
 
-    // A press that reaches the document without passing through any element is outside the menu too.
+    // A press reaches the document without passing through any element only when a script dispatches it there. No
+    // pointer can produce that, so the page's script is played here. It is outside the menu too.
     await inspect(saveButton);
-    fireEvent.mouseDown(document);
+    expect(hook.result.current.componentMenu).not.toBeNull();
+    act((): void => {
+      document.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    });
     expect(hook.result.current.componentMenu).toBeNull();
   });
 

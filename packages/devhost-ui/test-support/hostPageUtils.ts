@@ -8,11 +8,6 @@ export interface IViewportRectangle {
   y: number;
 }
 
-export interface IViewportPoint {
-  clientX: number;
-  clientY: number;
-}
-
 /** Fixes `element` at `rectangle`, so its layout and hit testing are exactly what a test states. */
 export function placeElement(element: HTMLElement, rectangle: IViewportRectangle): void {
   Object.assign(element.style, {
@@ -26,6 +21,37 @@ export function placeElement(element: HTMLElement, rectangle: IViewportRectangle
     top: `${rectangle.y}px`,
     width: `${rectangle.width}px`,
   });
+}
+
+/**
+ * Puts `element` at `rectangle` in page coordinates, so it moves through the viewport when the page scrolls.
+ * The page scrolls only after `makePageScrollable`.
+ */
+export function placeElementOnPage(element: HTMLElement, rectangle: IViewportRectangle): void {
+  placeElement(element, rectangle);
+  element.style.position = "absolute";
+}
+
+/** Makes the host page several viewports tall, so wheel input scrolls it. */
+export function makePageScrollable(): void {
+  const filler: HTMLDivElement = document.createElement("div");
+
+  filler.style.height = "3000px";
+  document.body.append(filler);
+}
+
+/**
+ * Adds an empty frame to the host page at `rectangle`. A press inside it moves the focus out of the test's own
+ * window, which then receives `blur`.
+ */
+export function addHostFrame(rectangle: IViewportRectangle): HTMLIFrameElement {
+  const frame: HTMLIFrameElement = document.createElement("iframe");
+
+  frame.srcdoc = "<!doctype html><title>Embedded page</title>";
+  placeElement(frame, rectangle);
+  document.body.append(frame);
+
+  return frame;
 }
 
 /** Adds a button to the host page at `rectangle`. */
@@ -51,13 +77,6 @@ export function addDevtoolsButton(rectangle: IViewportRectangle): HTMLButtonElem
   document.body.append(host);
 
   return button;
-}
-
-/** The point at the center of `element`, for pointer events that the page hit-tests. */
-export function readCenter(element: Element): IViewportPoint {
-  const rectangle: DOMRect = element.getBoundingClientRect();
-
-  return { clientX: rectangle.left + rectangle.width / 2, clientY: rectangle.top + rectangle.height / 2 };
 }
 
 export function waitForAnimationFrame(): Promise<void> {

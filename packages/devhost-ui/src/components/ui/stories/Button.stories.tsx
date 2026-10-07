@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, fireEvent, fn, userEvent } from "storybook/test";
+import { expect, fn, userEvent } from "storybook/test";
 
 import { Button } from "../Button";
 import {
@@ -138,7 +138,7 @@ export const Disabled: Story = {
     await expect(button).toBeInTheDocument();
     await expect(button).toBeDisabled();
     await expect(enhancer).toBeInTheDocument();
-    await fireEvent.click(button);
+    await userEvent.click(button);
     await expect(args.onClick).toHaveBeenCalledTimes(0);
   },
 };
