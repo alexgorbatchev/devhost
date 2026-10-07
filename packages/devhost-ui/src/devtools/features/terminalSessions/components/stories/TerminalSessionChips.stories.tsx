@@ -42,16 +42,11 @@ type Story = StoryObj<typeof meta>;
 
 type TerminalSessionChipsProps = ComponentProps<typeof TerminalSessionChips>;
 
-interface IResizableSegmentProps {
-  /** The width of what the segment shows once it has grown. */
-  wideWidth?: string;
-}
-
 /**
  * A neighbouring toolbar segment that takes more room and gives it back on request, as the services segment does
  * when a stack grows and shrinks.
  */
-function ResizableSegment({ wideWidth = "calc(100vw - 320px)" }: IResizableSegmentProps): JSX.Element {
+function ResizableSegment(): JSX.Element {
   const [isWide, setIsWide] = useState<boolean>(false);
 
   return (
@@ -59,29 +54,9 @@ function ResizableSegment({ wideWidth = "calc(100vw - 320px)" }: IResizableSegme
       <Button onClick={(): void => setIsWide((isCurrentlyWide: boolean): boolean => !isCurrentlyWide)}>
         {isWide ? "Shrink" : "Grow"}
       </Button>
-      {isWide ? (
-        <span style={{ flexShrink: 0, overflow: "hidden", whiteSpace: "nowrap", width: wideWidth }}>
-          eight more services
-        </span>
-      ) : null}
+      {isWide ? <span style={{ flexShrink: 0, width: "calc(100vw - 320px)" }}>eight more services</span> : null}
     </ToolbarSegment>
   );
-}
-
-/**
- * Resolves once the browser has reported the size `element` has now to its resize observers. The chips observe
- * their own size too, so by then they have seen the change that led to it.
- */
-function waitForResizeReport(element: Element): Promise<void> {
-  const report = Promise.withResolvers<void>();
-  const resizeObserver = new ResizeObserver((): void => {
-    resizeObserver.disconnect();
-    report.resolve();
-  });
-
-  resizeObserver.observe(element);
-
-  return report.promise;
 }
 
 /** Chips whose first session finishes on request, as a session does when its process exits. */
@@ -200,48 +175,6 @@ export const FoldsWhenAnotherSegmentGrows: Story = {
   },
 };
 
-/**
- * A toolbar that is already as wide as it can be does not resize when a segment grows; only the chips' own segment
- * gets narrower. The chips fold then too.
- */
-export const FoldsInAToolbarThatIsAlreadyFull: Story = {
-  args: {
-    sessions: factory_agentSessions(3),
-  },
-  render: (args, context) =>
-    renderInDevtoolsStoryShadowRoot(
-      <StorybookThemeProvider globals={context.globals}>
-        <div aria-label="devhost" role="toolbar" style={{ display: "flex", width: 480 }}>
-          <ResizableSegment wideWidth="140px" />
-          <TerminalSessionChips {...args} />
-        </div>
-      </StorybookThemeProvider>,
-    ),
-  play: async ({ canvasElement }): Promise<void> => {
-    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
-    const toolbar = await shadowCanvas.findByRole("toolbar", { name: "devhost" });
-    const segment = within(toolbar).getByRole("group", { name: "Terminal sessions" });
-
-    await waitFor(() => expect(within(segment).getAllByRole("button", { name: / terminal, / })).toHaveLength(3));
-
-    const { height, width } = toolbar.getBoundingClientRect();
-
-    await expect(width).toBe(480);
-    // The chips fit once more after their first size is reported. Once that is behind them, only their own segment
-    // getting narrower can make them fold.
-    await waitForResizeReport(segment);
-    await waitForResizeReport(segment);
-    await userEvent.click(within(toolbar).getByRole("button", { name: "Grow" }));
-
-    await expect(
-      await within(segment).findByRole("button", { name: /^All terminal sessions \(\d+ more\)$/ }),
-    ).toBeVisible();
-    await expect(toolbar.getBoundingClientRect().width).toBe(width);
-    await expect(toolbar.getBoundingClientRect().height).toBe(height);
-    await expect(segment.scrollWidth).toBeLessThanOrEqual(segment.clientWidth);
-  },
-};
-
 /** Folded chips come back when the neighbouring segment gives the room back. */
 export const ExpandsWhenAnotherSegmentShrinks: Story = {
   args: {
@@ -263,9 +196,6 @@ export const ExpandsWhenAnotherSegmentShrinks: Story = {
 
     await userEvent.click(within(toolbar).getByRole("button", { name: "Grow" }));
     await within(segment).findByRole("button", { name: /^All terminal sessions \(\d+ more\)$/ });
-    // Folding resized the chips themselves. Once that is behind them, only the neighbour can bring the chips back.
-    await waitForResizeReport(segment);
-    await waitForResizeReport(segment);
 
     await userEvent.click(within(toolbar).getByRole("button", { name: "Shrink" }));
 

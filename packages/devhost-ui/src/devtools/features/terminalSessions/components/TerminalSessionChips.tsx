@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type JSX } from "react";
+import { useLayoutEffect, useRef, useState, type JSX } from "react";
 import { CheckIcon, CodeIcon, TerminalIcon, XIcon } from "lucide-react";
 
 import { Icon } from "../../../../components/ui/Icon";
@@ -9,6 +9,7 @@ import { ToolbarPopover } from "../../../shared/components/ToolbarPopover";
 import { ToolbarSegment } from "../../../shared/components/ToolbarSegment";
 import { useToolbarPopoverId } from "../../../shared/hooks/useToolbarPopoverId";
 import { fitTerminalSessionChips } from "../fitTerminalSessionChips";
+import { useToolbarRoomChanges } from "../hooks/useToolbarRoomChanges";
 import { pickVisibleTerminalSessions } from "../pickVisibleTerminalSessions";
 import { readTerminalSessionStatusLabel } from "../readTerminalSessionStatusLabel";
 import type {
@@ -45,7 +46,6 @@ export function TerminalSessionChips(props: ITerminalSessionChipsProps): JSX.Ele
   const foldedChipsReference = useRef<HTMLSpanElement | null>(null);
   const failedFitReference = useRef<ITerminalSessionChipFailedFit | null>(null);
   const [visibleLimit, setVisibleLimit] = useState<number>(Number.POSITIVE_INFINITY);
-  const [, setFitRequestCount] = useState<number>(0);
   const hasSessions: boolean = props.sessions.length > 0;
   const visibleSessions: TerminalSession[] = pickVisibleTerminalSessions(props.sessions, visibleLimit);
   const hiddenSessions: TerminalSession[] = props.sessions.filter(
@@ -55,31 +55,9 @@ export function TerminalSessionChips(props: ITerminalSessionChipsProps): JSX.Ele
     .map((session: TerminalSession) => `${session.sessionId}:${session.status}`)
     .join();
 
-  // The room changes without rendering anything here: a neighbouring segment grows or shrinks, or the viewport
-  // does. Each such change asks for another fit. The segment exists only while there are sessions.
-  useEffect(() => {
-    const segment: HTMLDivElement | null = segmentReference.current;
-
-    if (segment === null) {
-      return;
-    }
-
-    const requestFit = (): void => {
-      setFitRequestCount((fitRequestCount: number): number => fitRequestCount + 1);
-    };
-    const resizeObserver = new ResizeObserver(requestFit);
-
-    resizeObserver.observe(segment);
-    if (segment.parentElement !== null) {
-      resizeObserver.observe(segment.parentElement);
-    }
-    window.addEventListener("resize", requestFit);
-
-    return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener("resize", requestFit);
-    };
-  }, [hasSessions]);
+  // The room also changes without rendering anything here, and each such change renders the chips again. The
+  // segment exists only while there are sessions.
+  useToolbarRoomChanges(segmentReference, hasSessions);
 
   // Fit after every render, one chip per layout pass and before the browser paints. The popover stays mounted
   // throughout, so an open list of sessions stays open.
