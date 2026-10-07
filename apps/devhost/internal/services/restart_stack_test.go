@@ -187,13 +187,34 @@ func TestStackRestartFailureRemainsRetryableWithAcceptedManifest(t *testing.T) {
 
 func TestStackRestartRejectsMissingSelectedCheckoutBeforeStoppingOtherServices(t *testing.T) {
 	root, linked := createWorktreeRepository(t)
+	workerRoot, _ := createWorktreeRepository(t)
 	web := strings.Replace(reloadServiceBody("web", "web", "reload.localhost"), "command = ", fmt.Sprintf("cwd = %q\ncommand = ", filepath.Join(root, "web")), 1)
-	f := startReloadStackConfiguration(t, web+reloadServiceBody("worker", "worker", "worker.localhost"), true)
+	workerBody := strings.Replace(reloadServiceBody("worker", "worker", "worker.localhost"), "command = ", fmt.Sprintf("cwd = %q\ncommand = ", filepath.Join(workerRoot, "api")), 1)
+	f := startReloadStackConfiguration(t, web+workerBody, true)
 	health, err := f.control.GetHealthResponse()
-	if err != nil || len(health.Repositories) != 1 {
+	if err != nil || len(health.Repositories) != 2 {
 		t.Fatalf("repositories: %#v, %v", health, err)
 	}
-	if err := f.control.SwitchWorktree(health.Repositories[0].ID, linked); err != nil {
+	var webRepositoryID string
+	for _, repository := range health.Repositories {
+		switch repository.ConfiguredPath {
+		case root:
+			if repository.SelectedPath != root || len(repository.ServiceNames) != 1 || repository.ServiceNames[0] != "web" {
+				t.Fatalf("web repository: %#v", repository)
+			}
+			webRepositoryID = repository.ID
+		case workerRoot:
+			if repository.SelectedPath != workerRoot || len(repository.ServiceNames) != 1 || repository.ServiceNames[0] != "worker" {
+				t.Fatalf("worker repository: %#v", repository)
+			}
+		default:
+			t.Fatalf("unowned repository: %#v", repository)
+		}
+	}
+	if webRepositoryID == "" {
+		t.Fatal("web repository was not discovered")
+	}
+	if err := f.control.SwitchWorktree(webRepositoryID, linked); err != nil {
 		t.Fatal(err)
 	}
 	worker := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "worker.localhost_worker_2f.json"))
