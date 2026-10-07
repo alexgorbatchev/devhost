@@ -232,6 +232,36 @@ describe("openTerminalSessionStream", () => {
     expect(terminalText).toBe("still attached");
   });
 
+  test("reports that the session is no longer running when devhost ends it", async () => {
+    openStream();
+    await settle();
+
+    // Devhost closes a session's connections normally when the session ends: another page closed it, or the stack
+    // stopped.
+    readConnection(0).close(1000);
+    await settle();
+    await passTime(60_000);
+
+    expect(statusReports).toEqual([
+      ["running", null],
+      ["error", "This terminal session is no longer running."],
+    ]);
+    expect(webSocket.attemptCount).toBe(1);
+  });
+
+  test("stays finished when devhost ends the session after it exited", async () => {
+    openStream();
+    await settle();
+
+    const connection = readConnection(0);
+
+    connection.send({ exitCode: 0, signalCode: null, type: "exit" });
+    connection.close(1000);
+    await settle();
+
+    expect(readLastStatus()).toEqual(["exited", null]);
+  });
+
   test("stays finished when the connection is lost after the session exited", async () => {
     openStream();
     await settle();
