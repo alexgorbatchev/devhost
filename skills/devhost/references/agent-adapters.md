@@ -129,14 +129,15 @@ queue storage uses its existing state location.
 
 Devhost injects these environment variables for custom commands:
 
-- `DEVHOST_AGENT_ANNOTATION_FILE`: JSON annotation payload.
-- `DEVHOST_AGENT_PROMPT_FILE`: rendered prompt text.
-- `DEVHOST_AGENT_TRANSPORT`: currently `files`.
-- `DEVHOST_AGENT_DISPLAY_NAME`: configured display name.
+- `DEVHOST_ANNOTATION_FILE`: JSON annotation payload.
+- `DEVHOST_ANNOTATION_PROMPT_FILE`: rendered prompt text.
+- `DEVHOST_ANNOTATION_TRANSPORT`: currently `files`.
+- `DEVHOST_ANNOTATION_ACTION_ID`, `DEVHOST_ANNOTATION_ACTION_KIND`: the action's `id` and `kind`.
+- `DEVHOST_ANNOTATION_ACTION_LABEL`: the action's `label`, or its `displayName` when `label` is omitted.
 - `DEVHOST_PROJECT_ROOT`: manifest project root, remapped into the selected repository checkout when worktree support is enabled.
 - `DEVHOST_STACK_NAME`: devhost stack name.
 
-The custom agent must read `DEVHOST_AGENT_PROMPT_FILE` or `DEVHOST_AGENT_ANNOTATION_FILE` and handle the requested change.
+The custom agent must read `DEVHOST_ANNOTATION_PROMPT_FILE` or `DEVHOST_ANNOTATION_FILE` and handle the requested change.
 
 Worktree support is enabled by default. While enabled, new browser-launched actions use the selected checkout. Configured action directories inside the service repository are remapped with their relative offsets; directories outside it remain unchanged. Existing sessions retain their launch directory. Devhost rejects queued handoffs into a session from another checkout and pauses the queue; resume it to start an agent in the selected checkout. Do not dispatch new work into an old-checkout session.
 

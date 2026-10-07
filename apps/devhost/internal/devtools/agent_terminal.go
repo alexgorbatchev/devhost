@@ -16,14 +16,12 @@ const (
 	agentTransportMode              = "files"
 	agentSessionDirectoryPrefix     = "devhost-agent-session-"
 	annotationActionDirectoryPrefix = "devhost-annotation-action-"
-	annotationActionFileName        = "annotation.json"
-	annotationActionPromptFileName  = "prompt.txt"
+	annotationFileName              = "annotation.json"
+	annotationPromptFileName        = "prompt.txt"
 	claudeSettingsFileName          = "claude-settings.json"
 	opencodeConfigFileName          = "opencode-config.jsonc"
 	opencodePluginFileName          = "opencode-plugin.ts"
 	piStatusExtensionFileName       = "register-agent-status.js"
-	agentAnnotationFileName         = "annotation.json"
-	agentPromptFileName             = "prompt.txt"
 	annotationQueueResumePromptText = "Please read the annotation details from %s and address the requested change.\r"
 )
 
@@ -69,17 +67,12 @@ func findAnnotationAction(actions []manifest.ValidatedAnnotationAction, actionID
 
 func createAgentTerminalCommand(action manifest.ValidatedAnnotationAction, projectRootPath string, annotation annotationSubmitDetail, colorScheme agentColorScheme, stackName string) (*terminalSessionCommand, error) {
 	agent := action.Agent
-	sessionFiles, err := createAgentSessionFiles(agentSessionFilesOptions{
-		tempDir:          action.TempDir,
-		actionID:         action.ID,
-		actionLabel:      action.DisplayName,
-		agentDisplayName: agent.DisplayName,
-		annotation:       annotation,
-		colorScheme:      colorScheme,
-		projectRootPath:  projectRootPath,
-		prompt:           createAnnotationAgentPrompt(annotation),
-		stackName:        stackName,
-	})
+	sessionFiles, err := createAgentSessionFiles(annotationSessionFilesOptions{
+		action:          action,
+		annotation:      annotation,
+		projectRootPath: projectRootPath,
+		stackName:       stackName,
+	}, colorScheme)
 	if err != nil {
 		return nil, err
 	}
@@ -97,28 +90,28 @@ func createAgentTerminalCommand(action manifest.ValidatedAnnotationAction, proje
 			command = append(command, "--use-theme", string(colorScheme))
 		}
 		command = append(command, agent.Args...)
-		command = append(command, "@"+sessionFiles.env["DEVHOST_AGENT_PROMPT_FILE"])
+		command = append(command, "@"+sessionFiles.promptFilePath)
 	case "claude-code":
 		command = []string{
 			"claude",
 			"--settings",
-			sessionFiles.env["DEVHOST_AGENT_CLAUDE_SETTINGS_FILE"],
+			sessionFiles.claudeSettingsFilePath,
 		}
 		command = append(command, agent.Args...)
-		command = append(command, fmt.Sprintf("Please read the annotation details from %s and address the requested change.", sessionFiles.env["DEVHOST_AGENT_PROMPT_FILE"]))
+		command = append(command, fmt.Sprintf("Please read the annotation details from %s and address the requested change.", sessionFiles.promptFilePath))
 	case "opencode":
-		env["OPENCODE_CONFIG"] = sessionFiles.env["DEVHOST_AGENT_OPENCODE_CONFIG_FILE"]
+		env["OPENCODE_CONFIG"] = sessionFiles.opencodeConfigFilePath
 		command = []string{
 			"opencode",
 			"run",
 		}
 		command = append(command, agent.Args...)
-		command = append(command, fmt.Sprintf("Please read the annotation details from %s and address the requested change.", sessionFiles.env["DEVHOST_AGENT_PROMPT_FILE"]))
+		command = append(command, fmt.Sprintf("Please read the annotation details from %s and address the requested change.", sessionFiles.promptFilePath))
 	case "codex":
 		env[codexStatusTTYEnvironmentName] = ""
 		command = codexTerminalCommand()
 		command = append(command, agent.Args...)
-		command = append(command, fmt.Sprintf("Please read the annotation details from %s and address the requested change.", sessionFiles.env["DEVHOST_AGENT_PROMPT_FILE"]))
+		command = append(command, fmt.Sprintf("Please read the annotation details from %s and address the requested change.", sessionFiles.promptFilePath))
 	case "configured":
 		command = append([]string{}, agent.Command...)
 		cwd = agent.Cwd
@@ -139,16 +132,11 @@ func createAgentTerminalCommand(action manifest.ValidatedAnnotationAction, proje
 }
 
 func createCommandAnnotationTerminalCommand(action manifest.ValidatedAnnotationAction, projectRootPath string, annotation annotationSubmitDetail, stackName string) (*terminalSessionCommand, error) {
-	prompt := createAnnotationAgentPrompt(annotation)
-	sessionFiles, err := createAnnotationActionSessionFiles(annotationActionSessionFilesOptions{
+	sessionFiles, err := createAnnotationSessionFiles(annotationActionDirectoryPrefix, annotationSessionFilesOptions{
+		action:          action,
 		annotation:      annotation,
-		actionID:        action.ID,
-		actionKind:      action.Kind,
-		actionLabel:     action.DisplayName,
 		projectRootPath: projectRootPath,
-		prompt:          prompt,
 		stackName:       stackName,
-		tempDir:         action.TempDir,
 	})
 	if err != nil {
 		return nil, err
@@ -165,20 +153,19 @@ func createCommandAnnotationTerminalCommand(action manifest.ValidatedAnnotationA
 	}, nil
 }
 
-type annotationActionSessionFiles struct {
-	cleanup func()
-	env     map[string]string
+// annotationSessionFiles are the files every annotation action receives and the environment that points at them.
+type annotationSessionFiles struct {
+	cleanup        func()
+	directoryPath  string
+	env            map[string]string
+	promptFilePath string
 }
 
-type annotationActionSessionFilesOptions struct {
+type annotationSessionFilesOptions struct {
+	action          manifest.ValidatedAnnotationAction
 	annotation      annotationSubmitDetail
-	actionID        string
-	actionKind      string
-	actionLabel     string
 	projectRootPath string
-	prompt          string
 	stackName       string
-	tempDir         *string
 }
 
 func createAnnotationSessionDirectory(tempDir *string, prefix string) (string, error) {
@@ -192,96 +179,69 @@ func createAnnotationSessionDirectory(tempDir *string, prefix string) (string, e
 	return os.MkdirTemp(base, prefix)
 }
 
-func createAnnotationActionSessionFiles(options annotationActionSessionFilesOptions) (*annotationActionSessionFiles, error) {
-	sessionDirectoryPath, err := createAnnotationSessionDirectory(options.tempDir, annotationActionDirectoryPrefix)
+func createAnnotationSessionFiles(directoryPrefix string, options annotationSessionFilesOptions) (*annotationSessionFiles, error) {
+	directoryPath, err := createAnnotationSessionDirectory(options.action.TempDir, directoryPrefix)
 	if err != nil {
-		return nil, fmt.Errorf("create annotation action session directory: %w", err)
+		return nil, fmt.Errorf("create annotation session directory: %w", err)
 	}
 	cleanup := func() {
-		_ = os.RemoveAll(sessionDirectoryPath)
+		_ = os.RemoveAll(directoryPath)
 	}
 
-	annotationFilePath := filepath.Join(sessionDirectoryPath, annotationActionFileName)
-	promptFilePath := filepath.Join(sessionDirectoryPath, annotationActionPromptFileName)
+	annotationFilePath := filepath.Join(directoryPath, annotationFileName)
+	promptFilePath := filepath.Join(directoryPath, annotationPromptFileName)
 	annotationJSON, err := json.MarshalIndent(options.annotation, "", "  ")
 	if err != nil {
 		cleanup()
-		return nil, fmt.Errorf("marshal annotation action file: %w", err)
+		return nil, fmt.Errorf("marshal annotation file: %w", err)
 	}
 	if err := os.WriteFile(annotationFilePath, annotationJSON, 0o600); err != nil {
 		cleanup()
-		return nil, fmt.Errorf("write annotation action file: %w", err)
+		return nil, fmt.Errorf("write annotation file: %w", err)
 	}
-	if err := os.WriteFile(promptFilePath, []byte(options.prompt), 0o600); err != nil {
+	if err := os.WriteFile(promptFilePath, []byte(createAnnotationAgentPrompt(options.annotation)), 0o600); err != nil {
 		cleanup()
-		return nil, fmt.Errorf("write annotation action prompt file: %w", err)
+		return nil, fmt.Errorf("write annotation prompt file: %w", err)
 	}
 
-	return &annotationActionSessionFiles{
-		cleanup: cleanup,
+	return &annotationSessionFiles{
+		cleanup:       cleanup,
+		directoryPath: directoryPath,
 		env: map[string]string{
-			"DEVHOST_ANNOTATION_ACTION_ID":    options.actionID,
-			"DEVHOST_ANNOTATION_ACTION_KIND":  options.actionKind,
-			"DEVHOST_ANNOTATION_ACTION_LABEL": options.actionLabel,
-			"DEVHOST_ANNOTATION_DISPLAY_NAME": options.actionLabel,
+			"DEVHOST_ANNOTATION_ACTION_ID":    options.action.ID,
+			"DEVHOST_ANNOTATION_ACTION_KIND":  options.action.Kind,
+			"DEVHOST_ANNOTATION_ACTION_LABEL": options.action.DisplayName,
 			"DEVHOST_ANNOTATION_FILE":         annotationFilePath,
 			"DEVHOST_ANNOTATION_PROMPT_FILE":  promptFilePath,
 			"DEVHOST_ANNOTATION_TRANSPORT":    agentTransportMode,
 			"DEVHOST_PROJECT_ROOT":            options.projectRootPath,
 			"DEVHOST_STACK_NAME":              options.stackName,
 		},
+		promptFilePath: promptFilePath,
 	}, nil
 }
 
+// agentSessionFiles adds the support files the built-in adapters load to report their status.
 type agentSessionFiles struct {
-	cleanup             func()
-	env                 map[string]string
-	piExtensionFilePath string
+	*annotationSessionFiles
+	claudeSettingsFilePath string
+	opencodeConfigFilePath string
+	piExtensionFilePath    string
 }
 
-type agentSessionFilesOptions struct {
-	tempDir          *string
-	actionID         string
-	actionLabel      string
-	agentDisplayName string
-	annotation       annotationSubmitDetail
-	// colorScheme is written as the Claude Code theme when set; empty leaves the user's own theme in effect.
-	colorScheme     agentColorScheme
-	projectRootPath string
-	prompt          string
-	stackName       string
-}
-
-func createAgentSessionFiles(options agentSessionFilesOptions) (*agentSessionFiles, error) {
-	annotation := options.annotation
-	sessionDirectoryPath, err := createAnnotationSessionDirectory(options.tempDir, agentSessionDirectoryPrefix)
+// createAgentSessionFiles writes colorScheme as the Claude Code theme when set; empty leaves the user's own theme in
+// effect.
+func createAgentSessionFiles(options annotationSessionFilesOptions, colorScheme agentColorScheme) (*agentSessionFiles, error) {
+	sessionFiles, err := createAnnotationSessionFiles(agentSessionDirectoryPrefix, options)
 	if err != nil {
-		return nil, fmt.Errorf("create agent session directory: %w", err)
+		return nil, err
 	}
-	cleanup := func() {
-		_ = os.RemoveAll(sessionDirectoryPath)
-	}
+	cleanup := sessionFiles.cleanup
 
-	annotationFilePath := filepath.Join(sessionDirectoryPath, agentAnnotationFileName)
-	promptFilePath := filepath.Join(sessionDirectoryPath, agentPromptFileName)
-	claudeSettingsFilePath := filepath.Join(sessionDirectoryPath, claudeSettingsFileName)
-	opencodePluginFilePath := filepath.Join(sessionDirectoryPath, opencodePluginFileName)
-	opencodeConfigFilePath := filepath.Join(sessionDirectoryPath, opencodeConfigFileName)
-	piExtensionFilePath := filepath.Join(sessionDirectoryPath, piStatusExtensionFileName)
-
-	annotationJSON, err := json.MarshalIndent(annotation, "", "  ")
-	if err != nil {
-		cleanup()
-		return nil, fmt.Errorf("marshal annotation session file: %w", err)
-	}
-	if err := os.WriteFile(annotationFilePath, annotationJSON, 0o600); err != nil {
-		cleanup()
-		return nil, fmt.Errorf("write annotation session file: %w", err)
-	}
-	if err := os.WriteFile(promptFilePath, []byte(options.prompt), 0o600); err != nil {
-		cleanup()
-		return nil, fmt.Errorf("write agent prompt file: %w", err)
-	}
+	claudeSettingsFilePath := filepath.Join(sessionFiles.directoryPath, claudeSettingsFileName)
+	opencodePluginFilePath := filepath.Join(sessionFiles.directoryPath, opencodePluginFileName)
+	opencodeConfigFilePath := filepath.Join(sessionFiles.directoryPath, opencodeConfigFileName)
+	piExtensionFilePath := filepath.Join(sessionFiles.directoryPath, piStatusExtensionFileName)
 
 	claudeSettings := map[string]any{
 		"hooks": map[string]any{
@@ -291,8 +251,8 @@ func createAgentSessionFiles(options agentSessionFilesOptions) (*agentSessionFil
 			"SessionEnd":       []map[string]any{{"matcher": "", "hooks": []map[string]string{{"type": "command", "command": "printf '\\x1b]1337;SetAgentStatus=finished\\x07'"}}}},
 		},
 	}
-	if options.colorScheme != "" {
-		claudeSettings["theme"] = string(options.colorScheme)
+	if colorScheme != "" {
+		claudeSettings["theme"] = string(colorScheme)
 	}
 	claudeJSON, err := json.MarshalIndent(claudeSettings, "", "  ")
 	if err != nil {
@@ -344,26 +304,15 @@ func createAgentSessionFiles(options agentSessionFilesOptions) (*agentSessionFil
 		return nil, fmt.Errorf("write Pi extension file: %w", err)
 	}
 
+	// Every agent, built-in or custom, also receives the Claude Code and OpenCode support files through its environment.
+	sessionFiles.env["DEVHOST_AGENT_CLAUDE_SETTINGS_FILE"] = claudeSettingsFilePath
+	sessionFiles.env["DEVHOST_AGENT_OPENCODE_CONFIG_FILE"] = opencodeConfigFilePath
+
 	return &agentSessionFiles{
-		cleanup: cleanup,
-		env: map[string]string{
-			"DEVHOST_ANNOTATION_ACTION_ID":       options.actionID,
-			"DEVHOST_ANNOTATION_ACTION_KIND":     terminalSessionRequestKindAgent,
-			"DEVHOST_ANNOTATION_ACTION_LABEL":    options.actionLabel,
-			"DEVHOST_ANNOTATION_DISPLAY_NAME":    options.actionLabel,
-			"DEVHOST_ANNOTATION_FILE":            annotationFilePath,
-			"DEVHOST_ANNOTATION_PROMPT_FILE":     promptFilePath,
-			"DEVHOST_ANNOTATION_TRANSPORT":       agentTransportMode,
-			"DEVHOST_AGENT_ANNOTATION_FILE":      annotationFilePath,
-			"DEVHOST_AGENT_CLAUDE_SETTINGS_FILE": claudeSettingsFilePath,
-			"DEVHOST_AGENT_DISPLAY_NAME":         options.agentDisplayName,
-			"DEVHOST_AGENT_OPENCODE_CONFIG_FILE": opencodeConfigFilePath,
-			"DEVHOST_AGENT_PROMPT_FILE":          promptFilePath,
-			"DEVHOST_AGENT_TRANSPORT":            agentTransportMode,
-			"DEVHOST_PROJECT_ROOT":               options.projectRootPath,
-			"DEVHOST_STACK_NAME":                 options.stackName,
-		},
-		piExtensionFilePath: piExtensionFilePath,
+		annotationSessionFiles: sessionFiles,
+		claudeSettingsFilePath: claudeSettingsFilePath,
+		opencodeConfigFilePath: opencodeConfigFilePath,
+		piExtensionFilePath:    piExtensionFilePath,
 	}, nil
 }
 

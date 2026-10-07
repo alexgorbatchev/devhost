@@ -875,7 +875,7 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 		writes := secondStarter.sessions[0].writesSnapshot()
 		return len(writes) == 1 && strings.Contains(writes[0], "prompt.txt")
 	})
-	files, err := filepath.Glob(filepath.Join(tempDir, agentSessionDirectoryPrefix+"*", agentAnnotationFileName))
+	files, err := filepath.Glob(filepath.Join(tempDir, agentSessionDirectoryPrefix+"*", annotationFileName))
 	if err != nil || len(files) != 1 {
 		t.Fatalf("queued annotation files = %v, error = %v", files, err)
 	}

@@ -38,7 +38,7 @@ func TestCodexTerminalCommand(t *testing.T) {
 			if !reflect.DeepEqual(cmd.command[:2], []string{"codex", "--no-daemon"}) {
 				t.Fatalf("command = %#v", cmd.command)
 			}
-			wantPrompt := fmt.Sprintf("Please read the annotation details from %s and address the requested change.", cmd.env["DEVHOST_AGENT_PROMPT_FILE"])
+			wantPrompt := fmt.Sprintf("Please read the annotation details from %s and address the requested change.", cmd.env["DEVHOST_ANNOTATION_PROMPT_FILE"])
 			if got := cmd.command[len(cmd.command)-1]; got != wantPrompt {
 				t.Fatalf("prompt = %q, want %q", got, wantPrompt)
 			}
@@ -50,7 +50,7 @@ func TestCodexTerminalCommand(t *testing.T) {
 					t.Fatalf("adapter bypasses Codex policy: %q", arg)
 				}
 			}
-			promptPath := cmd.env["DEVHOST_AGENT_PROMPT_FILE"]
+			promptPath := cmd.env["DEVHOST_ANNOTATION_PROMPT_FILE"]
 			prompt, err := os.ReadFile(promptPath)
 			if err != nil || !strings.Contains(string(prompt), annotation.Comment) {
 				t.Fatalf("prompt file = %q, error = %v", prompt, err)

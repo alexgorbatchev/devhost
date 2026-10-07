@@ -229,7 +229,6 @@ CI = "1"
 - `DEVHOST_ANNOTATION_ACTION_ID`
 - `DEVHOST_ANNOTATION_ACTION_KIND`
 - `DEVHOST_ANNOTATION_ACTION_LABEL`
-- `DEVHOST_ANNOTATION_DISPLAY_NAME`
 - `DEVHOST_ANNOTATION_FILE`
 - `DEVHOST_ANNOTATION_PROMPT_FILE`
 - `DEVHOST_ANNOTATION_TRANSPORT=files`
@@ -309,7 +308,7 @@ Running annotation sessions keep the stack alive through its idle timeout. Use t
 
 The injected config includes UI-safe action metadata as `annotationActions`, with each action exposing `id`, `displayName`, `kind`, and `queueEnabled`, plus `annotationDefaultActionId` for the selected default.
 
-`devhost` executes custom agent commands directly, not through a shell string. For configured commands, `devhost` writes the annotation JSON and rendered prompt to temp files and injects them via `DEVHOST_AGENT_*` and neutral `DEVHOST_ANNOTATION_*` environment variables. Built-in adapters receive the rendered prompt natively via command-line arguments.
+`devhost` executes custom agent commands directly, not through a shell string. For configured commands, `devhost` writes the annotation JSON and rendered prompt to temp files and injects their paths as `DEVHOST_ANNOTATION_FILE` and `DEVHOST_ANNOTATION_PROMPT_FILE`. Agent commands receive every variable listed for command actions; `DEVHOST_ANNOTATION_ACTION_LABEL` carries the action's label. Built-in adapters receive the rendered prompt natively via command-line arguments.
 
 All built-in adapters integrate terminal OSC sequences to reflect working and idle states during embedded session execution, and the durable annotation queue uses those same status events to decide when to drain queued work:
 
