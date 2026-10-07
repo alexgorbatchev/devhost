@@ -1,10 +1,11 @@
 import type {
-  IActiveTerminalSessionSnapshot,
+  ActiveTerminalSessionSnapshot,
   IListTerminalSessionsResponse,
-  StartTerminalSessionRequest,
+  IStartEditorTerminalSessionRequest,
+  StartAnnotationTerminalSessionRequest,
 } from "./types";
 
-// Validates the control server's session list. A listed request is the stored terminalSessionRequest from
+// Validates the control server's session list. Each entry is an activeTerminalSessionSnapshot from
 // apps/devhost/internal/devtools/terminal.go, so every field checked here must be one the server sends.
 export function isListTerminalSessionsResponse(value: unknown): value is IListTerminalSessionsResponse {
   if (typeof value !== "object" || value === null) {
@@ -15,21 +16,31 @@ export function isListTerminalSessionsResponse(value: unknown): value is IListTe
 
   return (
     Array.isArray(sessions) &&
-    sessions.every((session: unknown): session is IActiveTerminalSessionSnapshot => {
+    sessions.every((session: unknown): session is ActiveTerminalSessionSnapshot => {
       return isActiveTerminalSessionSnapshot(session);
     })
   );
 }
 
-function isActiveTerminalSessionSnapshot(value: unknown): value is IActiveTerminalSessionSnapshot {
+function isActiveTerminalSessionSnapshot(value: unknown): value is ActiveTerminalSessionSnapshot {
   if (typeof value !== "object" || value === null) {
     return false;
   }
 
+  const label: unknown = Reflect.get(value, "label");
   const request: unknown = Reflect.get(value, "request");
   const sessionId: unknown = Reflect.get(value, "sessionId");
 
-  return typeof sessionId === "string" && sessionId.length > 0 && isStartTerminalSessionRequest(request);
+  if (typeof sessionId !== "string" || sessionId.length === 0) {
+    return false;
+  }
+
+  // The server labels every annotation session; an editor session has no label.
+  if (isStartAnnotationTerminalSessionRequest(request)) {
+    return typeof label === "string" && label.length > 0;
+  }
+
+  return isStartEditorTerminalSessionRequest(request);
 }
 
 function isAnnotationMarkerPayload(value: unknown): boolean {
@@ -125,13 +136,12 @@ function isSourceLocation(value: unknown): boolean {
   );
 }
 
-function isStartTerminalSessionRequest(value: unknown): value is StartTerminalSessionRequest {
+function isStartAnnotationTerminalSessionRequest(value: unknown): value is StartAnnotationTerminalSessionRequest {
   if (typeof value !== "object" || value === null) {
     return false;
   }
 
   const requestKind: unknown = Reflect.get(value, "kind");
-  const launcher: unknown = Reflect.get(value, "launcher");
 
   if (requestKind === "agent") {
     const actionId: unknown = Reflect.get(value, "actionId");
@@ -157,20 +167,27 @@ function isStartTerminalSessionRequest(value: unknown): value is StartTerminalSe
     return typeof actionId === "string" && isAnnotationSubmitDetail(annotation);
   }
 
-  if (requestKind === "editor") {
-    const componentName: unknown = Reflect.get(value, "componentName");
-    const source: unknown = Reflect.get(value, "source");
-    const sourceLabel: unknown = Reflect.get(value, "sourceLabel");
+  return false;
+}
 
-    return (
-      launcher === "neovim" &&
-      typeof componentName === "string" &&
-      isSourceLocation(source) &&
-      typeof sourceLabel === "string"
-    );
+function isStartEditorTerminalSessionRequest(value: unknown): value is IStartEditorTerminalSessionRequest {
+  if (typeof value !== "object" || value === null) {
+    return false;
   }
 
-  return false;
+  const componentName: unknown = Reflect.get(value, "componentName");
+  const launcher: unknown = Reflect.get(value, "launcher");
+  const requestKind: unknown = Reflect.get(value, "kind");
+  const source: unknown = Reflect.get(value, "source");
+  const sourceLabel: unknown = Reflect.get(value, "sourceLabel");
+
+  return (
+    requestKind === "editor" &&
+    launcher === "neovim" &&
+    typeof componentName === "string" &&
+    isSourceLocation(source) &&
+    typeof sourceLabel === "string"
+  );
 }
 
 function isStringRecord(value: unknown): value is Record<string, string> {

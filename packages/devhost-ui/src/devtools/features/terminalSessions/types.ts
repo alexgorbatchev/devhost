@@ -58,13 +58,25 @@ export interface IStartTerminalSessionResponse {
   sessionId: string;
 }
 
-export interface IActiveTerminalSessionSnapshot {
-  request: StartTerminalSessionRequest;
+export interface IActiveAnnotationTerminalSessionSnapshot {
+  /** The label the session's annotation action had when the session started. */
+  label: string;
+  request: StartAnnotationTerminalSessionRequest;
   sessionId: string;
 }
 
+export interface IActiveEditorTerminalSessionSnapshot {
+  request: IStartEditorTerminalSessionRequest;
+  sessionId: string;
+}
+
+/** A running terminal session as the control server lists it. */
+export type ActiveTerminalSessionSnapshot =
+  | IActiveAnnotationTerminalSessionSnapshot
+  | IActiveEditorTerminalSessionSnapshot;
+
 export interface IListTerminalSessionsResponse {
-  sessions: IActiveTerminalSessionSnapshot[];
+  sessions: ActiveTerminalSessionSnapshot[];
 }
 
 export interface ITerminalSessionStartResult {
@@ -100,7 +112,9 @@ export interface IEditorTerminalSession extends ITerminalSessionBase {
   sourceLabel: string;
 }
 
-export type TerminalSession = IAgentTerminalSession | ICommandTerminalSession | IEditorTerminalSession;
+export type AnnotationTerminalSession = IAgentTerminalSession | ICommandTerminalSession;
+
+export type TerminalSession = AnnotationTerminalSession | IEditorTerminalSession;
 
 export interface ITerminalSessionInputMessage {
   data: string;

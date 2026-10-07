@@ -1,19 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
-import type { IAnnotationAction } from "../../../shared/devtoolsConfig";
 import { createTerminalSession } from "../createTerminalSession";
 
-const ANNOTATION_ACTIONS: IAnnotationAction[] = [
-  { id: "fix", kind: "agent", label: "Claude Code", queueEnabled: true },
-  { id: "ticket", kind: "command", label: "Create Ticket", queueEnabled: false },
-];
-
 describe("createTerminalSession", () => {
-  test("creates an agent terminal session labelled with its configured action", () => {
+  test("creates an agent terminal session labelled by its snapshot", () => {
     expect(
-      createTerminalSession(
-        "session-a",
-        {
+      createTerminalSession({
+        label: "Claude Code",
+        request: {
           actionId: "fix",
           annotation: {
             comment: "Fix button",
@@ -25,8 +19,8 @@ describe("createTerminalSession", () => {
           },
           kind: "agent",
         },
-        ANNOTATION_ACTIONS,
-      ),
+        sessionId: "session-a",
+      }),
     ).toEqual({
       actionId: "fix",
       annotation: {
@@ -57,9 +51,9 @@ describe("createTerminalSession", () => {
 
   test("creates a command terminal session with command-specific summary and behavior", () => {
     expect(
-      createTerminalSession(
-        "session-command",
-        {
+      createTerminalSession({
+        label: "Create Ticket",
+        request: {
           actionId: "ticket",
           annotation: {
             comment: "Create a ticket",
@@ -71,8 +65,8 @@ describe("createTerminalSession", () => {
           },
           kind: "command",
         },
-        ANNOTATION_ACTIONS,
-      ),
+        sessionId: "session-command",
+      }),
     ).toEqual({
       actionId: "ticket",
       annotation: {
@@ -101,33 +95,10 @@ describe("createTerminalSession", () => {
     });
   });
 
-  test("labels an annotation session with its action id when the action is not configured", () => {
-    const terminalSession = createTerminalSession(
-      "session-unknown",
-      {
-        actionId: "removed-action",
-        annotation: {
-          comment: "Fix button",
-          markers: [],
-          stackName: "stack-a",
-          submittedAt: 1,
-          title: "Page A",
-          url: "https://example.test/a",
-        },
-        kind: "agent",
-      },
-      ANNOTATION_ACTIONS,
-    );
-
-    expect(terminalSession.summary.chipLabel).toBe("removed-action");
-    expect(terminalSession.summary.title).toBe("removed-action");
-  });
-
   test("creates an editor terminal session with launcher-specific summary and behavior", () => {
     expect(
-      createTerminalSession(
-        "session-b",
-        {
+      createTerminalSession({
+        request: {
           componentName: "PrimaryButton",
           kind: "editor",
           launcher: "neovim",
@@ -138,8 +109,8 @@ describe("createTerminalSession", () => {
           },
           sourceLabel: "src/components/PrimaryButton.tsx:42:8",
         },
-        ANNOTATION_ACTIONS,
-      ),
+        sessionId: "session-b",
+      }),
     ).toEqual({
       behavior: {
         defaultIsExpanded: true,

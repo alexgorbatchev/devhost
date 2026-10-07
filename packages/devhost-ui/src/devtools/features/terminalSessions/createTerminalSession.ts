@@ -1,12 +1,13 @@
-import type { IAnnotationAction } from "../../shared/devtoolsConfig";
 import type {
+  ActiveTerminalSessionSnapshot,
+  AnnotationTerminalSession,
   EditorTerminalLauncher,
+  IActiveAnnotationTerminalSessionSnapshot,
   IAgentTerminalSession,
   ICommandTerminalSession,
   IEditorTerminalSession,
   IStartEditorTerminalSessionRequest,
   StartAnnotationTerminalSessionRequest,
-  StartTerminalSessionRequest,
   TerminalSession,
   ITerminalSessionBehavior,
   ITerminalSessionSummary,
@@ -36,40 +37,12 @@ const terminalTitleByEditorLauncher: Record<EditorTerminalLauncher, string> = {
   neovim: "Neovim",
 };
 
-// The control server lists an annotation session by action id, so its label comes from the configured actions.
-export function createTerminalSession(
-  sessionId: string,
-  request: StartTerminalSessionRequest,
-  annotationActions: IAnnotationAction[],
-): TerminalSession {
-  if (request.kind === "agent") {
-    return {
-      actionId: request.actionId,
-      annotation: request.annotation,
-      behavior: agentTerminalBehavior,
-      errorMessage: null,
-      isExpanded: agentTerminalBehavior.defaultIsExpanded,
-      kind: "agent",
-      sessionId,
-      status: "connecting",
-      summary: createAnnotationTerminalSummary(request, annotationActions),
-    } satisfies IAgentTerminalSession;
+export function createTerminalSession(snapshot: ActiveTerminalSessionSnapshot): TerminalSession {
+  if ("label" in snapshot) {
+    return createAnnotationTerminalSession(snapshot);
   }
 
-  if (request.kind === "command") {
-    return {
-      actionId: request.actionId,
-      annotation: request.annotation,
-      behavior: commandTerminalBehavior,
-      errorMessage: null,
-      isExpanded: commandTerminalBehavior.defaultIsExpanded,
-      kind: "command",
-      sessionId,
-      status: "connecting",
-      summary: createAnnotationTerminalSummary(request, annotationActions),
-    } satisfies ICommandTerminalSession;
-  }
-
+  const { request, sessionId } = snapshot;
   const behavior: ITerminalSessionBehavior = terminalBehaviorByEditorLauncher[request.launcher];
 
   return {
@@ -86,19 +59,42 @@ export function createTerminalSession(
   } satisfies IEditorTerminalSession;
 }
 
-function createAnnotationTerminalSummary(
-  request: StartAnnotationTerminalSessionRequest,
-  annotationActions: IAnnotationAction[],
-): ITerminalSessionSummary {
-  const actionLabel: string =
-    annotationActions.find((action: IAnnotationAction): boolean => action.id === request.actionId)?.label ??
-    request.actionId;
+function createAnnotationTerminalSession({
+  label,
+  request,
+  sessionId,
+}: IActiveAnnotationTerminalSessionSnapshot): AnnotationTerminalSession {
+  const summary: ITerminalSessionSummary = {
+    chipLabel: label,
+    meta: createAnnotationSummaryMeta(request),
+    title: label,
+  };
+
+  if (request.kind === "agent") {
+    return {
+      actionId: request.actionId,
+      annotation: request.annotation,
+      behavior: agentTerminalBehavior,
+      errorMessage: null,
+      isExpanded: agentTerminalBehavior.defaultIsExpanded,
+      kind: "agent",
+      sessionId,
+      status: "connecting",
+      summary,
+    } satisfies IAgentTerminalSession;
+  }
 
   return {
-    chipLabel: actionLabel,
-    meta: createAnnotationSummaryMeta(request),
-    title: actionLabel,
-  };
+    actionId: request.actionId,
+    annotation: request.annotation,
+    behavior: commandTerminalBehavior,
+    errorMessage: null,
+    isExpanded: commandTerminalBehavior.defaultIsExpanded,
+    kind: "command",
+    sessionId,
+    status: "connecting",
+    summary,
+  } satisfies ICommandTerminalSession;
 }
 
 function createEditorTerminalSummary(request: IStartEditorTerminalSessionRequest): ITerminalSessionSummary {

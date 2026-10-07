@@ -1,12 +1,6 @@
-import type { IAnnotationAction } from "../../../../shared/devtoolsConfig";
 import { createTerminalSession } from "../../createTerminalSession";
 import type { IAnnotationSubmitDetail } from "../../../annotationComposer/types";
 import type { TerminalSession } from "../../types";
-
-const fixture_annotationActions: IAnnotationAction[] = [
-  { id: "agent", kind: "agent", label: "Pi", queueEnabled: true },
-  { id: "create-ticket", kind: "command", label: "Create Ticket", queueEnabled: false },
-];
 
 const fixture_annotation: IAnnotationSubmitDetail = {
   comment: "Fix button",
@@ -18,15 +12,15 @@ const fixture_annotation: IAnnotationSubmitDetail = {
 };
 
 export const fixture_agentSession: TerminalSession = {
-  ...createTerminalSession(
-    "session-1",
-    {
+  ...createTerminalSession({
+    label: "Pi",
+    request: {
       actionId: "agent",
       annotation: fixture_annotation,
       kind: "agent",
     },
-    fixture_annotationActions,
-  ),
+    sessionId: "session-1",
+  }),
   behavior: { defaultIsExpanded: false, isFullscreenExpanded: false, shouldAutoRemoveOnExit: false },
 };
 
@@ -47,27 +41,26 @@ export const fixture_fullscreenAgentSession: TerminalSession = {
   sessionId: "session-fullscreen",
 };
 
-export const fixture_commandSession: TerminalSession = createTerminalSession(
-  "command-session-1",
-  {
+export const fixture_commandSession: TerminalSession = createTerminalSession({
+  label: "Create Ticket",
+  request: {
     actionId: "create-ticket",
     annotation: fixture_annotation,
     kind: "command",
   },
-  fixture_annotationActions,
-);
+  sessionId: "command-session-1",
+});
 
-export const fixture_editorSession: TerminalSession = createTerminalSession(
-  "editor-session-1",
-  {
+export const fixture_editorSession: TerminalSession = createTerminalSession({
+  request: {
     componentName: "PrimaryButton",
     kind: "editor",
     launcher: "neovim",
     source: { columnNumber: 3, fileName: "src/components/PrimaryButton.tsx", lineNumber: 12 },
     sourceLabel: "src/components/PrimaryButton.tsx:12:3",
   },
-  fixture_annotationActions,
-);
+  sessionId: "editor-session-1",
+});
 
 export function factory_agentSessions(count: number): TerminalSession[] {
   return Array.from({ length: count }, (_, index: number): TerminalSession => {

@@ -2,17 +2,14 @@ import assert from "node:assert";
 
 import { describe, expect, test } from "bun:test";
 
-import type { IAnnotationAction } from "../../../../shared/devtoolsConfig";
 import { appendStartedTerminalSessionIfNeeded } from "../../appendStartedTerminalSessionIfNeeded";
 import { createTerminalSession } from "../../createTerminalSession";
 
-const ANNOTATION_ACTIONS: IAnnotationAction[] = [{ id: "agent", kind: "agent", label: "Pi", queueEnabled: true }];
-
 describe("useTerminalSessions", () => {
   test("keeps the existing local session when the server returns a duplicate session id", () => {
-    const existingSession = createTerminalSession(
-      "session-1",
-      {
+    const existingSession = createTerminalSession({
+      label: "Pi",
+      request: {
         actionId: "agent",
         annotation: {
           comment: "First annotation",
@@ -24,11 +21,11 @@ describe("useTerminalSessions", () => {
         },
         kind: "agent",
       },
-      ANNOTATION_ACTIONS,
-    );
-    const duplicateResponseSession = createTerminalSession(
-      "session-1",
-      {
+      sessionId: "session-1",
+    });
+    const duplicateResponseSession = createTerminalSession({
+      label: "Pi",
+      request: {
         actionId: "agent",
         annotation: {
           comment: "Second annotation",
@@ -40,8 +37,8 @@ describe("useTerminalSessions", () => {
         },
         kind: "agent",
       },
-      ANNOTATION_ACTIONS,
-    );
+      sessionId: "session-1",
+    });
     const currentSessions = [existingSession];
 
     const nextSessions = appendStartedTerminalSessionIfNeeded(currentSessions, duplicateResponseSession);

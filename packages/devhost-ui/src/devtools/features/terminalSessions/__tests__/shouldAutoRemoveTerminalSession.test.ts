@@ -1,16 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
-import type { IAnnotationAction } from "../../../shared/devtoolsConfig";
 import { createTerminalSession } from "../createTerminalSession";
 import { shouldAutoRemoveTerminalSession } from "../shouldAutoRemoveTerminalSession";
 
-const ANNOTATION_ACTIONS: IAnnotationAction[] = [
-  { id: "agent", kind: "agent", label: "Claude Code", queueEnabled: true },
-];
-
-const AGENT_TERMINAL_SESSION = createTerminalSession(
-  "session-a",
-  {
+const AGENT_TERMINAL_SESSION = createTerminalSession({
+  label: "Claude Code",
+  request: {
     actionId: "agent",
     annotation: {
       comment: "Fix button",
@@ -22,12 +17,11 @@ const AGENT_TERMINAL_SESSION = createTerminalSession(
     },
     kind: "agent",
   },
-  ANNOTATION_ACTIONS,
-);
+  sessionId: "session-a",
+});
 
-const EDITOR_TERMINAL_SESSION = createTerminalSession(
-  "session-b",
-  {
+const EDITOR_TERMINAL_SESSION = createTerminalSession({
+  request: {
     componentName: "PrimaryButton",
     kind: "editor",
     launcher: "neovim",
@@ -38,8 +32,8 @@ const EDITOR_TERMINAL_SESSION = createTerminalSession(
     },
     sourceLabel: "src/components/PrimaryButton.tsx:42:8",
   },
-  ANNOTATION_ACTIONS,
-);
+  sessionId: "session-b",
+});
 
 describe("shouldAutoRemoveTerminalSession", () => {
   test("does not auto-remove a running editor terminal session", () => {

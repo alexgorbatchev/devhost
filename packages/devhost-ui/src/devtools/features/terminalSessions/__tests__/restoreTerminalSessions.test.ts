@@ -2,15 +2,13 @@ import assert from "node:assert";
 
 import { describe, expect, test } from "bun:test";
 
-import type { IAnnotationAction } from "../../../shared/devtoolsConfig";
 import { createTerminalSession } from "../createTerminalSession";
 import { restoreTerminalSessions } from "../restoreTerminalSessions";
-import type { IActiveTerminalSessionSnapshot, TerminalSession } from "../types";
+import type { ActiveTerminalSessionSnapshot, TerminalSession } from "../types";
 
-const ANNOTATION_ACTIONS: IAnnotationAction[] = [{ id: "agent", kind: "agent", label: "Pi", queueEnabled: true }];
-
-// The control server lists a session's request without a label; the label comes from the configured actions.
-const AGENT_SNAPSHOT: IActiveTerminalSessionSnapshot = {
+// The control server lists an annotation session with the label its action had when the session started.
+const AGENT_SNAPSHOT: ActiveTerminalSessionSnapshot = {
+  label: "Pi",
   request: {
     actionId: "agent",
     annotation: {
@@ -26,7 +24,7 @@ const AGENT_SNAPSHOT: IActiveTerminalSessionSnapshot = {
   sessionId: "agent-session",
 };
 
-const EDITOR_SNAPSHOT: IActiveTerminalSessionSnapshot = {
+const EDITOR_SNAPSHOT: ActiveTerminalSessionSnapshot = {
   request: {
     componentName: "SaveButton",
     kind: "editor",
@@ -43,26 +41,22 @@ const EDITOR_SNAPSHOT: IActiveTerminalSessionSnapshot = {
 
 describe("restoreTerminalSessions", () => {
   test("restores missing sessions in newest-first order as minimized sessions", () => {
-    const restoredSessions: TerminalSession[] = restoreTerminalSessions(
-      [],
-      [AGENT_SNAPSHOT, EDITOR_SNAPSHOT],
-      ANNOTATION_ACTIONS,
-    );
+    const restoredSessions: TerminalSession[] = restoreTerminalSessions([], [AGENT_SNAPSHOT, EDITOR_SNAPSHOT]);
 
     expect(restoredSessions).toEqual([
       {
-        ...createTerminalSession(EDITOR_SNAPSHOT.sessionId, EDITOR_SNAPSHOT.request, ANNOTATION_ACTIONS),
+        ...createTerminalSession(EDITOR_SNAPSHOT),
         isExpanded: false,
       },
       {
-        ...createTerminalSession(AGENT_SNAPSHOT.sessionId, AGENT_SNAPSHOT.request, ANNOTATION_ACTIONS),
+        ...createTerminalSession(AGENT_SNAPSHOT),
         isExpanded: false,
       },
     ]);
   });
 
-  test("labels a restored annotation session with its configured action label", () => {
-    const restoredSessions: TerminalSession[] = restoreTerminalSessions([], [AGENT_SNAPSHOT], ANNOTATION_ACTIONS);
+  test("labels a restored annotation session with the label the server listed", () => {
+    const restoredSessions: TerminalSession[] = restoreTerminalSessions([], [AGENT_SNAPSHOT]);
     const restoredSession: TerminalSession | undefined = restoredSessions[0];
 
     assert(restoredSession !== undefined);
@@ -72,20 +66,19 @@ describe("restoreTerminalSessions", () => {
 
   test("keeps the current expanded session and avoids duplicates", () => {
     const currentSessions: TerminalSession[] = [
-      createTerminalSession("current-editor", EDITOR_SNAPSHOT.request, ANNOTATION_ACTIONS),
-      createTerminalSession(AGENT_SNAPSHOT.sessionId, AGENT_SNAPSHOT.request, ANNOTATION_ACTIONS),
+      createTerminalSession({ ...EDITOR_SNAPSHOT, sessionId: "current-editor" }),
+      createTerminalSession(AGENT_SNAPSHOT),
     ];
-    const restoredSessions: TerminalSession[] = restoreTerminalSessions(
-      currentSessions,
-      [AGENT_SNAPSHOT, EDITOR_SNAPSHOT],
-      ANNOTATION_ACTIONS,
-    );
+    const restoredSessions: TerminalSession[] = restoreTerminalSessions(currentSessions, [
+      AGENT_SNAPSHOT,
+      EDITOR_SNAPSHOT,
+    ]);
 
     expect(restoredSessions).toEqual([
-      createTerminalSession("current-editor", EDITOR_SNAPSHOT.request, ANNOTATION_ACTIONS),
-      createTerminalSession(AGENT_SNAPSHOT.sessionId, AGENT_SNAPSHOT.request, ANNOTATION_ACTIONS),
+      createTerminalSession({ ...EDITOR_SNAPSHOT, sessionId: "current-editor" }),
+      createTerminalSession(AGENT_SNAPSHOT),
       {
-        ...createTerminalSession(EDITOR_SNAPSHOT.sessionId, EDITOR_SNAPSHOT.request, ANNOTATION_ACTIONS),
+        ...createTerminalSession(EDITOR_SNAPSHOT),
         isExpanded: false,
       },
     ]);
