@@ -3,9 +3,12 @@ package caddy
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -272,11 +275,12 @@ func TestClaimHost(t *testing.T) {
 }
 
 func TestClaimHostKillZombies(t *testing.T) {
+	zombie := startZombieProcess(t)
 	withRouteMutationTestHooks(t, routeMutationTestHooks{
 		now:       time.Date(2026, time.April, 19, 12, 34, 56, 0, time.UTC),
 		processID: 4321,
 		processAlive: func(pid int) bool {
-			return pid == 4321 || pid == 9999
+			return pid == 4321 || pid == zombie.pid
 		},
 	})
 
@@ -290,7 +294,7 @@ func TestClaimHostKillZombies(t *testing.T) {
 		`  "createdAt": "2026-04-19T12:34:56.000Z",`,
 		`  "host": "hello.localhost",`,
 		`  "manifestPath": "/tmp/project/devhost.toml",`,
-		`  "ownerPid": 9999,`, // Different PID!
+		fmt.Sprintf(`  "ownerPid": %d,`, zombie.pid), // Another process, which this test owns.
 		`  "path": "/api/*",`,
 		`  "serviceName": "api"`,
 		"}",
@@ -305,7 +309,7 @@ func TestClaimHostKillZombies(t *testing.T) {
 		RegistrationsDirectoryPath: paths.RegistrationsDirectoryPath,
 		KillZombies:                false,
 		LogWriter:                  &buf,
-	}); err == nil || !strings.Contains(err.Error(), "hello.localhost is already claimed by PID 9999") {
+	}); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("hello.localhost is already claimed by PID %d", zombie.pid)) {
 		t.Fatalf("ClaimHost(...) without KillZombies expected failure, got = %v", err)
 	}
 
@@ -320,17 +324,19 @@ func TestClaimHostKillZombies(t *testing.T) {
 		t.Fatalf("ClaimHost(...) with KillZombies unexpected error = %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "Killing zombie PID 9999 claiming hello.localhost") {
+	if !strings.Contains(buf.String(), fmt.Sprintf("Killing zombie PID %d claiming hello.localhost", zombie.pid)) {
 		t.Fatalf("ClaimHost(...) did not log expected zombie killing message: %q", buf.String())
 	}
+	zombie.assertKilled(t)
 }
 
 func TestClaimFixedPortKillZombies(t *testing.T) {
+	zombie := startZombieProcess(t)
 	withRouteMutationTestHooks(t, routeMutationTestHooks{
 		now:       time.Date(2026, time.April, 19, 12, 34, 56, 0, time.UTC),
 		processID: 4321,
 		processAlive: func(pid int) bool {
-			return pid == 4321 || pid == 9999
+			return pid == 4321 || pid == zombie.pid
 		},
 	})
 
@@ -343,7 +349,7 @@ func TestClaimFixedPortKillZombies(t *testing.T) {
 		`  "bindHost": "127.0.0.1",`,
 		`  "createdAt": "2026-04-19T12:34:56.000Z",`,
 		`  "manifestPath": "/tmp/project/devhost.toml",`,
-		`  "ownerPid": 9999,`,
+		fmt.Sprintf(`  "ownerPid": %d,`, zombie.pid),
 		`  "port": 3000`,
 		"}",
 	}, "\n")
@@ -377,8 +383,51 @@ func TestClaimFixedPortKillZombies(t *testing.T) {
 		t.Fatalf("ClaimFixedPort(...) with KillZombies unexpected error = %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "Killing zombie PID 9999 claiming port 3000") {
+	if !strings.Contains(buf.String(), fmt.Sprintf("Killing zombie PID %d claiming port 3000", zombie.pid)) {
 		t.Fatalf("ClaimFixedPort(...) did not log expected zombie killing message: %q", buf.String())
+	}
+	zombie.assertKilled(t)
+}
+
+// zombieProcess is a process the test started. Claims written under its PID let the zombie path kill a real
+// process; a made-up PID would have it kill whatever process holds that number on the machine running the test.
+type zombieProcess struct {
+	exited chan error
+	pid    int
+}
+
+func startZombieProcess(t *testing.T) *zombieProcess {
+	t.Helper()
+
+	command := exec.Command("sleep", "300")
+	if err := command.Start(); err != nil {
+		t.Fatalf("start zombie process: %v", err)
+	}
+	zombie := &zombieProcess{exited: make(chan error, 1), pid: command.Process.Pid}
+	go func() {
+		zombie.exited <- command.Wait()
+	}()
+	t.Cleanup(func() {
+		_ = command.Process.Kill()
+	})
+	return zombie
+}
+
+func (z *zombieProcess) assertKilled(t *testing.T) {
+	t.Helper()
+
+	select {
+	case err := <-z.exited:
+		var exitError *exec.ExitError
+		if !errors.As(err, &exitError) {
+			t.Fatalf("zombie process exit = %v, want a kill", err)
+		}
+		status, ok := exitError.Sys().(syscall.WaitStatus)
+		if !ok || !status.Signaled() || status.Signal() != syscall.SIGKILL {
+			t.Fatalf("zombie process exit = %v, want SIGKILL", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("zombie process was not killed")
 	}
 }
 
