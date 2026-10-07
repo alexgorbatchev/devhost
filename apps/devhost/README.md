@@ -43,6 +43,9 @@ devhost --version
   - a managed Caddy binary downloaded with `devhost caddy download`
 - `nvim` and `curl` when `[devtools.editor].ide = "neovim"`
 
+Stopping the last stack removes its routes while retaining the running Caddy instance's configured admin address,
+bind host, and HTTP/HTTPS ports. Separate instances keep their own listeners through stack shutdown.
+
 When Neovim editor integration is enabled, devhost loads a bundled `devhost-react-highlight.nvim` plugin for that
 devhost instance. The plugin streams TSX/JSX cursor locations back to the injected browser overlay through the
 instance's local control port, so multiple devhost stacks can run at the same time without sharing editor

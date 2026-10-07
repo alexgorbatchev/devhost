@@ -6,6 +6,7 @@ Local React workspace for the injected `devhost` browser UI that gets embedded i
 
 - Check package-local validations: `just ui check`
 - Storybook: `just ui storybook`
+- Record the real utility demo: `just demo record`; recording tests: `just demo test`. See `../../docs/internal/references/demo-recording.md` for prerequisites, scene refreshes, and artifact locations.
 - Open the design reference in the default browser (from the repo root): `just design devtools`
 
 ## Local conventions
@@ -13,6 +14,11 @@ Local React workspace for the injected `devhost` browser UI that gets embedded i
 - Keep the injected UI source under `src/devtools/` so the Go app and the public website can both consume the same entrypoint.
 - Re-export public entrypoints through `package.json` exports. Consumers should use `@alexgorbatchev/devhost-ui` or `@alexgorbatchev/devhost-ui/main` instead of reaching into source paths.
 - Keep package-owned Storybook and browser tests inside this workspace.
+- Keep repeatable recording scenes under `scripts/demo/`. Capture real playground interactions through the compiled devhost, with accessible locators and observable readiness checks. Fixed pauses are allowed only for viewer pacing in recordings. The package TypeScript and Bun checks include these scripts and their unit tests.
+- Record portless HTTPS URLs through the existing managed Caddy on port 443. Inherit the devhost state directory, remove only the recording manifest's routes, and leave Caddy running. Use distinct hostnames for concurrent recordings.
+- Annotation recordings use real Pi and HMR against a copied playground under the recording directory. Keep its edit guard and restoration; never edit or reset the checkout's playground for recordings. Request reduced motion to freeze the playground background and logo. Use recording click rings without action text labels.
+- Keep the browser sequence minimap → toolbar/worktrees → annotation/Pi/live fix → TanStack Query → minimize Query and end. Worktrees belong to the copied Git fixture. Change captions on observed Pi working and heading-update events, using native video segments and measured durations rather than guessed timestamps.
+- Load the playground and wait for UI/fonts before starting capture. Reuse that page across browser scenes, preserve its live state, and reject full-page navigations during capture. Keep real HMR and client-side Query navigation visible.
 - `../design/references/devtools.html` (`just design devtools`) is the visual design reference for the injected UI: a standalone page that mounts every devtools surface in a Shadow DOM over switchable host backgrounds. Match its tokens, layout, and state treatments when changing devtools components, and update it in the same change when the design intentionally diverges.
 
 ## Local gotchas
