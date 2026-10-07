@@ -360,15 +360,15 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 				}
 				session.request.Annotation = &annotation
 				write := session.write
-				colorScheme := session.request.ColorScheme
 				controlServer.mu.Unlock()
 
-				sessionFiles, err := createAgentSessionFiles(annotationSessionFilesOptions{
+				// The agent is already running with its adapter support files, so the handoff needs only the annotation.
+				sessionFiles, err := createAnnotationSessionFiles(agentSessionDirectoryPrefix, annotationSessionFilesOptions{
 					action:          action,
 					annotation:      annotation,
 					projectRootPath: toolContext.ProjectRootPath,
 					stackName:       options.StackName,
-				}, colorScheme)
+				})
 				if err != nil {
 					return err
 				}
@@ -381,7 +381,8 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 				}
 				activeSession.cleanup = chainCleanup(activeSession.cleanup, sessionFiles.cleanup)
 				controlServer.mu.Unlock()
-				write(fmt.Sprintf(annotationQueueResumePromptText, sessionFiles.promptFilePath))
+				// The carriage return submits the instruction to the running agent.
+				write(createAnnotationPromptInstruction(sessionFiles.promptFilePath) + "\r")
 				return nil
 			},
 		})

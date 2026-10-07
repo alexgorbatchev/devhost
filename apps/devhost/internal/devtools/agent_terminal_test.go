@@ -2,9 +2,11 @@ package devtools
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -18,7 +20,7 @@ func TestAnnotationSessionTempDir(t *testing.T) {
 				base := filepath.Join(t.TempDir(), "nested", "annotations")
 				action := manifest.ValidatedAnnotationAction{
 					ID: "fix", Kind: kind, DisplayName: "Fix", Command: []string{"true"},
-					Agent: manifest.ValidatedAgent{Kind: "pi", DisplayName: "Pi"},
+					Agent: manifest.ValidatedAgent{Kind: "pi"},
 				}
 				if configured {
 					action.TempDir = &base
@@ -115,8 +117,7 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 			name: "pi without args",
 			action: manifest.ValidatedAnnotationAction{
 				Agent: manifest.ValidatedAgent{
-					DisplayName: "Pi",
-					Kind:        "pi",
+					Kind: "pi",
 				},
 				DisplayName: "Pi",
 				ID:          "ask-pi",
@@ -143,9 +144,8 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 			name: "pi with args",
 			action: manifest.ValidatedAnnotationAction{
 				Agent: manifest.ValidatedAgent{
-					Args:        []string{"--thinking", "high"},
-					DisplayName: "Pi",
-					Kind:        "pi",
+					Args: []string{"--thinking", "high"},
+					Kind: "pi",
 				},
 				DisplayName: "Pi",
 				ID:          "ask-pi",
@@ -175,9 +175,8 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 			name: "pi with args and color scheme",
 			action: manifest.ValidatedAnnotationAction{
 				Agent: manifest.ValidatedAgent{
-					Args:        []string{"--thinking", "high"},
-					DisplayName: "Pi",
-					Kind:        "pi",
+					Args: []string{"--thinking", "high"},
+					Kind: "pi",
 				},
 				DisplayName: "Pi",
 				ID:          "ask-pi",
@@ -211,8 +210,7 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 			name: "claude-code without args",
 			action: manifest.ValidatedAnnotationAction{
 				Agent: manifest.ValidatedAgent{
-					DisplayName: "Claude Code",
-					Kind:        "claude-code",
+					Kind: "claude-code",
 				},
 				DisplayName: "Claude Code",
 				ID:          "ask-claude",
@@ -239,9 +237,8 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 			name: "claude-code with args",
 			action: manifest.ValidatedAnnotationAction{
 				Agent: manifest.ValidatedAgent{
-					Args:        []string{"--model", "claude-3-7-sonnet", "--dangerously-skip-permissions"},
-					DisplayName: "Claude Code",
-					Kind:        "claude-code",
+					Args: []string{"--model", "claude-3-7-sonnet", "--dangerously-skip-permissions"},
+					Kind: "claude-code",
 				},
 				DisplayName: "Claude Code",
 				ID:          "ask-claude",
@@ -271,8 +268,7 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 			name: "opencode without args",
 			action: manifest.ValidatedAnnotationAction{
 				Agent: manifest.ValidatedAgent{
-					DisplayName: "OpenCode",
-					Kind:        "opencode",
+					Kind: "opencode",
 				},
 				DisplayName: "OpenCode",
 				ID:          "ask-opencode",
@@ -302,9 +298,8 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 			name: "opencode with args",
 			action: manifest.ValidatedAnnotationAction{
 				Agent: manifest.ValidatedAgent{
-					Args:        []string{"--model", "gpt-4o"},
-					DisplayName: "OpenCode",
-					Kind:        "opencode",
+					Args: []string{"--model", "gpt-4o"},
+					Kind: "opencode",
 				},
 				DisplayName: "OpenCode",
 				ID:          "ask-opencode",
@@ -346,6 +341,74 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 			}
 			defer command.cleanup()
 			tc.assertFn(t, command)
+		})
+	}
+}
+
+func TestAgentTerminalCommandWritesOnlyItsAdapterFiles(t *testing.T) {
+	t.Parallel()
+
+	sharedFiles := []string{"annotation.json", "prompt.txt"}
+	sharedVariables := []string{
+		"DEVHOST_ANNOTATION_ACTION_ID",
+		"DEVHOST_ANNOTATION_ACTION_KIND",
+		"DEVHOST_ANNOTATION_ACTION_LABEL",
+		"DEVHOST_ANNOTATION_FILE",
+		"DEVHOST_ANNOTATION_PROMPT_FILE",
+		"DEVHOST_ANNOTATION_TRANSPORT",
+		"DEVHOST_PROJECT_ROOT",
+		"DEVHOST_STACK_NAME",
+	}
+	tests := []struct {
+		name          string
+		agent         manifest.ValidatedAgent
+		wantFiles     []string
+		wantVariables []string
+	}{
+		{name: "pi", agent: manifest.ValidatedAgent{Kind: "pi"}, wantFiles: []string{"register-agent-status.js"}},
+		{name: "claude-code", agent: manifest.ValidatedAgent{Kind: "claude-code"}, wantFiles: []string{"claude-settings.json"}},
+		{
+			name:          "opencode",
+			agent:         manifest.ValidatedAgent{Kind: "opencode"},
+			wantFiles:     []string{"opencode-config.jsonc", "opencode-plugin.ts"},
+			wantVariables: []string{"OPENCODE_CONFIG"},
+		},
+		{name: "codex", agent: manifest.ValidatedAgent{Kind: "codex"}, wantVariables: []string{codexStatusTTYEnvironmentName}},
+		{
+			name:          "configured",
+			agent:         manifest.ValidatedAgent{Command: []string{"true"}, Env: map[string]string{"MY_AGENT_MODE": "annotation"}, Kind: "configured"},
+			wantVariables: []string{"MY_AGENT_MODE"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			action := manifest.ValidatedAnnotationAction{Agent: tc.agent, DisplayName: "Review change", ID: "fix", Kind: "agent"}
+			command, err := createAgentTerminalCommand(action, t.TempDir(), annotationSubmitDetail{Comment: "fix"}, agentColorSchemeDark, "stack")
+			if err != nil {
+				t.Fatalf("createAgentTerminalCommand(...) error = %v", err)
+			}
+			t.Cleanup(command.cleanup)
+
+			entries, err := os.ReadDir(filepath.Dir(command.env["DEVHOST_ANNOTATION_FILE"]))
+			if err != nil {
+				t.Fatal(err)
+			}
+			gotFiles := make([]string, 0, len(entries))
+			for _, entry := range entries {
+				gotFiles = append(gotFiles, entry.Name())
+			}
+			wantFiles := slices.Sorted(slices.Values(slices.Concat(sharedFiles, tc.wantFiles)))
+			if !slices.Equal(gotFiles, wantFiles) {
+				t.Fatalf("session files = %v, want %v", gotFiles, wantFiles)
+			}
+
+			gotVariables := slices.Sorted(maps.Keys(command.env))
+			wantVariables := slices.Sorted(slices.Values(slices.Concat(sharedVariables, tc.wantVariables)))
+			if !slices.Equal(gotVariables, wantVariables) {
+				t.Fatalf("environment variables = %v, want %v", gotVariables, wantVariables)
+			}
 		})
 	}
 }

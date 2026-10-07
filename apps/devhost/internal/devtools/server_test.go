@@ -22,7 +22,7 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 	restartedServices := []string{}
 	controlServer, err := StartControlServer(StartControlServerOptions{
 		AnnotationActions: []manifest.ValidatedAnnotationAction{
-			{Agent: manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"}, DisplayName: "Pi", ID: defaultAnnotationActionID, Kind: "agent"},
+			{Agent: manifest.ValidatedAgent{Kind: "pi"}, DisplayName: "Pi", ID: defaultAnnotationActionID, Kind: "agent"},
 			{Command: []string{"bun", "run", "lint"}, Cwd: "/tmp/project", DisplayName: "Run lint", ID: "lint", Kind: "command"},
 		},
 		ComponentEditor: "vscode",
@@ -343,7 +343,7 @@ func TestControlServerTerminalSessionsEditorOnlyLifecycle(t *testing.T) {
 	projectRootPath := t.TempDir()
 	controlServer, err := StartControlServer(StartControlServerOptions{
 		AnnotationActions: []manifest.ValidatedAnnotationAction{
-			{Agent: manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"}, DisplayName: "Pi", ID: defaultAnnotationActionID, Kind: "agent"},
+			{Agent: manifest.ValidatedAgent{Kind: "pi"}, DisplayName: "Pi", ID: defaultAnnotationActionID, Kind: "agent"},
 			{Command: []string{"bun", "run", "lint"}, Cwd: "/tmp/project", DisplayName: "Run lint", ID: "lint", Kind: "command"},
 		},
 		ComponentEditor: "neovim",
@@ -578,7 +578,7 @@ func TestControlServerAgentAnnotationQueuesLifecycle(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	controlServer, err := StartControlServer(StartControlServerOptions{
 		AnnotationActions: []manifest.ValidatedAnnotationAction{{
-			Agent:       manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"},
+			Agent:       manifest.ValidatedAgent{Kind: "pi"},
 			DisplayName: "Pi",
 			ID:          defaultAnnotationActionID,
 			Kind:        "agent",
@@ -761,7 +761,7 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 	firstStarter := newTestTerminalStarter()
 	firstServer, err := StartControlServer(StartControlServerOptions{
 		AnnotationActions: []manifest.ValidatedAnnotationAction{{
-			Agent:       manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"},
+			Agent:       manifest.ValidatedAgent{Kind: "pi"},
 			DisplayName: "Pi",
 			ID:          defaultAnnotationActionID,
 			Kind:        "agent",
@@ -821,7 +821,7 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 	secondServer, err := StartControlServer(StartControlServerOptions{
 		AnnotationActions: []manifest.ValidatedAnnotationAction{{
 			TempDir:     &tempDir,
-			Agent:       manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"},
+			Agent:       manifest.ValidatedAgent{Kind: "pi"},
 			DisplayName: "Pi",
 			ID:          defaultAnnotationActionID,
 			Kind:        "agent",
@@ -878,6 +878,11 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 	files, err := filepath.Glob(filepath.Join(tempDir, agentSessionDirectoryPrefix+"*", annotationFileName))
 	if err != nil || len(files) != 1 {
 		t.Fatalf("queued annotation files = %v, error = %v", files, err)
+	}
+	// The agent is already running, so a handoff needs no adapter support files.
+	entries, err := os.ReadDir(filepath.Dir(files[0]))
+	if err != nil || len(entries) != 2 || entries[0].Name() != annotationFileName || entries[1].Name() != annotationPromptFileName {
+		t.Fatalf("queued handoff files = %v, error = %v; want only the annotation and prompt", entries, err)
 	}
 	data, err := os.ReadFile(files[0])
 	if err != nil || !strings.Contains(string(data), "Second annotation") {

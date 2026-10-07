@@ -23,7 +23,7 @@ func TestCodexTerminalCommand(t *testing.T) {
 			t.Parallel()
 			root := t.TempDir()
 			action := manifest.ValidatedAnnotationAction{
-				Agent: manifest.ValidatedAgent{Kind: "codex", DisplayName: "Codex", Args: args},
+				Agent: manifest.ValidatedAgent{Kind: "codex", Args: args},
 				ID:    "ask-codex", DisplayName: "Codex", Kind: "agent",
 			}
 			annotation := annotationSubmitDetail{Comment: "Fix spacing", StackName: "test", URL: "https://app.localhost"}
@@ -67,7 +67,7 @@ func TestCodexTerminalCommand(t *testing.T) {
 // stdout and a detached subprocess, as used by Codex's hook runtime.
 func TestCodexHooksReportStatusThroughTerminal(t *testing.T) {
 	t.Parallel()
-	action := manifest.ValidatedAnnotationAction{Agent: manifest.ValidatedAgent{Kind: "codex", DisplayName: "Codex"}, Kind: "agent"}
+	action := manifest.ValidatedAnnotationAction{Agent: manifest.ValidatedAgent{Kind: "codex"}, Kind: "agent"}
 	cmd, err := createAgentTerminalCommand(action, t.TempDir(), annotationSubmitDetail{}, "", "test")
 	if err != nil {
 		t.Fatal(err)
