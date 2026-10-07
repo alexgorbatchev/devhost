@@ -5,7 +5,6 @@ import {
 import devtoolsCssText from "./devtoolsCssText";
 
 const devtoolsStylesheetAttributeName: string = "data-devhost-devtools-styles";
-const devtoolsStylesheetViteSourcePathSuffix: string = "/src/devtools/shared/devtools.css";
 
 type DevtoolsStyleRoot = Document | ShadowRoot;
 type DevtoolsStyleContainer = DevtoolsStyleRoot | HTMLElement;
@@ -22,7 +21,7 @@ export function installDevtoolsStyles(root: DevtoolsStyleRoot): HTMLStyleElement
 
   const stylesheet: HTMLStyleElement = document.createElement("style");
   stylesheet.setAttribute(devtoolsStylesheetAttributeName, "");
-  stylesheet.textContent = readDevtoolsCssText();
+  stylesheet.textContent = devtoolsCssText;
   stylesheetRoot.prepend(stylesheet);
 
   if (!(root instanceof Document)) {
@@ -57,14 +56,4 @@ function installShadowRootPropertyFallback(stylesheet: HTMLStyleElement): void {
 // Structural check instead of `instanceof`, so rules from another realm (for example an iframe document) match too.
 function isCssPropertyRule(rule: CSSRule): rule is CSSPropertyRule {
   return "inherits" in rule && "initialValue" in rule && "name" in rule && "syntax" in rule;
-}
-
-function readDevtoolsCssText(): string {
-  const viteStylesheet: HTMLStyleElement | undefined = Array.from(
-    document.querySelectorAll<HTMLStyleElement>("style[data-vite-dev-id]"),
-  ).find((stylesheet: HTMLStyleElement): boolean => {
-    return stylesheet.getAttribute("data-vite-dev-id")?.endsWith(devtoolsStylesheetViteSourcePathSuffix) ?? false;
-  });
-
-  return viteStylesheet?.textContent ?? devtoolsCssText;
 }
