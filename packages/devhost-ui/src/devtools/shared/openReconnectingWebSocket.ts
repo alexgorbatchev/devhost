@@ -12,6 +12,8 @@ export interface IReconnectingWebSocketHandlers {
    * The connection was lost. Another one is opened after a delay, unless this handler closes the stream.
    */
   onDisconnect?: StreamEventHandler;
+  /** The server ended the stream normally. It stays closed. */
+  onEnd?: StreamEventHandler;
   onMessage: StreamMessageHandler;
   onOpen?: StreamEventHandler;
 }
@@ -26,7 +28,8 @@ export interface IReconnectingWebSocket {
 /**
  * Opens a devtools control stream and keeps it open. A lost connection, such as devhost restarting or the machine
  * sleeping, is reopened after a delay that starts at one second, doubles with each failed attempt up to ten seconds,
- * and starts over once a connection opens. A stream the server closes normally stays closed.
+ * and starts over once a connection opens. A stream the server closes normally stays closed: devhost does that
+ * when what the stream served is over, and closes with "going away" when the stack stops.
  */
 export function openReconnectingWebSocket(
   url: string,
@@ -58,7 +61,13 @@ export function openReconnectingWebSocket(
     connection.addEventListener("close", (event: CloseEvent): void => {
       websocket = null;
 
-      if (isClosed || event.code === normalClosureCode) {
+      if (isClosed) {
+        return;
+      }
+
+      if (event.code === normalClosureCode) {
+        isClosed = true;
+        handlers.onEnd?.();
         return;
       }
 

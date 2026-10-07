@@ -116,7 +116,9 @@ While a connection is down:
 - React Highlight shows no highlight until the editor reports its cursor again
 - a terminal shows `disconnected` and keeps its output
 
-Each recovers when its connection reopens. A reattached terminal replaces its output with the session's retained output. A terminal stops reconnecting when its session has finished, or when `GET /__devhost__/terminal-sessions` no longer lists the session, as after devhost restarts; it then reports that the session is no longer running.
+Each recovers when its connection reopens. A reattached terminal replaces its output with the session's retained output. A terminal stops reconnecting when its session has finished or is gone, and then reports that the session is no longer running.
+
+devhost ends a connection with a WebSocket close frame. It closes with `1001` (going away) when the stack stops, and the injected UI reconnects. It closes a terminal connection with `1000` (normal closure) when the session ends while a page is attached: another page closed it, or the stack stopped. A session that ended while the page was not attached answers `404`, which a browser reports like any failed connection, so the injected UI then asks `GET /__devhost__/terminal-sessions` whether the session is still listed.
 
 An active native browser-control WebSocket also keeps the stack from idle shutdown. Disconnecting releases that activity and restarts the normal idle buffer.
 

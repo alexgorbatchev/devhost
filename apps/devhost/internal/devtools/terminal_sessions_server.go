@@ -79,7 +79,7 @@ func (s *ControlServer) handleTerminalWebsocket(writer http.ResponseWriter, requ
 	if session == nil {
 		s.mu.Unlock()
 		_ = writeJSONMessage(client, createTerminalSessionErrorMessage("Terminal session is no longer available."))
-		client.close()
+		client.closeWith(websocket.CloseNormalClosure, websocketCloseReasonSessionEnded)
 		return
 	}
 
@@ -313,7 +313,7 @@ func (s *ControlServer) readTerminalMessages(sessionID string, client *websocket
 		if session == nil || session.closed {
 			s.mu.Unlock()
 			_ = writeJSONMessage(client, createTerminalSessionErrorMessage("Terminal session is no longer available."))
-			client.close()
+			client.closeWith(websocket.CloseNormalClosure, websocketCloseReasonSessionEnded)
 			return
 		}
 
@@ -382,7 +382,7 @@ func (s *ControlServer) closeTerminalSession(sessionID string) {
 	s.mu.Unlock()
 
 	for _, client := range clients {
-		client.close()
+		client.closeWith(websocket.CloseNormalClosure, websocketCloseReasonSessionEnded)
 	}
 	session.closeOnce.Do(session.close)
 	s.runTerminalSessionCleanup(session)

@@ -32,6 +32,9 @@ const (
 	logsWebsocketPath                = controlPathPrefix + "/ws/logs"
 	maximumRetainedLogEntries        = 512
 	healthPollInterval               = time.Second
+	websocketCloseFrameTimeout       = time.Second
+	websocketCloseReasonStopping     = "devhost is stopping"
+	websocketCloseReasonSessionEnded = "terminal session ended"
 	defaultIdleTerminalSessionPeriod = 10 * time.Second
 	applicationJavascriptContentType = "application/javascript; charset=utf-8"
 	textCSSContentType               = "text/css; charset=utf-8"
@@ -597,7 +600,7 @@ func (s *ControlServer) Stop() error {
 		s.closeTerminalSession(sessionID)
 	}
 	for _, client := range append(append(append(healthClients, logsClients...), annotationQueueClients...), reactHighlightClients...) {
-		client.close()
+		client.closeWith(websocket.CloseGoingAway, websocketCloseReasonStopping)
 	}
 
 	shutdownContext, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -937,10 +940,26 @@ func (c *websocketClient) writeJSONMessagesLocked(values []any) error {
 	return nil
 }
 
+// close ends a connection that is already broken or that the browser is closing: nobody is left to tell why.
 func (c *websocketClient) close() {
+	c.end(nil)
+}
+
+// closeWith tells the browser why the connection ends, then closes it. The code decides what the page does next: it
+// reopens a connection that ended because the stack is going away, and leaves one that ended normally closed.
+// Without a close frame a browser reports every end as a failure and cannot tell the two apart.
+func (c *websocketClient) closeWith(code int, reason string) {
+	c.end(websocket.FormatCloseMessage(code, reason))
+}
+
+func (c *websocketClient) end(closeFrame []byte) {
 	c.writeMu.Lock()
 	defer c.writeMu.Unlock()
 	c.closeOnce.Do(func() {
+		if closeFrame != nil {
+			// Best effort: a browser that is gone cannot be told, and the connection closes either way.
+			_ = c.conn.WriteControl(websocket.CloseMessage, closeFrame, time.Now().Add(websocketCloseFrameTimeout))
+		}
 		_ = c.conn.Close()
 		if c.tracker != nil {
 			c.tracker.DecrementActive()
