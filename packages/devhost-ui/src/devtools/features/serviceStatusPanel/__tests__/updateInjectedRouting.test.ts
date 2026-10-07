@@ -1,31 +1,58 @@
 import { expect, test } from "bun:test";
 
-import { resolveRoutedServiceKeyForUrl } from "../../../shared/routedServices";
 import { updateInjectedRouting } from "../updateInjectedRouting";
 
-test("updates route matching and primary service while retaining the stack identity", () => {
+test("applies new routing to a copy and retains the other settings", () => {
   const config = {
     stackName: "retained",
     primaryService: "web",
     routedServices: [{ host: "old.localhost", path: "/", serviceName: "web" }],
   };
-  updateInjectedRouting(
-    { primaryService: "worker", routedServices: [{ host: "new.localhost", path: "/api/*", serviceName: "worker" }] },
-    config,
-  );
-  expect(resolveRoutedServiceKeyForUrl(config.routedServices, "https://old.localhost/")).toBeNull();
-  expect(resolveRoutedServiceKeyForUrl(config.routedServices, "https://new.localhost/api/orders")).toBe("worker");
-  expect(config.primaryService).toBe("worker");
-  expect(config.stackName).toBe("retained");
-  updateInjectedRouting({ primaryService: "", routedServices: [] }, config);
-  expect(resolveRoutedServiceKeyForUrl(config.routedServices, "https://new.localhost/api/orders")).toBeNull();
-  expect(config.primaryService).toBe("");
+
+  expect(
+    updateInjectedRouting(
+      { primaryService: "worker", routedServices: [{ host: "new.localhost", path: "/api/*", serviceName: "worker" }] },
+      config,
+    ),
+  ).toEqual({
+    stackName: "retained",
+    primaryService: "worker",
+    routedServices: [{ host: "new.localhost", path: "/api/*", serviceName: "worker" }],
+  });
+  // The previous configuration object is left as it was; readers tell a change by the object's identity.
+  expect(config).toEqual({
+    stackName: "retained",
+    primaryService: "web",
+    routedServices: [{ host: "old.localhost", path: "/", serviceName: "web" }],
+  });
 });
 
-test("health without routing retains the current routing", () => {
+test("clears routing when the stack reports none", () => {
   const config = { primaryService: "web", routedServices: [{ host: "app.localhost", path: "/", serviceName: "web" }] };
-  updateInjectedRouting(undefined, config);
-  expect(resolveRoutedServiceKeyForUrl(config.routedServices, "https://app.localhost/")).toBe("web");
-  expect(config.primaryService).toBe("web");
-  updateInjectedRouting({ primaryService: "web", routedServices: [] }, undefined);
+
+  expect(updateInjectedRouting({ primaryService: "", routedServices: [] }, config)).toEqual({
+    primaryService: "",
+    routedServices: [],
+  });
+});
+
+test("keeps the same configuration object while routing is unchanged", () => {
+  const config = { primaryService: "web", routedServices: [{ host: "app.localhost", path: "/", serviceName: "web" }] };
+
+  expect(
+    updateInjectedRouting(
+      { primaryService: "web", routedServices: [{ host: "app.localhost", path: "/", serviceName: "web" }] },
+      config,
+    ),
+  ).toBe(config);
+});
+
+test("health without routing keeps the current configuration", () => {
+  const config = { primaryService: "web", routedServices: [{ host: "app.localhost", path: "/", serviceName: "web" }] };
+
+  expect(updateInjectedRouting(undefined, config)).toBe(config);
+});
+
+test("leaves an unavailable configuration unavailable", () => {
+  expect(updateInjectedRouting({ primaryService: "web", routedServices: [] }, undefined)).toBeUndefined();
 });
