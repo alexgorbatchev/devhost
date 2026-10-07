@@ -146,7 +146,7 @@ func startAnnotationLifecycleServer(t *testing.T, kind string) *ControlServer {
 	action := manifest.ValidatedAnnotationAction{
 		ID: kind, Kind: kind, DisplayName: "Lifecycle test", TempDir: &projectRoot,
 		Command: command, Cwd: projectRoot, Env: env,
-		Agent: manifest.ValidatedAgent{Kind: "configured", DisplayName: "Lifecycle test", Command: command, Cwd: projectRoot, Env: env},
+		Agent: manifest.ValidatedAgent{Kind: "configured", Command: command, Cwd: projectRoot, Env: env},
 	}
 	server, err := StartControlServer(StartControlServerOptions{
 		AnnotationActions: []manifest.ValidatedAnnotationAction{action}, AnnotationDefaultActionID: kind,
