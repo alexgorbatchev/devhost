@@ -21,5 +21,8 @@
     "oxfmt": "^0.53.0",
     "oxlint": "^1.68.0",
     "ts-unused": "^3.2.0"
+  },
+  "patchedDependencies": {
+    "jotai-devtools@0.14.0": "patches/jotai-devtools@0.14.0.patch"
   }
 }
