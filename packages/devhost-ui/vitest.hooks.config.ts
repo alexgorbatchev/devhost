@@ -25,6 +25,14 @@ export default mergeConfig(
         screenshotFailures: false,
         viewport: { height: 768, width: 1024 },
       },
+      // `bun test --coverage` cannot see the hooks, because their tests run here. `--coverage` reports them.
+      coverage: {
+        include: ["src/**/hooks/*.{ts,tsx}"],
+        provider: "v8",
+        // Vitest leaves fully covered files out of the table when an agent runs it; list every hook for everyone.
+        reporter: [["text", { skipFull: false }]],
+        reportsDirectory: "./.cache/coverage-hooks",
+      },
       include: ["src/**/hooks/__tests__/*.test.ts"],
       name: "hooks",
       setupFiles: ["./test-support/setupHookTests.ts"],

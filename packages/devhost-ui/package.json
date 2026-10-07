@@ -66,6 +66,7 @@
     "@types/ws": "8.18.2",
     "@typescript/native-preview": "^7.0.0-dev.20260408.1",
     "@vitest/browser-playwright": "4.1.4",
+    "@vitest/coverage-v8": "4.1.4",
     "@vue/devtools-kit": "9.0.0-beta.1",
     "jotai": "2.20.3",
     "jotai-devtools": "0.14.0",
