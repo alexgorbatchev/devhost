@@ -35,7 +35,7 @@ export function DevtoolsToolbar(props: IDevtoolsToolbarProps): JSX.Element {
     >
       <div
         aria-label="devhost"
-        className="flex h-6.5 items-stretch overflow-hidden rounded-md border border-edge bg-card text-card-foreground shadow-frame"
+        className="flex h-6.5 max-w-full items-stretch overflow-hidden rounded-md border border-edge bg-card text-card-foreground shadow-frame"
         data-testid="DevtoolsToolbar--bar"
         role="toolbar"
       >
