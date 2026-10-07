@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
-import { useEffect, useState, type JSX } from "react";
+import type { JSX } from "react";
 
 import { App as DevtoolsApp } from "../App";
-import { renderDevtools } from "../../renderDevtools";
 import { DEVTOOLS_HOST_ID, installDevtoolsStyles } from "../../shared";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../shared/constants";
 import {
@@ -20,6 +19,11 @@ import {
   ReactHighlightLayeringScene,
 } from "../../../../.storybook/ReactHighlightLayeringScene";
 import { withDevhostMock } from "../../../../.storybook/withDevhostMock";
+import { InjectedMountScene } from "../../../../.storybook/InjectedMountScene";
+import {
+  readInjectedDevtoolsStory,
+  setupInjectedDevtoolsStory,
+} from "../../../../.storybook/setupInjectedDevtoolsStory";
 import {
   verifyDevtoolsClickDuringSelection,
   verifyReactHighlightLayering,
@@ -191,7 +195,17 @@ export const WorktreeRecovery: Story = {
  * and px-based tokens ignore the host's rem scale.
  */
 export const HostileHostPage: Story = {
-  render: () => <HostileHostPageStory />,
+  beforeEach: (context) => {
+    const hostileStylesheet = document.createElement("style");
+    hostileStylesheet.textContent = hostileHostStylesheetText;
+    document.head.append(hostileStylesheet);
+    const unmountDevtools = setupInjectedDevtoolsStory(context);
+    return () => {
+      unmountDevtools();
+      hostileStylesheet.remove();
+    };
+  },
+  render: (_args, context) => <InjectedMountScene devtools={readInjectedDevtoolsStory(context)} hasControls={false} />,
   play: async (): Promise<void> => {
     const toolbar: HTMLElement = await waitFor(() => {
       const hostElement: HTMLElement | null = document.getElementById(DEVTOOLS_HOST_ID);
@@ -235,7 +249,8 @@ export const ShadowRootWithoutDocumentStyles: Story = {
 };
 
 export const InjectedMount: Story = {
-  render: () => <InjectedMountStory />,
+  beforeEach: setupInjectedDevtoolsStory,
+  render: (_args, context) => <InjectedMountScene devtools={readInjectedDevtoolsStory(context)} />,
   play: async (): Promise<void> => {
     await waitFor(() => {
       const hostElement = document.getElementById(DEVTOOLS_HOST_ID);
@@ -249,7 +264,8 @@ export const InjectedMount: Story = {
 
 /** Unmounting removes the host and every page-level listener, so the page no longer reacts to devtools keys. */
 export const InjectedUnmount: Story = {
-  render: () => <InjectedMountStory />,
+  beforeEach: setupInjectedDevtoolsStory,
+  render: (_args, context) => <InjectedMountScene devtools={readInjectedDevtoolsStory(context)} />,
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
     const hostText = canvas.getByText("Host page text");
@@ -360,23 +376,6 @@ const hostileHostStylesheetText: string = [
   "html { font-size: 10px !important; }",
 ].join("\n");
 
-function HostileHostPageStory(): null {
-  useEffect(() => {
-    const hostileStylesheet: HTMLStyleElement = document.createElement("style");
-
-    hostileStylesheet.textContent = hostileHostStylesheetText;
-    document.head.append(hostileStylesheet);
-    const unmountDevtools = renderDevtools();
-
-    return () => {
-      unmountDevtools();
-      hostileStylesheet.remove();
-    };
-  }, []);
-
-  return null;
-}
-
 const isolatedFrameTestId: string = "ShadowRootWithoutDocumentStyles--frame";
 const isolatedFrameProbeTestId: string = "ShadowRootWithoutDocumentStyles--probe";
 
@@ -416,27 +415,6 @@ function readIsolatedFrameProbe(canvasElement: HTMLElement): HTMLDivElement | nu
   const hostElement: Element | null = frameElement?.contentDocument?.body.firstElementChild ?? null;
 
   return hostElement?.shadowRoot?.querySelector<HTMLDivElement>(`[data-testid='${isolatedFrameProbeTestId}']`) ?? null;
-}
-
-function InjectedMountStory(): JSX.Element {
-  const [isMounted, setIsMounted] = useState<boolean>(true);
-
-  useEffect(() => {
-    if (!isMounted) {
-      return;
-    }
-
-    return renderDevtools();
-  }, [isMounted]);
-
-  return (
-    <>
-      <p>Host page text</p>
-      <button type="button" onClick={() => setIsMounted((currentValue) => !currentValue)}>
-        {isMounted ? "Unmount devtools" : "Mount devtools"}
-      </button>
-    </>
-  );
 }
 
 async function readStoryShadowRoot(canvasElement: HTMLElement): Promise<ShadowRoot> {
