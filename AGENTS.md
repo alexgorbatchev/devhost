@@ -67,6 +67,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Root `postinstall` runs `just ui install-browser`, which uses `playwright install chromium` without `--force` so existing Chromium binaries are reused instead of being re-downloaded on every `bun install`.
 - Keep a single root `bun.lock`. Do not add workspace-local lockfiles.
 - Versioned dependency patches live in `patches/` and are registered by root `package.json` and `bun.lock`; `bun install` applies them. See `packages/devhost-ui/AGENTS.md` for the Jotai Storybook patch and its regression coverage.
+- Root `package.json` `packageManager` names the Bun version. The CI, docs, and publish workflows read it through `bun-version-file: package.json`; change the version there and nowhere else.
 - Browser contrast regressions share `test-support/readContrastRatio.ts`, which measures computed CSS colors and opacity using native canvas compositing. UI stories and docs style tests check minimum contrast ratios instead of fixed token values.
 
 ## Shipping
