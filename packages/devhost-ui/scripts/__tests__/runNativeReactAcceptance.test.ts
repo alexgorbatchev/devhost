@@ -28,6 +28,9 @@ test.each(["missing", "mismatched"])(
       (error: unknown) => error,
     );
     assert(preparationError instanceof Error);
+    assert(preparationError.stack !== undefined);
+    const preparationHeader = preparationError.stack.split("\n")[0];
+    assert(preparationHeader !== undefined);
     const child = Bun.spawn([process.execPath, resolve(import.meta.dir, "../runNativeReactAcceptance.ts")], {
       cwd: repositoryRoot,
       env: {
@@ -55,9 +58,7 @@ test.each(["missing", "mismatched"])(
         .filter((line) => /^(?:error:|AssertionError:|ENOENT:)/.test(line))
         .map((line) => line.slice(line.indexOf(":") + 1).trimStart());
       expect(reportedErrors).toEqual([preparationError.message]);
-      expect((await Bun.file(resolve(outputPath, "failure.log")).text()).split("\n")[0]).toBe(
-        preparationError.stack?.split("\n")[0],
-      );
+      expect((await Bun.file(resolve(outputPath, "failure.log")).text()).split("\n")[0]).toBe(preparationHeader);
       expect(await Bun.file(resolve(outputPath, "extracted-assets-manifest.json")).json()).toEqual([]);
       expect(await Bun.file(resolve(outputPath, "extracted-assets-cleanup.json")).json()).toEqual({
         directoryPath: resolve(outputPath, "assets"),
