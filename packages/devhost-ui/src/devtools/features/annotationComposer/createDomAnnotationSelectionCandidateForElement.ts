@@ -8,6 +8,9 @@ interface ICreateDomAnnotationSelectionCandidateForElementOptions {
   sourceLocation?: IAnnotationSourceLocation;
 }
 
+const elementIdentities: WeakMap<HTMLElement, string> = new WeakMap<HTMLElement, string>();
+let nextElementIdentity: number = 1;
+
 export function createDomAnnotationSelectionCandidateForElement({
   element,
   selectedText,
@@ -26,7 +29,7 @@ export function createDomAnnotationSelectionCandidateForElement({
         sourceLocation,
       });
     },
-    id: identifiedElement.path,
+    id: readElementIdentity(element),
     label: identifiedElement.name,
     readRect: (): IRectSnapshot | null => {
       const elementRectangle: DOMRect = element.getBoundingClientRect();
@@ -43,4 +46,21 @@ export function createDomAnnotationSelectionCandidateForElement({
       };
     },
   };
+}
+
+// An element path reads well in an annotation but does not tell apart siblings that share a tag and class, so a
+// candidate is identified by the element itself.
+function readElementIdentity(element: HTMLElement): string {
+  const knownIdentity: string | undefined = elementIdentities.get(element);
+
+  if (knownIdentity !== undefined) {
+    return knownIdentity;
+  }
+
+  const identity: string = `dom-element-${nextElementIdentity}`;
+
+  nextElementIdentity += 1;
+  elementIdentities.set(element, identity);
+
+  return identity;
 }

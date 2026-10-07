@@ -174,18 +174,50 @@ describe("useAnnotationSelectionDraft", () => {
 
     expect(
       hook.result.current.selectedTargets.map((target) => ({
-        id: target.candidate.id,
         label: target.candidate.label,
         markerNumber: target.markerNumber,
       })),
     ).toEqual([
-      { id: "#cancel", label: 'button "Cancel"', markerNumber: 1 },
-      { id: "#save", label: 'button "Save"', markerNumber: 2 },
+      { label: 'button "Cancel"', markerNumber: 1 },
+      { label: 'button "Save"', markerNumber: 2 },
     ]);
     expect(hook.result.current.popupCoordinates).toEqual({ left: 568, top: 50 });
 
     releaseAlt();
     expect(hook.result.current.selectedTargets).toHaveLength(2);
+  });
+
+  test("tells apart elements that share a tag and have no id or class", async () => {
+    const firstItem: HTMLLIElement = document.createElement("li");
+    const secondItem: HTMLLIElement = document.createElement("li");
+    const hook = renderSelectionDraft();
+
+    firstItem.textContent = "First";
+    secondItem.textContent = "Second";
+    placeElement(firstItem, { height: 20, width: 200, x: 100, y: 300 });
+    placeElement(secondItem, { height: 20, width: 200, x: 100, y: 340 });
+    document.body.append(firstItem, secondItem);
+
+    holdAlt();
+    await pointAt(firstItem);
+    expect(hook.result.current.hoveredRectangle).toEqual({ height: 20, width: 200, x: 100, y: 300 });
+
+    await pointAt(secondItem);
+    expect(hook.result.current.hoveredRectangle).toEqual({ height: 20, width: 200, x: 100, y: 340 });
+
+    await click(firstItem);
+    expect(hook.result.current.isHoveredElementSelected).toBe(true);
+
+    await pointAt(secondItem);
+    expect(hook.result.current.isHoveredElementSelected).toBe(false);
+
+    await click(secondItem);
+    await click(secondItem);
+    expect(hook.result.current.selectedTargets.map((target) => target.candidate.readRect())).toEqual([
+      { height: 20, width: 200, x: 100, y: 300 },
+      { height: 20, width: 200, x: 100, y: 340 },
+    ]);
+    expect(hook.result.current.selectedTargets.map((target) => target.markerNumber)).toEqual([1, 2]);
   });
 
   test("keeps selection clicks from the page but leaves devtools and ordinary clicks alone", async () => {
