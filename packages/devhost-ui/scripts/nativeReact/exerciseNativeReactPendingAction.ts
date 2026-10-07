@@ -1,6 +1,7 @@
+import type { NativeReactElementHandle } from "./types";
 import assert from "node:assert/strict";
 import { resolve } from "node:path";
-import type { Browser, BrowserContext, WebSocketRoute, JSHandle, ElementHandle, CDPSession } from "playwright";
+import type { Browser, BrowserContext, WebSocketRoute, JSHandle, CDPSession } from "playwright";
 import { z } from "zod";
 import { parseNativeBrowserUpdate } from "../../src/devtools/shared/nativeBrowser/parseNativeBrowserUpdate";
 import { NativeReactInspector } from "./NativeReactInspector";
@@ -56,7 +57,7 @@ export async function exerciseNativeReactPendingAction(options: INativeReactPend
   let hasUpstreamClosed: boolean = false;
   let hasAttemptedLateDelivery: boolean = false;
   let originalDocument: JSHandle<Document> | null = null;
-  let originalApp: ElementHandle<HTMLElement | SVGElement> | null = null;
+  let originalApp: NativeReactElementHandle | null = null;
   let hostSession: CDPSession | null = null;
   let continuity: unknown = null;
   let failure: unknown;
@@ -231,7 +232,6 @@ export async function exerciseNativeReactPendingAction(options: INativeReactPend
       resolve(options.outputPath, "pending-failure-page-snapshots.json"),
       JSON.stringify({ url: page.url(), snapshots }, null, 2),
     );
-    throw error;
   } finally {
     const streamCleanup = await Promise.allSettled(fixtureStreams.map((stream) => stream.close()));
     const streamJoin = await Promise.allSettled([
@@ -283,9 +283,10 @@ export async function exerciseNativeReactPendingAction(options: INativeReactPend
       .filter((result) => result.status === "rejected")
       .map((result) => result.reason);
     if (cleanupErrors.length > 0)
-      throw new AggregateError(
+      failure = new AggregateError(
         failure === undefined ? cleanupErrors : [failure, ...cleanupErrors],
         "Pending-result Page cleanup failed.",
       );
   }
+  if (failure !== undefined) throw failure;
 }

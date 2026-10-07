@@ -1,4 +1,4 @@
-import type { IReduxHostRegistrationApi } from "./types";
+import type { IReduxHostRegistrationApi } from "../helpers";
 
 function isRegistrationApi(value: unknown): value is IReduxHostRegistrationApi {
   return (

@@ -14,7 +14,7 @@ Local React workspace for the injected `devhost` browser UI that gets embedded i
 
 - Keep the injected UI source under `src/devtools/` so the Go app and the public website can both consume the same entrypoint.
 - Re-export public entrypoints through `package.json` exports. Consumers should use `@alexgorbatchev/devhost-ui` or `@alexgorbatchev/devhost-ui/main` instead of reaching into source paths.
-- Keep package-owned Storybook and browser tests inside this workspace.
+- Keep package-owned Storybook and browser tests inside this workspace. Storybook discovers owning stories in both `src/**` and `scripts/**`; the native fixture components' stories exercise their UI callbacks and host state, while genuine extension inspection remains in the separately provisioned native command.
 - Keep repeatable recording scenes under `scripts/demo/`. Capture real playground interactions through the compiled devhost, with accessible locators and observable readiness checks. Fixed pauses are allowed only for viewer pacing in recordings. The package TypeScript and Bun checks include these scripts and their unit tests.
 - Record portless HTTPS URLs through the existing managed Caddy on port 443. Inherit the devhost state directory, remove only the recording manifest's routes, and leave Caddy running. Use distinct hostnames for concurrent recordings.
 - Annotation recordings use real Pi and HMR against a copied playground under the recording directory. Keep its edit guard and restoration; never edit or reset the checkout's playground for recordings. Request reduced motion to freeze the playground background and logo. Use recording click rings without action text labels.

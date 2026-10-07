@@ -1,3 +1,4 @@
+import type { NativeBrowserListener, NativeBrowserViewPredicate } from "../types";
 import assert from "node:assert/strict";
 import { z } from "zod";
 import type { ServerWebSocket } from "bun";
@@ -29,8 +30,8 @@ export function createTransportHarness(hasNativeSessionLoss: boolean = false): I
   const requests: ControlRequest[] = [];
   const configurationRequests: Request[] = [];
   let socket: ServerWebSocket<undefined> | null = null;
-  const closures = new Set<() => void>();
-  const requestReaders = new Set<() => void>();
+  const closures = new Set<NativeBrowserListener>();
+  const requestReaders = new Set<NativeBrowserListener>();
   const state: INativeBrowserObservation = {
     isConnected: true,
     documentState: "bound",
@@ -126,7 +127,7 @@ export function createTransportHarness(hasNativeSessionLoss: boolean = false): I
 
 export function waitForNativeView(
   client: INativeBrowserClient,
-  predicate: (view: INativeBrowserView) => boolean,
+  predicate: NativeBrowserViewPredicate,
   timeoutMilliseconds: number = 1000,
 ): Promise<INativeBrowserView> {
   return new Promise((resolve, reject) => {

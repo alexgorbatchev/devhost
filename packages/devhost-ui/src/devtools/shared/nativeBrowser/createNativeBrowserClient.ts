@@ -1,3 +1,4 @@
+import type { NativeBrowserListener, NativeBrowserDispose } from "./types";
 import { z } from "zod";
 import { parseNativeBrowserUpdate } from "./parseNativeBrowserUpdate";
 import { createNativeBrowserView } from "./createNativeBrowserView";
@@ -19,10 +20,10 @@ const nativeBrowserProtocol: string = "devhost-native-browser.v1";
 
 export function createNativeBrowserClient(options: INativeBrowserClientOptions): INativeBrowserClient {
   let snapshot: INativeBrowserView = createNativeBrowserView();
-  const listeners = new Set<() => void>();
+  const listeners = new Set<NativeBrowserListener>();
   const pending = new Map<string, ReturnType<typeof setTimeout>>();
   let socket: WebSocket | null = null;
-  let removeSocketListeners: (() => void) | null = null;
+  let removeSocketListeners: NativeBrowserDispose | null = null;
   let configurationAbort: AbortController | null = null;
   let configurationTimeout: ReturnType<typeof setTimeout> | null = null;
   let generation: number = 0;
@@ -206,7 +207,7 @@ export function createNativeBrowserClient(options: INativeBrowserClientOptions):
       socket.send(JSON.stringify({ id, command: "open-react", binding: snapshot.binding }));
     },
     getSnapshot: (): INativeBrowserView => snapshot,
-    subscribe: (listener: () => void): (() => void) => {
+    subscribe: (listener: NativeBrowserListener): NativeBrowserDispose => {
       listeners.add(listener);
       return (): void => {
         listeners.delete(listener);

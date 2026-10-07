@@ -1,8 +1,9 @@
+import type { ReduxDevtoolsListener } from "./types";
 import type { IReduxDevtoolsRegistration, IReduxDevtoolsRegistry } from "./types";
 
 export function createReduxDevtoolsRegistry(): IReduxDevtoolsRegistry {
   const entries = new Map<string, IReduxDevtoolsRegistration>();
-  const listeners = new Set<() => void>();
+  const listeners = new Set<ReduxDevtoolsListener>();
   const emit = (): void => {
     listeners.forEach((listener) => listener());
   };

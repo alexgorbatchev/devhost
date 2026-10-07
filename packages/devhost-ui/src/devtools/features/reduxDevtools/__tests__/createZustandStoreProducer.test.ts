@@ -7,7 +7,7 @@ import {
   factory_failingSnapshotRegistration,
   factory_richZustandRegistration,
   factory_zustandRegistration,
-} from "./fixtures";
+} from "./fixtures/fixtures";
 import type { ProducerMessage } from "../types";
 
 test("records callable native Zustand bound stores, replays their data and releases only producer subscriptions", () => {

@@ -56,3 +56,7 @@ export interface INativeBrowserClient {
   subscribe: (listener: () => void) => () => void;
   dispose: () => void;
 }
+
+export type NativeBrowserListener = () => void;
+export type NativeBrowserDispose = () => void;
+export type NativeBrowserViewPredicate = (view: INativeBrowserView) => boolean;

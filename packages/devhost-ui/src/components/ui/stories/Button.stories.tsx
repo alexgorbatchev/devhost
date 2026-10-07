@@ -188,3 +188,14 @@ export const WithStartAndEndEnhancers: Story = {
     await expect(args.onClick).toHaveBeenCalledTimes(1);
   },
 };
+
+export const Surface: Story = {
+  args: { children: "Connect browser control", variant: "surface", onClick: fn() },
+  play: async ({ args, canvasElement }) => {
+    const panel = await getShadowCanvas(canvasElement);
+    const button = panel.getByRole("button", { name: "Connect browser control" });
+    await userEvent.click(button);
+    await expect(args.onClick).toHaveBeenCalledTimes(1);
+    await expect(button).toBeEnabled();
+  },
+};

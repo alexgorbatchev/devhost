@@ -3,13 +3,13 @@ import { instrument } from "@redux-devtools/instrument";
 import { create } from "zustand";
 import { createStore } from "zustand/vanilla";
 import { devtools } from "zustand/middleware";
-import type { IZustandDevtoolsRegistrationOptions } from "../types";
+import type { IZustandDevtoolsRegistrationOptions } from "../../types";
 import type {
   ICounterFixtureSnapshot,
   ICounterFixtureState,
   IReduxFixture,
   IRichCounterFixtureSnapshot,
-} from "./fixtures/types";
+} from "../helpers";
 
 export function factory_reduxStore(): IReduxFixture {
   const counter = createSlice({

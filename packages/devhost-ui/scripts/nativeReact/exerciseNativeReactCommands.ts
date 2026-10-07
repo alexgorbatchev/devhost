@@ -1,6 +1,7 @@
+import type { NativeReactElementHandle, NativeReactDispose } from "./types";
 import assert from "node:assert/strict";
 import { resolve } from "node:path";
-import type { ElementHandle, Page, Request, Route, WebSocket } from "playwright";
+import type { Page, Request, Route, WebSocket } from "playwright";
 import { z } from "zod";
 import type { NativeReactInspector } from "./NativeReactInspector";
 import type { INativeReactProject } from "./types";
@@ -81,7 +82,7 @@ async function holdConfigurationRequest(page: Page, url: string) {
 
 async function assertOriginalFocusedCommand(
   page: Page,
-  original: ElementHandle<HTMLElement | SVGElement>,
+  original: NativeReactElementHandle,
   name: string,
 ): Promise<void> {
   const command = page.getByRole("button", { name, exact: true });
@@ -115,7 +116,7 @@ export async function exerciseNativeReactCommands(
   const sockets: WebSocket[] = [];
   const closedSockets: WebSocket[] = [];
   const frames: string[] = [];
-  const removeSocketListeners: Array<() => void> = [];
+  const removeSocketListeners: NativeReactDispose[] = [];
   const onRequest = (request: Request): void => {
     requests.push(request);
   };

@@ -1,9 +1,10 @@
+import type { ReduxDevtoolsDispose } from "./types";
 import { REMOVE_INSTANCE, UPDATE_STATE, showNotification } from "@redux-devtools/app-core";
 import { createReduxDevtoolsMonitorStore } from "./createReduxDevtoolsMonitorStore";
 import { isReduxDevtoolsProtocolMessage } from "./isReduxDevtoolsProtocolMessage";
-import { renderReduxDevtoolsMonitor } from "./components/renderReduxDevtoolsMonitor";
+import { renderReduxDevtoolsMonitor } from "./renderReduxDevtoolsMonitor";
 
-export function startReduxDevtoolsMonitor(hostWindow: Window): () => void {
+export function startReduxDevtoolsMonitor(hostWindow: Window): ReduxDevtoolsDispose {
   const container = hostWindow.document.getElementById("redux-monitor");
   if (container === null) throw new Error("Redux DevTools monitor mount is missing.");
   let port: MessagePort | undefined;

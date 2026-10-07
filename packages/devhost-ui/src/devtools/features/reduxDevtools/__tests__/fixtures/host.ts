@@ -1,3 +1,4 @@
+import type { ReduxDevtoolsDispose } from "../../types";
 import { configureStore, createSlice } from "@reduxjs/toolkit";
 import { instrument } from "@redux-devtools/instrument";
 import { create } from "zustand";
@@ -7,7 +8,7 @@ import { registerReduxDevtoolsStore, registerZustandDevtoolsStore } from "../../
 import { loadServedReduxRegistrationApi } from "./loadServedReduxRegistrationApi";
 import { isInstrumentedReduxStore } from "../../isInstrumentedReduxStore";
 import type { NativeLiftedState } from "../../types";
-import type { ICounterFixtureState, INativeReduxFixture, IReduxHostRegistrationApi } from "./types";
+import type { ICounterFixtureState, INativeReduxFixture, IReduxHostRegistrationApi } from "../helpers";
 
 const parameters = new URL(location.href).searchParams;
 const project = parameters.get("project") ?? "A";
@@ -44,7 +45,7 @@ const zustand = [1, 2].map((number) => ({
   ),
 }));
 const zustandActions = zustand.map((entry) => entry.store.getState().increment);
-let unregisters: (() => void)[] = [];
+let unregisters: ReduxDevtoolsDispose[] = [];
 const unregister = (): void => {
   unregisters.forEach((remove) => remove());
   unregisters = [];
@@ -108,7 +109,7 @@ const fixture: INativeReduxFixture = {
   },
 };
 window.reduxNativeFixture = fixture;
-function button(name: string, action: () => void): void {
+function button(name: string, action: ReduxDevtoolsDispose): void {
   const node = document.createElement("button");
   node.type = "button";
   node.textContent = name;

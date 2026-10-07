@@ -20,7 +20,7 @@ export async function buildNativeReactFixture(outputPath: string, repositoryRoot
   const css = stylesheet.outputs.find((output) => output.path.endsWith(".css"));
   assert(css, "Actual devhost stylesheet did not build.");
   const result = await Bun.build({
-    entrypoints: [resolve(import.meta.dir, "mountNativeReactFixture.tsx")],
+    entrypoints: [resolve(import.meta.dir, "mountNativeReactFixture.ts")],
     outdir: outputPath,
     target: "browser",
     format: "esm",

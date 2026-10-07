@@ -3,7 +3,7 @@ import { expect, test } from "bun:test";
 import { ActionCreators } from "@redux-devtools/instrument";
 import { parse } from "jsan";
 import { createReduxStoreProducer } from "../createReduxStoreProducer";
-import { factory_reduxStore } from "./fixtures";
+import { factory_reduxStore } from "./fixtures/fixtures";
 import type { ProducerMessage } from "../types";
 
 test("publishes existing real Toolkit history and replays through the same native lifted store", () => {
