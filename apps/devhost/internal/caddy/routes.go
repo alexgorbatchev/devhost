@@ -444,9 +444,21 @@ func UnregisterRoute(
 	if err := removeIfExists(registrationPath); err != nil {
 		return err
 	}
-	nextSettings, err := readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
+	remaining, err := os.ReadDir(registrationsDirectoryPath)
 	if err != nil {
 		return err
+	}
+	// An empty instance keeps its listeners and admin endpoint. Resetting to
+	// defaults could reload a different Caddy instance during stack shutdown.
+	nextSettings := previousSettings
+	for _, entry := range remaining {
+		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".json" {
+			nextSettings, err = readManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
+			if err != nil {
+				return err
+			}
+			break
+		}
 	}
 	if didManagedCaddyGlobalSettingsChange(previousSettings, nextSettings) {
 		if err := syncManagedCaddyGlobalState(routesDirectoryPath, nextSettings); err != nil {
