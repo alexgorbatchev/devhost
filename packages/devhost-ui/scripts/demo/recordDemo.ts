@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { join, resolve } from "node:path";
 import type { Subprocess } from "bun";
-import { chromium, type Browser } from "playwright";
+import type { Browser } from "playwright";
 import { assembleDemo } from "./assembleDemo";
 import { cleanupDemoRuntime } from "./cleanupDemoRuntime";
 import { createBrowserScenes } from "./createBrowserScenes";
 import { createDemoRuntime } from "./createDemoRuntime";
 import { createDemoPage } from "./createDemoPage";
 import { exportClip } from "./exportClip";
+import { launchDemoBrowser } from "./launchDemoBrowser";
 import { prepareDemoCaddy } from "./prepareDemoCaddy";
 import { recordBrowserScene } from "./recordBrowserScene";
 import { runCommand } from "./runCommand";
@@ -109,7 +110,7 @@ export async function recordDemo(signal: AbortSignal, selectedScene: string): Pr
     );
     if (selectedBrowserScenes.length > 0) {
       stack = await startDemoStack(runtime, signal);
-      browser = await chromium.launch({ env: runtime.env });
+      browser = await launchDemoBrowser(runtime.env);
       const page = await createDemoPage(browser, runtime);
       for (const scene of selectedBrowserScenes) {
         signal.throwIfAborted();
