@@ -20,10 +20,10 @@ import (
 	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
-	"github.com/hashicorp/consul/sdk/freeport"
 )
 
 func TestCreateInjectedServiceEnvironment(t *testing.T) {
@@ -287,8 +287,7 @@ func testStartupCrashRecovery(t *testing.T, worktreesEnabled, inRepository bool)
 	t.Helper()
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
-	adminAddress, stopAdmin := startTestAdminServer(t)
-	defer stopAdmin()
+	adminAddress := caddytest.StartAdminServer(t)
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
 	projectRoot := t.TempDir()
@@ -297,7 +296,7 @@ func testStartupCrashRecovery(t *testing.T, worktreesEnabled, inRepository bool)
 		projectRoot, _ = createWorktreeRepository(t)
 		serviceCwd = filepath.Join(projectRoot, "web")
 	}
-	servicePort := freeport.GetOne(t)
+	servicePort := nettest.ReservePort(t)
 	manifestValue := newResolvedManifest(projectRoot, adminAddress)
 	manifestValue.Worktrees.Enabled = worktreesEnabled
 	manifestValue.Devtools.Status.Enabled = true
@@ -419,10 +418,9 @@ func testStartupCrashRecovery(t *testing.T, worktreesEnabled, inRepository bool)
 func TestStartStackFailsStartupHealthTimeoutAndReleasesClaims(t *testing.T) {
 	statePath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(statePath)
-	admin, stopAdmin := startTestAdminServer(t)
-	defer stopAdmin()
+	admin := caddytest.StartAdminServer(t)
 	m := newResolvedManifest(t.TempDir(), admin)
-	port := freeport.GetOne(t)
+	port := nettest.ReservePort(t)
 	m.Services["web"] = ResolvedService{
 		Name: "web", BindHost: "127.0.0.1", Cwd: t.TempDir(), Command: helperCommandWithMode("graceful-signal-waiter"),
 		Env:    map[string]string{"GO_WANT_HELPER_PROCESS": "1", "STOP_TRACE_PATH": filepath.Join(t.TempDir(), "stopped"), "STOP_TRACE_VALUE": "stopped"},
@@ -441,10 +439,9 @@ func TestStartStackFailsStartupHealthTimeoutAndReleasesClaims(t *testing.T) {
 func TestStartStackRetriesAutoPortAndPrefixesOutput(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
-	adminAddress, stopAdmin := startTestAdminServer(t)
-	defer stopAdmin()
+	adminAddress := caddytest.StartAdminServer(t)
 
-	initialPort := freeport.GetOne(t)
+	initialPort := nettest.ReservePort(t)
 	tracePath := filepath.Join(t.TempDir(), "assigned-port.txt")
 	var infoLog strings.Builder
 	var stderrLog strings.Builder
@@ -523,7 +520,7 @@ func TestStartStackVerifiesManagedCaddyAdminBeforeServiceStartup(t *testing.T) {
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
 	tracePath := filepath.Join(t.TempDir(), "service-start.txt")
 
-	manifestValue := newResolvedManifest(t.TempDir(), reserveUnusedAdminAddress(t))
+	manifestValue := newResolvedManifest(t.TempDir(), caddytest.UnusedAdminAddress(t))
 	manifestValue.PrimaryService = "web"
 	manifestValue.Services["web"] = ResolvedService{
 		BindHost:  "127.0.0.1",
@@ -563,12 +560,11 @@ func TestStartStackVerifiesManagedCaddyAdminBeforeServiceStartup(t *testing.T) {
 func TestStartStackStartsServicesInDependencyOrderAndStopsOnSignalAfterChildExit(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
-	adminAddress, stopAdmin := startTestAdminServer(t)
-	defer stopAdmin()
+	adminAddress := caddytest.StartAdminServer(t)
 
 	startTracePath := filepath.Join(t.TempDir(), "start-order.txt")
 	stopTracePath := filepath.Join(t.TempDir(), "stop-order.txt")
-	ports := freeport.GetN(t, 2)
+	ports := nettest.ReservePorts(t, 2)
 	apiPort, webPort := ports[0], ports[1]
 
 	orderManifest := manifest.Manifest{
@@ -662,11 +658,10 @@ func TestStartStackStartsServicesInDependencyOrderAndStopsOnSignalAfterChildExit
 func TestStartStackActivatesRoutesAndCleansUpAfterShutdown(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
-	adminAddress, stopAdmin := startTestAdminServer(t)
-	defer stopAdmin()
+	adminAddress := caddytest.StartAdminServer(t)
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
-	servicePort := freeport.GetOne(t)
+	servicePort := nettest.ReservePort(t)
 	tracePath := filepath.Join(t.TempDir(), "service-trace.txt")
 	var infoLog strings.Builder
 
@@ -741,11 +736,10 @@ func TestStartStackActivatesRoutesAndCleansUpAfterShutdown(t *testing.T) {
 func TestStartStackActivatesDevtoolsRoutesForRootCompatibleServices(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
-	adminAddress, stopAdmin := startTestAdminServer(t)
-	defer stopAdmin()
+	adminAddress := caddytest.StartAdminServer(t)
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
-	servicePort := freeport.GetOne(t)
+	servicePort := nettest.ReservePort(t)
 	tracePath := filepath.Join(t.TempDir(), "devtools-root-trace.txt")
 
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
@@ -803,11 +797,10 @@ func TestStartStackActivatesDevtoolsRoutesForRootCompatibleServices(t *testing.T
 func TestStartStackSkipsDocumentInjectionForNonRootRoutes(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
-	adminAddress, stopAdmin := startTestAdminServer(t)
-	defer stopAdmin()
+	adminAddress := caddytest.StartAdminServer(t)
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
-	servicePort := freeport.GetOne(t)
+	servicePort := nettest.ReservePort(t)
 	tracePath := filepath.Join(t.TempDir(), "devtools-non-root-trace.txt")
 
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
@@ -864,11 +857,10 @@ func TestStartStackSkipsDocumentInjectionForNonRootRoutes(t *testing.T) {
 func TestStartStackLeavesDevtoolsRoutesUnmountedWhenAllFeaturesAreDisabled(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
-	adminAddress, stopAdmin := startTestAdminServer(t)
-	defer stopAdmin()
+	adminAddress := caddytest.StartAdminServer(t)
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
-	servicePort := freeport.GetOne(t)
+	servicePort := nettest.ReservePort(t)
 	tracePath := filepath.Join(t.TempDir(), "devtools-disabled-trace.txt")
 
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
@@ -928,8 +920,7 @@ func TestStartStackLeavesDevtoolsRoutesUnmountedWhenAllFeaturesAreDisabled(t *te
 func TestStartStackStopsDevtoolsServersDuringCleanup(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
-	adminAddress, stopAdmin := startTestAdminServer(t)
-	defer stopAdmin()
+	adminAddress := caddytest.StartAdminServer(t)
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
 	originalStartControlServer := startDevtoolsControlServer
@@ -956,7 +947,7 @@ func TestStartStackStopsDevtoolsServersDuringCleanup(t *testing.T) {
 		return server, err
 	}
 
-	servicePort := freeport.GetOne(t)
+	servicePort := nettest.ReservePort(t)
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
 	manifestValue.Name = "cleanup-devtools-stack"
 	manifestValue.PrimaryService = "web"
@@ -1023,8 +1014,7 @@ func TestStartStackStopsDevtoolsServersDuringCleanup(t *testing.T) {
 func TestStartStackRestartServiceDoesNotStallOnRedundantHealthLoop(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
-	adminAddress, stopAdmin := startTestAdminServer(t)
-	defer stopAdmin()
+	adminAddress := caddytest.StartAdminServer(t)
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
 	originalStartControlServer := startDevtoolsControlServer
@@ -1072,7 +1062,7 @@ func TestStartStackRestartServiceDoesNotStallOnRedundantHealthLoop(t *testing.T)
 		return devtools.StartControlServer(options)
 	}
 
-	servicePort := freeport.GetOne(t)
+	servicePort := nettest.ReservePort(t)
 	stateFilePath := filepath.Join(t.TempDir(), "restart-state.txt")
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
 	manifestValue.Name = "restart-health-stack"
@@ -1167,8 +1157,7 @@ func TestStartStackRestartServiceDoesNotStallOnRedundantHealthLoop(t *testing.T)
 func TestStartStackRestartServiceFailsPromptlyWithinHealthTimeout(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
-	adminAddress, stopAdmin := startTestAdminServer(t)
-	defer stopAdmin()
+	adminAddress := caddytest.StartAdminServer(t)
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
 	originalStartControlServer := startDevtoolsControlServer
@@ -1216,7 +1205,7 @@ func TestStartStackRestartServiceFailsPromptlyWithinHealthTimeout(t *testing.T) 
 		return devtools.StartControlServer(options)
 	}
 
-	servicePort := freeport.GetOne(t)
+	servicePort := nettest.ReservePort(t)
 	stateFilePath := filepath.Join(t.TempDir(), "restart-state.txt")
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
 	manifestValue.Name = "restart-fail-stack"
@@ -1310,11 +1299,10 @@ func TestStartStackRestartServiceFailsPromptlyWithinHealthTimeout(t *testing.T) 
 func TestStartStackGracefulIdleTimeoutShutdown(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
-	adminAddress, stopAdmin := startTestAdminServer(t)
-	defer stopAdmin()
+	adminAddress := caddytest.StartAdminServer(t)
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
-	servicePort := freeport.GetOne(t)
+	servicePort := nettest.ReservePort(t)
 	tracePath := filepath.Join(t.TempDir(), "service-trace.txt")
 
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
@@ -1395,8 +1383,7 @@ func TestStartStackReturnsSignalExitCodeAndUnregistersHandlers(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			stateDirectoryPath := t.TempDir()
 			paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
-			adminAddress, stopAdmin := startTestAdminServer(t)
-			defer stopAdmin()
+			adminAddress := caddytest.StartAdminServer(t)
 
 			originalRegisterProcessSignals := registerProcessSignals
 			originalUnregisterProcessSignals := unregisterProcessSignals
@@ -1502,11 +1489,10 @@ func TestStartStackReturnsSignalExitCodeAndUnregistersHandlers(t *testing.T) {
 func TestStartStackActivatesRoutesOnlyAfterHealthPasses(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
-	adminAddress, stopAdmin := startTestAdminServer(t)
-	defer stopAdmin()
+	adminAddress := caddytest.StartAdminServer(t)
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
-	servicePort := freeport.GetOne(t)
+	servicePort := nettest.ReservePort(t)
 	tracePath := filepath.Join(t.TempDir(), "route-health-trace.txt")
 
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
@@ -1608,7 +1594,7 @@ func TestStopStartedServicesStopsRunningServicesGracefully(t *testing.T) {
 }
 
 func TestStopStartedServiceStopsDescendantProcesses(t *testing.T) {
-	servicePort := freeport.GetOne(t)
+	servicePort := nettest.ReservePort(t)
 	childPidPath := filepath.Join(t.TempDir(), "child.pid")
 	t.Cleanup(func() {
 		childPidText, err := os.ReadFile(childPidPath)
@@ -1664,7 +1650,7 @@ func TestStopStartedServiceStopsDescendantProcesses(t *testing.T) {
 }
 
 func TestStopStartedServiceStopsDetachedDescendantProcesses(t *testing.T) {
-	servicePort := freeport.GetOne(t)
+	servicePort := nettest.ReservePort(t)
 	childPidPath := filepath.Join(t.TempDir(), "child.pid")
 	t.Cleanup(func() {
 		childPidText, err := os.ReadFile(childPidPath)
@@ -1724,7 +1710,7 @@ func TestStopStartedServiceStopsDescendantsSpawnedDuringSignalHandling(t *testin
 		t.Skip("linux-specific subreaper adoption test")
 	}
 
-	servicePort := freeport.GetOne(t)
+	servicePort := nettest.ReservePort(t)
 	childPidPath := filepath.Join(t.TempDir(), "child.pid")
 	readyPath := filepath.Join(t.TempDir(), "ready")
 	t.Cleanup(func() {
@@ -1797,7 +1783,7 @@ func TestStopStartedServiceStopsDetachedDescendantsExitedDuringStartup(t *testin
 		t.Skip("linux-specific startup containment test")
 	}
 
-	servicePort := freeport.GetOne(t)
+	servicePort := nettest.ReservePort(t)
 	childPIDPath := filepath.Join(t.TempDir(), "child.pid")
 	t.Cleanup(func() {
 		childPIDText, err := os.ReadFile(childPIDPath)
@@ -1854,7 +1840,7 @@ func TestStopStartedServiceStopsDetachedDescendantsExitedDuringStartup(t *testin
 }
 
 func TestStopStartedServicePreservesLateExternalPortRespawns(t *testing.T) {
-	servicePort := freeport.GetOne(t)
+	servicePort := nettest.ReservePort(t)
 	tempDirectory := t.TempDir()
 	childPIDPath := filepath.Join(tempDirectory, "child.pid")
 	triggerPath := filepath.Join(tempDirectory, "trigger")
@@ -2102,7 +2088,7 @@ func TestReadListeningProcessIDsForBindHostSeparatesInterfaces(t *testing.T) {
 		t.Skip("linux-specific listener discovery test")
 	}
 
-	port := freeport.GetOne(t)
+	port := nettest.ReservePort(t)
 	probeIPv4, err := net.Listen("tcp4", fmt.Sprintf("127.0.0.1:%d", port))
 	if err != nil {
 		t.Fatalf("Listen(tcp4) error = %v", err)
@@ -2257,11 +2243,10 @@ func TestStopStartedServiceEscalatesToSIGKILL(t *testing.T) {
 func TestStartStackRunsDaemonLifecycleCommands(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
-	adminAddress, stopAdmin := startTestAdminServer(t)
-	defer stopAdmin()
+	adminAddress := caddytest.StartAdminServer(t)
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
-	servicePort := freeport.GetOne(t)
+	servicePort := nettest.ReservePort(t)
 	tracePath := filepath.Join(t.TempDir(), "daemon-lifecycle-trace.txt")
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
 	manifestValue.PrimaryService = "api"
@@ -2488,28 +2473,6 @@ func helperCommandWithMode(mode string) []string {
 	return []string{os.Args[0], "-test.run=TestServiceHelperProcess", "--", mode}
 }
 
-func startTestAdminServer(t *testing.T) (string, func()) {
-	t.Helper()
-
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("Listen(...) error = %v", err)
-	}
-
-	server := &http.Server{Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusOK)
-		_, _ = writer.Write([]byte("{}"))
-	})}
-	go func() {
-		_ = server.Serve(listener)
-	}()
-
-	return listener.Addr().String(), func() {
-		_ = server.Close()
-		_ = listener.Close()
-	}
-}
-
 func serverURL(port int, path string) string {
 	return fmt.Sprintf("http://127.0.0.1:%d%s", port, path)
 }
@@ -2625,13 +2588,6 @@ func assertRouteDirectoryEmpty(t *testing.T, routesDirectoryPath string) {
 	if len(files) != 0 {
 		t.Fatalf("route files = %#v, want empty", files)
 	}
-}
-
-// reserveUnusedAdminAddress returns an admin address that refuses connections for the whole test, as a Caddy
-// that is not running does.
-func reserveUnusedAdminAddress(t *testing.T) string {
-	t.Helper()
-	return nettest.ReserveRefusingAddress(t).String()
 }
 
 func runAutoPortRetryHelper() {

@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/consul/sdk/freeport"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
 )
 
 func TestStackRestartStartupDoesNotAcceptOccupiedAutoPort(t *testing.T) {
@@ -55,7 +55,7 @@ func TestManualRestartPreservesAssignedPortAndStackRestartRecovers(t *testing.T)
 	external := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = io.WriteString(w, "external") }))
 	t.Cleanup(external.Close)
 	body := reloadServiceBody("web", "web", "reload.localhost") + reloadServiceBody("api", "api", "api.localhost") + "REFERENCE = \"{{ services.web.port }}\"\n"
-	fixedPort := freeport.GetOne(t)
+	fixedPort := nettest.ReservePort(t)
 	body += strings.Replace(reloadServiceBody("worker", "worker", "worker.localhost"), "port = \"auto\"", fmt.Sprintf("port = %d", fixedPort), 1)
 	body += fmt.Sprintf("\n[services.external]\nmanaged = false\nport = %d\n", external.Listener.Addr().(*net.TCPAddr).Port)
 	f := startReloadStack(t, body)

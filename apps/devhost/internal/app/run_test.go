@@ -3,8 +3,6 @@ package app
 import (
 	"fmt"
 	"io"
-	"net"
-	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -16,8 +14,8 @@ import (
 	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/version"
 )
 
@@ -123,8 +121,7 @@ func TestRunExplicitManifestBypassesUpwardDiscovery(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
 
-	adminAddress, stopAdminServer := startTestAdminServer(t)
-	defer stopAdminServer()
+	adminAddress := caddytest.StartAdminServer(t)
 
 	manifestDirectoryPath := t.TempDir()
 	manifestPath := writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath, adminAddress)
@@ -154,8 +151,7 @@ func TestRunManifestFromEnvironmentBypassesUpwardDiscovery(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
 
-	adminAddress, stopAdminServer := startTestAdminServer(t)
-	defer stopAdminServer()
+	adminAddress := caddytest.StartAdminServer(t)
 
 	manifestDirectoryPath := t.TempDir()
 	manifestPath := writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath, adminAddress)
@@ -186,8 +182,7 @@ func TestRunManifestModeStartsStackWhenDevtoolsDisabled(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
 
-	adminAddress, stopAdminServer := startTestAdminServer(t)
-	defer stopAdminServer()
+	adminAddress := caddytest.StartAdminServer(t)
 
 	manifestDirectoryPath := t.TempDir()
 	manifestPath := writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath, adminAddress)
@@ -211,8 +206,7 @@ func TestRunManifestModeStartsStackWithoutExplicitManifestPath(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
 
-	adminAddress, stopAdminServer := startTestAdminServer(t)
-	defer stopAdminServer()
+	adminAddress := caddytest.StartAdminServer(t)
 
 	manifestDirectoryPath := t.TempDir()
 	_ = writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath, adminAddress)
@@ -236,8 +230,7 @@ func TestRunManifestModeReportsExistingSameManifestFixedPortClaim(t *testing.T) 
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
 
-	adminAddress, stopAdminServer := startTestAdminServer(t)
-	defer stopAdminServer()
+	adminAddress := caddytest.StartAdminServer(t)
 
 	manifestDirectoryPath := t.TempDir()
 	manifestPath := filepath.Join(manifestDirectoryPath, "devhost.toml")
@@ -416,7 +409,7 @@ func TestRunCaddyStartUsesManifestGlobalSettings(t *testing.T) {
 			}, "\n"))
 
 			manifestDirectoryPath := t.TempDir()
-			adminAddress := reserveUnusedAdminAddress(t)
+			adminAddress := caddytest.UnusedAdminAddress(t)
 			manifestPath := writeManifestWithAdminAddress(t, manifestDirectoryPath, adminAddress, tc.globalOptions...)
 
 			var stdout strings.Builder
@@ -466,7 +459,7 @@ func TestRunCaddyStopWithoutRunningProcess(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
 	manifestDirectoryPath := t.TempDir()
-	manifestPath := writeManifestWithAdminAddress(t, manifestDirectoryPath, reserveUnusedAdminAddress(t))
+	manifestPath := writeManifestWithAdminAddress(t, manifestDirectoryPath, caddytest.UnusedAdminAddress(t))
 
 	var stdout strings.Builder
 	var stderr strings.Builder
@@ -486,7 +479,7 @@ func TestRunCaddyTrustRequiresRunningManagedCaddy(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
 	manifestDirectoryPath := t.TempDir()
-	manifestPath := writeManifestWithAdminAddress(t, manifestDirectoryPath, reserveUnusedAdminAddress(t))
+	manifestPath := writeManifestWithAdminAddress(t, manifestDirectoryPath, caddytest.UnusedAdminAddress(t))
 
 	var stdout strings.Builder
 	var stderr strings.Builder
@@ -526,8 +519,7 @@ func TestRunPreservesSignalExitCodes(t *testing.T) {
 		tc := tt
 		t.Run(tc.name, func(t *testing.T) {
 			stateDirectoryPath := t.TempDir()
-			adminAddress, stopAdminServer := startTestAdminServer(t)
-			defer stopAdminServer()
+			adminAddress := caddytest.StartAdminServer(t)
 
 			manifestDirectoryPath := t.TempDir()
 			startTracePath := filepath.Join(t.TempDir(), "signal-start.txt")
@@ -729,35 +721,6 @@ func assertServiceExitOutput(t *testing.T, output string) {
 	startupCrash := "[hello-stack] Service worker exited before passing its health check with code 0.\n"
 	if output != want && output != startupCrash+want {
 		t.Fatalf("Run(...) stdout = %q, want service exit notification", output)
-	}
-}
-
-// reserveUnusedAdminAddress returns an admin address that refuses connections for the whole test, as a Caddy
-// that is not running does.
-func reserveUnusedAdminAddress(t *testing.T) string {
-	t.Helper()
-	return nettest.ReserveRefusingAddress(t).String()
-}
-
-func startTestAdminServer(t *testing.T) (string, func()) {
-	t.Helper()
-
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("Listen(...) error = %v", err)
-	}
-
-	server := &http.Server{Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusOK)
-		_, _ = writer.Write([]byte("{}"))
-	})}
-	go func() {
-		_ = server.Serve(listener)
-	}()
-
-	return listener.Addr().String(), func() {
-		_ = server.Close()
-		_ = listener.Close()
 	}
 }
 

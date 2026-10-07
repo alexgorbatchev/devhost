@@ -172,9 +172,8 @@ func TestDocumentInjectionBackendCanChangeDuringRequests(t *testing.T) {
 
 func TestDocumentInjectionServerServesRecoveryPageWhenBackendExits(t *testing.T) {
 	t.Parallel()
-	// An exited backend refuses connections.
-	address := nettest.ReserveRefusingAddress(t)
-	server, err := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{BackendHost: address.IP.String(), BackendPort: address.Port})
+	// An exited backend refuses connections, as a reserved port that nothing listens on does.
+	server, err := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{BackendHost: "127.0.0.1", BackendPort: nettest.ReservePort(t)})
 	if err != nil {
 		t.Fatal(err)
 	}

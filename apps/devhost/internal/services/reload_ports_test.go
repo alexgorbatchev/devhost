@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
-	"github.com/hashicorp/consul/sdk/freeport"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
 )
 
 func TestReloadPreservesAutoPortsAndRebindsServiceTemplates(t *testing.T) {
@@ -27,7 +27,7 @@ func TestReloadPreservesAutoPortsAndRebindsServiceTemplates(t *testing.T) {
 		}
 	}
 	api := m.Services["api"]
-	api.Port = &manifest.PortConfig{Number: freeport.GetOne(t)}
+	api.Port = &manifest.PortConfig{Number: nettest.ReservePort(t)}
 	m.Services["api"] = api
 	next, err = resolveReloadPorts(m, previous)
 	if err != nil {

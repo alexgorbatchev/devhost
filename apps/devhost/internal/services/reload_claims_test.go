@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
-	"github.com/hashicorp/consul/sdk/freeport"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
 )
 
 func TestManifestReloadRejectsClaimConflictsBeforeStoppingServices(t *testing.T) {
@@ -20,7 +20,7 @@ func TestManifestReloadRejectsClaimConflictsBeforeStoppingServices(t *testing.T)
 			f := startReloadStack(t, body)
 			route := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "reload.localhost_web_2f.json"))
 			pid := reloadPID(t, route.AppPort)
-			port := freeport.GetOne(t)
+			port := nettest.ReservePort(t)
 			if kind == "host" {
 				claim := caddy.ClaimHostOptions{Host: "worker.localhost", ManifestPath: "/other/devhost.toml", RegistrationsDirectoryPath: f.paths.RegistrationsDirectoryPath}
 				if err := caddy.ClaimHost(claim); err != nil {
@@ -61,7 +61,7 @@ func TestManifestReloadRejectsClaimConflictsBeforeStoppingServices(t *testing.T)
 func TestManifestReloadShutdownCleansDynamicallyAddedResources(t *testing.T) {
 	body := reloadServiceBody("web", "original", "reload.localhost")
 	f := startReloadStack(t, body)
-	port := freeport.GetOne(t)
+	port := nettest.ReservePort(t)
 	worker := strings.ReplaceAll(reloadServiceBody("worker", "worker", "worker.localhost"), "port = \"auto\"", fmt.Sprintf("port = %d", port))
 	f.write(t, body+worker)
 	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reloaded") })

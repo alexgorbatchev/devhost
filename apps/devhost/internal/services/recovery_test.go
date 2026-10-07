@@ -16,9 +16,10 @@ import (
 	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
 	"github.com/gorilla/websocket"
-	"github.com/hashicorp/consul/sdk/freeport"
 )
 
 func TestStartStackKeepsExitedServicesRestartable(t *testing.T) {
@@ -26,8 +27,7 @@ func TestStartStackKeepsExitedServicesRestartable(t *testing.T) {
 		t.Run(strconv.Itoa(code), func(t *testing.T) {
 			statePath := t.TempDir()
 			paths := caddy.CreateManagedCaddyPaths(statePath)
-			admin, stopAdmin := startTestAdminServer(t)
-			defer stopAdmin()
+			admin := caddytest.StartAdminServer(t)
 			writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
 			originalStart, originalRegister, originalUnregister := startDevtoolsControlServer, registerProcessSignals, unregisterProcessSignals
@@ -51,7 +51,7 @@ func TestStartStackKeepsExitedServicesRestartable(t *testing.T) {
 			triggerPath := filepath.Join(t.TempDir(), "exit")
 			pidPath := filepath.Join(t.TempDir(), "pid")
 			failPath := filepath.Join(t.TempDir(), "fail")
-			servicePort := freeport.GetOne(t)
+			servicePort := nettest.ReservePort(t)
 			m := newResolvedManifest(t.TempDir(), admin)
 			m.PrimaryService = "web"
 			m.ServiceOrder = []string{"web", "worker"}

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
@@ -63,8 +64,7 @@ func TestStackRoutesPreservesExplicitManagementVotes(t *testing.T) {
 
 func TestStackRoutesRestoresDocumentBackendOnReloadFailure(t *testing.T) {
 	paths := caddy.CreateManagedCaddyPaths(t.TempDir())
-	admin, stopAdmin := startTestAdminServer(t)
-	defer stopAdmin()
+	admin := caddytest.StartAdminServer(t)
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 	if err := caddy.EnsureManagedCaddyConfig(paths, caddy.ManagedCaddyConfigFallback{AdminAddress: admin}); err != nil {
 		t.Fatal(err)
