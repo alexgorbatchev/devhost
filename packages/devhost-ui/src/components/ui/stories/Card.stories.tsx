@@ -1,10 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, within } from "storybook/test";
+import { expect } from "storybook/test";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../Card";
 import {
-  devtoolsStoryShadowRootHostTestId,
-  readShadowRoot,
+  readDevtoolsStoryShadowCanvas,
   renderInDevtoolsStoryShadowRoot,
 } from "../../../devtools/shared/components/stories/helpers";
 import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
@@ -33,10 +32,7 @@ type Story = StoryObj<typeof meta>;
 const Default: Story = {
   args: {},
   play: async ({ canvasElement }): Promise<void> => {
-    const canvas = within(canvasElement);
-    const hostElement = canvas.getByTestId(devtoolsStoryShadowRootHostTestId);
-    const shadowRoot: ShadowRoot = readShadowRoot(hostElement, "Card story shadow root was not created.");
-    const shadowCanvas = within(shadowRoot as unknown as HTMLElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
 
     await expect(shadowCanvas.getByText("Service status")).toBeInTheDocument();
     await expect(shadowCanvas.getByText("api is healthy")).toBeInTheDocument();

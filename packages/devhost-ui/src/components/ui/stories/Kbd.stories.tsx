@@ -1,10 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, within } from "storybook/test";
+import { expect } from "storybook/test";
 
 import { Kbd, KbdGroup } from "../Kbd";
 import {
-  devtoolsStoryShadowRootHostTestId,
-  readShadowRoot,
+  readDevtoolsStoryShadowCanvas,
   renderInDevtoolsStoryShadowRoot,
 } from "../../../devtools/shared/components/stories/helpers";
 import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
@@ -32,7 +31,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   play: async ({ canvasElement }): Promise<void> => {
-    const shadowCanvas = readKbdShadowCanvas(canvasElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
 
     await expect(shadowCanvas.getByText("Cmd")).toBeInTheDocument();
     await expect(shadowCanvas.getByText("Enter")).toBeInTheDocument();
@@ -50,7 +49,7 @@ export const LightOnPrimary: Story = {
       </StorybookThemeProvider>,
     ),
   play: async ({ canvasElement }): Promise<void> => {
-    const shadowCanvas = readKbdShadowCanvas(canvasElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
     await expect(readContrastRatio(shadowCanvas.getByText("⌘↵"))).toBeGreaterThanOrEqual(4.5);
   },
 };
@@ -66,15 +65,7 @@ export const LightOnSecondary: Story = {
       </StorybookThemeProvider>,
     ),
   play: async ({ canvasElement }): Promise<void> => {
-    const shadowCanvas = readKbdShadowCanvas(canvasElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
     await expect(readContrastRatio(shadowCanvas.getByText("⌘K"))).toBeGreaterThanOrEqual(4.5);
   },
 };
-
-function readKbdShadowCanvas(canvasElement: HTMLElement): ReturnType<typeof within> {
-  const canvas = within(canvasElement);
-  const hostElement = canvas.getByTestId(devtoolsStoryShadowRootHostTestId);
-  const shadowRoot: ShadowRoot = readShadowRoot(hostElement, "Kbd story shadow root was not created.");
-
-  return within(shadowRoot as unknown as HTMLElement);
-}

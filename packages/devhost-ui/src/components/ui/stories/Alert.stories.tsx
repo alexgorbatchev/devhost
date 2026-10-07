@@ -1,11 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, within } from "storybook/test";
+import { expect } from "storybook/test";
 
 import { Button } from "../Button";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "../Alert";
 import {
-  devtoolsStoryShadowRootHostTestId,
-  readShadowRoot,
+  readDevtoolsStoryShadowCanvas,
   renderInDevtoolsStoryShadowRoot,
 } from "../../../devtools/shared/components/stories/helpers";
 import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
@@ -40,7 +39,7 @@ type Story = StoryObj<typeof meta>;
 
 const Default: Story = {
   play: async ({ canvasElement }): Promise<void> => {
-    const shadowCanvas = readAlertShadowCanvas(canvasElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
 
     const alerts = shadowCanvas.getAllByRole("alert");
 
@@ -52,11 +51,3 @@ const Default: Story = {
 };
 
 export { Default as Alert };
-
-function readAlertShadowCanvas(canvasElement: HTMLElement): ReturnType<typeof within> {
-  const canvas = within(canvasElement);
-  const hostElement = canvas.getByTestId(devtoolsStoryShadowRootHostTestId);
-  const shadowRoot: ShadowRoot = readShadowRoot(hostElement, "Alert story shadow root was not created.");
-
-  return within(shadowRoot as unknown as HTMLElement);
-}

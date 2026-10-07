@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, fn, userEvent, waitFor, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor } from "storybook/test";
 
 import { InlineNotice } from "../InlineNotice";
-import { devtoolsStoryShadowRootHostTestId, readShadowRoot, renderInDevtoolsStoryShadowRoot } from "./helpers";
+import { readDevtoolsStoryShadowCanvas, renderInDevtoolsStoryShadowRoot } from "./helpers";
 import { StorybookThemeProvider } from "./helpers";
 
 const meta: Meta<typeof InlineNotice> = {
@@ -29,7 +29,7 @@ export const Default: Story = {
     tone: "danger",
   },
   play: async ({ canvasElement }): Promise<void> => {
-    const shadowCanvas = readInlineNoticeShadowCanvas(canvasElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
 
     await expect(shadowCanvas.getByRole("alert")).toHaveTextContent("Connection failed");
     await expect(shadowCanvas.getByRole("button", { name: "Retry" })).toBeInTheDocument();
@@ -43,7 +43,7 @@ export const Copyable: Story = {
     tone: "danger",
   },
   play: async ({ canvasElement }): Promise<void> => {
-    const shadowCanvas = readInlineNoticeShadowCanvas(canvasElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
     const writeText = fn().mockResolvedValue(undefined);
     const restore = stubClipboard({ writeText });
 
@@ -72,7 +72,7 @@ export const CopyError: Story = {
     tone: "danger",
   },
   play: async ({ canvasElement }): Promise<void> => {
-    const shadowCanvas = readInlineNoticeShadowCanvas(canvasElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
     const restore = stubClipboard(undefined);
 
     try {
@@ -99,7 +99,7 @@ export const Dismissible: Story = {
     tone: "danger",
   },
   play: async ({ args, canvasElement }): Promise<void> => {
-    const shadowCanvas = readInlineNoticeShadowCanvas(canvasElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
 
     await userEvent.click(shadowCanvas.getByRole("button", { name: "Dismiss" }));
     await expect(args.onDismiss).toHaveBeenCalledTimes(1);
@@ -124,12 +124,4 @@ function stubClipboard(replacement: IClipboardStub | undefined): RestoreClipboar
       Object.defineProperty(Navigator.prototype, "clipboard", descriptor);
     }
   };
-}
-
-function readInlineNoticeShadowCanvas(canvasElement: HTMLElement): ReturnType<typeof within> {
-  const canvas = within(canvasElement);
-  const hostElement = canvas.getByTestId(devtoolsStoryShadowRootHostTestId);
-  const shadowRoot: ShadowRoot = readShadowRoot(hostElement, "InlineNotice story shadow root was not created.");
-
-  return within(shadowRoot as unknown as HTMLElement);
 }
