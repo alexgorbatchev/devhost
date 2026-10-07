@@ -7,7 +7,7 @@ This `AGENTS.md` file must be kept up to date.
 Its vital that when devtools are injected into the user's web application, CSS that devtools uses/defines must never ever conflict or affect the host application.
 
 - The injected devtools UI must mount inside its own Shadow DOM root.
-- Devtools component styling must use the Tailwind v4 entry stylesheet at `shared/devtools.css`; runtime and Storybook must install that compiled CSS through `shared/devtoolsStyles.ts` into the active Shadow DOM root.
+- Devtools component styling must use the Tailwind v4 entry stylesheet at `shared/devtools.css`; runtime and Storybook must install that compiled CSS through `shared/devtoolsStyles.ts` into the active Shadow DOM root. The CSS text comes from `shared/devtoolsCssText.ts`, an empty placeholder that each build replaces: `apps/devhost/scripts/buildDevtoolsBundle.ts` for the shipped runtime and the `inlineDevtoolsStylesheet` plugin in `vite.config.ts` for Storybook (dev server and static build) and browser tests. Do not read the stylesheet out of the page.
 - shadcn/ui primitives live under `packages/devhost-ui/src/components/ui/` and may be composed by devtools features. Put app-specific behavior or stable test IDs in devtools-owned wrappers under `shared/` instead of forking generated primitives.
 - Tailwind Preflight is allowed only inside the devtools Shadow DOM root. Do not load the devtools stylesheet into host-page globals.
 - Do not add CSS modules, document-global CSS, or host-page global CSS for devtools UI styling.
