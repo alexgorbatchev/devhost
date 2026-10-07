@@ -25,7 +25,7 @@ func TestValidateCodexAnnotationAction(t *testing.T) {
 				t.Fatal(err)
 			}
 			action := m.Annotation.Actions[0]
-			if action.Agent.Kind != "codex" || action.Agent.DisplayName != "Codex" || action.DisplayName != "Codex" || action.ID != m.Annotation.DefaultActionID {
+			if action.Agent.Kind != "codex" || action.DisplayName != "Codex" || action.ID != m.Annotation.DefaultActionID {
 				t.Fatalf("normalized Codex action = %#v, default = %q", action, m.Annotation.DefaultActionID)
 			}
 			want := make([]string, len(args))

@@ -8,8 +8,8 @@ Use this reference when a `devhost.toml` manifest needs an annotation `kind = "a
 - Built-in adapters accept an optional `args = ["..."]` string array to pass extra CLI flags (e.g., model, thinking level, or permission modes) while preserving built-in status reporting and prompt handoff. An empty array `args = []` is accepted when no extra arguments are passed.
 - `args` is only valid when `adapter` is configured; it cannot be used with custom command agents.
 - Do not invent project-local adapter names. A new `adapter = "..."` value requires devhost Go code changes and a release.
-- Use a custom command for user-provided or project-local agent integrations. Custom agent actions omit `adapter` and use `displayName`, `command`, optional `cwd`, and optional `env` inside `[annotation.actions.agent]`.
-- Omit `label` on agent actions. It defaults to the agent's name: `Pi`, `Claude Code`, `OpenCode`, or `Codex` for a built-in adapter, or the custom `displayName`. Set `label` only to tell apart actions that share an agent. Command actions require `label`.
+- Use a custom command for user-provided or project-local agent integrations. Custom agent actions omit `adapter`, set `label` on the action, and use `command`, optional `cwd`, and optional `env` inside `[annotation.actions.agent]`.
+- Omit `label` on built-in adapter actions. It defaults to the adapter's name: `Pi`, `Claude Code`, `OpenCode`, or `Codex`. Set `label` only to tell apart actions that share an adapter. Custom agent actions and command actions require `label`.
 
 ## Built-in adapter form
 
@@ -95,10 +95,10 @@ defaultAction = "fix"
 
 [[annotation.actions]]
 id = "fix"
+label = "My Agent"
 kind = "agent"
 
 [annotation.actions.agent]
-displayName = "My Agent"
 command = ["./scripts/devhost-agent.sh"]
 cwd = "."
 
@@ -108,7 +108,7 @@ MY_AGENT_MODE = "annotation"
 
 Rules:
 
-- Set `displayName` to the label shown in the UI.
+- Set the action's `label` to the name shown in the UI.
 - Use a string-array `command`; devhost executes it directly, not through a shell.
 - Keep `cwd` at the manifest directory unless the agent must run elsewhere.
 - Prefer a real executable or script path in `command` over inline shell behavior.
@@ -133,7 +133,7 @@ Devhost injects these environment variables for custom commands:
 - `DEVHOST_ANNOTATION_PROMPT_FILE`: rendered prompt text.
 - `DEVHOST_ANNOTATION_TRANSPORT`: currently `files`.
 - `DEVHOST_ANNOTATION_ACTION_ID`, `DEVHOST_ANNOTATION_ACTION_KIND`: the action's `id` and `kind`.
-- `DEVHOST_ANNOTATION_ACTION_LABEL`: the action's `label`, or its `displayName` when `label` is omitted.
+- `DEVHOST_ANNOTATION_ACTION_LABEL`: the action's label.
 - `DEVHOST_PROJECT_ROOT`: manifest project root, remapped into the selected repository checkout when worktree support is enabled.
 - `DEVHOST_STACK_NAME`: devhost stack name.
 

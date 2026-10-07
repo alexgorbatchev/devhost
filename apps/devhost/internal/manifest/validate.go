@@ -192,9 +192,9 @@ func validateAnnotationAction(index int, value map[string]any, manifestDirectory
 	case "agent":
 		return validateAgentAnnotationAction(actionID, actionLabel, value, manifestDirectoryPath, schemaIssues, validationIssues)
 	case "command":
-		// A command has no name to fall back on, unlike an agent.
+		// A command has no name to fall back on, unlike a built-in agent adapter.
 		if !hasLabel {
-			*schemaIssues = append(*schemaIssues, fmt.Sprintf("annotation.actions.%s.label Expected a non-empty string.", actionID))
+			appendMissingLabelIssue(actionID, schemaIssues)
 			return ValidatedAnnotationAction{ID: actionID, Kind: actionKind}
 		}
 		return validateCommandAnnotationAction(actionID, actionLabel, value, manifestDirectoryPath, schemaIssues, validationIssues)
@@ -213,12 +213,21 @@ func validateAgentAnnotationAction(actionID string, actionLabel string, value ma
 	if !ok {
 		return ValidatedAnnotationAction{DisplayName: actionLabel, ID: actionID, Kind: "agent"}
 	}
-	allowKeys(agentValue, []string{"adapter", "args", "command", "cwd", "displayName", "env"}, "annotation.actions."+actionID+".agent", schemaIssues)
+	allowKeys(agentValue, []string{"adapter", "args", "command", "cwd", "env"}, "annotation.actions."+actionID+".agent", schemaIssues)
 	agent := validateAgentActionFields("annotation.actions."+actionID+".agent", agentValue, manifestDirectoryPath, schemaIssues, validationIssues)
-	if agent.DisplayName == "" || agent.Kind == "" {
+	if agent.Kind == "" {
 		return ValidatedAnnotationAction{DisplayName: actionLabel, ID: actionID, Kind: "agent"}
 	}
-	return createAgentAnnotationAction(actionID, actionLabel, agent)
+	if actionLabel == "" {
+		adapterLabel, isAdapter := adapterLabels[agent.Kind]
+		if !isAdapter {
+			// A custom agent has no built-in name to fall back on.
+			appendMissingLabelIssue(actionID, schemaIssues)
+			return ValidatedAnnotationAction{ID: actionID, Kind: "agent"}
+		}
+		actionLabel = adapterLabel
+	}
+	return ValidatedAnnotationAction{Agent: agent, DisplayName: actionLabel, ID: actionID, Kind: "agent"}
 }
 
 func validateCommandAnnotationAction(actionID string, actionLabel string, value map[string]any, manifestDirectoryPath string, schemaIssues *[]string, validationIssues *[]string) ValidatedAnnotationAction {
@@ -254,12 +263,16 @@ func validateCommandAnnotationAction(actionID string, actionLabel string, value 
 	}
 }
 
-// createAgentAnnotationAction labels the action with the agent's display name when the manifest sets no label.
-func createAgentAnnotationAction(actionID string, actionLabel string, agent ValidatedAgent) ValidatedAnnotationAction {
-	if actionLabel == "" {
-		actionLabel = agent.DisplayName
-	}
-	return ValidatedAnnotationAction{Agent: agent, DisplayName: actionLabel, ID: actionID, Kind: "agent"}
+// adapterLabels are the built-in agent adapters and the labels their actions take when the manifest sets none.
+var adapterLabels = map[string]string{
+	"pi":          "Pi",
+	"claude-code": "Claude Code",
+	"opencode":    "OpenCode",
+	"codex":       "Codex",
+}
+
+func appendMissingLabelIssue(actionID string, schemaIssues *[]string) {
+	*schemaIssues = append(*schemaIssues, fmt.Sprintf("annotation.actions.%s.label Expected a non-empty string.", actionID))
 }
 
 func validateAgentActionFields(path string, value map[string]any, manifestDirectoryPath string, schemaIssues *[]string, validationIssues *[]string) ValidatedAgent {
@@ -267,29 +280,19 @@ func validateAgentActionFields(path string, value map[string]any, manifestDirect
 	adapterValue, hasAdapter := readOptionalString(value, "adapter", schemaIssues)
 	argsValue, hasArgs := readOptionalStringArrayAllowEmpty(value, "args", schemaIssues)
 	commandValue, hasCommand := readOptionalStringArray(value, "command", schemaIssues)
-	displayName, hasDisplayName := readOptionalNonEmptyString(value, "displayName", schemaIssues)
 	cwdValue, hasCwd := readOptionalString(value, "cwd", schemaIssues)
 	envValue, hasEnv := readOptionalStringMap(value, "env", schemaIssues)
 
 	if hasAdapter {
-		if hasCommand || hasDisplayName || hasCwd || hasEnv {
+		if hasCommand || hasCwd || hasEnv {
 			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must define either adapter or custom command fields, not both.", path))
 			return ValidatedAgent{}
 		}
-
-		switch adapterValue {
-		case "pi":
-			return ValidatedAgent{Args: argsValue, DisplayName: "Pi", Kind: "pi"}
-		case "claude-code":
-			return ValidatedAgent{Args: argsValue, DisplayName: "Claude Code", Kind: "claude-code"}
-		case "opencode":
-			return ValidatedAgent{Args: argsValue, DisplayName: "OpenCode", Kind: "opencode"}
-		case "codex":
-			return ValidatedAgent{Args: argsValue, DisplayName: "Codex", Kind: "codex"}
-		default:
+		if _, isAdapter := adapterLabels[adapterValue]; !isAdapter {
 			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.adapter must be one of pi, claude-code, opencode, or codex.", path))
 			return ValidatedAgent{}
 		}
+		return ValidatedAgent{Args: argsValue, Kind: adapterValue}
 	}
 
 	if hasArgs {
@@ -297,8 +300,8 @@ func validateAgentActionFields(path string, value map[string]any, manifestDirect
 		return ValidatedAgent{}
 	}
 
-	if !hasCommand || !hasDisplayName {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must define adapter or both command and displayName.", path))
+	if !hasCommand {
+		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must define adapter or command.", path))
 		return ValidatedAgent{}
 	}
 
@@ -314,11 +317,10 @@ func validateAgentActionFields(path string, value map[string]any, manifestDirect
 	}
 
 	return ValidatedAgent{
-		Command:     commandValue,
-		Cwd:         resolvedCwd,
-		DisplayName: displayName,
-		Env:         validatedEnv,
-		Kind:        "configured",
+		Command: commandValue,
+		Cwd:     resolvedCwd,
+		Env:     validatedEnv,
+		Kind:    "configured",
 	}
 }
 

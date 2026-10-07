@@ -164,7 +164,7 @@ When the host page is a React development build that exposes component source me
 
 Configure annotation launchers with a root-level `[annotation]` table and one or more `[[annotation.actions]]` entries.
 If you omit `[annotation]`, `devhost` does not expose annotation submission actions in the injected UI.
-Each action declares a stable `id` and a `kind`. The `label` names the action in the composer: command actions require it, and agent actions default it to the agent's name (`Pi`, `Claude Code`, `OpenCode`, or `Codex` for a built-in adapter, or the custom agent's `displayName`). Set `label` on an agent action to tell apart actions that share an agent. Set `defaultAction` when the UI should preselect an action other than the first one.
+Each action declares a stable `id` and a `kind`. The `label` names the action in the composer. Actions that use a built-in agent adapter default it to the adapter's name (`Pi`, `Claude Code`, `OpenCode`, or `Codex`); set `label` on them to tell apart actions that share an adapter. Custom agent actions and command actions require `label`. Set `defaultAction` when the UI should preselect an action other than the first one.
 
 Agent actions use the existing built-in integrations:
 
@@ -182,7 +182,7 @@ args = ["--thinking", "high"]
 ```
 
 Supported agent adapters are `"pi"`, `"claude-code"`, `"opencode"`, and `"codex"`. Built-in adapters accept an optional `args` string array to pass harness flags (such as a model, thinking level, or permission mode) while keeping status reporting, hooks, and prompt file arguments intact.
-For a custom agent action, omit `adapter` and set `command` plus `displayName` inside `[annotation.actions.agent]`; `displayName` names the agent and labels the action in the composer unless the parent `label` is set (`args` is valid only with `adapter`).
+For a custom agent action, omit `adapter`, set `command` inside `[annotation.actions.agent]`, and give the action a `label` (`args` is valid only with `adapter`).
 
 For Codex, install and sign in to the [Codex CLI](https://learn.chatgpt.com/docs/cli), then use:
 
