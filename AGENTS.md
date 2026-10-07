@@ -71,6 +71,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 
 ## Shipping
 
+- CI: `.github/workflows/ci.yml` runs `just check` on every push to `main` and on pull requests.
 - Docs deploy entrypoint: push docs changes to `main` so `.github/workflows/docs.yml` publishes `packages/docs` to GitHub Pages.
 - CLI release entrypoint: push a tag like `v0.0.2`. `apps/devhost/RELEASE.md` and `.github/workflows/publish.yml` are the authoritative GitHub Release binary procedure.
 
