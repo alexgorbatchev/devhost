@@ -118,15 +118,22 @@ func (s *ControlServer) handleAnnotationQueueWebsocket(writer http.ResponseWrite
 		return
 	}
 
-	snapshot := s.annotationQueueStore.getSnapshot()
-	s.mu.Lock()
-	if s.annotationQueueClients == nil {
-		s.annotationQueueClients = map[*websocketClient]struct{}{}
-	}
-	s.annotationQueueClients[client] = struct{}{}
-	s.mu.Unlock()
-
-	if err := writeJSONMessage(client, createAnnotationQueueSnapshotMessage(snapshot)); err != nil {
+	// The client becomes reachable by queue changes while the store still withholds them and with its write lock
+	// already taken. Every later change therefore waits until this snapshot is written, and none is missed.
+	var snapshot []annotationQueueSnapshot
+	s.annotationQueueStore.withSnapshot(func(queues []annotationQueueSnapshot) {
+		snapshot = queues
+		s.mu.Lock()
+		if s.annotationQueueClients == nil {
+			s.annotationQueueClients = map[*websocketClient]struct{}{}
+		}
+		s.annotationQueueClients[client] = struct{}{}
+		client.writeMu.Lock()
+		s.mu.Unlock()
+	})
+	err = client.writeJSONMessagesLocked([]any{createAnnotationQueueSnapshotMessage(snapshot)})
+	client.writeMu.Unlock()
+	if err != nil {
 		s.removeAnnotationQueueClient(client)
 		return
 	}

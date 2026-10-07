@@ -141,6 +141,9 @@ type ControlServer struct {
 	ctx        context.Context
 	cancel     context.CancelFunc
 	buildMu    sync.Mutex
+	// healthMu makes recording the health sent last and sending it one step, so the health every client holds is the
+	// recorded one.
+	healthMu sync.Mutex
 
 	mu                     sync.Mutex
 	isStopped              bool
@@ -503,23 +506,38 @@ func (s *ControlServer) PublishHealthResponse() error {
 		return nil
 	}
 
+	return s.publishHealth(nil)
+}
+
+// publishHealth reads the stack health and sends it to every client it is news to: all of them when it differs
+// from the health sent last, and otherwise only newClient, which has received none yet. newClient is the client an
+// attach is adding, or nil.
+func (s *ControlServer) publishHealth(newClient *websocketClient) error {
 	healthMessage, err := s.resolveHealthMessage()
-	if err != nil || healthMessage == "" {
+	if err != nil {
 		return err
 	}
 
+	// With two sends interleaved, a client could end up holding health other than the recorded one, and the next
+	// publish of the recorded health would be skipped as nothing new.
+	s.healthMu.Lock()
+	defer s.healthMu.Unlock()
+
 	s.mu.Lock()
-	if healthMessage == s.lastPublishedHealth {
-		s.mu.Unlock()
-		return nil
+	if newClient != nil {
+		s.healthClients[newClient] = struct{}{}
 	}
-	s.lastPublishedHealth = healthMessage
-	clients := snapshotClients(s.healthClients)
+	var recipients []*websocketClient
+	switch {
+	case healthMessage != s.lastPublishedHealth:
+		s.lastPublishedHealth = healthMessage
+		recipients = snapshotClients(s.healthClients)
+	case newClient != nil:
+		recipients = []*websocketClient{newClient}
+	}
 	s.mu.Unlock()
 
-	s.broadcast(clients, healthMessage, func(client *websocketClient) {
-		s.removeHealthClient(client)
-	})
+	s.broadcast(recipients, healthMessage, s.removeHealthClient)
 	return nil
 }
 
@@ -741,24 +759,10 @@ func (s *ControlServer) handleHealthWebsocket(writer http.ResponseWriter, reques
 		return
 	}
 
-	healthMessage, err := s.resolveHealthMessage()
-	if err != nil {
+	// Attaching publishes: the health read for this client goes to the earlier clients too when it is new to them.
+	if err := s.publishHealth(client); err != nil {
 		client.close()
 		return
-	}
-	if healthMessage != "" {
-		s.mu.Lock()
-		s.lastPublishedHealth = healthMessage
-		s.healthClients[client] = struct{}{}
-		s.mu.Unlock()
-		if err := client.write(websocket.TextMessage, []byte(healthMessage)); err != nil {
-			s.removeHealthClient(client)
-			return
-		}
-	} else {
-		s.mu.Lock()
-		s.healthClients[client] = struct{}{}
-		s.mu.Unlock()
 	}
 
 	go s.readUntilClosed(client, s.removeHealthClient)
@@ -773,10 +777,13 @@ func (s *ControlServer) handleLogsWebsocket(writer http.ResponseWriter, request 
 	s.mu.Lock()
 	s.logsClients[client] = struct{}{}
 	snapshot := append([]ServiceLogEntry{}, s.retainedLogEntries...)
+	// The client is now reachable by new entries. Taking its write lock before releasing the server lock makes them
+	// wait, so the snapshot they extend always arrives first.
+	client.writeMu.Lock()
 	s.mu.Unlock()
-
-	message, _ := json.Marshal(serviceLogSnapshotMessage{Entries: snapshot, Type: "snapshot"})
-	if err := client.write(websocket.TextMessage, message); err != nil {
+	err = client.writeJSONMessagesLocked([]any{serviceLogSnapshotMessage{Entries: snapshot, Type: "snapshot"}})
+	client.writeMu.Unlock()
+	if err != nil {
 		s.removeLogsClient(client)
 		return
 	}

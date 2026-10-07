@@ -201,6 +201,14 @@ func (s *annotationQueueStore) getSnapshot() []annotationQueueSnapshot {
 	return s.createSnapshotsLocked()
 }
 
+// withSnapshot calls use with the current queues. No change is published until use returns, so a listener that
+// use registers has seen exactly this snapshot: it misses no change and receives none that the snapshot includes.
+func (s *annotationQueueStore) withSnapshot(use func(queues []annotationQueueSnapshot)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	use(s.createSnapshotsLocked())
+}
+
 func (s *annotationQueueStore) enqueue(actionID string, annotation annotationSubmitDetail, colorScheme agentColorScheme, targetSessionID *string) (queueSessionResult, error) {
 	if actionID == "" {
 		actionID = defaultAnnotationActionID

@@ -183,7 +183,8 @@ The token-free native browser WebSocket requires the exact current Origin/Host, 
 ## Control server and test networking rules
 
 - Never close a websocket client while holding the control server lock: a close waits for that client's in-flight write, which can stall on a dead connection. Drop the client from server state under the lock, release it, then close.
-- A client attaching to a terminal session must receive its snapshot before any broadcast. The attach path takes the client's write lock before releasing the server lock for exactly that reason; keep the order when changing it.
+- A client attaching to a terminal session, the log stream, or the annotation queues must receive its snapshot before any broadcast. Each attach path takes the client's write lock before the client becomes reachable for exactly that reason; keep the order when changing it. The queue attach also registers inside `annotationQueueStore.withSnapshot`, because queue changes are published under the store lock.
+- Health has no snapshot message: `publishHealth` records the health sent last and sends it as one step under `healthMu`, and an attach goes through it, so the health read for a new client also reaches the earlier clients it is news to. Do not set `lastPublishedHealth` anywhere else.
 - Resolve an annotation session's action when the session is created and keep its label on the session; the session list returns that label to the browser.
 - A test that needs an address nothing listens on uses `internal/nettest.ReserveRefusingAddress`. Do not close a listener and expect its port to stay unused: another test or process can claim it first.
 - A test that hands a port number to devhost or to a child process takes it from `freeport.GetOne(t)` or `freeport.GetN(t, n)` (`github.com/hashicorp/consul/sdk/freeport`). Those ports lie outside the range the kernel assigns to `:0` listeners, and each one returns to the pool when the test ends.
