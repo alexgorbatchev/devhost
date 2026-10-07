@@ -42,7 +42,9 @@ describe("devBootstrap", () => {
     const installed = Bun.spawn([binaryPath, "--version"]);
     expect(await new Response(installed.stdout).text()).toBe(`999.0.0-dev.${revisionText}\n`);
     expect(await installed.exited).toBe(0);
-  });
+    // This test compiles devhost. With an empty Go build cache (a new toolchain, a fresh runner) the build alone
+    // outlasts the default five seconds.
+  }, 120_000);
 
   it("replaces the shim's versioned payload, preserves the shim, and leaves an executable", async () => {
     const shimText = await Bun.file(shimPath).text();
