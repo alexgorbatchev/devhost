@@ -63,13 +63,15 @@ export function useServiceHealth(): IUseServiceHealthResult {
       setErrorMessage(null);
     };
 
-    return openReconnectingWebSocket(createDevtoolsWebSocketUrl(HEALTH_WEBSOCKET_PATH, window.location), {
+    const stream = openReconnectingWebSocket(createDevtoolsWebSocketUrl(HEALTH_WEBSOCKET_PATH, window.location), {
       onDisconnect: handleDisconnect,
       onMessage: handleMessage,
       onOpen: (): void => {
         setErrorMessage(null);
       },
     });
+
+    return stream.close;
   }, [devtoolsStackName, updateHealth]);
 
   const refreshWorktrees = useCallback(async (): Promise<string | null> => {

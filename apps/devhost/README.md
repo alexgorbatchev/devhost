@@ -125,7 +125,7 @@ If a foreground service exits, including with exit code `0` or before its startu
 
 With `[devtools.status].enabled = true`, an exited service opens a full-screen recovery overlay in pages with injected devtools. The overlay shows its exit code, retained stdout/stderr logs, and a **Restart** button. Failed restarts keep the overlay open with an error and allow another attempt. Refreshing a root-compatible routed app while its backend is unavailable returns a recovery page with the same devtools; a successful restart reloads that page. Daemon lifecycle services and external services report health without foreground process exit codes. Executable launch errors and health timeouts still fail startup.
 
-When a page loses its connection to devhost, for example after the machine sleeps, the Services panel shows every service as unavailable and the injected UI reconnects on its own, retrying every one to ten seconds.
+When a page loses its connection to devhost, for example after the machine sleeps, the Services panel shows every service as unavailable and the injected UI reconnects on its own, retrying every one to ten seconds. Open terminals reattach to their sessions the same way.
 
 A foreground restart preserves its assigned automatic port and completes after the replacement passes its health check and its routes refresh. If the port is occupied, the service remains stopped and the error points to **Restart stack with new ports**. A routing failure restores the previous route registration, configuration, and document backend, stops the replacement, and keeps recovery retryable. The restart response and retained service logs include the error; restoration failures are also reported.
 

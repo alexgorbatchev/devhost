@@ -1,6 +1,6 @@
 import { act, renderHook, type RenderHookResult } from "@testing-library/react";
 import type { RefObject } from "react";
-import { afterEach, assert, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, assert, beforeEach, describe, expect, test, vi } from "vitest";
 
 import type { IMockWebSocketConnection } from "../../../../../../test-support/createMockWebSocket";
 import {
@@ -58,6 +58,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   webSocket.restore();
 });
 
@@ -95,7 +96,7 @@ describe("useReactHighlightOverlay", () => {
     expect(webSocket.connections).toHaveLength(1);
 
     hook.unmount();
-    expect(connection.readClientClosure()).toEqual({ code: 1000, reason: "" });
+    expect(connection.readClientClosure()).toEqual({ code: 1000, reason: "devtools unmounted" });
   });
 
   test("connects only while enabled and stops listening once disabled", async () => {
@@ -284,5 +285,74 @@ describe("useReactHighlightOverlay", () => {
     secondHook.unmount();
     expect(countClosedConnections()).toBe(2);
     expect(readOverlayLocators(overlayRoot)).toEqual([]);
+  });
+
+  test("clears the highlight when the stream drops and follows the editor again once it reopens", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const renderer = new HighlightRenderer();
+    const overlayRoot = createOverlayRoot();
+
+    renderOverlayHook(renderer, {
+      enabled: true,
+      overlayRootReference: { current: overlayRoot },
+      projectRootPath: "/configured-project",
+    });
+    await settle();
+
+    const connection = readConnection(0);
+
+    await settle(() => sendCursor(connection, "src/First.tsx:10:5"));
+    expect(readOverlayLocators(overlayRoot)).toEqual(["src/First.tsx:10:5"]);
+
+    // Nothing reports the editor's cursor while the stream is down, so the page stops showing the last one.
+    await settle(() => connection.close(1006));
+    expect(readOverlayLocators(overlayRoot)).toEqual([]);
+    expect(webSocket.attemptCount).toBe(1);
+
+    await settle(() => vi.advanceTimersByTime(1_000));
+
+    const reopened = readConnection(1);
+
+    expect(reopened.url.href).toBe(connection.url.href);
+    await settle(() => sendCursor(reopened, "src/Second.tsx:20:5"));
+    expect(readOverlayLocators(overlayRoot)).toEqual(["src/Second.tsx:20:5"]);
+  });
+
+  test("drops a highlight that resolves after the stream dropped", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const renderer = new HighlightRenderer(true);
+    const overlayRoot = createOverlayRoot();
+
+    renderOverlayHook(renderer, {
+      enabled: true,
+      overlayRootReference: { current: overlayRoot },
+      projectRootPath: "/configured-project",
+    });
+    await settle();
+
+    const connection = readConnection(0);
+
+    await settle(() => sendCursor(connection, "src/First.tsx:10:5"));
+    await settle(() => connection.close(1006));
+    await settle(() => renderer.resolveRequest(0));
+
+    expect(readOverlayLocators(overlayRoot)).toEqual([]);
+  });
+
+  test("stops reopening the stream once it unmounts", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const renderer = new HighlightRenderer();
+    const hook = renderOverlayHook(renderer, {
+      enabled: true,
+      overlayRootReference: { current: createOverlayRoot() },
+      projectRootPath: "/configured-project",
+    });
+
+    await settle();
+    await settle(() => readConnection(0).close(1006));
+    hook.unmount();
+    await settle(() => vi.advanceTimersByTime(60_000));
+
+    expect(webSocket.attemptCount).toBe(1);
   });
 });

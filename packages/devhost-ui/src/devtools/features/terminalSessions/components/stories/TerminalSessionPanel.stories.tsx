@@ -11,6 +11,7 @@ import { TerminalSessionPanel } from "../TerminalSessionPanel";
 import type { TerminalSession, TerminalSessionStatus } from "../../types";
 import {
   fixture_agentSession,
+  fixture_agentSessionSnapshot,
   fixture_contrastSession,
   fixture_commandSession,
   fixture_editorSession,
@@ -18,6 +19,11 @@ import {
   fixture_fullscreenAgentSession,
 } from "./fixtures";
 import { readContrastRatio } from "../../../../../../../../test-support/readContrastRatio";
+import {
+  installTerminalSessionMock,
+  type ITerminalSessionMock,
+} from "../../../../../../.storybook/installTerminalSessionMock";
+import type { IMockWebSocketConnection } from "../../../../../../test-support/createMockWebSocket";
 
 const meta: Meta<typeof TerminalSessionPanel> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/terminalSessions/components/TerminalSessionPanel",
@@ -43,6 +49,25 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 type TerminalSessionPanelProps = ComponentProps<typeof TerminalSessionPanel>;
+
+// The devhost a connection-loss story plays. Its `beforeEach` installs it before the panel renders.
+let terminalSessionMock: ITerminalSessionMock;
+
+function installAgentSessionMock(): ITerminalSessionMock["uninstall"] {
+  terminalSessionMock = installTerminalSessionMock(fixture_agentSessionSnapshot, "before the drop\r\n");
+
+  return terminalSessionMock.uninstall;
+}
+
+function readTerminalConnection(index: number): IMockWebSocketConnection {
+  const connection: IMockWebSocketConnection | undefined = terminalSessionMock.connections[index];
+
+  if (connection === undefined) {
+    throw new Error(`The panel has not opened terminal connection ${index + 1}.`);
+  }
+
+  return connection;
+}
 
 // Applies reported status back onto the session, as useTerminalSessions does in the app.
 function TerminalSessionPanelHarness(props: TerminalSessionPanelProps): JSX.Element {
@@ -151,6 +176,63 @@ export const Finished: Story = {
 
     await userEvent.click(await shadowCanvas.findByRole("button", { name: "Close" }));
     await expect(args.onRemove).toHaveBeenCalledTimes(1);
+  },
+};
+
+/** The panel reattaches to its session when the connection drops, as it does after the machine sleeps. */
+export const ReattachesAfterConnectionLoss: Story = {
+  beforeEach: installAgentSessionMock,
+  play: async ({ canvasElement }): Promise<void> => {
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const dialog = await shadowCanvas.findByRole("dialog", { name: "Pi terminal" });
+    const terminal = within(dialog).getByTestId("TerminalSessionPanel--terminal");
+
+    await waitFor(() => expect(dialog).toBeVisible());
+    await within(terminal).findByText("before the drop");
+    await expect(within(dialog).getByText("running")).toBeVisible();
+
+    terminalSessionMock.output = "after the drop\r\n";
+    readTerminalConnection(0).close(1006);
+    await expect(await within(dialog).findByText("disconnected")).toBeVisible();
+
+    // The session's output arrives again, so the terminal shows it once instead of appending it.
+    await within(terminal).findByText("after the drop");
+    await expect(within(terminal).queryByText("before the drop")).toBeNull();
+    await expect(within(dialog).getByText("running")).toBeVisible();
+    await expect(terminalSessionMock.connections).toHaveLength(2);
+
+    // The reattached session learns the terminal's size, and keys reach it.
+    await userEvent.keyboard("ls");
+    await waitFor(() => {
+      const sentFrames: string[] = readTerminalConnection(1).readSentFrames().map(String);
+
+      expect(sentFrames.filter((frame: string): boolean => frame.includes('"type":"resize"'))).not.toEqual([]);
+      expect(sentFrames.filter((frame: string): boolean => frame.includes('"type":"input"'))).toEqual([
+        '{"data":"l","type":"input"}',
+        '{"data":"s","type":"input"}',
+      ]);
+    });
+  },
+};
+
+/** Devhost no longer runs the session, as after it restarted. The panel says so and keeps the output it has. */
+export const SessionEndedWhileDisconnected: Story = {
+  beforeEach: installAgentSessionMock,
+  play: async ({ canvasElement }): Promise<void> => {
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const dialog = await shadowCanvas.findByRole("dialog", { name: "Pi terminal" });
+    const terminal = within(dialog).getByTestId("TerminalSessionPanel--terminal");
+
+    await waitFor(() => expect(dialog).toBeVisible());
+    await within(terminal).findByText("before the drop");
+
+    terminalSessionMock.hasEnded = true;
+    readTerminalConnection(0).close(1006);
+
+    await expect(await within(dialog).findByText("This terminal session is no longer running.")).toBeVisible();
+    await expect(within(dialog).getByText("error")).toBeVisible();
+    await expect(within(terminal).getByText("before the drop")).toBeVisible();
+    await expect(terminalSessionMock.attemptCount).toBe(1);
   },
 };
 

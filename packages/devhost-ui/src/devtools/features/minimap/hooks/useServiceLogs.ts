@@ -40,9 +40,11 @@ export function useServiceLogs(isPaused: boolean): ServiceLogEntry[] {
     };
 
     // The entries shown stay while the stream is down; a reopened stream starts with a fresh snapshot.
-    return openReconnectingWebSocket(createDevtoolsWebSocketUrl(LOGS_WEBSOCKET_PATH, window.location), {
+    const stream = openReconnectingWebSocket(createDevtoolsWebSocketUrl(LOGS_WEBSOCKET_PATH, window.location), {
       onMessage: handleMessage,
     });
+
+    return stream.close;
   }, []);
 
   useEffect(() => {

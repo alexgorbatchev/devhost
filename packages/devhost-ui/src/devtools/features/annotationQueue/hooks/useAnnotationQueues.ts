@@ -52,7 +52,7 @@ export function useAnnotationQueues(enabled: boolean = true): IUseAnnotationQueu
       setErrorMessage(null);
     };
 
-    return openReconnectingWebSocket(createAnnotationQueuesWebSocketUrl(window.location), {
+    const stream = openReconnectingWebSocket(createAnnotationQueuesWebSocketUrl(window.location), {
       onDisconnect: (): void => {
         setErrorMessage("devhost annotation queue stream disconnected.");
       },
@@ -61,6 +61,8 @@ export function useAnnotationQueues(enabled: boolean = true): IUseAnnotationQueu
         setErrorMessage(null);
       },
     });
+
+    return stream.close;
   }, [enabled]);
 
   const saveEntry = useCallback(
