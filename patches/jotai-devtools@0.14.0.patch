@@ -1,0 +1,28 @@
+diff --git a/dist/chunk-JPL4X5V2.esm.mjs b/dist/chunk-JPL4X5V2.esm.mjs
+index 719c16a1c93a88522551e84e17fddec2b535a537..bef57cb300dabd4d189c4325be0e3e8950d865e3 100644
+--- a/dist/chunk-JPL4X5V2.esm.mjs
++++ b/dist/chunk-JPL4X5V2.esm.mjs
+@@ -2678,9 +2678,6 @@ var DevToolsProvider = ({ children }) => {
+ };
+ var InternalDevTools = (props) => {
+   if (process.env.NODE_ENV !== "production") {
+-    console.warn(
+-      "[jotai-devtools]: automatic tree-shaking in development mode is being deprecated. Make sure to tree-shake it out in your applications if you don't want it in production.\n\nFor more information, see https://github.com/jotaijs/jotai-devtools"
+-    );
+     return /* @__PURE__ */ React38.createElement(DevToolsProvider, null, /* @__PURE__ */ React38.createElement(DevToolsMain, { ...props }));
+   }
+   return /* @__PURE__ */ React38.createElement(React38.Fragment, null);
+diff --git a/dist/chunk-SFUUTJEM.cjs.js b/dist/chunk-SFUUTJEM.cjs.js
+index 8f959b394c0a24cf921fabd9a51383b49290d3f6..6873ab805edd816638c57576e82fc4805f080d1c 100644
+--- a/dist/chunk-SFUUTJEM.cjs.js
++++ b/dist/chunk-SFUUTJEM.cjs.js
+@@ -2678,9 +2678,6 @@ var DevToolsProvider = ({ children }) => {
+ };
+ var InternalDevTools = (props) => {
+   if (process.env.NODE_ENV !== "production") {
+-    console.warn(
+-      "[jotai-devtools]: automatic tree-shaking in development mode is being deprecated. Make sure to tree-shake it out in your applications if you don't want it in production.\n\nFor more information, see https://github.com/jotaijs/jotai-devtools"
+-    );
+     return /* @__PURE__ */ React38.createElement(DevToolsProvider, null, /* @__PURE__ */ React38.createElement(DevToolsMain, { ...props }));
+   }
+   return /* @__PURE__ */ React38.createElement(React38.Fragment, null);

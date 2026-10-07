@@ -65,6 +65,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - `apps/devhost/internal/devtools/dist/` contains the generated static entry, lazy chunks, fonts, terminal stylesheet, and gzip assets for Go `//go:embed` and is intentionally ignored; run `just devhost build-devtools-bundle`, `just devhost check`, or `just devhost compile` instead of committing those files. Instance configuration is served separately with `no-store`; production JavaScript and content-versioned assets use immutable caching.
 - Root `postinstall` runs `just ui install-browser`, which uses `playwright install chromium` without `--force` so existing Chromium binaries are reused instead of being re-downloaded on every `bun install`.
 - Keep a single root `bun.lock`. Do not add workspace-local lockfiles.
+- Versioned dependency patches live in `patches/` and are registered by root `package.json` and `bun.lock`; `bun install` applies them. See `packages/devhost-ui/AGENTS.md` for the Jotai Storybook patch and its regression coverage.
 - Browser contrast regressions share `test-support/readContrastRatio.ts`, which measures computed CSS colors and opacity using native canvas compositing. UI stories and docs style tests check minimum contrast ratios instead of fixed token values.
 
 ## Shipping
