@@ -332,7 +332,15 @@ export const TanStackNativeCleanup: Story = {
     const shell = within(await within(document.body).findByTestId("tanstack-devtools-panel"));
     await userEvent.click(await shell.findByRole("button", { name: "TanStack Form" }));
     await userEvent.type(canvas.getByRole("textbox", { name: "Form name" }), " cleanup");
-    await shell.findByText("devhost-form", { exact: true });
+    // TanStack Form reports its state to the devtools through a 300 ms throttle that outlives the form: a report
+    // still pending when the form unmounts arrives after its removal, and the devtools list the form again for
+    // good. Selecting the form moves focus out of the input, which is the form's last change. Once the pane shows
+    // the typed value and that blur, no report is pending.
+    await userEvent.click(await shell.findByText("devhost-form", { exact: true }));
+    await waitFor(() => expect(shell.getAllByText('"Ada cleanup"', { exact: true })).toHaveLength(2));
+    await waitFor(() =>
+      expect(shell.getByText('"isBlurred":', { exact: true }).parentElement).toHaveTextContent('"isBlurred": true'),
+    );
     await userEvent.click(shell.getByRole("button", { name: "TanStack Table" }));
     await shell.findByRole("button", { name: "State" });
     await userEvent.click(shell.getByRole("button", { name: "TanStack Pacer" }));
