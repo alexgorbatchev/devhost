@@ -6,7 +6,7 @@ import type { BrowserContext, Page } from "playwright";
 import tailwindPlugin from "bun-plugin-tailwind";
 import type { EnhancedStore } from "@redux-devtools/instrument";
 import type { Action } from "redux";
-import { createOwnedBrowserEnvironment } from "../../../../../test-support/createOwnedBrowserEnvironment";
+import { createOwnedBrowserEnvironment } from "../../../../../../../test-support/createOwnedBrowserEnvironment";
 import type { registerReduxDevtoolsStore, registerZustandDevtoolsStore } from "../index";
 
 const repositoryRoot: string = resolve(import.meta.dir, "../../../../../../..");

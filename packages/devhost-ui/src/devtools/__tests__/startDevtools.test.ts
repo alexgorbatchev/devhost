@@ -20,7 +20,7 @@ describe("startDevtools", () => {
     host.delayTerminalRuntime();
     let browser: Browser | undefined;
     try {
-      browser = await chromium.launch({ headless: true });
+      browser = await chromium.launch({ env: host.browserEnvironment, headless: true });
       const page = await browser.newPage();
       page.setDefaultTimeout(5000);
       const errors: Error[] = [];
@@ -50,7 +50,7 @@ describe("startDevtools", () => {
     host.failTerminalRuntime();
     let browser: Browser | undefined;
     try {
-      browser = await chromium.launch({ headless: true });
+      browser = await chromium.launch({ env: host.browserEnvironment, headless: true });
       const page = await browser.newPage();
       page.setDefaultTimeout(5000);
       const errors: Error[] = [];
@@ -71,7 +71,7 @@ describe("startDevtools", () => {
     const host = await startBuiltDevtoolsHost();
     let browser: Browser | undefined;
     try {
-      browser = await chromium.launch({ headless: true });
+      browser = await chromium.launch({ env: host.browserEnvironment, headless: true });
       const page = await browser.newPage();
       const errors: Error[] = [];
       page.on("pageerror", (error) => errors.push(error));

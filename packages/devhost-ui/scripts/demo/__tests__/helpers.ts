@@ -2,6 +2,7 @@ import assert, { AssertionError } from "node:assert/strict";
 import { rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { chromium, type Browser } from "playwright";
+import { createOwnedBrowserEnvironment } from "../../../../../test-support/createOwnedBrowserEnvironment";
 import { createDemoPage } from "../createDemoPage";
 import { createDemoRuntime } from "../createDemoRuntime";
 import { recordBrowserScene } from "../recordBrowserScene";
@@ -27,7 +28,8 @@ const runtime: IDemoRuntime = {
 };
 let browser: Browser | undefined;
 try {
-  browser = await chromium.launch();
+  // The test that runs this script gives it a working directory of its own.
+  browser = await chromium.launch({ env: await createOwnedBrowserEnvironment(process.cwd()) });
   const page = await createDemoPage(browser, runtime);
   const signal = new AbortController().signal;
   const first = await recordBrowserScene(

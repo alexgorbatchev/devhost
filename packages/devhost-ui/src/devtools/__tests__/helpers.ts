@@ -3,8 +3,11 @@ import { resolve } from "node:path";
 
 import { buildDevtoolsBundle } from "../../../../../apps/devhost/scripts/buildDevtoolsBundle";
 import type { IStartEditorTerminalSessionRequest } from "../features/terminalSessions/types";
+import { createOwnedBrowserEnvironment } from "../../../../../test-support/createOwnedBrowserEnvironment";
 
 interface IBuiltDevtoolsHost {
+  /** The environment for the browser a test opens this host in. Its home lives in the host's own directory. */
+  browserEnvironment: NodeJS.ProcessEnv;
   close: () => Promise<void>;
   requests: string[];
   requestUrls: string[];
@@ -27,6 +30,7 @@ export async function startBuiltDevtoolsHost(): Promise<IBuiltDevtoolsHost> {
     await rm(directoryPath, { recursive: true, force: true });
     throw error;
   }
+  const browserEnvironment: NodeJS.ProcessEnv = await createOwnedBrowserEnvironment(directoryPath);
   const requests: string[] = [];
   const requestUrls: string[] = [];
   const requestHeaders: Headers[] = [];
@@ -128,6 +132,7 @@ export async function startBuiltDevtoolsHost(): Promise<IBuiltDevtoolsHost> {
     failTerminalRuntime: (): void => {
       shouldFailTerminalRuntime = true;
     },
+    browserEnvironment,
     close: async (): Promise<void> => {
       runtimeGate.resolve();
       await server.stop(true);
