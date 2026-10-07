@@ -72,7 +72,7 @@ func TestTerminalSessionRetainsOutputBeforeLauncherReturns(t *testing.T) {
 					result, queueErr := server.annotationQueueStore.enqueue(kind, annotation, "", nil)
 					id, err = result.SessionID, queueErr
 				} else {
-					id, err = server.createTerminalSession(terminalSessionRequest{Kind: kind, Annotation: &annotation})
+					id, err = server.createTerminalSession(terminalSessionRequest{ActionID: kind, Kind: kind, Annotation: &annotation})
 				}
 				if err != nil {
 					t.Fatal(err)

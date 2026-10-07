@@ -3,7 +3,7 @@ import type {
   IAnnotationQueuesSnapshotMessage,
 } from "../src/devtools/features/annotationQueue/types";
 import type {
-  IActiveTerminalSessionSnapshot,
+  ActiveTerminalSessionSnapshot,
   IListTerminalSessionsResponse,
   ITerminalSessionSnapshotMessage,
 } from "../src/devtools/features/terminalSessions/types";
@@ -36,7 +36,7 @@ export interface IDevhostStoryStack {
   fallbackTerminalSnapshot: string | null;
   logEntries: ServiceLogEntry[];
   services: ServiceHealth[];
-  terminalSessions: IActiveTerminalSessionSnapshot[];
+  terminalSessions: ActiveTerminalSessionSnapshot[];
   terminalSnapshots: Record<string, string>;
 }
 

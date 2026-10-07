@@ -180,11 +180,15 @@ function AppContent(): JSX.Element {
       });
 
       if (sessionId !== null && activeEntry !== undefined && activeAction !== undefined) {
-        registerStartedSession(sessionId, {
-          actionId: activeAction.id,
-          annotation: activeEntry.annotation,
-          colorScheme,
-          kind: "agent",
+        registerStartedSession({
+          label: activeAction.label,
+          request: {
+            actionId: activeAction.id,
+            annotation: activeEntry.annotation,
+            colorScheme,
+            kind: "agent",
+          },
+          sessionId,
         });
       }
 

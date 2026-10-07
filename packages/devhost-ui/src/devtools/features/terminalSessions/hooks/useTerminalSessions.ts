@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from "react";
 import { TERMINAL_SESSION_START_PATH } from "../../../shared/constants";
 import type { DevtoolsColorScheme } from "../../../shared/DevtoolsColorScheme";
 import { pristineFetch } from "../../../shared/pristineFetch";
-import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
 import type { IAnnotationAction } from "../../../shared/devtoolsConfig";
 import type { IAnnotationSubmitDetail } from "../../annotationComposer/types";
 import type { ComponentSourceMenuItem } from "../../componentSourceNavigation/types";
@@ -19,6 +18,9 @@ import {
 } from "../manageTerminalSessions";
 import { restoreTerminalSessions } from "../restoreTerminalSessions";
 import type {
+  ActiveTerminalSessionSnapshot,
+  IStartEditorTerminalSessionRequest,
+  StartAnnotationTerminalSessionRequest,
   StartTerminalSessionRequest,
   IStartTerminalSessionResponse,
   TerminalSession,
@@ -29,7 +31,7 @@ import type {
 interface IUseTerminalSessionsResult {
   expandSession: (sessionId: string) => void;
   minimizeSession: (sessionId: string) => void;
-  registerStartedSession: (sessionId: string, request: StartTerminalSessionRequest) => void;
+  registerStartedSession: (snapshot: ActiveTerminalSessionSnapshot) => void;
   terminalSessions: TerminalSession[];
   removeSession: (sessionId: string) => void;
   startComponentSourceSession: (menuItem: ComponentSourceMenuItem) => Promise<ITerminalSessionStartResult>;
@@ -83,17 +85,17 @@ export function useTerminalSessions(
     [],
   );
 
-  const registerStartedSession = useCallback((sessionId: string, request: StartTerminalSessionRequest): void => {
+  const registerStartedSession = useCallback((snapshot: ActiveTerminalSessionSnapshot): void => {
     setTerminalSessions((currentSessions: TerminalSession[]): TerminalSession[] => {
-      return appendStartedTerminalSessionIfNeeded(
-        currentSessions,
-        createTerminalSession(sessionId, request, readInjectedDevtoolsConfig().annotationActions),
-      );
+      return appendStartedTerminalSessionIfNeeded(currentSessions, createTerminalSession(snapshot));
     });
   }, []);
 
   const startSession = useCallback(
-    async (request: StartTerminalSessionRequest): Promise<ITerminalSessionStartResult> => {
+    async (
+      request: StartTerminalSessionRequest,
+      createSnapshot: CreateTerminalSessionSnapshot,
+    ): Promise<ITerminalSessionStartResult> => {
       if (!enabled) {
         return {
           errorMessage: "Terminal sessions are not supported by this runtime.",
@@ -126,7 +128,7 @@ export function useTerminalSessions(
           };
         }
 
-        registerStartedSession(responseBody.sessionId, request);
+        registerStartedSession(createSnapshot(responseBody.sessionId));
 
         return {
           success: true,
@@ -147,22 +149,33 @@ export function useTerminalSessions(
       action: IAnnotationAction,
       targetSessionId?: string,
     ): Promise<ITerminalSessionStartResult> => {
-      return await startSession(
-        createAnnotationTerminalSessionRequest({ action, annotation, colorScheme, targetSessionId }),
-      );
+      const request: StartAnnotationTerminalSessionRequest = createAnnotationTerminalSessionRequest({
+        action,
+        annotation,
+        colorScheme,
+        targetSessionId,
+      });
+
+      return await startSession(request, (sessionId: string): ActiveTerminalSessionSnapshot => {
+        return { label: action.label, request, sessionId };
+      });
     },
     [colorScheme, startSession],
   );
 
   const startComponentSourceSession = useCallback(
     async (menuItem: ComponentSourceMenuItem): Promise<ITerminalSessionStartResult> => {
-      return await startSession({
+      const request: IStartEditorTerminalSessionRequest = {
         pageUrl: window.location.href,
         componentName: menuItem.displayName,
         kind: "editor",
         launcher: "neovim",
         source: menuItem.source,
         sourceLabel: menuItem.sourceLabel,
+      };
+
+      return await startSession(request, (sessionId: string): ActiveTerminalSessionSnapshot => {
+        return { request, sessionId };
       });
     },
     [startSession],
@@ -182,6 +195,9 @@ export function useTerminalSessions(
 
 type SetTerminalSessionsCallback = (value: (currentSessions: TerminalSession[]) => TerminalSession[]) => void;
 
+// Describes a session this page just started, once the server has assigned its id.
+type CreateTerminalSessionSnapshot = (sessionId: string) => ActiveTerminalSessionSnapshot;
+
 async function restoreActiveTerminalSessions(setTerminalSessions: SetTerminalSessionsCallback): Promise<void> {
   try {
     const response = await pristineFetch(TERMINAL_SESSION_START_PATH, {
@@ -199,11 +215,7 @@ async function restoreActiveTerminalSessions(setTerminalSessions: SetTerminalSes
     }
 
     setTerminalSessions((currentSessions: TerminalSession[]): TerminalSession[] => {
-      return restoreTerminalSessions(
-        currentSessions,
-        responseBody.sessions,
-        readInjectedDevtoolsConfig().annotationActions,
-      );
+      return restoreTerminalSessions(currentSessions, responseBody.sessions);
     });
   } catch {
     return;

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -1092,6 +1093,63 @@ func assertServerUsableWhileClientCloseWaits(t *testing.T, controlServer *Contro
 		defer controlServer.mu.Unlock()
 		return countClients() == 0
 	})
+}
+
+// The browser labels a restored annotation session with what the server recorded, so the list carries the label.
+func TestControlServerListsAnnotationSessionsWithTheirActionLabel(t *testing.T) {
+	t.Parallel()
+
+	starter := newTestTerminalStarter()
+	controlServer := startTerminalTestControlServer(t, starter, time.Hour)
+	commandSessionID := startTerminalTestSession(t, controlServer, commandTerminalTestRequest)
+	editorSessionID := startTerminalTestSession(t, controlServer, editorTerminalTestRequest)
+
+	response, err := http.Get(serverURL(controlServer.Port(), terminalSessionsPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	var listed struct {
+		Sessions []map[string]json.RawMessage `json:"sessions"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&listed); err != nil {
+		t.Fatalf("Decode(list sessions) error = %v", err)
+	}
+	if len(listed.Sessions) != 2 {
+		t.Fatalf("listed sessions = %d, want 2", len(listed.Sessions))
+	}
+
+	commandSession, editorSession := listed.Sessions[0], listed.Sessions[1]
+	if string(commandSession["sessionId"]) != strconv.Quote(commandSessionID) || string(commandSession["label"]) != `"Run lint"` {
+		t.Fatalf("command session = %s, want session %s labelled Run lint", commandSession, commandSessionID)
+	}
+	if _, hasLabel := editorSession["label"]; hasLabel || string(editorSession["sessionId"]) != strconv.Quote(editorSessionID) {
+		t.Fatalf("editor session = %s, want session %s without a label", editorSession, editorSessionID)
+	}
+}
+
+func TestControlServerRejectsSessionForUnknownAnnotationAction(t *testing.T) {
+	t.Parallel()
+
+	starter := newTestTerminalStarter()
+	controlServer := startTerminalTestControlServer(t, starter, time.Hour)
+	request, err := http.NewRequest(http.MethodPost, serverURL(controlServer.Port(), terminalSessionsPath), strings.NewReader(strings.Replace(commandTerminalTestRequest, `"actionId":"lint"`, `"actionId":"missing"`, 1)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	request.Header.Set("content-type", "application/json")
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+
+	if body := readResponseText(t, response); response.StatusCode == http.StatusOK || !strings.Contains(body, "Unsupported annotation action: missing") {
+		t.Fatalf("start session response = %d %q, want the unknown action rejected", response.StatusCode, body)
+	}
+	if len(starter.sessions) != 0 {
+		t.Fatalf("started sessions = %d, want none", len(starter.sessions))
+	}
 }
 
 const (

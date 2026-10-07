@@ -106,6 +106,8 @@ type startTerminalSessionResponse struct {
 }
 
 type activeTerminalSessionSnapshot struct {
+	// Label is the action label of an annotation session; editor sessions have none.
+	Label     string                 `json:"label,omitempty"`
 	Request   terminalSessionRequest `json:"request"`
 	SessionID string                 `json:"sessionId"`
 }
@@ -148,6 +150,7 @@ type terminalSessionState struct {
 	clients         map[*websocketClient]struct{}
 	exited          *terminalSessionExitStatus
 	idleTimer       *time.Timer
+	label           string
 	output          string
 	pendingOutput   []byte
 	request         terminalSessionRequest

@@ -95,6 +95,7 @@ export function factory_appStack(): IDevhostStoryStack {
     ],
     terminalSessions: [
       {
+        label: "Pi",
         sessionId: "pi-session",
         request: {
           actionId: "agent",
@@ -212,6 +213,7 @@ export function factory_designOverviewStack(): IDevhostStoryStack {
     ],
     terminalSessions: [
       {
+        label: "Pi",
         sessionId: "pi-session",
         request: {
           actionId: "agent",

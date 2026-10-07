@@ -13,15 +13,17 @@ const ANNOTATION = {
 
 describe("isListTerminalSessionsResponse", () => {
   test("accepts the session list the control server returns", () => {
-    // Each request mirrors the JSON of terminalSessionRequest in apps/devhost/internal/devtools/terminal.go.
+    // Each entry mirrors the JSON of activeTerminalSessionSnapshot in apps/devhost/internal/devtools/terminal.go.
     expect(
       isListTerminalSessionsResponse({
         sessions: [
           {
+            label: "Claude Code",
             request: { actionId: "fix", annotation: ANNOTATION, colorScheme: "dark", kind: "agent" },
             sessionId: "agent-session",
           },
           {
+            label: "Run lint",
             request: { actionId: "lint", annotation: ANNOTATION, kind: "command" },
             sessionId: "command-session",
           },
@@ -41,10 +43,18 @@ describe("isListTerminalSessionsResponse", () => {
     ).toBe(true);
   });
 
+  test("rejects an annotation session without a label", () => {
+    expect(
+      isListTerminalSessionsResponse({
+        sessions: [{ request: { actionId: "fix", annotation: ANNOTATION, kind: "agent" }, sessionId: "agent-session" }],
+      }),
+    ).toBe(false);
+  });
+
   test("rejects a session whose request has no annotation", () => {
     expect(
       isListTerminalSessionsResponse({
-        sessions: [{ request: { actionId: "fix", kind: "agent" }, sessionId: "agent-session" }],
+        sessions: [{ label: "Claude Code", request: { actionId: "fix", kind: "agent" }, sessionId: "agent-session" }],
       }),
     ).toBe(false);
   });

@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
 
-import type { IAnnotationAction } from "../../../shared/devtoolsConfig";
 import { createTerminalSession } from "../createTerminalSession";
 import {
   appendTerminalSession,
@@ -11,13 +10,9 @@ import {
 } from "../manageTerminalSessions";
 import type { TerminalSession } from "../types";
 
-const ANNOTATION_ACTIONS: IAnnotationAction[] = [
-  { id: "agent", kind: "agent", label: "Claude Code", queueEnabled: true },
-];
-
-const FIRST_SESSION: TerminalSession = createTerminalSession(
-  "session-a",
-  {
+const FIRST_SESSION: TerminalSession = createTerminalSession({
+  label: "Claude Code",
+  request: {
     actionId: "agent",
     annotation: {
       comment: "First annotation",
@@ -29,13 +24,13 @@ const FIRST_SESSION: TerminalSession = createTerminalSession(
     },
     kind: "agent",
   },
-  ANNOTATION_ACTIONS,
-);
+  sessionId: "session-a",
+});
 
 const SECOND_SESSION: TerminalSession = {
-  ...createTerminalSession(
-    "session-b",
-    {
+  ...createTerminalSession({
+    label: "Claude Code",
+    request: {
       actionId: "agent",
       annotation: {
         comment: "Second annotation",
@@ -47,15 +42,14 @@ const SECOND_SESSION: TerminalSession = {
       },
       kind: "agent",
     },
-    ANNOTATION_ACTIONS,
-  ),
+    sessionId: "session-b",
+  }),
   isExpanded: true,
 };
 
 const THIRD_SESSION: TerminalSession = {
-  ...createTerminalSession(
-    "session-c",
-    {
+  ...createTerminalSession({
+    request: {
       componentName: "PrimaryButton",
       kind: "editor",
       launcher: "neovim",
@@ -66,8 +60,8 @@ const THIRD_SESSION: TerminalSession = {
       },
       sourceLabel: "src/components/PrimaryButton.tsx:42:8",
     },
-    ANNOTATION_ACTIONS,
-  ),
+    sessionId: "session-c",
+  }),
   isExpanded: false,
 };
 

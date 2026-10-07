@@ -141,6 +141,16 @@ func (s *ControlServer) createTerminalSession(request terminalSessionRequest) (s
 		return "", err
 	}
 
+	// The session keeps the label its action had at launch; the browser shows it when it restores the session.
+	label := ""
+	if request.Kind == terminalSessionRequestKindAgent || request.Kind == terminalSessionRequestKindCommand {
+		action, err := resolveAnnotationSessionAction(toolContext.AnnotationActions, request)
+		if err != nil {
+			return "", err
+		}
+		label = action.Label
+	}
+
 	launchedSession, err := starter(request)
 	if err != nil {
 		return "", err
@@ -152,6 +162,7 @@ func (s *ControlServer) createTerminalSession(request terminalSessionRequest) (s
 		close:           launchedSession.close,
 		clients:         map[*websocketClient]struct{}{},
 		cleanup:         launchedSession.cleanup,
+		label:           label,
 		request:         request,
 		resize:          launchedSession.resize,
 		write:           launchedSession.write,
@@ -394,7 +405,7 @@ func (s *ControlServer) createTerminalSessionListResponse() listTerminalSessions
 		if session == nil || session.closed {
 			continue
 		}
-		sessions = append(sessions, activeTerminalSessionSnapshot{Request: session.request, SessionID: sessionID})
+		sessions = append(sessions, activeTerminalSessionSnapshot{Label: session.label, Request: session.request, SessionID: sessionID})
 	}
 
 	return listTerminalSessionsResponse{Sessions: sessions}

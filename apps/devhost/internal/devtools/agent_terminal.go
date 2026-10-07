@@ -36,12 +36,9 @@ func createTerminalSessionCommand(actions []manifest.ValidatedAnnotationAction, 
 		if request.Annotation == nil {
 			return nil, fmt.Errorf("annotation terminal payload is required")
 		}
-		action, ok := findAnnotationAction(actions, request.ActionID)
-		if !ok {
-			return nil, fmt.Errorf("Unsupported annotation action: %s", request.ActionID)
-		}
-		if action.Kind != request.Kind {
-			return nil, fmt.Errorf("Annotation action %s cannot start %s terminal sessions.", action.ID, request.Kind)
+		action, err := resolveAnnotationSessionAction(actions, request)
+		if err != nil {
+			return nil, err
 		}
 		if request.Kind == terminalSessionRequestKindAgent {
 			return createAgentTerminalCommand(action, projectRootPath, *request.Annotation, request.ColorScheme, stackName)
@@ -50,6 +47,18 @@ func createTerminalSessionCommand(actions []manifest.ValidatedAnnotationAction, 
 	}
 
 	return createEditorTerminalCommand(componentEditor, request, projectRootPath, stackName, editorIntegration)
+}
+
+// resolveAnnotationSessionAction returns the configured action an annotation session request names.
+func resolveAnnotationSessionAction(actions []manifest.ValidatedAnnotationAction, request terminalSessionRequest) (manifest.ValidatedAnnotationAction, error) {
+	action, ok := findAnnotationAction(actions, request.ActionID)
+	if !ok {
+		return manifest.ValidatedAnnotationAction{}, fmt.Errorf("Unsupported annotation action: %s", request.ActionID)
+	}
+	if action.Kind != request.Kind {
+		return manifest.ValidatedAnnotationAction{}, fmt.Errorf("Annotation action %s cannot start %s terminal sessions.", action.ID, request.Kind)
+	}
+	return action, nil
 }
 
 func findAnnotationAction(actions []manifest.ValidatedAnnotationAction, actionID string) (manifest.ValidatedAnnotationAction, bool) {
