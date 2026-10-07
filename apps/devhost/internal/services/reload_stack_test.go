@@ -17,9 +17,10 @@ import (
 	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
-	"github.com/hashicorp/consul/sdk/freeport"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
 )
 
 type reloadLogs struct {
@@ -62,8 +63,7 @@ func startReloadStack(t *testing.T, body string) *reloadStackFixture {
 func startReloadStackConfiguration(t *testing.T, body string, worktreesEnabled bool) *reloadStackFixture {
 	t.Helper()
 	root, state := t.TempDir(), t.TempDir()
-	admin, stopAdmin := startTestAdminServer(t)
-	t.Cleanup(stopAdmin)
+	admin := caddytest.StartAdminServer(t)
 	f := &reloadStackFixture{path: filepath.Join(root, "devhost.toml"), paths: caddy.CreateManagedCaddyPaths(state), logs: &reloadLogs{}}
 	f.header = fmt.Sprintf("name = \"reload\"\n[worktrees]\nenabled = %t\n[caddy.global]\nadminAddress = %q\n", worktreesEnabled, admin)
 	f.write(t, body)
@@ -211,7 +211,7 @@ func TestManifestReloadReconcilesIncludesServicesRoutesAndClaims(t *testing.T) {
 		t.Fatal(err)
 	}
 	child := filepath.Join(dir, "worker.toml")
-	port := freeport.GetOne(t)
+	port := nettest.ReservePort(t)
 	worker := strings.ReplaceAll(reloadServiceBody("worker", "worker", "worker.localhost"), "port = \"auto\"", fmt.Sprintf("port = %d", port))
 	if err := os.WriteFile(child, []byte(worker), 0600); err != nil {
 		t.Fatal(err)

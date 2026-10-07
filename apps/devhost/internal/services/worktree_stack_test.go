@@ -15,15 +15,15 @@ import (
 	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
-	"github.com/hashicorp/consul/sdk/freeport"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
 )
 
 func TestStackSwitchesWholeRepositoryAndRecoversFailedSwitch(t *testing.T) {
 	root, linked := createWorktreeRepository(t)
 	m := worktreeTestManifest(root)
-	admin, stopAdmin := startTestAdminServer(t)
-	defer stopAdmin()
+	admin := caddytest.StartAdminServer(t)
 	base := newResolvedManifest(root, admin)
 	m.Caddy, m.Devtools, m.Name = base.Caddy, base.Devtools, "worktrees"
 	m.Devtools.Status.Enabled, m.PrimaryService = true, "web"
@@ -32,7 +32,7 @@ func TestStackSwitchesWholeRepositoryAndRecoversFailedSwitch(t *testing.T) {
 	paths := caddy.CreateManagedCaddyPaths(state)
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 	for name, service := range m.Services {
-		port := freeport.GetOne(t)
+		port := nettest.ReservePort(t)
 		service.Command = []string{os.Args[0], "-test.run=TestWorktreeServiceHelperProcess", "--"}
 		service.BindHost, service.Port, service.PortSource, service.InjectPort = "127.0.0.1", &port, "fixed", true
 		service.Health = ResolvedHealthConfig{Kind: "tcp", Host: stringPointer("127.0.0.1"), Port: &port, Interval: 10, Timeout: 1000}
@@ -261,7 +261,7 @@ func TestWorktreeDaemonStopUsesItsLaunchCheckout(t *testing.T) {
 	m := worktreeTestManifest(root)
 	trace := filepath.Join(t.TempDir(), "trace")
 	stopCwd := filepath.Join(t.TempDir(), "stop-cwd")
-	port := freeport.GetOne(t)
+	port := nettest.ReservePort(t)
 	service := m.Services["api"]
 	service.Command = nil
 	service.BindHost, service.Port, service.InjectPort = "127.0.0.1", &port, true

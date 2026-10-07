@@ -115,6 +115,7 @@ The token-free native browser WebSocket requires the exact current Origin/Host, 
 - `internal/manifest/` — manifest discovery, parsing, validation, and defaults
 - `internal/services/` — child process orchestration, health checks, port resolution, and cleanup
 - `internal/caddy/` — managed Caddy lifecycle, paths, config, and routing
+- `internal/caddy/caddytest/`, `internal/nettest/` — test support: stand-ins for Caddy's admin endpoint, and reserved loopback ports
 - `internal/nativebrowser/` — attach-only typed CDP observation and native window access for explicitly configured user-owned browsers
 - `internal/devtools/` — Go devtools control servers plus embedded browser assets
 - `internal/devtools/nvim/devhost-react-highlight.nvim/` — bundled Neovim plugin; follow its nested `AGENTS.md`
@@ -186,8 +187,9 @@ The token-free native browser WebSocket requires the exact current Origin/Host, 
 - A client attaching to a terminal session, the log stream, or the annotation queues must receive its snapshot before any broadcast. Each attach path takes the client's write lock before the client becomes reachable for exactly that reason; keep the order when changing it. The queue attach also registers inside `annotationQueueStore.withSnapshot`, because queue changes are published under the store lock.
 - Health has no snapshot message: `publishHealth` records the health sent last and sends it as one step under `healthMu`, and an attach goes through it, so the health read for a new client also reaches the earlier clients it is news to. Do not set `lastPublishedHealth` anywhere else.
 - Resolve an annotation session's action when the session is created and keep its label on the session; the session list returns that label to the browser.
-- A test that needs an address nothing listens on uses `internal/nettest.ReserveRefusingAddress`. Do not close a listener and expect its port to stay unused: another test or process can claim it first.
-- A test that hands a port number to devhost or to a child process takes it from `freeport.GetOne(t)` or `freeport.GetN(t, n)` (`github.com/hashicorp/consul/sdk/freeport`). Those ports lie outside the range the kernel assigns to `:0` listeners, and each one returns to the pool when the test ends.
+- A test that hands a port number to devhost or to a child process, or needs an address that refuses connections, takes the port from `nettest.ReservePort(t)` or `nettest.ReservePorts(t, n)` (`internal/nettest`). Do not close a listener and expect its port to stay unused: another test or process can claim it first.
+- `internal/nettest` reserves through `github.com/hashicorp/consul/sdk/freeport`: the ports lie outside the range the kernel assigns to `:0` listeners, and each one returns to the pool when the test ends. It calls `freeport.Take`, not `freeport.GetOne` or `freeport.GetN`, which write two lines to stderr for every reservation. Call freeport only through `internal/nettest`.
+- A test that needs a Caddy admin endpoint uses `caddytest.StartAdminServer(t)` (`internal/caddy/caddytest`), or `caddytest.UnusedAdminAddress(t)` for a Caddy that is not running. Both clean up when the test ends.
 - Do not make a test beat a timer. Use an unreachable timeout while a test attaches or inspects, a short one only where the test waits for the timer to fire, and read scheduled state directly instead of sleeping to prove that nothing happened.
 
 ## Go naming rule
