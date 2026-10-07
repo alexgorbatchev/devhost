@@ -283,10 +283,10 @@ For Codex, install and sign in to the [Codex CLI](https://learn.chatgpt.com/docs
 
 ```toml
 [annotation]
-defaultAction = "ask-codex"
+defaultAction = "fix-codex"
 
 [[annotation.actions]]
-id = "ask-codex"
+id = "fix-codex"
 kind = "agent"
 
 [annotation.actions.agent]
