@@ -7,6 +7,8 @@ import {
 } from "../../shared/reactSourceInspection";
 import { cleanSourcePath, type ISourceLocation } from "../../shared/sourceLocation";
 import { REACT_HIGHLIGHT_WEBSOCKET_PATH } from "../../shared/constants";
+import { createDevtoolsWebSocketUrl } from "../../shared/createDevtoolsWebSocketUrl";
+import type { ILocationHostProtocol } from "../../shared/types";
 import { pristineFetch } from "../../shared/pristineFetch";
 import { promoteDevtoolsTopLayer } from "../../shared/promoteDevtoolsTopLayer";
 
@@ -44,10 +46,8 @@ const reactHighlightOverlayClassName: string =
   "pointer-events-none fixed z-(--devhost-z-overlay) box-border rounded-sm border-2 border-mark-alt bg-mark-alt/10 shadow-mark";
 const sourceMapCache: Map<string, Promise<IReactHighlightSourceMap | undefined>> = new Map();
 
-export function createReactHighlightWebSocketUrl(location: Location): string {
-  const protocol: string = location.protocol === "https:" ? "wss:" : "ws:";
-  const url = new URL(REACT_HIGHLIGHT_WEBSOCKET_PATH, `${protocol}//${location.host}`);
-  return url.toString();
+export function createReactHighlightWebSocketUrl(location: ILocationHostProtocol): string {
+  return createDevtoolsWebSocketUrl(REACT_HIGHLIGHT_WEBSOCKET_PATH, location);
 }
 
 export function isReactHighlightCursorMessage(value: unknown): value is IReactHighlightCursorMessage {
