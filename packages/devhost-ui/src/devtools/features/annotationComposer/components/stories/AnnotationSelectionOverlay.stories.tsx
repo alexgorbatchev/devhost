@@ -481,10 +481,12 @@ const Default: Story = {
       expectContainedStageMarkerToStayAnchoredToHighlight();
     });
 
-    window.scrollTo({ left: 0, top: 150 });
+    // The page is only about 150 pixels taller than the viewport, a pixel more or less with how its text is laid
+    // out, and a scroll past the end stops there. This distance is always within reach.
+    window.scrollTo({ left: 0, top: 100 });
 
     await waitFor(() => {
-      expect(window.scrollY).toBeGreaterThanOrEqual(150);
+      expect(window.scrollY).toBe(100);
       expectContainedStageHighlightToMatchTarget();
       expectContainedStageMarkerToStayAnchoredToHighlight();
     });
