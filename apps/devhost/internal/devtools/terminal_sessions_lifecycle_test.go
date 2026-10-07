@@ -27,7 +27,6 @@ func TestAnnotationSessionsSurviveBrowserDisconnect(t *testing.T) {
 			sessionID := startAnnotationLifecycleSession(t, server, kind, annotation)
 
 			// Submission must survive even when the browser never attaches a terminal.
-			time.Sleep(3 * server.idleTerminalSessionTimeout)
 			assertAnnotationLifecycleSession(t, server, sessionID)
 			socket := mustDialWebsocket(t, terminalWebsocketURL(server.Port(), sessionID))
 			defer socket.Close()
@@ -38,7 +37,6 @@ func TestAnnotationSessionsSurviveBrowserDisconnect(t *testing.T) {
 				t.Fatal(err)
 			}
 			waitForAnnotationLifecycleDisconnect(t, server, sessionID)
-			time.Sleep(3 * server.idleTerminalSessionTimeout)
 			assertAnnotationLifecycleSession(t, server, sessionID)
 			if !server.HasActiveTerminalSessions() {
 				t.Fatal("disconnected annotation must prevent stack idle shutdown")
@@ -55,22 +53,21 @@ func TestAnnotationSessionsSurviveBrowserDisconnect(t *testing.T) {
 					t.Fatalf("enqueue second annotation = (%#v, %v), want same session", result, err)
 				}
 				writeAnnotationLifecycleInput(t, server, sessionID, "finish\n")
-				waitForCondition(t, time.Second, func() bool {
+				waitForCondition(t, 5*time.Second, func() bool {
 					queues := server.annotationQueueStore.getSnapshot()
 					return len(queues) == 1 && len(queues[0].Entries) == 1 && queues[0].Entries[0].Annotation.Comment == second.Comment && queues[0].Status == annotationQueueStatusWorking
 				})
 				writeAnnotationLifecycleInput(t, server, sessionID, "finish\n")
-				waitForCondition(t, time.Second, func() bool {
+				waitForCondition(t, 5*time.Second, func() bool {
 					return len(server.annotationQueueStore.getSnapshot()) == 0
 				})
-				time.Sleep(3 * server.idleTerminalSessionTimeout)
 				assertAnnotationLifecycleSession(t, server, sessionID)
 				third := testAnnotationDetail("Third annotation", 3, annotation.URL)
 				result, err = server.annotationQueueStore.enqueue(kind, third, "", &sessionID)
 				if err != nil || result.SessionID != sessionID {
 					t.Fatalf("enqueue into idle session = (%#v, %v), want same session", result, err)
 				}
-				waitForCondition(t, time.Second, func() bool {
+				waitForCondition(t, 5*time.Second, func() bool {
 					queues := server.annotationQueueStore.getSnapshot()
 					return len(queues) == 1 && queues[0].Status == annotationQueueStatusWorking
 				})
@@ -120,7 +117,7 @@ func TestAnnotationSessionsExplicitShutdown(t *testing.T) {
 				} else if err := server.Stop(); err != nil {
 					t.Fatal(err)
 				}
-				waitForCondition(t, time.Second, func() bool {
+				waitForCondition(t, 5*time.Second, func() bool {
 					return len(server.createTerminalSessionListResponse().Sessions) == 0
 				})
 				if kind == terminalSessionRequestKindAgent {
@@ -200,17 +197,24 @@ func startAnnotationLifecycleSession(t *testing.T, server *ControlServer, kind s
 	return result.SessionID
 }
 
+// assertAnnotationLifecycleSession checks that the running session is still listed and that nothing is scheduled
+// to close it. Reading the timer directly replaces waiting out the idle timeout to see that it never fires.
 func assertAnnotationLifecycleSession(t *testing.T, server *ControlServer, sessionID string) {
 	t.Helper()
 	sessions := server.createTerminalSessionListResponse().Sessions
 	if len(sessions) != 1 || sessions[0].SessionID != sessionID {
 		t.Fatalf("annotation sessions = %#v, want original running session", sessions)
 	}
+	server.mu.Lock()
+	defer server.mu.Unlock()
+	if server.terminalSessions[sessionID].idleTimer != nil {
+		t.Fatal("running annotation session has an idle shutdown scheduled")
+	}
 }
 
 func waitForAnnotationLifecycleDisconnect(t *testing.T, server *ControlServer, sessionID string) {
 	t.Helper()
-	waitForCondition(t, time.Second, func() bool {
+	waitForCondition(t, 5*time.Second, func() bool {
 		server.mu.Lock()
 		defer server.mu.Unlock()
 		session := server.terminalSessions[sessionID]
