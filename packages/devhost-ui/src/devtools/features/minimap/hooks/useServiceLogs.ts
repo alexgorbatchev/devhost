@@ -2,10 +2,8 @@ import { useEffect, useRef, useState } from "react";
 
 import { LOGS_WEBSOCKET_PATH, maximumRetainedLogEntries } from "../../../shared/constants";
 import { createDevtoolsWebSocketUrl } from "../../../shared/createDevtoolsWebSocketUrl";
-import { pristineWebSocket } from "../../../shared/pristineFetch";
+import { openReconnectingWebSocket } from "../../../shared/openReconnectingWebSocket";
 import type { ServiceLogEntry, ServiceLogMessage } from "../../../shared/types";
-
-const normalClosureCode: number = 1_000;
 
 export function useServiceLogs(isPaused: boolean): ServiceLogEntry[] {
   const [entries, setEntries] = useState<ServiceLogEntry[]>([]);
@@ -17,8 +15,6 @@ export function useServiceLogs(isPaused: boolean): ServiceLogEntry[] {
   isPausedReference.current = isPaused;
 
   useEffect(() => {
-    let websocket: WebSocket | null = null;
-
     const handleMessage = (event: MessageEvent): void => {
       if (typeof event.data !== "string") {
         return;
@@ -43,14 +39,10 @@ export function useServiceLogs(isPaused: boolean): ServiceLogEntry[] {
       applyIncomingEntries(nextEntries);
     };
 
-    websocket = pristineWebSocket(createDevtoolsWebSocketUrl(LOGS_WEBSOCKET_PATH, window.location));
-    websocket.addEventListener("message", handleMessage);
-
-    return () => {
-      if (websocket !== null && websocket.readyState !== WebSocket.CLOSED) {
-        websocket.close(normalClosureCode, "devtools unmounted");
-      }
-    };
+    // The entries shown stay while the stream is down; a reopened stream starts with a fresh snapshot.
+    return openReconnectingWebSocket(createDevtoolsWebSocketUrl(LOGS_WEBSOCKET_PATH, window.location), {
+      onMessage: handleMessage,
+    });
   }, []);
 
   useEffect(() => {

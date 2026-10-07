@@ -106,6 +106,8 @@ Handlers still validate methods, payloads, enabled features, and session state. 
 
 Use the page's routed host with `ws://` for HTTP or `wss://` for HTTPS. The terminal connection requires the ID of an existing session: a missing `sessionId` produces `400`, and an unknown session produces `404` before the WebSocket upgrade. The injected UI constructs these URLs automatically.
 
+The injected UI reopens its health, logs, and annotation queue connections when they are lost, for example after the machine sleeps or devhost restarts behind the same host. It tries again after one second and doubles the wait after each failed attempt, up to ten seconds. While the health connection is down the Services panel shows every service as unavailable, the minimap keeps the log entries it already has, and the queue panel reports that its stream is disconnected. Each recovers when its connection reopens.
+
 An active native browser-control WebSocket also keeps the stack from idle shutdown. Disconnecting releases that activity and restarts the normal idle buffer.
 
 Native browser control negotiates the nonsecret `devhost-native-browser.v1` codec and validates the current routed origin and exact instance/document binding. Fresh uncached configuration publishes only whether it is configured and its current instance identity; the private debugging endpoint is never included.

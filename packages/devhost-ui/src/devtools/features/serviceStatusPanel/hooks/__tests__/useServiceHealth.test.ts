@@ -1,5 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
-import { afterEach, assert, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, assert, beforeEach, describe, expect, test, vi } from "vitest";
 
 import type { IMockWebSocketConnection } from "../../../../../../test-support/createMockWebSocket";
 import { installMockFetch, type IInstalledMockFetch } from "../../../../../../test-support/installMockFetch";
@@ -57,6 +57,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   webSocket.restore();
   mockFetch.restore();
   Reflect.deleteProperty(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME);
@@ -172,6 +173,81 @@ describe("useServiceHealth", () => {
 
     expect(hook.result.current.services).toEqual([apiService]);
     expect(hook.result.current.repositories).toEqual([repository]);
+  });
+
+  test("reopens the stream a second after it drops and shows the health the server sends", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const { connection, hook } = await connectServiceHealth();
+
+    await settle(() => connection.send({ services: [apiService] }));
+    await settle(() => connection.close(1006));
+    expect(hook.result.current.services).toEqual([
+      { managed: true, name: "api", status: false, url: "https://api.shop.localhost" },
+    ]);
+
+    await settle(() => vi.advanceTimersByTime(999));
+    expect(webSocket.attemptCount).toBe(1);
+
+    await settle(() => vi.advanceTimersByTime(1));
+    expect(webSocket.attemptCount).toBe(2);
+
+    const reopened: IMockWebSocketConnection | undefined = webSocket.connections.at(1);
+
+    assert(reopened !== undefined);
+    expect(reopened.url.href).toBe(connection.url.href);
+
+    await settle(() => reopened.send({ services: [apiService] }));
+    expect(hook.result.current.services).toEqual([apiService]);
+  });
+
+  test("waits twice as long after each failed attempt, up to ten seconds, and starts over once connected", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const { connection } = await connectServiceHealth();
+    const attemptCounts: number[] = [];
+
+    webSocket.isRefusingConnections = true;
+    await settle(() => connection.close(1006));
+
+    // One attempt is due after each of these waits: 1s, 2s, 4s, 8s, then 10s each time.
+    for (const delay of [1_000, 2_000, 4_000, 8_000, 10_000, 10_000]) {
+      await settle(() => vi.advanceTimersByTime(delay - 1));
+      attemptCounts.push(webSocket.attemptCount);
+      await settle(() => vi.advanceTimersByTime(1));
+      attemptCounts.push(webSocket.attemptCount);
+    }
+    expect(attemptCounts).toEqual([1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7]);
+
+    webSocket.isRefusingConnections = false;
+    await settle(() => vi.advanceTimersByTime(10_000));
+    expect(webSocket.connections).toHaveLength(2);
+
+    const reopened: IMockWebSocketConnection | undefined = webSocket.connections.at(1);
+
+    assert(reopened !== undefined);
+    await settle(() => reopened.close(1006));
+    await settle(() => vi.advanceTimersByTime(1_000));
+    expect(webSocket.connections).toHaveLength(3);
+  });
+
+  test("does not reopen a stream the server closed normally", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const { connection } = await connectServiceHealth();
+
+    await settle(() => connection.close(1000));
+    await settle(() => vi.advanceTimersByTime(60_000));
+
+    expect(webSocket.attemptCount).toBe(1);
+  });
+
+  test("stops reconnecting when it unmounts", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const { connection, hook } = await connectServiceHealth();
+
+    await settle(() => connection.close(1006));
+    hook.unmount();
+    await settle(() => vi.advanceTimersByTime(60_000));
+
+    expect(webSocket.attemptCount).toBe(1);
   });
 
   test("closes the stream when it unmounts", async () => {

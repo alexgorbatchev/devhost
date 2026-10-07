@@ -91,6 +91,8 @@ Its vital that when devtools are injected into the user's web application, CSS t
 - Read the injected configuration with `readInjectedDevtoolsConfig()`. It parses each injected object once, so components get the same object and arrays on every render until the configuration changes. Change the configuration by replacing the injected object, as `updateInjectedRouting` does; an edit in place is invisible to readers.
 - The control server lists each annotation session with the label its action had at launch. Build sessions from that snapshot shape with `createTerminalSession`; never derive a session label from the browser's own configuration. `isListTerminalSessionsResponse` must accept exactly what the server sends.
 
+- Open the health, logs, and annotation queue streams through `shared/openReconnectingWebSocket.ts`. It reopens a lost connection after one second, doubling to ten seconds between failed attempts, and leaves a stream the server closed normally closed. While the health stream is down every service shows as unavailable; logs keep their entries and take the reopened stream's snapshot; the queue panel reports the disconnect until the stream is back.
+
 - With status devtools enabled, foreground service exit codes trigger a full-screen recovery dialog with retained service logs and restart controls. Keep the dialog open during recovery and failed attempts; remove it after healthy recovery. Health-probe failures and control-stream disconnects alone are not process exit events.
 - Keep the theme small and explicit.
 - Prefer stable semantic names over raw color names.

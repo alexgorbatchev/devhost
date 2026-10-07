@@ -2,15 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 
 import { HEALTH_WEBSOCKET_PATH, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "../../../shared/constants";
 import { createDevtoolsWebSocketUrl } from "../../../shared/createDevtoolsWebSocketUrl";
-import { pristineFetch, pristineWebSocket } from "../../../shared/pristineFetch";
+import { openReconnectingWebSocket } from "../../../shared/openReconnectingWebSocket";
+import { pristineFetch } from "../../../shared/pristineFetch";
 import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
 import type { HealthResponse, ServiceHealth, IWorktreeRepository } from "../../../shared/types";
 import { parseHealthResponse } from "../parseHealthResponse";
 import { requestWorktrees } from "../requestWorktrees";
 import { markServicesAsUnavailable } from "../markServicesAsUnavailable";
 import { updateInjectedRouting } from "../updateInjectedRouting";
-
-const normalClosureCode: number = 1_000;
 
 interface IUseServiceHealthResult {
   errorMessage: string | null;
@@ -38,13 +37,6 @@ export function useServiceHealth(): IUseServiceHealthResult {
   }, []);
 
   useEffect(() => {
-    let websocket: WebSocket | null = null;
-    let isDisposed: boolean = false;
-
-    const handleOpen = (): void => {
-      setErrorMessage(null);
-    };
-
     const handleMessage = (event: MessageEvent): void => {
       if (typeof event.data !== "string") {
         setErrorMessage("devhost status stream sent a non-text message.");
@@ -62,13 +54,8 @@ export function useServiceHealth(): IUseServiceHealthResult {
       setErrorMessage(null);
     };
 
-    const handleClose = (event: CloseEvent): void => {
-      websocket = null;
-
-      if (isDisposed || event.code === normalClosureCode) {
-        return;
-      }
-
+    // Until the stream is back, nothing is known about the stack.
+    const handleDisconnect = (): void => {
       setServices((currentServices: ServiceHealth[]): ServiceHealth[] => {
         return markServicesAsUnavailable(currentServices, devtoolsStackName);
       });
@@ -76,15 +63,13 @@ export function useServiceHealth(): IUseServiceHealthResult {
       setErrorMessage(null);
     };
 
-    websocket = pristineWebSocket(createDevtoolsWebSocketUrl(HEALTH_WEBSOCKET_PATH, window.location));
-    websocket.addEventListener("open", handleOpen);
-    websocket.addEventListener("message", handleMessage);
-    websocket.addEventListener("close", handleClose);
-
-    return () => {
-      isDisposed = true;
-      websocket?.close(normalClosureCode, "devtools unmounted");
-    };
+    return openReconnectingWebSocket(createDevtoolsWebSocketUrl(HEALTH_WEBSOCKET_PATH, window.location), {
+      onDisconnect: handleDisconnect,
+      onMessage: handleMessage,
+      onOpen: (): void => {
+        setErrorMessage(null);
+      },
+    });
   }, [devtoolsStackName, updateHealth]);
 
   const refreshWorktrees = useCallback(async (): Promise<string | null> => {
