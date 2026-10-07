@@ -35,6 +35,9 @@ const (
 	websocketCloseFrameTimeout       = time.Second
 	websocketCloseReasonStopping     = "devhost is stopping"
 	websocketCloseReasonSessionEnded = "terminal session ended"
+	// A page that reads nothing for this long while its connection is full, such as one paused in a debugger, is
+	// dropped.
+	defaultWebsocketWriteTimeout     = 10 * time.Second
 	defaultIdleTerminalSessionPeriod = 10 * time.Second
 	applicationJavascriptContentType = "application/javascript; charset=utf-8"
 	textCSSContentType               = "text/css; charset=utf-8"
@@ -98,20 +101,22 @@ type StartControlServerOptions struct {
 	FeatureToggles             FeatureToggles
 	GetHealthResponse          func() (HealthResponse, error)
 	IdleTerminalSessionTimeout time.Duration
-	ManifestPath               string
-	Position                   string
-	ProjectRootPath            string
-	PrimaryService             string
-	RestartService             func([]string) error
-	RestartStack               func() error
-	SwitchWorktree             func(string, string) error
-	RefreshWorktrees           func() error
-	GetToolContext             func(string) (ToolContext, error)
-	RestartServicesShortcut    string
-	RoutedServices             []RoutedServiceIdentity
-	StateDirectoryPath         string
-	StartTerminalSession       terminalSessionStarter
-	StackName                  string
+	// WebsocketWriteTimeout bounds one write to a browser connection. Zero selects the default.
+	WebsocketWriteTimeout   time.Duration
+	ManifestPath            string
+	Position                string
+	ProjectRootPath         string
+	PrimaryService          string
+	RestartService          func([]string) error
+	RestartStack            func() error
+	SwitchWorktree          func(string, string) error
+	RefreshWorktrees        func() error
+	GetToolContext          func(string) (ToolContext, error)
+	RestartServicesShortcut string
+	RoutedServices          []RoutedServiceIdentity
+	StateDirectoryPath      string
+	StartTerminalSession    terminalSessionStarter
+	StackName               string
 }
 
 type ControlServer struct {
@@ -123,6 +128,7 @@ type ControlServer struct {
 	componentEditor            string
 	featureToggles             FeatureToggles
 	idleTerminalSessionTimeout time.Duration
+	websocketWriteTimeout      time.Duration
 	restartService             func([]string) error
 	restartStack               func() error
 	switchWorktree             func(string, string) error
@@ -165,10 +171,11 @@ type ControlServer struct {
 }
 
 type websocketClient struct {
-	conn      *websocket.Conn
-	writeMu   sync.Mutex
-	closeOnce sync.Once
-	tracker   *ActivityTracker
+	conn         *websocket.Conn
+	writeMu      sync.Mutex
+	closeOnce    sync.Once
+	tracker      *ActivityTracker
+	writeTimeout time.Duration
 }
 
 type injectedConfig struct {
@@ -296,6 +303,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		getHealth:                  options.GetHealthResponse,
 		healthClients:              map[*websocketClient]struct{}{},
 		idleTerminalSessionTimeout: options.IdleTerminalSessionTimeout,
+		websocketWriteTimeout:      options.WebsocketWriteTimeout,
 		listener:                   listener,
 		logsClients:                map[*websocketClient]struct{}{},
 		nextLogEntryID:             1,
@@ -320,6 +328,9 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	}
 	if controlServer.idleTerminalSessionTimeout <= 0 {
 		controlServer.idleTerminalSessionTimeout = defaultIdleTerminalSessionPeriod
+	}
+	if controlServer.websocketWriteTimeout <= 0 {
+		controlServer.websocketWriteTimeout = defaultWebsocketWriteTimeout
 	}
 	if options.FeatureToggles.EditorEnabled {
 		neovimShellIntegration, err := createNeovimPluginShellIntegrationFiles(
@@ -867,7 +878,7 @@ func (s *ControlServer) upgrade(writer http.ResponseWriter, request *http.Reques
 	}
 
 	s.tracker.IncrementActive()
-	return &websocketClient{conn: connection, tracker: s.tracker}, nil
+	return &websocketClient{conn: connection, tracker: s.tracker, writeTimeout: s.websocketWriteTimeout}, nil
 }
 
 func (s *ControlServer) readUntilClosed(client *websocketClient, remove func(*websocketClient)) {
@@ -923,6 +934,16 @@ func (s *ControlServer) isClosed() bool {
 func (c *websocketClient) write(messageType int, payload []byte) error {
 	c.writeMu.Lock()
 	defer c.writeMu.Unlock()
+	return c.writeMessageLocked(messageType, payload)
+}
+
+// writeMessageLocked writes one frame. The caller holds writeMu. Without a deadline, a client that stops reading
+// blocks the write for as long as its connection lingers, and with it whoever is publishing. A write that misses
+// the deadline leaves the connection unusable, so every caller drops the client when a write fails.
+func (c *websocketClient) writeMessageLocked(messageType int, payload []byte) error {
+	if err := c.conn.SetWriteDeadline(time.Now().Add(c.writeTimeout)); err != nil {
+		return err
+	}
 	return c.conn.WriteMessage(messageType, payload)
 }
 
@@ -933,7 +954,7 @@ func (c *websocketClient) writeJSONMessagesLocked(values []any) error {
 		if err != nil {
 			return err
 		}
-		if err := c.conn.WriteMessage(websocket.TextMessage, payload); err != nil {
+		if err := c.writeMessageLocked(websocket.TextMessage, payload); err != nil {
 			return err
 		}
 	}
