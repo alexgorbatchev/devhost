@@ -14,6 +14,8 @@ import {
   XTERM_STYLESHEET_PATH,
 } from "../src/devtools/shared/constants";
 import type {
+  IListTerminalSessionsResponse,
+  IStartTerminalSessionResponse,
   ITerminalSessionExitMessage,
   ITerminalSessionSnapshotMessage,
 } from "../src/devtools/features/terminalSessions/types";
@@ -106,15 +108,22 @@ function createStorybookFetch(): typeof fetch {
   };
 
   const storybookFetch: typeof fetch = Object.assign(
-    async (input: FetchRequestInput, _init?: FetchRequestInit): Promise<Response> => {
+    async (input: FetchRequestInput, init?: FetchRequestInit): Promise<Response> => {
       const requestUrl: URL = readRequestUrl(input);
 
       if (requestUrl.pathname === RESTART_STACK_PATH) return new Response(null, { status: 204 });
 
+      // As on the control server: POST starts a session, GET lists the running ones. None runs by default.
       if (requestUrl.pathname === TERMINAL_SESSION_START_PATH) {
-        return new Response(JSON.stringify({ sessionId: "storybook-session" }), {
-          headers: { "content-type": "application/json" },
-        });
+        if (readRequestMethod(input, init) === "POST") {
+          const startedSession: IStartTerminalSessionResponse = { sessionId: "storybook-session" };
+
+          return Response.json(startedSession);
+        }
+
+        const sessionList: IListTerminalSessionsResponse = { sessions: [] };
+
+        return Response.json(sessionList);
       }
 
       return new Response("Not found", { status: 404 });
@@ -125,6 +134,14 @@ function createStorybookFetch(): typeof fetch {
   );
 
   return storybookFetch;
+}
+
+function readRequestMethod(input: FetchRequestInput, init?: FetchRequestInit): string {
+  if (init?.method !== undefined) {
+    return init.method;
+  }
+
+  return input instanceof Request ? input.method : "GET";
 }
 
 function readRequestUrl(input: FetchRequestInput): URL {
