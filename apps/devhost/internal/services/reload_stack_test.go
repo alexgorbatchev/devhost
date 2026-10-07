@@ -19,6 +19,7 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
+	"github.com/hashicorp/consul/sdk/freeport"
 )
 
 type reloadLogs struct {
@@ -210,7 +211,7 @@ func TestManifestReloadReconcilesIncludesServicesRoutesAndClaims(t *testing.T) {
 		t.Fatal(err)
 	}
 	child := filepath.Join(dir, "worker.toml")
-	port := mustReservePort(t)
+	port := freeport.GetOne(t)
 	worker := strings.ReplaceAll(reloadServiceBody("worker", "worker", "worker.localhost"), "port = \"auto\"", fmt.Sprintf("port = %d", port))
 	if err := os.WriteFile(child, []byte(worker), 0600); err != nil {
 		t.Fatal(err)

@@ -17,6 +17,7 @@ import (
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/version"
 )
 
@@ -731,18 +732,11 @@ func assertServiceExitOutput(t *testing.T, output string) {
 	}
 }
 
+// reserveUnusedAdminAddress returns an admin address that refuses connections for the whole test, as a Caddy
+// that is not running does.
 func reserveUnusedAdminAddress(t *testing.T) string {
 	t.Helper()
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("Listen(...) error = %v", err)
-	}
-	address := listener.Addr().String()
-	if err := listener.Close(); err != nil {
-		t.Fatalf("Close(...) error = %v", err)
-	}
-
-	return address
+	return nettest.ReserveRefusingAddress(t).String()
 }
 
 func startTestAdminServer(t *testing.T) (string, func()) {

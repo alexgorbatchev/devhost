@@ -20,6 +20,7 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
+	"github.com/hashicorp/consul/sdk/freeport"
 )
 
 func TestMultipleHostMetadata(t *testing.T) {
@@ -150,7 +151,7 @@ func TestStartStackMultipleHosts(t *testing.T) {
 				controls <- options
 				return server, err
 			}
-			port := mustReservePort(t)
+			port := freeport.GetOne(t)
 			trace := filepath.Join(t.TempDir(), "starts")
 			text := fmt.Sprintf("name = \"hosts\"\n[caddy.global]\nadminAddress = %q\n[services.web]\ncommand = [%q, \"-test.run=TestMultipleHostBackendProcess\"]\nport = %d\nhost = [\"app.localhost\", \"alias.localhost\"]\nenv = { DEVHOST_MULTI_HOST_HELPER = \"1\", START_TRACE_PATH = %q }\n", admin, os.Args[0], port, trace)
 			value := resolveHostTestManifest(t, text)
@@ -289,7 +290,7 @@ func TestStartStackAliasClaimConflictReleasesOwnClaims(t *testing.T) {
 	}()
 	value := newResolvedManifest(t.TempDir(), admin)
 	value.Services["web"] = ResolvedService{
-		Name: "web", BindHost: "127.0.0.1", Hosts: []string{"app.localhost", "z-blocked.localhost"}, Path: stringPointer("/"), Port: intPointer(mustReservePort(t)), PortSource: "fixed",
+		Name: "web", BindHost: "127.0.0.1", Hosts: []string{"app.localhost", "z-blocked.localhost"}, Path: stringPointer("/"), Port: intPointer(freeport.GetOne(t)), PortSource: "fixed",
 	}
 	_, err := StartStack(&value, []string{"web"}, StartStackOptions{CaddyPaths: paths, LogWriter: ioDiscard{}})
 	if err == nil || !strings.Contains(err.Error(), "z-blocked.localhost is already claimed") {

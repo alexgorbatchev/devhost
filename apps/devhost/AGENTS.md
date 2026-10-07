@@ -177,6 +177,8 @@ Devtools control requests are token-free for trusted local development; keep bro
 - Never close a websocket client while holding the control server lock: a close waits for that client's in-flight write, which can stall on a dead connection. Drop the client from server state under the lock, release it, then close.
 - A client attaching to a terminal session must receive its snapshot before any broadcast. The attach path takes the client's write lock before releasing the server lock for exactly that reason; keep the order when changing it.
 - Resolve an annotation session's action when the session is created and keep its label on the session; the session list returns that label to the browser.
+- A test that needs an address nothing listens on uses `internal/nettest.ReserveRefusingAddress`. Do not close a listener and expect its port to stay unused: another test or process can claim it first.
+- A test that hands a port number to devhost or to a child process takes it from `freeport.GetOne(t)` or `freeport.GetN(t, n)` (`github.com/hashicorp/consul/sdk/freeport`). Those ports lie outside the range the kernel assigns to `:0` listeners, and each one returns to the pool when the test ends.
 - Do not make a test beat a timer. Use an unreachable timeout while a test attaches or inspects, a short one only where the test waits for the timer to fire, and read scheduled state directly instead of sleeping to prove that nothing happened.
 
 ## Go naming rule
