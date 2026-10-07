@@ -6,7 +6,7 @@ import { cn } from "../../../../lib/utils";
 import { useDevtoolsColorScheme } from "../../../shared";
 import type { ServiceLogEntry } from "../../../shared/types";
 import type { ILogAnsiFragment } from "../parseAnsiLogLine";
-import { createLogMinimapMarksFromVisibleRows, type ILogMinimapMark } from "../createLogMinimapMarks";
+import { createLogMinimapMarks, type ILogMinimapMark } from "../createLogMinimapMarks";
 import { createLogPreviewWindow } from "../createLogPreviewWindow";
 import { createVisibleLogRows, LOG_MINIMAP_MARK_INSET_IN_PIXELS, type IVisibleLogRow } from "../createVisibleLogRows";
 import { readLogMinimapPalette, type ILogMinimapPalette } from "../readLogMinimapPalette";
@@ -69,7 +69,7 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
       context.clearRect(0, 0, renderWidth, renderHeight);
 
       const visibleRows: IVisibleLogRow[] = createVisibleLogRows(entriesReference.current, cssHeight, cssWidth);
-      const marks: ILogMinimapMark[] = createLogMinimapMarksFromVisibleRows(visibleRows);
+      const marks: ILogMinimapMark[] = createLogMinimapMarks(visibleRows);
 
       visibleRowsReference.current = visibleRows;
       marksReference.current = marks;

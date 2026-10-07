@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { createLogMinimapMarks } from "../createLogMinimapMarks";
+import { createVisibleLogRows } from "../createVisibleLogRows";
 import type { ServiceLogEntry } from "../../../shared/types";
 
 describe("createLogMinimapMarks", () => {
@@ -20,7 +21,7 @@ describe("createLogMinimapMarks", () => {
       },
     ];
 
-    expect(createLogMinimapMarks(entries, 40, 100)).toEqual([
+    expect(createLogMinimapMarks(createVisibleLogRows(entries, 40, 100))).toEqual([
       {
         entryIndex: 0,
         height: 2,
@@ -74,7 +75,7 @@ describe("createLogMinimapMarks", () => {
       },
     ];
 
-    expect(createLogMinimapMarks(entries, 8, 100)).toEqual([
+    expect(createLogMinimapMarks(createVisibleLogRows(entries, 8, 100))).toEqual([
       {
         entryIndex: 2,
         height: 2,
@@ -118,7 +119,7 @@ describe("createLogMinimapMarks", () => {
       },
     ];
 
-    expect(createLogMinimapMarks(entries, 8, 100)).toEqual([
+    expect(createLogMinimapMarks(createVisibleLogRows(entries, 8, 100))).toEqual([
       {
         entryIndex: 0,
         height: 2,
