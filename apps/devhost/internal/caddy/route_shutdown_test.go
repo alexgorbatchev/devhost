@@ -3,6 +3,7 @@ package caddy
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -39,7 +40,7 @@ func TestUnregisterLastRouteRetainsIsolatedCaddy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rendered, err := renderManagedCaddyfile(renderManagedCaddyfileOptions{AdminAddress: settings.AdminAddress, BindHost: settings.BindHost, EnableHTTP: settings.HTTPEnabled, HTTPPort: settings.HTTPPort, HTTPSPort: settings.HTTPSPort, Paths: paths})
+	rendered, err := renderManagedCaddyfile(renderManagedCaddyfileOptions{AdminAddress: settings.AdminAddress, BindHost: settings.BindHost, EnableHTTP: settings.HTTPEnabled, HTTPPort: settings.HTTPPort, HTTPSPort: settings.HTTPSPort, Paths: paths, RuntimeOS: runtime.GOOS})
 	if err != nil {
 		t.Fatal(err)
 	}
