@@ -177,6 +177,7 @@ Devtools control requests are token-free for trusted local development; keep bro
 - Never close a websocket client while holding the control server lock: a close waits for that client's in-flight write, which can stall on a dead connection. Drop the client from server state under the lock, release it, then close.
 - A client attaching to a terminal session must receive its snapshot before any broadcast. The attach path takes the client's write lock before releasing the server lock for exactly that reason; keep the order when changing it.
 - Resolve an annotation session's action when the session is created and keep its label on the session; the session list returns that label to the browser.
+- Do not make a test beat a timer. Use an unreachable timeout while a test attaches or inspects, a short one only where the test waits for the timer to fire, and read scheduled state directly instead of sleeping to prove that nothing happened.
 
 ## Go naming rule
 
