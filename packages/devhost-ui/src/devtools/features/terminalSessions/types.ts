@@ -79,6 +79,36 @@ export interface IListTerminalSessionsResponse {
   sessions: ActiveTerminalSessionSnapshot[];
 }
 
+/** What the toolbar's session chips measure before deciding how many of them fit. Widths are in CSS pixels. */
+export interface ITerminalSessionChipMeasurement {
+  /** The width of the chips and the "+N" control as they are laid out now. */
+  contentWidth: number;
+  /** Identifies the chips that were measured. */
+  fitKey: string;
+  gapWidth: number;
+  hiddenCount: number;
+  /** The width of the folded chip that comes back next, or `null` when there is none to measure. */
+  nextChipWidth: number | null;
+  /** The width of the "+N" control, or 0 while no chip is folded. */
+  overflowWidth: number;
+  /** The width the toolbar can give the chips. */
+  room: number;
+  visibleCount: number;
+}
+
+/** A chip count that overflowed, with the room and the chips it overflowed for. */
+export interface ITerminalSessionChipFailedFit {
+  fitKey: string;
+  room: number;
+  visibleLimit: number;
+}
+
+export interface ITerminalSessionChipFit {
+  failedFit: ITerminalSessionChipFailedFit | null;
+  /** How many chips to show next. The fit is settled when this is the count already shown. */
+  visibleLimit: number;
+}
+
 /** Whether devhost still lists a session; `unknown` while devhost does not answer. */
 export type TerminalSessionPresence = "ended" | "running" | "unknown";
 

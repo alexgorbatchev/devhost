@@ -1,4 +1,4 @@
-import { useId, useState, type JSX, type ReactNode, type ToggleEvent } from "react";
+import { useId, useState, type JSX, type ReactNode, type Ref, type ToggleEvent } from "react";
 
 import { cn } from "../../../lib/utils";
 import { toolbarPopoverIdContext } from "../toolbarPopoverIdContext";
@@ -18,6 +18,8 @@ interface IToolbarPopoverProps {
   triggerAppearance?: ToolbarPopoverTriggerAppearance;
   triggerContent: ReactNode;
   triggerLabel: string;
+  /** The trigger button, for a toolbar segment that measures how much room the trigger takes. */
+  triggerReference?: Ref<HTMLButtonElement>;
   triggerTone?: ToolbarPopoverTriggerTone;
 }
 
@@ -44,6 +46,7 @@ export function ToolbarPopover({
   triggerAppearance = "segment",
   triggerContent,
   triggerLabel,
+  triggerReference,
   triggerTone = "default",
 }: IToolbarPopoverProps): JSX.Element {
   const panelId: string = useId();
@@ -52,6 +55,7 @@ export function ToolbarPopover({
   return (
     <span className="contents" data-testid="ToolbarPopover">
       <button
+        ref={triggerReference}
         aria-expanded={isOpen}
         aria-label={triggerLabel}
         className={cn(

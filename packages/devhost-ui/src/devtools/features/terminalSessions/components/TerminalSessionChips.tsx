@@ -8,9 +8,15 @@ import { cn } from "../../../../lib/utils";
 import { ToolbarPopover } from "../../../shared/components/ToolbarPopover";
 import { ToolbarSegment } from "../../../shared/components/ToolbarSegment";
 import { useToolbarPopoverId } from "../../../shared/hooks/useToolbarPopoverId";
+import { fitTerminalSessionChips } from "../fitTerminalSessionChips";
 import { pickVisibleTerminalSessions } from "../pickVisibleTerminalSessions";
 import { readTerminalSessionStatusLabel } from "../readTerminalSessionStatusLabel";
-import type { TerminalSession, TerminalSessionStatus } from "../types";
+import type {
+  ITerminalSessionChipFailedFit,
+  ITerminalSessionChipFit,
+  TerminalSession,
+  TerminalSessionStatus,
+} from "../types";
 
 interface ITerminalSessionChipsProps {
   onExpandSession: (sessionId: string) => void;
@@ -30,13 +36,16 @@ const statusDotClassNames: Record<Exclude<TerminalSessionStatus, "exited">, stri
 
 /**
  * Toolbar segment with one chip per terminal session. The segment shrinks with the toolbar; chips that no longer
- * fit fold into a "+N" popover listing every session, so the toolbar never overflows the viewport.
+ * fit fold into a "+N" popover listing every session, so the toolbar never overflows the viewport. Folded chips
+ * come back as soon as the toolbar has room for them again.
  */
 export function TerminalSessionChips(props: ITerminalSessionChipsProps): JSX.Element | null {
   const segmentReference = useRef<HTMLDivElement | null>(null);
+  const overflowReference = useRef<HTMLButtonElement | null>(null);
+  const foldedChipsReference = useRef<HTMLSpanElement | null>(null);
+  const failedFitReference = useRef<ITerminalSessionChipFailedFit | null>(null);
   const [visibleLimit, setVisibleLimit] = useState<number>(Number.POSITIVE_INFINITY);
-  const [viewportWidth, setViewportWidth] = useState<number>(() => window.innerWidth);
-  const [segmentWidth, setSegmentWidth] = useState<number>(0);
+  const [, setFitRequestCount] = useState<number>(0);
   const hasSessions: boolean = props.sessions.length > 0;
   const visibleSessions: TerminalSession[] = pickVisibleTerminalSessions(props.sessions, visibleLimit);
   const hiddenSessions: TerminalSession[] = props.sessions.filter(
@@ -46,20 +55,34 @@ export function TerminalSessionChips(props: ITerminalSessionChipsProps): JSX.Ele
     .map((session: TerminalSession) => `${session.sessionId}:${session.status}`)
     .join();
 
+  // The room changes without rendering anything here: a neighbouring segment grows or shrinks, or the viewport
+  // does. Each such change asks for another fit. The segment exists only while there are sessions.
   useEffect(() => {
-    const handleResize = (): void => {
-      setViewportWidth(window.innerWidth);
-    };
+    const segment: HTMLDivElement | null = segmentReference.current;
 
-    window.addEventListener("resize", handleResize);
+    if (segment === null) {
+      return;
+    }
+
+    const requestFit = (): void => {
+      setFitRequestCount((fitRequestCount: number): number => fitRequestCount + 1);
+    };
+    const resizeObserver = new ResizeObserver(requestFit);
+
+    resizeObserver.observe(segment);
+    if (segment.parentElement !== null) {
+      resizeObserver.observe(segment.parentElement);
+    }
+    window.addEventListener("resize", requestFit);
 
     return () => {
-      window.removeEventListener("resize", handleResize);
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", requestFit);
     };
-  }, []);
+  }, [hasSessions]);
 
-  // The segment loses width when a neighbouring segment grows, which renders nothing here. The segment exists only
-  // while there are sessions.
+  // Fit after every render, one chip per layout pass and before the browser paints. The popover stays mounted
+  // throughout, so an open list of sessions stays open.
   useLayoutEffect(() => {
     const segment: HTMLDivElement | null = segmentReference.current;
 
@@ -67,32 +90,29 @@ export function TerminalSessionChips(props: ITerminalSessionChipsProps): JSX.Ele
       return;
     }
 
-    const resizeObserver = new ResizeObserver((): void => {
-      setSegmentWidth(segment.clientWidth);
+    const nextSessionIndex: number = hiddenSessions.findIndex((session: TerminalSession): boolean => {
+      return pickVisibleTerminalSessions(props.sessions, visibleSessions.length + 1).includes(session);
     });
+    const nextChip: Element | undefined = foldedChipsReference.current?.children[nextSessionIndex];
+    const fit: ITerminalSessionChipFit = fitTerminalSessionChips(
+      {
+        contentWidth: segment.scrollWidth,
+        fitKey,
+        gapWidth: Number.parseFloat(getComputedStyle(segment).columnGap) || 0,
+        hiddenCount: hiddenSessions.length,
+        nextChipWidth: nextChip?.getBoundingClientRect().width ?? null,
+        overflowWidth: overflowReference.current?.getBoundingClientRect().width ?? 0,
+        room: readAvailableWidth(segment),
+        visibleCount: visibleSessions.length,
+      },
+      failedFitReference.current,
+    );
 
-    resizeObserver.observe(segment);
-
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, [hasSessions]);
-
-  // Start from "everything visible" whenever the chip set or the viewport changes, then shrink below.
-  useLayoutEffect(() => {
-    setVisibleLimit(Number.POSITIVE_INFINITY);
-  }, [fitKey, viewportWidth]);
-
-  // Measure-and-shrink: drop one chip per layout pass until the segment content fits its available width.
-  useLayoutEffect(() => {
-    const segment: HTMLDivElement | null = segmentReference.current;
-
-    if (segment === null || visibleSessions.length === 0 || segment.scrollWidth <= segment.clientWidth) {
-      return;
+    failedFitReference.current = fit.failedFit;
+    if (fit.visibleLimit !== visibleSessions.length) {
+      setVisibleLimit(fit.visibleLimit);
     }
-
-    setVisibleLimit(visibleSessions.length - 1);
-  }, [props.sessions, segmentWidth, visibleSessions.length]);
+  });
 
   if (!hasSessions) {
     return null;
@@ -131,6 +151,7 @@ export function TerminalSessionChips(props: ITerminalSessionChipsProps): JSX.Ele
             </>
           }
           triggerLabel={`All terminal sessions (${hiddenSessions.length} more)`}
+          triggerReference={overflowReference}
         >
           <TerminalSessionList
             sessions={props.sessions}
@@ -139,22 +160,35 @@ export function TerminalSessionChips(props: ITerminalSessionChipsProps): JSX.Ele
           />
         </ToolbarPopover>
       ) : null}
+      {/* Folded chips are laid out where nobody sees or reaches them, so the fit knows how wide each one is. */}
+      <span ref={foldedChipsReference} aria-hidden="true" className="invisible absolute flex" inert>
+        {hiddenSessions.map((session: TerminalSession) => (
+          <TerminalSessionChip key={session.sessionId} isFolded session={session} onRemove={ignore} onToggle={ignore} />
+        ))}
+      </span>
     </ToolbarSegment>
   );
 }
 
 interface ITerminalSessionChipProps {
+  /** A folded chip is rendered only to be measured. */
+  isFolded?: boolean;
   onRemove: () => void;
   onToggle: () => void;
   session: TerminalSession;
 }
 
-function TerminalSessionChip({ onRemove, onToggle, session }: ITerminalSessionChipProps): JSX.Element {
+function TerminalSessionChip({
+  isFolded = false,
+  onRemove,
+  onToggle,
+  session,
+}: ITerminalSessionChipProps): JSX.Element {
   const hasExited: boolean = session.status === "exited";
   const statusLabel: string = readTerminalSessionStatusLabel(session.status);
 
   return (
-    <span className="flex shrink-0" data-testid="TerminalSessionChip">
+    <span className="flex shrink-0" data-testid={isFolded ? undefined : "TerminalSessionChip"}>
       <button
         aria-label={`${session.summary.chipLabel} terminal, ${statusLabel}`}
         aria-pressed={session.isExpanded}
@@ -262,4 +296,23 @@ interface ITerminalSessionKindIconProps {
 
 function TerminalSessionKindIcon({ session }: ITerminalSessionKindIconProps): JSX.Element {
   return session.kind === "editor" ? <Icon glyph={CodeIcon} /> : <Icon glyph={TerminalIcon} />;
+}
+
+function ignore(): void {}
+
+/**
+ * The width the toolbar can give the segment. A segment that wants more than there is gets exactly what is left,
+ * so the layout answers for every limit above it: the viewport, the minimap, and the neighbouring segments.
+ */
+function readAvailableWidth(segment: HTMLElement): number {
+  const width: string = segment.style.width;
+
+  // A width, unlike a flex basis, also counts towards the width the toolbar itself asks for.
+  segment.style.width = "100vw";
+
+  const availableWidth: number = segment.clientWidth;
+
+  segment.style.width = width;
+
+  return availableWidth;
 }
