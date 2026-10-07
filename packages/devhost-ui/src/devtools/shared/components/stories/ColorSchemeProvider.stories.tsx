@@ -2,7 +2,11 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { expect, within } from "storybook/test";
 
 import { ColorSchemeProvider, type DevtoolsColorScheme, useDevtoolsColorScheme } from "../..";
-import { devtoolsStoryShadowRootHostTestId, readShadowRoot, renderInDevtoolsStoryShadowRoot } from "./helpers";
+import {
+  devtoolsStoryShadowRootHostTestId,
+  readDevtoolsStoryShadowCanvas,
+  renderInDevtoolsStoryShadowRoot,
+} from "./helpers";
 
 function ColorSchemeConsumer() {
   const colorScheme = useDevtoolsColorScheme();
@@ -52,10 +56,8 @@ export const Light: Story = {
 };
 
 async function expectColorSchemeStory(canvasElement: HTMLElement, colorScheme: DevtoolsColorScheme): Promise<void> {
-  const canvas = within(canvasElement);
-  const hostElement = canvas.getByTestId(devtoolsStoryShadowRootHostTestId);
-  const shadowRoot: ShadowRoot = readShadowRoot(hostElement, "ColorSchemeProvider story shadow root was not created.");
-  const shadowCanvas = within(shadowRoot as unknown as HTMLElement);
+  const hostElement = within(canvasElement).getByTestId(devtoolsStoryShadowRootHostTestId);
+  const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
 
   await expect(shadowCanvas.getByTestId("color-scheme-consumer")).toHaveTextContent(`Color scheme: ${colorScheme}`);
   await expect(hostElement).toHaveAttribute("data-theme", colorScheme);

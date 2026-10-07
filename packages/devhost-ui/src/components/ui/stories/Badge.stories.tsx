@@ -1,10 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, within } from "storybook/test";
+import { expect } from "storybook/test";
 
 import { Badge } from "../Badge";
 import {
-  devtoolsStoryShadowRootHostTestId,
-  readShadowRoot,
+  readDevtoolsStoryShadowCanvas,
   renderInDevtoolsStoryShadowRoot,
 } from "../../../devtools/shared/components/stories/helpers";
 import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
@@ -25,20 +24,14 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-function readBadgeShadowCanvas(canvasElement: HTMLElement): ReturnType<typeof within> {
-  const canvas = within(canvasElement);
-  const hostElement = canvas.getByTestId(devtoolsStoryShadowRootHostTestId);
-  const shadowRoot: ShadowRoot = readShadowRoot(hostElement, "Badge story shadow root was not created.");
-
-  return within(shadowRoot as unknown as HTMLElement);
-}
-
 export const Default: Story = {
   args: {
     children: "external",
   },
   play: async ({ canvasElement }): Promise<void> => {
-    await expect(readBadgeShadowCanvas(canvasElement).getByText("external")).toBeInTheDocument();
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+
+    await expect(shadowCanvas.getByText("external")).toBeInTheDocument();
   },
 };
 
@@ -48,7 +41,9 @@ export const Primary: Story = {
     variant: "primary",
   },
   play: async ({ canvasElement }): Promise<void> => {
-    await expect(readBadgeShadowCanvas(canvasElement).getByText("working")).toBeInTheDocument();
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+
+    await expect(shadowCanvas.getByText("working")).toBeInTheDocument();
   },
 };
 
@@ -58,7 +53,9 @@ export const Destructive: Story = {
     variant: "destructive",
   },
   play: async ({ canvasElement }): Promise<void> => {
-    await expect(readBadgeShadowCanvas(canvasElement).getByText("paused")).toBeInTheDocument();
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+
+    await expect(shadowCanvas.getByText("paused")).toBeInTheDocument();
   },
 };
 
@@ -68,7 +65,9 @@ export const Warning: Story = {
     variant: "warning",
   },
   play: async ({ canvasElement }): Promise<void> => {
-    await expect(readBadgeShadowCanvas(canvasElement).getByText("changed")).toBeInTheDocument();
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+
+    await expect(shadowCanvas.getByText("changed")).toBeInTheDocument();
   },
 };
 
@@ -78,6 +77,8 @@ export const Success: Story = {
     variant: "success",
   },
   play: async ({ canvasElement }): Promise<void> => {
-    await expect(readBadgeShadowCanvas(canvasElement).getByText("finished")).toBeInTheDocument();
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+
+    await expect(shadowCanvas.getByText("finished")).toBeInTheDocument();
   },
 };

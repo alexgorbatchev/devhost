@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState, type JSX } from "react";
-import { expect, userEvent, waitFor, within } from "storybook/test";
+import { expect, userEvent, waitFor } from "storybook/test";
 
 import { Button } from "../Button";
 import {
@@ -20,8 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "../DropdownMenu";
 import {
-  devtoolsStoryShadowRootHostTestId,
-  readShadowRoot,
+  readDevtoolsStoryShadowCanvas,
   renderInDevtoolsStoryShadowRoot,
 } from "../../../devtools/shared/components/stories/helpers";
 import { StorybookThemeProvider } from "@/devtools/shared/components/stories/helpers";
@@ -82,7 +81,7 @@ type Story = StoryObj<typeof meta>;
 
 const Default: Story = {
   play: async ({ canvasElement }): Promise<void> => {
-    const shadowCanvas = readDropdownMenuShadowCanvas(canvasElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
 
     await expect(shadowCanvas.getByRole("button", { name: "Open commands" })).toBeInTheDocument();
     await expect(shadowCanvas.getByRole("menuitem", { name: /Restart service/ })).toBeInTheDocument();
@@ -101,11 +100,3 @@ const Default: Story = {
 };
 
 export { Default as DropdownMenu };
-
-function readDropdownMenuShadowCanvas(canvasElement: HTMLElement): ReturnType<typeof within> {
-  const canvas = within(canvasElement);
-  const hostElement = canvas.getByTestId(devtoolsStoryShadowRootHostTestId);
-  const shadowRoot: ShadowRoot = readShadowRoot(hostElement, "DropdownMenu story shadow root was not created.");
-
-  return within(shadowRoot as unknown as HTMLElement);
-}
