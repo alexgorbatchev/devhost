@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { lstat, rm } from "node:fs/promises";
 import assert from "node:assert/strict";
-import { resolve } from "node:path";
+import { relative, resolve } from "node:path";
 import type { INativeReactAutomation } from "./types";
 import { isNativeReactOwnedProcessAlive, readNativeReactOwnedProcesses } from "./readNativeReactOwnedProcesses";
 import { waitForNativeReactCondition } from "./waitForNativeReactCondition";
@@ -24,6 +24,10 @@ export function createNativeReactAutomation(
 ): INativeReactAutomation {
   const namespace: string = "n";
   const socketDirectoryPath = resolve(repositoryRoot, ".tmp", `nr-${crypto.randomUUID().slice(0, 8)}`);
+  // The pinned CLI retains relative socket paths and its daemon inherits cwd.
+  // Keep the Unix pathname short without moving this owner's files outside W.
+  const socketDirectoryArgument = relative(repositoryRoot, socketDirectoryPath);
+  assert.equal(resolve(repositoryRoot, socketDirectoryArgument), socketDirectoryPath);
   mkdirSync(socketDirectoryPath, { mode: 0o700 });
   const sessions = new Map<string, string>();
   const daemonPids = new Set<number>();
@@ -69,11 +73,15 @@ export function createNativeReactAutomation(
     const prefix = resolve(outputPath, `${String(++sequence).padStart(3, "0")}-${label}`);
     await Bun.write(
       `${prefix}.command.json`,
-      JSON.stringify({ command, cwd: repositoryRoot, socketDirectoryPath }, null, 2),
+      JSON.stringify({ command, cwd: repositoryRoot, socketDirectoryPath, socketDirectoryArgument }, null, 2),
     );
     const child = Bun.spawn(command, {
       cwd: repositoryRoot,
-      env: { ...process.env, TMPDIR: resolve(repositoryRoot, ".tmp"), AGENT_BROWSER_SOCKET_DIR: socketDirectoryPath },
+      env: {
+        ...process.env,
+        TMPDIR: resolve(repositoryRoot, ".tmp"),
+        AGENT_BROWSER_SOCKET_DIR: socketDirectoryArgument,
+      },
       timeout: 40_000,
       stdout: Bun.file(`${prefix}.stdout.log`),
       stderr: Bun.file(`${prefix}.stderr.log`),
@@ -167,7 +175,7 @@ export function createNativeReactAutomation(
         if (!isNativeReactOwnedProcessAlive(pid)) continue;
         const environment = (await Bun.file(`/proc/${pid}/environ`).text()).split("\0");
         const ownership = [
-          `AGENT_BROWSER_SOCKET_DIR=${socketDirectoryPath}`,
+          `AGENT_BROWSER_SOCKET_DIR=${socketDirectoryArgument}`,
           `AGENT_BROWSER_NAMESPACE=${namespace}`,
           `AGENT_BROWSER_SESSION=${binding.session}`,
         ];
