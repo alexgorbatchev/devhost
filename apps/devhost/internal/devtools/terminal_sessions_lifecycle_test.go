@@ -144,7 +144,7 @@ func startAnnotationLifecycleServer(t *testing.T, kind string) *ControlServer {
 	command := []string{os.Args[0], "-test.run=^TestAnnotationSessionHelperProcess$"}
 	env := map[string]string{annotationHelperEnvironment: "1"}
 	action := manifest.ValidatedAnnotationAction{
-		ID: kind, Kind: kind, DisplayName: "Lifecycle test", TempDir: &projectRoot,
+		ID: kind, Kind: kind, Label: "Lifecycle test", TempDir: &projectRoot,
 		Command: command, Cwd: projectRoot, Env: env,
 		Agent: manifest.ValidatedAgent{Kind: "configured", Command: command, Cwd: projectRoot, Env: env},
 	}

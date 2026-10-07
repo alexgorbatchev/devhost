@@ -207,16 +207,16 @@ func validateAnnotationAction(index int, value map[string]any, manifestDirectory
 func validateAgentAnnotationAction(actionID string, actionLabel string, value map[string]any, manifestDirectoryPath string, schemaIssues *[]string, validationIssues *[]string) ValidatedAnnotationAction {
 	if _, hasCommand := value["command"]; hasCommand {
 		*schemaIssues = append(*schemaIssues, fmt.Sprintf("annotation.actions.%s agent actions must omit command.", actionID))
-		return ValidatedAnnotationAction{DisplayName: actionLabel, ID: actionID, Kind: "agent"}
+		return ValidatedAnnotationAction{Label: actionLabel, ID: actionID, Kind: "agent"}
 	}
 	agentValue, ok := readMap(value["agent"], "annotation.actions."+actionID+".agent", schemaIssues)
 	if !ok {
-		return ValidatedAnnotationAction{DisplayName: actionLabel, ID: actionID, Kind: "agent"}
+		return ValidatedAnnotationAction{Label: actionLabel, ID: actionID, Kind: "agent"}
 	}
 	allowKeys(agentValue, []string{"adapter", "args", "command", "cwd", "env"}, "annotation.actions."+actionID+".agent", schemaIssues)
 	agent := validateAgentActionFields("annotation.actions."+actionID+".agent", agentValue, manifestDirectoryPath, schemaIssues, validationIssues)
 	if agent.Kind == "" {
-		return ValidatedAnnotationAction{DisplayName: actionLabel, ID: actionID, Kind: "agent"}
+		return ValidatedAnnotationAction{Label: actionLabel, ID: actionID, Kind: "agent"}
 	}
 	if actionLabel == "" {
 		adapterLabel, isAdapter := adapterLabels[agent.Kind]
@@ -227,23 +227,23 @@ func validateAgentAnnotationAction(actionID string, actionLabel string, value ma
 		}
 		actionLabel = adapterLabel
 	}
-	return ValidatedAnnotationAction{Agent: agent, DisplayName: actionLabel, ID: actionID, Kind: "agent"}
+	return ValidatedAnnotationAction{Agent: agent, Label: actionLabel, ID: actionID, Kind: "agent"}
 }
 
 func validateCommandAnnotationAction(actionID string, actionLabel string, value map[string]any, manifestDirectoryPath string, schemaIssues *[]string, validationIssues *[]string) ValidatedAnnotationAction {
 	if _, hasAgent := value["agent"]; hasAgent {
 		*schemaIssues = append(*schemaIssues, fmt.Sprintf("annotation.actions.%s command actions must omit agent.", actionID))
-		return ValidatedAnnotationAction{DisplayName: actionLabel, ID: actionID, Kind: "command"}
+		return ValidatedAnnotationAction{Label: actionLabel, ID: actionID, Kind: "command"}
 	}
 	commandValue, ok := readMap(value["command"], "annotation.actions."+actionID+".command", schemaIssues)
 	if !ok {
-		return ValidatedAnnotationAction{DisplayName: actionLabel, ID: actionID, Kind: "command"}
+		return ValidatedAnnotationAction{Label: actionLabel, ID: actionID, Kind: "command"}
 	}
 	allowKeys(commandValue, []string{"command", "cwd", "env"}, "annotation.actions."+actionID+".command", schemaIssues)
 	command, hasCommand := readOptionalCommand(commandValue, "command", schemaIssues)
 	if !hasCommand {
 		*schemaIssues = append(*schemaIssues, fmt.Sprintf("annotation.actions.%s.command must define command.", actionID))
-		return ValidatedAnnotationAction{DisplayName: actionLabel, ID: actionID, Kind: "command"}
+		return ValidatedAnnotationAction{Label: actionLabel, ID: actionID, Kind: "command"}
 	}
 	cwd := "."
 	if valueCwd, ok := readOptionalString(commandValue, "cwd", schemaIssues); ok {
@@ -254,12 +254,12 @@ func validateCommandAnnotationAction(actionID string, actionLabel string, value 
 		env = envValue
 	}
 	return ValidatedAnnotationAction{
-		Command:     command,
-		Cwd:         resolveConstrainedPath("annotation.actions."+actionID+".cwd", cwd, manifestDirectoryPath, validationIssues),
-		DisplayName: actionLabel,
-		Env:         env,
-		ID:          actionID,
-		Kind:        "command",
+		Command: command,
+		Cwd:     resolveConstrainedPath("annotation.actions."+actionID+".cwd", cwd, manifestDirectoryPath, validationIssues),
+		Label:   actionLabel,
+		Env:     env,
+		ID:      actionID,
+		Kind:    "command",
 	}
 }
 

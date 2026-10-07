@@ -1,3 +1,4 @@
+import type { IAnnotationAction } from "../../shared/devtoolsConfig";
 import type {
   EditorTerminalLauncher,
   IAgentTerminalSession,
@@ -36,19 +37,23 @@ const terminalTitleByEditorLauncher: Record<EditorTerminalLauncher, string> = {
   neovim: "Neovim",
 };
 
-export function createTerminalSession(sessionId: string, request: StartTerminalSessionRequest): TerminalSession {
+// The control server lists an annotation session by action id, so its label comes from the configured actions.
+export function createTerminalSession(
+  sessionId: string,
+  request: StartTerminalSessionRequest,
+  annotationActions: IAnnotationAction[],
+): TerminalSession {
   if (request.kind === "agent") {
     return {
       actionId: request.actionId,
       annotation: request.annotation,
       behavior: agentTerminalBehavior,
-      displayName: request.displayName,
       errorMessage: null,
       isExpanded: agentTerminalBehavior.defaultIsExpanded,
       kind: "agent",
       sessionId,
       status: "connecting",
-      summary: createAgentTerminalSummary(request),
+      summary: createAnnotationTerminalSummary(request, annotationActions),
     } satisfies IAgentTerminalSession;
   }
 
@@ -57,13 +62,12 @@ export function createTerminalSession(sessionId: string, request: StartTerminalS
       actionId: request.actionId,
       annotation: request.annotation,
       behavior: commandTerminalBehavior,
-      displayName: request.displayName,
       errorMessage: null,
       isExpanded: commandTerminalBehavior.defaultIsExpanded,
       kind: "command",
       sessionId,
       status: "connecting",
-      summary: createCommandTerminalSummary(request),
+      summary: createAnnotationTerminalSummary(request, annotationActions),
     } satisfies ICommandTerminalSession;
   }
 
@@ -83,19 +87,18 @@ export function createTerminalSession(sessionId: string, request: StartTerminalS
   } satisfies IEditorTerminalSession;
 }
 
-function createAgentTerminalSummary(request: IStartAgentTerminalSessionRequest): ITerminalSessionSummary {
-  return {
-    chipLabel: request.displayName,
-    meta: createAnnotationSummaryMeta(request),
-    title: request.displayName,
-  };
-}
+function createAnnotationTerminalSummary(
+  request: IStartAgentTerminalSessionRequest | IStartCommandTerminalSessionRequest,
+  annotationActions: IAnnotationAction[],
+): ITerminalSessionSummary {
+  const actionLabel: string =
+    annotationActions.find((action: IAnnotationAction): boolean => action.id === request.actionId)?.label ??
+    request.actionId;
 
-function createCommandTerminalSummary(request: IStartCommandTerminalSessionRequest): ITerminalSessionSummary {
   return {
-    chipLabel: request.displayName,
+    chipLabel: actionLabel,
     meta: createAnnotationSummaryMeta(request),
-    title: request.displayName,
+    title: actionLabel,
   };
 }
 

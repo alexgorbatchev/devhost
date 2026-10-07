@@ -182,7 +182,7 @@ type injectedConfig struct {
 
 type injectedAnnotationAction struct {
 	ID           string `json:"id"`
-	DisplayName  string `json:"displayName"`
+	Label        string `json:"label"`
 	Kind         string `json:"kind"`
 	QueueEnabled bool   `json:"queueEnabled"`
 }
@@ -453,7 +453,7 @@ func createInjectedAnnotationActions(actions []manifest.ValidatedAnnotationActio
 	for _, action := range actions {
 		result = append(result, injectedAnnotationAction{
 			ID:           action.ID,
-			DisplayName:  action.DisplayName,
+			Label:        action.Label,
 			Kind:         action.Kind,
 			QueueEnabled: action.Kind == terminalSessionRequestKindAgent,
 		})

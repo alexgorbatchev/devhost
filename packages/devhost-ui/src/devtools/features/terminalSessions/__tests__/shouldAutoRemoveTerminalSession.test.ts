@@ -1,33 +1,45 @@
 import { describe, expect, test } from "bun:test";
 
+import type { IAnnotationAction } from "../../../shared/devtoolsConfig";
 import { createTerminalSession } from "../createTerminalSession";
 import { shouldAutoRemoveTerminalSession } from "../shouldAutoRemoveTerminalSession";
 
-const AGENT_TERMINAL_SESSION = createTerminalSession("session-a", {
-  actionId: "agent",
-  annotation: {
-    comment: "Fix button",
-    markers: [],
-    stackName: "stack-a",
-    submittedAt: 1,
-    title: "Page A",
-    url: "https://example.test/a",
-  },
-  displayName: "Claude Code",
-  kind: "agent",
-});
+const ANNOTATION_ACTIONS: IAnnotationAction[] = [
+  { id: "agent", kind: "agent", label: "Claude Code", queueEnabled: true },
+];
 
-const EDITOR_TERMINAL_SESSION = createTerminalSession("session-b", {
-  componentName: "PrimaryButton",
-  kind: "editor",
-  launcher: "neovim",
-  source: {
-    columnNumber: 8,
-    fileName: "src/components/PrimaryButton.tsx",
-    lineNumber: 42,
+const AGENT_TERMINAL_SESSION = createTerminalSession(
+  "session-a",
+  {
+    actionId: "agent",
+    annotation: {
+      comment: "Fix button",
+      markers: [],
+      stackName: "stack-a",
+      submittedAt: 1,
+      title: "Page A",
+      url: "https://example.test/a",
+    },
+    kind: "agent",
   },
-  sourceLabel: "src/components/PrimaryButton.tsx:42:8",
-});
+  ANNOTATION_ACTIONS,
+);
+
+const EDITOR_TERMINAL_SESSION = createTerminalSession(
+  "session-b",
+  {
+    componentName: "PrimaryButton",
+    kind: "editor",
+    launcher: "neovim",
+    source: {
+      columnNumber: 8,
+      fileName: "src/components/PrimaryButton.tsx",
+      lineNumber: 42,
+    },
+    sourceLabel: "src/components/PrimaryButton.tsx:42:8",
+  },
+  ANNOTATION_ACTIONS,
+);
 
 describe("shouldAutoRemoveTerminalSession", () => {
   test("does not auto-remove a running editor terminal session", () => {

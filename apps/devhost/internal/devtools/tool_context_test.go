@@ -95,7 +95,7 @@ func TestWorktreeQueuePausesOldSessionAndResumesInSelectedCheckout(t *testing.T)
 	root := configured
 	inputFile := filepath.Join(t.TempDir(), "input")
 	tempDir := t.TempDir()
-	action := manifest.ValidatedAnnotationAction{ID: "fix", Kind: "agent", DisplayName: "Test agent", TempDir: &tempDir, Agent: manifest.ValidatedAgent{Kind: "configured", Cwd: configured, Command: []string{"sh", "-c", `read task; printf '%s' "$task" > "$INPUT_PATH"`}, Env: map[string]string{"INPUT_PATH": inputFile}}}
+	action := manifest.ValidatedAnnotationAction{ID: "fix", Kind: "agent", Label: "Test agent", TempDir: &tempDir, Agent: manifest.ValidatedAgent{Kind: "configured", Cwd: configured, Command: []string{"sh", "-c", `read task; printf '%s' "$task" > "$INPUT_PATH"`}, Env: map[string]string{"INPUT_PATH": inputFile}}}
 	server, err := StartControlServer(StartControlServerOptions{
 		ProjectRootPath: configured, PrimaryService: "web", ManifestPath: filepath.Join(configured, "devhost.toml"), StateDirectoryPath: t.TempDir(),
 		GetHealthResponse: func() (HealthResponse, error) { return HealthResponse{Services: []ServiceHealth{}}, nil },

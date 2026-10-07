@@ -29,7 +29,6 @@ export interface IStartAgentTerminalSessionRequest {
   annotation: IAnnotationSubmitDetail;
   actionId: string;
   colorScheme?: DevtoolsColorScheme;
-  displayName: string;
   kind: "agent";
   targetSessionId?: string;
 }
@@ -37,7 +36,6 @@ export interface IStartAgentTerminalSessionRequest {
 export interface IStartCommandTerminalSessionRequest {
   annotation: IAnnotationSubmitDetail;
   actionId: string;
-  displayName: string;
   kind: "command";
 }
 
@@ -85,14 +83,12 @@ interface ITerminalSessionBase {
 export interface IAgentTerminalSession extends ITerminalSessionBase {
   actionId: string;
   annotation: IAnnotationSubmitDetail;
-  displayName: string;
   kind: "agent";
 }
 
 export interface ICommandTerminalSession extends ITerminalSessionBase {
   actionId: string;
   annotation: IAnnotationSubmitDetail;
-  displayName: string;
   kind: "command";
 }
 

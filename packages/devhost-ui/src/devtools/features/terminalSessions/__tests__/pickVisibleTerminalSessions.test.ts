@@ -1,24 +1,30 @@
 import { describe, expect, test } from "bun:test";
 
+import type { IAnnotationAction } from "../../../shared/devtoolsConfig";
 import { createTerminalSession } from "../createTerminalSession";
 import { pickVisibleTerminalSessions } from "../pickVisibleTerminalSessions";
 import type { TerminalSession, TerminalSessionStatus } from "../types";
 
+const ANNOTATION_ACTIONS: IAnnotationAction[] = [{ id: "agent", kind: "agent", label: "Claude", queueEnabled: true }];
+
 function createAgentSession(sessionId: string, status: TerminalSessionStatus): TerminalSession {
   return {
-    ...createTerminalSession(sessionId, {
-      actionId: "agent",
-      annotation: {
-        comment: "Annotation",
-        markers: [],
-        stackName: "stack",
-        submittedAt: 1,
-        title: "Page",
-        url: "https://example.test/",
+    ...createTerminalSession(
+      sessionId,
+      {
+        actionId: "agent",
+        annotation: {
+          comment: "Annotation",
+          markers: [],
+          stackName: "stack",
+          submittedAt: 1,
+          title: "Page",
+          url: "https://example.test/",
+        },
+        kind: "agent",
       },
-      displayName: "Claude",
-      kind: "agent",
-    }),
+      ANNOTATION_ACTIONS,
+    ),
     isExpanded: false,
     status,
   };

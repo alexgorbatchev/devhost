@@ -112,9 +112,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
         return;
       }
 
-      setSubmissionErrorMessage(
-        submitResult.errorMessage ?? `Failed to start the ${selectedAction.displayName} action.`,
-      );
+      setSubmissionErrorMessage(submitResult.errorMessage ?? `Failed to start the ${selectedAction.label} action.`);
     } catch (error) {
       setSubmissionErrorMessage(error instanceof Error ? error.message : String(error));
     } finally {
@@ -204,7 +202,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
   const displayedTargets: ISelectedAnnotationTarget[] = useRetainedValue(selectedTargets, isPopupOpen);
   const displayedCoordinates = useRetainedValue(popupCoordinates, isPopupOpen);
   const displayedComment: string = useRetainedValue(comment, isPopupOpen);
-  const runLabel: string = isSubmitting ? "Submitting…" : selectedAction.displayName;
+  const runLabel: string = isSubmitting ? "Submitting…" : selectedAction.label;
   const markerCountLabel: string = `${displayedTargets.length} ${displayedTargets.length === 1 ? "marker" : "markers"}`;
 
   return (
@@ -289,7 +287,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
                       setSendToActiveSession(event.currentTarget.checked);
                     }}
                   />
-                  Append to active {selectedAction.displayName} queue
+                  Append to active {selectedAction.label} queue
                 </label>
               ) : null}
               <div className="flex items-center gap-1.5">

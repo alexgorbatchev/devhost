@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import type { IAnnotationAction } from "../../../shared/devtoolsConfig";
 import { createTerminalSession } from "../createTerminalSession";
 import {
   appendTerminalSession,
@@ -10,49 +11,63 @@ import {
 } from "../manageTerminalSessions";
 import type { TerminalSession } from "../types";
 
-const FIRST_SESSION: TerminalSession = createTerminalSession("session-a", {
-  actionId: "agent",
-  annotation: {
-    comment: "First annotation",
-    markers: [],
-    stackName: "stack-a",
-    submittedAt: 1,
-    title: "Page A",
-    url: "https://example.test/a",
-  },
-  displayName: "Claude Code",
-  kind: "agent",
-});
+const ANNOTATION_ACTIONS: IAnnotationAction[] = [
+  { id: "agent", kind: "agent", label: "Claude Code", queueEnabled: true },
+];
 
-const SECOND_SESSION: TerminalSession = {
-  ...createTerminalSession("session-b", {
+const FIRST_SESSION: TerminalSession = createTerminalSession(
+  "session-a",
+  {
     actionId: "agent",
     annotation: {
-      comment: "Second annotation",
+      comment: "First annotation",
       markers: [],
-      stackName: "stack-b",
-      submittedAt: 2,
-      title: "Page B",
-      url: "https://example.test/b",
+      stackName: "stack-a",
+      submittedAt: 1,
+      title: "Page A",
+      url: "https://example.test/a",
     },
-    displayName: "Claude Code",
     kind: "agent",
-  }),
+  },
+  ANNOTATION_ACTIONS,
+);
+
+const SECOND_SESSION: TerminalSession = {
+  ...createTerminalSession(
+    "session-b",
+    {
+      actionId: "agent",
+      annotation: {
+        comment: "Second annotation",
+        markers: [],
+        stackName: "stack-b",
+        submittedAt: 2,
+        title: "Page B",
+        url: "https://example.test/b",
+      },
+      kind: "agent",
+    },
+    ANNOTATION_ACTIONS,
+  ),
   isExpanded: true,
 };
 
 const THIRD_SESSION: TerminalSession = {
-  ...createTerminalSession("session-c", {
-    componentName: "PrimaryButton",
-    kind: "editor",
-    launcher: "neovim",
-    source: {
-      columnNumber: 8,
-      fileName: "src/components/PrimaryButton.tsx",
-      lineNumber: 42,
+  ...createTerminalSession(
+    "session-c",
+    {
+      componentName: "PrimaryButton",
+      kind: "editor",
+      launcher: "neovim",
+      source: {
+        columnNumber: 8,
+        fileName: "src/components/PrimaryButton.tsx",
+        lineNumber: 42,
+      },
+      sourceLabel: "src/components/PrimaryButton.tsx:42:8",
     },
-    sourceLabel: "src/components/PrimaryButton.tsx:42:8",
-  }),
+    ANNOTATION_ACTIONS,
+  ),
   isExpanded: false,
 };
 

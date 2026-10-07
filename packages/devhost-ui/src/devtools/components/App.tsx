@@ -184,7 +184,6 @@ function AppContent(): JSX.Element {
           actionId: activeAction.id,
           annotation: activeEntry.annotation,
           colorScheme,
-          displayName: activeAction.displayName,
           kind: "agent",
         });
       }

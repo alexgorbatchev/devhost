@@ -2,37 +2,46 @@ import assert from "node:assert";
 
 import { describe, expect, test } from "bun:test";
 
+import type { IAnnotationAction } from "../../../../shared/devtoolsConfig";
 import { appendStartedTerminalSessionIfNeeded } from "../../appendStartedTerminalSessionIfNeeded";
 import { createTerminalSession } from "../../createTerminalSession";
 
+const ANNOTATION_ACTIONS: IAnnotationAction[] = [{ id: "agent", kind: "agent", label: "Pi", queueEnabled: true }];
+
 describe("useTerminalSessions", () => {
   test("keeps the existing local session when the server returns a duplicate session id", () => {
-    const existingSession = createTerminalSession("session-1", {
-      actionId: "agent",
-      annotation: {
-        comment: "First annotation",
-        markers: [],
-        stackName: "hello-stack",
-        submittedAt: 1,
-        title: "Example page",
-        url: "https://example.test/page",
+    const existingSession = createTerminalSession(
+      "session-1",
+      {
+        actionId: "agent",
+        annotation: {
+          comment: "First annotation",
+          markers: [],
+          stackName: "hello-stack",
+          submittedAt: 1,
+          title: "Example page",
+          url: "https://example.test/page",
+        },
+        kind: "agent",
       },
-      displayName: "Pi",
-      kind: "agent",
-    });
-    const duplicateResponseSession = createTerminalSession("session-1", {
-      actionId: "agent",
-      annotation: {
-        comment: "Second annotation",
-        markers: [],
-        stackName: "hello-stack",
-        submittedAt: 2,
-        title: "Another page",
-        url: "https://example.test/another-page",
+      ANNOTATION_ACTIONS,
+    );
+    const duplicateResponseSession = createTerminalSession(
+      "session-1",
+      {
+        actionId: "agent",
+        annotation: {
+          comment: "Second annotation",
+          markers: [],
+          stackName: "hello-stack",
+          submittedAt: 2,
+          title: "Another page",
+          url: "https://example.test/another-page",
+        },
+        kind: "agent",
       },
-      displayName: "Pi",
-      kind: "agent",
-    });
+      ANNOTATION_ACTIONS,
+    );
     const currentSessions = [existingSession];
 
     const nextSessions = appendStartedTerminalSessionIfNeeded(currentSessions, duplicateResponseSession);

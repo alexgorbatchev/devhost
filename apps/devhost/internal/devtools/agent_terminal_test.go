@@ -19,7 +19,7 @@ func TestAnnotationSessionTempDir(t *testing.T) {
 			t.Run(fmt.Sprintf("%s/configured=%t", kind, configured), func(t *testing.T) {
 				base := filepath.Join(t.TempDir(), "nested", "annotations")
 				action := manifest.ValidatedAnnotationAction{
-					ID: "fix", Kind: kind, DisplayName: "Fix", Command: []string{"true"},
+					ID: "fix", Kind: kind, Label: "Fix", Command: []string{"true"},
 					Agent: manifest.ValidatedAgent{Kind: "pi"},
 				}
 				if configured {
@@ -119,9 +119,9 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 				Agent: manifest.ValidatedAgent{
 					Kind: "pi",
 				},
-				DisplayName: "Pi",
-				ID:          "ask-pi",
-				Kind:        "agent",
+				Label: "Pi",
+				ID:    "ask-pi",
+				Kind:  "agent",
 			},
 			assertFn: func(t *testing.T, command *terminalSessionCommand) {
 				t.Helper()
@@ -147,9 +147,9 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 					Args: []string{"--thinking", "high"},
 					Kind: "pi",
 				},
-				DisplayName: "Pi",
-				ID:          "ask-pi",
-				Kind:        "agent",
+				Label: "Pi",
+				ID:    "ask-pi",
+				Kind:  "agent",
 			},
 			assertFn: func(t *testing.T, command *terminalSessionCommand) {
 				t.Helper()
@@ -178,9 +178,9 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 					Args: []string{"--thinking", "high"},
 					Kind: "pi",
 				},
-				DisplayName: "Pi",
-				ID:          "ask-pi",
-				Kind:        "agent",
+				Label: "Pi",
+				ID:    "ask-pi",
+				Kind:  "agent",
 			},
 			colorScheme: agentColorSchemeDark,
 			assertFn: func(t *testing.T, command *terminalSessionCommand) {
@@ -212,9 +212,9 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 				Agent: manifest.ValidatedAgent{
 					Kind: "claude-code",
 				},
-				DisplayName: "Claude Code",
-				ID:          "ask-claude",
-				Kind:        "agent",
+				Label: "Claude Code",
+				ID:    "ask-claude",
+				Kind:  "agent",
 			},
 			assertFn: func(t *testing.T, command *terminalSessionCommand) {
 				t.Helper()
@@ -240,9 +240,9 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 					Args: []string{"--model", "claude-3-7-sonnet", "--dangerously-skip-permissions"},
 					Kind: "claude-code",
 				},
-				DisplayName: "Claude Code",
-				ID:          "ask-claude",
-				Kind:        "agent",
+				Label: "Claude Code",
+				ID:    "ask-claude",
+				Kind:  "agent",
 			},
 			assertFn: func(t *testing.T, command *terminalSessionCommand) {
 				t.Helper()
@@ -270,9 +270,9 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 				Agent: manifest.ValidatedAgent{
 					Kind: "opencode",
 				},
-				DisplayName: "OpenCode",
-				ID:          "ask-opencode",
-				Kind:        "agent",
+				Label: "OpenCode",
+				ID:    "ask-opencode",
+				Kind:  "agent",
 			},
 			assertFn: func(t *testing.T, command *terminalSessionCommand) {
 				t.Helper()
@@ -301,9 +301,9 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 					Args: []string{"--model", "gpt-4o"},
 					Kind: "opencode",
 				},
-				DisplayName: "OpenCode",
-				ID:          "ask-opencode",
-				Kind:        "agent",
+				Label: "OpenCode",
+				ID:    "ask-opencode",
+				Kind:  "agent",
 			},
 			assertFn: func(t *testing.T, command *terminalSessionCommand) {
 				t.Helper()
@@ -384,7 +384,7 @@ func TestAgentTerminalCommandWritesOnlyItsAdapterFiles(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			action := manifest.ValidatedAnnotationAction{Agent: tc.agent, DisplayName: "Review change", ID: "fix", Kind: "agent"}
+			action := manifest.ValidatedAnnotationAction{Agent: tc.agent, Label: "Review change", ID: "fix", Kind: "agent"}
 			command, err := createAgentTerminalCommand(action, t.TempDir(), annotationSubmitDetail{Comment: "fix"}, agentColorSchemeDark, "stack")
 			if err != nil {
 				t.Fatalf("createAgentTerminalCommand(...) error = %v", err)

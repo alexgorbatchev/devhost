@@ -1740,9 +1740,9 @@
       // Mock state
       // ======================================================================
       const ANNOTATION_ACTIONS = [
-        { id: "claude", displayName: "Claude Code", kind: "agent", queueEnabled: true },
-        { id: "codex", displayName: "Codex", kind: "agent", queueEnabled: false },
-        { id: "lint", displayName: "Lint fix", kind: "command", queueEnabled: false },
+        { id: "claude", kind: "agent", label: "Claude Code", queueEnabled: true },
+        { id: "codex", kind: "agent", label: "Codex", queueEnabled: false },
+        { id: "lint", kind: "command", label: "Lint fix", queueEnabled: false },
       ];
 
       const state = {
@@ -1915,8 +1915,8 @@
           session = {
             id,
             kind,
-            label: action.displayName,
-            title: action.displayName,
+            label: action.label,
+            title: action.label,
             meta: [`${extra?.markers ?? 2} markers`, "Cart — Acme Shop", "shop.localhost", now],
             status: "running",
             fullscreen: false,
@@ -1926,8 +1926,8 @@
           session = {
             id,
             kind,
-            label: action.displayName,
-            title: action.displayName,
+            label: action.label,
+            title: action.label,
             meta: [`${extra?.markers ?? 1} markers`, "shop.localhost", now],
             status: "running",
             fullscreen: false,
@@ -2573,7 +2573,7 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
         setSurfaceVisible(target, true);
         const action = ANNOTATION_ACTIONS.find((a) => a.id === state.selectedActionId);
         const activeAgent = state.sessions.find(
-          (s) => s.kind === "agent" && s.status === "running" && s.label === action.displayName,
+          (s) => s.kind === "agent" && s.status === "running" && s.label === action.label,
         );
         const canAppend = action.kind === "agent" && action.queueEnabled && activeAgent !== undefined;
         const signature = JSON.stringify([
@@ -2600,20 +2600,20 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
                 <ol class="markers">${state.markers.map((m, i) => `<li><span class="num">${i + 1}</span><span class="trunc" title="${esc(m.label)}">${esc(m.label)}</span></li>`).join("")}</ol>
                 <textarea class="input" rows="4" data-focus-key="composer-comment" data-input="composer-comment"
                   placeholder="Describe the change. Refer to markers as #1, #2…">${esc(state.comment)}</textarea>
-                ${canAppend ? `<label class="check"><input type="checkbox" data-input="append" ${state.appendToActive ? "checked" : ""}/>Append to running ${esc(action.displayName)} session</label>` : ""}
+                ${canAppend ? `<label class="check"><input type="checkbox" data-input="append" ${state.appendToActive ? "checked" : ""}/>Append to running ${esc(action.label)} session</label>` : ""}
                 <div class="composer-foot">
                   ${
                     ANNOTATION_ACTIONS.length > 1
                       ? `<span class="split">
                           <button class="btn primary" type="button" data-action="composer-run" data-run ${state.comment.trim() === "" || state.submitting ? "disabled" : ""}>
-                            ${esc(action.displayName)} <span class="kbd">⌘↵</span></button>
+                            ${esc(action.label)} <span class="kbd">⌘↵</span></button>
                           <button class="btn primary caret" type="button" data-action="composer-menu" aria-haspopup="menu" aria-expanded="${state.actionMenuOpen}"
-                            aria-label="Choose action. Current: ${esc(action.displayName)}" ${state.submitting ? "disabled" : ""}>${icon("chevDown")}</button>
+                            aria-label="Choose action. Current: ${esc(action.label)}" ${state.submitting ? "disabled" : ""}>${icon("chevDown")}</button>
                           ${
                             state.actionMenuOpen
                               ? `<div class="menu frame ${menuBelow ? "below" : ""}" role="menu">${ANNOTATION_ACTIONS.map(
                                   (a) =>
-                                    `<button type="button" role="menuitemradio" aria-checked="${a.id === action.id}" data-action="composer-pick" data-id="${a.id}">${icon("check")}<span class="grow">${esc(a.displayName)}</span><span class="muted">${a.kind}</span></button>`,
+                                    `<button type="button" role="menuitemradio" aria-checked="${a.id === action.id}" data-action="composer-pick" data-id="${a.id}">${icon("check")}<span class="grow">${esc(a.label)}</span><span class="muted">${a.kind}</span></button>`,
                                 ).join("")}</div>`
                               : ""
                           }
@@ -2933,7 +2933,7 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
         const action = ANNOTATION_ACTIONS.find((a) => a.id === state.selectedActionId);
         const markerCount = state.markers.length;
         const running = state.sessions.find(
-          (s) => s.kind === "agent" && s.status === "running" && s.label === action.displayName,
+          (s) => s.kind === "agent" && s.status === "running" && s.label === action.label,
         );
         if (action.kind === "agent" && action.queueEnabled && running && state.appendToActive) {
           const queue = state.queues[0] ?? { queueId: "q-new", status: "working", pauseReason: null, entries: [] };

@@ -11,16 +11,16 @@ import {
 import { AnnotationActionSplitButton } from "../AnnotationActionSplitButton";
 
 const agentAction: IAnnotationAction = {
-  displayName: "Pi",
   id: "agent",
   kind: "agent",
+  label: "Pi",
   queueEnabled: true,
 };
 
 const ticketAction: IAnnotationAction = {
-  displayName: "Create Ticket",
   id: "create-ticket",
   kind: "command",
+  label: "Create Ticket",
   queueEnabled: false,
 };
 
@@ -53,7 +53,7 @@ function StoryHarness({
         actions={actions}
         isActionMenuDisabled={isActionMenuDisabled}
         isRunDisabled={isRunDisabled}
-        runLabel={selectedAction.displayName}
+        runLabel={selectedAction.label}
         selectedAction={selectedAction}
         onActionSelect={(actionId: string): void => {
           setSelectedAction(resolveSelectedAction(actions, actionId));
