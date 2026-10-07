@@ -7,7 +7,7 @@ import {
   isReactHighlightCursorMessage,
 } from "../reactHighlightOverlay";
 import { parseReactHighlightCursorPayload } from "../reactHighlightCursorPayload";
-import { pristineWebSocket } from "../../../shared/pristineFetch";
+import { openReconnectingWebSocket } from "../../../shared/openReconnectingWebSocket";
 
 interface IUseReactHighlightOverlayParams {
   enabled: boolean;
@@ -32,7 +32,13 @@ export function useReactHighlightOverlay({
     let overlays: Awaited<ReturnType<typeof highlightReactElements>> = [];
     let messageSequence: number = 0;
     let isDisposed: boolean = false;
-    const websocket: WebSocket = pristineWebSocket(createReactHighlightWebSocketUrl(window.location));
+
+    // Removes what is shown and makes a highlight that is still being resolved a stale one.
+    const clearHighlight = (): void => {
+      messageSequence += 1;
+      clearReactHighlightOverlays(overlays);
+      overlays = [];
+    };
 
     const handleMessage = (event: MessageEvent): void => {
       const payload: unknown = parseReactHighlightCursorPayload(event.data);
@@ -41,10 +47,8 @@ export function useReactHighlightOverlay({
         return;
       }
 
-      messageSequence += 1;
+      clearHighlight();
       const currentMessageSequence: number = messageSequence;
-      clearReactHighlightOverlays(overlays);
-      overlays = [];
 
       if (payload.locator === null) {
         return;
@@ -69,13 +73,17 @@ export function useReactHighlightOverlay({
       );
     };
 
-    websocket.addEventListener("message", handleMessage);
+    // The stream reports cursor moves and does not repeat the last one to a new connection, so the page cannot
+    // tell where the cursor is while the stream is down. It shows nothing until the editor reports again.
+    const stream = openReconnectingWebSocket(createReactHighlightWebSocketUrl(window.location), {
+      onDisconnect: clearHighlight,
+      onMessage: handleMessage,
+    });
 
     return () => {
       isDisposed = true;
-      websocket.removeEventListener("message", handleMessage);
       clearReactHighlightOverlays(overlays);
-      websocket.close();
+      stream.close();
     };
   }, [enabled, highlightElements, overlayRootReference, projectRootPath]);
 }

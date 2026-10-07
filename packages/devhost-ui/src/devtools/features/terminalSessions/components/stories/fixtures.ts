@@ -1,6 +1,6 @@
 import { createTerminalSession } from "../../createTerminalSession";
 import type { IAnnotationSubmitDetail } from "../../../annotationComposer/types";
-import type { TerminalSession } from "../../types";
+import type { ActiveTerminalSessionSnapshot, TerminalSession } from "../../types";
 
 const fixture_annotation: IAnnotationSubmitDetail = {
   comment: "Fix button",
@@ -11,16 +11,19 @@ const fixture_annotation: IAnnotationSubmitDetail = {
   url: "https://shop.example.test/cart",
 };
 
+// The session as the control server lists it.
+export const fixture_agentSessionSnapshot: ActiveTerminalSessionSnapshot = {
+  label: "Pi",
+  request: {
+    actionId: "agent",
+    annotation: fixture_annotation,
+    kind: "agent",
+  },
+  sessionId: "session-1",
+};
+
 export const fixture_agentSession: TerminalSession = {
-  ...createTerminalSession({
-    label: "Pi",
-    request: {
-      actionId: "agent",
-      annotation: fixture_annotation,
-      kind: "agent",
-    },
-    sessionId: "session-1",
-  }),
+  ...createTerminalSession(fixture_agentSessionSnapshot),
   behavior: { defaultIsExpanded: false, isFullscreenExpanded: false, shouldAutoRemoveOnExit: false },
 };
 

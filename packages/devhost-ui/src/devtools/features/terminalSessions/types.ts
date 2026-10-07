@@ -79,6 +79,9 @@ export interface IListTerminalSessionsResponse {
   sessions: ActiveTerminalSessionSnapshot[];
 }
 
+/** Whether devhost still lists a session; `unknown` while devhost does not answer. */
+export type TerminalSessionPresence = "ended" | "running" | "unknown";
+
 export interface ITerminalSessionStartResult {
   errorMessage?: string;
   success: boolean;

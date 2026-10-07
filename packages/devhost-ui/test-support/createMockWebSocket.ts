@@ -18,6 +18,8 @@ export interface IMockWebSocketConnection {
   close: (code: number) => void;
   /** How the client closed the connection, or `null` while it has not. */
   readClientClosure: () => IMockWebSocketClosure | null;
+  /** What the client has sent over the open connection, oldest first. */
+  readSentFrames: () => MockWebSocketSendData[];
   /**
    * Delivers a JSON message to the client. Like a real socket, the client still receives messages between its call
    * to `close()` and the close event; messages sent after that are dropped.
@@ -57,6 +59,7 @@ export function createMockWebSocket(
     protocol: string = "";
     readyState: number = MockWebSocket.CONNECTING;
     private clientClosure: IMockWebSocketClosure | null = null;
+    private readonly sentFrames: MockWebSocketSendData[] = [];
 
     constructor(url: MockWebSocketUrl, _protocols?: MockWebSocketProtocols) {
       super();
@@ -86,7 +89,16 @@ export function createMockWebSocket(
       });
     }
 
-    send(_data: MockWebSocketSendData): void {}
+    // Like a real socket: sending before the connection opens is an error, and a closing socket drops the frame.
+    send(data: MockWebSocketSendData): void {
+      if (this.readyState === MockWebSocket.CONNECTING) {
+        throw new DOMException("Still in CONNECTING state.", "InvalidStateError");
+      }
+
+      if (this.readyState === MockWebSocket.OPEN) {
+        this.sentFrames.push(data);
+      }
+    }
 
     private closeFromServer(code: number): void {
       if (this.readyState !== MockWebSocket.OPEN && this.readyState !== MockWebSocket.CLOSING) {
@@ -124,13 +136,15 @@ export function createMockWebSocket(
           this.closeFromServer(code);
         },
         readClientClosure: (): IMockWebSocketClosure | null => this.clientClosure,
+        readSentFrames: (): MockWebSocketSendData[] => [...this.sentFrames],
         send: (message: unknown): void => {
           this.deliverFrame(JSON.stringify(message));
         },
         sendFrame: (frame: MockWebSocketFrame): void => {
           this.deliverFrame(frame);
         },
-        url: new URL(this.url, window.location.href),
+        // A unit test outside a browser has no page to resolve a relative URL against.
+        url: new URL(this.url, typeof window === "undefined" ? undefined : window.location.href),
       });
     }
   };

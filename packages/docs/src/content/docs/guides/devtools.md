@@ -106,7 +106,17 @@ Handlers still validate methods, payloads, enabled features, and session state. 
 
 Use the page's routed host with `ws://` for HTTP or `wss://` for HTTPS. The terminal connection requires the ID of an existing session: a missing `sessionId` produces `400`, and an unknown session produces `404` before the WebSocket upgrade. The injected UI constructs these URLs automatically.
 
-The injected UI reopens its health, logs, and annotation queue connections when they are lost, for example after the machine sleeps or devhost restarts behind the same host. It tries again after one second and doubles the wait after each failed attempt, up to ten seconds. While the health connection is down the Services panel shows every service as unavailable, the minimap keeps the log entries it already has, and the queue panel reports that its stream is disconnected. Each recovers when its connection reopens.
+The injected UI reopens its health, logs, annotation queue, React Highlight, and terminal connections when they are lost, for example after the machine sleeps or devhost restarts behind the same host. It tries again after one second and doubles the wait after each failed attempt, up to ten seconds. The native browser-control connection is the exception: it reconnects only when you choose **Connect browser control** again.
+
+While a connection is down:
+
+- the Services panel shows every service as unavailable
+- the minimap keeps the log entries it already has
+- the queue panel reports that its stream is disconnected
+- React Highlight shows no highlight until the editor reports its cursor again
+- a terminal shows `disconnected` and keeps its output
+
+Each recovers when its connection reopens. A reattached terminal replaces its output with the session's retained output. A terminal stops reconnecting when its session has finished, or when `GET /__devhost__/terminal-sessions` no longer lists the session, as after devhost restarts; it then reports that the session is no longer running.
 
 An active native browser-control WebSocket also keeps the stack from idle shutdown. Disconnecting releases that activity and restarts the normal idle buffer.
 

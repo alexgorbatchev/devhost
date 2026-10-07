@@ -10,23 +10,14 @@ import { Badge } from "../../../../components/ui/Badge";
 import { cn } from "../../../../lib/utils";
 
 import { Button, InlineNotice, useDevtoolsColorScheme } from "../../../shared";
-import { createDevtoolsWebSocketUrl } from "../../../shared/createDevtoolsWebSocketUrl";
-import { pristineWebSocket } from "../../../shared/pristineFetch";
-import {
-  TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME,
-  TERMINAL_SESSION_WEBSOCKET_PATH,
-  XTERM_STYLESHEET_PATH,
-} from "../../../shared/constants";
+import { pristineFetch } from "../../../shared/pristineFetch";
+import { XTERM_STYLESHEET_PATH } from "../../../shared/constants";
+import { openTerminalSessionStream, type ITerminalSessionStream } from "../openTerminalSessionStream";
 import { readTerminalSessionPrimaryAction } from "../readTerminalSessionPrimaryAction";
 import { readTerminalSessionStatusLabel } from "../readTerminalSessionStatusLabel";
 import { readTerminalTheme, type ITerminalTheme } from "../readTerminalTheme";
 import { shouldAutoRemoveTerminalSession } from "../shouldAutoRemoveTerminalSession";
-import type {
-  TerminalSession,
-  TerminalSessionClientMessage,
-  TerminalSessionServerMessage,
-  TerminalSessionStatus,
-} from "../types";
+import type { TerminalSession, TerminalSessionStatus } from "../types";
 
 interface ITerminalSessionPanelProps {
   isExpanded: boolean;
@@ -51,11 +42,14 @@ const statusBadgeVariants: Record<TerminalSessionStatus, StatusBadgeVariant> = {
   working: "primary",
 };
 
-const normalClosureCode: number = 1000;
 const xtermStylesheetId: string = "devhost-xterm-stylesheet";
 
+// The escape sequence for a full terminal reset (RIS). Written ahead of a snapshot it clears the screen and the
+// scrollback in order with the output around it.
+const terminalResetSequence: string = "\u001bc";
+
 /**
- * One terminal session window. It stays mounted (hidden) while minimized so the websocket and xterm buffer
+ * One terminal session window. It stays mounted (hidden) while minimized so the session stream and xterm buffer
  * persist and the session keeps reporting status to its toolbar chip; expanding only reveals it.
  */
 export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Element {
@@ -72,7 +66,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
   const terminalReference = useRef<Terminal | null>(null);
   const terminalThemeReference = useRef<ITerminalTheme>(terminalTheme);
   const terminalViewportReference = useRef<HTMLDivElement | null>(null);
-  const websocketReference = useRef<WebSocket | null>(null);
+  const streamReference = useRef<ITerminalSessionStream | null>(null);
   const { onRemove, session } = props;
   const hasExited: boolean = session.status === "exited";
   const isFullscreen: boolean = session.behavior.isFullscreenExpanded;
@@ -82,16 +76,16 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
   onStatusChangeReference.current = props.onStatusChange;
 
   const discardSession = useCallback((): void => {
-    terminateSession(websocketReference.current);
+    streamReference.current?.send({ type: "close" });
     onRemove();
   }, [onRemove]);
 
   const scheduleTerminalResize = useCallback((): void => {
     const fitAddon: FitAddon | null = fitAddonReference.current;
     const terminal: Terminal | null = terminalReference.current;
-    const websocket: WebSocket | null = websocketReference.current;
+    const stream: ITerminalSessionStream | null = streamReference.current;
 
-    if (hasExitedReference.current || fitAddon === null || terminal === null || websocket === null) {
+    if (hasExitedReference.current || fitAddon === null || terminal === null || stream === null) {
       return;
     }
 
@@ -101,7 +95,7 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
 
     resizeAnimationFrameReference.current = window.requestAnimationFrame((): void => {
       resizeAnimationFrameReference.current = null;
-      resizeTerminal(terminal, fitAddon, websocket);
+      resizeTerminal(terminal, fitAddon, stream);
     });
   }, []);
 
@@ -158,12 +152,36 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
         theme: currentTheme.theme,
       });
       const fitAddon = new FitAddon();
-      const websocketUrl: URL = new URL(createDevtoolsWebSocketUrl(TERMINAL_SESSION_WEBSOCKET_PATH, window.location));
-      const websocket = pristineWebSocket(appendTerminalSessionParameters(websocketUrl, session.sessionId).toString());
+      const stream: ITerminalSessionStream = openTerminalSessionStream({
+        fetch: pristineFetch,
+        location: window.location,
+        onOpen: (): void => {
+          scheduleTerminalResize();
+
+          if (isExpandedReference.current) {
+            terminal.focus();
+          }
+        },
+        onOutput: (data: string): void => {
+          terminal.write(data);
+        },
+        // A reattached session sends its output again, so the snapshot replaces what the terminal shows.
+        onSnapshot: (data: string): void => {
+          terminal.write(`${terminalResetSequence}${data}`);
+        },
+        onStatusChange: (status: TerminalSessionStatus, errorMessage: string | null): void => {
+          if (status === "exited") {
+            hasExitedReference.current = true;
+          }
+
+          reportStatus(status, errorMessage);
+        },
+        sessionId: session.sessionId,
+      });
 
       fitAddonReference.current = fitAddon;
       terminalReference.current = terminal;
-      websocketReference.current = websocket;
+      streamReference.current = stream;
 
       const resizeObserver = new ResizeObserver((): void => {
         scheduleTerminalResize();
@@ -182,75 +200,23 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
         return false;
       });
       const dataListener = terminal.onData((data: string): void => {
-        sendClientMessage(websocket, {
-          data,
-          type: "input",
-        });
+        stream.send({ data, type: "input" });
       });
-      const handleOpen = (): void => {
-        reportStatus("running");
-        scheduleTerminalResize();
-
-        if (isExpandedReference.current) {
-          terminal.focus();
-        }
-      };
-      const handleClose = (): void => {
-        if (!hasExitedReference.current) {
-          reportStatus("disconnected");
-        }
-      };
-      const handleError = (): void => {
-        reportStatus("error", "The terminal websocket failed.");
-      };
-      const handleMessage = (event: MessageEvent<string>): void => {
-        const message: TerminalSessionServerMessage | null = parseTerminalSessionServerMessage(event.data);
-
-        if (message === null) {
-          reportStatus("error", "Received an invalid terminal message.");
-          return;
-        }
-
-        if (message.type === "snapshot" || message.type === "output") {
-          terminal.write(message.data);
-          return;
-        }
-
-        if (message.type === "exit") {
-          hasExitedReference.current = true;
-          reportStatus("exited");
-          return;
-        }
-
-        reportStatus("error", message.message);
-      };
-
-      websocket.addEventListener("open", handleOpen);
-      websocket.addEventListener("close", handleClose);
-      websocket.addEventListener("error", handleError);
-      websocket.addEventListener("message", handleMessage);
       dispose = () => {
         resizeObserver.disconnect();
         dataListener.dispose();
         oscListener.dispose();
-        websocket.removeEventListener("open", handleOpen);
-        websocket.removeEventListener("close", handleClose);
-        websocket.removeEventListener("error", handleError);
-        websocket.removeEventListener("message", handleMessage);
 
         if (resizeAnimationFrameReference.current !== null) {
           window.cancelAnimationFrame(resizeAnimationFrameReference.current);
           resizeAnimationFrameReference.current = null;
         }
 
-        if (websocket.readyState !== WebSocket.CLOSED) {
-          websocket.close(normalClosureCode, "devtools panel closed");
-        }
-
+        stream.close();
         terminal.dispose();
         fitAddonReference.current = null;
         terminalReference.current = null;
-        websocketReference.current = null;
+        streamReference.current = null;
       };
       terminal.loadAddon(fitAddon);
       terminal.open(terminalContainer);
@@ -364,12 +330,6 @@ export function TerminalSessionPanel(props: ITerminalSessionPanelProps): JSX.Ele
   );
 }
 
-function appendTerminalSessionParameters(websocketUrl: URL, sessionId: string): URL {
-  websocketUrl.searchParams.set(TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME, sessionId);
-
-  return websocketUrl;
-}
-
 function ensureXtermStylesheet(rootNode: Node): void {
   if (!(rootNode instanceof ShadowRoot)) {
     throw new Error("The terminal panel must render inside a shadow root.");
@@ -387,88 +347,12 @@ function ensureXtermStylesheet(rootNode: Node): void {
   rootNode.append(stylesheetLink);
 }
 
-function parseTerminalSessionServerMessage(messageText: string): TerminalSessionServerMessage | null {
-  const parsedValue: unknown = JSON.parse(messageText);
-
-  if (typeof parsedValue !== "object" || parsedValue === null) {
-    return null;
-  }
-
-  const messageType: unknown = Reflect.get(parsedValue, "type");
-
-  if (messageType === "snapshot" || messageType === "output") {
-    const data: unknown = Reflect.get(parsedValue, "data");
-
-    if (typeof data !== "string") {
-      return null;
-    }
-
-    return {
-      data,
-      type: messageType,
-    };
-  }
-
-  if (messageType === "exit") {
-    const exitCode: unknown = Reflect.get(parsedValue, "exitCode");
-    const signalCode: unknown = Reflect.get(parsedValue, "signalCode");
-
-    if (
-      (typeof exitCode !== "number" && exitCode !== null) ||
-      (typeof signalCode !== "string" && signalCode !== null)
-    ) {
-      return null;
-    }
-
-    return {
-      exitCode,
-      signalCode,
-      type: "exit",
-    };
-  }
-
-  if (messageType === "error") {
-    const errorMessage: unknown = Reflect.get(parsedValue, "message");
-
-    if (typeof errorMessage !== "string") {
-      return null;
-    }
-
-    return {
-      message: errorMessage,
-      type: "error",
-    };
-  }
-
-  return null;
-}
-
-function resizeTerminal(terminal: Terminal, fitAddon: FitAddon, websocket: WebSocket): void {
+function resizeTerminal(terminal: Terminal, fitAddon: FitAddon, stream: ITerminalSessionStream): void {
   fitAddon.fit();
 
   if (terminal.cols === 0 || terminal.rows === 0) {
     return;
   }
 
-  sendClientMessage(websocket, {
-    cols: terminal.cols,
-    rows: terminal.rows,
-    type: "resize",
-  });
-}
-
-function sendClientMessage(websocket: WebSocket, message: TerminalSessionClientMessage): void {
-  if (websocket.readyState !== WebSocket.OPEN) {
-    return;
-  }
-
-  websocket.send(JSON.stringify(message));
-}
-
-function terminateSession(websocket: WebSocket | null): void {
-  if (websocket !== null && websocket.readyState === WebSocket.OPEN) {
-    sendClientMessage(websocket, {
-      type: "close",
-    });
-  }
+  stream.send({ cols: terminal.cols, rows: terminal.rows, type: "resize" });
 }
