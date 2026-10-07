@@ -40,5 +40,8 @@ jobs:
       - name: Install Playwright Browsers
         run: just ui install-browser
 
+      - name: Install recording test tools
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
       - name: Run checks
         run: just check

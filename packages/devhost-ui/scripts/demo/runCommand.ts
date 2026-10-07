@@ -1,6 +1,6 @@
-import type { CommandOptions } from "./types";
+import type { ICommandOptions } from "./types";
 
-export async function runCommand(command: string[], options: CommandOptions = {}): Promise<string> {
+export async function runCommand(command: string[], options: ICommandOptions = {}): Promise<string> {
   options.signal?.throwIfAborted();
   const subprocess = Bun.spawn(command, {
     cwd: options.cwd,

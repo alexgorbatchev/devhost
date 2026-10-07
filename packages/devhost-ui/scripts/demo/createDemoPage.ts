@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { join } from "node:path";
 import type { Browser, Page } from "playwright";
 import { viewport } from "./constants";
-import type { DemoRuntime } from "./types";
+import type { IDemoRuntime } from "./types";
 
-export async function createDemoPage(browser: Browser, runtime: DemoRuntime): Promise<Page> {
+export async function createDemoPage(browser: Browser, runtime: IDemoRuntime): Promise<Page> {
   const context = await browser.newContext({
     viewport,
     colorScheme: "dark",
@@ -23,6 +23,14 @@ export async function createDemoPage(browser: Browser, runtime: DemoRuntime): Pr
   try {
     page.setDefaultTimeout(15_000);
     const response = await page.goto(runtime.url, { waitUntil: "domcontentloaded" });
+    await Bun.write(
+      join(runtime.directoryPath, "browser-response.json"),
+      JSON.stringify({
+        url: response?.url(),
+        status: response?.status(),
+        body: response?.ok() ? undefined : await response?.text(),
+      }),
+    );
     assert(response?.ok(), "The playground did not load through devhost");
     await page.getByRole("main").waitFor();
     await page.getByRole("button", { name: "Services: 2 of 2 up", exact: true }).waitFor();

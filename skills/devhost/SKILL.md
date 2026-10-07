@@ -4,7 +4,7 @@ description: Use anytime devhost.toml is involved, including reading, writing, m
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-06 17:47
+  last_modified: 2026-10-07 03:25
   status: current
 ---
 
@@ -77,6 +77,21 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 - **Environment Interpolation**: String values support standard environment interpolation using `{{ env.NAME }}` placeholders. Placeholder names must start with a letter/underscore and only contain alphanumeric characters or underscores. Referencing an undefined valid placeholder is a manifest load error.
 
 ### Reference Guides
+
+Published guides include a video at the top and a collapsible text transcript. Read the guide prose and transcript for operational instructions; watching or downloading the video is optional.
+
+- [Managed Caddy and routing](https://alexgorbatchev.github.io/devhost/guides/managed-caddy/)
+- [Stack lifecycle](https://alexgorbatchev.github.io/devhost/guides/stack-lifecycle/)
+- [Shared managed Caddy settings](https://alexgorbatchev.github.io/devhost/guides/shared-managed-caddy-settings/)
+- [Docker-backed services](https://alexgorbatchev.github.io/devhost/guides/docker-backed-services/)
+- [Managed daemon-style services](https://alexgorbatchev.github.io/devhost/guides/managed-daemon-style-services/)
+- [Environment variables](https://alexgorbatchev.github.io/devhost/guides/environment-variables/)
+- [Service references](https://alexgorbatchev.github.io/devhost/guides/service-references/)
+- [Manifest includes](https://alexgorbatchev.github.io/devhost/guides/manifest-includes/)
+- [Troubleshooting](https://alexgorbatchev.github.io/devhost/guides/troubleshooting/)
+- [Devtools](https://alexgorbatchev.github.io/devhost/guides/devtools/)
+- [React Highlight](https://alexgorbatchev.github.io/devhost/guides/react-highlight/)
+- [Annotations](https://alexgorbatchev.github.io/devhost/guides/annotations/)
 
 - **Full Manifest Example**: To read or copy a comprehensive, production-ready configuration illustrating every available feature and key, refer to the [Full Manifest Example](references/manifest-example.md).
 - **Vite & Storybook**: For modern frontend setups involving dynamic ports, IPv6 loopback bindings, or host verification security, refer to the [Vite & Storybook Manifest Integration guide](references/vite-storybook-integration.md).

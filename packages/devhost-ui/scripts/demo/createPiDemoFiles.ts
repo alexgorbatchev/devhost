@@ -1,7 +1,7 @@
 import { join } from "node:path";
-import type { DemoRuntime } from "./types";
+import type { IDemoRuntime } from "./types";
 
-export async function createPiDemoFiles(runtime: DemoRuntime): Promise<void> {
+export async function createPiDemoFiles(runtime: IDemoRuntime): Promise<void> {
   await Bun.write(
     join(runtime.directoryPath, "pi-demo-instructions.md"),
     [

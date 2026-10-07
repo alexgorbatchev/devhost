@@ -1,16 +1,15 @@
 import { join } from "node:path";
-import type { Screencast } from "playwright";
 import { viewport } from "./constants";
-import type { CaptionRecording, RecordedSourceClip } from "./types";
+import type { ICaptionRecording, IRecordedSourceClip, ScreencastControls } from "./types";
 
 export async function createCaptionRecording(
-  screencast: Pick<Screencast, "start" | "stop">,
+  screencast: ScreencastControls,
   directoryPath: string,
   sceneId: string,
   initialCaption: string,
-): Promise<CaptionRecording> {
-  const clips: RecordedSourceClip[] = [];
-  const createClip = (caption: string): RecordedSourceClip => {
+): Promise<ICaptionRecording> {
+  const clips: IRecordedSourceClip[] = [];
+  const createClip = (caption: string): IRecordedSourceClip => {
     const id = `${sceneId}-${clips.length + 1}`;
     return { id, path: join(directoryPath, "raw", `${id}.webm`), caption };
   };
@@ -26,7 +25,7 @@ export async function createCaptionRecording(
       clip = createClip(caption);
       await screencast.start({ path: clip.path, size: viewport });
     },
-    stop: async (): Promise<RecordedSourceClip[]> => {
+    stop: async (): Promise<IRecordedSourceClip[]> => {
       await finishClip();
       return clips;
     },

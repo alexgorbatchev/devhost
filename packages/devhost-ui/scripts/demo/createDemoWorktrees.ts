@@ -1,9 +1,9 @@
 import { symlink } from "node:fs/promises";
 import { join } from "node:path";
 import { runCommand } from "./runCommand";
-import type { DemoRuntime } from "./types";
+import type { IDemoRuntime } from "./types";
 
-export async function createDemoWorktrees(runtime: DemoRuntime): Promise<void> {
+export async function createDemoWorktrees(runtime: IDemoRuntime): Promise<void> {
   const cwd = join(runtime.directoryPath, "playground");
   const env: NodeJS.ProcessEnv = { ...runtime.env, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" };
   const baseline: Record<string, string> = await Bun.file(

@@ -4,6 +4,19 @@ sidebar:
   order: 5
 ---
 
+<!-- guide-demo -->
+<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/docker-backed-services.webp" aria-label="docker backed services demo">
+  <source src="https://alexgorbatchev.github.io/devhost/demos/docker-backed-services.mp4" type="video/mp4">
+  <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/docker-backed-services.vtt" srclang="en" label="English">
+  <a href="https://alexgorbatchev.github.io/devhost/demos/docker-backed-services.mp4">Watch the demo video</a>.
+</video>
+
+<details>
+<summary>Demo transcript</summary>
+<p>Route a published Docker port. Its lifecycle stays with Docker.</p>
+</details>
+<!-- /guide-demo -->
+
 `devhost` can front a Docker- or Compose-managed backend, but only when the container publishes a port onto the host and `devhost` routes to that host-visible port.
 `devhost` does not proxy to Docker-internal service names or container-network-only addresses.
 

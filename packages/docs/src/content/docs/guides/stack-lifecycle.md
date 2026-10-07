@@ -4,6 +4,19 @@ sidebar:
   order: 3
 ---
 
+<!-- guide-demo -->
+<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/stack-lifecycle.webp" aria-label="stack lifecycle demo">
+  <source src="https://alexgorbatchev.github.io/devhost/demos/stack-lifecycle.mp4" type="video/mp4">
+  <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/stack-lifecycle.vtt" srclang="en" label="English">
+  <a href="https://alexgorbatchev.github.io/devhost/demos/stack-lifecycle.mp4">Watch the demo video</a>.
+</video>
+
+<details>
+<summary>Demo transcript</summary>
+<p>Start dependencies first. Stop the whole stack with one command.</p>
+</details>
+<!-- /guide-demo -->
+
 The canonical manifest reference lives in [../devhost.example.toml](../reference/devhost-example/).
 Use that file as the documented source of truth for top-level sections, allowed values, defaults, health variants, inline explanations, and copy/paste examples.
 

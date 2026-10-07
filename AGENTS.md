@@ -22,6 +22,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Run standalone React Highlight Neovim plugin tests: `just devhost test-nvim`
 - Record the utility demo on Linux: `just demo record` (or `just demo record annotations` for one scene); follow `docs/internal/references/demo-recording.md` for prerequisites and refresh instructions.
 - Run recording workflow unit tests: `just demo test` (also included in `just ui check`).
+- Refresh all public guide demos: `just demo guides` (or `just demo guides annotations` for one guide). This updates tracked docs media and the guide's first video block; review before committing.
 - Start the root devhost stack locally: `just dev`
 - Start the docs site locally: `just docs` (or `just docs dev`)
 - Open the injected devtools UI design reference (`packages/design/references/devtools.html`) in the default browser: `just design devtools`
@@ -50,6 +51,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - `packages/playground/**` is a local dev harness and is intentionally excluded from shared root lint/format enforcement.
 - `packages/devhost-ui/scripts/demo/` owns the recording workflow and uses the real playground services through the managed Caddy on HTTPS port 443. Preserve portless public URLs, manifest-scoped route cleanup, and per-run artifacts under ignored `.tmp/demos/`. Stop owned processes on failure as well as success; leave the shared Caddy running. Concurrent recordings must use distinct `.localhost` hostnames.
 - Recording annotations runs real Pi against a per-run playground copy. Restrict edits to its layout component, retain actual edits in `pi-changes.json`, and restore copied source during cleanup. Never reset checkout files to undo recording edits.
+- Guide demo MP4/WebP/VTT files under `packages/docs/public/demos/` are published site assets and stay tracked. Runtime files stay in `.tmp/demos/`. Agent readers use guide prose/transcripts and HTTPS links instead of reading binary media as text. CI installs FFmpeg for native publication tests.
 - Workspace `justfile` recipes are package-local validation only; do not duplicate shared lint/format enforcement there unless a workspace intentionally diverges.
 - Invoke workspace recipes directly with `just <workspace> <recipe>`; keep root recipes for repository-wide work and do not add forwarding recipes.
 - `just devhost check` refreshes the generated embedded devtools bundle, then runs `just devhost lint` (fails on any `gofmt -l` output, then `go vet ./...`, `go tool predeclared ./...`, and `go mod tidy -diff`) and the Bun script tests and `go test ./...` in `apps/devhost/`. Fix formatting failures with root `just fix`.

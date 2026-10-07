@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { join, resolve } from "node:path";
 import type { Subprocess } from "bun";
 import { chromium, type Browser } from "playwright";
@@ -12,17 +13,17 @@ import { recordBrowserScene } from "./recordBrowserScene";
 import { runCommand } from "./runCommand";
 import { startDemoStack } from "./startDemoStack";
 import { stopProcess } from "./stopProcess";
-import type { RecordedClip } from "./types";
+import type { IRecordedClip } from "./types";
 
-export async function recordDemo(signal: AbortSignal): Promise<string> {
+export async function recordDemo(signal: AbortSignal, selectedScene: string): Promise<string> {
   const repositoryPath = resolve(import.meta.dir, "../../../..");
-  const selectedScene = process.env.DEVHOST_DEMO_SCENE ?? "all";
   const scenes = createBrowserScenes();
-  if (!["all", "startup", ...scenes.map((scene) => scene.id)].includes(selectedScene)) {
-    throw new Error("Choose a scene: all, startup, overview, annotations, query");
+  if (!["all", "startup", "devtools", ...scenes.map((scene) => scene.id)].includes(selectedScene)) {
+    throw new Error("Choose a scene: all, startup, overview, annotations, query, devtools, react-highlight");
   }
   const dependencies = ["bun", "just", "git", "caddy", "ffmpeg", "ffprobe", "vhs", "ttyd", "bash", "ln"];
   if (selectedScene === "all" || selectedScene === "annotations") dependencies.push("pi");
+  if (selectedScene === "react-highlight") dependencies.push("nvim");
   for (const executable of dependencies) {
     if (!Bun.which(executable)) throw new Error(`Missing recording dependency: ${executable}`);
   }
@@ -34,6 +35,13 @@ export async function recordDemo(signal: AbortSignal): Promise<string> {
   console.log("Building devhost and its embedded UI...");
   await runCommand(["just", "devhost", "compile"], { cwd: repositoryPath, signal });
   const runtime = await createDemoRuntime(repositoryPath, process.env.DEVHOST_DEMO_HOST ?? "demo.localhost");
+  if (selectedScene === "react-highlight") {
+    const manifest = await Bun.file(runtime.manifestPath).text();
+    await Bun.write(
+      runtime.manifestPath,
+      manifest.replace("[devtools.editor]\nenabled = false", "[devtools.editor]\nenabled = true"),
+    );
+  }
   console.log(`Recording artifacts: ${runtime.directoryPath}`);
   await Bun.write(
     join(runtime.directoryPath, "versions.json"),
@@ -50,10 +58,12 @@ export async function recordDemo(signal: AbortSignal): Promise<string> {
       2,
     ) + "\n",
   );
-  const clips: RecordedClip[] = [];
+  const clips: IRecordedClip[] = [];
   let stack: Subprocess | undefined;
   let browser: Browser | undefined;
   let recordingError: unknown;
+  let cleanupError: AggregateError | undefined;
+  let videoPath: string | undefined;
   const originalDirectory = process.cwd();
   const originalTemporaryDirectory = process.env.TMPDIR;
   const closeBrowser = (): void => {
@@ -91,7 +101,12 @@ export async function recordDemo(signal: AbortSignal): Promise<string> {
         ),
       );
     }
-    const selectedBrowserScenes = scenes.filter((scene) => selectedScene === "all" || scene.id === selectedScene);
+    const selectedBrowserScenes = scenes.filter(
+      (scene) =>
+        (selectedScene === "all" && scene.id !== "react-highlight") ||
+        (selectedScene === "devtools" && ["overview", "query"].includes(scene.id)) ||
+        scene.id === selectedScene,
+    );
     if (selectedBrowserScenes.length > 0) {
       stack = await startDemoStack(runtime, signal);
       browser = await chromium.launch({ env: runtime.env });
@@ -107,14 +122,13 @@ export async function recordDemo(signal: AbortSignal): Promise<string> {
     }
     signal.throwIfAborted();
     console.log("Assembling captioned MP4...");
-    return await assembleDemo(runtime.directoryPath, clips);
+    videoPath = await assembleDemo(runtime.directoryPath, clips);
   } catch (error) {
     recordingError = error;
     await Bun.write(
       join(runtime.directoryPath, "recording-error.log"),
       error instanceof Error ? (error.stack ?? error.message) : String(error),
     );
-    throw error;
   } finally {
     signal.removeEventListener("abort", closeBrowser);
     const cleanup = await Promise.allSettled([
@@ -127,12 +141,16 @@ export async function recordDemo(signal: AbortSignal): Promise<string> {
     else process.env.TMPDIR = originalTemporaryDirectory;
     const failures = cleanup.filter((result) => result.status === "rejected").map((result) => result.reason);
     if (failures.length > 0) {
-      throw new AggregateError(
+      cleanupError = new AggregateError(
         recordingError === undefined ? failures : [recordingError, ...failures],
         "Recording cleanup failed",
       );
     }
   }
+  if (cleanupError) throw cleanupError;
+  if (recordingError !== undefined) throw recordingError;
+  assert(videoPath, "Recording produced no video");
+  return videoPath;
 }
 
 if (import.meta.main) {
@@ -141,7 +159,7 @@ if (import.meta.main) {
   process.once("SIGINT", abort);
   process.once("SIGTERM", abort);
   try {
-    console.log(`Recording saved: ${await recordDemo(controller.signal)}`);
+    console.log(`Recording saved: ${await recordDemo(controller.signal, process.env.DEVHOST_DEMO_SCENE ?? "all")}`);
   } catch (error) {
     console.error(error);
     process.exitCode = 1;

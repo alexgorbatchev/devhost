@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { join } from "node:path";
 import type { Page } from "playwright";
 import { clickWithIndicator } from "./clickWithIndicator";
-import type { ChangeCaption, DemoRuntime } from "./types";
+import type { ChangeCaption, IDemoRuntime } from "./types";
 
 export async function recordOverview(
   page: Page,
-  runtime: DemoRuntime,
+  runtime: IDemoRuntime,
   signal: AbortSignal,
   changeCaption: ChangeCaption,
 ): Promise<void> {

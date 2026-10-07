@@ -4,6 +4,21 @@ sidebar:
   order: 10
 ---
 
+<!-- guide-demo -->
+<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/annotations.webp" aria-label="annotations demo">
+  <source src="https://alexgorbatchev.github.io/devhost/demos/annotations.mp4" type="video/mp4">
+  <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/annotations.vtt" srclang="en" label="English">
+  <a href="https://alexgorbatchev.github.io/devhost/demos/annotations.mp4">Watch the demo video</a>.
+</video>
+
+<details>
+<summary>Demo transcript</summary>
+<p>Alt-click. Describe the change. Watch Pi fix the live page.</p>
+<p>Pi is working on the annotated change.</p>
+<p>The heading updates live from Pi&#x27;s source edit.</p>
+</details>
+<!-- /guide-demo -->
+
 Annotations build on top of the injected devtools UI. For the overlay and routing model itself, see [Devtools](./devtools/).
 
 ## AI annotations

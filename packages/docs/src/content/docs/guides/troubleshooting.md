@@ -4,6 +4,19 @@ sidebar:
   order: 10
 ---
 
+<!-- guide-demo -->
+<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/troubleshooting.webp" aria-label="troubleshooting demo">
+  <source src="https://alexgorbatchev.github.io/devhost/demos/troubleshooting.mp4" type="video/mp4">
+  <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/troubleshooting.vtt" srclang="en" label="English">
+  <a href="https://alexgorbatchev.github.io/devhost/demos/troubleshooting.mp4">Watch the demo video</a>.
+</video>
+
+<details>
+<summary>Demo transcript</summary>
+<p>A rejected manifest leaves the running stack intact. Correct it and save again.</p>
+</details>
+<!-- /guide-demo -->
+
 ## Automatic port conflict during restart
 
 A single-service restart reuses its assigned automatic port. If another process occupies it, devhost reports the conflict and leaves the service stopped. Choose **Restart stack with new ports** in the Services panel or recovery overlay to restart all managed services with fresh automatic ports and rebuilt port references and environments. External processes keep running, and fixed ports stay unchanged.

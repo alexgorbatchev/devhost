@@ -4,6 +4,22 @@ sidebar:
   order: 8
 ---
 
+<!-- guide-demo -->
+<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/devtools.webp" aria-label="devtools demo">
+  <source src="https://alexgorbatchev.github.io/devhost/demos/devtools.mp4" type="video/mp4">
+  <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/devtools.vtt" srclang="en" label="English">
+  <a href="https://alexgorbatchev.github.io/devhost/demos/devtools.mp4">Watch the demo video</a>.
+</video>
+
+<details>
+<summary>Demo transcript</summary>
+<p>Hover the minimap to see live output from your services.</p>
+<p>Your stack and services are right in the toolbar.</p>
+<p>Browse your repository&#x27;s worktrees without leaving the page.</p>
+<p>Native Query devtools are here when you need them.</p>
+</details>
+<!-- /guide-demo -->
+
 `devhost` routing works without the browser tooling layer. Enable `devtools` only when you want the injected overlay, service controls, annotations, or component-source navigation on top of routed local apps.
 
 When `devtools` are enabled, routed traffic is split like this:

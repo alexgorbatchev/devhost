@@ -4,6 +4,23 @@ sidebar:
   order: 9
 ---
 
+<!-- guide-demo -->
+<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/react-highlight.webp" aria-label="react highlight demo">
+  <source src="https://alexgorbatchev.github.io/devhost/demos/react-highlight.mp4" type="video/mp4">
+  <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/react-highlight.vtt" srclang="en" label="English">
+  <a href="https://alexgorbatchev.github.io/devhost/demos/react-highlight.mp4">Watch the demo video</a>.
+</video>
+
+<details>
+<summary>Demo transcript</summary>
+<p>Connect the JSX cursor in Neovim to your live page.</p>
+<p>Move to the heading in Neovim. Its live DOM element is highlighted.</p>
+<p>Move the JSX cursor again. The browser highlight follows.</p>
+<p>Source-map matching also connects JSX images to the live page.</p>
+<p>Move outside JSX to clear the highlight. Your page stays interactive.</p>
+</details>
+<!-- /guide-demo -->
+
 React Highlight mirrors the active JSX cursor position from Neovim into the routed browser page. It is part of the injected devtools overlay and uses the same instance-scoped control server as the rest of the devtools runtime.
 
 For the injected overlay and routing model, see [Devtools](../devtools/).
