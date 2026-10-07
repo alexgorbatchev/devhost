@@ -31,8 +31,8 @@ export async function startNativeReactBrowser(options: INativeReactBrowserOption
   };
   const environment = {
     ...configurationDirectories,
-    // The relative path avoids Chrome's observed absolute Unix socket limit;
-    // the fixed repository cwd resolves it to the absolute owned directory.
+    // Preserved validation contrasts absolute-TMPDIR SIGTRAP with owned relative
+    // success; the cause is unverified. The fixed cwd resolves this owned path.
     TMPDIR: relative(options.repositoryRoot, temporaryPath),
   };
   const command = [
