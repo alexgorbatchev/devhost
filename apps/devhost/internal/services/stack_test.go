@@ -22,6 +22,8 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
+	"github.com/hashicorp/consul/sdk/freeport"
 )
 
 func TestCreateInjectedServiceEnvironment(t *testing.T) {
@@ -295,7 +297,7 @@ func testStartupCrashRecovery(t *testing.T, worktreesEnabled, inRepository bool)
 		projectRoot, _ = createWorktreeRepository(t)
 		serviceCwd = filepath.Join(projectRoot, "web")
 	}
-	servicePort := mustReservePort(t)
+	servicePort := freeport.GetOne(t)
 	manifestValue := newResolvedManifest(projectRoot, adminAddress)
 	manifestValue.Worktrees.Enabled = worktreesEnabled
 	manifestValue.Devtools.Status.Enabled = true
@@ -420,7 +422,7 @@ func TestStartStackFailsStartupHealthTimeoutAndReleasesClaims(t *testing.T) {
 	admin, stopAdmin := startTestAdminServer(t)
 	defer stopAdmin()
 	m := newResolvedManifest(t.TempDir(), admin)
-	port := mustReservePort(t)
+	port := freeport.GetOne(t)
 	m.Services["web"] = ResolvedService{
 		Name: "web", BindHost: "127.0.0.1", Cwd: t.TempDir(), Command: helperCommandWithMode("graceful-signal-waiter"),
 		Env:    map[string]string{"GO_WANT_HELPER_PROCESS": "1", "STOP_TRACE_PATH": filepath.Join(t.TempDir(), "stopped"), "STOP_TRACE_VALUE": "stopped"},
@@ -442,7 +444,7 @@ func TestStartStackRetriesAutoPortAndPrefixesOutput(t *testing.T) {
 	adminAddress, stopAdmin := startTestAdminServer(t)
 	defer stopAdmin()
 
-	initialPort := mustReservePort(t)
+	initialPort := freeport.GetOne(t)
 	tracePath := filepath.Join(t.TempDir(), "assigned-port.txt")
 	var infoLog strings.Builder
 	var stderrLog strings.Builder
@@ -566,8 +568,8 @@ func TestStartStackStartsServicesInDependencyOrderAndStopsOnSignalAfterChildExit
 
 	startTracePath := filepath.Join(t.TempDir(), "start-order.txt")
 	stopTracePath := filepath.Join(t.TempDir(), "stop-order.txt")
-	apiPort := mustReservePort(t)
-	webPort := mustReservePort(t)
+	ports := freeport.GetN(t, 2)
+	apiPort, webPort := ports[0], ports[1]
 
 	orderManifest := manifest.Manifest{
 		ServiceOrder: []string{"web", "api"},
@@ -664,7 +666,7 @@ func TestStartStackActivatesRoutesAndCleansUpAfterShutdown(t *testing.T) {
 	defer stopAdmin()
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
-	servicePort := mustReservePort(t)
+	servicePort := freeport.GetOne(t)
 	tracePath := filepath.Join(t.TempDir(), "service-trace.txt")
 	var infoLog strings.Builder
 
@@ -743,7 +745,7 @@ func TestStartStackActivatesDevtoolsRoutesForRootCompatibleServices(t *testing.T
 	defer stopAdmin()
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
-	servicePort := mustReservePort(t)
+	servicePort := freeport.GetOne(t)
 	tracePath := filepath.Join(t.TempDir(), "devtools-root-trace.txt")
 
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
@@ -805,7 +807,7 @@ func TestStartStackSkipsDocumentInjectionForNonRootRoutes(t *testing.T) {
 	defer stopAdmin()
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
-	servicePort := mustReservePort(t)
+	servicePort := freeport.GetOne(t)
 	tracePath := filepath.Join(t.TempDir(), "devtools-non-root-trace.txt")
 
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
@@ -866,7 +868,7 @@ func TestStartStackLeavesDevtoolsRoutesUnmountedWhenAllFeaturesAreDisabled(t *te
 	defer stopAdmin()
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
-	servicePort := mustReservePort(t)
+	servicePort := freeport.GetOne(t)
 	tracePath := filepath.Join(t.TempDir(), "devtools-disabled-trace.txt")
 
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
@@ -954,7 +956,7 @@ func TestStartStackStopsDevtoolsServersDuringCleanup(t *testing.T) {
 		return server, err
 	}
 
-	servicePort := mustReservePort(t)
+	servicePort := freeport.GetOne(t)
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
 	manifestValue.Name = "cleanup-devtools-stack"
 	manifestValue.PrimaryService = "web"
@@ -1070,7 +1072,7 @@ func TestStartStackRestartServiceDoesNotStallOnRedundantHealthLoop(t *testing.T)
 		return devtools.StartControlServer(options)
 	}
 
-	servicePort := mustReservePort(t)
+	servicePort := freeport.GetOne(t)
 	stateFilePath := filepath.Join(t.TempDir(), "restart-state.txt")
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
 	manifestValue.Name = "restart-health-stack"
@@ -1214,7 +1216,7 @@ func TestStartStackRestartServiceFailsPromptlyWithinHealthTimeout(t *testing.T) 
 		return devtools.StartControlServer(options)
 	}
 
-	servicePort := mustReservePort(t)
+	servicePort := freeport.GetOne(t)
 	stateFilePath := filepath.Join(t.TempDir(), "restart-state.txt")
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
 	manifestValue.Name = "restart-fail-stack"
@@ -1312,7 +1314,7 @@ func TestStartStackGracefulIdleTimeoutShutdown(t *testing.T) {
 	defer stopAdmin()
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
-	servicePort := mustReservePort(t)
+	servicePort := freeport.GetOne(t)
 	tracePath := filepath.Join(t.TempDir(), "service-trace.txt")
 
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
@@ -1504,7 +1506,7 @@ func TestStartStackActivatesRoutesOnlyAfterHealthPasses(t *testing.T) {
 	defer stopAdmin()
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
-	servicePort := mustReservePort(t)
+	servicePort := freeport.GetOne(t)
 	tracePath := filepath.Join(t.TempDir(), "route-health-trace.txt")
 
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
@@ -1606,7 +1608,7 @@ func TestStopStartedServicesStopsRunningServicesGracefully(t *testing.T) {
 }
 
 func TestStopStartedServiceStopsDescendantProcesses(t *testing.T) {
-	servicePort := mustReservePort(t)
+	servicePort := freeport.GetOne(t)
 	childPidPath := filepath.Join(t.TempDir(), "child.pid")
 	t.Cleanup(func() {
 		childPidText, err := os.ReadFile(childPidPath)
@@ -1662,7 +1664,7 @@ func TestStopStartedServiceStopsDescendantProcesses(t *testing.T) {
 }
 
 func TestStopStartedServiceStopsDetachedDescendantProcesses(t *testing.T) {
-	servicePort := mustReservePort(t)
+	servicePort := freeport.GetOne(t)
 	childPidPath := filepath.Join(t.TempDir(), "child.pid")
 	t.Cleanup(func() {
 		childPidText, err := os.ReadFile(childPidPath)
@@ -1722,7 +1724,7 @@ func TestStopStartedServiceStopsDescendantsSpawnedDuringSignalHandling(t *testin
 		t.Skip("linux-specific subreaper adoption test")
 	}
 
-	servicePort := mustReservePort(t)
+	servicePort := freeport.GetOne(t)
 	childPidPath := filepath.Join(t.TempDir(), "child.pid")
 	readyPath := filepath.Join(t.TempDir(), "ready")
 	t.Cleanup(func() {
@@ -1795,7 +1797,7 @@ func TestStopStartedServiceStopsDetachedDescendantsExitedDuringStartup(t *testin
 		t.Skip("linux-specific startup containment test")
 	}
 
-	servicePort := mustReservePort(t)
+	servicePort := freeport.GetOne(t)
 	childPIDPath := filepath.Join(t.TempDir(), "child.pid")
 	t.Cleanup(func() {
 		childPIDText, err := os.ReadFile(childPIDPath)
@@ -1852,7 +1854,7 @@ func TestStopStartedServiceStopsDetachedDescendantsExitedDuringStartup(t *testin
 }
 
 func TestStopStartedServicePreservesLateExternalPortRespawns(t *testing.T) {
-	servicePort := mustReservePort(t)
+	servicePort := freeport.GetOne(t)
 	tempDirectory := t.TempDir()
 	childPIDPath := filepath.Join(tempDirectory, "child.pid")
 	triggerPath := filepath.Join(tempDirectory, "trigger")
@@ -2107,11 +2109,11 @@ func TestReadListeningProcessIDsForBindHostSeparatesInterfaces(t *testing.T) {
 		t.Skip("linux-specific listener discovery test")
 	}
 
-	probeIPv4, err := net.Listen("tcp4", "127.0.0.1:0")
+	port := freeport.GetOne(t)
+	probeIPv4, err := net.Listen("tcp4", fmt.Sprintf("127.0.0.1:%d", port))
 	if err != nil {
 		t.Fatalf("Listen(tcp4) error = %v", err)
 	}
-	port := probeIPv4.Addr().(*net.TCPAddr).Port
 	probeIPv6, err := net.Listen("tcp6", fmt.Sprintf("[::1]:%d", port))
 	if err != nil {
 		_ = probeIPv4.Close()
@@ -2266,7 +2268,7 @@ func TestStartStackRunsDaemonLifecycleCommands(t *testing.T) {
 	defer stopAdmin()
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 
-	servicePort := mustReservePort(t)
+	servicePort := freeport.GetOne(t)
 	tracePath := filepath.Join(t.TempDir(), "daemon-lifecycle-trace.txt")
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
 	manifestValue.PrimaryService = "api"
@@ -2579,19 +2581,11 @@ func assertRouteDirectoryEmpty(t *testing.T, routesDirectoryPath string) {
 	}
 }
 
-func mustReservePort(t *testing.T) int {
-	t.Helper()
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("Listen(...) error = %v", err)
-	}
-	defer listener.Close()
-	return listener.Addr().(*net.TCPAddr).Port
-}
-
+// reserveUnusedAdminAddress returns an admin address that refuses connections for the whole test, as a Caddy
+// that is not running does.
 func reserveUnusedAdminAddress(t *testing.T) string {
 	t.Helper()
-	return fmt.Sprintf("127.0.0.1:%d", mustReservePort(t))
+	return nettest.ReserveRefusingAddress(t).String()
 }
 
 func runAutoPortRetryHelper() {

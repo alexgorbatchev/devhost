@@ -18,6 +18,7 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/gorilla/websocket"
+	"github.com/hashicorp/consul/sdk/freeport"
 )
 
 func TestStartStackKeepsExitedServicesRestartable(t *testing.T) {
@@ -50,7 +51,7 @@ func TestStartStackKeepsExitedServicesRestartable(t *testing.T) {
 			triggerPath := filepath.Join(t.TempDir(), "exit")
 			pidPath := filepath.Join(t.TempDir(), "pid")
 			failPath := filepath.Join(t.TempDir(), "fail")
-			servicePort := mustReservePort(t)
+			servicePort := freeport.GetOne(t)
 			m := newResolvedManifest(t.TempDir(), admin)
 			m.PrimaryService = "web"
 			m.ServiceOrder = []string{"web", "worker"}

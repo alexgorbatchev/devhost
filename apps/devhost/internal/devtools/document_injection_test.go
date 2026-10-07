@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"golang.org/x/sys/unix"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
 )
 
 func TestDocumentInjectionServerRewritesHTMLDocuments(t *testing.T) {
@@ -173,7 +173,7 @@ func TestDocumentInjectionBackendCanChangeDuringRequests(t *testing.T) {
 func TestDocumentInjectionServerServesRecoveryPageWhenBackendExits(t *testing.T) {
 	t.Parallel()
 	// An exited backend refuses connections.
-	address := reserveRefusingTCPAddress(t)
+	address := nettest.ReserveRefusingAddress(t)
 	server, err := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{BackendHost: address.IP.String(), BackendPort: address.Port})
 	if err != nil {
 		t.Fatal(err)
@@ -197,28 +197,4 @@ func TestDocumentInjectionServerServesRecoveryPageWhenBackendExits(t *testing.T)
 	if body := readResponseText(t, response); body != want {
 		t.Fatalf("recovery body = %q", body)
 	}
-}
-
-// reserveRefusingTCPAddress binds a loopback TCP port without listening on it. Connections to it are refused, and
-// unlike the port of a server that was just closed, nothing else can start listening there while the test runs.
-func reserveRefusingTCPAddress(t *testing.T) *net.TCPAddr {
-	t.Helper()
-
-	socket, err := unix.Socket(unix.AF_INET, unix.SOCK_STREAM, 0)
-	if err != nil {
-		t.Fatalf("Socket(...) error = %v", err)
-	}
-	t.Cleanup(func() { _ = unix.Close(socket) })
-	if err := unix.Bind(socket, &unix.SockaddrInet4{Addr: [4]byte{127, 0, 0, 1}}); err != nil {
-		t.Fatalf("Bind(...) error = %v", err)
-	}
-	address, err := unix.Getsockname(socket)
-	if err != nil {
-		t.Fatalf("Getsockname(...) error = %v", err)
-	}
-	boundAddress, ok := address.(*unix.SockaddrInet4)
-	if !ok {
-		t.Fatalf("bound address = %#v, want IPv4", address)
-	}
-	return &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: boundAddress.Port}
 }

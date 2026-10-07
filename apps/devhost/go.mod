@@ -1,6 +1,6 @@
 module github.com/alexgorbatchev/devhost/apps/devhost
 
-go 1.26.2
+go 1.26.7
 
 require github.com/BurntSushi/toml v1.5.0
 
@@ -9,6 +9,7 @@ require (
 	github.com/creack/pty v1.1.24
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/gorilla/websocket v1.5.3
+	github.com/hashicorp/consul/sdk v0.18.2
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/sys v0.48.0
 )
