@@ -41,6 +41,7 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@friedemannsommer/lcov-parser": "8.0.0",
     "@hookform/devtools": "4.4.0",
     "@storybook/addon-vitest": "10.3.5",
     "@storybook/builder-vite": "10.3.5",

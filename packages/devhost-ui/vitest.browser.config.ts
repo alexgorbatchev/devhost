@@ -3,6 +3,7 @@ import { defineConfig, mergeConfig } from "vitest/config";
 
 import { nativeBrowserTransport, nativeBrowserTransportCommands } from "./test-support/nativeBrowserTransport";
 import viteConfig from "./vite.config";
+import { createCoverageOptions } from "./vitest.coverage";
 
 // The tests that need a browser run in Chromium: hook tests, whose hooks listen to the page, hit-test it, measure it,
 // and follow its media queries, and `*.browser.test.ts` files, whose modules query and change the DOM.
@@ -25,14 +26,7 @@ export default mergeConfig(
         screenshotFailures: false,
         viewport: { height: 768, width: 1024 },
       },
-      // `bun test --coverage` cannot see the hooks, because their tests run here. `--coverage` reports them.
-      coverage: {
-        include: ["src/**/hooks/*.{ts,tsx}"],
-        provider: "v8",
-        // Vitest leaves fully covered files out of the table when an agent runs it; list every hook for everyone.
-        reporter: [["text", { skipFull: false }]],
-        reportsDirectory: "./.cache/coverage-browser",
-      },
+      coverage: createCoverageOptions("browser"),
       include: ["src/**/hooks/__tests__/*.test.ts", "src/**/*.browser.test.ts"],
       name: "browser",
       setupFiles: ["./test-support/setupBrowserTests.ts"],

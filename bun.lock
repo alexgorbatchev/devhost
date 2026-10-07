@@ -58,6 +58,7 @@
         "zustand": "5.0.15",
       },
       "devDependencies": {
+        "@friedemannsommer/lcov-parser": "8.0.0",
         "@hookform/devtools": "4.4.0",
         "@redux-devtools/core": "5.0.0",
         "@reduxjs/toolkit": "2.13.0",
@@ -408,6 +409,8 @@
     "@fontsource-variable/jetbrains-mono": ["@fontsource-variable/jetbrains-mono@5.3.0", "", {}, "sha512-F32xpS2NsGYoQi2ADSkKTgpJj7ozajsGgDJ8woTnqjmIB+dxDIqImjl4pXZVEExu8UFZ2ndhmX18EBS/hdz3Lw=="],
 
     "@fortawesome/fontawesome-free": ["@fortawesome/fontawesome-free@6.7.2", "", {}, "sha512-JUOtgFW6k9u4Y+xeIaEiLr3+cjoUPiAuLXoyKOJSia6Duzb7pq+A76P9ZdPDoAoxHdHzq6gE9/jKBGXlZT8FbA=="],
+
+    "@friedemannsommer/lcov-parser": ["@friedemannsommer/lcov-parser@8.0.0", "", {}, "sha512-7NAl5m3cnPTqY6wj3wkGZxLqu9S3Q2gd/RBRqDivsaFeLvrif3ube0nPfOcL57Zx/ERiP2j70nGzNTurNMe9DQ=="],
 
     "@hookform/devtools": ["@hookform/devtools@4.4.0", "", { "dependencies": { "@emotion/react": "^11.1.5", "@emotion/styled": "^11.3.0", "@types/lodash": "^4.14.168", "little-state-machine": "^4.1.0", "lodash": "^4.17.21", "react-simple-animate": "^3.3.12", "use-deep-compare-effect": "^1.8.1", "uuid": "^8.3.2" }, "peerDependencies": { "react": "^16.8.0 || ^17 || ^18 || ^19", "react-dom": "^16.8.0 || ^17 || ^18 || ^19" } }, "sha512-Mtlic+uigoYBPXlfvPBfiYYUZuyMrD3pTjDpVIhL6eCZTvQkHsKBSKeZCvXWUZr8fqrkzDg27N+ZuazLKq6Vmg=="],
 
