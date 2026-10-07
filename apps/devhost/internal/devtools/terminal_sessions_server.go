@@ -337,16 +337,16 @@ func (s *ControlServer) readTerminalMessages(sessionID string, client *websocket
 
 func (s *ControlServer) handleTerminalClientClosed(sessionID string, client *websocketClient) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
+	if session := s.terminalSessions[sessionID]; session != nil {
+		delete(session.clients, client)
+		if len(session.clients) == 0 && !session.closed {
+			s.scheduleIdleTerminalSessionShutdownLocked(sessionID, session)
+		}
+	}
+	s.mu.Unlock()
 
-	session := s.terminalSessions[sessionID]
-	if session == nil {
-		return
-	}
-	delete(session.clients, client)
-	if len(session.clients) == 0 && !session.closed {
-		s.scheduleIdleTerminalSessionShutdownLocked(sessionID, session)
-	}
+	// Closing waits for the client's in-flight write, which can stall on a dead connection. Doing it outside the
+	// server lock keeps every other request moving.
 	client.close()
 }
 
