@@ -1011,6 +1011,89 @@ func TestControlServerClosesExitedAnnotationSessionAfterLastClientDisconnects(t 
 	waitForTerminalTestSessionsClosed(t, controlServer, starter)
 }
 
+// Closing a client waits for that client's in-flight write, so it must not happen under the server lock: one
+// stalled browser connection would otherwise freeze every other request.
+func TestControlServerStaysUsableWhileClientCloseWaitsForWrite(t *testing.T) {
+	t.Parallel()
+
+	t.Run("terminal client", func(t *testing.T) {
+		t.Parallel()
+
+		starter := newTestTerminalStarter()
+		controlServer := startTerminalTestControlServer(t, starter, time.Hour)
+		sessionID := startTerminalTestSession(t, controlServer, editorTerminalTestRequest)
+		socket := mustDialWebsocket(t, terminalWebsocketURL(controlServer.Port(), sessionID))
+		readWebsocketText(t, socket)
+
+		controlServer.mu.Lock()
+		clients := snapshotClients(controlServer.terminalSessions[sessionID].clients)
+		controlServer.mu.Unlock()
+		assertServerUsableWhileClientCloseWaits(t, controlServer, socket, clients, func() int {
+			return len(controlServer.terminalSessions[sessionID].clients)
+		})
+	})
+
+	t.Run("annotation queue client", func(t *testing.T) {
+		t.Parallel()
+
+		controlServer, err := StartControlServer(StartControlServerOptions{
+			AnnotationActions: []manifest.ValidatedAnnotationAction{
+				{Agent: manifest.ValidatedAgent{Kind: "pi"}, ID: defaultAnnotationActionID, Kind: "agent", Label: "Pi"},
+			},
+			AnnotationDefaultActionID: defaultAnnotationActionID,
+			FeatureToggles:            FeatureToggles{AnnotationEnabled: true, AnnotationQueueEnabled: true, TerminalEnabled: true},
+			GetHealthResponse: func() (HealthResponse, error) {
+				return HealthResponse{Services: []ServiceHealth{}}, nil
+			},
+			ManifestPath:         "/tmp/project/devhost.toml",
+			Position:             "bottom-right",
+			ProjectRootPath:      "/tmp/project",
+			StackName:            "hello-stack",
+			StartTerminalSession: newTestTerminalStarter().start,
+			StateDirectoryPath:   t.TempDir(),
+		})
+		if err != nil {
+			t.Fatalf("StartControlServer(...) error = %v", err)
+		}
+		t.Cleanup(func() {
+			_ = controlServer.Stop()
+		})
+		socket := mustDialWebsocket(t, annotationQueueWebsocketURL(controlServer.Port()))
+		readWebsocketText(t, socket)
+
+		controlServer.mu.Lock()
+		clients := snapshotClients(controlServer.annotationQueueClients)
+		controlServer.mu.Unlock()
+		assertServerUsableWhileClientCloseWaits(t, controlServer, socket, clients, func() int {
+			return len(controlServer.annotationQueueClients)
+		})
+	})
+}
+
+// assertServerUsableWhileClientCloseWaits holds the only client's write lock, as a write stuck on a stalled
+// connection would, then disconnects the browser side. The server must drop the client and release its own lock
+// while that client's close is still waiting. countClients runs with the server lock held.
+func assertServerUsableWhileClientCloseWaits(t *testing.T, controlServer *ControlServer, socket *websocket.Conn, clients []*websocketClient, countClients func() int) {
+	t.Helper()
+
+	if len(clients) != 1 {
+		t.Fatalf("attached clients = %d, want 1", len(clients))
+	}
+	clients[0].writeMu.Lock()
+	defer clients[0].writeMu.Unlock()
+	if err := socket.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	waitForCondition(t, 5*time.Second, func() bool {
+		if !controlServer.mu.TryLock() {
+			return false
+		}
+		defer controlServer.mu.Unlock()
+		return countClients() == 0
+	})
+}
+
 const (
 	editorTerminalTestRequest  = `{"componentName":"SaveButton","kind":"editor","launcher":"neovim","source":{"fileName":"src/components/SaveButton.tsx","lineNumber":42},"sourceLabel":"src/components/SaveButton.tsx:42:1"}`
 	commandTerminalTestRequest = `{"actionId":"lint","annotation":{"comment":"Check lint.","markers":[],"stackName":"hello-stack","submittedAt":1,"title":"Buttons","url":"https://hello.test/buttons"},"kind":"command"}`

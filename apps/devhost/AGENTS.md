@@ -172,6 +172,11 @@ Devtools control requests are token-free for trusted local development; keep bro
 - `devhost` does not ship built-in Jira or generic webhook adapters for annotation submission; integrations like ticket creation must be implemented by the configured command reading `DEVHOST_ANNOTATION_FILE` or `DEVHOST_ANNOTATION_PROMPT_FILE`.
 - Durable annotation queues are supported for `agent` actions only. `command` actions always start standalone terminal sessions and do not participate in the queue.
 
+## Control server and test networking rules
+
+- Never close a websocket client while holding the control server lock: a close waits for that client's in-flight write, which can stall on a dead connection. Drop the client from server state under the lock, release it, then close.
+- A client attaching to a terminal session must receive its snapshot before any broadcast. The attach path takes the client's write lock before releasing the server lock for exactly that reason; keep the order when changing it.
+
 ## Go naming rule
 
 - Name error variables `err`, never `error`. A local `error` hides the built-in `error` type for every function literal declared after it in that scope, so a later `func() (T, error)` fails to compile. `just devhost lint` runs `go tool predeclared ./...` (a `tool` directive in `go.mod`), which rejects any declaration that shadows a built-in identifier.

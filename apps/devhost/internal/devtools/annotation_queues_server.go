@@ -155,8 +155,8 @@ func (s *ControlServer) publishAnnotationQueues(snapshot []annotationQueueSnapsh
 
 func (s *ControlServer) removeAnnotationQueueClient(client *websocketClient) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	delete(s.annotationQueueClients, client)
+	s.mu.Unlock()
 	client.close()
 }
 
