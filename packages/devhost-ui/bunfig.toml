@@ -1,0 +1,7 @@
+[test]
+# These hook tests run in Chromium through vitest.hooks.config.ts. A hook test that needs Bun itself stays out of
+# this list and is excluded there instead.
+pathIgnorePatterns = [
+  "src/devtools/features/**/hooks/__tests__/**",
+  "src/devtools/shared/hooks/__tests__/use{DevtoolsColorScheme,ResolvedColorScheme,RetainedValue,ToolbarPopoverId}.test.ts",
+]

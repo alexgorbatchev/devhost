@@ -5,6 +5,7 @@ Local React workspace for the injected `devhost` browser UI that gets embedded i
 ## Commands
 
 - Check package-local validations: `just ui check`
+- Hook tests in Chromium, optionally limited to matching paths: `just ui test-hooks [path]`
 - Storybook: `just ui storybook`
 - Record the real utility demo: `just demo record`; recording tests: `just demo test`. See `../../docs/internal/references/demo-recording.md` for prerequisites, scene refreshes, and artifact locations.
 - Refresh every public guide video: `just demo guides` (or `just demo guides <guide-slug>`). Publication tests require FFmpeg/ffprobe; full rendering also needs VHS/ttyd. Docker and React Highlight guides need real Docker and Neovim/TSX Tree-sitter.
@@ -32,7 +33,8 @@ Local React workspace for the injected `devhost` browser UI that gets embedded i
 - Vitest's browser server uses its own Vite 8/Rolldown dependency, while the workspace declares Vite 7.3.1. `vitest.storybook.config.ts` groups the complete native `@tanstack/query-devtools`, `@tanstack/router-devtools-core`, `@tanstack/table-devtools`, and `@tanstack/devtools-utils` packages separately in its optimizer output so rendering and mounting code arrive with their public entries before interaction or mount. The shared utility matcher includes the reachable 0.4.0 and 0.7.0 versions used by Form, Table and Pacer; preserve their native lazy mounting, abort and disposal behavior. Preserve `strictExecutionOrder` for native module initialization and the original browser assertions and lookup budgets; do not replace this with warmed stories, private imports or longer waits. This optimizer setting applies to automated browser checks, not the standalone Storybook server or shipped Go bundle.
 - For styling, theme, and feature-layout rules under `src/devtools/`, follow `src/devtools/AGENTS.md` and `src/devtools/features/AGENTS.md`.
 - Storybook's `preview.beforeAll` configures a shared five-second failure budget for Testing Library async queries and assertions. Native panels lazy-load while stories run in parallel; wait for observable readiness and popover visibility without sleeps, retries, or per-story timeout overrides.
-- Bun unit tests have no DOM. A hook test renders through React Testing Library on happy-dom: its sibling `__tests__/helpers.ts` registers the DOM globals when it loads, so the test file imports `./helpers` before `@testing-library/react` and unregisters them in `afterAll`.
+- Hook tests (`src/**/hooks/__tests__/*.test.ts`) run in Chromium through `vitest.hooks.config.ts`, because the hooks listen to the page, hit-test it, measure it, and follow its media queries. They import from `vitest` and `@testing-library/react`; `bunfig.toml` lists them so Bun's runner, which has no DOM, leaves them alone and `bun test` covers everything else. A hook test that needs Bun itself stays in `bun test`: `useNativeBrowserConnection.test.ts` serves a real loopback endpoint and registers happy-dom for its own file. Exclude such a test in `vitest.hooks.config.ts` and keep it out of the patterns in `bunfig.toml`; a new browser hook test under `shared/hooks/` needs its name added to those patterns.
+- The hook-test viewport is 1024 by 768. `test-support/hostPageUtils.ts` fixes elements at stated rectangles so layout and hit testing are exact; fire pointer events at an element's real coordinates (`readCenter`). Change the system color scheme through `cdp()` and wait for the media query's own `change` event inside `act`, record navigations through the Navigation API because `location.assign` cannot be replaced, and spy on `navigator.clipboard.writeText` because headless Chromium refuses clipboard writes from an unfocused page.
 - Devtools control requests use no authentication token. Preserve session IDs and instance routing when changing HTTP/WebSocket clients.
 - The browser entry awaits uncached `/__devhost__/config.json` before rendering. Keep instance data out of the static bundle. Terminal constructors load through dynamic imports only when a session panel mounts; cancellation must prevent late initialization after unmount. Production JavaScript, hashed chunks/fonts, and versioned terminal styles use one-year immutable caching; source-mode entry scripts use `no-store`.
 - Native Vue regressions start genuine Vue DevTools 9.0.0-beta.1/Vite 8.3.3 hosts and owned Chromium profiles. Their exact dependencies, lockfile, ports, and runtime artifacts stay under ignored `.tmp/vue-native-host/`; repository Vite remains 7.3.1. Each run owns its Vite dependency cache under `runs/<uuid>/.vite`: the default cache beside the shared dependency installation lets independent hosts replace each other's optimized modules and stall authorization. Run them through normal `just ui check` and stop all owned resources. Preserve the real authorization flow and host APIs; a simulated context cannot verify this integration.
@@ -52,6 +54,8 @@ Local React workspace for the injected `devhost` browser UI that gets embedded i
 ## References
 
 - `package.json`
+- `vitest.hooks.config.ts`
+- `test-support/`
 - `../design/references/devtools.html`
 - `src/devtools/AGENTS.md`
 - `src/devtools/features/AGENTS.md`

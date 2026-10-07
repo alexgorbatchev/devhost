@@ -1,12 +1,5 @@
-import { GlobalRegistrator } from "@happy-dom/global-registrator";
-
+import type { IMockWebSocketConnection } from "../../../../../../test-support/createMockWebSocket";
 import type { IOverlayElement, IReactHighlightCursorMessage } from "../../reactHighlightOverlay";
-
-// React DOM and Testing Library read the DOM globals while they load, so this module registers them when it is
-// evaluated. Test files import it before either of those.
-GlobalRegistrator.register({ url: "http://app.localhost/" });
-
-type CursorSocketConnection = Pick<WebSocket, "addEventListener" | "removeEventListener" | "close">;
 
 interface IHighlightRequest {
   isResolved: boolean;
@@ -21,41 +14,15 @@ export interface IHighlightRequestSummary {
   projectRootPath: string;
 }
 
-class CursorSocket extends EventTarget {
-  closeCount: number = 0;
-  readonly url: string;
-
-  constructor(url: string) {
-    super();
-    this.url = url;
-  }
-
-  close(): void {
-    this.closeCount += 1;
-  }
-
-  deliver(data: unknown): void {
-    this.dispatchEvent(new MessageEvent("message", { data }));
-  }
-}
-
-/** The collaborators `useReactHighlightOverlay` accepts, recording every connection and highlight request. */
-export class ReactHighlightLifecycleController {
-  readonly sockets: CursorSocket[] = [];
+/** The highlight renderer `useReactHighlightOverlay` accepts, recording every request it receives. */
+export class HighlightRenderer {
   private readonly requests: IHighlightRequest[] = [];
   private readonly isDeferred: boolean;
 
+  /** A deferred renderer answers a request only when the test calls `resolveRequest`. */
   constructor(isDeferred: boolean = false) {
     this.isDeferred = isDeferred;
   }
-
-  readonly createWebSocket = (url: string): CursorSocketConnection => {
-    const socket = new CursorSocket(url);
-
-    this.sockets.push(socket);
-
-    return socket;
-  };
 
   readonly highlightElements = (
     locator: string,
@@ -78,39 +45,10 @@ export class ReactHighlightLifecycleController {
     return request.result.promise;
   };
 
-  get closedConnectionCount(): number {
-    return this.sockets.reduce((count: number, socket: CursorSocket): number => count + socket.closeCount, 0);
-  }
-
   get requestSummaries(): IHighlightRequestSummary[] {
     return this.requests.map(({ locator, projectRootPath }: IHighlightRequest): IHighlightRequestSummary => {
       return { locator, projectRootPath };
     });
-  }
-
-  /** Delivers a cursor message on the newest socket, or on `socketIndex` when given. */
-  sendCursor(
-    locator: string | null,
-    projectRoot: string = "/message-project",
-    socketIndex: number = this.sockets.length - 1,
-  ): void {
-    const payload: IReactHighlightCursorMessage = {
-      kind: "cursor",
-      locator,
-      projectRoot,
-      stackName: "cursor-lifecycle",
-      timestamp: 1,
-    };
-
-    this.sockets[socketIndex]?.deliver(JSON.stringify(payload));
-  }
-
-  sendInvalidMessages(): void {
-    const socket: CursorSocket | undefined = this.sockets.at(-1);
-
-    for (const data of [new ArrayBuffer(1), "{", "{}", '{"kind":"other"}', '{"kind":"cursor","locator":42}']) {
-      socket?.deliver(data);
-    }
   }
 
   /** Resolves a deferred highlight request, appending its overlay to the overlay root as the renderer does. */
@@ -134,6 +72,31 @@ export class ReactHighlightLifecycleController {
   }
 }
 
+/** Sends the cursor position an editor reports. An empty `projectRoot` leaves the project to the page's own. */
+export function sendCursor(
+  connection: IMockWebSocketConnection,
+  locator: string | null,
+  projectRoot: string = "/message-project",
+): void {
+  const payload: IReactHighlightCursorMessage = {
+    kind: "cursor",
+    locator,
+    projectRoot,
+    stackName: "cursor-lifecycle",
+    timestamp: 1,
+  };
+
+  connection.send(payload);
+}
+
+export function sendInvalidMessages(connection: IMockWebSocketConnection): void {
+  connection.sendFrame(new ArrayBuffer(1));
+  connection.sendFrame("{");
+  connection.send({});
+  connection.send({ kind: "other" });
+  connection.send({ kind: "cursor", locator: 42 });
+}
+
 export function createOverlayRoot(): HTMLDivElement {
   const overlayRoot: HTMLDivElement = document.createElement("div");
 
@@ -144,8 +107,4 @@ export function createOverlayRoot(): HTMLDivElement {
 
 export function readOverlayLocators(overlayRoot: HTMLElement): string[] {
   return Array.from(overlayRoot.children, (overlay: Element): string => overlay.textContent ?? "");
-}
-
-export async function unregisterDom(): Promise<void> {
-  await GlobalRegistrator.unregister();
 }
