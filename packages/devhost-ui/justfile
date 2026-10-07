@@ -1,10 +1,14 @@
-# Run package-local checks (TypeScript, unused exports, unit and browser tests with coverage, Storybook tests in Chromium)
-check:
+# Run package-local checks (TypeScript, unused exports, unit, browser and Storybook tests, merged line coverage)
+check: && coverage
     bun tsgo --noEmit -p tsconfig.json
     bun --bun x ts-unused tsconfig.json
-    bun test --coverage
+    bun test --coverage --coverage-reporter=lcov --coverage-dir=.cache/coverage/unit
     bun vitest run -c vitest.browser.config.ts --coverage
-    NODE_ENV=development bun vitest run -c vitest.storybook.config.ts
+    NODE_ENV=development bun vitest run -c vitest.storybook.config.ts --coverage
+
+# Print the line coverage of the three test runs of the last `check` as one table; fail below the floor
+coverage:
+    bun scripts/lineCoverage/reportCoverage.ts --minimum-line-coverage 82 .cache/coverage/unit/lcov.info .cache/coverage/browser/lcov.info .cache/coverage/stories/lcov.info
 
 # Run the hook and `*.browser.test.ts` tests in Chromium, optionally limited to matching paths
 test-browser *args:
