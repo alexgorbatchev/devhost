@@ -8,6 +8,8 @@ import { chromium } from "playwright";
 import type { BrowserContext } from "playwright";
 import tailwindPlugin from "bun-plugin-tailwind";
 
+import { createOwnedBrowserEnvironment } from "../../../../../test-support/createOwnedBrowserEnvironment";
+
 export type NativeVueHostTest = (hosts: readonly INativeVueHost[], browser: BrowserContext) => Promise<void>;
 
 export interface INativeVueHost {
@@ -119,6 +121,8 @@ export async function startNativeVueHost(options: INativeVueHostOptions = {}): P
     stderr: "pipe",
     env: {
       ...process.env,
+      // The host keeps its instance registry and devtools state in the home directory; this one belongs to the run.
+      HOME: resolve(rootPath, "home"),
       NODE_ENV: "development",
       NATIVE_VUE_BASE: options.base,
       NATIVE_VUE_OPTIMIZE_DEPS: JSON.stringify(options.optimizedDependencies ?? []),
@@ -187,6 +191,7 @@ export async function withNativeVueHosts(
     browser = await chromium.launchPersistentContext(`${first.rootPath}/profile`, {
       headless: true,
       artifactsDir: `${first.rootPath}/artifacts`,
+      env: await createOwnedBrowserEnvironment(first.rootPath),
     });
     await run(hosts, browser);
   } finally {

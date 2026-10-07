@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { mkdir, rm } from "node:fs/promises";
-import { relative, resolve } from "node:path";
+import { resolve } from "node:path";
 import { chromium } from "playwright";
 import type { BrowserContext, Page } from "playwright";
 import tailwindPlugin from "bun-plugin-tailwind";
 import type { EnhancedStore } from "@redux-devtools/instrument";
 import type { Action } from "redux";
+import { createOwnedBrowserEnvironment } from "../../../../../test-support/createOwnedBrowserEnvironment";
 import type { registerReduxDevtoolsStore, registerZustandDevtoolsStore } from "../index";
 
 const repositoryRoot: string = resolve(import.meta.dir, "../../../../../../..");
@@ -69,19 +70,13 @@ export async function withNativeReduxHost(options: INativeReduxHostOptions, run:
   };
   try {
     const extensionPath = options.isExtensionEnabled ? await loadNativeReduxExtension() : undefined;
-    const browserTempDirectoryPath = relative(process.cwd(), resolve(repositoryRoot, ".tmp"));
-    assert.equal(resolve(process.cwd(), browserTempDirectoryPath), resolve(repositoryRoot, ".tmp"));
-    // Chromium cancels a download when its default download directory, Downloads in the home directory, does not
-    // exist, as on a fresh CI runner. An owned home supplies it and keeps the browser out of the real one.
-    const browserHomePath = resolve(rootPath, "home");
-    await mkdir(resolve(browserHomePath, "Downloads"), { recursive: true });
+    const browserEnvironment = await createOwnedBrowserEnvironment(rootPath);
     await Bun.write(
       resolve(rootPath, "browser-environment.json"),
       JSON.stringify({
         cwd: process.cwd(),
-        HOME: browserHomePath,
-        TMPDIR: browserTempDirectoryPath,
-        resolvedTempDirectoryPath: resolve(process.cwd(), browserTempDirectoryPath),
+        HOME: browserEnvironment.HOME,
+        TMPDIR: browserEnvironment.TMPDIR,
       }) + "\n",
     );
     browser = await chromium.launchPersistentContext(resolve(rootPath, "profile"), {
@@ -89,13 +84,7 @@ export async function withNativeReduxHost(options: INativeReduxHostOptions, run:
       headless: true,
       ignoreHTTPSErrors: options.hasUntrustedFixtureCertificate ?? false,
       artifactsDir: resolve(rootPath, "artifacts"),
-      // Native controls fail with the absolute TMPDIR here and pass with this relative path to the same owned directory.
-      env: {
-        ...process.env,
-        HOME: browserHomePath,
-        XDG_CONFIG_HOME: resolve(browserHomePath, ".config"),
-        TMPDIR: browserTempDirectoryPath,
-      },
+      env: browserEnvironment,
       args:
         extensionPath === undefined
           ? []
