@@ -53,6 +53,10 @@ const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
   primaryService: "",
 };
 
+// The injected object is replaced, never edited in place, so each one is parsed once. Components read the
+// configuration during render and get the same object and arrays until the configuration changes.
+const parsedConfigs = new WeakMap<object, IInjectedDevtoolsConfig>();
+
 export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
   const injectedConfig: unknown = Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME);
 
@@ -60,6 +64,20 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
     return defaultInjectedDevtoolsConfig;
   }
 
+  const cachedConfig: IInjectedDevtoolsConfig | undefined = parsedConfigs.get(injectedConfig);
+
+  if (cachedConfig !== undefined) {
+    return cachedConfig;
+  }
+
+  const parsedConfig: IInjectedDevtoolsConfig = parseInjectedDevtoolsConfig(injectedConfig);
+
+  parsedConfigs.set(injectedConfig, parsedConfig);
+
+  return parsedConfig;
+}
+
+function parseInjectedDevtoolsConfig(injectedConfig: object): IInjectedDevtoolsConfig {
   const annotationActions: IAnnotationAction[] = readAnnotationActionsValue(injectedConfig);
   const annotationDefaultActionId: string = readAnnotationDefaultActionIdValue(injectedConfig, annotationActions);
   const componentEditor: DevtoolsComponentEditor = readComponentEditorValue(injectedConfig);

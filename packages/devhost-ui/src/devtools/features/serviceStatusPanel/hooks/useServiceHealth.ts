@@ -28,7 +28,11 @@ export function useServiceHealth(): IUseServiceHealthResult {
   const { stackName: devtoolsStackName } = readInjectedDevtoolsConfig();
 
   const updateHealth = useCallback((health: HealthResponse): void => {
-    updateInjectedRouting(health.routing, Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME));
+    Reflect.set(
+      globalThis,
+      DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME,
+      updateInjectedRouting(health.routing, Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME)),
+    );
     setServices(health.services);
     setRepositories(health.repositories ?? []);
   }, []);

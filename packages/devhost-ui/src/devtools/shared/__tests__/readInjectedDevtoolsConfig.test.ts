@@ -163,4 +163,30 @@ describe("readInjectedDevtoolsConfig", () => {
       primaryService: "",
     });
   });
+
+  test("returns the same configuration while the injected object is unchanged", () => {
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
+      annotationActions: [{ id: "agent", kind: "agent", label: "Pi", queueEnabled: true }],
+      routedServices: [{ host: "app.localhost", path: "/", serviceName: "web" }],
+    });
+
+    const firstRead = readInjectedDevtoolsConfig();
+    const secondRead = readInjectedDevtoolsConfig();
+
+    // Components read the configuration during render; a new object or array each time would retrigger every
+    // effect and callback that depends on it.
+    expect(secondRead).toBe(firstRead);
+    expect(secondRead.annotationActions).toBe(firstRead.annotationActions);
+    expect(secondRead.routedServices).toBe(firstRead.routedServices);
+  });
+
+  test("reads again when the injected object is replaced", () => {
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, { homeDirectoryPath: "/home/first" });
+    const firstRead = readInjectedDevtoolsConfig();
+
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, { homeDirectoryPath: "/home/second" });
+
+    expect(firstRead.homeDirectoryPath).toBe("/home/first");
+    expect(readInjectedDevtoolsConfig().homeDirectoryPath).toBe("/home/second");
+  });
 });
