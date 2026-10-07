@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { mkdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
-import type { Mock } from "bun:test";
 import type { DevframeViewIframe } from "@devframes/hub";
 import type { DevframeClientContext } from "@devframes/hub/client";
 import type { Page } from "playwright";
@@ -37,21 +36,22 @@ declare global {
   }
 }
 
-export type JotaiInspectorAction = () => void;
+export type ReadClickCount = () => number;
+export type CountClick = () => void;
 
 export interface IJotaiInspectorFixture {
   root: HTMLElement;
-  open: Mock<JotaiInspectorAction>;
-  close: Mock<JotaiInspectorAction>;
-  replaceLauncher: () => Mock<JotaiInspectorAction>;
+  /** How often a launcher the inspector rendered itself was clicked. */
+  readOpenCount: ReadClickCount;
+  readCloseCount: ReadClickCount;
+  /** Renders a new launcher in place of the current one and returns how often that one was clicked. */
+  replaceLauncher: () => ReadClickCount;
 }
-
-export type DispatchEventFn = (event: Event) => boolean;
 
 export interface ITanStackShellFixture {
   root: HTMLElement;
-  openButton: Mock<DispatchEventFn>;
-  closeButton: Mock<DispatchEventFn>;
+  readOpenCount: ReadClickCount;
+  readCloseCount: ReadClickCount;
 }
 
 const repositoryRoot = resolve(import.meta.dir, "../../../../../../..");

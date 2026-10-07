@@ -4,12 +4,12 @@ import { defineConfig, mergeConfig } from "vitest/config";
 import { nativeBrowserTransport, nativeBrowserTransportCommands } from "./test-support/nativeBrowserTransport";
 import viteConfig from "./vite.config";
 
-// Hook tests run in Chromium: the hooks listen to the page, hit-test it, measure it, and follow its media queries,
-// and only a browser does those.
+// The tests that need a browser run in Chromium: hook tests, whose hooks listen to the page, hit-test it, measure it,
+// and follow its media queries, and `*.browser.test.ts` files, whose modules query and change the DOM.
 export default mergeConfig(
   viteConfig,
   defineConfig({
-    cacheDir: "./.cache/vite-hooks",
+    cacheDir: "./.cache/vite-browser",
     plugins: [nativeBrowserTransport()],
     optimizeDeps: {
       include: ["@testing-library/react", "react", "react-dom", "react-dom/client", "react/jsx-dev-runtime"],
@@ -31,11 +31,11 @@ export default mergeConfig(
         provider: "v8",
         // Vitest leaves fully covered files out of the table when an agent runs it; list every hook for everyone.
         reporter: [["text", { skipFull: false }]],
-        reportsDirectory: "./.cache/coverage-hooks",
+        reportsDirectory: "./.cache/coverage-browser",
       },
-      include: ["src/**/hooks/__tests__/*.test.ts"],
-      name: "hooks",
-      setupFiles: ["./test-support/setupHookTests.ts"],
+      include: ["src/**/hooks/__tests__/*.test.ts", "src/**/*.browser.test.ts"],
+      name: "browser",
+      setupFiles: ["./test-support/setupBrowserTests.ts"],
     },
   }),
 );

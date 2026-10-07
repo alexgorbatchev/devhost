@@ -3,7 +3,7 @@ import { commands } from "vitest/browser";
 import type { INativeBrowserTransportState } from "../../../../../test-support/nativeBrowserTransport";
 import type { INativeBrowserObservation } from "../../nativeBrowser/types";
 
-// The control plane these commands reach is `nativeBrowserTransport` in vitest.hooks.config.ts: a real HTTP and
+// The control plane these commands reach is `nativeBrowserTransport` in vitest.browser.config.ts: a real HTTP and
 // WebSocket endpoint at the test page's own origin, running in the test server's process.
 declare module "vitest/browser" {
   interface BrowserCommands {

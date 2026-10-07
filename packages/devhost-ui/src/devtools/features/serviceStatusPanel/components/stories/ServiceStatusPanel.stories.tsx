@@ -53,7 +53,7 @@ export const Default: Story = {
     const restartFetch = fn(async () => new Response(null, { status: 204 }));
     const originalFetch = globalThis.fetch;
 
-    Reflect.set(globalThis, "fetch", restartFetch as unknown as typeof fetch);
+    Reflect.set(globalThis, "fetch", restartFetch);
 
     try {
       await userEvent.click(shadowCanvas.getByRole("button", { name: "Restart api" }));
