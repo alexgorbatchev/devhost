@@ -16,7 +16,7 @@ describe("createAnnotationTerminalSessionRequest", () => {
   test("carries the devtools color scheme and target session on agent requests", () => {
     expect(
       createAnnotationTerminalSessionRequest({
-        action: { displayName: "Ask Pi", id: "fix", kind: "agent", queueEnabled: true },
+        action: { displayName: "Pi", id: "fix", kind: "agent", queueEnabled: true },
         annotation,
         colorScheme: "light",
         targetSessionId: "session-1",
@@ -25,7 +25,7 @@ describe("createAnnotationTerminalSessionRequest", () => {
       actionId: "fix",
       annotation,
       colorScheme: "light",
-      displayName: "Ask Pi",
+      displayName: "Pi",
       kind: "agent",
       targetSessionId: "session-1",
     });

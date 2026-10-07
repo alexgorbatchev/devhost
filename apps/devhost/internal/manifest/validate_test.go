@@ -176,7 +176,7 @@ func TestValidateManifestAcceptsAnnotationActions(t *testing.T) {
 		"annotation": map[string]any{
 			"defaultAction": "lint",
 			"actions": []any{
-				map[string]any{"agent": map[string]any{"adapter": "claude-code"}, "id": "fix", "kind": "agent", "label": "Ask Claude"},
+				map[string]any{"agent": map[string]any{"adapter": "claude-code"}, "id": "fix", "kind": "agent"},
 				map[string]any{
 					"command": map[string]any{
 						"command": []any{"bun", "run", "lint"},
@@ -201,7 +201,7 @@ func TestValidateManifestAcceptsAnnotationActions(t *testing.T) {
 		t.Fatalf("manifest.Annotation.DefaultActionID = %q, want lint", manifest.Annotation.DefaultActionID)
 	}
 	agentAction := manifest.Annotation.Actions[0]
-	if agentAction.ID != "fix" || agentAction.Kind != "agent" || agentAction.DisplayName != "Ask Claude" || agentAction.Agent.DisplayName != "Claude Code" || agentAction.Agent.Kind != "claude-code" {
+	if agentAction.ID != "fix" || agentAction.Kind != "agent" || agentAction.DisplayName != "Claude Code" || agentAction.Agent.DisplayName != "Claude Code" || agentAction.Agent.Kind != "claude-code" {
 		t.Fatalf("agent action = %#v", agentAction)
 	}
 	commandAction := manifest.Annotation.Actions[1]
@@ -221,26 +221,23 @@ func TestValidateManifestAcceptsAnnotationAgentArgs(t *testing.T) {
 						"adapter": "pi",
 						"args":    []any{"--thinking", "high"},
 					},
-					"id":    "ask-pi",
-					"kind":  "agent",
-					"label": "Ask Pi",
+					"id":   "ask-pi",
+					"kind": "agent",
 				},
 				map[string]any{
 					"agent": map[string]any{
 						"adapter": "claude-code",
 						"args":    []any{"--model", "sonnet"},
 					},
-					"id":    "ask-claude",
-					"kind":  "agent",
-					"label": "Ask Claude",
+					"id":   "ask-claude",
+					"kind": "agent",
 				},
 				map[string]any{
 					"agent": map[string]any{
 						"adapter": "opencode",
 					},
-					"id":    "ask-opencode",
-					"kind":  "agent",
-					"label": "Ask OpenCode",
+					"id":   "ask-opencode",
+					"kind": "agent",
 				},
 			},
 		},
@@ -277,9 +274,8 @@ func TestValidateManifestAcceptsEmptyAnnotationAgentArgs(t *testing.T) {
 						"adapter": "claude-code",
 						"args":    []any{},
 					},
-					"id":    "ask-claude",
-					"kind":  "agent",
-					"label": "Ask Claude",
+					"id":   "ask-claude",
+					"kind": "agent",
 				},
 			},
 		},
@@ -294,6 +290,57 @@ func TestValidateManifestAcceptsEmptyAnnotationAgentArgs(t *testing.T) {
 	action := manifest.Annotation.Actions[0]
 	if action.Agent.Args == nil || len(action.Agent.Args) != 0 {
 		t.Fatalf("action.Agent.Args = %#v, want empty non-nil slice", action.Agent.Args)
+	}
+}
+
+func TestValidateManifestLabelsAnnotationAgentActions(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		agent         map[string]any
+		label         string
+		wantLabel     string
+		wantAgentName string
+	}{
+		{name: "pi adapter name", agent: map[string]any{"adapter": "pi"}, wantLabel: "Pi", wantAgentName: "Pi"},
+		{name: "claude-code adapter name", agent: map[string]any{"adapter": "claude-code"}, wantLabel: "Claude Code", wantAgentName: "Claude Code"},
+		{name: "opencode adapter name", agent: map[string]any{"adapter": "opencode"}, wantLabel: "OpenCode", wantAgentName: "OpenCode"},
+		{name: "codex adapter name", agent: map[string]any{"adapter": "codex"}, wantLabel: "Codex", wantAgentName: "Codex"},
+		{
+			name:          "custom agent display name",
+			agent:         map[string]any{"command": []any{"./scripts/devhost-agent.sh"}, "displayName": "My Agent"},
+			wantLabel:     "My Agent",
+			wantAgentName: "My Agent",
+		},
+		{
+			name:          "explicit label",
+			agent:         map[string]any{"adapter": "claude-code"},
+			label:         "Claude Code (Sonnet)",
+			wantLabel:     "Claude Code (Sonnet)",
+			wantAgentName: "Claude Code",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			action := map[string]any{"agent": tt.agent, "id": "fix", "kind": "agent"}
+			if tt.label != "" {
+				action["label"] = tt.label
+			}
+			manifest, err := ValidateManifest(filepath.Join(string(filepath.Separator), "tmp", "project", "devhost.toml"), rawManifestWithServices(map[string]any{
+				"annotation": map[string]any{"actions": []any{action}},
+			}))
+			if err != nil {
+				t.Fatalf("ValidateManifest(...) unexpected error = %v", err)
+			}
+
+			got := manifest.Annotation.Actions[0]
+			if got.DisplayName != tt.wantLabel || got.Agent.DisplayName != tt.wantAgentName {
+				t.Fatalf("action label = %q, agent name = %q; want %q and %q", got.DisplayName, got.Agent.DisplayName, tt.wantLabel, tt.wantAgentName)
+			}
+		})
 	}
 }
 
@@ -440,6 +487,24 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 			wantError: "annotation.actions.test.command must define command.",
 		},
 		{
+			name: "rejects annotation command action without label",
+			manifest: rawManifestWithServices(map[string]any{
+				"annotation": map[string]any{"actions": []any{
+					map[string]any{"command": map[string]any{"command": []any{"bun", "test"}}, "id": "test", "kind": "command"},
+				}},
+			}),
+			wantError: "annotation.actions.test.label Expected a non-empty string.",
+		},
+		{
+			name: "rejects empty annotation agent action label",
+			manifest: rawManifestWithServices(map[string]any{
+				"annotation": map[string]any{"actions": []any{
+					map[string]any{"agent": map[string]any{"adapter": "pi"}, "id": "fix", "kind": "agent", "label": ""},
+				}},
+			}),
+			wantError: "label Expected a non-empty string.",
+		},
+		{
 			name: "rejects invalid annotation action kind",
 			manifest: rawManifestWithServices(map[string]any{
 				"annotation": map[string]any{"actions": []any{
@@ -459,7 +524,7 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 			name: "rejects unknown annotation default action",
 			manifest: rawManifestWithServices(map[string]any{
 				"annotation": map[string]any{"defaultAction": "missing", "actions": []any{
-					map[string]any{"agent": map[string]any{"adapter": "pi"}, "id": "ask", "kind": "agent", "label": "Ask"},
+					map[string]any{"agent": map[string]any{"adapter": "pi"}, "id": "ask", "kind": "agent"},
 				}},
 			}),
 			wantError: "annotation.defaultAction must reference an annotation action id: missing",
@@ -474,9 +539,8 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 							"cwd":         "../outside",
 							"displayName": "Claude Code",
 						},
-						"id":    "ask",
-						"kind":  "agent",
-						"label": "Ask Claude",
+						"id":   "ask",
+						"kind": "agent",
 					},
 				}},
 			}),
@@ -492,9 +556,8 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 							"command":     []any{"bun", "./scripts/devhost-agent.ts"},
 							"displayName": "Claude Code",
 						},
-						"id":    "ask",
-						"kind":  "agent",
-						"label": "Ask Claude",
+						"id":   "ask",
+						"kind": "agent",
 					},
 				}},
 			}),
@@ -510,9 +573,8 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 							"command":     []any{"bun", "./scripts/devhost-agent.ts"},
 							"displayName": "Claude Code",
 						},
-						"id":    "ask",
-						"kind":  "agent",
-						"label": "Ask Claude",
+						"id":   "ask",
+						"kind": "agent",
 					},
 				}},
 			}),
@@ -527,9 +589,8 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 							"adapter": "pi",
 							"args":    []any{123},
 						},
-						"id":    "ask",
-						"kind":  "agent",
-						"label": "Ask Pi",
+						"id":   "ask",
+						"kind": "agent",
 					},
 				}},
 			}),
@@ -544,9 +605,8 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 							"adapter": "pi",
 							"args":    []any{""},
 						},
-						"id":    "ask",
-						"kind":  "agent",
-						"label": "Ask Pi",
+						"id":   "ask",
+						"kind": "agent",
 					},
 				}},
 			}),

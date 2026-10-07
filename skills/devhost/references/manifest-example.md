@@ -90,7 +90,6 @@ defaultAction = "fix"
 
 [[annotation.actions]]
 id = "fix"
-label = "Ask Claude"
 kind = "agent"
 
 [annotation.actions.agent]

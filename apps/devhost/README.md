@@ -275,7 +275,6 @@ defaultAction = "ask-codex"
 
 [[annotation.actions]]
 id = "ask-codex"
-label = "Ask Codex"
 kind = "agent"
 
 [annotation.actions.agent]
