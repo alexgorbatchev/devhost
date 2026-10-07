@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import { readDevtoolsStoryShadowCanvas } from "../../../../src/devtools/shared/components/stories/helpers";
+import { readInjectedDevtoolsConfig } from "../../../../src/devtools/shared/readInjectedDevtoolsConfig";
 import { NativeReactFixtureControls } from "../NativeReactFixtureControls";
 import { mountNativeReactStoryRoots, readNativeReactStoryControls } from "./helpers";
 
@@ -29,11 +30,17 @@ const Default: Story = {
     await expect(await roots.findByRole("status", { name: "Host count" })).toHaveTextContent("0");
     const shadow = await readDevtoolsStoryShadowCanvas(appContainer);
     await shadow.findByRole("toolbar", { name: "devhost" });
+    const enabledConfiguration = readInjectedDevtoolsConfig();
     await userEvent.click(canvas.getByRole("button", { name: "Disable external tools" }));
     await waitFor(() => expect(shadow.queryByRole("toolbar", { name: "devhost" })).toBeNull());
+    const disabledConfiguration = readInjectedDevtoolsConfig();
+    await expect(disabledConfiguration).not.toBe(enabledConfiguration);
+    await expect(disabledConfiguration.externalToolbarsEnabled).toBe(false);
     await expect(shadow.getByTestId("DevtoolsTopLayer")).toBeVisible();
     await userEvent.click(canvas.getByRole("button", { name: "Enable external tools" }));
     await expect(await shadow.findByRole("toolbar", { name: "devhost" })).toBeVisible();
+    await expect(readInjectedDevtoolsConfig()).not.toBe(disabledConfiguration);
+    await expect(readInjectedDevtoolsConfig().externalToolbarsEnabled).toBe(true);
     await userEvent.click(canvas.getByRole("button", { name: "Unmount actual App root" }));
     await expect(appContainer).toBeEmptyDOMElement();
     await expect(roots.getByRole("main")).toBeVisible();

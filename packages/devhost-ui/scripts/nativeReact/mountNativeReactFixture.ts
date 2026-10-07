@@ -55,13 +55,15 @@ export async function mountNativeReactFixture(): Promise<void> {
       if (typeof activeConfiguration !== "object" || activeConfiguration === null)
         throw new Error("Actual App configuration is missing.");
       const wasEnabled: unknown = Reflect.get(activeConfiguration, "externalToolbarsEnabled");
-      Reflect.set(activeConfiguration, "externalToolbarsEnabled", isEnabled);
+      const nextConfiguration = { ...activeConfiguration, externalToolbarsEnabled: isEnabled };
+      Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, nextConfiguration);
       console.info(
         "Native fixture external toolbar configuration",
         JSON.stringify({
           isInitialConfigurationActive: activeConfiguration === configuration,
           wasEnabled,
-          isEnabled: Reflect.get(activeConfiguration, "externalToolbarsEnabled"),
+          isEnabled: nextConfiguration.externalToolbarsEnabled,
+          isConfigurationReplaced: nextConfiguration !== activeConfiguration,
         }),
       );
       devhostRoot?.render(jsx(StrictMode, { children: jsx(App, {}) }));
