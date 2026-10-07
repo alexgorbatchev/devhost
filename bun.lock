@@ -28,6 +28,7 @@
       "dependencies": {
         "@alexgorbatchev/devhost-design": "workspace:*",
         "@devframes/hub": "1.2.2",
+        "@emotion/cache": "11.14.0",
         "@emotion/react": "11.14.0",
         "@emotion/styled": "11.14.1",
         "@fontsource-variable/jetbrains-mono": "^5.3.0",
