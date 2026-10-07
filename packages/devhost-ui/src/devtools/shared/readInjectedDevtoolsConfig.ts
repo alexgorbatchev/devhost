@@ -121,17 +121,17 @@ function readAnnotationActionsValue(injectedConfig: object): IAnnotationAction[]
     }
 
     const id: unknown = Reflect.get(action, "id");
-    const displayName: unknown = Reflect.get(action, "displayName");
     const kind: unknown = Reflect.get(action, "kind");
+    const label: unknown = Reflect.get(action, "label");
     const queueEnabled: unknown = Reflect.get(action, "queueEnabled");
 
     if (
       typeof id !== "string" ||
       id.length === 0 ||
       uniqueActionIds.has(id) ||
-      typeof displayName !== "string" ||
-      displayName.trim().length === 0 ||
       !isAnnotationActionKind(kind) ||
+      typeof label !== "string" ||
+      label.trim().length === 0 ||
       typeof queueEnabled !== "boolean"
     ) {
       return [];
@@ -141,9 +141,9 @@ function readAnnotationActionsValue(injectedConfig: object): IAnnotationAction[]
 
     return [
       {
-        displayName,
         id,
         kind,
+        label,
         queueEnabled,
       },
     ];

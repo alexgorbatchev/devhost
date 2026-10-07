@@ -22,8 +22,8 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 	restartedServices := []string{}
 	controlServer, err := StartControlServer(StartControlServerOptions{
 		AnnotationActions: []manifest.ValidatedAnnotationAction{
-			{Agent: manifest.ValidatedAgent{Kind: "pi"}, DisplayName: "Pi", ID: defaultAnnotationActionID, Kind: "agent"},
-			{Command: []string{"bun", "run", "lint"}, Cwd: "/tmp/project", DisplayName: "Run lint", ID: "lint", Kind: "command"},
+			{Agent: manifest.ValidatedAgent{Kind: "pi"}, Label: "Pi", ID: defaultAnnotationActionID, Kind: "agent"},
+			{Command: []string{"bun", "run", "lint"}, Cwd: "/tmp/project", Label: "Run lint", ID: "lint", Kind: "command"},
 		},
 		ComponentEditor: "vscode",
 		FeatureToggles: FeatureToggles{
@@ -88,7 +88,7 @@ func TestControlServerServesAssetsAndRestartService(t *testing.T) {
 	if !strings.Contains(injectedScriptText, `"terminalEnabled":false`) {
 		t.Fatalf("inject.js missing terminal capability gate: %q", injectedScriptText)
 	}
-	if !strings.Contains(injectedScriptText, `"annotationDefaultActionId":"agent"`) || !strings.Contains(injectedScriptText, `"annotationActions":[{"id":"agent","displayName":"Pi","kind":"agent","queueEnabled":true},{"id":"lint","displayName":"Run lint","kind":"command","queueEnabled":false}]`) {
+	if !strings.Contains(injectedScriptText, `"annotationDefaultActionId":"agent"`) || !strings.Contains(injectedScriptText, `"annotationActions":[{"id":"agent","label":"Pi","kind":"agent","queueEnabled":true},{"id":"lint","label":"Run lint","kind":"command","queueEnabled":false}]`) {
 		t.Fatalf("inject.js missing UI-safe annotation actions: %q", injectedScriptText)
 	}
 
@@ -343,8 +343,8 @@ func TestControlServerTerminalSessionsEditorOnlyLifecycle(t *testing.T) {
 	projectRootPath := t.TempDir()
 	controlServer, err := StartControlServer(StartControlServerOptions{
 		AnnotationActions: []manifest.ValidatedAnnotationAction{
-			{Agent: manifest.ValidatedAgent{Kind: "pi"}, DisplayName: "Pi", ID: defaultAnnotationActionID, Kind: "agent"},
-			{Command: []string{"bun", "run", "lint"}, Cwd: "/tmp/project", DisplayName: "Run lint", ID: "lint", Kind: "command"},
+			{Agent: manifest.ValidatedAgent{Kind: "pi"}, Label: "Pi", ID: defaultAnnotationActionID, Kind: "agent"},
+			{Command: []string{"bun", "run", "lint"}, Cwd: "/tmp/project", Label: "Run lint", ID: "lint", Kind: "command"},
 		},
 		ComponentEditor: "neovim",
 		FeatureToggles: FeatureToggles{
@@ -578,10 +578,10 @@ func TestControlServerAgentAnnotationQueuesLifecycle(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	controlServer, err := StartControlServer(StartControlServerOptions{
 		AnnotationActions: []manifest.ValidatedAnnotationAction{{
-			Agent:       manifest.ValidatedAgent{Kind: "pi"},
-			DisplayName: "Pi",
-			ID:          defaultAnnotationActionID,
-			Kind:        "agent",
+			Agent: manifest.ValidatedAgent{Kind: "pi"},
+			Label: "Pi",
+			ID:    defaultAnnotationActionID,
+			Kind:  "agent",
 		}},
 		AnnotationDefaultActionID: defaultAnnotationActionID,
 		ComponentEditor:           "vscode",
@@ -761,10 +761,10 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 	firstStarter := newTestTerminalStarter()
 	firstServer, err := StartControlServer(StartControlServerOptions{
 		AnnotationActions: []manifest.ValidatedAnnotationAction{{
-			Agent:       manifest.ValidatedAgent{Kind: "pi"},
-			DisplayName: "Pi",
-			ID:          defaultAnnotationActionID,
-			Kind:        "agent",
+			Agent: manifest.ValidatedAgent{Kind: "pi"},
+			Label: "Pi",
+			ID:    defaultAnnotationActionID,
+			Kind:  "agent",
 		}},
 		AnnotationDefaultActionID: defaultAnnotationActionID,
 		ComponentEditor:           "vscode",
@@ -820,11 +820,11 @@ func TestControlServerAgentAnnotationQueuesPersistAcrossRestart(t *testing.T) {
 	secondStarter := newTestTerminalStarter()
 	secondServer, err := StartControlServer(StartControlServerOptions{
 		AnnotationActions: []manifest.ValidatedAnnotationAction{{
-			TempDir:     &tempDir,
-			Agent:       manifest.ValidatedAgent{Kind: "pi"},
-			DisplayName: "Pi",
-			ID:          defaultAnnotationActionID,
-			Kind:        "agent",
+			TempDir: &tempDir,
+			Agent:   manifest.ValidatedAgent{Kind: "pi"},
+			Label:   "Pi",
+			ID:      defaultAnnotationActionID,
+			Kind:    "agent",
 		}},
 		AnnotationDefaultActionID: defaultAnnotationActionID,
 		ComponentEditor:           "vscode",

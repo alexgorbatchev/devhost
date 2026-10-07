@@ -16,7 +16,7 @@ describe("createAnnotationTerminalSessionRequest", () => {
   test("carries the devtools color scheme and target session on agent requests", () => {
     expect(
       createAnnotationTerminalSessionRequest({
-        action: { displayName: "Pi", id: "fix", kind: "agent", queueEnabled: true },
+        action: { id: "fix", kind: "agent", label: "Pi", queueEnabled: true },
         annotation,
         colorScheme: "light",
         targetSessionId: "session-1",
@@ -25,7 +25,6 @@ describe("createAnnotationTerminalSessionRequest", () => {
       actionId: "fix",
       annotation,
       colorScheme: "light",
-      displayName: "Pi",
       kind: "agent",
       targetSessionId: "session-1",
     });
@@ -34,7 +33,7 @@ describe("createAnnotationTerminalSessionRequest", () => {
   test("leaves the color scheme off command requests", () => {
     expect(
       createAnnotationTerminalSessionRequest({
-        action: { displayName: "Log it", id: "log", kind: "command", queueEnabled: false },
+        action: { id: "log", kind: "command", label: "Log it", queueEnabled: false },
         annotation,
         colorScheme: "dark",
         targetSessionId: "session-1",
@@ -42,7 +41,6 @@ describe("createAnnotationTerminalSessionRequest", () => {
     ).toEqual({
       actionId: "log",
       annotation,
-      displayName: "Log it",
       kind: "command",
     });
   });

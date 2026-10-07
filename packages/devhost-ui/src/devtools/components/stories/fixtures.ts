@@ -60,7 +60,7 @@ export function factory_appStack(): IDevhostStoryStack {
       },
     ],
     config: {
-      annotationActions: [{ displayName: "Pi", id: "agent", kind: "agent", queueEnabled: true }],
+      annotationActions: [{ id: "agent", kind: "agent", label: "Pi", queueEnabled: true }],
       annotationDefaultActionId: "agent",
       componentEditor: "vscode",
       homeDirectoryPath: "/home/alex",
@@ -98,7 +98,6 @@ export function factory_appStack(): IDevhostStoryStack {
         sessionId: "pi-session",
         request: {
           actionId: "agent",
-          displayName: "Pi",
           kind: "agent",
           annotation: {
             comment: "Update the header title",
@@ -163,8 +162,8 @@ export function factory_designOverviewStack(): IDevhostStoryStack {
     ],
     config: {
       annotationActions: [
-        { displayName: "Pi", id: "agent", kind: "agent", queueEnabled: true },
-        { displayName: "Audit", id: "cmd", kind: "command", queueEnabled: false },
+        { id: "agent", kind: "agent", label: "Pi", queueEnabled: true },
+        { id: "cmd", kind: "command", label: "Audit", queueEnabled: false },
       ],
       annotationDefaultActionId: "agent",
       componentEditor: "vscode",
@@ -216,7 +215,6 @@ export function factory_designOverviewStack(): IDevhostStoryStack {
         sessionId: "pi-session",
         request: {
           actionId: "agent",
-          displayName: "Pi",
           kind: "agent",
           annotation: {
             comment: "Change primary button to modern border-radius and color",

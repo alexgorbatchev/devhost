@@ -201,11 +201,11 @@ func TestValidateManifestAcceptsAnnotationActions(t *testing.T) {
 		t.Fatalf("manifest.Annotation.DefaultActionID = %q, want lint", manifest.Annotation.DefaultActionID)
 	}
 	agentAction := manifest.Annotation.Actions[0]
-	if agentAction.ID != "fix" || agentAction.Kind != "agent" || agentAction.DisplayName != "Claude Code" || agentAction.Agent.Kind != "claude-code" {
+	if agentAction.ID != "fix" || agentAction.Kind != "agent" || agentAction.Label != "Claude Code" || agentAction.Agent.Kind != "claude-code" {
 		t.Fatalf("agent action = %#v", agentAction)
 	}
 	commandAction := manifest.Annotation.Actions[1]
-	if commandAction.ID != "lint" || commandAction.Kind != "command" || commandAction.DisplayName != "Run lint" || strings.Join(commandAction.Command, " ") != "bun run lint" || commandAction.Cwd != filepath.Join(string(filepath.Separator), "tmp", "project", "tools") || commandAction.Env["CI"] != "1" {
+	if commandAction.ID != "lint" || commandAction.Kind != "command" || commandAction.Label != "Run lint" || strings.Join(commandAction.Command, " ") != "bun run lint" || commandAction.Cwd != filepath.Join(string(filepath.Separator), "tmp", "project", "tools") || commandAction.Env["CI"] != "1" {
 		t.Fatalf("command action = %#v", commandAction)
 	}
 }
@@ -324,7 +324,7 @@ func TestValidateManifestLabelsAnnotationAgentActions(t *testing.T) {
 				t.Fatalf("ValidateManifest(...) unexpected error = %v", err)
 			}
 
-			if got := manifest.Annotation.Actions[0].DisplayName; got != tt.wantLabel {
+			if got := manifest.Annotation.Actions[0].Label; got != tt.wantLabel {
 				t.Fatalf("action label = %q, want %q", got, tt.wantLabel)
 			}
 		})

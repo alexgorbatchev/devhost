@@ -24,7 +24,6 @@ export function createAnnotationTerminalSessionRequest({
       actionId: action.id,
       annotation,
       colorScheme,
-      displayName: action.displayName,
       kind: "agent",
       targetSessionId,
     };
@@ -33,7 +32,6 @@ export function createAnnotationTerminalSessionRequest({
   return {
     actionId: action.id,
     annotation,
-    displayName: action.displayName,
     kind: "command",
   };
 }

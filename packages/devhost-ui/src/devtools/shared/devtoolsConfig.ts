@@ -3,9 +3,9 @@ export const defaultAnnotationActionId = "agent";
 export type AnnotationActionKind = "agent" | "command";
 
 export interface IAnnotationAction {
-  displayName: string;
   id: string;
   kind: AnnotationActionKind;
+  label: string;
   queueEnabled: boolean;
 }
 

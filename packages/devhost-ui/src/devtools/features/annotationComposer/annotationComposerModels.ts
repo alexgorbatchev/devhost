@@ -23,9 +23,9 @@ export function resolveSelectedAnnotationAction(
 
 function createFallbackAnnotationAction(): IAnnotationAction {
   return {
-    displayName: "Pi",
     id: defaultAnnotationActionId,
     kind: "agent",
+    label: "Pi",
     queueEnabled: true,
   };
 }

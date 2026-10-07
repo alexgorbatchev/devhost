@@ -46,7 +46,7 @@ describe("readInjectedDevtoolsConfig", () => {
 
   test("reads the injected editor and project-root config", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
-      annotationActions: [{ displayName: "Claude Code", id: "agent", kind: "agent", queueEnabled: true }],
+      annotationActions: [{ id: "agent", kind: "agent", label: "Claude Code", queueEnabled: true }],
       annotationDefaultActionId: "agent",
       componentEditor: "neovim",
       homeDirectoryPath: "",
@@ -57,7 +57,7 @@ describe("readInjectedDevtoolsConfig", () => {
     });
 
     expect(readInjectedDevtoolsConfig()).toEqual({
-      annotationActions: [{ displayName: "Claude Code", id: "agent", kind: "agent", queueEnabled: true }],
+      annotationActions: [{ id: "agent", kind: "agent", label: "Claude Code", queueEnabled: true }],
       annotationDefaultActionId: "agent",
       componentEditor: "neovim",
       homeDirectoryPath: "",
@@ -134,16 +134,16 @@ describe("readInjectedDevtoolsConfig", () => {
   test("reads annotation actions from the injected config", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
       annotationActions: [
-        { displayName: "Pi", id: "ask-agent", kind: "agent", queueEnabled: true },
-        { displayName: "Create Ticket", id: "create-ticket", kind: "command", queueEnabled: false },
+        { id: "ask-agent", kind: "agent", label: "Pi", queueEnabled: true },
+        { id: "create-ticket", kind: "command", label: "Create Ticket", queueEnabled: false },
       ],
       annotationDefaultActionId: "create-ticket",
     });
 
     expect(readInjectedDevtoolsConfig()).toEqual({
       annotationActions: [
-        { displayName: "Pi", id: "ask-agent", kind: "agent", queueEnabled: true },
-        { displayName: "Create Ticket", id: "create-ticket", kind: "command", queueEnabled: false },
+        { id: "ask-agent", kind: "agent", label: "Pi", queueEnabled: true },
+        { id: "create-ticket", kind: "command", label: "Create Ticket", queueEnabled: false },
       ],
       annotationDefaultActionId: "create-ticket",
       componentEditor: "vscode",

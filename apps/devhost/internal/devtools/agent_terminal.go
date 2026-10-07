@@ -226,7 +226,7 @@ func createAnnotationSessionFiles(directoryPrefix string, options annotationSess
 		env: map[string]string{
 			"DEVHOST_ANNOTATION_ACTION_ID":    options.action.ID,
 			"DEVHOST_ANNOTATION_ACTION_KIND":  options.action.Kind,
-			"DEVHOST_ANNOTATION_ACTION_LABEL": options.action.DisplayName,
+			"DEVHOST_ANNOTATION_ACTION_LABEL": options.action.Label,
 			"DEVHOST_ANNOTATION_FILE":         annotationFilePath,
 			"DEVHOST_ANNOTATION_PROMPT_FILE":  promptFilePath,
 			"DEVHOST_ANNOTATION_TRANSPORT":    agentTransportMode,

@@ -7,15 +7,15 @@ import { StoryContainer, StorybookThemeProvider } from "@/devtools/shared/compon
 import { AnnotationComposer } from "../AnnotationComposer";
 
 const agentAction = {
-  displayName: "Pi",
   id: "agent",
   kind: "agent" as const,
+  label: "Pi",
   queueEnabled: true,
 };
 const ticketAction = {
-  displayName: "Create Ticket",
   id: "create-ticket",
   kind: "command" as const,
+  label: "Create Ticket",
   queueEnabled: false,
 };
 

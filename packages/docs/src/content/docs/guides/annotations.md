@@ -306,7 +306,7 @@ Replace the `console.log(...)` with your real Jira client or HTTP call. The impo
 Agent actions continue to support durable annotation queues. Command actions start standalone terminal sessions and are not queued.
 Running annotation sessions keep the stack alive through its idle timeout. Use the terminal's terminate action or stop `devhost` to end a running session.
 
-The injected config includes UI-safe action metadata as `annotationActions`, with each action exposing `id`, `displayName`, `kind`, and `queueEnabled`, plus `annotationDefaultActionId` for the selected default.
+The injected config includes UI-safe action metadata as `annotationActions`, with each action exposing `id`, `kind`, `label`, and `queueEnabled`, plus `annotationDefaultActionId` for the selected default.
 
 `devhost` executes custom agent commands directly, not through a shell string. For configured commands, `devhost` writes the annotation JSON and rendered prompt to temp files and injects their paths as `DEVHOST_ANNOTATION_FILE` and `DEVHOST_ANNOTATION_PROMPT_FILE`. Agent commands receive every variable listed for command actions; `DEVHOST_ANNOTATION_ACTION_LABEL` carries the action's label. Built-in adapters receive the rendered prompt natively via command-line arguments.
 

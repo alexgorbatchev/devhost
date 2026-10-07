@@ -39,14 +39,14 @@ type ValidatedAnnotation struct {
 
 type ValidatedAnnotationAction struct {
 	// TempDir is inherited from the stack's annotation configuration.
-	TempDir     *string
-	Agent       ValidatedAgent
-	Command     []string
-	Cwd         string
-	DisplayName string
-	Env         map[string]string
-	ID          string
-	Kind        string
+	TempDir *string
+	Agent   ValidatedAgent
+	Command []string
+	Cwd     string
+	Env     map[string]string
+	ID      string
+	Kind    string
+	Label   string
 }
 
 type CaddyConfig struct {

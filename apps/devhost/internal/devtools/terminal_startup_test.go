@@ -36,7 +36,7 @@ func TestTerminalSessionRetainsOutputBeforeLauncherReturns(t *testing.T) {
 				server, err := StartControlServer(StartControlServerOptions{
 					ProjectRootPath: root,
 					ManifestPath:    filepath.Join(root, "devhost.toml"), StateDirectoryPath: root, StackName: "hello-stack",
-					AnnotationActions: []manifest.ValidatedAnnotationAction{{ID: kind, Kind: kind, DisplayName: "Startup test"}},
+					AnnotationActions: []manifest.ValidatedAnnotationAction{{ID: kind, Kind: kind, Label: "Startup test"}},
 					FeatureToggles:    FeatureToggles{TerminalEnabled: true, AnnotationQueueEnabled: kind == terminalSessionRequestKindAgent},
 					GetHealthResponse: func() (HealthResponse, error) { return HealthResponse{Services: []ServiceHealth{}}, nil },
 					StartTerminalSession: func(request terminalSessionRequest) (*launchedTerminalSession, error) {

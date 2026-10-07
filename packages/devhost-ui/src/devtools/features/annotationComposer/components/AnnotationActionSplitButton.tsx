@@ -71,7 +71,7 @@ export function AnnotationActionSplitButton({
         <DropdownMenuTrigger asChild>
           <button
             aria-controls={isMenuOpen ? menuId : undefined}
-            aria-label={`Select annotation action. Current: ${selectedAction.displayName}`}
+            aria-label={`Select annotation action. Current: ${selectedAction.label}`}
             className={menuToggleClassName}
             data-testid="AnnotationActionSplitButton--action-menu-toggle"
             disabled={isActionMenuDisabled}
@@ -98,7 +98,7 @@ export function AnnotationActionSplitButton({
                     setIsMenuOpen(false);
                   }}
                 >
-                  <span className="flex-1">{action.displayName}</span>
+                  <span className="flex-1">{action.label}</span>
                   <span aria-hidden="true" className="text-muted-foreground">
                     {action.kind}
                   </span>

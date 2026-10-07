@@ -228,7 +228,7 @@ func TestCreateAgentTerminalCommandMatchesBuiltInAdapters(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			command, err := createTerminalSessionCommand([]manifest.ValidatedAnnotationAction{{Agent: tc.agent, DisplayName: "Review change", ID: defaultAnnotationActionID, Kind: "agent"}}, "vscode", "/tmp/project", terminalSessionRequest{
+			command, err := createTerminalSessionCommand([]manifest.ValidatedAnnotationAction{{Agent: tc.agent, Label: "Review change", ID: defaultAnnotationActionID, Kind: "agent"}}, "vscode", "/tmp/project", terminalSessionRequest{
 				ActionID:   defaultAnnotationActionID,
 				Annotation: &annotation,
 				Kind:       terminalSessionRequestKindAgent,
@@ -280,7 +280,7 @@ func TestCreateAgentTerminalCommandPassesColorSchemeToPi(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			command, err := createTerminalSessionCommand([]manifest.ValidatedAnnotationAction{{Agent: manifest.ValidatedAgent{Kind: "pi"}, DisplayName: "Review change", ID: defaultAnnotationActionID, Kind: "agent"}}, "vscode", "/tmp/project", terminalSessionRequest{
+			command, err := createTerminalSessionCommand([]manifest.ValidatedAnnotationAction{{Agent: manifest.ValidatedAgent{Kind: "pi"}, Label: "Review change", ID: defaultAnnotationActionID, Kind: "agent"}}, "vscode", "/tmp/project", terminalSessionRequest{
 				ActionID:    defaultAnnotationActionID,
 				Annotation:  &annotation,
 				ColorScheme: tc.colorScheme,
@@ -323,7 +323,7 @@ func TestCreateAgentTerminalCommandWritesColorSchemeToClaudeSettings(t *testing.
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			command, err := createTerminalSessionCommand([]manifest.ValidatedAnnotationAction{{Agent: manifest.ValidatedAgent{Kind: "claude-code"}, DisplayName: "Review change", ID: defaultAnnotationActionID, Kind: "agent"}}, "vscode", "/tmp/project", terminalSessionRequest{
+			command, err := createTerminalSessionCommand([]manifest.ValidatedAnnotationAction{{Agent: manifest.ValidatedAgent{Kind: "claude-code"}, Label: "Review change", ID: defaultAnnotationActionID, Kind: "agent"}}, "vscode", "/tmp/project", terminalSessionRequest{
 				ActionID:    defaultAnnotationActionID,
 				Annotation:  &annotation,
 				ColorScheme: tc.colorScheme,
@@ -400,12 +400,12 @@ func TestCreateCommandAnnotationTerminalCommand(t *testing.T) {
 	t.Parallel()
 
 	action := manifest.ValidatedAnnotationAction{
-		Command:     []string{"bun", "run", "lint"},
-		Cwd:         "/tmp/project/tools",
-		DisplayName: "Run lint",
-		Env:         map[string]string{"CI": "1"},
-		ID:          "lint",
-		Kind:        "command",
+		Command: []string{"bun", "run", "lint"},
+		Cwd:     "/tmp/project/tools",
+		Label:   "Run lint",
+		Env:     map[string]string{"CI": "1"},
+		ID:      "lint",
+		Kind:    "command",
 	}
 	annotation := annotationSubmitDetail{
 		Comment:     "Check lint.",
@@ -463,7 +463,7 @@ func TestCreateCommandAnnotationTerminalCommand(t *testing.T) {
 func TestCreateAgentTerminalCommandRejectsUnsupportedEditorSession(t *testing.T) {
 	t.Parallel()
 
-	if _, err := createTerminalSessionCommand([]manifest.ValidatedAnnotationAction{{Agent: manifest.ValidatedAgent{Kind: "pi"}, DisplayName: "Pi", ID: defaultAnnotationActionID, Kind: "agent"}}, "cursor", "/tmp/project", terminalSessionRequest{
+	if _, err := createTerminalSessionCommand([]manifest.ValidatedAnnotationAction{{Agent: manifest.ValidatedAgent{Kind: "pi"}, Label: "Pi", ID: defaultAnnotationActionID, Kind: "agent"}}, "cursor", "/tmp/project", terminalSessionRequest{
 		ComponentName: "PrimaryButton",
 		Kind:          terminalSessionRequestKindEditor,
 		Launcher:      terminalSessionLauncherNeovim,
