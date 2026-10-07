@@ -20,7 +20,7 @@ import { readNativeReactBinding } from "./nativeReact/readNativeReactBinding";
 import { assertNativeReactRequestRejected } from "./nativeReact/assertNativeReactRequestRejected";
 import { exerciseNativeReactLoss } from "./nativeReact/exerciseNativeReactLoss";
 import { exerciseNativeReactPendingAction } from "./nativeReact/exerciseNativeReactPendingAction";
-import { removeNativeReactAssets } from "./nativeReact/removeNativeReactAssets";
+import { finishNativeReactCleanup } from "./nativeReact/finishNativeReactCleanup";
 import { assertNativeReactDockLayout } from "./nativeReact/assertNativeReactDockLayout";
 import { activateNativeReactFixtureControl } from "./nativeReact/activateNativeReactFixtureControl";
 import { assertNativeReactCompiledAssets } from "./nativeReact/assertNativeReactCompiledAssets";
@@ -290,15 +290,11 @@ export async function runNativeReactAcceptance(): Promise<void> {
         2,
       ),
     );
-    const cleanupErrors = [...cleanup, ...browserCleanup, ...finalCleanup]
-      .filter((result) => result.status === "rejected")
-      .map((result) => result.reason);
-    if (cleanupErrors.length > 0)
-      failure = new AggregateError(
-        failure === undefined ? cleanupErrors : [failure, ...cleanupErrors],
-        "Native acceptance resource cleanup failed.",
-      );
-    else await removeNativeReactAssets(assetsPath, outputPath);
+    failure = await finishNativeReactCleanup(assetsPath, outputPath, failure, [
+      ...cleanup,
+      ...browserCleanup,
+      ...finalCleanup,
+    ]);
   }
   if (failure !== undefined) throw failure;
 }

@@ -6,10 +6,23 @@ import type { INativeReactAssetProof } from "./types";
 
 export async function removeNativeReactAssets(directoryPath: string, outputPath: string): Promise<void> {
   const proofs: INativeReactAssetProof[] = [];
-  for await (const relativePath of new Glob("**/*").scan({ cwd: directoryPath, onlyFiles: true })) {
-    const path = resolve(directoryPath, relativePath);
-    const bytes = await Bun.file(path).bytes();
-    proofs.push({ path, bytes: bytes.byteLength, sha256: new Bun.CryptoHasher("sha256").update(bytes).digest("hex") });
+  let isDirectoryPresent = true;
+  try {
+    await lstat(directoryPath);
+  } catch (error) {
+    if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") throw error;
+    isDirectoryPresent = false;
+  }
+  if (isDirectoryPresent) {
+    for await (const relativePath of new Glob("**/*").scan({ cwd: directoryPath, onlyFiles: true })) {
+      const path = resolve(directoryPath, relativePath);
+      const bytes = await Bun.file(path).bytes();
+      proofs.push({
+        path,
+        bytes: bytes.byteLength,
+        sha256: new Bun.CryptoHasher("sha256").update(bytes).digest("hex"),
+      });
+    }
   }
   proofs.sort((left, right) => left.path.localeCompare(right.path));
   await Bun.write(resolve(outputPath, "extracted-assets-manifest.json"), JSON.stringify(proofs, null, 2));
