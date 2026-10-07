@@ -154,7 +154,8 @@ func TestCodexInstalledHookRuntime(t *testing.T) {
 		"--strict-config", "--dangerously-bypass-hook-trust",
 		"-c", `openai_base_url="http://127.0.0.1:1/v1"`,
 		"-c", `hooks.UserPromptSubmit=[{hooks=[{type="command",command="printf '%s' '{\"decision\":\"block\",\"reason\":\"devhost offline validation\"}'",timeout=3}]}]`,
-		"exec", "--skip-git-repo-check", "offline validation",
+		// Codex styles hook results when stdout is a terminal; plain output keeps "UserPromptSubmit Blocked" matchable.
+		"exec", "--skip-git-repo-check", "--color", "never", "offline validation",
 	)
 	env := map[string]string{
 		codexStatusTTYEnvironmentName: "",
