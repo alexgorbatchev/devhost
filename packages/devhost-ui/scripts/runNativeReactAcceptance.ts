@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { chromium, type Browser } from "playwright";
+import type { Server } from "bun";
 import { readNativeReactProvisioning } from "./nativeReact/readNativeReactProvisioning";
 import { prepareNativeReactAssets } from "./nativeReact/prepareNativeReactAssets";
 import { buildNativeReactFixture } from "./nativeReact/buildNativeReactFixture";
@@ -18,6 +19,11 @@ import {
 import { readNativeReactBinding } from "./nativeReact/readNativeReactBinding";
 import { assertNativeReactRequestRejected } from "./nativeReact/assertNativeReactRequestRejected";
 import { exerciseNativeReactLoss } from "./nativeReact/exerciseNativeReactLoss";
+import { exerciseNativeReactPendingAction } from "./nativeReact/exerciseNativeReactPendingAction";
+import { removeNativeReactAssets } from "./nativeReact/removeNativeReactAssets";
+import { assertNativeReactDockLayout } from "./nativeReact/assertNativeReactDockLayout";
+import { activateNativeReactFixtureControl } from "./nativeReact/activateNativeReactFixtureControl";
+import { assertNativeReactCompiledAssets } from "./nativeReact/assertNativeReactCompiledAssets";
 import type { INativeReactAutomation, INativeReactBrowser, INativeReactStack } from "./nativeReact/types";
 
 export async function runNativeReactAcceptance(): Promise<void> {
@@ -27,18 +33,28 @@ export async function runNativeReactAcceptance(): Promise<void> {
   const outputPath = resolve(repositoryRoot, ".tmp/native-react-acceptance", crypto.randomUUID());
   await mkdir(outputPath, { recursive: true });
   console.log(`Native React acceptance evidence: ${outputPath}`);
-  const assets = await prepareNativeReactAssets(provisioning, resolve(outputPath, "assets"));
-  await buildNativeReactFixture(resolve(outputPath, "fixture"), repositoryRoot);
-  const fixture = serveNativeReactFixture(resolve(outputPath, "fixture"));
-  const siblingFixture = serveNativeReactFixture(resolve(outputPath, "fixture"));
+  const assetsPath = resolve(outputPath, "assets");
+  let fixture: Server<undefined> | null = null;
+  let siblingFixture: Server<undefined> | null = null;
   const runtimeErrors: string[] = [];
+  const runtimeErrorDetails: unknown[] = [];
   const responses: unknown[] = [];
   const controlFrames: unknown[] = [];
+  const fixtureConfigurations: unknown[] = [];
   let ownedBrowser: INativeReactBrowser | null = null;
   let automation: INativeReactAutomation | null = null;
   let browser: Browser | null = null;
   let stack: INativeReactStack | null = null;
+  let failure: unknown;
   try {
+    const assets = await prepareNativeReactAssets(provisioning, assetsPath);
+    await Bun.write(
+      resolve(outputPath, "provisioning-proof.json"),
+      await Bun.file(resolve(assetsPath, "provisioning-proof.json")).bytes(),
+    );
+    await buildNativeReactFixture(resolve(outputPath, "fixture"), repositoryRoot);
+    fixture = serveNativeReactFixture(resolve(outputPath, "fixture"));
+    siblingFixture = serveNativeReactFixture(resolve(outputPath, "fixture"));
     ownedBrowser = await startNativeReactBrowser({ ...assets, outputPath, repositoryRoot });
     browser = await chromium.connectOverCDP(ownedBrowser.endpoint);
     const context = browser.contexts()[0];
@@ -50,7 +66,14 @@ export async function runNativeReactAcceptance(): Promise<void> {
             controlFrames.push({ url: page.url(), payload: String(event.payload) }),
           );
       });
-      page.on("pageerror", (error) => runtimeErrors.push(`${page.url()}: ${error.message}`));
+      page.on("console", (message) => {
+        if (message.type() === "info" && message.text().startsWith("Native fixture external toolbar configuration "))
+          fixtureConfigurations.push({ url: page.url(), message: message.text() });
+      });
+      page.on("pageerror", (error) => {
+        runtimeErrors.push(`${page.url()}: ${error.message}`);
+        runtimeErrorDetails.push({ url: page.url(), message: error.message, stack: error.stack });
+      });
       page.on("response", (response) => {
         if (response.url().includes("/__devhost__/"))
           responses.push({ url: response.url(), status: response.status(), headers: response.headers() });
@@ -71,6 +94,8 @@ export async function runNativeReactAcceptance(): Promise<void> {
     assert(first && second);
     const host = await context.newPage();
     const sibling = await context.newPage();
+    await host.emulateMedia({ colorScheme: "light" });
+    await sibling.emulateMedia({ colorScheme: "dark" });
     await host.goto(`${first.url}&owner=fixture`);
     await sibling.goto(second.aliasUrl);
     await connectNativeReactControl(sibling);
@@ -85,6 +110,11 @@ export async function runNativeReactAcceptance(): Promise<void> {
     });
     await siblingInspector.assertWindowPreserved();
     await siblingInspector.assertComponents(0);
+    await sibling.setViewportSize({ width: 360, height: 480 });
+    await Bun.write(
+      resolve(outputPath, "sibling-dock-layout.json"),
+      JSON.stringify(await assertNativeReactDockLayout(sibling), null, 2),
+    );
     await connectNativeReactControl(host);
     const oldBinding = await readNativeReactBinding(host);
     const siblingBinding = await readNativeReactBinding(sibling);
@@ -152,16 +182,14 @@ export async function runNativeReactAcceptance(): Promise<void> {
     });
     await shippedInspector.assertComponents(0);
     await shippedInspector.startRecording();
-    await shipped.getByRole("button", { name: "Increment host A", exact: true }).click();
+    await activateNativeReactFixtureControl(shipped, "Increment host A", outputPath, "compiled host increment 1");
     await shippedInspector.assertComponents(1);
     await shippedInspector.finishRecording(1);
     await disconnectNativeReactControl(duplicate);
-    await shipped.getByRole("button", { name: "Increment host A", exact: true }).click();
+    await activateNativeReactFixtureControl(shipped, "Increment host A", outputPath, "compiled host increment 2");
     await shippedInspector.assertComponents(2);
     await shipped.goto(`${first.aliasUrl}&host=none`);
     const oldShippedBinding = firstShippedBinding;
-    const trigger = shipped.getByRole("button", { name: "Native browser connection", exact: true });
-    await trigger.click();
     await shipped.getByRole("button", { name: "Connect browser control", exact: true }).click();
     await shipped.getByRole("status").filter({ hasText: "Browser control is connected." }).waitFor();
     assert.equal(await shipped.getByRole("button", { name: "React DevTools", exact: true }).count(), 0);
@@ -172,9 +200,32 @@ export async function runNativeReactAcceptance(): Promise<void> {
       label: "actual-navigation-document-rejected",
       outputPath,
     });
-    const config = await shipped.request.get(new URL("/__devhost__/config.json", first.aliasUrl).href);
-    assert.equal(config.headers()["cache-control"], "no-store");
-    assert.equal((await config.text()).includes(ownedBrowser.endpoint), false);
+    // This per-request setting matches the owned Chrome TLS fixture: its
+    // real Caddy CA is intentionally not installed into the user's trust.
+    const config = await shipped.request.get(new URL("/__devhost__/config.json", first.aliasUrl).href, {
+      ignoreHTTPSErrors: true,
+    });
+    try {
+      assert.equal(config.status(), 200);
+      assert.equal(config.headers()["cache-control"], "no-store");
+      assert.equal((await config.text()).includes(ownedBrowser.endpoint), false);
+      await Bun.write(
+        resolve(outputPath, "compiled-config-response.json"),
+        JSON.stringify({ url: config.url(), status: config.status(), headers: config.headers() }, null, 2),
+      );
+    } finally {
+      await config.dispose();
+    }
+    await assertNativeReactCompiledAssets(shipped, repositoryRoot, outputPath);
+    await exerciseNativeReactPendingAction({
+      browser,
+      context,
+      endpoint: ownedBrowser.endpoint,
+      extensionId: ownedBrowser.extensionId,
+      automation,
+      project: first,
+      outputPath,
+    });
     await exerciseNativeReactLoss({ host, inspector, outputPath });
     assert.deepEqual(runtimeErrors, []);
     await Bun.write(
@@ -195,6 +246,7 @@ export async function runNativeReactAcceptance(): Promise<void> {
     );
     console.log("Native React acceptance passed.");
   } catch (error) {
+    failure = error;
     if (browser !== null) {
       const pages = browser.contexts().flatMap((context) => context.pages());
       const snapshots = await Promise.allSettled(
@@ -214,26 +266,41 @@ export async function runNativeReactAcceptance(): Promise<void> {
       resolve(outputPath, "failure.log"),
       error instanceof Error ? `${error.stack}\n` : `${String(error)}\n`,
     );
-    throw error;
   } finally {
     await Bun.write(resolve(outputPath, "control-frames.json"), JSON.stringify(controlFrames, null, 2));
+    await Bun.write(
+      resolve(outputPath, "fixture-configuration-ownership.json"),
+      JSON.stringify(fixtureConfigurations, null, 2),
+    );
     await Bun.write(resolve(outputPath, "runtime-errors.json"), JSON.stringify(runtimeErrors, null, 2));
+    await Bun.write(resolve(outputPath, "runtime-error-details.json"), JSON.stringify(runtimeErrorDetails, null, 2));
     await Bun.write(resolve(outputPath, "asset-responses.json"), JSON.stringify(responses, null, 2));
-    const cleanup = await Promise.allSettled([automation?.stop(), stack?.stop(), browser?.close()]);
+    const cleanup = await Promise.allSettled([automation?.stop(), stack?.stop()]);
     // Playwright only connects to this run's fresh owned browser. Production
     // disconnect/Stop assertions above never close a browser-owned target.
-    const finalCleanup = await Promise.allSettled([
-      ownedBrowser?.stop(),
-      fixture.stop(true),
-      siblingFixture.stop(true),
-    ]);
+    // Snapshot/join Chrome's owned child processes before disconnecting the
+    // Playwright object, so native crashpad ownership is observed while live.
+    const browserCleanup = await Promise.allSettled([ownedBrowser?.stop()]);
+    const finalCleanup = await Promise.allSettled([browser?.close(), fixture?.stop(true), siblingFixture?.stop(true)]);
     await Bun.write(
       resolve(outputPath, "cleanup.json"),
-      JSON.stringify({ cleanup, finalCleanup, fixturePorts: [fixture.port, siblingFixture.port] }, null, 2),
+      JSON.stringify(
+        { cleanup, browserCleanup, finalCleanup, fixturePorts: [fixture?.port, siblingFixture?.port] },
+        null,
+        2,
+      ),
     );
-    for (const result of [...cleanup, ...finalCleanup])
-      assert.equal(result.status, "fulfilled", JSON.stringify(result));
+    const cleanupErrors = [...cleanup, ...browserCleanup, ...finalCleanup]
+      .filter((result) => result.status === "rejected")
+      .map((result) => result.reason);
+    if (cleanupErrors.length > 0)
+      throw new AggregateError(
+        failure === undefined ? cleanupErrors : [failure, ...cleanupErrors],
+        "Native acceptance resource cleanup failed.",
+      );
+    await removeNativeReactAssets(assetsPath, outputPath);
   }
+  if (failure !== undefined) throw failure;
 }
 
 if (import.meta.main) await runNativeReactAcceptance();

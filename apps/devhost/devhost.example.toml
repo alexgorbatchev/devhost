@@ -148,20 +148,24 @@ enabled = true
 #   Devhost loads its bundled Neovim plugin for that terminal session so cursor movement in TSX/JSX buffers can
 #   highlight the matching React component in the routed browser page for the same devhost instance.
 #   While the stack runs, `.tmp/devhost/<stack-name>/nvim-shell/bin/devhost-nvim` launches Neovim from a shell with
-#   the same instance cursor endpoint, project root, and plugin path.
+#   the same token-free instance cursor endpoint, project root, and plugin path.
 ide = "vscode"
 
 [devtools.browser]
 # Native React DevTools uses an already running dedicated browser/profile owned by you.
 # Install the original React Developer Tools extension before loading your React app.
-# Required version contract: Chrome for Testing 154.0.8037.92, extension 8.0.0,
+# Tested native versions: Chrome for Testing 154.0.8037.92, extension 8.0.0,
 # and a mounted React DOM 19.2.5 Element/ShadowRoot host; other combinations need verification.
+# Native tests cover live host Components/Profiler and preserved-window connection lifetimes.
 # Empty endpoint (default) disables native browser access and starts no browser connection.
 # Set an explicit literal-loopback HTTP discovery endpoint with a nonzero port,
 # or a complete ws:// loopback /devtools/browser/<id> URL. DNS, remote addresses,
 # credentials, redirects, query/fragment parameters, and page WebSockets are rejected.
 # devhost never launches a browser, scans profiles, or closes your native windows.
-# Through the routed page, choose Browser > Connect browser control, then React DevTools.
+# Through the routed page, choose Connect browser control directly in the dock, then React DevTools.
+# The same button reads Disconnect browser control while connecting or connected.
+# Setup/status/observations/window/loss/error information is visible in the dock; errors have Copy.
+# Collapse hides the command and full readout but retains the connection and compact state cue.
 # Select Components or Profiler in the genuine native window yourself.
 # Disconnect releases devhost's connections; it preserves your native window and browser.
 # Controller connection/window presence does not certify live inspection or recovery.

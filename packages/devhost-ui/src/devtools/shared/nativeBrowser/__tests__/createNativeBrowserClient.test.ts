@@ -3,6 +3,88 @@ import { expect, test } from "bun:test";
 import { createTransportHarness, waitForNativeView } from "./helpers";
 import { createNativeBrowserClient } from "../createNativeBrowserClient";
 
+test("disconnect aborts an in-flight real configuration request and rejects its late result", async () => {
+  const response = Promise.withResolvers<Response>();
+  const requestStarted = Promise.withResolvers<void>();
+  const signals: AbortSignal[] = [];
+  const socketURLs: string[] = [];
+  const server = Bun.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    fetch: () => {
+      requestStarted.resolve();
+      return response.promise;
+    },
+  });
+  const client = createNativeBrowserClient({
+    hasNativeSessionLoss: false,
+    documentId: "11111111111111111111111111111111",
+    fetch: (input, init) => {
+      assert(init?.signal);
+      signals.push(init.signal);
+      return globalThis.fetch(input, init);
+    },
+    createSocket: (url, protocols) => {
+      socketURLs.push(String(url));
+      return new WebSocket(url, protocols);
+    },
+    getHref: () => server.url.href,
+  });
+  const connection = client.connect();
+  try {
+    await requestStarted.promise;
+    expect(client.getSnapshot().connectionStatus).toBe("connecting");
+    client.disconnect();
+    expect(signals[0]?.aborted).toBe(true);
+    response.resolve(
+      Response.json({
+        nativeBrowserConfigured: true,
+        nativeBrowserInstanceId: "11111111111111111111111111111111",
+        externalToolbarsEnabled: true,
+      }),
+    );
+    await connection;
+    expect(client.getSnapshot()).toEqual({
+      connectionStatus: "disconnected",
+      observation: null,
+      isActionPending: false,
+      errorMessage: null,
+      binding: null,
+    });
+    expect(socketURLs).toEqual([]);
+  } finally {
+    client.dispose();
+    response.resolve(Response.json({}));
+    await connection;
+    await server.stop(true);
+  }
+});
+
+test("disconnect releases a real pending native action and leaves no late command", async () => {
+  const transport = createTransportHarness();
+  try {
+    await transport.client.connect();
+    await waitForNativeView(transport.client, (view) => view.connectionStatus === "connected");
+    transport.client.openReact();
+    await transport.waitForRequest(1);
+    expect(transport.client.getSnapshot().isActionPending).toBe(true);
+    const closed = transport.waitForClose();
+    transport.client.disconnect();
+    await closed;
+    transport.client.openReact();
+    expect(transport.client.getSnapshot()).toEqual({
+      connectionStatus: "disconnected",
+      observation: null,
+      isActionPending: false,
+      errorMessage: null,
+      binding: null,
+    });
+    expect(transport.requests.map((request) => request.command)).toEqual(["connect", "open-react"]);
+  } finally {
+    await transport.dispose();
+  }
+});
+
 test("real transport correlates and serializes native actions for the exact document", async () => {
   const transport = createTransportHarness();
   try {

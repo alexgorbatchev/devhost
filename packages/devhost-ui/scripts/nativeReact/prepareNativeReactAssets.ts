@@ -65,10 +65,18 @@ export async function prepareNativeReactAssets(
   );
   manifestSchema.parse(await Bun.file(manifestProof.path).json());
   const chromeExecutablePath = resolve(chromeDirectoryPath, "chrome-linux64/chrome");
+  const versionEnvironment = {
+    CHROME_CONFIG_HOME: resolve(outputPath, "version-runtime/chrome-config"),
+    XDG_CONFIG_HOME: resolve(outputPath, "version-runtime/config"),
+    XDG_CACHE_HOME: resolve(outputPath, "version-runtime/cache"),
+    XDG_DATA_HOME: resolve(outputPath, "version-runtime/data"),
+    XDG_STATE_HOME: resolve(outputPath, "version-runtime/state"),
+  };
+  await Promise.all(Object.values(versionEnvironment).map((path) => mkdir(path, { recursive: true, mode: 0o700 })));
   const version = Bun.spawnSync([chromeExecutablePath, "--version"], {
     stdout: "pipe",
     stderr: "pipe",
-    env: { ...process.env, TMPDIR: ".tmp" },
+    env: { ...process.env, ...versionEnvironment, TMPDIR: ".tmp" },
     cwd: process.cwd(),
   });
   assert.equal(version.exitCode, 0, version.stderr.toString());
