@@ -17,6 +17,7 @@ const manifestDebounce = 200 * time.Millisecond
 type manifestWatcher struct {
 	watcher  *fsnotify.Watcher
 	events   chan error
+	checks   chan struct{}
 	done     chan struct{}
 	inputs   manifest.Inputs
 	inputsMu sync.RWMutex
@@ -27,11 +28,11 @@ func newManifestWatcher(inputs manifest.Inputs) (*manifestWatcher, error) {
 	if err != nil {
 		return nil, fmt.Errorf("watch manifest: %w", err)
 	}
-	w := &manifestWatcher{watcher: watcher, events: make(chan error, 1), done: make(chan struct{})}
+	w := &manifestWatcher{watcher: watcher, events: make(chan error, 1), checks: make(chan struct{}, 1), done: make(chan struct{})}
 	if err := w.update(inputs); err != nil {
 		return nil, joinCleanupError(err, watcher.Close())
 	}
-	go w.run()
+	go w.run(watcher.Events, watcher.Errors)
 	return w, nil
 }
 
@@ -41,7 +42,18 @@ func (w *manifestWatcher) close() error {
 	return err
 }
 
-func (w *manifestWatcher) run() {
+// check reports the manifest as changed once the debounce passes, as a save
+// does. A save the watcher has already seen, or sees meanwhile, is reported
+// with it: reading the manifest right away would apply that save, and its own
+// report would then apply it again.
+func (w *manifestWatcher) check() {
+	select {
+	case w.checks <- struct{}{}:
+	default:
+	}
+}
+
+func (w *manifestWatcher) run(changes <-chan fsnotify.Event, failures <-chan error) {
 	defer close(w.done)
 	var timer *time.Timer
 	var elapsed <-chan time.Time
@@ -50,9 +62,17 @@ func (w *manifestWatcher) run() {
 			timer.Stop()
 		}
 	}()
+	debounce := func() {
+		if timer == nil {
+			timer = time.NewTimer(manifestDebounce)
+		} else {
+			timer.Reset(manifestDebounce)
+		}
+		elapsed = timer.C
+	}
 	for {
 		select {
-		case event, ok := <-w.watcher.Events:
+		case event, ok := <-changes:
 			if !ok {
 				return
 			}
@@ -62,13 +82,10 @@ func (w *manifestWatcher) run() {
 			if !w.matches(event) {
 				continue
 			}
-			if timer == nil {
-				timer = time.NewTimer(manifestDebounce)
-			} else {
-				timer.Reset(manifestDebounce)
-			}
-			elapsed = timer.C
-		case err, ok := <-w.watcher.Errors:
+			debounce()
+		case <-w.checks:
+			debounce()
+		case err, ok := <-failures:
 			if !ok {
 				return
 			}

@@ -536,8 +536,10 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		}
 	}()
 	if manifestWatch != nil {
-		// Configuration may have changed while the initial services started.
-		manifestWatch.notify(nil)
+		// Configuration may have changed while the initial services started. The
+		// check shares the watcher's debounce, so a save made meanwhile is applied
+		// once.
+		manifestWatch.check()
 	}
 	for {
 		select {
