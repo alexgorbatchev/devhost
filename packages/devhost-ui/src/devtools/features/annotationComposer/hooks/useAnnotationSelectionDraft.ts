@@ -179,21 +179,11 @@ export function useAnnotationSelectionDraft({
         return;
       }
 
-      const latestSelections: ISelectedAnnotationTarget[] = selectedTargetsReference.current;
-
-      if (
-        latestSelections.some((selection: ISelectedAnnotationTarget): boolean => {
-          return selection.candidate.id === selectionCandidate.id;
-        })
-      ) {
-        return;
-      }
-
       const nextSelection: ISelectedAnnotationTarget = {
         candidate: selectionCandidate,
-        markerNumber: latestSelections.length + 1,
+        markerNumber: currentSelections.length + 1,
       };
-      const nextSelections: ISelectedAnnotationTarget[] = [...latestSelections, nextSelection];
+      const nextSelections: ISelectedAnnotationTarget[] = [...currentSelections, nextSelection];
 
       selectedTargetsReference.current = nextSelections;
       setSelectedTargets(nextSelections);
