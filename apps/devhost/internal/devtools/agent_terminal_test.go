@@ -133,7 +133,7 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 				if _, err := os.Stat(command.command[2]); err != nil {
 					t.Fatalf("pi extension file %q stat error = %v", command.command[2], err)
 				}
-				wantPrompt := "@" + command.env["DEVHOST_AGENT_PROMPT_FILE"]
+				wantPrompt := "@" + command.env["DEVHOST_ANNOTATION_PROMPT_FILE"]
 				if command.command[3] != wantPrompt {
 					t.Fatalf("command prompt = %q, want %q", command.command[3], wantPrompt)
 				}
@@ -165,7 +165,7 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 				if got, want := command.command[3:5], []string{"--thinking", "high"}; !reflect.DeepEqual(got, want) {
 					t.Fatalf("command args = %#v, want %#v", got, want)
 				}
-				wantPrompt := "@" + command.env["DEVHOST_AGENT_PROMPT_FILE"]
+				wantPrompt := "@" + command.env["DEVHOST_ANNOTATION_PROMPT_FILE"]
 				if command.command[5] != wantPrompt {
 					t.Fatalf("command prompt = %q, want %q", command.command[5], wantPrompt)
 				}
@@ -201,7 +201,7 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 				if got, want := command.command[5:7], []string{"--thinking", "high"}; !reflect.DeepEqual(got, want) {
 					t.Fatalf("command args = %#v, want %#v", got, want)
 				}
-				wantPrompt := "@" + command.env["DEVHOST_AGENT_PROMPT_FILE"]
+				wantPrompt := "@" + command.env["DEVHOST_ANNOTATION_PROMPT_FILE"]
 				if command.command[7] != wantPrompt {
 					t.Fatalf("command prompt = %q, want %q", command.command[7], wantPrompt)
 				}
@@ -229,7 +229,7 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 				if _, err := os.Stat(command.command[2]); err != nil {
 					t.Fatalf("claude settings file %q stat error = %v", command.command[2], err)
 				}
-				wantInstruction := fmt.Sprintf("Please read the annotation details from %s and address the requested change.", command.env["DEVHOST_AGENT_PROMPT_FILE"])
+				wantInstruction := fmt.Sprintf("Please read the annotation details from %s and address the requested change.", command.env["DEVHOST_ANNOTATION_PROMPT_FILE"])
 				if command.command[3] != wantInstruction {
 					t.Fatalf("command prompt = %q, want %q", command.command[3], wantInstruction)
 				}
@@ -261,7 +261,7 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 				if got, want := command.command[3:6], []string{"--model", "claude-3-7-sonnet", "--dangerously-skip-permissions"}; !reflect.DeepEqual(got, want) {
 					t.Fatalf("command args = %#v, want %#v", got, want)
 				}
-				wantInstruction := fmt.Sprintf("Please read the annotation details from %s and address the requested change.", command.env["DEVHOST_AGENT_PROMPT_FILE"])
+				wantInstruction := fmt.Sprintf("Please read the annotation details from %s and address the requested change.", command.env["DEVHOST_ANNOTATION_PROMPT_FILE"])
 				if command.command[6] != wantInstruction {
 					t.Fatalf("command prompt = %q, want %q", command.command[6], wantInstruction)
 				}
@@ -292,7 +292,7 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 				if _, err := os.Stat(command.env["OPENCODE_CONFIG"]); err != nil {
 					t.Fatalf("opencode config file stat error = %v", err)
 				}
-				wantInstruction := fmt.Sprintf("Please read the annotation details from %s and address the requested change.", command.env["DEVHOST_AGENT_PROMPT_FILE"])
+				wantInstruction := fmt.Sprintf("Please read the annotation details from %s and address the requested change.", command.env["DEVHOST_ANNOTATION_PROMPT_FILE"])
 				if command.command[2] != wantInstruction {
 					t.Fatalf("command prompt = %q, want %q", command.command[2], wantInstruction)
 				}
@@ -327,7 +327,7 @@ func TestAgentTerminalCommandAdapters(t *testing.T) {
 				if got, want := command.command[2:4], []string{"--model", "gpt-4o"}; !reflect.DeepEqual(got, want) {
 					t.Fatalf("command args = %#v, want %#v", got, want)
 				}
-				wantInstruction := fmt.Sprintf("Please read the annotation details from %s and address the requested change.", command.env["DEVHOST_AGENT_PROMPT_FILE"])
+				wantInstruction := fmt.Sprintf("Please read the annotation details from %s and address the requested change.", command.env["DEVHOST_ANNOTATION_PROMPT_FILE"])
 				if command.command[4] != wantInstruction {
 					t.Fatalf("command prompt = %q, want %q", command.command[4], wantInstruction)
 				}

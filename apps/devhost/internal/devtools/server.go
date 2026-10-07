@@ -363,17 +363,12 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 				colorScheme := session.request.ColorScheme
 				controlServer.mu.Unlock()
 
-				sessionFiles, err := createAgentSessionFiles(agentSessionFilesOptions{
-					tempDir:          action.TempDir,
-					actionID:         action.ID,
-					actionLabel:      action.DisplayName,
-					agentDisplayName: action.Agent.DisplayName,
-					annotation:       annotation,
-					colorScheme:      colorScheme,
-					projectRootPath:  toolContext.ProjectRootPath,
-					prompt:           createAnnotationAgentPrompt(annotation),
-					stackName:        options.StackName,
-				})
+				sessionFiles, err := createAgentSessionFiles(annotationSessionFilesOptions{
+					action:          action,
+					annotation:      annotation,
+					projectRootPath: toolContext.ProjectRootPath,
+					stackName:       options.StackName,
+				}, colorScheme)
 				if err != nil {
 					return err
 				}
@@ -386,7 +381,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 				}
 				activeSession.cleanup = chainCleanup(activeSession.cleanup, sessionFiles.cleanup)
 				controlServer.mu.Unlock()
-				write(fmt.Sprintf(annotationQueueResumePromptText, sessionFiles.env["DEVHOST_AGENT_PROMPT_FILE"]))
+				write(fmt.Sprintf(annotationQueueResumePromptText, sessionFiles.promptFilePath))
 				return nil
 			},
 		})

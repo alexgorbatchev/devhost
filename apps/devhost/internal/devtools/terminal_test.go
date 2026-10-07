@@ -3,8 +3,10 @@ package devtools
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -235,10 +237,10 @@ func TestCreateAgentTerminalCommandMatchesBuiltInAdapters(t *testing.T) {
 				t.Fatalf("createTerminalSessionCommand(...) error = %v", err)
 			}
 			defer command.cleanup()
-			if command.env["DEVHOST_AGENT_ANNOTATION_FILE"] == "" || command.env["DEVHOST_AGENT_PROMPT_FILE"] == "" || command.env["DEVHOST_AGENT_TRANSPORT"] != "files" || command.env["DEVHOST_ANNOTATION_FILE"] == "" || command.env["DEVHOST_ANNOTATION_PROMPT_FILE"] == "" || command.env["DEVHOST_ANNOTATION_ACTION_ID"] != defaultAnnotationActionID || command.env["DEVHOST_ANNOTATION_ACTION_KIND"] != "agent" || command.env["DEVHOST_ANNOTATION_ACTION_LABEL"] != tc.agent.DisplayName || command.env["DEVHOST_PROJECT_ROOT"] != "/tmp/project" || command.env["DEVHOST_STACK_NAME"] != "hello-stack" {
+			if command.env["DEVHOST_ANNOTATION_FILE"] == "" || command.env["DEVHOST_ANNOTATION_PROMPT_FILE"] == "" || command.env["DEVHOST_ANNOTATION_TRANSPORT"] != "files" || command.env["DEVHOST_ANNOTATION_ACTION_ID"] != defaultAnnotationActionID || command.env["DEVHOST_ANNOTATION_ACTION_KIND"] != "agent" || command.env["DEVHOST_ANNOTATION_ACTION_LABEL"] != tc.agent.DisplayName || command.env["DEVHOST_PROJECT_ROOT"] != "/tmp/project" || command.env["DEVHOST_STACK_NAME"] != "hello-stack" {
 				t.Fatalf("agent env = %#v", command.env)
 			}
-			annotationPayload, err := os.ReadFile(command.env["DEVHOST_AGENT_ANNOTATION_FILE"])
+			annotationPayload, err := os.ReadFile(command.env["DEVHOST_ANNOTATION_FILE"])
 			if err != nil {
 				t.Fatalf("ReadFile(annotation) error = %v", err)
 			}
@@ -277,7 +279,7 @@ func TestCreateAgentTerminalCommandAppliesColorScheme(t *testing.T) {
 			agent:       manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"},
 			colorScheme: agentColorSchemeLight,
 			wantCommand: func(command *terminalSessionCommand) []string {
-				return []string{"pi", "-e", command.command[2], "--use-theme", "light", "@" + command.env["DEVHOST_AGENT_PROMPT_FILE"]}
+				return []string{"pi", "-e", command.command[2], "--use-theme", "light", "@" + command.env["DEVHOST_ANNOTATION_PROMPT_FILE"]}
 			},
 			// The generated Claude settings file is exported to every agent adapter, so it carries the theme too.
 			wantTheme: "light",
@@ -287,7 +289,7 @@ func TestCreateAgentTerminalCommandAppliesColorScheme(t *testing.T) {
 			agent:       manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"},
 			colorScheme: agentColorSchemeDark,
 			wantCommand: func(command *terminalSessionCommand) []string {
-				return []string{"pi", "-e", command.command[2], "--use-theme", "dark", "@" + command.env["DEVHOST_AGENT_PROMPT_FILE"]}
+				return []string{"pi", "-e", command.command[2], "--use-theme", "dark", "@" + command.env["DEVHOST_ANNOTATION_PROMPT_FILE"]}
 			},
 			// The generated Claude settings file is exported to every agent adapter, so it carries the theme too.
 			wantTheme: "dark",
@@ -296,7 +298,7 @@ func TestCreateAgentTerminalCommandAppliesColorScheme(t *testing.T) {
 			name:  "pi unspecified",
 			agent: manifest.ValidatedAgent{DisplayName: "Pi", Kind: "pi"},
 			wantCommand: func(command *terminalSessionCommand) []string {
-				return []string{"pi", "-e", command.command[2], "@" + command.env["DEVHOST_AGENT_PROMPT_FILE"]}
+				return []string{"pi", "-e", command.command[2], "@" + command.env["DEVHOST_ANNOTATION_PROMPT_FILE"]}
 			},
 		},
 		{
@@ -433,6 +435,20 @@ func TestCreateCommandAnnotationTerminalCommand(t *testing.T) {
 	if command.cwd != "/tmp/project/tools" || command.env["CI"] != "1" || command.env["DEVHOST_ANNOTATION_FILE"] == "" || command.env["DEVHOST_ANNOTATION_PROMPT_FILE"] == "" || command.env["DEVHOST_ANNOTATION_ACTION_ID"] != "lint" || command.env["DEVHOST_ANNOTATION_ACTION_KIND"] != "command" || command.env["DEVHOST_ANNOTATION_ACTION_LABEL"] != "Run lint" || command.env["DEVHOST_PROJECT_ROOT"] != "/tmp/project" || command.env["DEVHOST_STACK_NAME"] != "hello-stack" {
 		t.Fatalf("command cwd/env = %q %#v", command.cwd, command.env)
 	}
+	wantEnvKeys := []string{
+		"CI",
+		"DEVHOST_ANNOTATION_ACTION_ID",
+		"DEVHOST_ANNOTATION_ACTION_KIND",
+		"DEVHOST_ANNOTATION_ACTION_LABEL",
+		"DEVHOST_ANNOTATION_FILE",
+		"DEVHOST_ANNOTATION_PROMPT_FILE",
+		"DEVHOST_ANNOTATION_TRANSPORT",
+		"DEVHOST_PROJECT_ROOT",
+		"DEVHOST_STACK_NAME",
+	}
+	if got := slices.Sorted(maps.Keys(command.env)); !slices.Equal(got, wantEnvKeys) {
+		t.Fatalf("command env variables = %v, want %v", got, wantEnvKeys)
+	}
 
 	annotationPayload, err := os.ReadFile(command.env["DEVHOST_ANNOTATION_FILE"])
 	if err != nil {
@@ -467,10 +483,8 @@ func TestCreateAgentTerminalCommandRejectsUnsupportedEditorSession(t *testing.T)
 func TestCreateAgentSessionFilesWritesExpectedSupportFiles(t *testing.T) {
 	t.Parallel()
 
-	files, err := createAgentSessionFiles(agentSessionFilesOptions{
-		actionID:         defaultAnnotationActionID,
-		actionLabel:      "Pi",
-		agentDisplayName: "Pi",
+	files, err := createAgentSessionFiles(annotationSessionFilesOptions{
+		action: manifest.ValidatedAnnotationAction{DisplayName: "Pi", ID: defaultAnnotationActionID, Kind: "agent"},
 		annotation: annotationSubmitDetail{
 			Comment:     "Fix it",
 			Markers:     []annotationMarkerPayload{},
@@ -480,40 +494,39 @@ func TestCreateAgentSessionFilesWritesExpectedSupportFiles(t *testing.T) {
 			URL:         "https://example.test/page",
 		},
 		projectRootPath: "/tmp/project",
-		prompt:          "Prompt text",
 		stackName:       "hello-stack",
-	})
+	}, "")
 	if err != nil {
 		t.Fatalf("createAgentSessionFiles(...) error = %v", err)
 	}
 	defer files.cleanup()
 
-	for _, key := range []string{
+	// Agent sessions receive the command action variables plus the two adapter support files.
+	wantEnvKeys := []string{
+		"DEVHOST_AGENT_CLAUDE_SETTINGS_FILE",
+		"DEVHOST_AGENT_OPENCODE_CONFIG_FILE",
 		"DEVHOST_ANNOTATION_ACTION_ID",
 		"DEVHOST_ANNOTATION_ACTION_KIND",
 		"DEVHOST_ANNOTATION_ACTION_LABEL",
-		"DEVHOST_ANNOTATION_DISPLAY_NAME",
 		"DEVHOST_ANNOTATION_FILE",
 		"DEVHOST_ANNOTATION_PROMPT_FILE",
 		"DEVHOST_ANNOTATION_TRANSPORT",
-		"DEVHOST_AGENT_ANNOTATION_FILE",
-		"DEVHOST_AGENT_CLAUDE_SETTINGS_FILE",
-		"DEVHOST_AGENT_DISPLAY_NAME",
-		"DEVHOST_AGENT_OPENCODE_CONFIG_FILE",
-		"DEVHOST_AGENT_PROMPT_FILE",
-		"DEVHOST_AGENT_TRANSPORT",
 		"DEVHOST_PROJECT_ROOT",
 		"DEVHOST_STACK_NAME",
-	} {
+	}
+	if got := slices.Sorted(maps.Keys(files.env)); !slices.Equal(got, wantEnvKeys) {
+		t.Fatalf("agent env variables = %v, want %v", got, wantEnvKeys)
+	}
+	for _, key := range wantEnvKeys {
 		if files.env[key] == "" {
 			t.Fatalf("missing env %q in %#v", key, files.env)
 		}
 	}
 	for _, path := range []string{
-		files.env["DEVHOST_AGENT_ANNOTATION_FILE"],
-		files.env["DEVHOST_AGENT_CLAUDE_SETTINGS_FILE"],
-		files.env["DEVHOST_AGENT_OPENCODE_CONFIG_FILE"],
-		files.env["DEVHOST_AGENT_PROMPT_FILE"],
+		files.env["DEVHOST_ANNOTATION_FILE"],
+		files.promptFilePath,
+		files.claudeSettingsFilePath,
+		files.opencodeConfigFilePath,
 		files.piExtensionFilePath,
 	} {
 		if _, err := os.Stat(path); err != nil {
