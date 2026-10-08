@@ -29,6 +29,7 @@ export interface IInjectedDevtoolsConfig {
   editorEnabled: boolean;
   externalToolbarsEnabled: boolean;
   minimapEnabled: boolean;
+  resourcesEnabled: boolean;
   statusEnabled: boolean;
   terminalEnabled: boolean;
   restartServicesShortcut?: string;
@@ -51,6 +52,7 @@ const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
   editorEnabled: true,
   externalToolbarsEnabled: true,
   minimapEnabled: true,
+  resourcesEnabled: false,
   statusEnabled: true,
   terminalEnabled: true,
   restartServicesShortcut: DEFAULT_RESTART_SERVICES_SHORTCUT,
@@ -104,6 +106,11 @@ function parseInjectedDevtoolsConfig(injectedConfig: object): IInjectedDevtoolsC
   const editorEnabled: boolean = readBooleanValue(injectedConfig, "editorEnabled", true);
   const externalToolbarsEnabled: boolean = readBooleanValue(injectedConfig, "externalToolbarsEnabled", true);
   const minimapEnabled: boolean = readBooleanValue(injectedConfig, "minimapEnabled", true);
+  const resourcesEnabled: boolean = readBooleanValue(
+    injectedConfig,
+    "resourcesEnabled",
+    defaultInjectedDevtoolsConfig.resourcesEnabled,
+  );
   const statusEnabled: boolean = readBooleanValue(injectedConfig, "statusEnabled", true);
   const terminalEnabled: boolean = readBooleanValue(injectedConfig, "terminalEnabled", true);
   const restartServicesShortcut: string = readRestartServicesShortcutValue(injectedConfig);
@@ -128,6 +135,7 @@ function parseInjectedDevtoolsConfig(injectedConfig: object): IInjectedDevtoolsC
     editorEnabled,
     externalToolbarsEnabled,
     minimapEnabled,
+    resourcesEnabled,
     statusEnabled,
     terminalEnabled,
     restartServicesShortcut,

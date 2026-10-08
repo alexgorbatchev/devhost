@@ -20,6 +20,14 @@ describe("readInjectedDevtoolsConfig", () => {
     expect(readInjectedDevtoolsConfig().homeDirectoryPath).toBe("");
   });
 
+  test("turns the resource readouts on only when the server says so", () => {
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, { resourcesEnabled: true });
+    expect(readInjectedDevtoolsConfig().resourcesEnabled).toBe(true);
+
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, { resourcesEnabled: "yes" });
+    expect(readInjectedDevtoolsConfig().resourcesEnabled).toBe(false);
+  });
+
   test("returns defaults when the injected config is unavailable", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, undefined);
 
@@ -39,6 +47,7 @@ describe("readInjectedDevtoolsConfig", () => {
       editorEnabled: true,
       externalToolbarsEnabled: true,
       minimapEnabled: true,
+      resourcesEnabled: false,
       statusEnabled: true,
       terminalEnabled: true,
       restartServicesShortcut: "alt+ctrl+r",
@@ -74,6 +83,7 @@ describe("readInjectedDevtoolsConfig", () => {
       editorEnabled: true,
       externalToolbarsEnabled: true,
       minimapEnabled: true,
+      resourcesEnabled: false,
       statusEnabled: true,
       terminalEnabled: true,
       restartServicesShortcut: "alt+ctrl+r",
@@ -102,6 +112,7 @@ describe("readInjectedDevtoolsConfig", () => {
       editorEnabled: true,
       externalToolbarsEnabled: true,
       minimapEnabled: true,
+      resourcesEnabled: false,
       statusEnabled: true,
       terminalEnabled: true,
       restartServicesShortcut: "alt+ctrl+r",
@@ -132,6 +143,7 @@ describe("readInjectedDevtoolsConfig", () => {
       editorEnabled: true,
       externalToolbarsEnabled: true,
       minimapEnabled: true,
+      resourcesEnabled: false,
       statusEnabled: true,
       terminalEnabled: false,
       restartServicesShortcut: "alt+ctrl+r",
@@ -167,6 +179,7 @@ describe("readInjectedDevtoolsConfig", () => {
       editorEnabled: true,
       externalToolbarsEnabled: true,
       minimapEnabled: true,
+      resourcesEnabled: false,
       statusEnabled: true,
       terminalEnabled: true,
       restartServicesShortcut: "alt+ctrl+r",

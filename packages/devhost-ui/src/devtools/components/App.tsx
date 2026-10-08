@@ -12,6 +12,7 @@ import { ExternalDevtoolsPanel, useExternalDevtoolsLaunchers } from "../features
 import { LogMinimap, useServiceLogs } from "../features/minimap";
 import { TerminalSessionChips, TerminalSessionHost, useTerminalSessions } from "../features/terminalSessions";
 import { useReactHighlightOverlay } from "../features/reactHighlight";
+import { ResourceUsagePanel, useResourceUsage } from "../features/resourceUsage";
 import { ServiceCrashOverlay, ServiceStatusPanel, useServiceHealth } from "../features/serviceStatusPanel";
 import { pristineFetch } from "../shared/pristineFetch";
 import { useNativeBrowserConnection } from "../shared/hooks/useNativeBrowserConnection";
@@ -54,6 +55,7 @@ function AppContent(): JSX.Element {
     minimapEnabled,
     position: devtoolsPosition,
     projectRootPath: configuredProjectRootPath,
+    resourcesEnabled,
     routedServices,
     stackName,
     statusEnabled,
@@ -95,6 +97,7 @@ function AppContent(): JSX.Element {
     submitAnnotation,
     updateSessionStatus,
   } = useTerminalSessions(colorScheme, terminalEnabled);
+  const resourceUsage = useResourceUsage(resourcesEnabled);
   const [isMinimapHovered, setIsMinimapHovered] = useState<boolean>(false);
   const [selectedAnnotationActionId, setSelectedAnnotationActionId] = useState<string>(annotationDefaultActionId);
   const exitedServices = services.filter(
@@ -276,6 +279,7 @@ function AppContent(): JSX.Element {
               queues={annotationQueues}
             />
           ) : null}
+          {resourcesEnabled ? <ResourceUsagePanel usage={resourceUsage} /> : null}
           {isNativeBrowserEnabled ? (
             <ReactNativeAccessButton
               isAvailable={nativeBrowser.view.observation?.isReactAvailable === true}

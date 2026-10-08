@@ -21,6 +21,7 @@ import (
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/hostusage"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
 
@@ -329,15 +330,22 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			Position:                  manifest.Devtools.Status.Position,
 			ProjectRootPath:           manifest.ManifestDirectoryPath,
 			PrimaryService:            manifest.PrimaryService,
-			RestartService:            func(names []string) error { return state.restart(lifecycleCtx, names) },
-			RestartStack:              func() error { return state.restartStack(lifecycleCtx) },
-			SwitchWorktree:            switchWorktree,
-			RefreshWorktrees:          refreshWorktrees,
-			GetToolContext:            state.toolContext,
-			RestartServicesShortcut:   manifest.Devtools.Shortcuts.RestartServices,
-			RoutedServices:            routedServices,
-			StateDirectoryPath:        paths.StateDirectoryPath,
-			StackName:                 manifest.Name,
+			ResourceUsage: devtools.ResourceUsageOptions{
+				Intervals: resolveResourceIntervals(manifest.Devtools.Resources),
+				Readers:   hostusage.HostReaders(),
+				OnFailure: func(readout string, err error) {
+					writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("devtools %s usage is unavailable: %v", readout, err))
+				},
+			},
+			RestartService:          func(names []string) error { return state.restart(lifecycleCtx, names) },
+			RestartStack:            func() error { return state.restartStack(lifecycleCtx) },
+			SwitchWorktree:          switchWorktree,
+			RefreshWorktrees:        refreshWorktrees,
+			GetToolContext:          state.toolContext,
+			RestartServicesShortcut: manifest.Devtools.Shortcuts.RestartServices,
+			RoutedServices:          routedServices,
+			StateDirectoryPath:      paths.StateDirectoryPath,
+			StackName:               manifest.Name,
 		})
 		if err != nil {
 			return 0, joinCleanupError(err, cleanupError)
@@ -1375,6 +1383,25 @@ func resolveSupportedDevtoolsFeatures(config manifest.DevtoolsConfig, annotation
 		StatusEnabled:           config.Status.Enabled,
 		TerminalEnabled:         devtoolsEnabled,
 	}
+}
+
+// resolveResourceIntervals returns the poll interval of every readout that is on; an off readout keeps zero.
+func resolveResourceIntervals(config manifest.DevtoolsResourcesConfig) hostusage.Intervals {
+	intervals := hostusage.Intervals{}
+	if !config.Enabled {
+		return intervals
+	}
+	if config.CPU.Enabled {
+		intervals.CPU = config.CPU.PollInterval
+	}
+	if config.Memory.Enabled {
+		intervals.Memory = config.Memory.PollInterval
+	}
+	if config.Disk.Enabled {
+		intervals.Disk = config.Disk.PollInterval
+	}
+
+	return intervals
 }
 
 func hasEnabledRuntimeDevtools(features devtools.FeatureToggles) bool {

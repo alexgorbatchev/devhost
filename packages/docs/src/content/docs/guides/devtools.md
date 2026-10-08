@@ -44,6 +44,8 @@ Every injected surface renders in the browser's top layer: above page content wh
 
 When the page opens a popover or a modal dialog, the injected UI moves back above it. A popover inside a web component's shadow root gives the page no signal, so the injected UI moves above it the next time a selection or cursor highlight appears. An open toolbar panel or recovery dialog postpones the move until it closes. While a page's modal dialog is open, the browser makes everything outside that dialog non-interactive, the injected UI included.
 
+The toolbar also shows how much of the machine is in use: **CPU**, **RAM**, and **Disk**, each as percent used. See [Host resource usage](#host-resource-usage).
+
 The services panel lists every service with its state. Routed services become links automatically, and clicking one opens that service URL in a new browser tab or window by default. Externally owned services are tagged `external`; only `devhost`-managed services expose restart controls. Services with watched file changes are marked `changed` until they restart.
 
 Repository services also share a checkout picker. Opening it or pressing **Refresh** discovers added and deleted Git worktrees. Selecting a checkout restarts that repository's managed services together; repositories containing externally managed services cannot switch checkouts. If the running checkout disappears, its services remain stopped until you select an available checkout; other repositories keep running.
@@ -65,6 +67,59 @@ Minimap log previews preserve ANSI backgrounds and text decorations. Foreground 
 When all devtools features are disabled, `devhost` does not mount these control routes for that stack.
 
 For annotation workflows, action configuration, and queue behavior, see [Annotations](./annotations/).
+
+## Host resource usage
+
+The toolbar shows three readouts for the machine devhost runs on: **CPU**, **RAM**, and **Disk**. Each is a small bar with the percent used beside it. A readout is on by default and needs no configuration.
+
+| Readout | What it measures                                                             | Read every |
+| ------- | ---------------------------------------------------------------------------- | ---------- |
+| CPU     | Share of all logical CPUs that was busy since the previous reading           | 2 seconds  |
+| RAM     | Memory in use, out of the memory installed                                   | 2 seconds  |
+| Disk    | Space used across fixed local filesystems, out of the space available to you | 1 minute   |
+
+The bar is neutral below 70%, amber from 70%, and red from 90%, where the number also turns bold. Hover a readout for the figures behind the percentage, such as `RAM: 9.8 of 32 GB used`.
+
+Disk counts each fixed local filesystem once, the way `df` does:
+
+- On Linux, USB-attached drives, drives the kernel marks removable, and loop-mounted images are left out.
+- On macOS, the startup disk is reported. Other internal disks are not counted.
+
+### Configuration
+
+`[devtools.resources]` changes what is shown and how often it is read:
+
+```toml
+[devtools.resources]
+# Turn every readout off. devhost then samples nothing.
+enabled = true
+# Read all three at one rate.
+pollInterval = "5s"
+
+[devtools.resources.cpu]
+# Override the shared rate for one readout.
+pollInterval = "1s"
+
+[devtools.resources.memory]
+# Hide one readout.
+enabled = false
+
+[devtools.resources.disk]
+pollInterval = "10m"
+```
+
+- `pollInterval` is a duration string such as `"500ms"`, `"5s"`, or `"1m"`, of at least `"250ms"`.
+- A readout uses its own `pollInterval` when it has one, then the shared `[devtools.resources].pollInterval`, then its default. A shared interval therefore also replaces the one-minute default for disk.
+- `cpu`, `memory`, and `disk` each take `enabled` and `pollInterval`.
+- Changing these keys requires restarting devhost.
+
+The readouts appear in the toolbar that the other devtools features bring. With the editor, external toolbars, minimap, and status features all disabled, nothing is injected and no readout is shown.
+
+### When a readout is missing
+
+- A readout that devhost cannot read is hidden, and devhost logs the reason once, for example `devtools disk usage is unavailable: ...`. It returns when a read succeeds.
+- While the page has lost its connection to devhost, all three readouts are hidden: a reading that has stopped updating would pass for the current one. They return when the connection reopens.
+- A collapsed toolbar hides the readouts.
 
 ## Control API
 
@@ -101,17 +156,19 @@ Handlers still validate methods, payloads, enabled features, and session state. 
 /__devhost__/ws/react-highlight
 /__devhost__/ws/health
 /__devhost__/ws/logs
+/__devhost__/ws/resources
 /__devhost__/ws/native-browser
 ```
 
 Use the page's routed host with `ws://` for HTTP or `wss://` for HTTPS. The terminal connection requires the ID of an existing session: a missing `sessionId` produces `400`, and an unknown session produces `404` before the WebSocket upgrade. The injected UI constructs these URLs automatically.
 
-The injected UI reopens its health, logs, annotation queue, React Highlight, and terminal connections when they are lost, for example after the machine sleeps or devhost restarts behind the same host. It tries again after one second and doubles the wait after each failed attempt, up to ten seconds. The native browser-control connection is the exception: it reconnects only when you choose **Connect browser control** again.
+The injected UI reopens its health, logs, resource usage, annotation queue, React Highlight, and terminal connections when they are lost, for example after the machine sleeps or devhost restarts behind the same host. It tries again after one second and doubles the wait after each failed attempt, up to ten seconds. The native browser-control connection is the exception: it reconnects only when you choose **Connect browser control** again.
 
 While a connection is down:
 
 - the Services panel shows every service as unavailable
 - the minimap keeps the log entries it already has
+- the CPU, memory, and disk readouts disappear, because a reading that has stopped updating would pass for the current one
 - the queue panel reports that its stream is disconnected
 - React Highlight shows no highlight until the editor reports its cursor again
 - a terminal shows `disconnected` and keeps its output

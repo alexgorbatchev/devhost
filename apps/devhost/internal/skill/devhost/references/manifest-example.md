@@ -77,6 +77,23 @@ reactExtensionId = "fmkadmapgofadopljbjfkapdkoienihi"
 # `enabled` controls whether the injected log minimap UI is shown (default: true).
 enabled = true
 
+[devtools.resources]
+# `enabled` controls whether host CPU, memory, and disk usage is shown in the toolbar (default: true).
+enabled = true
+# `pollInterval` sets how often every readout is read (minimum "250ms").
+# Omit it for the defaults: CPU and memory every "2s", disk every "1m".
+pollInterval = "5s"
+
+# Each readout has its own `enabled` (default: true) and a `pollInterval` that overrides the shared one.
+[devtools.resources.cpu]
+pollInterval = "1s"
+
+[devtools.resources.memory]
+enabled = false
+
+[devtools.resources.disk]
+pollInterval = "10m"
+
 [devtools.status]
 # `enabled` controls whether the injected service-status panel is shown (default: true).
 # It also shows exited foreground services in a full-screen log view with a restart button.

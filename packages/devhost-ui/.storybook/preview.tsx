@@ -48,6 +48,7 @@ const storybookInjectedConfig: IInjectedDevtoolsConfig = {
   editorEnabled: true,
   externalToolbarsEnabled: true,
   minimapEnabled: true,
+  resourcesEnabled: false,
   position: "bottom-right",
   projectRootPath: "storybook-workspace",
   routedServices: [],

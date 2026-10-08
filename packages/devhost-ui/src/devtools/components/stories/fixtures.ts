@@ -75,6 +75,7 @@ export function factory_appStack(): IDevhostStoryStack {
       editorEnabled: true,
       externalToolbarsEnabled: true,
       minimapEnabled: true,
+      resourcesEnabled: true,
       statusEnabled: true,
       terminalEnabled: true,
       routedServices: [
@@ -90,6 +91,11 @@ export function factory_appStack(): IDevhostStoryStack {
       { id: 3, line: "API listening on port 4000", serviceName: "api", stream: "stdout" },
       { id: 4, line: "Worker failed to start", serviceName: "worker", stream: "stderr" },
     ],
+    resourceUsage: {
+      cpu: { cores: 8, percent: 18 },
+      disk: { percent: 41, totalBytes: 512_000_000_000, usedBytes: 212_000_000_000 },
+      memory: { percent: 31, totalBytes: 32_000_000_000, usedBytes: 9_800_000_000 },
+    },
     services: [
       { managed: true, name: "app", status: true },
       { managed: true, name: "api", status: true },
@@ -181,6 +187,7 @@ export function factory_designOverviewStack(): IDevhostStoryStack {
       editorEnabled: true,
       externalToolbarsEnabled: true,
       minimapEnabled: true,
+      resourcesEnabled: true,
       statusEnabled: true,
       terminalEnabled: true,
       routedServices: [
@@ -207,6 +214,11 @@ export function factory_designOverviewStack(): IDevhostStoryStack {
       { id: 14, line: "Database backup completed (size: 42MB)", serviceName: "db", stream: "stdout" },
       { id: 15, line: "Listening on http://app.localhost", serviceName: "app", stream: "stdout" },
     ],
+    resourceUsage: {
+      cpu: { cores: 8, percent: 78 },
+      disk: { percent: 97, totalBytes: 512_000_000_000, usedBytes: 498_000_000_000 },
+      memory: { percent: 31, totalBytes: 32_000_000_000, usedBytes: 9_800_000_000 },
+    },
     services: [
       { managed: true, name: "app", status: true },
       { managed: true, name: "api", status: true },

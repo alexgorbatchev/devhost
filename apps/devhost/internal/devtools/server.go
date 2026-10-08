@@ -10,10 +10,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/hostusage"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/gorilla/websocket"
 )
@@ -29,6 +31,7 @@ const (
 	restartServicePath               = controlPathPrefix + "/restart-service"
 	restartStackPath                 = controlPathPrefix + "/restart-stack"
 	healthWebsocketPath              = controlPathPrefix + "/ws/health"
+	resourcesWebsocketPath           = controlPathPrefix + "/ws/resources"
 	logsWebsocketPath                = controlPathPrefix + "/ws/logs"
 	maximumRetainedLogEntries        = 512
 	healthPollInterval               = time.Second
@@ -107,6 +110,7 @@ type StartControlServerOptions struct {
 	Position                string
 	ProjectRootPath         string
 	PrimaryService          string
+	ResourceUsage           ResourceUsageOptions
 	RestartService          func([]string) error
 	RestartStack            func() error
 	SwitchWorktree          func(string, string) error
@@ -153,10 +157,15 @@ type ControlServer struct {
 	// healthMu makes recording the health sent last and sending it one step, so the health every client holds is the
 	// recorded one.
 	healthMu sync.Mutex
+	// resourcesMu does for resource usage what healthMu does for health.
+	resourcesMu sync.Mutex
 
 	mu                     sync.Mutex
 	isStopped              bool
 	lastPublishedHealth    string
+	lastPublishedResources string
+	resourceSampler        *hostusage.Sampler
+	resourceClients        map[*websocketClient]struct{}
 	nextLogEntryID         int
 	retainedLogEntries     []ServiceLogEntry
 	terminalSessionOrder   []string
@@ -192,6 +201,7 @@ type injectedConfig struct {
 	ExternalToolbarsEnabled   bool                       `json:"externalToolbarsEnabled"`
 	MinimapEnabled            bool                       `json:"minimapEnabled"`
 	StatusEnabled             bool                       `json:"statusEnabled"`
+	ResourcesEnabled          bool                       `json:"resourcesEnabled"`
 	AnnotationEnabled         bool                       `json:"annotationEnabled"`
 	AnnotationQueueEnabled    bool                       `json:"annotationQueueEnabled"`
 	TerminalEnabled           bool                       `json:"terminalEnabled"`
@@ -277,6 +287,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		RoutedServices:            append([]RoutedServiceIdentity{}, options.RoutedServices...),
 		StackName:                 options.StackName,
 		StatusEnabled:             options.FeatureToggles.StatusEnabled,
+		ResourcesEnabled:          options.ResourceUsage.isEnabled(),
 		TerminalEnabled:           options.FeatureToggles.TerminalEnabled,
 		RestartServicesShortcut:   options.RestartServicesShortcut,
 		PrimaryService:            options.PrimaryService,
@@ -309,6 +320,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		nextLogEntryID:             1,
 		projectRootPath:            options.ProjectRootPath,
 		reactHighlightClients:      map[*websocketClient]struct{}{},
+		resourceClients:            map[*websocketClient]struct{}{},
 		restartService:             options.RestartService,
 		restartStack:               options.RestartStack,
 		switchWorktree:             options.SwitchWorktree,
@@ -447,6 +459,10 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	mux.HandleFunc(restartStackPath, controlServer.handleRestartStack)
 	mux.HandleFunc(worktreesPath, controlServer.handleWorktrees)
 	mux.HandleFunc(healthWebsocketPath, controlServer.handleHealthWebsocket)
+	if options.ResourceUsage.isEnabled() {
+		mux.HandleFunc(resourcesWebsocketPath, controlServer.handleResourcesWebsocket)
+		controlServer.startResourceSampler(options.ResourceUsage)
+	}
 	mux.HandleFunc(logsWebsocketPath, controlServer.handleLogsWebsocket)
 	controlServer.server = &http.Server{Handler: controlServer.trackerMiddleware(mux)}
 
@@ -595,12 +611,15 @@ func (s *ControlServer) Stop() error {
 	logsClients := snapshotClients(s.logsClients)
 	annotationQueueClients := snapshotClients(s.annotationQueueClients)
 	reactHighlightClients := snapshotClients(s.reactHighlightClients)
+	resourceClients := snapshotClients(s.resourceClients)
+	resourceSampler := s.resourceSampler
 	terminalSessionIDs := append([]string{}, s.terminalSessionOrder...)
 	neovimShellIntegration := s.neovimShellIntegration
 	s.healthClients = map[*websocketClient]struct{}{}
 	s.logsClients = map[*websocketClient]struct{}{}
 	s.annotationQueueClients = map[*websocketClient]struct{}{}
 	s.reactHighlightClients = map[*websocketClient]struct{}{}
+	s.resourceClients = map[*websocketClient]struct{}{}
 	s.neovimShellIntegration = nil
 	s.mu.Unlock()
 	if s.annotationQueueStore != nil {
@@ -610,8 +629,12 @@ func (s *ControlServer) Stop() error {
 	for _, sessionID := range terminalSessionIDs {
 		s.closeTerminalSession(sessionID)
 	}
-	for _, client := range append(append(append(healthClients, logsClients...), annotationQueueClients...), reactHighlightClients...) {
+	for _, client := range slices.Concat(healthClients, logsClients, annotationQueueClients, reactHighlightClients, resourceClients) {
 		client.closeWith(websocket.CloseGoingAway, websocketCloseReasonStopping)
+	}
+	if resourceSampler != nil {
+		// The context is canceled and the clients are closed, so no reading is taken or sent after Stop returns.
+		resourceSampler.Wait()
 	}
 
 	shutdownContext, cancel := context.WithTimeout(context.Background(), 2*time.Second)

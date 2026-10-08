@@ -2,6 +2,7 @@ import type {
   IAnnotationQueueSnapshot,
   IAnnotationQueuesSnapshotMessage,
 } from "../src/devtools/features/annotationQueue/types";
+import type { IResourceUsage } from "../src/devtools/features/resourceUsage";
 import type {
   ActiveTerminalSessionSnapshot,
   IListTerminalSessionsResponse,
@@ -12,6 +13,7 @@ import {
   DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME,
   HEALTH_WEBSOCKET_PATH,
   LOGS_WEBSOCKET_PATH,
+  RESOURCES_WEBSOCKET_PATH,
   TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME,
   TERMINAL_SESSION_START_PATH,
   TERMINAL_SESSION_WEBSOCKET_PATH,
@@ -35,6 +37,8 @@ export interface IDevhostStoryStack {
   /** Sent to terminal sessions that have no entry in `terminalSnapshots`; `null` sends nothing. */
   fallbackTerminalSnapshot: string | null;
   logEntries: ServiceLogEntry[];
+  /** Sent on the resource usage stream; `null` sends nothing. */
+  resourceUsage: IResourceUsage | null;
   services: ServiceHealth[];
   terminalSessions: ActiveTerminalSessionSnapshot[];
   terminalSnapshots: Record<string, string>;
@@ -58,6 +62,10 @@ export function installDevhostStackMock(stack: IDevhostStoryStack): IDevhostStac
       const logs: ServiceLogSnapshotMessage = { entries: stack.logEntries, type: "snapshot" };
 
       connection.send(logs);
+    } else if (connection.url.pathname === RESOURCES_WEBSOCKET_PATH) {
+      if (stack.resourceUsage !== null) {
+        connection.send(stack.resourceUsage);
+      }
     } else if (connection.url.pathname === ANNOTATION_QUEUES_WEBSOCKET_PATH) {
       const queues: IAnnotationQueuesSnapshotMessage = { queues: stack.annotationQueues, type: "snapshot" };
 
