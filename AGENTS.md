@@ -35,6 +35,9 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 
 - `AGENTS.md`, deploy/release runbooks, and other contributor-facing docs must be kept up to date after workflow, policy, validation, or behavior changes.
 - When shared validation commands, release or publish procedures, or contributor expectations change, update the affected docs in the same change, including `packages/docs/AGENTS.md` and `apps/devhost/RELEASE.md` when applicable.
+- The public docs under `packages/docs/src/content/docs/` must always be kept up to date: document every user-visible feature and behavior change there, however small, in the same change.
+- After every behavior change, review the docs and `README.md` for statements the change made inaccurate, and correct each one.
+- `README.md` is an overview, not a feature list. Ask the user before adding a new feature, section, or option to it; correcting or removing existing README text needs no approval. `apps/devhost/AGENTS.md` has the full policy.
 - Root `README.md` is a symlink to `apps/devhost/README.md`. Update the app README, not the symlink.
 - Public docs source content lives in `apps/devhost/README.md`, `apps/devhost/devhost.example.toml`, and `packages/docs/src/content/docs/**`; edit those sources instead of hand-editing generated docs outputs.
 - Repository-local skills live under `.agents/skills/`. Put new local skills at `.agents/skills/<skill-name>/SKILL.md`.
