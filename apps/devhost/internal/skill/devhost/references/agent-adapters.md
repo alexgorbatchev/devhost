@@ -7,7 +7,7 @@ Use this reference when a `devhost.toml` manifest needs an annotation `kind = "a
 - Use `adapter` only for built-ins: `"pi"`, `"claude-code"`, `"opencode"`, or `"codex"`.
 - Built-in adapters accept an optional `args = ["..."]` string array to pass extra CLI flags (e.g., model, thinking level, or permission modes) while preserving built-in status reporting and prompt handoff. An empty array `args = []` is accepted when no extra arguments are passed.
 - `args` is only valid when `adapter` is configured; it cannot be used with custom command agents.
-- Do not invent project-local adapter names. A new `adapter = "..."` value requires devhost Go code changes and a release.
+- The built-in adapter names are fixed in devhost itself: a new `adapter = "..."` value requires devhost Go code changes and a release.
 - Use a custom command for user-provided or project-local agent integrations. Custom agent actions omit `adapter`, set `label` on the action, and use `command`, optional `cwd`, and optional `env` inside `[annotation.actions.agent]`.
 - Omit `label` on built-in adapter actions. It defaults to the adapter's name: `Pi`, `Claude Code`, `OpenCode`, or `Codex`. Set `label` only to tell apart actions that share an adapter. Custom agent actions and command actions require `label`.
 
@@ -81,7 +81,7 @@ args = ["-c", "model_reasoning_effort=high"]
 
 Review and trust the devhost hooks using `/hooks` in the embedded Codex terminal. Leave those
 hooks enabled for queue draining. If trust is missing or an admin requires managed hooks only,
-report that queues cannot drain; do not bypass hook trust or alter admin policy.
+report that queues cannot drain, and leave hook trust and admin policy as they are.
 Keep Codex authentication, sandbox, approval, and syntax theme settings user-controlled.
 Pass optional model, reasoning, or theme overrides through `args`.
 If the initial annotation finishes before hook review, send another prompt after trusting the
@@ -120,7 +120,7 @@ to store annotation JSON, prompts, and agent support files beneath devhost's sta
 working directory. Absolute paths are accepted. Omit the key to use the system temp
 directory (`$TMPDIR` on Unix, otherwise `/tmp`); empty strings are invalid. This setting
 applies to both agent and command actions, including queued agent handoffs. Action
-`cwd` and the manifest directory do not affect resolution.
+Resolution is independent of `cwd` and the manifest directory.
 
 Missing parents are created. Each session or queued handoff receives a unique private
 subdirectory; cleanup removes its files without deleting the configured parent or
@@ -139,7 +139,7 @@ Devhost injects these environment variables for custom commands:
 
 The custom agent must read `DEVHOST_ANNOTATION_PROMPT_FILE` or `DEVHOST_ANNOTATION_FILE` and handle the requested change. Devhost writes adapter support files, such as hook and settings files, only for the built-in adapter an action selects. A custom agent receives the annotation JSON and prompt files and nothing else.
 
-Worktree support is enabled by default. While enabled, new browser-launched actions use the selected checkout. Configured action directories inside the service repository are remapped with their relative offsets; directories outside it remain unchanged. Existing sessions retain their launch directory. Devhost rejects queued handoffs into a session from another checkout and pauses the queue; resume it to start an agent in the selected checkout. Do not dispatch new work into an old-checkout session.
+Worktree support is enabled by default. While enabled, new browser-launched actions use the selected checkout. Configured action directories inside the service repository are remapped with their relative offsets; directories outside it remain unchanged. Existing sessions retain their launch directory. Devhost rejects queued handoffs into a session from another checkout and pauses the queue; resume it to start an agent in the selected checkout. Dispatch new work to a session started in the selected checkout.
 
 ## Queue status contract
 
@@ -150,4 +150,4 @@ To support durable annotation queue draining, custom agents must emit terminal O
 
 BEL (`\x07`) and ST (`\x1b\\`) terminators are accepted.
 
-If a wrapper script is needed, keep it project-local and invoke the script directly from `command`; do not put shell snippets in the manifest.
+If a wrapper script is needed, keep it project-local, with the shell logic inside the script, and invoke the script directly from `command`.
