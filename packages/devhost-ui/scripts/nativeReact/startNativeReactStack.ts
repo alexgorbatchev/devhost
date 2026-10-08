@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { tmpdir } from "node:os";
 import { chmod, lstat, mkdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { stopNativeReactProcess } from "./stopNativeReactProcess";
@@ -54,7 +55,7 @@ export async function startNativeReactStack(options: INativeReactStackOptions): 
     ...process.env,
     AGENT: "1",
     DEVHOST_STATE_DIR: statePath,
-    TMPDIR: resolve(process.cwd(), ".tmp"),
+    TMPDIR: tmpdir(),
     XDG_CONFIG_HOME: resolve(statePath, "config"),
     XDG_CACHE_HOME: resolve(statePath, "cache"),
     XDG_DATA_HOME: resolve(statePath, "data"),

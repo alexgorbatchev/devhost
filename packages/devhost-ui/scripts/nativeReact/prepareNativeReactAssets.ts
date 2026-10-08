@@ -76,8 +76,8 @@ export async function prepareNativeReactAssets(
   const version = Bun.spawnSync([chromeExecutablePath, "--version"], {
     stdout: "pipe",
     stderr: "pipe",
-    env: { ...process.env, ...versionEnvironment, TMPDIR: ".tmp" },
-    cwd: process.cwd(),
+    env: { ...process.env, ...versionEnvironment, TMPDIR: "version-runtime" },
+    cwd: outputPath,
   });
   assert.equal(version.exitCode, 0, version.stderr.toString());
   assert.equal(version.stdout.toString().trim(), `Google Chrome for Testing ${nativeReactChromeVersion}`);

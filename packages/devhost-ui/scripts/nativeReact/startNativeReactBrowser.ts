@@ -1,3 +1,4 @@
+import { E2E_TEMPORARY_PATH } from "../../../../test-support/constants";
 import assert from "node:assert/strict";
 import { lstat, mkdir, rm } from "node:fs/promises";
 import { relative, resolve } from "node:path";
@@ -18,7 +19,7 @@ interface INativeReactBrowserOptions {
 export async function startNativeReactBrowser(options: INativeReactBrowserOptions): Promise<INativeReactBrowser> {
   const profilePath = resolve(options.outputPath, "profile");
   const runtimePath = resolve(options.outputPath, "browser-runtime");
-  const temporaryPath = resolve(options.repositoryRoot, ".tmp", `nb-${crypto.randomUUID().slice(0, 8)}`);
+  const temporaryPath = resolve(E2E_TEMPORARY_PATH, `nb-${crypto.randomUUID().slice(0, 8)}`);
   // Chrome's crashpad database ignores --user-data-dir on Linux. Its documented
   // config override and XDG consumers must share this run's owned lifetime.
   const configurationDirectories = {

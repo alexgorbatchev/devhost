@@ -1,3 +1,4 @@
+import { E2E_TEMPORARY_PATH } from "../../../test-support/constants";
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -30,7 +31,7 @@ export async function runNativeReactAcceptance(): Promise<void> {
   const repositoryRoot = resolve(import.meta.dir, "../../..");
   assert.equal(process.cwd(), repositoryRoot, "Run native acceptance from the repository root.");
   const provisioning = await readNativeReactProvisioning(Bun.env.DEVHOST_NATIVE_REACT_ASSETS);
-  const outputPath = resolve(repositoryRoot, ".tmp/native-react-acceptance", crypto.randomUUID());
+  const outputPath = resolve(E2E_TEMPORARY_PATH, "native-react-acceptance", crypto.randomUUID());
   await mkdir(outputPath, { recursive: true });
   console.log(`Native React acceptance evidence: ${outputPath}`);
   const assetsPath = resolve(outputPath, "assets");

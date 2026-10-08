@@ -1,3 +1,4 @@
+import { E2E_TEMPORARY_PATH } from "../../../../../test-support/constants";
 import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
 import { lstat, mkdir, rm } from "node:fs/promises";
@@ -6,7 +7,7 @@ import { finishNativeReactCleanup } from "../finishNativeReactCleanup";
 import { verifyNativeReactAsset } from "../verifyNativeReactAsset";
 
 test("asset-cleanup rejection retains both the original provisioning error and genuine filesystem failure", async () => {
-  const outputPath = resolve(".tmp", `native-cleanup-failure-${crypto.randomUUID()}`);
+  const outputPath = resolve(E2E_TEMPORARY_PATH, `native-cleanup-failure-${crypto.randomUUID()}`);
   const directoryPath = resolve(outputPath, "assets");
   const extractedPath = resolve(directoryPath, "partial");
   const missingPath = resolve(outputPath, "missing.zip");

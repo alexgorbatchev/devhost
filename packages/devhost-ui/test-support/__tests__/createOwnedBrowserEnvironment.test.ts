@@ -1,11 +1,13 @@
+import { tmpdir } from "node:os";
+import { E2E_TEMPORARY_PATH } from "../../../../test-support/constants";
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm, stat } from "node:fs/promises";
-import { isAbsolute, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 
 import { createOwnedBrowserEnvironment } from "../../../../test-support/createOwnedBrowserEnvironment";
 
-const projectTemporaryPath: string = resolve(import.meta.dir, "../../../../.tmp");
+const projectTemporaryPath: string = E2E_TEMPORARY_PATH;
 let runDirectoryPath: string;
 
 beforeEach(async () => {
@@ -27,12 +29,12 @@ test("gives the browser a home inside the run directory that already has a Downl
   expect((await stat(join(runDirectoryPath, "home", "Downloads"))).isDirectory()).toBe(true);
 });
 
-test("points the browser's temporary directory at the project .tmp through a relative path", async () => {
+test("uses the OS temporary directory for browser-created temporary files", async () => {
   const environment = await createOwnedBrowserEnvironment(runDirectoryPath, {});
 
   assert(environment.TMPDIR !== undefined);
-  expect(isAbsolute(environment.TMPDIR)).toBe(false);
-  expect(resolve(process.cwd(), environment.TMPDIR)).toBe(projectTemporaryPath);
+  expect(resolve(process.cwd(), environment.TMPDIR)).toBe(tmpdir());
+  expect((await stat(resolve(process.cwd(), environment.TMPDIR))).isDirectory()).toBe(true);
 });
 
 test("replaces an absolute temporary directory, whose length Chromium may not survive", async () => {
@@ -41,13 +43,14 @@ test("replaces an absolute temporary directory, whose length Chromium may not su
   });
 
   assert(environment.TMPDIR !== undefined);
-  expect(resolve(process.cwd(), environment.TMPDIR)).toBe(projectTemporaryPath);
+  expect(resolve(process.cwd(), environment.TMPDIR)).toBe(tmpdir());
 });
 
-test("keeps a relative temporary directory", async () => {
+test("isolates an inherited repository-relative temporary directory", async () => {
   const environment = await createOwnedBrowserEnvironment(runDirectoryPath, { TMPDIR: ".tmp" });
 
-  expect(environment.TMPDIR).toBe(".tmp");
+  assert(environment.TMPDIR !== undefined);
+  expect(resolve(process.cwd(), environment.TMPDIR)).toBe(tmpdir());
 });
 
 test("keeps the other variables the browser would inherit", async () => {

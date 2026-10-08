@@ -100,6 +100,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Never: build or release `devhost` from the repo root using ad-hoc Go commands; use the documented `apps/devhost/justfile` recipes, root justfile recipes, and runbook.
 - Never: start local docs or Storybook dev servers proactively; the user will start them when needed.
 - Testing exception: agents may start temporary local servers for validation or recording workflows, but must shut them down before the end of the turn.
+- Temporary-file policy exception: generated end-to-end test fixtures, browser profiles, downloads, native dependencies, sockets, and evidence belong under `<os.tmpdir()>/devhost-e2e/`, outside the checkout. Use unique run directories and preserve owned process/directory cleanup. Demo recordings retain `.tmp/demos/`.
 
 ## References
 
