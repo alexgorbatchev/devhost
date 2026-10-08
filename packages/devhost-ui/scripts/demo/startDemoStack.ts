@@ -5,7 +5,7 @@ import { stopProcess } from "./stopProcess";
 
 export async function startDemoStack(runtime: IDemoRuntime, signal: AbortSignal): Promise<Subprocess> {
   const certificate = await Bun.file(runtime.certificatePath).text();
-  const subprocess = Bun.spawn([join(runtime.repositoryPath, "apps/devhost/dist/devhost"), "start"], {
+  const subprocess = Bun.spawn([join(runtime.repositoryPath, "apps/devhost/bin/devhost"), "start"], {
     cwd: runtime.directoryPath,
     env: runtime.env,
     stdin: "ignore",

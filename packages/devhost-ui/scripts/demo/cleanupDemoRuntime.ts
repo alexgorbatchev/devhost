@@ -5,7 +5,7 @@ import { restoreDemoPlayground } from "./restoreDemoPlayground";
 
 export async function cleanupDemoRuntime(runtime: IDemoRuntime): Promise<void> {
   await runCommand(
-    [join(runtime.repositoryPath, "apps/devhost/dist/devhost"), "stop", "--manifest", runtime.manifestPath],
+    [join(runtime.repositoryPath, "apps/devhost/bin/devhost"), "stop", "--manifest", runtime.manifestPath],
     {
       env: runtime.env,
       timeoutMs: 30_000,

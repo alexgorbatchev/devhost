@@ -7,18 +7,18 @@ build-devtools-bundle:
 
 # Compile devhost executable for the current platform
 compile: build-devtools-bundle
-    mkdir -p ./dist
-    go build -trimpath -ldflags "-X {{build-version-variable}}={{build-version}}" -o ./dist/devhost ./cmd/devhost
+    mkdir -p ./bin
+    go build -trimpath -ldflags "-X {{build-version-variable}}={{build-version}}" -o ./bin/devhost ./cmd/devhost
 
 # Run devhost from source in the calling directory
 [no-cd]
 run *args: build-devtools-bundle
-    {{source_directory()}}/bin/devhost {{args}}
+    {{source_directory()}}/scripts/runFromSource.sh {{args}}
 
 # Run devhost from source in the calling directory with agent-facing output
 [no-cd]
 run-ai *args: build-devtools-bundle
-    AGENT=1 {{source_directory()}}/bin/devhost {{args}}
+    AGENT=1 {{source_directory()}}/scripts/runFromSource.sh {{args}}
 
 # Run Go tests
 test: build-devtools-bundle

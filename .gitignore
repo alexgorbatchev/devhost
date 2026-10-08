@@ -1,6 +1,7 @@
 .cache/
 node_modules/
 dist
+/apps/devhost/bin/
 
 caddy/routes/*.caddy
 caddy/routes/.registrations/*.json

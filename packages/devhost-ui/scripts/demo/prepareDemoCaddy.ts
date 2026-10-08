@@ -10,7 +10,7 @@ export async function prepareDemoCaddy(runtime: IDemoRuntime, signal: AbortSigna
     if (!response.ok) throw new Error(`Caddy admin returned HTTP ${response.status}`);
     await response.body?.cancel();
     const certificate = await runCommand(
-      [join(runtime.repositoryPath, "apps/devhost/dist/devhost"), "caddy", "print-root-cert"],
+      [join(runtime.repositoryPath, "apps/devhost/bin/devhost"), "caddy", "print-root-cert"],
       { env: runtime.env, signal },
     );
     await Bun.write(runtime.certificatePath, certificate);

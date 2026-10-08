@@ -1,6 +1,6 @@
 ---
 created_on: 2026-06-03 12:00
-last_modified: 2026-09-27 09:39
+last_modified: 2026-10-08 07:12
 status: current
 ---
 
@@ -276,7 +276,7 @@ No new HTTP endpoints are added.
 ### Manual Verification
 
 - Define `idleTimeout = "1m"` inside `devhost.toml` under `[devtools]`.
-- Launch playground using `bin/devhost --manifest devhost.toml`.
+- Launch the playground with `just dev`.
 - Do not open the browser. Run `curl http://playground.localhost/api/...` (direct Caddy-proxied API request).
 - Confirm that the background daemon remains alive, resetting the 1-minute idle clock.
 - Stop all curl requests, wait 1 minute, and confirm the background daemon executes a clean, graceful cascading teardown.

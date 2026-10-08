@@ -50,6 +50,6 @@ if (import.meta.main) {
     throw new Error("Run this script through just dev-bootstrap.");
   }
 
-  const destinationPath = await devBootstrap(fileURLToPath(new URL("../dist/devhost", import.meta.url)), dotfilesPath);
+  const destinationPath = await devBootstrap(fileURLToPath(new URL("../bin/devhost", import.meta.url)), dotfilesPath);
   console.log(`Installed local devhost build at ${destinationPath}`);
 }

@@ -75,7 +75,7 @@ Run the app check suite:
 just devhost check
 ```
 
-The root `fix` recipe runs `oxfmt --write` for the repo using the shared root config and `gofmt -w` for this app; the pre-commit hook also formats staged files. `just devhost check` refreshes the generated embedded devtools bundle, then runs `just devhost lint` (fails on unformatted Go files, then `go vet ./...`, `go tool predeclared ./...`, and `go mod tidy -diff`) and the Bun script tests and `just devhost test` from this app. `run` and `run-ai` use `[no-cd]` and the `bin/devhost` shim, so relative manifest paths (`--manifest`, `-m`, `DEVHOST_MANIFEST`) and manifest discovery resolve from the directory you call `just` in. The shim runs `go build` on every call and leaves staleness to it, so a change to a Go source, an embedded asset, or the module files is rebuilt and nothing else is; do not add a file-time check or change directory before starting `devhost`. The shim builds to `dist/shim/devhost`, without a version stamp (`--version` prints `dev`), and keeps that apart from the `dist/devhost` that `just devhost compile` writes so neither build replaces the other. The injected UI checks and Storybook coverage now live in `packages/devhost-ui/`. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
+The root `fix` recipe runs `oxfmt --write` for the repo using the shared root config and `gofmt -w` for this app; the pre-commit hook also formats staged files. `just devhost check` refreshes the generated embedded devtools bundle, then runs `just devhost lint` (fails on unformatted Go files, then `go vet ./...`, `go tool predeclared ./...`, and `go mod tidy -diff`) and the Bun script tests and `just devhost test` from this app. `run` and `run-ai` use `[no-cd]` and the `scripts/runFromSource.sh` shim, so relative manifest paths (`--manifest`, `-m`, `DEVHOST_MANIFEST`) and manifest discovery resolve from the directory you call `just` in. The shim runs `go build` on every call and leaves staleness to it, so a change to a Go source, an embedded asset, or the module files is rebuilt and nothing else is; do not add a file-time check or change directory before starting `devhost`. The shim builds to `bin/source/devhost`, without a version stamp (`--version` prints `dev`), and keeps that apart from the `bin/devhost` that `just devhost compile` writes so neither build replaces the other. Compiled binaries go under `bin/`, which is ignored; never write one elsewhere or commit one. The injected UI checks and Storybook coverage now live in `packages/devhost-ui/`. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
 
 `scripts/buildDevtoolsBundle.ts` refreshes the generated injected devtools assets under `internal/devtools/dist/` used by Go `//go:embed`: the static `devtools.js` entry, lazy JavaScript chunks and WOFF2 subsets under `assets/`, `xterm.css`, and precompressed `.gz` representations. The whole directory is intentionally ignored. Production builds must define `process.env.NODE_ENV` as `"production"`; the source loop sets the internal `DEVHOST_DEVTOOLS_DEVELOPMENT=1` build switch for development diagnostics and retains old hashed chunks for active tabs. Production builds remove obsolete artifacts before embedding.
 
@@ -87,7 +87,7 @@ The same existing browser build embeds `redux.js` (public host registration), `r
 
 `just devhost build-release-artifacts` refreshes that bundle, cross-compiles the supported Go release targets, embeds the current `metadata.json` version into `devhost --version`, and writes versioned `.tar.gz` archives to `apps/devhost/dist/release/`.
 
-`just devhost compile` refreshes that bundle, embeds the current `metadata.json` version into `devhost --version`, then writes the current-platform executable to `apps/devhost/dist/devhost`.
+`just devhost compile` refreshes that bundle, embeds the current `metadata.json` version into `devhost --version`, then writes the current-platform executable to `apps/devhost/bin/devhost`.
 
 Native React access is attach-only. `[devtools.browser].endpoint` explicitly names an already running user-owned loopback browser; retain it only in Go configuration. The injected config exposes a fresh instance identity and configured flag, never the endpoint. `internal/nativebrowser/` owns maintained typed CDP connections and target observers; cancellation detaches and joins them without closing browser windows, tabs or profiles. Keep persistent target initialization on its owning context rather than a disposable per-call timeout.
 
@@ -109,7 +109,8 @@ The token-free native browser WebSocket requires the exact current Origin/Host, 
 ## Internal app layout
 
 - `cmd/devhost/main.go` — shipped CLI entrypoint
-- `bin/devhost` — local shell shim that launches the Go runtime for workspace scripts and source-checkout use
+- `scripts/runFromSource.sh` — local shell shim that builds and launches the Go runtime for workspace recipes and source-checkout use
+- `bin/` — ignored build output: `bin/devhost` from `just devhost compile`, `bin/source/devhost` from the shim
 - `internal/app/` — top-level Go CLI dispatch
 - `internal/cli/` — command definitions (boa on top of cobra) and help screens; help is rendered by `cobra-help-tree/v2`, which documents positional arguments, environment variables, and quickstart examples from the catalog in `internal/cli/help.go` because cobra has no fields for them. Long descriptions print verbatim, so keep their lines at 60 columns or less.
 - `internal/manifest/` — manifest discovery, parsing, validation, and defaults

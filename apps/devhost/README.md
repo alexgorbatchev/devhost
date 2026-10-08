@@ -351,10 +351,10 @@ If you are working from this repository and want a current-platform binary inste
 
 ```bash
 just devhost compile
-./apps/devhost/dist/devhost --version
+./apps/devhost/bin/devhost --version
 ```
 
-That build refreshes the embedded injected devtools bundle and writes the CLI binary to `apps/devhost/dist/devhost` with the version from `apps/devhost/metadata.json` embedded into `devhost --version`.
+That build refreshes the embedded injected devtools bundle and writes the CLI binary to `apps/devhost/bin/devhost` with the version from `apps/devhost/metadata.json` embedded into `devhost --version`.
 
 ## Frontend UI development
 
