@@ -3,6 +3,8 @@ mod design 'packages/design/justfile'
 mod ui 'packages/devhost-ui/justfile'
 mod docs 'packages/docs/justfile'
 mod demo 'packages/devhost-ui/scripts/demo/justfile'
+mod playground-backend 'packages/playground/backend/justfile'
+mod playground-frontend 'packages/playground/frontend/justfile'
 
 # Run devhost from source in the calling directory
 run *args: (devhost::run args)
