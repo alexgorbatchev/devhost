@@ -4,10 +4,7 @@ Local rules for the `devhost` Go app in `apps/devhost/`.
 
 ## Documentation policy
 
-- `README.md` must be kept up to date after behavior changes.
-- `AGENTS.md` files must be kept up to date after workflow, policy, or contributor-expectation changes.
-- `RELEASE.md` must be kept up to date after tag, packaging, or GitHub release workflow changes.
-- Update `README.md` whenever you change:
+- The public docs under `packages/docs/src/content/docs/` must always be kept up to date. They are where every feature is documented, however small. Update them in the same change whenever you change:
   - CLI usage
   - manifest behavior
   - injected environment variables
@@ -15,13 +12,17 @@ Local rules for the `devhost` Go app in `apps/devhost/`.
   - logging behavior
   - devtools behavior
   - limitations, caveats, or failure modes
+- After every behavior change, review the docs and `README.md` for statements the change made inaccurate, and correct each one. This applies to the README as well: what it already says must stay true.
+- `README.md` is an overview, not a feature list. Do not add a new feature, section, or option to it without asking the user first; there are too many small features for all of them to belong there. Correcting or removing existing README text needs no approval.
+- `AGENTS.md` files must be kept up to date after workflow, policy, or contributor-expectation changes.
+- `RELEASE.md` must be kept up to date after tag, packaging, or GitHub release workflow changes.
 - If the manifest contract changes, also update `devhost.example.toml` and the devhost skill at `internal/skill/devhost/SKILL.md` (and its reference files).
 - Update `internal/skill/devhost/SKILL.md` in the same change as any change to a command, argument, option, short alias, type, default, environment variable, output, exit code, or side effect, and set its `last_modified`. `devhost skill` prints that file, so it is the reference agents work from. `TestSkillCoversTheWholeInterface` fails while it omits a command, flag, argument, or environment variable, or leaves a flag's type or non-zero default off the line that names the flag; check what the file says about them against the implementation yourself, because the test compares names and values only.
 - Write the skill for someone operating `devhost`: affirmative usage instructions and facts. Keep its frontmatter `description` to when the skill applies. Contributor rules belong in the `AGENTS.md` files.
 - If devtools-specific contributor rules change, also update `packages/devhost-ui/AGENTS.md` and the nested files under `packages/devhost-ui/src/devtools/`.
 - If the tag-driven binary release flow changes, also update `RELEASE.md` and the relevant shared guidance in the repo-root `AGENTS.md`.
 - **CRITICAL:** `packages/docs/sync.ts` regenerates the public docs landing page from `README.md` and the manifest reference from `devhost.example.toml`. After editing either source, you **must** validate `packages/docs` so the GitHub Pages content stays in sync.
-- Do not leave README or AGENTS examples/rules stale after changing implementation details.
+- Do not leave docs, README, or AGENTS examples/rules stale after changing implementation details.
 - Repo-root `README.md` is a symlink to this workspace README; update `README.md` here, not the root symlink.
 
 ## Development workflow
@@ -103,7 +104,7 @@ The token-free native browser WebSocket requires the exact current Origin/Host, 
 
 ## Done policy
 
-- Done means the required app docs are updated (`README.md`, relevant `AGENTS.md`, `RELEASE.md`, and `devhost.example.toml` when applicable), required validation for the affected scope has passed, and any temporary local processes started for validation are stopped.
+- Done means the required docs are updated (the public docs, relevant `AGENTS.md`, `RELEASE.md`, and `devhost.example.toml` when applicable) and `README.md` has been reviewed for inaccuracies, required validation for the affected scope has passed, and any temporary local processes started for validation are stopped.
 - When changes affect the shipped `devhost` executable or its user-visible behavior, run `just devhost compile` successfully before yielding to the user.
 - If `just devhost check`, packaging checks, or required documentation updates were skipped, failed, or are blocked, report the app work as incomplete and call out the exact blocker.
 - Release work is not done until the tag exists remotely, the publish workflow has reached its expected result, and the matching GitHub Release state is confirmed.
