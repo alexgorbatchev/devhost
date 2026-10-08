@@ -56,7 +56,7 @@ To keep completion across sessions, write the script to the directory your shell
 
 ### Output for agents and scripts
 
-Set `AGENT=1` (`true` and `yes` work too) when an agent or a script reads the output. Help screens become compact `key: value` text without tree glyphs or column padding, and a command that fails ends with one `ERR:` line that carries the whole error:
+Set `AGENT=1` (`true` and `yes` work too) when an agent or a script reads the output. Help screens become compact `key: value` text without tree glyphs or column padding, each listing every command below the one asked about, and a command that fails ends with one `ERR:` line that carries the whole error:
 
 ```console
 $ devhost star

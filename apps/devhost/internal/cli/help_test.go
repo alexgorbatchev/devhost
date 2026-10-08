@@ -160,6 +160,37 @@ func TestParseCommandLineArgumentsRendersAgentHelp(t *testing.T) {
 	}
 }
 
+func TestParseCommandLineArgumentsAgentHelpListsTheWholeTree(t *testing.T) {
+	t.Setenv("AGENT", "1")
+
+	// One request for help has to tell an agent everything devhost offers, as the
+	// human tree does: the commands inside each group, with their arguments.
+	var stdout strings.Builder
+	got, err := ParseCommandLineArguments([]string{"--help"}, &stdout, &strings.Builder{})
+	if err != nil {
+		t.Fatalf("ParseCommandLineArguments(--help) unexpected error = %v", err)
+	}
+
+	if got.Kind != KindHelp {
+		t.Fatalf("ParseCommandLineArguments(--help) kind = %q, want %q", got.Kind, KindHelp)
+	}
+
+	for _, want := range []string{
+		"usage: devhost [flags] [command]\n",
+		"  - caddy: Set up and control the shared HTTPS proxy\n",
+		"    - download: Download the Caddy server devhost uses\n",
+		"    - trust-remote <ssh-target>: Trust another machine's Caddy certificate over SSH (macOS)\n",
+		"  - completion: ",
+		"    - zsh: ",
+		"  - start: Start every service in devhost.toml\n",
+		"  - stop: Stop the running stack for this project\n",
+	} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("agent help missing %q:\n%s", want, stdout.String())
+		}
+	}
+}
+
 func TestParseCommandLineArgumentsTrimsHelpToTerminalWidth(t *testing.T) {
 	const terminalWidth = 60
 	t.Setenv("AGENT", "0")
