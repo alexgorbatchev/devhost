@@ -63,6 +63,8 @@ That writes these archives to `apps/devhost/dist/release/`:
 
 Replace `0.0.2` with the real package version.
 
+Each archive holds the `devhost` binary, `README.md`, and the repository `LICENSE`. The build stops before compiling when one of the two documents is missing.
+
 The release builder cross-compiles with `CGO_ENABLED=0`. The `linux-*-musl` archives therefore ship the same static Linux binaries as the matching non-musl Linux targets, packaged under distinct archive names for download clarity.
 Each archived `devhost` binary also reports that same metadata version through `devhost --version`.
 

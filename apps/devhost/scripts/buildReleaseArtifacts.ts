@@ -1,5 +1,5 @@
-import { access, cp, mkdir, readFile, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, readFile, rm } from "node:fs/promises";
+import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { buildDevtoolsBundle } from "./buildDevtoolsBundle";
@@ -14,11 +14,15 @@ interface IPackageMetadata {
 }
 
 interface IBuildReleaseArtifactsOptions {
+  documentFilePaths?: readonly string[];
+  outputDirectoryPath?: string;
   targets: ReleaseTarget[];
 }
 
 interface IBuildReleaseArtifactOptions {
   artifactName: string;
+  documentFilePaths: readonly string[];
+  outputDirectoryPath: string;
   target: ReleaseTarget;
   version: string;
 }
@@ -39,33 +43,55 @@ const targetPlatformNames: Readonly<Record<ReleaseTarget, IReleaseTargetDetails>
 const releaseTargetNames: ReadonlySet<string> = new Set(releaseTargets);
 
 const packageDirectoryPath: string = fileURLToPath(new URL("..", import.meta.url));
-const artifactOutputDirectoryPath: string = join(packageDirectoryPath, "dist", "release");
+const defaultOutputDirectoryPath: string = join(packageDirectoryPath, "dist", "release");
 const buildVersionVariablePath: string = "github.com/alexgorbatchev/devhost/apps/devhost/internal/version.buildVersion";
 const packageManifestPath: string = join(packageDirectoryPath, "metadata.json");
 const cliEntrypointPath: string = "./cmd/devhost";
-const readmeFilePath: string = join(packageDirectoryPath, "README.md");
-const licenseFilePath: string = join(packageDirectoryPath, "LICENSE");
+// The license is the repository's; this workspace has no copy of its own.
+const defaultDocumentFilePaths: readonly string[] = [
+  join(packageDirectoryPath, "README.md"),
+  join(packageDirectoryPath, "..", "..", "LICENSE"),
+];
 
 export async function buildReleaseArtifacts(
   options: IBuildReleaseArtifactsOptions = { targets: [...releaseTargets] },
 ): Promise<void> {
+  const documentFilePaths = options.documentFilePaths ?? defaultDocumentFilePaths;
+  const outputDirectoryPath = options.outputDirectoryPath ?? defaultOutputDirectoryPath;
+
+  await requireReleaseDocuments(documentFilePaths);
+
   const packageMetadata = await readPackageMetadata(packageManifestPath);
   const artifactName = readArtifactName(packageMetadata.name);
 
   await buildDevtoolsBundle();
-  await rm(artifactOutputDirectoryPath, { force: true, recursive: true });
-  await mkdir(artifactOutputDirectoryPath, { recursive: true });
+  await rm(outputDirectoryPath, { force: true, recursive: true });
+  await mkdir(outputDirectoryPath, { recursive: true });
 
   for (const target of options.targets) {
-    await buildReleaseArtifact({ artifactName, target, version: packageMetadata.version });
+    await buildReleaseArtifact({
+      artifactName,
+      documentFilePaths,
+      outputDirectoryPath,
+      target,
+      version: packageMetadata.version,
+    });
+  }
+}
+
+async function requireReleaseDocuments(documentFilePaths: readonly string[]): Promise<void> {
+  for (const documentFilePath of documentFilePaths) {
+    if (!(await Bun.file(documentFilePath).exists())) {
+      throw new Error(`Release document not found: ${documentFilePath}`);
+    }
   }
 }
 
 async function buildReleaseArtifact(options: IBuildReleaseArtifactOptions): Promise<void> {
   const platformName: IReleaseTargetDetails = targetPlatformNames[options.target];
   const artifactBaseName: string = `${options.artifactName}-v${options.version}-${platformName.archivePlatformName}`;
-  const stagingDirectoryPath: string = join(artifactOutputDirectoryPath, artifactBaseName);
-  const archiveFilePath: string = join(artifactOutputDirectoryPath, `${artifactBaseName}.tar.gz`);
+  const stagingDirectoryPath: string = join(options.outputDirectoryPath, artifactBaseName);
+  const archiveFilePath: string = join(options.outputDirectoryPath, `${artifactBaseName}.tar.gz`);
   const executableFilePath: string = join(stagingDirectoryPath, options.artifactName);
   const ldflags: string = `-X ${buildVersionVariablePath}=${options.version}`;
 
@@ -92,13 +118,11 @@ async function buildReleaseArtifact(options: IBuildReleaseArtifactOptions): Prom
     throw new Error(`go build exited with code ${exitCode} while building ${options.target}.`);
   }
 
-  await cp(readmeFilePath, join(stagingDirectoryPath, "README.md"));
-
-  if (await doesFileExist(licenseFilePath)) {
-    await cp(licenseFilePath, join(stagingDirectoryPath, "LICENSE"));
+  for (const documentFilePath of options.documentFilePaths) {
+    await Bun.write(join(stagingDirectoryPath, basename(documentFilePath)), Bun.file(documentFilePath));
   }
 
-  await createTarGzArchive(artifactBaseName, archiveFilePath);
+  await createTarGzArchive(options.outputDirectoryPath, artifactBaseName, archiveFilePath);
   await rm(stagingDirectoryPath, { force: true, recursive: true });
 
   console.log(`Built ${archiveFilePath}`);
@@ -191,9 +215,13 @@ function readArtifactName(packageName: string): string {
   return artifactName;
 }
 
-async function createTarGzArchive(stagingDirectoryName: string, archiveFilePath: string): Promise<void> {
+async function createTarGzArchive(
+  outputDirectoryPath: string,
+  stagingDirectoryName: string,
+  archiveFilePath: string,
+): Promise<void> {
   const tarProcess = Bun.spawn(["tar", "-czf", archiveFilePath, stagingDirectoryName], {
-    cwd: artifactOutputDirectoryPath,
+    cwd: outputDirectoryPath,
     stderr: "inherit",
     stdout: "inherit",
   });
@@ -201,15 +229,6 @@ async function createTarGzArchive(stagingDirectoryName: string, archiveFilePath:
 
   if (exitCode !== 0) {
     throw new Error(`tar exited with code ${exitCode} while creating ${archiveFilePath}.`);
-  }
-}
-
-async function doesFileExist(filePath: string): Promise<boolean> {
-  try {
-    await access(filePath);
-    return true;
-  } catch {
-    return false;
   }
 }
 
