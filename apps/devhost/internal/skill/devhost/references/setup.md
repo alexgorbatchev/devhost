@@ -1,6 +1,6 @@
 ---
 created_on: 2026-06-26 21:23
-last_modified: 2026-10-07 02:28
+last_modified: 2026-10-08 13:30
 status: current
 ---
 
@@ -35,7 +35,7 @@ _If discovery does not produce enough confidence to assign a command, port, heal
 
 ## 2. Base Domain Prompt
 
-Do not silently choose routed hostnames. Ask one short question before writing any `host = ...` fields. Recommend `*.localhost` as the default suggestion because it is the safest zero-config choice.
+The user chooses the routed hostnames. Ask one short question before writing any `host = ...` fields. Recommend `*.localhost` as the default suggestion because it is the safest zero-config choice.
 
 Use a prompt in this shape:
 
@@ -45,7 +45,7 @@ Use a prompt in this shape:
 
 - If there is one routed app, use the base domain directly for the primary service.
 - If there are multiple routed HTTP services, derive clear names from the base domain such as `api.<base-domain>` or `admin.<base-domain>` unless the user asked for path-based composition instead.
-- Do not assign hosts to non-routed background services.
+- Give `host` to routed services alone; background services stay without one.
 
 ---
 
@@ -63,15 +63,15 @@ When writing the finalized manifest:
 Worktree support is enabled by default. When configuring repository services or selecting a checkout:
 
 1. Run `git -C <service-cwd> worktree list --porcelain` for each service repository. Require Git on `PATH` and keep configured directories in one checkout per repository.
-2. Omit `[worktrees]` to keep checkout selection enabled. An empty table or `enabled = true` also enables it. Set `[worktrees].enabled = false` only to disable discovery and saved-selection restore; services then use their configured directories. Do not invent per-service selections, a branch setting, or a remember option.
+2. Omit `[worktrees]` to keep checkout selection enabled. An empty table or `enabled = true` also enables it. Set `[worktrees].enabled = false` only to disable discovery and saved-selection restore; services then use their configured directories. `enabled` is the only key of that table: a selection covers a whole repository and is saved automatically.
 3. Enable `[devtools.status]` for the Services picker. Select the repository branch button, inspect the target directory preview, and use **Switch and restart**. All services in that repository move together, retaining their directory offsets; other repositories and non-Git services stay independent.
-4. Explain that the saved local choice is scoped to manifest path and repository and survives devhost restarts. Before the first choice, devhost uses the checkout containing the configured cwd values. Do not edit the manifest when changing checkout; its original commands and configuration remain authoritative.
-5. If the saved checkout is unavailable or a group launch fails, keep the group stopped. Refresh a routed app to access Services recovery, then choose an available checkout, **Retry** after fixing the cause, or **Return to configured checkout**. Do not silently fall back or claim a selected checkout is running while an error is shown. Refresh the app after success.
-6. If a repository contains a `managed = false` service, report that switches are blocked. Do not claim devhost can relocate an externally owned process. Existing terminal sessions keep their launch directories; resume a paused queue to launch an agent in the selected checkout.
+4. Explain that the saved local choice is scoped to manifest path and repository and survives devhost restarts. Before the first choice, devhost uses the checkout containing the configured cwd values. Leave the manifest as it is when changing checkout; its original commands and configuration remain authoritative.
+5. If the saved checkout is unavailable or a group launch fails, keep the group stopped. Refresh a routed app to access Services recovery, then choose an available checkout, **Retry** after fixing the cause, or **Return to configured checkout**. While an error is shown, report the group as stopped and the selected checkout as unavailable. Refresh the app after success.
+6. If a repository contains a `managed = false` service, report that switches are blocked. An externally owned process stays where its owner runs it. Existing terminal sessions keep their launch directories; resume a paused queue to launch an agent in the selected checkout.
 
-Relative watch paths use the selected service cwd. Absolute watch paths remain absolute. New browser editor and annotation launches remap configured paths inside the selected repository; directories outside it remain configured. The selected checkout's manifest is never loaded.
+Relative watch paths use the selected service cwd. Absolute watch paths remain absolute. New browser editor and annotation launches remap configured paths inside the selected repository; directories outside it remain configured. devhost keeps the original manifest loaded, whichever checkout is selected.
 
-Open the checkout picker or press **Refresh** to discover worktree additions and deletions. If the running checkout disappears, refresh stops only its repository group and blocks new tool launches there. Retain the missing selection and choose an available checkout for recovery; do not silently substitute another checkout.
+Open the checkout picker or press **Refresh** to discover worktree additions and deletions. If the running checkout disappears, refresh stops only its repository group and blocks new tool launches there. Retain the missing selection, and have the user choose an available checkout for recovery.
 
 ## 5. Managed Caddy Startup
 
@@ -87,7 +87,7 @@ Stop the shared proxy manually with `devhost caddy stop --manifest ./devhost.tom
 
 For manual recovery, restart an individual service to reuse its assigned port. If an automatic port is occupied, choose **Restart stack with new ports** in Services or the recovery overlay. This relaunches all managed services using the last accepted manifest, refreshes automatic ports and their injected references, and retains fixed ports, selected checkouts, control listeners, and terminal sessions. External processes keep running. Check the response and retained logs for launch, routing, or restoration failures before claiming recovery, then retry the action after addressing the failure. A fixed-port conflict requires freeing the port or changing its manifest setting.
 
-Save service changes to the original root manifest or an included manifest while devhost is running. Files added or deleted under an `includes` glob also change the stack. Wait for `configuration reloaded`; invalid, conflicting, or restart-required edits print `configuration reload rejected` and do not apply.
+Save service changes to the original root manifest or an included manifest while devhost is running. Files added or deleted under an `includes` glob also change the stack. Wait for `configuration reloaded`; invalid, conflicting, or restart-required edits print `configuration reload rejected` and leave the running stack unchanged.
 
 Keep stack `name`, `killZombies`, Caddy settings, devtools settings, annotation settings, and `[worktrees].enabled` unchanged in a live edit. Stop and restart devhost to apply those settings. An edit changing one of them rejects its service changes as well.
 
@@ -101,8 +101,8 @@ Use an explicitly provisioned dedicated browser profile with original React Deve
 
 1. Set `[devtools.browser].endpoint` to the exact browser loopback HTTP root with a nonzero port, or its complete loopback browser WebSocket URL. An empty endpoint disables native access. No default port is chosen; DNS names, non-loopback addresses, credentials, redirects, query/fragment values and page WebSockets are rejected. The optional `reactExtensionId` defaults to the official Chrome Web Store ID; an original unpacked extension needs its actual ID.
 2. Keep `[devtools.externalToolbars].enabled = true`, visit the actual routed host, and choose **Connect browser control** directly in the dock. The same button reads **Disconnect browser control** while connecting or connected and remains operable. Read the full setup/status/observation/window/loss/error information in the dock and use **Copy** for errors. A uniquely bound mounted host and configured extension are required for the separate **React DevTools** action. Choose it to open native DevTools, then select the upstream Components or Profiler tab. Devhost leaves native panel selection to the user. This connection operation has no popup; Escape does not invoke Disconnect or window access.
-3. Treat control connection, host/extension detection and native window presence as separate observations. A hook alone, devhost-only tree or unrelated page does not qualify. Missing, ambiguous, unsupported or lost sessions remain unavailable; do not fabricate an installed inspector or live backend.
+3. Treat control connection, host/extension detection and native window presence as separate observations. A hook alone, devhost-only tree or unrelated page does not qualify. Missing, ambiguous, unsupported or lost sessions remain unavailable; report them as unavailable.
 4. Choose **Disconnect browser control** to release devhost resources while leaving native windows, tabs and profile intact. Collapse hides the command and full diagnostics while preserving its connection, stack health and compact browser state/error/loss cue; expand to restore the command/readout. Disabling aggregation or actual App-root unmount releases owned control resources. DOM removal alone is not React unmount. Reconnect explicitly after a control failure or stack restart; it fetches current instance configuration.
-5. Preserve the user-owned native window across connect/disconnect. Native manual close/reopen showed Loading/empty trees in isolated Chrome 147/154 probes; controller reconnect does not certify inspection recovery or clear observed native-session loss for that mounted App lifetime. Do not add an automatic reload or a manual-window repair step as a substitute.
+5. Preserve the user-owned native window across connect/disconnect. Native manual close/reopen showed Loading/empty trees in isolated Chrome 147/154 probes; controller reconnect does not certify inspection recovery or clear observed native-session loss for that mounted App lifetime. Report that loss as observed, and leave reloading the app to the user.
 
-Requests remain token-free for trusted local development. The Go runtime retains the endpoint privately and rechecks effective managed Caddy scheme/port, current root-route owner, service-path precedence and exact instance/document URL identity. These checks constrain targeting; they do not authenticate same-origin scripts or local callers able to forge headers. Foreign or ambiguous documents cannot control the browser. Escaped matcher literals and repeated-slash registrations withhold native access rather than approximate Caddy matching. Preserve the recorded native-popup focus failure and unverified toolbar-wide arrow-key navigation separately from the direct command; do not label them repaired. See the [native architecture and support boundaries](https://alexgorbatchev.github.io/devhost/architecture/external-devtools/#native-react-devtools).
+Requests remain token-free for trusted local development. The Go runtime retains the endpoint privately and rechecks effective managed Caddy scheme/port, current root-route owner, service-path precedence and exact instance/document URL identity. These checks constrain targeting alone: same-origin scripts and local callers able to forge headers remain unauthenticated. Foreign or ambiguous documents cannot control the browser. Escaped matcher literals and repeated-slash registrations withhold native access rather than approximate Caddy matching. Preserve the recorded native-popup focus failure and unverified toolbar-wide arrow-key navigation separately from the direct command, as open limitations. See the [native architecture and support boundaries](https://alexgorbatchev.github.io/devhost/architecture/external-devtools/#native-react-devtools).
