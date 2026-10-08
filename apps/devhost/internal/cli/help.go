@@ -3,6 +3,8 @@ package cli
 import (
 	cobrahelptree "github.com/alexgorbatchev/cobra-help-tree/v2"
 	"github.com/spf13/cobra"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/skill"
 )
 
 const (
@@ -20,7 +22,10 @@ var manifestEnvironmentSpec = cobrahelptree.EnvSpec{
 // for the whole command hierarchy, and records in result that help was printed
 // so the caller does not go on to run a command.
 func installHelp(rootCommand *cobra.Command, result *CommandLineArguments) error {
-	if err := cobrahelptree.SetupWithOptions(rootCommand, cobrahelptree.HelpOptions{Catalog: createHelpCatalog()}); err != nil {
+	// Skill adds the skill command and opens every agent help screen with an alert
+	// that sends the agent to it.
+	options := cobrahelptree.HelpOptions{Catalog: createHelpCatalog(), Skill: skill.Document()}
+	if err := cobrahelptree.SetupWithOptions(rootCommand, options); err != nil {
 		return err
 	}
 

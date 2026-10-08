@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-07 03:45
+last_modified: 2026-10-08 11:18
 status: current
 ---
 
@@ -72,7 +72,7 @@ Routing guides capture native VHS terminal sessions and verify real HTTP respons
 
 Guide rendering also needs `curl` and `setsid`; Docker needs a working local daemon and permission to pull the tiny public image. Rendering runs serially because guides use `demo.localhost`. Source files are `createGuideTerminalScene.ts`, `createGuideTape.ts`, `recordGuideTerminal.ts`, `recordReactHighlight.ts`, `recordGuides.ts`, and `publishGuideDemo.ts`. Native publication tests use FFmpeg/ffprobe, which CI installs before `just check`.
 
-Review the new media, transcript, and Markdown changes before committing. A push of docs assets to `main` uses `.github/workflows/docs.yml` to deploy them. Agent consumers can follow the HTTPS guide links in `skills/devhost/SKILL.md` and read prose/transcripts without loading binary media.
+Review the new media, transcript, and Markdown changes before committing. A push of docs assets to `main` uses `.github/workflows/docs.yml` to deploy them. Agent consumers can follow the HTTPS guide links in `apps/devhost/internal/skill/devhost/SKILL.md` and read prose/transcripts without loading binary media.
 
 ## Editing the sequence
 

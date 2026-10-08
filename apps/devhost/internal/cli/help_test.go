@@ -27,6 +27,7 @@ func TestParseCommandLineArgumentsRendersTreeHelp(t *testing.T) {
 				"├─ completion",
 				"│  ├─ bash",
 				"│  ╰─ zsh",
+				"├─ skill",
 				"├─ start",
 				"╰─ stop",
 				"--version",

@@ -1,12 +1,55 @@
 ---
 name: devhost
-description: Use anytime devhost.toml is involved, including reading, writing, making changes, bootstrapping, and running dev host. Start with repository discovery to identify runnable services, commands, ports, health checks, and the correct manifest location. Propose or update configurations, including routing and annotation agent commands. If first drafting, ask the user to choose a base domain with *.localhost as the default suggestion.
+description: Use when running devhost or when reading, writing, or changing a devhost.toml manifest, including bootstrapping one for a repository and operating its stack or the shared Caddy proxy.
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-08 07:12
+  last_modified: 2026-10-08 11:17
   status: current
 ---
+
+## Command Line
+
+Run `devhost` with `AGENT=1`: help becomes `key: value` text, and a failed command ends with one `ERR:` line that holds the whole error. Without it, a failure ends with an `[ERROR]` line and, where the next step is known, an `[INFO]` hint. Failure lines and warnings (`WARN:`, or `[WARN]` without `AGENT=1`) go to stderr. Exit code `0` means success and `1` a failure. `devhost start` ended by a signal exits with `128` plus the signal number: `130` after Ctrl-C, `143` after SIGTERM.
+
+### Commands
+
+- `devhost start`: start every service in the manifest behind its HTTPS hostnames and stay in the foreground. After startup stdout carries one `service-name: url` line per routed service, then log lines prefixed `[stack-name]` for devhost itself and `[service-name]` for each service. Routes are removed when it exits. Start the shared Caddy first.
+- `devhost stop`: stop the running stack of the manifest. It sends SIGTERM to the stack's processes, waits up to 15 seconds, force-kills what remains, and reports each step on stdout. With no stack running it says so and exits `0`.
+- `devhost caddy download`: download the Caddy server devhost manages. Run it once on a machine that has no `caddy` on `PATH`.
+- `devhost caddy privileged-ports`: on Linux, let the managed Caddy listen on ports 80 and 443 without root. It downloads Caddy first when needed and runs `sudo setcap` once. On macOS it reports that no setup is needed.
+- `devhost caddy start`: start the shared Caddy server in the background. Every stack on the machine routes through it.
+- `devhost caddy stop`: stop the shared Caddy server.
+- `devhost caddy trust`: install Caddy's root certificate into the system trust store, so browsers accept the HTTPS hostnames. It asks for the user's password and needs the shared Caddy running.
+- `devhost caddy print-root-cert`: print Caddy's root certificate to stdout. The certificate exists after the first `devhost caddy start`.
+- `devhost caddy trust-remote <ssh-target>`: on macOS, trust the Caddy certificate of another machine. `<ssh-target>` is an SSH host with `devhost` on its `PATH`, such as `devbox` or `user@devbox`. It prints the certificate's SHA-256 fingerprint and installs the certificate into the System keychain.
+- `devhost skill`: print this guide, byte for byte. Takes no arguments.
+- `devhost help [command]`: print the help of a command, the screen `--help` prints for it.
+- `devhost completion bash`, `devhost completion fish`, `devhost completion powershell`, `devhost completion zsh`: print a completion script for that shell on stdout. `--no-descriptions` (bool) leaves the command descriptions out of the completions.
+
+`devhost`, `devhost caddy`, and `devhost completion` are groups. Run one without a command to print its help, which lists everything below it.
+
+### Flags and Environment
+
+- `--manifest <path>`, `-m <path>` (string): the `devhost.toml` to use; the file must have that name. Accepted by `devhost start`, `devhost stop`, `devhost caddy start`, `devhost caddy stop`, and `devhost caddy trust`. `DEVHOST_MANIFEST` supplies the same path, and the flag wins when both are set. Without either, `devhost start` and `devhost stop` use the nearest `devhost.toml` in the current directory or a parent, looking no higher than the directory that holds `.git`, and the `caddy` commands use the settings of the stacks already running, or the defaults.
+- `--debug`, `-d` (bool): `devhost start` only. Show Caddy's own output while the stack runs.
+- `--idle-timeout <duration>`, `-i <duration>` (string): `devhost start` only. Stop the stack after this long without traffic, written as a duration such as `30s` or `1m`. `DEVHOST_IDLE_TIMEOUT` supplies the same value, and the flag wins when both are set. Either one takes precedence over `[devtools].idleTimeout` in the manifest.
+- `--help`, `-h` (bool): print the help of the command instead of running it. Accepted by every command.
+- `--version`, `-v` (bool): `devhost` only. Print the version alone on one line.
+
+### First Run
+
+```bash
+devhost caddy download          # once, on a machine with no caddy on PATH
+devhost caddy privileged-ports  # once, on Linux
+devhost caddy start
+devhost caddy trust             # once per machine
+devhost start
+```
+
+Stop the stack with `devhost stop`, a shutdown signal, or an idle timeout. The shared Caddy keeps running until `devhost caddy stop`.
+
+When this guide is printed by `devhost skill`, the `references/` files it links to are at <https://github.com/alexgorbatchev/devhost/tree/main/apps/devhost/internal/skill/devhost/references>.
 
 ## Setup and Discovery
 
@@ -27,10 +70,6 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 ### Top-Level Configurations
 
 - **Managed Caddy lifecycle**: Start the shared proxy with `devhost caddy start --manifest ./devhost.toml`; stop it manually with `devhost caddy stop --manifest ./devhost.toml`. Use matching custom management settings. Read [Setup](references/setup.md#5-managed-caddy-startup) before changing shared settings or starting after all stacks stop; follow its active HTTP votes, captured retirement, and empty-runtime rules.
-
-- **Shell completion**: Print a completion script to stdout with `devhost completion <shell>`, where `<shell>` is `bash`, `zsh`, `fish`, or `powershell`. Add `--no-descriptions` to complete command names alone.
-
-- **Agent output**: Run `devhost` with `AGENT=1` to read compact `key: value` help and to get the whole error of a failed command on one `ERR:` line on stderr; a warning is a `WARN:` line. The exit code is `1` for a failure in either mode.
 
 - **killZombies Option**: Optional boolean (default `true`) at the top level of `devhost.toml`. When `true`, devhost automatically finds, terminates, and reclaims zombie processes claiming the same ports or hosts from the same manifest path. Set `killZombies = false` to disable automatic recovery and report a standard collision error instead.
 

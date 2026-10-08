@@ -19,11 +19,12 @@ type Kind string
 
 const (
 	KindStart Kind = "start"
-	// KindHelp, KindVersion, and KindCompletion mean the requested output has
-	// already been written to stdout.
+	// KindHelp, KindVersion, KindCompletion, and KindSkill mean the requested
+	// output has already been written to stdout.
 	KindHelp               Kind = "help"
 	KindVersion            Kind = "version"
 	KindCompletion         Kind = "completion"
+	KindSkill              Kind = "skill"
 	KindStop               Kind = "stop"
 	KindCaddyLifecycle     Kind = "caddy-lifecycle"
 	KindCaddyPrintRootCert Kind = "caddy-print-root-cert"
@@ -53,6 +54,9 @@ const (
 	// cobraCompletionCommandName is the name cobra gives the command it adds to the
 	// root for printing shell completion scripts. Cobra does not export it.
 	cobraCompletionCommandName = "completion"
+	// skillCommandName is the name cobra-help-tree gives the command it adds to the
+	// root for printing the skill. The library does not export it.
+	skillCommandName = "skill"
 )
 
 type CommandLineArguments struct {
@@ -65,23 +69,17 @@ type CommandLineArguments struct {
 }
 
 // ParseCommandLineArguments resolves rawArguments into the command to run. Help
-// screens, the version, and shell completion output are written to stdout and
-// reported as KindHelp, KindVersion, and KindCompletion; stderr receives cobra's
-// diagnostics. A command line that cannot be run is returned as a
-// *cliout.Failure whose hint names the help screen of the command that
-// rejected it.
+// screens, the version, shell completion output, and the skill are written to
+// stdout and reported as KindHelp, KindVersion, KindCompletion, and KindSkill;
+// stderr receives cobra's diagnostics. A command line that cannot be run is
+// returned as a *cliout.Failure whose hint names the help screen of the command
+// that rejected it.
 func ParseCommandLineArguments(rawArguments []string, stdout io.Writer, stderr io.Writer) (CommandLineArguments, error) {
 	result := CommandLineArguments{}
 
-	rootDefinition := createRootCommand(&result)
-	rootDefinition.RawArgs = rawArguments
-	rootCommand, err := rootDefinition.ToCobraE()
+	rootCommand, err := newRootCommand(&result, rawArguments)
 	if err != nil {
-		return CommandLineArguments{}, fmt.Errorf("building command line: %w", err)
-	}
-
-	if err := installHelp(rootCommand, &result); err != nil {
-		return CommandLineArguments{}, fmt.Errorf("installing help screens: %w", err)
+		return CommandLineArguments{}, err
 	}
 
 	rootCommand.SetVersionTemplate(versionTemplate)
@@ -106,7 +104,36 @@ func ParseCommandLineArguments(rawArguments []string, stdout io.Writer, stderr i
 		return CommandLineArguments{Kind: KindCompletion}, nil
 	}
 
+	if result.Kind == "" && printedSkill(executedCommand) {
+		return CommandLineArguments{Kind: KindSkill}, nil
+	}
+
 	return result, nil
+}
+
+// newRootCommand builds the command tree devhost executes: its own commands,
+// which record what to run in result, and the help screens with the skill
+// command they add. The tests read the interface off the same tree.
+func newRootCommand(result *CommandLineArguments, rawArguments []string) (*cobra.Command, error) {
+	rootDefinition := createRootCommand(result)
+	rootDefinition.RawArgs = rawArguments
+	rootCommand, err := rootDefinition.ToCobraE()
+	if err != nil {
+		return nil, fmt.Errorf("building command line: %w", err)
+	}
+
+	if err := installHelp(rootCommand, result); err != nil {
+		return nil, fmt.Errorf("installing help screens: %w", err)
+	}
+
+	return rootCommand, nil
+}
+
+// printedSkill reports whether the skill command ran. The help library adds it
+// to the root and prints the guide itself, so like the completion commands it
+// runs no devhost command function that could record it.
+func printedSkill(command *cobra.Command) bool {
+	return command.Name() == skillCommandName && command.Parent() == command.Root()
 }
 
 // ranShellCompletion reports whether cobra ran one of the completion commands it
