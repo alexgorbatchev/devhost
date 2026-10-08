@@ -41,7 +41,7 @@ dev-bootstrap $dotfiles_dir=(env_var("HOME") / ".dotfiles"):
 
 # Start the root devhost stack locally
 dev: devhost::build-devtools-bundle
-    DEVHOST_DEV_SOURCE_DIR=. apps/devhost/bin/devhost start --manifest devhost.toml
+    DEVHOST_DEV_SOURCE_DIR=. apps/devhost/scripts/runFromSource.sh start --manifest devhost.toml
 
 # Clean all node_modules directories across the repository
 clean:

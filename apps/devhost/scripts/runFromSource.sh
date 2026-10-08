@@ -5,14 +5,14 @@ set -euo pipefail
 script_path="${BASH_SOURCE[0]}"
 script_directory_path="$(cd "$(dirname "$script_path")" && pwd)"
 package_root_path="$(cd "$script_directory_path/.." && pwd)"
-# Apart from dist/devhost, which `just devhost compile` writes with a version stamp
+# Apart from bin/devhost, which `just devhost compile` writes with a version stamp
 # this build does not carry: sharing one path would make each build replace the other.
-source_binary_path="$package_root_path/dist/shim/devhost"
+source_binary_path="$package_root_path/bin/source/devhost"
 
 # go build decides whether the binary is stale: it rebuilds after a change to a Go
 # source, an embedded file, or the module files, and keeps a current binary.
-# -C changes directory for the build alone, so devhost starts in the directory the
-# shim was called from and relative paths in its arguments keep their meaning.
+# -C changes directory for the build alone, so devhost starts in the directory this
+# script was called from and relative paths in its arguments keep their meaning.
 go build -C "$package_root_path" -o "$source_binary_path" ./cmd/devhost
 
 exec "$source_binary_path" "$@"

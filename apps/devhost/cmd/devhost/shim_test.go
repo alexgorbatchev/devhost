@@ -9,6 +9,9 @@ import (
 	"testing"
 )
 
+// shimPath is where the shim sits in the app directory, and so in a fixture.
+var shimPath = filepath.Join("scripts", "runFromSource.sh")
+
 // shimFixtureProgram stands in for devhost: it reports the file it embeds, the
 // directory it runs in, and the arguments it received.
 const shimFixtureProgram = `package main
@@ -59,7 +62,7 @@ func TestShimLeavesTheCompiledBinaryInPlace(t *testing.T) {
 	const compiledBinary = "the binary `just devhost compile` wrote"
 
 	checkoutPath := createShimFixture(t)
-	compiledBinaryPath := filepath.Join(checkoutPath, "dist", "devhost")
+	compiledBinaryPath := filepath.Join(checkoutPath, "bin", "devhost")
 	writeShimFixtureFile(t, compiledBinaryPath, compiledBinary, 0o755)
 
 	runShim(t, checkoutPath, checkoutPath)
@@ -106,13 +109,13 @@ func TestShimRunsInTheCallingDirectory(t *testing.T) {
 func createShimFixture(t *testing.T) string {
 	t.Helper()
 
-	shim, err := os.ReadFile(filepath.Join("..", "..", "bin", "devhost"))
+	shim, err := os.ReadFile(filepath.Join("..", "..", shimPath))
 	if err != nil {
 		t.Fatalf("read the shim: %v", err)
 	}
 
 	checkoutPath := t.TempDir()
-	writeShimFixtureFile(t, filepath.Join(checkoutPath, "bin", "devhost"), string(shim), 0o755)
+	writeShimFixtureFile(t, filepath.Join(checkoutPath, shimPath), string(shim), 0o755)
 	writeShimFixtureFile(t, filepath.Join(checkoutPath, "go.mod"), "module shimfixture\n\ngo 1.26\n", 0o644)
 	writeShimFixtureFile(t, filepath.Join(checkoutPath, "cmd", "devhost", "main.go"), shimFixtureProgram, 0o644)
 	writeShimFixtureFile(t, filepath.Join(checkoutPath, "cmd", "devhost", "asset.txt"), "first\n", 0o644)
@@ -136,7 +139,7 @@ func runShim(t *testing.T, checkoutPath string, callerPath string, arguments ...
 	t.Helper()
 
 	var stderr bytes.Buffer
-	command := exec.CommandContext(t.Context(), filepath.Join(checkoutPath, "bin", "devhost"), arguments...)
+	command := exec.CommandContext(t.Context(), filepath.Join(checkoutPath, shimPath), arguments...)
 	command.Dir = callerPath
 	command.Stderr = &stderr
 

@@ -78,7 +78,7 @@ export async function recordDemo(signal: AbortSignal, selectedScene: string): Pr
     await runCommand([
       "ln",
       "-s",
-      join(repositoryPath, "apps/devhost/dist/devhost"),
+      join(repositoryPath, "apps/devhost/bin/devhost"),
       join(runtime.directoryPath, "bin/devhost"),
     ]);
     await prepareDemoCaddy(runtime, signal);

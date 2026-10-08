@@ -15,7 +15,7 @@ export async function recordGuideTerminal(repositoryPath: string, slug: string, 
   const scene = createGuideTerminalScene(slug, await allocateGuidePort());
   const runtime = await createDemoRuntime(repositoryPath, "demo.localhost");
   console.log(`Guide ${slug}: ${runtime.directoryPath}`);
-  await symlink(join(repositoryPath, "apps/devhost/dist/devhost"), join(runtime.directoryPath, "bin/devhost"));
+  await symlink(join(repositoryPath, "apps/devhost/bin/devhost"), join(runtime.directoryPath, "bin/devhost"));
   if (scene.isPrivateCaddy) {
     runtime.env.DEVHOST_STATE_DIR = join(runtime.directoryPath, "state");
     runtime.adminAddress = `127.0.0.1:${await allocateGuidePort()}`;

@@ -30,7 +30,7 @@ To build a native executable for the current platform:
 
 ```sh
 just devhost compile
-./apps/devhost/dist/devhost --version
+./apps/devhost/bin/devhost --version
 ```
 
 This first refreshes the embedded injected devtools assets under `internal/devtools/dist/`, then runs `go build` with linker flags that embed the current `apps/devhost/metadata.json` version into `devhost --version`.
