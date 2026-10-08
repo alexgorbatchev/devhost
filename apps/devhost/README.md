@@ -54,6 +54,20 @@ devhost completion fish | source    # fish
 
 To keep completion across sessions, write the script to the directory your shell loads completions from; `devhost completion <shell> --help` names that directory for each shell. Add `--no-descriptions` to complete command names without their descriptions.
 
+### Output for agents and scripts
+
+Set `AGENT=1` (`true` and `yes` work too) when an agent or a script reads the output. Help screens become compact `key: value` text without tree glyphs or column padding, and a command that fails ends with one `ERR:` line that carries the whole error:
+
+```console
+$ devhost star
+[ERROR] unknown command "star" for "devhost"; did you mean "start" or "stop"?
+[INFO] Run "devhost --help" for usage.
+$ AGENT=1 devhost star
+ERR: unknown command "star" for "devhost"; did you mean "start" or "stop"?
+```
+
+Without the variable, a failure ends with an `[ERROR]` line and, where `devhost` knows the next step, an `[INFO]` hint. Warnings are split the same way: `[WARN]` for people and `WARN:` for agents. These lines go to stderr, and the exit code is the same in both modes. Stack logs, `--version`, completion scripts, and `devhost caddy print-root-cert` print the same text in both.
+
 ### Requirements
 
 - either:

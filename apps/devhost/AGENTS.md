@@ -112,6 +112,7 @@ The token-free native browser WebSocket requires the exact current Origin/Host, 
 - `scripts/runFromSource.sh` — local shell shim that builds and launches the Go runtime for workspace recipes and source-checkout use
 - `bin/` — ignored build output: `bin/devhost` from `just devhost compile`, `bin/source/devhost` from the shim
 - `internal/app/` — top-level Go CLI dispatch
+- `internal/cliout/` — the failure and warning lines devhost prints outside its logs, in the form for people or for agents (`AGENT=1`)
 - `internal/cli/` — command definitions (boa on top of cobra) and help screens; help is rendered by `cobra-help-tree/v2`, which documents positional arguments, environment variables, and quickstart examples from the catalog in `internal/cli/help.go` because cobra has no fields for them. Long descriptions print verbatim, so keep their lines at 60 columns or less.
 - `internal/manifest/` — manifest discovery, parsing, validation, and defaults
 - `internal/services/` — child process orchestration, health checks, port resolution, and cleanup
@@ -164,6 +165,8 @@ The token-free native browser WebSocket requires the exact current Origin/Host, 
 - Generated managed Caddyfiles must discard the default Caddy runtime logger so background Caddy stderr never leaks into default stack output.
 - Do not print successful Caddy reload chatter during default `devhost start` runs; only print it for `devhost start --debug` or explicit `devhost caddy ...` commands.
 - Surface Caddy output on failure, and surface successful reload output only for `devhost start --debug` or explicit `devhost caddy ...` commands.
+- Report the failure that ends a command with `cliout.WriteFailure`, and format a warning written outside the logs with `cliout.Warning`; do not hand-write a `failed:` or `WARNING:` prefix for either. A person gets `[ERROR]`, an optional `[INFO]` hint, and `[WARN]`; under `AGENT=1` an agent gets `ERR:` with the whole error and `WARN:`. Wrap an error in `cliout.Failure` where the command line is known (`internal/cli`, `internal/app`) to give a person a hint, or a summary when the error repeats itself or names internals. Log lines, warnings inside them included, keep their `[label]` prefix and their text in both modes.
+- A test that asserts on a failure or warning line sets `AGENT` itself with `t.Setenv`, because the line depends on it and the test may run under an agent.
 
 ## Devtools UI boundary
 

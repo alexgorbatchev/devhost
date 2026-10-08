@@ -1,8 +1,11 @@
 package cli
 
 import (
+	"errors"
 	"io"
 	"testing"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 )
 
 func TestParseCommandLineArguments(t *testing.T) {
@@ -195,9 +198,19 @@ func TestParseCommandLineArguments(t *testing.T) {
 			wantError: "unknown command \"skill\" for \"devhost\"",
 		},
 		{
-			name:      "rejects unsupported caddy action",
+			name:      "suggests the caddy action an unsupported one resembles",
 			rawArgs:   []string{"caddy", "restart"},
-			wantError: "unknown command \"restart\" for \"devhost caddy\"",
+			wantError: "unknown command \"restart\" for \"devhost caddy\"; did you mean \"start\"?",
+		},
+		{
+			name:      "suggests every root command a mistyped one resembles",
+			rawArgs:   []string{"star"},
+			wantError: "unknown command \"star\" for \"devhost\"; did you mean \"start\" or \"stop\"?",
+		},
+		{
+			name:      "suggests the commands an abbreviation begins",
+			rawArgs:   []string{"caddy", "tru"},
+			wantError: "unknown command \"tru\" for \"devhost caddy\"; did you mean \"trust\" or \"trust-remote\"?",
 		},
 		{
 			name:      "rejects extra lifecycle arguments",
@@ -291,6 +304,41 @@ func TestParseCommandLineArguments(t *testing.T) {
 
 			if *got.ManifestPath != *tc.want.ManifestPath {
 				t.Fatalf("ParseCommandLineArguments(%q) manifestPath = %q, want %q", tc.rawArgs, *got.ManifestPath, *tc.want.ManifestPath)
+			}
+		})
+	}
+}
+
+func TestParseCommandLineArgumentsPointsAtTheHelpOfTheCommandThatFailed(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		rawArgs  []string
+		wantHint string
+	}{
+		{name: "unknown root command", rawArgs: []string{"bun"}, wantHint: `Run "devhost --help" for usage.`},
+		{name: "unknown command in a group", rawArgs: []string{"caddy", "restart"}, wantHint: `Run "devhost caddy --help" for usage.`},
+		{name: "unknown option", rawArgs: []string{"start", "--bogus"}, wantHint: `Run "devhost start --help" for usage.`},
+		{name: "option without its value", rawArgs: []string{"stop", "--manifest"}, wantHint: `Run "devhost stop --help" for usage.`},
+		{name: "missing argument", rawArgs: []string{"caddy", "trust-remote"}, wantHint: `Run "devhost caddy trust-remote --help" for usage.`},
+		{name: "rejected option value", rawArgs: []string{"start", "--manifest", "./other.toml"}, wantHint: `Run "devhost start --help" for usage.`},
+	}
+
+	for _, tt := range tests {
+		tc := tt
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := ParseCommandLineArguments(tc.rawArgs, io.Discard, io.Discard)
+
+			var failure *cliout.Failure
+			if !errors.As(err, &failure) {
+				t.Fatalf("ParseCommandLineArguments(%q) error = %v, want a failure with a hint", tc.rawArgs, err)
+			}
+
+			if failure.Hint != tc.wantHint {
+				t.Fatalf("ParseCommandLineArguments(%q) hint = %q, want %q", tc.rawArgs, failure.Hint, tc.wantHint)
 			}
 		})
 	}

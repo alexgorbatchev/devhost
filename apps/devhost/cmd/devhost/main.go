@@ -5,12 +5,13 @@ import (
 	"os"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/app"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 )
 
 func main() {
 	cwd, err := os.Getwd()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed: read current working directory: %v\n", err)
+		cliout.WriteFailure(os.Stderr, fmt.Errorf("read current working directory: %w", err))
 		os.Exit(1)
 	}
 
