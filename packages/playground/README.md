@@ -25,6 +25,12 @@ Open the playground host configured by `DEVHOST_PLAYGROUND`. The overlay include
 - **Query demo** (`/query`): Fetch `/api/hello` through TanStack Query. Click **Refetch query** to repeat the request and inspect `["playground", "hello"]` in Query devtools. Navigate back to the API tester to see the query become inactive.
 - Open **Router** and switch between the pages to inspect the route matches and current location.
 
+## Design prototypes
+
+The second navigation row opens the design references from `packages/design/references/` on the playground host: the devtools prototype, the docs prototype, and the design system. Each is read from disk per request, so reload the page after editing one.
+
+The devtools prototype draws its own mock toolbar, so on the playground host it appears together with the real injected overlay.
+
 Both devtools remain mounted across route changes and are included in development and production playground runs.
 
 ## Project layout
