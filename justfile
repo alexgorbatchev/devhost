@@ -4,6 +4,19 @@ mod ui 'packages/devhost-ui/justfile'
 mod docs 'packages/docs/justfile'
 mod demo 'packages/devhost-ui/scripts/demo/justfile'
 
+# Run devhost from source in the calling directory
+run *args: (devhost::run args)
+
+# Run devhost from source in the calling directory with agent-facing output
+run-ai *args: (devhost::run-ai args)
+
+# Run every workspace test suite
+test:
+    just devhost test
+    just design test
+    just ui test
+    just docs test
+
 # Run full repo formatting, policy, and package checks
 check:
     @echo 'Running formatting and policy checks...'

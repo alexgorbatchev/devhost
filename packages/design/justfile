@@ -25,10 +25,13 @@ system:
 system:
     xdg-open references/design-system.html
 
-# Check package-local validations (TypeScript and unit tests)
-check:
-    bun tsc --noEmit -p tsconfig.json
+# Run unit tests
+test:
     bun test
+
+# Check package-local validations (TypeScript and unit tests)
+check: && test
+    bun tsc --noEmit -p tsconfig.json
 
 # Regenerate tokens.css from src/constants.ts
 write-tokens:
