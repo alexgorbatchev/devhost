@@ -23,7 +23,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 	}
 
 	switch arguments.Kind {
-	case cli.KindHelp, cli.KindVersion:
+	case cli.KindHelp, cli.KindVersion, cli.KindCompletion:
 		return 0
 	case cli.KindStop:
 		manifestPath := arguments.ManifestPath

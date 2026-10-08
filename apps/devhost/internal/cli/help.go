@@ -20,10 +20,7 @@ var manifestEnvironmentSpec = cobrahelptree.EnvSpec{
 // for the whole command hierarchy, and records in result that help was printed
 // so the caller does not go on to run a command.
 func installHelp(rootCommand *cobra.Command, result *CommandLineArguments) error {
-	if err := cobrahelptree.SetupWithOptions(rootCommand, cobrahelptree.HelpOptions{
-		Catalog: createHelpCatalog(),
-		Tree:    cobrahelptree.TreeOptions{HideGeneratedCommands: true},
-	}); err != nil {
+	if err := cobrahelptree.SetupWithOptions(rootCommand, cobrahelptree.HelpOptions{Catalog: createHelpCatalog()}); err != nil {
 		return err
 	}
 

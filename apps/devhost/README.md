@@ -42,6 +42,18 @@ To print the CLI build version:
 devhost --version
 ```
 
+### Shell completion
+
+`devhost completion <shell>` prints a completion script for `bash`, `zsh`, `fish`, or `powershell`. To load it in the current session:
+
+```bash
+source <(devhost completion bash)   # bash, with the bash-completion package installed
+source <(devhost completion zsh)    # zsh, after compinit
+devhost completion fish | source    # fish
+```
+
+To keep completion across sessions, write the script to the directory your shell loads completions from; `devhost completion <shell> --help` names that directory for each shell. Add `--no-descriptions` to complete command names without their descriptions.
+
 ### Requirements
 
 - either:
