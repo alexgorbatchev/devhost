@@ -1,8 +1,10 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -11,6 +13,7 @@ import (
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cli"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/services"
 )
@@ -18,76 +21,62 @@ import (
 func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) int {
 	arguments, err := cli.ParseCommandLineArguments(rawArguments, stdout, stderr)
 	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "failed: %s\n", err.Error())
-		return 1
+		return fail(stderr, err)
 	}
 
 	switch arguments.Kind {
 	case cli.KindHelp, cli.KindVersion, cli.KindCompletion:
 		return 0
 	case cli.KindStop:
-		manifestPath := arguments.ManifestPath
-		if manifestPath == nil {
-			resolvedPath, resolveError := manifest.ResolveManifestPath(cwd)
-			if resolveError != nil {
-				_, _ = fmt.Fprintf(stderr, "failed: %s\n", resolveError.Error())
-				return 1
-			}
-			manifestPath = &resolvedPath
+		manifestPath, err := resolveManifestPath(arguments.ManifestPath, cwd)
+		if err != nil {
+			return fail(stderr, err)
 		}
 
-		if err := services.StopStack(*manifestPath, readEnvironment(), stdout, stderr); err != nil {
-			_, _ = fmt.Fprintf(stderr, "failed: %s\n", err.Error())
-			return 1
+		if err := services.StopStack(manifestPath, readEnvironment(), stdout, stderr); err != nil {
+			return fail(stderr, err)
 		}
 
 		return 0
 	case cli.KindStart:
-		manifestPath := arguments.ManifestPath
-		if manifestPath == nil {
-			resolvedPath, resolveError := manifest.ResolveManifestPath(cwd)
-			if resolveError != nil {
-				_, _ = fmt.Fprintf(stderr, "failed: %s\n", resolveError.Error())
-				return 1
-			}
-			manifestPath = &resolvedPath
+		manifestPath, err := resolveManifestPath(arguments.ManifestPath, cwd)
+		if err != nil {
+			return fail(stderr, err)
 		}
 
-		rawManifest, readError := manifest.ReadManifest(*manifestPath)
+		rawManifest, readError := manifest.ReadManifest(manifestPath)
 		if readError != nil {
-			_, _ = fmt.Fprintf(stderr, "failed: %s\n", readError.Error())
-			return 1
+			return fail(stderr, describeManifestReadError(manifestPath, readError))
 		}
 
-		validatedManifest, validateError := manifest.ValidateManifest(*manifestPath, rawManifest)
+		validatedManifest, validateError := manifest.ValidateManifest(manifestPath, rawManifest)
 		if validateError != nil {
-			_, _ = fmt.Fprintf(stderr, "failed: %s\n", validateError.Error())
-			return 1
+			return fail(stderr, validateError)
 		}
 
 		if err := resolveAnnotationTempDir(validatedManifest.Annotation, cwd); err != nil {
-			_, _ = fmt.Fprintf(stderr, "failed: %s\n", err)
-			return 1
+			return fail(stderr, err)
 		}
 
 		serviceOrder, orderError := services.ResolveServiceOrder(validatedManifest)
 		if orderError != nil {
-			_, _ = fmt.Fprintf(stderr, "failed: %s\n", orderError.Error())
-			return 1
+			return fail(stderr, orderError)
 		}
 
 		resolvedManifest, resolveError := services.ResolveServicePorts(validatedManifest)
 		if resolveError != nil {
-			_, _ = fmt.Fprintf(stderr, "failed: %s\n", resolveError.Error())
-			return 1
+			return fail(stderr, resolveError)
 		}
 
 		var idleTimeout time.Duration
 		if arguments.IdleTimeout != "" {
 			parsed, err := time.ParseDuration(arguments.IdleTimeout)
 			if err != nil {
-				_, _ = fmt.Fprintf(stderr, "failed: invalid idle-timeout: %s\n", err.Error())
-				return 1
+				return fail(stderr, &cliout.Failure{
+					Err:     fmt.Errorf("invalid idle-timeout: %w", err),
+					Summary: fmt.Sprintf("the idle timeout %q is not a duration", arguments.IdleTimeout),
+					Hint:    "Set --idle-timeout or DEVHOST_IDLE_TIMEOUT to a value such as 30s or 1m.",
+				})
 			}
 			idleTimeout = parsed
 		}
@@ -109,36 +98,31 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 
 		exitCode, startError := services.StartStack(&resolvedManifest, serviceOrder, startOptions)
 		if startError != nil {
-			_, _ = fmt.Fprintf(stderr, "failed: %s\n", startError.Error())
-			return 1
+			return fail(stderr, startError)
 		}
 
 		return exitCode
 	case cli.KindCaddyPrintRootCert:
 		paths, err := caddy.CreateManagedCaddyPathsFromEnvironment(readEnvironment())
 		if err != nil {
-			_, _ = fmt.Fprintf(stderr, "failed: %s\n", err.Error())
-			return 1
+			return fail(stderr, err)
 		}
 
 		exitCode, err := caddy.PrintManagedCaddyRootCertificate(stdout, paths)
 		if err != nil {
-			_, _ = fmt.Fprintf(stderr, "failed: %s\n", err.Error())
-			return 1
+			return fail(stderr, err)
 		}
 
 		return exitCode
 	case cli.KindCaddyLifecycle:
 		paths, err := caddy.CreateManagedCaddyPathsFromEnvironment(readEnvironment())
 		if err != nil {
-			_, _ = fmt.Fprintf(stderr, "failed: %s\n", err.Error())
-			return 1
+			return fail(stderr, err)
 		}
 
 		if arguments.Action == cli.CaddyDownload {
 			if err := caddy.DownloadCaddy(stderr, runtime.GOOS, runtime.GOARCH, paths, caddy.DownloadDependencies{}); err != nil {
-				_, _ = fmt.Fprintf(stderr, "failed: %s\n", err.Error())
-				return 1
+				return fail(stderr, err)
 			}
 
 			return 0
@@ -147,8 +131,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 		if arguments.Action == cli.CaddyPrivilegedPorts {
 			exitCode, err := caddy.ConfigureManagedCaddyPrivilegedPorts(stderr, runtime.GOOS, runtime.GOARCH, paths, caddy.PrivilegedPortsDependencies{})
 			if err != nil {
-				_, _ = fmt.Fprintf(stderr, "failed: %s\n", err.Error())
-				return 1
+				return fail(stderr, err)
 			}
 
 			return exitCode
@@ -158,14 +141,12 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 		if arguments.ManifestPath != nil {
 			rawManifest, readError := manifest.ReadManifest(*arguments.ManifestPath)
 			if readError != nil {
-				_, _ = fmt.Fprintf(stderr, "failed: %s\n", readError.Error())
-				return 1
+				return fail(stderr, describeManifestReadError(*arguments.ManifestPath, readError))
 			}
 
 			validatedManifest, validateError := manifest.ValidateManifest(*arguments.ManifestPath, rawManifest)
 			if validateError != nil {
-				_, _ = fmt.Fprintf(stderr, "failed: %s\n", validateError.Error())
-				return 1
+				return fail(stderr, validateError)
 			}
 
 			fallback = caddy.ManagedCaddyConfigFallback{
@@ -185,22 +166,62 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			caddy.ManagedCaddyLifecycleDependencies{RuntimeOS: runtime.GOOS},
 		)
 		if err != nil {
-			_, _ = fmt.Fprintf(stderr, "failed: %s\n", err.Error())
-			return 1
+			return fail(stderr, err)
 		}
 
 		return exitCode
 	case cli.KindCaddyTrustRemote:
 		exitCode, err := caddy.TrustManagedCaddyRemoteCertificate(arguments.SSHTarget, stderr, runtime.GOOS, caddy.TrustRemoteDependencies{})
 		if err != nil {
-			_, _ = fmt.Fprintf(stderr, "failed: %s\n", err.Error())
-			return 1
+			return fail(stderr, err)
 		}
 
 		return exitCode
 	default:
-		_, _ = fmt.Fprintf(stderr, "failed: unsupported command kind: %s\n", arguments.Kind)
-		return 1
+		return fail(stderr, fmt.Errorf("unsupported command kind: %s", arguments.Kind))
+	}
+}
+
+// fail reports err as the reason the command failed and returns the exit code
+// for it.
+func fail(stderr io.Writer, err error) int {
+	cliout.WriteFailure(stderr, err)
+	return 1
+}
+
+// resolveManifestPath returns the manifest a command names or, when it names
+// none, the nearest one in cwd or above it.
+func resolveManifestPath(explicitPath *string, cwd string) (string, error) {
+	if explicitPath != nil {
+		return *explicitPath, nil
+	}
+
+	discoveredPath, err := manifest.ResolveManifestPath(cwd)
+	if err != nil {
+		return "", &cliout.Failure{Err: err, Hint: "Run devhost from your project folder, or pass --manifest <path>."}
+	}
+
+	return discoveredPath, nil
+}
+
+// describeManifestReadError gives a manifest that does not exist a message that
+// names the file once and says where its path came from. Every other read error,
+// a missing file the manifest includes among them, is returned as it is.
+func describeManifestReadError(manifestPath string, err error) error {
+	var pathError *fs.PathError
+	if !errors.As(err, &pathError) || !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+
+	absoluteManifestPath, absoluteError := filepath.Abs(manifestPath)
+	if absoluteError != nil || pathError.Path != absoluteManifestPath {
+		return err
+	}
+
+	return &cliout.Failure{
+		Err:     err,
+		Summary: "manifest file not found: " + absoluteManifestPath,
+		Hint:    "Check the path given with --manifest or DEVHOST_MANIFEST.",
 	}
 }
 

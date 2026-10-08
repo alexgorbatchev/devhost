@@ -154,9 +154,104 @@ func TestRunShellCompletionSucceeds(t *testing.T) {
 			if !strings.Contains(stdout.String(), tc.wantStdout) {
 				t.Fatalf("Run(%q) stdout missing %q:\n%s", tc.rawArgs, tc.wantStdout, stdout.String())
 			}
+		})
+	}
+}
 
-			if strings.Contains(stderr.String(), "failed:") {
-				t.Fatalf("Run(%q) stderr = %q, want no failure", tc.rawArgs, stderr.String())
+func TestRunReportsFailuresForTheReader(t *testing.T) {
+	missingManifestPath := filepath.Join(t.TempDir(), "devhost.toml")
+	manifestPath := writeDevtoolsDisabledProcessManifest(t, t.TempDir(), caddytest.UnusedAdminAddress(t))
+
+	// A .git directory ends the upward search, so no manifest above the temporary
+	// directory can be found.
+	repositoryPath := t.TempDir()
+	projectPath := filepath.Join(repositoryPath, "project")
+	for _, directoryPath := range []string{filepath.Join(repositoryPath, ".git"), projectPath} {
+		if err := os.Mkdir(directoryPath, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	tests := []struct {
+		name       string
+		agent      string
+		rawArgs    []string
+		wantStderr string
+	}{
+		{
+			name:    "a person mistypes a command",
+			agent:   "0",
+			rawArgs: []string{"star"},
+			wantStderr: "[ERROR] unknown command \"star\" for \"devhost\"; did you mean \"start\" or \"stop\"?\n" +
+				"[INFO] Run \"devhost --help\" for usage.\n",
+		},
+		{
+			name:       "an agent mistypes a command",
+			agent:      "1",
+			rawArgs:    []string{"star"},
+			wantStderr: "ERR: unknown command \"star\" for \"devhost\"; did you mean \"start\" or \"stop\"?\n",
+		},
+		{
+			name:    "a person names a manifest that does not exist",
+			agent:   "0",
+			rawArgs: []string{"start", "--manifest", missingManifestPath},
+			wantStderr: "[ERROR] manifest file not found: " + missingManifestPath + "\n" +
+				"[INFO] Check the path given with --manifest or DEVHOST_MANIFEST.\n",
+		},
+		{
+			name:    "an agent names a manifest that does not exist",
+			agent:   "1",
+			rawArgs: []string{"start", "--manifest", missingManifestPath},
+			wantStderr: "ERR: read manifest " + missingManifestPath + ": open " + missingManifestPath +
+				": no such file or directory\n",
+		},
+		{
+			name:    "a person runs outside a project",
+			agent:   "0",
+			rawArgs: []string{"stop"},
+			wantStderr: "[ERROR] Could not find devhost.toml from " + projectPath + " upward.\n" +
+				"[INFO] Run devhost from your project folder, or pass --manifest <path>.\n",
+		},
+		{
+			name:       "an agent runs outside a project",
+			agent:      "1",
+			rawArgs:    []string{"stop"},
+			wantStderr: "ERR: Could not find devhost.toml from " + projectPath + " upward.\n",
+		},
+		{
+			name:    "a person gives an idle timeout that is not a duration",
+			agent:   "0",
+			rawArgs: []string{"start", "--manifest", manifestPath, "--idle-timeout", "soon"},
+			wantStderr: "[ERROR] the idle timeout \"soon\" is not a duration\n" +
+				"[INFO] Set --idle-timeout or DEVHOST_IDLE_TIMEOUT to a value such as 30s or 1m.\n",
+		},
+		{
+			name:       "an agent gives an idle timeout that is not a duration",
+			agent:      "1",
+			rawArgs:    []string{"start", "--manifest", manifestPath, "--idle-timeout", "soon"},
+			wantStderr: "ERR: invalid idle-timeout: time: invalid duration \"soon\"\n",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("AGENT", tc.agent)
+
+			var stdout strings.Builder
+			var stderr strings.Builder
+
+			exitCode := Run(tc.rawArgs, projectPath, &stdout, &stderr)
+
+			if exitCode != 1 {
+				t.Fatalf("Run(%q) exit code = %d, want 1", tc.rawArgs, exitCode)
+			}
+
+			if stderr.String() != tc.wantStderr {
+				t.Fatalf("Run(%q) stderr = %q, want %q", tc.rawArgs, stderr.String(), tc.wantStderr)
+			}
+
+			if stdout.String() != "" {
+				t.Fatalf("Run(%q) stdout = %q, want empty", tc.rawArgs, stdout.String())
 			}
 		})
 	}
@@ -521,6 +616,8 @@ func TestRunCaddyStopWithoutRunningProcess(t *testing.T) {
 }
 
 func TestRunCaddyTrustRequiresRunningManagedCaddy(t *testing.T) {
+	t.Setenv("AGENT", "0")
+
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
 	manifestDirectoryPath := t.TempDir()
@@ -537,7 +634,7 @@ func TestRunCaddyTrustRequiresRunningManagedCaddy(t *testing.T) {
 	}
 	wantStderr := strings.Join([]string{
 		"[devhost] managed caddy trust may prompt for your password because installing a root CA into the system trust store is privileged.",
-		"failed: Managed Caddy is not running. Run 'devhost caddy start' first.",
+		"[ERROR] Managed Caddy is not running. Run 'devhost caddy start' first.",
 		"",
 	}, "\n")
 	if stderr.String() != wantStderr {

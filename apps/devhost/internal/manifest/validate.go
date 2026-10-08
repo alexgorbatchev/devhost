@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 )
 
 const (
@@ -573,7 +575,7 @@ func validateService(
 			resolvedPath := filepath.Clean(filepath.Join(manifestDirectoryPath, p))
 			relativePath, err := filepath.Rel(manifestDirectoryPath, resolvedPath)
 			if err != nil || relativePath == ".." || strings.HasPrefix(relativePath, ".."+string(filepath.Separator)) {
-				fmt.Fprintf(os.Stderr, "WARNING: services.%s.watch path %q resolves outside the manifest directory %q\n", serviceName, p, manifestDirectoryPath)
+				fmt.Fprintln(os.Stderr, cliout.Warning(fmt.Sprintf("services.%s.watch path %q resolves outside the manifest directory %q", serviceName, p, manifestDirectoryPath)))
 			}
 			watch = append(watch, p)
 		}

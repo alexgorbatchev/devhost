@@ -1,13 +1,17 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/GiGurra/boa/pkg/boa"
 	"github.com/spf13/cobra"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/version"
 )
 
@@ -63,7 +67,9 @@ type CommandLineArguments struct {
 // ParseCommandLineArguments resolves rawArguments into the command to run. Help
 // screens, the version, and shell completion output are written to stdout and
 // reported as KindHelp, KindVersion, and KindCompletion; stderr receives cobra's
-// diagnostics.
+// diagnostics. A command line that cannot be run is returned as a
+// *cliout.Failure whose hint names the help screen of the command that
+// rejected it.
 func ParseCommandLineArguments(rawArguments []string, stdout io.Writer, stderr io.Writer) (CommandLineArguments, error) {
 	result := CommandLineArguments{}
 
@@ -86,7 +92,10 @@ func ParseCommandLineArguments(rawArguments []string, stdout io.Writer, stderr i
 
 	executedCommand, err := rootCommand.ExecuteC()
 	if err != nil {
-		return CommandLineArguments{}, normalizeParseError(err)
+		return CommandLineArguments{}, &cliout.Failure{
+			Err:  normalizeParseError(err),
+			Hint: fmt.Sprintf("Run %q for usage.", executedCommand.CommandPath()+" --help"),
+		}
 	}
 
 	if printedVersion(executedCommand) {
@@ -144,13 +153,13 @@ type trustRemoteOptions struct {
 }
 
 // createRootCommand has no run function of its own, so boa prints its help when
-// it is invoked without a subcommand and rejects unknown subcommands. The caddy group
-// follows the same rule.
+// it is invoked without a subcommand. The caddy group follows the same rule.
 func createRootCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 	return boa.CmdT[boa.NoParams]{
 		Use:     rootCommandName,
 		Short:   "Run your project's services behind local HTTPS hostnames",
 		Version: version.String(),
+		Args:    rejectUnknownCommand,
 		SubCmds: boa.SubCmds(
 			createCaddyCommand(result),
 			createStartCommand(result),
@@ -222,6 +231,7 @@ func createCaddyCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 		Use:   caddyCommandName,
 		Short: "Set up and control the shared HTTPS proxy",
 		Long:  caddyDescription,
+		Args:  rejectUnknownCommand,
 		SubCmds: boa.SubCmds(
 			createCaddyLifecycleCommand(result, CaddyStart, "Start the shared Caddy server"),
 			createCaddyLifecycleCommand(result, CaddyStop, "Stop the shared Caddy server"),
@@ -295,6 +305,38 @@ func createTrustRemoteCommand(result *CommandLineArguments) boa.CmdT[trustRemote
 			*result = CommandLineArguments{Kind: KindCaddyTrustRemote, SSHTarget: options.SSHTarget}
 		},
 	}
+}
+
+// suggestionDistance is how many edits may separate a mistyped command from one
+// suggested for it. It is cobra's default, which cobra applies only inside the
+// argument check that rejectUnknownCommand replaces.
+const suggestionDistance = 2
+
+// rejectUnknownCommand is the argument check of a command group. boa installs one
+// of its own when Args is unset; this one also names the commands the argument
+// resembles or begins.
+func rejectUnknownCommand(command *cobra.Command, arguments []string) error {
+	if len(arguments) == 0 {
+		return nil
+	}
+
+	message := fmt.Sprintf("unknown command %q for %q", arguments[0], command.CommandPath())
+
+	command.SuggestionsMinimumDistance = suggestionDistance
+	suggestions := command.SuggestionsFor(arguments[0])
+	if len(suggestions) == 0 {
+		return errors.New(message)
+	}
+
+	// Sorted and deduplicated because cobra lists a command once per rule it matches,
+	// in the order the commands were registered.
+	slices.Sort(suggestions)
+	suggestions = slices.Compact(suggestions)
+	for i, suggestion := range suggestions {
+		suggestions[i] = strconv.Quote(suggestion)
+	}
+
+	return fmt.Errorf("%s; did you mean %s?", message, strings.Join(suggestions, " or "))
 }
 
 // requireSSHTarget replaces boa's positional count check, which boa only installs
