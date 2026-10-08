@@ -117,6 +117,51 @@ func TestRunVersionPrintsBuildVersion(t *testing.T) {
 	}
 }
 
+func TestRunShellCompletionSucceeds(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		rawArgs    []string
+		wantStdout string
+	}{
+		{
+			name:       "completion script",
+			rawArgs:    []string{"completion", "bash"},
+			wantStdout: "complete -o default -F __start_devhost devhost",
+		},
+		{
+			name:       "completion request made by a script",
+			rawArgs:    []string{"__complete", "caddy", ""},
+			wantStdout: "trust-remote\t",
+		},
+	}
+
+	for _, tt := range tests {
+		tc := tt
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			var stdout strings.Builder
+			var stderr strings.Builder
+
+			exitCode := Run(tc.rawArgs, "/tmp", &stdout, &stderr)
+
+			if exitCode != 0 {
+				t.Fatalf("Run(%q) exit code = %d, want 0; stderr = %q", tc.rawArgs, exitCode, stderr.String())
+			}
+
+			if !strings.Contains(stdout.String(), tc.wantStdout) {
+				t.Fatalf("Run(%q) stdout missing %q:\n%s", tc.rawArgs, tc.wantStdout, stdout.String())
+			}
+
+			if strings.Contains(stderr.String(), "failed:") {
+				t.Fatalf("Run(%q) stderr = %q, want no failure", tc.rawArgs, stderr.String())
+			}
+		})
+	}
+}
+
 func TestRunExplicitManifestBypassesUpwardDiscovery(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)

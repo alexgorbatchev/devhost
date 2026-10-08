@@ -15,9 +15,11 @@ type Kind string
 
 const (
 	KindStart Kind = "start"
-	// KindHelp and KindVersion mean the requested screen has already been written to stdout.
+	// KindHelp, KindVersion, and KindCompletion mean the requested output has
+	// already been written to stdout.
 	KindHelp               Kind = "help"
 	KindVersion            Kind = "version"
+	KindCompletion         Kind = "completion"
 	KindStop               Kind = "stop"
 	KindCaddyLifecycle     Kind = "caddy-lifecycle"
 	KindCaddyPrintRootCert Kind = "caddy-print-root-cert"
@@ -44,6 +46,9 @@ const (
 	trustRemoteCommandName   = "trust-remote"
 	versionTemplate          = "{{.Version}}\n"
 	cobraVersionFlagName     = "version"
+	// cobraCompletionCommandName is the name cobra gives the command it adds to the
+	// root for printing shell completion scripts. Cobra does not export it.
+	cobraCompletionCommandName = "completion"
 )
 
 type CommandLineArguments struct {
@@ -56,8 +61,9 @@ type CommandLineArguments struct {
 }
 
 // ParseCommandLineArguments resolves rawArguments into the command to run. Help
-// and version screens are written to stdout and reported as KindHelp and
-// KindVersion; stderr receives cobra's diagnostics.
+// screens, the version, and shell completion output are written to stdout and
+// reported as KindHelp, KindVersion, and KindCompletion; stderr receives cobra's
+// diagnostics.
 func ParseCommandLineArguments(rawArguments []string, stdout io.Writer, stderr io.Writer) (CommandLineArguments, error) {
 	result := CommandLineArguments{}
 
@@ -87,7 +93,25 @@ func ParseCommandLineArguments(rawArguments []string, stdout io.Writer, stderr i
 		return CommandLineArguments{Kind: KindVersion}, nil
 	}
 
+	if result.Kind == "" && ranShellCompletion(executedCommand) {
+		return CommandLineArguments{Kind: KindCompletion}, nil
+	}
+
 	return result, nil
+}
+
+// ranShellCompletion reports whether cobra ran one of the completion commands it
+// generates: a script printer under "completion", or the hidden request command
+// those scripts call back into. Neither runs a devhost command function, so
+// nothing else records that they ran. Help for these commands is recorded by
+// installHelp and is not a completion run.
+func ranShellCompletion(command *cobra.Command) bool {
+	if command.Name() == cobra.ShellCompRequestCmd {
+		return true
+	}
+
+	parent := command.Parent()
+	return parent != nil && parent.Name() == cobraCompletionCommandName && parent.Parent() == command.Root()
 }
 
 // printedVersion reports whether cobra handled --version, which it does
