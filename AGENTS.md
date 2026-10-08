@@ -50,7 +50,8 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 
 - Root `package.json` owns the shared TypeScript AI policy tooling and the shared `oxfmt` / `oxlint` configs. Keep workspace-local copies out unless the workspaces genuinely diverge.
 - Root `just check` runs `typescript-ai-policy check` first (wrapping the shared `oxfmt` / `oxlint` enforcement and excluding `packages/playground/**`), then delegates to package-specific checks.
-- `packages/playground/**` is a local dev harness and is intentionally excluded from shared root lint/format enforcement.
+- `packages/playground/**` is a local dev harness and is intentionally excluded from shared root lint/format enforcement. Its two apps keep their own `justfile`, which the root links as `playground-backend` and `playground-frontend` (`just playground-backend dev`); the stack starts them through `just dev`.
+- The root `justfile` links every nested `justfile` with a `mod` line. Add one in the same change as a new `justfile`.
 - `packages/devhost-ui/scripts/demo/` owns the recording workflow and uses the real playground services through the managed Caddy on HTTPS port 443. Preserve portless public URLs, manifest-scoped route cleanup, and per-run artifacts under ignored `.tmp/demos/`. Stop owned processes on failure as well as success; leave the shared Caddy running. Concurrent recordings must use distinct `.localhost` hostnames.
 - Recording annotations runs real Pi against a per-run playground copy. Restrict edits to its layout component, retain actual edits in `pi-changes.json`, and restore copied source during cleanup. Never reset checkout files to undo recording edits.
 - Guide demo MP4/WebP/VTT files under `packages/docs/public/demos/` are published site assets and stay tracked. Runtime files stay in `.tmp/demos/`. Agent readers use guide prose/transcripts and HTTPS links instead of reading binary media as text. CI installs FFmpeg for native publication tests.

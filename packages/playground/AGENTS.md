@@ -5,6 +5,7 @@ Bun + React workspace split into frontend and backend apps, used to exercise `de
 ## Commands
 
 - Start the root devhost stack from the repo root: `just dev`
+- Run one app outside the stack from the repo root: `just playground-backend dev` or `just playground-frontend dev` (`start` runs it with `NODE_ENV=production`)
 - Run the frontend query request tests from the repo root: `bun test packages/playground/frontend/src/__tests__`
 
 ## Local conventions
