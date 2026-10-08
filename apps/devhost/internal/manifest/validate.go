@@ -389,6 +389,7 @@ func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 		Editor:           DevtoolsEditorConfig{Enabled: true, IDE: defaultDevtoolsEditor},
 		ExternalToolbars: DevtoolsToggleConfig{Enabled: true},
 		Minimap:          DevtoolsMinimapConfig{Enabled: true},
+		Resources:        validateDevtoolsResources(nil, schemaIssues),
 		Status:           DevtoolsStatusConfig{Enabled: true, Position: defaultDevtoolsStatusPosition},
 		Shortcuts:        DevtoolsShortcutsConfig{RestartServices: "alt+ctrl+r"},
 	}
@@ -402,9 +403,10 @@ func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 		return result
 	}
 
-	allowKeys(value, []string{"browser", "editor", "externalToolbars", "idleTimeout", "minimap", "status", "shortcuts"}, "devtools", schemaIssues)
+	allowKeys(value, []string{"browser", "editor", "externalToolbars", "idleTimeout", "minimap", "resources", "status", "shortcuts"}, "devtools", schemaIssues)
 
 	result.Browser = validateNativeBrowser(value["browser"], schemaIssues)
+	result.Resources = validateDevtoolsResources(value["resources"], schemaIssues)
 
 	if rawEditor := value["editor"]; rawEditor != nil {
 		editorValue, ok := readMap(rawEditor, "devtools.editor", schemaIssues)

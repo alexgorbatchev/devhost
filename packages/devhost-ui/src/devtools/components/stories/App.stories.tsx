@@ -129,6 +129,8 @@ export const App: Story = {
     await waitFor(() => {
       expect(within(toolbar).getByRole("button", { name: "Services: 2 of 3 up" })).toBeVisible();
       expect(within(toolbar).getByRole("button", { name: /^Annotation queues: / })).toBeVisible();
+      expect(within(toolbar).getByRole("meter", { name: "CPU usage" })).toHaveValue(18);
+      expect(within(toolbar).getByRole("meter", { name: "Disk usage" })).toHaveValue(41);
       expect(within(toolbar).getByRole("button", { name: /^Pi terminal, / })).toBeVisible();
       expect(within(toolbar).getByRole("button", { name: /^<Header> terminal, / })).toBeVisible();
       expect(shadowRoot.querySelector("[data-testid='LogMinimap--canvas']")).not.toBeNull();

@@ -21,6 +21,7 @@
 # - `[devtools.editor]` (optional)
 # - `[devtools.externalToolbars]` (optional)
 # - `[devtools.minimap]` (optional)
+# - `[devtools.resources]` (optional; host CPU, memory, and disk readouts, enabled by default)
 # - `[devtools.status]` (optional)
 # - `[devtools.shortcuts]` (optional)
 # - `[annotation]` and `[[annotation.actions]]` (optional; annotation actions are unavailable when omitted)
@@ -204,6 +205,39 @@ enabled = true
 # - `true` (default): show the log minimap in the overlay.
 # - `false`: hide the log minimap.
 enabled = true
+
+[devtools.resources]
+# Host CPU, memory, and disk usage in the devtools toolbar, each as percent used. A readout
+# turns amber from 70% and red from 90%; hover one for the absolute figures.
+# CPU is the share of all logical CPUs that was busy since the previous reading. Disk is the
+# space used across fixed local filesystems: on Linux, USB-attached and removable drives are
+# left out; on macOS, the startup disk is reported.
+# `enabled` controls whether any readout is shown.
+# - `true` (default): show the readouts.
+# - `false`: hide them; devhost samples nothing.
+enabled = true
+# `pollInterval` sets how often every readout is read, as a duration string of at least "250ms".
+# - omitted (default): CPU and memory are read every "2s", disk every "1m".
+# - string (e.g. "5s"): read all three at this rate, unless a readout sets its own below.
+# pollInterval = "5s"
+
+[devtools.resources.cpu]
+# `enabled` shows (`true`, default) or hides (`false`) the CPU readout.
+enabled = true
+# `pollInterval` overrides the shared rate for the CPU readout.
+# pollInterval = "1s"
+
+[devtools.resources.memory]
+# `enabled` shows (`true`, default) or hides (`false`) the memory readout.
+enabled = true
+# `pollInterval` overrides the shared rate for the memory readout.
+# pollInterval = "2s"
+
+[devtools.resources.disk]
+# `enabled` shows (`true`, default) or hides (`false`) the disk readout.
+enabled = true
+# `pollInterval` overrides the shared rate for the disk readout.
+# pollInterval = "1m"
 
 [devtools.status]
 # Exited foreground services open a full-screen log view with a restart button.

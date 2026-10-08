@@ -1,5 +1,7 @@
 package manifest
 
+import "time"
+
 type RawManifest struct {
 	Inputs       Inputs
 	serviceOrder []string
@@ -71,6 +73,7 @@ type DevtoolsConfig struct {
 	Editor           DevtoolsEditorConfig
 	ExternalToolbars DevtoolsToggleConfig
 	Minimap          DevtoolsMinimapConfig
+	Resources        DevtoolsResourcesConfig
 	Status           DevtoolsStatusConfig
 	Shortcuts        DevtoolsShortcutsConfig // New table
 	IdleTimeout      string
@@ -91,6 +94,21 @@ type DevtoolsToggleConfig struct {
 
 type DevtoolsMinimapConfig struct {
 	Enabled bool
+}
+
+// DevtoolsResourcesConfig configures the host CPU, memory, and disk readouts in the toolbar.
+type DevtoolsResourcesConfig struct {
+	Enabled bool
+	CPU     DevtoolsResourceConfig
+	Memory  DevtoolsResourceConfig
+	Disk    DevtoolsResourceConfig
+}
+
+// DevtoolsResourceConfig holds the resolved settings of one readout: its own poll interval, the shared one, or its
+// default, in that order.
+type DevtoolsResourceConfig struct {
+	Enabled      bool
+	PollInterval time.Duration
 }
 
 type DevtoolsStatusConfig struct {

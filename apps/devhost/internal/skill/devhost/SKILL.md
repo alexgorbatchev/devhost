@@ -4,7 +4,7 @@ description: Use when running devhost or when reading, writing, or changing a de
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-08 11:17
+  last_modified: 2026-10-08 12:05
   status: current
 ---
 
@@ -74,6 +74,8 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 - **killZombies Option**: Optional boolean (default `true`) at the top level of `devhost.toml`. When `true`, devhost automatically finds, terminates, and reclaims zombie processes claiming the same ports or hosts from the same manifest path. Set `killZombies = false` to disable automatic recovery and report a standard collision error instead.
 
 - **Annotation temporary files**: Set `[annotation].tempDir` in the root manifest to a non-empty path for all annotation actions. Resolve relative paths against devhost's startup working directory, independently of the manifest location and action `cwd`. Omit the key to use the system temp directory. See the [Agent Adapters guide](references/agent-adapters.md) for file lifecycle details.
+
+- **Host resource readouts**: Omit `[devtools.resources]` to show host CPU, memory, and disk usage (percent used) in the toolbar, with CPU and memory read every `2s` and disk every `1m`. Set `[devtools.resources].enabled = false` to turn all three off. Set `[devtools.resources].pollInterval` to a duration string of at least `250ms` (for example `"5s"`) to read all three at one rate. Give `[devtools.resources.cpu]`, `[devtools.resources.memory]`, or `[devtools.resources.disk]` its own `enabled` or `pollInterval` to hide one readout or override the shared rate for it. Disk counts fixed local filesystems; on Linux, USB-attached and removable drives are left out, and on macOS the startup disk is reported. Changing these keys requires restarting devhost.
 
 - **Git worktrees**: Omit `[worktrees]` to use checkout selection, which is enabled by default. Set `[worktrees].enabled = false` only to disable discovery and saved-selection restore. Inspect `git worktree list --porcelain` and configure all service `cwd` values from one checkout per repository. Use the Services repository picker to switch every repository member together; do not set services from one repository to different checkouts. Follow the persistence and recovery procedure in [Setup](references/setup.md#4-git-worktree-selection). Worktree group startup failures remain recoverable instead of terminating the supervisor.
 

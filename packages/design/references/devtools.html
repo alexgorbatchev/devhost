@@ -1046,20 +1046,21 @@
           height: 6px;
           border: 0;
           border-radius: var(--dh-radius-sm);
-          background: var(--dh-surface-3);
+          /* The boundary token keeps the empty part of the bar visible in both themes. */
+          background: var(--dh-input-line);
           overflow: hidden;
         }
         .usage meter::-webkit-meter-inner-element {
           display: block;
         }
         .usage meter::-webkit-meter-bar {
-          height: 6px;
+          height: 100%;
           border: 0;
           border-radius: 0;
-          background: var(--dh-surface-3);
+          background: var(--dh-input-line);
         }
         .usage meter::-webkit-meter-optimum-value {
-          background: var(--dh-fg-muted);
+          background: var(--dh-fg);
         }
         .usage meter::-webkit-meter-suboptimum-value {
           background: var(--dh-warn);
@@ -1068,7 +1069,7 @@
           background: var(--dh-danger);
         }
         .usage meter::-moz-meter-bar {
-          background: var(--dh-fg-muted);
+          background: var(--dh-fg);
         }
         .usage meter:-moz-meter-sub-optimum::-moz-meter-bar {
           background: var(--dh-warn);
@@ -2337,10 +2338,12 @@
         return "normal";
       }
 
+      // A meter turns critical only above `high`; percentages are whole, so half a percent below the danger level
+      // makes the fill and the bold value change at the same reading.
       function renderUsageItem(usage) {
         return `<span class="usage-item" data-usage="${usage.key}" data-level="${usageLevel(usage.percent)}" title="${esc(usage.label)}: ${esc(usage.detail)}">
           <span class="muted">${esc(usage.label)}</span>
-          <meter min="0" max="100" low="${USAGE_WARN_PERCENT}" high="${USAGE_DANGER_PERCENT}" optimum="0" value="${usage.percent}"
+          <meter min="0" max="100" low="${USAGE_WARN_PERCENT}" high="${USAGE_DANGER_PERCENT - 0.5}" optimum="0" value="${usage.percent}"
             aria-label="${esc(usage.label)} usage">${usage.percent}%</meter>
           <span class="usage-value">${usage.percent}%</span>
         </span>`;

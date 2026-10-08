@@ -215,6 +215,57 @@
   [data-slot="icon"][data-spinning="true"] {
     animation: devhost-spin 1s linear infinite;
   }
+
+  /*
+   * A native `<meter>` paints its track and fill in pseudo-elements, which utilities cannot reach. Its low/high
+   * regions pick the fill: normal, warning, and critical.
+   */
+  [data-slot="usage-meter"] {
+    appearance: none;
+    flex-shrink: 0;
+    width: calc(var(--spacing) * 7);
+    height: calc(var(--spacing) * 1.5);
+    overflow: hidden;
+    border: 0;
+    border-radius: var(--radius-sm);
+    /* The boundary token keeps the empty part of the bar visible in both themes. */
+    background: var(--input);
+  }
+
+  [data-slot="usage-meter"]::-webkit-meter-inner-element {
+    display: block;
+  }
+
+  [data-slot="usage-meter"]::-webkit-meter-bar {
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+    background: var(--input);
+  }
+
+  [data-slot="usage-meter"]::-webkit-meter-optimum-value {
+    background: var(--foreground);
+  }
+
+  [data-slot="usage-meter"]::-webkit-meter-suboptimum-value {
+    background: var(--warning);
+  }
+
+  [data-slot="usage-meter"]::-webkit-meter-even-less-good-value {
+    background: var(--destructive);
+  }
+
+  [data-slot="usage-meter"]::-moz-meter-bar {
+    background: var(--foreground);
+  }
+
+  [data-slot="usage-meter"]:-moz-meter-sub-optimum::-moz-meter-bar {
+    background: var(--warning);
+  }
+
+  [data-slot="usage-meter"]:-moz-meter-sub-sub-optimum::-moz-meter-bar {
+    background: var(--destructive);
+  }
 }
 
 @layer base {
