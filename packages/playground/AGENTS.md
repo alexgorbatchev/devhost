@@ -13,6 +13,7 @@ Bun + React workspace split into frontend and backend apps, used to exercise `de
 - Keep this package and its sub-workspaces on the repo-root `bun.lock`; do not add package-local lockfiles.
 - `backend/src/index.ts` is the backend Bun server, serving `/api/hello` endpoints on port 3000 (or dynamic assigned port).
 - `frontend/src/index.ts` is the frontend Bun server, serving `frontend/src/index.html` on port 3001 (or dynamic assigned port).
+- The frontend server also serves the design prototypes from `packages/design` under `/prototypes/`: `references/*.html` and the `tokens.css` they link. `frontend/src/constants.ts` lists them for both the routes and the navigation links; add a new prototype there.
 - `frontend/src/frontend.tsx` is the React browser entrypoint referenced by `frontend/src/index.html`.
 - Keep Router and Query floating devtools mounted so the overlay can detect their native launchers. The playground uses their production-capable exports to exercise the overlay in either server mode.
 

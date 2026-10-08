@@ -1,8 +1,13 @@
 import { serve } from "bun";
+import { createPrototypeRoutes } from "./createPrototypeRoutes";
 import index from "./index.html";
 
 const server = serve({
   routes: {
+    // Design prototypes from `packages/design`, linked from the playground navigation.
+    ...createPrototypeRoutes(new URL("../../../design/", import.meta.url)),
+
+
     // Serve index.html for all unmatched routes.
     "/*": index,
   },
