@@ -25,7 +25,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 	}
 
 	switch arguments.Kind {
-	case cli.KindHelp, cli.KindVersion, cli.KindCompletion:
+	case cli.KindHelp, cli.KindVersion, cli.KindCompletion, cli.KindSkill:
 		return 0
 	case cli.KindStop:
 		manifestPath, err := resolveManifestPath(arguments.ManifestPath, cwd)

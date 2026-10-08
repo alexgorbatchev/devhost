@@ -15,7 +15,9 @@ Local rules for the `devhost` Go app in `apps/devhost/`.
   - logging behavior
   - devtools behavior
   - limitations, caveats, or failure modes
-- If the manifest contract changes or the public app surface is changed, also update `devhost.example.toml` and the local devhost skill at `skills/devhost/SKILL.md` (and its reference files).
+- If the manifest contract changes, also update `devhost.example.toml` and the devhost skill at `internal/skill/devhost/SKILL.md` (and its reference files).
+- Update `internal/skill/devhost/SKILL.md` in the same change as any change to a command, argument, option, short alias, type, default, environment variable, output, exit code, or side effect, and set its `last_modified`. `devhost skill` prints that file, so it is the reference agents work from. `TestSkillCoversTheWholeInterface` fails while it omits a command, flag, argument, or environment variable, or leaves a flag's type or non-zero default off the line that names the flag; check what the file says about them against the implementation yourself, because the test compares names and values only.
+- Write the skill for someone operating `devhost`: affirmative usage instructions and facts. Keep its frontmatter `description` to when the skill applies. Contributor rules belong in the `AGENTS.md` files.
 - If devtools-specific contributor rules change, also update `packages/devhost-ui/AGENTS.md` and the nested files under `packages/devhost-ui/src/devtools/`.
 - If the tag-driven binary release flow changes, also update `RELEASE.md` and the relevant shared guidance in the repo-root `AGENTS.md`.
 - **CRITICAL:** `packages/docs/sync.ts` regenerates the public docs landing page from `README.md` and the manifest reference from `devhost.example.toml`. After editing either source, you **must** validate `packages/docs` so the GitHub Pages content stays in sync.
@@ -114,6 +116,7 @@ The token-free native browser WebSocket requires the exact current Origin/Host, 
 - `internal/app/` — top-level Go CLI dispatch
 - `internal/cliout/` — the failure and warning lines devhost prints outside its logs, in the form for people or for agents (`AGENT=1`)
 - `internal/cli/` — command definitions (boa on top of cobra) and help screens; help is rendered by `cobra-help-tree/v2`, which documents positional arguments, environment variables, and quickstart examples from the catalog in `internal/cli/help.go` because cobra has no fields for them. Long descriptions print verbatim, so keep their lines at 60 columns or less.
+- `internal/skill/` — embeds `devhost/SKILL.md`, the guide `devhost skill` prints. `devhost/` is a complete skill directory (`SKILL.md` plus `references/`) that `npx skills add` installs by its path, so keep Go files out of it: `go:embed` cannot reach outside the module, which is why the skill lives here and not at the repository root. `cobra-help-tree` adds the `skill` command and the alert that opens every agent help screen.
 - `internal/manifest/` — manifest discovery, parsing, validation, and defaults
 - `internal/services/` — child process orchestration, health checks, port resolution, and cleanup
 - `internal/caddy/` — managed Caddy lifecycle, paths, config, and routing

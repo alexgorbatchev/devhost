@@ -16,6 +16,7 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/skill"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/version"
 )
 
@@ -153,6 +154,31 @@ func TestRunShellCompletionSucceeds(t *testing.T) {
 
 			if !strings.Contains(stdout.String(), tc.wantStdout) {
 				t.Fatalf("Run(%q) stdout missing %q:\n%s", tc.rawArgs, tc.wantStdout, stdout.String())
+			}
+		})
+	}
+}
+
+func TestRunPrintsTheSkill(t *testing.T) {
+	for _, agent := range []string{"0", "1"} {
+		t.Run("AGENT="+agent, func(t *testing.T) {
+			t.Setenv("AGENT", agent)
+
+			var stdout strings.Builder
+			var stderr strings.Builder
+
+			exitCode := Run([]string{"skill"}, "/tmp", &stdout, &stderr)
+
+			if exitCode != 0 {
+				t.Fatalf("Run(skill) exit code = %d, want 0; stderr = %q", exitCode, stderr.String())
+			}
+
+			if stdout.String() != skill.Document() {
+				t.Fatalf("Run(skill) stdout is not the embedded SKILL.md byte for byte:\n%s", stdout.String())
+			}
+
+			if stderr.String() != "" {
+				t.Fatalf("Run(skill) stderr = %q, want empty", stderr.String())
 			}
 		})
 	}

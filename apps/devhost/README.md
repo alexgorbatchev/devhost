@@ -386,10 +386,24 @@ If you are modifying the injected browser devtools UI (`packages/devhost-ui/`) a
 
 ## AI devhost skill
 
-To install the manifest-authoring and devhost update skill from this repository:
+`devhost` carries its guide for AI agents inside the binary. The guide covers every command, flag, and environment variable, and the rules for writing `devhost.toml`:
 
 ```bash
-npx skills add https://github.com/alexgorbatchev/devhost --skill devhost -y
+devhost skill
+```
+
+The command prints the guide exactly as written, with or without `AGENT=1`, and needs no network or repository. Every `AGENT=1` help screen starts with a line that sends the agent to it:
+
+```console
+$ AGENT=1 devhost --help
+ALERT: Agents must read `AGENT=1 devhost skill` before using this tool.
+command: devhost
+```
+
+To install the same guide as a skill, together with the reference files it links to:
+
+```bash
+npx skills add https://github.com/alexgorbatchev/devhost/tree/main/apps/devhost/internal/skill/devhost -y
 ```
 
 Omit `-y` to choose target agents interactively.

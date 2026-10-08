@@ -193,9 +193,11 @@ func TestParseCommandLineArguments(t *testing.T) {
 			comparePath: true,
 		},
 		{
-			name:      "rejects removed skill command",
-			rawArgs:   []string{"skill"},
-			wantError: "unknown command \"skill\" for \"devhost\"",
+			name:    "parses skill command",
+			rawArgs: []string{"skill"},
+			want: CommandLineArguments{
+				Kind: KindSkill,
+			},
 		},
 		{
 			name:      "suggests the caddy action an unsupported one resembles",
