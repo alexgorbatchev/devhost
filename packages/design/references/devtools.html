@@ -502,6 +502,14 @@
             <option value="single">One managed service</option>
           </select>
         </label>
+        <label
+          >Host load
+          <select id="pc-load">
+            <option value="normal">Normal</option>
+            <option value="high">High (warn)</option>
+            <option value="critical">Critical (danger)</option>
+          </select>
+        </label>
         <label><input type="checkbox" id="pc-svc-error" /> Health poll error</label>
         <label><input type="checkbox" id="pc-restart-fail" /> Restarts fail</label>
         <label><input type="checkbox" id="pc-worktree-fail" /> Worktree switch fails</label>
@@ -1009,6 +1017,64 @@
         .dots {
           display: flex;
           gap: 3px;
+        }
+        /* Host resource readouts. A native <meter> carries the range; its
+           low/high/optimum regions pick the normal, warn and danger fills. */
+        .usage {
+          gap: var(--dh-space-4);
+        }
+        .usage-item {
+          display: flex;
+          align-items: center;
+          gap: var(--dh-space-2);
+        }
+        .usage-value {
+          min-width: 4ch;
+          font-variant-numeric: tabular-nums;
+        }
+        /* The last value ends the segment, so it reserves no trailing room. */
+        .usage-item:last-child .usage-value {
+          min-width: 0;
+        }
+        .usage-item[data-level="danger"] .usage-value {
+          font-weight: 600;
+        }
+        .usage meter {
+          appearance: none;
+          flex: none;
+          width: 28px;
+          height: 6px;
+          border: 0;
+          border-radius: var(--dh-radius-sm);
+          background: var(--dh-surface-3);
+          overflow: hidden;
+        }
+        .usage meter::-webkit-meter-inner-element {
+          display: block;
+        }
+        .usage meter::-webkit-meter-bar {
+          height: 6px;
+          border: 0;
+          border-radius: 0;
+          background: var(--dh-surface-3);
+        }
+        .usage meter::-webkit-meter-optimum-value {
+          background: var(--dh-fg-muted);
+        }
+        .usage meter::-webkit-meter-suboptimum-value {
+          background: var(--dh-warn);
+        }
+        .usage meter::-webkit-meter-even-less-good-value {
+          background: var(--dh-danger);
+        }
+        .usage meter::-moz-meter-bar {
+          background: var(--dh-fg-muted);
+        }
+        .usage meter:-moz-meter-sub-optimum::-moz-meter-bar {
+          background: var(--dh-warn);
+        }
+        .usage meter:-moz-meter-sub-sub-optimum::-moz-meter-bar {
+          background: var(--dh-danger);
         }
         .chip {
           display: inline-flex;
@@ -1779,6 +1845,15 @@
         { id: "lint", kind: "command", label: "Lint fix", queueEnabled: false },
       ];
 
+      // CPU is a percentage across all cores; memory and disk are GB.
+      const MOCK_RESOURCES = {
+        normal: { cpu: 18, cores: 8, memory: { used: 9.8, total: 32 }, disk: { used: 212, total: 512 } },
+        high: { cpu: 78, cores: 8, memory: { used: 26.1, total: 32 }, disk: { used: 420, total: 512 } },
+        critical: { cpu: 96, cores: 8, memory: { used: 30.9, total: 32 }, disk: { used: 498, total: 512 } },
+      };
+      const USAGE_WARN_PERCENT = 70;
+      const USAGE_DANGER_PERCENT = 90;
+
       const state = {
         scene: "docs",
         theme: "auto",
@@ -1852,6 +1927,9 @@
             ],
           },
         ],
+        // Mock host readings; the shipped UI will read them from the devhost server.
+        resourceScenario: "normal",
+        resources: structuredClone(MOCK_RESOURCES.normal),
         queues: [],
         queueError: null,
         queueUi: { expanded: new Set(["q1"]), editing: new Set(), confirming: new Set(), drafts: {} },
@@ -2201,6 +2279,11 @@
             </button>`);
         }
 
+        segments.push(`
+          <span class="seg usage" role="group" aria-label="Host resource usage">
+            ${readResourceUsage().map(renderUsageItem).join("")}
+          </span>`);
+
         if (tools.length > 0) {
           segments.push(`
             <span class="seg tight" role="group" aria-label="External devtools">
@@ -2231,6 +2314,45 @@
         }
 
         return segments.join("");
+      }
+
+      function readResourceUsage() {
+        const { cpu, cores, memory, disk } = state.resources;
+        const share = ({ used, total }) => Math.round((used / total) * 100);
+        return [
+          { key: "cpu", label: "CPU", percent: Math.round(cpu), detail: `${Math.round(cpu)}% of ${cores} cores` },
+          {
+            key: "memory",
+            label: "RAM",
+            percent: share(memory),
+            detail: `${memory.used} of ${memory.total} GB used`,
+          },
+          { key: "disk", label: "Disk", percent: share(disk), detail: `${disk.used} of ${disk.total} GB used` },
+        ];
+      }
+
+      function usageLevel(percent) {
+        if (percent >= USAGE_DANGER_PERCENT) return "danger";
+        if (percent >= USAGE_WARN_PERCENT) return "warn";
+        return "normal";
+      }
+
+      function renderUsageItem(usage) {
+        return `<span class="usage-item" data-usage="${usage.key}" data-level="${usageLevel(usage.percent)}" title="${esc(usage.label)}: ${esc(usage.detail)}">
+          <span class="muted">${esc(usage.label)}</span>
+          <meter min="0" max="100" low="${USAGE_WARN_PERCENT}" high="${USAGE_DANGER_PERCENT}" optimum="0" value="${usage.percent}"
+            aria-label="${esc(usage.label)} usage">${usage.percent}%</meter>
+          <span class="usage-value">${usage.percent}%</span>
+        </span>`;
+      }
+
+      // Live readings replace one readout in place; a full render() would
+      // rebuild the bar under an open menu or a hovered control.
+      function renderResourceUsage() {
+        for (const usage of readResourceUsage()) {
+          const item = surface("bar").querySelector(`[data-usage="${usage.key}"]`);
+          if (item) item.outerHTML = renderUsageItem(usage);
+        }
       }
 
       function readOpenPanel() {
@@ -3377,6 +3499,17 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
         state.dockCollapsed = false;
         render();
       });
+      bind("pc-load", "change", (event) => {
+        state.resourceScenario = event.target.value;
+        state.resources = structuredClone(MOCK_RESOURCES[state.resourceScenario]);
+        render();
+      });
+      // Mock sampling: CPU wanders around the scenario baseline every 2s.
+      setInterval(() => {
+        const baseline = MOCK_RESOURCES[state.resourceScenario].cpu;
+        state.resources.cpu = Math.min(100, Math.max(0, baseline + (Math.random() - 0.5) * 8));
+        renderResourceUsage();
+      }, 2000);
       bind("pc-scene", "change", (e) => {
         document.body.dataset.scene = e.target.value;
         render();
