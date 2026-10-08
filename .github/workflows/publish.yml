@@ -18,12 +18,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: apps/devhost/go.mod
           cache-dependency-path: apps/devhost/go.sum
@@ -34,7 +34,7 @@ jobs:
           bun-version-file: package.json
 
       - name: Setup Just
-        uses: extractions/setup-just@v2
+        uses: extractions/setup-just@v4
 
       - name: Derive release version from tag
         run: |
