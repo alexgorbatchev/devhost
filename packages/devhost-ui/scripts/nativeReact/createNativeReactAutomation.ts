@@ -1,3 +1,4 @@
+import { E2E_TEMPORARY_PATH } from "../../../../test-support/constants";
 import { mkdirSync } from "node:fs";
 import { lstat, rm } from "node:fs/promises";
 import assert from "node:assert/strict";
@@ -23,9 +24,9 @@ export function createNativeReactAutomation(
   repositoryRoot: string,
 ): INativeReactAutomation {
   const namespace: string = "n";
-  const socketDirectoryPath = resolve(repositoryRoot, ".tmp", `nr-${crypto.randomUUID().slice(0, 8)}`);
+  const socketDirectoryPath = resolve(E2E_TEMPORARY_PATH, `nr-${crypto.randomUUID().slice(0, 8)}`);
   // The pinned CLI retains relative socket paths and its daemon inherits cwd.
-  // Keep the Unix pathname short without moving this owner's files outside W.
+  // Keep the Unix pathname short and outside the checkout.
   const socketDirectoryArgument = relative(repositoryRoot, socketDirectoryPath);
   assert.equal(resolve(repositoryRoot, socketDirectoryArgument), socketDirectoryPath);
   mkdirSync(socketDirectoryPath, { mode: 0o700 });
@@ -79,7 +80,7 @@ export function createNativeReactAutomation(
       cwd: repositoryRoot,
       env: {
         ...process.env,
-        TMPDIR: resolve(repositoryRoot, ".tmp"),
+        TMPDIR: socketDirectoryPath,
         AGENT_BROWSER_SOCKET_DIR: socketDirectoryArgument,
       },
       timeout: 40_000,

@@ -1,3 +1,4 @@
+import { E2E_TEMPORARY_PATH } from "../../../../../test-support/constants";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 
@@ -21,7 +22,7 @@ interface IBuiltDevtoolsHost {
 }
 
 export async function startBuiltDevtoolsHost(): Promise<IBuiltDevtoolsHost> {
-  const temporaryRootPath: string = resolve(import.meta.dir, "../../../../..", ".tmp");
+  const temporaryRootPath: string = E2E_TEMPORARY_PATH;
   await mkdir(temporaryRootPath, { recursive: true });
   const directoryPath: string = await mkdtemp(resolve(temporaryRootPath, "browser-bundle-"));
   try {

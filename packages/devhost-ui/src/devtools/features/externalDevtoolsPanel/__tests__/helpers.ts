@@ -1,3 +1,4 @@
+import { E2E_TEMPORARY_PATH } from "../../../../../../../test-support/constants";
 import assert from "node:assert/strict";
 import { mkdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -59,7 +60,7 @@ export interface ITanStackShellFixture {
 const repositoryRoot = resolve(import.meta.dir, "../../../../../../..");
 
 export async function startNativeVueHost(options: INativeVueHostOptions = {}): Promise<INativeVueHost> {
-  const dependenciesPath = resolve(repositoryRoot, ".tmp/vue-native-host");
+  const dependenciesPath = resolve(E2E_TEMPORARY_PATH, "vue-native-host");
   await mkdir(dependenciesPath, { recursive: true });
   await Bun.write(
     resolve(dependenciesPath, "package.json"),

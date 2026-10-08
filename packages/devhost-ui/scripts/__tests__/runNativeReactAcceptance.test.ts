@@ -1,7 +1,8 @@
+import { E2E_TEMPORARY_PATH } from "../../../../test-support/constants";
 import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
 import { lstat, mkdir, rm } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { prepareNativeReactAssets } from "../nativeReact/prepareNativeReactAssets";
 import { readNativeReactProvisioning } from "../nativeReact/readNativeReactProvisioning";
 
@@ -9,7 +10,7 @@ test.each(["missing", "mismatched"])(
   "native runner preserves the %s provisioning failure before extraction",
   async (assetState) => {
     const repositoryRoot = resolve(import.meta.dir, "../../../..");
-    const inputPath = resolve(repositoryRoot, ".tmp", `native-preflight-${crypto.randomUUID()}`);
+    const inputPath = resolve(E2E_TEMPORARY_PATH, `native-preflight-${crypto.randomUUID()}`);
     const chromeArchivePath = resolve(inputPath, `${assetState}.zip`);
     const provisioningPath = resolve(inputPath, "assets.json");
     await mkdir(inputPath, { recursive: true });
@@ -36,7 +37,7 @@ test.each(["missing", "mismatched"])(
       env: {
         ...process.env,
         AGENT: "1",
-        TMPDIR: resolve(repositoryRoot, ".tmp"),
+        TMPDIR: inputPath,
         DEVHOST_NATIVE_REACT_ASSETS: provisioningPath,
       },
       stdout: "pipe",
@@ -53,6 +54,7 @@ test.each(["missing", "mismatched"])(
     assert(outputPath !== undefined);
     try {
       expect(exitCode).toBe(1);
+      expect(dirname(outputPath)).toBe(resolve(inputPath, "devhost-e2e", "native-react-acceptance"));
       const reportedErrors = Bun.stripANSI(stderr)
         .split("\n")
         .filter((line) => /^(?:error:|AssertionError:|ENOENT:)/.test(line))

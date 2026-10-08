@@ -1,3 +1,4 @@
+import { E2E_TEMPORARY_PATH } from "../../../../../../../test-support/constants";
 import assert from "node:assert/strict";
 import { mkdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -12,7 +13,7 @@ import type { registerReduxDevtoolsStore, registerZustandDevtoolsStore } from ".
 const repositoryRoot: string = resolve(import.meta.dir, "../../../../../../..");
 
 export async function withNativeReduxHost(options: INativeReduxHostOptions, run: NativeReduxHostTest): Promise<void> {
-  const rootPath = resolve(repositoryRoot, ".tmp/redux-native-host", crypto.randomUUID());
+  const rootPath = resolve(E2E_TEMPORARY_PATH, "redux-native-host", crypto.randomUUID());
   await mkdir(rootPath, { recursive: true });
   // Run the genuine bundler in its normal process, isolated from Bun's in-test module resolver.
   const build = Bun.spawn(["bun", import.meta.path], {
@@ -156,7 +157,7 @@ async function buildNativeReduxAssets(rootPath: string): Promise<void> {
 }
 
 async function loadNativeReduxExtension(): Promise<string> {
-  const directoryPath = resolve(repositoryRoot, ".tmp/redux-native-extension-3.2.10");
+  const directoryPath = resolve(E2E_TEMPORARY_PATH, "redux-native-extension-3.2.10");
   await mkdir(directoryPath, { recursive: true });
   const archivePath = resolve(directoryPath, "chrome.zip");
   const archive = Bun.file(archivePath);
