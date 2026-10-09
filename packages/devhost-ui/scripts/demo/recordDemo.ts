@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { Subprocess } from "bun";
 import type { Browser } from "playwright";
@@ -11,6 +12,7 @@ import { createDemoPage } from "./createDemoPage";
 import { exportClip } from "./exportClip";
 import { launchDemoBrowser } from "./launchDemoBrowser";
 import { prepareDemoCaddy } from "./prepareDemoCaddy";
+import { preparePromoRenderer } from "./preparePromoRenderer";
 import { recordBrowserScene } from "./recordBrowserScene";
 import { renderPromo } from "./renderPromo";
 import { renderPromoComposition } from "./renderPromoComposition";
@@ -36,6 +38,12 @@ export async function recordDemo(signal: AbortSignal, selectedScene: string): Pr
   if (selectedScene === "react-highlight") dependencies.push("nvim");
   for (const executable of dependencies) {
     if (!Bun.which(executable)) throw new Error(`Missing recording dependency: ${executable}`);
+  }
+  if (isPromo) {
+    // An unusable renderer stops the run here, before the capture and its Pi request.
+    const temporaryPath = join(repositoryPath, ".tmp/demos");
+    await mkdir(temporaryPath, { recursive: true });
+    await preparePromoRenderer(runCommand, join(import.meta.dir, "promo"), temporaryPath, signal);
   }
   const versions = await Promise.all([
     runCommand(["vhs", "--version"]),

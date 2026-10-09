@@ -1,5 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
+import { createPromoRendererEnvironment } from "./createPromoRendererEnvironment";
 import { runCommand } from "./runCommand";
 
 export async function renderPromoComposition(
@@ -29,14 +30,8 @@ export async function renderPromoComposition(
     ],
     {
       cwd: projectPath,
-      env: {
-        ...process.env,
-        // The render neither installs agent skills on this machine nor reports usage.
-        HYPERFRAMES_SKIP_SKILLS: "1",
-        HYPERFRAMES_NO_TELEMETRY: "1",
-        // A relative path keeps Chrome's profile sockets within Linux's 108-byte limit in deep worktrees.
-        TMPDIR: relative(projectPath, temporaryPath),
-      },
+      // A relative path keeps Chrome's profile sockets within Linux's 108-byte limit in deep worktrees.
+      env: createPromoRendererEnvironment(process.env, relative(projectPath, temporaryPath)),
       signal,
       timeoutMs: 30 * 60_000,
       logPath: join(dirname(outputPath), "promo-render.log"),
