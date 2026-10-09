@@ -8,7 +8,6 @@ import type { IDemoMediaManifest, IDemoMediaPin, IPublishDemoMediaOptions, RunCo
 
 interface IUpload {
   name: string;
-  asset: string;
   pin: IDemoMediaPin;
 }
 
@@ -45,22 +44,22 @@ export async function publishDemoMedia(options: IPublishDemoMediaOptions): Promi
     // A pinned video that is not on disk keeps its pin: a checkout need not hold every video to publish one.
     if (state !== "different" && state !== "unpinned") continue;
     const path = join(directoryPath, name);
-    const pin: IDemoMediaPin = { sha256: await hashFile(path), bytes: Bun.file(path).size };
-    uploads.push({ name, asset: createDemoMediaAssetName(name, pin.sha256), pin });
+    const sha256 = await hashFile(path);
+    uploads.push({ name, pin: { asset: createDemoMediaAssetName(name, sha256), sha256, bytes: Bun.file(path).size } });
   }
   if (uploads.length === 0) return [];
 
   const held = await readReleaseDigests(manifest, run);
   // An asset is named after its content, so one the release already holds needs no second upload.
-  const missing = uploads.filter((upload) => !held.has(upload.asset));
+  const missing = uploads.filter((upload) => !held.has(upload.pin.asset));
   let digests = held;
   if (missing.length > 0) {
     try {
       // `gh` names an asset after the file it reads, so each upload is staged under its asset name.
       for (const upload of missing) {
-        await Bun.write(join(stagingPath, upload.asset), Bun.file(join(directoryPath, upload.name)));
+        await Bun.write(join(stagingPath, upload.pin.asset), Bun.file(join(directoryPath, upload.name)));
       }
-      const staged = missing.map((upload) => join(stagingPath, upload.asset));
+      const staged = missing.map((upload) => join(stagingPath, upload.pin.asset));
       await run(["gh", "release", "upload", manifest.release, ...staged, "--repo", manifest.repository]);
     } finally {
       await rm(stagingPath, { recursive: true, force: true });
@@ -70,13 +69,13 @@ export async function publishDemoMedia(options: IPublishDemoMediaOptions): Promi
 
   // A pin is written only for content the release reports holding, byte for byte.
   for (const upload of uploads) {
-    const digest = digests.get(upload.asset);
+    const digest = digests.get(upload.pin.asset);
     if (digest === undefined) {
-      throw new Error(`Release ${manifest.release} does not hold ${upload.asset} after the upload`);
+      throw new Error(`Release ${manifest.release} does not hold ${upload.pin.asset} after the upload`);
     }
     if (digest !== `sha256:${upload.pin.sha256}`) {
       throw new Error(
-        `Release ${manifest.release} holds ${upload.asset} as ${digest}, not sha256:${upload.pin.sha256}`,
+        `Release ${manifest.release} holds ${upload.pin.asset} as ${digest}, not sha256:${upload.pin.sha256}`,
       );
     }
   }

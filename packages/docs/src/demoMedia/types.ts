@@ -1,4 +1,6 @@
 export interface IDemoMediaPin {
+  // Name of the release asset that holds the content, so a reader needs no naming rule to build its URL.
+  asset: string;
   // Lowercase hexadecimal SHA-256 of the file's content.
   sha256: string;
   bytes: number;
