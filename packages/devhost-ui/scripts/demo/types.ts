@@ -106,9 +106,13 @@ export type PromoFootageSource = Pick<IRecordedSourceClip, "id" | "path">;
 
 export type RenderPromoComposition = (projectPath: string, outputPath: string, signal: AbortSignal) => Promise<void>;
 
+export type PreparePromoRenderer = (signal: AbortSignal) => Promise<void>;
+
 export interface IRenderPromoOptions {
   directoryPath: string;
   projectSourcePath: string;
+  // Runs once the directory is known to be a recording and before anything in it changes.
+  prepare?: PreparePromoRenderer;
   render: RenderPromoComposition;
   signal: AbortSignal;
 }
