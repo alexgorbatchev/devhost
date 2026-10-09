@@ -58,7 +58,9 @@ func expandReloadGroups(affected map[string]bool, previous, next ResolvedManifes
 		for _, w := range worktrees {
 			for _, repo := range w.snapshot() {
 				for _, name := range repo.ServiceNames {
-					if !affected[name] {
+					// A service that joins a repository starts in the checkout the
+					// group already runs from, so its siblings keep running.
+					if _, existed := previous.Services[name]; !affected[name] || !existed {
 						continue
 					}
 					for _, member := range repo.ServiceNames {

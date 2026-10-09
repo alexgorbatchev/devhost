@@ -30,6 +30,7 @@ const (
 	xtermStylesheetPath              = controlPathPrefix + "/xterm.css"
 	restartServicePath               = controlPathPrefix + "/restart-service"
 	restartStackPath                 = controlPathPrefix + "/restart-stack"
+	startServicePath                 = controlPathPrefix + "/start-service"
 	healthWebsocketPath              = controlPathPrefix + "/ws/health"
 	resourcesWebsocketPath           = controlPathPrefix + "/ws/resources"
 	logsWebsocketPath                = controlPathPrefix + "/ws/logs"
@@ -74,10 +75,17 @@ type ServiceHealth struct {
 	ProjectRootPath string  `json:"projectRootPath,omitempty"`
 }
 
+// StoppedService is a manifest service this run has not started.
+type StoppedService struct {
+	Name string `json:"name"`
+}
+
 type HealthResponse struct {
-	Routing      *RoutingConfig       `json:"routing,omitempty"`
-	Services     []ServiceHealth      `json:"services"`
-	Repositories []WorktreeRepository `json:"repositories,omitempty"`
+	Routing  *RoutingConfig  `json:"routing,omitempty"`
+	Services []ServiceHealth `json:"services"`
+	// StoppedServices lists the services left out by a run that named the ones to start.
+	StoppedServices []StoppedService     `json:"stoppedServices,omitempty"`
+	Repositories    []WorktreeRepository `json:"repositories,omitempty"`
 }
 
 type ServiceLogStream string
@@ -113,6 +121,7 @@ type StartControlServerOptions struct {
 	ResourceUsage           ResourceUsageOptions
 	RestartService          func([]string) error
 	RestartStack            func() error
+	StartService            func([]string) error
 	SwitchWorktree          func(string, string) error
 	RefreshWorktrees        func() error
 	GetToolContext          func(string) (ToolContext, error)
@@ -135,6 +144,7 @@ type ControlServer struct {
 	websocketWriteTimeout      time.Duration
 	restartService             func([]string) error
 	restartStack               func() error
+	startService               func([]string) error
 	switchWorktree             func(string, string) error
 	refreshWorktrees           func() error
 	getToolContext             func(string) (ToolContext, error)
@@ -323,6 +333,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		resourceClients:            map[*websocketClient]struct{}{},
 		restartService:             options.RestartService,
 		restartStack:               options.RestartStack,
+		startService:               options.StartService,
 		switchWorktree:             options.SwitchWorktree,
 		refreshWorktrees:           options.RefreshWorktrees,
 		getToolContext:             options.GetToolContext,
@@ -457,6 +468,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	mux.HandleFunc("GET "+reduxMonitorStylesheetPath, controlServer.handleReduxMonitorStylesheet)
 	mux.HandleFunc(restartServicePath, controlServer.handleRestartService)
 	mux.HandleFunc(restartStackPath, controlServer.handleRestartStack)
+	mux.HandleFunc(startServicePath, controlServer.handleStartService)
 	mux.HandleFunc(worktreesPath, controlServer.handleWorktrees)
 	mux.HandleFunc(healthWebsocketPath, controlServer.handleHealthWebsocket)
 	if options.ResourceUsage.isEnabled() {

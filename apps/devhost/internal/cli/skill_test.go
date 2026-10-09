@@ -84,6 +84,8 @@ func TestAgentHelpStartsWithTheSkillAlert(t *testing.T) {
 		{name: "group without a command", rawArgs: []string{"caddy"}, wantCommand: "devhost caddy"},
 		{name: "command in a group", rawArgs: []string{"caddy", "trust-remote", "--help"}, wantCommand: "devhost caddy trust-remote"},
 		{name: "start", rawArgs: []string{"start", "--help"}, wantCommand: "devhost start"},
+		{name: "service group", rawArgs: []string{"service"}, wantCommand: "devhost service"},
+		{name: "service list", rawArgs: []string{"service", "list", "--help"}, wantCommand: "devhost service list"},
 		{name: "stop", rawArgs: []string{"stop", "-h"}, wantCommand: "devhost stop"},
 		{name: "skill", rawArgs: []string{"skill", "--help"}, wantCommand: "devhost skill"},
 		{name: "generated completion group", rawArgs: []string{"completion", "--help"}, wantCommand: "devhost completion"},

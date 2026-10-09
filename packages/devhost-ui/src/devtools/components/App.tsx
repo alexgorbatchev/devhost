@@ -68,8 +68,16 @@ function AppContent(): JSX.Element {
   const nativeBrowser = useNativeBrowserConnection(isNativeBrowserEnabled);
   const nativeBrowserStatusId: string = useId();
   const colorScheme = useDevtoolsColorScheme();
-  const { errorMessage, setErrorMessage, services, repositories, refreshWorktrees, switchWorktree } =
-    useServiceHealth();
+  const {
+    errorMessage,
+    setErrorMessage,
+    services,
+    stoppedServices,
+    repositories,
+    refreshWorktrees,
+    switchWorktree,
+    startStoppedServices,
+  } = useServiceHealth();
   const currentRoutedServiceKey = resolveRoutedServiceKeyForUrl(routedServices, window.location.href);
   const currentRepository = repositories.find(
     (repository) => currentRoutedServiceKey !== null && repository.serviceNames.includes(currentRoutedServiceKey),
@@ -262,9 +270,11 @@ function AppContent(): JSX.Element {
             <ServiceStatusPanel
               errorMessage={errorMessage}
               services={services}
+              stoppedServices={stoppedServices}
               repositories={repositories}
               onRefreshWorktrees={refreshWorktrees}
               onSwitchWorktree={switchWorktree}
+              onStartServices={startStoppedServices}
               onSetErrorMessage={setErrorMessage}
             />
           ) : null}

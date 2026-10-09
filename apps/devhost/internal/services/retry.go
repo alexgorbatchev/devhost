@@ -66,7 +66,7 @@ func ReassignAutoPort(value ResolvedManifest, serviceName string) (ResolvedServi
 	nextManifest.Services = copyResolvedServices(value.Services)
 	nextManifest.Services[serviceName] = service
 	if value.configuration != nil {
-		nextManifest, err = resolveReloadPorts(*value.configuration, nextManifest)
+		nextManifest, err = resolveReloadPorts(*value.configuration, nextManifest, value.requested)
 		if err != nil {
 			return ResolvedService{}, ResolvedManifest{}, err
 		}

@@ -5,9 +5,10 @@ import { createDevtoolsWebSocketUrl } from "../../../shared/createDevtoolsWebSoc
 import { openReconnectingWebSocket } from "../../../shared/openReconnectingWebSocket";
 import { pristineFetch } from "../../../shared/pristineFetch";
 import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
-import type { HealthResponse, ServiceHealth, IWorktreeRepository } from "../../../shared/types";
+import type { HealthResponse, ServiceHealth, IStoppedService, IWorktreeRepository } from "../../../shared/types";
 import { parseHealthResponse } from "../parseHealthResponse";
 import { requestWorktrees } from "../requestWorktrees";
+import { startServices } from "../startServices";
 import { markServicesAsUnavailable } from "../markServicesAsUnavailable";
 import { updateInjectedRouting } from "../updateInjectedRouting";
 
@@ -15,14 +16,17 @@ interface IUseServiceHealthResult {
   errorMessage: string | null;
   setErrorMessage: (message: string | null) => void;
   services: ServiceHealth[];
+  stoppedServices: IStoppedService[];
   repositories: IWorktreeRepository[];
   refreshWorktrees: () => Promise<string | null>;
   switchWorktree: (repositoryId: string, path: string) => Promise<string | null>;
+  startStoppedServices: (serviceNames: string[]) => Promise<string | null>;
 }
 
 export function useServiceHealth(): IUseServiceHealthResult {
   const [repositories, setRepositories] = useState<IWorktreeRepository[]>([]);
   const [services, setServices] = useState<ServiceHealth[]>([]);
+  const [stoppedServices, setStoppedServices] = useState<IStoppedService[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { stackName: devtoolsStackName } = readInjectedDevtoolsConfig();
 
@@ -33,6 +37,7 @@ export function useServiceHealth(): IUseServiceHealthResult {
       updateInjectedRouting(health.routing, Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME)),
     );
     setServices(health.services);
+    setStoppedServices(health.stoppedServices ?? []);
     setRepositories(health.repositories ?? []);
   }, []);
 
@@ -59,6 +64,7 @@ export function useServiceHealth(): IUseServiceHealthResult {
       setServices((currentServices: ServiceHealth[]): ServiceHealth[] => {
         return markServicesAsUnavailable(currentServices, devtoolsStackName);
       });
+      setStoppedServices([]);
       setRepositories([]);
       setErrorMessage(null);
     };
@@ -89,12 +95,18 @@ export function useServiceHealth(): IUseServiceHealthResult {
     },
     [refreshWorktrees],
   );
+  // The health stream reports the started services; nothing is read from the response.
+  const startStoppedServices = useCallback((serviceNames: string[]): Promise<string | null> => {
+    return startServices(serviceNames, pristineFetch);
+  }, []);
   return {
     repositories,
     refreshWorktrees,
     switchWorktree,
+    startStoppedServices,
     errorMessage,
     setErrorMessage,
     services,
+    stoppedServices,
   };
 }

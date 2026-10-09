@@ -46,7 +46,9 @@ When the page opens a popover or a modal dialog, the injected UI moves back abov
 
 The toolbar also shows how much of the machine is in use: **CPU**, **RAM**, and **Disk**, each as percent used. See [Host resource usage](#host-resource-usage).
 
-The services panel lists every service with its state. Routed services become links automatically, and clicking one opens that service URL in a new browser tab or window by default. Externally owned services are tagged `external`; only `devhost`-managed services expose restart controls. Services with watched file changes are marked `changed` until they restart.
+The services panel lists every started service with its state. Routed services become links automatically, and clicking one opens that service URL in a new browser tab or window by default. Externally owned services are tagged `external`; only `devhost`-managed services expose restart controls. Services with watched file changes are marked `changed` until they restart.
+
+When `devhost start` named the services to run, the panel also shows **Stopped services** with the number of services left out. It opens a list of them; **Start** on a row starts that service and the services it depends on without restarting the ones that run. See [Starting part of a stack](../stack-lifecycle/#starting-part-of-a-stack).
 
 Repository services also share a checkout picker. Opening it or pressing **Refresh** discovers added and deleted Git worktrees. Selecting a checkout restarts that repository's managed services together; repositories containing externally managed services cannot switch checkouts. If the running checkout disappears, its services remain stopped until you select an available checkout; other repositories keep running.
 

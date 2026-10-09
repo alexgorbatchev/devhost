@@ -12,9 +12,15 @@ export type ServiceHealth = {
   projectRootPath?: string;
 };
 
+/** A manifest service the run has not started. */
+export interface IStoppedService {
+  name: string;
+}
+
 export type HealthResponse = {
   routing?: IRoutingConfig;
   services: ServiceHealth[];
+  stoppedServices?: IStoppedService[];
   repositories?: IWorktreeRepository[];
 };
 

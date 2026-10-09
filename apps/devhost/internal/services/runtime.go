@@ -112,6 +112,9 @@ func (r *stackRuntime) restart(ctx context.Context, serviceNames []string) error
 	for _, name := range serviceNames {
 		s, ok := r.manifest.Services[name]
 		if !ok {
+			if _, stopped := r.manifest.Stopped[name]; stopped {
+				return fmt.Errorf("service %s is not started", name)
+			}
 			return fmt.Errorf("unknown service: %s", name)
 		}
 		if !isManagedService(s) {

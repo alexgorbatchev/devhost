@@ -125,6 +125,8 @@ type ValidatedAgent struct {
 }
 
 type ValidatedService struct {
+	// AlwaysStart starts the service on every `devhost start`, including one that names other services.
+	AlwaysStart      bool
 	ProxyLocalOrigin bool
 	BindHost         string
 	Command          []string

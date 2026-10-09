@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"net"
+	"slices"
 	"strings"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
@@ -24,7 +25,10 @@ const (
 
 type ResolvedManifest struct {
 	// Retain unresolved templates so automatic-port retries can bind them again.
-	configuration         *manifest.Manifest
+	configuration *manifest.Manifest
+	// requested holds the service names given to devhost start and those started
+	// since; empty means every service runs.
+	requested             []string
 	Annotation            manifest.ValidatedAnnotation
 	Caddy                 manifest.CaddyConfig
 	Devtools              manifest.DevtoolsConfig
@@ -35,7 +39,10 @@ type ResolvedManifest struct {
 	PrimaryService        string
 	ServiceOrder          []string
 	Services              map[string]ResolvedService
-	KillZombies           bool
+	// Stopped holds the services this run leaves out. They keep resolved addresses so
+	// templates and injected ports that name them stay the same once they start.
+	Stopped     map[string]ResolvedService
+	KillZombies bool
 }
 
 type ResolvedService struct {
@@ -78,7 +85,14 @@ func ResolveServicePorts(value manifest.Manifest) (ResolvedManifest, error) {
 	return resolveServicePorts(value, portResolutionOptions{})
 }
 
+// ResolveRequestedServicePorts resolves the manifest for a run that names the
+// services to start. With no names every service starts.
+func ResolveRequestedServicePorts(value manifest.Manifest, requested []string) (ResolvedManifest, error) {
+	return resolveServicePorts(value, portResolutionOptions{Requested: requested})
+}
+
 type portResolutionOptions struct {
+	Requested []string
 	Preserved map[string]int
 	Excluded  map[string]map[int]struct{}
 }
@@ -190,8 +204,18 @@ func resolveServicePorts(value manifest.Manifest, options portResolutionOptions)
 		resolvedServices[serviceName] = service
 	}
 
+	started := startedServiceNames(value, options.Requested)
+	stoppedServices := map[string]ResolvedService{}
+	for serviceName, service := range resolvedServices {
+		if !started[serviceName] {
+			stoppedServices[serviceName] = service
+			delete(resolvedServices, serviceName)
+		}
+	}
+
 	return ResolvedManifest{
 		configuration:         &value,
+		requested:             slices.Clone(options.Requested),
 		Annotation:            value.Annotation,
 		Caddy:                 value.Caddy,
 		Devtools:              value.Devtools,
@@ -202,6 +226,7 @@ func resolveServicePorts(value manifest.Manifest, options portResolutionOptions)
 		PrimaryService:        value.PrimaryService,
 		ServiceOrder:          append([]string{}, value.ServiceOrder...),
 		Services:              resolvedServices,
+		Stopped:               stoppedServices,
 		KillZombies:           value.KillZombies,
 	}, nil
 }

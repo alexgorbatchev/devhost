@@ -17,7 +17,7 @@ func TestReloadPreservesAutoPortsAndRebindsServiceTemplates(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	next, err := resolveReloadPorts(m, previous)
+	next, err := resolveReloadPorts(m, previous, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,7 +29,7 @@ func TestReloadPreservesAutoPortsAndRebindsServiceTemplates(t *testing.T) {
 	api := m.Services["api"]
 	api.Port = &manifest.PortConfig{Number: nettest.ReservePort(t)}
 	m.Services["api"] = api
-	next, err = resolveReloadPorts(m, previous)
+	next, err = resolveReloadPorts(m, previous, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

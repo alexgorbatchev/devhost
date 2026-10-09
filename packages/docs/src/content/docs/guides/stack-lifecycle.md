@@ -30,12 +30,43 @@ When you run `devhost start`, it:
 2. parses TOML and validates schema and semantics
 3. resolves `port = "auto"` before spawning managed foreground children
 4. requires the managed Caddy admin API to already be available
-5. reserves fixed numeric bind ports before starting any service that uses them
-6. reserves every public hostname before starting any service
+5. reserves the fixed numeric bind ports of the services it starts before starting any of them
+6. reserves the public hostnames of the services it starts before starting any of them
 7. starts managed services in dependency order, using either a foreground `command` or daemon `lifecycle.start`, and evaluates unmanaged services in the same dependency graph
 8. waits for each managed service health check before routing it; a foreground service that exits during startup keeps its route available for recovery, while unmanaged routed services claim their routes immediately once dependencies are satisfied
 9. keeps the stack, sibling services, routes, and devtools running after foreground service exits, including exit code `0`, so you can inspect retained logs and restart the exited service
 10. removes routes and reservations on explicit shutdown, idle timeout, or fatal startup errors, forwards shutdown signals to managed foreground services through the service-containment backend for the current platform, and runs daemon `lifecycle.stop` commands for managed daemon services
+
+## Starting part of a stack
+
+Name the services to run when the manifest holds more than you need, such as one slice of a monorepo:
+
+```bash
+devhost start web admin
+```
+
+devhost starts the named services, every service they reach through `dependsOn`, and every service marked `alwaysStart = true` together with its own `dependsOn` chain. Mark the services every slice needs:
+
+```toml
+[services.db]
+command = ["bun", "run", "db:dev"]
+port = "auto"
+alwaysStart = true
+```
+
+Plain `devhost start` starts every service, whatever `alwaysStart` says. A name the manifest does not define fails the command before anything starts and lists the defined names.
+
+The services left out are stopped. They run no process, have no route, and hold no hostname or fixed-port reservation, so another stack can use those hostnames and ports. Startup prints them on a `not started:` line. They keep an assigned address: `{{ services.<name>.port }}` references and `DEVHOST_PORT_<NAME>` variables that name a stopped service resolve as they do when it runs, and stay the same when it starts. A reference without a `dependsOn` entry does not start the service it names.
+
+With `[devtools.status]` enabled, the Services panel shows **Stopped services** with their count. It opens the list of stopped services; **Start** starts one together with what it depends on, and the services already running keep running. If the service fails to start, the list shows the error and the service stays stopped. Stopped services cannot be restarted, including by the restart shortcut when the primary service is one of them.
+
+The selection lasts for the run. Manifest reloads and **Restart stack with new ports** keep it, a service added to the manifest stays stopped unless it is marked `alwaysStart`, and edits to a stopped service take effect when it starts. Stop and start devhost to run fewer services.
+
+`devhost service list` prints the service names of the manifest, one per line in alphabetical order. `--startable` leaves out the `alwaysStart` services, which start whether or not they are named. Use it to pick a slice:
+
+```bash
+devhost start $(devhost service list --startable | fzf --multi)
+```
 
 Exited foreground services remain stopped until explicit recovery or a configuration edit affecting them. With status devtools enabled, exited services appear in a full-screen recovery overlay with their exit code, retained stdout/stderr logs, and a restart button. Failed attempts remain retryable. Executable launch errors and startup health timeouts remain fatal startup errors; daemon lifecycle and external services report health separately from foreground process exits.
 
@@ -43,7 +74,7 @@ Exited foreground services remain stopped until explicit recovery or a configura
 
 Saving the root manifest or an included manifest reloads service configuration. Added and deleted files matching an `includes` pattern change service membership. The whole candidate must parse, validate, and have a valid dependency order before devhost changes running services. Invalid edits print `configuration reload rejected` and leave the stack running.
 
-Service commands, environment, working directories, health checks, dependencies, routes, watch paths, additions/removals, and primary-service selection reload. Compatible automatic ports and selected Git checkouts are preserved. Affected services and their dependents stop in reverse dependency order and start in dependency order; an affected repository restarts as a group. Changes to injected `DEVHOST_PORT_*` values can require restarting otherwise unchanged services.
+Service commands, environment, working directories, health checks, dependencies, routes, watch paths, additions/removals, and primary-service selection reload. Compatible automatic ports and selected Git checkouts are preserved. Affected services and their dependents stop in reverse dependency order and start in dependency order; an affected repository restarts as a group. A service that joins a repository, whether added to the manifest or started from **Stopped services**, starts in the checkout that repository runs from and leaves its other services running. Changes to injected `DEVHOST_PORT_*` values can require restarting otherwise unchanged services.
 
 Devhost updates routing and ownership claims and retains its control listener, connected browsers, and existing terminal sessions. Launch or routing failures trigger restoration of the previous services and routes, with restoration errors reported explicitly. Unrelated edits preserve stopped services' recovery state. Unrelated filesystem writes do not trigger or postpone a reload. Shutdown signals interrupt replacement health waits and clean up the stack without launching restoration services. Successful reloads print `configuration reloaded`.
 

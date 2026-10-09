@@ -1883,6 +1883,10 @@
           },
           { name: "postgres", managed: false, status: true, dirty: false, restarting: false },
         ],
+        // Services a run started with service names left out; started from the Stopped services view.
+        stoppedServices: [{ name: "admin" }, { name: "mail" }],
+        stoppedServicesOpen: false,
+        startingService: null,
         serviceScenario: "multiple",
         serviceError: null,
         failRestart: false,
@@ -2483,7 +2487,49 @@
         return `<span class="chip-group">${chip}<button class="btn icon" type="button" data-action="session-close" data-id="${session.id}" title="Close ${esc(session.label)} session" aria-label="Close ${esc(session.label)} session">${icon("x")}</button></span>`;
       }
 
+      function renderStoppedServicesEntry() {
+        if (state.stoppedServices.length === 0) return "";
+        return `<div style="display:flex;justify-content:flex-end;padding:4px 8px">
+          <button class="btn" type="button" data-action="stopped-open" data-focus-key="stopped-open">
+            Stopped services (${state.stoppedServices.length})${icon("chevRight")}
+          </button></div>`;
+      }
+
+      function renderStoppedServices() {
+        const isBlocked =
+          state.startingService !== null ||
+          state.isStackRestarting ||
+          state.services.some((service) => service.restarting) ||
+          state.repositories.some((repo) => repo.phase);
+        const rows = state.stoppedServices
+          .map((service) => {
+            const isStarting = state.startingService === service.name;
+            return `
+              <div class="row">
+                <span class="name trunc grow">${esc(service.name)}</span>
+                <button class="btn" type="button" data-action="start-service" data-name="${esc(service.name)}"
+                  ${isBlocked ? "disabled" : ""} aria-label="Start ${esc(service.name)}">
+                  ${icon(isStarting ? "restart" : "play", isStarting ? "spin" : "")}${isStarting ? "Starting…" : "Start"}</button>
+              </div>`;
+          })
+          .join("");
+        return {
+          width: 300,
+          label: "Stopped services",
+          html: `
+            <header class="panel-head">
+              <button class="btn icon ghost" type="button" data-action="stopped-back" data-focus-key="stopped-back" aria-label="Back to services">${icon("collapse")}</button>
+              <span class="grow">Stopped services</span>
+            </header>
+            <div class="panel-body">
+              <p class="muted">Starting a service also starts the services it depends on. Running services keep running.</p>
+              ${rows}
+            </div>`,
+        };
+      }
+
       function renderServicesPanel() {
+        if (state.stoppedServicesOpen && state.stoppedServices.length > 0) return renderStoppedServices();
         if (state.worktreesEnabled && state.worktreePicker !== null) return renderWorktreePicker();
         const externalServices = state.services.filter(
           (service) => !state.repositories.some((repo) => service.name in repo.serviceDirectories),
@@ -2503,7 +2549,7 @@
               <span class="muted" style="font-weight:400" title="Restart changed services (or the primary service)"><span class="kbd">⌃⌥R</span></span>
             </header>
             ${state.serviceError ? renderNotice(state.serviceError, "dismiss-service-error") : ""}
-            <div class="panel-body">${rows}${renderStackRestart()}</div>`,
+            <div class="panel-body">${rows}${renderStoppedServicesEntry()}${renderStackRestart()}</div>`,
         };
       }
 
@@ -3192,7 +3238,28 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
             state.dockCollapsed = !state.dockCollapsed;
             state.openPanel = null;
             break;
+          case "stopped-open":
+            state.stoppedServicesOpen = true;
+            render();
+            surface("panel").querySelector('[data-action="stopped-back"]').focus();
+            return;
+          case "stopped-back":
+            state.stoppedServicesOpen = false;
+            render();
+            surface("panel").querySelector('[data-action="stopped-open"]').focus();
+            return;
+          case "start-service":
+            state.startingService = name;
+            render();
+            setTimeout(() => {
+              state.startingService = null;
+              state.stoppedServices = state.stoppedServices.filter((service) => service.name !== name);
+              state.services.push({ name, managed: true, status: true, dirty: false, restarting: false });
+              render();
+            }, 900);
+            return;
           case "panel":
+            state.stoppedServicesOpen = false;
             state.worktreePicker = null;
             state.openPanel = state.openPanel === panel ? null : panel;
             if (state.openPanel !== null) state.panelAnchor = state.openPanel;

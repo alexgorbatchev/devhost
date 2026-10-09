@@ -1,5 +1,12 @@
 import { useRef, useState, type JSX } from "react";
-import { ArrowLeftIcon, ChevronDownIcon, GitBranchIcon, RotateCwIcon, TriangleAlertIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  GitBranchIcon,
+  RotateCwIcon,
+  TriangleAlertIcon,
+} from "lucide-react";
 
 import { Icon } from "../../../../components/ui/Icon";
 
@@ -10,13 +17,15 @@ import { cn } from "../../../../lib/utils";
 import { Button, InlineNotice } from "../../../shared";
 import { pristineFetch } from "../../../shared/pristineFetch";
 import { restartServices } from "../../../shared/restartServices";
+import { PanelActions } from "../../../shared/components/PanelActions";
 import { ToolbarPopover } from "../../../shared/components/ToolbarPopover";
 import { RestartStackButton } from "../../../shared/components/RestartStackButton";
 import { DEFAULT_RESTART_SERVICES_SHORTCUT } from "../../../shared/constants";
 import { formatShortcutLabel } from "../../../shared/formatShortcutLabel";
 import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
-import type { ServiceHealth, IWorktreeRepository } from "../../../shared/types";
+import type { ServiceHealth, IStoppedService, IWorktreeRepository } from "../../../shared/types";
 
+import { StoppedServices } from "./StoppedServices";
 import { WorktreePicker } from "./WorktreePicker";
 import { formatWorktreePath } from "../formatWorktreePath";
 
@@ -24,9 +33,11 @@ interface IServiceStatusPanelProps {
   errorMessage: string | null;
   onSetErrorMessage?: (message: string | null) => void;
   services: ServiceHealth[];
+  stoppedServices?: IStoppedService[];
   repositories?: IWorktreeRepository[];
   onRefreshWorktrees?: () => Promise<string | null>;
   onSwitchWorktree?: (repositoryId: string, path: string) => Promise<string | null>;
+  onStartServices?: (serviceNames: string[]) => Promise<string | null>;
 }
 
 type ServiceDotState = "down" | "dirty" | "ok" | "restarting";
@@ -49,18 +60,28 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
   const { homeDirectoryPath, restartServicesShortcut } = readInjectedDevtoolsConfig();
   const [repositoryId, setRepositoryId] = useState<string | null>(null);
   const [isStackRestarting, setIsStackRestarting] = useState<boolean>(false);
+  const [isChoosingStoppedService, setIsChoosingStoppedService] = useState<boolean>(false);
   const repositoryButtons = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const stoppedServicesButton = useRef<HTMLButtonElement | null>(null);
   const repositories = props.repositories ?? [];
+  const stoppedServices = props.stoppedServices ?? [];
+  const onStartServices = props.onStartServices;
   const selectedRepository = repositories.find((repository) => repository.id === repositoryId);
+  // The view closes by itself once its last service has started.
+  const isShowingStoppedServices: boolean =
+    isChoosingStoppedService && stoppedServices.length > 0 && onStartServices !== undefined;
+  const isShowingServices: boolean = selectedRepository === undefined && !isShowingStoppedServices;
   const onBack = (): void => {
     setRepositoryId(null);
+    setIsChoosingStoppedService(false);
     requestAnimationFrame(() => {
       if (repositoryId !== null) repositoryButtons.current.get(repositoryId)?.focus();
+      else stoppedServicesButton.current?.focus();
     });
   };
   const hasError: boolean = props.errorMessage !== null;
 
-  if (!hasError && props.services.length === 0) {
+  if (!hasError && props.services.length === 0 && stoppedServices.length === 0) {
     return null;
   }
 
@@ -73,7 +94,7 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
   return (
     <ToolbarPopover
       headerEndEnhancer={
-        selectedRepository === undefined ? (
+        isShowingServices ? (
           <Kbd title="Restart changed services, or the primary service when none changed">
             {formatShortcutLabel(restartServicesShortcut ?? DEFAULT_RESTART_SERVICES_SHORTCUT)}
           </Kbd>
@@ -103,7 +124,13 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
           </InlineNotice>
         ) : undefined
       }
-      panelLabel={selectedRepository === undefined ? "Services" : selectedRepository.name + " · Worktrees"}
+      panelLabel={
+        isShowingStoppedServices
+          ? "Stopped services"
+          : selectedRepository === undefined
+            ? "Services"
+            : selectedRepository.name + " · Worktrees"
+      }
       panelWidth={selectedRepository === undefined ? (repositories.length > 0 ? "md" : "sm") : "lg"}
       testId="ServiceStatusPanel"
       triggerContent={
@@ -123,9 +150,19 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
       triggerLabel={readServicesTriggerLabel(upCount, props.services.length, changedCount, hasError)}
       triggerTone={hasError ? "alert" : "default"}
     >
-      {selectedRepository !== undefined &&
-      props.onRefreshWorktrees !== undefined &&
-      props.onSwitchWorktree !== undefined ? (
+      {isShowingStoppedServices && onStartServices !== undefined ? (
+        <StoppedServices
+          services={stoppedServices}
+          isBlocked={
+            isStackRestarting ||
+            props.services.some((service) => service.restarting === true) ||
+            repositories.some((repository) => repository.switching)
+          }
+          onStart={onStartServices}
+        />
+      ) : selectedRepository !== undefined &&
+        props.onRefreshWorktrees !== undefined &&
+        props.onSwitchWorktree !== undefined ? (
         <WorktreePicker
           key={selectedRepository.id}
           repository={selectedRepository}
@@ -186,6 +223,20 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
             onSetErrorMessage={onSetErrorMessage}
             isBlocked={isStackRestarting}
           />
+          {stoppedServices.length > 0 ? (
+            <PanelActions>
+              <Button
+                ref={stoppedServicesButton}
+                disabled={onStartServices === undefined}
+                endEnhancer={<Icon glyph={ChevronRightIcon} />}
+                onClick={(): void => {
+                  setIsChoosingStoppedService(true);
+                }}
+              >
+                {`Stopped services (${stoppedServices.length})`}
+              </Button>
+            </PanelActions>
+          ) : null}
           {props.services.some((service) => service.managed) ? (
             <RestartStackButton
               isDisabled={
