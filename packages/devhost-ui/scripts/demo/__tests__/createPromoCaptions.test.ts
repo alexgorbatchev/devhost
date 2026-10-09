@@ -42,6 +42,15 @@ it("ends a caption when the composition cuts its audio clip short", async () => 
   );
 });
 
+it("rejects a narration clip whose length is not a positive number", async () => {
+  const html = `<audio id="voice-line-1" data-narration="line-1" src="a.mp3" data-start="0.25" data-duration="3s"></audio>
+    <audio id="voice-line-2" data-narration="line-2" src="b.mp3" data-start="6"></audio>`;
+
+  await expect(createPromoCaptions(html, lines, timings)).rejects.toThrow(
+    "Narration clip line-1 has an invalid data-duration: 3s",
+  );
+});
+
 it("names a narration line the composition never plays", async () => {
   const html = '<audio id="voice-line-1" data-narration="line-1" src="a.mp3" data-start="0.25"></audio>';
 
