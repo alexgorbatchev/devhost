@@ -95,3 +95,26 @@ func listGitWorktrees(cwd string) ([]devtools.Worktree, error) {
 	}
 	return entries, nil
 }
+
+// Remote HEAD records the default branch without a network request. When remotes
+// disagree (or no HEAD is recorded), leave the default unknown rather than guess.
+func defaultGitBranch(cwd string) (string, error) {
+	out, err := runGit(cwd, "for-each-ref", "--format=%(refname)%00%(symref)", "refs/remotes/")
+	if err != nil {
+		return "", err
+	}
+	branch := ""
+	for line := range strings.SplitSeq(out, "\n") {
+		ref, target, _ := strings.Cut(line, "\x00")
+		remote, isHead := strings.CutSuffix(ref, "/HEAD")
+		if !isHead || !strings.HasPrefix(target, remote+"/") {
+			continue
+		}
+		candidate := strings.TrimPrefix(target, remote+"/")
+		if branch != "" && branch != candidate {
+			return "", nil
+		}
+		branch = candidate
+	}
+	return branch, nil
+}

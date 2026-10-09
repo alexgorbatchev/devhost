@@ -14,10 +14,14 @@ export const fixture_healthPollErrorServices: ComponentProps<typeof ServiceStatu
 
 export const fixture_stoppedServices: IStoppedService[] = [{ name: "docs" }, { name: "admin" }, { name: "mail" }];
 
-export function factory_worktreeRepository(serviceNames: string[] = ["api", "web"]): IWorktreeRepository {
+export function factory_worktreeRepository(
+  serviceNames: string[] = ["api", "web"],
+  defaultBranch: string = "main",
+): IWorktreeRepository {
   return {
     id: "shop",
     name: "shop",
+    defaultBranch,
     configuredPath: "/projects/shop",
     selectedPath: "/projects/shop",
     runningPath: "/projects/shop",
@@ -26,7 +30,7 @@ export function factory_worktreeRepository(serviceNames: string[] = ["api", "web
     worktrees: [
       {
         path: "/projects/shop",
-        branch: "main",
+        branch: defaultBranch || "main",
         head: "abcdef123",
         detached: false,
         available: true,

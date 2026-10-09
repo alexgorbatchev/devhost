@@ -17,6 +17,7 @@ type CanceledEventType = "contextmenu" | "keydown";
 // The stack runs from `/projects/shop`, where the page's source metadata points.
 const repository: IWorktreeRepository = {
   configuredPath: "/projects/shop",
+  defaultBranch: "main",
   id: "shop",
   name: "shop",
   runningPath: "/projects/shop",

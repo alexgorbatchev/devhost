@@ -69,6 +69,7 @@ type Worktree struct {
 type WorktreeRepository struct {
 	ID             string     `json:"id"`
 	Name           string     `json:"name"`
+	DefaultBranch  string     `json:"defaultBranch"`
 	ConfiguredPath string     `json:"configuredPath"`
 	SelectedPath   string     `json:"selectedPath"`
 	RunningPath    string     `json:"runningPath"`

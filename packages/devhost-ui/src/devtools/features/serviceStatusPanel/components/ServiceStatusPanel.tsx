@@ -28,6 +28,7 @@ import type { ServiceHealth, IStoppedService, IWorktreeRepository } from "../../
 import { StoppedServices } from "./StoppedServices";
 import { WorktreePicker } from "./WorktreePicker";
 import { formatWorktreePath } from "../formatWorktreePath";
+import { readNonDefaultBranches } from "../readNonDefaultBranches";
 
 interface IServiceStatusPanelProps {
   errorMessage: string | null;
@@ -80,6 +81,9 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
     });
   };
   const hasError: boolean = props.errorMessage !== null;
+  const nonDefaultBranches = readNonDefaultBranches(repositories);
+  const worktreeSummary: string | undefined =
+    nonDefaultBranches.length > 0 ? `Non-default branches: ${nonDefaultBranches.join(", ")}` : undefined;
 
   if (!hasError && props.services.length === 0 && stoppedServices.length === 0) {
     return null;
@@ -142,12 +146,21 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
             ))}
           </span>
           <span aria-hidden="true">{`${upCount}/${props.services.length}`}</span>
+          {worktreeSummary !== undefined ? (
+            <span data-testid="ServiceStatusPanel--worktree-indicator">
+              <Icon glyph={GitBranchIcon} />
+            </span>
+          ) : null}
           {changedCount > 0 && !hasError ? (
             <Badge aria-hidden="true" variant="warning">{`${changedCount} changed`}</Badge>
           ) : null}
         </>
       }
-      triggerLabel={readServicesTriggerLabel(upCount, props.services.length, changedCount, hasError)}
+      title={worktreeSummary}
+      triggerLabel={
+        readServicesTriggerLabel(upCount, props.services.length, changedCount, hasError) +
+        (worktreeSummary === undefined ? "" : `, non-default branches: ${nonDefaultBranches.join(", ")}`)
+      }
       triggerTone={hasError ? "alert" : "default"}
     >
       {isShowingStoppedServices && onStartServices !== undefined ? (

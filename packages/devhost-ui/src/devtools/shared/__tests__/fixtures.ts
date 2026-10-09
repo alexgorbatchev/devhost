@@ -6,6 +6,7 @@ export function factory_worktreeRepository(): IWorktreeRepository {
     id: "shop",
     name: "shop",
     configuredPath: "/projects/shop",
+    defaultBranch: "main",
     selectedPath: "/projects/shop",
     runningPath: "/projects/shop",
     switching: false,
