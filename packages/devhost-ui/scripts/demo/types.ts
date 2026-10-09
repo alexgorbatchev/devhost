@@ -93,6 +93,11 @@ export interface IPromoFootagePlan {
   holdSeconds: number;
 }
 
+export interface IPromoFootageRequest {
+  file: string;
+  slot: IPromoFootageSlot;
+}
+
 export interface IStagedPromoFootage extends IPromoFootageSlot, IPromoFootagePlan {}
 
 export type PromoFootageSource = Pick<IRecordedSourceClip, "id" | "path">;
