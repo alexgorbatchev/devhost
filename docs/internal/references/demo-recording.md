@@ -54,7 +54,7 @@ just demo promo .tmp/demos/recording-AbC123
 DEVHOST_DEMO_QUALITY=draft just demo promo
 ```
 
-Without an argument the command uses the newest recording that holds every recording the composition requests, so a later single-scene run or a run that failed part-way is skipped. A directory given as the argument is checked the same way before the renderer is prepared and before anything in it is created or replaced, and the command stops when footage is missing. `DEVHOST_DEMO_QUALITY` accepts HyperFrames' `draft`, `looks`, and `delivery`; the default is `delivery`, and `draft` is the fast setting for iterating on the composition. Both `just demo record` and `just demo promo` honor it.
+Without an argument the command uses the most recently captured recording that holds every recording the composition requests, so a later single-scene run or a run that failed part-way is skipped. It compares the footage's own timestamps, so rendering an older recording again does not make it the newest. A directory given as the argument is checked the same way before the renderer is prepared and before anything in it is created or replaced, and the command stops when footage is missing. `DEVHOST_DEMO_QUALITY` accepts HyperFrames' `draft`, `looks`, and `delivery`; the default is `delivery`, and `draft` is the fast setting for iterating on the composition. Both `just demo record` and `just demo promo` honor it.
 
 To iterate on one scene:
 
