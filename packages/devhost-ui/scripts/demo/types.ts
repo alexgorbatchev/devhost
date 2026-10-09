@@ -12,6 +12,8 @@ export interface ICommandOptions {
   logPath?: string;
 }
 
+export type RunCommand = (command: string[], options?: ICommandOptions) => Promise<string>;
+
 export interface ICaptionClip {
   caption: string;
   duration: number;
