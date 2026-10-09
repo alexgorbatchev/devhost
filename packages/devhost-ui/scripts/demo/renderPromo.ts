@@ -6,6 +6,7 @@ import { createPromoCaptions } from "./createPromoCaptions";
 import { findPromoRecording } from "./findPromoRecording";
 import { readMediaInfo } from "./readMediaInfo";
 import { readPromoFootageRequests } from "./readPromoFootageRequests";
+import { readPromoSources } from "./readPromoSources";
 import { renderPromoComposition } from "./renderPromoComposition";
 import { runCommand } from "./runCommand";
 import { stagePromoFootage } from "./stagePromoFootage";
@@ -21,13 +22,7 @@ const stagedDependencies: Record<string, string> = {
 
 export async function renderPromo(options: IRenderPromoOptions): Promise<string> {
   const { directoryPath, signal } = options;
-  const rawPath = join(directoryPath, "raw");
-  const sources = (await Array.fromAsync(new Bun.Glob("*.{mp4,webm}").scan({ cwd: rawPath, onlyFiles: true }))).map(
-    (file) => ({ id: file.replace(/\.[^.]+$/, ""), path: join(rawPath, file) }),
-  );
-  // A frame names a recording without its extension, so two files with one name would pick footage by glob order.
-  const ambiguous = sources.find((source, index) => sources.findIndex((other) => other.id === source.id) !== index);
-  if (ambiguous) throw new Error(`raw/ holds more than one recording named ${ambiguous.id}`);
+  const sources = await readPromoSources(directoryPath);
   // Each run renders its own copy, so concurrent recordings and the checkout never share staged footage.
   const projectPath = join(directoryPath, "promo");
   await rm(projectPath, { recursive: true, force: true });

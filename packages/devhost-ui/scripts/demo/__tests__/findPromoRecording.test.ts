@@ -26,6 +26,7 @@ it("picks the newest recording that holds every recording the composition reques
   await createRecording("recording-older-full", ["startup.mp4", "overview-1.webm", "query-1.webm"], 1_000);
   const complete = await createRecording("recording-full", ["startup.mp4", "overview-1.webm", "query-1.webm"], 2_000);
   await createRecording("recording-startup-only", ["startup.mp4"], 3_000);
+  await createRecording("recording-screenshots", ["startup.mp4", "overview-1.png", "query-1.png"], 3_500);
   await createRecording("guide-terminal", ["startup.mp4", "overview-1.webm", "query-1.webm"], 4_000);
 
   expect(await findPromoRecording(parentPath, ["startup", "overview-1", "query-1"])).toBe(complete);
