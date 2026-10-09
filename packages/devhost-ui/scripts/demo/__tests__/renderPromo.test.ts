@@ -131,6 +131,20 @@ it("stages a private copy of the project and writes the video with its captions 
   expect(await Bun.file(join(projectSourcePath, "assets/footage/terminal.mp4")).exists()).toBe(false);
 }, 30_000);
 
+it("rejects two recordings that a frame could not tell apart", async () => {
+  const recordingPath = await createRecording("ambiguous");
+  await Bun.write(join(recordingPath, "raw/startup.webm"), "not the terminal recording");
+
+  await expect(
+    renderPromo({
+      directoryPath: recordingPath,
+      projectSourcePath,
+      render: createRenderer(4, tone),
+      signal: new AbortController().signal,
+    }),
+  ).rejects.toThrow("raw/ holds more than one recording named startup");
+}, 30_000);
+
 it("rejects a render that runs past the promo's length limit", async () => {
   const recordingPath = await createRecording("too-long");
 
