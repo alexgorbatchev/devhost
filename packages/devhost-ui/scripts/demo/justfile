@@ -1,6 +1,14 @@
-# Record all scenes, or one of startup/overview/annotations/query
+# Record the real scenes and render the promo, or record one of startup/overview/annotations/query with captions
 record scene="all":
     DEVHOST_DEMO_SCENE={{quote(scene)}} bun run ./recordDemo.ts
+
+# Render the promo again from the footage of the latest recording, or of the given recording directory
+promo recording="":
+    DEVHOST_DEMO_RECORDING={{quote(recording)}} DEVHOST_DEMO_INVOCATION_DIRECTORY={{quote(invocation_directory())}} bun run ./renderPromo.ts
+
+# Regenerate the promo's ElevenLabs audio (all, voice, or music); this bills the ELEVENLABS_API_KEY account
+audio part="all":
+    DEVHOST_DEMO_AUDIO={{quote(part)}} bun run ./generatePromoAudio.ts
 
 # Run the recording workflow's behavioral tests
 test:

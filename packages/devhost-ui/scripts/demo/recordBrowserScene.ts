@@ -9,6 +9,7 @@ export async function recordBrowserScene(
   scene: IBrowserScene,
   runtime: IDemoRuntime,
   signal: AbortSignal,
+  captureScale: number = 1,
 ): Promise<IRecordedSourceClip[]> {
   let clips: IRecordedSourceClip[] = [];
   const errors: string[] = [];
@@ -22,7 +23,13 @@ export async function recordBrowserScene(
   page.on("pageerror", onPageError);
   page.on("request", onRequest);
   try {
-    const recording = await createCaptionRecording(page.screencast, runtime.directoryPath, scene.id, scene.caption);
+    const recording = await createCaptionRecording(
+      page.screencast,
+      runtime.directoryPath,
+      scene.id,
+      scene.caption,
+      captureScale,
+    );
     try {
       await scene.record(page, runtime, signal, recording.changeCaption);
     } finally {
