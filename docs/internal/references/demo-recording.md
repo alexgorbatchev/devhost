@@ -1,12 +1,12 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-09 10:16
+last_modified: 2026-10-09 14:24
 status: current
 ---
 
 # Refreshing the devhost demo
 
-Run the recording from the checkout whose UI you want to demonstrate. The recorder rebuilds the CLI and embedded UI and starts real services through devhost. The full sequence becomes a promo of at most 45 seconds: [HyperFrames](https://github.com/heygen-com/hyperframes) composes the captured scenes with narration and music. A single scene and each guide export a silent, captioned H.264 MP4. The promo and single scenes stay in `.tmp/demos/`; guide recordings also update reviewed, tracked site media.
+Run the recording from the checkout whose UI you want to demonstrate. The recorder rebuilds the CLI and embedded UI and starts real services through devhost. The full sequence becomes a promo of at most 45 seconds: [HyperFrames](https://github.com/heygen-com/hyperframes) composes the captured scenes with narration and music. A single scene and each guide export a silent, captioned H.264 MP4. The promo and single scenes stay in `.tmp/demos/`; guide recordings also update the docs site's media, which you review and then publish.
 
 ## Prerequisites
 
@@ -82,7 +82,22 @@ just demo guides react-highlight
 just demo guides service-references
 ```
 
-The command discovers guide Markdown files, renders each corresponding real workflow, and copies its MP4, WebP poster, and English WebVTT captions to `packages/docs/public/demos/<slug>.*`. It replaces the guide's `guide-demo` block with a native video player at the top and a collapsed text transcript. The prose remains untouched. Assets use full `https://alexgorbatchev.github.io/devhost/demos/` URLs and ship through the existing Pages build; no additional upload service or release is involved. Players use `preload="none"` and play only when requested.
+The command discovers guide Markdown files, renders each corresponding real workflow, and copies its MP4, WebP poster, and English WebVTT captions to `packages/docs/public/demos/<slug>.*`. It replaces the guide's `guide-demo` block with a native video player at the top and a collapsed text transcript. The prose remains untouched. Assets use full `https://alexgorbatchev.github.io/devhost/demos/` URLs and ship through the existing Pages build. Players use `preload="none"` and play only when requested.
+
+### Where guide videos are stored
+
+Git tracks each guide's poster and captions but not its video. `packages/docs/demo-media.json` pins every video by name, SHA-256, and size, and the files themselves are assets of the `media` release of `alexgorbatchev/devhost`. That release is not a devhost version and is never marked as the latest release.
+
+| Command                   | What it does                                                                                   |
+| ------------------------- | ---------------------------------------------------------------------------------------------- |
+| `just docs media`         | Downloads the pinned videos this checkout lacks into `packages/docs/public/demos/`             |
+| `just docs publish-media` | Uploads each new or re-rendered video to the release and rewrites its pin in `demo-media.json` |
+
+`just docs dev`, `just docs test`, and `just docs build` run `just docs media` first, so the docs deploy and CI download the videos by themselves and need no token: the release is public. A download is written only after its SHA-256 matches the pin. `just docs check` also fails while a video on disk is not the pinned one, which is the state between a new render and its publication.
+
+A release asset is named after its content, such as `annotations-273a29aa49b00e5f.mp4`, and is never replaced. An earlier commit therefore keeps building with the videos it pinned, and a re-render adds an asset instead of overwriting one. `just docs publish-media` needs the GitHub CLI signed in with write access to the repository. It never removes a pin; delete an entry from `demo-media.json` by hand when a guide is removed.
+
+`just docs media` leaves a video on disk alone when it differs from its pin, because that is a render you have not published yet. To discard such a render, delete the file and run `just docs media` again.
 
 Browser guides cover the minimap, toolbar, worktrees and Query; real Pi annotation/live fixes; and React Highlight. The React Highlight scene launches the stack's generated `devhost-nvim` with a clean headless Neovim configuration, loads its native start packages with `packloadall!`, starts a real TSX Tree-sitter highlighter, moves its actual JSX cursor, and waits for a matching native browser diagnostic and overlay. Set `DEVHOST_DEMO_TSX_PARSER` to an installed `tsx.so` when it is not at the normal `nvim/site/parser/tsx.so` under the host's XDG data directory.
 
@@ -90,7 +105,7 @@ Routing guides capture native VHS terminal sessions and verify real HTTP respons
 
 Guide rendering also needs `curl` and `setsid`; Docker needs a working local daemon and permission to pull the tiny public image. Rendering runs serially because guides use `demo.localhost`. Source files are `createGuideTerminalScene.ts`, `createGuideTape.ts`, `recordGuideTerminal.ts`, `recordReactHighlight.ts`, `recordGuides.ts`, and `publishGuideDemo.ts`. Native publication tests use FFmpeg/ffprobe, which CI installs before `just check`.
 
-Review the new media, transcript, and Markdown changes before committing. A push of docs assets to `main` uses `.github/workflows/docs.yml` to deploy them. Agent consumers can follow the HTTPS guide links in `skills/devhost/SKILL.md` and read prose/transcripts without loading binary media.
+Review the new media, transcript, and Markdown changes, for example on the playground's `/videos` page. Then run `just docs publish-media` and commit `demo-media.json` together with the posters, captions, and guides. A push of those files to `main` uses `.github/workflows/docs.yml` to deploy them with the newly pinned videos. Agent consumers can follow the HTTPS guide links in `skills/devhost/SKILL.md` and read prose/transcripts without loading binary media.
 
 ## Editing the sequence
 
@@ -183,4 +198,4 @@ The recorder closes its browser, stops its stack, and runs manifest-scoped `devh
 
 Recorded terminals show absolute paths under the checkout, and the Pi terminal shows the configured provider and model. Review a video for anything you would not publish before sharing it.
 
-There is no automatic upload, release change, or scheduled refresh. `just demo record` retains its media locally; `just demo guides` prepares tracked docs assets for the existing Pages deployment after review and an authorized push.
+There is no automatic upload or scheduled refresh. `just demo record` retains its media locally. `just demo guides` writes the docs site's media locally; only `just docs publish-media`, run by a person after review, uploads a video, and the Pages deployment serves it after an authorized push of its pin.
