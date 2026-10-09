@@ -37,14 +37,15 @@
       display: flex;
       flex-direction: column;
       padding: 30px 40px 36px;
-      font-size: 32px;
+      font-size: 30px;
       font-weight: 500;
-      line-height: 52px;
-      white-space: pre;
+      line-height: 48px;
     }
+    /* A line keeps to one row however the markup is wrapped, and an empty one keeps its height. */
     .start-line {
       display: block;
-      height: 52px;
+      height: 48px;
+      white-space: nowrap;
     }
     .start-table {
       color: var(--dh-accent);
@@ -124,22 +125,24 @@
         <span class="start-line"
           ><span class="start-key">name</span> = <span class="start-string">"Devhost demo"</span></span
         >
-        <span class="start-line"> </span>
+        <span class="start-line"></span>
         <span class="start-line start-table">[services.web]</span>
         <span class="start-line"><span class="start-key">primary</span> = true</span>
         <span class="start-line"
           ><span class="start-key">command</span> = [<span class="start-string">"bun"</span>,
           <span class="start-string">"run"</span>, <span class="start-string">"src/index.ts"</span>]</span
         >
+        <span class="start-line"><span class="start-key">port</span> = <span class="start-string">"auto"</span></span>
         <span class="start-line"
           ><span class="start-key">host</span> = <span class="start-string">"demo.localhost"</span></span
         >
-        <span class="start-line"> </span>
+        <span class="start-line"></span>
         <span class="start-line start-table">[services.api]</span>
         <span class="start-line"
           ><span class="start-key">command</span> = [<span class="start-string">"bun"</span>,
           <span class="start-string">"run"</span>, <span class="start-string">"src/index.ts"</span>]</span
         >
+        <span class="start-line"><span class="start-key">port</span> = <span class="start-string">"auto"</span></span>
         <span class="start-line"
           ><span class="start-key">host</span> = <span class="start-string">"demo.localhost"</span></span
         >
@@ -215,7 +218,7 @@
       tl.fromTo(
         ".start-line",
         { x: -36, opacity: 0 },
-        { x: 0, opacity: 1, duration: 0.22, ease: "power2.out", stagger: 0.13 },
+        { x: 0, opacity: 1, duration: 0.22, ease: "power2.out", stagger: 0.11 },
         0.4,
       );
       // "Then one command": the file leaves and the terminal takes the stage.
