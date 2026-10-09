@@ -10,7 +10,8 @@ interface IVideoSectionProps {
 }
 
 function describeFile(video: IDemoVideo): string {
-  return `${new Date(video.modified).toLocaleString()} · ${(video.bytes / 1_000_000).toFixed(1)} MB`;
+  const size = `${(video.bytes / 1_000_000).toFixed(1)} MB`;
+  return video.modified === undefined ? size : `${new Date(video.modified).toLocaleString()} · ${size}`;
 }
 
 export function VideoSection({ heading, layout, emptyMessage, videos }: IVideoSectionProps): JSX.Element {

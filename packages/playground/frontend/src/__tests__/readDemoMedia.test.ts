@@ -93,6 +93,63 @@ describe("readDemoMedia", () => {
     expect((await readDemoMedia(repositoryDirectory)).videos).toEqual([]);
   });
 
+  test("lists each published video with its address in the GitHub release, after the local videos", async () => {
+    await writeMedia("packages/docs/public/demos/devtools.mp4", 500);
+    await Bun.write(
+      new URL("packages/docs/demo-media.json", repositoryDirectory),
+      JSON.stringify({
+        repository: "alexgorbatchev/devhost",
+        release: "media",
+        files: {
+          "devtools.mp4": { asset: "devtools-828c3b1aa27cea7d.mp4", sha256: "8".repeat(64), bytes: 1_006_527 },
+          "annotations.mp4": { asset: "annotations-273a29aa49b00e5f.mp4", sha256: "2".repeat(64), bytes: 1_151_684 },
+        },
+      }),
+    );
+
+    const media = await readDemoMedia(repositoryDirectory);
+
+    expect(media.videos.map((video) => video.id)).toEqual([
+      "guide-devtools",
+      "published-annotations",
+      "published-devtools",
+    ]);
+    expect(media.videos[1]).toEqual({
+      id: "published-annotations",
+      kind: "published",
+      title: "annotations",
+      src: "https://github.com/alexgorbatchev/devhost/releases/download/media/annotations-273a29aa49b00e5f.mp4",
+      bytes: 1_151_684,
+    });
+    // GitHub serves a published video; this server only serves the files on disk.
+    expect([...media.files.keys()]).toEqual(["/demo-videos/guides/devtools.mp4"]);
+  });
+
+  test.each([
+    ["is not JSON", "<html>"],
+    ["names no repository", JSON.stringify({ release: "media", files: {} })],
+    [
+      "puts a path in an asset name",
+      JSON.stringify({
+        repository: "alexgorbatchev/devhost",
+        release: "media",
+        files: { "annotations.mp4": { asset: "../../evil/annotations.mp4", sha256: "2".repeat(64), bytes: 1 } },
+      }),
+    ],
+    [
+      "points at another host",
+      JSON.stringify({
+        repository: "evil.example/x/y",
+        release: "media",
+        files: { "annotations.mp4": { asset: "annotations-273a29aa49b00e5f.mp4", sha256: "2".repeat(64), bytes: 1 } },
+      }),
+    ],
+  ])("lists no published video when the pin file %s", async (_name, manifest) => {
+    await Bun.write(new URL("packages/docs/demo-media.json", repositoryDirectory), manifest);
+
+    expect((await readDemoMedia(repositoryDirectory)).videos).toEqual([]);
+  });
+
   test("lists nothing in a checkout that has neither recordings nor guide demos", async () => {
     const media = await readDemoMedia(repositoryDirectory);
 
