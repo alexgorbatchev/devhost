@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>devhost promo</title>
+    <script src="assets/vendor/gsap.min.js"></script>
+    <link rel="stylesheet" href="assets/vendor/devhost-tokens.css" />
+    <style>
+      @font-face {
+        font-family: "JetBrains Mono Variable";
+        font-style: normal;
+        font-weight: 100 800;
+        src: url("assets/fonts/jetbrains-mono-latin-wght-normal.woff2") format("woff2");
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--dh-term-bg);
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: "JetBrains Mono Variable", monospace;
+        color: var(--dh-fg);
+      }
+      #root > div[data-composition-src] {
+        position: absolute;
+        inset: 0;
+      }
+      /* Shared by every frame that shows a recording: one window, one label style. */
+      .dh-window {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border: 2px solid var(--dh-line);
+        border-radius: 22px;
+        /* The recorded terminal's own background, so a window never shows a seam. */
+        background: #171717;
+        box-shadow:
+          0 60px 160px rgb(0 0 0 / 0.7),
+          0 0 120px color-mix(in srgb, var(--dh-accent) 14%, transparent);
+      }
+      .dh-window-bar {
+        display: flex;
+        flex: none;
+        align-items: center;
+        gap: 12px;
+        height: 54px;
+        padding: 0 22px;
+        border-bottom: 2px solid var(--dh-line);
+        background: var(--dh-surface-2);
+      }
+      .dh-window-dot {
+        display: block;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--dh-surface-3);
+      }
+      .dh-window-address {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        height: 34px;
+        margin-left: 18px;
+        padding: 0 18px;
+        border-radius: 17px;
+        background: var(--dh-term-bg);
+        font-size: 20px;
+        font-weight: 500;
+        color: var(--dh-fg-muted);
+      }
+      .dh-window-lock {
+        display: block;
+        width: 18px;
+        height: 18px;
+        color: var(--dh-ok);
+      }
+      .dh-window-screen {
+        position: relative;
+        flex: 1;
+        overflow: hidden;
+      }
+      .dh-camera {
+        position: absolute;
+        inset: 0;
+      }
+      .dh-camera video {
+        position: absolute;
+        inset: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .dh-label {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        height: 78px;
+        padding: 0 32px;
+        border-radius: 39px;
+        background: var(--dh-fg);
+        color: var(--dh-term-bg);
+        font-size: 38px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        white-space: nowrap;
+        box-shadow: 0 20px 60px rgb(0 0 0 / 0.6);
+      }
+      .dh-label-accent {
+        background: var(--dh-accent);
+        color: var(--dh-on-accent);
+      }
+      .dh-label-step {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background: var(--dh-term-bg);
+        color: var(--dh-fg);
+        font-size: 26px;
+      }
+      .dh-note {
+        position: absolute;
+        font-size: 22px;
+        font-weight: 500;
+        color: var(--dh-fg-muted);
+        white-space: nowrap;
+      }
+      #cut-flash {
+        position: absolute;
+        inset: 0;
+        background: var(--dh-fg);
+        opacity: 0;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="41.4" data-width="1920" data-height="1080">
+      <div
+        id="el-backdrop"
+        data-composition-id="backdrop"
+        data-composition-src="compositions/backdrop.html"
+        data-start="0"
+        data-duration="41.4"
+        data-track-index="0"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+
+      <!-- Frames cut on the music: the drop at 4.2s, then every beat-aligned change, and the final hit at 36.2s. -->
+      <div
+        id="el-01-hook"
+        data-composition-id="01-hook"
+        data-composition-src="compositions/frames/01-hook.html"
+        data-start="0"
+        data-duration="4.2"
+        data-track-index="1"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+      <div
+        id="el-02-promise"
+        data-composition-id="02-promise"
+        data-composition-src="compositions/frames/02-promise.html"
+        data-start="4.2"
+        data-duration="8.5"
+        data-track-index="1"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+      <div
+        id="el-03-start"
+        data-composition-id="03-start"
+        data-composition-src="compositions/frames/03-start.html"
+        data-start="12.7"
+        data-duration="8"
+        data-track-index="1"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+      <div
+        id="el-04-devtools"
+        data-composition-id="04-devtools"
+        data-composition-src="compositions/frames/04-devtools.html"
+        data-start="20.7"
+        data-duration="6"
+        data-track-index="1"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+      <div
+        id="el-05-agent"
+        data-composition-id="05-agent"
+        data-composition-src="compositions/frames/05-agent.html"
+        data-start="26.7"
+        data-duration="9.5"
+        data-track-index="1"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+      <div
+        id="el-06-close"
+        data-composition-id="06-close"
+        data-composition-src="compositions/frames/06-close.html"
+        data-start="36.2"
+        data-duration="5.2"
+        data-track-index="1"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+
+      <div id="cut-flash"></div>
+
+      <!-- One bus lifts every narration line to the same level under one ceiling. -->
+      <hf-audio-group
+        id="voiceover"
+        data-label="Voiceover"
+        data-fx-chain='{"version":1,"nodes":[{"type":"gain","id":"n1","label":"Voice level","params":{"gain":5}},{"type":"limiter","id":"n2","label":"Ceiling","params":{"limit":-3}}]}'
+      ></hf-audio-group>
+      <audio
+        id="voice-line-1"
+        data-narration="line-1"
+        data-audio-group="voiceover"
+        src="assets/audio/voice/line-1.mp3"
+        data-start="0.25"
+        data-duration="3.35"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
+      <audio
+        id="voice-line-2"
+        data-narration="line-2"
+        data-audio-group="voiceover"
+        src="assets/audio/voice/line-2.mp3"
+        data-start="4.15"
+        data-duration="8.9"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
+      <audio
+        id="voice-line-3"
+        data-narration="line-3"
+        data-audio-group="voiceover"
+        src="assets/audio/voice/line-3.mp3"
+        data-start="13.1"
+        data-duration="7.55"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
+      <audio
+        id="voice-line-4"
+        data-narration="line-4"
+        data-audio-group="voiceover"
+        src="assets/audio/voice/line-4.mp3"
+        data-start="20.8"
+        data-duration="4.45"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
+      <audio
+        id="voice-line-5"
+        data-narration="line-5"
+        data-audio-group="voiceover"
+        src="assets/audio/voice/line-5.mp3"
+        data-start="26.9"
+        data-duration="6.95"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
+      <audio
+        id="voice-line-6"
+        data-narration="line-6"
+        data-audio-group="voiceover"
+        src="assets/audio/voice/line-6.mp3"
+        data-start="36.5"
+        data-duration="4.4"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
+
+      <!--
+        The track starts 1.8s in, which puts its drop at 4.2s and its final hit at 36.2s. The lane keeps it under the
+        narration and lets it through at the drop, the unvoiced shot, and the ending.
+      -->
+      <audio
+        id="music"
+        src="assets/audio/music.mp3"
+        data-start="0"
+        data-duration="40.3"
+        data-media-start="1.8"
+        data-track-index="11"
+        data-volume="1"
+        data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0.45},{"t":3.3,"v":0.45},{"t":4.1,"v":0.5},{"t":4.55,"v":0.45},{"t":4.95,"v":0.12},{"t":12.6,"v":0.12},{"t":12.75,"v":0.26},{"t":13.15,"v":0.12},{"t":20.5,"v":0.12},{"t":20.7,"v":0.26},{"t":20.9,"v":0.12},{"t":25.15,"v":0.12},{"t":25.5,"v":0.42},{"t":26.7,"v":0.42},{"t":27,"v":0.12},{"t":33.6,"v":0.12},{"t":34.1,"v":0.6},{"t":36.7,"v":0.6},{"t":37.1,"v":0.24},{"t":40.3,"v":0.24}]}]}'
+      ></audio>
+    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      // One white frame on each cut ties the picture to the beat.
+      for (const cut of [4.2, 12.7, 20.7, 26.7, 33.6, 36.2]) {
+        tl.set("#cut-flash", { opacity: 0.55 }, cut);
+        tl.to("#cut-flash", { opacity: 0, duration: 0.28, ease: "power2.out" }, cut);
+      }
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,251 @@
+<template>
+  <style>
+    #root {
+      position: absolute;
+      inset: 0;
+    }
+    .start-file {
+      position: absolute;
+      left: 500px;
+      top: 150px;
+      width: 920px;
+      overflow: hidden;
+      border: 2px solid var(--dh-line);
+      border-radius: 22px;
+      background: var(--dh-surface);
+      box-shadow: 0 50px 140px rgb(0 0 0 / 0.65);
+    }
+    .start-file-tab {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      height: 62px;
+      padding: 0 30px;
+      border-bottom: 2px solid var(--dh-line);
+      background: var(--dh-surface-2);
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .start-file-dot {
+      display: block;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--dh-accent);
+    }
+    .start-file-body {
+      display: flex;
+      flex-direction: column;
+      padding: 30px 40px 36px;
+      font-size: 32px;
+      font-weight: 500;
+      line-height: 52px;
+      white-space: pre;
+    }
+    .start-line {
+      display: block;
+      height: 52px;
+    }
+    .start-table {
+      color: var(--dh-accent);
+      font-weight: 700;
+    }
+    .start-key {
+      color: var(--dh-mark-alt);
+    }
+    .start-string {
+      color: var(--dh-ok);
+    }
+    .start-window {
+      left: 200px;
+      top: 250px;
+      width: 1520px;
+      height: 660px;
+    }
+    .start-terminal {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 2080px;
+      height: 1170px;
+    }
+    .start-terminal video {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .start-route {
+      position: absolute;
+      left: 706px;
+      top: 266px;
+      display: block;
+      width: 508px;
+      height: 54px;
+      border: 4px solid var(--dh-accent);
+      border-radius: 12px;
+      box-shadow: 0 0 50px color-mix(in srgb, var(--dh-accent) 55%, transparent);
+    }
+    .start-command {
+      left: 200px;
+      top: 144px;
+    }
+    .start-health {
+      position: absolute;
+      left: 54px;
+      top: 392px;
+      display: flex;
+      gap: 22px;
+    }
+    .start-health-chip {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      height: 70px;
+      padding: 0 28px;
+      border: 2px solid var(--dh-ok);
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--dh-ok) 12%, transparent);
+      color: var(--dh-ok);
+      font-size: 34px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .start-health-tick {
+      display: block;
+      width: 32px;
+      height: 32px;
+    }
+  </style>
+
+  <div id="root" data-composition-id="03-start" data-width="1920" data-height="1080">
+    <div id="start-file" class="start-file">
+      <div class="start-file-tab"><span class="start-file-dot"></span>devhost.toml</div>
+      <div class="start-file-body">
+        <span class="start-line"
+          ><span class="start-key">name</span> = <span class="start-string">"Devhost demo"</span></span
+        >
+        <span class="start-line"> </span>
+        <span class="start-line start-table">[services.web]</span>
+        <span class="start-line"><span class="start-key">primary</span> = true</span>
+        <span class="start-line"
+          ><span class="start-key">command</span> = [<span class="start-string">"bun"</span>,
+          <span class="start-string">"run"</span>, <span class="start-string">"src/index.ts"</span>]</span
+        >
+        <span class="start-line"
+          ><span class="start-key">host</span> = <span class="start-string">"demo.localhost"</span></span
+        >
+        <span class="start-line"> </span>
+        <span class="start-line start-table">[services.api]</span>
+        <span class="start-line"
+          ><span class="start-key">command</span> = [<span class="start-string">"bun"</span>,
+          <span class="start-string">"run"</span>, <span class="start-string">"src/index.ts"</span>]</span
+        >
+        <span class="start-line"
+          ><span class="start-key">host</span> = <span class="start-string">"demo.localhost"</span></span
+        >
+        <span class="start-line"><span class="start-key">path</span> = <span class="start-string">"/api/*"</span></span>
+      </div>
+    </div>
+
+    <div id="start-command" class="dh-label dh-label-accent start-command">one command</div>
+
+    <div id="start-window" class="dh-window start-window">
+      <div class="dh-window-bar">
+        <span class="dh-window-dot"></span><span class="dh-window-dot"></span><span class="dh-window-dot"></span>
+        <span class="dh-window-address">terminal</span>
+      </div>
+      <div class="dh-window-screen">
+        <div class="start-terminal" data-layout-allow-overflow>
+          <video
+            id="start-footage"
+            class="clip"
+            src="assets/footage/start-footage.mp4"
+            data-footage="startup"
+            data-footage-to="-0.5"
+            data-start="3.5"
+            data-hf-media-start-basis="local"
+            data-duration="4.5"
+            data-track-index="2"
+            muted
+            playsinline
+          ></video>
+        </div>
+        <span id="start-route" class="start-route"></span>
+        <div class="start-health">
+          <div class="start-health-chip">
+            <svg class="start-health-tick" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="m4 12.5 5 5L20 6.5"
+                stroke="currentColor"
+                stroke-width="3.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            api healthy
+          </div>
+          <div class="start-health-chip">
+            <svg class="start-health-tick" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="m4 12.5 5 5L20 6.5"
+                stroke="currentColor"
+                stroke-width="3.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            web healthy
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    {
+      const tl = gsap.timeline({ paused: true });
+      const health = gsap.utils.toArray(".start-health-chip");
+      // "List your services in one file."
+      tl.fromTo(
+        "#start-file",
+        { y: 90, opacity: 0, scale: 0.94 },
+        { y: 0, opacity: 1, scale: 1, duration: 0.45, ease: "expo.out" },
+        0,
+      );
+      tl.fromTo(
+        ".start-line",
+        { x: -36, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.22, ease: "power2.out", stagger: 0.13 },
+        0.4,
+      );
+      // "Then one command": the file leaves and the terminal takes the stage.
+      tl.to("#start-file", { x: -900, scale: 0.7, opacity: 0, duration: 0.5, ease: "expo.in" }, 2.4);
+      tl.fromTo(
+        "#start-window",
+        { y: 260, opacity: 0, rotationX: 24, transformPerspective: 1600 },
+        { y: 0, opacity: 1, rotationX: 0, duration: 0.7, ease: "expo.out" },
+        2.55,
+      );
+      tl.fromTo(
+        "#start-command",
+        { scale: 0.4, opacity: 0, rotation: -8 },
+        { scale: 1, opacity: 1, rotation: 0, duration: 0.4, ease: "back.out(2.6)" },
+        2.8,
+      );
+      // "Routes open when health checks pass."
+      tl.fromTo(
+        "#start-route",
+        { scale: 1.5, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.36, ease: "back.out(2)" },
+        5.9,
+      );
+      tl.fromTo(
+        health,
+        { y: 40, opacity: 0, scale: 0.85 },
+        { y: 0, opacity: 1, scale: 1, duration: 0.32, ease: "back.out(2.4)", stagger: 0.26 },
+        6.66,
+      );
+      window.__timelines["03-start"] = tl;
+    }
+  </script>
+</template>

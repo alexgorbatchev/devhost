@@ -1,0 +1,97 @@
+{
+  "voice": {
+    "id": "CwhRBWXzGAHq8TQ4Fs17",
+    "name": "Roger",
+    "model": "eleven_multilingual_v2",
+    "stability": 0.45,
+    "similarityBoost": 0.75,
+    "style": 0.3
+  },
+  "lines": [
+    {
+      "id": "line-1",
+      "text": "Localhost three thousand. Four thousand. Which port?"
+    },
+    {
+      "id": "line-2",
+      "text": "devhost puts your local app on HTTPS hostnames, through a managed Caddy. For when logins and cookies need more than a port."
+    },
+    {
+      "id": "line-3",
+      "text": "List your services in one file. Then one command: devhost start. Routes open when health checks pass."
+    },
+    {
+      "id": "line-4",
+      "text": "Optional devtools add real-time logs and service controls, right in the page."
+    },
+    {
+      "id": "line-5",
+      "text": "Hold Alt, click an element, describe the change. A coding agent edits your source, and the page hot-reloads."
+    },
+    {
+      "id": "line-6",
+      "text": "devhost. Open source, on GitHub. Stop juggling ports."
+    }
+  ],
+  "music": {
+    "model": "music_v2",
+    "sections": [
+      {
+        "name": "Intro",
+        "seconds": 3.5,
+        "styles": [
+          "modern electronic underscore",
+          "developer tool launch video",
+          "120 BPM",
+          "instrumental",
+          "sparse ticking hi-hat",
+          "muted synth plucks",
+          "tense riser into a drop",
+          "great production quality"
+        ],
+        "avoid": ["vocals", "full drums"]
+      },
+      {
+        "name": "Drop",
+        "seconds": 9.1,
+        "styles": ["full groove from the first beat", "tight punchy synth bass", "crisp drums", "confident", "driving"],
+        "avoid": ["vocals", "quiet intro"]
+      },
+      {
+        "name": "Groove",
+        "seconds": 7.8,
+        "styles": ["same groove continues", "bright plucky arpeggio added", "driving"],
+        "avoid": ["vocals"]
+      },
+      {
+        "name": "Lift",
+        "seconds": 6.2,
+        "styles": ["more energy", "uplifting chords", "added sparkle"],
+        "avoid": ["vocals"]
+      },
+      {
+        "name": "Build",
+        "seconds": 6.6,
+        "styles": ["rising tension", "snare roll", "riser"],
+        "avoid": ["vocals"]
+      },
+      {
+        "name": "Breakdown",
+        "seconds": 3,
+        "styles": ["sudden stop", "near silence", "one sustained pad", "held breath"],
+        "avoid": ["vocals", "drums", "bass"]
+      },
+      {
+        "name": "Finale",
+        "seconds": 8.8,
+        "styles": [
+          "explosive full band hit on the first beat",
+          "loud triumphant final chorus",
+          "full drums and bass",
+          "clean final chord in the last two seconds"
+        ],
+        "avoid": ["vocals", "quiet outro", "early fade out"]
+      }
+    ]
+  }
+}

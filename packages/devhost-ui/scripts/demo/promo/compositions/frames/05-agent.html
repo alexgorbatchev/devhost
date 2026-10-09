@@ -1,0 +1,230 @@
+<template>
+  <style>
+    #root {
+      position: absolute;
+      inset: 0;
+    }
+    .agent-window {
+      left: 180px;
+      top: 70px;
+      width: 1560px;
+      height: 933px;
+    }
+    .agent-ring {
+      position: absolute;
+      left: 19%;
+      top: 28%;
+      display: block;
+      width: 62%;
+      height: 12.5%;
+      border: 5px solid var(--dh-accent);
+      border-radius: 14px;
+      box-shadow: 0 0 60px color-mix(in srgb, var(--dh-accent) 60%, transparent);
+    }
+    .agent-step-click {
+      left: 240px;
+      top: 640px;
+    }
+    .agent-step-describe {
+      left: 240px;
+      top: 742px;
+    }
+    .agent-step-top {
+      left: 240px;
+      top: 180px;
+    }
+    .agent-diff {
+      position: absolute;
+      left: 330px;
+      top: 640px;
+      width: 1260px;
+      overflow: hidden;
+      border: 2px solid var(--dh-line);
+      border-radius: 20px;
+      background: color-mix(in srgb, var(--dh-term-bg) 96%, transparent);
+      box-shadow: 0 40px 120px rgb(0 0 0 / 0.75);
+    }
+    .agent-diff-file {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+      padding: 0 30px;
+      border-bottom: 2px solid var(--dh-line);
+      background: var(--dh-surface-2);
+      font-size: 26px;
+      font-weight: 700;
+    }
+    .agent-diff-source {
+      font-weight: 500;
+      color: var(--dh-fg-muted);
+    }
+    .agent-diff-line {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      height: 78px;
+      padding: 0 30px;
+      font-size: 40px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .agent-diff-old {
+      background: var(--dh-danger-soft);
+      color: var(--dh-danger);
+    }
+    .agent-diff-new {
+      background: color-mix(in srgb, var(--dh-ok) 16%, transparent);
+      color: var(--dh-ok);
+    }
+    .agent-diff-sign {
+      display: block;
+      width: 28px;
+      font-weight: 800;
+    }
+    .agent-note {
+      left: 180px;
+      top: 1022px;
+    }
+  </style>
+
+  <div id="root" data-composition-id="05-agent" data-width="1920" data-height="1080">
+    <div id="agent-window" class="dh-window agent-window">
+      <div class="dh-window-bar">
+        <span class="dh-window-dot"></span><span class="dh-window-dot"></span><span class="dh-window-dot"></span>
+        <span class="dh-window-address">
+          <svg class="dh-window-lock" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="4.5" y="10.5" width="15" height="10" rx="2.4" fill="currentColor" />
+            <path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+          </svg>
+          https://demo.localhost
+        </span>
+      </div>
+      <div class="dh-window-screen">
+        <div id="agent-camera" class="dh-camera" data-layout-allow-overflow>
+          <video
+            id="agent-annotate-footage"
+            class="clip"
+            src="assets/footage/agent-annotate-footage.mp4"
+            data-footage="annotations-1"
+            data-footage-from="2"
+            data-footage-to="10.5"
+            data-start="0"
+            data-duration="3.1"
+            data-track-index="2"
+            muted
+            playsinline
+          ></video>
+          <video
+            id="agent-working-footage"
+            class="clip"
+            src="assets/footage/agent-working-footage.mp4"
+            data-footage="annotations-2"
+            data-footage-to="4"
+            data-start="3.1"
+            data-hf-media-start-basis="local"
+            data-duration="3.8"
+            data-track-index="2"
+            muted
+            playsinline
+          ></video>
+          <video
+            id="agent-result-footage"
+            class="clip"
+            src="assets/footage/agent-result-footage.mp4"
+            data-footage="annotations-3"
+            data-footage-from="-4"
+            data-start="6.9"
+            data-hf-media-start-basis="local"
+            data-duration="2.6"
+            data-track-index="2"
+            muted
+            playsinline
+          ></video>
+          <span id="agent-ring" class="agent-ring"></span>
+        </div>
+      </div>
+    </div>
+
+    <div id="agent-step-click" class="dh-label agent-step-click">
+      <span class="dh-label-step">1</span>hold Alt and click
+    </div>
+    <div id="agent-step-describe" class="dh-label agent-step-describe">
+      <span class="dh-label-step">2</span>describe the change
+    </div>
+    <div id="agent-step-edit" class="dh-label agent-step-top">
+      <span class="dh-label-step">3</span>a coding agent edits your source
+    </div>
+    <div id="agent-step-reload" class="dh-label dh-label-accent agent-step-top">
+      <span class="dh-label-step">4</span>the page hot-reloads
+    </div>
+
+    <div id="agent-diff" class="agent-diff">
+      <div class="agent-diff-file">
+        PlaygroundLayout.tsx
+        <span class="agent-diff-source">the agent's edit</span>
+      </div>
+      <div class="agent-diff-line agent-diff-old">
+        <span class="agent-diff-sign">-</span>&lt;h1&gt;Devtools playground&lt;/h1&gt;
+      </div>
+      <div class="agent-diff-line agent-diff-new">
+        <span class="agent-diff-sign">+</span>&lt;h1&gt;Local domains. Live fixes.&lt;/h1&gt;
+      </div>
+    </div>
+
+    <div class="dh-note agent-note">Real recording, edited for length. The agent in this demo is Pi.</div>
+  </div>
+
+  <script>
+    {
+      const tl = gsap.timeline({ paused: true });
+      const pop = (target, time) => {
+        tl.fromTo(
+          target,
+          { x: -70, opacity: 0, scale: 0.8 },
+          { x: 0, opacity: 1, scale: 1, duration: 0.36, ease: "back.out(2.2)" },
+          time,
+        );
+      };
+      // "Hold Alt, click an element, describe the change."
+      tl.fromTo(
+        "#agent-camera",
+        { scale: 1, transformOrigin: "50% 36%" },
+        { scale: 1.5, duration: 0.6, ease: "expo.out" },
+        0.05,
+      );
+      pop("#agent-step-click", 0.2);
+      pop("#agent-step-describe", 1.6);
+      // "A coding agent edits your source": the agent's own terminal, then the line it changed.
+      tl.set("#agent-camera", { scale: 1 }, 3.1);
+      tl.to("#agent-camera", { scale: 1.06, duration: 3.8, ease: "none" }, 3.1);
+      tl.to(["#agent-step-click", "#agent-step-describe"], { opacity: 0, duration: 0.14 }, 3.06);
+      pop("#agent-step-edit", 3.28);
+      tl.fromTo(
+        "#agent-diff",
+        { y: 120, opacity: 0, scale: 0.94 },
+        { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: "expo.out" },
+        4.1,
+      );
+      tl.fromTo(
+        ".agent-diff-new",
+        { opacity: 0, x: -40 },
+        { opacity: 1, x: 0, duration: 0.3, ease: "power3.out" },
+        4.6,
+      );
+      // The payoff, in silence: the running page now shows the new line.
+      tl.set("#agent-camera", { scale: 1.7, transformOrigin: "50% 34%" }, 6.9);
+      tl.to("#agent-camera", { scale: 1.32, duration: 1, ease: "expo.out" }, 6.9);
+      tl.to("#agent-step-edit", { opacity: 0, duration: 0.12 }, 6.86);
+      pop("#agent-step-reload", 6.98);
+      tl.fromTo(
+        "#agent-ring",
+        { opacity: 0, scale: 1.25 },
+        { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(2)" },
+        7.05,
+      );
+      tl.to("#agent-diff", { y: 150, scale: 0.9, duration: 0.6, ease: "expo.inOut" }, 6.9);
+      window.__timelines["05-agent"] = tl;
+    }
+  </script>
+</template>

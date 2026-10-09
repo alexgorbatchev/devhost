@@ -1,0 +1,399 @@
+<template>
+  <style>
+    #root {
+      position: absolute;
+      inset: 0;
+    }
+    .promise-brand {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 96px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 30px;
+    }
+    .promise-mark {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 112px;
+      height: 112px;
+      border-radius: 22px;
+      background: var(--dh-fg);
+      color: var(--dh-term-bg);
+      font-size: 62px;
+      font-weight: 800;
+      letter-spacing: -0.06em;
+    }
+    .promise-name {
+      font-size: 124px;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 1;
+    }
+    .promise-bars {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 26px;
+    }
+    .promise-bar {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 34px;
+      height: 170px;
+      padding: 0 60px 0 46px;
+      border: 3px solid var(--dh-danger);
+      border-radius: 30px;
+      background: color-mix(in srgb, var(--dh-surface) 94%, transparent);
+      box-shadow: 0 30px 90px rgb(0 0 0 / 0.55);
+    }
+    .promise-bar-glow {
+      position: absolute;
+      inset: -3px;
+      display: block;
+      border-radius: 30px;
+      box-shadow: 0 0 90px color-mix(in srgb, var(--dh-ok) 35%, transparent);
+    }
+    .promise-bar-small {
+      height: 104px;
+      gap: 22px;
+      padding: 0 40px 0 30px;
+      border-radius: 22px;
+      border-color: var(--dh-ok);
+    }
+    .promise-icon {
+      position: relative;
+      display: block;
+      width: 68px;
+      height: 68px;
+    }
+    #promise-warning {
+      color: var(--dh-danger);
+    }
+    #promise-lock {
+      color: var(--dh-ok);
+    }
+    .promise-icon svg {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .promise-icon-small {
+      width: 42px;
+      height: 42px;
+      color: var(--dh-ok);
+    }
+    .promise-url {
+      position: relative;
+      display: block;
+      width: 1250px;
+      height: 130px;
+      font-size: 98px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 130px;
+      white-space: nowrap;
+    }
+    .promise-url-text {
+      position: absolute;
+      left: 0;
+      top: 0;
+      display: block;
+    }
+    .promise-url-small {
+      font-size: 54px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      white-space: nowrap;
+    }
+    .promise-scheme {
+      color: var(--dh-ok);
+    }
+    .promise-port {
+      color: var(--dh-danger);
+    }
+    .promise-route {
+      position: absolute;
+      left: 190px;
+      right: 190px;
+      top: 640px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 156px;
+    }
+    .promise-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 156px;
+      padding: 0 52px;
+      border: 2px solid var(--dh-line);
+      border-radius: 20px;
+      background: var(--dh-surface-2);
+      font-size: 52px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .promise-node-caddy {
+      border-color: var(--dh-accent);
+      box-shadow: 0 0 70px color-mix(in srgb, var(--dh-accent) 30%, transparent);
+    }
+    .promise-node-note {
+      font-size: 28px;
+      font-weight: 500;
+      color: var(--dh-fg-muted);
+    }
+    .promise-services {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .promise-service {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      height: 72px;
+      padding: 0 32px;
+      border: 2px solid var(--dh-line);
+      border-radius: 14px;
+      background: var(--dh-surface-2);
+      font-size: 38px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .promise-service-port {
+      color: var(--dh-fg-muted);
+    }
+    .promise-wire {
+      display: block;
+      flex: 1;
+      height: 6px;
+      margin: 0 22px;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--dh-ok), var(--dh-accent));
+    }
+    .promise-chips {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 856px;
+      display: flex;
+      justify-content: center;
+      gap: 26px;
+    }
+    .promise-chip {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      height: 76px;
+      padding: 0 34px;
+      border-radius: 38px;
+      background: var(--dh-fg);
+      color: var(--dh-term-bg);
+      font-size: 36px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .promise-chip-quiet {
+      border: 2px solid var(--dh-line);
+      background: var(--dh-surface-2);
+      color: var(--dh-fg-muted);
+    }
+    .promise-tick {
+      display: block;
+      width: 34px;
+      height: 34px;
+      color: currentColor;
+    }
+    .promise-strike {
+      color: var(--dh-danger);
+      text-decoration: line-through;
+      text-decoration-thickness: 4px;
+    }
+  </style>
+
+  <div id="root" data-composition-id="02-promise" data-width="1920" data-height="1080">
+    <div id="promise-brand" class="promise-brand">
+      <div id="promise-mark" class="promise-mark">dh</div>
+      <div id="promise-name" class="promise-name">devhost</div>
+    </div>
+
+    <div class="promise-bars">
+      <div id="promise-bar" class="promise-bar">
+        <span id="promise-bar-glow" class="promise-bar-glow"></span>
+        <div class="promise-icon">
+          <svg id="promise-warning" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 3 2 20h20L12 3Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+            <path d="M12 10v5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <circle cx="12" cy="17.6" r="1.1" fill="currentColor" />
+          </svg>
+          <svg id="promise-lock" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="4.5" y="10.5" width="15" height="10" rx="2.4" fill="currentColor" />
+            <path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div class="promise-url">
+          <span id="promise-url-old" class="promise-url-text">localhost<span class="promise-port">:????</span></span>
+          <span id="promise-url-new" class="promise-url-text"
+            ><span class="promise-scheme">https://</span>app.localhost</span
+          >
+        </div>
+      </div>
+      <div id="promise-bar-api" class="promise-bar promise-bar-small">
+        <svg class="promise-icon promise-icon-small" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="4.5" y="10.5" width="15" height="10" rx="2.4" fill="currentColor" />
+          <path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+        </svg>
+        <div class="promise-url-small"><span class="promise-scheme">https://</span>api.app.localhost</div>
+      </div>
+    </div>
+
+    <div class="promise-route">
+      <div id="promise-node-browser" class="promise-node">
+        browser
+        <span class="promise-node-note">HTTPS hostnames</span>
+      </div>
+      <span id="promise-wire-in" class="promise-wire"></span>
+      <div id="promise-node-caddy" class="promise-node promise-node-caddy">
+        Caddy
+        <span class="promise-node-note">managed by devhost</span>
+      </div>
+      <span id="promise-wire-out" class="promise-wire"></span>
+      <div class="promise-services">
+        <div class="promise-service">web <span class="promise-service-port">:3000</span></div>
+        <div class="promise-service">api <span class="promise-service-port">:4000</span></div>
+      </div>
+    </div>
+
+    <div class="promise-chips">
+      <div class="promise-chip">
+        <svg class="promise-tick" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="m4 12.5 5 5L20 6.5"
+            stroke="currentColor"
+            stroke-width="3.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        login redirects
+      </div>
+      <div class="promise-chip">
+        <svg class="promise-tick" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="m4 12.5 5 5L20 6.5"
+            stroke="currentColor"
+            stroke-width="3.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        cookies
+      </div>
+      <div class="promise-chip promise-chip-quiet">more than <span class="promise-strike">:3000</span></div>
+    </div>
+  </div>
+
+  <script>
+    {
+      const tl = gsap.timeline({ paused: true });
+      const chips = gsap.utils.toArray(".promise-chip");
+      const services = gsap.utils.toArray(".promise-service");
+      const tokens = getComputedStyle(document.documentElement);
+      const token = (name) => tokens.getPropertyValue(name).trim();
+      // "devhost", on the music's drop: the name owns the frame, then steps aside for what it does.
+      tl.fromTo(
+        "#promise-mark",
+        { scale: 0, rotation: -40 },
+        { scale: 1, rotation: 0, duration: 0.45, ease: "back.out(2.2)" },
+        0,
+      );
+      tl.fromTo("#promise-name", { x: 120, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "expo.out" }, 0.04);
+      tl.fromTo("#promise-brand", { y: 330, scale: 1.9 }, { y: 0, scale: 1, duration: 0.6, ease: "expo.inOut" }, 0.95);
+      // The port from the hook is still in the address bar.
+      tl.fromTo(
+        "#promise-bar",
+        { y: 120, opacity: 0, scale: 0.92 },
+        { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: "expo.out" },
+        1.15,
+      );
+      // "HTTPS hostnames": the port gives way to a name with a certificate.
+      tl.to("#promise-url-old", { y: -90, opacity: 0, duration: 0.26, ease: "power3.in" }, 1.87);
+      tl.fromTo(
+        "#promise-url-new",
+        { y: 90, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.42, ease: "expo.out" },
+        2.05,
+      );
+      tl.to("#promise-warning", { opacity: 0, scale: 0.4, duration: 0.2, ease: "power2.in" }, 1.87);
+      tl.fromTo(
+        "#promise-lock",
+        { opacity: 0, scale: 0.4 },
+        { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(3)" },
+        2.05,
+      );
+      tl.to("#promise-bar", { borderColor: token("--dh-ok"), duration: 0.3 }, 2.05);
+      tl.fromTo("#promise-bar-glow", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 2.05);
+      tl.fromTo(
+        "#promise-bar-api",
+        { y: -50, opacity: 0, scale: 0.9 },
+        { y: 0, opacity: 1, scale: 1, duration: 0.42, ease: "back.out(1.8)" },
+        3.04,
+      );
+      // "through a managed Caddy": one hop from the name to the ports it hides.
+      tl.fromTo(
+        "#promise-node-browser",
+        { y: 60, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.36, ease: "expo.out" },
+        4.05,
+      );
+      tl.fromTo(
+        "#promise-wire-in",
+        { scaleX: 0, transformOrigin: "0% 50%" },
+        { scaleX: 1, duration: 0.4, ease: "power2.inOut" },
+        4.35,
+      );
+      tl.fromTo(
+        "#promise-node-caddy",
+        { scale: 0.5, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(2.4)" },
+        4.91,
+      );
+      tl.fromTo(
+        "#promise-wire-out",
+        { scaleX: 0, transformOrigin: "0% 50%" },
+        { scaleX: 1, duration: 0.36, ease: "power2.inOut" },
+        5.3,
+      );
+      tl.fromTo(
+        services,
+        { x: -50, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.32, ease: "expo.out", stagger: 0.12 },
+        5.57,
+      );
+      // "logins and cookies need more than a port".
+      [6.53, 7.11, 7.87].forEach((time, index) => {
+        tl.fromTo(
+          chips[index],
+          { y: 60, opacity: 0, scale: 0.8 },
+          { y: 0, opacity: 1, scale: 1, duration: 0.36, ease: "back.out(2.2)" },
+          time,
+        );
+      });
+      window.__timelines["02-promise"] = tl;
+    }
+  </script>
+</template>

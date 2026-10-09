@@ -4,13 +4,13 @@ import type { Browser, Page } from "playwright";
 import { viewport } from "./constants";
 import type { IDemoRuntime } from "./types";
 
-export async function createDemoPage(browser: Browser, runtime: IDemoRuntime): Promise<Page> {
+export async function createDemoPage(browser: Browser, runtime: IDemoRuntime, captureScale: number = 1): Promise<Page> {
   const context = await browser.newContext({
-    viewport,
+    // A scaled capture keeps the window launchDemoBrowser sized: an emulated viewport would reset its device scale.
+    ...(captureScale === 1 ? { viewport, deviceScaleFactor: 1 } : { viewport: null }),
     colorScheme: "dark",
     locale: "en-US",
     timezoneId: "UTC",
-    deviceScaleFactor: 1,
     reducedMotion: "reduce",
     ignoreHTTPSErrors: true,
   });
@@ -32,6 +32,15 @@ export async function createDemoPage(browser: Browser, runtime: IDemoRuntime): P
       }),
     );
     assert(response?.ok(), "The playground did not load through devhost");
+    assert.deepEqual(
+      await page.evaluate(() => ({
+        width: window.innerWidth,
+        height: window.innerHeight,
+        devicePixelRatio: window.devicePixelRatio,
+      })),
+      { ...viewport, devicePixelRatio: captureScale },
+      "The recording window does not have the capture size",
+    );
     await page.getByRole("main").waitFor();
     await page.getByRole("button", { name: "Services: 2 of 2 up", exact: true }).waitFor();
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
