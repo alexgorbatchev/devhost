@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { Subprocess } from "bun";
 import type { Browser } from "playwright";
@@ -41,9 +40,7 @@ export async function recordDemo(signal: AbortSignal, selectedScene: string): Pr
   }
   if (isPromo) {
     // An unusable renderer stops the run here, before the capture and its Pi request.
-    const temporaryPath = join(repositoryPath, ".tmp/demos");
-    await mkdir(temporaryPath, { recursive: true });
-    await preparePromoRenderer(runCommand, join(import.meta.dir, "promo"), temporaryPath, signal);
+    await preparePromoRenderer(runCommand, join(import.meta.dir, "promo"), join(repositoryPath, ".tmp/demos"), signal);
   }
   const versions = await Promise.all([
     runCommand(["vhs", "--version"]),
