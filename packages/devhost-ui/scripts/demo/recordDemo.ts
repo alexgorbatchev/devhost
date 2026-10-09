@@ -30,7 +30,8 @@ export async function recordDemo(signal: AbortSignal, selectedScene: string): Pr
   const isPromo = selectedScene === "all";
   const captureScale = isPromo ? promoCaptureScale : 1;
   const dependencies = ["bun", "just", "git", "caddy", "ffmpeg", "ffprobe", "vhs", "ttyd", "bash", "ln"];
-  if (isPromo) dependencies.push("node", "npx");
+  // HyperFrames runs on Node.js; Bun starts it from the promo project's pinned script.
+  if (isPromo) dependencies.push("node");
   if (isPromo || selectedScene === "annotations") dependencies.push("pi");
   if (selectedScene === "react-highlight") dependencies.push("nvim");
   for (const executable of dependencies) {
