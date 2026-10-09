@@ -108,6 +108,8 @@ export type RenderPromoComposition = (projectPath: string, outputPath: string, s
 
 export type PreparePromoRenderer = (signal: AbortSignal) => Promise<void>;
 
+export type RemovePromoCache = (path: string) => Promise<void>;
+
 export interface IRenderPromoOptions {
   directoryPath: string;
   projectSourcePath: string;
