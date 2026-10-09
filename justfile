@@ -18,6 +18,7 @@ test:
     just design test
     just ui test
     just docs test
+    just playground-frontend test
 
 # Run full repo formatting, policy, and package checks
 check:
@@ -28,6 +29,7 @@ check:
     just design check
     just ui check
     just docs check
+    just playground-frontend check
 
 # Human-only repo-wide formatting command for explicit manual cleanup
 fix:

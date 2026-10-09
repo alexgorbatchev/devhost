@@ -6,7 +6,7 @@ Bun + React workspace split into frontend and backend apps, used to exercise `de
 
 - Start the root devhost stack from the repo root: `just dev`
 - Run one app outside the stack from the repo root: `just playground-backend dev` or `just playground-frontend dev` (`start` runs it with `NODE_ENV=production`)
-- Run the frontend query request tests from the repo root: `bun test packages/playground/frontend/src/__tests__`
+- Run the frontend tests from the repo root: `just playground-frontend test` (`just playground-frontend check` is the recipe root `just check` runs)
 
 ## Local conventions
 
@@ -23,7 +23,7 @@ Bun + React workspace split into frontend and backend apps, used to exercise `de
 - `devhost.toml` takes the shared hostname from `DEVHOST_PLAYGROUND`: `/api/*` goes to the backend, and `/` goes to the frontend. The frontend enables `proxyLocalOrigin` so Bun HTML assets and HMR accept the local upstream Host/Origin; keep the backend's default header handling.
 - The root `just dev` command starts the repo-root `devhost.toml`, which includes this playground split services and Storybook.
 - Playground `dev` recipes use Just's `[no-exit-message]` attribute so Ctrl-C does not print a wrapper recipe error per service. Child diagnostics and non-zero exit statuses still reach devhost, which owns stack shutdown progress and service exit reporting.
-- The root `oxfmt` and `oxlint` configs ignore `packages/playground/**`: this dev harness is intentionally excluded from shared lint and format enforcement (see the root `AGENTS.md`), so `just check` and `just fix` do not touch it. Do not add workspace-local lint or format config.
+- The root `oxfmt` and `oxlint` configs ignore `packages/playground/**`: this dev harness is intentionally excluded from shared lint and format enforcement (see the root `AGENTS.md`), so the lint and format steps of `just check` and `just fix` do not touch it. Do not add workspace-local lint or format config. Root `just check` and `just test` do run the frontend tests.
 
 ## Boundaries
 
