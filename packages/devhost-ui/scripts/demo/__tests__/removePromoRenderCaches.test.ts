@@ -1,7 +1,9 @@
+import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { afterAll, beforeAll, beforeEach, expect, it } from "bun:test";
+import { afterAll, beforeAll, beforeEach, expect, it, mock } from "bun:test";
 import { removePromoRenderCaches } from "../removePromoRenderCaches";
+import type { RemovePromoCache } from "../types";
 
 let testsPath = "";
 let temporaryPath = "";
@@ -33,6 +35,23 @@ it("removes the renderer's frame cache and package install and keeps the run's o
   await removePromoRenderCaches(temporaryPath);
 
   expect((await listFiles()).sort()).toEqual(["bunx-notes.txt", "pi-sessions/session.jsonl"]);
+});
+
+it("removes the other caches when one cannot be removed, then reports the one that remains", async () => {
+  await Bun.write(join(temporaryPath, "promo-frames/clip/frame-0001.png"), "frame");
+  await Bun.write(join(temporaryPath, "bunx-1000-hyperframes@0.8.143/node_modules/hyperframes/cli.js"), "cli");
+  const denied = new Error("EACCES: permission denied, rmdir 'promo-frames/clip'");
+  // The frame cache is removed first; every later removal really happens.
+  const remove = mock<RemovePromoCache>()
+    .mockRejectedValueOnce(denied)
+    .mockImplementation((path) => rm(path, { recursive: true, force: true }));
+
+  const failure: unknown = await removePromoRenderCaches(temporaryPath, remove).catch((error: unknown) => error);
+
+  assert(failure instanceof AggregateError);
+  expect(failure.message).toBe(`Could not remove every render cache under ${temporaryPath}`);
+  expect(failure.errors).toEqual([denied]);
+  expect(await listFiles()).toEqual(["promo-frames/clip/frame-0001.png"]);
 });
 
 it("leaves a run that rendered nothing as it was", async () => {
