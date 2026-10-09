@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-09 09:06
+last_modified: 2026-10-09 09:28
 status: current
 ---
 
@@ -54,7 +54,7 @@ just demo promo .tmp/demos/recording-AbC123
 DEVHOST_DEMO_QUALITY=draft just demo promo
 ```
 
-Without an argument the command uses the newest recording that holds every recording the composition requests, so a later single-scene run or a run that failed part-way is skipped. `DEVHOST_DEMO_QUALITY` accepts HyperFrames' `draft`, `looks`, and `delivery`; the default is `delivery`, and `draft` is the fast setting for iterating on the composition. Both `just demo record` and `just demo promo` honor it.
+Without an argument the command uses the newest recording that holds every recording the composition requests, so a later single-scene run or a run that failed part-way is skipped. A directory given as the argument is checked the same way before anything in it is created or replaced, and the command stops when footage is missing. `DEVHOST_DEMO_QUALITY` accepts HyperFrames' `draft`, `looks`, and `delivery`; the default is `delivery`, and `draft` is the fast setting for iterating on the composition. Both `just demo record` and `just demo promo` honor it.
 
 To iterate on one scene:
 
@@ -113,6 +113,7 @@ Sources live in `packages/devhost-ui/scripts/demo/`:
 | `readPromoFootageRequests.ts` / `findPromoRecording.ts`                     | List the footage the composition requests and find a recording that has it all  |
 | `readPromoSources.ts`                                                       | Name a run's captured videos the way frames request them                        |
 | `preparePromoRenderer.ts` / `createPromoRendererEnvironment.ts`             | Check Node.js and fetch HyperFrames' Chrome before a capture or a render        |
+| `removePromoRenderCaches.ts`                                                | Remove the renderer's frame cache and install from a run's `.tmp`               |
 | `generatePromoAudio.ts`                                                     | Generate the narration and music with ElevenLabs                                |
 
 Use accessible roles and names for browser actions. Wait for rendered state or real responses before pacing pauses. Do not replace actual services, logs, restart requests, or native devtools with recording-only imitations. Scenes fail on missing UI, unsuccessful requests, or uncaught page errors, and retain a failure screenshot.
@@ -173,6 +174,8 @@ Each generation bills that ElevenLabs account, and a failed request is not retri
 A promo run's directory contains `devhost-demo.mp4`, the narration captions in `devhost-demo.srt`, `poster.png` from the closing card, `promo-footage.json` with each slot's source window and playback speed, `promo-render.log`, the staged `promo/` project, raw VHS/Playwright videos, per-scene screenshots, and tool/revision metadata in `versions.json`. A single-scene or guide run instead contains its captioned MP4, `devhost-demo.srt`, `poster.png`, measured `clips.json`, per-scene SRT files, and normalized `clips/*.mp4`.
 
 Each browser scene writes `<scene>-navigations.json` with captured full-page requests; successful scenes contain an empty array. Annotation screenshots include the draft, Pi terminal, and live fix. `pi-changes.json` preserves the edited source for review; `playground-baseline.json` records the original copy. Pi sessions and annotation prompts stay under the run's `.tmp`. Logs include `vhs.log`, browser-stack logs, `cleanup.log`, and `recording-error.log` on failures.
+
+A render extracts every source frame and installs HyperFrames under the run's `.tmp`, several hundred megabytes together, and removes both when it ends, whether it succeeded or failed.
 
 Browser profiles, artifacts, a copy of the public Caddy root certificate, and the runtime manifest are isolated under that directory. Caddy state and its privileged HTTPS listener are shared with normal devhost stacks; routes belong to the recording manifest. Editor integration is enabled only for the React Highlight guide; worktrees are enabled for the copied Git fixture. Temporary Chromium paths, including those of the promo's render, use a relative `.tmp` inside the recording directory to fit Linux's Unix socket path limit in deep worktrees.
 

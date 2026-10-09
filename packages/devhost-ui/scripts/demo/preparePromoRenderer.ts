@@ -1,5 +1,6 @@
 import { promoMinimumNodeMajor } from "./constants";
 import { createPromoRendererEnvironment } from "./createPromoRendererEnvironment";
+import { removePromoRenderCaches } from "./removePromoRenderCaches";
 import type { RunCommand } from "./types";
 
 export async function preparePromoRenderer(
@@ -14,11 +15,15 @@ export async function preparePromoRenderer(
   if (major < promoMinimumNodeMajor) {
     throw new Error(`The promo's renderer needs Node.js ${promoMinimumNodeMajor} or newer; found ${version}`);
   }
-  // HyperFrames renders with its own Chrome build; the first run downloads it, later runs find it.
-  await run(["bun", "run", "browser"], {
-    cwd: projectPath,
-    env: createPromoRendererEnvironment(process.env, temporaryPath),
-    signal,
-    timeoutMs: 10 * 60_000,
-  });
+  try {
+    // HyperFrames renders with its own Chrome build; the first run downloads it, later runs find it.
+    await run(["bun", "run", "browser"], {
+      cwd: projectPath,
+      env: createPromoRendererEnvironment(process.env, temporaryPath),
+      signal,
+      timeoutMs: 10 * 60_000,
+    });
+  } finally {
+    await removePromoRenderCaches(temporaryPath);
+  }
 }
