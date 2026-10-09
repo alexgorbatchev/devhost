@@ -28,6 +28,20 @@ it("captions each narration line from where the composition starts its audio", a
   );
 });
 
+it("ends a caption when the composition cuts its audio clip short", async () => {
+  const html = `<div id="root" data-composition-id="main">
+    <audio id="voice-line-1" data-narration="line-1" src="a.mp3" data-start="0.25" data-duration="3"></audio>
+    <audio id="voice-line-2" data-narration="line-2" src="b.mp3" data-start="6" data-duration="2"></audio>
+  </div>`;
+
+  expect(await createPromoCaptions(html, lines, timings)).toBe(
+    [
+      "1\n00:00:00,250 --> 00:00:03,250\nWhich port?\n",
+      "2\n00:00:06,000 --> 00:00:08,000\nStop juggling ports.\n",
+    ].join("\n"),
+  );
+});
+
 it("names a narration line the composition never plays", async () => {
   const html = '<audio id="voice-line-1" data-narration="line-1" src="a.mp3" data-start="0.25"></audio>';
 
