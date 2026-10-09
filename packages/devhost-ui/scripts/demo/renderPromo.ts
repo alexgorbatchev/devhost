@@ -47,23 +47,27 @@ export async function renderPromo(options: IRenderPromoOptions): Promise<string>
   await Bun.write(join(directoryPath, "promo-footage.json"), JSON.stringify(footage, null, 2) + "\n");
   const outputPath = join(directoryPath, "devhost-demo.mp4");
   await options.render(projectPath, outputPath, signal);
-  const media = await readMediaInfo(outputPath);
+  // An interrupt that arrives once the render has ended stops the checks and the poster too.
+  const media = await readMediaInfo(outputPath, signal);
   assert(
     media.duration <= promoMaximumSeconds,
     `The promo lasts ${media.duration.toFixed(1)}s; the limit is ${promoMaximumSeconds}s`,
   );
-  const audioStreams = await runCommand([
-    "ffprobe",
-    "-v",
-    "error",
-    "-select_streams",
-    "a",
-    "-show_entries",
-    "stream=codec_name",
-    "-of",
-    "csv=p=0",
-    outputPath,
-  ]);
+  const audioStreams = await runCommand(
+    [
+      "ffprobe",
+      "-v",
+      "error",
+      "-select_streams",
+      "a",
+      "-show_entries",
+      "stream=codec_name",
+      "-of",
+      "csv=p=0",
+      outputPath,
+    ],
+    { signal },
+  );
   assert(audioStreams.trim() !== "", "The promo has no audio track");
   const narration: unknown = await Bun.file(join(projectPath, "narration.json")).json();
   assert(typeof narration === "object" && narration !== null && "lines" in narration && Array.isArray(narration.lines));
@@ -75,21 +79,24 @@ export async function renderPromo(options: IRenderPromoOptions): Promise<string>
       await Bun.file(join(projectPath, "assets/audio/timings.json")).json(),
     ),
   );
-  await runCommand([
-    "ffmpeg",
-    "-hide_banner",
-    "-loglevel",
-    "error",
-    "-y",
-    "-ss",
-    // The closing card carries the name and the address.
-    String(Math.max(0, media.duration - 1.5)),
-    "-i",
-    outputPath,
-    "-frames:v",
-    "1",
-    join(directoryPath, "poster.png"),
-  ]);
+  await runCommand(
+    [
+      "ffmpeg",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-y",
+      "-ss",
+      // The closing card carries the name and the address.
+      String(Math.max(0, media.duration - 1.5)),
+      "-i",
+      outputPath,
+      "-frames:v",
+      "1",
+      join(directoryPath, "poster.png"),
+    ],
+    { signal },
+  );
   return outputPath;
 }
 
