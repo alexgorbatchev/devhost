@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { cp, mkdir, rm } from "node:fs/promises";
+import { cp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { promoMaximumSeconds } from "./constants";
 import { createPromoCaptions } from "./createPromoCaptions";
@@ -110,7 +110,6 @@ if (import.meta.main) {
           resolve(process.env.DEVHOST_DEMO_INVOCATION_DIRECTORY ?? process.cwd(), selected);
     // The preflight works beside the recordings, so a wrong directory argument is not written to.
     const recordingsPath = resolve(import.meta.dir, "../../../../.tmp/demos");
-    await mkdir(recordingsPath, { recursive: true });
     await preparePromoRenderer(runCommand, projectSourcePath, recordingsPath, controller.signal);
     console.log(`Rendering the promo from ${directoryPath}`);
     const outputPath = await renderPromo({
