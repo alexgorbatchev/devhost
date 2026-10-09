@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
-import { cp, readdir, rm, stat } from "node:fs/promises";
+import { cp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { promoMaximumSeconds } from "./constants";
 import { createPromoCaptions } from "./createPromoCaptions";
+import { findPromoRecording } from "./findPromoRecording";
 import { readMediaInfo } from "./readMediaInfo";
+import { readPromoFootageRequests } from "./readPromoFootageRequests";
 import { renderPromoComposition } from "./renderPromoComposition";
 import { runCommand } from "./runCommand";
 import { stagePromoFootage } from "./stagePromoFootage";
@@ -83,23 +85,6 @@ export async function renderPromo(options: IRenderPromoOptions): Promise<string>
   return outputPath;
 }
 
-async function findLatestRecording(repositoryPath: string): Promise<string> {
-  const parentPath = join(repositoryPath, ".tmp/demos");
-  let latestPath = "";
-  let latestModified = 0;
-  for (const name of await readdir(parentPath).catch((): string[] => [])) {
-    const path = join(parentPath, name);
-    if (!name.startsWith("recording-") || !(await Bun.file(join(path, "raw/startup.mp4")).exists())) continue;
-    const modified = (await stat(path)).mtimeMs;
-    if (modified > latestModified) {
-      latestPath = path;
-      latestModified = modified;
-    }
-  }
-  if (latestPath === "") throw new Error("No recording with captured footage exists; run `just demo record` first");
-  return latestPath;
-}
-
 if (import.meta.main) {
   const controller = new AbortController();
   const abort = (): void => controller.abort(new Error("Promo render interrupted"));
@@ -107,15 +92,19 @@ if (import.meta.main) {
   process.once("SIGTERM", abort);
   try {
     const selected = process.env.DEVHOST_DEMO_RECORDING ?? "";
+    const projectSourcePath = join(import.meta.dir, "promo");
+    const requests = await readPromoFootageRequests(projectSourcePath);
     const directoryPath =
       selected === ""
-        ? await findLatestRecording(resolve(import.meta.dir, "../../../.."))
+        ? await findPromoRecording(resolve(import.meta.dir, "../../../../.tmp/demos"), [
+            ...new Set(requests.map((request) => request.slot.sourceId)),
+          ])
         : // A relative path means what it meant where `just` was invoked, not in this recipe's directory.
           resolve(process.env.DEVHOST_DEMO_INVOCATION_DIRECTORY ?? process.cwd(), selected);
     console.log(`Rendering the promo from ${directoryPath}`);
     const outputPath = await renderPromo({
       directoryPath,
-      projectSourcePath: join(import.meta.dir, "promo"),
+      projectSourcePath,
       render: renderPromoComposition,
       signal: controller.signal,
     });
