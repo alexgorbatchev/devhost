@@ -17,6 +17,7 @@ const apiService: ServiceHealth = { managed: true, name: "api", status: true, ur
 const workerService: ServiceHealth = { dirty: true, exitCode: 0, managed: true, name: "worker", status: true };
 const repository: IWorktreeRepository = {
   configuredPath: "/projects/shop",
+  defaultBranch: "main",
   id: "shop",
   name: "shop",
   runningPath: "/projects/shop",

@@ -259,6 +259,7 @@ export const GroupedServices: Story = {
   },
   play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    await expect(canvas.queryByTestId("ServiceStatusPanel--worktree-indicator")).toBeNull();
     await userEvent.click(await canvas.findByRole("button", { name: "Services: 3 of 3 up, 1 changed" }));
     await waitFor(() => expect(canvas.getByRole("region", { name: "shop repository" })).toBeVisible());
     await userEvent.click(canvas.getByRole("button", { name: "Choose worktree for shop" }));
@@ -271,6 +272,12 @@ export const GroupedServices: Story = {
       expect(canvas.getByRole("button", { name: "Choose worktree for shop" })).toHaveTextContent("feature/cart"),
     );
     await expect(canvas.getByText("postgres")).toBeVisible();
+    await expect(canvas.getByTestId("ServiceStatusPanel--worktree-indicator")).toBeVisible();
+    await expect(
+      canvas.getByRole("button", {
+        name: "Services: 3 of 3 up, 1 changed, non-default branches: shop: feature/cart",
+      }),
+    ).toHaveAttribute("title", "Non-default branches: shop: feature/cart");
   },
 };
 
@@ -298,5 +305,98 @@ export const SingleManagedServiceWithWorktrees: Story = {
       expect(Reflect.get(button.getRootNode(), "activeElement")).toBe(button);
     });
     await expect(canvas.getByRole("button", { name: "Choose worktree for shop" })).toHaveTextContent("main");
+  },
+};
+
+export const CustomDefaultBranch: Story = {
+  args: {
+    errorMessage: null,
+    services: [{ managed: true, name: "web", status: true }],
+    repositories: [factory_worktreeRepository(["web"], "trunk")],
+    onRefreshWorktrees: fn(async () => null),
+    onSwitchWorktree: fn(async () => null),
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const trigger = await canvas.findByRole("button", { name: "Services: 1 of 1 up" });
+    await expect(canvas.queryByTestId("ServiceStatusPanel--worktree-indicator")).toBeNull();
+    await userEvent.click(trigger);
+    await userEvent.click(canvas.getByRole("button", { name: "Choose worktree for shop" }));
+    const feature = canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" });
+    await waitFor(() => expect(feature).toBeEnabled());
+    await userEvent.click(feature);
+    await userEvent.click(canvas.getByRole("button", { name: "Switch and restart 1 service" }));
+    await waitFor(() => expect(canvas.getByTestId("ServiceStatusPanel--worktree-indicator")).toBeVisible());
+    await expect(trigger).toHaveAccessibleName("Services: 1 of 1 up, non-default branches: shop: feature/cart");
+    await userEvent.click(canvas.getByRole("button", { name: "Choose worktree for shop" }));
+    const trunk = canvas.getByRole("radio", { name: "trunk /projects/shop" });
+    await waitFor(() => expect(trunk).toBeEnabled());
+    await userEvent.click(trunk);
+    await userEvent.click(canvas.getByRole("button", { name: "Switch and restart 1 service" }));
+    await waitFor(() => expect(canvas.queryByTestId("ServiceStatusPanel--worktree-indicator")).toBeNull());
+    await expect(trigger).toHaveAccessibleName("Services: 1 of 1 up");
+  },
+};
+
+export const NonDefaultBranchAmongRepositories: Story = {
+  args: {
+    errorMessage: null,
+    services: [
+      { managed: true, name: "api", status: true },
+      { managed: true, name: "web", status: true },
+    ],
+    repositories: [
+      { ...factory_worktreeRepository(["api"]), id: "api", name: "api" },
+      { ...factory_worktreeRepository(["web"]), defaultBranch: "trunk" },
+    ],
+    onRefreshWorktrees: fn(async () => null),
+    onSwitchWorktree: fn(async () => null),
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    // A branch named main is still non-default when Git reports trunk.
+    const trigger = await canvas.findByRole("button", {
+      name: "Services: 2 of 2 up, non-default branches: shop: main",
+    });
+    await expect(canvas.getByTestId("ServiceStatusPanel--worktree-indicator")).toBeVisible();
+    await userEvent.click(trigger);
+    await expect(canvas.getByRole("button", { name: "Choose worktree for shop" })).toHaveTextContent("main");
+    await expect(canvas.getByRole("button", { name: "Choose worktree for api" })).toHaveTextContent("main");
+  },
+};
+
+export const UnknownDefaultBranch: Story = {
+  args: {
+    ...CustomDefaultBranch.args,
+    repositories: [
+      { ...factory_worktreeRepository(["web"], ""), selectedPath: "/worktrees/cart", runningPath: "/worktrees/cart" },
+    ],
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Services: 1 of 1 up" }));
+    await expect(canvas.queryByTestId("ServiceStatusPanel--worktree-indicator")).toBeNull();
+    await expect(canvas.getByRole("button", { name: "Choose worktree for shop" })).toHaveTextContent("feature/cart");
+  },
+};
+
+export const DetachedCheckout: Story = {
+  args: {
+    ...CustomDefaultBranch.args,
+    repositories: [
+      {
+        ...factory_worktreeRepository(["web"]),
+        selectedPath: "/worktrees/experiment",
+        runningPath: "/worktrees/experiment",
+      },
+    ],
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Services: 1 of 1 up" }));
+    await expect(canvas.queryByTestId("ServiceStatusPanel--worktree-indicator")).toBeNull();
+    await expect(canvas.getByRole("button", { name: "Choose worktree for shop" })).toHaveTextContent(
+      "Detached deadbee",
+    );
   },
 };

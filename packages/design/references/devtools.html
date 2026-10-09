@@ -1901,6 +1901,7 @@
           {
             id: "shop",
             name: "shop",
+            defaultBranch: "main",
             configuredPath: "/projects/shop",
             selectedPath: "/projects/shop",
             runningPath: "/projects/shop",
@@ -1912,13 +1913,19 @@
               { path: "/projects/shop", label: "main", available: true },
               { path: "/projects/shop/.workspaces/cart", label: "feature/cart", available: true },
               { path: "/projects/shop/.workspaces/login", label: "fix/login", available: true },
-              { path: "/projects/shop/.workspaces/review", label: "Detached · c8a21f4", available: true },
+              {
+                path: "/projects/shop/.workspaces/review",
+                label: "Detached · c8a21f4",
+                detached: true,
+                available: true,
+              },
               { path: "/projects/shop/.workspaces/old", label: "feature/old", available: false },
             ],
           },
           {
             id: "docs",
             name: "shop-docs",
+            defaultBranch: "main",
             configuredPath: "/projects/shop-docs",
             selectedPath: "/projects/shop-docs",
             runningPath: "/projects/shop-docs",
@@ -2238,6 +2245,20 @@
         const upCount = services.filter((s) => s.status).length;
         const downCount = services.length - upCount;
         const dirtyCount = services.filter((s) => s.dirty && !s.restarting).length;
+        // Fixture defaults stand in for the remote HEAD names discovered by the Go backend.
+        const nonDefaultBranches = state.worktreesEnabled
+          ? state.repositories.flatMap((repository) => {
+              const selected = repository.worktrees.find((entry) => entry.path === repository.selectedPath);
+              return repository.defaultBranch &&
+                selected &&
+                !selected.detached &&
+                selected.label !== repository.defaultBranch
+                ? [`${repository.name}: ${selected.label}`]
+                : [];
+            })
+          : [];
+        const worktreeSummary =
+          nonDefaultBranches.length > 0 ? `Non-default branches: ${nonDefaultBranches.join(", ")}` : "";
         const panelOpen = (name) => (state.openPanel === name ? "true" : "false");
         const segments = [];
 
@@ -2263,10 +2284,12 @@
           const alert = state.serviceError !== null;
           segments.push(`
             <button class="seg ${alert ? "alert" : ""}" type="button" data-action="panel" data-panel="services"
-              aria-expanded="${panelOpen("services")}" aria-label="Services: ${upCount} of ${services.length} up${dirtyCount ? `, ${dirtyCount} changed` : ""}">
+              title="${esc(worktreeSummary)}"
+              aria-expanded="${panelOpen("services")}" aria-label="Services: ${upCount} of ${services.length} up${dirtyCount ? `, ${dirtyCount} changed` : ""}${worktreeSummary ? `, non-default branches: ${esc(nonDefaultBranches.join(", "))}` : ""}">
               ${alert ? icon("alert") : ""}
               <span class="dots">${services.map((s) => `<span class="dot ${serviceDotClass(s)}" title="${esc(s.name)}: ${serviceStateText(s)}"></span>`).join("")}</span>
               <span>${upCount}/${services.length}</span>
+              ${worktreeSummary ? icon("branch") : ""}
               ${dirtyCount > 0 && !alert ? `<span class="tag warn">${dirtyCount} changed</span>` : ""}
             </button>`);
         }

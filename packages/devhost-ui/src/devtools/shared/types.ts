@@ -47,6 +47,7 @@ export interface IWorktree {
 export interface IWorktreeRepository {
   id: string;
   name: string;
+  defaultBranch: string;
   configuredPath: string;
   selectedPath: string;
   runningPath: string;

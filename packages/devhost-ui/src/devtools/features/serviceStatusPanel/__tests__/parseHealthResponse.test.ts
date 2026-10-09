@@ -11,6 +11,7 @@ describe("parseHealthResponse", () => {
           id: "shop",
           name: "shop",
           configuredPath: "/main",
+          defaultBranch: "trunk",
           selectedPath: "/feature",
           runningPath: "",
           serviceNames: ["web"],

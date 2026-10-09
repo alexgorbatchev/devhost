@@ -72,7 +72,7 @@ function isRepository(value: unknown): value is IWorktreeRepository {
   const names: unknown = Reflect.get(value, "serviceNames");
   const worktrees: unknown = Reflect.get(value, "worktrees");
   return (
-    ["id", "name", "configuredPath", "selectedPath", "runningPath"].every(
+    ["id", "name", "defaultBranch", "configuredPath", "selectedPath", "runningPath"].every(
       (key) => typeof Reflect.get(value, key) === "string",
     ) &&
     typeof Reflect.get(value, "switching") === "boolean" &&

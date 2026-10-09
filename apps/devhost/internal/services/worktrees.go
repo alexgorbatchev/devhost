@@ -181,6 +181,10 @@ func (g *worktreeGroup) refresh() error {
 	if err != nil {
 		return err
 	}
+	defaultBranch, err := defaultGitBranch(g.repository.commonDir)
+	if err != nil {
+		return err
+	}
 	foundSelected := false
 	for i := range entries {
 		entry := &entries[i]
@@ -200,6 +204,7 @@ func (g *worktreeGroup) refresh() error {
 		entries = append(entries, devtools.Worktree{Path: g.view.SelectedPath, Reason: "Saved checkout is no longer registered with Git.", Directories: []devtools.WorktreeDirectory{}})
 	}
 	g.view.Worktrees = entries
+	g.view.DefaultBranch = defaultBranch
 	return nil
 }
 

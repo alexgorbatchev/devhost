@@ -177,7 +177,10 @@ export const WorktreeRecovery: Story = {
   render: () => renderDevtoolsInStoryShadowRoot(<DevtoolsApp />),
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
-    const services = await canvas.findByRole("button", { name: "Services: 0 of 1 up" });
+    const services = await canvas.findByRole("button", {
+      name: "Services: 0 of 1 up, non-default branches: shop: feature/cart",
+    });
+    await expect(canvas.getByTestId("ServiceStatusPanel--worktree-indicator")).toBeVisible();
     await expect(canvas.queryByRole("dialog", { name: "Service exited" })).toBeNull();
     await userEvent.click(services);
     await userEvent.click(canvas.getByRole("button", { name: "Choose worktree for shop" }));
@@ -186,6 +189,7 @@ export const WorktreeRecovery: Story = {
     await waitFor(() => expect(recover).toBeEnabled());
     await userEvent.click(recover);
     await expect(await canvas.findByRole("button", { name: "Services: 1 of 1 up" })).toBeVisible();
+    await expect(canvas.queryByTestId("ServiceStatusPanel--worktree-indicator")).toBeNull();
     await expect(canvas.queryByRole("dialog", { name: "Service exited" })).toBeNull();
     await expect(await canvas.findByRole("button", { name: "Choose worktree for shop" })).toHaveTextContent("main");
   },
