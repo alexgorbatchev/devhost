@@ -22,7 +22,9 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Check the docs package-only validations: `just docs check`
 - Run provisioned native React acceptance from the repository root: `just ui test-native-react` (see `packages/devhost-ui/AGENTS.md` for mandatory assets and additional coverage)
 - Run standalone React Highlight Neovim plugin tests: `just devhost test-nvim`
-- Record the utility demo on Linux: `just demo record` (or `just demo record annotations` for one scene); follow `docs/internal/references/demo-recording.md` for prerequisites and refresh instructions.
+- Record the real scenes and render the promo on Linux: `just demo record` (or `just demo record annotations` for one captioned scene); follow `docs/internal/references/demo-recording.md` for prerequisites and refresh instructions.
+- Render the promo again from an earlier recording's footage: `just demo promo` (or `just demo promo .tmp/demos/recording-AbC123`).
+- Regenerate the promo's ElevenLabs narration and music: `just demo audio` (or `just demo audio voice`, `just demo audio music`). This needs `ELEVENLABS_API_KEY` and bills that account.
 - Run recording workflow unit tests: `just demo test` (also included in `just ui check`).
 - Refresh all public guide demos: `just demo guides` (or `just demo guides annotations` for one guide). This updates tracked docs media and the guide's first video block; review before committing.
 - Start the root devhost stack locally: `just dev`
@@ -57,6 +59,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - `packages/playground/**` is a local dev harness and is intentionally excluded from shared root lint/format enforcement. Its two apps keep their own `justfile`, which the root links as `playground-backend` and `playground-frontend` (`just playground-backend dev`); the stack starts them through `just dev`.
 - The root `justfile` links every nested `justfile` with a `mod` line. Add one in the same change as a new `justfile`.
 - `packages/devhost-ui/scripts/demo/` owns the recording workflow and uses the real playground services through the managed Caddy on HTTPS port 443. Preserve portless public URLs, manifest-scoped route cleanup, and per-run artifacts under ignored `.tmp/demos/`. Stop owned processes on failure as well as success; leave the shared Caddy running. Concurrent recordings must use distinct `.localhost` hostnames.
+- `packages/devhost-ui/scripts/demo/promo/` is the promo's HyperFrames project. Its `package.json` pins the HyperFrames release and is not a workspace; keep it out of the root `workspaces` list. The ElevenLabs narration and music under `promo/assets/audio/` are tracked, so a render needs no key. Footage, fonts, GSAP, and the design tokens are staged into each run's copy under `.tmp/demos/` and are never committed.
 - Recording annotations runs real Pi against a per-run playground copy. Restrict edits to its layout component, retain actual edits in `pi-changes.json`, and restore copied source during cleanup. Never reset checkout files to undo recording edits.
 - Guide demo MP4/WebP/VTT files under `packages/docs/public/demos/` are published site assets and stay tracked. Runtime files stay in `.tmp/demos/`. Agent readers use guide prose/transcripts and HTTPS links instead of reading binary media as text. CI installs FFmpeg for native publication tests.
 - Workspace `justfile` recipes are package-local validation only; do not duplicate shared lint/format enforcement there unless a workspace intentionally diverges.
