@@ -39,6 +39,51 @@ async function listVideo(media: IDemoMedia, directory: URL, urlPath: string, fil
   return video;
 }
 
+interface IPublishedPin {
+  asset: string;
+  bytes: number;
+}
+
+function isPublishedPin(value: unknown): value is IPublishedPin {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "asset" in value &&
+    typeof value.asset === "string" &&
+    // The asset becomes the last segment of a GitHub address, so it is a plain file name.
+    /^[a-z0-9][\w.-]*$/i.test(value.asset) &&
+    "bytes" in value &&
+    typeof value.bytes === "number"
+  );
+}
+
+// `just docs publish-media` records every video it uploads to the GitHub media release in the docs package's pin file.
+async function listPublishedVideos(repositoryDirectory: URL): Promise<IDemoVideo[]> {
+  const manifest: unknown = await Bun.file(new URL("packages/docs/demo-media.json", repositoryDirectory))
+    .json()
+    .catch((): undefined => undefined);
+  if (typeof manifest !== "object" || manifest === null) return [];
+  if (!("repository" in manifest && "release" in manifest && "files" in manifest)) return [];
+  const { repository, release, files } = manifest;
+  // A pin file that is not in the expected shape lists nothing: its values become addresses a browser requests.
+  if (typeof repository !== "string" || !/^[\w.-]+\/[\w.-]+$/.test(repository)) return [];
+  if (typeof release !== "string" || !/^[\w.-]+$/.test(release)) return [];
+  if (typeof files !== "object" || files === null) return [];
+  const videos: IDemoVideo[] = [];
+  for (const [name, pin] of Object.entries(files).sort(([first], [second]) => first.localeCompare(second))) {
+    if (!/^[a-z0-9][a-z0-9-]*\.mp4$/.test(name) || !isPublishedPin(pin)) return [];
+    const title = basename(name, ".mp4");
+    videos.push({
+      id: `published-${title}`,
+      kind: "published",
+      title,
+      src: `https://github.com/${repository}/releases/download/${release}/${pin.asset}`,
+      bytes: pin.bytes,
+    });
+  }
+  return videos;
+}
+
 // Reads the disk on every call, so a new render shows on reload.
 export async function readDemoMedia(repositoryDirectory: URL): Promise<IDemoMedia> {
   const media: IDemoMedia = { videos: [], files: new Map() };
@@ -59,7 +104,7 @@ export async function readDemoMedia(repositoryDirectory: URL): Promise<IDemoMedi
     );
   }
   // The render to review is the latest one.
-  recordings.sort((first, second) => second.modified.localeCompare(first.modified));
+  recordings.sort((first, second) => (second.modified ?? "").localeCompare(first.modified ?? ""));
 
   // `just demo guides` publishes each guide's video, poster and captions to the docs site.
   const guidesDirectory = new URL("packages/docs/public/demos/", repositoryDirectory);
@@ -78,6 +123,6 @@ export async function readDemoMedia(repositoryDirectory: URL): Promise<IDemoMedi
     );
   }
 
-  media.videos.push(...recordings, ...guides);
+  media.videos.push(...recordings, ...guides, ...(await listPublishedVideos(repositoryDirectory)));
   return media;
 }

@@ -35,8 +35,22 @@ describe("fetchDemoVideos", () => {
     );
   });
 
+  test("accepts a published video, which GitHub serves and which has no file time", async () => {
+    const published: IDemoVideo = {
+      id: "published-annotations",
+      kind: "published",
+      title: "annotations",
+      src: "https://github.com/alexgorbatchev/devhost/releases/download/media/annotations-273a29aa49b00e5f.mp4",
+      bytes: 1_151_684,
+    };
+    const fetcher = async (): Promise<Response> => Response.json([promo, published]);
+
+    expect(await fetchDemoVideos(fetcher, new AbortController().signal)).toEqual([promo, published]);
+  });
+
   test.each([
     ["an object", { videos: [promo] }],
+    ["a file time that is not text", [{ ...promo, modified: 1_791_500_000 }]],
     ["a video without a source", [{ ...promo, src: undefined }]],
     ["a video of an unknown kind", [{ ...promo, kind: "trailer" }]],
     ["a poster that is not a path", [{ ...promo, poster: 7 }]],
