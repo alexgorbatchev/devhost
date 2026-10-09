@@ -28,7 +28,7 @@ Health checks verify HTTPS using the existing root certificate returned by `devh
 
 The full sequence and annotation scene also require Pi on PATH with a working configured provider/model. This is a real model request and uses that provider's normal billing. The recorder limits Pi to read/edit tools and guards edits to the copied `PlaygroundLayout.tsx`. It keeps provider extensions but skips skills, context files, prompt templates, and local approval configuration for this isolated fixture. Query and startup scenes do not require Pi.
 
-The full sequence also needs Node.js 22 or newer on PATH, which HyperFrames runs on. Before it captures anything, `just demo record` checks that version and has HyperFrames find or download its own Chrome build, about 114 MB on the first run; `just demo promo` does the same before it renders. An older Node.js or a failed download therefore stops the run before the capture and its Pi request.
+The full sequence also needs Node.js 22 or newer on PATH, which HyperFrames runs on. Before it captures anything, `just demo record` checks that version and has HyperFrames find or download its own Chrome build, about 114 MB on the first run; `just demo promo` does the same once it has checked the recording and before it changes anything in it. An older Node.js or a failed download therefore stops the run before the capture and its Pi request.
 
 HyperFrames keeps that build under `~/.cache/hyperframes` and its own settings under `~/.hyperframes`; both follow `HOME`, so they cannot be moved into a run directory without downloading Chrome again for every run. The promo's render runs with `HYPERFRAMES_NO_TELEMETRY=1` and `HYPERFRAMES_SKIP_SKILLS=1`, so it reports no usage and installs no agent skills on your machine. A render needs no ElevenLabs key: the narration and music are committed files.
 
@@ -54,7 +54,7 @@ just demo promo .tmp/demos/recording-AbC123
 DEVHOST_DEMO_QUALITY=draft just demo promo
 ```
 
-Without an argument the command uses the newest recording that holds every recording the composition requests, so a later single-scene run or a run that failed part-way is skipped. A directory given as the argument is checked the same way before anything in it is created or replaced, and the command stops when footage is missing. `DEVHOST_DEMO_QUALITY` accepts HyperFrames' `draft`, `looks`, and `delivery`; the default is `delivery`, and `draft` is the fast setting for iterating on the composition. Both `just demo record` and `just demo promo` honor it.
+Without an argument the command uses the newest recording that holds every recording the composition requests, so a later single-scene run or a run that failed part-way is skipped. A directory given as the argument is checked the same way before the renderer is prepared and before anything in it is created or replaced, and the command stops when footage is missing. `DEVHOST_DEMO_QUALITY` accepts HyperFrames' `draft`, `looks`, and `delivery`; the default is `delivery`, and `draft` is the fast setting for iterating on the composition. Both `just demo record` and `just demo promo` honor it.
 
 To iterate on one scene:
 

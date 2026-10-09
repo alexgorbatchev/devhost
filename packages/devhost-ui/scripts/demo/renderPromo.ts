@@ -36,6 +36,7 @@ export async function renderPromo(options: IRenderPromoOptions): Promise<string>
   if (missing.length > 0) {
     throw new Error(`${directoryPath} is not a recording the promo can render from: it has no ${missing.join(", ")}`);
   }
+  await options.prepare?.(signal);
   // Each run renders its own copy, so concurrent recordings and the checkout never share staged footage.
   await rm(projectPath, { recursive: true, force: true });
   await cp(options.projectSourcePath, projectPath, { recursive: true });
@@ -101,20 +102,18 @@ if (import.meta.main) {
     const selected = process.env.DEVHOST_DEMO_RECORDING ?? "";
     const projectSourcePath = join(import.meta.dir, "promo");
     const requests = await readPromoFootageRequests(projectSourcePath);
+    const recordingsPath = resolve(import.meta.dir, "../../../../.tmp/demos");
     const directoryPath =
       selected === ""
-        ? await findPromoRecording(resolve(import.meta.dir, "../../../../.tmp/demos"), [
-            ...new Set(requests.map((request) => request.slot.sourceId)),
-          ])
+        ? await findPromoRecording(recordingsPath, [...new Set(requests.map((request) => request.slot.sourceId))])
         : // A relative path means what it meant where `just` was invoked, not in this recipe's directory.
           resolve(process.env.DEVHOST_DEMO_INVOCATION_DIRECTORY ?? process.cwd(), selected);
-    // The preflight works beside the recordings, so a wrong directory argument is not written to.
-    const recordingsPath = resolve(import.meta.dir, "../../../../.tmp/demos");
-    await preparePromoRenderer(runCommand, projectSourcePath, recordingsPath, controller.signal);
     console.log(`Rendering the promo from ${directoryPath}`);
     const outputPath = await renderPromo({
       directoryPath,
       projectSourcePath,
+      // The preflight works beside the recordings, and only once the directory is known to be one of them.
+      prepare: (signal) => preparePromoRenderer(runCommand, projectSourcePath, recordingsPath, signal),
       render: renderPromoComposition,
       signal: controller.signal,
     });

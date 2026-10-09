@@ -1,10 +1,10 @@
 import { cp, mkdir, mkdtemp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { afterAll, beforeAll, expect, it } from "bun:test";
+import { afterAll, beforeAll, expect, it, mock } from "bun:test";
 import { readMediaInfo } from "../readMediaInfo";
 import { renderPromo } from "../renderPromo";
 import { runCommand } from "../runCommand";
-import type { IPromoAudioTimings, RenderPromoComposition } from "../types";
+import type { IPromoAudioTimings, PreparePromoRenderer, RenderPromoComposition } from "../types";
 
 let directoryPath = "";
 let projectSourcePath = "";
@@ -131,20 +131,41 @@ it("stages a private copy of the project and writes the video with its captions 
   expect(await Bun.file(join(projectSourcePath, "assets/footage/terminal.mp4")).exists()).toBe(false);
 }, 30_000);
 
-it("leaves a directory that is not a recording exactly as it was", async () => {
+it("leaves a directory that is not a recording exactly as it was, before the renderer is prepared", async () => {
   const directory = join(directoryPath, "not-a-recording");
   await Bun.write(join(directory, "promo/keep.txt"), "someone's work");
+  const prepare = mock<PreparePromoRenderer>().mockResolvedValue(undefined);
 
   await expect(
     renderPromo({
       directoryPath: directory,
       projectSourcePath,
+      prepare,
       render: createRenderer(4, tone),
       signal: new AbortController().signal,
     }),
   ).rejects.toThrow(`${directory} is not a recording the promo can render from: it has no startup`);
+  expect(prepare).not.toHaveBeenCalled();
   expect(await Array.fromAsync(new Bun.Glob("**/*").scan({ cwd: directory, dot: true }))).toEqual(["promo/keep.txt"]);
 });
+
+it("stages nothing in a recording when the renderer cannot be prepared", async () => {
+  const recordingPath = await createRecording("unusable-renderer");
+  const render = mock<RenderPromoComposition>().mockResolvedValue(undefined);
+  const signal = new AbortController().signal;
+  const prepare = mock<PreparePromoRenderer>().mockRejectedValue(
+    new Error("The promo's renderer needs Node.js 22 or newer; found v20.11.0"),
+  );
+
+  await expect(
+    renderPromo({ directoryPath: recordingPath, projectSourcePath, prepare, render, signal }),
+  ).rejects.toThrow("The promo's renderer needs Node.js 22 or newer; found v20.11.0");
+  expect(prepare.mock.calls).toEqual([[signal]]);
+  expect(render).not.toHaveBeenCalled();
+  expect(await Array.fromAsync(new Bun.Glob("**/*").scan({ cwd: recordingPath, dot: true }))).toEqual([
+    "raw/startup.mp4",
+  ]);
+}, 30_000);
 
 it("refuses to stage a render over the promo's own project", async () => {
   const directory = await createRecording("holds-the-project");
