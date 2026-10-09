@@ -32,7 +32,7 @@ export function VideoGallery(): JSX.Element {
           <VideoSection
             heading="Guide demos"
             layout="grid"
-            emptyMessage="packages/docs/public/demos holds no guide video."
+            emptyMessage="packages/docs/public/demos holds no guide video. Run just docs media to download the published ones."
             videos={query.data.filter((video) => video.kind === "guide")}
           />
         </>

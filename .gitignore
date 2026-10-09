@@ -10,6 +10,8 @@ caddy/routes/.registrations/*.json
 coverage/
 storybook-static/
 .tmp
+# Demo videos live in the media release; packages/docs/demo-media.json pins them and `just docs media` downloads them.
+/packages/docs/public/demos/*.mp4
 /.workspaces
 /.envrc.local
 /.codegraph

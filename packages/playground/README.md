@@ -38,7 +38,7 @@ Both devtools remain mounted across route changes and are included in developmen
 **Demo videos** in the second navigation row opens `/videos`, which plays the demo videos of the checkout the stack runs from:
 
 - **Recordings**: the rendered `devhost-demo.mp4` of every `.tmp/demos/recording-*` run, latest render first. `just demo record` and `just demo promo` write them.
-- **Guide demos**: the videos under `packages/docs/public/demos/`, with their posters and captions.
+- **Guide demos**: the videos under `packages/docs/public/demos/`, with their posters and captions. Git does not track those videos; `just docs media` downloads the published ones, and `just demo guides` writes new renders there.
 
 The frontend server reads the disk on each request, so reload the page after a new render. It serves only the listed video, poster, and caption files, under `/demo-videos/`.
 
