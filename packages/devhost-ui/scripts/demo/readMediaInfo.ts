@@ -1,19 +1,22 @@
 import { runCommand } from "./runCommand";
 import type { IMediaInfo } from "./types";
 
-export async function readMediaInfo(path: string): Promise<IMediaInfo> {
-  const output = await runCommand([
-    "ffprobe",
-    "-v",
-    "error",
-    "-select_streams",
-    "v:0",
-    "-show_entries",
-    "format=duration:stream=width,height",
-    "-of",
-    "json",
-    path,
-  ]);
+export async function readMediaInfo(path: string, signal?: AbortSignal): Promise<IMediaInfo> {
+  const output = await runCommand(
+    [
+      "ffprobe",
+      "-v",
+      "error",
+      "-select_streams",
+      "v:0",
+      "-show_entries",
+      "format=duration:stream=width,height",
+      "-of",
+      "json",
+      path,
+    ],
+    { signal },
+  );
   const value: unknown = JSON.parse(output);
   if (typeof value !== "object" || value === null) throw new Error("Invalid ffprobe output");
   const format: unknown = Reflect.get(value, "format");

@@ -167,6 +167,23 @@ it("stages nothing in a recording when the renderer cannot be prepared", async (
   ]);
 }, 30_000);
 
+it("stops before the captions and the poster when interrupted as the render ends", async () => {
+  const recordingPath = await createRecording("interrupted");
+  const controller = new AbortController();
+  const render: RenderPromoComposition = async (projectPath, outputPath, signal) => {
+    await createRenderer(4, tone)(projectPath, outputPath, signal);
+    controller.abort(new Error("Promo render interrupted"));
+  };
+
+  await expect(
+    renderPromo({ directoryPath: recordingPath, projectSourcePath, render, signal: controller.signal }),
+  ).rejects.toThrow("Promo render interrupted");
+  expect({
+    captions: await Bun.file(join(recordingPath, "devhost-demo.srt")).exists(),
+    poster: await Bun.file(join(recordingPath, "poster.png")).exists(),
+  }).toEqual({ captions: false, poster: false });
+}, 30_000);
+
 it("refuses to stage a render over the promo's own project", async () => {
   const directory = await createRecording("holds-the-project");
   const ownProjectPath = join(directory, "promo");
