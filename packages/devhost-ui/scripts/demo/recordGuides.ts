@@ -22,8 +22,9 @@ export async function recordGuides(signal: AbortSignal, selectedGuide: string): 
       ? await recordDemo(signal, slug)
       : await recordGuideTerminal(repositoryPath, slug, signal);
     await publishGuideDemo(repositoryPath, slug, dirname(path));
-    console.log(`Published guide media: packages/docs/public/demos/${slug}.mp4`);
+    console.log(`Wrote guide media: packages/docs/public/demos/${slug}.mp4`);
   }
+  console.log("Review the videos, then publish them with `just docs publish-media`.");
 }
 
 if (import.meta.main) {

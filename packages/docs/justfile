@@ -1,5 +1,5 @@
 # Start local docs server with host 0.0.0.0
-dev: sync
+dev: sync media
     bun astro dev --host 0.0.0.0
 
 # Alias for dev
@@ -9,16 +9,25 @@ start: dev
 sync:
     bun sync.ts
 
+# Download the pinned demo videos this checkout does not hold yet
+media:
+    bun demoMedia.ts fetch
+
+# Upload new or re-rendered demo videos to the media release and pin them in demo-media.json
+publish-media:
+    bun demoMedia.ts publish
+
 # Run docs unit tests
-test:
+test: media
     bun test
 
 # Build the static docs site
-build: sync
+build: sync media
     bun astro build
 
 # Check package-local validations
 check: test sync
+    bun demoMedia.ts verify
     bun astro check
     bun astro build
 
