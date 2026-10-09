@@ -6,3 +6,10 @@ dev:
 # Run playground frontend in production
 start:
     NODE_ENV=production bun src/index.ts
+
+# Run playground frontend tests
+test:
+    bun test
+
+# Check package-local validations
+check: test
