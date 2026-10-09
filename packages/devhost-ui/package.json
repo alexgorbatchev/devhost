@@ -41,6 +41,7 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@elevenlabs/elevenlabs-js": "2.71.0",
     "@friedemannsommer/lcov-parser": "8.0.0",
     "@hookform/devtools": "4.4.0",
     "@storybook/addon-vitest": "10.3.5",
@@ -70,6 +71,7 @@
     "@vitest/browser-playwright": "4.1.4",
     "@vitest/coverage-v8": "4.1.4",
     "@vue/devtools-kit": "9.0.0-beta.1",
+    "gsap": "3.14.2",
     "jotai": "2.20.3",
     "jotai-devtools": "0.14.0",
     "playwright": "1.59.1",

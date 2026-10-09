@@ -4,6 +4,7 @@ import type { Subprocess } from "bun";
 import type { Browser } from "playwright";
 import { assembleDemo } from "./assembleDemo";
 import { cleanupDemoRuntime } from "./cleanupDemoRuntime";
+import { promoCaptureScale } from "./constants";
 import { createBrowserScenes } from "./createBrowserScenes";
 import { createDemoRuntime } from "./createDemoRuntime";
 import { createDemoPage } from "./createDemoPage";
@@ -11,7 +12,10 @@ import { exportClip } from "./exportClip";
 import { launchDemoBrowser } from "./launchDemoBrowser";
 import { prepareDemoCaddy } from "./prepareDemoCaddy";
 import { recordBrowserScene } from "./recordBrowserScene";
+import { renderPromo } from "./renderPromo";
+import { renderPromoComposition } from "./renderPromoComposition";
 import { runCommand } from "./runCommand";
+import { scaleTape } from "./scaleTape";
 import { startDemoStack } from "./startDemoStack";
 import { stopProcess } from "./stopProcess";
 import type { IRecordedClip } from "./types";
@@ -22,8 +26,12 @@ export async function recordDemo(signal: AbortSignal, selectedScene: string): Pr
   if (!["all", "startup", "devtools", ...scenes.map((scene) => scene.id)].includes(selectedScene)) {
     throw new Error("Choose a scene: all, startup, overview, annotations, query, devtools, react-highlight");
   }
+  // The full sequence becomes the promo: real scenes captured at twice the pixel density, composed by HyperFrames.
+  const isPromo = selectedScene === "all";
+  const captureScale = isPromo ? promoCaptureScale : 1;
   const dependencies = ["bun", "just", "git", "caddy", "ffmpeg", "ffprobe", "vhs", "ttyd", "bash", "ln"];
-  if (selectedScene === "all" || selectedScene === "annotations") dependencies.push("pi");
+  if (isPromo) dependencies.push("node", "npx");
+  if (isPromo || selectedScene === "annotations") dependencies.push("pi");
   if (selectedScene === "react-highlight") dependencies.push("nvim");
   for (const executable of dependencies) {
     if (!Bun.which(executable)) throw new Error(`Missing recording dependency: ${executable}`);
@@ -85,7 +93,7 @@ export async function recordDemo(signal: AbortSignal, selectedScene: string): Pr
     if (selectedScene === "all" || selectedScene === "startup") {
       console.log("Recording startup...");
       const tapePath = join(runtime.directoryPath, "startup.tape");
-      await Bun.write(tapePath, Bun.file(join(import.meta.dir, "startup.tape")));
+      await Bun.write(tapePath, scaleTape(await Bun.file(join(import.meta.dir, "startup.tape")).text(), captureScale));
       await runCommand(["vhs", "validate", tapePath], { cwd: runtime.directoryPath, env: runtime.env, signal });
       await runCommand(["vhs", tapePath], {
         cwd: runtime.directoryPath,
@@ -93,14 +101,16 @@ export async function recordDemo(signal: AbortSignal, selectedScene: string): Pr
         signal,
         logPath: join(runtime.directoryPath, "vhs.log"),
       });
-      clips.push(
-        await exportClip(
-          runtime.directoryPath,
-          "startup",
-          join(runtime.directoryPath, "raw/startup.mp4"),
-          "Start the whole stack with local domains and browser devtools.",
-        ),
-      );
+      if (!isPromo) {
+        clips.push(
+          await exportClip(
+            runtime.directoryPath,
+            "startup",
+            join(runtime.directoryPath, "raw/startup.mp4"),
+            "Start the whole stack with local domains and browser devtools.",
+          ),
+        );
+      }
     }
     const selectedBrowserScenes = scenes.filter(
       (scene) =>
@@ -110,20 +120,36 @@ export async function recordDemo(signal: AbortSignal, selectedScene: string): Pr
     );
     if (selectedBrowserScenes.length > 0) {
       stack = await startDemoStack(runtime, signal);
-      browser = await launchDemoBrowser(runtime.env);
-      const page = await createDemoPage(browser, runtime);
+      browser = await launchDemoBrowser(runtime.env, captureScale);
+      const page = await createDemoPage(browser, runtime, captureScale);
       for (const scene of selectedBrowserScenes) {
         signal.throwIfAborted();
         console.log(`Recording ${scene.id}...`);
-        const sources = await recordBrowserScene(page, scene, runtime, signal);
+        const sources = await recordBrowserScene(page, scene, runtime, signal, captureScale);
+        if (isPromo) continue;
         for (const source of sources) {
           clips.push(await exportClip(runtime.directoryPath, source.id, source.path, source.caption));
         }
       }
     }
     signal.throwIfAborted();
-    console.log("Assembling captioned MP4...");
-    videoPath = await assembleDemo(runtime.directoryPath, clips);
+    if (isPromo) {
+      // The render reads only the captured files, so the browser and the stack stop before it starts.
+      await browser?.close();
+      browser = undefined;
+      if (stack) await stopProcess(stack);
+      stack = undefined;
+      console.log("Rendering the promo...");
+      videoPath = await renderPromo({
+        directoryPath: runtime.directoryPath,
+        projectSourcePath: join(import.meta.dir, "promo"),
+        render: renderPromoComposition,
+        signal,
+      });
+    } else {
+      console.log("Assembling captioned MP4...");
+      videoPath = await assembleDemo(runtime.directoryPath, clips);
+    }
   } catch (error) {
     recordingError = error;
     await Bun.write(
