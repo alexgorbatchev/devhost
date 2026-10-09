@@ -8,17 +8,25 @@ export async function createPromoCaptions(
 ): Promise<string> {
   const starts = new Map<string, number>();
   const clipSeconds = new Map<string, number>();
+  const errors: string[] = [];
   await new HTMLRewriter()
     .on("audio[data-narration]", {
       element: (element): void => {
         const lineId = element.getAttribute("data-narration") ?? "";
         starts.set(lineId, Number(element.getAttribute("data-start")));
         const duration = element.getAttribute("data-duration");
-        if (duration !== null) clipSeconds.set(lineId, Number(duration));
+        if (duration === null) return;
+        const seconds = duration.trim() === "" ? Number.NaN : Number(duration);
+        if (!Number.isFinite(seconds) || seconds <= 0) {
+          errors.push(`Narration clip ${lineId} has an invalid data-duration: ${duration}`);
+        }
+        clipSeconds.set(lineId, seconds);
       },
     })
     .transform(new Response(compositionHtml))
     .text();
+  const error = errors[0];
+  if (error) throw new Error(error);
   const cues = lines.map((line) => {
     const start = starts.get(line.id);
     const fileSeconds = timings.lines.find((timing) => timing.id === line.id)?.duration;
