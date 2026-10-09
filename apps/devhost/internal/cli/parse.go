@@ -27,6 +27,7 @@ const (
 	KindSkill              Kind = "skill"
 	KindStop               Kind = "stop"
 	KindServiceList        Kind = "service-list"
+	KindStackList          Kind = "stack-list"
 	KindCaddyLifecycle     Kind = "caddy-lifecycle"
 	KindCaddyPrintRootCert Kind = "caddy-print-root-cert"
 	KindCaddyTrustRemote   Kind = "caddy-trust-remote"
@@ -49,6 +50,9 @@ const (
 	serviceCommandName       = "service"
 	serviceCommandPath       = rootCommandName + " " + serviceCommandName
 	serviceListCommandName   = "list"
+	stackCommandName         = "stack"
+	stackCommandPath         = rootCommandName + " " + stackCommandName
+	stackListCommandName     = "list"
 	caddyCommandName         = "caddy"
 	caddyCommandPath         = rootCommandName + " " + caddyCommandName
 	printRootCertCommandName = "print-root-cert"
@@ -204,6 +208,7 @@ func createRootCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 		SubCmds: boa.SubCmds(
 			createCaddyCommand(result),
 			createServiceCommand(result),
+			createStackCommand(result),
 			createStartCommand(result),
 			createStopCommand(result),
 		),
@@ -249,7 +254,11 @@ DNS setup.`
 const stopDescription = `Stop the running stack for this project.
 
 Processes that do not exit within 15 seconds are
-force-killed.`
+force-killed.
+
+To stop a stack started somewhere else, pass its manifest
+with --manifest. "devhost stack list" prints the manifest of
+every running stack.`
 
 const caddyDescription = `devhost sends every stack through one shared Caddy server.
 Download and trust it once, then start it before running
@@ -304,6 +313,34 @@ func createServiceCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 						Startable:    options.Startable,
 					}
 					return nil
+				},
+			},
+		),
+	}
+}
+
+const stackDescription = `Inspect the stacks running on this machine.`
+
+const stackListDescription = `Print every stack running on this machine, one per line:
+its PID, a tab, and the absolute path of its devhost.toml.
+
+Stop one of them from any folder by passing its path to
+devhost stop --manifest.`
+
+func createStackCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
+	return boa.CmdT[boa.NoParams]{
+		Use:   stackCommandName,
+		Short: "Inspect the stacks running on this machine",
+		Long:  stackDescription,
+		Args:  rejectUnknownCommand,
+		SubCmds: boa.SubCmds(
+			boa.CmdT[boa.NoParams]{
+				Use:   stackListCommandName,
+				Short: "Print the PID and manifest of every running stack",
+				Long:  stackListDescription,
+				Args:  cobra.NoArgs,
+				RunFunc: func(_ *boa.NoParams, _ *cobra.Command, _ []string) {
+					*result = CommandLineArguments{Kind: KindStackList}
 				},
 			},
 		),

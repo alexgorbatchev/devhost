@@ -11,6 +11,8 @@ import (
 	"sync"
 
 	"golang.org/x/sys/unix"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/procid"
 )
 
 var prepareServiceContainmentOnce sync.Once
@@ -31,12 +33,12 @@ func processIsLive(pid int) bool {
 		return false
 	}
 
-	stat, err := readLinuxProcessStat(pid)
+	stat, err := procid.ReadStat(pid)
 	if err != nil {
 		return false
 	}
 
-	return stat.state != 'Z' && stat.state != 'X' && stat.state != 'x'
+	return stat.State != 'Z' && stat.State != 'X' && stat.State != 'x'
 }
 
 func readProcessSnapshot() (map[int][]int, error) {
@@ -56,12 +58,12 @@ func readProcessSnapshot() (map[int][]int, error) {
 			continue
 		}
 
-		stat, err := readLinuxProcessStat(pid)
+		stat, err := procid.ReadStat(pid)
 		if err != nil {
 			continue
 		}
 
-		childrenByParent[stat.parentPID] = append(childrenByParent[stat.parentPID], pid)
+		childrenByParent[stat.ParentPID] = append(childrenByParent[stat.ParentPID], pid)
 	}
 
 	return childrenByParent, nil
@@ -83,42 +85,6 @@ func collectPlatformContainmentRootPIDs(childrenByParent map[int][]int, serviceT
 	}
 
 	return rootPIDs
-}
-
-type linuxProcessStat struct {
-	parentPID int
-	state     byte
-}
-
-func readLinuxProcessStat(pid int) (linuxProcessStat, error) {
-	statPath := filepath.Join("/proc", strconv.Itoa(pid), "stat")
-	text, err := os.ReadFile(statPath)
-	if err != nil {
-		return linuxProcessStat{}, err
-	}
-
-	line := strings.TrimSpace(string(text))
-	closeIndex := strings.LastIndex(line, ")")
-	if closeIndex < 0 || closeIndex+2 >= len(line) {
-		return linuxProcessStat{}, fmt.Errorf("parse %s: malformed stat line", statPath)
-	}
-
-	fields := strings.Fields(line[closeIndex+2:])
-	if len(fields) < 2 {
-		return linuxProcessStat{}, fmt.Errorf("parse %s: missing ppid field", statPath)
-	}
-
-	parentPID, err := strconv.Atoi(fields[1])
-	if err != nil {
-		return linuxProcessStat{}, fmt.Errorf("parse %s parent pid: %w", statPath, err)
-	}
-
-	state := byte(0)
-	if len(fields[0]) > 0 {
-		state = fields[0][0]
-	}
-
-	return linuxProcessStat{parentPID: parentPID, state: state}, nil
 }
 
 func readLinuxProcessEnvironmentValue(pid int, key string) (string, bool) {

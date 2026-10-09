@@ -105,6 +105,10 @@ func TestCreateManagedCaddyPaths(t *testing.T) {
 		t.Fatalf("paths.RegistrationsDirectoryPath = %q, want %q", paths.RegistrationsDirectoryPath, "/tmp/devhost-state/caddy/routes/.registrations")
 	}
 
+	if paths.StacksDirectoryPath != "/tmp/devhost-state/caddy/stacks" {
+		t.Fatalf("paths.StacksDirectoryPath = %q, want %q", paths.StacksDirectoryPath, "/tmp/devhost-state/caddy/stacks")
+	}
+
 	if paths.RootCertificatePath != "/tmp/devhost-state/caddy/storage/pki/authorities/local/root.crt" {
 		t.Fatalf("paths.RootCertificatePath = %q, want %q", paths.RootCertificatePath, "/tmp/devhost-state/caddy/storage/pki/authorities/local/root.crt")
 	}
