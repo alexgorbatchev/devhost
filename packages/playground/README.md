@@ -33,6 +33,17 @@ The devtools prototype draws its own mock toolbar, so on the playground host it 
 
 Both devtools remain mounted across route changes and are included in development and production playground runs.
 
+## Demo videos
+
+**Demo videos** in the second navigation row opens `/videos`, which plays the demo videos of the checkout the stack runs from:
+
+- **Recordings**: the rendered `devhost-demo.mp4` of every `.tmp/demos/recording-*` run, latest render first. `just demo record` and `just demo promo` write them.
+- **Guide demos**: the videos under `packages/docs/public/demos/`, with their posters and captions.
+
+The frontend server reads the disk on each request, so reload the page after a new render. It serves only the listed video, poster, and caption files, under `/demo-videos/`.
+
+The page is a document of its own, outside the router. `just demo record` and `just demo guides` film this app, so its link shows in their footage; it sits in the second navigation row, which still fits one line at the recorder's 1280-pixel width, so nothing in the filmed layout moves.
+
 ## Project layout
 
 - `backend/` — Backend app
@@ -41,7 +52,8 @@ Both devtools remain mounted across route changes and are included in developmen
   - `src/index.ts` — Frontend static server.
   - `src/frontend.tsx` — React browser entrypoint.
   - `src/App.tsx` — Query provider and Router setup.
-  - `src/components/` — playground layout and Query demo.
+  - `src/videos.html`, `src/videos.tsx` — the demo videos page.
+  - `src/components/` — playground layout, Query demo, and the video gallery.
 - `../../devhost.toml` — repository-root manifest for the playground stack.
 
 ## Notes

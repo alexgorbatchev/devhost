@@ -134,6 +134,47 @@ code {
   background: #1a1a1a;
   border-radius: 12px;
 }
+.video-gallery {
+  box-sizing: border-box;
+  width: min(100vw, 1280px);
+}
+.video-section {
+  margin-top: 2rem;
+  text-align: left;
+}
+.video-list {
+  display: grid;
+  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.video-list--grid {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+.video-card {
+  margin: 0;
+}
+.video-card video {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #000;
+  border: 2px solid #fbf0df;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+.video-card figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+  margin-top: 0.5rem;
+  color: #fbf0df;
+}
+.video-card a {
+  color: #f3d5a3;
+}
 .endpoint-row {
   display: flex;
   align-items: center;

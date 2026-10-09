@@ -1,7 +1,7 @@
 import { Link, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsInProd } from "@tanstack/react-router-devtools";
 import type { JSX } from "react";
-import { PROTOTYPES } from "../constants";
+import { PROTOTYPES, VIDEOS_PAGE } from "../constants";
 import logo from "../logo.svg";
 import reactLogo from "../react.svg";
 
@@ -20,11 +20,11 @@ export function PlaygroundLayout(): JSX.Element {
         </Link>
         <Link to="/query">Query demo</Link>
       </nav>
-      {/* Static documents outside the router: plain anchors load them as full pages. */}
-      <nav className="playground-navigation" aria-label="Design prototypes">
-        {PROTOTYPES.map((prototype) => (
-          <a key={prototype.path} href={prototype.path}>
-            {prototype.label}
+      {/* Documents outside the router: plain anchors load them as full pages. */}
+      <nav className="playground-navigation" aria-label="Repository pages">
+        {[...PROTOTYPES, VIDEOS_PAGE].map((page) => (
+          <a key={page.path} href={page.path}>
+            {page.label}
           </a>
         ))}
       </nav>

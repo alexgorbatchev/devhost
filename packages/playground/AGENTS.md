@@ -14,6 +14,7 @@ Bun + React workspace split into frontend and backend apps, used to exercise `de
 - `backend/src/index.ts` is the backend Bun server, serving `/api/hello` endpoints on port 3000 (or dynamic assigned port).
 - `frontend/src/index.ts` is the frontend Bun server, serving `frontend/src/index.html` on port 3001 (or dynamic assigned port).
 - The frontend server also serves the design prototypes from `packages/design` under `/prototypes/`: `references/*.html` and the `tokens.css` they link. `frontend/src/constants.ts` lists them for both the routes and the navigation links; add a new prototype there.
+- The frontend server serves the demo videos page at `/videos` (`frontend/src/videos.html`) and its media under `/demo-videos/`. `frontend/src/readDemoMedia.ts` lists each `.tmp/demos/recording-*/devhost-demo.mp4` and the guide demos in `packages/docs/public/demos/` per request; only listed files are served, because a run directory also holds logs, sessions, and configuration. `frontend/src/constants.ts` names the page for both its route and its link in the second navigation row. The recorder films this app at a 1280-pixel width: keep that row on one line so the filmed layout does not move.
 - `frontend/src/frontend.tsx` is the React browser entrypoint referenced by `frontend/src/index.html`.
 - Keep Router and Query floating devtools mounted so the overlay can detect their native launchers. The playground uses their production-capable exports to exercise the overlay in either server mode.
 
