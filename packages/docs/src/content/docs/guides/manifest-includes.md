@@ -35,6 +35,16 @@ includes = [
 
 Each matching sub-manifest is parsed, prepared, and merged recursively into the main stack.
 
+## Starting part of the merged stack
+
+The merged stack holds every service of every included manifest, which is usually more than one task needs. Name the services to run from the root manifest's directory, and devhost starts those, the services they reach through `dependsOn`, and the services marked `alwaysStart = true`:
+
+```bash
+devhost start web api
+```
+
+The names can come from any included manifest, and `dependsOn` can cross from one included manifest to another. The services left out run no process and reserve no hostname or port. See [Starting part of a stack](../stack-lifecycle/#starting-part-of-a-stack) for the selection rules, a worked example, and how to start a stopped service later.
+
 ## Changes while the stack is running
 
 Saving the root manifest or an included manifest reloads the merged service configuration. Adding or deleting files matching an `includes` glob adds or removes their services without restarting devhost. Devhost validates the whole candidate before changing running services; rejected edits leave the accepted configuration in place. Changing annotation actions requires stopping and restarting devhost, including when the actions come from an included file.
