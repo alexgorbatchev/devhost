@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-09 09:28
+last_modified: 2026-10-09 09:54
 status: current
 ---
 
@@ -175,7 +175,7 @@ A promo run's directory contains `devhost-demo.mp4`, the narration captions in `
 
 Each browser scene writes `<scene>-navigations.json` with captured full-page requests; successful scenes contain an empty array. Annotation screenshots include the draft, Pi terminal, and live fix. `pi-changes.json` preserves the edited source for review; `playground-baseline.json` records the original copy. Pi sessions and annotation prompts stay under the run's `.tmp`. Logs include `vhs.log`, browser-stack logs, `cleanup.log`, and `recording-error.log` on failures.
 
-A render extracts every source frame and installs HyperFrames under the run's `.tmp`, several hundred megabytes together, and removes both when it ends, whether it succeeded or failed.
+A render extracts every source frame and installs HyperFrames under the run's `.tmp`, several hundred megabytes together, and removes both when it ends, whether it succeeded or failed. The check before a capture or a render installs HyperFrames in a `promo-preflight-*` directory of its own under `.tmp/demos/` and removes that directory the same way, so runs started together never share an install.
 
 Browser profiles, artifacts, a copy of the public Caddy root certificate, and the runtime manifest are isolated under that directory. Caddy state and its privileged HTTPS listener are shared with normal devhost stacks; routes belong to the recording manifest. Editor integration is enabled only for the React Highlight guide; worktrees are enabled for the copied Git fixture. Temporary Chromium paths, including those of the promo's render, use a relative `.tmp` inside the recording directory to fit Linux's Unix socket path limit in deep worktrees.
 
