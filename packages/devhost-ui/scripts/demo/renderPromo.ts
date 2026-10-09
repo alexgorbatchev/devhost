@@ -23,9 +23,20 @@ const stagedDependencies: Record<string, string> = {
 
 export async function renderPromo(options: IRenderPromoOptions): Promise<string> {
   const { directoryPath, signal } = options;
-  const sources = await readPromoSources(directoryPath);
-  // Each run renders its own copy, so concurrent recordings and the checkout never share staged footage.
   const projectPath = join(directoryPath, "promo");
+  // A wrong directory fails here, before anything in it is created or removed.
+  if (resolve(projectPath) === resolve(options.projectSourcePath)) {
+    throw new Error(`${directoryPath} holds the promo's own project, so it cannot be a recording`);
+  }
+  const sources = await readPromoSources(directoryPath);
+  const requests = await readPromoFootageRequests(options.projectSourcePath);
+  const missing = [...new Set(requests.map((request) => request.slot.sourceId))].filter(
+    (sourceId) => !sources.some((source) => source.id === sourceId),
+  );
+  if (missing.length > 0) {
+    throw new Error(`${directoryPath} is not a recording the promo can render from: it has no ${missing.join(", ")}`);
+  }
+  // Each run renders its own copy, so concurrent recordings and the checkout never share staged footage.
   await rm(projectPath, { recursive: true, force: true });
   await cp(options.projectSourcePath, projectPath, { recursive: true });
   for (const [specifier, target] of Object.entries(stagedDependencies)) {
@@ -97,8 +108,10 @@ if (import.meta.main) {
           ])
         : // A relative path means what it meant where `just` was invoked, not in this recipe's directory.
           resolve(process.env.DEVHOST_DEMO_INVOCATION_DIRECTORY ?? process.cwd(), selected);
-    await mkdir(join(directoryPath, ".tmp"), { recursive: true });
-    await preparePromoRenderer(runCommand, projectSourcePath, join(directoryPath, ".tmp"), controller.signal);
+    // The preflight works beside the recordings, so a wrong directory argument is not written to.
+    const recordingsPath = resolve(import.meta.dir, "../../../../.tmp/demos");
+    await mkdir(recordingsPath, { recursive: true });
+    await preparePromoRenderer(runCommand, projectSourcePath, recordingsPath, controller.signal);
     console.log(`Rendering the promo from ${directoryPath}`);
     const outputPath = await renderPromo({
       directoryPath,
