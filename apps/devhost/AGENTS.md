@@ -122,6 +122,7 @@ The token-free native browser WebSocket requires the exact current Origin/Host, 
 - `internal/services/` — child process orchestration, health checks, port resolution, and cleanup
 - `internal/caddy/` — managed Caddy lifecycle, paths, config, and routing
 - `internal/caddy/caddytest/`, `internal/nettest/`, `internal/testenv/` — test support: stand-ins for Caddy's admin endpoint, reserved loopback ports, and the test process environment
+- `internal/procid/` — the start identity that tells a process from a later one with the same PID, and the Linux `/proc/<pid>/stat` reader the service containment shares
 - `internal/nativebrowser/` — attach-only typed CDP observation and native window access for explicitly configured user-owned browsers
 - `internal/devtools/` — Go devtools control servers plus embedded browser assets
 - `internal/hostusage/` — samples host CPU, memory, and disk usage for the toolbar readouts (gopsutil; Linux reads sysfs to leave out USB-attached and removable drives)
@@ -138,6 +139,8 @@ The token-free native browser WebSocket requires the exact current Origin/Host, 
 - Never submit or merge schema additions that break this naming contract.
 
 ## Service supervision boundary
+
+- Every stack registers itself with `caddy.RegisterStack` before it claims anything and unregisters last in its cleanup, so `devhost stop` and `devhost stack list` know a stack that holds no hostname or port. A stack record, hostname claim, fixed port claim, or route registration names its owner by PID and start identity (`ownerStartIdentity`, from `internal/procid`). Decide whether an owner is still running with `routeMutationIsOwnerAlive`, never by PID alone: a PID is reused, and the answer decides which process `killZombies` and `devhost stop` signal. A record without an identity comes from an older devhost and is checked by PID. `internal/caddy` owns the record formats; other packages read owners through `caddy.ReadLiveStackOwners` and do not parse the files. Tests that need a running stack's records start a process that makes real claims, as `startStackOwner` in `internal/services` does.
 
 - Single-service restarts retain assigned automatic ports and report collisions with the **Restart stack with new ports** recovery action. Full-stack restart uses the last accepted manifest, refreshes managed auto ports, stops all managed services before relaunching them with rebuilt port templates/environments, retains selected worktrees and control/document listeners, and remains retryable after launch/routing failure. Fixed ports and external processes stay unchanged. Signal only owned listener processes during cleanup; an unrelated listener taking over a stopped service's port must neither be killed nor prevent stack recovery.
 

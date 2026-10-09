@@ -39,6 +39,17 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 		}
 
 		return 0
+	case cli.KindStackList:
+		stacks, err := services.ListRunningStacks(readEnvironment())
+		if err != nil {
+			return fail(stderr, err)
+		}
+
+		if err := writeRunningStacks(stdout, stacks); err != nil {
+			return fail(stderr, err)
+		}
+
+		return 0
 	case cli.KindServiceList:
 		manifestPath, err := resolveManifestPath(arguments.ManifestPath, cwd)
 		if err != nil {
@@ -238,11 +249,31 @@ func writeServiceNames(stdout io.Writer, value manifest.Manifest, startableOnly 
 	return nil
 }
 
-// resolveManifestPath returns the manifest a command names or, when it names
-// none, the nearest one in cwd or above it.
+// writeRunningStacks prints one line per running stack, in the same form in
+// both output modes so the list can be piped into a picker: the PID, a tab, and
+// the manifest path. The path comes last and runs to the end of the line, so it
+// stays one field when it holds spaces.
+func writeRunningStacks(stdout io.Writer, stacks []caddy.StackOwner) error {
+	for _, stack := range stacks {
+		if _, err := fmt.Fprintf(stdout, "%d\t%s\n", stack.PID, stack.ManifestPath); err != nil {
+			return fmt.Errorf("writing running stacks: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// resolveManifestPath returns the absolute path of the manifest a command names
+// or, when it names none, of the nearest one in cwd or above it. The path is
+// what a running stack records as its identity, so it must name the same file
+// from every directory: devhost stop and devhost stack list read it elsewhere.
 func resolveManifestPath(explicitPath *string, cwd string) (string, error) {
 	if explicitPath != nil {
-		return *explicitPath, nil
+		if filepath.IsAbs(*explicitPath) {
+			return filepath.Clean(*explicitPath), nil
+		}
+
+		return filepath.Join(cwd, *explicitPath), nil
 	}
 
 	discoveredPath, err := manifest.ResolveManifestPath(cwd)

@@ -1,248 +1,207 @@
 package services
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
-	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
-
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 )
 
-func TestStopHelperProcess(t *testing.T) {
-	if os.Getenv("GO_WANT_STOP_HELPER_PROCESS") != "1" {
-		return
+// An unreachable grace period, for a stack expected to stop when asked.
+const unreachableGracePeriod = time.Hour
+
+const stackListHint = "Other stacks are running. Run \"devhost stack list\" to print their PIDs and manifests.\n"
+
+// endedBySignal reports whether a process that has been waited for was ended by
+// signal rather than by exiting.
+func endedBySignal(waitError error, signal syscall.Signal) bool {
+	var exitError *exec.ExitError
+	if !errors.As(waitError, &exitError) {
+		return false
 	}
 
-	mode := os.Getenv("DEVHOST_STOP_HELPER_MODE")
-	switch mode {
-	case "sleep":
-		// Sleep for up to 10 seconds, waiting to be killed or stop
-		time.Sleep(10 * time.Second)
-		os.Exit(0)
-	case "graceful":
-		signals := make(chan os.Signal, 1)
-		signal.Notify(signals, syscall.SIGTERM)
-		<-signals
-		os.Exit(0)
-	default:
-		os.Exit(2)
+	status, ok := exitError.Sys().(syscall.WaitStatus)
+	return ok && status.Signaled() && status.Signal() == signal
+}
+
+func TestStopStackWithoutAnyStack(t *testing.T) {
+	environment := map[string]string{"DEVHOST_STATE_DIR": t.TempDir()}
+	manifestPath := filepath.Join(t.TempDir(), "devhost.toml")
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	if err := StopStack(manifestPath, environment, &stdout, &stderr); err != nil {
+		t.Fatalf("StopStack() unexpected error = %v", err)
+	}
+
+	if want := "No active devhost stack process found for manifest: " + manifestPath + "\n"; stdout.String() != want {
+		t.Fatalf("StopStack() stdout = %q, want %q", stdout.String(), want)
+	}
+
+	if stderr.String() != "" {
+		t.Fatalf("StopStack() stderr = %q, want empty", stderr.String())
 	}
 }
 
-func TestStopStack_NoProcesses(t *testing.T) {
-	tempDir := t.TempDir()
-	environment := map[string]string{
-		"DEVHOST_STATE_DIR": tempDir,
+func TestStopStackStopsTheStackOfTheManifest(t *testing.T) {
+	stateDirectoryPath := t.TempDir()
+	environment := map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath}
+
+	projectsPath := t.TempDir()
+	manifestPath := filepath.Join(projectsPath, "target", "devhost.toml")
+	otherManifestPath := filepath.Join(projectsPath, "other", "devhost.toml")
+
+	// The target keeps two records, which must not make it two processes to stop.
+	target := startStackOwner(t, stateDirectoryPath, stackOwnerOptions{ManifestPath: manifestPath, Port: 4000, Host: "target.localhost", Behavior: stackOwnerStopsOnRequest})
+	other := startStackOwner(t, stateDirectoryPath, stackOwnerOptions{ManifestPath: otherManifestPath, Port: 5000, Host: "other.localhost", Behavior: stackOwnerStopsOnRequest})
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	if err := stopStack(manifestPath, environment, unreachableGracePeriod, &stdout, &stderr); err != nil {
+		t.Fatalf("stopStack() unexpected error = %v", err)
 	}
 
-	manifestPath := filepath.Join(tempDir, "devhost.toml")
-	if err := os.WriteFile(manifestPath, []byte(""), 0o644); err != nil {
-		t.Fatalf("failed to create dummy manifest: %v", err)
+	// The stand-in exits with code 0 when it handles SIGTERM, so a clean Wait is
+	// the proof that it was asked to stop and not killed.
+	if err := target.Wait(); err != nil {
+		t.Fatalf("target stack Wait() error = %v, want a clean exit", err)
 	}
 
-	var stdout io.Writer = os.Stdout
-	var stderr io.Writer = os.Stderr
+	targetPID := strconv.Itoa(target.Process.Pid)
+	wantStdout := "Stopping 1 active stack process(es) associated with manifest...\n" +
+		"Sending SIGTERM to process " + targetPID + "...\n" +
+		"Process " + targetPID + " stopped cleanly.\n"
+	if stdout.String() != wantStdout {
+		t.Fatalf("stopStack() stdout = %q, want %q", stdout.String(), wantStdout)
+	}
 
-	// Since there are no claim files, it should print "No active devhost stack process found" and succeed.
-	err := StopStack(manifestPath, environment, stdout, stderr)
-	if err != nil {
-		t.Fatalf("StopStack failed: %v", err)
+	if stderr.String() != "" {
+		t.Fatalf("stopStack() stderr = %q, want empty", stderr.String())
+	}
+
+	if !processExists(other.Process.Pid) {
+		t.Fatalf("stopStack() stopped the stack of %s, which it was not asked to stop", otherManifestPath)
 	}
 }
 
-func TestStopStack_CleanShutdown(t *testing.T) {
-	tempDir := t.TempDir()
-	environment := map[string]string{
-		"DEVHOST_STATE_DIR": tempDir,
+func TestStopStackKillsAStackThatIgnoresTheRequest(t *testing.T) {
+	stateDirectoryPath := t.TempDir()
+	environment := map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath}
+	manifestPath := filepath.Join(t.TempDir(), "devhost.toml")
+
+	stack := startStackOwner(t, stateDirectoryPath, stackOwnerOptions{ManifestPath: manifestPath, Port: 4000, Behavior: stackOwnerIgnoresRequests})
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	// The test waits for the grace period to run out, so it is a short one.
+	if err := stopStack(manifestPath, environment, 200*time.Millisecond, &stdout, &stderr); err != nil {
+		t.Fatalf("stopStack() unexpected error = %v", err)
 	}
 
-	// 1. Spawn graceful helper process
-	cmd := exec.Command(os.Args[0], "-test.run=TestStopHelperProcess", "--")
-	cmd.Env = append(os.Environ(), "GO_WANT_STOP_HELPER_PROCESS=1", "DEVHOST_STOP_HELPER_MODE=graceful")
-	if err := cmd.Start(); err != nil {
-		t.Fatalf("failed to start helper process: %v", err)
-	}
-	defer func() {
-		_ = cmd.Process.Kill() // no-op once StopStack has stopped it
-		_ = cmd.Wait()         // reap the helper so it does not linger as a zombie
-	}()
-
-	manifestPath := filepath.Join(tempDir, "devhost.toml")
-	if err := os.WriteFile(manifestPath, []byte(""), 0o644); err != nil {
-		t.Fatalf("failed to create dummy manifest: %v", err)
+	if err := stack.Wait(); !endedBySignal(err, syscall.SIGKILL) {
+		t.Fatalf("stack Wait() error = %v, want it ended by SIGKILL", err)
 	}
 
-	// 2. Setup mock claim directories and a mock registration file
-	paths, err := caddy.CreateManagedCaddyPathsFromEnvironment(environment)
-	if err != nil {
-		t.Fatalf("failed to resolve caddy paths: %v", err)
+	stackPID := strconv.Itoa(stack.Process.Pid)
+	wantStdout := "Stopping 1 active stack process(es) associated with manifest...\n" +
+		"Sending SIGTERM to process " + stackPID + "...\n" +
+		"Process " + stackPID + " terminated.\n"
+	if stdout.String() != wantStdout {
+		t.Fatalf("stopStack() stdout = %q, want %q", stdout.String(), wantStdout)
 	}
 
-	err = os.MkdirAll(paths.RegistrationsDirectoryPath, 0o755)
-	if err != nil {
-		t.Fatalf("failed to create registrations directory: %v", err)
-	}
-
-	claim := claimMetadata{
-		OwnerPID:     cmd.Process.Pid,
-		ManifestPath: manifestPath,
-	}
-	claimBytes, err := json.Marshal(claim)
-	if err != nil {
-		t.Fatalf("failed to marshal mock claim: %v", err)
-	}
-
-	registrationPath := filepath.Join(paths.RegistrationsDirectoryPath, "mock_registration.json")
-	if err := os.WriteFile(registrationPath, claimBytes, 0o644); err != nil {
-		t.Fatalf("failed to write mock claim file: %v", err)
-	}
-
-	// 3. Verify target process exists initially
-	if !processExists(cmd.Process.Pid) {
-		t.Fatalf("helper process %d should be running initially", cmd.Process.Pid)
-	}
-
-	// 4. Run StopStack
-	err = StopStack(manifestPath, environment, io.Discard, io.Discard)
-	if err != nil {
-		t.Fatalf("StopStack failed: %v", err)
-	}
-
-	// 5. Verify target process has been stopped
-	// Wait up to 2 seconds for OS to clean up process table
-	dead := false
-	for i := 0; i < 20; i++ {
-		if !processExists(cmd.Process.Pid) {
-			dead = true
-			break
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-
-	if !dead {
-		t.Fatalf("expected helper process %d to be stopped, but it is still alive", cmd.Process.Pid)
+	if want := "Process " + stackPID + " did not stop in time. Sending SIGKILL...\n"; stderr.String() != want {
+		t.Fatalf("stopStack() stderr = %q, want %q", stderr.String(), want)
 	}
 }
 
-func TestStopStack_ProcessAlreadyDead(t *testing.T) {
-	tempDir := t.TempDir()
-	environment := map[string]string{
-		"DEVHOST_STATE_DIR": tempDir,
+func TestStopStackPointsAtTheOtherRunningStacks(t *testing.T) {
+	stateDirectoryPath := t.TempDir()
+	environment := map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath}
+
+	projectsPath := t.TempDir()
+	manifestPath := filepath.Join(projectsPath, "idle", "devhost.toml")
+	otherManifestPath := filepath.Join(projectsPath, "other", "devhost.toml")
+
+	other := startStackOwner(t, stateDirectoryPath, stackOwnerOptions{ManifestPath: otherManifestPath, Port: 5000, Host: "other.localhost", Behavior: stackOwnerStopsOnRequest})
+
+	var stdout strings.Builder
+
+	if err := StopStack(manifestPath, environment, &stdout, &strings.Builder{}); err != nil {
+		t.Fatalf("StopStack() unexpected error = %v", err)
 	}
 
-	manifestPath := filepath.Join(tempDir, "devhost.toml")
-	if err := os.WriteFile(manifestPath, []byte(""), 0o644); err != nil {
-		t.Fatalf("failed to create dummy manifest: %v", err)
+	if want := "No active devhost stack process found for manifest: " + manifestPath + "\n" + stackListHint; stdout.String() != want {
+		t.Fatalf("StopStack() stdout = %q, want %q", stdout.String(), want)
 	}
 
-	paths, err := caddy.CreateManagedCaddyPathsFromEnvironment(environment)
-	if err != nil {
-		t.Fatalf("failed to resolve caddy paths: %v", err)
-	}
-
-	err = os.MkdirAll(paths.RegistrationsDirectoryPath, 0o755)
-	if err != nil {
-		t.Fatalf("failed to create registrations directory: %v", err)
-	}
-
-	// Use a non-existent PID (e.g. incredibly high PID)
-	nonExistentPID := 999999
-	// Verify it indeed does not exist
-	if processExists(nonExistentPID) {
-		t.Skip("skipping test: high PID 999999 exists on this machine")
-	}
-
-	claim := claimMetadata{
-		OwnerPID:     nonExistentPID,
-		ManifestPath: manifestPath,
-	}
-	claimBytes, err := json.Marshal(claim)
-	if err != nil {
-		t.Fatalf("failed to marshal mock claim: %v", err)
-	}
-
-	registrationPath := filepath.Join(paths.RegistrationsDirectoryPath, "mock_registration.json")
-	if err := os.WriteFile(registrationPath, claimBytes, 0o644); err != nil {
-		t.Fatalf("failed to write mock claim file: %v", err)
-	}
-
-	// StopStack should identify the registration, check aliveness, realize it is already dead,
-	// and finish cleanly without error.
-	err = StopStack(manifestPath, environment, io.Discard, io.Discard)
-	if err != nil {
-		t.Fatalf("StopStack with dead PID failed: %v", err)
+	if !processExists(other.Process.Pid) {
+		t.Fatalf("StopStack() stopped the stack of %s, which it was not asked to stop", otherManifestPath)
 	}
 }
 
-func TestStopStack_TargetAndClaimsPathsHandling(t *testing.T) {
-	tempDir := t.TempDir()
-	environment := map[string]string{
-		"DEVHOST_STATE_DIR": tempDir,
+func TestStopStackIgnoresTheRecordsOfACrashedStack(t *testing.T) {
+	stateDirectoryPath := t.TempDir()
+	environment := map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath}
+	manifestPath := filepath.Join(t.TempDir(), "devhost.toml")
+
+	startStackOwner(t, stateDirectoryPath, stackOwnerOptions{ManifestPath: manifestPath, Port: 4000, Host: "crashed.localhost", Behavior: stackOwnerCrashes})
+
+	var stdout strings.Builder
+
+	if err := StopStack(manifestPath, environment, &stdout, &strings.Builder{}); err != nil {
+		t.Fatalf("StopStack() unexpected error = %v", err)
 	}
 
-	manifestPath := filepath.Join(tempDir, "devhost.toml")
-	if err := os.WriteFile(manifestPath, []byte(""), 0o644); err != nil {
-		t.Fatalf("failed to create dummy manifest: %v", err)
+	// Nothing runs, so there is nothing to stop and no other stack to point at.
+	if want := "No active devhost stack process found for manifest: " + manifestPath + "\n"; stdout.String() != want {
+		t.Fatalf("StopStack() stdout = %q, want %q", stdout.String(), want)
+	}
+}
+
+func TestStopStackResolvesARelativeManifestPath(t *testing.T) {
+	stateDirectoryPath := t.TempDir()
+	environment := map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath}
+
+	projectPath := t.TempDir()
+	manifestPath := filepath.Join(projectPath, "devhost.toml")
+	stack := startStackOwner(t, stateDirectoryPath, stackOwnerOptions{ManifestPath: manifestPath, Port: 4000, Behavior: stackOwnerStopsOnRequest})
+
+	t.Chdir(projectPath)
+
+	if err := stopStack("./devhost.toml", environment, unreachableGracePeriod, &strings.Builder{}, &strings.Builder{}); err != nil {
+		t.Fatalf("stopStack() unexpected error = %v", err)
 	}
 
-	paths, err := caddy.CreateManagedCaddyPathsFromEnvironment(environment)
-	if err != nil {
-		t.Fatalf("failed to resolve caddy paths: %v", err)
+	if err := stack.Wait(); err != nil {
+		t.Fatalf("stack Wait() error = %v, want a clean exit", err)
+	}
+}
+
+func TestStopStackReportsAnUnreadableRecord(t *testing.T) {
+	stateDirectoryPath := t.TempDir()
+	environment := map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath}
+	manifestPath := filepath.Join(t.TempDir(), "devhost.toml")
+
+	// A crashed stack leaves the directories in place for the damaged record.
+	startStackOwner(t, stateDirectoryPath, stackOwnerOptions{ManifestPath: manifestPath, Port: 4000, Behavior: stackOwnerCrashes})
+	damagedRecordPath := filepath.Join(stateDirectoryPath, "caddy", "port-claims", "damaged.json")
+	if err := os.WriteFile(damagedRecordPath, []byte("{"), 0o644); err != nil {
+		t.Fatalf("write damaged record: %v", err)
 	}
 
-	err = os.MkdirAll(paths.HostClaimsDirectoryPath, 0o755)
-	if err != nil {
-		t.Fatalf("failed to create host claims directory: %v", err)
-	}
-
-	// Setup multiple mock claims in HostClaims directory:
-	// 1. One with relative/dirty manifest path matching our target manifest path.
-	// 2. One with non-matching manifest path.
-	nonMatchingPath := filepath.Join(tempDir, "other.toml")
-
-	claims := []struct {
-		pid      int
-		path     string
-		filename string
-	}{
-		{111111, "./devhost.toml", "matching_relative.json"}, // Will resolve relative to working directory or be cleaned
-		{222222, nonMatchingPath, "non_matching.json"},
-	}
-
-	// Write mock claims
-	for _, tc := range claims {
-		// If it is "./devhost.toml", let's resolve it relative to tempDir to simulate a claim written from that directory.
-		realPath := tc.path
-		if tc.path == "./devhost.toml" {
-			realPath = manifestPath
-		}
-		claim := claimMetadata{
-			OwnerPID:     tc.pid,
-			ManifestPath: realPath,
-		}
-		claimBytes, _ := json.Marshal(claim)
-		_ = os.WriteFile(filepath.Join(paths.HostClaimsDirectoryPath, tc.filename), claimBytes, 0o644)
-	}
-
-	// Scan and verify that scanForManifestPIDs returns ONLY PID 111111.
-	pids, err := scanForManifestPIDs(paths, manifestPath)
-	if err != nil {
-		t.Fatalf("scanForManifestPIDs failed: %v", err)
-	}
-
-	if !pids[111111] {
-		t.Errorf("expected PID 111111 to be found in scan, pids: %v", pids)
-	}
-	if pids[222222] {
-		t.Errorf("did not expect PID 222222 to be found in scan, pids: %v", pids)
+	err := StopStack(manifestPath, environment, &strings.Builder{}, &strings.Builder{})
+	if err == nil || !strings.Contains(err.Error(), damagedRecordPath) {
+		t.Fatalf("StopStack() error = %v, want it to name %s", err, damagedRecordPath)
 	}
 }
 

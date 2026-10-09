@@ -4,7 +4,7 @@ description: Use when running devhost or when reading, writing, or changing a de
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-09 12:00
+  last_modified: 2026-10-09 16:10
   status: current
 ---
 
@@ -16,7 +16,8 @@ Run `devhost` with `AGENT=1`: help becomes `key: value` text, and a failed comma
 
 - `devhost start [service...]`: start the manifest's services behind their HTTPS hostnames and stay in the foreground. With no `[service...]` argument every service starts. With one or more service names, devhost starts those services, every service they reach through `dependsOn`, and every service marked `alwaysStart = true` with its own `dependsOn` chain; the remaining services stay stopped. A name the manifest lacks fails the command with `unknown service` and the list of defined names. After startup stdout carries one `service-name: url` line per routed service that started, a `not started: a, b` line naming the stopped services when there are any, then log lines prefixed `[stack-name]` for devhost itself and `[service-name]` for each service. Routes are removed when it exits. Start the shared Caddy first.
 - `devhost service list`: print the name of every service in the manifest on stdout, one per line in alphabetical order, in the same form with and without `AGENT=1`. With `--startable` it prints only the services that start when named, leaving out those marked `alwaysStart = true`. Feed the output to a picker: `devhost start $(devhost service list --startable | fzf --multi)`.
-- `devhost stop`: stop the running stack of the manifest. It sends SIGTERM to the stack's processes, waits up to 15 seconds, force-kills what remains, and reports each step on stdout. With no stack running it says so and exits `0`.
+- `devhost stop`: stop the running stack of the manifest. It sends SIGTERM to the stack's processes, waits up to 15 seconds, force-kills what remains, and reports each step on stdout. With no stack running from that manifest it says so and exits `0`, and when other stacks are running it adds `Other stacks are running. Run "devhost stack list" to print their PIDs and manifests.`
+- `devhost stack list`: print every stack running on the machine on stdout, one per line in manifest path order, in the same form with and without `AGENT=1`. A line is the PID of the stack's devhost process, one tab, and the absolute manifest path, which runs to the end of the line and may hold spaces. It takes no flags, reads no manifest, and prints nothing when no stack runs. Every running stack is listed, whatever its services are. Take the path with `cut -f2` and pass it to `devhost stop --manifest` to stop that stack from any directory: `devhost stop --manifest "$(devhost stack list | fzf | cut -f2)"`.
 - `devhost caddy download`: download the Caddy server devhost manages. Run it once on a machine that has no `caddy` on `PATH`.
 - `devhost caddy privileged-ports`: on Linux, let the managed Caddy listen on ports 80 and 443 without root. It downloads Caddy first when needed and runs `sudo setcap` once. On macOS it reports that no setup is needed.
 - `devhost caddy start`: start the shared Caddy server in the background. Every stack on the machine routes through it.
@@ -28,11 +29,11 @@ Run `devhost` with `AGENT=1`: help becomes `key: value` text, and a failed comma
 - `devhost help [command]`: print the help of a command, the screen `--help` prints for it.
 - `devhost completion bash`, `devhost completion fish`, `devhost completion powershell`, `devhost completion zsh`: print a completion script for that shell on stdout. `--no-descriptions` (bool) leaves the command descriptions out of the completions.
 
-`devhost`, `devhost caddy`, `devhost service`, and `devhost completion` are groups. Run one without a command to print its help, which lists everything below it.
+`devhost`, `devhost caddy`, `devhost service`, `devhost stack`, and `devhost completion` are groups. Run one without a command to print its help, which lists everything below it.
 
 ### Flags and Environment
 
-- `--manifest <path>`, `-m <path>` (string): the `devhost.toml` to use; the file must have that name. Accepted by `devhost start`, `devhost stop`, `devhost service list`, `devhost caddy start`, `devhost caddy stop`, and `devhost caddy trust`. `DEVHOST_MANIFEST` supplies the same path, and the flag wins when both are set. Without either, `devhost start`, `devhost stop`, and `devhost service list` use the nearest `devhost.toml` in the current directory or a parent, looking no higher than the directory that holds `.git`, and the `caddy` commands use the settings of the stacks already running, or the defaults.
+- `--manifest <path>`, `-m <path>` (string): the `devhost.toml` to use; the file must have that name. A relative path resolves against the current directory, and a running stack is identified by the absolute path. Accepted by `devhost start`, `devhost stop`, `devhost service list`, `devhost caddy start`, `devhost caddy stop`, and `devhost caddy trust`. `DEVHOST_MANIFEST` supplies the same path, and the flag wins when both are set. Without either, `devhost start`, `devhost stop`, and `devhost service list` use the nearest `devhost.toml` in the current directory or a parent, looking no higher than the directory that holds `.git`, and the `caddy` commands use the settings of the stacks already running, or the defaults.
 - `--debug`, `-d` (bool): `devhost start` only. Show Caddy's own output while the stack runs.
 - `--idle-timeout <duration>`, `-i <duration>` (string): `devhost start` only. Stop the stack after this long without traffic, written as a duration such as `30s` or `1m`. `DEVHOST_IDLE_TIMEOUT` supplies the same value, and the flag wins when both are set. Either one takes precedence over `[devtools].idleTimeout` in the manifest.
 - `--startable`, `-s` (bool): `devhost service list` only. Print only the services that start when named, which leaves out the services marked `alwaysStart = true`.
@@ -50,6 +51,22 @@ devhost start
 ```
 
 Stop the stack with `devhost stop`, a shutdown signal, or an idle timeout. The shared Caddy keeps running until `devhost caddy stop`.
+
+### Stop a Stack Started Elsewhere
+
+`devhost stop` stops the stack of the manifest it resolves from the current directory. A stack started from another manifest, such as the one named by `<host> is already claimed by PID <pid> from <manifest>.`, is stopped by its manifest path:
+
+```bash
+devhost stack list
+# 3596463	/home/me/projects/app/.tmp/review/devhost.toml
+devhost stop --manifest /home/me/projects/app/.tmp/review/devhost.toml
+```
+
+Interactively, pick the stack with `fzf`; `cut -f2` takes the manifest path, the second tab-separated field of the picked line:
+
+```bash
+devhost stop --manifest "$(devhost stack list | fzf | cut -f2)"
+```
 
 When this guide is printed by `devhost skill`, the `references/` files it links to are at <https://github.com/alexgorbatchev/devhost/tree/main/apps/devhost/internal/skill/devhost/references>.
 

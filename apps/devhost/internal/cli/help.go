@@ -12,6 +12,10 @@ const (
 	idleTimeoutEnvironmentVariable = "DEVHOST_IDLE_TIMEOUT"
 	sshTargetDescription           = "SSH host that runs devhost, e.g. devbox or user@devbox"
 	serviceArgumentDescription     = "Services to start; all of them when none is named"
+	// stopPickedStackCommand stops a stack chosen from the running ones: the
+	// listing goes through a picker, and the second field of the picked line is
+	// the manifest devhost stop takes.
+	stopPickedStackCommand = `devhost stop --manifest "$(devhost stack list | fzf | cut -f2)"`
 )
 
 var manifestEnvironmentSpec = cobrahelptree.EnvSpec{
@@ -63,7 +67,20 @@ func createHelpCatalog() cobrahelptree.TechCatalog {
 				},
 			},
 		},
-		rootCommandName + " " + stopCommandName: manifestOnly,
+		rootCommandName + " " + stopCommandName: {
+			Env: []cobrahelptree.EnvSpec{manifestEnvironmentSpec},
+			Quickstart: []cobrahelptree.QuickstartItem{
+				{Command: "devhost stop", Comment: "stop the stack of this folder"},
+				{Command: stopPickedStackCommand, Comment: "pick one"},
+			},
+		},
+		stackCommandPath + " " + stackListCommandName: {
+			Quickstart: []cobrahelptree.QuickstartItem{
+				{Command: "devhost stack list", Comment: "PID, tab, manifest per line"},
+				{Command: "devhost stack list | cut -f2", Comment: "manifests only"},
+				{Command: stopPickedStackCommand, Comment: "pick one to stop"},
+			},
+		},
 		caddyCommandPath + " " + trustRemoteCommandName: {
 			Args: []cobrahelptree.ArgSpec{{Name: "<ssh-target>", Description: sshTargetDescription}},
 		},

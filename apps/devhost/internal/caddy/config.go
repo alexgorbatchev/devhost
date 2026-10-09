@@ -34,6 +34,7 @@ func ensureManagedCaddyConfig(paths Paths, fallback ManagedCaddyConfigFallback) 
 		paths.HostClaimsDirectoryPath,
 		paths.PortClaimsDirectoryPath,
 		paths.RegistrationsDirectoryPath,
+		paths.StacksDirectoryPath,
 		paths.StorageDirectoryPath,
 	}
 	for _, directoryPath := range directories {

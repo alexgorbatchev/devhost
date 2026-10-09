@@ -1001,7 +1001,8 @@ func withRouteMutationTestHooks(t *testing.T, hooks routeMutationTestHooks) {
 	t.Helper()
 	originalNow := routeMutationNow
 	originalProcessID := routeMutationProcessID
-	originalProcessAlive := routeMutationIsProcessAlive
+	originalOwnerAlive := routeMutationIsOwnerAlive
+	originalOwnerStartIdentity := routeMutationOwnerStartIdentity
 	originalListeningProcessLabel := routeMutationReadListeningProcessLabel
 	routeMutationNow = func() time.Time {
 		return hooks.now
@@ -1009,12 +1010,19 @@ func withRouteMutationTestHooks(t *testing.T, hooks routeMutationTestHooks) {
 	routeMutationProcessID = func() int {
 		return hooks.processID
 	}
-	if hooks.processAlive == nil {
-		routeMutationIsProcessAlive = func(processID int) bool {
+	// The records of these tests name invented PIDs, which have no start identity
+	// to record or to check.
+	routeMutationOwnerStartIdentity = func() string {
+		return ""
+	}
+	processAlive := hooks.processAlive
+	if processAlive == nil {
+		processAlive = func(processID int) bool {
 			return processID == hooks.processID
 		}
-	} else {
-		routeMutationIsProcessAlive = hooks.processAlive
+	}
+	routeMutationIsOwnerAlive = func(processID int, _ string) bool {
+		return processAlive(processID)
 	}
 	if hooks.listeningProcessLabel == nil {
 		routeMutationReadListeningProcessLabel = func(port int) string {
@@ -1029,7 +1037,8 @@ func withRouteMutationTestHooks(t *testing.T, hooks routeMutationTestHooks) {
 	t.Cleanup(func() {
 		routeMutationNow = originalNow
 		routeMutationProcessID = originalProcessID
-		routeMutationIsProcessAlive = originalProcessAlive
+		routeMutationIsOwnerAlive = originalOwnerAlive
+		routeMutationOwnerStartIdentity = originalOwnerStartIdentity
 		routeMutationReadListeningProcessLabel = originalListeningProcessLabel
 	})
 }

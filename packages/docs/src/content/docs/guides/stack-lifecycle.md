@@ -104,9 +104,32 @@ devhost stop
 devhost stop --manifest path/to/devhost.toml
 ```
 
+A stack is identified by the absolute path of its manifest, whichever way `--manifest` was written when it started. `devhost stack list` prints every stack running on the machine, one per line in manifest path order, and prints nothing when none runs. Each line is the PID of the stack's devhost process, one tab, and the absolute manifest path; the path runs to the end of the line, so it stays one field when it holds spaces. Every running stack is listed, including one whose services have no hostname and no port. Use it to stop a stack from another directory, such as one that holds a hostname you need:
+
+```bash
+devhost stack list
+# 3596463	/home/me/projects/app/devhost.toml
+devhost stop --manifest "$(devhost stack list | fzf | cut -f2)"
+```
+
+The last line stops a stack you pick, from any directory:
+
+1. `devhost stack list` prints the running stacks.
+2. [`fzf`](https://github.com/junegunn/fzf) shows them as a list and prints the line you choose. Any picker that prints one of its input lines works in its place.
+3. `cut -f2` keeps the second tab-separated field, the manifest path. `cut -f1` gives the PID.
+4. `devhost stop --manifest` stops the stack of that manifest. The quotes keep a path with spaces in one piece.
+
+When you already know which stack you want, filter instead of picking, with a pattern that matches one stack:
+
+```bash
+devhost stop --manifest "$(devhost stack list | cut -f2 | grep my-project)"
+```
+
 When you run `devhost stop`, the command performs the following lifecycle operations:
 
 1. **Path Resolution**: Resolves the absolute and clean filesystem path of the target manifest file.
-2. **Scan Claims**: Scans the registrations and claims directories (`.host-claims`, `.port-claims`, and `.registrations`) to discover all PIDs registered under that manifest path.
+2. **Scan Records**: Reads the record every running stack keeps of itself (`stacks`), and the claims and registrations directories (`.host-claims`, `port-claims`, and `.registrations`), to discover all PIDs registered under that manifest path. Each record also carries the start identity of the process that wrote it, so a record left by a stack that exited is skipped even when its PID has since gone to another process. Records written by a devhost version without start identities are matched by PID alone until those stacks restart.
 3. **Graceful Term**: Sends `SIGTERM` (or platform equivalent) to each active process, and polls for up to 15 seconds to allow them to stop cleanly.
 4. **Force Kill Escalation**: If any target processes remain active after the 15-second grace period, it escalates to `SIGKILL` (force-killing) to ensure the stack is fully cleared.
+
+When no stack runs from that manifest, `devhost stop` says so and exits `0`. If other stacks are running it adds a line that points to `devhost stack list`, because the stack you mean may have been started from another manifest.

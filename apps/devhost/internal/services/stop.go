@@ -1,7 +1,6 @@
 package services
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -12,15 +11,18 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 )
 
-type claimMetadata struct {
-	OwnerPID     int    `json:"ownerPid"`
-	ManifestPath string `json:"manifestPath"`
-}
+// stopGracePeriod is how long a stack is given to stop after SIGTERM before it
+// is force-killed.
+const stopGracePeriod = 15 * time.Second
 
 // StopStack finds all running processes associated with the given manifest and stops them.
 // It first attempts a clean shutdown using SIGTERM, and falls back to SIGKILL if processes
 // do not stop within the 15-second grace period.
 func StopStack(manifestPath string, environment map[string]string, stdout io.Writer, stderr io.Writer) error {
+	return stopStack(manifestPath, environment, stopGracePeriod, stdout, stderr)
+}
+
+func stopStack(manifestPath string, environment map[string]string, gracePeriod time.Duration, stdout io.Writer, stderr io.Writer) error {
 	absoluteTargetManifestPath, err := filepath.Abs(manifestPath)
 	if err != nil {
 		return fmt.Errorf("resolve absolute manifest path for %s: %w", manifestPath, err)
@@ -32,27 +34,32 @@ func StopStack(manifestPath string, environment map[string]string, stdout io.Wri
 		return fmt.Errorf("resolve caddy paths from environment: %w", err)
 	}
 
-	pidsToStop, err := scanForManifestPIDs(paths, absoluteTargetManifestPath)
+	owners, err := caddy.ReadLiveStackOwners(paths)
 	if err != nil {
 		return fmt.Errorf("scan claim directories for manifest process IDs: %w", err)
 	}
 
 	activePIDs := []int{}
-	for pid := range pidsToStop {
-		if processExists(pid) {
-			activePIDs = append(activePIDs, pid)
+	for _, owner := range owners {
+		if resolveRecordedManifestPath(owner.ManifestPath) == absoluteTargetManifestPath {
+			activePIDs = append(activePIDs, owner.PID)
 		}
 	}
 
 	if len(activePIDs) == 0 {
 		_, _ = fmt.Fprintf(stdout, "No active devhost stack process found for manifest: %s\n", absoluteTargetManifestPath)
+		if len(owners) > 0 {
+			// The stack the caller means may run from another manifest, such as the one
+			// that holds a hostname they need.
+			_, _ = fmt.Fprintln(stdout, "Other stacks are running. Run \"devhost stack list\" to print their PIDs and manifests.")
+		}
 		return nil
 	}
 
 	_, _ = fmt.Fprintf(stdout, "Stopping %d active stack process(es) associated with manifest...\n", len(activePIDs))
 
 	for _, pid := range activePIDs {
-		if err := stopProcess(pid, stdout, stderr); err != nil {
+		if err := stopProcess(pid, gracePeriod, stdout, stderr); err != nil {
 			return fmt.Errorf("stop process %d: %w", pid, err)
 		}
 	}
@@ -60,76 +67,20 @@ func StopStack(manifestPath string, environment map[string]string, stdout io.Wri
 	return nil
 }
 
-func scanForManifestPIDs(paths caddy.Paths, targetManifestPath string) (map[int]bool, error) {
-	pids := make(map[int]bool)
-
-	dirs := []string{
-		paths.HostClaimsDirectoryPath,
-		paths.PortClaimsDirectoryPath,
-		paths.RegistrationsDirectoryPath,
-	}
-
-	for _, dir := range dirs {
-		if dir == "" {
-			continue
-		}
-
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			if os.IsNotExist(err) {
-				continue
-			}
-			return nil, fmt.Errorf("read claim directory %s: %w", dir, err)
-		}
-
-		for _, entry := range entries {
-			if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
-				continue
-			}
-
-			filePath := filepath.Join(dir, entry.Name())
-			metadata, err := readClaimMetadata(filePath)
-			if err != nil {
-				// If file is deleted concurrently or is invalid, log/ignore or return error.
-				// Returning error is safer to maintain correctness, but concurrent deletion of stale claims is expected.
-				if os.IsNotExist(err) {
-					continue
-				}
-				return nil, fmt.Errorf("read claim metadata from %s: %w", filePath, err)
-			}
-
-			claimManifestPath, err := filepath.Abs(metadata.ManifestPath)
-			if err != nil {
-				claimManifestPath = filepath.Clean(metadata.ManifestPath)
-			} else {
-				claimManifestPath = filepath.Clean(claimManifestPath)
-			}
-
-			if claimManifestPath == targetManifestPath && metadata.OwnerPID > 0 {
-				pids[metadata.OwnerPID] = true
-			}
-		}
-	}
-
-	return pids, nil
-}
-
-func readClaimMetadata(filePath string) (claimMetadata, error) {
-	file, err := os.Open(filePath)
+// resolveRecordedManifestPath returns the absolute form of the manifest path a
+// stack recorded. A stack records an absolute path; one started by a devhost
+// that recorded the path as it was typed is matched from the directory it was
+// started in.
+func resolveRecordedManifestPath(recordedPath string) string {
+	absolutePath, err := filepath.Abs(recordedPath)
 	if err != nil {
-		return claimMetadata{}, err
-	}
-	defer file.Close()
-
-	var meta claimMetadata
-	if err := json.NewDecoder(file).Decode(&meta); err != nil {
-		return claimMetadata{}, err
+		return filepath.Clean(recordedPath)
 	}
 
-	return meta, nil
+	return filepath.Clean(absolutePath)
 }
 
-func stopProcess(pid int, stdout io.Writer, stderr io.Writer) error {
+func stopProcess(pid int, gracePeriod time.Duration, stdout io.Writer, stderr io.Writer) error {
 	proc, err := os.FindProcess(pid)
 	if err != nil {
 		// On Unix, FindProcess always succeeds even if process doesn't exist,
@@ -146,8 +97,6 @@ func stopProcess(pid int, stdout io.Writer, stderr io.Writer) error {
 		return fmt.Errorf("signal process %d with SIGTERM: %w", pid, err)
 	}
 
-	// Poll up to 15 seconds
-	gracePeriod := 15 * time.Second
 	pollInterval := 100 * time.Millisecond
 	deadline := time.Now().Add(gracePeriod)
 

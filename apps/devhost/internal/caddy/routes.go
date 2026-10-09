@@ -59,18 +59,20 @@ type RouteCommandOutputWriters struct {
 }
 
 type hostClaim struct {
-	CreatedAt    string `json:"createdAt"`
-	Host         string `json:"host"`
-	ManifestPath string `json:"manifestPath"`
-	OwnerPID     int    `json:"ownerPid"`
+	CreatedAt          string `json:"createdAt"`
+	Host               string `json:"host"`
+	ManifestPath       string `json:"manifestPath"`
+	OwnerPID           int    `json:"ownerPid"`
+	OwnerStartIdentity string `json:"ownerStartIdentity,omitempty"`
 }
 
 type fixedPortClaim struct {
-	BindHost     string `json:"bindHost"`
-	CreatedAt    string `json:"createdAt"`
-	ManifestPath string `json:"manifestPath"`
-	OwnerPID     int    `json:"ownerPid"`
-	Port         int    `json:"port"`
+	BindHost           string `json:"bindHost"`
+	CreatedAt          string `json:"createdAt"`
+	ManifestPath       string `json:"manifestPath"`
+	OwnerPID           int    `json:"ownerPid"`
+	OwnerStartIdentity string `json:"ownerStartIdentity,omitempty"`
+	Port               int    `json:"port"`
 }
 
 type routeRegistration struct {
@@ -81,6 +83,7 @@ type routeRegistration struct {
 	Host                  string  `json:"host"`
 	ManifestPath          string  `json:"manifestPath"`
 	OwnerPID              int     `json:"ownerPid"`
+	OwnerStartIdentity    string  `json:"ownerStartIdentity,omitempty"`
 	Path                  string  `json:"path"`
 	ServiceName           string  `json:"serviceName"`
 	DevtoolsControlPort   *int    `json:"devtoolsControlPort,omitempty"`
@@ -117,6 +120,7 @@ type managedRouteRecord struct {
 	IsLegacy              bool
 	ManifestPath          string
 	OwnerPID              int
+	OwnerStartIdentity    string
 	Path                  string
 	Port                  int
 	ServiceName           string
@@ -138,6 +142,7 @@ type routeRegistrationJSON struct {
 	HTTPEnabled           *bool   `json:"httpEnabled"`
 	ManifestPath          *string `json:"manifestPath"`
 	OwnerPID              *int    `json:"ownerPid"`
+	OwnerStartIdentity    *string `json:"ownerStartIdentity"`
 	Path                  *string `json:"path"`
 	ServiceName           *string `json:"serviceName"`
 	StackName             *string `json:"stackName"`
@@ -152,23 +157,26 @@ type legacyRouteRegistrationJSON struct {
 }
 
 type hostClaimJSON struct {
-	CreatedAt    *string `json:"createdAt"`
-	Host         *string `json:"host"`
-	ManifestPath *string `json:"manifestPath"`
-	OwnerPID     *int    `json:"ownerPid"`
+	CreatedAt          *string `json:"createdAt"`
+	Host               *string `json:"host"`
+	ManifestPath       *string `json:"manifestPath"`
+	OwnerPID           *int    `json:"ownerPid"`
+	OwnerStartIdentity *string `json:"ownerStartIdentity"`
 }
 
 type fixedPortClaimJSON struct {
-	BindHost     *string `json:"bindHost"`
-	CreatedAt    *string `json:"createdAt"`
-	ManifestPath *string `json:"manifestPath"`
-	OwnerPID     *int    `json:"ownerPid"`
-	Port         *int    `json:"port"`
+	BindHost           *string `json:"bindHost"`
+	CreatedAt          *string `json:"createdAt"`
+	ManifestPath       *string `json:"manifestPath"`
+	OwnerPID           *int    `json:"ownerPid"`
+	OwnerStartIdentity *string `json:"ownerStartIdentity"`
+	Port               *int    `json:"port"`
 }
 
 var routeMutationNow = time.Now
 var routeMutationProcessID = os.Getpid
-var routeMutationIsProcessAlive = isManagedProcessAlive
+var routeMutationIsOwnerAlive = isRecordOwnerAlive
+var routeMutationOwnerStartIdentity = readOwnStartIdentity
 var routeMutationReadListeningProcessLabel = readListeningProcessLabel
 var routeMutationRunManagedCaddyCommand = func(paths Paths, arguments []string, options ManagedCaddyCommandOptions) CommandResult {
 	return RunManagedCaddyCommand(paths, arguments, options, ManagedCaddyCommandDependencies{})
@@ -367,7 +375,7 @@ func CleanupStaleRegistrations(registrationsDirectoryPath string, fallback Manag
 		if err != nil {
 			return err
 		}
-		if routeMutationIsProcessAlive(registration.OwnerPID) {
+		if routeMutationIsOwnerAlive(registration.OwnerPID, registration.OwnerStartIdentity) {
 			continue
 		}
 
@@ -500,11 +508,12 @@ func CreateManagedCaddyReloadErrorMessage(stdout []byte, stderr []byte) string {
 
 func createFixedPortClaimText(bindHost string, manifestPath string, port int) string {
 	claim := fixedPortClaim{
-		BindHost:     bindHost,
-		CreatedAt:    formatRouteMutationTimestamp(routeMutationNow()),
-		ManifestPath: manifestPath,
-		OwnerPID:     routeMutationProcessID(),
-		Port:         port,
+		BindHost:           bindHost,
+		CreatedAt:          formatRouteMutationTimestamp(routeMutationNow()),
+		ManifestPath:       manifestPath,
+		OwnerPID:           routeMutationProcessID(),
+		OwnerStartIdentity: routeMutationOwnerStartIdentity(),
+		Port:               port,
 	}
 	text, _ := json.MarshalIndent(claim, "", "  ") // Primitive-only fields cannot fail JSON marshaling.
 	return string(text)
@@ -512,10 +521,11 @@ func createFixedPortClaimText(bindHost string, manifestPath string, port int) st
 
 func createHostClaimText(host string, manifestPath string) string {
 	claim := hostClaim{
-		CreatedAt:    formatRouteMutationTimestamp(routeMutationNow()),
-		Host:         host,
-		ManifestPath: manifestPath,
-		OwnerPID:     routeMutationProcessID(),
+		CreatedAt:          formatRouteMutationTimestamp(routeMutationNow()),
+		Host:               host,
+		ManifestPath:       manifestPath,
+		OwnerPID:           routeMutationProcessID(),
+		OwnerStartIdentity: routeMutationOwnerStartIdentity(),
 	}
 	text, _ := json.MarshalIndent(claim, "", "  ") // Primitive-only fields cannot fail JSON marshaling.
 	return string(text)
@@ -523,16 +533,17 @@ func createHostClaimText(host string, manifestPath string) string {
 
 func createRouteRegistrationText(options ActivateRouteOptions, manifestPath string) string {
 	registration := routeRegistration{
-		ProxyLocalOrigin: options.ProxyLocalOrigin,
-		AppBindHost:      options.AppBindHost,
-		AppPort:          options.AppPort,
-		CreatedAt:        formatRouteMutationTimestamp(routeMutationNow()),
-		Host:             options.Host,
-		ManifestPath:     manifestPath,
-		OwnerPID:         routeMutationProcessID(),
-		Path:             normalizeRoutePath(options.Path),
-		ServiceName:      options.ServiceName,
-		StackName:        options.StackName,
+		ProxyLocalOrigin:   options.ProxyLocalOrigin,
+		AppBindHost:        options.AppBindHost,
+		AppPort:            options.AppPort,
+		CreatedAt:          formatRouteMutationTimestamp(routeMutationNow()),
+		Host:               options.Host,
+		ManifestPath:       manifestPath,
+		OwnerPID:           routeMutationProcessID(),
+		OwnerStartIdentity: routeMutationOwnerStartIdentity(),
+		Path:               normalizeRoutePath(options.Path),
+		ServiceName:        options.ServiceName,
+		StackName:          options.StackName,
 	}
 	if options.DevtoolsControlPort != 0 {
 		registration.DevtoolsControlPort = &options.DevtoolsControlPort
@@ -829,7 +840,12 @@ func parseHostClaim(claimText []byte) (hostClaim, error) {
 		return hostClaim{}, fmt.Errorf("Host claim is malformed.")
 	}
 
-	return hostClaim{CreatedAt: *value.CreatedAt, Host: *value.Host, ManifestPath: *value.ManifestPath, OwnerPID: *value.OwnerPID}, nil
+	claim := hostClaim{CreatedAt: *value.CreatedAt, Host: *value.Host, ManifestPath: *value.ManifestPath, OwnerPID: *value.OwnerPID}
+	if value.OwnerStartIdentity != nil {
+		claim.OwnerStartIdentity = *value.OwnerStartIdentity
+	}
+
+	return claim, nil
 }
 
 func parseFixedPortClaim(claimText []byte) (fixedPortClaim, error) {
@@ -841,13 +857,18 @@ func parseFixedPortClaim(claimText []byte) (fixedPortClaim, error) {
 		return fixedPortClaim{}, fmt.Errorf("Fixed port claim is malformed.")
 	}
 
-	return fixedPortClaim{
+	claim := fixedPortClaim{
 		BindHost:     *value.BindHost,
 		CreatedAt:    *value.CreatedAt,
 		ManifestPath: *value.ManifestPath,
 		OwnerPID:     *value.OwnerPID,
 		Port:         *value.Port,
-	}, nil
+	}
+	if value.OwnerStartIdentity != nil {
+		claim.OwnerStartIdentity = *value.OwnerStartIdentity
+	}
+
+	return claim, nil
 }
 
 func parseManagedRouteRecord(registrationText []byte) (managedRouteRecord, error) {
@@ -862,6 +883,9 @@ func parseManagedRouteRecord(registrationText []byte) (managedRouteRecord, error
 			OwnerPID:     *modernValue.OwnerPID,
 			Path:         normalizeRoutePath(*modernValue.Path),
 			ServiceName:  *modernValue.ServiceName,
+		}
+		if modernValue.OwnerStartIdentity != nil {
+			record.OwnerStartIdentity = *modernValue.OwnerStartIdentity
 		}
 		if modernValue.DevtoolsControlPort != nil {
 			record.DevtoolsControlPort = *modernValue.DevtoolsControlPort
@@ -928,15 +952,16 @@ func parseRouteRegistration(registrationText []byte) (routeRegistration, error) 
 
 func routeRegistrationFromRecord(record managedRouteRecord) routeRegistration {
 	registration := routeRegistration{
-		ProxyLocalOrigin: record.ProxyLocalOrigin,
-		AppBindHost:      record.AppBindHost,
-		AppPort:          record.AppPort,
-		CreatedAt:        record.CreatedAt,
-		Host:             record.Host,
-		ManifestPath:     record.ManifestPath,
-		OwnerPID:         record.OwnerPID,
-		Path:             record.Path,
-		ServiceName:      record.ServiceName,
+		ProxyLocalOrigin:   record.ProxyLocalOrigin,
+		AppBindHost:        record.AppBindHost,
+		AppPort:            record.AppPort,
+		CreatedAt:          record.CreatedAt,
+		Host:               record.Host,
+		ManifestPath:       record.ManifestPath,
+		OwnerPID:           record.OwnerPID,
+		OwnerStartIdentity: record.OwnerStartIdentity,
+		Path:               record.Path,
+		ServiceName:        record.ServiceName,
 	}
 	if record.DevtoolsControlPort != 0 {
 		registration.DevtoolsControlPort = &record.DevtoolsControlPort
@@ -1165,7 +1190,7 @@ func isHostClaimStale(claim hostClaim) bool {
 		return false
 	}
 
-	return !routeMutationIsProcessAlive(claim.OwnerPID)
+	return !routeMutationIsOwnerAlive(claim.OwnerPID, claim.OwnerStartIdentity)
 }
 
 func isFixedPortClaimStale(claim fixedPortClaim) bool {
@@ -1173,7 +1198,7 @@ func isFixedPortClaimStale(claim fixedPortClaim) bool {
 		return false
 	}
 
-	return !routeMutationIsProcessAlive(claim.OwnerPID)
+	return !routeMutationIsOwnerAlive(claim.OwnerPID, claim.OwnerStartIdentity)
 }
 
 func assertHostIsAvailable(options ClaimHostOptions) error {
@@ -1196,7 +1221,7 @@ func assertHostIsAvailable(options ClaimHostOptions) error {
 		if err != nil {
 			return err
 		}
-		if registration.Host != options.Host || !routeMutationIsProcessAlive(registration.OwnerPID) {
+		if registration.Host != options.Host || !routeMutationIsOwnerAlive(registration.OwnerPID, registration.OwnerStartIdentity) {
 			continue
 		}
 		if !registration.IsLegacy {

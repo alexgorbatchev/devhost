@@ -17,6 +17,20 @@ sidebar:
 </details>
 <!-- /guide-demo -->
 
+## Hostname already claimed
+
+`devhost start` fails with `<host> is already claimed by PID <pid> from <manifest>.` when another running stack routes that hostname. The stack may have been started from a different manifest, so `devhost stop` in your project folder reports that nothing is running there and points to `devhost stack list`.
+
+List the running stacks, then stop the one that holds the hostname:
+
+```bash
+devhost stack list
+# 3596463	/home/me/projects/app/.tmp/review/devhost.toml
+devhost stop --manifest "$(devhost stack list | fzf | cut -f2)"
+```
+
+Each line is the PID of the stack's devhost process, one tab, and its manifest path; the PID matches the one in the error. [Stopping a Stack](../stack-lifecycle/#stopping-a-stack) explains the command line piece by piece.
+
 ## Automatic port conflict during restart
 
 A single-service restart reuses its assigned automatic port. If another process occupies it, devhost reports the conflict and leaves the service stopped. Choose **Restart stack with new ports** in the Services panel or recovery overlay to restart all managed services with fresh automatic ports and rebuilt port references and environments. External processes keep running, and fixed ports stay unchanged.

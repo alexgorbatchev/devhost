@@ -208,14 +208,14 @@ func TestRunReportsFailuresForTheReader(t *testing.T) {
 			name:    "a person mistypes a command",
 			agent:   "0",
 			rawArgs: []string{"star"},
-			wantStderr: "[ERROR] unknown command \"star\" for \"devhost\"; did you mean \"start\" or \"stop\"?\n" +
+			wantStderr: "[ERROR] unknown command \"star\" for \"devhost\"; did you mean \"stack\" or \"start\" or \"stop\"?\n" +
 				"[INFO] Run \"devhost --help\" for usage.\n",
 		},
 		{
 			name:       "an agent mistypes a command",
 			agent:      "1",
 			rawArgs:    []string{"star"},
-			wantStderr: "ERR: unknown command \"star\" for \"devhost\"; did you mean \"start\" or \"stop\"?\n",
+			wantStderr: "ERR: unknown command \"star\" for \"devhost\"; did you mean \"stack\" or \"start\" or \"stop\"?\n",
 		},
 		{
 			name:    "a person names a manifest that does not exist",

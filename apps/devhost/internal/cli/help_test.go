@@ -8,8 +8,14 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/version"
 )
 
+// The command line that stops a stack picked from the running ones. The help of
+// both commands it joins has to print it whole, so it can be copied.
+const stopPickedStackExample = `devhost stop --manifest "$(devhost stack list | fzf | cut -f2)"`
+
 func TestParseCommandLineArgumentsRendersTreeHelp(t *testing.T) {
 	t.Setenv("AGENT", "0")
+	// The width of a common terminal: the example has to fit it untrimmed.
+	t.Setenv("COLUMNS", "80")
 
 	tests := []struct {
 		name        string
@@ -30,6 +36,8 @@ func TestParseCommandLineArgumentsRendersTreeHelp(t *testing.T) {
 				"├─ service",
 				"│  ╰─ list",
 				"├─ skill",
+				"├─ stack",
+				"│  ╰─ list",
 				"├─ start [service...]",
 				"╰─ stop",
 				"--version",
@@ -68,6 +76,18 @@ func TestParseCommandLineArgumentsRendersTreeHelp(t *testing.T) {
 			wantMissing: []string{"--verbose"},
 		},
 		{
+			name:        "stack help lists its commands",
+			rawArgs:     []string{"stack"},
+			wantAll:     []string{"devhost stack [flags] [command]", "╰─ list"},
+			wantMissing: []string{"├─ caddy"},
+		},
+		{
+			name:        "stack list help takes no manifest",
+			rawArgs:     []string{"stack", "list", "--help"},
+			wantAll:     []string{"devhost stack list", "PID", "Quickstart:", stopPickedStackExample},
+			wantMissing: []string{"-m, --manifest", "DEVHOST_MANIFEST", "--startable"},
+		},
+		{
 			name:        "service help lists its commands",
 			rawArgs:     []string{"service"},
 			wantAll:     []string{"devhost service [flags] [command]", "╰─ list"},
@@ -82,7 +102,7 @@ func TestParseCommandLineArgumentsRendersTreeHelp(t *testing.T) {
 		{
 			name:        "stop help lists only the manifest flag",
 			rawArgs:     []string{"stop", "--help"},
-			wantAll:     []string{"--manifest", "DEVHOST_MANIFEST"},
+			wantAll:     []string{"--manifest", "DEVHOST_MANIFEST", "Quickstart:", stopPickedStackExample},
 			wantMissing: []string{"--debug", "--idle-timeout"},
 		},
 		{
@@ -201,6 +221,8 @@ func TestParseCommandLineArgumentsAgentHelpListsTheWholeTree(t *testing.T) {
 		"    - zsh: ",
 		"  - service: Inspect the services in devhost.toml\n",
 		"    - list: Print the service names in devhost.toml\n",
+		"  - stack: Inspect the stacks running on this machine\n",
+		"    - list: Print the PID and manifest of every running stack\n",
 		"  - start [service...]: Start the services in devhost.toml\n",
 		"  - stop: Stop the running stack for this project\n",
 	} {

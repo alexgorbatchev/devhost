@@ -49,6 +49,26 @@ func TestParseCommandLineArguments(t *testing.T) {
 			comparePath: true,
 		},
 		{
+			name:    "parses stack list",
+			rawArgs: []string{"stack", "list"},
+			want:    CommandLineArguments{Kind: KindStackList},
+		},
+		{
+			name:      "rejects the manifest flag on stack list",
+			rawArgs:   []string{"stack", "list", "--manifest", manifestPath},
+			wantError: "unknown option: --manifest",
+		},
+		{
+			name:      "rejects stack list arguments",
+			rawArgs:   []string{"stack", "list", "all"},
+			wantError: "unknown command \"all\" for \"devhost stack list\"",
+		},
+		{
+			name:      "rejects an unknown stack command",
+			rawArgs:   []string{"stack", "lst"},
+			wantError: "unknown command \"lst\" for \"devhost stack\"; did you mean \"list\"?",
+		},
+		{
 			name:      "rejects stack-only flags on stop",
 			rawArgs:   []string{"stop", "--debug"},
 			wantError: "unknown option: --debug",
@@ -250,7 +270,7 @@ func TestParseCommandLineArguments(t *testing.T) {
 		{
 			name:      "suggests every root command a mistyped one resembles",
 			rawArgs:   []string{"star"},
-			wantError: "unknown command \"star\" for \"devhost\"; did you mean \"start\" or \"stop\"?",
+			wantError: "unknown command \"star\" for \"devhost\"; did you mean \"stack\" or \"start\" or \"stop\"?",
 		},
 		{
 			name:      "suggests the commands an abbreviation begins",

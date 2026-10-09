@@ -19,6 +19,7 @@ type Paths struct {
 	RegistrationsDirectoryPath string
 	RootCertificatePath        string
 	RoutesDirectoryPath        string
+	StacksDirectoryPath        string
 	StateDirectoryPath         string
 	StorageDirectoryPath       string
 }
@@ -95,6 +96,7 @@ func CreateManagedCaddyPaths(stateDirectoryPath string) Paths {
 		RegistrationsDirectoryPath: filepath.Join(routesDirectoryPath, ".registrations"),
 		RootCertificatePath:        filepath.Join(caddyDirectoryPath, "storage", "pki", "authorities", "local", "root.crt"),
 		RoutesDirectoryPath:        routesDirectoryPath,
+		StacksDirectoryPath:        filepath.Join(caddyDirectoryPath, "stacks"),
 		StateDirectoryPath:         stateDirectoryPath,
 		StorageDirectoryPath:       filepath.Join(caddyDirectoryPath, "storage"),
 	}

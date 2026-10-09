@@ -239,12 +239,27 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			}))
 		}
 
+		// Last, so the stack stays known to devhost stop and devhost stack list
+		// for as long as anything of it is left to stop.
+		cleanupError = appendCleanupError(cleanupError, caddy.UnregisterStack(paths.StacksDirectoryPath))
+
 		if cleanupError != nil {
 			returnedError = joinCleanupError(returnedError, cleanupError)
 		}
 	}()
 
 	if err := caddy.EnsureManagedCaddyConfig(paths, fallback); err != nil {
+		return 0, joinCleanupError(err, cleanupError)
+	}
+
+	if err := caddy.CleanupStaleStackRecords(paths.StacksDirectoryPath); err != nil {
+		return 0, joinCleanupError(err, cleanupError)
+	}
+	if err := caddy.RegisterStack(caddy.RegisterStackOptions{
+		ManifestPath:        manifest.ManifestPath,
+		StackName:           manifest.Name,
+		StacksDirectoryPath: paths.StacksDirectoryPath,
+	}); err != nil {
 		return 0, joinCleanupError(err, cleanupError)
 	}
 
