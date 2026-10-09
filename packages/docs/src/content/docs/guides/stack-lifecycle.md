@@ -148,6 +148,8 @@ Managed foreground-service shutdown is best-effort and platform-specific. On Lin
 
 ## Stopping a Stack
 
+Press **Ctrl-C** in the stack's terminal to stop it. Devhost prints `Stopping service <name>...` for each managed service as shutdown begins and `Stopped service <name>.` after its cleanup succeeds, all prefixed with the stack name. `Stack stopped.` confirms that service and routing cleanup finished successfully. Child stdout/stderr remains visible during shutdown, and cleanup failures report the affected services instead of claiming success. Ctrl-C exits with code `130`; SIGTERM exits with `143`.
+
 To shut down a running stack cleanly, you can run the `stop` command from your project's manifest directory, or point to it explicitly:
 
 ```bash

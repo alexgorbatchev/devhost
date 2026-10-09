@@ -1,4 +1,5 @@
 # Run playground frontend in development
+[no-exit-message]
 dev:
     bun src/index.ts
 

@@ -898,7 +898,13 @@ func (w *serviceExitShutdownWriter) Write(p []byte) (int, error) {
 
 func assertServiceExitOutput(t *testing.T, output string) {
 	t.Helper()
-	want := "[hello-stack] worker exited with code 0; devhost is waiting for a restart.\n"
+	want := strings.Join([]string{
+		"[hello-stack] worker exited with code 0; devhost is waiting for a restart.",
+		"[hello-stack] Stopping service worker...",
+		"[hello-stack] Stopped service worker.",
+		"[hello-stack] Stack stopped.",
+		"",
+	}, "\n")
 	startupCrash := "[hello-stack] Service worker exited before passing its health check with code 0.\n"
 	if output != want && output != startupCrash+want {
 		t.Fatalf("Run(...) stdout = %q, want service exit notification", output)

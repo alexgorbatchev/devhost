@@ -152,6 +152,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	documentInjectionServers := map[string]*devtools.DocumentInjectionServer{}
 	var devtoolsControlServer *devtools.ControlServer
 	var cleanupError error
+	shutdownProgress := newShutdownProgress(options.LogWriter, manifest.Name)
 	routes := stackRoutes{manifest: *manifest, paths: paths, outputWriters: options.CaddyOutputWriters, documentServers: documentInjectionServers, active: map[string]caddy.ActivateRouteOptions{}}
 
 	dirtyTracker := NewDirtyTracker()
@@ -186,6 +187,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		cancelLifecycle()
 		state.operationMu.Lock()
 		state.shuttingDown = true
+		wasReady := state.ready
 		state.operationMu.Unlock()
 		if watchManager != nil {
 			watchManager.StopAll()
@@ -200,7 +202,12 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		state.daemonMu.Lock()
 		startedDaemonServicesSnapshot := append([]daemonLifecycleService{}, state.daemons...)
 		state.daemonMu.Unlock()
-		cleanupError = appendCleanupError(cleanupError, stopStartedServices(startedServicesSnapshot, gracePeriod))
+		for _, started := range startedServicesSnapshot {
+			if started != nil {
+				shutdownProgress.stopping(started.service.Name)
+			}
+		}
+		cleanupError = appendCleanupError(cleanupError, stopStartedServices(startedServicesSnapshot, gracePeriod, shutdownProgress.stopped))
 		cleanupError = appendCleanupError(cleanupError, stopDaemonLifecycleServices(*manifest, startedDaemonServicesSnapshot, options, environment, devtoolsControlServer))
 
 		for _, documentInjectionServer := range documentInjectionServers {
@@ -245,6 +252,8 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 
 		if cleanupError != nil {
 			returnedError = joinCleanupError(returnedError, cleanupError)
+		} else if wasReady || len(startedServicesSnapshot) > 0 || len(startedDaemonServicesSnapshot) > 0 {
+			writeLogLine(options.LogWriter, manifest.Name, "Stack stopped.")
 		}
 	}()
 
@@ -600,7 +609,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			state.startedMu.Lock()
 			startedServicesSnapshot := append([]*startedService{}, state.started...)
 			state.startedMu.Unlock()
-			forwardStartedServicesSignal(startedServicesSnapshot, receivedSignal)
+			forwardStartedServicesSignal(startedServicesSnapshot, receivedSignal, shutdownProgress.stopping)
 			return readSignalExitCode(receivedSignal), nil
 		case <-idleShutdownChan:
 			cancelLifecycle()
@@ -608,7 +617,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			state.startedMu.Lock()
 			startedServicesSnapshot := append([]*startedService{}, state.started...)
 			state.startedMu.Unlock()
-			forwardStartedServicesSignal(startedServicesSnapshot, syscall.SIGTERM)
+			forwardStartedServicesSignal(startedServicesSnapshot, syscall.SIGTERM, shutdownProgress.stopping)
 			return 0, nil
 		}
 	}
@@ -1022,9 +1031,14 @@ func stopDaemonLifecycleServices(
 	devtoolsControlServer *devtools.ControlServer,
 ) error {
 	var cleanupError error
+	progress := newShutdownProgress(options.LogWriter, manifest.Name)
 
 	for index := len(startedServices) - 1; index >= 0; index-- {
-		cleanupError = appendCleanupError(cleanupError, stopDaemonLifecycleService(manifest, startedServices[index].service, options, environment, devtoolsControlServer))
+		service := startedServices[index].service
+		progress.stopping(service.Name)
+		err := stopDaemonLifecycleService(manifest, service, options, environment, devtoolsControlServer)
+		cleanupError = appendCleanupError(cleanupError, err)
+		progress.stopped(service.Name, err)
 	}
 
 	return cleanupError
@@ -1212,8 +1226,10 @@ func stopStartedService(startedService *startedService, gracePeriod time.Duratio
 	return startedService.shutdownFailure()
 }
 
-func stopStartedServices(startedServices []*startedService, gracePeriod time.Duration) error {
+func stopStartedServices(startedServices []*startedService, gracePeriod time.Duration, onStopped func(string, error)) error {
 	var cleanupError error
+	serviceErrors := map[string]error{}
+	var stoppedNames []string
 
 	for index := len(startedServices) - 1; index >= 0; index-- {
 		startedService := startedServices[index]
@@ -1236,19 +1252,34 @@ func stopStartedServices(startedServices []*startedService, gracePeriod time.Dur
 		}
 
 		startedService.wait()
-		cleanupError = appendCleanupError(cleanupError, startedService.shutdownFailure())
+		err := startedService.shutdownFailure()
+		cleanupError = appendCleanupError(cleanupError, err)
 		startedService.closeContainment()
+		name := startedService.service.Name
+		if _, exists := serviceErrors[name]; !exists {
+			stoppedNames = append(stoppedNames, name)
+		}
+		serviceErrors[name] = errors.Join(serviceErrors[name], err)
+	}
+
+	// A failed route replacement can leave two process trees for one service.
+	// Report completion only after every tree belonging to that service is gone.
+	if onStopped != nil {
+		for _, name := range stoppedNames {
+			onStopped(name, serviceErrors[name])
+		}
 	}
 
 	return cleanupError
 }
 
-func forwardStartedServicesSignal(startedServices []*startedService, receivedSignal os.Signal) {
+func forwardStartedServicesSignal(startedServices []*startedService, receivedSignal os.Signal, onStopping func(string)) {
 	for _, startedService := range startedServices {
 		if startedService == nil {
 			continue
 		}
 
+		onStopping(startedService.service.Name)
 		signalStartedService(startedService, receivedSignal)
 	}
 }

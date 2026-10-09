@@ -4,7 +4,7 @@ description: Use when running devhost or when reading, writing, or changing a de
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-09 16:10
+  last_modified: 2026-10-09 21:11
   status: current
 ---
 
@@ -51,6 +51,8 @@ devhost start
 ```
 
 Stop the stack with `devhost stop`, a shutdown signal, or an idle timeout. The shared Caddy keeps running until `devhost caddy stop`.
+
+The running stack prints `[stack-name] Stopping service <name>...` before signaling each managed foreground service or running a daemon's stop command, and `[stack-name] Stopped service <name>.` after its cleanup succeeds. `Stack stopped.` confirms service and routing cleanup completed successfully. Child stdout/stderr remains visible during shutdown, and cleanup failures report the affected services. Signal-driven shutdown retains the signal exit codes listed above.
 
 ### Stop a Stack Started Elsewhere
 
