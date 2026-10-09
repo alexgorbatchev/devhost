@@ -13,7 +13,7 @@ import { runCommand } from "./runCommand";
 import { stagePromoFootage } from "./stagePromoFootage";
 import type { IRenderPromoOptions } from "./types";
 
-// The composition loads these from its own assets, so a render reads nothing from the network.
+// The composition loads these from its own assets, so it reads nothing from the network.
 const stagedDependencies: Record<string, string> = {
   "@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2":
     "assets/fonts/jetbrains-mono-latin-wght-normal.woff2",
