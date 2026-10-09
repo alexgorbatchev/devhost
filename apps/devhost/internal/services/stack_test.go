@@ -504,17 +504,16 @@ func TestStartStackRetriesAutoPortAndPrefixesOutput(t *testing.T) {
 	}
 
 	infoLines := nonEmptyLines(infoLog.String())
-	if len(infoLines) != 3 {
-		t.Fatalf("info lines = %#v, want three lines", infoLines)
+	wantInfo := []string{
+		"[retry-stack] retrying web with a new auto port after a bind collision.",
+		fmt.Sprintf("[retry-stack] web (primary): http://127.0.0.1:%d", *finalPort),
+		"[retry-stack] web exited with code 0; devhost is waiting for a restart.",
+		"[retry-stack] Stopping service web...",
+		"[retry-stack] Stopped service web.",
+		"[retry-stack] Stack stopped.",
 	}
-	if infoLines[0] != "[retry-stack] retrying web with a new auto port after a bind collision." {
-		t.Fatalf("retry log = %q", infoLines[0])
-	}
-	if infoLines[1] != fmt.Sprintf("[retry-stack] web (primary): http://127.0.0.1:%d", *finalPort) {
-		t.Fatalf("service URL log = %q", infoLines[1])
-	}
-	if infoLines[2] != "[retry-stack] web exited with code 0; devhost is waiting for a restart." {
-		t.Fatalf("service exit log = %q", infoLines[2])
+	if !stringSlicesEqual(infoLines, wantInfo) {
+		t.Fatalf("info lines = %#v, want %#v", infoLines, wantInfo)
 	}
 }
 
@@ -726,7 +725,14 @@ func TestStartStackActivatesRoutesAndCleansUpAfterShutdown(t *testing.T) {
 		t.Fatalf("trace = %q", trace)
 	}
 
-	if lines := nonEmptyLines(infoLog.String()); !stringSlicesEqual(lines, []string{"[route-stack] web (primary): https://hello.localhost", "[route-stack] web exited with code 0; devhost is waiting for a restart."}) {
+	wantInfo := []string{
+		"[route-stack] web (primary): https://hello.localhost",
+		"[route-stack] web exited with code 0; devhost is waiting for a restart.",
+		"[route-stack] Stopping service web...",
+		"[route-stack] Stopped service web.",
+		"[route-stack] Stack stopped.",
+	}
+	if lines := nonEmptyLines(infoLog.String()); !stringSlicesEqual(lines, wantInfo) {
 		t.Fatalf("info lines = %#v", lines)
 	}
 
@@ -1579,7 +1585,7 @@ func TestStopStartedServicesStopsRunningServicesGracefully(t *testing.T) {
 		_, err2 := os.Stat(secondReadyPath)
 		return err1 == nil && err2 == nil
 	})
-	if err := stopStartedServices([]*startedService{firstService, secondService}, 2*time.Second); err != nil {
+	if err := stopStartedServices([]*startedService{firstService, secondService}, 2*time.Second, nil); err != nil {
 		t.Fatalf("stopStartedServices(...) error = %v", err)
 	}
 
@@ -2012,7 +2018,7 @@ func TestStopStartedServicesIgnoresUnownedListeners(t *testing.T) {
 	err := stopStartedServices([]*startedService{
 		newExitedService("api", firstPort),
 		newExitedService("web", secondPort),
-	}, 50*time.Millisecond)
+	}, 50*time.Millisecond, nil)
 	if err != nil {
 		t.Fatalf("stopStartedServices(...) = %v; unrelated listeners must not prevent cleanup", err)
 	}
@@ -2202,7 +2208,7 @@ func TestStopStartedServicesSignalsInReverseOrder(t *testing.T) {
 		}
 	}
 
-	if err := stopStartedServices([]*startedService{firstService, secondService}, 100*time.Millisecond); err != nil {
+	if err := stopStartedServices([]*startedService{firstService, secondService}, 100*time.Millisecond, nil); err != nil {
 		t.Fatalf("stopStartedServices(...) error = %v", err)
 	}
 
