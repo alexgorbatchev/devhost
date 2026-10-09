@@ -91,6 +91,27 @@ it("retimes each requested recording into a clip of exactly its slot length", as
   expect({ width: lapse.width, height: lapse.height }).toEqual({ width: 320, height: 180 });
   expect(lapse.duration).toBeCloseTo(2, 1);
   expect(held.duration).toBeCloseTo(2.5, 1);
+  // The renderer seeks into each clip, which needs a keyframe every second rather than one per clip.
+  const keyframes = await runCommand([
+    "ffprobe",
+    "-v",
+    "error",
+    "-select_streams",
+    "v:0",
+    "-skip_frame",
+    "nokey",
+    "-show_entries",
+    "frame=pts_time",
+    "-of",
+    "csv=p=0",
+    join(projectPath, "assets/footage/held.mp4"),
+  ]);
+  expect(
+    keyframes
+      .trim()
+      .split("\n")
+      .map((time) => Number.parseFloat(time)),
+  ).toEqual([0, 1, 2]);
 }, 30_000);
 
 it("names the frame and the recording when requested footage was not captured", async () => {

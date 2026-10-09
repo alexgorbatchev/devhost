@@ -46,6 +46,13 @@ export async function stagePromoFootage(
         "fast",
         "-crf",
         "16",
+        // The renderer seeks into each clip; a keyframe every second at 30 fps keeps those seeks exact.
+        "-g",
+        "30",
+        "-keyint_min",
+        "30",
+        "-sc_threshold",
+        "0",
         "-pix_fmt",
         "yuv420p",
         "-movflags",
