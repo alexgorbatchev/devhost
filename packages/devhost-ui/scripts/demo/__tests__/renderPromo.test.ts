@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, expect, it } from "bun:test";
 import { readMediaInfo } from "../readMediaInfo";
@@ -129,6 +129,37 @@ it("stages a private copy of the project and writes the video with its captions 
   ).toBe(true);
   expect(await Bun.file(join(recordingPath, "promo/assets/vendor/gsap.min.js")).exists()).toBe(true);
   expect(await Bun.file(join(projectSourcePath, "assets/footage/terminal.mp4")).exists()).toBe(false);
+}, 30_000);
+
+it("leaves a directory that is not a recording exactly as it was", async () => {
+  const directory = join(directoryPath, "not-a-recording");
+  await Bun.write(join(directory, "promo/keep.txt"), "someone's work");
+
+  await expect(
+    renderPromo({
+      directoryPath: directory,
+      projectSourcePath,
+      render: createRenderer(4, tone),
+      signal: new AbortController().signal,
+    }),
+  ).rejects.toThrow(`${directory} is not a recording the promo can render from: it has no startup`);
+  expect(await Array.fromAsync(new Bun.Glob("**/*").scan({ cwd: directory, dot: true }))).toEqual(["promo/keep.txt"]);
+});
+
+it("refuses to stage a render over the promo's own project", async () => {
+  const directory = await createRecording("holds-the-project");
+  const ownProjectPath = join(directory, "promo");
+  await cp(projectSourcePath, ownProjectPath, { recursive: true });
+
+  await expect(
+    renderPromo({
+      directoryPath: directory,
+      projectSourcePath: ownProjectPath,
+      render: createRenderer(4, tone),
+      signal: new AbortController().signal,
+    }),
+  ).rejects.toThrow(`${directory} holds the promo's own project, so it cannot be a recording`);
+  expect(await Bun.file(join(ownProjectPath, "narration.json")).exists()).toBe(true);
 }, 30_000);
 
 it("rejects two recordings that a frame could not tell apart", async () => {
