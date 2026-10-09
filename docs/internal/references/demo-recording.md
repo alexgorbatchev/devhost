@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-09 14:24
+last_modified: 2026-10-09 15:20
 status: current
 ---
 
@@ -86,7 +86,7 @@ The command discovers guide Markdown files, renders each corresponding real work
 
 ### Where guide videos are stored
 
-Git tracks each guide's poster and captions but not its video. `packages/docs/demo-media.json` pins every video by name, SHA-256, and size, and the files themselves are assets of the `media` release of `alexgorbatchev/devhost`. That release is not a devhost version and is never marked as the latest release.
+Git tracks each guide's poster and captions but not its video. `packages/docs/demo-media.json` pins every video by name, release asset, SHA-256, and size, and the files themselves are assets of the `media` release of `alexgorbatchev/devhost`. That release is not a devhost version and is never marked as the latest release.
 
 | Command                   | What it does                                                                                   |
 | ------------------------- | ---------------------------------------------------------------------------------------------- |
