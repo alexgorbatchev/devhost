@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
-import { cp, rm } from "node:fs/promises";
+import { cp, mkdir, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { promoMaximumSeconds } from "./constants";
 import { createPromoCaptions } from "./createPromoCaptions";
 import { findPromoRecording } from "./findPromoRecording";
 import { readMediaInfo } from "./readMediaInfo";
+import { preparePromoRenderer } from "./preparePromoRenderer";
 import { readPromoFootageRequests } from "./readPromoFootageRequests";
 import { readPromoSources } from "./readPromoSources";
 import { renderPromoComposition } from "./renderPromoComposition";
@@ -96,6 +97,8 @@ if (import.meta.main) {
           ])
         : // A relative path means what it meant where `just` was invoked, not in this recipe's directory.
           resolve(process.env.DEVHOST_DEMO_INVOCATION_DIRECTORY ?? process.cwd(), selected);
+    await mkdir(join(directoryPath, ".tmp"), { recursive: true });
+    await preparePromoRenderer(runCommand, projectSourcePath, join(directoryPath, ".tmp"), controller.signal);
     console.log(`Rendering the promo from ${directoryPath}`);
     const outputPath = await renderPromo({
       directoryPath,

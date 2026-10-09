@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-09 08:31
+last_modified: 2026-10-09 09:06
 status: current
 ---
 
@@ -28,11 +28,7 @@ Health checks verify HTTPS using the existing root certificate returned by `devh
 
 The full sequence and annotation scene also require Pi on PATH with a working configured provider/model. This is a real model request and uses that provider's normal billing. The recorder limits Pi to read/edit tools and guards edits to the copied `PlaygroundLayout.tsx`. It keeps provider extensions but skips skills, context files, prompt templates, and local approval configuration for this isolated fixture. Query and startup scenes do not require Pi.
 
-The full sequence also needs Node.js 22 or newer on PATH, which HyperFrames runs on, and HyperFrames' own Chrome build. Download that build once, using the HyperFrames release pinned in `packages/devhost-ui/scripts/demo/promo/package.json`:
-
-```bash
-bun x hyperframes@<pinned version> browser ensure
-```
+The full sequence also needs Node.js 22 or newer on PATH, which HyperFrames runs on. Before it captures anything, `just demo record` checks that version and has HyperFrames find or download its own Chrome build, about 114 MB on the first run; `just demo promo` does the same before it renders. An older Node.js or a failed download therefore stops the run before the capture and its Pi request.
 
 HyperFrames keeps that build under `~/.cache/hyperframes` and its own settings under `~/.hyperframes`; both follow `HOME`, so they cannot be moved into a run directory without downloading Chrome again for every run. The promo's render runs with `HYPERFRAMES_NO_TELEMETRY=1` and `HYPERFRAMES_SKIP_SKILLS=1`, so it reports no usage and installs no agent skills on your machine. A render needs no ElevenLabs key: the narration and music are committed files.
 
@@ -115,6 +111,8 @@ Sources live in `packages/devhost-ui/scripts/demo/`:
 | `renderPromo.ts` / `renderPromoComposition.ts`                              | Stage a copy of the project in the run directory, render it, and verify it      |
 | `readPromoFootageSlots.ts` / `planPromoFootage.ts` / `stagePromoFootage.ts` | Fit each recording into the slot a frame declares                               |
 | `readPromoFootageRequests.ts` / `findPromoRecording.ts`                     | List the footage the composition requests and find a recording that has it all  |
+| `readPromoSources.ts`                                                       | Name a run's captured videos the way frames request them                        |
+| `preparePromoRenderer.ts` / `createPromoRendererEnvironment.ts`             | Check Node.js and fetch HyperFrames' Chrome before a capture or a render        |
 | `generatePromoAudio.ts`                                                     | Generate the narration and music with ElevenLabs                                |
 
 Use accessible roles and names for browser actions. Wait for rendered state or real responses before pacing pauses. Do not replace actual services, logs, restart requests, or native devtools with recording-only imitations. Scenes fail on missing UI, unsuccessful requests, or uncaught page errors, and retain a failure screenshot.
@@ -127,7 +125,7 @@ The copied playground has its own local Git repository on `main` and a real `ui-
 
 ## Editing the promo
 
-`packages/devhost-ui/scripts/demo/promo/` is a HyperFrames project. `index.html` places the frames, the narration, and the music on the timeline; `compositions/backdrop.html` and `compositions/frames/*.html` are its sub-compositions. `package.json` pins the HyperFrames release, and the recorder renders through that `render` script with `bun run`, which starts the pinned release itself. Change the pin with `bun x hyperframes@latest upgrade --project .` from the project directory, then render and review the promo.
+`packages/devhost-ui/scripts/demo/promo/` is a HyperFrames project. `index.html` places the frames, the narration, and the music on the timeline; `compositions/backdrop.html` and `compositions/frames/*.html` are its sub-compositions. `package.json` pins the HyperFrames release in its scripts, and the recorder runs the `browser` and `render` scripts with `bun run`, which starts the pinned release itself. Change the pin with `bun x hyperframes@latest upgrade --project .` from the project directory, then render and review the promo.
 
 A frame asks for footage with a `<video>` element:
 
