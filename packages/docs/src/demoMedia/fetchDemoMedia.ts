@@ -1,5 +1,4 @@
 import { join } from "node:path";
-import { createDemoMediaAssetName } from "./createDemoMediaAssetName";
 import { inspectDemoMedia } from "./inspectDemoMedia";
 import type { IDemoMediaFetchResult, IFetchDemoMediaOptions } from "./types";
 
@@ -18,8 +17,7 @@ export async function fetchDemoMedia(options: IFetchDemoMediaOptions): Promise<I
       results.push({ name, outcome: "different" });
       continue;
     }
-    const asset = createDemoMediaAssetName(name, pin.sha256);
-    const url = `https://github.com/${manifest.repository}/releases/download/${manifest.release}/${asset}`;
+    const url = `https://github.com/${manifest.repository}/releases/download/${manifest.release}/${pin.asset}`;
     const response = await fetcher(url);
     if (!response.ok) throw new Error(`Cannot download ${name} from ${url}: HTTP ${response.status}`);
     const content = await response.bytes();

@@ -3,7 +3,7 @@ import { basename, join } from "node:path";
 import { afterEach, beforeEach, expect, it, mock } from "bun:test";
 import { publishDemoMedia } from "../publishDemoMedia";
 import type { IDemoMediaManifest, IPublishDemoMediaOptions, RunCommand } from "../types";
-import { assetName, createManifest, createTestDirectory, pin } from "./helpers";
+import { assetName, createManifest, createTestDirectory, hash } from "./helpers";
 
 const view = ["gh", "release", "view", "media", "--repo", "alexgorbatchev/devhost", "--json", "assets"];
 
@@ -14,7 +14,7 @@ function listAssets(assets: Record<string, string>): string {
   return JSON.stringify({
     assets: Object.entries(assets).map(([name, content]) => ({
       name,
-      digest: `sha256:${pin(content).sha256}`,
+      digest: `sha256:${hash(content)}`,
       state: "uploaded",
     })),
   });
@@ -139,7 +139,7 @@ it("pins nothing when the release reports other content for an upload", async ()
     .mockResolvedValueOnce(listAssets({ [asset]: "truncated" }));
 
   await expect(publishDemoMedia({ ...options, run })).rejects.toThrow(
-    `Release media holds ${asset} as sha256:${pin("truncated").sha256}, not sha256:${pin("new annotations").sha256}`,
+    `Release media holds ${asset} as sha256:${hash("truncated")}, not sha256:${hash("new annotations")}`,
   );
   expect(await Bun.file(options.manifestPath).text()).toBe(manifest);
 });
