@@ -73,6 +73,8 @@ name = "hello-stack"
 # - If `cwd` is missing in an included service, it defaults to the directory of the manifest
 #   it was defined in.
 # - Cyclic references are safely and gracefully ignored.
+# - The merged stack holds every included service. `devhost start web api` starts one slice of it:
+#   the named services, their `dependsOn` chains, and the `alwaysStart` services (see `services.db`).
 #
 # includes = ["packages/*/devhost.toml", "apps/*/devhost.toml"]
 
@@ -537,6 +539,9 @@ retries = 10
 
 [services.db]
 # `alwaysStart` controls whether the service starts when `devhost start` names other services.
+# Naming services starts one slice of a large stack, such as the one app of a monorepo you are
+# working on, without launching the rest. Set `alwaysStart = true` on a service every slice
+# needs, such as this database, so it starts whichever services are named.
 # - `false` (default): the service starts when it is named, when a started service depends on it,
 #   or when `devhost start` names no service at all.
 # - `true`: the service and everything it reaches through `dependsOn` start on every `devhost start`.

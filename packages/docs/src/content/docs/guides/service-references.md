@@ -55,6 +55,10 @@ env = { API_URL = "http://{{ services.api.bindHost }}:{{ services.api.port }}" }
 
 In this example, the API's bind host and assigned port are resolved into the web service's `API_URL` at startup. The `api:dev` and `web:dev` scripts must launch servers that listen on their injected `PORT` values.
 
+## References to stopped services
+
+When `devhost start` names the services to run, a monorepo stack runs with some services stopped. A stopped service keeps its assigned address, so a reference to it resolves to the same value it has when the service runs, and stays the same when the service starts later. A reference does not start the service it names: add the service to `dependsOn`, as `web` does above, when the consumer needs it running. See [Starting part of a stack](../stack-lifecycle/#starting-part-of-a-stack).
+
 ## References after reload or restart
 
 A configuration reload resolves command and environment templates against the accepted service configuration and restarts affected consumers. Individual service restarts preserve their assigned automatic port. **Restart stack with new ports** reassigns automatic ports and rebuilds references before relaunching all managed services, so consumers receive the current port values. See [Stack lifecycle](./stack-lifecycle/) for recovery and restoration behavior.

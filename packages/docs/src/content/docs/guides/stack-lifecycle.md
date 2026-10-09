@@ -39,22 +39,74 @@ When you run `devhost start`, it:
 
 ## Starting part of a stack
 
-Name the services to run when the manifest holds more than you need, such as one slice of a monorepo:
+A monorepo manifest describes every app and backend in the repository, often merged from one file per package with [manifest includes](../manifest-includes/). A single task usually touches one or two of those apps, and plain `devhost start` launches all of them. Name the services you are working on to start one slice of the stack:
 
 ```bash
 devhost start web admin
 ```
 
-devhost starts the named services, every service they reach through `dependsOn`, and every service marked `alwaysStart = true` together with its own `dependsOn` chain. Mark the services every slice needs:
+Starting a slice gives you:
+
+- **Less to launch.** The services left out run no process, and startup waits only for the health checks of the services it starts.
+- **Free hostnames and ports.** The services left out reserve no hostname and no fixed port, so another stack can use them at the same time.
+- **Dependencies without bookkeeping.** devhost follows `dependsOn` from the services you name, so you name the app and get the backends it needs.
+- **Room to grow the slice.** A service left out starts later from the devtools while the running services keep running.
+
+devhost starts the named services, every service they reach through `dependsOn`, and every service marked `alwaysStart = true` together with its own `dependsOn` chain. Set `alwaysStart = true` on the services every slice needs, such as a database or a proxy.
+
+Plain `devhost start` starts every service, whatever `alwaysStart` says. A name the manifest does not define fails the command before anything starts and lists the defined names.
+
+### Example: slices of a monorepo
+
+This manifest has three apps, one API they share, and a database:
 
 ```toml
+name = "acme"
+
 [services.db]
 command = ["bun", "run", "db:dev"]
 port = "auto"
 alwaysStart = true
+
+[services.api]
+command = ["bun", "run", "api:dev"]
+port = "auto"
+dependsOn = ["db"]
+
+[services.web]
+command = ["bun", "run", "web:dev"]
+port = "auto"
+host = "web.acme.localhost"
+dependsOn = ["api"]
+
+[services.admin]
+command = ["bun", "run", "admin:dev"]
+port = "auto"
+host = "admin.acme.localhost"
+dependsOn = ["api"]
+
+[services.docs]
+command = ["bun", "run", "docs:dev"]
+port = "auto"
+host = "docs.acme.localhost"
 ```
 
-Plain `devhost start` starts every service, whatever `alwaysStart` says. A name the manifest does not define fails the command before anything starts and lists the defined names.
+| Command                   | Starts                              | Leaves stopped        |
+| ------------------------- | ----------------------------------- | --------------------- |
+| `devhost start web`       | `web`, `api`, `db`                  | `admin`, `docs`       |
+| `devhost start web admin` | `web`, `admin`, `api`, `db`         | `docs`                |
+| `devhost start docs`      | `docs`, `db`                        | `api`, `web`, `admin` |
+| `devhost start`           | `db`, `api`, `web`, `admin`, `docs` | none                  |
+
+`devhost start web` reaches `api` through `dependsOn` and `db` through `api`. `devhost start docs` starts `db` because of `alwaysStart`, although `docs` does not depend on it, and leaves `api` stopped because nothing started depends on it.
+
+After `devhost start web`, startup names the services it left out:
+
+```text
+[acme] not started: admin, docs
+```
+
+### Stopped services
 
 The services left out are stopped. They run no process, have no route, and hold no hostname or fixed-port reservation, so another stack can use those hostnames and ports. Startup prints them on a `not started:` line. They keep an assigned address: `{{ services.<name>.port }}` references and `DEVHOST_PORT_<NAME>` variables that name a stopped service resolve as they do when it runs, and stay the same when it starts. A reference without a `dependsOn` entry does not start the service it names.
 
