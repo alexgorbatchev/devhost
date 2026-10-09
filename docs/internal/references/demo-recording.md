@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-09 09:54
+last_modified: 2026-10-09 10:16
 status: current
 ---
 
@@ -126,7 +126,7 @@ The copied playground has its own local Git repository on `main` and a real `ui-
 
 ## Editing the promo
 
-`packages/devhost-ui/scripts/demo/promo/` is a HyperFrames project. `index.html` places the frames, the narration, and the music on the timeline; `compositions/backdrop.html` and `compositions/frames/*.html` are its sub-compositions. `package.json` pins the HyperFrames release in its scripts, and the recorder runs the `browser` and `render` scripts with `bun run`, which starts the pinned release itself. Change the pin with `bun x hyperframes@latest upgrade --project .` from the project directory, then render and review the promo.
+`packages/devhost-ui/scripts/demo/promo/` is a HyperFrames project. `index.html` places the frames, the narration, and the music on the timeline; `compositions/backdrop.html` and `compositions/frames/*.html` are its sub-compositions. `package.json` pins the HyperFrames release in its scripts, and the recorder runs the `browser` and `render` scripts with `bun run`, which starts the pinned release itself. Bun resolves that release from the npm registry each time, so the preflight and every render need the registry to be reachable even when Bun's cache already holds the packages. The pin fixes the HyperFrames release, not the packages it depends on, which it declares as version ranges. Change the pin with `bun x hyperframes@latest upgrade --project .` from the project directory, then render and review the promo.
 
 A frame asks for footage with a `<video>` element:
 
@@ -146,7 +146,7 @@ A frame asks for footage with a `<video>` element:
 ></video>
 ```
 
-`data-footage` names a recording in the run's `raw/` directory by its file name without the extension: `startup`, `overview-1` to `overview-3`, `annotations-1` to `annotations-3`, or `query-1`. `data-footage-from` and `data-footage-to` select seconds within it, and a negative value counts back from its end, which suits recordings whose length varies with the model. `data-duration` is the slot's length. Before each render the recorder writes every requested `src` under `assets/footage/` in the run's copy of the project. It also copies JetBrains Mono, GSAP, and `packages/design/tokens.css` from this package's dependencies into `assets/fonts/` and `assets/vendor/`, so a render reads nothing from the network. Those three asset directories exist only in a run directory, which makes the run's `promo/` directory the place to open HyperFrames Studio:
+`data-footage` names a recording in the run's `raw/` directory by its file name without the extension: `startup`, `overview-1` to `overview-3`, `annotations-1` to `annotations-3`, or `query-1`. `data-footage-from` and `data-footage-to` select seconds within it, and a negative value counts back from its end, which suits recordings whose length varies with the model. `data-duration` is the slot's length. Before each render the recorder writes every requested `src` under `assets/footage/` in the run's copy of the project. It also copies JetBrains Mono, GSAP, and `packages/design/tokens.css` from this package's dependencies into `assets/fonts/` and `assets/vendor/`, so the composition loads nothing from the network. Those three asset directories exist only in a run directory, which makes the run's `promo/` directory the place to open HyperFrames Studio:
 
 ```bash
 cd .tmp/demos/recording-AbC123/promo
