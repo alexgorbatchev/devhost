@@ -11,6 +11,7 @@ const (
 	manifestEnvironmentVariable    = "DEVHOST_MANIFEST"
 	idleTimeoutEnvironmentVariable = "DEVHOST_IDLE_TIMEOUT"
 	sshTargetDescription           = "SSH host that runs devhost, e.g. devbox or user@devbox"
+	serviceArgumentDescription     = "Services to start; all of them when none is named"
 )
 
 var manifestEnvironmentSpec = cobrahelptree.EnvSpec{
@@ -48,9 +49,12 @@ func createHelpCatalog() cobrahelptree.TechCatalog {
 				{Command: "devhost caddy trust", Comment: "one-time setup"},
 				{Command: "devhost caddy start", Comment: "start the shared proxy"},
 				{Command: "devhost start", Comment: "run the stack in devhost.toml"},
+				{Command: "devhost start web", Comment: "run web and what it depends on"},
 			},
 		},
+		serviceCommandPath + " " + serviceListCommandName: manifestOnly,
 		rootCommandName + " " + startCommandName: {
+			Args: []cobrahelptree.ArgSpec{{Name: "[service...]", Description: serviceArgumentDescription}},
 			Env: []cobrahelptree.EnvSpec{
 				manifestEnvironmentSpec,
 				{

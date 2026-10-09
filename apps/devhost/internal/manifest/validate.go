@@ -569,7 +569,7 @@ func validateService(
 	schemaIssues *[]string,
 	validationIssues *[]string,
 ) (ValidatedService, bool) {
-	allowKeys(value, []string{"bindHost", "command", "cwd", "dependsOn", "env", "health", "host", "injectPort", "lifecycle", "managed", "path", "port", "primary", "proxyLocalOrigin", "watch"}, fmt.Sprintf("services.%s", serviceName), schemaIssues)
+	allowKeys(value, []string{"alwaysStart", "bindHost", "command", "cwd", "dependsOn", "env", "health", "host", "injectPort", "lifecycle", "managed", "path", "port", "primary", "proxyLocalOrigin", "watch"}, fmt.Sprintf("services.%s", serviceName), schemaIssues)
 
 	watch := []string{}
 	if watchValues, ok := readOptionalStringArray(value, "watch", schemaIssues); ok {
@@ -637,6 +637,7 @@ func validateService(
 	}
 
 	primary, _ := readOptionalBool(value, "primary", schemaIssues)
+	alwaysStart, _ := readOptionalBool(value, "alwaysStart", schemaIssues)
 	bindHost, bindHostSet := readOptionalString(value, "bindHost", schemaIssues)
 	if !bindHostSet {
 		bindHost = defaultServiceBindHost
@@ -758,6 +759,7 @@ func validateService(
 	}
 
 	return ValidatedService{
+		AlwaysStart:      alwaysStart,
 		ProxyLocalOrigin: proxyLocalOrigin,
 		BindHost:         bindHost,
 		Command:          command,

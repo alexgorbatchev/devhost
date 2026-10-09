@@ -245,6 +245,19 @@ func TestRunReportsFailuresForTheReader(t *testing.T) {
 			wantStderr: "ERR: Could not find devhost.toml from " + projectPath + " upward.\n",
 		},
 		{
+			name:    "a person names a service the manifest does not define",
+			agent:   "0",
+			rawArgs: []string{"start", "--manifest", manifestPath, "wroker"},
+			wantStderr: "[ERROR] unknown service: \"wroker\"; the manifest defines: worker\n" +
+				"[INFO] Run \"devhost service list\" to print the service names.\n",
+		},
+		{
+			name:       "an agent names a service the manifest does not define",
+			agent:      "1",
+			rawArgs:    []string{"start", "--manifest", manifestPath, "wroker"},
+			wantStderr: "ERR: unknown service: \"wroker\"; the manifest defines: worker\n",
+		},
+		{
 			name:    "a person gives an idle timeout that is not a duration",
 			agent:   "0",
 			rawArgs: []string{"start", "--manifest", manifestPath, "--idle-timeout", "soon"},

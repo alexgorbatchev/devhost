@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react";
 
-import type { IWorktreeRepository } from "../../../../shared/types";
+import type { IStoppedService, IWorktreeRepository } from "../../../../shared/types";
 import type { ServiceStatusPanel } from "../ServiceStatusPanel";
 
 export const fixture_healthPollErrorServices: ComponentProps<typeof ServiceStatusPanel> = {
@@ -11,6 +11,8 @@ export const fixture_healthPollErrorServices: ComponentProps<typeof ServiceStatu
     { managed: true, name: "worker", status: false },
   ],
 };
+
+export const fixture_stoppedServices: IStoppedService[] = [{ name: "docs" }, { name: "admin" }, { name: "mail" }];
 
 export function factory_worktreeRepository(serviceNames: string[] = ["api", "web"]): IWorktreeRepository {
   return {

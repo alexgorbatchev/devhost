@@ -26,6 +26,7 @@ const (
 	KindCompletion         Kind = "completion"
 	KindSkill              Kind = "skill"
 	KindStop               Kind = "stop"
+	KindServiceList        Kind = "service-list"
 	KindCaddyLifecycle     Kind = "caddy-lifecycle"
 	KindCaddyPrintRootCert Kind = "caddy-print-root-cert"
 	KindCaddyTrustRemote   Kind = "caddy-trust-remote"
@@ -45,6 +46,9 @@ const (
 	rootCommandName          = "devhost"
 	startCommandName         = "start"
 	stopCommandName          = "stop"
+	serviceCommandName       = "service"
+	serviceCommandPath       = rootCommandName + " " + serviceCommandName
+	serviceListCommandName   = "list"
 	caddyCommandName         = "caddy"
 	caddyCommandPath         = rootCommandName + " " + caddyCommandName
 	printRootCertCommandName = "print-root-cert"
@@ -66,6 +70,10 @@ type CommandLineArguments struct {
 	SSHTarget    string
 	Debug        bool
 	IdleTimeout  string
+	// Services names the services devhost start was asked for; empty means all of them.
+	Services []string
+	// Startable limits devhost service list to the services that start only when named.
+	Startable bool
 }
 
 // ParseCommandLineArguments resolves rawArguments into the command to run. Help
@@ -163,8 +171,14 @@ func printedVersion(command *cobra.Command) bool {
 
 type startOptions struct {
 	ManifestOptions
-	Debug       bool   `descr:"Show Caddy's output while the stack runs." name:"debug"`
-	IdleTimeout string `descr:"Stop the stack after this long without traffic, e.g. 30s or 1m." env:"DEVHOST_IDLE_TIMEOUT" name:"idle-timeout" optional:"true"`
+	Debug       bool     `descr:"Show Caddy's output while the stack runs." name:"debug"`
+	IdleTimeout string   `descr:"Stop the stack after this long without traffic, e.g. 30s or 1m." env:"DEVHOST_IDLE_TIMEOUT" name:"idle-timeout" optional:"true"`
+	Services    []string `descr:"Services to start; all of them when none is named." name:"service" optional:"true" positional:"true"`
+}
+
+type serviceListOptions struct {
+	ManifestOptions
+	Startable bool `descr:"List only the services that start when named." name:"startable"`
 }
 
 // ManifestOptions is for commands that only locate a manifest; they must not
@@ -189,6 +203,7 @@ func createRootCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 		Args:    rejectUnknownCommand,
 		SubCmds: boa.SubCmds(
 			createCaddyCommand(result),
+			createServiceCommand(result),
 			createStartCommand(result),
 			createStopCommand(result),
 		),
@@ -198,9 +213,8 @@ func createRootCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 func createStartCommand(result *CommandLineArguments) boa.CmdT[startOptions] {
 	return boa.CmdT[startOptions]{
 		Use:   startCommandName,
-		Short: "Start every service in devhost.toml",
+		Short: "Start the services in devhost.toml",
 		Long:  startDescription,
-		Args:  cobra.NoArgs,
 		RunFuncE: func(options *startOptions, _ *cobra.Command, _ []string) error {
 			if err := validateManifestPath(options.ManifestPath); err != nil {
 				return err
@@ -211,6 +225,7 @@ func createStartCommand(result *CommandLineArguments) boa.CmdT[startOptions] {
 				ManifestPath: options.ManifestPath,
 				Debug:        options.Debug,
 				IdleTimeout:  options.IdleTimeout,
+				Services:     options.Services,
 			}
 			return nil
 		},
@@ -221,6 +236,10 @@ func createStartCommand(result *CommandLineArguments) boa.CmdT[startOptions] {
 // not to wrap in a 60-column terminal.
 const startDescription = `Start every service in devhost.toml behind local HTTPS
 hostnames. Routes are removed when the stack exits.
+
+Name services to start only those, what they depend on,
+and the services the manifest marks alwaysStart. The rest
+can be started later from the Services panel in the page.
 
 Without --manifest, devhost uses the nearest devhost.toml in
 the current folder or a parent folder. Hostnames must
@@ -250,6 +269,44 @@ func createStopCommand(result *CommandLineArguments) boa.CmdT[ManifestOptions] {
 			*result = CommandLineArguments{Kind: KindStop, ManifestPath: options.ManifestPath}
 			return nil
 		},
+	}
+}
+
+const serviceDescription = `Inspect the services devhost.toml defines.`
+
+const serviceListDescription = `Print the name of every service in devhost.toml, one per
+line in alphabetical order.
+
+With --startable, leave out the services marked alwaysStart,
+which start whether or not they are named. Pipe the output
+into a picker to choose what devhost start runs.`
+
+func createServiceCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
+	return boa.CmdT[boa.NoParams]{
+		Use:   serviceCommandName,
+		Short: "Inspect the services in devhost.toml",
+		Long:  serviceDescription,
+		Args:  rejectUnknownCommand,
+		SubCmds: boa.SubCmds(
+			boa.CmdT[serviceListOptions]{
+				Use:   serviceListCommandName,
+				Short: "Print the service names in devhost.toml",
+				Long:  serviceListDescription,
+				Args:  cobra.NoArgs,
+				RunFuncE: func(options *serviceListOptions, _ *cobra.Command, _ []string) error {
+					if err := validateManifestPath(options.ManifestPath); err != nil {
+						return err
+					}
+
+					*result = CommandLineArguments{
+						Kind:         KindServiceList,
+						ManifestPath: options.ManifestPath,
+						Startable:    options.Startable,
+					}
+					return nil
+				},
+			},
+		),
 	}
 }
 

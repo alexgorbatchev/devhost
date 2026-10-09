@@ -62,6 +62,12 @@ func startReloadStack(t *testing.T, body string) *reloadStackFixture {
 
 func startReloadStackConfiguration(t *testing.T, body string, worktreesEnabled bool) *reloadStackFixture {
 	t.Helper()
+	return startReloadStackRequested(t, body, worktreesEnabled, nil)
+}
+
+// startReloadStackRequested starts the stack the way `devhost start <requested...>` does.
+func startReloadStackRequested(t *testing.T, body string, worktreesEnabled bool, requested []string) *reloadStackFixture {
+	t.Helper()
 	root, state := t.TempDir(), t.TempDir()
 	admin := caddytest.StartAdminServer(t)
 	f := &reloadStackFixture{path: filepath.Join(root, "devhost.toml"), paths: caddy.CreateManagedCaddyPaths(state), logs: &reloadLogs{}}
@@ -79,7 +85,7 @@ func startReloadStackConfiguration(t *testing.T, body string, worktreesEnabled b
 	if err != nil {
 		t.Fatal(err)
 	}
-	m, err := ResolveServicePorts(configured)
+	m, err := ResolveRequestedServicePorts(configured, requested)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -71,7 +71,27 @@ describe("useServiceHealth", () => {
     expect(webSocket.connections).toHaveLength(1);
     expect(hook.result.current.services).toEqual([]);
     expect(hook.result.current.repositories).toEqual([]);
+    expect(hook.result.current.stoppedServices).toEqual([]);
     expect(hook.result.current.errorMessage).toBeNull();
+  });
+
+  test("publishes the stopped services of each health message and forgets them when the stream drops", async () => {
+    const { connection, hook } = await connectServiceHealth();
+
+    await settle(() =>
+      connection.send({ services: [apiService], stoppedServices: [{ name: "docs" }, { name: "db" }] }),
+    );
+    expect(hook.result.current.stoppedServices).toEqual([{ name: "docs" }, { name: "db" }]);
+
+    await settle(() => connection.send({ services: [apiService], stoppedServices: [{ name: "db" }] }));
+    expect(hook.result.current.stoppedServices).toEqual([{ name: "db" }]);
+
+    await settle(() => connection.send({ services: [apiService] }));
+    expect(hook.result.current.stoppedServices).toEqual([]);
+
+    await settle(() => connection.send({ services: [apiService], stoppedServices: [{ name: "db" }] }));
+    await settle(() => connection.close(1006));
+    expect(hook.result.current.stoppedServices).toEqual([]);
   });
 
   test("publishes the services and repositories of each health message", async () => {
@@ -84,6 +104,24 @@ describe("useServiceHealth", () => {
     await settle(() => connection.send({ services: [apiService] }));
     expect(hook.result.current.services).toEqual([apiService]);
     expect(hook.result.current.repositories).toEqual([]);
+  });
+
+  test("asks devhost to start stopped services and reports why it could not", async () => {
+    const { hook } = await connectServiceHealth();
+
+    mockFetch.fetch.mockResolvedValueOnce(new Response(null, { status: 204 }));
+    expect(await hook.result.current.startStoppedServices(["docs", "admin"])).toBeNull();
+    expect(mockFetch.fetch.mock.calls).toEqual([
+      [
+        "/__devhost__/start-service",
+        { body: JSON.stringify({ serviceNames: ["docs", "admin"] }), headers: worktreeRequestHeaders, method: "POST" },
+      ],
+    ]);
+
+    mockFetch.fetch.mockResolvedValueOnce(new Response("service docs is already started\n", { status: 500 }));
+    expect(await hook.result.current.startStoppedServices(["docs"])).toBe(
+      "Failed to start docs: service docs is already started",
+    );
   });
 
   test("applies the routing of a health message to the injected configuration", async () => {

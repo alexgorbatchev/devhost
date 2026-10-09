@@ -2,11 +2,14 @@ package services
 
 import "github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 
-func resolveReloadPorts(next manifest.Manifest, current ResolvedManifest) (ResolvedManifest, error) {
+func resolveReloadPorts(next manifest.Manifest, current ResolvedManifest, requested []string) (ResolvedManifest, error) {
 	fixed := collectFixedPorts(next.Services)
 	preserved := map[string]int{}
 	for name, service := range next.Services {
 		old, ok := current.Services[name]
+		if !ok {
+			old, ok = current.Stopped[name]
+		}
 		if !ok || service.Port == nil || !service.Port.Auto || old.PortSource != "auto" || old.Port == nil || old.BindHost != service.BindHost {
 			continue
 		}
@@ -14,11 +17,11 @@ func resolveReloadPorts(next manifest.Manifest, current ResolvedManifest) (Resol
 			preserved[name] = *old.Port
 		}
 	}
-	return resolveServicePorts(next, portResolutionOptions{Preserved: preserved})
+	return resolveServicePorts(next, portResolutionOptions{Preserved: preserved, Requested: requested})
 }
 
-func resolveStackRestartPorts(next manifest.Manifest, current ResolvedManifest) (ResolvedManifest, error) {
-	options := portResolutionOptions{Excluded: map[string]map[int]struct{}{}}
+func resolveStackRestartPorts(next manifest.Manifest, current ResolvedManifest, requested []string) (ResolvedManifest, error) {
+	options := portResolutionOptions{Excluded: map[string]map[int]struct{}{}, Requested: requested}
 	for _, service := range current.Services {
 		if service.Port == nil {
 			continue

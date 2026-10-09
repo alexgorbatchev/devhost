@@ -170,7 +170,11 @@ host = "hello.local.test"
 # `path` sets a subpath for mounting (e.g. "/api/*"). Defaults to "/".
 path = "/"
 # `dependsOn` declares services that must start before this service.
+# `devhost start web` starts this service and everything it reaches through `dependsOn`.
 dependsOn = ["api"]
+# `alwaysStart = true` starts a service on every `devhost start`, including one that names
+# other services (default: false). Set it on shared infrastructure such as a database.
+# alwaysStart = true
 # Relative watch paths use the service cwd and follow its selected worktree.
 # Absolute watch paths stay absolute. Changes mark the service dirty in the UI.
 watch = ["src/"]

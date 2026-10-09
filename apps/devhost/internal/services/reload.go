@@ -7,15 +7,57 @@ import (
 	"maps"
 	"path/filepath"
 	"reflect"
+	"slices"
+	"strings"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
 
+// configurationChange says how applyConfiguration differs from a plain reload.
+type configurationChange struct {
+	// restartStack relaunches every managed service with fresh automatic ports.
+	restartStack bool
+	// requested replaces the names of the services to run.
+	requested []string
+	// message is logged once the configuration is accepted.
+	message string
+}
+
 func (r *stackRuntime) reloadConfiguration(ctx context.Context, next manifest.Manifest) error {
 	r.operationMu.Lock()
 	defer r.operationMu.Unlock()
-	return r.applyConfiguration(ctx, next, false)
+	return r.applyConfiguration(ctx, next, configurationChange{requested: r.manifest.requested, message: "configuration reloaded"})
+}
+
+// startServices starts services this run left stopped, with the services they
+// depend on, and leaves the running ones untouched.
+func (r *stackRuntime) startServices(ctx context.Context, names []string) error {
+	r.operationMu.Lock()
+	defer r.operationMu.Unlock()
+	if err := r.checkReady(); err != nil {
+		return err
+	}
+	if r.configured == nil {
+		return fmt.Errorf("starting a service requires an accepted manifest")
+	}
+	for _, name := range names {
+		if _, started := r.manifest.Services[name]; started {
+			return fmt.Errorf("service %s is already started", name)
+		}
+		if _, stopped := r.manifest.Stopped[name]; !stopped {
+			return fmt.Errorf("unknown service: %s", name)
+		}
+	}
+	change := configurationChange{
+		requested: append(slices.Clone(r.manifest.requested), names...),
+		message:   fmt.Sprintf("started services: %s", strings.Join(names, ", ")),
+	}
+	err := r.applyConfiguration(ctx, *r.configured, change)
+	if err != nil {
+		r.logFailure("devhost", fmt.Errorf("starting %s failed: %w", strings.Join(names, ", "), err))
+	}
+	return err
 }
 
 func (r *stackRuntime) restartStack(ctx context.Context) error {
@@ -24,14 +66,15 @@ func (r *stackRuntime) restartStack(ctx context.Context) error {
 	if r.configured == nil {
 		return fmt.Errorf("stack restart requires an accepted manifest")
 	}
-	err := r.applyConfiguration(ctx, *r.configured, true)
+	err := r.applyConfiguration(ctx, *r.configured, configurationChange{restartStack: true, requested: r.manifest.requested, message: "stack restarted with new automatic ports"})
 	if err != nil {
 		r.logFailure("devhost", fmt.Errorf("stack restart failed: %w", err))
 	}
 	return err
 }
 
-func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Manifest, restartStack bool) error {
+func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Manifest, change configurationChange) error {
+	restartStack := change.restartStack
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -48,7 +91,7 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	if err := validateReloadBoundary(*r.configured, next); err != nil {
 		return err
 	}
-	if !restartStack && reflect.DeepEqual(*r.configured, next) {
+	if !restartStack && reflect.DeepEqual(*r.configured, next) && slices.Equal(r.manifest.requested, change.requested) {
 		return nil
 	}
 	order, err := ResolveServiceOrder(next)
@@ -59,7 +102,7 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	if restartStack {
 		resolvePorts = resolveStackRestartPorts
 	}
-	candidate, err := resolvePorts(next, *r.manifest)
+	candidate, err := resolvePorts(next, *r.manifest, change.requested)
 	if err != nil {
 		return err
 	}
@@ -172,12 +215,9 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	r.pendingReload = nil
 	r.manifestMu.Unlock()
 	r.publish()
-	message := "configuration reloaded"
-	if restartStack {
-		message = "stack restarted with new automatic ports"
-	}
-	writeLogLine(r.options.LogWriter, r.manifest.Name, message)
+	writeLogLine(r.options.LogWriter, r.manifest.Name, change.message)
 	LogServiceURLs(*r.manifest, r.options.LogWriter)
+	logStoppedServices(*r.manifest, r.options.LogWriter)
 	return r.releaseClaimsExcept(collectClaimedHosts(r.manifest.Services), manifestFixedPortClaims(*r.manifest))
 }
 
@@ -202,8 +242,8 @@ func (r *stackRuntime) startReloadServices(ctx context.Context, affected map[str
 			if err := ctx.Err(); err != nil {
 				return err
 			}
-			service := r.manifest.Services[name]
-			if r.blocked[name] != "" {
+			service, exists := r.manifest.Services[name]
+			if !exists || r.blocked[name] != "" {
 				continue
 			}
 			if err := r.watcher.StartWatching(name, service.Watch, service.Cwd); err != nil {

@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -338,6 +339,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 				},
 			},
 			RestartService:          func(names []string) error { return state.restart(lifecycleCtx, names) },
+			StartService:            func(names []string) error { return state.startServices(lifecycleCtx, names) },
 			RestartStack:            func() error { return state.restartStack(lifecycleCtx) },
 			SwitchWorktree:          switchWorktree,
 			RefreshWorktrees:        refreshWorktrees,
@@ -367,6 +369,9 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	for _, serviceName := range serviceOrder {
 		service, ok := manifest.Services[serviceName]
 		if !ok {
+			if _, stopped := manifest.Stopped[serviceName]; stopped {
+				continue
+			}
 			return 0, joinCleanupError(fmt.Errorf("unknown service: %s", serviceName), cleanupError)
 		}
 
@@ -433,6 +438,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		worktrees.finish(repo.ID, groupError)
 	}
 	LogServiceURLs(*manifest, options.LogWriter)
+	logStoppedServices(*manifest, options.LogWriter)
 
 	finalIdleTimeout := options.IdleTimeout
 	if finalIdleTimeout == 0 && manifest.Devtools.IdleTimeout != "" {
@@ -612,10 +618,12 @@ func CreateInjectedServiceEnvironment(manifest ResolvedManifest, service Resolve
 		environment["DEVHOST_PATH"] = *service.Path
 	}
 
-	for _, otherService := range manifest.Services {
-		if otherService.Port != nil {
-			envSafeName := toEnvSafeName(otherService.Name)
-			environment["DEVHOST_PORT_"+envSafeName] = fmt.Sprintf("%d", *otherService.Port)
+	for _, services := range []map[string]ResolvedService{manifest.Services, manifest.Stopped} {
+		for _, otherService := range services {
+			if otherService.Port != nil {
+				envSafeName := toEnvSafeName(otherService.Name)
+				environment["DEVHOST_PORT_"+envSafeName] = fmt.Sprintf("%d", *otherService.Port)
+			}
 		}
 	}
 
@@ -653,6 +661,33 @@ func LogServiceURLs(manifest ResolvedManifest, writer io.Writer) {
 			writeLogLine(writer, manifest.Name, fmt.Sprintf("%s: %s", displayName, serviceURL))
 		}
 	}
+}
+
+// logStoppedServices names the services a run that started only some of them left out.
+func logStoppedServices(manifest ResolvedManifest, writer io.Writer) {
+	if stopped := stoppedServiceNames(manifest); len(stopped) > 0 {
+		writeLogLine(writer, manifest.Name, fmt.Sprintf("not started: %s", strings.Join(stopped, ", ")))
+	}
+}
+
+// stoppedServiceNames returns the stopped services in manifest order.
+func stoppedServiceNames(manifest ResolvedManifest) []string {
+	var names []string
+	for _, serviceName := range manifest.ServiceOrder {
+		if _, ok := manifest.Stopped[serviceName]; ok && !slices.Contains(names, serviceName) {
+			names = append(names, serviceName)
+		}
+	}
+
+	var remaining []string
+	for serviceName := range manifest.Stopped {
+		if !slices.Contains(names, serviceName) {
+			remaining = append(remaining, serviceName)
+		}
+	}
+	sort.Strings(remaining)
+
+	return append(names, remaining...)
 }
 
 func orderedManifestServiceNames(manifest ResolvedManifest) []string {
@@ -1509,7 +1544,12 @@ func collectServicesHealth(manifest ResolvedManifest, startedServices []*started
 		})
 	}
 
-	return devtools.HealthResponse{Services: services}
+	var stoppedServices []devtools.StoppedService
+	for _, serviceName := range stoppedServiceNames(manifest) {
+		stoppedServices = append(stoppedServices, devtools.StoppedService{Name: serviceName})
+	}
+
+	return devtools.HealthResponse{Services: services, StoppedServices: stoppedServices}
 }
 
 func isManagedService(service ResolvedService) bool {

@@ -30,6 +30,7 @@
 # Hard validation rules:
 # - service names must match `^[a-z][a-z0-9-]*$`
 # - every service must define either `port` or `health`
+# - `alwaysStart = false` by default; `alwaysStart = true` starts the service on every `devhost start`, including one that names other services
 # - `managed = true` by default; `managed = false` means devhost must not start or restart that service
 # - daemon lifecycle services use `[services.<name>.lifecycle]` with `mode = "daemon"`
 # - daemon lifecycle services must keep `managed = true`, must omit top-level `command`, and must define `lifecycle.start` and `lifecycle.stop`
@@ -353,7 +354,7 @@ restartServices = "alt+ctrl+r"
 # - `services.preview` shows an externally managed routed service
 # - `services.mailpit` shows a managed daemon lifecycle service
 # - `services.cache.health` shows explicit TCP health
-# - `services.db` shows `port = "auto"`
+# - `services.db` shows `port = "auto"` and `alwaysStart`
 # - `services.worker.health` shows process health
 #
 # Health defaults still matter even when no explicit `[services.<name>.health]`
@@ -425,6 +426,7 @@ host = "hello.local.test"
 # - `services.api.host = "hello.local.test"`, `services.api.path = "/api/*"`
 # path = "/api/*"
 # `dependsOn` declares services that must start before this service.
+# `devhost start web` starts this service and everything it reaches through `dependsOn`.
 dependsOn = ["api"]
 # `watch` lists paths to watch for file changes; relative paths use the service cwd.
 # Relative watches follow a selected worktree; absolute watch paths remain unchanged.
@@ -534,6 +536,15 @@ timeout = 3000
 retries = 10
 
 [services.db]
+# `alwaysStart` controls whether the service starts when `devhost start` names other services.
+# - `false` (default): the service starts when it is named, when a started service depends on it,
+#   or when `devhost start` names no service at all.
+# - `true`: the service and everything it reaches through `dependsOn` start on every `devhost start`.
+# `devhost start web` starts web, its `dependsOn` chain, and every `alwaysStart` service. The
+# services left out hold no process, route, hostname, or port; start one later from
+# "Stopped services" in the devtools Services panel, which also starts what it depends on.
+# `devhost service list` prints every service name; `--startable` leaves out the `alwaysStart` ones.
+alwaysStart = true
 # `port = "auto"` is valid, but `health` must be omitted in v1.
 command = ["bun", "run", "db:dev"]
 cwd = "./db"

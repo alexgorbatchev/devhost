@@ -10,8 +10,8 @@ import {
   StorybookThemeProvider,
 } from "@/devtools/shared/components/stories/helpers";
 import { ServiceStatusPanel } from "../ServiceStatusPanel";
-import { exerciseHealthPollErrorContrast, WorktreePanelHarness } from "./helpers";
-import { factory_worktreeRepository, fixture_healthPollErrorServices } from "./fixtures";
+import { exerciseHealthPollErrorContrast, StoppedServicesPanelHarness, WorktreePanelHarness } from "./helpers";
+import { factory_worktreeRepository, fixture_healthPollErrorServices, fixture_stoppedServices } from "./fixtures";
 
 const meta: Meta<typeof ServiceStatusPanel> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/serviceStatusPanel/components/ServiceStatusPanel",
@@ -174,6 +174,74 @@ export const LightHealthPollErrorWithServices: Story = {
   globals: { [storybookDevtoolsThemeGlobalName]: "light" },
   play: async ({ args, canvasElement }): Promise<void> => {
     await exerciseHealthPollErrorContrast(canvasElement, args);
+  },
+};
+
+export const WithStoppedServices: Story = {
+  args: {
+    errorMessage: null,
+    services: [{ managed: true, name: "web", status: true }],
+    stoppedServices: fixture_stoppedServices.slice(0, 2),
+    onStartServices: fn(async () => null),
+  },
+  render: (args, context) =>
+    renderInDevtoolsStoryShadowRoot(
+      <StorybookThemeProvider globals={context.globals}>
+        <DevtoolsToolbar collapsedIndicator={null} isMinimapVisible={false} position="bottom-right" stackName="demo">
+          <StoppedServicesPanelHarness {...args} />
+        </DevtoolsToolbar>
+      </StorybookThemeProvider>,
+    ),
+  play: async ({ args, canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+
+    // Stopped services are not counted among the running ones.
+    await userEvent.click(await canvas.findByRole("button", { name: "Services: 1 of 1 up" }));
+    await waitFor(() => expect(canvas.getByRole("region", { name: "Services" })).toBeVisible());
+    await expect(canvas.queryByRole("button", { name: "Start docs" })).toBeNull();
+
+    await userEvent.click(canvas.getByRole("button", { name: "Stopped services (2)" }));
+    await waitFor(() => expect(canvas.getByRole("region", { name: "Stopped services" })).toBeVisible());
+    await expect(canvas.queryByRole("button", { name: "Restart web" })).toBeNull();
+
+    await userEvent.click(canvas.getByRole("button", { name: "Back to services" }));
+    await waitFor(() => {
+      const opener = canvas.getByRole("button", { name: "Stopped services (2)" });
+      expect(Reflect.get(opener.getRootNode(), "activeElement")).toBe(opener);
+    });
+
+    await userEvent.click(canvas.getByRole("button", { name: "Stopped services (2)" }));
+    await userEvent.click(await canvas.findByRole("button", { name: "Start docs" }));
+    await expect(args.onStartServices).toHaveBeenCalledWith(["docs"]);
+    await waitFor(() => expect(canvas.queryByRole("button", { name: "Start docs" })).toBeNull());
+    await expect(canvas.getByRole("button", { name: "Start admin" })).toBeEnabled();
+
+    // Starting the last stopped service returns to the services, where both now run.
+    await userEvent.click(canvas.getByRole("button", { name: "Start admin" }));
+    await waitFor(() => expect(canvas.getByRole("region", { name: "Services" })).toBeVisible());
+    await expect(canvas.getByRole("button", { name: "Services: 3 of 3 up" })).toBeVisible();
+    await expect(canvas.getByRole("button", { name: "Restart docs" })).toBeEnabled();
+    await expect(canvas.getByRole("button", { name: "Restart admin" })).toBeEnabled();
+    await expect(canvas.queryByRole("button", { name: /^Stopped services/ })).toBeNull();
+  },
+};
+
+export const StoppedServicesWhileRestarting: Story = {
+  args: {
+    errorMessage: null,
+    services: [{ managed: true, name: "web", restarting: true, status: true }],
+    stoppedServices: fixture_stoppedServices,
+    onStartServices: fn(async () => null),
+  },
+  play: async ({ args, canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+
+    await userEvent.click(await canvas.findByRole("button", { name: "Services: 1 of 1 up" }));
+    await userEvent.click(await canvas.findByRole("button", { name: "Stopped services (3)" }));
+    const start = await canvas.findByRole("button", { name: "Start docs" });
+    await waitFor(() => expect(start).toBeVisible());
+    await expect(start).toBeDisabled();
+    await expect(args.onStartServices).not.toHaveBeenCalled();
   },
 };
 

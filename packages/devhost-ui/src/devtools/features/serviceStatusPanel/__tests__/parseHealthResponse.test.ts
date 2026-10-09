@@ -32,8 +32,19 @@ describe("parseHealthResponse", () => {
     expect(parseHealthResponse(JSON.stringify(payload))).toEqual(payload);
   });
 
+  test("retains the services a run left stopped", () => {
+    const payload = {
+      services: [{ name: "web", managed: true, status: true }],
+      stoppedServices: [{ name: "docs" }, { name: "db" }],
+    };
+    expect(parseHealthResponse(JSON.stringify(payload))).toEqual(payload);
+  });
+
   test.each([
     "not json",
+    JSON.stringify({ services: [], stoppedServices: "docs" }),
+    JSON.stringify({ services: [], stoppedServices: ["docs"] }),
+    JSON.stringify({ services: [], stoppedServices: [{ name: 42 }] }),
     JSON.stringify({ services: [{ name: "web", managed: true, status: "up" }] }),
     JSON.stringify({ services: [], repositories: [{ id: "shop" }] }),
     JSON.stringify({ services: [], repositories: "shop" }),

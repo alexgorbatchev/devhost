@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 	"io"
+	"slices"
 	"testing"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
@@ -118,6 +119,48 @@ func TestParseCommandLineArguments(t *testing.T) {
 			want: CommandLineArguments{
 				Kind: KindStart,
 			},
+		},
+		{
+			name:    "parses the services to start",
+			rawArgs: []string{"start", "web", "api"},
+			want: CommandLineArguments{
+				Kind:     KindStart,
+				Services: []string{"web", "api"},
+			},
+		},
+		{
+			name:    "parses the services to start around flags",
+			rawArgs: []string{"start", "web", "--debug", "api"},
+			want: CommandLineArguments{
+				Kind:     KindStart,
+				Debug:    true,
+				Services: []string{"web", "api"},
+			},
+		},
+		{
+			name:    "parses service list",
+			rawArgs: []string{"service", "list"},
+			want: CommandLineArguments{
+				Kind: KindServiceList,
+			},
+		},
+		{
+			name:    "parses service list limited to startable services",
+			rawArgs: []string{"service", "list", "--startable"},
+			want: CommandLineArguments{
+				Kind:      KindServiceList,
+				Startable: true,
+			},
+		},
+		{
+			name:    "parses service list with explicit manifest",
+			rawArgs: []string{"service", "list", "-s", "--manifest", manifestPath},
+			want: CommandLineArguments{
+				Kind:         KindServiceList,
+				ManifestPath: &manifestPath,
+				Startable:    true,
+			},
+			comparePath: true,
 		},
 		{
 			name:    "parses start command with explicit manifest",
@@ -245,9 +288,19 @@ func TestParseCommandLineArguments(t *testing.T) {
 			wantError: "--manifest must point to a file named devhost.toml, received: ./other.toml",
 		},
 		{
-			name:      "rejects start positional arguments",
-			rawArgs:   []string{"start", "--manifest", manifestPath, "bun"},
-			wantError: "unknown command \"bun\" for \"devhost start\"",
+			name:      "rejects service list arguments",
+			rawArgs:   []string{"service", "list", "web"},
+			wantError: "unknown command \"web\" for \"devhost service list\"",
+		},
+		{
+			name:      "rejects an unknown service command",
+			rawArgs:   []string{"service", "lst"},
+			wantError: "unknown command \"lst\" for \"devhost service\"; did you mean \"list\"?",
+		},
+		{
+			name:      "rejects invalid service list manifest suffix",
+			rawArgs:   []string{"service", "list", "--manifest", "./other.toml"},
+			wantError: "--manifest must point to a file named devhost.toml, received: ./other.toml",
 		},
 		{
 			name:      "rejects stack flags on the root command",
@@ -289,7 +342,7 @@ func TestParseCommandLineArguments(t *testing.T) {
 				t.Fatalf("ParseCommandLineArguments(%q) unexpected error = %v", tc.rawArgs, err)
 			}
 
-			if got.Kind != tc.want.Kind || got.Action != tc.want.Action || got.SSHTarget != tc.want.SSHTarget || got.Debug != tc.want.Debug || got.IdleTimeout != tc.want.IdleTimeout {
+			if got.Kind != tc.want.Kind || got.Action != tc.want.Action || got.SSHTarget != tc.want.SSHTarget || got.Debug != tc.want.Debug || got.IdleTimeout != tc.want.IdleTimeout || got.Startable != tc.want.Startable || !slices.Equal(got.Services, tc.want.Services) {
 				t.Fatalf("ParseCommandLineArguments(%q) = %#v, want %#v", tc.rawArgs, got, tc.want)
 			}
 

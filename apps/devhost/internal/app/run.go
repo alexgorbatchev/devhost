@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"time"
 
@@ -38,6 +39,27 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 		}
 
 		return 0
+	case cli.KindServiceList:
+		manifestPath, err := resolveManifestPath(arguments.ManifestPath, cwd)
+		if err != nil {
+			return fail(stderr, err)
+		}
+
+		rawManifest, readError := manifest.ReadManifest(manifestPath)
+		if readError != nil {
+			return fail(stderr, describeManifestReadError(manifestPath, readError))
+		}
+
+		validatedManifest, validateError := manifest.ValidateManifest(manifestPath, rawManifest)
+		if validateError != nil {
+			return fail(stderr, validateError)
+		}
+
+		if err := writeServiceNames(stdout, validatedManifest, arguments.Startable); err != nil {
+			return fail(stderr, err)
+		}
+
+		return 0
 	case cli.KindStart:
 		manifestPath, err := resolveManifestPath(arguments.ManifestPath, cwd)
 		if err != nil {
@@ -58,12 +80,16 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			return fail(stderr, err)
 		}
 
+		if err := services.ValidateRequestedServices(validatedManifest, arguments.Services); err != nil {
+			return fail(stderr, &cliout.Failure{Err: err, Hint: "Run \"devhost service list\" to print the service names."})
+		}
+
 		serviceOrder, orderError := services.ResolveServiceOrder(validatedManifest)
 		if orderError != nil {
 			return fail(stderr, orderError)
 		}
 
-		resolvedManifest, resolveError := services.ResolveServicePorts(validatedManifest)
+		resolvedManifest, resolveError := services.ResolveRequestedServicePorts(validatedManifest, arguments.Services)
 		if resolveError != nil {
 			return fail(stderr, resolveError)
 		}
@@ -187,6 +213,29 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 func fail(stderr io.Writer, err error) int {
 	cliout.WriteFailure(stderr, err)
 	return 1
+}
+
+// writeServiceNames prints the service names of the manifest in alphabetical
+// order, one per line in both output modes so the list can be piped.
+// startableOnly leaves out the services that start whether or not devhost start
+// names them.
+func writeServiceNames(stdout io.Writer, value manifest.Manifest, startableOnly bool) error {
+	names := make([]string, 0, len(value.Services))
+	for name, service := range value.Services {
+		if startableOnly && service.AlwaysStart {
+			continue
+		}
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	for _, name := range names {
+		if _, err := fmt.Fprintln(stdout, name); err != nil {
+			return fmt.Errorf("writing service names: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // resolveManifestPath returns the manifest a command names or, when it names

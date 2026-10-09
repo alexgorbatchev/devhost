@@ -1,7 +1,7 @@
 import { useCallback, useState, type ComponentProps, type JSX } from "react";
 import { expect, userEvent, waitFor } from "storybook/test";
 
-import type { IWorktreeRepository } from "../../../../shared/types";
+import type { IStoppedService, IWorktreeRepository, ServiceHealth } from "../../../../shared/types";
 import { readDevtoolsStoryShadowCanvas } from "../../../../shared/components/stories/helpers";
 import { ServiceStatusPanel } from "../ServiceStatusPanel";
 
@@ -87,4 +87,27 @@ export function WorktreePanelHarness(args: ServiceStatusPanelProps): JSX.Element
     [onSwitchWorktree],
   );
   return <ServiceStatusPanel {...args} repositories={repositories} onSwitchWorktree={onSwitch} />;
+}
+
+/** Plays devhost's part after a start: a started service leaves the stopped list and joins the running ones. */
+export function StoppedServicesPanelHarness(args: ServiceStatusPanelProps): JSX.Element {
+  const [services, setServices] = useState<ServiceHealth[]>(args.services);
+  const [stoppedServices, setStoppedServices] = useState<IStoppedService[]>(args.stoppedServices ?? []);
+  const { onStartServices } = args;
+  const onStart = useCallback(
+    async (serviceNames: string[]): Promise<string | null> => {
+      const error = (await onStartServices?.(serviceNames)) ?? null;
+      if (error !== null) return error;
+      setStoppedServices((current) => current.filter((service) => !serviceNames.includes(service.name)));
+      setServices((current) => [
+        ...current,
+        ...serviceNames.map((name): ServiceHealth => ({ managed: true, name, status: true })),
+      ]);
+      return null;
+    },
+    [onStartServices],
+  );
+  return (
+    <ServiceStatusPanel {...args} services={services} stoppedServices={stoppedServices} onStartServices={onStart} />
+  );
 }

@@ -3,6 +3,7 @@ import type {
   IWorktree,
   IWorktreeDirectory,
   ServiceHealth,
+  IStoppedService,
   IWorktreeRepository,
   IRoutingConfig,
 } from "../../shared/types";
@@ -22,9 +23,11 @@ function isHealthResponse(value: unknown): value is HealthResponse {
   const services: unknown = Reflect.get(value, "services");
   const repositories: unknown = Reflect.get(value, "repositories");
   const routing: unknown = Reflect.get(value, "routing");
+  const stoppedServices: unknown = Reflect.get(value, "stoppedServices");
   return (
     Array.isArray(services) &&
     services.every(isServiceHealth) &&
+    (stoppedServices === undefined || (Array.isArray(stoppedServices) && stoppedServices.every(isStoppedService))) &&
     (routing === undefined || isRoutingConfig(routing)) &&
     (repositories === undefined || (Array.isArray(repositories) && repositories.every(isRepository)))
   );
@@ -58,6 +61,10 @@ function isServiceHealth(value: unknown): value is ServiceHealth {
     optional(value, "exitCode", "number") &&
     optional(value, "projectRootPath", "string")
   );
+}
+
+function isStoppedService(value: unknown): value is IStoppedService {
+  return typeof value === "object" && value !== null && typeof Reflect.get(value, "name") === "string";
 }
 
 function isRepository(value: unknown): value is IWorktreeRepository {

@@ -27,8 +27,10 @@ func TestParseCommandLineArgumentsRendersTreeHelp(t *testing.T) {
 				"├─ completion",
 				"│  ├─ bash",
 				"│  ╰─ zsh",
+				"├─ service",
+				"│  ╰─ list",
 				"├─ skill",
-				"├─ start",
+				"├─ start [service...]",
 				"╰─ stop",
 				"--version",
 			},
@@ -55,6 +57,8 @@ func TestParseCommandLineArgumentsRendersTreeHelp(t *testing.T) {
 			name:    "start help documents every stack flag and environment variable",
 			rawArgs: []string{"start", "-h"},
 			wantAll: []string{
+				"devhost start [service...] [flags]",
+				"[service...]          Services to start; all of them when none is named",
 				"--manifest",
 				"-d, --debug",
 				"--idle-timeout",
@@ -62,6 +66,18 @@ func TestParseCommandLineArgumentsRendersTreeHelp(t *testing.T) {
 				"DEVHOST_IDLE_TIMEOUT",
 			},
 			wantMissing: []string{"--verbose"},
+		},
+		{
+			name:        "service help lists its commands",
+			rawArgs:     []string{"service"},
+			wantAll:     []string{"devhost service [flags] [command]", "╰─ list"},
+			wantMissing: []string{"├─ caddy", "--manifest"},
+		},
+		{
+			name:        "service list help documents its flags",
+			rawArgs:     []string{"service", "list", "--help"},
+			wantAll:     []string{"--manifest", "DEVHOST_MANIFEST", "-s, --startable"},
+			wantMissing: []string{"--debug", "--idle-timeout"},
 		},
 		{
 			name:        "stop help lists only the manifest flag",
@@ -183,7 +199,9 @@ func TestParseCommandLineArgumentsAgentHelpListsTheWholeTree(t *testing.T) {
 		"    - trust-remote <ssh-target>: Trust another machine's Caddy certificate over SSH (macOS)\n",
 		"  - completion: ",
 		"    - zsh: ",
-		"  - start: Start every service in devhost.toml\n",
+		"  - service: Inspect the services in devhost.toml\n",
+		"    - list: Print the service names in devhost.toml\n",
+		"  - start [service...]: Start the services in devhost.toml\n",
 		"  - stop: Stop the running stack for this project\n",
 	} {
 		if !strings.Contains(stdout.String(), want) {
