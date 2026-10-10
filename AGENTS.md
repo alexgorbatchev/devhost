@@ -26,6 +26,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Run recording workflow unit tests: `just demo test` (also included in `just ui check`).
 - Refresh all public guide demos: `just demo guides` (or `just demo guides annotations` for one guide). This updates tracked docs media and the guide's first video block; review before committing.
 - Start the root devhost stack locally: `just dev`
+- Preview startup timeout and recovery pages: `just devhost demo-recovery`; configure `DEVHOST_RECOVERY` through `.envrc` / `.envrc.local`.
 - Start the docs site locally: `just docs` (or `just docs dev`)
 - Open the injected devtools UI design reference (`packages/design/references/devtools.html`) in the default browser: `just design devtools`
 - Open the docs site design reference (`packages/design/references/docs.html`) in the default browser: `just design docs`

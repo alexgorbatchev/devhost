@@ -20,6 +20,10 @@ run *args: build-devtools-bundle
 run-ai *args: build-devtools-bundle
     AGENT=1 {{source_directory()}}/scripts/runFromSource.sh {{args}}
 
+# Preview startup and recovery pages with a deliberately unhealthy service
+demo-recovery: build-devtools-bundle
+    ./scripts/runFromSource.sh start --manifest ../../demos/recovery/devhost.toml
+
 # Run Go tests
 test: build-devtools-bundle
     go test ./...
