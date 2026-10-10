@@ -17,6 +17,10 @@ export const fixture_mixedLevelUsage: IResourceUsage = {
   memory: { percent: 81.6, totalBytes: totalMemoryBytes, usedBytes: 26_100_000_000 },
 };
 
-export function factory_cpuUsage(percent: number): IResourceUsage {
-  return { ...fixture_calmUsage, cpu: { cores: 8, percent } };
+export function factory_uniformUsage(percent: number): IResourceUsage {
+  return {
+    cpu: { cores: 8, percent },
+    memory: { percent, totalBytes: totalMemoryBytes, usedBytes: (totalMemoryBytes * percent) / 100 },
+    disk: { percent, totalBytes: totalDiskBytes, usedBytes: (totalDiskBytes * percent) / 100 },
+  };
 }

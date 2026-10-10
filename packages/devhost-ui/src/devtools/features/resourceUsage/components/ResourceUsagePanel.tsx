@@ -30,7 +30,7 @@ export function ResourceUsagePanel({ usage }: IResourceUsagePanelProps): JSX.Ele
       {readouts.map((readout: IResourceReadout) => (
         <span
           key={readout.key}
-          className="group/readout flex items-center gap-1 not-last:pr-1"
+          className="flex items-center gap-1 not-last:pr-1"
           data-testid="ResourceUsagePanel--readout"
           title={`${readout.label}: ${readout.detail}`}
         >
@@ -47,14 +47,9 @@ export function ResourceUsagePanel({ usage }: IResourceUsagePanelProps): JSX.Ele
           >
             {readout.percent}%
           </meter>
-          {/* Room for "100%" keeps the toolbar from shifting as a value changes; the last value ends the segment. */}
-          <span
-            className={cn(
-              "min-w-[4ch] tabular-nums group-last/readout:min-w-0",
-              readout.level === "danger" && "font-semibold",
-            )}
-          >
-            {readout.percent}%
+          {/* Reserve every value's width independently of the critical number's heavier font metrics. */}
+          <span className="w-[4ch] shrink-0 tabular-nums">
+            <span className={cn(readout.level === "danger" && "font-semibold")}>{readout.percent}%</span>
           </span>
         </span>
       ))}
