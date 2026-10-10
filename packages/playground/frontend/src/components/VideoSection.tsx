@@ -1,5 +1,5 @@
 import { useId, type JSX } from "react";
-import type { IDemoVideo } from "../types";
+import type { DemoVideoState, IDemoVideo } from "../types";
 
 interface IVideoSectionProps {
   heading: string;
@@ -8,6 +8,13 @@ interface IVideoSectionProps {
   emptyMessage: string;
   videos: IDemoVideo[];
 }
+
+const STATE_LABELS: Record<DemoVideoState, string> = {
+  local: "Local render",
+  published: "Published",
+  unpublished: "Not published yet",
+  remote: "Playing from GitHub",
+};
 
 function describeFile(video: IDemoVideo): string {
   const size = `${(video.bytes / 1_000_000).toFixed(1)} MB`;
@@ -34,8 +41,10 @@ export function VideoSection({ heading, layout, emptyMessage, videos }: IVideoSe
                 </video>
                 <figcaption>
                   <strong>{video.title}</strong>
+                  <span className={`video-state video-state--${video.state}`}>{STATE_LABELS[video.state]}</span>
                   <span>{describeFile(video)}</span>
-                  <a href={video.src}>Open the file</a>
+                  {video.state !== "remote" && <a href={video.src}>Open the file</a>}
+                  {video.publishedSrc !== undefined && <a href={video.publishedSrc}>Published copy on GitHub</a>}
                 </figcaption>
               </figure>
             </li>

@@ -35,11 +35,10 @@ Both devtools remain mounted across route changes and are included in developmen
 
 ## Demo videos
 
-**Demo videos** in the second navigation row opens `/videos`, which plays the demo videos of the checkout the stack runs from:
+**Demo videos** in the second navigation row opens `/videos`, which plays every current demo once:
 
-- **Recordings**: the rendered `devhost-demo.mp4` of every `.tmp/demos/recording-*` run, latest render first. `just demo record` and `just demo promo` write them.
-- **Guide demos**: the videos under `packages/docs/public/demos/`, with their posters and captions. Git does not track those videos; `just docs media` downloads the published ones, and `just demo guides` writes new renders there.
-- **Published on GitHub**: every video pinned in `packages/docs/demo-media.json`, played straight from the GitHub media release. `just docs publish-media` uploads a video there, so this section shows what the published site will serve.
+- **Promo**: the latest promo render in `.tmp/demos/`, which `just demo record` and `just demo promo` write. Earlier renders and runs of a single scene or guide are not listed.
+- **Guides**: one card per guide. It plays the video under `packages/docs/public/demos/` and marks it **Published** when that file is the one pinned in `packages/docs/demo-media.json`, or **Not published yet** when it is a render `just docs publish-media` has not uploaded. A guide that is pinned but not on disk plays straight from the GitHub media release. Each pinned guide links to its published copy.
 
 The frontend server reads the disk on each request, so reload the page after a new render. It serves only the listed video, poster, and caption files, under `/demo-videos/`.
 
