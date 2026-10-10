@@ -15,6 +15,9 @@ import (
 // stackRuntime owns process state. Startup and lifecycle operations are serialized;
 // the health stream reads snapshots while commands and probes run outside these locks.
 type stackRuntime struct {
+	starting          map[string]bool
+	failures          map[string]string
+	startupComplete   bool
 	configured        *manifest.Manifest
 	pendingReload     map[string]devtools.ServiceHealth
 	routing           devtools.RoutingConfig
@@ -49,6 +52,8 @@ func (r *stackRuntime) health() (devtools.HealthResponse, error) {
 	m := *r.manifest
 	worktrees := r.worktrees
 	pending := maps.Clone(r.pendingReload)
+	failures := maps.Clone(r.failures)
+	starting := maps.Clone(r.starting)
 	routing := r.routing
 	r.startedMu.Lock()
 	started := append([]*startedService{}, r.started...)
@@ -66,7 +71,7 @@ func (r *stackRuntime) health() (devtools.HealthResponse, error) {
 		if previous, exists := pending[s.Name]; exists {
 			s.Status, s.Restarting, s.ExitCode = false, true, previous.ExitCode
 		}
-		if blocked[s.Name] != "" {
+		if blocked[s.Name] != "" || failures[s.Name] != "" || starting[s.Name] {
 			s.Status = false
 		}
 		for _, repo := range h.Repositories {
@@ -166,6 +171,12 @@ func (r *stackRuntime) restart(ctx context.Context, serviceNames []string) error
 }
 
 func (r *stackRuntime) stop(name string) error {
+	r.manifestMu.Lock()
+	if r.starting == nil {
+		r.starting = map[string]bool{}
+	}
+	r.starting[name] = true
+	r.manifestMu.Unlock()
 	if failed := r.failedRoutes[name]; failed != nil {
 		if err := stopStartedService(failed, r.gracePeriod); err != nil {
 			return fmt.Errorf("clean up previous unrouted replacement: %w", err)
@@ -214,7 +225,26 @@ type runtimeStartOptions struct {
 	AllowPortReassignment bool
 }
 
-func (r *stackRuntime) start(ctx context.Context, name string, options runtimeStartOptions) error {
+func (r *stackRuntime) start(ctx context.Context, name string, options runtimeStartOptions) (returnedError error) {
+	r.manifestMu.Lock()
+	if r.starting == nil {
+		r.starting = map[string]bool{}
+	}
+	r.starting[name] = true
+	delete(r.failures, name)
+	r.manifestMu.Unlock()
+	defer func() {
+		r.manifestMu.Lock()
+		delete(r.starting, name)
+		if returnedError != nil {
+			if r.failures == nil {
+				r.failures = map[string]string{}
+			}
+			r.failures[name] = returnedError.Error()
+		}
+		r.manifestMu.Unlock()
+		r.publish()
+	}()
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -247,6 +277,12 @@ func (r *stackRuntime) start(ctx context.Context, name string, options runtimeSt
 		}
 	}
 	if err != nil {
+		if started != nil && started.ReadExitCode() != nil {
+			r.startedMu.Lock()
+			r.started = removeStartedService(r.started, findStartedService(r.started, name))
+			r.started = append(r.started, started)
+			r.startedMu.Unlock()
+		}
 		return err
 	}
 	r.manifestMu.Lock()
@@ -261,6 +297,9 @@ func (r *stackRuntime) start(ctx context.Context, name string, options runtimeSt
 }
 
 func (r *stackRuntime) clearRestarting(name string) {
+	r.manifestMu.Lock()
+	delete(r.starting, name)
+	r.manifestMu.Unlock()
 	r.startedMu.Lock()
 	if s := findStartedService(r.started, name); s != nil {
 		s.setRestarting(false)

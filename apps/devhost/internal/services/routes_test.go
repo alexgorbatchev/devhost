@@ -70,16 +70,12 @@ func TestStackRoutesRestoresDocumentBackendOnReloadFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 	m := newResolvedManifest(t.TempDir(), admin)
-	control, err := devtools.StartControlServer(devtools.StartControlServerOptions{GetHealthResponse: func() (devtools.HealthResponse, error) { return collectServicesHealth(m, nil, nil), nil }})
+	routes := stackRoutes{manifest: m, paths: paths, runtime: &stackRuntime{manifest: &m}, documentServers: map[string]*devtools.DocumentInjectionServer{}, active: map[string]caddy.ActivateRouteOptions{}}
+	settings, err := caddy.ReadManagedCaddyGlobalSettings(paths, caddy.ManagedCaddyConfigFallback{AdminAddress: admin})
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer control.Stop()
-	routes := stackRoutes{manifest: m, paths: paths, controlServer: control, documentServers: map[string]*devtools.DocumentInjectionServer{}, active: map[string]caddy.ActivateRouteOptions{}}
-	routes.settings, err = caddy.ReadManagedCaddyGlobalSettings(paths, caddy.ManagedCaddyConfigFallback{AdminAddress: admin})
-	if err != nil {
-		t.Fatal(err)
-	}
+	routes.settings = settings
 	backend := func(text string) *httptest.Server {
 		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("content-type", "text/html")
@@ -90,6 +86,8 @@ func TestStackRoutesRestoresDocumentBackendOnReloadFailure(t *testing.T) {
 	defer oldBackend.Close()
 	defer newBackend.Close()
 	service := ResolvedService{Name: "web", Hosts: []string{"recover.localhost", "alias.recover.localhost"}, BindHost: "127.0.0.1", Port: intPointer(oldBackend.Listener.Addr().(*net.TCPAddr).Port), ProxyLocalOrigin: true}
+	service.Health = ResolvedHealthConfig{Kind: HealthKindTCP, Host: stringPointer("127.0.0.1"), Port: service.Port}
+	m.Services[service.Name] = service
 	if err := routes.activate(service); err != nil {
 		t.Fatal(err)
 	}

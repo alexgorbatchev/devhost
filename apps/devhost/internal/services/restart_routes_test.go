@@ -144,14 +144,14 @@ func restartWithRoutingGate(t *testing.T, options devtools.StartControlServerOpt
 	if health.Services[0].Status || !health.Services[0].Restarting {
 		t.Fatalf("recovery cleared before routing: %#v", health.Services[0])
 	}
-	// Documents already target the healthy replacement, while health remains pending.
+	// The recovery document remains visible until routing accepts the replacement.
 	response, err := http.Get(serverURL(documentPort, "/"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	response.Body.Close()
-	if response.StatusCode != http.StatusOK {
-		t.Fatalf("replacement document backend not ready: %d", response.StatusCode)
+	if response.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("replacement escaped recovery before routing completed: %d", response.StatusCode)
 	}
 	if err := os.Remove(gate); err != nil {
 		t.Fatal(err)

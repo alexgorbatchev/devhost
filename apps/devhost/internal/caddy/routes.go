@@ -667,7 +667,8 @@ func renderHostRouteSiteBlock(
 		lines = append(lines, "")
 	}
 	if rootRegistration != nil {
-		if rootRegistration.DevtoolsControlPort != nil && rootRegistration.DocumentInjectionPort != nil {
+		if rootRegistration.DocumentInjectionPort != nil {
+			lines = append(lines, renderRecoveryProxyHandleLines(*rootRegistration)...)
 			documentLines, err := renderDocumentProxyHandleLines(*rootRegistration)
 			if err != nil {
 				return nil, err
@@ -729,8 +730,28 @@ func renderServiceHandle(registration routeRegistration) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	lines := append([]string{fmt.Sprintf("    handle %s {", registration.Path)}, indentProxyLines(proxyLines, 8)...)
+	lines := []string{fmt.Sprintf("    handle %s {", registration.Path)}
+	if registration.DocumentInjectionPort != nil {
+		lines = append(lines, indentProxyLines(renderRecoveryProxyHandleLines(registration), 8)...)
+		documentLines, err := renderDocumentProxyHandleLines(registration)
+		if err != nil {
+			return nil, err
+		}
+		lines = append(lines, indentProxyLines(documentLines, 8)...)
+		lines = append(lines, "        handle {")
+		lines = append(lines, indentProxyLines(proxyLines, 12)...)
+		lines = append(lines, "        }")
+	} else {
+		lines = append(lines, indentProxyLines(proxyLines, 8)...)
+	}
 	return append(lines, "    }"), nil
+}
+
+func renderRecoveryProxyHandleLines(registration routeRegistration) []string {
+	// Recovery requests retain the browser's public Origin for mutation checks;
+	// proxyLocalOrigin translation applies only to traffic forwarded to the app.
+	matcher := "@devhost_recovery_" + registration.ServiceName
+	return renderNamedProxyHandleLines(matcher+" header X-Devhost-Recovery *", matcher, *registration.DocumentInjectionPort)
 }
 
 func readAppTarget(registration routeRegistration) (string, error) {

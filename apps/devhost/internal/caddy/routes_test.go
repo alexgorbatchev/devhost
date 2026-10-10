@@ -519,7 +519,7 @@ func TestRenderHostRouteSnippet(t *testing.T) {
 	if !strings.Contains(snippet, "tls internal") {
 		t.Fatalf("renderHostRouteSnippet(...) missing internal tls = %q", snippet)
 	}
-	if !strings.Contains(snippet, "@devhost_control path /__devhost__/*") || !strings.Contains(snippet, "@devhost_document header Sec-Fetch-Dest document") {
+	if !strings.Contains(snippet, "@devhost_control path /__devhost__/*") || !strings.Contains(snippet, "@devhost_document_web header Sec-Fetch-Dest document") {
 		t.Fatalf("renderHostRouteSnippet(...) missing devtools handlers = %q", snippet)
 	}
 	if !strings.Contains(snippet, "reverse_proxy 127.0.0.1:3000") {

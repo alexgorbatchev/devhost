@@ -142,6 +142,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	lifecycleCtx, cancelLifecycle := context.WithCancel(context.Background())
 	defer cancelLifecycle()
 	state := &stackRuntime{
+		starting: map[string]bool{}, failures: map[string]string{},
 		configured: options.Configuration,
 		routing:    devtools.RoutingConfig{RoutedServices: collectRoutedServiceIdentities(initial.Services), PrimaryService: initial.PrimaryService},
 		manifest:   manifest, order: append([]string{}, serviceOrder...), options: options, environment: environment,
@@ -154,6 +155,13 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	var cleanupError error
 	shutdownProgress := newShutdownProgress(options.LogWriter, manifest.Name)
 	routes := stackRoutes{manifest: *manifest, paths: paths, outputWriters: options.CaddyOutputWriters, documentServers: documentInjectionServers, active: map[string]caddy.ActivateRouteOptions{}}
+	routes.runtime, routes.injectDevtools = state, devtoolsEnabled
+	routes.restartService = func(name string) error { return state.restart(lifecycleCtx, []string{name}) }
+	for name, service := range manifest.Services {
+		if isManagedService(service) {
+			state.starting[name] = true
+		}
+	}
 
 	dirtyTracker := NewDirtyTracker()
 	onDirty := func(serviceName string) {
@@ -180,8 +188,30 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		HTTPSPort:    manifest.Caddy.Global.HTTPSPort,
 		RuntimeOS:    runtime.GOOS,
 	}
-	registerProcessSignals(signalExits)
-	defer unregisterProcessSignals(signalExits)
+	processSignals := make(chan os.Signal, 1)
+	registerProcessSignals(processSignals)
+	defer unregisterProcessSignals(processSignals)
+	signalForwardingDone := make(chan struct{})
+	go func() {
+		defer close(signalForwardingDone)
+		select {
+		case receivedSignal := <-processSignals:
+			signalExits <- receivedSignal
+			cancelLifecycle()
+		case <-lifecycleCtx.Done():
+		}
+	}()
+	defer func() {
+		cancelLifecycle()
+		<-signalForwardingDone
+		if errors.Is(returnedError, context.Canceled) && cleanupError == nil {
+			select {
+			case sig := <-signalExits:
+				exitCode, returnedError = readSignalExitCode(sig), nil
+			default:
+			}
+		}
+	}()
 
 	defer func() {
 		cancelLifecycle()
@@ -325,7 +355,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	}
 
 	routedServices := collectRoutedServiceIdentities(manifest.Services)
-	if devtoolsEnabled {
+	if devtoolsEnabled || len(routedServices) > 0 {
 		devSource, err := loadDevSourceCheckout(environment, manifest.ManifestDirectoryPath)
 		if err != nil {
 			return 0, joinCleanupError(err, cleanupError)
@@ -383,6 +413,11 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		state.controlMu.Unlock()
 		routes.controlServer = controlServer
 	}
+	// Publish every selected route before any child waits for health. The document
+	// listener serves lifecycle state until both health and routing are ready.
+	if err := routes.replace(*manifest); err != nil {
+		return 0, joinCleanupError(err, cleanupError)
+	}
 
 	groupedServices := map[string]bool{}
 	for _, repo := range worktrees.snapshot() {
@@ -401,41 +436,26 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 
 		if isManagedService(service) && blocked[serviceName] == "" {
 			if groupedServices[serviceName] {
-				if err := state.start(lifecycleCtx, serviceName, runtimeStartOptions{AllowPortReassignment: true}); err != nil {
+				if err := state.start(lifecycleCtx, serviceName, runtimeStartOptions{RefreshRoute: true, AllowPortReassignment: true}); err != nil {
 					if err := state.failWorktreeStartup(serviceName, err); err != nil {
 						return 0, err
 					}
 				}
 				service = manifest.Services[serviceName]
-			} else if usesDaemonLifecycle(service) {
-				if err := startDaemonLifecycleService(lifecycleCtx, manifest, serviceName, options, environment, devtoolsControlServer); err != nil {
-					return 0, joinCleanupError(err, cleanupError)
-				}
-
-				state.daemonMu.Lock()
-				state.daemons = append(state.daemons, daemonLifecycleService{service: manifest.Services[serviceName]})
-				state.daemonMu.Unlock()
-
-				service = manifest.Services[serviceName]
 			} else {
-				attemptManifest := *manifest
-				started, err := startServiceWithRetries(lifecycleCtx, &attemptManifest, serviceStartOptions{ServiceName: serviceName, Exits: state.exits, Stack: options, Environment: environment, Control: devtoolsControlServer, AllowPortReassignment: true})
-				if err != nil {
-					if started == nil || started.ReadExitCode() == nil {
-						return 0, joinCleanupError(err, cleanupError)
+				if err := state.start(lifecycleCtx, serviceName, runtimeStartOptions{RefreshRoute: true, AllowPortReassignment: true}); err != nil {
+					if lifecycleCtx.Err() != nil {
+						return 0, err
 					}
-					writeLogLine(options.LogWriter, manifest.Name, err.Error())
-					state.exits <- serviceExitResult{exitCode: started.exitCodeValue(), serviceName: serviceName}
+					state.logFailure(serviceName, err)
+					state.startedMu.Lock()
+					started := findStartedService(state.started, serviceName)
+					state.startedMu.Unlock()
+					if started != nil && started.unexpectedExitCode() != nil {
+						state.exits <- serviceExitResult{exitCode: *started.unexpectedExitCode(), serviceName: serviceName}
+					}
 				}
-
-				state.manifestMu.Lock()
-				manifest.Services = attemptManifest.Services
-				state.startedMu.Lock()
-				state.started = append(state.started, started)
-				state.startedMu.Unlock()
-				state.manifestMu.Unlock()
-
-				service = started.service
+				service = manifest.Services[serviceName]
 			}
 		}
 
@@ -447,9 +467,6 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			writeLogLine(options.LogWriter, manifest.Name, warning)
 		}
 
-		if err := routes.activate(service); err != nil {
-			return 0, joinCleanupError(err, cleanupError)
-		}
 	}
 	for _, repo := range worktrees.snapshot() {
 		var groupError error
@@ -564,6 +581,9 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	state.operationMu.Lock()
 	state.ready = true
 	state.operationMu.Unlock()
+	state.manifestMu.Lock()
+	state.startupComplete = true
+	state.manifestMu.Unlock()
 	lastReloadError := ""
 	stackName := manifest.Name
 	var reloadResults <-chan error

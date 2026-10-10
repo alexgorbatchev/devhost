@@ -583,6 +583,18 @@ func (s *ControlServer) publishHealth(newClient *websocketClient) error {
 	return nil
 }
 
+func (s *ControlServer) ServiceLogLines(serviceName string) []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var lines []string
+	for _, entry := range s.retainedLogEntries {
+		if entry.ServiceName == serviceName {
+			lines = append(lines, entry.Line)
+		}
+	}
+	return lines
+}
+
 func (s *ControlServer) PublishLogEntry(serviceName string, stream ServiceLogStream, line string) {
 	if s.isClosed() {
 		return
