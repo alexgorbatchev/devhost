@@ -2554,15 +2554,15 @@
       function renderServicesPanel() {
         if (state.stoppedServicesOpen && state.stoppedServices.length > 0) return renderStoppedServices();
         if (state.worktreesEnabled && state.worktreePicker !== null) return renderWorktreePicker();
-        const externalServices = state.services.filter(
+        const ungroupedServices = state.services.filter(
           (service) => !state.repositories.some((repo) => service.name in repo.serviceDirectories),
         );
         const rows = state.worktreesEnabled
           ? state.repositories.map(renderRepositoryGroup).join("") +
-            (externalServices.length > 0
-              ? `<section class="repo-group"><header class="repo-head"><span class="muted">External services</span></header>${renderServiceRows(externalServices)}</section>`
+            (ungroupedServices.length > 0
+              ? `<section class="repo-group">${renderServiceLists(ungroupedServices)}</section>`
               : "")
-          : renderServiceRows(state.services);
+          : renderServiceLists(state.services);
         return {
           width: state.worktreesEnabled ? 380 : 300,
           label: "Services",
@@ -2574,6 +2574,23 @@
             ${state.serviceError ? renderNotice(state.serviceError, "dismiss-service-error") : ""}
             <div class="panel-body">${rows}${renderStoppedServicesEntry()}${renderStackRestart()}</div>`,
         };
+      }
+
+      function renderServiceLists(services, repository) {
+        const collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
+        const sorted = services.toSorted((first, second) => collator.compare(first.name, second.name));
+        return [
+          { label: "Applications", services: sorted.filter((service) => service.url !== undefined) },
+          { label: "Services", services: sorted.filter((service) => service.url === undefined) },
+        ]
+          .filter((group) => group.services.length > 0)
+          .map(
+            (group) => `<div class="repo-group">
+            <h3 class="repo-head" style="margin:0;font-size:inherit">${group.label}</h3>
+            <ul aria-label="${group.label}" style="margin:0;padding:0;list-style:none">${renderServiceRows(group.services, repository)}</ul>
+          </div>`,
+          )
+          .join("");
       }
 
       function renderServiceRows(services, repository) {
@@ -2594,11 +2611,11 @@
                   ${icon("restart", service.restarting ? "spin" : "")}</button>`
               : "";
             return `
-              <div class="row ${service.status ? "" : "down"}">
+              <li class="row ${service.status ? "" : "down"}">
                 <span class="dot ${serviceDotClass(service)}" aria-hidden="true"></span>
                 <span class="sr-only">${serviceStateText(service)}</span>
                 ${name}${tags}${restart}
-              </div>`;
+              </li>`;
           })
           .join("");
       }
@@ -2622,7 +2639,7 @@
               ${icon("branch")}<span class="trunc">${esc(worktreeLabel(repository, repository.selectedPath))}</span>${icon("chevDown")}
             </button>
           </header>
-          ${renderServiceRows(repositoryServices(repository), repository)}
+          ${renderServiceLists(repositoryServices(repository), repository)}
         </section>`;
       }
 

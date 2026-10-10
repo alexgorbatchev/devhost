@@ -57,6 +57,8 @@ const serviceStateLabels: Record<ServiceDotState, string> = {
   restarting: "restarting",
 };
 
+const serviceNameCollator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
+
 export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element | null {
   const { homeDirectoryPath, restartServicesShortcut } = readInjectedDevtoolsConfig();
   const [repositoryId, setRepositoryId] = useState<string | null>(null);
@@ -221,7 +223,7 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
                       (selected?.detached === true ? "Detached " + selected.head.slice(0, 7) : "Unavailable worktree")}
                   </Button>
                 </header>
-                <ServiceRows
+                <ServiceLists
                   services={props.services.filter((service) => repository.serviceNames.includes(service.name))}
                   onSetErrorMessage={onSetErrorMessage}
                   isBlocked={isStackRestarting || repository.switching || repository.error !== undefined}
@@ -229,7 +231,7 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
               </section>
             );
           })}
-          <ServiceRows
+          <ServiceLists
             services={props.services.filter(
               (service) => !repositories.some((repository) => repository.serviceNames.includes(service.name)),
             )}
@@ -270,9 +272,36 @@ interface IServiceRowsProps {
   onSetErrorMessage?: (message: string | null) => void;
   isBlocked: boolean;
 }
-function ServiceRows({ services, onSetErrorMessage, isBlocked }: IServiceRowsProps): JSX.Element {
+function ServiceLists(props: IServiceRowsProps): JSX.Element {
+  const sortedServices = props.services.toSorted((first, second) =>
+    serviceNameCollator.compare(first.name, second.name),
+  );
+  const groups = [
+    { label: "Applications", services: sortedServices.filter((service) => service.url !== undefined) },
+    { label: "Services", services: sortedServices.filter((service) => service.url === undefined) },
+  ];
+
   return (
-    <ul className="m-0 list-none p-0" data-testid="ServiceRows">
+    <>
+      {groups
+        .filter((group) => group.services.length > 0)
+        .map((group) => (
+          <div key={group.label} className="not-first:border-t">
+            <h3 className="m-0 border-b bg-secondary px-2 py-1 font-semibold">{group.label}</h3>
+            <ServiceRows {...props} services={group.services} label={group.label} />
+          </div>
+        ))}
+    </>
+  );
+}
+
+interface ILabeledServiceRowsProps extends IServiceRowsProps {
+  label: string;
+}
+
+function ServiceRows({ services, onSetErrorMessage, isBlocked, label }: ILabeledServiceRowsProps): JSX.Element {
+  return (
+    <ul aria-label={label} className="m-0 list-none p-0" data-testid="ServiceRows">
       {services.map((service: ServiceHealth) => {
         const dotState: ServiceDotState = readServiceDotState(service);
         const isChanged: boolean = dotState === "dirty";
