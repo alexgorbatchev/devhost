@@ -28,7 +28,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Run recording workflow unit tests: `just demo test` (also included in `just ui check`).
 - Refresh all public guide demos: `just demo guides` (or `just demo guides annotations` for one guide). This records each guide, renders its narrated film, and updates the docs media and the guide's first video block; review before publishing and committing.
 - Render one guide's film again from its latest recording: `just demo guide-film <guide-slug>`.
-- Regenerate the guide films' ElevenLabs narration and music: `just demo audio-guides` (or `just demo audio-guides voice <guide-slug>`, `just demo audio-guides music`). This needs `ELEVENLABS_API_KEY` and bills that account.
+- Generate the guide films' ElevenLabs narration and music: `just demo audio-guides` (or `just demo audio-guides voice <guide-slug>`, `just demo audio-guides music`). A line whose request is unchanged keeps its take; append `retake` after the guide to speak the selected lines again. The music is composed again on every `all` or `music` run. This needs `ELEVENLABS_API_KEY` and bills that account.
 - Download the pinned guide videos a checkout lacks: `just docs media` (`just docs dev`, `test`, and `build` run it first).
 - Upload reviewed guide videos to the `media` release and pin them: `just docs publish-media`. This needs the GitHub CLI signed in with write access; commit the rewritten `packages/docs/demo-media.json`.
 - Start the root devhost stack locally: `just dev`

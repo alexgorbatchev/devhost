@@ -285,9 +285,15 @@ export interface IRenderGuideFilmOptions extends IGuideRecord {
   signal: AbortSignal;
 }
 
+// A guide line's take and what it was generated from.
+export interface IGuideLineTiming extends IPromoLineTiming {
+  // The SHA-256 of the ElevenLabs request the take answers. A line keeps its take while its request gives this hash.
+  requestSha256: string;
+}
+
 export interface IGuideAudioTimings {
   // Each guide's lines, named after the clip they are spoken over.
-  guides: Record<string, IPromoLineTiming[]>;
+  guides: Record<string, IGuideLineTiming[]>;
   music?: IPromoMusicTiming;
 }
 
