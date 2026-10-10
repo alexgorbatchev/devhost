@@ -84,7 +84,9 @@ just demo guides service-references
 
 The command discovers guide Markdown files and records each corresponding real workflow. Each guide becomes a narrated film of 1920 × 1080 at 30 fps and at most 45 seconds, rendered by the HyperFrames release the promo pins. A film opens on a title card with the guide's title from its front matter, shows the recording in a window while a voice explains each step, and closes on a card with the docs address. The words of the current line appear under the window as they are spoken.
 
-The command also updates the docs site's media. It writes the film, its WebP poster, and English WebVTT captions to `packages/docs/public/demos/<slug>.*`, and replaces the guide's `guide-demo` block with a native video player at the top and a collapsed text transcript of the narration. The prose remains untouched. Assets use full `https://alexgorbatchev.github.io/devhost/demos/` URLs and ship through the existing Pages build. Players use `preload="none"` and play only when requested.
+The command also updates the docs site's media. It writes the film's web encode, WebP poster, and English WebVTT captions to `packages/docs/public/demos/<slug>.*`, and replaces the guide's `guide-demo` block with a native video player at the top and a collapsed text transcript of the narration. The prose remains untouched. Assets use full `https://alexgorbatchev.github.io/devhost/demos/` URLs and ship through the existing Pages build. Players use `preload="none"` and play only when requested.
+
+The docs site does not get the render itself. `publishGuideDemo.ts` encodes it again for the web: H.264 at CRF 27 with AAC audio at 128 kbit/s, and its index first so playback starts while the file downloads.
 
 ### How a guide film is put together
 

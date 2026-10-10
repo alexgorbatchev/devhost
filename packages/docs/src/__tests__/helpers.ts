@@ -66,9 +66,16 @@ try {
       if (track) track.mode = "hidden";
       await video.play();
     });
+    // The page reserves the film's own picture size, so nothing moves when the video loads.
     await page.waitForFunction(() => {
       const video = document.querySelector("video");
-      return video !== null && video.currentTime > 0 && video.videoWidth === 1280 && video.videoHeight === 860;
+      return (
+        video !== null &&
+        video.currentTime > 0 &&
+        video.videoWidth > 0 &&
+        video.videoWidth === video.width &&
+        video.videoHeight === video.height
+      );
     });
     guidesPlayed += 1;
     await page.waitForFunction(() => (document.querySelector("video")?.textTracks[0]?.cues?.length ?? 0) > 0);
