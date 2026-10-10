@@ -71,6 +71,17 @@
         margin-top: 24px;
         text-align: left;
       }
+      .devhost-recovery__worktrees-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .devhost-recovery__worktrees-header .devhost-status__label,
+      .devhost-recovery__worktrees-header .devhost-recovery__restart {
+        margin: 0;
+      }
       .devhost-recovery__worktrees fieldset {
         margin-top: 16px;
         padding: 16px;
@@ -102,7 +113,11 @@
       </button>
       <p class="devhost-status__body" id="error" role="alert"></p>
       {{if .Repositories}}
-      <section class="devhost-recovery__worktrees" aria-label="Worktrees" id="worktrees">
+      <section class="devhost-recovery__worktrees" aria-labelledby="worktrees-title" id="worktrees">
+        <div class="devhost-recovery__worktrees-header">
+          <h2 class="devhost-status__label" id="worktrees-title">Worktrees</h2>
+          <button class="devhost-recovery__restart" id="refresh-worktrees" type="button">Refresh worktrees</button>
+        </div>
         {{range .Repositories}}
         <form data-repository="{{.ID}}" data-selected-path="{{.SelectedPath}}">
           <fieldset {{if or .Switching .BlockedReason}}disabled{{end}}>
@@ -127,7 +142,6 @@
           </fieldset>
         </form>
         {{end}}
-        <button class="devhost-recovery__restart" id="refresh-worktrees" type="button">Refresh worktrees</button>
       </section>
       {{end}}
       <details class="devhost-recovery__logs" open>
