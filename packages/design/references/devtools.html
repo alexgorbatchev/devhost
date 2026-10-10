@@ -1029,14 +1029,11 @@
           gap: var(--dh-space-2);
         }
         .usage-value {
-          min-width: 4ch;
+          width: 4ch;
+          flex-shrink: 0;
           font-variant-numeric: tabular-nums;
         }
-        /* The last value ends the segment, so it reserves no trailing room. */
-        .usage-item:last-child .usage-value {
-          min-width: 0;
-        }
-        .usage-item[data-level="danger"] .usage-value {
+        .usage-item[data-level="danger"] .usage-number {
           font-weight: 600;
         }
         .usage meter {
@@ -1796,8 +1793,8 @@
       </style>
     </template>
 
-    <script>
-      "use strict";
+    <script type="module">
+      import fuzzysort from "https://cdn.jsdelivr.net/npm/fuzzysort@4.0.2/fuzzysort.min.js";
 
       // ======================================================================
       // Icons (lucide geometry)
@@ -2372,7 +2369,7 @@
           <span class="muted">${esc(usage.label)}</span>
           <meter min="0" max="100" low="${USAGE_WARN_PERCENT}" high="${USAGE_DANGER_PERCENT - 0.5}" optimum="0" value="${usage.percent}"
             aria-label="${esc(usage.label)} usage">${usage.percent}%</meter>
-          <span class="usage-value">${usage.percent}%</span>
+          <span class="usage-value"><span class="usage-number">${usage.percent}%</span></span>
         </span>`;
       }
 
@@ -2656,7 +2653,12 @@
           !hasRestartingService &&
           (picker.path !== repository.selectedPath || repository.error !== null) &&
           repository.worktrees.some((worktree) => worktree.path === picker.path && worktree.available);
-        const options = repository.worktrees
+        const worktrees = picker.query?.trim()
+          ? fuzzysort
+              .go(picker.query.trim(), repository.worktrees, { keys: ["label", "path"], threshold: 0, limit: 0 })
+              .map((result) => result.obj)
+          : repository.worktrees;
+        const options = worktrees
           .map(
             (worktree, index) => `
           <label class="worktree-option">
@@ -2685,7 +2687,10 @@
             <div class="panel-body">
               ${repository.error ? renderNotice(repository.error, null) : ""}
               ${hasExternalService ? renderNotice("This repository has external services. devhost cannot switch all services together.", null) : ""}
+              <input class="input" type="search" aria-label="Find worktree" placeholder="Find branch or checkout path…"
+                data-input="worktree-search" data-focus-key="worktree-search" value="${esc(picker.query ?? "")}" ${isBusy ? "disabled" : ""} />
               <fieldset class="worktree-options"><legend class="sr-only">Choose a checkout for ${esc(repository.name)}</legend>${options}</fieldset>
+              ${worktrees.length === 0 ? `<p role="status">No matching worktrees.</p>` : ""}
             </div>
             <footer class="worktree-foot">
               <p class="muted">Your choice is remembered across devhost restarts.</p>
@@ -3238,7 +3243,10 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
       shadow.addEventListener("input", (event) => {
         const target = event.target;
         const kind = target.dataset.input;
-        if (kind === "composer-comment") {
+        if (kind === "worktree-search") {
+          state.worktreePicker.query = target.value;
+          render();
+        } else if (kind === "composer-comment") {
           state.comment = target.value;
           const run = shadow.querySelector("[data-run]");
           if (run) run.disabled = state.comment.trim() === "" || state.submitting;
@@ -3306,9 +3314,9 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
             break;
           case "worktree-open": {
             const repository = state.repositories.find((repo) => repo.id === id);
-            state.worktreePicker = { repositoryId: id, path: repository.selectedPath };
+            state.worktreePicker = { repositoryId: id, path: repository.selectedPath, query: "" };
             render();
-            surface("panel").querySelector('[data-action="worktree-back"]').focus();
+            surface("panel").querySelector('[data-input="worktree-search"]').focus();
             return;
           }
           case "worktree-back": {

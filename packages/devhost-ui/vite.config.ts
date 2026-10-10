@@ -9,6 +9,7 @@ const devtoolsStylesheetPath: string = path.resolve(dirname, "src/devtools/share
 const devtoolsStylesheetTextModuleId: string = "\0devhost-devtools-css-text";
 
 export const optimizeDependencyEntries: string[] = [
+  "fuzzysort",
   "@hookform/devtools",
   "react-hook-form",
   "jotai",

@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type JSX } from "react";
 import { RotateCwIcon } from "lucide-react";
+import fuzzysort from "fuzzysort";
 
 import { Icon } from "../../../../components/ui/Icon";
 
@@ -29,12 +30,22 @@ export function WorktreePicker({
   const { homeDirectoryPath } = readInjectedDevtoolsConfig();
   const name = useId();
   const [path, setPath] = useState<string>(repository.selectedPath);
+  const [query, setQuery] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const formReference = useRef<HTMLFieldSetElement | null>(null);
+  const searchReference = useRef<HTMLInputElement | null>(null);
   const isBusy = repository.switching || isSubmitting;
+  const worktrees = query.trim()
+    ? fuzzysort
+        .go(query.trim(), repository.worktrees, {
+          keys: [worktreeLabel, "path"],
+          threshold: 0,
+          limit: 0,
+        })
+        .map((result) => result.obj)
+    : repository.worktrees;
   const choice = repository.worktrees.find((entry) => entry.path === path);
   const canSwitch =
     isLoaded &&
@@ -60,10 +71,7 @@ export function WorktreePicker({
 
   useEffect(() => {
     if (!isLoaded || isLoading) return;
-    const selected =
-      formReference.current?.querySelector<HTMLInputElement>("input:checked:not(:disabled)") ??
-      formReference.current?.querySelector<HTMLInputElement>("input:not(:disabled)");
-    selected?.focus();
+    searchReference.current?.focus();
   }, [isLoaded, isLoading]);
 
   const apply = async (destination: string): Promise<void> => {
@@ -84,6 +92,16 @@ export function WorktreePicker({
         <InlineNotice tone="danger">{repository.blockedReason}</InlineNotice>
       ) : null}
       <PanelActions>
+        <input
+          ref={searchReference}
+          type="search"
+          aria-label="Find worktree"
+          placeholder="Find branch or checkout path…"
+          className="h-6 min-w-0 flex-1 rounded-sm border border-input bg-background px-1.5 text-foreground placeholder:text-muted-foreground disabled:opacity-50"
+          disabled={isBusy || isLoading || !isLoaded}
+          value={query}
+          onChange={(event): void => setQuery(event.currentTarget.value)}
+        />
         <Button
           aria-label="Refresh worktrees"
           disabled={isLoading || isBusy}
@@ -100,9 +118,9 @@ export function WorktreePicker({
           Refresh
         </Button>
       </PanelActions>
-      <fieldset ref={formReference} className="m-0 min-w-0 border-0 p-0" disabled={isBusy || isLoading || !isLoaded}>
+      <fieldset className="m-0 min-w-0 border-0 p-0" disabled={isBusy || isLoading || !isLoaded}>
         <legend className="sr-only">Choose a checkout for {repository.name}</legend>
-        {repository.worktrees.map((entry) => (
+        {worktrees.map((entry) => (
           <label
             key={entry.path}
             className={cn(
@@ -139,6 +157,11 @@ export function WorktreePicker({
           </label>
         ))}
       </fieldset>
+      {worktrees.length === 0 && isLoaded && !isLoading ? (
+        <p className="m-0 p-2 text-muted-foreground" role="status">
+          No matching worktrees.
+        </p>
+      ) : null}
       <footer className="flex flex-col gap-2 border-t-[3px] border-border p-2">
         <p className="m-0 text-muted-foreground">Your choice is remembered across devhost restarts.</p>
         <dl className="m-0 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-1">
