@@ -16,14 +16,15 @@ const recoveryHeader = "X-Devhost-Recovery"
 
 // RecoveryState is the service lifecycle snapshot served independently of the toolbar.
 type RecoveryState struct {
-	Stack      string   `json:"stack"`
-	Service    string   `json:"service"`
-	Phase      string   `json:"phase"`
-	Title      string   `json:"title"`
-	Message    string   `json:"message"`
-	Address    string   `json:"address"`
-	CanRestart bool     `json:"canRestart"`
-	Logs       []string `json:"logs"`
+	Stack        string               `json:"stack"`
+	Service      string               `json:"service"`
+	Phase        string               `json:"phase"`
+	Title        string               `json:"title"`
+	Message      string               `json:"message"`
+	Address      string               `json:"address"`
+	CanRestart   bool                 `json:"canRestart"`
+	Logs         []string             `json:"logs"`
+	Repositories []WorktreeRepository `json:"repositories,omitempty"`
 }
 
 //go:embed recovery_page.html
@@ -45,22 +46,30 @@ func serveRecoveryPage(w http.ResponseWriter, r *http.Request, state RecoverySta
 		_ = json.NewEncoder(w).Encode(state) // Delivery to a disconnected client is best-effort.
 		return
 	}
-	var body bytes.Buffer
-	// The trusted stylesheet is embedded at build time; service data remains escaped.
-	page := recoveryPageData{RecoveryState: state, Status: status, Styles: template.CSS(statuspage.CSS)}
-	if err := recoveryTemplate.Execute(&body, page); err != nil {
+	document, err := renderRecoveryDocument(state, status, injectToolbar)
+	if err != nil {
 		http.Error(w, "Unable to render service status", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
 	if r.Method != http.MethodHead {
-		document := body.String()
-		if injectToolbar {
-			document = injectDevtoolsScript(document)
-		}
 		_, _ = io.WriteString(w, document) // Delivery to a disconnected client is best-effort.
 	}
+}
+
+func renderRecoveryDocument(state RecoveryState, status int, injectToolbar bool) (string, error) {
+	var body bytes.Buffer
+	// The trusted stylesheet is embedded at build time; service data remains escaped.
+	page := recoveryPageData{RecoveryState: state, Status: status, Styles: template.CSS(statuspage.CSS)}
+	if err := recoveryTemplate.Execute(&body, page); err != nil {
+		return "", err
+	}
+	document := body.String()
+	if injectToolbar {
+		document = injectDevtoolsScript(document)
+	}
+	return document, nil
 }
 
 func serveRecoveryControl(w http.ResponseWriter, r *http.Request, options StartDocumentInjectionServerOptions, proxy http.Handler) {
@@ -75,6 +84,16 @@ func serveRecoveryControl(w http.ResponseWriter, r *http.Request, options StartD
 		return
 	}
 	switch r.Header.Get(recoveryHeader) {
+	case "worktrees":
+		if r.Method == http.MethodPost && len(origins) != 1 {
+			http.Error(w, "Origin does not match the routed host", http.StatusForbidden)
+			return
+		}
+		if options.Worktrees == nil {
+			http.Error(w, "Worktrees are not enabled.", http.StatusNotImplemented)
+			return
+		}
+		options.Worktrees.ServeHTTP(w, r)
 	case "status", "probe":
 		if r.Method != http.MethodGet {
 			w.Header().Set("Allow", http.MethodGet)

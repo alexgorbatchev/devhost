@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
@@ -54,11 +55,16 @@ func (r *stackRoutes) prepare(service ResolvedService) (caddy.ActivateRouteOptio
 	documentServer := r.documentServers[service.Name]
 	if documentServer == nil {
 		name := service.Name
+		var worktrees http.Handler
+		if r.controlServer != nil {
+			worktrees = r.controlServer.RecoveryWorktrees()
+		}
 		documentServer, err = startDocumentInjectionServer(devtools.StartDocumentInjectionServerOptions{
 			BackendHost: host, BackendPort: *service.Port,
 			DisableInjection: !r.injectDevtools || !isRootCompatibleServicePath(service.Path),
 			GetRecovery:      func() devtools.RecoveryState { return r.runtime.recovery(name) },
 			Restart:          func() error { return r.restartService(name) },
+			Worktrees:        worktrees,
 		})
 		if err != nil {
 			return options, nil, err

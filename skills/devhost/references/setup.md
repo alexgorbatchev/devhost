@@ -1,6 +1,6 @@
 ---
 created_on: 2026-06-26 21:23
-last_modified: 2026-10-09 22:39
+last_modified: 2026-10-10 03:26
 status: current
 ---
 
@@ -68,7 +68,7 @@ Worktree support is enabled by default. When configuring repository services or 
 2. Omit `[worktrees]` to keep checkout selection enabled. An empty table or `enabled = true` also enables it. Set `[worktrees].enabled = false` only to disable discovery and saved-selection restore; services then use their configured directories. `enabled` is the only key of that table: a selection covers a whole repository and is saved automatically.
 3. Enable `[devtools.status]` for the Services picker. Select the repository branch button, inspect the target directory preview, and use **Switch and restart**. All services in that repository move together, retaining their directory offsets; other repositories and non-Git services stay independent.
 4. Explain that the saved local choice is scoped to manifest path and repository and survives devhost restarts. Before the first choice, devhost uses the checkout containing the configured cwd values. Leave the manifest as it is when changing checkout; its original commands and configuration remain authoritative.
-5. If the saved checkout is unavailable or a group launch fails, keep the group stopped. Refresh a routed app to access Services recovery, then choose an available checkout, **Retry** after fixing the cause, or **Return to configured checkout**. While an error is shown, report the group as stopped and the selected checkout as unavailable. Refresh the app after success.
+5. If the saved checkout is unavailable or a group launch fails, keep the group stopped. Refresh a routed app to access the standalone recovery page, choose an available checkout, and use **Switch worktree**. **Refresh worktrees** discovers added or deleted checkouts. These controls work with the toolbar disabled. A browser navigation to a missing app path also shows this page with HTTP 404; switching retains the original path and query, and the page reloads after success. Automatic recovery waits until that path stops returning 404. While an error is shown, report the group as stopped and read its recorded failure. With status devtools enabled, Services also offers **Retry** and **Return to configured checkout**.
 6. If a repository contains a `managed = false` service, report that switches are blocked. An externally owned process stays where its owner runs it. Existing terminal sessions keep their launch directories; resume a paused queue to launch an agent in the selected checkout.
 
 Relative watch paths use the selected service cwd. Absolute watch paths remain absolute. New browser editor and annotation launches remap configured paths inside the selected repository; directories outside it remain configured. devhost keeps the original manifest loaded, whichever checkout is selected.

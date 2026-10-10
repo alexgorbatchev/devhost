@@ -52,6 +52,60 @@ func TestRecoveryProbeWaitsForDocumentTransport(t *testing.T) {
 	}
 }
 
+func TestMissingDocumentOffersRecoveryWithoutReloadLoop(t *testing.T) {
+	t.Parallel()
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.NotFound(w, r)
+	}))
+	t.Cleanup(backend.Close)
+	address := backend.Listener.Addr().(*net.TCPAddr)
+	server, err := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{
+		BackendHost: address.IP.String(), BackendPort: address.Port, DisableInjection: true,
+		GetRecovery: func() RecoveryState {
+			return RecoveryState{Phase: "ready", Service: "web", Repositories: []WorktreeRepository{{ID: "repo", Name: "project", SelectedPath: "/main", Worktrees: []Worktree{{Path: "/main", Branch: "main", Available: true}, {Path: "/feature", Branch: "feature", Available: true}}}}}
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = server.Stop() })
+	for _, kind := range []string{"document", "probe", "api"} {
+		t.Run(kind, func(t *testing.T) {
+			r, err := http.NewRequest(http.MethodGet, serverURL(server.Port(), "/missing?value=1"), nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if kind == "document" {
+				r.Header.Set("Sec-Fetch-Dest", "document")
+			}
+			if kind == "probe" {
+				r.Header.Set(recoveryHeader, "probe")
+			}
+			response, err := http.DefaultClient.Do(r)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer response.Body.Close()
+			body, err := io.ReadAll(response.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if response.StatusCode != http.StatusNotFound {
+				t.Fatalf("status = %d, want 404", response.StatusCode)
+			}
+			if kind == "api" {
+				if string(body) != "404 page not found\n" {
+					t.Fatalf("API response changed: %s", body)
+				}
+				return
+			}
+			if !strings.Contains(string(body), "Switch worktree") || !strings.Contains(string(body), "/feature") || response.Header.Get("Cache-Control") != "no-store" {
+				t.Fatalf("missing document has no checkout recovery: %s", body)
+			}
+		})
+	}
+}
+
 func TestRecoveryKeepsEnabledToolbarAvailable(t *testing.T) {
 	t.Parallel()
 	server, err := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{
@@ -171,6 +225,9 @@ func TestRecoveryControlsValidateMethodAndOrigin(t *testing.T) {
 		{name: "missing origin", action: "restart", method: "POST", want: 403},
 		{name: "foreign origin", action: "restart", method: "POST", origin: "https://foreign.test", want: 403},
 		{name: "unknown", action: "unknown", method: "GET", want: 400},
+		{name: "worktrees disabled", action: "worktrees", method: "GET", want: 501},
+		{name: "worktree missing origin", action: "worktrees", method: "POST", want: 403},
+		{name: "worktree foreign origin", action: "worktrees", method: "POST", origin: "https://foreign.test", want: 403},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			restarted := false

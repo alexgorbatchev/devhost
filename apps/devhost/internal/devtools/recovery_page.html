@@ -67,6 +67,27 @@
       #error:empty {
         display: none;
       }
+      .devhost-recovery__worktrees {
+        margin-top: 24px;
+        text-align: left;
+      }
+      .devhost-recovery__worktrees fieldset {
+        margin-top: 16px;
+        padding: 16px;
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-md);
+      }
+      .devhost-recovery__worktrees select {
+        display: block;
+        width: 100%;
+        margin-top: 12px;
+        padding: 12px;
+        background: var(--surface-subtle);
+        color: var(--foreground);
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-md);
+        font: inherit;
+      }
     </style>
   </head>
   <body data-devhost-recovery>
@@ -80,6 +101,35 @@
         Restart {{.Service}}
       </button>
       <p class="devhost-status__body" id="error" role="alert"></p>
+      {{if .Repositories}}
+      <section class="devhost-recovery__worktrees" aria-label="Worktrees" id="worktrees">
+        {{range .Repositories}}
+        <form data-repository="{{.ID}}" data-selected-path="{{.SelectedPath}}">
+          <fieldset {{if or .Switching .BlockedReason}}disabled{{end}}>
+            <legend>{{.Name}}</legend>
+            <label
+              >Checkout
+              <select name="path">
+                {{$selected := .SelectedPath}} {{range .Worktrees}}
+                <option value="{{.Path}}" {{if eq .Path $selected}}selected{{end}} {{if not .Available}}disabled{{end}}>
+                  {{if .Branch}}{{.Branch}}{{else}}Detached {{.Head}}{{end}} · {{.Path}}{{if .Reason}} ·
+                  {{.Reason}}{{end}}
+                </option>
+                {{end}}
+              </select>
+            </label>
+            {{if .BlockedReason}}
+            <p class="devhost-status__body">{{.BlockedReason}}</p>
+            {{end}} {{if .Error}}
+            <p class="devhost-status__body" role="status">{{.Error}}</p>
+            {{end}}
+            <button class="devhost-recovery__restart" type="submit">Switch worktree</button>
+          </fieldset>
+        </form>
+        {{end}}
+        <button class="devhost-recovery__restart" id="refresh-worktrees" type="button">Refresh worktrees</button>
+      </section>
+      {{end}}
       <details class="devhost-recovery__logs" open>
         <summary class="devhost-status__label">Recent logs</summary>
         <pre id="logs">
@@ -97,6 +147,7 @@
       const restart = document.getElementById("restart");
       const error = document.getElementById("error");
       let restarting = false;
+      let switching = false;
       async function readStatus() {
         try {
           const response = await fetch(location.href, {
@@ -105,7 +156,22 @@
           });
           if (!response.ok) throw new Error("Devhost is unavailable. Waiting to reconnect…");
           const state = await response.json();
+          for (const repository of state.repositories || []) {
+            const form = Array.from(document.querySelectorAll("form[data-repository]")).find(
+              (candidate) => candidate.dataset.repository === repository.id,
+            );
+            if (!form) continue;
+            form.querySelector("fieldset").disabled = switching || repository.switching || !!repository.blockedReason;
+            if (form.dataset.selectedPath !== repository.selectedPath) {
+              form.querySelector("select").value = repository.selectedPath;
+              form.dataset.selectedPath = repository.selectedPath;
+            }
+          }
           if (state.phase === "ready") {
+            if (switching) {
+              setTimeout(readStatus, 1000);
+              return;
+            }
             const probe = await fetch(location.href, {
               cache: "no-store",
               headers: { "X-Devhost-Recovery": "probe" },
@@ -120,7 +186,7 @@
             document.getElementById("message").textContent = state.message;
           }
           document.getElementById("logs").textContent = (state.logs || []).join("\n");
-          restart.disabled = restarting || !state.canRestart;
+          restart.disabled = restarting || switching || !state.canRestart;
         } catch (failure) {
           document.getElementById("message").textContent = failure.message;
           restart.disabled = true;
@@ -128,6 +194,7 @@
         setTimeout(readStatus, 1000);
       }
       restart.addEventListener("click", async () => {
+        if (switching || restarting) return;
         restarting = true;
         restart.disabled = true;
         error.textContent = "";
@@ -142,6 +209,48 @@
           error.textContent = failure.message;
         } finally {
           restarting = false;
+        }
+      });
+      document.querySelectorAll("form[data-repository]").forEach((form) => {
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          if (switching || restarting) return;
+          switching = true;
+          const path = new FormData(form).get("path");
+          const fieldset = form.querySelector("fieldset");
+          fieldset.disabled = true;
+          error.textContent = "";
+          try {
+            const response = await fetch(location.href, {
+              method: "POST",
+              cache: "no-store",
+              headers: { "X-Devhost-Recovery": "worktrees", "Content-Type": "application/json" },
+              body: JSON.stringify({ repositoryId: form.dataset.repository, path }),
+            });
+            if (!response.ok) throw new Error(await response.text());
+            location.replace(location.href);
+          } catch (failure) {
+            error.textContent = failure.message;
+            fieldset.disabled = false;
+          } finally {
+            switching = false;
+          }
+        });
+      });
+      document.getElementById("refresh-worktrees")?.addEventListener("click", async (event) => {
+        if (switching || restarting) return;
+        event.currentTarget.disabled = true;
+        error.textContent = "";
+        try {
+          const response = await fetch(location.href, {
+            cache: "no-store",
+            headers: { "X-Devhost-Recovery": "worktrees" },
+          });
+          if (!response.ok) throw new Error(await response.text());
+          location.replace(location.href);
+        } catch (failure) {
+          error.textContent = failure.message;
+          document.getElementById("refresh-worktrees").disabled = false;
         }
       });
       readStatus();

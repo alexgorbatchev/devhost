@@ -19,6 +19,7 @@ type StartDocumentInjectionServerOptions struct {
 	DisableInjection bool
 	GetRecovery      func() RecoveryState
 	Restart          func() error
+	Worktrees        http.Handler
 }
 
 type DocumentInjectionServer struct {
@@ -53,8 +54,26 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 			request.Header.Set("x-forwarded-proto", "https")
 		},
 		ModifyResponse: func(response *http.Response) error {
+			if options.GetRecovery != nil && response.StatusCode == http.StatusNotFound &&
+				(response.Request.Header.Get("Sec-Fetch-Dest") == "document" || response.Request.Header.Get(recoveryHeader) == "probe") {
+				state := options.GetRecovery()
+				state.Phase, state.Title = "not-found", "Page not found"
+				state.Message = "This path does not exist in the current checkout. Check the URL."
+				if len(state.Repositories) > 0 {
+					state.Message = "This path does not exist in the current checkout. Choose another worktree below or check the URL."
+				}
+				document, err := renderRecoveryDocument(state, http.StatusNotFound, !options.DisableInjection)
+				if err != nil {
+					return err
+				}
+				_ = response.Body.Close() // The missing application's document is replaced by recovery controls.
+				response.Body = io.NopCloser(strings.NewReader(document))
+				response.ContentLength = -1
+				response.Header = http.Header{"Content-Type": {"text/html; charset=utf-8"}, "Cache-Control": {"no-store"}}
+				return nil
+			}
 			if options.GetRecovery != nil && response.Request.Header.Get(recoveryHeader) == "probe" {
-				// An upstream HTTP response, including an application error or redirect,
+				// An upstream response other than a missing page, including an error or redirect,
 				// proves document transport works. Keep the probe from navigating or
 				// downloading the app before the browser performs its real navigation.
 				_ = response.Body.Close()
