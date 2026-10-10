@@ -19,7 +19,8 @@ func (r *stackRuntime) recovery(name string) devtools.RecoveryState {
 	started := findStartedService(r.started, name)
 	r.startedMu.Unlock()
 	r.manifestMu.RUnlock()
-	for _, repo := range worktrees.snapshot() {
+	state.Repositories = worktrees.snapshot()
+	for _, repo := range state.Repositories {
 		for _, member := range repo.ServiceNames {
 			if member == name && repo.Switching {
 				starting, blocked = true, ""

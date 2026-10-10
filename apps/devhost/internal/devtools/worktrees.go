@@ -7,6 +7,14 @@ import (
 
 const worktreesPath = controlPathPrefix + "/worktrees"
 
+// RecoveryWorktrees exposes the existing checkout operations to standalone recovery pages.
+func (s *ControlServer) RecoveryWorktrees() http.Handler {
+	if s.switchWorktree == nil || s.refreshWorktrees == nil {
+		return nil
+	}
+	return http.HandlerFunc(s.handleWorktrees)
+}
+
 type switchWorktreeRequest struct {
 	RepositoryID string `json:"repositoryId"`
 	Path         string `json:"path"`

@@ -337,6 +337,12 @@ func TestReloadServiceHelperProcess(t *testing.T) {
 	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT)
 	go func() {
 		_ = http.Serve(listener, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/checkout-only" {
+				if _, err := os.Stat("route-ready"); err != nil {
+					http.NotFound(w, r)
+					return
+				}
+			}
 			if r.URL.Path == "/health" && os.Getenv("HEALTH_STATUS") == "503" {
 				w.WriteHeader(http.StatusServiceUnavailable)
 				return
