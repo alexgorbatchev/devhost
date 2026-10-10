@@ -19,11 +19,15 @@ const stagedDependencies: Record<string, string> = {
     "assets/fonts/jetbrains-mono-latin-wght-normal.woff2",
   "gsap/dist/gsap.min.js": "assets/vendor/gsap.min.js",
   "@alexgorbatchev/devhost-design/tokens.css": "assets/vendor/devhost-tokens.css",
+  // The window, label and backdrop styles the promo and the guide films share.
+  "./film.css": "assets/vendor/devhost-film.css",
 };
 
 export async function renderPromo(options: IRenderPromoOptions): Promise<string> {
   const { directoryPath, signal } = options;
-  const projectPath = join(directoryPath, "promo");
+  // A guide film is staged under its own name, so its run is not taken for a promo render.
+  const projectName = options.projectName ?? "promo";
+  const projectPath = join(directoryPath, projectName);
   // A wrong directory fails here, before anything in it is created or removed.
   if (resolve(projectPath) === resolve(options.projectSourcePath)) {
     throw new Error(`${directoryPath} holds the promo's own project, so it cannot be a recording`);
@@ -44,14 +48,14 @@ export async function renderPromo(options: IRenderPromoOptions): Promise<string>
     await Bun.write(join(projectPath, target), Bun.file(Bun.resolveSync(specifier, import.meta.dir)));
   }
   const footage = await stagePromoFootage(projectPath, sources, signal);
-  await Bun.write(join(directoryPath, "promo-footage.json"), JSON.stringify(footage, null, 2) + "\n");
+  await Bun.write(join(directoryPath, `${projectName}-footage.json`), JSON.stringify(footage, null, 2) + "\n");
   const outputPath = join(directoryPath, "devhost-demo.mp4");
   await options.render(projectPath, outputPath, signal);
   // An interrupt that arrives once the render has ended stops the checks and the poster too.
   const media = await readMediaInfo(outputPath, signal);
   assert(
     media.duration <= promoMaximumSeconds,
-    `The promo lasts ${media.duration.toFixed(1)}s; the limit is ${promoMaximumSeconds}s`,
+    `The ${projectName} film lasts ${media.duration.toFixed(2)}s; the limit is ${promoMaximumSeconds}s`,
   );
   const audioStreams = await runCommand(
     [
@@ -68,7 +72,7 @@ export async function renderPromo(options: IRenderPromoOptions): Promise<string>
     ],
     { signal },
   );
-  assert(audioStreams.trim() !== "", "The promo has no audio track");
+  assert(audioStreams.trim() !== "", `The ${projectName} film has no audio track`);
   const narration: unknown = await Bun.file(join(projectPath, "narration.json")).json();
   assert(typeof narration === "object" && narration !== null && "lines" in narration && Array.isArray(narration.lines));
   await Bun.write(

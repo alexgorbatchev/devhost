@@ -1,0 +1,163 @@
+{
+  "voice": {
+    "id": "CwhRBWXzGAHq8TQ4Fs17",
+    "name": "Roger",
+    "model": "eleven_multilingual_v2",
+    "stability": 0.45,
+    "similarityBoost": 0.75,
+    "style": 0.3
+  },
+  "music": {
+    "model": "music_v2",
+    "sections": [
+      {
+        "name": "Bed",
+        "seconds": 50,
+        "styles": [
+          "calm modern electronic underscore",
+          "background for a developer tutorial",
+          "104 BPM",
+          "instrumental",
+          "soft muted synth plucks",
+          "warm pad",
+          "light steady percussion",
+          "even energy from start to finish",
+          "great production quality"
+        ],
+        "avoid": ["vocals", "drops", "risers", "dramatic changes", "lead melody"]
+      }
+    ]
+  },
+  "guides": {
+    "annotations": {
+      "intro": "Point at the problem, and let a coding agent fix it.",
+      "clips": [
+        { "clip": "annotations-1", "text": "Hold Alt, click an element, and describe the change." },
+        { "clip": "annotations-2", "text": "The Pi coding agent takes the annotation and edits your source." },
+        { "clip": "annotations-3", "text": "The fix is on the page, without a full reload." }
+      ]
+    },
+    "devtools": {
+      "intro": "Optional devtools put your stack's logs and controls inside the page.",
+      "clips": [
+        { "clip": "overview-1", "text": "Hover the log minimap for real-time output from your services." },
+        { "clip": "overview-2", "text": "The Services panel lists every service, each with a restart control." },
+        { "clip": "overview-3", "text": "Browse your Git worktrees without leaving the page." },
+        { "clip": "query-1", "text": "TanStack Query's own devtools open from the same toolbar." }
+      ]
+    },
+    "docker-backed-services": {
+      "intro": "Give a Docker container a local HTTPS hostname. Docker still starts and stops it.",
+      "clips": [
+        { "clip": "step-1", "text": "This service is unmanaged: devhost routes to it but never starts it." },
+        { "clip": "step-2", "text": "Docker starts the container." },
+        { "clip": "step-3", "text": "Its port is published on the host's loopback address." },
+        { "clip": "step-4", "text": "Start the stack." },
+        { "clip": "step-5", "text": "devhost starts no process. It publishes the container's HTTPS address." },
+        { "clip": "step-6", "text": "The container answers on its HTTPS hostname." },
+        { "clip": "step-7", "text": "Stopping the stack removes the route." },
+        { "clip": "step-8", "text": "The container is still running." },
+        { "clip": "step-9", "text": "Removing it is Docker's job." }
+      ]
+    },
+    "environment-variables": {
+      "intro": "devhost hands each service its port, its hostname, and your own variables.",
+      "clips": [
+        { "clip": "step-1", "text": "This service declares two variables of its own." },
+        { "clip": "step-2", "text": "Start the stack." },
+        { "clip": "step-3", "text": "devhost assigns a free port and starts the service." },
+        { "clip": "step-4", "text": "The service received its port, bind host, hostname, and your message." },
+        { "clip": "step-5", "text": "Stop the stack." }
+      ]
+    },
+    "managed-caddy": {
+      "intro": "One proxy. Local HTTPS hostnames. Route each service by path.",
+      "clips": [
+        { "clip": "step-1", "text": "Two services share one hostname, split by path." },
+        { "clip": "step-2", "text": "Start the stack." },
+        { "clip": "step-3", "text": "devhost starts both and publishes an HTTPS address for each." },
+        { "clip": "step-4", "text": "The hostname alone reaches the web service." },
+        { "clip": "step-5", "text": "The API path reaches the API service." },
+        { "clip": "step-6", "text": "One command stops both services." }
+      ]
+    },
+    "managed-daemon-style-services": {
+      "intro": "devhost starts a background daemon, checks on it, and stops it.",
+      "clips": [
+        { "clip": "step-1", "text": "This daemon has three commands: start, status, and stop." },
+        { "clip": "step-2", "text": "Start the stack." },
+        { "clip": "step-3", "text": "devhost runs the start command and waits for the health check." },
+        { "clip": "step-4", "text": "The daemon answers on its HTTPS hostname." },
+        { "clip": "step-5", "text": "Stopping the stack runs the daemon's stop command." },
+        { "clip": "step-6", "text": "The daemon is no longer running." }
+      ]
+    },
+    "manifest-includes": {
+      "intro": "Each package owns its services. The root starts them together.",
+      "clips": [
+        { "clip": "step-1", "text": "The root manifest declares no services. It includes each package's manifest." },
+        { "clip": "step-2", "text": "Each package declares its own service." },
+        { "clip": "step-3", "text": "Start from the root." },
+        { "clip": "step-4", "text": "devhost merges them into one stack." },
+        { "clip": "step-5", "text": "The merged stack answers on its HTTPS hostname." },
+        { "clip": "step-6", "text": "And it stops as one." }
+      ]
+    },
+    "react-highlight": {
+      "intro": "Connect your Neovim cursor to the page running in your browser.",
+      "clips": [
+        { "clip": "react-highlight-1", "text": "Start Neovim with the devhost launcher. Here, it runs off screen." },
+        { "clip": "react-highlight-2", "text": "Move the Neovim cursor to the heading. The page highlights it." },
+        { "clip": "react-highlight-3", "text": "Move the cursor again, and the highlight follows." },
+        { "clip": "react-highlight-4", "text": "Images work too. Source maps match the JSX to the page." },
+        { "clip": "react-highlight-5", "text": "Leave the JSX, and the highlight clears." }
+      ]
+    },
+    "service-references": {
+      "intro": "Point one service at another, even when its port is assigned at start.",
+      "clips": [
+        { "clip": "step-1", "text": "The API address is a reference, not a fixed port." },
+        { "clip": "step-2", "text": "Start the stack." },
+        { "clip": "step-3", "text": "devhost fills in the API's port and starts the API first." },
+        { "clip": "step-4", "text": "The web service called the API at the resolved address." },
+        { "clip": "step-5", "text": "One command stops both services." }
+      ]
+    },
+    "shared-managed-caddy-settings": {
+      "intro": "Your stacks share one Caddy. Turn on plain HTTP and choose its ports.",
+      "clips": [
+        { "clip": "step-1", "text": "The shared Caddy settings turn on plain HTTP and set both ports." },
+        { "clip": "step-2", "text": "Start the stack." },
+        { "clip": "step-3", "text": "The HTTPS address now uses the port you set." },
+        { "clip": "step-4", "text": "The service answers over HTTPS." },
+        { "clip": "step-5", "text": "The same service answers over plain HTTP." },
+        { "clip": "step-6", "text": "Stop the stack." }
+      ]
+    },
+    "stack-lifecycle": {
+      "intro": "Start dependencies first. Stop the whole stack with one command.",
+      "clips": [
+        { "clip": "step-1", "text": "The web service depends on the API." },
+        { "clip": "step-2", "text": "Start the stack." },
+        { "clip": "step-3", "text": "devhost starts the API first, then the web service." },
+        { "clip": "step-4", "text": "The web service answers on its HTTPS hostname." },
+        { "clip": "step-5", "text": "Stopping takes one command." }
+      ]
+    },
+    "troubleshooting": {
+      "intro": "Save a broken manifest and the running stack stays up. Fix it, save again.",
+      "clips": [
+        { "clip": "step-1", "text": "A stack with one service." },
+        { "clip": "step-2", "text": "Start the stack." },
+        { "clip": "step-3", "text": "The service is running." },
+        { "clip": "step-4", "text": "Now save an invalid port." },
+        { "clip": "step-5", "text": "devhost rejects the reload and says why." },
+        { "clip": "step-6", "text": "The running stack still answers." },
+        { "clip": "step-7", "text": "Save a corrected manifest." },
+        { "clip": "step-8", "text": "This time the reload is applied." },
+        { "clip": "step-9", "text": "The service shows the new configuration." },
+        { "clip": "step-10", "text": "Stop the stack." }
+      ]
+    }
+  }
+}

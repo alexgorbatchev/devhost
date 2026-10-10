@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>devhost guide</title>
+    <script src="assets/vendor/gsap.min.js"></script>
+    <link rel="stylesheet" href="assets/vendor/devhost-tokens.css" />
+    <link rel="stylesheet" href="assets/vendor/devhost-film.css" />
+    <style>
+      @font-face {
+        font-family: "JetBrains Mono Variable";
+        font-style: normal;
+        font-weight: 100 800;
+        src: url("assets/fonts/jetbrains-mono-latin-wght-normal.woff2") format("woff2");
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--dh-term-bg);
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: "JetBrains Mono Variable", monospace;
+        color: var(--dh-fg);
+      }
+      .guide-stage {
+        position: absolute;
+        inset: 0;
+      }
+      /* The recording keeps its 16:9 shape; the caption sits below the window, clear of the page's own toolbar. */
+      .guide-window {
+        left: 160px;
+        top: 14px;
+        width: 1600px;
+        height: 958px;
+      }
+      .guide-stage-title {
+        right: 128px;
+        top: 4px;
+        height: 60px;
+        padding: 0 26px;
+        border-radius: 30px;
+        font-size: 30px;
+      }
+      .guide-title-card {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 44px;
+        padding: 0 120px 150px;
+      }
+      .guide-brand {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        height: 84px;
+        font-size: 40px;
+        font-weight: 700;
+        color: var(--dh-fg-muted);
+        white-space: nowrap;
+      }
+      .guide-brand-mark {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 84px;
+        height: 84px;
+        border-radius: 18px;
+        background: var(--dh-fg);
+        color: var(--dh-term-bg);
+        font-size: 46px;
+        font-weight: 800;
+        letter-spacing: -0.06em;
+      }
+      .guide-brand-name {
+        color: var(--dh-fg);
+        font-weight: 800;
+      }
+      .guide-title {
+        margin: 0;
+        max-width: 1680px;
+        font-size: 120px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 1.08;
+        text-align: center;
+      }
+      .guide-cues {
+        position: absolute;
+        left: 0;
+        top: 978px;
+        width: 1920px;
+        height: 96px;
+      }
+      /* Captions share one place; the timeline shows the one that is being spoken. */
+      .guide-cue {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .guide-cue-card {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0 16px;
+        max-width: 1640px;
+        margin: 0;
+        padding: 12px 36px;
+        border: 2px solid var(--dh-line);
+        border-radius: 22px;
+        background: var(--dh-surface-2);
+        box-shadow: 0 20px 60px rgb(0 0 0 / 0.6);
+        font-size: 34px;
+        font-weight: 600;
+        line-height: 46px;
+      }
+      .guide-word {
+        display: block;
+        white-space: nowrap;
+      }
+      .guide-end {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 48px;
+      }
+      .guide-end-brand {
+        display: flex;
+        align-items: center;
+        gap: 36px;
+        height: 200px;
+      }
+      .guide-end-mark {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 156px;
+        height: 156px;
+        border-radius: 32px;
+        background: var(--dh-fg);
+        color: var(--dh-term-bg);
+        font-size: 88px;
+        font-weight: 800;
+        letter-spacing: -0.06em;
+      }
+      .guide-end-name {
+        font-size: 176px;
+        font-weight: 800;
+        letter-spacing: -0.05em;
+        line-height: 200px;
+      }
+      .guide-end-address {
+        display: flex;
+        align-items: center;
+        height: 84px;
+        padding: 0 44px;
+        border-radius: 42px;
+        background: var(--dh-accent);
+        color: var(--dh-on-accent);
+        font-size: 38px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      #cut-flash {
+        position: absolute;
+        inset: 0;
+        background: var(--dh-fg);
+        opacity: 0;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!--
+      A guide film: a title card, the guide's recorded clips in one window with their narration as captions, and an
+      end card. The recorder writes the title, the clips, the captions, the narration and every duration for each
+      guide; what is authored here is the sample of one clip that `hyperframes preview` shows.
+    -->
+    <div id="root" data-composition-id="main" data-start="0" data-duration="12" data-width="1920" data-height="1080">
+      <div class="backdrop-fill"></div>
+      <div id="backdrop-grid" class="backdrop-grid" data-layout-allow-overflow></div>
+      <div id="backdrop-glow-accent" class="backdrop-glow backdrop-glow-accent" data-layout-allow-overflow></div>
+      <div id="backdrop-glow-cyan" class="backdrop-glow backdrop-glow-cyan" data-layout-allow-overflow></div>
+      <div class="backdrop-vignette"></div>
+
+      <div id="stage" class="guide-stage">
+        <div id="stage-window" class="dh-window guide-window">
+          <div class="dh-window-bar">
+            <span class="dh-window-dot"></span><span class="dh-window-dot"></span><span class="dh-window-dot"></span>
+            <span id="stage-address" class="dh-window-address">terminal</span>
+          </div>
+          <div class="dh-window-screen">
+            <div id="stage-clips" class="dh-camera">
+              <video
+                id="clip-guide"
+                class="clip"
+                src="assets/footage/clip-guide.mp4"
+                data-footage="guide"
+                data-start="2.4"
+                data-duration="7.8"
+                data-track-index="2"
+                muted
+                playsinline
+              ></video>
+            </div>
+          </div>
+        </div>
+        <div id="stage-title" class="dh-label dh-label-accent guide-stage-title">Guide title</div>
+      </div>
+
+      <div id="title-card" class="guide-title-card">
+        <div id="title-brand" class="guide-brand">
+          <span class="guide-brand-mark">dh</span><span class="guide-brand-name">devhost</span>guide
+        </div>
+        <h1 id="title-text" class="guide-title">Guide title</h1>
+      </div>
+
+      <div id="cues" class="guide-cues">
+        <div id="cue-intro" class="guide-cue">
+          <p class="guide-cue-card">
+            <span id="cue-intro-w0" class="guide-word">Sample</span>
+            <span id="cue-intro-w1" class="guide-word">promise.</span>
+          </p>
+        </div>
+        <div id="cue-guide" class="guide-cue">
+          <p class="guide-cue-card">
+            <span id="cue-guide-w0" class="guide-word">Sample</span>
+            <span id="cue-guide-w1" class="guide-word">narration.</span>
+          </p>
+        </div>
+      </div>
+
+      <div id="end-card" class="guide-end">
+        <div id="end-brand" class="guide-end-brand">
+          <div class="guide-end-mark">dh</div>
+          <div class="guide-end-name">devhost</div>
+        </div>
+        <div id="end-address" class="guide-end-address">alexgorbatchev.github.io/devhost</div>
+      </div>
+
+      <div id="cut-flash"></div>
+
+      <!-- One bus lifts every narration line to the same level under one ceiling. -->
+      <hf-audio-group
+        id="voiceover"
+        data-label="Voiceover"
+        data-fx-chain='{"version":1,"nodes":[{"type":"gain","id":"n1","label":"Voice level","params":{"gain":5}},{"type":"limiter","id":"n2","label":"Ceiling","params":{"limit":-3}}]}'
+      ></hf-audio-group>
+      <div id="narration">
+        <audio
+          id="voice-intro"
+          data-narration="intro"
+          data-audio-group="voiceover"
+          src="assets/audio/voice/intro.mp3"
+          data-start="0.35"
+          data-duration="1.5"
+          data-track-index="10"
+          data-volume="1"
+        ></audio>
+        <audio
+          id="voice-guide"
+          data-narration="guide"
+          data-audio-group="voiceover"
+          src="assets/audio/voice/guide.mp3"
+          data-start="2.55"
+          data-duration="2"
+          data-track-index="10"
+          data-volume="1"
+        ></audio>
+      </div>
+
+      <!-- The bed stays under the narration, comes up for the end card, and fades out with the film. -->
+      <audio
+        id="music"
+        src="assets/audio/music.mp3"
+        data-start="0"
+        data-duration="12"
+        data-track-index="11"
+        data-volume="1"
+        data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0.3},{"t":12,"v":0}]}]}'
+      ></audio>
+    </div>
+    <script id="guide-film">
+      window.__guideFilm = {
+        duration: 12,
+        introSeconds: 2.4,
+        outroSeconds: 1.8,
+        cuts: [],
+        cues: [
+          { cue: "cue-intro", cueStart: 0.3, cueEnd: 2.4, words: [0.35, 0.9] },
+          { cue: "cue-guide", cueStart: 2.5, cueEnd: 10.2, words: [2.55, 3.1] },
+        ],
+      };
+    </script>
+    <script>
+      const film = window.__guideFilm;
+      const stageStart = film.introSeconds;
+      const outroStart = film.duration - film.outroSeconds;
+      const tl = gsap.timeline({ paused: true });
+
+      // The ground drifts for the whole film so every cut lands on something moving.
+      tl.fromTo("#backdrop-grid", { x: 0, y: 0 }, { x: -80, y: -80, duration: film.duration, ease: "none" }, 0);
+      tl.fromTo(
+        "#backdrop-glow-accent",
+        { x: 0, y: 0 },
+        { x: 420, y: 220, duration: film.duration, ease: "sine.inOut" },
+        0,
+      );
+      tl.fromTo(
+        "#backdrop-glow-cyan",
+        { x: 0, y: 0 },
+        { x: -380, y: -260, duration: film.duration, ease: "sine.inOut" },
+        0,
+      );
+
+      // The title card: the brand drops in, the title rises, and both leave as the window takes the stage.
+      tl.fromTo(
+        "#title-brand",
+        { y: -40, opacity: 0, scale: 0.8 },
+        { y: 0, opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2.2)" },
+        0.08,
+      );
+      tl.fromTo("#title-text", { y: 90, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "expo.out" }, 0.2);
+      tl.to("#title-card", { y: -140, scale: 0.84, opacity: 0, duration: 0.4, ease: "expo.in" }, stageStart - 0.42);
+      tl.fromTo(
+        "#stage-window",
+        { y: 260, opacity: 0, rotationX: 24, transformPerspective: 1600 },
+        { y: 0, opacity: 1, rotationX: 0, duration: 0.7, ease: "expo.out" },
+        stageStart - 0.15,
+      );
+      tl.fromTo(
+        "#stage-title",
+        { scale: 0.4, opacity: 0, rotation: 8 },
+        { scale: 1, opacity: 1, rotation: 2, duration: 0.4, ease: "back.out(2.6)" },
+        stageStart + 0.3,
+      );
+
+      // One white frame on each cut ties a new clip to the line that introduces it.
+      for (const cut of film.cuts) {
+        tl.set("#cut-flash", { opacity: 0.4 }, cut);
+        tl.to("#cut-flash", { opacity: 0, duration: 0.28, ease: "power2.out" }, cut);
+      }
+      for (const cue of film.cues) {
+        tl.set(`#${cue.cue}`, { opacity: 1 }, cue.cueStart);
+        tl.set(`#${cue.cue}`, { opacity: 0 }, cue.cueEnd);
+        tl.fromTo(
+          `#${cue.cue} .guide-cue-card`,
+          { y: 44, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.35, ease: "expo.out" },
+          cue.cueStart,
+        );
+        // Each word lights up as it is spoken.
+        for (const [word, spokenAt] of cue.words.entries()) {
+          tl.fromTo(`#${cue.cue}-w${word}`, { opacity: 0.36 }, { opacity: 1, duration: 0.12, ease: "none" }, spokenAt);
+        }
+      }
+
+      // The end card: the window falls back and the brand lands where it stood.
+      tl.to("#stage", { scale: 0.9, opacity: 0, duration: 0.34, ease: "expo.in" }, outroStart - 0.34);
+      tl.set("#end-card", { opacity: 1 }, outroStart);
+      tl.fromTo(
+        "#end-brand",
+        { scale: 0.7, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(2)" },
+        outroStart,
+      );
+      tl.fromTo(
+        "#end-address",
+        { y: 50, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.4, ease: "expo.out" },
+        outroStart + 0.22,
+      );
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

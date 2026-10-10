@@ -4,7 +4,7 @@ import type { Subprocess } from "bun";
 import type { Browser } from "playwright";
 import { assembleDemo } from "./assembleDemo";
 import { cleanupDemoRuntime } from "./cleanupDemoRuntime";
-import { promoCaptureScale } from "./constants";
+import { guideCaptureScale, promoCaptureScale } from "./constants";
 import { createBrowserScenes } from "./createBrowserScenes";
 import { createDemoRuntime } from "./createDemoRuntime";
 import { createDemoPage } from "./createDemoPage";
@@ -13,15 +13,17 @@ import { launchDemoBrowser } from "./launchDemoBrowser";
 import { prepareDemoCaddy } from "./prepareDemoCaddy";
 import { preparePromoRenderer } from "./preparePromoRenderer";
 import { recordBrowserScene } from "./recordBrowserScene";
+import { renderGuideFilm } from "./renderGuideFilm";
 import { renderPromo } from "./renderPromo";
 import { renderPromoComposition } from "./renderPromoComposition";
 import { runCommand } from "./runCommand";
 import { scaleTape } from "./scaleTape";
 import { startDemoStack } from "./startDemoStack";
 import { stopProcess } from "./stopProcess";
-import type { IRecordedClip } from "./types";
+import type { IGuideRun, IRecordedClip, IRecordedSourceClip } from "./types";
 
-export async function recordDemo(signal: AbortSignal, selectedScene: string): Promise<string> {
+// With a guide, the scene's clips become that guide's film; otherwise a single scene is exported with captions.
+export async function recordDemo(signal: AbortSignal, selectedScene: string, guide?: IGuideRun): Promise<string> {
   const repositoryPath = resolve(import.meta.dir, "../../../..");
   const scenes = createBrowserScenes();
   if (!["all", "startup", "devtools", ...scenes.map((scene) => scene.id)].includes(selectedScene)) {
@@ -29,10 +31,10 @@ export async function recordDemo(signal: AbortSignal, selectedScene: string): Pr
   }
   // The full sequence becomes the promo: real scenes captured at twice the pixel density, composed by HyperFrames.
   const isPromo = selectedScene === "all";
-  const captureScale = isPromo ? promoCaptureScale : 1;
+  const captureScale = isPromo ? promoCaptureScale : guide ? guideCaptureScale : 1;
   const dependencies = ["bun", "just", "git", "caddy", "ffmpeg", "ffprobe", "vhs", "ttyd", "bash", "ln"];
   // HyperFrames runs on Node.js; Bun starts it from the promo project's pinned script.
-  if (isPromo) dependencies.push("node");
+  if (isPromo || guide) dependencies.push("node");
   if (isPromo || selectedScene === "annotations") dependencies.push("pi");
   if (selectedScene === "react-highlight") dependencies.push("nvim");
   for (const executable of dependencies) {
@@ -74,6 +76,7 @@ export async function recordDemo(signal: AbortSignal, selectedScene: string): Pr
     ) + "\n",
   );
   const clips: IRecordedClip[] = [];
+  const guideSources: IRecordedSourceClip[] = [];
   let stack: Subprocess | undefined;
   let browser: Browser | undefined;
   let recordingError: unknown;
@@ -133,18 +136,36 @@ export async function recordDemo(signal: AbortSignal, selectedScene: string): Pr
         console.log(`Recording ${scene.id}...`);
         const sources = await recordBrowserScene(page, scene, runtime, signal, captureScale);
         if (isPromo) continue;
+        if (guide) {
+          guideSources.push(...sources);
+          continue;
+        }
         for (const source of sources) {
           clips.push(await exportClip(runtime.directoryPath, source.id, source.path, source.caption));
         }
       }
     }
     signal.throwIfAborted();
-    if (isPromo) {
+    if (isPromo || guide) {
       // The render reads only the captured files, so the browser and the stack stop before it starts.
       await browser?.close();
       browser = undefined;
       if (stack) await stopProcess(stack);
       stack = undefined;
+    }
+    if (guide) {
+      console.log(`Rendering the ${guide.slug} guide film...`);
+      videoPath = await renderGuideFilm({
+        directoryPath: runtime.directoryPath,
+        filmPath: import.meta.dir,
+        slug: guide.slug,
+        title: guide.title,
+        address: new URL(runtime.url).host,
+        clips: guideSources.map((source) => ({ clip: source.id, footage: { sourceId: source.id } })),
+        render: renderPromoComposition,
+        signal,
+      });
+    } else if (isPromo) {
       console.log("Rendering the promo...");
       videoPath = await renderPromo({
         directoryPath: runtime.directoryPath,

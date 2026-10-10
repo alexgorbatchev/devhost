@@ -5,42 +5,6 @@
       inset: 0;
       overflow: hidden;
     }
-    .backdrop-fill {
-      position: absolute;
-      inset: 0;
-      background: var(--dh-term-bg);
-    }
-    .backdrop-grid {
-      position: absolute;
-      inset: -80px;
-      background-image:
-        linear-gradient(color-mix(in srgb, var(--dh-fg) 4.5%, transparent) 1px, transparent 1px),
-        linear-gradient(90deg, color-mix(in srgb, var(--dh-fg) 4.5%, transparent) 1px, transparent 1px);
-      background-size: 80px 80px;
-    }
-    .backdrop-glow {
-      position: absolute;
-      width: 900px;
-      height: 900px;
-      border-radius: 50%;
-      filter: blur(140px);
-      opacity: 0.2;
-    }
-    .backdrop-glow-accent {
-      left: -260px;
-      top: -320px;
-      background: var(--dh-accent);
-    }
-    .backdrop-glow-cyan {
-      right: -300px;
-      bottom: -380px;
-      background: var(--dh-mark-alt);
-    }
-    .backdrop-vignette {
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(ellipse at center, transparent 45%, var(--dh-backdrop) 100%);
-    }
   </style>
 
   <div id="root" data-composition-id="backdrop" data-width="1920" data-height="1080">

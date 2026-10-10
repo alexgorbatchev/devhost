@@ -26,7 +26,6 @@ export function createGuideTerminalScene(slug: string, port: number): IGuideTerm
     case "managed-caddy":
       return {
         slug,
-        caption: "One proxy. Local HTTPS domains. Route each service by path.",
         manifest: header + web + api,
         steps: [
           config,
@@ -44,14 +43,12 @@ export function createGuideTerminalScene(slug: string, port: number): IGuideTerm
     case "stack-lifecycle":
       return {
         slug,
-        caption: "Start dependencies first. Stop the whole stack with one command.",
         manifest: header + api + web + 'dependsOn = ["api"]\n',
         steps,
       };
     case "environment-variables":
       return {
         slug,
-        caption: "Automatic bind inputs and service context reach your application.",
         manifest:
           header + web + '\n[services.web.env]\nSHOW_BIND_INPUTS = "1"\nDEMO_MESSAGE = "Configured in devhost.toml"\n',
         steps,
@@ -59,7 +56,6 @@ export function createGuideTerminalScene(slug: string, port: number): IGuideTerm
     case "service-references":
       return {
         slug,
-        caption: "Resolve the API's assigned port before starting its consumer.",
         manifest:
           header +
           api.replace('port = "auto"', 'bindHost = "127.0.0.1"\nport = "auto"') +
@@ -70,7 +66,6 @@ export function createGuideTerminalScene(slug: string, port: number): IGuideTerm
     case "manifest-includes":
       return {
         slug,
-        caption: "Each package owns its services. The root starts them together.",
         manifest: header.replace(
           "killZombies = false\n",
           'killZombies = false\nincludes = ["packages/*/devhost.toml"]\n',
@@ -88,7 +83,6 @@ export function createGuideTerminalScene(slug: string, port: number): IGuideTerm
     case "managed-daemon-style-services":
       return {
         slug,
-        caption: "Own a background service through explicit start, status, and stop commands.",
         daemonPort: port,
         manifest:
           header +
@@ -109,7 +103,6 @@ export function createGuideTerminalScene(slug: string, port: number): IGuideTerm
     case "docker-backed-services":
       return {
         slug,
-        caption: "Route a published Docker port. Its lifecycle stays with Docker.",
         isDocker: true,
         dockerPort: port,
         manifest:
@@ -138,7 +131,6 @@ export function createGuideTerminalScene(slug: string, port: number): IGuideTerm
     case "troubleshooting":
       return {
         slug,
-        caption: "A rejected manifest leaves the running stack intact. Correct it and save again.",
         manifest: header + web,
         files: {
           "invalid.toml": header + web.replace('port = "auto"', "port = -1"),
@@ -164,7 +156,6 @@ export function createGuideTerminalScene(slug: string, port: number): IGuideTerm
     case "shared-managed-caddy-settings":
       return {
         slug,
-        caption: "Shared listener settings serve the same routed service over HTTP and HTTPS.",
         isPrivateCaddy: true,
         manifest:
           header.replace(
