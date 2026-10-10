@@ -123,7 +123,9 @@ func TestPlaygroundStartupFailureKeepsDiagnostics(t *testing.T) {
 	for _, app := range []string{"backend", "frontend"} {
 		t.Run(app, func(t *testing.T) {
 			port := nettest.ReservePort(t)
-			listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+			// Bun listens on the IPv4 wildcard address. Occupy that same address:
+			// macOS can allow a wildcard listener alongside a loopback-only listener.
+			listener, err := net.Listen("tcp4", fmt.Sprintf("0.0.0.0:%d", port))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -142,7 +144,7 @@ func TestPlaygroundStartupFailureKeepsDiagnostics(t *testing.T) {
 				}
 			}()
 			if !waitForExitWithinGracePeriod(started, 5*time.Second) {
-				t.Fatal("service did not exit after its port collision")
+				t.Fatalf("service did not exit after its port collision:\n%s", output.snapshot())
 			}
 			started.wait()
 			if started.exitCodeValue() == 0 || !strings.Contains(output.snapshot(), "EADDRINUSE") {

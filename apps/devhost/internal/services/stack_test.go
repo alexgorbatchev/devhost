@@ -2289,15 +2289,11 @@ func TestStartStackRunsDaemonLifecycleCommands(t *testing.T) {
 		unregisterProcessSignals = originalSignalStopper
 	}()
 
-	signalExits := make(chan os.Signal, 1)
-	registerProcessSignals = func(ch chan<- os.Signal) {
-		go func() {
-			receivedSignal := <-signalExits
-			ch <- receivedSignal
-		}()
-	}
+	signals := make(chan chan<- os.Signal, 1)
+	registerProcessSignals = func(ch chan<- os.Signal) { signals <- ch }
 	unregisterProcessSignals = func(ch chan<- os.Signal) {}
 
+	var output shutdownOutput
 	resultCh := make(chan struct {
 		exitCode int
 		error    error
@@ -2306,9 +2302,9 @@ func TestStartStackRunsDaemonLifecycleCommands(t *testing.T) {
 		exitCode, err := StartStack(&manifestValue, []string{"api"}, StartStackOptions{
 			CaddyPaths:          paths,
 			Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
-			LogWriter:           ioDiscard{},
-			ServiceStdoutWriter: ioDiscard{},
-			ServiceStderrWriter: ioDiscard{},
+			LogWriter:           &output,
+			ServiceStdoutWriter: &output,
+			ServiceStderrWriter: &output,
 			ShutdownGracePeriod: 100 * time.Millisecond,
 		})
 		resultCh <- struct {
@@ -2317,18 +2313,24 @@ func TestStartStackRunsDaemonLifecycleCommands(t *testing.T) {
 		}{exitCode: exitCode, error: err}
 	}()
 
-	waitForCondition(t, 5*time.Second, func() bool {
-		traceText, err := os.ReadFile(tracePath)
-		if err != nil {
-			return false
+	signalExits := <-signals
+	defer func() {
+		if signalExits != nil {
+			signalExits <- syscall.SIGTERM
+			<-resultCh
 		}
-		return contains(nonEmptyLines(string(traceText)), "start")
+	}()
+	// The start trace precedes launching the daemon. The URL is logged only after
+	// the start command and health check finish, so shutdown cannot cancel startup.
+	waitForCondition(t, 5*time.Second, func() bool {
+		return strings.Contains(output.snapshot(), fmt.Sprintf("[hello-stack] api (primary): http://127.0.0.1:%d\n", servicePort))
 	})
 
 	signalExits <- syscall.SIGTERM
 	result := <-resultCh
+	signalExits = nil
 	if result.error != nil {
-		t.Fatalf("StartStack(...) error = %v", result.error)
+		t.Fatalf("StartStack(...) error = %v\n%s", result.error, output.snapshot())
 	}
 	if result.exitCode != 143 {
 		t.Fatalf("StartStack(...) exit code = %d, want 143", result.exitCode)
