@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import type { Subprocess } from "bun";
+import { isDemoStackReady } from "./isDemoStackReady";
 import type { IDemoRuntime } from "./types";
 import { stopProcess } from "./stopProcess";
 
@@ -12,7 +13,6 @@ export async function startDemoStack(runtime: IDemoRuntime, signal: AbortSignal)
     stdout: Bun.file(join(runtime.directoryPath, "stack.stdout.log")),
     stderr: Bun.file(join(runtime.directoryPath, "stack.stderr.log")),
   });
-  const probe = new URL("/api/hello", runtime.url);
   try {
     for (let attempt = 0; attempt < 150; attempt += 1) {
       signal.throwIfAborted();
@@ -20,21 +20,7 @@ export async function startDemoStack(runtime: IDemoRuntime, signal: AbortSignal)
         throw new Error(`Demo stack exited (${subprocess.exitCode}). Inspect stack.stdout.log and stack.stderr.log`);
       }
       try {
-        const response = await fetch(probe, {
-          tls: { ca: certificate },
-          signal: AbortSignal.any([signal, AbortSignal.timeout(500)]),
-        });
-        if (response.ok) {
-          await response.body?.cancel();
-          const frontend = await fetch(new URL("/", probe), {
-            tls: { ca: certificate },
-            signal: AbortSignal.any([signal, AbortSignal.timeout(500)]),
-          });
-          const isFrontendReady = frontend.ok;
-          await frontend.body?.cancel();
-          if (isFrontendReady) return subprocess;
-        }
-        await response.body?.cancel();
+        if (await isDemoStackReady(runtime.url, signal, certificate)) return subprocess;
       } catch {
         signal.throwIfAborted();
       }

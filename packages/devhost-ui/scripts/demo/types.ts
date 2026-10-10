@@ -29,6 +29,12 @@ export interface IDemoRuntime {
   env: NodeJS.ProcessEnv;
 }
 
+// What a stand-in for a starting devhost stack answers with.
+export interface IStartingStackState {
+  isApiUp: boolean;
+  isPageHealthy: boolean;
+}
+
 export interface IBrowserScene {
   id: string;
   caption: string;

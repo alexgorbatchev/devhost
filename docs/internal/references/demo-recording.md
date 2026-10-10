@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-09 15:20
+last_modified: 2026-10-09 22:40
 status: current
 ---
 
@@ -67,7 +67,7 @@ just demo record query
 
 A single-scene run exports that scene as a silent `devhost-demo.mp4` of 1280 × 860 at 30 fps: a 1280 × 720 recording plus a 140-pixel caption band. Captions use DejaVu Sans Mono at size 37.5 in the band's own pixel coordinate system, centered horizontally and vertically even when they wrap. Run the full command after reviewing the scene to refresh the promo.
 
-The browser loads the playground and waits for the toolbar and fonts before capture starts. All browser scenes reuse that page, retaining the annotation and live fix without reloading between scenes. A full-page navigation during capture fails the recording; real HMR updates and client-side Query navigation remain visible.
+devhost answers a browser navigation with its own startup page until a service passes its health check, while other requests already reach the app. The recorder therefore waits until the API answers and a navigation, a request with `Sec-Fetch-Dest: document`, reaches the playground. The browser then loads the playground and waits for the toolbar and fonts before capture starts. All browser scenes reuse that page, retaining the annotation and live fix without reloading between scenes. A full-page navigation during capture fails the recording; real HMR updates and client-side Query navigation remain visible.
 
 `DEVHOST_DEMO_HOST` can override the default `demo.localhost`; it must remain a `.localhost` hostname. Concurrent runs must use distinct hostnames. Existing host claims are protected by `killZombies = false`. Backend services still receive automatic ports behind the proxy; public URLs use standard HTTPS without a port suffix.
 
@@ -123,6 +123,7 @@ Sources live in `packages/devhost-ui/scripts/demo/`:
 | `createBrowserScenes.ts`                                                    | Browser interactions, captions, and deliberate viewer pauses                    |
 | `devhost.toml`                                                              | Real service manifest; environment templates select checkout and hostname       |
 | `constants.ts`                                                              | Viewport, caption band, promo capture scale, and the promo's length limit       |
+| `isDemoStackReady.ts` / `startDemoStack.ts`                                 | Start the stack and wait until a browser navigation reaches the playground      |
 | `exportClip.ts` / `assembleDemo.ts`                                         | Single scenes and guides: normalize clips, burn captions, and concatenate       |
 | `promo/`                                                                    | The promo's HyperFrames project: composition, narration, and audio              |
 | `renderPromo.ts` / `renderPromoComposition.ts`                              | Stage a copy of the project in the run directory, render it, and verify it      |
