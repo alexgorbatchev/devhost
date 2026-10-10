@@ -388,7 +388,7 @@ func TestValidateManifestAcceptsDocumentedFixtureShape(t *testing.T) {
 
 	apiHealth := manifest.Services["api"].Health
 	if apiHealth == nil || apiHealth.HTTP == nil || *apiHealth.HTTP != "/healthz" {
-		t.Fatalf("manifest.Services[\"api\"].Health = %#v, want HTTP health path", apiHealth)
+		t.Fatalf("manifest.Services[\"api\"].Health = %#v, want HTTP health shorthand", apiHealth)
 	}
 
 	workerLifecycle := manifest.Services["worker"].Lifecycle
