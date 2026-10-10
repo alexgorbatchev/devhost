@@ -387,8 +387,8 @@ func TestValidateManifestAcceptsDocumentedFixtureShape(t *testing.T) {
 	}
 
 	apiHealth := manifest.Services["api"].Health
-	if apiHealth == nil || apiHealth.HTTP == nil || *apiHealth.HTTP != "http://127.0.0.1:4000/healthz" {
-		t.Fatalf("manifest.Services[\"api\"].Health = %#v, want HTTP health", apiHealth)
+	if apiHealth == nil || apiHealth.HTTP == nil || *apiHealth.HTTP != "/healthz" {
+		t.Fatalf("manifest.Services[\"api\"].Health = %#v, want HTTP health path", apiHealth)
 	}
 
 	workerLifecycle := manifest.Services["worker"].Lifecycle
