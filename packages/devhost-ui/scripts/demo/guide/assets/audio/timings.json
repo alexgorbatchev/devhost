@@ -1,0 +1,3766 @@
+{
+  "guides": {
+    "stack-lifecycle": [
+      {
+        "id": "intro",
+        "path": "assets/audio/voice/stack-lifecycle/intro.mp3",
+        "duration": 4.365351,
+        "words": [
+          {
+            "text": "Start",
+            "start": 0,
+            "end": 0.348
+          },
+          {
+            "text": "dependencies",
+            "start": 0.383,
+            "end": 1.022
+          },
+          {
+            "text": "first.",
+            "start": 1.091,
+            "end": 1.591
+          },
+          {
+            "text": "Stop",
+            "start": 1.974,
+            "end": 2.252
+          },
+          {
+            "text": "the",
+            "start": 2.31,
+            "end": 2.38
+          },
+          {
+            "text": "whole",
+            "start": 2.438,
+            "end": 2.647
+          },
+          {
+            "text": "stack",
+            "start": 2.682,
+            "end": 2.972
+          },
+          {
+            "text": "with",
+            "start": 3.03,
+            "end": 3.17
+          },
+          {
+            "text": "one",
+            "start": 3.262,
+            "end": 3.437
+          },
+          {
+            "text": "command.",
+            "start": 3.483,
+            "end": 4.365
+          }
+        ]
+      },
+      {
+        "id": "step-1",
+        "path": "assets/audio/voice/stack-lifecycle/step-1.mp3",
+        "duration": 2.321995,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.128
+          },
+          {
+            "text": "web",
+            "start": 0.186,
+            "end": 0.348
+          },
+          {
+            "text": "service",
+            "start": 0.406,
+            "end": 0.731
+          },
+          {
+            "text": "depends",
+            "start": 0.766,
+            "end": 1.149
+          },
+          {
+            "text": "on",
+            "start": 1.184,
+            "end": 1.254
+          },
+          {
+            "text": "the",
+            "start": 1.277,
+            "end": 1.347
+          },
+          {
+            "text": "API.",
+            "start": 1.393,
+            "end": 2.322
+          }
+        ]
+      },
+      {
+        "id": "step-2",
+        "path": "assets/audio/voice/stack-lifecycle/step-2.mp3",
+        "duration": 1.811156,
+        "words": [
+          {
+            "text": "Start",
+            "start": 0,
+            "end": 0.348
+          },
+          {
+            "text": "the",
+            "start": 0.383,
+            "end": 0.453
+          },
+          {
+            "text": "stack.",
+            "start": 0.499,
+            "end": 1.811
+          }
+        ]
+      },
+      {
+        "id": "step-3",
+        "path": "assets/audio/voice/stack-lifecycle/step-3.mp3",
+        "duration": 3.715193,
+        "words": [
+          {
+            "text": "devhost",
+            "start": 0,
+            "end": 0.511
+          },
+          {
+            "text": "starts",
+            "start": 0.569,
+            "end": 0.871
+          },
+          {
+            "text": "the",
+            "start": 0.917,
+            "end": 0.987
+          },
+          {
+            "text": "API",
+            "start": 1.057,
+            "end": 1.486
+          },
+          {
+            "text": "first,",
+            "start": 1.602,
+            "end": 2.043
+          },
+          {
+            "text": "then",
+            "start": 2.159,
+            "end": 2.31
+          },
+          {
+            "text": "the",
+            "start": 2.357,
+            "end": 2.426
+          },
+          {
+            "text": "web",
+            "start": 2.473,
+            "end": 2.647
+          },
+          {
+            "text": "service.",
+            "start": 2.717,
+            "end": 3.715
+          }
+        ]
+      },
+      {
+        "id": "step-4",
+        "path": "assets/audio/voice/stack-lifecycle/step-4.mp3",
+        "duration": 3.575873,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.163
+          },
+          {
+            "text": "web",
+            "start": 0.221,
+            "end": 0.383
+          },
+          {
+            "text": "service",
+            "start": 0.441,
+            "end": 0.778
+          },
+          {
+            "text": "answers",
+            "start": 0.813,
+            "end": 1.126
+          },
+          {
+            "text": "on",
+            "start": 1.184,
+            "end": 1.265
+          },
+          {
+            "text": "its",
+            "start": 1.312,
+            "end": 1.451
+          },
+          {
+            "text": "HTTPS",
+            "start": 1.521,
+            "end": 2.415
+          },
+          {
+            "text": "hostname.",
+            "start": 2.531,
+            "end": 3.576
+          }
+        ]
+      },
+      {
+        "id": "step-5",
+        "path": "assets/audio/voice/stack-lifecycle/step-5.mp3",
+        "duration": 1.950476,
+        "words": [
+          {
+            "text": "Stopping",
+            "start": 0,
+            "end": 0.476
+          },
+          {
+            "text": "takes",
+            "start": 0.546,
+            "end": 0.813
+          },
+          {
+            "text": "one",
+            "start": 0.894,
+            "end": 1.115
+          },
+          {
+            "text": "command.",
+            "start": 1.161,
+            "end": 1.95
+          }
+        ]
+      }
+    ],
+    "annotations": [
+      {
+        "id": "intro",
+        "path": "assets/audio/voice/annotations/intro.mp3",
+        "duration": 3.575873,
+        "words": [
+          {
+            "text": "Point",
+            "start": 0,
+            "end": 0.313
+          },
+          {
+            "text": "at",
+            "start": 0.36,
+            "end": 0.43
+          },
+          {
+            "text": "the",
+            "start": 0.464,
+            "end": 0.534
+          },
+          {
+            "text": "problem,",
+            "start": 0.604,
+            "end": 1.103
+          },
+          {
+            "text": "and",
+            "start": 1.138,
+            "end": 1.3
+          },
+          {
+            "text": "let",
+            "start": 1.382,
+            "end": 1.533
+          },
+          {
+            "text": "a",
+            "start": 1.567,
+            "end": 1.591
+          },
+          {
+            "text": "coding",
+            "start": 1.683,
+            "end": 2.02
+          },
+          {
+            "text": "agent",
+            "start": 2.078,
+            "end": 2.345
+          },
+          {
+            "text": "fix",
+            "start": 2.415,
+            "end": 2.635
+          },
+          {
+            "text": "it.",
+            "start": 2.705,
+            "end": 3.576
+          }
+        ]
+      },
+      {
+        "id": "annotations-1",
+        "path": "assets/audio/voice/annotations/annotations-1.mp3",
+        "duration": 3.575873,
+        "words": [
+          {
+            "text": "Hold",
+            "start": 0,
+            "end": 0.325
+          },
+          {
+            "text": "Alt,",
+            "start": 0.395,
+            "end": 0.731
+          },
+          {
+            "text": "click",
+            "start": 0.801,
+            "end": 1.045
+          },
+          {
+            "text": "an",
+            "start": 1.08,
+            "end": 1.138
+          },
+          {
+            "text": "element,",
+            "start": 1.184,
+            "end": 1.556
+          },
+          {
+            "text": "and",
+            "start": 1.579,
+            "end": 1.649
+          },
+          {
+            "text": "describe",
+            "start": 1.695,
+            "end": 2.136
+          },
+          {
+            "text": "the",
+            "start": 2.159,
+            "end": 2.229
+          },
+          {
+            "text": "change.",
+            "start": 2.276,
+            "end": 3.576
+          }
+        ]
+      },
+      {
+        "id": "annotations-2",
+        "path": "assets/audio/voice/annotations/annotations-2.mp3",
+        "duration": 4.040272,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.197
+          },
+          {
+            "text": "Pi",
+            "start": 0.267,
+            "end": 0.511
+          },
+          {
+            "text": "coding",
+            "start": 0.592,
+            "end": 0.906
+          },
+          {
+            "text": "agent",
+            "start": 0.964,
+            "end": 1.242
+          },
+          {
+            "text": "takes",
+            "start": 1.289,
+            "end": 1.521
+          },
+          {
+            "text": "the",
+            "start": 1.556,
+            "end": 1.625
+          },
+          {
+            "text": "annotation",
+            "start": 1.683,
+            "end": 2.241
+          },
+          {
+            "text": "and",
+            "start": 2.299,
+            "end": 2.403
+          },
+          {
+            "text": "edits",
+            "start": 2.519,
+            "end": 2.786
+          },
+          {
+            "text": "your",
+            "start": 2.821,
+            "end": 2.949
+          },
+          {
+            "text": "source.",
+            "start": 3.007,
+            "end": 4.04
+          }
+        ]
+      },
+      {
+        "id": "annotations-3",
+        "path": "assets/audio/voice/annotations/annotations-3.mp3",
+        "duration": 2.879274,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.139
+          },
+          {
+            "text": "fix",
+            "start": 0.186,
+            "end": 0.383
+          },
+          {
+            "text": "is",
+            "start": 0.453,
+            "end": 0.534
+          },
+          {
+            "text": "on",
+            "start": 0.604,
+            "end": 0.685
+          },
+          {
+            "text": "the",
+            "start": 0.731,
+            "end": 0.801
+          },
+          {
+            "text": "page,",
+            "start": 0.848,
+            "end": 1.312
+          },
+          {
+            "text": "without",
+            "start": 1.393,
+            "end": 1.683
+          },
+          {
+            "text": "a",
+            "start": 1.707,
+            "end": 1.73
+          },
+          {
+            "text": "full",
+            "start": 1.788,
+            "end": 1.997
+          },
+          {
+            "text": "reload.",
+            "start": 2.078,
+            "end": 2.879
+          }
+        ]
+      }
+    ],
+    "devtools": [
+      {
+        "id": "intro",
+        "path": "assets/audio/voice/devtools/intro.mp3",
+        "duration": 4.458231,
+        "words": [
+          {
+            "text": "Optional",
+            "start": 0,
+            "end": 0.441
+          },
+          {
+            "text": "devtools",
+            "start": 0.557,
+            "end": 1.138
+          },
+          {
+            "text": "put",
+            "start": 1.184,
+            "end": 1.324
+          },
+          {
+            "text": "your",
+            "start": 1.37,
+            "end": 1.474
+          },
+          {
+            "text": "stack's",
+            "start": 1.521,
+            "end": 1.846
+          },
+          {
+            "text": "logs",
+            "start": 1.916,
+            "end": 2.206
+          },
+          {
+            "text": "and",
+            "start": 2.241,
+            "end": 2.322
+          },
+          {
+            "text": "controls",
+            "start": 2.38,
+            "end": 2.914
+          },
+          {
+            "text": "inside",
+            "start": 3.03,
+            "end": 3.425
+          },
+          {
+            "text": "the",
+            "start": 3.448,
+            "end": 3.518
+          },
+          {
+            "text": "page.",
+            "start": 3.553,
+            "end": 4.458
+          }
+        ]
+      },
+      {
+        "id": "overview-1",
+        "path": "assets/audio/voice/devtools/overview-1.mp3",
+        "duration": 4.272472,
+        "words": [
+          {
+            "text": "Hover",
+            "start": 0,
+            "end": 0.348
+          },
+          {
+            "text": "the",
+            "start": 0.418,
+            "end": 0.488
+          },
+          {
+            "text": "log",
+            "start": 0.557,
+            "end": 0.789
+          },
+          {
+            "text": "minimap",
+            "start": 0.848,
+            "end": 1.265
+          },
+          {
+            "text": "for",
+            "start": 1.324,
+            "end": 1.451
+          },
+          {
+            "text": "real-time",
+            "start": 1.533,
+            "end": 1.985
+          },
+          {
+            "text": "output",
+            "start": 2.032,
+            "end": 2.38
+          },
+          {
+            "text": "from",
+            "start": 2.415,
+            "end": 2.543
+          },
+          {
+            "text": "your",
+            "start": 2.589,
+            "end": 2.705
+          },
+          {
+            "text": "services.",
+            "start": 2.763,
+            "end": 4.272
+          }
+        ]
+      },
+      {
+        "id": "overview-2",
+        "path": "assets/audio/voice/devtools/overview-2.mp3",
+        "duration": 4.272472,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.163
+          },
+          {
+            "text": "Services",
+            "start": 0.221,
+            "end": 0.673
+          },
+          {
+            "text": "panel",
+            "start": 0.743,
+            "end": 1.033
+          },
+          {
+            "text": "lists",
+            "start": 1.08,
+            "end": 1.265
+          },
+          {
+            "text": "every",
+            "start": 1.382,
+            "end": 1.672
+          },
+          {
+            "text": "service,",
+            "start": 1.73,
+            "end": 2.241
+          },
+          {
+            "text": "each",
+            "start": 2.392,
+            "end": 2.566
+          },
+          {
+            "text": "with",
+            "start": 2.601,
+            "end": 2.728
+          },
+          {
+            "text": "a",
+            "start": 2.775,
+            "end": 2.798
+          },
+          {
+            "text": "restart",
+            "start": 2.879,
+            "end": 3.262
+          },
+          {
+            "text": "control.",
+            "start": 3.309,
+            "end": 4.272
+          }
+        ]
+      },
+      {
+        "id": "overview-3",
+        "path": "assets/audio/voice/devtools/overview-3.mp3",
+        "duration": 3.018594,
+        "words": [
+          {
+            "text": "Browse",
+            "start": 0,
+            "end": 0.372
+          },
+          {
+            "text": "your",
+            "start": 0.406,
+            "end": 0.534
+          },
+          {
+            "text": "Git",
+            "start": 0.615,
+            "end": 0.813
+          },
+          {
+            "text": "worktrees",
+            "start": 0.859,
+            "end": 1.382
+          },
+          {
+            "text": "without",
+            "start": 1.428,
+            "end": 1.683
+          },
+          {
+            "text": "leaving",
+            "start": 1.741,
+            "end": 1.985
+          },
+          {
+            "text": "the",
+            "start": 2.032,
+            "end": 2.101
+          },
+          {
+            "text": "page.",
+            "start": 2.136,
+            "end": 3.019
+          }
+        ]
+      },
+      {
+        "id": "query-1",
+        "path": "assets/audio/voice/devtools/query-1.mp3",
+        "duration": 3.622313,
+        "words": [
+          {
+            "text": "TanStack",
+            "start": 0,
+            "end": 0.534
+          },
+          {
+            "text": "Query's",
+            "start": 0.592,
+            "end": 0.94
+          },
+          {
+            "text": "own",
+            "start": 0.987,
+            "end": 1.138
+          },
+          {
+            "text": "devtools",
+            "start": 1.231,
+            "end": 1.834
+          },
+          {
+            "text": "open",
+            "start": 1.892,
+            "end": 2.078
+          },
+          {
+            "text": "from",
+            "start": 2.125,
+            "end": 2.252
+          },
+          {
+            "text": "the",
+            "start": 2.299,
+            "end": 2.368
+          },
+          {
+            "text": "same",
+            "start": 2.415,
+            "end": 2.659
+          },
+          {
+            "text": "toolbar.",
+            "start": 2.705,
+            "end": 3.622
+          }
+        ]
+      }
+    ],
+    "docker-backed-services": [
+      {
+        "id": "intro",
+        "path": "assets/audio/voice/docker-backed-services/intro.mp3",
+        "duration": 6.919546,
+        "words": [
+          {
+            "text": "Give",
+            "start": 0,
+            "end": 0.244
+          },
+          {
+            "text": "a",
+            "start": 0.267,
+            "end": 0.29
+          },
+          {
+            "text": "Docker",
+            "start": 0.348,
+            "end": 0.627
+          },
+          {
+            "text": "container",
+            "start": 0.685,
+            "end": 1.08
+          },
+          {
+            "text": "a",
+            "start": 1.149,
+            "end": 1.173
+          },
+          {
+            "text": "local",
+            "start": 1.242,
+            "end": 1.544
+          },
+          {
+            "text": "HTTPS",
+            "start": 1.66,
+            "end": 2.612
+          },
+          {
+            "text": "hostname.",
+            "start": 2.728,
+            "end": 3.564
+          },
+          {
+            "text": "Docker",
+            "start": 4.168,
+            "end": 4.551
+          },
+          {
+            "text": "still",
+            "start": 4.632,
+            "end": 4.865
+          },
+          {
+            "text": "starts",
+            "start": 4.923,
+            "end": 5.248
+          },
+          {
+            "text": "and",
+            "start": 5.294,
+            "end": 5.375
+          },
+          {
+            "text": "stops",
+            "start": 5.433,
+            "end": 5.782
+          },
+          {
+            "text": "it.",
+            "start": 5.828,
+            "end": 6.92
+          }
+        ]
+      },
+      {
+        "id": "step-1",
+        "path": "assets/audio/voice/docker-backed-services/step-1.mp3",
+        "duration": 4.92263,
+        "words": [
+          {
+            "text": "This",
+            "start": 0,
+            "end": 0.232
+          },
+          {
+            "text": "service",
+            "start": 0.279,
+            "end": 0.65
+          },
+          {
+            "text": "is",
+            "start": 0.697,
+            "end": 0.813
+          },
+          {
+            "text": "unmanaged:",
+            "start": 0.929,
+            "end": 1.846
+          },
+          {
+            "text": "devhost",
+            "start": 2.055,
+            "end": 2.519
+          },
+          {
+            "text": "routes",
+            "start": 2.589,
+            "end": 2.821
+          },
+          {
+            "text": "to",
+            "start": 2.868,
+            "end": 2.937
+          },
+          {
+            "text": "it",
+            "start": 3.03,
+            "end": 3.1
+          },
+          {
+            "text": "but",
+            "start": 3.146,
+            "end": 3.262
+          },
+          {
+            "text": "never",
+            "start": 3.32,
+            "end": 3.541
+          },
+          {
+            "text": "starts",
+            "start": 3.611,
+            "end": 3.947
+          },
+          {
+            "text": "it.",
+            "start": 4.005,
+            "end": 4.923
+          }
+        ]
+      },
+      {
+        "id": "step-2",
+        "path": "assets/audio/voice/docker-backed-services/step-2.mp3",
+        "duration": 1.718277,
+        "words": [
+          {
+            "text": "Docker",
+            "start": 0,
+            "end": 0.418
+          },
+          {
+            "text": "starts",
+            "start": 0.488,
+            "end": 0.801
+          },
+          {
+            "text": "the",
+            "start": 0.859,
+            "end": 0.929
+          },
+          {
+            "text": "container.",
+            "start": 0.975,
+            "end": 1.718
+          }
+        ]
+      },
+      {
+        "id": "step-3",
+        "path": "assets/audio/voice/docker-backed-services/step-3.mp3",
+        "duration": 3.018594,
+        "words": [
+          {
+            "text": "Its",
+            "start": 0,
+            "end": 0.221
+          },
+          {
+            "text": "port",
+            "start": 0.279,
+            "end": 0.499
+          },
+          {
+            "text": "is",
+            "start": 0.546,
+            "end": 0.615
+          },
+          {
+            "text": "published",
+            "start": 0.685,
+            "end": 1.057
+          },
+          {
+            "text": "on",
+            "start": 1.091,
+            "end": 1.161
+          },
+          {
+            "text": "the",
+            "start": 1.196,
+            "end": 1.265
+          },
+          {
+            "text": "host's",
+            "start": 1.335,
+            "end": 1.707
+          },
+          {
+            "text": "loopback",
+            "start": 1.823,
+            "end": 2.229
+          },
+          {
+            "text": "address.",
+            "start": 2.276,
+            "end": 3.019
+          }
+        ]
+      },
+      {
+        "id": "step-4",
+        "path": "assets/audio/voice/docker-backed-services/step-4.mp3",
+        "duration": 1.532517,
+        "words": [
+          {
+            "text": "Start",
+            "start": 0,
+            "end": 0.325
+          },
+          {
+            "text": "the",
+            "start": 0.36,
+            "end": 0.43
+          },
+          {
+            "text": "stack.",
+            "start": 0.464,
+            "end": 1.533
+          }
+        ]
+      },
+      {
+        "id": "step-5",
+        "path": "assets/audio/voice/docker-backed-services/step-5.mp3",
+        "duration": 5.619229,
+        "words": [
+          {
+            "text": "devhost",
+            "start": 0,
+            "end": 0.522
+          },
+          {
+            "text": "starts",
+            "start": 0.569,
+            "end": 0.871
+          },
+          {
+            "text": "no",
+            "start": 0.94,
+            "end": 1.057
+          },
+          {
+            "text": "process.",
+            "start": 1.126,
+            "end": 1.776
+          },
+          {
+            "text": "It",
+            "start": 2.589,
+            "end": 2.752
+          },
+          {
+            "text": "publishes",
+            "start": 2.81,
+            "end": 3.286
+          },
+          {
+            "text": "the",
+            "start": 3.344,
+            "end": 3.413
+          },
+          {
+            "text": "container's",
+            "start": 3.46,
+            "end": 3.924
+          },
+          {
+            "text": "HTTPS",
+            "start": 4.005,
+            "end": 4.888
+          },
+          {
+            "text": "address.",
+            "start": 4.934,
+            "end": 5.619
+          }
+        ]
+      },
+      {
+        "id": "step-6",
+        "path": "assets/audio/voice/docker-backed-services/step-6.mp3",
+        "duration": 3.715193,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.151
+          },
+          {
+            "text": "container",
+            "start": 0.209,
+            "end": 0.615
+          },
+          {
+            "text": "answers",
+            "start": 0.685,
+            "end": 0.998
+          },
+          {
+            "text": "on",
+            "start": 1.057,
+            "end": 1.149
+          },
+          {
+            "text": "its",
+            "start": 1.196,
+            "end": 1.335
+          },
+          {
+            "text": "HTTPS",
+            "start": 1.393,
+            "end": 2.229
+          },
+          {
+            "text": "hostname.",
+            "start": 2.31,
+            "end": 3.715
+          }
+        ]
+      },
+      {
+        "id": "step-7",
+        "path": "assets/audio/voice/docker-backed-services/step-7.mp3",
+        "duration": 2.182676,
+        "words": [
+          {
+            "text": "Stopping",
+            "start": 0,
+            "end": 0.43
+          },
+          {
+            "text": "the",
+            "start": 0.476,
+            "end": 0.546
+          },
+          {
+            "text": "stack",
+            "start": 0.58,
+            "end": 0.859
+          },
+          {
+            "text": "removes",
+            "start": 0.929,
+            "end": 1.3
+          },
+          {
+            "text": "the",
+            "start": 1.347,
+            "end": 1.416
+          },
+          {
+            "text": "route.",
+            "start": 1.474,
+            "end": 2.183
+          }
+        ]
+      },
+      {
+        "id": "step-8",
+        "path": "assets/audio/voice/docker-backed-services/step-8.mp3",
+        "duration": 2.089796,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.128
+          },
+          {
+            "text": "container",
+            "start": 0.186,
+            "end": 0.615
+          },
+          {
+            "text": "is",
+            "start": 0.662,
+            "end": 0.743
+          },
+          {
+            "text": "still",
+            "start": 0.789,
+            "end": 1.01
+          },
+          {
+            "text": "running.",
+            "start": 1.068,
+            "end": 2.09
+          }
+        ]
+      },
+      {
+        "id": "step-9",
+        "path": "assets/audio/voice/docker-backed-services/step-9.mp3",
+        "duration": 1.996916,
+        "words": [
+          {
+            "text": "Removing",
+            "start": 0,
+            "end": 0.464
+          },
+          {
+            "text": "it",
+            "start": 0.522,
+            "end": 0.592
+          },
+          {
+            "text": "is",
+            "start": 0.639,
+            "end": 0.72
+          },
+          {
+            "text": "Docker's",
+            "start": 0.778,
+            "end": 1.196
+          },
+          {
+            "text": "job.",
+            "start": 1.254,
+            "end": 1.997
+          }
+        ]
+      }
+    ],
+    "environment-variables": [
+      {
+        "id": "intro",
+        "path": "assets/audio/voice/environment-variables/intro.mp3",
+        "duration": 4.92263,
+        "words": [
+          {
+            "text": "devhost",
+            "start": 0,
+            "end": 0.488
+          },
+          {
+            "text": "hands",
+            "start": 0.534,
+            "end": 0.801
+          },
+          {
+            "text": "each",
+            "start": 0.882,
+            "end": 1.068
+          },
+          {
+            "text": "service",
+            "start": 1.126,
+            "end": 1.498
+          },
+          {
+            "text": "its",
+            "start": 1.533,
+            "end": 1.66
+          },
+          {
+            "text": "port,",
+            "start": 1.73,
+            "end": 2.183
+          },
+          {
+            "text": "its",
+            "start": 2.264,
+            "end": 2.426
+          },
+          {
+            "text": "hostname,",
+            "start": 2.473,
+            "end": 2.995
+          },
+          {
+            "text": "and",
+            "start": 3.019,
+            "end": 3.1
+          },
+          {
+            "text": "your",
+            "start": 3.146,
+            "end": 3.274
+          },
+          {
+            "text": "own",
+            "start": 3.32,
+            "end": 3.425
+          },
+          {
+            "text": "variables.",
+            "start": 3.495,
+            "end": 4.923
+          }
+        ]
+      },
+      {
+        "id": "step-1",
+        "path": "assets/audio/voice/environment-variables/step-1.mp3",
+        "duration": 2.925714,
+        "words": [
+          {
+            "text": "This",
+            "start": 0,
+            "end": 0.232
+          },
+          {
+            "text": "service",
+            "start": 0.279,
+            "end": 0.615
+          },
+          {
+            "text": "declares",
+            "start": 0.65,
+            "end": 1.057
+          },
+          {
+            "text": "two",
+            "start": 1.126,
+            "end": 1.312
+          },
+          {
+            "text": "variables",
+            "start": 1.382,
+            "end": 1.892
+          },
+          {
+            "text": "of",
+            "start": 1.95,
+            "end": 2.009
+          },
+          {
+            "text": "its",
+            "start": 2.055,
+            "end": 2.171
+          },
+          {
+            "text": "own.",
+            "start": 2.229,
+            "end": 2.926
+          }
+        ]
+      },
+      {
+        "id": "step-2",
+        "path": "assets/audio/voice/environment-variables/step-2.mp3",
+        "duration": 1.439637,
+        "words": [
+          {
+            "text": "Start",
+            "start": 0,
+            "end": 0.279
+          },
+          {
+            "text": "the",
+            "start": 0.313,
+            "end": 0.383
+          },
+          {
+            "text": "stack.",
+            "start": 0.43,
+            "end": 1.44
+          }
+        ]
+      },
+      {
+        "id": "step-3",
+        "path": "assets/audio/voice/environment-variables/step-3.mp3",
+        "duration": 3.575873,
+        "words": [
+          {
+            "text": "devhost",
+            "start": 0,
+            "end": 0.488
+          },
+          {
+            "text": "assigns",
+            "start": 0.534,
+            "end": 0.882
+          },
+          {
+            "text": "a",
+            "start": 0.917,
+            "end": 0.94
+          },
+          {
+            "text": "free",
+            "start": 0.998,
+            "end": 1.184
+          },
+          {
+            "text": "port",
+            "start": 1.231,
+            "end": 1.533
+          },
+          {
+            "text": "and",
+            "start": 1.579,
+            "end": 1.672
+          },
+          {
+            "text": "starts",
+            "start": 1.741,
+            "end": 2.032
+          },
+          {
+            "text": "the",
+            "start": 2.078,
+            "end": 2.159
+          },
+          {
+            "text": "service.",
+            "start": 2.218,
+            "end": 3.576
+          }
+        ]
+      },
+      {
+        "id": "step-4",
+        "path": "assets/audio/voice/environment-variables/step-4.mp3",
+        "duration": 3.947392,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.139
+          },
+          {
+            "text": "service",
+            "start": 0.186,
+            "end": 0.499
+          },
+          {
+            "text": "received",
+            "start": 0.546,
+            "end": 0.906
+          },
+          {
+            "text": "its",
+            "start": 0.94,
+            "end": 1.057
+          },
+          {
+            "text": "port,",
+            "start": 1.126,
+            "end": 1.521
+          },
+          {
+            "text": "bind",
+            "start": 1.602,
+            "end": 1.892
+          },
+          {
+            "text": "host,",
+            "start": 1.95,
+            "end": 2.299
+          },
+          {
+            "text": "hostname,",
+            "start": 2.345,
+            "end": 2.902
+          },
+          {
+            "text": "and",
+            "start": 2.926,
+            "end": 2.995
+          },
+          {
+            "text": "your",
+            "start": 3.042,
+            "end": 3.158
+          },
+          {
+            "text": "message.",
+            "start": 3.228,
+            "end": 3.947
+          }
+        ]
+      },
+      {
+        "id": "step-5",
+        "path": "assets/audio/voice/environment-variables/step-5.mp3",
+        "duration": 1.207438,
+        "words": [
+          {
+            "text": "Stop",
+            "start": 0,
+            "end": 0.302
+          },
+          {
+            "text": "the",
+            "start": 0.36,
+            "end": 0.43
+          },
+          {
+            "text": "stack.",
+            "start": 0.464,
+            "end": 1.207
+          }
+        ]
+      }
+    ],
+    "managed-caddy": [
+      {
+        "id": "intro",
+        "path": "assets/audio/voice/managed-caddy/intro.mp3",
+        "duration": 6.826667,
+        "words": [
+          {
+            "text": "One",
+            "start": 0,
+            "end": 0.186
+          },
+          {
+            "text": "proxy.",
+            "start": 0.232,
+            "end": 0.917
+          },
+          {
+            "text": "Local",
+            "start": 1.242,
+            "end": 1.637
+          },
+          {
+            "text": "HTTPS",
+            "start": 1.73,
+            "end": 2.694
+          },
+          {
+            "text": "hostnames.",
+            "start": 2.81,
+            "end": 3.657
+          },
+          {
+            "text": "Route",
+            "start": 4.261,
+            "end": 4.54
+          },
+          {
+            "text": "each",
+            "start": 4.598,
+            "end": 4.783
+          },
+          {
+            "text": "service",
+            "start": 4.841,
+            "end": 5.201
+          },
+          {
+            "text": "by",
+            "start": 5.236,
+            "end": 5.364
+          },
+          {
+            "text": "path.",
+            "start": 5.457,
+            "end": 6.827
+          }
+        ]
+      },
+      {
+        "id": "step-1",
+        "path": "assets/audio/voice/managed-caddy/step-1.mp3",
+        "duration": 3.575873,
+        "words": [
+          {
+            "text": "Two",
+            "start": 0,
+            "end": 0.232
+          },
+          {
+            "text": "services",
+            "start": 0.29,
+            "end": 0.755
+          },
+          {
+            "text": "share",
+            "start": 0.801,
+            "end": 1.057
+          },
+          {
+            "text": "one",
+            "start": 1.138,
+            "end": 1.358
+          },
+          {
+            "text": "hostname,",
+            "start": 1.405,
+            "end": 1.974
+          },
+          {
+            "text": "split",
+            "start": 2.125,
+            "end": 2.415
+          },
+          {
+            "text": "by",
+            "start": 2.461,
+            "end": 2.566
+          },
+          {
+            "text": "path.",
+            "start": 2.647,
+            "end": 3.576
+          }
+        ]
+      },
+      {
+        "id": "step-2",
+        "path": "assets/audio/voice/managed-caddy/step-2.mp3",
+        "duration": 1.578957,
+        "words": [
+          {
+            "text": "Start",
+            "start": 0,
+            "end": 0.313
+          },
+          {
+            "text": "the",
+            "start": 0.36,
+            "end": 0.43
+          },
+          {
+            "text": "stack.",
+            "start": 0.476,
+            "end": 1.579
+          }
+        ]
+      },
+      {
+        "id": "step-3",
+        "path": "assets/audio/voice/managed-caddy/step-3.mp3",
+        "duration": 4.690431,
+        "words": [
+          {
+            "text": "devhost",
+            "start": 0,
+            "end": 0.476
+          },
+          {
+            "text": "starts",
+            "start": 0.511,
+            "end": 0.813
+          },
+          {
+            "text": "both",
+            "start": 0.894,
+            "end": 1.196
+          },
+          {
+            "text": "and",
+            "start": 1.254,
+            "end": 1.335
+          },
+          {
+            "text": "publishes",
+            "start": 1.405,
+            "end": 1.869
+          },
+          {
+            "text": "an",
+            "start": 1.927,
+            "end": 2.009
+          },
+          {
+            "text": "HTTPS",
+            "start": 2.101,
+            "end": 3.007
+          },
+          {
+            "text": "address",
+            "start": 3.065,
+            "end": 3.367
+          },
+          {
+            "text": "for",
+            "start": 3.402,
+            "end": 3.518
+          },
+          {
+            "text": "each.",
+            "start": 3.576,
+            "end": 4.69
+          }
+        ]
+      },
+      {
+        "id": "step-4",
+        "path": "assets/audio/voice/managed-caddy/step-4.mp3",
+        "duration": 2.600635,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.151
+          },
+          {
+            "text": "hostname",
+            "start": 0.209,
+            "end": 0.685
+          },
+          {
+            "text": "alone",
+            "start": 0.72,
+            "end": 1.103
+          },
+          {
+            "text": "reaches",
+            "start": 1.161,
+            "end": 1.463
+          },
+          {
+            "text": "the",
+            "start": 1.509,
+            "end": 1.579
+          },
+          {
+            "text": "web",
+            "start": 1.625,
+            "end": 1.788
+          },
+          {
+            "text": "service.",
+            "start": 1.858,
+            "end": 2.601
+          }
+        ]
+      },
+      {
+        "id": "step-5",
+        "path": "assets/audio/voice/managed-caddy/step-5.mp3",
+        "duration": 2.693515,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.116
+          },
+          {
+            "text": "API",
+            "start": 0.186,
+            "end": 0.604
+          },
+          {
+            "text": "path",
+            "start": 0.673,
+            "end": 0.929
+          },
+          {
+            "text": "reaches",
+            "start": 0.987,
+            "end": 1.265
+          },
+          {
+            "text": "the",
+            "start": 1.312,
+            "end": 1.382
+          },
+          {
+            "text": "API",
+            "start": 1.451,
+            "end": 1.834
+          },
+          {
+            "text": "service.",
+            "start": 1.927,
+            "end": 2.694
+          }
+        ]
+      },
+      {
+        "id": "step-6",
+        "path": "assets/audio/voice/managed-caddy/step-6.mp3",
+        "duration": 2.229116,
+        "words": [
+          {
+            "text": "One",
+            "start": 0,
+            "end": 0.209
+          },
+          {
+            "text": "command",
+            "start": 0.244,
+            "end": 0.569
+          },
+          {
+            "text": "stops",
+            "start": 0.627,
+            "end": 0.964
+          },
+          {
+            "text": "both",
+            "start": 1.022,
+            "end": 1.254
+          },
+          {
+            "text": "services.",
+            "start": 1.312,
+            "end": 2.229
+          }
+        ]
+      }
+    ],
+    "managed-daemon-style-services": [
+      {
+        "id": "intro",
+        "path": "assets/audio/voice/managed-daemon-style-services/intro.mp3",
+        "duration": 4.179592,
+        "words": [
+          {
+            "text": "devhost",
+            "start": 0,
+            "end": 0.522
+          },
+          {
+            "text": "starts",
+            "start": 0.557,
+            "end": 0.848
+          },
+          {
+            "text": "a",
+            "start": 0.882,
+            "end": 0.917
+          },
+          {
+            "text": "background",
+            "start": 0.987,
+            "end": 1.405
+          },
+          {
+            "text": "daemon,",
+            "start": 1.486,
+            "end": 1.892
+          },
+          {
+            "text": "checks",
+            "start": 1.95,
+            "end": 2.252
+          },
+          {
+            "text": "on",
+            "start": 2.31,
+            "end": 2.403
+          },
+          {
+            "text": "it,",
+            "start": 2.45,
+            "end": 2.543
+          },
+          {
+            "text": "and",
+            "start": 2.566,
+            "end": 2.659
+          },
+          {
+            "text": "stops",
+            "start": 2.717,
+            "end": 3.053
+          },
+          {
+            "text": "it.",
+            "start": 3.1,
+            "end": 4.18
+          }
+        ]
+      },
+      {
+        "id": "step-1",
+        "path": "assets/audio/voice/managed-daemon-style-services/step-1.mp3",
+        "duration": 3.993832,
+        "words": [
+          {
+            "text": "This",
+            "start": 0,
+            "end": 0.244
+          },
+          {
+            "text": "daemon",
+            "start": 0.313,
+            "end": 0.58
+          },
+          {
+            "text": "has",
+            "start": 0.639,
+            "end": 0.813
+          },
+          {
+            "text": "three",
+            "start": 0.894,
+            "end": 1.126
+          },
+          {
+            "text": "commands:",
+            "start": 1.173,
+            "end": 1.834
+          },
+          {
+            "text": "start,",
+            "start": 2.009,
+            "end": 2.485
+          },
+          {
+            "text": "status,",
+            "start": 2.566,
+            "end": 3.088
+          },
+          {
+            "text": "and",
+            "start": 3.123,
+            "end": 3.228
+          },
+          {
+            "text": "stop.",
+            "start": 3.286,
+            "end": 3.994
+          }
+        ]
+      },
+      {
+        "id": "step-2",
+        "path": "assets/audio/voice/managed-daemon-style-services/step-2.mp3",
+        "duration": 1.718277,
+        "words": [
+          {
+            "text": "Start",
+            "start": 0,
+            "end": 0.337
+          },
+          {
+            "text": "the",
+            "start": 0.372,
+            "end": 0.441
+          },
+          {
+            "text": "stack.",
+            "start": 0.476,
+            "end": 1.718
+          }
+        ]
+      },
+      {
+        "id": "step-3",
+        "path": "assets/audio/voice/managed-daemon-style-services/step-3.mp3",
+        "duration": 3.529433,
+        "words": [
+          {
+            "text": "devhost",
+            "start": 0,
+            "end": 0.499
+          },
+          {
+            "text": "runs",
+            "start": 0.569,
+            "end": 0.824
+          },
+          {
+            "text": "the",
+            "start": 0.894,
+            "end": 0.975
+          },
+          {
+            "text": "start",
+            "start": 1.033,
+            "end": 1.289
+          },
+          {
+            "text": "command",
+            "start": 1.324,
+            "end": 1.649
+          },
+          {
+            "text": "and",
+            "start": 1.695,
+            "end": 1.776
+          },
+          {
+            "text": "waits",
+            "start": 1.823,
+            "end": 2.032
+          },
+          {
+            "text": "for",
+            "start": 2.078,
+            "end": 2.183
+          },
+          {
+            "text": "the",
+            "start": 2.229,
+            "end": 2.299
+          },
+          {
+            "text": "health",
+            "start": 2.368,
+            "end": 2.612
+          },
+          {
+            "text": "check.",
+            "start": 2.67,
+            "end": 3.529
+          }
+        ]
+      },
+      {
+        "id": "step-4",
+        "path": "assets/audio/voice/managed-daemon-style-services/step-4.mp3",
+        "duration": 3.808073,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.139
+          },
+          {
+            "text": "daemon",
+            "start": 0.197,
+            "end": 0.453
+          },
+          {
+            "text": "answers",
+            "start": 0.511,
+            "end": 0.836
+          },
+          {
+            "text": "on",
+            "start": 0.894,
+            "end": 0.998
+          },
+          {
+            "text": "its",
+            "start": 1.045,
+            "end": 1.184
+          },
+          {
+            "text": "HTTPS",
+            "start": 1.265,
+            "end": 2.218
+          },
+          {
+            "text": "hostname.",
+            "start": 2.334,
+            "end": 3.808
+          }
+        ]
+      },
+      {
+        "id": "step-5",
+        "path": "assets/audio/voice/managed-daemon-style-services/step-5.mp3",
+        "duration": 2.739955,
+        "words": [
+          {
+            "text": "Stopping",
+            "start": 0,
+            "end": 0.406
+          },
+          {
+            "text": "the",
+            "start": 0.453,
+            "end": 0.522
+          },
+          {
+            "text": "stack",
+            "start": 0.557,
+            "end": 0.848
+          },
+          {
+            "text": "runs",
+            "start": 0.906,
+            "end": 1.091
+          },
+          {
+            "text": "the",
+            "start": 1.149,
+            "end": 1.219
+          },
+          {
+            "text": "daemon's",
+            "start": 1.289,
+            "end": 1.625
+          },
+          {
+            "text": "stop",
+            "start": 1.649,
+            "end": 1.892
+          },
+          {
+            "text": "command.",
+            "start": 1.95,
+            "end": 2.74
+          }
+        ]
+      },
+      {
+        "id": "step-6",
+        "path": "assets/audio/voice/managed-daemon-style-services/step-6.mp3",
+        "duration": 1.857596,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.128
+          },
+          {
+            "text": "daemon",
+            "start": 0.174,
+            "end": 0.441
+          },
+          {
+            "text": "is",
+            "start": 0.499,
+            "end": 0.58
+          },
+          {
+            "text": "no",
+            "start": 0.65,
+            "end": 0.743
+          },
+          {
+            "text": "longer",
+            "start": 0.824,
+            "end": 1.115
+          },
+          {
+            "text": "running.",
+            "start": 1.184,
+            "end": 1.858
+          }
+        ]
+      }
+    ],
+    "manifest-includes": [
+      {
+        "id": "intro",
+        "path": "assets/audio/voice/manifest-includes/intro.mp3",
+        "duration": 3.993832,
+        "words": [
+          {
+            "text": "Each",
+            "start": 0,
+            "end": 0.255
+          },
+          {
+            "text": "package",
+            "start": 0.325,
+            "end": 0.755
+          },
+          {
+            "text": "owns",
+            "start": 0.813,
+            "end": 1.057
+          },
+          {
+            "text": "its",
+            "start": 1.103,
+            "end": 1.231
+          },
+          {
+            "text": "services.",
+            "start": 1.265,
+            "end": 1.962
+          },
+          {
+            "text": "The",
+            "start": 2.171,
+            "end": 2.299
+          },
+          {
+            "text": "root",
+            "start": 2.368,
+            "end": 2.554
+          },
+          {
+            "text": "starts",
+            "start": 2.624,
+            "end": 2.914
+          },
+          {
+            "text": "them",
+            "start": 2.961,
+            "end": 3.088
+          },
+          {
+            "text": "together.",
+            "start": 3.135,
+            "end": 3.994
+          }
+        ]
+      },
+      {
+        "id": "step-1",
+        "path": "assets/audio/voice/manifest-includes/step-1.mp3",
+        "duration": 4.87619,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.128
+          },
+          {
+            "text": "root",
+            "start": 0.174,
+            "end": 0.337
+          },
+          {
+            "text": "manifest",
+            "start": 0.406,
+            "end": 0.859
+          },
+          {
+            "text": "declares",
+            "start": 0.906,
+            "end": 1.312
+          },
+          {
+            "text": "no",
+            "start": 1.405,
+            "end": 1.544
+          },
+          {
+            "text": "services.",
+            "start": 1.614,
+            "end": 2.322
+          },
+          {
+            "text": "It",
+            "start": 2.403,
+            "end": 2.519
+          },
+          {
+            "text": "includes",
+            "start": 2.566,
+            "end": 2.926
+          },
+          {
+            "text": "each",
+            "start": 3.007,
+            "end": 3.181
+          },
+          {
+            "text": "package's",
+            "start": 3.239,
+            "end": 3.704
+          },
+          {
+            "text": "manifest.",
+            "start": 3.773,
+            "end": 4.876
+          }
+        ]
+      },
+      {
+        "id": "step-2",
+        "path": "assets/audio/voice/manifest-includes/step-2.mp3",
+        "duration": 2.414875,
+        "words": [
+          {
+            "text": "Each",
+            "start": 0,
+            "end": 0.232
+          },
+          {
+            "text": "package",
+            "start": 0.302,
+            "end": 0.766
+          },
+          {
+            "text": "declares",
+            "start": 0.813,
+            "end": 1.207
+          },
+          {
+            "text": "its",
+            "start": 1.254,
+            "end": 1.382
+          },
+          {
+            "text": "own",
+            "start": 1.428,
+            "end": 1.579
+          },
+          {
+            "text": "service.",
+            "start": 1.649,
+            "end": 2.415
+          }
+        ]
+      },
+      {
+        "id": "step-3",
+        "path": "assets/audio/voice/manifest-includes/step-3.mp3",
+        "duration": 2.089796,
+        "words": [
+          {
+            "text": "Start",
+            "start": 0,
+            "end": 0.325
+          },
+          {
+            "text": "from",
+            "start": 0.36,
+            "end": 0.488
+          },
+          {
+            "text": "the",
+            "start": 0.534,
+            "end": 0.604
+          },
+          {
+            "text": "root.",
+            "start": 0.662,
+            "end": 2.09
+          }
+        ]
+      },
+      {
+        "id": "step-4",
+        "path": "assets/audio/voice/manifest-includes/step-4.mp3",
+        "duration": 2.879274,
+        "words": [
+          {
+            "text": "devhost",
+            "start": 0,
+            "end": 0.488
+          },
+          {
+            "text": "merges",
+            "start": 0.557,
+            "end": 0.859
+          },
+          {
+            "text": "them",
+            "start": 0.906,
+            "end": 1.022
+          },
+          {
+            "text": "into",
+            "start": 1.068,
+            "end": 1.219
+          },
+          {
+            "text": "one",
+            "start": 1.335,
+            "end": 1.533
+          },
+          {
+            "text": "stack.",
+            "start": 1.567,
+            "end": 2.879
+          }
+        ]
+      },
+      {
+        "id": "step-5",
+        "path": "assets/audio/voice/manifest-includes/step-5.mp3",
+        "duration": 3.761633,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.151
+          },
+          {
+            "text": "merged",
+            "start": 0.209,
+            "end": 0.476
+          },
+          {
+            "text": "stack",
+            "start": 0.499,
+            "end": 0.778
+          },
+          {
+            "text": "answers",
+            "start": 0.848,
+            "end": 1.196
+          },
+          {
+            "text": "on",
+            "start": 1.265,
+            "end": 1.37
+          },
+          {
+            "text": "its",
+            "start": 1.416,
+            "end": 1.567
+          },
+          {
+            "text": "HTTPS",
+            "start": 1.66,
+            "end": 2.589
+          },
+          {
+            "text": "hostname.",
+            "start": 2.763,
+            "end": 3.762
+          }
+        ]
+      },
+      {
+        "id": "step-6",
+        "path": "assets/audio/voice/manifest-includes/step-6.mp3",
+        "duration": 1.393197,
+        "words": [
+          {
+            "text": "And",
+            "start": 0,
+            "end": 0.163
+          },
+          {
+            "text": "it",
+            "start": 0.209,
+            "end": 0.279
+          },
+          {
+            "text": "stops",
+            "start": 0.313,
+            "end": 0.65
+          },
+          {
+            "text": "as",
+            "start": 0.685,
+            "end": 0.766
+          },
+          {
+            "text": "one.",
+            "start": 0.848,
+            "end": 1.393
+          }
+        ]
+      }
+    ],
+    "react-highlight": [
+      {
+        "id": "intro",
+        "path": "assets/audio/voice/react-highlight/intro.mp3",
+        "duration": 3.761633,
+        "words": [
+          {
+            "text": "Connect",
+            "start": 0,
+            "end": 0.372
+          },
+          {
+            "text": "your",
+            "start": 0.406,
+            "end": 0.569
+          },
+          {
+            "text": "Neovim",
+            "start": 0.685,
+            "end": 1.126
+          },
+          {
+            "text": "cursor",
+            "start": 1.207,
+            "end": 1.556
+          },
+          {
+            "text": "to",
+            "start": 1.614,
+            "end": 1.672
+          },
+          {
+            "text": "the",
+            "start": 1.73,
+            "end": 1.8
+          },
+          {
+            "text": "page",
+            "start": 1.846,
+            "end": 2.159
+          },
+          {
+            "text": "running",
+            "start": 2.218,
+            "end": 2.461
+          },
+          {
+            "text": "in",
+            "start": 2.496,
+            "end": 2.554
+          },
+          {
+            "text": "your",
+            "start": 2.601,
+            "end": 2.717
+          },
+          {
+            "text": "browser.",
+            "start": 2.775,
+            "end": 3.762
+          }
+        ]
+      },
+      {
+        "id": "react-highlight-1",
+        "path": "assets/audio/voice/react-highlight/react-highlight-1.mp3",
+        "duration": 4.504671,
+        "words": [
+          {
+            "text": "Start",
+            "start": 0,
+            "end": 0.36
+          },
+          {
+            "text": "Neovim",
+            "start": 0.476,
+            "end": 0.987
+          },
+          {
+            "text": "with",
+            "start": 1.033,
+            "end": 1.149
+          },
+          {
+            "text": "the",
+            "start": 1.184,
+            "end": 1.254
+          },
+          {
+            "text": "devhost",
+            "start": 1.335,
+            "end": 1.788
+          },
+          {
+            "text": "launcher.",
+            "start": 1.846,
+            "end": 2.357
+          },
+          {
+            "text": "Here,",
+            "start": 2.531,
+            "end": 2.833
+          },
+          {
+            "text": "it",
+            "start": 2.856,
+            "end": 2.926
+          },
+          {
+            "text": "runs",
+            "start": 2.972,
+            "end": 3.17
+          },
+          {
+            "text": "off",
+            "start": 3.216,
+            "end": 3.344
+          },
+          {
+            "text": "screen.",
+            "start": 3.39,
+            "end": 4.505
+          }
+        ]
+      },
+      {
+        "id": "react-highlight-2",
+        "path": "assets/audio/voice/react-highlight/react-highlight-2.mp3",
+        "duration": 3.900952,
+        "words": [
+          {
+            "text": "Move",
+            "start": 0,
+            "end": 0.221
+          },
+          {
+            "text": "the",
+            "start": 0.255,
+            "end": 0.325
+          },
+          {
+            "text": "Neovim",
+            "start": 0.383,
+            "end": 0.813
+          },
+          {
+            "text": "cursor",
+            "start": 0.882,
+            "end": 1.219
+          },
+          {
+            "text": "to",
+            "start": 1.289,
+            "end": 1.335
+          },
+          {
+            "text": "the",
+            "start": 1.393,
+            "end": 1.463
+          },
+          {
+            "text": "heading.",
+            "start": 1.521,
+            "end": 1.997
+          },
+          {
+            "text": "The",
+            "start": 2.438,
+            "end": 2.554
+          },
+          {
+            "text": "page",
+            "start": 2.601,
+            "end": 2.891
+          },
+          {
+            "text": "highlights",
+            "start": 2.949,
+            "end": 3.413
+          },
+          {
+            "text": "it.",
+            "start": 3.471,
+            "end": 3.901
+          }
+        ]
+      },
+      {
+        "id": "react-highlight-3",
+        "path": "assets/audio/voice/react-highlight/react-highlight-3.mp3",
+        "duration": 2.693515,
+        "words": [
+          {
+            "text": "Move",
+            "start": 0,
+            "end": 0.267
+          },
+          {
+            "text": "the",
+            "start": 0.302,
+            "end": 0.372
+          },
+          {
+            "text": "cursor",
+            "start": 0.418,
+            "end": 0.755
+          },
+          {
+            "text": "again,",
+            "start": 0.813,
+            "end": 1.115
+          },
+          {
+            "text": "and",
+            "start": 1.138,
+            "end": 1.219
+          },
+          {
+            "text": "the",
+            "start": 1.254,
+            "end": 1.324
+          },
+          {
+            "text": "highlight",
+            "start": 1.382,
+            "end": 1.753
+          },
+          {
+            "text": "follows.",
+            "start": 1.8,
+            "end": 2.694
+          }
+        ]
+      },
+      {
+        "id": "react-highlight-4",
+        "path": "assets/audio/voice/react-highlight/react-highlight-4.mp3",
+        "duration": 4.551111,
+        "words": [
+          {
+            "text": "Images",
+            "start": 0,
+            "end": 0.43
+          },
+          {
+            "text": "work",
+            "start": 0.499,
+            "end": 0.708
+          },
+          {
+            "text": "too.",
+            "start": 0.755,
+            "end": 1.207
+          },
+          {
+            "text": "Source",
+            "start": 1.591,
+            "end": 1.95
+          },
+          {
+            "text": "maps",
+            "start": 2.009,
+            "end": 2.276
+          },
+          {
+            "text": "match",
+            "start": 2.334,
+            "end": 2.554
+          },
+          {
+            "text": "the",
+            "start": 2.624,
+            "end": 2.694
+          },
+          {
+            "text": "JSX",
+            "start": 2.775,
+            "end": 3.309
+          },
+          {
+            "text": "to",
+            "start": 3.379,
+            "end": 3.437
+          },
+          {
+            "text": "the",
+            "start": 3.495,
+            "end": 3.564
+          },
+          {
+            "text": "page.",
+            "start": 3.611,
+            "end": 4.551
+          }
+        ]
+      },
+      {
+        "id": "react-highlight-5",
+        "path": "assets/audio/voice/react-highlight/react-highlight-5.mp3",
+        "duration": 2.414875,
+        "words": [
+          {
+            "text": "Leave",
+            "start": 0,
+            "end": 0.279
+          },
+          {
+            "text": "the",
+            "start": 0.313,
+            "end": 0.383
+          },
+          {
+            "text": "JSX,",
+            "start": 0.441,
+            "end": 1.033
+          },
+          {
+            "text": "and",
+            "start": 1.057,
+            "end": 1.138
+          },
+          {
+            "text": "the",
+            "start": 1.184,
+            "end": 1.254
+          },
+          {
+            "text": "highlight",
+            "start": 1.312,
+            "end": 1.672
+          },
+          {
+            "text": "clears.",
+            "start": 1.707,
+            "end": 2.415
+          }
+        ]
+      }
+    ],
+    "service-references": [
+      {
+        "id": "intro",
+        "path": "assets/audio/voice/service-references/intro.mp3",
+        "duration": 4.551111,
+        "words": [
+          {
+            "text": "Point",
+            "start": 0,
+            "end": 0.325
+          },
+          {
+            "text": "one",
+            "start": 0.418,
+            "end": 0.627
+          },
+          {
+            "text": "service",
+            "start": 0.673,
+            "end": 1.033
+          },
+          {
+            "text": "at",
+            "start": 1.068,
+            "end": 1.149
+          },
+          {
+            "text": "another,",
+            "start": 1.196,
+            "end": 1.649
+          },
+          {
+            "text": "even",
+            "start": 1.718,
+            "end": 1.939
+          },
+          {
+            "text": "when",
+            "start": 1.974,
+            "end": 2.113
+          },
+          {
+            "text": "its",
+            "start": 2.148,
+            "end": 2.264
+          },
+          {
+            "text": "port",
+            "start": 2.31,
+            "end": 2.531
+          },
+          {
+            "text": "is",
+            "start": 2.577,
+            "end": 2.647
+          },
+          {
+            "text": "assigned",
+            "start": 2.705,
+            "end": 3.077
+          },
+          {
+            "text": "at",
+            "start": 3.111,
+            "end": 3.181
+          },
+          {
+            "text": "start.",
+            "start": 3.239,
+            "end": 4.551
+          }
+        ]
+      },
+      {
+        "id": "step-1",
+        "path": "assets/audio/voice/service-references/step-1.mp3",
+        "duration": 3.343673,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.151
+          },
+          {
+            "text": "API",
+            "start": 0.209,
+            "end": 0.627
+          },
+          {
+            "text": "address",
+            "start": 0.697,
+            "end": 1.033
+          },
+          {
+            "text": "is",
+            "start": 1.08,
+            "end": 1.161
+          },
+          {
+            "text": "a",
+            "start": 1.219,
+            "end": 1.254
+          },
+          {
+            "text": "reference,",
+            "start": 1.335,
+            "end": 1.846
+          },
+          {
+            "text": "not",
+            "start": 1.904,
+            "end": 2.067
+          },
+          {
+            "text": "a",
+            "start": 2.113,
+            "end": 2.136
+          },
+          {
+            "text": "fixed",
+            "start": 2.194,
+            "end": 2.485
+          },
+          {
+            "text": "port.",
+            "start": 2.543,
+            "end": 3.344
+          }
+        ]
+      },
+      {
+        "id": "step-2",
+        "path": "assets/audio/voice/service-references/step-2.mp3",
+        "duration": 1.253878,
+        "words": [
+          {
+            "text": "Start",
+            "start": 0,
+            "end": 0.302
+          },
+          {
+            "text": "the",
+            "start": 0.337,
+            "end": 0.406
+          },
+          {
+            "text": "stack.",
+            "start": 0.453,
+            "end": 1.254
+          }
+        ]
+      },
+      {
+        "id": "step-3",
+        "path": "assets/audio/voice/service-references/step-3.mp3",
+        "duration": 4.411791,
+        "words": [
+          {
+            "text": "devhost",
+            "start": 0,
+            "end": 0.488
+          },
+          {
+            "text": "fills",
+            "start": 0.534,
+            "end": 0.778
+          },
+          {
+            "text": "in",
+            "start": 0.813,
+            "end": 0.871
+          },
+          {
+            "text": "the",
+            "start": 0.906,
+            "end": 0.975
+          },
+          {
+            "text": "API's",
+            "start": 1.033,
+            "end": 1.498
+          },
+          {
+            "text": "port",
+            "start": 1.567,
+            "end": 1.881
+          },
+          {
+            "text": "and",
+            "start": 1.927,
+            "end": 2.02
+          },
+          {
+            "text": "starts",
+            "start": 2.09,
+            "end": 2.415
+          },
+          {
+            "text": "the",
+            "start": 2.461,
+            "end": 2.543
+          },
+          {
+            "text": "API",
+            "start": 2.601,
+            "end": 3.007
+          },
+          {
+            "text": "first.",
+            "start": 3.123,
+            "end": 4.412
+          }
+        ]
+      },
+      {
+        "id": "step-4",
+        "path": "assets/audio/voice/service-references/step-4.mp3",
+        "duration": 3.343673,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.163
+          },
+          {
+            "text": "web",
+            "start": 0.221,
+            "end": 0.383
+          },
+          {
+            "text": "service",
+            "start": 0.453,
+            "end": 0.778
+          },
+          {
+            "text": "called",
+            "start": 0.813,
+            "end": 1.045
+          },
+          {
+            "text": "the",
+            "start": 1.068,
+            "end": 1.138
+          },
+          {
+            "text": "API",
+            "start": 1.207,
+            "end": 1.695
+          },
+          {
+            "text": "at",
+            "start": 1.765,
+            "end": 1.834
+          },
+          {
+            "text": "the",
+            "start": 1.869,
+            "end": 1.939
+          },
+          {
+            "text": "resolved",
+            "start": 2.009,
+            "end": 2.426
+          },
+          {
+            "text": "address.",
+            "start": 2.461,
+            "end": 3.344
+          }
+        ]
+      },
+      {
+        "id": "step-5",
+        "path": "assets/audio/voice/service-references/step-5.mp3",
+        "duration": 2.275556,
+        "words": [
+          {
+            "text": "One",
+            "start": 0,
+            "end": 0.221
+          },
+          {
+            "text": "command",
+            "start": 0.267,
+            "end": 0.615
+          },
+          {
+            "text": "stops",
+            "start": 0.685,
+            "end": 1.01
+          },
+          {
+            "text": "both",
+            "start": 1.068,
+            "end": 1.289
+          },
+          {
+            "text": "services.",
+            "start": 1.347,
+            "end": 2.276
+          }
+        ]
+      }
+    ],
+    "shared-managed-caddy-settings": [
+      {
+        "id": "intro",
+        "path": "assets/audio/voice/shared-managed-caddy-settings/intro.mp3",
+        "duration": 5.804989,
+        "words": [
+          {
+            "text": "Your",
+            "start": 0,
+            "end": 0.244
+          },
+          {
+            "text": "stacks",
+            "start": 0.313,
+            "end": 0.685
+          },
+          {
+            "text": "share",
+            "start": 0.708,
+            "end": 0.975
+          },
+          {
+            "text": "one",
+            "start": 1.045,
+            "end": 1.289
+          },
+          {
+            "text": "Caddy.",
+            "start": 1.347,
+            "end": 1.834
+          },
+          {
+            "text": "Turn",
+            "start": 2.043,
+            "end": 2.276
+          },
+          {
+            "text": "on",
+            "start": 2.334,
+            "end": 2.426
+          },
+          {
+            "text": "plain",
+            "start": 2.496,
+            "end": 2.798
+          },
+          {
+            "text": "HTTP",
+            "start": 2.879,
+            "end": 3.611
+          },
+          {
+            "text": "and",
+            "start": 3.785,
+            "end": 3.889
+          },
+          {
+            "text": "choose",
+            "start": 3.959,
+            "end": 4.203
+          },
+          {
+            "text": "its",
+            "start": 4.238,
+            "end": 4.354
+          },
+          {
+            "text": "ports.",
+            "start": 4.412,
+            "end": 5.805
+          }
+        ]
+      },
+      {
+        "id": "step-1",
+        "path": "assets/audio/voice/shared-managed-caddy-settings/step-1.mp3",
+        "duration": 4.086712,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.139
+          },
+          {
+            "text": "shared",
+            "start": 0.186,
+            "end": 0.488
+          },
+          {
+            "text": "Caddy",
+            "start": 0.546,
+            "end": 0.848
+          },
+          {
+            "text": "settings",
+            "start": 0.906,
+            "end": 1.242
+          },
+          {
+            "text": "turn",
+            "start": 1.289,
+            "end": 1.474
+          },
+          {
+            "text": "on",
+            "start": 1.533,
+            "end": 1.614
+          },
+          {
+            "text": "plain",
+            "start": 1.66,
+            "end": 1.904
+          },
+          {
+            "text": "HTTP",
+            "start": 1.95,
+            "end": 2.589
+          },
+          {
+            "text": "and",
+            "start": 2.717,
+            "end": 2.798
+          },
+          {
+            "text": "set",
+            "start": 2.856,
+            "end": 3.03
+          },
+          {
+            "text": "both",
+            "start": 3.111,
+            "end": 3.344
+          },
+          {
+            "text": "ports.",
+            "start": 3.402,
+            "end": 4.087
+          }
+        ]
+      },
+      {
+        "id": "step-2",
+        "path": "assets/audio/voice/shared-managed-caddy-settings/step-2.mp3",
+        "duration": 1.764717,
+        "words": [
+          {
+            "text": "Start",
+            "start": 0,
+            "end": 0.267
+          },
+          {
+            "text": "the",
+            "start": 0.302,
+            "end": 0.372
+          },
+          {
+            "text": "stack.",
+            "start": 0.418,
+            "end": 1.765
+          }
+        ]
+      },
+      {
+        "id": "step-3",
+        "path": "assets/audio/voice/shared-managed-caddy-settings/step-3.mp3",
+        "duration": 3.529433,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.151
+          },
+          {
+            "text": "HTTPS",
+            "start": 0.232,
+            "end": 1.08
+          },
+          {
+            "text": "address",
+            "start": 1.138,
+            "end": 1.509
+          },
+          {
+            "text": "now",
+            "start": 1.637,
+            "end": 1.811
+          },
+          {
+            "text": "uses",
+            "start": 1.892,
+            "end": 2.194
+          },
+          {
+            "text": "the",
+            "start": 2.252,
+            "end": 2.322
+          },
+          {
+            "text": "port",
+            "start": 2.368,
+            "end": 2.612
+          },
+          {
+            "text": "you",
+            "start": 2.647,
+            "end": 2.728
+          },
+          {
+            "text": "set.",
+            "start": 2.798,
+            "end": 3.529
+          }
+        ]
+      },
+      {
+        "id": "step-4",
+        "path": "assets/audio/voice/shared-managed-caddy-settings/step-4.mp3",
+        "duration": 2.600635,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.139
+          },
+          {
+            "text": "service",
+            "start": 0.186,
+            "end": 0.511
+          },
+          {
+            "text": "answers",
+            "start": 0.546,
+            "end": 0.871
+          },
+          {
+            "text": "over",
+            "start": 0.952,
+            "end": 1.184
+          },
+          {
+            "text": "HTTPS.",
+            "start": 1.254,
+            "end": 2.601
+          }
+        ]
+      },
+      {
+        "id": "step-5",
+        "path": "assets/audio/voice/shared-managed-caddy-settings/step-5.mp3",
+        "duration": 2.739955,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.163
+          },
+          {
+            "text": "same",
+            "start": 0.221,
+            "end": 0.441
+          },
+          {
+            "text": "service",
+            "start": 0.476,
+            "end": 0.801
+          },
+          {
+            "text": "answers",
+            "start": 0.836,
+            "end": 1.149
+          },
+          {
+            "text": "over",
+            "start": 1.196,
+            "end": 1.358
+          },
+          {
+            "text": "plain",
+            "start": 1.44,
+            "end": 1.741
+          },
+          {
+            "text": "HTTP.",
+            "start": 1.811,
+            "end": 2.74
+          }
+        ]
+      },
+      {
+        "id": "step-6",
+        "path": "assets/audio/voice/shared-managed-caddy-settings/step-6.mp3",
+        "duration": 1.253878,
+        "words": [
+          {
+            "text": "Stop",
+            "start": 0,
+            "end": 0.29
+          },
+          {
+            "text": "the",
+            "start": 0.36,
+            "end": 0.43
+          },
+          {
+            "text": "stack.",
+            "start": 0.476,
+            "end": 1.254
+          }
+        ]
+      }
+    ],
+    "troubleshooting": [
+      {
+        "id": "intro",
+        "path": "assets/audio/voice/troubleshooting/intro.mp3",
+        "duration": 4.96907,
+        "words": [
+          {
+            "text": "Save",
+            "start": 0,
+            "end": 0.29
+          },
+          {
+            "text": "a",
+            "start": 0.313,
+            "end": 0.348
+          },
+          {
+            "text": "broken",
+            "start": 0.406,
+            "end": 0.731
+          },
+          {
+            "text": "manifest",
+            "start": 0.801,
+            "end": 1.347
+          },
+          {
+            "text": "and",
+            "start": 1.393,
+            "end": 1.474
+          },
+          {
+            "text": "the",
+            "start": 1.509,
+            "end": 1.579
+          },
+          {
+            "text": "running",
+            "start": 1.625,
+            "end": 1.869
+          },
+          {
+            "text": "stack",
+            "start": 1.916,
+            "end": 2.183
+          },
+          {
+            "text": "stays",
+            "start": 2.241,
+            "end": 2.531
+          },
+          {
+            "text": "up.",
+            "start": 2.624,
+            "end": 2.914
+          },
+          {
+            "text": "Fix",
+            "start": 3.297,
+            "end": 3.599
+          },
+          {
+            "text": "it,",
+            "start": 3.68,
+            "end": 3.866
+          },
+          {
+            "text": "save",
+            "start": 3.959,
+            "end": 4.214
+          },
+          {
+            "text": "again.",
+            "start": 4.249,
+            "end": 4.969
+          }
+        ]
+      },
+      {
+        "id": "step-1",
+        "path": "assets/audio/voice/troubleshooting/step-1.mp3",
+        "duration": 1.625397,
+        "words": [
+          {
+            "text": "A",
+            "start": 0,
+            "end": 0.081
+          },
+          {
+            "text": "stack",
+            "start": 0.151,
+            "end": 0.418
+          },
+          {
+            "text": "with",
+            "start": 0.464,
+            "end": 0.604
+          },
+          {
+            "text": "one",
+            "start": 0.673,
+            "end": 0.871
+          },
+          {
+            "text": "service.",
+            "start": 0.917,
+            "end": 1.625
+          }
+        ]
+      },
+      {
+        "id": "step-2",
+        "path": "assets/audio/voice/troubleshooting/step-2.mp3",
+        "duration": 1.021678,
+        "words": [
+          {
+            "text": "Start",
+            "start": 0,
+            "end": 0.313
+          },
+          {
+            "text": "the",
+            "start": 0.348,
+            "end": 0.418
+          },
+          {
+            "text": "stack.",
+            "start": 0.453,
+            "end": 1.022
+          }
+        ]
+      },
+      {
+        "id": "step-3",
+        "path": "assets/audio/voice/troubleshooting/step-3.mp3",
+        "duration": 1.439637,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.163
+          },
+          {
+            "text": "service",
+            "start": 0.209,
+            "end": 0.534
+          },
+          {
+            "text": "is",
+            "start": 0.569,
+            "end": 0.65
+          },
+          {
+            "text": "running.",
+            "start": 0.731,
+            "end": 1.44
+          }
+        ]
+      },
+      {
+        "id": "step-4",
+        "path": "assets/audio/voice/troubleshooting/step-4.mp3",
+        "duration": 1.950476,
+        "words": [
+          {
+            "text": "Now",
+            "start": 0,
+            "end": 0.163
+          },
+          {
+            "text": "save",
+            "start": 0.244,
+            "end": 0.476
+          },
+          {
+            "text": "an",
+            "start": 0.499,
+            "end": 0.557
+          },
+          {
+            "text": "invalid",
+            "start": 0.592,
+            "end": 0.94
+          },
+          {
+            "text": "port.",
+            "start": 0.998,
+            "end": 1.95
+          }
+        ]
+      },
+      {
+        "id": "step-5",
+        "path": "assets/audio/voice/troubleshooting/step-5.mp3",
+        "duration": 3.018594,
+        "words": [
+          {
+            "text": "devhost",
+            "start": 0,
+            "end": 0.522
+          },
+          {
+            "text": "rejects",
+            "start": 0.592,
+            "end": 0.964
+          },
+          {
+            "text": "the",
+            "start": 0.998,
+            "end": 1.068
+          },
+          {
+            "text": "reload",
+            "start": 1.149,
+            "end": 1.544
+          },
+          {
+            "text": "and",
+            "start": 1.591,
+            "end": 1.683
+          },
+          {
+            "text": "says",
+            "start": 1.741,
+            "end": 1.962
+          },
+          {
+            "text": "why.",
+            "start": 2.043,
+            "end": 3.019
+          }
+        ]
+      },
+      {
+        "id": "step-6",
+        "path": "assets/audio/voice/troubleshooting/step-6.mp3",
+        "duration": 1.811156,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.151
+          },
+          {
+            "text": "running",
+            "start": 0.197,
+            "end": 0.418
+          },
+          {
+            "text": "stack",
+            "start": 0.453,
+            "end": 0.731
+          },
+          {
+            "text": "still",
+            "start": 0.801,
+            "end": 1.022
+          },
+          {
+            "text": "answers.",
+            "start": 1.103,
+            "end": 1.811
+          }
+        ]
+      },
+      {
+        "id": "step-7",
+        "path": "assets/audio/voice/troubleshooting/step-7.mp3",
+        "duration": 2.089796,
+        "words": [
+          {
+            "text": "Save",
+            "start": 0,
+            "end": 0.255
+          },
+          {
+            "text": "a",
+            "start": 0.279,
+            "end": 0.313
+          },
+          {
+            "text": "corrected",
+            "start": 0.36,
+            "end": 0.778
+          },
+          {
+            "text": "manifest.",
+            "start": 0.871,
+            "end": 2.09
+          }
+        ]
+      },
+      {
+        "id": "step-8",
+        "path": "assets/audio/voice/troubleshooting/step-8.mp3",
+        "duration": 1.904036,
+        "words": [
+          {
+            "text": "This",
+            "start": 0,
+            "end": 0.221
+          },
+          {
+            "text": "time",
+            "start": 0.279,
+            "end": 0.464
+          },
+          {
+            "text": "the",
+            "start": 0.499,
+            "end": 0.569
+          },
+          {
+            "text": "reload",
+            "start": 0.639,
+            "end": 1.022
+          },
+          {
+            "text": "is",
+            "start": 1.08,
+            "end": 1.149
+          },
+          {
+            "text": "applied.",
+            "start": 1.196,
+            "end": 1.904
+          }
+        ]
+      },
+      {
+        "id": "step-9",
+        "path": "assets/audio/voice/troubleshooting/step-9.mp3",
+        "duration": 2.321995,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.163
+          },
+          {
+            "text": "service",
+            "start": 0.221,
+            "end": 0.557
+          },
+          {
+            "text": "shows",
+            "start": 0.58,
+            "end": 0.789
+          },
+          {
+            "text": "the",
+            "start": 0.848,
+            "end": 0.917
+          },
+          {
+            "text": "new",
+            "start": 0.975,
+            "end": 1.091
+          },
+          {
+            "text": "configuration.",
+            "start": 1.161,
+            "end": 2.322
+          }
+        ]
+      },
+      {
+        "id": "step-10",
+        "path": "assets/audio/voice/troubleshooting/step-10.mp3",
+        "duration": 1.253878,
+        "words": [
+          {
+            "text": "Stop",
+            "start": 0,
+            "end": 0.313
+          },
+          {
+            "text": "the",
+            "start": 0.372,
+            "end": 0.441
+          },
+          {
+            "text": "stack.",
+            "start": 0.488,
+            "end": 1.254
+          }
+        ]
+      }
+    ]
+  },
+  "music": {
+    "path": "assets/audio/music.mp3",
+    "duration": 50.04
+  }
+}

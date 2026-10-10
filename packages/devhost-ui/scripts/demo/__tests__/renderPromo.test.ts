@@ -128,7 +128,29 @@ it("stages a private copy of the project and writes the video with its captions 
     await Bun.file(join(recordingPath, "promo/assets/fonts/jetbrains-mono-latin-wght-normal.woff2")).exists(),
   ).toBe(true);
   expect(await Bun.file(join(recordingPath, "promo/assets/vendor/gsap.min.js")).exists()).toBe(true);
+  expect(await Bun.file(join(recordingPath, "promo/assets/vendor/devhost-film.css")).text()).toBe(
+    await Bun.file(resolve(import.meta.dir, "../film.css")).text(),
+  );
   expect(await Bun.file(join(projectSourcePath, "assets/footage/terminal.mp4")).exists()).toBe(false);
+}, 30_000);
+
+it("stages a guide film under its own name, so the run is not taken for a promo render", async () => {
+  const recordingPath = await createRecording("guide-film");
+
+  await renderPromo({
+    directoryPath: recordingPath,
+    projectSourcePath,
+    projectName: "guide",
+    render: createRenderer(4, tone),
+    signal: new AbortController().signal,
+  });
+
+  expect({
+    project: await Bun.file(join(recordingPath, "guide/index.html")).exists(),
+    footage: await Bun.file(join(recordingPath, "guide-footage.json")).exists(),
+    promoProject: await Bun.file(join(recordingPath, "promo/index.html")).exists(),
+    promoFootage: await Bun.file(join(recordingPath, "promo-footage.json")).exists(),
+  }).toEqual({ project: true, footage: true, promoProject: false, promoFootage: false });
 }, 30_000);
 
 it("leaves a directory that is not a recording exactly as it was, before the renderer is prepared", async () => {
@@ -214,17 +236,20 @@ it("rejects two recordings that a frame could not tell apart", async () => {
   ).rejects.toThrow("raw/ holds more than one recording named startup");
 }, 30_000);
 
-it("rejects a render that runs past the promo's length limit", async () => {
+it("rejects a render that runs past the length limit, naming the film and its length to the hundredth", async () => {
   const recordingPath = await createRecording("too-long");
 
+  // A film a few frames over the limit must not read as "45.0s; the limit is 45s". Without an audio track, the
+  // stand-in's length is exactly that of its frames.
   await expect(
     renderPromo({
       directoryPath: recordingPath,
       projectSourcePath,
-      render: createRenderer(46, tone),
+      projectName: "guide",
+      render: createRenderer(45.1, []),
       signal: new AbortController().signal,
     }),
-  ).rejects.toThrow("The promo lasts 46.0s; the limit is 45s");
+  ).rejects.toThrow("The guide film lasts 45.10s; the limit is 45s");
 }, 30_000);
 
 it("rejects a render without the narration and music", async () => {
@@ -237,5 +262,5 @@ it("rejects a render without the narration and music", async () => {
       render: createRenderer(4, []),
       signal: new AbortController().signal,
     }),
-  ).rejects.toThrow("The promo has no audio track");
+  ).rejects.toThrow("The promo film has no audio track");
 }, 30_000);

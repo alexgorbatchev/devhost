@@ -11,7 +11,7 @@ export function createGuideTape(steps: readonly IGuideTerminalStep[]): string {
     'Set Shell "bash"',
     "Set Width 1280",
     "Set Height 720",
-    "Set FontSize 22",
+    "Set FontSize 24",
     'Set FontFamily "DejaVu Sans Mono, Noto Color Emoji"',
     "Set Padding 24",
     "Set Framerate 30",

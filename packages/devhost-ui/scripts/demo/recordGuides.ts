@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { dirname, join, resolve } from "node:path";
+import { preparePromoRenderer } from "./preparePromoRenderer";
 import { publishGuideDemo } from "./publishGuideDemo";
+import { readGuideTitle } from "./readGuideTitle";
 import { recordDemo } from "./recordDemo";
 import { recordGuideTerminal } from "./recordGuideTerminal";
 import { runCommand } from "./runCommand";
@@ -11,16 +13,31 @@ export async function recordGuides(signal: AbortSignal, selectedGuide: string): 
   const files = await Array.fromAsync(new Bun.Glob("*.md").scan({ cwd: guidePath, onlyFiles: true }));
   const slugs = files.map((file) => file.replace(/\.md$/, "")).sort();
   assert(selectedGuide === "all" || slugs.includes(selectedGuide), `Unknown guide: ${selectedGuide}`);
-  for (const executable of ["bun", "just", "git", "caddy", "ffmpeg", "ffprobe", "vhs", "ttyd", "curl", "setsid"]) {
+  for (const executable of [
+    "bun",
+    "just",
+    "git",
+    "caddy",
+    "ffmpeg",
+    "ffprobe",
+    "vhs",
+    "ttyd",
+    "curl",
+    "setsid",
+    "node",
+  ]) {
     assert(Bun.which(executable), `Missing recording dependency: ${executable}`);
   }
+  // An unusable renderer stops the run here, before anything is recorded.
+  await preparePromoRenderer(runCommand, join(import.meta.dir, "promo"), join(repositoryPath, ".tmp/demos"), signal);
   await runCommand(["just", "devhost", "compile"], { cwd: repositoryPath, signal });
   for (const slug of slugs.filter((slug) => selectedGuide === "all" || slug === selectedGuide)) {
     signal.throwIfAborted();
     console.log(`Recording guide: ${slug}`);
+    const guide = { slug, title: readGuideTitle(await Bun.file(join(guidePath, `${slug}.md`)).text()) };
     const path = ["annotations", "devtools", "react-highlight"].includes(slug)
-      ? await recordDemo(signal, slug)
-      : await recordGuideTerminal(repositoryPath, slug, signal);
+      ? await recordDemo(signal, slug, guide)
+      : await recordGuideTerminal(repositoryPath, guide, signal);
     await publishGuideDemo(repositoryPath, slug, dirname(path));
     console.log(`Wrote guide media: packages/docs/public/demos/${slug}.mp4`);
   }

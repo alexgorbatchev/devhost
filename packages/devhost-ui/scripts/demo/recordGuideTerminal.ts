@@ -2,16 +2,27 @@ import assert from "node:assert/strict";
 import { mkdir, symlink } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { allocateGuidePort } from "./allocateGuidePort";
-import { assembleDemo } from "./assembleDemo";
 import { cleanupDemoRuntime } from "./cleanupDemoRuntime";
+import { guideCaptureScale } from "./constants";
 import { createDemoRuntime } from "./createDemoRuntime";
 import { createGuideTape } from "./createGuideTape";
 import { createGuideTerminalScene } from "./createGuideTerminalScene";
-import { exportClip } from "./exportClip";
 import { prepareDemoCaddy } from "./prepareDemoCaddy";
+import { findGuideStepWindows } from "./findGuideStepWindows";
+import { readFrameBrightness } from "./readFrameBrightness";
+import { readMediaInfo } from "./readMediaInfo";
+import { renderGuideFilm } from "./renderGuideFilm";
+import { renderPromoComposition } from "./renderPromoComposition";
 import { runCommand } from "./runCommand";
+import { scaleTape } from "./scaleTape";
+import type { IGuideClipSource, IGuideRun } from "./types";
 
-export async function recordGuideTerminal(repositoryPath: string, slug: string, signal: AbortSignal): Promise<string> {
+export async function recordGuideTerminal(
+  repositoryPath: string,
+  guide: IGuideRun,
+  signal: AbortSignal,
+): Promise<string> {
+  const { slug } = guide;
   const scene = createGuideTerminalScene(slug, await allocateGuidePort());
   const runtime = await createDemoRuntime(repositoryPath, "demo.localhost");
   console.log(`Guide ${slug}: ${runtime.directoryPath}`);
@@ -55,7 +66,7 @@ export async function recordGuideTerminal(repositoryPath: string, slug: string, 
   }
   const options = { cwd: runtime.directoryPath, env: runtime.env, signal };
   const failures: unknown[] = [];
-  let videoPath: string | undefined;
+  let clips: IGuideClipSource[] = [];
   let recordingError: unknown;
   try {
     if (scene.isPrivateCaddy) {
@@ -98,7 +109,7 @@ export async function recordGuideTerminal(repositoryPath: string, slug: string, 
       );
     }
     const tapePath = join(runtime.directoryPath, "guide.tape");
-    await Bun.write(tapePath, createGuideTape(scene.steps));
+    await Bun.write(tapePath, scaleTape(createGuideTape(scene.steps), guideCaptureScale));
     await runCommand(["vhs", "validate", tapePath], options);
     await runCommand(["vhs", tapePath], {
       ...options,
@@ -126,13 +137,12 @@ export async function recordGuideTerminal(repositoryPath: string, slug: string, 
     }
     if (scene.isPrivateCaddy)
       assert.equal(await Bun.file(join(runtime.directoryPath, "http-response.json")).text(), responseText);
-    const clip = await exportClip(
-      runtime.directoryPath,
-      "guide",
-      join(runtime.directoryPath, "raw/guide.mp4"),
-      scene.caption,
-    );
-    videoPath = await assembleDemo(runtime.directoryPath, [clip]);
+    // The tape clears the screen before every step, which is where the film cuts the one recording.
+    const recordingPath = join(runtime.directoryPath, "raw/guide.mp4");
+    const brightness = await readFrameBrightness(recordingPath, signal);
+    const recording = await readMediaInfo(recordingPath, signal);
+    const windows = findGuideStepWindows(brightness, brightness.length / recording.duration, scene.steps.length);
+    clips = windows.map((window, index) => ({ clip: `step-${index + 1}`, footage: { sourceId: "guide", ...window } }));
   } catch (error) {
     recordingError = error;
     await Bun.write(
@@ -183,6 +193,15 @@ export async function recordGuideTerminal(repositoryPath: string, slug: string, 
       "Guide recording cleanup failed",
     );
   if (recordingError !== undefined) throw recordingError;
-  assert(videoPath, "Guide recording produced no video");
-  return videoPath;
+  // The film is rendered once the stack, the container and the owned Caddy are gone.
+  return renderGuideFilm({
+    directoryPath: runtime.directoryPath,
+    filmPath: import.meta.dir,
+    slug,
+    title: guide.title,
+    address: "terminal",
+    clips,
+    render: renderPromoComposition,
+    signal,
+  });
 }
