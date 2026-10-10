@@ -413,10 +413,10 @@ ALERT: Agents must read `AGENT=1 devhost skill` before using this tool.
 command: devhost
 ```
 
-To install the same guide as a skill, together with the reference files it links to:
+To install the skill directly into your coding agents:
 
 ```bash
-npx skills add https://github.com/alexgorbatchev/devhost/tree/main/apps/devhost/internal/skill/devhost -y
+npx skills add alexgorbatchev/devhost -y
 ```
 
 Omit `-y` to choose target agents interactively.
