@@ -72,13 +72,16 @@ type ResolvedServiceLifecycle struct {
 }
 
 type ResolvedHealthConfig struct {
-	Host     *string
-	Interval int
-	Kind     string
-	Port     *int
-	Retries  int
-	Timeout  int
-	URL      *string
+	// Track the target's meaning so a fixed TCP probe stays fixed even when its
+	// number happens to match the service's assigned port.
+	fixedTCPPort bool
+	Host         *string
+	Interval     int
+	Kind         string
+	Port         *int
+	Retries      int
+	Timeout      int
+	URL          *string
 }
 
 func ResolveServicePorts(value manifest.Manifest) (ResolvedManifest, error) {
@@ -146,11 +149,6 @@ func resolveServicePorts(value manifest.Manifest, options portResolutionOptions)
 			}
 		}
 
-		health, err := resolveHealthConfig(service, resolvedPort)
-		if err != nil {
-			return ResolvedManifest{}, err
-		}
-
 		if resolvedPort != nil && hasRuntimeBindPortConflict(service.BindHost, *resolvedPort, resolvedServices) {
 			return ResolvedManifest{}, fmt.Errorf("Resolved runtime bind port is duplicated: %s:%d", service.BindHost, *resolvedPort)
 		}
@@ -162,7 +160,6 @@ func resolveServicePorts(value manifest.Manifest, options portResolutionOptions)
 			Cwd:              service.Cwd,
 			DependsOn:        service.DependsOn,
 			Env:              service.Env,
-			Health:           health,
 			Hosts:            append([]string{}, service.Hosts...),
 			InjectPort:       service.InjectPort,
 			Lifecycle: ResolvedServiceLifecycle{
@@ -181,6 +178,11 @@ func resolveServicePorts(value manifest.Manifest, options portResolutionOptions)
 	}
 
 	for serviceName, service := range resolvedServices {
+		health, err := resolveHealthConfig(value.Services[serviceName], service.Port, resolvedServices)
+		if err != nil {
+			return ResolvedManifest{}, err
+		}
+		service.Health = health
 		interpolatedEnv := make(map[string]string, len(service.Env))
 		for k, v := range service.Env {
 			val, err := interpolateServiceTemplates(v, resolvedServices)
@@ -278,6 +280,12 @@ func interpolateServiceTemplates(val string, resolvedServices map[string]Resolve
 					}
 				case "bindHost":
 					resolvedValue = targetService.BindHost
+				case "url":
+					u, err := buildServiceURL(targetService)
+					if err != nil {
+						return "", fmt.Errorf("referenced service %q in template %q: %w", targetServiceName, val[i:closeIdx+2], err)
+					}
+					resolvedValue = u.String()
 				default:
 					return "", fmt.Errorf("unknown property %q on service %q in template %q", property, targetServiceName, val[i:closeIdx+2])
 				}
@@ -333,21 +341,33 @@ func reserveAutoPort(bindHost string, excludedPorts map[int]struct{}) (int, erro
 	return resolvedPort, nil
 }
 
-func resolveHealthConfig(service manifest.ValidatedService, resolvedPort *int) (ResolvedHealthConfig, error) {
+func resolveHealthConfig(service manifest.ValidatedService, resolvedPort *int, services map[string]ResolvedService) (ResolvedHealthConfig, error) {
 	baseHealth := ResolvedHealthConfig{Interval: defaultHealthInterval, Retries: defaultHealthRetries, Timeout: defaultHealthTimeout}
 	if service.Health != nil {
+		baseHealth.Interval = valueOrDefault(service.Health.Interval, defaultHealthInterval)
+		baseHealth.Retries = valueOrDefault(service.Health.Retries, defaultHealthRetries)
+		baseHealth.Timeout = valueOrDefault(service.Health.Timeout, defaultHealthTimeout)
 		if service.Health.TCP != nil {
 			host := service.BindHost
 			port := *service.Health.TCP
-			return ResolvedHealthConfig{Host: &host, Interval: valueOrDefault(service.Health.Interval, defaultHealthInterval), Kind: HealthKindTCP, Port: &port, Retries: valueOrDefault(service.Health.Retries, defaultHealthRetries), Timeout: valueOrDefault(service.Health.Timeout, defaultHealthTimeout)}, nil
+			baseHealth.fixedTCPPort = true
+			baseHealth.Kind, baseHealth.Host, baseHealth.Port = HealthKindTCP, &host, &port
+			return baseHealth, nil
 		}
 
 		if service.Health.HTTP != nil {
-			url := *service.Health.HTTP
-			return ResolvedHealthConfig{Interval: valueOrDefault(service.Health.Interval, defaultHealthInterval), Kind: HealthKindHTTP, Retries: valueOrDefault(service.Health.Retries, defaultHealthRetries), Timeout: valueOrDefault(service.Health.Timeout, defaultHealthTimeout), URL: &url}, nil
+			u, err := resolveHealthURL(service.Name, *service.Health.HTTP, services)
+			if err != nil {
+				return ResolvedHealthConfig{}, err
+			}
+			baseHealth.Kind, baseHealth.URL = HealthKindHTTP, &u
+			return baseHealth, nil
 		}
 
-		return ResolvedHealthConfig{Interval: valueOrDefault(service.Health.Interval, defaultHealthInterval), Kind: HealthKindProcess, Retries: valueOrDefault(service.Health.Retries, defaultHealthRetries), Timeout: valueOrDefault(service.Health.Timeout, defaultHealthTimeout)}, nil
+		if service.Health.Process {
+			baseHealth.Kind = HealthKindProcess
+			return baseHealth, nil
+		}
 	}
 
 	if resolvedPort == nil {
@@ -355,7 +375,8 @@ func resolveHealthConfig(service manifest.ValidatedService, resolvedPort *int) (
 	}
 
 	host := service.BindHost
-	return ResolvedHealthConfig{Host: &host, Interval: baseHealth.Interval, Kind: HealthKindTCP, Port: resolvedPort, Retries: baseHealth.Retries, Timeout: baseHealth.Timeout}, nil
+	baseHealth.Kind, baseHealth.Host, baseHealth.Port = HealthKindTCP, &host, resolvedPort
+	return baseHealth, nil
 }
 
 func hasRuntimeBindPortConflict(bindHost string, port int, resolvedServices map[string]ResolvedService) bool {

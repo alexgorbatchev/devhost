@@ -37,7 +37,7 @@
 # - daemon lifecycle services must not use `port = "auto"` or `health.process`
 # - a routed service (`host = ...`) must also define `port`
 # - a routed service must not use `health.process`
-# - `port = "auto"` must omit `health` in v1
+# - `health` selects at most one of `tcp`, `http`, or `process`; timing-only tables require a service port
 # - `managed = false` must omit `command`, `injectPort`, and `port = "auto"`
 # - `managed = false` may use explicit TCP or HTTP health, but must not use `health.process`
 # - `bindHost` must be one of: `127.0.0.1`, `0.0.0.0`, `::1`, `::`
@@ -363,6 +363,7 @@ restartServices = "alt+ctrl+r"
 # table is present:
 # - fixed numeric `port` + no `health` => implicit TCP health check on `bindHost:port`
 # - `port = "auto"` + no `health` => implicit TCP health check on the resolved port
+# A timing-only health table retains that TCP probe with custom interval, timeout, or retries.
 
 [services.web]
 # `primary` marks this as the default service for stack-level behavior.
@@ -463,15 +464,14 @@ dependsOn = ["db"]
 
 [services.api.env]
 LOG_LEVEL = "debug"
-# Use late-binding template references to get the dynamically allocated port and bind host of the `db` service:
-DATABASE_URL = "postgres://postgres:postgres@{{ services.db.bindHost }}:{{ services.db.port }}/mydb"
+# The db service binds IPv6 wildcard; connect through bracketed IPv6 loopback.
+DATABASE_URL = "postgres://postgres:postgres@[::1]:{{ services.db.port }}/mydb"
 
 [services.api.health]
-# `http` defines an absolute HTTP health-check URL.
-# - absolute URL using host `127.0.0.1`.
-# - absolute URL using host `localhost`.
-# - absolute URL using host `::1`.
-http = "http://127.0.0.1:4000/healthz"
+# `http` accepts a path on this service's direct listener or a loopback HTTP/HTTPS URL.
+# Equivalent full template: "{{ services.api.url }}/healthz".
+# The URL builder maps wildcard listeners to loopback and brackets IPv6.
+http = "/healthz"
 # `interval` sets the delay between HTTP health-check attempts.
 # - integer `>= 1`; `200` is the default.
 interval = 500
@@ -550,11 +550,14 @@ retries = 10
 # "Stopped services" in the devtools Services panel, which also starts what it depends on.
 # `devhost service list` prints every service name; `--startable` leaves out the `alwaysStart` ones.
 alwaysStart = true
-# `port = "auto"` is valid, but `health` must be omitted in v1.
+# `port = "auto"` allocates a free port; a timing-only health table customizes its TCP probe.
 command = ["bun", "run", "db:dev"]
 cwd = "./db"
 port = "auto"
 bindHost = "::"
+
+[services.db.health]
+timeout = 60000
 
 [services.worker]
 # A background process with process-based health.

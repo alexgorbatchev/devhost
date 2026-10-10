@@ -1,6 +1,6 @@
 ---
 created_on: 2026-06-26 21:23
-last_modified: 2026-10-08 13:30
+last_modified: 2026-10-09 22:39
 status: current
 ---
 
@@ -57,6 +57,8 @@ When writing the finalized manifest:
 - Keep comments minimal unless the user explicitly asks for an annotated file.
 - Explain any assumptions that still remain.
 - Name any unresolved gaps before claiming the manifest is ready.
+
+For fixed or automatic ports, customize the implicit TCP readiness budget with `[services.<name>.health]` and `timeout = 60000` (milliseconds). Set `http = "/health"` to probe the service's direct HTTP endpoint instead. Use the discovered endpoint path. The full equivalent is `http = "{{ services.<name>.url }}/health"`; `url` builds the HTTP base from the assigned port and connectable loopback address, including IPv6 brackets. Use it in command arguments and environment values for direct HTTP connections too. The `host` property supplies the first public routing hostname, falling back to the bind host, so it can name Caddy rather than the application's listener. Health HTTP targets resolve to loopback HTTP/HTTPS URLs before launch; port retries and reloads rebuild their templates and retain timing settings.
 
 ## 4. Git Worktree Selection
 
