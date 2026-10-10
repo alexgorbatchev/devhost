@@ -277,7 +277,7 @@ func (r *stackRuntime) start(ctx context.Context, name string, options runtimeSt
 		}
 	}
 	if err != nil {
-		if started != nil && started.ReadExitCode() != nil {
+		if started != nil && (ctx.Err() != nil || started.ReadExitCode() != nil) {
 			r.startedMu.Lock()
 			r.started = removeStartedService(r.started, findStartedService(r.started, name))
 			r.started = append(r.started, started)
