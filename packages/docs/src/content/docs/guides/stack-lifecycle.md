@@ -126,6 +126,8 @@ Exited foreground services remain stopped until explicit recovery or a configura
 
 Open a service's domain while it starts to see **Starting <service>**, its assigned address, and recent stdout/stderr. Startup and recovery pages share the managed proxy's 404 page styling: a centered monospace card with light and dark themes following your browser preference. The existing tab reloads its original path and query string once health checks and routing succeed. Devhost never launches a browser.
 
+Stopping the stack during startup cancels the health wait and reports shutdown progress for every launched service.
+
 If startup times out, the process exits, or the backend is unreachable, the same domain shows the recorded failure and recent service logs. **Restart <service>** becomes available for managed services after stack initialization and stays disabled during an active restart. Failed attempts show their error and remain retryable. External services show status and require recovery outside devhost.
 
 These pages work for aliases and path routes even when every devtools feature is disabled. They do not depend on the app or injected toolbar. When enabled on a root route, the toolbar also remains available for checkout selection and stack recovery. Recovery responses are uncached HTTP errors; an application's own error responses pass through. Assets and WebSocket traffic retain their direct proxy routes. Invalid configuration, ownership conflicts, and initial route registration failures still stop startup and are reported in the terminal.

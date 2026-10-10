@@ -903,6 +903,12 @@ func startServiceWithRetries(ctx context.Context, manifest *ResolvedManifest, st
 			return started, nil
 		}
 
+		if ctx.Err() != nil {
+			// Lifecycle cancellation enters stack shutdown. Retain ownership of the
+			// child so centralized cleanup announces and verifies its termination.
+			return started, ctx.Err()
+		}
+
 		// stopStartedService signals the whole contained process tree and then waits for exit and for the output readers
 		// to drain, so attemptOutput is complete below. Waiting before it could block on a surviving descendant that
 		// still holds the inherited output pipe.

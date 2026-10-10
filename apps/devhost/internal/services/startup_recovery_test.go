@@ -18,7 +18,7 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
 )
 
-func startRecoveryStack(t *testing.T, timeout int, missingExecutable bool) (string, string, func()) {
+func startRecoveryStack(t *testing.T, timeout int, missingExecutable bool) (string, string, func(), *shutdownOutput) {
 	t.Helper()
 	paths := caddy.CreateManagedCaddyPaths(t.TempDir())
 	admin := caddytest.StartAdminServer(t)
@@ -44,8 +44,9 @@ func startRecoveryStack(t *testing.T, timeout int, missingExecutable bool) (stri
 	unregisterProcessSignals = func(chan<- os.Signal) {}
 	t.Cleanup(func() { registerProcessSignals, unregisterProcessSignals = originalRegister, originalUnregister })
 	done := make(chan error, 1)
+	var output shutdownOutput
 	go func() {
-		_, err := StartStack(&m, []string{"web"}, StartStackOptions{CaddyPaths: paths, Environment: readCurrentEnvironment(), LogWriter: io.Discard, ServiceStdoutWriter: io.Discard, ServiceStderrWriter: io.Discard, ShutdownGracePeriod: 100 * time.Millisecond})
+		_, err := StartStack(&m, []string{"web"}, StartStackOptions{CaddyPaths: paths, Environment: readCurrentEnvironment(), LogWriter: &output, ServiceStdoutWriter: &output, ServiceStderrWriter: &output, ShutdownGracePeriod: 100 * time.Millisecond})
 		done <- err
 	}()
 	stop := sync.OnceFunc(func() {
@@ -64,7 +65,7 @@ func startRecoveryStack(t *testing.T, timeout int, missingExecutable bool) (stri
 	waitForCondition(t, 5*time.Second, func() bool { _, err := os.Stat(registrationPath); return err == nil })
 	route := readRestartRoute(t, registrationPath)
 	url := serverURL(route.DocumentInjectionPort, "/deep/link?value=1")
-	return url, gate, stop
+	return url, gate, stop, &output
 }
 
 func readStartupRecoveryPage(t *testing.T, url string) string {
@@ -101,7 +102,7 @@ func readStartupRecoveryState(t *testing.T, url string) devtools.RecoveryState {
 }
 
 func TestStartupRecoveryRetainsTimeoutAndRestartsWithoutToolbar(t *testing.T) {
-	url, gate, _ := startRecoveryStack(t, 2000, false)
+	url, gate, _, _ := startRecoveryStack(t, 2000, false)
 	waitForCondition(t, 5*time.Second, func() bool {
 		state := readStartupRecoveryState(t, url)
 		return state.CanRestart && strings.Contains(state.Message, "did not pass its health check within 2000ms")
@@ -146,7 +147,7 @@ func TestStartupRecoveryRetainsTimeoutAndRestartsWithoutToolbar(t *testing.T) {
 }
 
 func TestStartupPageWaitsForHealthBeforeServingApplication(t *testing.T) {
-	url, gate, _ := startRecoveryStack(t, 60000, false)
+	url, gate, _, _ := startRecoveryStack(t, 60000, false)
 	if page := readStartupRecoveryPage(t, url); !strings.Contains(page, "Starting web") {
 		t.Fatalf("startup page = %s", page)
 	}
@@ -157,15 +158,23 @@ func TestStartupPageWaitsForHealthBeforeServingApplication(t *testing.T) {
 }
 
 func TestShutdownCancelsStartupHealthWait(t *testing.T) {
-	url, _, stop := startRecoveryStack(t, 60000, false)
+	url, _, stop, output := startRecoveryStack(t, 60000, false)
 	if page := readStartupRecoveryPage(t, url); !strings.Contains(page, "Starting web") {
 		t.Fatalf("startup page = %s", page)
 	}
+	waitForCondition(t, 5*time.Second, func() bool {
+		return strings.Contains(output.snapshot(), "waiting for serve gate")
+	})
 	stop()
+	for _, message := range []string{"Stopping service web...", "Stopped service web."} {
+		if logs := output.snapshot(); strings.Count(logs, message) != 1 {
+			t.Errorf("want exactly one %q line:\n%s", message, logs)
+		}
+	}
 }
 
 func TestStartupLaunchErrorRetainsRoutesForRecovery(t *testing.T) {
-	url, gate, _ := startRecoveryStack(t, 2000, true)
+	url, gate, _, _ := startRecoveryStack(t, 2000, true)
 	waitForCondition(t, 5*time.Second, func() bool {
 		return strings.Contains(readStartupRecoveryPage(t, url), "missing-command")
 	})
