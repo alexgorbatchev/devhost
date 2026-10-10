@@ -91,8 +91,8 @@ name = "hello-stack"
 # runtime does not discover a custom endpoint from a different manifest.
 
 # The `devtools.*` sections control the browser-side devhost overlay injected into
-# routed HTML document navigations. If all devtools features are disabled, routed
-# services proxy directly to the app without the overlay.
+# routed HTML document navigations. If all devtools features are disabled, apps
+# load without the overlay. Startup and recovery pages remain available.
 
 # The repository worktree picker is enabled by default and requires Git on PATH.
 # Set enabled = false to disable discovery and saved-selection restore.
