@@ -3,6 +3,8 @@ package cli
 import (
 	"errors"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -154,8 +156,14 @@ func TestSkillCoversTheWholeInterface(t *testing.T) {
 		t.Fatalf("newRootCommand() unexpected error = %v", err)
 	}
 
-	if missing := cobrahelptree.SkillOmissions(rootCommand, createHelpCatalog(), skill.Document()); len(missing) > 0 {
-		t.Fatalf("internal/skill/devhost/SKILL.md does not cover:\n  %s", strings.Join(missing, "\n  "))
+	skillPath := filepath.Join("..", "..", "..", "..", "skills", "devhost", "SKILL.md")
+	skillContent, err := os.ReadFile(skillPath)
+	if err != nil {
+		t.Fatalf("read %s: %v", skillPath, err)
+	}
+
+	if missing := cobrahelptree.SkillOmissions(rootCommand, createHelpCatalog(), string(skillContent)); len(missing) > 0 {
+		t.Fatalf("skills/devhost/SKILL.md does not cover:\n  %s", strings.Join(missing, "\n  "))
 	}
 }
 

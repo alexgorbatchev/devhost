@@ -386,13 +386,26 @@ If you are modifying the injected browser devtools UI (`packages/devhost-ui/`) a
 
 ## AI devhost skill
 
-`devhost` carries its guide for AI agents inside the binary. The guide covers every command, flag, and environment variable, and the rules for writing `devhost.toml`:
+`devhost` provides an AI agent skill covering every command, flag, environment variable, and the rules for writing `devhost.toml`:
 
 ```bash
 devhost skill
 ```
 
-The command prints the guide exactly as written, with or without `AGENT=1`, and needs no network or repository. Every `AGENT=1` help screen starts with a line that sends the agent to it:
+The command prints instructions to install the skill via the Skills CLI, together with the skill URL:
+
+```console
+$ devhost skill
+Install the devhost skill using the Skills CLI:
+
+  npx skills add alexgorbatchev/devhost
+
+Skill:
+
+  https://github.com/alexgorbatchev/devhost/tree/main/skills/devhost
+```
+
+Every `AGENT=1` help screen starts with a line that sends the agent to it:
 
 ```console
 $ AGENT=1 devhost --help

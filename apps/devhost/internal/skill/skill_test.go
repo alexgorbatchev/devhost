@@ -17,15 +17,25 @@ var negativeInstruction = regexp.MustCompile(`(?i)\b(do not|don't|never|must not
 func TestSkillGivesNoNegativeInstructions(t *testing.T) {
 	t.Parallel()
 
-	referencePaths, err := filepath.Glob(filepath.Join("devhost", "references", "*.md"))
+	skillsDir := filepath.Join("..", "..", "..", "..", "skills", "devhost")
+	referencePaths, err := filepath.Glob(filepath.Join(skillsDir, "references", "*.md"))
 	if err != nil {
 		t.Fatalf("list the reference files: %v", err)
 	}
 	if len(referencePaths) == 0 {
-		t.Fatal("found no reference files beside devhost/SKILL.md")
+		t.Fatalf("found no reference files in %s", filepath.Join(skillsDir, "references"))
 	}
 
-	documents := map[string]string{filepath.Join("devhost", "SKILL.md"): Document()}
+	skillMdPath := filepath.Join(skillsDir, "SKILL.md")
+	skillContent, err := os.ReadFile(skillMdPath)
+	if err != nil {
+		t.Fatalf("read %s: %v", skillMdPath, err)
+	}
+
+	documents := map[string]string{
+		skillMdPath:        string(skillContent),
+		"skill.Document()": Document(),
+	}
 	for _, referencePath := range referencePaths {
 		content, err := os.ReadFile(referencePath)
 		if err != nil {
