@@ -21,6 +21,21 @@ it("retains each event caption with its own completed video segment", async () =
   expect(stop).toHaveBeenCalledTimes(3);
 });
 
+it("asks for every segment at the capture scale's pixel size", async () => {
+  const start = mock<ScreencastControls["start"]>(async () => ({
+    dispose: async (): Promise<void> => {},
+    [Symbol.asyncDispose]: async (): Promise<void> => {},
+  }));
+  const screencast: ScreencastControls = { start, stop: async (): Promise<void> => {} };
+  const recording = await createCaptionRecording(screencast, "/recording", "overview", "Hover the minimap.", 2);
+  await recording.changeCaption("Open the toolbar.");
+  await recording.stop();
+  expect(start.mock.calls).toEqual([
+    [{ path: "/recording/raw/overview-1.webm", size: { width: 2560, height: 1440 } }],
+    [{ path: "/recording/raw/overview-2.webm", size: { width: 2560, height: 1440 } }],
+  ]);
+});
+
 it("preserves a single caption for scenes without a transition", async () => {
   const screencast: ScreencastControls = {
     start: async () => ({

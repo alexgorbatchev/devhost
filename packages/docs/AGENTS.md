@@ -11,13 +11,16 @@ Public Astro + Starlight docs workspace for `devhost`, published to GitHub Pages
 - Build the static site: `just docs build`
 - Preview the production build: `just docs preview`
 - Refresh all guide videos: `just demo guides`; refresh one: `just demo guides <guide-slug>`. See `../../docs/internal/references/demo-recording.md` for recording prerequisites.
+- Download the pinned guide videos this checkout lacks: `just docs media`
+- Upload reviewed guide videos to the `media` release and pin them: `just docs publish-media`
 
 ## Local conventions
 
 - `apps/devhost/README.md` is the source of truth for the landing page.
 - `apps/devhost/devhost.example.toml` is the source of truth for the manifest reference page.
 - `src/content/docs/guides/**/*.md` is the source of truth for the Guides section.
-- Every guide starts with a native video player and collapsed text transcript. Keep controls, inline playback, and `preload="none"`; use full HTTPS URLs under `https://alexgorbatchev.github.io/devhost/demos/` for its MP4, WebP poster, and English VTT captions. The recorder replaces only the `guide-demo` block and updates tracked `public/demos/` assets. Guide prose remains usable by agents without watching videos.
+- Every guide starts with a native video player and collapsed text transcript. Keep controls, inline playback, and `preload="none"`; use full HTTPS URLs under `https://alexgorbatchev.github.io/devhost/demos/` for its MP4, WebP poster, and English VTT captions. The recorder replaces only the `guide-demo` block and updates the `public/demos/` assets. Guide prose remains usable by agents without watching videos.
+- `public/demos/` tracks each guide's poster and captions. Its `*.mp4` files are ignored: `demo-media.json` pins every video by name, release asset, SHA-256, and size, and the files are assets of the `media` GitHub release, each named after its content and never replaced. `demoMedia.ts` and `src/demoMedia/` download, check, and publish them. Never commit a video, and never hand-edit a pin except to delete the entry of a removed guide.
 - `src/content/docs/architecture/**/*.md` is the source of truth for the Architecture section.
 - `sync.ts` only regenerates `src/content/docs/index.mdx` and `src/content/docs/reference/devhost-example.md` from the app README and manifest reference.
 - `../design/references/docs.html` (`just design docs`) is the visual design reference for the docs site. Match its tokens, layout, and state treatments when changing docs styling, and update it in the same change when the design intentionally diverges.
@@ -29,7 +32,8 @@ Public Astro + Starlight docs workspace for `devhost`, published to GitHub Pages
 
 - This workspace uses the repo-root `bun.lock`. Do not add a package-local lockfile.
 - Shared `oxfmt` / `oxlint` enforcement runs from the repo root, not from this workspace `check` recipe.
-- `just docs check` runs `bun test`, content sync, `astro check`, and `astro build`.
+- `just docs check` downloads the pinned guide videos, then runs `bun test`, content sync, the check that the videos on disk are the pinned ones, `astro check`, and `astro build`. `just docs dev`, `test`, and `build` download the videos first too, so they need network access until the videos are on disk.
+- `just docs check` fails while a video in `public/demos/` differs from its pin or has none. After `just demo guides`, publish the render with `just docs publish-media`, or delete the file and run `just docs media` to return to the published video.
 - The style tests render real CSS in Playwright Chromium to verify prose link indicators and search shortcuts. Chromium is installed by root `bun install`; use `just ui install-browser` if its cached binary is missing.
 - Prose link underlines use opaque `--dh-accent` because their text matches surrounding prose. Keep search shortcut text opaque and use `--dh-input-line` for form-control boundaries.
 - `just docs dev`, `just docs start`, and `just docs preview` bind the Astro server to `0.0.0.0` so the site is reachable from outside the current environment.
@@ -54,6 +58,8 @@ Public Astro + Starlight docs workspace for `devhost`, published to GitHub Pages
 - `package.json`
 - `astro.config.mjs`
 - `sync.ts`
+- `demoMedia.ts`
+- `demo-media.json`
 - `../design/references/docs.html`
 - `src/content.config.ts`
 - `src/styles/`

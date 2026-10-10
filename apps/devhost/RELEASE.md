@@ -114,6 +114,8 @@ gh release view v0.0.2 --json assets
 
 Replace `0.0.2` with the released version. The GitHub release assets must include the five expected `.tar.gz` archives for the matching tag.
 
+The repository also has a release named `Demo media` on the tag `media`. It holds the documentation site's guide videos, is not a devhost version, and is never the latest release; leave it out of version checks. `docs/internal/references/demo-recording.md` describes it.
+
 ## Stop immediately if
 
 - the tag does not start with `v`

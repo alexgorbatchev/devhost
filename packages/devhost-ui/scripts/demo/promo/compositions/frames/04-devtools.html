@@ -1,0 +1,124 @@
+<template>
+  <style>
+    #root {
+      position: absolute;
+      inset: 0;
+    }
+    .devtools-window {
+      left: 180px;
+      top: 70px;
+      width: 1560px;
+      height: 933px;
+    }
+    .devtools-tag {
+      left: 240px;
+      top: 180px;
+    }
+    .devtools-logs {
+      left: 240px;
+      top: 292px;
+    }
+    .devtools-services {
+      left: 240px;
+      top: 404px;
+    }
+  </style>
+
+  <div id="root" data-composition-id="04-devtools" data-width="1920" data-height="1080">
+    <div id="devtools-window" class="dh-window devtools-window">
+      <div class="dh-window-bar">
+        <span class="dh-window-dot"></span><span class="dh-window-dot"></span><span class="dh-window-dot"></span>
+        <span class="dh-window-address">
+          <svg class="dh-window-lock" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="4.5" y="10.5" width="15" height="10" rx="2.4" fill="currentColor" />
+            <path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+          </svg>
+          https://demo.localhost
+        </span>
+      </div>
+      <div class="dh-window-screen">
+        <div id="devtools-camera" class="dh-camera" data-layout-allow-overflow>
+          <video
+            id="devtools-logs-footage"
+            class="clip"
+            src="assets/footage/devtools-logs-footage.mp4"
+            data-footage="overview-1"
+            data-footage-from="0.8"
+            data-start="0"
+            data-duration="2.5"
+            data-track-index="2"
+            muted
+            playsinline
+          ></video>
+          <video
+            id="devtools-services-footage"
+            class="clip"
+            src="assets/footage/devtools-services-footage.mp4"
+            data-footage="overview-2"
+            data-footage-to="4.5"
+            data-start="2.5"
+            data-hf-media-start-basis="local"
+            data-duration="2.1"
+            data-track-index="2"
+            muted
+            playsinline
+          ></video>
+          <video
+            id="devtools-query-footage"
+            class="clip"
+            src="assets/footage/devtools-query-footage.mp4"
+            data-footage="query-1"
+            data-footage-from="-9.2"
+            data-footage-to="-4"
+            data-start="4.6"
+            data-hf-media-start-basis="local"
+            data-duration="1.4"
+            data-track-index="2"
+            muted
+            playsinline
+          ></video>
+        </div>
+      </div>
+    </div>
+
+    <div id="devtools-tag" class="dh-label devtools-tag">optional devtools</div>
+    <div id="devtools-logs" class="dh-label dh-label-accent devtools-logs">live logs</div>
+    <div id="devtools-services" class="dh-label dh-label-accent devtools-services">service controls</div>
+    <div id="devtools-query" class="dh-label dh-label-accent devtools-tag">TanStack Query, one click</div>
+  </div>
+
+  <script>
+    {
+      const tl = gsap.timeline({ paused: true });
+      const pop = (target, time) => {
+        tl.fromTo(
+          target,
+          { x: -70, opacity: 0, scale: 0.8 },
+          { x: 0, opacity: 1, scale: 1, duration: 0.36, ease: "back.out(2.2)" },
+          time,
+        );
+      };
+      tl.fromTo(
+        "#devtools-window",
+        { y: 200, opacity: 0, rotationX: 18, transformPerspective: 1800 },
+        { y: 0, opacity: 1, rotationX: 0, duration: 0.6, ease: "expo.out" },
+        0,
+      );
+      pop("#devtools-tag", 0.12);
+      // "real-time logs": the camera pushes into the corner where the devtools live.
+      tl.fromTo(
+        "#devtools-camera",
+        { scale: 1, transformOrigin: "100% 100%" },
+        { scale: 2, duration: 0.75, ease: "expo.inOut" },
+        0.6,
+      );
+      pop("#devtools-logs", 1.4);
+      pop("#devtools-services", 2.55);
+      // Unvoiced: the same toolbar opens a third-party inspector.
+      tl.to("#devtools-camera", { scale: 1, duration: 0.34, ease: "expo.out" }, 4.6);
+      tl.to(["#devtools-tag", "#devtools-logs", "#devtools-services"], { opacity: 0, duration: 0.16 }, 4.56);
+      pop("#devtools-query", 4.78);
+      window.__timelines["04-devtools"] = tl;
+    }
+  </script>
+</template>
