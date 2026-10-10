@@ -4,7 +4,7 @@ description: Use when running devhost or when reading, writing, or changing a de
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-10 00:51
+  last_modified: 2026-10-10 01:58
   status: current
 ---
 
@@ -25,7 +25,7 @@ Run `devhost` with `AGENT=1`: help becomes `key: value` text, and a failed comma
 - `devhost caddy trust`: install Caddy's root certificate into the system trust store, so browsers accept the HTTPS hostnames. It asks for the user's password and needs the shared Caddy running.
 - `devhost caddy print-root-cert`: print Caddy's root certificate to stdout. The certificate exists after the first `devhost caddy start`.
 - `devhost caddy trust-remote <ssh-target>`: on macOS, trust the Caddy certificate of another machine. `<ssh-target>` is an SSH host with `devhost` on its `PATH`, such as `devbox` or `user@devbox`. It prints the certificate's SHA-256 fingerprint and installs the certificate into the System keychain.
-- `devhost skill`: print this guide, byte for byte. Takes no arguments.
+- `devhost skill`: print instructions to install the AI skill via the Skills CLI and the skill URL. Takes no arguments.
 - `devhost help [command]`: print the help of a command, the screen `--help` prints for it.
 - `devhost completion bash`, `devhost completion fish`, `devhost completion powershell`, `devhost completion zsh`: print a completion script for that shell on stdout. `--no-descriptions` (bool) leaves the command descriptions out of the completions.
 
@@ -70,7 +70,7 @@ Interactively, pick the stack with `fzf`; `cut -f2` takes the manifest path, the
 devhost stop --manifest "$(devhost stack list | fzf | cut -f2)"
 ```
 
-When this guide is printed by `devhost skill`, the `references/` files it links to are at <https://github.com/alexgorbatchev/devhost/tree/main/apps/devhost/internal/skill/devhost/references>.
+The `references/` files this guide links to are at <https://github.com/alexgorbatchev/devhost/tree/main/skills/devhost/references>.
 
 ## Setup and Discovery
 
@@ -132,8 +132,15 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
   - A health check on a routed service is `health.tcp` or `health.http`. `health.process` (the process-based health check) belongs to services without a `host`.
   - Set `proxyLocalOrigin = true` only for servers requiring a local Host/Origin, such as Bun HTML/HMR. Omit it or set `false` otherwise. It requires `host`, translates Host to the assigned backend address and matching public HTTP/HTTPS Origin to the local HTTP origin, preserves absent Origin and public X-Forwarded-Host, and rejects foreign, opaque, or duplicate origins with 403. Verify documents, assets, and HMR after enabling it. Leave it off for a service that takes cross-origin API requests, which it would answer with 403.
 - **Dynamic Ports (`port = "auto"`)**:
+  <<<<<<< HEAD:apps/devhost/internal/skill/devhost/SKILL.md
   - Use the implicit TCP probe or configure a health table. Set timing alone to retain TCP readiness; use `http = "/health"` for a discovered HTTP endpoint. Keep explicit TCP targets fixed and HTTP targets on loopback. Follow [Setup](references/setup.md#3-writing-and-outputting-manifest) for health URL templates and timing.
-  - Use `{{ services.api.url }}` for a direct HTTP base URL, with wildcard listeners mapped to loopback and IPv6 brackets included. Use `bindHost` and `port` references or `DEVHOST_PORT_<SERVICE_NAME_UPPERCASE>` for other protocols, accounting for wildcard and IPv6 addresses.
+  - # Use `{{ services.api.url }}` for a direct HTTP base URL, with wildcard listeners mapped to loopback and IPv6 brackets included. Use `bindHost` and `port` references or `DEVHOST_PORT_<SERVICE_NAME_UPPERCASE>` for other protocols, accounting for wildcard and IPv6 addresses.
+  - Omit `health` to use TCP readiness on the assigned port, or set timing alone (for example, `health = { timeout = 60000 }`) to customize it. Timing-only tables also work with fixed ports; services without a port select a probe.
+  - Select at most one explicit probe: a fixed numeric `tcp` target, an `http` URL/path, or `process = true` for managed, non-routed foreground services.
+  - Set `health.http = "/health"` as shorthand for the current service’s direct HTTP endpoint; it requires a service port. The equivalent template is `"{{ services.<name>.url }}/health"`. Absolute http/https targets resolve to `127.0.0.1`, `localhost`, or `::1` before launch.
+  - Keep `timeout` as the total startup readiness budget in milliseconds (default `30000`), `interval` as the delay between attempts (default `200` milliseconds), and `retries = 0` for timeout-bounded attempts. A positive retry value permits that many retries after the first failure. Port retries, reloads, and stack restarts rebuild health URL references while retaining timing and probe kinds.
+  - Inter-service discovery must use late-binding template placeholders (e.g., `{{ services.db.bindHost }}:{{ services.db.port }}`) or query the auto-injected environment variable `DEVHOST_PORT_<SERVICE_NAME_UPPERCASE>`.
+    > > > > > > > 71bb3d9 (refactor(devhost): move skill to root skills/ and print install instructions):skills/devhost/SKILL.md
 - **Daemon Lifecycle Services (`[services.<name>.lifecycle]` table)**:
   - Must use `mode = "daemon"`, keep `managed = true`, and define both `lifecycle.start` and `lifecycle.stop` (optionally `lifecycle.status`).
   - Must **omit** the top-level `command` array.
@@ -144,6 +151,7 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 - **Bind Host Constraints**: `bindHost` can only be one of the following: `127.0.0.1` (default), `0.0.0.0`, `::1`, `::`.
 - **Command Syntax**: `command` is best written as a string array to preserve argument boundaries exactly.
 - **Working Directories**: Use an absolute `cwd` for any directory, including outside the manifest directory, in services and custom annotation actions. Resolve relative `cwd` values against the manifest directory and keep them within it. Write an absolute `cwd` exactly as it is.
+- **Service References**: Use `{{ services.<name>.port }}`, `host`, `bindHost`, or `url` in command arguments, environment values, and `health.http`. `host` supplies the first public routing hostname (falling back to the bind host), so it can address Caddy. `bindHost` is the listening address. `url` builds a direct HTTP base URL from the assigned port and a connectable loopback address, maps wildcards to loopback, brackets IPv6, and includes neither a trailing slash nor a public routing path. Append the required path. It requires a service port. A reference resolves stopped service addresses too; use `dependsOn` to start a required service.
 - **Environment Interpolation**: String values support standard environment interpolation using `{{ env.NAME }}` placeholders. Placeholder names must start with a letter/underscore and only contain alphanumeric characters or underscores. Referencing an undefined valid placeholder is a manifest load error.
 
 ### Reference Guides
