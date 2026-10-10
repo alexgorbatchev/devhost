@@ -130,6 +130,14 @@ If startup times out, the process exits, or the backend is unreachable, the same
 
 These pages work for aliases and path routes even when every devtools feature is disabled. They do not depend on the app or injected toolbar. When enabled on a root route, the toolbar also remains available for checkout selection and stack recovery. Recovery responses are uncached HTTP errors; an application's own error responses pass through. Assets and WebSocket traffic retain their direct proxy routes. Invalid configuration, ownership conflicts, and initial route registration failures still stop startup and are reported in the terminal.
 
+To try this from a devhost repository checkout, configure `DEVHOST_RECOVERY` in `.envrc.local` if you need a hostname other than the default `recovery.localhost`, reload direnv, and run:
+
+```bash
+just devhost demo-recovery
+```
+
+Open that hostname manually. The separate `demos/recovery/devhost.toml` starts a service that deliberately leaves its automatic port closed: the page shows startup progress, then a health timeout after ten seconds with its logs and a **Restart unhealthy** button. Restart repeats the deliberate failure. The demo disables the injected toolbar so you can inspect the standalone recovery page. Press **Ctrl-C** to stop the demo stack.
+
 ## Configuration hot reload
 
 Saving the root manifest or an included manifest reloads service configuration. Added and deleted files matching an `includes` pattern change service membership. The whole candidate must parse, validate, and have a valid dependency order before devhost changes running services. Invalid edits print `configuration reload rejected` and leave the stack running.

@@ -1,0 +1,39 @@
+name = "recovery-demo"
+
+[worktrees]
+enabled = false
+
+[caddy.global]
+http = true
+httpPort = 80
+bindHost = "0.0.0.0"
+
+[devtools.editor]
+enabled = false
+
+[devtools.externalToolbars]
+enabled = false
+
+[devtools.minimap]
+enabled = false
+
+[devtools.resources]
+enabled = false
+
+[devtools.status]
+enabled = false
+
+[services.unhealthy]
+primary = true
+# Stay alive without opening PORT so readiness deliberately times out.
+command = [
+  "sh",
+  "-c",
+  "printf 'Recovery demo: deliberately leaving port %s closed. Restart repeats this failure.\\n' \"$PORT\"; exec sleep 86400",
+]
+port = "auto"
+host = "{{ env.DEVHOST_RECOVERY }}"
+
+[services.unhealthy.health]
+interval = 200
+timeout = 10000

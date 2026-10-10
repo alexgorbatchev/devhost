@@ -42,6 +42,8 @@ Run the app from source in the current directory with agent-facing output (`AGEN
 just devhost run-ai --help
 ```
 
+Preview startup timeout and recovery pages from the repository root with `just devhost demo-recovery`. The separate `demos/recovery/devhost.toml` deliberately leaves its automatic port closed and times out after ten seconds. Set `DEVHOST_RECOVERY` through the root `.envrc` / `.envrc.local`, reload direnv, and open that hostname manually. Restart repeats the deliberate failure; Ctrl-C stops the demo stack.
+
 Run the Go tests:
 
 ```bash
