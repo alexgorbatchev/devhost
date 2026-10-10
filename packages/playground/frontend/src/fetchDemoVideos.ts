@@ -9,14 +9,17 @@ function isOptionalString(value: unknown): value is string | undefined {
 
 function isDemoVideo(value: unknown): value is IDemoVideo {
   if (typeof value !== "object" || value === null) return false;
-  if (!("id" in value && "kind" in value && "title" in value && "src" in value)) return false;
+  if (!("id" in value && "kind" in value && "title" in value && "state" in value && "src" in value)) return false;
   if (!("bytes" in value)) return false;
   return (
     typeof value.id === "string" &&
-    (value.kind === "recording" || value.kind === "guide" || value.kind === "published") &&
+    (value.kind === "promo" || value.kind === "guide") &&
+    typeof value.state === "string" &&
+    ["local", "published", "unpublished", "remote"].includes(value.state) &&
     typeof value.title === "string" &&
     typeof value.src === "string" &&
     typeof value.bytes === "number" &&
+    isOptionalString("publishedSrc" in value ? value.publishedSrc : undefined) &&
     isOptionalString("modified" in value ? value.modified : undefined) &&
     isOptionalString("poster" in value ? value.poster : undefined) &&
     isOptionalString("captions" in value ? value.captions : undefined)

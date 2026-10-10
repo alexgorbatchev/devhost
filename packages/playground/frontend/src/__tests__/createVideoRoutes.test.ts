@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { rm } from "node:fs/promises";
+import { rm, utimes } from "node:fs/promises";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createVideoRoutes } from "../createVideoRoutes";
 
@@ -14,6 +14,7 @@ function request(path: string, headers?: Record<string, string>): Promise<Respon
 beforeEach(async () => {
   repositoryDirectory = new URL(`../../../../../.tmp/video-routes-${Bun.randomUUIDv7()}/`, import.meta.url);
   await Bun.write(new URL(".tmp/demos/recording-full/devhost-demo.mp4", repositoryDirectory), "rendered video");
+  await Bun.write(new URL(".tmp/demos/recording-full/promo-footage.json", repositoryDirectory), "[]");
   await Bun.write(new URL(".tmp/demos/recording-full/pi-changes.json", repositoryDirectory), "{}");
   await Bun.write(new URL("packages/docs/public/demos/devtools.vtt", repositoryDirectory), "WEBVTT");
   await Bun.write(new URL("packages/docs/public/demos/devtools.mp4", repositoryDirectory), "guide video");
@@ -53,6 +54,10 @@ describe("createVideoRoutes", () => {
 
   test("reads the disk again on each request, so a new render shows on reload", async () => {
     await Bun.write(new URL(".tmp/demos/recording-later/devhost-demo.mp4", repositoryDirectory), "second render");
+    await Bun.write(new URL(".tmp/demos/recording-later/promo-footage.json", repositoryDirectory), "[]");
+    // The latest render is the promo; file times of two writes in one test can be equal.
+    const later = Date.now() / 1000 + 60;
+    await utimes(Bun.fileURLToPath(new URL(".tmp/demos/recording-later/devhost-demo.mp4", repositoryDirectory)), later, later);
 
     expect(await (await request("/demo-videos/recordings/recording-later/devhost-demo.mp4")).text()).toBe(
       "second render",

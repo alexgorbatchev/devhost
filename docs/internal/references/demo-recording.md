@@ -99,7 +99,7 @@ A release asset is named after its content, such as `annotations-273a29aa49b00e5
 
 `just docs media` leaves a video on disk alone when it differs from its pin, because that is a render you have not published yet. To discard such a render, delete the file and run `just docs media` again.
 
-To see what is published, open the release at <https://github.com/alexgorbatchev/devhost/releases/tag/media>, or the playground's `/videos` page: its "Published on GitHub" section plays every pinned video straight from the release, beside the local renders.
+To see what is published, open the release at <https://github.com/alexgorbatchev/devhost/releases/tag/media>, or the playground's `/videos` page: each guide's card says whether the video on disk is the published one and links to the published copy in the release.
 
 Browser guides cover the minimap, toolbar, worktrees and Query; real Pi annotation/live fixes; and React Highlight. The React Highlight scene launches the stack's generated `devhost-nvim` with a clean headless Neovim configuration, loads its native start packages with `packloadall!`, starts a real TSX Tree-sitter highlighter, moves its actual JSX cursor, and waits for a matching native browser diagnostic and overlay. Set `DEVHOST_DEMO_TSX_PARSER` to an installed `tsx.so` when it is not at the normal `nvim/site/parser/tsx.so` under the host's XDG data directory.
 

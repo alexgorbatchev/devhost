@@ -175,6 +175,19 @@ code {
 .video-card a {
   color: #f3d5a3;
 }
+.video-state {
+  padding: 0 0.5rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.85em;
+}
+.video-state--published,
+.video-state--remote {
+  color: #9be9a8;
+}
+.video-state--unpublished {
+  color: #f3d5a3;
+}
 .endpoint-row {
   display: flex;
   align-items: center;
