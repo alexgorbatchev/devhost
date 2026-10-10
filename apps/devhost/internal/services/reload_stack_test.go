@@ -328,7 +328,16 @@ func TestReloadServiceHelperProcess(t *testing.T) {
 	if _, err := os.Stat("fail"); err == nil {
 		os.Exit(7)
 	}
-	listener, err := net.Listen("tcp", net.JoinHostPort("127.0.0.1", os.Getenv("PORT")))
+	host := "127.0.0.1"
+	if path := os.Getenv("BIND_HOST_FILE"); path != "" {
+		value, err := os.ReadFile(path)
+		if err != nil {
+			_, _ = fmt.Fprintln(os.Stderr, err)
+			os.Exit(2)
+		}
+		host = string(value)
+	}
+	listener, err := net.Listen("tcp", net.JoinHostPort(host, os.Getenv("PORT")))
 	if err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)

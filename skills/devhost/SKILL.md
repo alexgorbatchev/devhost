@@ -4,7 +4,7 @@ description: Use when running devhost or when reading, writing, or changing a de
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-10 04:12
+  last_modified: 2026-10-10 05:11
   status: current
 ---
 
@@ -145,7 +145,7 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 
 ### Parameter Bindings & Placeholders
 
-- **Bind Host Constraints**: `bindHost` can only be one of the following: `127.0.0.1` (default), `0.0.0.0`, `::1`, `::`.
+- **Bind Host Constraints**: `bindHost` can only be one of the following: `127.0.0.1` (default), `0.0.0.0`, `::1`, `::`. Match the application's actual listener to this address and the assigned port; the app owns its listener configuration. A failed repository restart shows the failing member's error on every member's recovery page and remains retryable. Follow the [Vite integration guide](references/vite-storybook-integration.md#2-vite-loopback-bind-host-mismatch-bindhost) for listener verification and recovery.
 - **Command Syntax**: `command` is best written as a string array to preserve argument boundaries exactly.
 - **Working Directories**: Use an absolute `cwd` for any directory, including outside the manifest directory, in services and custom annotation actions. Resolve relative `cwd` values against the manifest directory and keep them within it. Write an absolute `cwd` exactly as it is.
 - **Service References**: Use `{{ services.<name>.port }}`, `host`, `bindHost`, or `url` in command arguments, environment values, and `health.http`. `host` supplies the first public routing hostname (falling back to the bind host), so it can address Caddy. `bindHost` is the listening address. `url` builds a direct HTTP base URL from the assigned port and a connectable loopback address, maps wildcards to loopback, brackets IPv6, and includes neither a trailing slash nor a public routing path. Append the required path. It requires a service port. A reference resolves stopped service addresses too; use `dependsOn` to start a required service.

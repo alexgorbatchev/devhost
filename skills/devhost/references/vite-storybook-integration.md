@@ -37,7 +37,9 @@ Storybook's Vite builder provides an `allowedHosts` config option. To support ro
 
 By default, `devhost` proxies to the IPv4 loopback (`127.0.0.1`). However, many modern machines resolve `localhost` and local listeners to the IPv6 loopback (`::1`).
 
-If a Vite-style service binds exclusively to IPv6 (`::1`), `devhost`'s proxy will fail to connect to the target port, even though typing the port directly in your browser works.
+If a Vite-style service binds exclusively to IPv6 (`::1`), `devhost`'s default IPv4 health check and proxy will fail to connect to the target port, even though typing the port directly in your browser works.
+
+`bindHost` selects devhost's target address; the application owns its listener. Configure Vite's `server.host` and `server.port` to match the manifest's address and assigned port, with `server.strictPort = true` to keep the port fixed. Verify the actual listener before changing the manifest. See [Vite's server options](https://vite.dev/config/server-options).
 
 - **Rule**: If a service binds to `::1`, set `bindHost = "::1"` explicitly on that service table in `devhost.toml`:
   ```toml
@@ -47,6 +49,8 @@ If a Vite-style service binds exclusively to IPv6 (`::1`), `devhost`'s proxy wil
   bindHost = "::1"
   ```
 - _Note_: `devhost` will emit a startup warning if a listener mismatch is detected.
+
+A health-check mismatch ends at the configured timeout and leaves recovery retryable. A failed repository restart stops its group and shows the failing member's error on every member's recovery page. Correct the listener configuration, then retry **Restart**. Removing `bindHost` selects IPv4 loopback, so verify the app accepts IPv4 before using the default.
 
 ---
 
