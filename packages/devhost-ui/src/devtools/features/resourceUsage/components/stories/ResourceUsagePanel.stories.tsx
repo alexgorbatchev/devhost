@@ -8,7 +8,8 @@ import {
   StorybookThemeProvider,
 } from "../../../../shared/components/stories/helpers";
 import { ResourceUsagePanel } from "../ResourceUsagePanel";
-import { factory_cpuUsage, fixture_calmUsage, fixture_mixedLevelUsage } from "./fixtures";
+import { fixture_calmUsage, fixture_mixedLevelUsage } from "./fixtures";
+import { expectStableResourceWidth, ResourceUsageWidthScene } from "./helpers";
 
 type ShadowCanvas = Awaited<ReturnType<typeof readDevtoolsStoryShadowCanvas>>;
 
@@ -117,27 +118,18 @@ export const StableReadoutWidth: Story = {
   render: (_args, context) =>
     renderInDevtoolsStoryShadowRoot(
       <StorybookThemeProvider globals={context.globals}>
-        <div data-testid="ResourceUsagePanelStory--idle">
-          <ResourceUsagePanel usage={factory_cpuUsage(5)} />
-        </div>
-        <div data-testid="ResourceUsagePanelStory--saturated">
-          <ResourceUsagePanel usage={factory_cpuUsage(100)} />
-        </div>
+        <ResourceUsageWidthScene />
       </StorybookThemeProvider>,
     ),
-  play: async ({ canvasElement }): Promise<void> => {
-    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
-    const readReadoutWidth = (testId: string): number => {
-      const [cpuReadout] = within(canvas.getByTestId(testId)).getAllByTestId("ResourceUsagePanel--readout");
+  play: async ({ canvasElement }): Promise<void> => expectStableResourceWidth(canvasElement),
+};
 
-      return cpuReadout.getBoundingClientRect().width;
-    };
-
-    await expect(
-      within(canvas.getByTestId("ResourceUsagePanelStory--saturated")).getByText("100%", { selector: "span" }),
-    ).toBeVisible();
-    await expect(readReadoutWidth("ResourceUsagePanelStory--idle")).toBe(
-      readReadoutWidth("ResourceUsagePanelStory--saturated"),
-    );
-  },
+export const StableSingleReadoutWidth: Story = {
+  render: (_args, context) =>
+    renderInDevtoolsStoryShadowRoot(
+      <StorybookThemeProvider globals={context.globals}>
+        <ResourceUsageWidthScene hasSingleReadout />
+      </StorybookThemeProvider>,
+    ),
+  play: async ({ canvasElement }): Promise<void> => expectStableResourceWidth(canvasElement),
 };
