@@ -52,6 +52,8 @@ When `devhost start` named the services to run, the panel also shows **Stopped s
 
 Repository services also share a checkout picker, with Applications and Services listed separately inside each repository section. Entries outside those repositories use the same grouping below the repository sections. Opening the picker or pressing **Refresh** discovers added and deleted Git worktrees. Selecting a checkout restarts that repository's managed services together; repositories containing externally managed services cannot switch checkouts. If the running checkout disappears, its services remain stopped until you select an available checkout; other repositories keep running.
 
+Use **Find worktree** to fuzzy-search branch names, checkout paths, or detached commit IDs. Matches are ranked by relevance; clear the search to show every checkout again. Filtering keeps your selection and does not restart services. Choose a checkout, then press **Switch and restart** to apply it.
+
 A branch icon beside the toolbar's service count indicates that at least one repository has a non-default branch selected. Hover the service count to see the repository and branch names. Devhost reads the default branch from Git's locally recorded remote `HEAD` references, without contacting a remote or assuming a branch name. The icon stays hidden for detached checkouts and repositories whose default branch is unknown or whose remote defaults disagree. Opening the picker or pressing **Refresh** also refreshes this information.
 
 Individual service restarts retain their assigned automatic ports. If a port is occupied, use **Restart stack with new ports** in the Services panel or recovery dialog. It restarts all managed services with fresh automatic ports and rebuilt port references and environments, while retaining fixed ports, selected checkouts, control listeners, and terminal sessions. External processes keep running. Failures display an error and allow another attempt. See [Stack lifecycle](./stack-lifecycle/) for hot reload, restart ordering, and restoration behavior.
@@ -83,6 +85,8 @@ The toolbar shows three readouts for the machine devhost runs on: **CPU**, **RAM
 | Disk    | Space used across fixed local filesystems, out of the space available to you | 1 minute   |
 
 The bar is neutral below 70%, amber from 70%, and red from 90%, where the number also turns bold. Hover a readout for the figures behind the percentage, such as `RAM: 9.8 of 32 GB used`.
+
+Each percentage reserves room for `100%`, including when only one readout is enabled, so changing values and bold critical readings keep the toolbar width stable.
 
 Disk counts each fixed local filesystem once, the way `df` does:
 

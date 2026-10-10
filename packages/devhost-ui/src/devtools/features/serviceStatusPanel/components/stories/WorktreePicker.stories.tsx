@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, fn, userEvent, waitFor } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 
 import { DevtoolsToolbar } from "../../../../shared/components/DevtoolsToolbar";
 import { ToolbarPopover } from "../../../../shared/components/ToolbarPopover";
@@ -42,6 +42,46 @@ const meta: Meta<typeof WorktreePicker> = {
 };
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+export const FuzzySearch: Story = {
+  render: (args, context) => (
+    <StorybookThemeProvider globals={context.globals}>
+      <WorktreePicker {...args} />
+    </StorybookThemeProvider>
+  ),
+  play: async ({ args, canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    const search = canvas.getByRole("searchbox", { name: "Find worktree" });
+    await waitFor(() => expect(search).toHaveFocus());
+    await userEvent.type(search, "FCRT");
+    await expect(canvas.getAllByRole("radio")).toHaveLength(1);
+    const feature = canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" });
+    await userEvent.tab();
+    await expect(canvas.getByRole("button", { name: "Refresh worktrees" })).toHaveFocus();
+    await userEvent.tab();
+    await expect(feature).toHaveFocus();
+    await userEvent.keyboard(" ");
+    await expect(feature).toBeChecked();
+    await userEvent.clear(search);
+    await expect(canvas.getAllByRole("radio")).toHaveLength(4);
+    await userEvent.type(search, "wtsexp");
+    await expect(canvas.getAllByRole("radio")).toHaveLength(1);
+    await expect(canvas.getByRole("radio", { name: "Detached deadbee /worktrees/experiment" })).toBeVisible();
+    await userEvent.clear(search);
+    await userEvent.type(search, "deadbee");
+    await expect(canvas.getAllByRole("radio")).toHaveLength(1);
+    await userEvent.clear(search);
+    await userEvent.type(search, "zzzzzz");
+    await expect(canvas.queryByRole("radio")).not.toBeInTheDocument();
+    await expect(canvas.getByRole("status")).toHaveTextContent("No matching worktrees.");
+    await expect(args.onSwitch).not.toHaveBeenCalled();
+    await userEvent.clear(search);
+    await expect(canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" })).toBeChecked();
+    await expect(canvas.getByRole("radio", { name: "feature/missing /worktrees/missing" })).toBeDisabled();
+    await userEvent.click(canvas.getByRole("button", { name: "Switch and restart 2 services" }));
+    await expect(args.onSwitch).toHaveBeenCalledWith("shop", "/worktrees/cart");
+  },
+};
 
 export const HomeDirectoryPaths: Story = {
   args: { repository: factory_homeWorktreeRepository() },
