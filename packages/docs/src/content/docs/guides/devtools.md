@@ -40,9 +40,11 @@ Production entry scripts, Redux inspector modules/styles, terminal styles, conte
 
 The injected overlay is a single compact toolbar docked to the right edge of the browser. It shows the stack name, service health, annotation queues, supported third-party devtools toggles, and terminal sessions. Use `[devtools.status].position` to switch between `top-right` and `bottom-right`; toolbar panels open above the toolbar, or below it at `top-right`. Clicking the stack name collapses the toolbar to a single stack-health dot.
 
+Toolbar panels, including Services, fade out in place when dismissed, staying beside their trigger until the animation finishes. With reduced motion enabled, they close immediately.
+
 Every injected surface renders in the browser's top layer: above page content whatever `z-index` or clipping the page uses, and without blocking clicks on the page around it. The surfaces keep one order among themselves, bottom to top: selection and cursor highlights, annotation drafts and the component-source menu, the toolbar, the log minimap, then terminal windows. Toolbar panels and the recovery dialog open above all of them.
 
-When the page opens a popover or a modal dialog, the injected UI moves back above it. A popover inside a web component's shadow root gives the page no signal, so the injected UI moves above it the next time a selection or cursor highlight appears. An open toolbar panel or recovery dialog postpones the move until it closes. While a page's modal dialog is open, the browser makes everything outside that dialog non-interactive, the injected UI included.
+When the page opens a popover or a modal dialog, the injected UI moves back above it. A popover inside a web component's shadow root gives the page no signal, so the injected UI moves above it the next time a selection or cursor highlight appears. An open toolbar panel or recovery dialog postpones the move until it closes; a fading toolbar panel postpones it until its exit animation finishes. While a page's modal dialog is open, the browser makes everything outside that dialog non-interactive, the injected UI included.
 
 The toolbar also shows how much of the machine is in use: **CPU**, **RAM**, and **Disk**, each as percent used. See [Host resource usage](#host-resource-usage).
 
