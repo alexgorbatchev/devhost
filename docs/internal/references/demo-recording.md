@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-09 22:40
+last_modified: 2026-10-10 09:45
 status: current
 ---
 
@@ -152,6 +152,7 @@ Sources live in `packages/devhost-ui/scripts/demo/`:
 | `renderGuide.ts` / `findGuideRecording.ts`                                  | Render a guide's film again from its latest recording                           |
 | `generateGuideAudio.ts` / `readGuideNarration.ts`                           | Generate the guide films' narration and music with ElevenLabs                   |
 | `speakLine.ts` / `composeMusic.ts` / `audioSchemas.ts`                      | Speak one line and compose music, for the promo and the guide films             |
+| `createSpeechRequest.ts` / `hashSpeechRequest.ts`                           | Build and hash a line's ElevenLabs request, so an unchanged line keeps its take |
 | `promo/`                                                                    | The promo's HyperFrames project: composition, narration, and audio              |
 | `renderPromo.ts` / `renderPromoComposition.ts`                              | Stage a copy of the project in the run directory, render it, and verify it      |
 | `readPromoFootageSlots.ts` / `planPromoFootage.ts` / `stagePromoFootage.ts` | Fit each recording into the slot a frame declares                               |
@@ -216,16 +217,21 @@ Each generation bills that ElevenLabs account, and a failed request is not retri
 
 ### Guide narration and music
 
-`guide/narration.json` holds the voice, one music bed, and the lines of every guide. `guide/assets/audio/` holds what ElevenLabs generated from it: `voice/<slug>/<clip>.mp3` for each line, `music.mp3`, and `timings.json`. Regenerate them with an exported `ELEVENLABS_API_KEY`:
+`guide/narration.json` holds the voice, one music bed, and the lines of every guide. `guide/assets/audio/` holds what ElevenLabs generated from it: `voice/<slug>/<clip>.mp3` for each line, `music.mp3`, and `timings.json`. Generate them with an exported `ELEVENLABS_API_KEY`:
 
 ```bash
 just demo audio-guides
 just demo audio-guides voice
 just demo audio-guides voice stack-lifecycle
+just demo audio-guides voice stack-lifecycle retake
 just demo audio-guides music
 ```
 
-The first argument selects the lines, the music, or both, and the second limits the lines to one guide. Each generation bills that ElevenLabs account, and a failed request is not retried. A guide film needs no re-timing by hand, because every render reads the measured lengths: render the affected guides again with `just demo guide-film <slug>`. Keep a line to what its clip shows. The music bed lasts 50 seconds, longer than any film, and the render fails when a film outlasts it.
+The first argument selects the lines, the music, or both, and the second limits the lines to one guide.
+
+A line keeps its take until its request changes. `timings.json` records with each take, as `requestSha256`, the hash of the request it was generated from: the voice and its settings, the model, the line, and the lines before and after it, which ElevenLabs receives as context. A run speaks only the lines whose hash no longer matches or whose MP3 is missing, and prints how many it generated. Rewording one line therefore speaks that line and the lines beside it again. To retake lines that have not changed, pass `retake` as the third argument for every selected line, or delete one line's MP3 and run the command. Do not edit `timings.json` or replace an MP3 by hand: a take is trusted because its recorded request matches. The music has no such record: `all` and `music` compose a new bed on every run, so pass `voice` when only lines changed.
+
+Each request bills that ElevenLabs account, and a failed request is not retried. Every take is recorded as it is made, so the run after a failed one continues at the line that failed. A guide film needs no re-timing by hand, because every render reads the measured lengths: render the affected guides again with `just demo guide-film <slug>`. Keep a line to what its clip shows. The music bed lasts 50 seconds, longer than any film, and the render fails when a film outlasts it.
 
 ## Artifacts and cleanup
 

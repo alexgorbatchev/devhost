@@ -4,7 +4,7 @@ import { afterAll, beforeAll, expect, it } from "bun:test";
 import { readPromoFootageSlots } from "../readPromoFootageSlots";
 import { renderGuideFilm } from "../renderGuideFilm";
 import { runCommand } from "../runCommand";
-import type { IGuideAudioTimings, IPromoLineTiming, RenderPromoComposition } from "../types";
+import type { IGuideAudioTimings, IGuideLineTiming, RenderPromoComposition } from "../types";
 
 let directoryPath = "";
 let filmPath = "";
@@ -23,10 +23,12 @@ const narration = {
   },
 };
 
-function createLine(id: string, words: string[]): IPromoLineTiming {
+function createLine(id: string, words: string[]): IGuideLineTiming {
   return {
     id,
     path: `assets/audio/voice/stack-lifecycle/${id}.mp3`,
+    // Only the audio generator reads which request a take answers.
+    requestSha256: "0".repeat(64),
     duration: 1,
     words: words.map((text, index) => ({ text, start: index * 0.3, end: index * 0.3 + 0.2 })),
   };

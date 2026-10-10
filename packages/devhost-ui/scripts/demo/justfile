@@ -10,9 +10,9 @@ promo recording="":
 audio part="all":
     DEVHOST_DEMO_AUDIO={{quote(part)}} bun run ./generatePromoAudio.ts
 
-# Regenerate the guide films' ElevenLabs narration and music (all, voice, or music; one guide or all); this bills the ELEVENLABS_API_KEY account
-audio-guides part="all" guide="all":
-    DEVHOST_DEMO_AUDIO={{quote(part)}} DEVHOST_DEMO_GUIDE={{quote(guide)}} bun run ./generateGuideAudio.ts
+# Generate the guide films' ElevenLabs narration and music (all, voice, or music; one guide or all; keep unchanged lines' takes or retake them); this bills the ELEVENLABS_API_KEY account
+audio-guides part="all" guide="all" takes="keep":
+    DEVHOST_DEMO_AUDIO={{quote(part)}} DEVHOST_DEMO_GUIDE={{quote(guide)}} DEVHOST_DEMO_TAKES={{quote(takes)}} bun run ./generateGuideAudio.ts
 
 # Render a guide's film again from the footage of its latest recording
 guide-film guide:

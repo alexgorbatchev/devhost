@@ -4,6 +4,7 @@
       {
         "id": "intro",
         "path": "assets/audio/voice/stack-lifecycle/intro.mp3",
+        "requestSha256": "29716621067b6f22becfc54053bcf7f475ba04d5ae3ae4c59608c227cd7ec5d1",
         "duration": 4.365351,
         "words": [
           {
@@ -61,6 +62,7 @@
       {
         "id": "step-1",
         "path": "assets/audio/voice/stack-lifecycle/step-1.mp3",
+        "requestSha256": "50f7cff0315c93c1b1628530dd91c6f6827aef4e7268bc7aa7cf8a13daf125de",
         "duration": 2.321995,
         "words": [
           {
@@ -103,6 +105,7 @@
       {
         "id": "step-2",
         "path": "assets/audio/voice/stack-lifecycle/step-2.mp3",
+        "requestSha256": "aaac0c993a499ec1b4d61e4bbc2e46414da3026debd8a3c1f71e90926e3634ca",
         "duration": 1.811156,
         "words": [
           {
@@ -125,6 +128,7 @@
       {
         "id": "step-3",
         "path": "assets/audio/voice/stack-lifecycle/step-3.mp3",
+        "requestSha256": "1ff84f5d0704ec85d24acc441a50b1ff6a9e22a8e52a6d9000ec621855c520f3",
         "duration": 3.715193,
         "words": [
           {
@@ -177,6 +181,7 @@
       {
         "id": "step-4",
         "path": "assets/audio/voice/stack-lifecycle/step-4.mp3",
+        "requestSha256": "c723e9b99fde54f9cf7bdce6b682208009f5195358781da24789f2c2b5b9042e",
         "duration": 3.575873,
         "words": [
           {
@@ -224,6 +229,7 @@
       {
         "id": "step-5",
         "path": "assets/audio/voice/stack-lifecycle/step-5.mp3",
+        "requestSha256": "de2941468cf8743bb3e94bdaa85e48879004043e4ab038e5f66ccf2071a1f031",
         "duration": 1.950476,
         "words": [
           {
@@ -253,6 +259,7 @@
       {
         "id": "intro",
         "path": "assets/audio/voice/annotations/intro.mp3",
+        "requestSha256": "7faa2ac5f38d3b93b1ebb6ece104be598b91cdecda9aa4caa4acc4588fb7cd08",
         "duration": 3.575873,
         "words": [
           {
@@ -315,6 +322,7 @@
       {
         "id": "annotations-1",
         "path": "assets/audio/voice/annotations/annotations-1.mp3",
+        "requestSha256": "6fdb4c4c29c75f6303039e738266c03c68b488800a0cfec777f5acb096224368",
         "duration": 3.575873,
         "words": [
           {
@@ -367,6 +375,7 @@
       {
         "id": "annotations-2",
         "path": "assets/audio/voice/annotations/annotations-2.mp3",
+        "requestSha256": "a6bf323cef37b905f474c67f740917574e8f21abf73c4cf90741d4ee47a56d73",
         "duration": 4.040272,
         "words": [
           {
@@ -429,6 +438,7 @@
       {
         "id": "annotations-3",
         "path": "assets/audio/voice/annotations/annotations-3.mp3",
+        "requestSha256": "1e5db0f35c6a30234e243f39b4bb384ebdc38d8bbfa4144e4e099462f8ff9aa2",
         "duration": 2.879274,
         "words": [
           {
@@ -488,6 +498,7 @@
       {
         "id": "intro",
         "path": "assets/audio/voice/devtools/intro.mp3",
+        "requestSha256": "b1728c106cfe535239df96d8904a4a789cba7b04d70d4af45e0836d0c2f4d9a1",
         "duration": 4.458231,
         "words": [
           {
@@ -550,6 +561,7 @@
       {
         "id": "overview-1",
         "path": "assets/audio/voice/devtools/overview-1.mp3",
+        "requestSha256": "b8f252941c972126bfb62ca5ba4ad5e8e7ba2295f7a54949bccfd614ef88439f",
         "duration": 4.272472,
         "words": [
           {
@@ -607,6 +619,7 @@
       {
         "id": "overview-2",
         "path": "assets/audio/voice/devtools/overview-2.mp3",
+        "requestSha256": "1017d1b518c5f4dbb7941f52891e14371595ff0ebc7c58dc0f61a52aa3c162ea",
         "duration": 4.272472,
         "words": [
           {
@@ -669,6 +682,7 @@
       {
         "id": "overview-3",
         "path": "assets/audio/voice/devtools/overview-3.mp3",
+        "requestSha256": "930e0f6fb663fb157477585a93212c687c4f1aec58305d18fa2f5e351863cc7b",
         "duration": 3.018594,
         "words": [
           {
@@ -716,6 +730,7 @@
       {
         "id": "query-1",
         "path": "assets/audio/voice/devtools/query-1.mp3",
+        "requestSha256": "93dea4d68b5750adf7059c547c81ab4f23e7e6c134c885e5b4572a2eed819389",
         "duration": 3.622313,
         "words": [
           {
@@ -770,6 +785,7 @@
       {
         "id": "intro",
         "path": "assets/audio/voice/docker-backed-services/intro.mp3",
+        "requestSha256": "f19179d256e5cf04a8ad9a11790dd4766ae8cdd6ed85ac8b6c6819b5bbe3ff1b",
         "duration": 6.919546,
         "words": [
           {
@@ -847,6 +863,7 @@
       {
         "id": "step-1",
         "path": "assets/audio/voice/docker-backed-services/step-1.mp3",
+        "requestSha256": "a3a431b1d10aba7cd0eb4640b192493f6a9a74e5dbcb0ba426bd7f6dbd2b8951",
         "duration": 4.92263,
         "words": [
           {
@@ -914,6 +931,7 @@
       {
         "id": "step-2",
         "path": "assets/audio/voice/docker-backed-services/step-2.mp3",
+        "requestSha256": "fc0f90b25f64a97d56d864b36b62701ebf02b9393dd596b480f30bbad6331114",
         "duration": 1.718277,
         "words": [
           {
@@ -941,6 +959,7 @@
       {
         "id": "step-3",
         "path": "assets/audio/voice/docker-backed-services/step-3.mp3",
+        "requestSha256": "182b4ac6a6373c9dbac37fd50ed466260eb14b0be86ec8c53cc67d9f235a33f0",
         "duration": 3.018594,
         "words": [
           {
@@ -993,6 +1012,7 @@
       {
         "id": "step-4",
         "path": "assets/audio/voice/docker-backed-services/step-4.mp3",
+        "requestSha256": "43ded35b01df87d207d944f72d2db28cbe838e629043ba5ed23b173833914bf4",
         "duration": 1.532517,
         "words": [
           {
@@ -1015,6 +1035,7 @@
       {
         "id": "step-5",
         "path": "assets/audio/voice/docker-backed-services/step-5.mp3",
+        "requestSha256": "d45e26ea05385dd43b3ca8f8f1599b17a10e652a347b09dd8741df09c03d8399",
         "duration": 5.619229,
         "words": [
           {
@@ -1072,6 +1093,7 @@
       {
         "id": "step-6",
         "path": "assets/audio/voice/docker-backed-services/step-6.mp3",
+        "requestSha256": "6b09af40f7ee3ebf4a0dd7b0364d539c462459b53638178b84379916493e531b",
         "duration": 3.715193,
         "words": [
           {
@@ -1114,6 +1136,7 @@
       {
         "id": "step-7",
         "path": "assets/audio/voice/docker-backed-services/step-7.mp3",
+        "requestSha256": "4b2328cb8cd48630a959bce4f074cdfb21a7f19efee95d2840c63d535ba7351e",
         "duration": 2.182676,
         "words": [
           {
@@ -1151,6 +1174,7 @@
       {
         "id": "step-8",
         "path": "assets/audio/voice/docker-backed-services/step-8.mp3",
+        "requestSha256": "b6093237c5afbc276851c45ba525ac98f20d52b116253dfdc05e29b55620b044",
         "duration": 2.089796,
         "words": [
           {
@@ -1183,6 +1207,7 @@
       {
         "id": "step-9",
         "path": "assets/audio/voice/docker-backed-services/step-9.mp3",
+        "requestSha256": "580a89d5d26f511dc4a3f12bf2bc9dc9717d10229b4c3e9ff2b237229f650d3e",
         "duration": 1.996916,
         "words": [
           {
@@ -1217,6 +1242,7 @@
       {
         "id": "intro",
         "path": "assets/audio/voice/environment-variables/intro.mp3",
+        "requestSha256": "2cea10098acd194c8f74be2f9bafa18ce4c4c9ec4e49a18a18dab5ea509c1e74",
         "duration": 4.92263,
         "words": [
           {
@@ -1284,6 +1310,7 @@
       {
         "id": "step-1",
         "path": "assets/audio/voice/environment-variables/step-1.mp3",
+        "requestSha256": "311bb90681157ec744eabae352f886ddda31e89af528725b88c912f1a568f393",
         "duration": 2.925714,
         "words": [
           {
@@ -1331,6 +1358,7 @@
       {
         "id": "step-2",
         "path": "assets/audio/voice/environment-variables/step-2.mp3",
+        "requestSha256": "c43361eda3e2da326f8165373c63f692f8374484b5490820e2af2c1bc255a231",
         "duration": 1.439637,
         "words": [
           {
@@ -1353,6 +1381,7 @@
       {
         "id": "step-3",
         "path": "assets/audio/voice/environment-variables/step-3.mp3",
+        "requestSha256": "3e151810cd8105882e2576a2d9f411f519a7f898234253db301e63e0b1258df7",
         "duration": 3.575873,
         "words": [
           {
@@ -1405,6 +1434,7 @@
       {
         "id": "step-4",
         "path": "assets/audio/voice/environment-variables/step-4.mp3",
+        "requestSha256": "3f729fdec996c4da3cd03c110327e1b26cddcf924c4b642e7fd3c420618d8046",
         "duration": 3.947392,
         "words": [
           {
@@ -1467,6 +1497,7 @@
       {
         "id": "step-5",
         "path": "assets/audio/voice/environment-variables/step-5.mp3",
+        "requestSha256": "b0d3419f2efc4873588542c72bc1d575463a70842ec11da2bb9974380748ed94",
         "duration": 1.207438,
         "words": [
           {
@@ -1491,6 +1522,7 @@
       {
         "id": "intro",
         "path": "assets/audio/voice/managed-caddy/intro.mp3",
+        "requestSha256": "de2d8b1b04c3abbe6b427b17aca396ff761c2fc2a1097b453ed99cd0dfa9e0eb",
         "duration": 6.826667,
         "words": [
           {
@@ -1548,6 +1580,7 @@
       {
         "id": "step-1",
         "path": "assets/audio/voice/managed-caddy/step-1.mp3",
+        "requestSha256": "aef0ccfd512660520e4d4a749d23210eb7b9ce4ec02d214e1d6b4d94a27ec486",
         "duration": 3.575873,
         "words": [
           {
@@ -1595,6 +1628,7 @@
       {
         "id": "step-2",
         "path": "assets/audio/voice/managed-caddy/step-2.mp3",
+        "requestSha256": "66f1402cf207132b8c93c549e3f943fd26b368d4b1ff20c7d6671afe58307920",
         "duration": 1.578957,
         "words": [
           {
@@ -1617,6 +1651,7 @@
       {
         "id": "step-3",
         "path": "assets/audio/voice/managed-caddy/step-3.mp3",
+        "requestSha256": "7d4bc112ceb2528220ed82a3b6bd623554e9ed1aa607980636193ed84eafc551",
         "duration": 4.690431,
         "words": [
           {
@@ -1674,6 +1709,7 @@
       {
         "id": "step-4",
         "path": "assets/audio/voice/managed-caddy/step-4.mp3",
+        "requestSha256": "f8aea6864321598b7d8461b798b1f871070201035f81bf581ea588fd8dda42db",
         "duration": 2.600635,
         "words": [
           {
@@ -1716,6 +1752,7 @@
       {
         "id": "step-5",
         "path": "assets/audio/voice/managed-caddy/step-5.mp3",
+        "requestSha256": "fc882b7060e0ec2c5d8b6551454e24356f3e3b2369956d759b87755ce71b78c8",
         "duration": 2.693515,
         "words": [
           {
@@ -1758,6 +1795,7 @@
       {
         "id": "step-6",
         "path": "assets/audio/voice/managed-caddy/step-6.mp3",
+        "requestSha256": "21d6bab67b300f5a948bb5ecb6558de5436d0dd77b46384a17d26c65e07b4e19",
         "duration": 2.229116,
         "words": [
           {
@@ -1792,6 +1830,7 @@
       {
         "id": "intro",
         "path": "assets/audio/voice/managed-daemon-style-services/intro.mp3",
+        "requestSha256": "67432ca6181da208284e57b7d631850d7cc7ce90c835c2c7d49c9055eaa8bed7",
         "duration": 4.179592,
         "words": [
           {
@@ -1854,6 +1893,7 @@
       {
         "id": "step-1",
         "path": "assets/audio/voice/managed-daemon-style-services/step-1.mp3",
+        "requestSha256": "e934cbf19319eb54aefbbe78bd07ca4ff83dc7c59b92d3b1f342636f754d6cfa",
         "duration": 3.993832,
         "words": [
           {
@@ -1906,6 +1946,7 @@
       {
         "id": "step-2",
         "path": "assets/audio/voice/managed-daemon-style-services/step-2.mp3",
+        "requestSha256": "c7774d8f8b17817469758c3a0930cebb43438e28d7956f2b38f4b36152b983fd",
         "duration": 1.718277,
         "words": [
           {
@@ -1928,6 +1969,7 @@
       {
         "id": "step-3",
         "path": "assets/audio/voice/managed-daemon-style-services/step-3.mp3",
+        "requestSha256": "acdcaf396e4f68b0ce32d663fc1e614e5ed31203452e75fc0a5471e92218b21d",
         "duration": 3.529433,
         "words": [
           {
@@ -1990,6 +2032,7 @@
       {
         "id": "step-4",
         "path": "assets/audio/voice/managed-daemon-style-services/step-4.mp3",
+        "requestSha256": "65c73b766277845b3df45fddd31885f3f23fd577459b4aa3df49d89d80342f3b",
         "duration": 3.808073,
         "words": [
           {
@@ -2032,6 +2075,7 @@
       {
         "id": "step-5",
         "path": "assets/audio/voice/managed-daemon-style-services/step-5.mp3",
+        "requestSha256": "6700f5476bb7697826114da7757d39cac7920d44f3ec08510d869f02cfcce6ec",
         "duration": 2.739955,
         "words": [
           {
@@ -2079,6 +2123,7 @@
       {
         "id": "step-6",
         "path": "assets/audio/voice/managed-daemon-style-services/step-6.mp3",
+        "requestSha256": "426ee9c4287870c14aeaa5f71c9fad68ceddfec96e363465477ed6deee48bf98",
         "duration": 1.857596,
         "words": [
           {
@@ -2118,6 +2163,7 @@
       {
         "id": "intro",
         "path": "assets/audio/voice/manifest-includes/intro.mp3",
+        "requestSha256": "5f08a42aa467df1c92c4ba952d9d5d9aaf5277b3b1b814c03ce0809c19cf10bd",
         "duration": 3.993832,
         "words": [
           {
@@ -2175,6 +2221,7 @@
       {
         "id": "step-1",
         "path": "assets/audio/voice/manifest-includes/step-1.mp3",
+        "requestSha256": "245fabaf9bdfa4b454b673284ee8c8ce1d30b73493ca7d3075277c442900512b",
         "duration": 4.87619,
         "words": [
           {
@@ -2237,6 +2284,7 @@
       {
         "id": "step-2",
         "path": "assets/audio/voice/manifest-includes/step-2.mp3",
+        "requestSha256": "15290653ced83195e69ec7a8aa34410cf9fab0c0a19dd735bfe0596a16867da0",
         "duration": 2.414875,
         "words": [
           {
@@ -2274,6 +2322,7 @@
       {
         "id": "step-3",
         "path": "assets/audio/voice/manifest-includes/step-3.mp3",
+        "requestSha256": "d35edf54c6a08daf429325391861461b04b1d56962b041e2ba38c2b8c0508513",
         "duration": 2.089796,
         "words": [
           {
@@ -2301,6 +2350,7 @@
       {
         "id": "step-4",
         "path": "assets/audio/voice/manifest-includes/step-4.mp3",
+        "requestSha256": "556f9590c2ac59a7c87df7252334f6ea2130c893fdb8fbcf549d8fb0eba6efc9",
         "duration": 2.879274,
         "words": [
           {
@@ -2338,6 +2388,7 @@
       {
         "id": "step-5",
         "path": "assets/audio/voice/manifest-includes/step-5.mp3",
+        "requestSha256": "abe5d259b2b4da4987ccd91279ec7753a1fda3f01d153ac9e3ea962dd5758add",
         "duration": 3.761633,
         "words": [
           {
@@ -2385,6 +2436,7 @@
       {
         "id": "step-6",
         "path": "assets/audio/voice/manifest-includes/step-6.mp3",
+        "requestSha256": "81460e7abcf0e9b6d5877465bcb7a7438e0a011081a3808cb8f927cf223f601f",
         "duration": 1.393197,
         "words": [
           {
@@ -2419,6 +2471,7 @@
       {
         "id": "intro",
         "path": "assets/audio/voice/react-highlight/intro.mp3",
+        "requestSha256": "6f8cdb67ce3e515785ec0beda652660eb73e18d9df9a101c9c8ee8092f966840",
         "duration": 3.761633,
         "words": [
           {
@@ -2481,6 +2534,7 @@
       {
         "id": "react-highlight-1",
         "path": "assets/audio/voice/react-highlight/react-highlight-1.mp3",
+        "requestSha256": "97be86df576b3fe9f583dcdd07695c1da184093d4640605b61257874b81dd2ed",
         "duration": 4.504671,
         "words": [
           {
@@ -2543,6 +2597,7 @@
       {
         "id": "react-highlight-2",
         "path": "assets/audio/voice/react-highlight/react-highlight-2.mp3",
+        "requestSha256": "8dbc8e0fb1a3a97970bcb5d0f7c2407d9d0a5e1426e3c79495f46f1de033da48",
         "duration": 3.900952,
         "words": [
           {
@@ -2605,6 +2660,7 @@
       {
         "id": "react-highlight-3",
         "path": "assets/audio/voice/react-highlight/react-highlight-3.mp3",
+        "requestSha256": "0cffa5ea252944b3cfd18b475468b8eb7bc9a9955c5d2f4d679004f3a98c12d9",
         "duration": 2.693515,
         "words": [
           {
@@ -2652,6 +2708,7 @@
       {
         "id": "react-highlight-4",
         "path": "assets/audio/voice/react-highlight/react-highlight-4.mp3",
+        "requestSha256": "47b3ab4bfaa0136c3a0ab778fdcfd833b0819a69f5ce0e8ba165b1c6d2d521e8",
         "duration": 4.551111,
         "words": [
           {
@@ -2714,6 +2771,7 @@
       {
         "id": "react-highlight-5",
         "path": "assets/audio/voice/react-highlight/react-highlight-5.mp3",
+        "requestSha256": "d99889be5f5e293b95bf1384b5ad705b1a3f22d91ec5dbb043181fa7d0e630a9",
         "duration": 2.414875,
         "words": [
           {
@@ -2758,6 +2816,7 @@
       {
         "id": "intro",
         "path": "assets/audio/voice/service-references/intro.mp3",
+        "requestSha256": "3a705f62c64901f35f027cfe0557ad40dd2a6c31f1122d259e3e8a9ba53e218a",
         "duration": 4.551111,
         "words": [
           {
@@ -2830,6 +2889,7 @@
       {
         "id": "step-1",
         "path": "assets/audio/voice/service-references/step-1.mp3",
+        "requestSha256": "8a4a0df0009aa227236a83970f10da4013eaa10c21ab525e08328e6dfa6d31ab",
         "duration": 3.343673,
         "words": [
           {
@@ -2887,6 +2947,7 @@
       {
         "id": "step-2",
         "path": "assets/audio/voice/service-references/step-2.mp3",
+        "requestSha256": "34de9714141d195a06178cd2e43c22107f4193e865406fc2e06a3c1aaa427111",
         "duration": 1.253878,
         "words": [
           {
@@ -2909,6 +2970,7 @@
       {
         "id": "step-3",
         "path": "assets/audio/voice/service-references/step-3.mp3",
+        "requestSha256": "02454bdb032896b2edd089829188bdc861d370d741217640ffc9f10b5ca1547b",
         "duration": 4.411791,
         "words": [
           {
@@ -2971,6 +3033,7 @@
       {
         "id": "step-4",
         "path": "assets/audio/voice/service-references/step-4.mp3",
+        "requestSha256": "d7e9c9e918230b746dca7255ddcd6b19115cb07e118041b7ffa24d2b992682de",
         "duration": 3.343673,
         "words": [
           {
@@ -3028,6 +3091,7 @@
       {
         "id": "step-5",
         "path": "assets/audio/voice/service-references/step-5.mp3",
+        "requestSha256": "eb2226ad85d6f5b13a184f0f8212ec70450f169471aecf10a97cf3904b079a8a",
         "duration": 2.275556,
         "words": [
           {
@@ -3062,6 +3126,7 @@
       {
         "id": "intro",
         "path": "assets/audio/voice/shared-managed-caddy-settings/intro.mp3",
+        "requestSha256": "c7d138aab671c87825faa7e44109b5fe5b14e62988f907626807c3e41b3808dc",
         "duration": 5.804989,
         "words": [
           {
@@ -3134,6 +3199,7 @@
       {
         "id": "step-1",
         "path": "assets/audio/voice/shared-managed-caddy-settings/step-1.mp3",
+        "requestSha256": "3974e2be4dda660d4a12eb346ed7ce20f4f159feaa166fd9d58cbfc99d32fa8b",
         "duration": 4.086712,
         "words": [
           {
@@ -3201,6 +3267,7 @@
       {
         "id": "step-2",
         "path": "assets/audio/voice/shared-managed-caddy-settings/step-2.mp3",
+        "requestSha256": "9c97be206adcdb48c0c59ff1d65e593fc31ea02dc2f46aafae302dc2d2afa48f",
         "duration": 1.764717,
         "words": [
           {
@@ -3223,6 +3290,7 @@
       {
         "id": "step-3",
         "path": "assets/audio/voice/shared-managed-caddy-settings/step-3.mp3",
+        "requestSha256": "603efbe996977df72ed96bef8909c26cddab2293417ff76a3704299d711c88bc",
         "duration": 3.529433,
         "words": [
           {
@@ -3275,6 +3343,7 @@
       {
         "id": "step-4",
         "path": "assets/audio/voice/shared-managed-caddy-settings/step-4.mp3",
+        "requestSha256": "8217324f070d32ba8ee59eca20964e36a44d897aee911f041331dfd4b7e381c4",
         "duration": 2.600635,
         "words": [
           {
@@ -3307,6 +3376,7 @@
       {
         "id": "step-5",
         "path": "assets/audio/voice/shared-managed-caddy-settings/step-5.mp3",
+        "requestSha256": "a9dbd589a161f0846de329988c67aeeb9f59906c4505c07da0d99e4bc7e08274",
         "duration": 2.739955,
         "words": [
           {
@@ -3349,6 +3419,7 @@
       {
         "id": "step-6",
         "path": "assets/audio/voice/shared-managed-caddy-settings/step-6.mp3",
+        "requestSha256": "c030589dec13e9ecc94c312b16b9b2367dc178bcf82999bf24d70d6d90f2ae60",
         "duration": 1.253878,
         "words": [
           {
@@ -3373,6 +3444,7 @@
       {
         "id": "intro",
         "path": "assets/audio/voice/troubleshooting/intro.mp3",
+        "requestSha256": "94658896a5765dd14cb292eba6b7ba16a6fb603ae1cc8f8176340cb10f522e87",
         "duration": 4.96907,
         "words": [
           {
@@ -3450,6 +3522,7 @@
       {
         "id": "step-1",
         "path": "assets/audio/voice/troubleshooting/step-1.mp3",
+        "requestSha256": "5d70af86bdb0dfda67c7cc423d56103962858a238fbc3324a89583506cd1ae4a",
         "duration": 1.625397,
         "words": [
           {
@@ -3482,6 +3555,7 @@
       {
         "id": "step-2",
         "path": "assets/audio/voice/troubleshooting/step-2.mp3",
+        "requestSha256": "12f1854815dc0b9978b1439d0395cb20540ff2d90405c4470a9e103c85bca8c9",
         "duration": 1.021678,
         "words": [
           {
@@ -3504,6 +3578,7 @@
       {
         "id": "step-3",
         "path": "assets/audio/voice/troubleshooting/step-3.mp3",
+        "requestSha256": "51a02b5e3cc01ee74eca92a51ae5bf0a865c36449c59191ae04f874067daf033",
         "duration": 1.439637,
         "words": [
           {
@@ -3531,6 +3606,7 @@
       {
         "id": "step-4",
         "path": "assets/audio/voice/troubleshooting/step-4.mp3",
+        "requestSha256": "967e2c830e738921113b6f100399a0262e9fad0846f9b97b9f1ccfa94484608d",
         "duration": 1.950476,
         "words": [
           {
@@ -3563,6 +3639,7 @@
       {
         "id": "step-5",
         "path": "assets/audio/voice/troubleshooting/step-5.mp3",
+        "requestSha256": "3e6c259df2cd328c3553eef21d522f39aef82828b17bd85b2578aaed486c5b64",
         "duration": 3.018594,
         "words": [
           {
@@ -3605,6 +3682,7 @@
       {
         "id": "step-6",
         "path": "assets/audio/voice/troubleshooting/step-6.mp3",
+        "requestSha256": "a6dea3cddf210e897a5b444a928c176b18932002b109d1a536f404d116d4149f",
         "duration": 1.811156,
         "words": [
           {
@@ -3637,6 +3715,7 @@
       {
         "id": "step-7",
         "path": "assets/audio/voice/troubleshooting/step-7.mp3",
+        "requestSha256": "2143ea59596af82f0d6d2d72ae8cb1bb9bee2ab8404b410cd4da5a59b35d2010",
         "duration": 2.089796,
         "words": [
           {
@@ -3664,6 +3743,7 @@
       {
         "id": "step-8",
         "path": "assets/audio/voice/troubleshooting/step-8.mp3",
+        "requestSha256": "4a3c3294947297d001b54040a7207d79e9ae00d4a55205945dde1efedd276304",
         "duration": 1.904036,
         "words": [
           {
@@ -3701,6 +3781,7 @@
       {
         "id": "step-9",
         "path": "assets/audio/voice/troubleshooting/step-9.mp3",
+        "requestSha256": "52df56333ca91787c72fd5b3382b93854163e8a718d01131c94bbbf909d66a47",
         "duration": 2.321995,
         "words": [
           {
@@ -3738,6 +3819,7 @@
       {
         "id": "step-10",
         "path": "assets/audio/voice/troubleshooting/step-10.mp3",
+        "requestSha256": "4380c6f8cef1278ef1c7a6be31bb597643597919d70122cd657e8bcac1a503d9",
         "duration": 1.253878,
         "words": [
           {
