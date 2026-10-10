@@ -4,8 +4,27 @@ import { expect, userEvent, waitFor } from "storybook/test";
 import type { IStoppedService, IWorktreeRepository, ServiceHealth } from "../../../../shared/types";
 import { readDevtoolsStoryShadowCanvas } from "../../../../shared/components/stories/helpers";
 import { ServiceStatusPanel } from "../ServiceStatusPanel";
+import { Button } from "../../../../shared";
 
 type ServiceStatusPanelProps = ComponentProps<typeof ServiceStatusPanel>;
+
+export function ServiceHealthUpdatesHarness(args: ServiceStatusPanelProps): JSX.Element {
+  const [services, setServices] = useState<ServiceHealth[]>(args.services);
+  return (
+    <>
+      <Button
+        onClick={(): void => {
+          setServices((current) =>
+            current.toReversed().map((service) => ({ ...service, status: !service.status, dirty: false })),
+          );
+        }}
+      >
+        Update service health
+      </Button>
+      <ServiceStatusPanel {...args} services={services} />
+    </>
+  );
+}
 
 export async function exerciseHealthPollErrorContrast(
   canvasElement: HTMLElement,
