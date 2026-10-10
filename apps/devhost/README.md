@@ -12,7 +12,7 @@ What it does well:
 
 - routes local services onto HTTPS hostnames through managed Caddy
 - starts one service or a full stack from `devhost.toml`, including optional externally managed backends
-- waits for health checks before exposing managed routes
+- serves startup status at service domains and forwards browser pages once health checks pass
 - hot-reloads `devhost.toml` and included manifests, adding or removing services and applying configuration edits without restarting devhost
 - switches Git worktrees and refreshes added or deleted checkouts from the browser
 - recovers services from the browser, with stable ports for individual restarts and **Restart stack with new ports** for automatic-port conflicts
@@ -149,7 +149,7 @@ After startup, `devhost` prints one line per configured service URL using the fo
 
 If a foreground service exits, including with exit code `0` or before its startup health check passes, `devhost` keeps running. Other services, routes, retained logs, and restart controls remain available. Exited services remain stopped until you request recovery or apply a configuration edit affecting them; use `devhost stop`, a shutdown signal, or the configured idle timeout to stop the stack.
 
-With `[devtools.status].enabled = true`, an exited service opens a full-screen recovery overlay in pages with injected devtools. The overlay shows its exit code, retained stdout/stderr logs, and a **Restart** button. Failed restarts keep the overlay open with an error and allow another attempt. Refreshing a root-compatible routed app while its backend is unavailable returns a recovery page with the same devtools; a successful restart reloads that page. Daemon lifecycle services and external services report health without foreground process exit codes. Executable launch errors and health timeouts still fail startup.
+With `[devtools.status].enabled = true`, an exited service opens a full-screen recovery overlay in pages with injected devtools. The overlay shows its exit code, retained stdout/stderr logs, and a **Restart** button. Failed restarts keep the overlay open with an error and allow another attempt. Service domains serve a startup or recovery page before the app is ready, including for path routes and with devtools disabled. The page shows the recorded failure and recent logs, enables **Restart** after stack initialization, and returns the open tab to its original URL when health checks and routing succeed. Devhost does not launch a browser. Executable launch errors and health timeouts keep the stack running for recovery; configuration, ownership, and initial routing errors still stop startup. Daemon lifecycle services and external services report health without foreground process exit codes.
 
 When a page loses its connection to devhost, for example after the machine sleeps, the Services panel shows every service as unavailable and the injected UI reconnects on its own, retrying every one to ten seconds. Open terminals reattach to their sessions the same way. devhost also drops a page's connection when the page reads nothing for ten seconds while updates wait for it, for example while it is paused in a debugger; the page reconnects in the same way once it runs again.
 

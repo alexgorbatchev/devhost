@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{.Title}} · devhost</title>
+    <style>
+      {{.Styles}}
+
+      .devhost-recovery__brand {
+        margin: 24px 0 0;
+      }
+      .devhost-recovery .devhost-status__body {
+        overflow-wrap: anywhere;
+      }
+      .devhost-recovery__restart {
+        margin-top: 24px;
+        padding: 14px 20px;
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-md);
+        background: var(--primary);
+        color: var(--primary-foreground);
+        box-shadow: var(--shadow-soft);
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .devhost-recovery__restart:hover:enabled {
+        background: var(--foreground);
+      }
+      .devhost-recovery__restart:focus-visible,
+      .devhost-recovery__logs summary:focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 3px;
+      }
+      .devhost-recovery__restart:disabled {
+        cursor: default;
+        opacity: 0.55;
+      }
+      .devhost-recovery__logs {
+        margin-top: 32px;
+        padding: 20px;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        background: var(--surface-subtle);
+        text-align: left;
+        min-width: 0;
+      }
+      .devhost-recovery__logs summary {
+        margin: 0;
+        cursor: pointer;
+      }
+      .devhost-recovery__logs pre {
+        margin: 16px 0 0;
+        overflow: auto;
+        max-height: 24rem;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        color: var(--foreground);
+        font: inherit;
+        font-size: 0.8125rem;
+        line-height: 1.65;
+      }
+      #error {
+        white-space: pre-wrap;
+      }
+      #error:empty {
+        display: none;
+      }
+    </style>
+  </head>
+  <body data-devhost-recovery>
+    <main class="devhost-status devhost-recovery">
+      <p class="devhost-status__code">{{.Status}}</p>
+      <p class="devhost-status__label devhost-recovery__brand">devhost · {{.Stack}}</p>
+      <h1 class="devhost-status__title" id="title">{{.Title}}</h1>
+      <p class="devhost-status__body" id="message" role="status">{{.Message}}</p>
+      <p class="devhost-status__body">Service: <strong>{{.Service}}</strong> · <code>{{.Address}}</code></p>
+      <button class="devhost-recovery__restart" id="restart" type="button" {{if not .CanRestart}}disabled{{end}}>
+        Restart {{.Service}}
+      </button>
+      <p class="devhost-status__body" id="error" role="alert"></p>
+      <details class="devhost-recovery__logs" open>
+        <summary class="devhost-status__label">Recent logs</summary>
+        <pre id="logs">
+{{range .Logs}}{{.}}
+{{end}}</pre
+        >
+      </details>
+      <noscript
+        ><p class="devhost-status__body">
+          JavaScript is needed for live status and restart controls. Refresh this page after the service is ready.
+        </p></noscript
+      >
+    </main>
+    <script>
+      const restart = document.getElementById("restart");
+      const error = document.getElementById("error");
+      let restarting = false;
+      async function readStatus() {
+        try {
+          const response = await fetch(location.href, {
+            cache: "no-store",
+            headers: { "X-Devhost-Recovery": "status" },
+          });
+          if (!response.ok) throw new Error("Devhost is unavailable. Waiting to reconnect…");
+          const state = await response.json();
+          if (state.phase === "ready") {
+            const probe = await fetch(location.href, {
+              cache: "no-store",
+              headers: { "X-Devhost-Recovery": "probe" },
+            });
+            if (probe.status === 204) {
+              location.replace(location.href);
+              return;
+            }
+          } else {
+            document.title = state.title + " · devhost";
+            document.getElementById("title").textContent = state.title;
+            document.getElementById("message").textContent = state.message;
+          }
+          document.getElementById("logs").textContent = (state.logs || []).join("\n");
+          restart.disabled = restarting || !state.canRestart;
+        } catch (failure) {
+          document.getElementById("message").textContent = failure.message;
+          restart.disabled = true;
+        }
+        setTimeout(readStatus, 1000);
+      }
+      restart.addEventListener("click", async () => {
+        restarting = true;
+        restart.disabled = true;
+        error.textContent = "";
+        try {
+          const response = await fetch(location.href, {
+            method: "POST",
+            cache: "no-store",
+            headers: { "X-Devhost-Recovery": "restart" },
+          });
+          if (!response.ok) throw new Error(await response.text());
+        } catch (failure) {
+          error.textContent = failure.message;
+        } finally {
+          restarting = false;
+        }
+      });
+      readStatus();
+    </script>
+  </body>
+</html>

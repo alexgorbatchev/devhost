@@ -14,8 +14,11 @@ import (
 )
 
 type StartDocumentInjectionServerOptions struct {
-	BackendHost string
-	BackendPort int
+	BackendHost      string
+	BackendPort      int
+	DisableInjection bool
+	GetRecovery      func() RecoveryState
+	Restart          func() error
 }
 
 type DocumentInjectionServer struct {
@@ -50,7 +53,17 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 			request.Header.Set("x-forwarded-proto", "https")
 		},
 		ModifyResponse: func(response *http.Response) error {
-			if !isHTMLResponse(response) {
+			if options.GetRecovery != nil && response.Request.Header.Get(recoveryHeader) == "probe" {
+				// An upstream HTTP response, including an application error or redirect,
+				// proves document transport works. Keep the probe from navigating or
+				// downloading the app before the browser performs its real navigation.
+				_ = response.Body.Close()
+				response.Body, response.ContentLength = http.NoBody, 0
+				response.StatusCode = http.StatusNoContent
+				response.Header = http.Header{"Cache-Control": []string{"no-store"}}
+				return nil
+			}
+			if options.DisableInjection || !isHTMLResponse(response) {
 				return nil
 			}
 
@@ -69,6 +82,13 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 			return nil
 		},
 		ErrorHandler: func(writer http.ResponseWriter, request *http.Request, err error) {
+			if options.GetRecovery != nil {
+				state := options.GetRecovery()
+				state.Phase, state.Title = "unavailable", state.Service+" could not load"
+				state.Message = "The service could not return a document: " + err.Error()
+				serveRecoveryPage(writer, request, state, http.StatusBadGateway, !options.DisableInjection)
+				return
+			}
 			writer.Header().Set("cache-control", "no-store")
 			writer.Header().Set("content-type", "text/html; charset=utf-8")
 			writer.WriteHeader(http.StatusBadGateway)
@@ -78,7 +98,20 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 		},
 	}
 
-	server := &http.Server{Handler: proxy}
+	server := &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if options.GetRecovery != nil {
+			if r.Header.Get(recoveryHeader) != "" {
+				serveRecoveryControl(w, r, options, proxy)
+				return
+			}
+			state := options.GetRecovery()
+			if state.Phase != "ready" {
+				serveRecoveryPage(w, r, state, http.StatusServiceUnavailable, !options.DisableInjection)
+				return
+			}
+		}
+		proxy.ServeHTTP(w, r)
+	})}
 	documentServer.server = server
 	documentServer.serverWG.Add(1)
 	go func() {

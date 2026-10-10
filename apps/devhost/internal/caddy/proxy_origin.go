@@ -47,7 +47,8 @@ func renderDocumentProxyHandleLines(registration routeRegistration) ([]string, e
 	if err != nil {
 		return nil, err
 	}
-	lines := []string{"@devhost_document header Sec-Fetch-Dest document", "handle @devhost_document {"}
+	matcher := "@devhost_document_" + registration.ServiceName
+	lines := []string{matcher + " header Sec-Fetch-Dest document", "handle " + matcher + " {"}
 	lines = append(lines, indentProxyLines(proxyLines, 4)...)
 	return append(lines, "}"), nil
 }

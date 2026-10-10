@@ -32,9 +32,9 @@ When you run `devhost start`, it:
 4. requires the managed Caddy admin API to already be available
 5. reserves the fixed numeric bind ports of the services it starts before starting any of them
 6. reserves the public hostnames of the services it starts before starting any of them
-7. starts managed services in dependency order, using either a foreground `command` or daemon `lifecycle.start`, and evaluates unmanaged services in the same dependency graph
-8. waits for each managed service health check before routing it; a foreground service that exits during startup keeps its route available for recovery, while unmanaged routed services claim their routes immediately once dependencies are satisfied
-9. keeps the stack, sibling services, routes, and devtools running after foreground service exits, including exit code `0`, so you can inspect retained logs and restart the exited service
+7. registers all selected service routes and serves startup status at their domains before launching children
+8. starts managed services in dependency order, using either a foreground `command` or daemon `lifecycle.start`, and forwards browser pages to each app once its health check and route update succeed
+9. keeps the stack, sibling services, routes, and retained logs available after service launch errors, health timeouts, and foreground process exits, including exit code `0`, for explicit recovery
 10. removes routes and reservations on explicit shutdown, idle timeout, or fatal startup errors, forwards shutdown signals to managed foreground services through the service-containment backend for the current platform, and runs daemon `lifecycle.stop` commands for managed daemon services
 
 ## Starting part of a stack
@@ -120,7 +120,15 @@ The selection lasts for the run. Manifest reloads and **Restart stack with new p
 devhost start $(devhost service list --startable | fzf --multi)
 ```
 
-Exited foreground services remain stopped until explicit recovery or a configuration edit affecting them. With status devtools enabled, exited services appear in a full-screen recovery overlay with their exit code, retained stdout/stderr logs, and a restart button. Failed attempts remain retryable. Executable launch errors and startup health timeouts remain fatal startup errors; daemon lifecycle and external services report health separately from foreground process exits.
+Exited foreground services remain stopped until explicit recovery or a configuration edit affecting them. With status devtools enabled, exited services appear in a full-screen recovery overlay with their exit code, retained stdout/stderr logs, and a restart button. Failed attempts remain retryable. Executable launch errors and startup health timeouts also keep the supervisor running for recovery; daemon lifecycle and external services report health separately from foreground process exits.
+
+## Startup and recovery pages
+
+Open a service's domain while it starts to see **Starting <service>**, its assigned address, and recent stdout/stderr. Startup and recovery pages share the managed proxy's 404 page styling: a centered monospace card with light and dark themes following your browser preference. The existing tab reloads its original path and query string once health checks and routing succeed. Devhost never launches a browser.
+
+If startup times out, the process exits, or the backend is unreachable, the same domain shows the recorded failure and recent service logs. **Restart <service>** becomes available for managed services after stack initialization and stays disabled during an active restart. Failed attempts show their error and remain retryable. External services show status and require recovery outside devhost.
+
+These pages work for aliases and path routes even when every devtools feature is disabled. They do not depend on the app or injected toolbar. When enabled on a root route, the toolbar also remains available for checkout selection and stack recovery. Recovery responses are uncached HTTP errors; an application's own error responses pass through. Assets and WebSocket traffic retain their direct proxy routes. Invalid configuration, ownership conflicts, and initial route registration failures still stop startup and are reported in the terminal.
 
 ## Configuration hot reload
 

@@ -13,6 +13,9 @@ type stackRoutes struct {
 	paths           caddy.Paths
 	outputWriters   caddy.RouteCommandOutputWriters
 	controlServer   *devtools.ControlServer
+	runtime         *stackRuntime
+	injectDevtools  bool
+	restartService  func(string) error
 	documentServers map[string]*devtools.DocumentInjectionServer
 	active          map[string]caddy.ActivateRouteOptions
 	settings        caddy.ManagedCaddyGlobalSettings
@@ -44,25 +47,30 @@ func (r *stackRoutes) activate(service ResolvedService) error {
 
 func (r *stackRoutes) prepare(service ResolvedService) (caddy.ActivateRouteOptions, *devtools.DocumentInjectionServer, error) {
 	options := r.options(service)
-	var documentServer *devtools.DocumentInjectionServer
-	if r.controlServer != nil && isRootCompatibleServicePath(service.Path) {
-		host, err := caddy.ResolveProxyHost(service.BindHost)
+	host, err := caddy.ResolveProxyHost(service.BindHost)
+	if err != nil {
+		return options, nil, err
+	}
+	documentServer := r.documentServers[service.Name]
+	if documentServer == nil {
+		name := service.Name
+		documentServer, err = startDocumentInjectionServer(devtools.StartDocumentInjectionServerOptions{
+			BackendHost: host, BackendPort: *service.Port,
+			DisableInjection: !r.injectDevtools || !isRootCompatibleServicePath(service.Path),
+			GetRecovery:      func() devtools.RecoveryState { return r.runtime.recovery(name) },
+			Restart:          func() error { return r.restartService(name) },
+		})
 		if err != nil {
 			return options, nil, err
 		}
-		documentServer = r.documentServers[service.Name]
-		if documentServer == nil {
-			documentServer, err = startDocumentInjectionServer(devtools.StartDocumentInjectionServerOptions{BackendHost: host, BackendPort: *service.Port})
-			if err != nil {
-				return options, nil, err
-			}
-			r.documentServers[service.Name] = documentServer
-		} else {
-			documentServer.SetBackend(host, *service.Port)
-		}
-		options.DevtoolsControlPort = r.controlServer.Port()
-		options.DocumentInjectionPort = documentServer.Port()
+		r.documentServers[service.Name] = documentServer
+	} else {
+		documentServer.SetBackend(host, *service.Port)
 	}
+	if r.controlServer != nil && r.injectDevtools && isRootCompatibleServicePath(service.Path) {
+		options.DevtoolsControlPort = r.controlServer.Port()
+	}
+	options.DocumentInjectionPort = documentServer.Port()
 	return options, documentServer, nil
 }
 

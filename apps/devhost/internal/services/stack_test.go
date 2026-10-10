@@ -415,7 +415,7 @@ func testStartupCrashRecovery(t *testing.T, worktreesEnabled, inRepository bool)
 	assertRouteDirectoryEmpty(t, paths.RoutesDirectoryPath)
 }
 
-func TestStartStackFailsStartupHealthTimeoutAndReleasesClaims(t *testing.T) {
+func TestStartStackHealthTimeoutReleasesClaimsOnIdleShutdown(t *testing.T) {
 	statePath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(statePath)
 	admin := caddytest.StartAdminServer(t)
@@ -430,9 +430,10 @@ func TestStartStackFailsStartupHealthTimeoutAndReleasesClaims(t *testing.T) {
 		Health: ResolvedHealthConfig{Kind: "tcp", Host: stringPointer("127.0.0.1"), Port: intPointer(port), Interval: 10, Timeout: 100},
 		Port:   intPointer(port), PortSource: "fixed", Hosts: []string{"timeout.localhost"},
 	}
-	_, err := StartStack(&m, []string{"web"}, StartStackOptions{CaddyPaths: paths, Environment: map[string]string{"DEVHOST_STATE_DIR": statePath}, LogWriter: ioDiscard{}, ServiceStdoutWriter: ioDiscard{}, ServiceStderrWriter: ioDiscard{}, ShutdownGracePeriod: 100 * time.Millisecond})
-	if err == nil || err.Error() != "Service web did not pass its health check within 100ms." {
-		t.Fatalf("startup error = %v, want health timeout", err)
+	var logs strings.Builder
+	_, err := StartStack(&m, []string{"web"}, StartStackOptions{CaddyPaths: paths, Environment: map[string]string{"DEVHOST_STATE_DIR": statePath}, LogWriter: &logs, ServiceStdoutWriter: ioDiscard{}, ServiceStderrWriter: ioDiscard{}, ShutdownGracePeriod: 100 * time.Millisecond, IdleTimeout: 10 * time.Millisecond})
+	if err != nil || !strings.Contains(logs.String(), "Service web did not pass its health check within 100ms.") {
+		t.Fatalf("shutdown error = %v, logs = %s", err, logs.String())
 	}
 	assertDirectoryEntries(t, paths.HostClaimsDirectoryPath, nil)
 	assertDirectoryEntries(t, paths.PortClaimsDirectoryPath, nil)
@@ -1495,7 +1496,7 @@ func TestStartStackReturnsSignalExitCodeAndUnregistersHandlers(t *testing.T) {
 	}
 }
 
-func TestStartStackActivatesRoutesOnlyAfterHealthPasses(t *testing.T) {
+func TestStartStackPublishesRecoveryRoutesBeforeHealthPasses(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
 	adminAddress := caddytest.StartAdminServer(t)
@@ -1546,8 +1547,8 @@ func TestStartStackActivatesRoutesOnlyAfterHealthPasses(t *testing.T) {
 	if readError != nil {
 		t.Fatalf("ReadFile(...) error = %v", readError)
 	}
-	if !stringSlicesEqual(nonEmptyLines(string(traceText)), []string{"route-missing-before-health", "route-present-after-health"}) {
-		t.Fatalf("trace = %#v, want route activation after health", nonEmptyLines(string(traceText)))
+	if !stringSlicesEqual(nonEmptyLines(string(traceText)), []string{"route-present-before-health", "route-present-after-health"}) {
+		t.Fatalf("trace = %#v, want recovery route before health", nonEmptyLines(string(traceText)))
 	}
 }
 
@@ -2795,8 +2796,19 @@ func runRouteAwareHTTPServerHelper() {
 	server := &http.Server{Addr: fmt.Sprintf("127.0.0.1:%d", port), Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		_, _ = writer.Write([]byte("ok"))
 	})}
+	listener, err := net.Listen("tcp", server.Addr)
+	if err != nil {
+		panic(err)
+	}
+	// Early routes exist before the child starts. Keep it alive until its first
+	// health probe rather than treating route registration as startup completion.
+	connection, err := listener.Accept()
+	if err != nil {
+		panic(err)
+	}
+	_ = connection.Close()
 	go func() {
-		_ = server.ListenAndServe()
+		_ = server.Serve(listener)
 	}()
 
 	deadline := time.Now().Add(5 * time.Second)
