@@ -37,7 +37,7 @@
 # - daemon lifecycle services must not use `port = "auto"` or `health.process`
 # - a routed service (`host = ...`) must also define `port`
 # - a routed service must not use `health.process`
-# - `health` selects at most one of `tcp`, `http`, or `process`; timing-only tables require a service port
+# - a health table selects at most one of `tcp`, `http`, or `process`; timing-only tables require a service `port`
 # - `managed = false` must omit `command`, `injectPort`, and `port = "auto"`
 # - `managed = false` may use explicit TCP or HTTP health, but must not use `health.process`
 # - `bindHost` must be one of: `127.0.0.1`, `0.0.0.0`, `::1`, `::`
@@ -91,8 +91,8 @@ name = "hello-stack"
 # runtime does not discover a custom endpoint from a different manifest.
 
 # The `devtools.*` sections control the browser-side devhost overlay injected into
-# routed HTML document navigations. If all devtools features are disabled, apps
-# load without the overlay. Startup and recovery pages remain available.
+# routed HTML document navigations. If all devtools features are disabled, routed
+# services proxy directly to the app without the overlay.
 
 # The repository worktree picker is enabled by default and requires Git on PATH.
 # Set enabled = false to disable discovery and saved-selection restore.
@@ -362,8 +362,10 @@ restartServices = "alt+ctrl+r"
 # Health defaults still matter even when no explicit `[services.<name>.health]`
 # table is present:
 # - fixed numeric `port` + no `health` => implicit TCP health check on `bindHost:port`
-# - `port = "auto"` + no `health` => implicit TCP health check on the resolved port
-# A timing-only health table retains that TCP probe with custom interval, timeout, or retries.
+# - `port = "auto"` + no probe kind => TCP health check on the resolved port, with optional health timing overrides
+# - health HTTP templates resolve after every service port is assigned
+# - `{{ services.<name>.host }}` names the first public routing host, falling back to bindHost
+# - `{{ services.<name>.url }}` builds the direct HTTP base URL, mapping wildcard hosts to loopback and bracketing IPv6
 
 [services.web]
 # `primary` marks this as the default service for stack-level behavior.
@@ -468,9 +470,12 @@ LOG_LEVEL = "debug"
 DATABASE_URL = "postgres://postgres:postgres@[::1]:{{ services.db.port }}/mydb"
 
 [services.api.health]
-# `http` accepts a path on this service's direct listener or a loopback HTTP/HTTPS URL.
-# Equivalent full template: "{{ services.api.url }}/healthz".
-# The URL builder maps wildcard listeners to loopback and brackets IPv6.
+# `http` defines a readiness URL or a single-leading-slash path on this service.
+# Absolute http/https URLs target `127.0.0.1`, `localhost`, or `::1`.
+# Shorthand uses the assigned port and connectable bind host, including IPv6 brackets.
+# Equivalent template: `http = "{{ services.api.url }}/healthz"`.
+# Full construction also works: `http = "http://[::1]:{{ services.api.port }}/healthz"`.
+# The `host` template property names the public proxy; use `url` for direct health probes.
 http = "/healthz"
 # `interval` sets the delay between HTTP health-check attempts.
 # - integer `>= 1`; `200` is the default.
@@ -478,10 +483,10 @@ interval = 500
 # `timeout` sets the maximum total wait time for this health check.
 # - integer `>= 1`; `30000` is the default.
 timeout = 5000
-# `retries` caps consecutive failed attempts before giving up early.
+# `retries` limits retries after the first failed attempt.
 # - integer `>= 0`; `0` (the default) disables the cap, so only `timeout`
-#   bounds the total wait. Set a positive value to fail fast after N
-#   consecutive failures regardless of remaining timeout.
+#   bounds the total wait. A positive N permits N retries after the first
+#   failure, giving up after N + 1 consecutive failures or the timeout.
 retries = 20
 
 [services.preview]
@@ -531,10 +536,10 @@ interval = 250
 # `timeout` sets the maximum total wait time for this health check.
 # - integer `>= 1`; `30000` is the default.
 timeout = 3000
-# `retries` caps consecutive failed attempts before giving up early.
+# `retries` limits retries after the first failed attempt.
 # - integer `>= 0`; `0` (the default) disables the cap, so only `timeout`
-#   bounds the total wait. Set a positive value to fail fast after N
-#   consecutive failures regardless of remaining timeout.
+#   bounds the total wait. A positive N permits N retries after the first
+#   failure, giving up after N + 1 consecutive failures or the timeout.
 retries = 10
 
 [services.db]
@@ -550,13 +555,14 @@ retries = 10
 # "Stopped services" in the devtools Services panel, which also starts what it depends on.
 # `devhost service list` prints every service name; `--startable` leaves out the `alwaysStart` ones.
 alwaysStart = true
-# `port = "auto"` allocates a free port; a timing-only health table customizes its TCP probe.
+# `port = "auto"` allocates a free port; health timing and explicit probes are supported.
 command = ["bun", "run", "db:dev"]
 cwd = "./db"
 port = "auto"
 bindHost = "::"
 
 [services.db.health]
+# Keep the implicit TCP probe on the assigned port; allow up to 60 seconds for startup.
 timeout = 60000
 
 [services.worker]
@@ -576,8 +582,8 @@ interval = 1000
 # `timeout` sets the maximum total wait time for this health check.
 # - integer `>= 1`; `30000` is the default.
 timeout = 1000
-# `retries` caps consecutive failed attempts before giving up early.
+# `retries` limits retries after the first failed attempt.
 # - integer `>= 0`; `0` (the default) disables the cap, so only `timeout`
-#   bounds the total wait. Set a positive value to fail fast after N
-#   consecutive failures regardless of remaining timeout.
+#   bounds the total wait. A positive N permits N retries after the first
+#   failure, giving up after N + 1 consecutive failures or the timeout.
 retries = 0
