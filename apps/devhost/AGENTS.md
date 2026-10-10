@@ -133,6 +133,8 @@ The token-free native browser WebSocket requires the exact current Origin/Host, 
 
 - Normalize `host` strings and arrays into one ordered hostname list. Keep one process, port, and document injection server per service. Claim and clean up each hostname independently; publish all service routes with one Caddy reload and restore the entire group on failure. Use the first hostname for single-value service references and metadata.
 
+- Resolve every service port before evaluating health URL templates. Timing-only health tables inherit TCP readiness on fixed or automatic ports; explicit probes retain their kind and timing across port retries and reloads. Build direct HTTP URLs from connectable bind addresses, validate resolved health targets as loopback HTTP/HTTPS, and keep explicit numeric TCP targets fixed.
+
 - **MANDATORY camelCase rule:** All keys across the entire TOML manifest must use standard `camelCase` naming conventions. Never introduce kebab-case (hyphenated), snake_case, or mixed casing for properties in the manifest.
 - This rule applies to both top-level tables and nested keys, including (but not limited to) `idleTimeout`, `externalToolbars`, `bindHost`, `httpPort`, `httpsPort`, `adminAddress`, `defaultAction`, `injectPort`, `dependsOn`, `primary`, `managed`, `restartServices`, etc.
 - When defining or updating schema validation logic or structs in Go (e.g., `validate.go` or `types.go`), always ensure allowed-keys lists, parsed fields, struct members, and serialization tags explicitly enforce and respect `camelCase`.

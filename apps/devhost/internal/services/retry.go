@@ -52,15 +52,10 @@ func ReassignAutoPort(value ResolvedManifest, serviceName string) (ResolvedServi
 		return ResolvedService{}, ResolvedManifest{}, err
 	}
 
-	service.Port = &nextPort
-	service.Health = ResolvedHealthConfig{
-		Host:     copyStringPointer(service.BindHost),
-		Interval: defaultHealthInterval,
-		Kind:     HealthKindTCP,
-		Port:     copyIntPointer(nextPort),
-		Retries:  defaultHealthRetries,
-		Timeout:  defaultHealthTimeout,
+	if service.Health.Kind == HealthKindTCP && !service.Health.fixedTCPPort {
+		service.Health.Port = copyIntPointer(nextPort)
 	}
+	service.Port = &nextPort
 
 	nextManifest := value
 	nextManifest.Services = copyResolvedServices(value.Services)

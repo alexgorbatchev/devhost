@@ -194,12 +194,14 @@ dependsOn = ["db"]
 
 [services.api.env]
 LOG_LEVEL = "debug"
-# Use late-binding template references to get the dynamic bindHost and port of dependent services:
-DATABASE_URL = "postgres://postgres:postgres@{{ services.db.bindHost }}:{{ services.db.port }}/mydb"
+# The db service binds IPv6 wildcard; connect through bracketed IPv6 loopback.
+DATABASE_URL = "postgres://postgres:postgres@[::1]:{{ services.db.port }}/mydb"
 
 [services.api.health]
-# `http` defines an absolute HTTP health-check URL.
-http = "http://127.0.0.1:4000/healthz"
+# A single-leading-slash path probes this service's direct HTTP listener.
+# Equivalent full template: "{{ services.api.url }}/healthz".
+# The URL builder maps wildcard listeners to loopback and brackets IPv6.
+http = "/healthz"
 interval = 500
 timeout = 5000
 retries = 20
@@ -241,13 +243,16 @@ timeout = 3000
 retries = 10
 
 [services.db]
-# `port = "auto"` automatically allocates a free port, but explicit `health` must be omitted in v1.
+# `port = "auto"` allocates a free port; a timing-only health table customizes its TCP probe.
 # Individual restarts keep the assigned port; use "Restart stack with new ports" for automatic-port conflicts.
 # Stack restart rebuilds port references and refreshes routes before reporting recovery.
 command = ["bun", "run", "db:dev"]
 cwd = "./db"
 port = "auto"
 bindHost = "::"
+
+[services.db.health]
+timeout = 60000
 
 [services.worker]
 # A background process with process-based health (valid only for non-routed services).

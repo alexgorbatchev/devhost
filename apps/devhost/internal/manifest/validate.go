@@ -730,8 +730,8 @@ func validateService(
 		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must not use health.process when lifecycle.mode = \"daemon\".", serviceName))
 	}
 
-	if hasPort && port != nil && port.Auto && hasHealth {
-		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must omit health when port = \"auto\" in v1.", serviceName))
+	if hasHealth && health.TCP == nil && health.HTTP == nil && !health.Process && !hasPort {
+		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.health must define a probe or a service port.", serviceName))
 	}
 	if hasPort && port != nil && port.Auto && !managed {
 		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must not use port = \"auto\" when managed = false.", serviceName))
@@ -745,7 +745,17 @@ func validateService(
 	}
 
 	if hasHealth && health != nil && health.HTTP != nil {
-		validateHealthHTTP(serviceName, *health.HTTP, validationIssues)
+		rawURL := *health.HTTP
+		if strings.HasPrefix(rawURL, "/") && !strings.HasPrefix(rawURL, "//") {
+			if !hasPort {
+				*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.health.http shorthand requires services.%s.port.", serviceName, serviceName))
+			}
+			if _, err := url.Parse(rawURL); err != nil {
+				*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.health.http must be a valid URL path: %v", serviceName, err))
+			}
+		} else if !strings.Contains(rawURL, "{{") {
+			validateHealthHTTP(serviceName, rawURL, validationIssues)
+		}
 	}
 
 	if hasPort && port != nil && !port.Auto {
@@ -819,15 +829,8 @@ func resolveConstrainedPath(fieldPath string, candidatePath string, manifestDire
 }
 
 func validateHealthHTTP(serviceName string, rawURL string, validationIssues *[]string) {
-	parsedURL, err := url.Parse(rawURL)
-	if err != nil || !parsedURL.IsAbs() || parsedURL.Host == "" {
-		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.health.http must be an absolute URL, received: %s", serviceName, rawURL))
-		return
-	}
-
-	hostname := parsedURL.Hostname()
-	if hostname != "127.0.0.1" && hostname != "localhost" && hostname != "::1" {
-		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.health.http must target 127.0.0.1, localhost, or ::1.", serviceName))
+	if err := ValidateHealthHTTPURL(serviceName, rawURL); err != nil {
+		*validationIssues = append(*validationIssues, err.Error())
 	}
 }
 
@@ -1260,8 +1263,8 @@ func readOptionalHealth(value map[string]any, key string, schemaIssues *[]string
 		}
 	}
 
-	if kinds != 1 {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must define exactly one of tcp, http, or process.", key))
+	if kinds > 1 {
+		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must define at most one of tcp, http, or process.", key))
 		return nil, false
 	}
 

@@ -654,7 +654,7 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 			wantError: "services.web.host must be a valid hostname",
 		},
 		{
-			name: "rejects explicit health with auto port",
+			name: "accepts explicit health with auto port",
 			manifest: rawManifestWithServices(map[string]any{
 				"services": map[string]any{
 					"db": map[string]any{
@@ -664,7 +664,7 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 					},
 				},
 			}),
-			wantError: "services.db must omit health when port = \"auto\" in v1.",
+			wantError: "",
 		},
 		{
 			name: "accepts daemon lifecycle service without foreground command",
@@ -923,8 +923,8 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 		},
 		{
 			name:      "rejects relative health http url",
-			manifest:  RawManifest{value: map[string]any{"name": "hello-stack", "services": map[string]any{"web": map[string]any{"command": []any{"bun", "run", "dev"}, "health": map[string]any{"http": "/health"}, "port": int64(3000)}}}},
-			wantError: "services.web.health.http must be an absolute URL, received: /health",
+			manifest:  RawManifest{value: map[string]any{"name": "hello-stack", "services": map[string]any{"web": map[string]any{"command": []any{"bun", "run", "dev"}, "health": map[string]any{"http": "health"}, "port": int64(3000)}}}},
+			wantError: "services.web.health.http must be an absolute URL, received: health",
 		},
 		{
 			name:      "rejects non loopback health http host",

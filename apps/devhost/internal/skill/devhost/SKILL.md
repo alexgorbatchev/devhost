@@ -4,7 +4,7 @@ description: Use when running devhost or when reading, writing, or changing a de
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-09 22:22
+  last_modified: 2026-10-10 00:51
   status: current
 ---
 
@@ -132,8 +132,8 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
   - A health check on a routed service is `health.tcp` or `health.http`. `health.process` (the process-based health check) belongs to services without a `host`.
   - Set `proxyLocalOrigin = true` only for servers requiring a local Host/Origin, such as Bun HTML/HMR. Omit it or set `false` otherwise. It requires `host`, translates Host to the assigned backend address and matching public HTTP/HTTPS Origin to the local HTTP origin, preserves absent Origin and public X-Forwarded-Host, and rejects foreign, opaque, or duplicate origins with 403. Verify documents, assets, and HMR after enabling it. Leave it off for a service that takes cross-origin API requests, which it would answer with 403.
 - **Dynamic Ports (`port = "auto"`)**:
-  - Must **omit** any explicit `health` table (TCP health check is automatically applied on the resolved port).
-  - Inter-service discovery must use late-binding template placeholders (e.g., `{{ services.db.bindHost }}:{{ services.db.port }}`) or query the auto-injected environment variable `DEVHOST_PORT_<SERVICE_NAME_UPPERCASE>`.
+  - Use the implicit TCP probe or configure a health table. Set timing alone to retain TCP readiness; use `http = "/health"` for a discovered HTTP endpoint. Keep explicit TCP targets fixed and HTTP targets on loopback. Follow [Setup](references/setup.md#3-writing-and-outputting-manifest) for health URL templates and timing.
+  - Use `{{ services.api.url }}` for a direct HTTP base URL, with wildcard listeners mapped to loopback and IPv6 brackets included. Use `bindHost` and `port` references or `DEVHOST_PORT_<SERVICE_NAME_UPPERCASE>` for other protocols, accounting for wildcard and IPv6 addresses.
 - **Daemon Lifecycle Services (`[services.<name>.lifecycle]` table)**:
   - Must use `mode = "daemon"`, keep `managed = true`, and define both `lifecycle.start` and `lifecycle.stop` (optionally `lifecycle.status`).
   - Must **omit** the top-level `command` array.
