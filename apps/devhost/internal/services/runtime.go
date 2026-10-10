@@ -340,7 +340,19 @@ func (r *stackRuntime) switchWorktreeLocked(ctx context.Context, id, path string
 		}
 	}
 	ordered := r.orderedGroup(names)
-	defer func() { r.worktrees.finish(id, returnedError); r.publish() }()
+	defer func() {
+		r.manifestMu.Lock()
+		for _, name := range ordered {
+			if returnedError != nil {
+				r.blocked[name] = returnedError.Error()
+			} else {
+				delete(r.blocked, name)
+			}
+		}
+		r.manifestMu.Unlock()
+		r.worktrees.finish(id, returnedError)
+		r.publish()
+	}()
 	r.publish()
 	for _, name := range ordered {
 		r.watcher.StopWatching(name)
@@ -351,9 +363,6 @@ func (r *stackRuntime) switchWorktreeLocked(ctx context.Context, id, path string
 	}
 	r.manifestMu.Lock()
 	r.manifest.Services = next.Services
-	for _, name := range ordered {
-		r.blocked[name] = "Worktree switch is in progress."
-	}
 	r.manifestMu.Unlock()
 	for _, name := range ordered {
 		s := r.manifest.Services[name]
@@ -371,11 +380,6 @@ func (r *stackRuntime) switchWorktreeLocked(ctx context.Context, id, path string
 		returnedError = joinCleanupError(returnedError, r.stopGroup(ordered))
 		return returnedError
 	}
-	r.manifestMu.Lock()
-	for _, name := range ordered {
-		delete(r.blocked, name)
-	}
-	r.manifestMu.Unlock()
 	return nil
 }
 

@@ -61,7 +61,9 @@ That can produce confusing behavior where the direct printed `localhost` URL wor
 
 When `devhost` detects that mismatch, it logs an explicit startup warning.
 
-For Vite-style apps that are actually listening on IPv6 loopback, set `bindHost = "::1"` explicitly:
+`bindHost` selects devhost's health-check and proxy target. The application owns its listener: changing the manifest alone does not reconfigure Vite's `server.host`. Configure Vite's `server.host` and `server.port` to match the manifest's address and assigned port, and use `server.strictPort = true` so it fails instead of moving to another port. See [Vite's server options](https://vite.dev/config/server-options).
+
+For an existing app verified to listen on IPv6 loopback, matching that listener means setting `bindHost = "::1"` explicitly:
 
 ```toml
 [services.app]
@@ -77,10 +79,12 @@ If you are unsure which listener your app is using, compare these directly:
 ```bash
 curl -I http://localhost:5173/
 curl -I http://127.0.0.1:5173/
-curl -I http://[::1]:5173/
+curl -g -I 'http://[::1]:5173/'
 ```
 
-If those responses differ, set `bindHost` explicitly instead of relying on the default.
+If those responses differ, match `bindHost` to the verified listener or configure the app to listen on devhost's address. Removing `bindHost` selects `127.0.0.1`, so it only resolves the mismatch if the app accepts IPv4 connections.
+
+A mismatch that prevents readiness ends with a health-check error after the configured timeout (30 seconds by default). The supervisor stays running and recovery remains retryable. With worktrees enabled, a failed repository restart stops the group and shows the failing service's error on every member's recovery page. Correct the listener configuration, then retry **Restart**.
 
 ## Composite services
 
