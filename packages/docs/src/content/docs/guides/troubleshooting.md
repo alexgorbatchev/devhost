@@ -59,7 +59,7 @@ On some machines, though, `http://localhost:5173` and `http://127.0.0.1:5173` do
 
 That can produce confusing behavior where the direct printed `localhost` URL works, but the routed `*.localhost` hostname lands on a different local process or response.
 
-When `devhost` detects that mismatch, it logs an explicit startup warning.
+When `devhost` detects that mismatch, it logs an explicit startup warning. If the configured TCP health-check address is unreachable but the other loopback address accepts a connection, the warning says "a TCP connection succeeded" on that address. This confirms connectivity only; verify that the listener belongs to your app before changing `bindHost`.
 
 `bindHost` selects devhost's health-check and proxy target. The application owns its listener: changing the manifest alone does not reconfigure Vite's `server.host`. Configure Vite's `server.host` and `server.port` to match the manifest's address and assigned port, and use `server.strictPort = true` so it fails instead of moving to another port. See [Vite's server options](https://vite.dev/config/server-options).
 

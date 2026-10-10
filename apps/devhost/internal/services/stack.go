@@ -868,7 +868,7 @@ func startServiceWithRetries(ctx context.Context, manifest *ResolvedManifest, st
 								if canConnectToPort(ctx, proxyHost, *service.Health.Port, probeTimeoutFor(service.Health)) {
 									lastAmbiguityWarning = now
 									writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf(
-										"WARNING: Service %s is not responding on %s:%d, but accepted a connection on %s:%d! Consider setting services.%s.bindHost = %q in your manifest.",
+										"WARNING: Service %s is not responding on %s:%d, but a TCP connection succeeded on %s:%d. Consider setting services.%s.bindHost = %q in your manifest.",
 										service.Name, *service.Health.Host, *service.Health.Port, altBindHost, *service.Health.Port, service.Name, altBindHost,
 									))
 								}
@@ -1000,7 +1000,7 @@ func startDaemonLifecycleService(
 							if canConnectToPort(ctx, proxyHost, *service.Health.Port, probeTimeoutFor(service.Health)) {
 								lastAmbiguityWarning = now
 								writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf(
-									"WARNING: Service %s is not responding on %s:%d, but accepted a connection on %s:%d! Consider setting services.%s.bindHost = %q in your manifest.",
+									"WARNING: Service %s is not responding on %s:%d, but a TCP connection succeeded on %s:%d. Consider setting services.%s.bindHost = %q in your manifest.",
 									service.Name, *service.Health.Host, *service.Health.Port, altBindHost, *service.Health.Port, service.Name, altBindHost,
 								))
 							}
