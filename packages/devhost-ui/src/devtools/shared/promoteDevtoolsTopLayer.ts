@@ -8,11 +8,20 @@ import { TOP_LAYER_ELEMENT_SELECTOR } from "./constants";
  * inside the root are unaffected.
  *
  * Devtools popovers and dialogs opened from inside the root must stay above it and keep their anchors, so the root
- * stays where it is until they close. Elements that are not an open devtools top-layer root are left alone.
+ * stays where it is until they close and any popover exit transition finishes. Elements that are not an open
+ * devtools top-layer root are left alone.
  */
 export function promoteDevtoolsTopLayer(topLayerElement: HTMLElement): void {
   if (!topLayerElement.matches(":popover-open") || topLayerElement.querySelector(TOP_LAYER_ELEMENT_SELECTOR) !== null) {
     return;
+  }
+
+  // A closed popover remains in the top layer while its overlay exit transition runs. Moving its trigger above
+  // it during that interval invalidates the anchor and sends the fading panel to the viewport origin.
+  for (const popoverElement of topLayerElement.querySelectorAll("[popover]")) {
+    if (getComputedStyle(popoverElement).getPropertyValue("overlay") === "auto") {
+      return;
+    }
   }
 
   topLayerElement.hidePopover();

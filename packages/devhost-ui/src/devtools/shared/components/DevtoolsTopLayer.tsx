@@ -49,14 +49,25 @@ export function DevtoolsTopLayer({ children, nativeBrowserBinding, ref }: IDevto
         promoteDevtoolsTopLayer(topLayerElement);
       }
     };
+    // `toggle` closes a panel before its overlay transition removes it from the top layer. Retry once that
+    // transition ends (or is canceled), when moving the trigger can no longer disturb the fading panel.
+    const handleOwnOverlayTransition = (event: TransitionEvent): void => {
+      if (event.propertyName === "overlay") {
+        promoteDevtoolsTopLayer(topLayerElement);
+      }
+    };
 
     topLayerElement.showPopover();
     ownerDocument.addEventListener("toggle", handleHostToggle, true);
     topLayerElement.addEventListener("toggle", handleOwnTopLayerChange, true);
+    topLayerElement.addEventListener("transitionend", handleOwnOverlayTransition);
+    topLayerElement.addEventListener("transitioncancel", handleOwnOverlayTransition);
 
     return () => {
       ownerDocument.removeEventListener("toggle", handleHostToggle, true);
       topLayerElement.removeEventListener("toggle", handleOwnTopLayerChange, true);
+      topLayerElement.removeEventListener("transitionend", handleOwnOverlayTransition);
+      topLayerElement.removeEventListener("transitioncancel", handleOwnOverlayTransition);
 
       if (topLayerElement.matches(":popover-open")) {
         topLayerElement.hidePopover();
