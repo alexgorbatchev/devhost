@@ -145,16 +145,16 @@
         ".close-fact",
         { y: 50, opacity: 0, scale: 0.85 },
         { y: 0, opacity: 1, scale: 1, duration: 0.34, ease: "back.out(2.2)", stagger: 0.16 },
-        1.12,
+        1.01,
       );
       tl.fromTo(
         "#close-address",
         { y: 80, opacity: 0, scale: 0.9 },
         { y: 0, opacity: 1, scale: 1, duration: 0.45, ease: "expo.out" },
-        1.96,
+        1.71,
       );
       // "Stop juggling ports."
-      [2.91, 3.28, 3.67].forEach((time, index) => {
+      [2.49, 2.83, 3.18].forEach((time, index) => {
         tl.fromTo(
           words[index],
           { y: 90, opacity: 0, scale: 1.3 },
@@ -162,7 +162,7 @@
           time,
         );
       });
-      tl.to("#close-stage", { scale: 1.03, duration: 4.8, ease: "none" }, 0);
+      tl.to("#close-stage", { scale: 1.03, duration: 4.3, ease: "none" }, 0);
       window.__timelines["06-close"] = tl;
     }
   </script>

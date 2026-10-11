@@ -110,7 +110,7 @@
             data-footage-from="2"
             data-footage-to="10.5"
             data-start="0"
-            data-duration="3.3"
+            data-duration="2.9"
             data-track-index="2"
             muted
             playsinline
@@ -121,9 +121,9 @@
             src="assets/footage/agent-working-footage.mp4"
             data-footage="annotations-2"
             data-footage-to="4"
-            data-start="3.3"
+            data-start="2.9"
             data-hf-media-start-basis="local"
-            data-duration="3.7"
+            data-duration="2.2"
             data-track-index="2"
             muted
             playsinline
@@ -134,9 +134,9 @@
             src="assets/footage/agent-result-footage.mp4"
             data-footage="annotations-3"
             data-footage-from="-4"
-            data-start="7"
+            data-start="5.1"
             data-hf-media-start-basis="local"
-            data-duration="2.6"
+            data-duration="2.1"
             data-track-index="2"
             muted
             playsinline
@@ -194,36 +194,36 @@
         0.05,
       );
       pop("#agent-step-click", 0.2);
-      pop("#agent-step-describe", 1.93);
+      pop("#agent-step-describe", 1.75);
       // "A coding agent edits your source": the agent's own terminal, then the line it changed.
-      tl.set("#agent-camera", { scale: 1 }, 3.3);
-      tl.to("#agent-camera", { scale: 1.06, duration: 3.7, ease: "none" }, 3.3);
-      tl.to(["#agent-step-click", "#agent-step-describe"], { opacity: 0, duration: 0.14 }, 3.26);
-      pop("#agent-step-edit", 3.48);
+      tl.set("#agent-camera", { scale: 1 }, 2.9);
+      tl.to("#agent-camera", { scale: 1.06, duration: 2.2, ease: "none" }, 2.9);
+      tl.to(["#agent-step-click", "#agent-step-describe"], { opacity: 0, duration: 0.14 }, 2.86);
+      pop("#agent-step-edit", 3.08);
       tl.fromTo(
         "#agent-diff",
         { y: 120, opacity: 0, scale: 0.94 },
         { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: "expo.out" },
-        4.41,
+        3.87,
       );
       tl.fromTo(
         ".agent-diff-new",
         { opacity: 0, x: -40 },
         { opacity: 1, x: 0, duration: 0.3, ease: "power3.out" },
-        4.87,
+        4.35,
       );
-      // The payoff, in silence: the running page now shows the new line.
-      tl.set("#agent-camera", { scale: 1.7, transformOrigin: "50% 34%" }, 7);
-      tl.to("#agent-camera", { scale: 1.32, duration: 1, ease: "expo.out" }, 7);
-      tl.to("#agent-step-edit", { opacity: 0, duration: 0.12 }, 6.96);
-      pop("#agent-step-reload", 7.08);
+      // "And the page hot-reloads.": the running page now shows the new line.
+      tl.set("#agent-camera", { scale: 1.7, transformOrigin: "50% 34%" }, 5.1);
+      tl.to("#agent-camera", { scale: 1.32, duration: 1, ease: "expo.out" }, 5.1);
+      tl.to("#agent-step-edit", { opacity: 0, duration: 0.12 }, 5.06);
+      pop("#agent-step-reload", 5.18);
       tl.fromTo(
         "#agent-ring",
         { opacity: 0, scale: 1.25 },
         { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(2)" },
-        7.15,
+        5.25,
       );
-      tl.to("#agent-diff", { y: 150, scale: 0.9, duration: 0.6, ease: "expo.inOut" }, 7);
+      tl.to("#agent-diff", { y: 150, scale: 0.9, duration: 0.6, ease: "expo.inOut" }, 5.1);
       window.__timelines["05-agent"] = tl;
     }
   </script>
