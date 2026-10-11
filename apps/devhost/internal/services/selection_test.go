@@ -18,6 +18,7 @@ func selectionManifest() manifest.Manifest {
 	web.Env = map[string]string{"DOCS": "http://127.0.0.1:{{ services.docs.port }}"}
 	return manifest.Manifest{
 		Name:         "slice",
+		Groups:       map[string][]string{"app": {"web"}, "documentation": {"docs"}, "full": {"web", "docs", "web"}},
 		ServiceOrder: []string{"web", "api", "db", "docs", "mail", "queue"},
 		Services: map[string]manifest.ValidatedService{
 			"web":   web,
@@ -77,6 +78,24 @@ func TestResolveRequestedServicePortsSelectsServices(t *testing.T) {
 			wantStarted: []string{"db", "docs", "mail", "queue"},
 			wantStopped: []string{"api", "web"},
 		},
+		{
+			name:        "group includes dependency chains",
+			requested:   []string{"app"},
+			wantStarted: []string{"api", "db", "mail", "queue", "web"},
+			wantStopped: []string{"docs"},
+		},
+		{
+			name:        "groups and services combine without duplicate starts",
+			requested:   []string{"app", "documentation", "web", "app"},
+			wantStarted: []string{"api", "db", "docs", "mail", "queue", "web"},
+			wantStopped: []string{},
+		},
+		{
+			name:        "group with several entries and duplicate members",
+			requested:   []string{"full"},
+			wantStarted: []string{"api", "db", "docs", "mail", "queue", "web"},
+			wantStopped: []string{},
+		},
 	}
 
 	for _, tc := range tests {
@@ -102,12 +121,12 @@ func TestResolveRequestedServicePortsSelectsServices(t *testing.T) {
 func TestValidateRequestedServicesRejectsUnknownNames(t *testing.T) {
 	t.Parallel()
 
-	if err := ValidateRequestedServices(selectionManifest(), []string{"web", "db"}); err != nil {
+	if err := ValidateRequestedServices(selectionManifest(), []string{"web", "db", "app", "documentation"}); err != nil {
 		t.Fatalf("ValidateRequestedServices(known names) unexpected error = %v", err)
 	}
 
 	err := ValidateRequestedServices(selectionManifest(), []string{"web", "wbe", "cache"})
-	want := `unknown services: "wbe", "cache"; the manifest defines: api, db, docs, mail, queue, web`
+	want := `unknown services or groups: "wbe", "cache"; the manifest defines: api, app, db, docs, documentation, full, mail, queue, web`
 	if err == nil || err.Error() != want {
 		t.Fatalf("ValidateRequestedServices(unknown names) error = %v, want %q", err, want)
 	}

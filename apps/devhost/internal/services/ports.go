@@ -26,7 +26,7 @@ const (
 type ResolvedManifest struct {
 	// Retain unresolved templates so automatic-port retries can bind them again.
 	configuration *manifest.Manifest
-	// requested holds the service names given to devhost start and those started
+	// requested holds the service or group names given to devhost start and services started
 	// since; empty means every service runs.
 	requested             []string
 	Annotation            manifest.ValidatedAnnotation
@@ -89,7 +89,7 @@ func ResolveServicePorts(value manifest.Manifest) (ResolvedManifest, error) {
 }
 
 // ResolveRequestedServicePorts resolves the manifest for a run that names the
-// services to start. With no names every service starts.
+// services or groups to start. With no names every service starts.
 func ResolveRequestedServicePorts(value manifest.Manifest, requested []string) (ResolvedManifest, error) {
 	return resolveServicePorts(value, portResolutionOptions{Requested: requested})
 }

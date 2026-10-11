@@ -35,7 +35,7 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 	validationIssues := []string{}
 	manifestValue := rawManifest.value
 
-	allowKeys(manifestValue, []string{"annotation", "caddy", "devtools", "worktrees", "name", "services", "includes", "killZombies"}, "", &schemaIssues)
+	allowKeys(manifestValue, []string{"annotation", "caddy", "devtools", "worktrees", "name", "services", "groups", "includes", "killZombies"}, "", &schemaIssues)
 
 	name, ok := readRequiredNonEmptyString(manifestValue, "name", &schemaIssues)
 	if !ok {
@@ -59,6 +59,8 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 		&validationIssues,
 	)
 
+	groups := validateGroups(manifestValue["groups"], validatedServices, &schemaIssues, &validationIssues)
+
 	if len(schemaIssues) > 0 {
 		return Manifest{}, fmt.Errorf("Manifest schema is invalid:\n%s", strings.Join(schemaIssues, "\n"))
 	}
@@ -78,6 +80,7 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 		PrimaryService:        primaryService,
 		ServiceOrder:          append([]string{}, rawManifest.serviceOrder...),
 		Services:              validatedServices,
+		Groups:                groups,
 		KillZombies:           killZombies,
 	}, nil
 }

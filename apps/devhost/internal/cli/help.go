@@ -11,7 +11,7 @@ const (
 	manifestEnvironmentVariable    = "DEVHOST_MANIFEST"
 	idleTimeoutEnvironmentVariable = "DEVHOST_IDLE_TIMEOUT"
 	sshTargetDescription           = "SSH host that runs devhost, e.g. devbox or user@devbox"
-	serviceArgumentDescription     = "Services to start; all of them when none is named"
+	serviceArgumentDescription     = "Services or groups; omit to start every service"
 	// stopPickedStackCommand stops a stack chosen from the running ones: the
 	// listing goes through a picker, and the second field of the picked line is
 	// the manifest devhost stop takes.

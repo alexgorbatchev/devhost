@@ -66,7 +66,7 @@ func TestParseCommandLineArgumentsRendersTreeHelp(t *testing.T) {
 			rawArgs: []string{"start", "-h"},
 			wantAll: []string{
 				"devhost start [service...] [flags]",
-				"[service...]          Services to start; all of them when none is named",
+				"[service...]          Services or groups; omit to start every service",
 				"--manifest",
 				"-d, --debug",
 				"--idle-timeout",

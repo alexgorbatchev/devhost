@@ -111,6 +111,13 @@ func TestRunServiceListReportsAWriteFailure(t *testing.T) {
 }
 
 func TestRunStartsOnlyTheNamedServices(t *testing.T) {
+	for _, name := range []string{"worker", "app"} {
+		t.Run(name, func(t *testing.T) { testRunStartsSelection(t, name) })
+	}
+}
+
+func testRunStartsSelection(t *testing.T, name string) {
+	t.Helper()
 	t.Setenv("DEVHOST_STATE_DIR", t.TempDir())
 
 	manifestDirectoryPath := t.TempDir()
@@ -125,6 +132,8 @@ func TestRunStartsOnlyTheNamedServices(t *testing.T) {
 		"[services.idle.health]",
 		"process = true",
 		"",
+		"[groups]",
+		`app = ["worker"]`,
 	}, "\n")
 	manifestFile, err := os.OpenFile(manifestPath, os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
@@ -140,17 +149,17 @@ func TestRunStartsOnlyTheNamedServices(t *testing.T) {
 	var stdout strings.Builder
 	var stderr strings.Builder
 
-	exitCode := runUntilServiceExit(t, []string{"start", "--manifest", manifestPath, "worker"}, manifestDirectoryPath, &stdout, &stderr)
+	exitCode := runUntilServiceExit(t, []string{"start", "--manifest", manifestPath, name}, manifestDirectoryPath, &stdout, &stderr)
 	if exitCode != 143 {
-		t.Fatalf("Run(start worker) exit code = %d, want 143 with stderr %q", exitCode, stderr.String())
+		t.Fatalf("Run(start %s) exit code = %d, want 143 with stderr %q", name, exitCode, stderr.String())
 	}
 
 	if want := "[hello-stack] not started: idle\n"; !strings.Contains(stdout.String(), want) {
-		t.Fatalf("Run(start worker) stdout = %q, want it to report %q", stdout.String(), want)
+		t.Fatalf("Run(start %s) stdout = %q, want it to report %q", name, stdout.String(), want)
 	}
 
 	if _, err := os.Stat(tracePath); !os.IsNotExist(err) {
-		t.Fatalf("Run(start worker) started the service it was not asked for: %v", err)
+		t.Fatalf("Run(start %s) started the service it was not asked for: %v", name, err)
 	}
 }
 

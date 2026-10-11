@@ -54,7 +54,34 @@ Starting a slice gives you:
 
 devhost starts the named services, every service they reach through `dependsOn`, and every service marked `alwaysStart = true` together with its own `dependsOn` chain. Set `alwaysStart = true` on the services every slice needs, such as a database or a proxy.
 
-Plain `devhost start` starts every service, whatever `alwaysStart` says. A name the manifest does not define fails the command before anything starts and lists the defined names.
+Plain `devhost start` starts every service, whatever `alwaysStart` says. A service or group name the manifest does not define fails the command before anything starts and lists the defined names.
+
+### Named service groups
+
+Define a short name under `[groups]` to select entry-point services. Groups work in standalone manifests and in each app's included `devhost.toml`. `dependsOn` supplies the selected services' dependency chains:
+
+```toml
+[groups]
+app = ["app-frontend"]
+
+[services.app-frontend]
+command = ["bun", "run", "dev"]
+cwd = "frontend"
+port = "auto"
+dependsOn = ["app-backend"]
+
+[services.app-backend]
+command = ["bun", "run", "dev"]
+cwd = "backend"
+port = "auto"
+dependsOn = ["database"]
+```
+
+With `database` also defined in the manifest, `devhost start app` selects `app-frontend` and starts its dependency chain: database, backend, then frontend. In a monorepo, each app can define its own group alongside its services, and `database` can live in a shared infrastructure manifest. The root needs only [includes](../manifest-includes/) to merge those files. Another app can define an `admin = ["admin-frontend"]` entry under `[groups]`; run both with `devhost start app admin`.
+
+Group names use the same format as service names: a lowercase letter followed by lowercase letters, digits, or hyphens. They must be unique across all included files and distinct from service names. Each group contains a non-empty array of service names from the complete manifest. Nested groups and unknown members are rejected. Groups and individual services can be mixed on the command line; shared services start once, and `alwaysStart` services retain their usual behavior. Plain `devhost start` still starts every service. `devhost service list` lists individual services only.
+
+Selected groups use their current membership after a manifest reload. Adding or removing a member changes the running selection, retaining services still selected by other groups, explicit service names, dependencies, or `alwaysStart`. Removing a selected group removes its selection. Stack restarts retain the requested group names. Invalid group edits leave the accepted configuration running.
 
 ### Example: slices of a monorepo
 
@@ -112,7 +139,7 @@ The services left out are stopped. They run no process, have no route, and hold 
 
 With `[devtools.status]` enabled, the Services panel shows **Stopped services** with their count. It opens the list of stopped services; **Start** starts one together with what it depends on, and the services already running keep running. If the service fails to start, the list shows the error and the service stays stopped. Stopped services cannot be restarted, including by the restart shortcut when the primary service is one of them.
 
-The selection lasts for the run. Manifest reloads and **Restart stack with new ports** keep it, a service added to the manifest stays stopped unless it is marked `alwaysStart`, and edits to a stopped service take effect when it starts. Stop and start devhost to run fewer services.
+The requested service and group names last for the run. Manifest reloads and **Restart stack with new ports** retain those names; selected groups use their current membership. A service added to the manifest stays stopped unless selected by a group, reached through dependencies, or marked `alwaysStart`. Edits to a stopped service take effect when it starts. Stop and start devhost to change the command-line selection.
 
 `devhost service list` prints the service names of the manifest, one per line in alphabetical order. `--startable` leaves out the `alwaysStart` services, which start whether or not they are named. Use it to pick a slice:
 

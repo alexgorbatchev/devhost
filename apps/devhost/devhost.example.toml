@@ -14,6 +14,7 @@
 # - `name` (required)
 # - `killZombies` (optional; boolean to automatically kill zombie processes from the same manifest, default `true`)
 # - `includes` (optional; string or string array of file glob patterns to merge multiple sub-manifests)
+# - `[groups]` (optional; named selections of services for `devhost start <name>`)
 # - `[worktrees]` (optional; Git checkout selection for repository service groups, enabled by default)
 # - `[caddy.global]` (optional)
 # - `[devtools]` (optional)
@@ -66,7 +67,7 @@ name = "hello-stack"
 # `includes` lists file paths or glob patterns (relative to this manifest's directory)
 # of sub-manifests to load and merge. This is perfect for monorepos where each sub-application
 # maintains its own services.
-# - Included manifests' services and annotation actions are recursively merged.
+# - Included manifests' services, groups, and annotation actions are recursively merged.
 # - Service names must be unique across all merged manifests.
 # - Relative paths (like `cwd` and `watch` folders) in included manifests are automatically
 #   rewritten to be relative to the root manifest's directory.
@@ -77,6 +78,19 @@ name = "hello-stack"
 #   the named services, their `dependsOn` chains, and the `alwaysStart` services (see `services.db`).
 #
 # includes = ["packages/*/devhost.toml", "apps/*/devhost.toml"]
+
+# Define groups here or in each app's included devhost.toml.
+# `devhost start app` starts web, its dependsOn chain, and alwaysStart services.
+# Mix group and service names: `devhost start app worker`. Shared services start once.
+# Group names follow service naming rules: lowercase letter, then lowercase letters,
+# digits, or hyphens. Names must be unique across includes and distinct from services.
+# Each group is a non-empty array of service names from the complete merged manifest;
+# nested groups and unknown services are rejected. Groups select services; dependsOn
+# defines their dependencies. Plain `devhost start` still starts every service.
+# Group edits hot-reload: selected groups use their current members. Removing a
+# selected group removes its selection; alwaysStart and other requested names remain.
+[groups]
+app = ["web"]
 
 # Managed Caddy lifecycle is shared and manual.
 # Start it explicitly with `devhost caddy start` before running one or more stacks.

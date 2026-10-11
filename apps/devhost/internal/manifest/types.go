@@ -26,6 +26,7 @@ type Manifest struct {
 	PrimaryService        string
 	ServiceOrder          []string
 	Services              map[string]ValidatedService
+	Groups                map[string][]string
 	KillZombies           bool
 }
 

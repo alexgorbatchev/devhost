@@ -273,7 +273,7 @@ name = "my-monorepo-stack"
 includes = ["packages/*/devhost.toml", "apps/*/devhost.toml"]
 ```
 
-Included manifests are recursively parsed, and their services and annotation actions are merged into the root stack. Relative paths for `cwd` and `watch` folders are automatically resolved, and missing `cwd` keys default to the directory of the manifest they were defined in. See the [Manifest Includes Documentation](https://alexgorbatchev.github.io/devhost/guides/manifest-includes/) page for more details.
+Included manifests are recursively parsed, and their services, groups, and annotation actions are merged into the root stack. Relative paths for `cwd` and `watch` folders are automatically resolved, and missing `cwd` keys default to the directory of the manifest they were defined in. See the [Manifest Includes Documentation](https://alexgorbatchev.github.io/devhost/guides/manifest-includes/) page for more details.
 
 ### Annotation Temporary Files
 

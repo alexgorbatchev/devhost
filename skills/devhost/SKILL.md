@@ -4,7 +4,7 @@ description: Use when running devhost or when reading, writing, or changing a de
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-11 09:23
+  last_modified: 2026-10-11 10:22
   status: current
 ---
 
@@ -14,7 +14,7 @@ Run `devhost` with `AGENT=1`: help becomes `key: value` text, and a failed comma
 
 ### Commands
 
-- `devhost start [service...]`: start the manifest's services behind their HTTPS hostnames and stay in the foreground. With no `[service...]` argument every service starts. With one or more service names, devhost starts those services, every service they reach through `dependsOn`, and every service marked `alwaysStart = true` with its own `dependsOn` chain; the remaining services stay stopped. A name the manifest lacks fails the command with `unknown service` and the list of defined names. After startup stdout carries one `service-name: url` line per routed service that started, a `not started: a, b` line naming the stopped services when there are any, then log lines prefixed `[stack-name]` for devhost itself and `[service-name]` for each service. Routes are removed when it exits. Start the shared Caddy first.
+- `devhost start [service...]`: start the manifest's services behind their HTTPS hostnames and stay in the foreground. With no `[service...]` argument every service starts. Arguments accept service names and group names from `[groups]`, including a mixture of both. Groups expand to their member services; devhost starts the selected services, every service they reach through `dependsOn`, and every service marked `alwaysStart = true` with its own `dependsOn` chain; the remaining services stay stopped. Shared services start once. A name the manifest lacks fails the command with `unknown service or group` when groups are defined, or `unknown service` otherwise, and the list of defined names. After startup stdout carries one `service-name: url` line per routed service that started, a `not started: a, b` line naming the stopped services when there are any, then log lines prefixed `[stack-name]` for devhost itself and `[service-name]` for each service. Routes are removed when it exits. Start the shared Caddy first.
 - `devhost service list`: print the name of every service in the manifest on stdout, one per line in alphabetical order, in the same form with and without `AGENT=1`. With `--startable` it prints only the services that start when named, leaving out those marked `alwaysStart = true`. Feed the output to a picker: `devhost start $(devhost service list --startable | fzf --multi)`.
 - `devhost stop`: stop the running stack of the manifest. It sends SIGTERM to the stack's processes, waits up to 15 seconds, force-kills what remains, and reports each step on stdout. With no stack running from that manifest it says so and exits `0`, and when other stacks are running it adds `Other stacks are running. Run "devhost stack list" to print their PIDs and manifests.`
 - `devhost stack list`: print every stack running on the machine on stdout, one per line in manifest path order, in the same form with and without `AGENT=1`. A line is the PID of the stack's devhost process, one tab, and the absolute manifest path, which runs to the end of the line and may hold spaces. It takes no flags, reads no manifest, and prints nothing when no stack runs. Every running stack is listed, whatever its services are. Take the path with `cut -f2` and pass it to `devhost stop --manifest` to stop that stack from any directory: `devhost stop --manifest "$(devhost stack list | fzf | cut -f2)"`.
@@ -88,6 +88,7 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 
 - **camelCase Rule**: All manifest properties and tables across the entire TOML file **must** use standard `camelCase` naming conventions (e.g., `idleTimeout`, `killZombies`, `externalToolbars`, `bindHost`, `httpPort`, `httpsPort`, `adminAddress`, `defaultAction`, `injectPort`, `dependsOn`, `primary`, etc.). devhost rejects a key written in kebab-case, snake_case, or mixed casing.
 - **Service Names**: Service keys inside `[services.<name>]` must match the regex `^[a-z][a-z0-9-]*$`.
+- **Service groups**: Define `[groups]` in each app's included manifest, with entries such as `app = ["app-frontend"]`, then run `devhost start app` from the root. Groups merge alongside services and annotation actions. Group names match service naming rules, are unique across included manifests, and are distinct from service names. Members form a non-empty array of service names from the complete merged manifest. Nested groups and unknown members are rejected. `devhost service list` prints individual services only. Selected groups use their current membership on reload; deleting a selected group removes its selection, retaining other requested selections and `alwaysStart` services. Stack restarts retain the requested group names. See [Setup](references/setup.md#6-configuration-hot-reload) for reload behavior.
 - **Annotation Action IDs**: Action ids under `[[annotation.actions]]` must match the regex `^[a-z][a-z0-9-]*$` and must be unique.
 
 ### Top-Level Configurations

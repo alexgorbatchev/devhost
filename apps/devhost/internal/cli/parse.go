@@ -74,7 +74,7 @@ type CommandLineArguments struct {
 	SSHTarget    string
 	Debug        bool
 	IdleTimeout  string
-	// Services names the services devhost start was asked for; empty means all of them.
+	// Services names the services or groups devhost start was asked for; empty means all services.
 	Services []string
 	// Startable limits devhost service list to the services that start only when named.
 	Startable bool
@@ -177,7 +177,7 @@ type startOptions struct {
 	ManifestOptions
 	Debug       bool     `descr:"Show Caddy's output while the stack runs." name:"debug"`
 	IdleTimeout string   `descr:"Stop the stack after this long without traffic, e.g. 30s or 1m." env:"DEVHOST_IDLE_TIMEOUT" name:"idle-timeout" optional:"true"`
-	Services    []string `descr:"Services to start; all of them when none is named." name:"service" optional:"true" positional:"true"`
+	Services    []string `descr:"Services or groups; omit to start every service." name:"service" optional:"true" positional:"true"`
 }
 
 type serviceListOptions struct {
@@ -242,9 +242,9 @@ func createStartCommand(result *CommandLineArguments) boa.CmdT[startOptions] {
 const startDescription = `Start every service in devhost.toml behind local HTTPS
 hostnames. Routes are removed when the stack exits.
 
-Name services to start only those, what they depend on,
-and the services the manifest marks alwaysStart. The rest
-can be started later from the Services panel in the page.
+Name services or groups from [groups] to start their services,
+what they depend on, and the services marked alwaysStart.
+The rest can be started later from the Services panel.
 
 Without --manifest, devhost uses the nearest devhost.toml in
 the current folder or a parent folder. Hostnames must
