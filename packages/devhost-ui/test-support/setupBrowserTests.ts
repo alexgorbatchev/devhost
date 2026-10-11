@@ -1,5 +1,5 @@
 import { cleanup } from "@testing-library/react";
-import { afterEach, beforeAll, beforeEach, expect, vi, type MockInstance } from "vitest";
+import { afterEach, assert, beforeAll, beforeEach, vi, type MockInstance } from "vitest";
 
 let consoleError: MockInstance<typeof console.error>;
 
@@ -21,5 +21,5 @@ afterEach((): void => {
   const reportedErrors: unknown[][] = consoleError.mock.calls;
 
   consoleError.mockRestore();
-  expect(reportedErrors).toEqual([]);
+  assert.deepStrictEqual(reportedErrors, []);
 });
