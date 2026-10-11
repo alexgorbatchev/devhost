@@ -252,7 +252,7 @@ it("rejects a render that runs past the length limit, naming the film and its le
   ).rejects.toThrow("The guide film lasts 45.10s; the limit is 45s");
 }, 30_000);
 
-it("rejects a render without the narration and music", async () => {
+it("rejects a render without sound", async () => {
   const recordingPath = await createRecording("silent");
 
   await expect(

@@ -45,7 +45,7 @@
             data-footage="overview-1"
             data-footage-from="0.8"
             data-start="0"
-            data-duration="2.5"
+            data-duration="2.3"
             data-track-index="2"
             muted
             playsinline
@@ -56,9 +56,9 @@
             src="assets/footage/devtools-services-footage.mp4"
             data-footage="overview-2"
             data-footage-to="4.5"
-            data-start="2.5"
+            data-start="2.3"
             data-hf-media-start-basis="local"
-            data-duration="2.1"
+            data-duration="2"
             data-track-index="2"
             muted
             playsinline
@@ -70,7 +70,7 @@
             data-footage="query-1"
             data-footage-from="-9.2"
             data-footage-to="-4"
-            data-start="4.6"
+            data-start="4.3"
             data-hf-media-start-basis="local"
             data-duration="1.4"
             data-track-index="2"
@@ -110,14 +110,14 @@
         "#devtools-camera",
         { scale: 1, transformOrigin: "100% 100%" },
         { scale: 2, duration: 0.75, ease: "expo.inOut" },
-        0.6,
+        0.55,
       );
-      pop("#devtools-logs", 1.4);
-      pop("#devtools-services", 2.55);
+      pop("#devtools-logs", 1.36);
+      pop("#devtools-services", 2.35);
       // Unvoiced: the same toolbar opens a third-party inspector.
-      tl.to("#devtools-camera", { scale: 1, duration: 0.34, ease: "expo.out" }, 4.6);
-      tl.to(["#devtools-tag", "#devtools-logs", "#devtools-services"], { opacity: 0, duration: 0.16 }, 4.56);
-      pop("#devtools-query", 4.78);
+      tl.to("#devtools-camera", { scale: 1, duration: 0.34, ease: "expo.out" }, 4.3);
+      tl.to(["#devtools-tag", "#devtools-logs", "#devtools-services"], { opacity: 0, duration: 0.16 }, 4.26);
+      pop("#devtools-query", 4.48);
       window.__timelines["04-devtools"] = tl;
     }
   </script>
