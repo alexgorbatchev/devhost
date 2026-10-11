@@ -57,7 +57,7 @@ export function TerminalSessionChips(props: ITerminalSessionChipsProps): JSX.Ele
 
   // The room also changes without rendering anything here, and each such change renders the chips again. The
   // segment exists only while there are sessions.
-  useToolbarRoomChanges(segmentReference, hasSessions);
+  const roomChangeCount: number = useToolbarRoomChanges(segmentReference, hasSessions);
 
   // Fit after every render, one chip per layout pass and before the browser paints. The popover stays mounted
   // throughout, so an open list of sessions stays open.
@@ -90,7 +90,7 @@ export function TerminalSessionChips(props: ITerminalSessionChipsProps): JSX.Ele
     if (fit.visibleLimit !== visibleSessions.length) {
       setVisibleLimit(fit.visibleLimit);
     }
-  });
+  }, [fitKey, hiddenSessions, props.sessions, roomChangeCount, visibleSessions.length]);
 
   if (!hasSessions) {
     return null;
