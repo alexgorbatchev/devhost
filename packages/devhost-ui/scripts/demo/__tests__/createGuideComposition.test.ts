@@ -5,7 +5,7 @@ import { createGuideComposition } from "../createGuideComposition";
 import { createPromoCaptions } from "../createPromoCaptions";
 import { planGuideFilm } from "../planGuideFilm";
 import { readPromoFootageSlots } from "../readPromoFootageSlots";
-import type { IGuideFilm, IPromoLineTiming, IPromoWord, IVolumePoint } from "../types";
+import type { IGuideFilm, IPromoLineTiming, IPromoWord } from "../types";
 
 const template = await Bun.file(resolve(import.meta.dir, "../guide/index.html")).text();
 
@@ -204,38 +204,13 @@ it("shows each line as a caption while its card or clip is on screen, with the t
   });
 });
 
-async function readMusicPoints(html: string): Promise<IVolumePoint[]> {
-  const [music] = await readAttributes(html, "#music", ["data-automation"]);
-  assert(music?.["data-automation"]);
-  // The rewriter reports an attribute as it is written in the markup, with its quotes as entities.
-  return JSON.parse(music["data-automation"].replaceAll("&quot;", '"')).lanes[0].points;
-}
-
-it("lowers the music under each line, brings it back in a long pause, and fades it out with the film", async () => {
+it("gives the film no sound but its narration", async () => {
   const html = await createGuideComposition(template, film);
 
-  expect(await readAttributes(html, "#music", ["data-duration"])).toEqual([{ "data-duration": "14.2" }]);
-  expect(await readMusicPoints(html)).toEqual([
-    { t: 0, v: 0.3 },
-    // The intro is spoken from 0.35s to 1.35s.
-    { t: 0.25, v: 0.3 },
-    { t: 0.55, v: 0.1 },
-    { t: 1.45, v: 0.1 },
-    // The first clip's line follows after 1.2s, too soon for the music to come back: 2.55s to 3.95s.
-    { t: 2.45, v: 0.1 },
-    { t: 2.75, v: 0.1 },
-    { t: 4.05, v: 0.1 },
-    // The second clip's line is 4.6s away, so the music returns until it starts: 8.55s to 10.05s.
-    { t: 4.65, v: 0.24 },
-    { t: 8.45, v: 0.24 },
-    { t: 8.75, v: 0.1 },
-    { t: 10.15, v: 0.1 },
-    { t: 10.75, v: 0.24 },
-    // The end card starts at 12.4s and the film ends at 14.2s.
-    { t: 12.4, v: 0.24 },
-    { t: 12.7, v: 0.34 },
-    { t: 13.4, v: 0.34 },
-    { t: 14.2, v: 0 },
+  expect(await readAttributes(html, "audio", ["id", "src"])).toEqual([
+    { id: "voice-intro", src: "assets/audio/voice/intro.mp3" },
+    { id: "voice-overview-1", src: "assets/audio/voice/overview-1.mp3" },
+    { id: "voice-query-1", src: "assets/audio/voice/query-1.mp3" },
   ]);
 });
 it("rejects a clip name that cannot be written into the composition's markup", async () => {

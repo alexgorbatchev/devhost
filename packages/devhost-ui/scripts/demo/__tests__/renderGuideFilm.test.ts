@@ -11,7 +11,6 @@ let filmPath = "";
 
 const narration = {
   voice: { id: "voice-123", name: "Narrator", model: "speech-model", stability: 0.4, similarityBoost: 0.7, style: 0.2 },
-  music: { model: "music_v2", sections: [{ name: "Bed", seconds: 50, styles: ["calm"], avoid: ["vocals"] }] },
   guides: {
     "stack-lifecycle": {
       intro: "Start dependencies first.",
@@ -42,7 +41,6 @@ const timings: IGuideAudioTimings = {
       createLine("step-2", ["Start", "it."]),
     ],
   },
-  music: { path: "assets/audio/music.mp3", duration: 50 },
 };
 
 // Stands in for HyperFrames: writes a video as long as the staged composition says it is.
@@ -104,7 +102,6 @@ async function createFilm(name: string, filmTimings: IGuideAudioTimings): Promis
   await Bun.write(join(path, "guide/index.html"), Bun.file(resolve(import.meta.dir, "../guide/index.html")));
   await Bun.write(join(path, "guide/narration.json"), JSON.stringify(narration));
   await Bun.write(join(path, "guide/assets/audio/timings.json"), JSON.stringify(filmTimings));
-  await Bun.write(join(path, "guide/assets/audio/music.mp3"), Bun.file(tonePath));
   for (const line of timings.guides["stack-lifecycle"] ?? []) {
     await Bun.write(join(path, "guide", line.path), Bun.file(tonePath));
   }
@@ -175,13 +172,14 @@ it("renders a guide's steps under its narration, with the transcript the guide p
   });
   expect({
     renderer: await Bun.file(join(runPath, "guide/package.json")).text(),
-    voice: await Bun.file(join(runPath, "guide/assets/audio/voice/step-2.mp3")).exists(),
+    // The film is staged with its narration and no other sound.
+    audio: (await Array.fromAsync(new Bun.Glob("**/*.mp3").scan({ cwd: join(runPath, "guide/assets/audio") }))).sort(),
     // A guide's run is not taken for a promo render, and the project it was staged from is gone.
     promoFootage: await Bun.file(join(runPath, "promo-footage.json")).exists(),
     source: await Bun.file(join(runPath, "guide-source/index.html")).exists(),
   }).toEqual({
     renderer: '{ "scripts": { "render": "pinned renderer" } }',
-    voice: true,
+    audio: ["voice/intro.mp3", "voice/step-1.mp3", "voice/step-2.mp3"],
     promoFootage: false,
     source: false,
   });
@@ -226,46 +224,6 @@ it("rejects a guide whose line has not been spoken yet", async () => {
       signal: new AbortController().signal,
     }),
   ).rejects.toThrow("No narration audio for stack-lifecycle step-1: run `just demo audio-guides`");
-});
-
-it("rejects guide films that have no music", async () => {
-  const runPath = await createRun("silent");
-  const silentPath = await createFilm("film-silent", { guides: timings.guides });
-
-  await expect(
-    renderGuideFilm({
-      directoryPath: runPath,
-      filmPath: silentPath,
-      slug: "stack-lifecycle",
-      title: "Stack lifecycle",
-      address: "terminal",
-      clips: steps,
-      render,
-      signal: new AbortController().signal,
-    }),
-  ).rejects.toThrow("The guide films have no music: run `just demo audio-guides`");
-});
-
-it("rejects a film that would outlast the music", async () => {
-  const runPath = await createRun("short-music");
-  const shortPath = await createFilm("film-short-music", {
-    ...timings,
-    music: { path: "assets/audio/music.mp3", duration: 5 },
-  });
-
-  // The title card's 2.4s, the 6s of recorded steps and the end card's 1.8s make 10.2s.
-  await expect(
-    renderGuideFilm({
-      directoryPath: runPath,
-      filmPath: shortPath,
-      slug: "stack-lifecycle",
-      title: "Stack lifecycle",
-      address: "terminal",
-      clips: steps,
-      render,
-      signal: new AbortController().signal,
-    }),
-  ).rejects.toThrow("The guide music lasts 5s, but the stack-lifecycle film lasts 10.2s");
 });
 
 it("rejects a guide the narration does not have", async () => {

@@ -1,12 +1,12 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-10 09:45
+last_modified: 2026-10-11 11:30
 status: current
 ---
 
 # Refreshing the devhost demo
 
-Run the recording from the checkout whose UI you want to demonstrate. The recorder rebuilds the CLI and embedded UI and starts real services through devhost. The full sequence becomes a promo of at most 45 seconds: [HyperFrames](https://github.com/heygen-com/hyperframes) composes the captured scenes with narration and music. Each guide becomes a narrated film made the same way from its own recording. A single scene exports a silent, captioned H.264 MP4. The promo and single scenes stay in `.tmp/demos/`; guide recordings also update the docs site's media, which you review and then publish.
+Run the recording from the checkout whose UI you want to demonstrate. The recorder rebuilds the CLI and embedded UI and starts real services through devhost. The full sequence becomes a promo of at most 45 seconds: [HyperFrames](https://github.com/heygen-com/hyperframes) composes the captured scenes with narration and music. Each guide becomes a narrated film, without music, made the same way from its own recording. A single scene exports a silent, captioned H.264 MP4. The promo and single scenes stay in `.tmp/demos/`; guide recordings also update the docs site's media, which you review and then publish.
 
 ## Prerequisites
 
@@ -30,7 +30,7 @@ The full sequence and annotation scene also require Pi on PATH with a working co
 
 The full sequence and every guide also need Node.js 22 or newer on PATH, which HyperFrames runs on. Before it captures anything, `just demo record` checks that version and has HyperFrames find or download its own Chrome build, about 114 MB on the first run; `just demo promo` does the same once it has checked the recording and before it changes anything in it. `just demo guides` and `just demo guide-film` run the same check before they record or render. An older Node.js or a failed download therefore stops the run before the capture and its Pi request.
 
-HyperFrames keeps that build under `~/.cache/hyperframes` and its own settings under `~/.hyperframes`; both follow `HOME`, so they cannot be moved into a run directory without downloading Chrome again for every run. Every render runs with `HYPERFRAMES_NO_TELEMETRY=1` and `HYPERFRAMES_SKIP_SKILLS=1`, so it reports no usage and installs no agent skills on your machine. A render needs no ElevenLabs key: the narration and music are committed files.
+HyperFrames keeps that build under `~/.cache/hyperframes` and its own settings under `~/.hyperframes`; both follow `HOME`, so they cannot be moved into a run directory without downloading Chrome again for every run. Every render runs with `HYPERFRAMES_NO_TELEMETRY=1` and `HYPERFRAMES_SKIP_SKILLS=1`, so it reports no usage and installs no agent skills on your machine. A render needs no ElevenLabs key: the promo's narration and music and the guides' narration are committed files.
 
 ## Record and refresh
 
@@ -82,7 +82,7 @@ just demo guides react-highlight
 just demo guides service-references
 ```
 
-The command discovers guide Markdown files and records each corresponding real workflow. Each guide becomes a narrated film of 1920 × 1080 at 30 fps and at most 45 seconds, rendered by the HyperFrames release the promo pins. A film opens on a title card with the guide's title from its front matter, shows the recording in a window while a voice explains each step, and closes on a card with the docs address. The words of the current line appear under the window as they are spoken.
+The command discovers guide Markdown files and records each corresponding real workflow. Each guide becomes a narrated film of 1920 × 1080 at 30 fps and at most 45 seconds, rendered by the HyperFrames release the promo pins. A film opens on a title card with the guide's title from its front matter, shows the recording in a window while a voice explains each step, and closes on a card with the docs address. The narration is its only sound. The words of the current line appear under the window as they are spoken.
 
 The command also updates the docs site's media. It writes the film's web encode, WebP poster, and English WebVTT captions to `packages/docs/public/demos/<slug>.*`, and replaces the guide's `guide-demo` block with a native video player at the top and a collapsed text transcript of the narration. The prose remains untouched. Assets use full `https://alexgorbatchev.github.io/devhost/demos/` URLs and ship through the existing Pages build. Players use `preload="none"` and play only when requested.
 
@@ -150,8 +150,8 @@ Sources live in `packages/devhost-ui/scripts/demo/`:
 | `renderGuideFilm.ts` / `planGuideFilm.ts` / `createGuideComposition.ts`     | Time a guide's clips to its narration, fill the template, and render it         |
 | `findGuideStepWindows.ts` / `readFrameBrightness.ts`                        | Find a terminal guide's steps where its recording clears the screen             |
 | `renderGuide.ts` / `findGuideRecording.ts`                                  | Render a guide's film again from its latest recording                           |
-| `generateGuideAudio.ts` / `readGuideNarration.ts`                           | Generate the guide films' narration and music with ElevenLabs                   |
-| `speakLine.ts` / `composeMusic.ts` / `audioSchemas.ts`                      | Speak one line and compose music, for the promo and the guide films             |
+| `generateGuideAudio.ts` / `readGuideNarration.ts`                           | Generate the guide films' narration with ElevenLabs                             |
+| `speakLine.ts` / `composeMusic.ts` / `audioSchemas.ts`                      | Speak a line for either film; compose the promo's music                         |
 | `createSpeechRequest.ts` / `hashSpeechRequest.ts`                           | Build and hash a line's ElevenLabs request, so an unchanged line keeps its take |
 | `promo/`                                                                    | The promo's HyperFrames project: composition, narration, and audio              |
 | `renderPromo.ts` / `renderPromoComposition.ts`                              | Stage a copy of the project in the run directory, render it, and verify it      |
@@ -215,23 +215,22 @@ just demo audio music
 
 Each generation bills that ElevenLabs account, and a failed request is not retried. A new take has different lengths, so after regenerating: read `timings.json`, then update each narration clip's `data-start` and `data-duration` in `index.html`, the frames' durations and tween times, and the cut times in the `index.html` script. After new music, measure where its drop and final hit fall and set the music clip's `data-media-start` and volume lane to match the cuts. Run root `just fix` before committing regenerated files.
 
-### Guide narration and music
+### Guide narration
 
-`guide/narration.json` holds the voice, one music bed, and the lines of every guide. `guide/assets/audio/` holds what ElevenLabs generated from it: `voice/<slug>/<clip>.mp3` for each line, `music.mp3`, and `timings.json`. Generate them with an exported `ELEVENLABS_API_KEY`:
+`guide/narration.json` holds the voice and the lines of every guide. A guide film has no music. `guide/assets/audio/` holds what ElevenLabs generated from the narration: `voice/<slug>/<clip>.mp3` for each line, and `timings.json`. Generate them with an exported `ELEVENLABS_API_KEY`:
 
 ```bash
 just demo audio-guides
-just demo audio-guides voice
-just demo audio-guides voice stack-lifecycle
-just demo audio-guides voice stack-lifecycle retake
-just demo audio-guides music
+just demo audio-guides stack-lifecycle
+just demo audio-guides stack-lifecycle retake
+just demo audio-guides all retake
 ```
 
-The first argument selects the lines, the music, or both, and the second limits the lines to one guide.
+The first argument limits the lines to one guide; `all`, the default, selects every guide.
 
-A line keeps its take until its request changes. `timings.json` records with each take, as `requestSha256`, the hash of the request it was generated from: the voice and its settings, the model, the line, and the lines before and after it, which ElevenLabs receives as context. A run speaks only the lines whose hash no longer matches or whose MP3 is missing, and prints how many it generated. Rewording one line therefore speaks that line and the lines beside it again. To retake lines that have not changed, pass `retake` as the third argument for every selected line, or delete one line's MP3 and run the command. Do not edit `timings.json` or replace an MP3 by hand: a take is trusted because its recorded request matches. The music has no such record: `all` and `music` compose a new bed on every run, so pass `voice` when only lines changed.
+A line keeps its take until its request changes. `timings.json` records with each take, as `requestSha256`, the hash of the request it was generated from: the voice and its settings, the model, the line, and the lines before and after it, which ElevenLabs receives as context. A run speaks only the lines whose hash no longer matches or whose MP3 is missing, and prints how many it generated. Rewording one line therefore speaks that line and the lines beside it again. To retake lines that have not changed, pass `retake` as the second argument for every selected line, or delete one line's MP3 and run the command. Do not edit `timings.json` or replace an MP3 by hand: a take is trusted because its recorded request matches. Changing the voice or one of its settings in `narration.json` changes every request, so the next run speaks every line again.
 
-Each request bills that ElevenLabs account, and a failed request is not retried. Every take is recorded as it is made, so the run after a failed one continues at the line that failed. A guide film needs no re-timing by hand, because every render reads the measured lengths: render the affected guides again with `just demo guide-film <slug>`. Keep a line to what its clip shows. The music bed lasts 50 seconds, longer than any film, and the render fails when a film outlasts it.
+Each request bills that ElevenLabs account, and a failed request is not retried. Every take is recorded as it is made, so the run after a failed one continues at the line that failed. A guide film needs no re-timing by hand, because every render reads the measured lengths: render the affected guides again with `just demo guide-film <slug>`. Keep a line to what its clip shows.
 
 ## Artifacts and cleanup
 

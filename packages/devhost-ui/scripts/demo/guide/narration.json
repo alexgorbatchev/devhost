@@ -1,32 +1,11 @@
 {
   "voice": {
-    "id": "CwhRBWXzGAHq8TQ4Fs17",
-    "name": "Roger",
+    "id": "zfc8CJQpe8Kqyl0vvCzo",
+    "name": "Mike - 2D & 3D POV/Storytime",
     "model": "eleven_multilingual_v2",
     "stability": 0.45,
     "similarityBoost": 0.75,
     "style": 0.3
-  },
-  "music": {
-    "model": "music_v2",
-    "sections": [
-      {
-        "name": "Bed",
-        "seconds": 50,
-        "styles": [
-          "calm modern electronic underscore",
-          "background for a developer tutorial",
-          "104 BPM",
-          "instrumental",
-          "soft muted synth plucks",
-          "warm pad",
-          "light steady percussion",
-          "even energy from start to finish",
-          "great production quality"
-        ],
-        "avoid": ["vocals", "drops", "risers", "dramatic changes", "lead melody"]
-      }
-    ]
   },
   "guides": {
     "annotations": {

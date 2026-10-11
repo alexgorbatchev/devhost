@@ -4,71 +4,190 @@
       {
         "id": "intro",
         "path": "assets/audio/voice/stack-lifecycle/intro.mp3",
-        "requestSha256": "29716621067b6f22becfc54053bcf7f475ba04d5ae3ae4c59608c227cd7ec5d1",
-        "duration": 4.365351,
+        "requestSha256": "632bc58357d1d178284634ff68e24183992382b32b67207aeb3751ccb66ffeee",
+        "duration": 3.343673,
         "words": [
           {
             "text": "Start",
             "start": 0,
-            "end": 0.348
+            "end": 0.313
           },
           {
             "text": "dependencies",
-            "start": 0.383,
-            "end": 1.022
+            "start": 0.348,
+            "end": 0.848
           },
           {
             "text": "first.",
-            "start": 1.091,
-            "end": 1.591
+            "start": 0.906,
+            "end": 1.289
           },
           {
             "text": "Stop",
-            "start": 1.974,
-            "end": 2.252
+            "start": 1.405,
+            "end": 1.672
           },
           {
             "text": "the",
-            "start": 2.31,
-            "end": 2.38
+            "start": 1.73,
+            "end": 1.8
           },
           {
             "text": "whole",
-            "start": 2.438,
-            "end": 2.647
+            "start": 1.834,
+            "end": 2.02
           },
           {
             "text": "stack",
-            "start": 2.682,
-            "end": 2.972
+            "start": 2.043,
+            "end": 2.299
           },
           {
             "text": "with",
-            "start": 3.03,
-            "end": 3.17
+            "start": 2.345,
+            "end": 2.461
           },
           {
             "text": "one",
-            "start": 3.262,
-            "end": 3.437
+            "start": 2.519,
+            "end": 2.647
           },
           {
             "text": "command.",
-            "start": 3.483,
-            "end": 4.365
+            "start": 2.682,
+            "end": 3.344
           }
         ]
       },
       {
         "id": "step-1",
         "path": "assets/audio/voice/stack-lifecycle/step-1.mp3",
-        "requestSha256": "50f7cff0315c93c1b1628530dd91c6f6827aef4e7268bc7aa7cf8a13daf125de",
-        "duration": 2.321995,
+        "requestSha256": "c8c319c3c503ebb735a2f0cd6e461012eac5447180168f25cc62e6fdbf506254",
+        "duration": 2.136236,
         "words": [
           {
             "text": "The",
             "start": 0,
-            "end": 0.128
+            "end": 0.139
+          },
+          {
+            "text": "web",
+            "start": 0.197,
+            "end": 0.372
+          },
+          {
+            "text": "service",
+            "start": 0.441,
+            "end": 0.743
+          },
+          {
+            "text": "depends",
+            "start": 0.778,
+            "end": 1.091
+          },
+          {
+            "text": "on",
+            "start": 1.126,
+            "end": 1.196
+          },
+          {
+            "text": "the",
+            "start": 1.231,
+            "end": 1.3
+          },
+          {
+            "text": "API.",
+            "start": 1.347,
+            "end": 2.136
+          }
+        ]
+      },
+      {
+        "id": "step-2",
+        "path": "assets/audio/voice/stack-lifecycle/step-2.mp3",
+        "requestSha256": "45bee421bd2a4f5f53f4c2a9fd8f34c868b9788cefffb8159a1930dd88fd7dc4",
+        "duration": 1.439637,
+        "words": [
+          {
+            "text": "Start",
+            "start": 0,
+            "end": 0.325
+          },
+          {
+            "text": "the",
+            "start": 0.36,
+            "end": 0.43
+          },
+          {
+            "text": "stack.",
+            "start": 0.488,
+            "end": 1.44
+          }
+        ]
+      },
+      {
+        "id": "step-3",
+        "path": "assets/audio/voice/stack-lifecycle/step-3.mp3",
+        "requestSha256": "4a4403940eb257601c4cd53e578a3e025d17fed4627613d1fdcf2269fbd25cdf",
+        "duration": 3.343673,
+        "words": [
+          {
+            "text": "devhost",
+            "start": 0,
+            "end": 0.662
+          },
+          {
+            "text": "starts",
+            "start": 0.778,
+            "end": 1.057
+          },
+          {
+            "text": "the",
+            "start": 1.091,
+            "end": 1.161
+          },
+          {
+            "text": "API",
+            "start": 1.196,
+            "end": 1.533
+          },
+          {
+            "text": "first,",
+            "start": 1.614,
+            "end": 2.02
+          },
+          {
+            "text": "then",
+            "start": 2.101,
+            "end": 2.241
+          },
+          {
+            "text": "the",
+            "start": 2.287,
+            "end": 2.357
+          },
+          {
+            "text": "web",
+            "start": 2.392,
+            "end": 2.554
+          },
+          {
+            "text": "service.",
+            "start": 2.612,
+            "end": 3.344
+          }
+        ]
+      },
+      {
+        "id": "step-4",
+        "path": "assets/audio/voice/stack-lifecycle/step-4.mp3",
+        "requestSha256": "7c982921d76f2a7193119484fe35f8f474e012fc3af0a58e7c71a46d03d7efb8",
+        "duration": 2.647075,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.139
           },
           {
             "text": "web",
@@ -78,179 +197,60 @@
           {
             "text": "service",
             "start": 0.406,
-            "end": 0.731
-          },
-          {
-            "text": "depends",
-            "start": 0.766,
-            "end": 1.149
-          },
-          {
-            "text": "on",
-            "start": 1.184,
-            "end": 1.254
-          },
-          {
-            "text": "the",
-            "start": 1.277,
-            "end": 1.347
-          },
-          {
-            "text": "API.",
-            "start": 1.393,
-            "end": 2.322
-          }
-        ]
-      },
-      {
-        "id": "step-2",
-        "path": "assets/audio/voice/stack-lifecycle/step-2.mp3",
-        "requestSha256": "aaac0c993a499ec1b4d61e4bbc2e46414da3026debd8a3c1f71e90926e3634ca",
-        "duration": 1.811156,
-        "words": [
-          {
-            "text": "Start",
-            "start": 0,
-            "end": 0.348
-          },
-          {
-            "text": "the",
-            "start": 0.383,
-            "end": 0.453
-          },
-          {
-            "text": "stack.",
-            "start": 0.499,
-            "end": 1.811
-          }
-        ]
-      },
-      {
-        "id": "step-3",
-        "path": "assets/audio/voice/stack-lifecycle/step-3.mp3",
-        "requestSha256": "1ff84f5d0704ec85d24acc441a50b1ff6a9e22a8e52a6d9000ec621855c520f3",
-        "duration": 3.715193,
-        "words": [
-          {
-            "text": "devhost",
-            "start": 0,
-            "end": 0.511
-          },
-          {
-            "text": "starts",
-            "start": 0.569,
-            "end": 0.871
-          },
-          {
-            "text": "the",
-            "start": 0.917,
-            "end": 0.987
-          },
-          {
-            "text": "API",
-            "start": 1.057,
-            "end": 1.486
-          },
-          {
-            "text": "first,",
-            "start": 1.602,
-            "end": 2.043
-          },
-          {
-            "text": "then",
-            "start": 2.159,
-            "end": 2.31
-          },
-          {
-            "text": "the",
-            "start": 2.357,
-            "end": 2.426
-          },
-          {
-            "text": "web",
-            "start": 2.473,
-            "end": 2.647
-          },
-          {
-            "text": "service.",
-            "start": 2.717,
-            "end": 3.715
-          }
-        ]
-      },
-      {
-        "id": "step-4",
-        "path": "assets/audio/voice/stack-lifecycle/step-4.mp3",
-        "requestSha256": "c723e9b99fde54f9cf7bdce6b682208009f5195358781da24789f2c2b5b9042e",
-        "duration": 3.575873,
-        "words": [
-          {
-            "text": "The",
-            "start": 0,
-            "end": 0.163
-          },
-          {
-            "text": "web",
-            "start": 0.221,
-            "end": 0.383
-          },
-          {
-            "text": "service",
-            "start": 0.441,
-            "end": 0.778
+            "end": 0.708
           },
           {
             "text": "answers",
-            "start": 0.813,
-            "end": 1.126
+            "start": 0.743,
+            "end": 1.08
           },
           {
             "text": "on",
-            "start": 1.184,
-            "end": 1.265
+            "start": 1.138,
+            "end": 1.207
           },
           {
             "text": "its",
-            "start": 1.312,
-            "end": 1.451
+            "start": 1.254,
+            "end": 1.358
           },
           {
             "text": "HTTPS",
-            "start": 1.521,
-            "end": 2.415
+            "start": 1.405,
+            "end": 1.881
           },
           {
             "text": "hostname.",
-            "start": 2.531,
-            "end": 3.576
+            "start": 1.939,
+            "end": 2.647
           }
         ]
       },
       {
         "id": "step-5",
         "path": "assets/audio/voice/stack-lifecycle/step-5.mp3",
-        "requestSha256": "de2941468cf8743bb3e94bdaa85e48879004043e4ab038e5f66ccf2071a1f031",
-        "duration": 1.950476,
+        "requestSha256": "533be021c0536006c1f7b493b0889c4c6323993c3fdc6841750fe850c7157bf5",
+        "duration": 1.811156,
         "words": [
           {
             "text": "Stopping",
             "start": 0,
-            "end": 0.476
+            "end": 0.557
           },
           {
             "text": "takes",
-            "start": 0.546,
-            "end": 0.813
+            "start": 0.627,
+            "end": 0.882
           },
           {
             "text": "one",
-            "start": 0.894,
-            "end": 1.115
+            "start": 0.94,
+            "end": 1.091
           },
           {
             "text": "command.",
-            "start": 1.161,
-            "end": 1.95
+            "start": 1.126,
+            "end": 1.811
           }
         ]
       }
@@ -259,237 +259,237 @@
       {
         "id": "intro",
         "path": "assets/audio/voice/annotations/intro.mp3",
-        "requestSha256": "7faa2ac5f38d3b93b1ebb6ece104be598b91cdecda9aa4caa4acc4588fb7cd08",
-        "duration": 3.575873,
+        "requestSha256": "b1164b2bd0a6c04c61ea85c265a41fd28cf126d0176d2c1061ea4b58df411cbb",
+        "duration": 2.832834,
         "words": [
           {
             "text": "Point",
             "start": 0,
-            "end": 0.313
+            "end": 0.255
           },
           {
             "text": "at",
-            "start": 0.36,
-            "end": 0.43
+            "start": 0.29,
+            "end": 0.348
           },
           {
             "text": "the",
-            "start": 0.464,
-            "end": 0.534
+            "start": 0.372,
+            "end": 0.441
           },
           {
             "text": "problem,",
-            "start": 0.604,
-            "end": 1.103
+            "start": 0.476,
+            "end": 1.01
           },
           {
             "text": "and",
-            "start": 1.138,
-            "end": 1.3
+            "start": 1.126,
+            "end": 1.265
           },
           {
             "text": "let",
-            "start": 1.382,
-            "end": 1.533
+            "start": 1.324,
+            "end": 1.44
           },
           {
             "text": "a",
-            "start": 1.567,
-            "end": 1.591
+            "start": 1.474,
+            "end": 1.498
           },
           {
             "text": "coding",
-            "start": 1.683,
-            "end": 2.02
+            "start": 1.533,
+            "end": 1.8
           },
           {
             "text": "agent",
-            "start": 2.078,
-            "end": 2.345
+            "start": 1.846,
+            "end": 2.125
           },
           {
             "text": "fix",
-            "start": 2.415,
-            "end": 2.635
+            "start": 2.171,
+            "end": 2.38
           },
           {
             "text": "it.",
-            "start": 2.705,
-            "end": 3.576
+            "start": 2.45,
+            "end": 2.833
           }
         ]
       },
       {
         "id": "annotations-1",
         "path": "assets/audio/voice/annotations/annotations-1.mp3",
-        "requestSha256": "6fdb4c4c29c75f6303039e738266c03c68b488800a0cfec777f5acb096224368",
-        "duration": 3.575873,
+        "requestSha256": "a3e6309a00f9ea3e2d0ce7f2691117e6386d2a9ec91ad4494c18c41bd4a55798",
+        "duration": 3.065034,
         "words": [
           {
             "text": "Hold",
             "start": 0,
-            "end": 0.325
+            "end": 0.313
           },
           {
             "text": "Alt,",
-            "start": 0.395,
-            "end": 0.731
+            "start": 0.372,
+            "end": 0.685
           },
           {
             "text": "click",
-            "start": 0.801,
-            "end": 1.045
+            "start": 0.859,
+            "end": 1.091
           },
           {
             "text": "an",
-            "start": 1.08,
-            "end": 1.138
+            "start": 1.138,
+            "end": 1.184
           },
           {
             "text": "element,",
-            "start": 1.184,
-            "end": 1.556
+            "start": 1.231,
+            "end": 1.602
           },
           {
             "text": "and",
-            "start": 1.579,
-            "end": 1.649
+            "start": 1.637,
+            "end": 1.776
           },
           {
             "text": "describe",
-            "start": 1.695,
-            "end": 2.136
+            "start": 1.834,
+            "end": 2.264
           },
           {
             "text": "the",
-            "start": 2.159,
-            "end": 2.229
+            "start": 2.299,
+            "end": 2.368
           },
           {
             "text": "change.",
-            "start": 2.276,
-            "end": 3.576
+            "start": 2.403,
+            "end": 3.065
           }
         ]
       },
       {
         "id": "annotations-2",
         "path": "assets/audio/voice/annotations/annotations-2.mp3",
-        "requestSha256": "a6bf323cef37b905f474c67f740917574e8f21abf73c4cf90741d4ee47a56d73",
-        "duration": 4.040272,
+        "requestSha256": "94c02fd2fe56282b02965c989d006522f64732f20d63505e67f51b690ac112f3",
+        "duration": 3.297234,
         "words": [
           {
             "text": "The",
             "start": 0,
-            "end": 0.197
+            "end": 0.116
           },
           {
             "text": "Pi",
-            "start": 0.267,
-            "end": 0.511
+            "start": 0.151,
+            "end": 0.29
           },
           {
             "text": "coding",
-            "start": 0.592,
-            "end": 0.906
+            "start": 0.348,
+            "end": 0.604
           },
           {
             "text": "agent",
-            "start": 0.964,
-            "end": 1.242
+            "start": 0.65,
+            "end": 0.917
           },
           {
             "text": "takes",
-            "start": 1.289,
-            "end": 1.521
+            "start": 0.952,
+            "end": 1.161
           },
           {
             "text": "the",
-            "start": 1.556,
-            "end": 1.625
+            "start": 1.184,
+            "end": 1.254
           },
           {
             "text": "annotation",
-            "start": 1.683,
-            "end": 2.241
+            "start": 1.289,
+            "end": 1.858
           },
           {
             "text": "and",
-            "start": 2.299,
-            "end": 2.403
+            "start": 1.927,
+            "end": 2.055
           },
           {
             "text": "edits",
-            "start": 2.519,
-            "end": 2.786
+            "start": 2.148,
+            "end": 2.415
           },
           {
             "text": "your",
-            "start": 2.821,
-            "end": 2.949
+            "start": 2.45,
+            "end": 2.566
           },
           {
             "text": "source.",
-            "start": 3.007,
-            "end": 4.04
+            "start": 2.612,
+            "end": 3.297
           }
         ]
       },
       {
         "id": "annotations-3",
         "path": "assets/audio/voice/annotations/annotations-3.mp3",
-        "requestSha256": "1e5db0f35c6a30234e243f39b4bb384ebdc38d8bbfa4144e4e099462f8ff9aa2",
-        "duration": 2.879274,
+        "requestSha256": "fb6072a43c07f27a67ad8015de18f61ede40f9f42c08c0a9481a9c7a19450635",
+        "duration": 2.832834,
         "words": [
           {
             "text": "The",
             "start": 0,
-            "end": 0.139
+            "end": 0.163
           },
           {
             "text": "fix",
-            "start": 0.186,
-            "end": 0.383
+            "start": 0.244,
+            "end": 0.488
           },
           {
             "text": "is",
-            "start": 0.453,
-            "end": 0.534
+            "start": 0.557,
+            "end": 0.639
           },
           {
             "text": "on",
-            "start": 0.604,
-            "end": 0.685
+            "start": 0.708,
+            "end": 0.789
           },
           {
             "text": "the",
-            "start": 0.731,
-            "end": 0.801
+            "start": 0.836,
+            "end": 0.906
           },
           {
             "text": "page,",
-            "start": 0.848,
-            "end": 1.312
+            "start": 0.952,
+            "end": 1.393
           },
           {
             "text": "without",
-            "start": 1.393,
-            "end": 1.683
+            "start": 1.428,
+            "end": 1.741
           },
           {
             "text": "a",
-            "start": 1.707,
-            "end": 1.73
+            "start": 1.765,
+            "end": 1.788
           },
           {
             "text": "full",
-            "start": 1.788,
-            "end": 1.997
+            "start": 1.834,
+            "end": 2.02
           },
           {
             "text": "reload.",
             "start": 2.078,
-            "end": 2.879
+            "end": 2.833
           }
         ]
       }
@@ -498,192 +498,192 @@
       {
         "id": "intro",
         "path": "assets/audio/voice/devtools/intro.mp3",
-        "requestSha256": "b1728c106cfe535239df96d8904a4a789cba7b04d70d4af45e0836d0c2f4d9a1",
-        "duration": 4.458231,
+        "requestSha256": "7c8094d53a1e1bf2eb23e0c42059ba0110078431ae7bb87448aecd5358cdd7cb",
+        "duration": 4.040272,
         "words": [
           {
             "text": "Optional",
             "start": 0,
-            "end": 0.441
+            "end": 0.395
           },
           {
             "text": "devtools",
-            "start": 0.557,
-            "end": 1.138
+            "start": 0.453,
+            "end": 0.94
           },
           {
             "text": "put",
-            "start": 1.184,
-            "end": 1.324
+            "start": 0.998,
+            "end": 1.138
           },
           {
             "text": "your",
-            "start": 1.37,
-            "end": 1.474
+            "start": 1.184,
+            "end": 1.3
           },
           {
             "text": "stack's",
-            "start": 1.521,
-            "end": 1.846
+            "start": 1.335,
+            "end": 1.649
           },
           {
             "text": "logs",
-            "start": 1.916,
-            "end": 2.206
+            "start": 1.695,
+            "end": 1.962
           },
           {
             "text": "and",
-            "start": 2.241,
-            "end": 2.322
+            "start": 1.997,
+            "end": 2.067
           },
           {
             "text": "controls",
-            "start": 2.38,
-            "end": 2.914
+            "start": 2.101,
+            "end": 2.485
           },
           {
             "text": "inside",
-            "start": 3.03,
-            "end": 3.425
+            "start": 2.531,
+            "end": 2.856
           },
           {
             "text": "the",
-            "start": 3.448,
-            "end": 3.518
+            "start": 2.879,
+            "end": 2.949
           },
           {
             "text": "page.",
-            "start": 3.553,
-            "end": 4.458
+            "start": 2.984,
+            "end": 4.04
           }
         ]
       },
       {
         "id": "overview-1",
         "path": "assets/audio/voice/devtools/overview-1.mp3",
-        "requestSha256": "b8f252941c972126bfb62ca5ba4ad5e8e7ba2295f7a54949bccfd614ef88439f",
-        "duration": 4.272472,
+        "requestSha256": "1424a690cf91891778ac017e99ae2a7e2484c204a0782630d78537be42a27a20",
+        "duration": 3.529433,
         "words": [
           {
             "text": "Hover",
             "start": 0,
-            "end": 0.348
+            "end": 0.337
           },
           {
             "text": "the",
-            "start": 0.418,
-            "end": 0.488
+            "start": 0.395,
+            "end": 0.464
           },
           {
             "text": "log",
-            "start": 0.557,
-            "end": 0.789
+            "start": 0.522,
+            "end": 0.731
           },
           {
             "text": "minimap",
-            "start": 0.848,
-            "end": 1.265
+            "start": 0.789,
+            "end": 1.184
           },
           {
             "text": "for",
-            "start": 1.324,
-            "end": 1.451
+            "start": 1.242,
+            "end": 1.37
           },
           {
             "text": "real-time",
-            "start": 1.533,
-            "end": 1.985
+            "start": 1.451,
+            "end": 1.927
           },
           {
             "text": "output",
-            "start": 2.032,
-            "end": 2.38
+            "start": 1.962,
+            "end": 2.31
           },
           {
             "text": "from",
-            "start": 2.415,
-            "end": 2.543
+            "start": 2.357,
+            "end": 2.473
           },
           {
             "text": "your",
-            "start": 2.589,
-            "end": 2.705
+            "start": 2.519,
+            "end": 2.624
           },
           {
             "text": "services.",
-            "start": 2.763,
-            "end": 4.272
+            "start": 2.67,
+            "end": 3.529
           }
         ]
       },
       {
         "id": "overview-2",
         "path": "assets/audio/voice/devtools/overview-2.mp3",
-        "requestSha256": "1017d1b518c5f4dbb7941f52891e14371595ff0ebc7c58dc0f61a52aa3c162ea",
-        "duration": 4.272472,
+        "requestSha256": "4dfc54432c982b759e23c9dc10cb29c62c90c626ce7ca37a57fa94a79bb58083",
+        "duration": 4.365351,
         "words": [
           {
             "text": "The",
             "start": 0,
-            "end": 0.163
+            "end": 0.151
           },
           {
             "text": "Services",
-            "start": 0.221,
-            "end": 0.673
+            "start": 0.232,
+            "end": 0.708
           },
           {
             "text": "panel",
-            "start": 0.743,
-            "end": 1.033
+            "start": 0.766,
+            "end": 1.068
           },
           {
             "text": "lists",
-            "start": 1.08,
-            "end": 1.265
+            "start": 1.161,
+            "end": 1.474
           },
           {
             "text": "every",
-            "start": 1.382,
-            "end": 1.672
+            "start": 1.533,
+            "end": 1.765
           },
           {
             "text": "service,",
-            "start": 1.73,
-            "end": 2.241
+            "start": 1.834,
+            "end": 2.485
           },
           {
             "text": "each",
-            "start": 2.392,
-            "end": 2.566
+            "start": 2.635,
+            "end": 2.879
           },
           {
             "text": "with",
-            "start": 2.601,
-            "end": 2.728
+            "start": 2.926,
+            "end": 3.053
           },
           {
             "text": "a",
-            "start": 2.775,
-            "end": 2.798
+            "start": 3.1,
+            "end": 3.123
           },
           {
             "text": "restart",
-            "start": 2.879,
-            "end": 3.262
+            "start": 3.193,
+            "end": 3.622
           },
           {
             "text": "control.",
-            "start": 3.309,
-            "end": 4.272
+            "start": 3.669,
+            "end": 4.365
           }
         ]
       },
       {
         "id": "overview-3",
         "path": "assets/audio/voice/devtools/overview-3.mp3",
-        "requestSha256": "930e0f6fb663fb157477585a93212c687c4f1aec58305d18fa2f5e351863cc7b",
-        "duration": 3.018594,
+        "requestSha256": "45940807fd4d6479b00a480c251fa874800bdcfe59a9425c3cb43fa9cf2d3e1a",
+        "duration": 2.647075,
         "words": [
           {
             "text": "Browse",
@@ -692,91 +692,91 @@
           },
           {
             "text": "your",
-            "start": 0.406,
-            "end": 0.534
+            "start": 0.395,
+            "end": 0.488
           },
           {
             "text": "Git",
-            "start": 0.615,
-            "end": 0.813
+            "start": 0.534,
+            "end": 0.662
           },
           {
             "text": "worktrees",
-            "start": 0.859,
-            "end": 1.382
+            "start": 0.708,
+            "end": 1.184
           },
           {
             "text": "without",
-            "start": 1.428,
-            "end": 1.683
+            "start": 1.219,
+            "end": 1.463
           },
           {
             "text": "leaving",
-            "start": 1.741,
-            "end": 1.985
+            "start": 1.521,
+            "end": 1.776
           },
           {
             "text": "the",
-            "start": 2.032,
-            "end": 2.101
+            "start": 1.823,
+            "end": 1.892
           },
           {
             "text": "page.",
-            "start": 2.136,
-            "end": 3.019
+            "start": 1.927,
+            "end": 2.647
           }
         ]
       },
       {
         "id": "query-1",
         "path": "assets/audio/voice/devtools/query-1.mp3",
-        "requestSha256": "93dea4d68b5750adf7059c547c81ab4f23e7e6c134c885e5b4572a2eed819389",
-        "duration": 3.622313,
+        "requestSha256": "1074718d24e5e017a2bfc8aa884f93754b632f1408a59fbb76c0fc05e9b7c8ef",
+        "duration": 3.250794,
         "words": [
           {
             "text": "TanStack",
             "start": 0,
-            "end": 0.534
+            "end": 0.604
           },
           {
             "text": "Query's",
-            "start": 0.592,
-            "end": 0.94
+            "start": 0.639,
+            "end": 0.964
           },
           {
             "text": "own",
-            "start": 0.987,
+            "start": 1.022,
             "end": 1.138
           },
           {
             "text": "devtools",
-            "start": 1.231,
-            "end": 1.834
+            "start": 1.184,
+            "end": 1.637
           },
           {
             "text": "open",
-            "start": 1.892,
-            "end": 2.078
+            "start": 1.695,
+            "end": 1.904
           },
           {
             "text": "from",
-            "start": 2.125,
-            "end": 2.252
+            "start": 1.95,
+            "end": 2.078
           },
           {
             "text": "the",
-            "start": 2.299,
-            "end": 2.368
+            "start": 2.125,
+            "end": 2.194
           },
           {
             "text": "same",
-            "start": 2.415,
-            "end": 2.659
+            "start": 2.252,
+            "end": 2.508
           },
           {
             "text": "toolbar.",
-            "start": 2.705,
-            "end": 3.622
+            "start": 2.543,
+            "end": 3.251
           }
         ]
       }
@@ -785,154 +785,154 @@
       {
         "id": "intro",
         "path": "assets/audio/voice/docker-backed-services/intro.mp3",
-        "requestSha256": "f19179d256e5cf04a8ad9a11790dd4766ae8cdd6ed85ac8b6c6819b5bbe3ff1b",
-        "duration": 6.919546,
+        "requestSha256": "32455262ae539d67c275affcc4d3740421fdf67a114e1e515349cde18c2e9d50",
+        "duration": 5.712109,
         "words": [
           {
             "text": "Give",
             "start": 0,
-            "end": 0.244
+            "end": 0.209
           },
           {
             "text": "a",
-            "start": 0.267,
-            "end": 0.29
+            "start": 0.232,
+            "end": 0.255
           },
           {
             "text": "Docker",
-            "start": 0.348,
-            "end": 0.627
+            "start": 0.302,
+            "end": 0.604
           },
           {
             "text": "container",
-            "start": 0.685,
-            "end": 1.08
+            "start": 0.662,
+            "end": 1.057
           },
           {
             "text": "a",
-            "start": 1.149,
-            "end": 1.173
+            "start": 1.138,
+            "end": 1.184
           },
           {
             "text": "local",
-            "start": 1.242,
-            "end": 1.544
+            "start": 1.3,
+            "end": 1.66
           },
           {
             "text": "HTTPS",
-            "start": 1.66,
-            "end": 2.612
+            "start": 1.741,
+            "end": 2.589
           },
           {
             "text": "hostname.",
-            "start": 2.728,
-            "end": 3.564
+            "start": 2.647,
+            "end": 3.274
           },
           {
             "text": "Docker",
-            "start": 4.168,
-            "end": 4.551
+            "start": 3.448,
+            "end": 3.82
           },
           {
             "text": "still",
-            "start": 4.632,
-            "end": 4.865
+            "start": 3.878,
+            "end": 4.052
           },
           {
             "text": "starts",
-            "start": 4.923,
-            "end": 5.248
+            "start": 4.122,
+            "end": 4.528
           },
           {
             "text": "and",
-            "start": 5.294,
-            "end": 5.375
+            "start": 4.644,
+            "end": 4.807
           },
           {
             "text": "stops",
-            "start": 5.433,
-            "end": 5.782
+            "start": 4.865,
+            "end": 5.213
           },
           {
             "text": "it.",
-            "start": 5.828,
-            "end": 6.92
+            "start": 5.259,
+            "end": 5.712
           }
         ]
       },
       {
         "id": "step-1",
         "path": "assets/audio/voice/docker-backed-services/step-1.mp3",
-        "requestSha256": "a3a431b1d10aba7cd0eb4640b192493f6a9a74e5dbcb0ba426bd7f6dbd2b8951",
-        "duration": 4.92263,
+        "requestSha256": "57cf67858de9b5b3c46585c1df49cae31529338b19b043f427dc401d865ec4c1",
+        "duration": 4.318912,
         "words": [
           {
             "text": "This",
             "start": 0,
-            "end": 0.232
+            "end": 0.221
           },
           {
             "text": "service",
-            "start": 0.279,
-            "end": 0.65
+            "start": 0.267,
+            "end": 0.58
           },
           {
             "text": "is",
-            "start": 0.697,
-            "end": 0.813
+            "start": 0.615,
+            "end": 0.685
           },
           {
             "text": "unmanaged:",
-            "start": 0.929,
-            "end": 1.846
+            "start": 0.743,
+            "end": 1.428
           },
           {
             "text": "devhost",
-            "start": 2.055,
-            "end": 2.519
+            "start": 1.707,
+            "end": 2.229
           },
           {
             "text": "routes",
-            "start": 2.589,
-            "end": 2.821
+            "start": 2.31,
+            "end": 2.554
           },
           {
             "text": "to",
-            "start": 2.868,
-            "end": 2.937
+            "start": 2.601,
+            "end": 2.694
           },
           {
             "text": "it",
-            "start": 3.03,
-            "end": 3.1
+            "start": 2.786,
+            "end": 2.902
           },
           {
             "text": "but",
-            "start": 3.146,
-            "end": 3.262
+            "start": 2.995,
+            "end": 3.251
           },
           {
             "text": "never",
             "start": 3.32,
-            "end": 3.541
+            "end": 3.564
           },
           {
             "text": "starts",
-            "start": 3.611,
-            "end": 3.947
+            "start": 3.646,
+            "end": 3.971
           },
           {
             "text": "it.",
-            "start": 4.005,
-            "end": 4.923
+            "start": 4.017,
+            "end": 4.319
           }
         ]
       },
       {
         "id": "step-2",
         "path": "assets/audio/voice/docker-backed-services/step-2.mp3",
-        "requestSha256": "fc0f90b25f64a97d56d864b36b62701ebf02b9393dd596b480f30bbad6331114",
-        "duration": 1.718277,
+        "requestSha256": "8d2d5e65a647e5fd1f69b1b3ca6398b5d31bc7c2e41b7931bd3aa1a91aac8391",
+        "duration": 1.625397,
         "words": [
           {
             "text": "Docker",
@@ -942,78 +942,78 @@
           {
             "text": "starts",
             "start": 0.488,
-            "end": 0.801
+            "end": 0.755
           },
           {
             "text": "the",
-            "start": 0.859,
-            "end": 0.929
+            "start": 0.789,
+            "end": 0.859
           },
           {
             "text": "container.",
-            "start": 0.975,
-            "end": 1.718
+            "start": 0.894,
+            "end": 1.625
           }
         ]
       },
       {
         "id": "step-3",
         "path": "assets/audio/voice/docker-backed-services/step-3.mp3",
-        "requestSha256": "182b4ac6a6373c9dbac37fd50ed466260eb14b0be86ec8c53cc67d9f235a33f0",
-        "duration": 3.018594,
+        "requestSha256": "10073a0989a4deab0febddd01922678525837002ce13777b49823ea6f33dc69e",
+        "duration": 2.925714,
         "words": [
           {
             "text": "Its",
             "start": 0,
-            "end": 0.221
+            "end": 0.197
           },
           {
             "text": "port",
-            "start": 0.279,
-            "end": 0.499
+            "start": 0.255,
+            "end": 0.476
           },
           {
             "text": "is",
-            "start": 0.546,
-            "end": 0.615
+            "start": 0.511,
+            "end": 0.592
           },
           {
             "text": "published",
-            "start": 0.685,
-            "end": 1.057
+            "start": 0.65,
+            "end": 1.022
           },
           {
             "text": "on",
-            "start": 1.091,
-            "end": 1.161
+            "start": 1.057,
+            "end": 1.126
           },
           {
             "text": "the",
-            "start": 1.196,
-            "end": 1.265
+            "start": 1.161,
+            "end": 1.231
           },
           {
             "text": "host's",
-            "start": 1.335,
-            "end": 1.707
+            "start": 1.265,
+            "end": 1.614
           },
           {
             "text": "loopback",
-            "start": 1.823,
-            "end": 2.229
+            "start": 1.683,
+            "end": 2.067
           },
           {
             "text": "address.",
-            "start": 2.276,
-            "end": 3.019
+            "start": 2.101,
+            "end": 2.926
           }
         ]
       },
       {
         "id": "step-4",
         "path": "assets/audio/voice/docker-backed-services/step-4.mp3",
-        "requestSha256": "43ded35b01df87d207d944f72d2db28cbe838e629043ba5ed23b173833914bf4",
-        "duration": 1.532517,
+        "requestSha256": "1d3d5808958a9e5fac272ad3805c9dbaa7621fff148e48a5e08dcc88e1e22302",
+        "duration": 1.439637,
         "words": [
           {
             "text": "Start",
@@ -1027,117 +1027,117 @@
           },
           {
             "text": "stack.",
-            "start": 0.464,
-            "end": 1.533
+            "start": 0.476,
+            "end": 1.44
           }
         ]
       },
       {
         "id": "step-5",
         "path": "assets/audio/voice/docker-backed-services/step-5.mp3",
-        "requestSha256": "d45e26ea05385dd43b3ca8f8f1599b17a10e652a347b09dd8741df09c03d8399",
-        "duration": 5.619229,
+        "requestSha256": "955d6a0ca9a8c4f93785856e696c226718cbf6960a85aa6ff0304120cc76dc20",
+        "duration": 4.96907,
         "words": [
           {
             "text": "devhost",
             "start": 0,
-            "end": 0.522
+            "end": 0.592
           },
           {
             "text": "starts",
-            "start": 0.569,
-            "end": 0.871
+            "start": 0.673,
+            "end": 0.952
           },
           {
             "text": "no",
-            "start": 0.94,
-            "end": 1.057
+            "start": 1.01,
+            "end": 1.115
           },
           {
             "text": "process.",
-            "start": 1.126,
-            "end": 1.776
+            "start": 1.184,
+            "end": 1.939
           },
           {
             "text": "It",
-            "start": 2.589,
-            "end": 2.752
+            "start": 2.183,
+            "end": 2.299
           },
           {
             "text": "publishes",
-            "start": 2.81,
-            "end": 3.286
+            "start": 2.334,
+            "end": 2.74
           },
           {
             "text": "the",
-            "start": 3.344,
-            "end": 3.413
+            "start": 2.775,
+            "end": 2.844
           },
           {
             "text": "container's",
-            "start": 3.46,
-            "end": 3.924
+            "start": 2.879,
+            "end": 3.309
           },
           {
             "text": "HTTPS",
-            "start": 4.005,
-            "end": 4.888
+            "start": 3.344,
+            "end": 4.017
           },
           {
             "text": "address.",
-            "start": 4.934,
-            "end": 5.619
+            "start": 4.075,
+            "end": 4.969
           }
         ]
       },
       {
         "id": "step-6",
         "path": "assets/audio/voice/docker-backed-services/step-6.mp3",
-        "requestSha256": "6b09af40f7ee3ebf4a0dd7b0364d539c462459b53638178b84379916493e531b",
-        "duration": 3.715193,
+        "requestSha256": "fc0cea6d9372a4a7065fc32a27c603029ba05aa9716d3639be25c59f649a935b",
+        "duration": 2.972154,
         "words": [
           {
             "text": "The",
             "start": 0,
-            "end": 0.151
+            "end": 0.139
           },
           {
             "text": "container",
-            "start": 0.209,
-            "end": 0.615
+            "start": 0.186,
+            "end": 0.58
           },
           {
             "text": "answers",
-            "start": 0.685,
-            "end": 0.998
+            "start": 0.65,
+            "end": 0.987
           },
           {
             "text": "on",
-            "start": 1.057,
-            "end": 1.149
+            "start": 1.045,
+            "end": 1.115
           },
           {
             "text": "its",
-            "start": 1.196,
-            "end": 1.335
+            "start": 1.149,
+            "end": 1.254
           },
           {
             "text": "HTTPS",
-            "start": 1.393,
-            "end": 2.229
+            "start": 1.3,
+            "end": 2.032
           },
           {
             "text": "hostname.",
-            "start": 2.31,
-            "end": 3.715
+            "start": 2.09,
+            "end": 2.972
           }
         ]
       },
       {
         "id": "step-7",
         "path": "assets/audio/voice/docker-backed-services/step-7.mp3",
-        "requestSha256": "4b2328cb8cd48630a959bce4f074cdfb21a7f19efee95d2840c63d535ba7351e",
-        "duration": 2.182676,
+        "requestSha256": "7317f31df249604d617aff6b7a0470e4cfb6eead563f7d2ddd44e2a1c7565525",
+        "duration": 1.764717,
         "words": [
           {
             "text": "Stopping",
@@ -1152,88 +1152,88 @@
           {
             "text": "stack",
             "start": 0.58,
-            "end": 0.859
+            "end": 0.882
           },
           {
             "text": "removes",
-            "start": 0.929,
-            "end": 1.3
+            "start": 0.964,
+            "end": 1.277
           },
           {
             "text": "the",
-            "start": 1.347,
-            "end": 1.416
+            "start": 1.3,
+            "end": 1.37
           },
           {
             "text": "route.",
-            "start": 1.474,
-            "end": 2.183
+            "start": 1.428,
+            "end": 1.765
           }
         ]
       },
       {
         "id": "step-8",
         "path": "assets/audio/voice/docker-backed-services/step-8.mp3",
-        "requestSha256": "b6093237c5afbc276851c45ba525ac98f20d52b116253dfdc05e29b55620b044",
-        "duration": 2.089796,
+        "requestSha256": "d13dc5872bf3967b268082c10e2ffb15d58e431cda3a14f043d5fae3e8c365f3",
+        "duration": 1.625397,
         "words": [
           {
             "text": "The",
             "start": 0,
-            "end": 0.128
+            "end": 0.151
           },
           {
             "text": "container",
-            "start": 0.186,
-            "end": 0.615
+            "start": 0.197,
+            "end": 0.604
           },
           {
             "text": "is",
             "start": 0.662,
-            "end": 0.743
+            "end": 0.731
           },
           {
             "text": "still",
-            "start": 0.789,
-            "end": 1.01
+            "start": 0.766,
+            "end": 0.964
           },
           {
             "text": "running.",
-            "start": 1.068,
-            "end": 2.09
+            "start": 1.033,
+            "end": 1.625
           }
         ]
       },
       {
         "id": "step-9",
         "path": "assets/audio/voice/docker-backed-services/step-9.mp3",
-        "requestSha256": "580a89d5d26f511dc4a3f12bf2bc9dc9717d10229b4c3e9ff2b237229f650d3e",
-        "duration": 1.996916,
+        "requestSha256": "59cee58de35312258bf617bccf5913846376b51e824bc3460578c59c4da0e332",
+        "duration": 1.950476,
         "words": [
           {
             "text": "Removing",
             "start": 0,
-            "end": 0.464
+            "end": 0.453
           },
           {
             "text": "it",
-            "start": 0.522,
+            "start": 0.511,
             "end": 0.592
           },
           {
             "text": "is",
-            "start": 0.639,
-            "end": 0.72
+            "start": 0.662,
+            "end": 0.778
           },
           {
             "text": "Docker's",
-            "start": 0.778,
-            "end": 1.196
+            "start": 0.859,
+            "end": 1.254
           },
           {
             "text": "job.",
-            "start": 1.254,
-            "end": 1.997
+            "start": 1.3,
+            "end": 1.95
           }
         ]
       }
@@ -1242,124 +1242,394 @@
       {
         "id": "intro",
         "path": "assets/audio/voice/environment-variables/intro.mp3",
-        "requestSha256": "2cea10098acd194c8f74be2f9bafa18ce4c4c9ec4e49a18a18dab5ea509c1e74",
-        "duration": 4.92263,
+        "requestSha256": "c2b615f89e4f4ec2c06c74e9f9d8cf9e97bd16a357b04569deaae00bf8b69c05",
+        "duration": 4.643991,
         "words": [
           {
             "text": "devhost",
             "start": 0,
-            "end": 0.488
+            "end": 0.522
           },
           {
             "text": "hands",
-            "start": 0.534,
-            "end": 0.801
+            "start": 0.58,
+            "end": 0.848
           },
           {
             "text": "each",
-            "start": 0.882,
-            "end": 1.068
+            "start": 0.894,
+            "end": 1.057
           },
           {
             "text": "service",
-            "start": 1.126,
-            "end": 1.498
+            "start": 1.091,
+            "end": 1.428
           },
           {
             "text": "its",
-            "start": 1.533,
-            "end": 1.66
+            "start": 1.463,
+            "end": 1.567
           },
           {
             "text": "port,",
-            "start": 1.73,
-            "end": 2.183
+            "start": 1.625,
+            "end": 2.02
           },
           {
             "text": "its",
-            "start": 2.264,
-            "end": 2.426
+            "start": 2.113,
+            "end": 2.287
           },
           {
             "text": "hostname,",
-            "start": 2.473,
-            "end": 2.995
+            "start": 2.334,
+            "end": 2.984
           },
           {
             "text": "and",
-            "start": 3.019,
-            "end": 3.1
+            "start": 3.111,
+            "end": 3.297
           },
           {
             "text": "your",
-            "start": 3.146,
-            "end": 3.274
+            "start": 3.355,
+            "end": 3.483
           },
           {
             "text": "own",
-            "start": 3.32,
-            "end": 3.425
+            "start": 3.529,
+            "end": 3.634
           },
           {
             "text": "variables.",
-            "start": 3.495,
-            "end": 4.923
+            "start": 3.68,
+            "end": 4.644
           }
         ]
       },
       {
         "id": "step-1",
         "path": "assets/audio/voice/environment-variables/step-1.mp3",
-        "requestSha256": "311bb90681157ec744eabae352f886ddda31e89af528725b88c912f1a568f393",
-        "duration": 2.925714,
+        "requestSha256": "711a93ceecdb354953543b7dc7af5cd7c6b2021bea8f1a30af088489fbc72783",
+        "duration": 2.554195,
         "words": [
           {
             "text": "This",
             "start": 0,
-            "end": 0.232
+            "end": 0.255
           },
           {
             "text": "service",
-            "start": 0.279,
-            "end": 0.615
+            "start": 0.302,
+            "end": 0.627
           },
           {
             "text": "declares",
             "start": 0.65,
-            "end": 1.057
+            "end": 1.033
           },
           {
             "text": "two",
-            "start": 1.126,
-            "end": 1.312
+            "start": 1.08,
+            "end": 1.219
           },
           {
             "text": "variables",
-            "start": 1.382,
-            "end": 1.892
+            "start": 1.277,
+            "end": 1.683
           },
           {
             "text": "of",
-            "start": 1.95,
-            "end": 2.009
+            "start": 1.718,
+            "end": 1.776
           },
           {
             "text": "its",
-            "start": 2.055,
-            "end": 2.171
+            "start": 1.811,
+            "end": 1.916
           },
           {
             "text": "own.",
-            "start": 2.229,
-            "end": 2.926
+            "start": 1.962,
+            "end": 2.554
           }
         ]
       },
       {
         "id": "step-2",
         "path": "assets/audio/voice/environment-variables/step-2.mp3",
-        "requestSha256": "c43361eda3e2da326f8165373c63f692f8374484b5490820e2af2c1bc255a231",
-        "duration": 1.439637,
+        "requestSha256": "2a0fdd9af463570a969efa9450a10cdbebc6093586b0aacfa7b05e15a36203de",
+        "duration": 1.114558,
+        "words": [
+          {
+            "text": "Start",
+            "start": 0,
+            "end": 0.279
+          },
+          {
+            "text": "the",
+            "start": 0.325,
+            "end": 0.395
+          },
+          {
+            "text": "stack.",
+            "start": 0.441,
+            "end": 1.115
+          }
+        ]
+      },
+      {
+        "id": "step-3",
+        "path": "assets/audio/voice/environment-variables/step-3.mp3",
+        "requestSha256": "3fbedfe1586b07cbafbba4e2db55e53b433134fef74efde84c4ad38e58ddaa71",
+        "duration": 3.111474,
+        "words": [
+          {
+            "text": "devhost",
+            "start": 0,
+            "end": 0.534
+          },
+          {
+            "text": "assigns",
+            "start": 0.58,
+            "end": 0.917
+          },
+          {
+            "text": "a",
+            "start": 0.952,
+            "end": 0.975
+          },
+          {
+            "text": "free",
+            "start": 1.033,
+            "end": 1.219
+          },
+          {
+            "text": "port",
+            "start": 1.265,
+            "end": 1.521
+          },
+          {
+            "text": "and",
+            "start": 1.579,
+            "end": 1.707
+          },
+          {
+            "text": "starts",
+            "start": 1.788,
+            "end": 2.078
+          },
+          {
+            "text": "the",
+            "start": 2.113,
+            "end": 2.183
+          },
+          {
+            "text": "service.",
+            "start": 2.229,
+            "end": 3.111
+          }
+        ]
+      },
+      {
+        "id": "step-4",
+        "path": "assets/audio/voice/environment-variables/step-4.mp3",
+        "requestSha256": "e743f95e2a797b230d72a21f7e892996e4ea6107897cff714ce5912a945742fe",
+        "duration": 4.133152,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.128
+          },
+          {
+            "text": "service",
+            "start": 0.186,
+            "end": 0.522
+          },
+          {
+            "text": "received",
+            "start": 0.557,
+            "end": 0.859
+          },
+          {
+            "text": "its",
+            "start": 0.894,
+            "end": 0.987
+          },
+          {
+            "text": "port,",
+            "start": 1.033,
+            "end": 1.393
+          },
+          {
+            "text": "bind",
+            "start": 1.521,
+            "end": 1.776
+          },
+          {
+            "text": "host,",
+            "start": 1.834,
+            "end": 2.229
+          },
+          {
+            "text": "hostname,",
+            "start": 2.299,
+            "end": 2.926
+          },
+          {
+            "text": "and",
+            "start": 2.984,
+            "end": 3.204
+          },
+          {
+            "text": "your",
+            "start": 3.251,
+            "end": 3.367
+          },
+          {
+            "text": "message.",
+            "start": 3.402,
+            "end": 4.133
+          }
+        ]
+      },
+      {
+        "id": "step-5",
+        "path": "assets/audio/voice/environment-variables/step-5.mp3",
+        "requestSha256": "5f4ccb4471b02f887dc03c716de11bef6d51cd380b7464e9d889e97af59c0605",
+        "duration": 1.114558,
+        "words": [
+          {
+            "text": "Stop",
+            "start": 0,
+            "end": 0.29
+          },
+          {
+            "text": "the",
+            "start": 0.348,
+            "end": 0.418
+          },
+          {
+            "text": "stack.",
+            "start": 0.453,
+            "end": 1.115
+          }
+        ]
+      }
+    ],
+    "managed-caddy": [
+      {
+        "id": "intro",
+        "path": "assets/audio/voice/managed-caddy/intro.mp3",
+        "requestSha256": "d339285286b96dbce3de20bb0cc957683fe637fb551f7f554de5973c437d2a50",
+        "duration": 5.433469,
+        "words": [
+          {
+            "text": "One",
+            "start": 0,
+            "end": 0.197
+          },
+          {
+            "text": "proxy.",
+            "start": 0.232,
+            "end": 0.824
+          },
+          {
+            "text": "Local",
+            "start": 1.033,
+            "end": 1.382
+          },
+          {
+            "text": "HTTPS",
+            "start": 1.44,
+            "end": 2.345
+          },
+          {
+            "text": "hostnames.",
+            "start": 2.415,
+            "end": 3.158
+          },
+          {
+            "text": "Route",
+            "start": 3.599,
+            "end": 3.843
+          },
+          {
+            "text": "each",
+            "start": 3.889,
+            "end": 4.063
+          },
+          {
+            "text": "service",
+            "start": 4.11,
+            "end": 4.47
+          },
+          {
+            "text": "by",
+            "start": 4.505,
+            "end": 4.621
+          },
+          {
+            "text": "path.",
+            "start": 4.69,
+            "end": 5.433
+          }
+        ]
+      },
+      {
+        "id": "step-1",
+        "path": "assets/audio/voice/managed-caddy/step-1.mp3",
+        "requestSha256": "f21e5d98d7a3e1d18ce6912ccd4272002ffaaadc097cd81d63d0750f23e52ccf",
+        "duration": 3.343673,
+        "words": [
+          {
+            "text": "Two",
+            "start": 0,
+            "end": 0.221
+          },
+          {
+            "text": "services",
+            "start": 0.29,
+            "end": 0.778
+          },
+          {
+            "text": "share",
+            "start": 0.836,
+            "end": 1.08
+          },
+          {
+            "text": "one",
+            "start": 1.149,
+            "end": 1.312
+          },
+          {
+            "text": "hostname,",
+            "start": 1.347,
+            "end": 1.927
+          },
+          {
+            "text": "split",
+            "start": 2.043,
+            "end": 2.392
+          },
+          {
+            "text": "by",
+            "start": 2.461,
+            "end": 2.601
+          },
+          {
+            "text": "path.",
+            "start": 2.67,
+            "end": 3.344
+          }
+        ]
+      },
+      {
+        "id": "step-2",
+        "path": "assets/audio/voice/managed-caddy/step-2.mp3",
+        "requestSha256": "cd1fa00187e40d0531d23cf51835ff7febcaaca9237d32d0f08af2cf2676f5bf",
+        "duration": 1.021678,
         "words": [
           {
             "text": "Start",
@@ -1373,69 +1643,397 @@
           },
           {
             "text": "stack.",
-            "start": 0.43,
-            "end": 1.44
+            "start": 0.418,
+            "end": 1.022
           }
         ]
       },
       {
         "id": "step-3",
-        "path": "assets/audio/voice/environment-variables/step-3.mp3",
-        "requestSha256": "3e151810cd8105882e2576a2d9f411f519a7f898234253db301e63e0b1258df7",
-        "duration": 3.575873,
+        "path": "assets/audio/voice/managed-caddy/step-3.mp3",
+        "requestSha256": "df6d8893496b6ef559c2bd475cffd3eed5d0bc18444293c74f54aad7e60d3257",
+        "duration": 3.761633,
         "words": [
           {
             "text": "devhost",
             "start": 0,
-            "end": 0.488
-          },
-          {
-            "text": "assigns",
-            "start": 0.534,
-            "end": 0.882
-          },
-          {
-            "text": "a",
-            "start": 0.917,
-            "end": 0.94
-          },
-          {
-            "text": "free",
-            "start": 0.998,
-            "end": 1.184
-          },
-          {
-            "text": "port",
-            "start": 1.231,
-            "end": 1.533
-          },
-          {
-            "text": "and",
-            "start": 1.579,
-            "end": 1.672
+            "end": 0.639
           },
           {
             "text": "starts",
-            "start": 1.741,
-            "end": 2.032
+            "start": 0.731,
+            "end": 1.033
           },
           {
-            "text": "the",
-            "start": 2.078,
-            "end": 2.159
+            "text": "both",
+            "start": 1.103,
+            "end": 1.37
           },
           {
-            "text": "service.",
-            "start": 2.218,
-            "end": 3.576
+            "text": "and",
+            "start": 1.428,
+            "end": 1.509
+          },
+          {
+            "text": "publishes",
+            "start": 1.556,
+            "end": 1.974
+          },
+          {
+            "text": "an",
+            "start": 2.02,
+            "end": 2.078
+          },
+          {
+            "text": "HTTPS",
+            "start": 2.125,
+            "end": 2.635
+          },
+          {
+            "text": "address",
+            "start": 2.694,
+            "end": 2.972
+          },
+          {
+            "text": "for",
+            "start": 3.007,
+            "end": 3.111
+          },
+          {
+            "text": "each.",
+            "start": 3.181,
+            "end": 3.762
           }
         ]
       },
       {
         "id": "step-4",
-        "path": "assets/audio/voice/environment-variables/step-4.mp3",
-        "requestSha256": "3f729fdec996c4da3cd03c110327e1b26cddcf924c4b642e7fd3c420618d8046",
-        "duration": 3.947392,
+        "path": "assets/audio/voice/managed-caddy/step-4.mp3",
+        "requestSha256": "2270d076b04875504371a64347c5e4efc0b7f26533176be1a9ed8df503f4bd6a",
+        "duration": 2.507755,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.163
+          },
+          {
+            "text": "hostname",
+            "start": 0.232,
+            "end": 0.697
+          },
+          {
+            "text": "alone",
+            "start": 0.731,
+            "end": 1.045
+          },
+          {
+            "text": "reaches",
+            "start": 1.103,
+            "end": 1.405
+          },
+          {
+            "text": "the",
+            "start": 1.428,
+            "end": 1.498
+          },
+          {
+            "text": "web",
+            "start": 1.533,
+            "end": 1.707
+          },
+          {
+            "text": "service.",
+            "start": 1.776,
+            "end": 2.508
+          }
+        ]
+      },
+      {
+        "id": "step-5",
+        "path": "assets/audio/voice/managed-caddy/step-5.mp3",
+        "requestSha256": "5974a561a0e153381ccaa6fb150fb0df299318dd20d69ec19a4e77d1230194f8",
+        "duration": 2.461315,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.128
+          },
+          {
+            "text": "API",
+            "start": 0.174,
+            "end": 0.488
+          },
+          {
+            "text": "path",
+            "start": 0.546,
+            "end": 0.789
+          },
+          {
+            "text": "reaches",
+            "start": 0.848,
+            "end": 1.138
+          },
+          {
+            "text": "the",
+            "start": 1.173,
+            "end": 1.242
+          },
+          {
+            "text": "API",
+            "start": 1.3,
+            "end": 1.649
+          },
+          {
+            "text": "service.",
+            "start": 1.73,
+            "end": 2.461
+          }
+        ]
+      },
+      {
+        "id": "step-6",
+        "path": "assets/audio/voice/managed-caddy/step-6.mp3",
+        "requestSha256": "7adb530f40e726877f26db9b804e1ef20df6abbfce852e4c25f171ab7e1c1f79",
+        "duration": 2.136236,
+        "words": [
+          {
+            "text": "One",
+            "start": 0,
+            "end": 0.244
+          },
+          {
+            "text": "command",
+            "start": 0.279,
+            "end": 0.592
+          },
+          {
+            "text": "stops",
+            "start": 0.65,
+            "end": 0.975
+          },
+          {
+            "text": "both",
+            "start": 1.033,
+            "end": 1.242
+          },
+          {
+            "text": "services.",
+            "start": 1.277,
+            "end": 2.136
+          }
+        ]
+      }
+    ],
+    "managed-daemon-style-services": [
+      {
+        "id": "intro",
+        "path": "assets/audio/voice/managed-daemon-style-services/intro.mp3",
+        "requestSha256": "4b0dff905cfec754019c9d594870572094065663441ee446a1110c0861769325",
+        "duration": 3.715193,
+        "words": [
+          {
+            "text": "devhost",
+            "start": 0,
+            "end": 0.453
+          },
+          {
+            "text": "starts",
+            "start": 0.476,
+            "end": 0.743
+          },
+          {
+            "text": "a",
+            "start": 0.778,
+            "end": 0.801
+          },
+          {
+            "text": "background",
+            "start": 0.848,
+            "end": 1.242
+          },
+          {
+            "text": "daemon,",
+            "start": 1.3,
+            "end": 1.741
+          },
+          {
+            "text": "checks",
+            "start": 1.811,
+            "end": 2.125
+          },
+          {
+            "text": "on",
+            "start": 2.183,
+            "end": 2.287
+          },
+          {
+            "text": "it,",
+            "start": 2.334,
+            "end": 2.473
+          },
+          {
+            "text": "and",
+            "start": 2.496,
+            "end": 2.647
+          },
+          {
+            "text": "stops",
+            "start": 2.717,
+            "end": 3.077
+          },
+          {
+            "text": "it.",
+            "start": 3.123,
+            "end": 3.715
+          }
+        ]
+      },
+      {
+        "id": "step-1",
+        "path": "assets/audio/voice/managed-daemon-style-services/step-1.mp3",
+        "requestSha256": "96a265e4a06beea50a4bc59b37f06ba79c4de2bf27bf7d3758ee84d548dd2793",
+        "duration": 3.622313,
+        "words": [
+          {
+            "text": "This",
+            "start": 0,
+            "end": 0.232
+          },
+          {
+            "text": "daemon",
+            "start": 0.313,
+            "end": 0.627
+          },
+          {
+            "text": "has",
+            "start": 0.673,
+            "end": 0.801
+          },
+          {
+            "text": "three",
+            "start": 0.859,
+            "end": 1.057
+          },
+          {
+            "text": "commands:",
+            "start": 1.091,
+            "end": 1.602
+          },
+          {
+            "text": "start,",
+            "start": 1.73,
+            "end": 2.136
+          },
+          {
+            "text": "status,",
+            "start": 2.252,
+            "end": 2.81
+          },
+          {
+            "text": "and",
+            "start": 2.833,
+            "end": 3.019
+          },
+          {
+            "text": "stop.",
+            "start": 3.077,
+            "end": 3.622
+          }
+        ]
+      },
+      {
+        "id": "step-2",
+        "path": "assets/audio/voice/managed-daemon-style-services/step-2.mp3",
+        "requestSha256": "b68148d9750c653024f5fcfc664700343538218baf6c1a0d189d5245ede74f75",
+        "duration": 1.532517,
+        "words": [
+          {
+            "text": "Start",
+            "start": 0,
+            "end": 0.348
+          },
+          {
+            "text": "the",
+            "start": 0.395,
+            "end": 0.464
+          },
+          {
+            "text": "stack.",
+            "start": 0.511,
+            "end": 1.533
+          }
+        ]
+      },
+      {
+        "id": "step-3",
+        "path": "assets/audio/voice/managed-daemon-style-services/step-3.mp3",
+        "requestSha256": "262bdb15f88424a4b5c52709be9af14984be5116df0a57795e56cce10c3436bf",
+        "duration": 3.111474,
+        "words": [
+          {
+            "text": "devhost",
+            "start": 0,
+            "end": 0.557
+          },
+          {
+            "text": "runs",
+            "start": 0.673,
+            "end": 0.917
+          },
+          {
+            "text": "the",
+            "start": 0.952,
+            "end": 1.022
+          },
+          {
+            "text": "start",
+            "start": 1.068,
+            "end": 1.312
+          },
+          {
+            "text": "command",
+            "start": 1.358,
+            "end": 1.66
+          },
+          {
+            "text": "and",
+            "start": 1.718,
+            "end": 1.811
+          },
+          {
+            "text": "waits",
+            "start": 1.892,
+            "end": 2.125
+          },
+          {
+            "text": "for",
+            "start": 2.159,
+            "end": 2.241
+          },
+          {
+            "text": "the",
+            "start": 2.287,
+            "end": 2.357
+          },
+          {
+            "text": "health",
+            "start": 2.403,
+            "end": 2.624
+          },
+          {
+            "text": "check.",
+            "start": 2.682,
+            "end": 3.111
+          }
+        ]
+      },
+      {
+        "id": "step-4",
+        "path": "assets/audio/voice/managed-daemon-style-services/step-4.mp3",
+        "requestSha256": "6e971a82efb6e5f3073235869d591c8f31e8953cbee40bf5269ec880ba783392",
+        "duration": 2.739955,
         "words": [
           {
             "text": "The",
@@ -1443,13 +2041,18 @@
             "end": 0.139
           },
           {
-            "text": "service",
-            "start": 0.186,
-            "end": 0.499
+            "text": "daemon",
+            "start": 0.197,
+            "end": 0.43
           },
           {
-            "text": "received",
-            "start": 0.546,
+            "text": "answers",
+            "start": 0.476,
+            "end": 0.778
+          },
+          {
+            "text": "on",
+            "start": 0.836,
             "end": 0.906
           },
           {
@@ -1458,178 +2061,1214 @@
             "end": 1.057
           },
           {
-            "text": "port,",
-            "start": 1.126,
-            "end": 1.521
+            "text": "HTTPS",
+            "start": 1.091,
+            "end": 1.765
           },
           {
-            "text": "bind",
-            "start": 1.602,
-            "end": 1.892
-          },
-          {
-            "text": "host,",
-            "start": 1.95,
-            "end": 2.299
-          },
-          {
-            "text": "hostname,",
-            "start": 2.345,
-            "end": 2.902
-          },
-          {
-            "text": "and",
-            "start": 2.926,
-            "end": 2.995
-          },
-          {
-            "text": "your",
-            "start": 3.042,
-            "end": 3.158
-          },
-          {
-            "text": "message.",
-            "start": 3.228,
-            "end": 3.947
+            "text": "hostname.",
+            "start": 1.823,
+            "end": 2.74
           }
         ]
       },
       {
         "id": "step-5",
-        "path": "assets/audio/voice/environment-variables/step-5.mp3",
-        "requestSha256": "b0d3419f2efc4873588542c72bc1d575463a70842ec11da2bb9974380748ed94",
-        "duration": 1.207438,
+        "path": "assets/audio/voice/managed-daemon-style-services/step-5.mp3",
+        "requestSha256": "5cf4d07dca9896f93043f267134002e9229ec5cf385cd5c174caaf377c21c098",
+        "duration": 2.600635,
         "words": [
           {
-            "text": "Stop",
+            "text": "Stopping",
             "start": 0,
-            "end": 0.302
+            "end": 0.464
           },
           {
             "text": "the",
-            "start": 0.36,
-            "end": 0.43
+            "start": 0.499,
+            "end": 0.569
           },
           {
-            "text": "stack.",
-            "start": 0.464,
+            "text": "stack",
+            "start": 0.604,
+            "end": 0.882
+          },
+          {
+            "text": "runs",
+            "start": 0.964,
             "end": 1.207
+          },
+          {
+            "text": "the",
+            "start": 1.242,
+            "end": 1.312
+          },
+          {
+            "text": "daemon's",
+            "start": 1.358,
+            "end": 1.683
+          },
+          {
+            "text": "stop",
+            "start": 1.707,
+            "end": 1.962
+          },
+          {
+            "text": "command.",
+            "start": 2.02,
+            "end": 2.601
+          }
+        ]
+      },
+      {
+        "id": "step-6",
+        "path": "assets/audio/voice/managed-daemon-style-services/step-6.mp3",
+        "requestSha256": "b73f745bddade33642b9c1af759ba7802029cf9775345842229ada5811d525c5",
+        "duration": 1.857596,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.139
+          },
+          {
+            "text": "daemon",
+            "start": 0.197,
+            "end": 0.522
+          },
+          {
+            "text": "is",
+            "start": 0.58,
+            "end": 0.673
+          },
+          {
+            "text": "no",
+            "start": 0.743,
+            "end": 0.848
+          },
+          {
+            "text": "longer",
+            "start": 0.917,
+            "end": 1.184
+          },
+          {
+            "text": "running.",
+            "start": 1.242,
+            "end": 1.858
           }
         ]
       }
     ],
-    "managed-caddy": [
+    "manifest-includes": [
       {
         "id": "intro",
-        "path": "assets/audio/voice/managed-caddy/intro.mp3",
-        "requestSha256": "de2d8b1b04c3abbe6b427b17aca396ff761c2fc2a1097b453ed99cd0dfa9e0eb",
-        "duration": 6.826667,
+        "path": "assets/audio/voice/manifest-includes/intro.mp3",
+        "requestSha256": "668a0985bdad744675cb9fb855c245cbfddd4c60ea20864ccb83832b2d8e37c3",
+        "duration": 4.133152,
         "words": [
           {
-            "text": "One",
+            "text": "Each",
             "start": 0,
-            "end": 0.186
+            "end": 0.255
           },
           {
-            "text": "proxy.",
-            "start": 0.232,
-            "end": 0.917
+            "text": "package",
+            "start": 0.313,
+            "end": 0.743
           },
           {
-            "text": "Local",
-            "start": 1.242,
-            "end": 1.637
+            "text": "owns",
+            "start": 0.801,
+            "end": 1.033
           },
           {
-            "text": "HTTPS",
-            "start": 1.73,
-            "end": 2.694
+            "text": "its",
+            "start": 1.068,
+            "end": 1.184
           },
           {
-            "text": "hostnames.",
-            "start": 2.81,
-            "end": 3.657
+            "text": "services.",
+            "start": 1.219,
+            "end": 1.95
           },
           {
-            "text": "Route",
-            "start": 4.261,
-            "end": 4.54
+            "text": "The",
+            "start": 2.229,
+            "end": 2.345
           },
           {
-            "text": "each",
-            "start": 4.598,
-            "end": 4.783
+            "text": "root",
+            "start": 2.415,
+            "end": 2.647
           },
           {
-            "text": "service",
-            "start": 4.841,
-            "end": 5.201
+            "text": "starts",
+            "start": 2.717,
+            "end": 3.019
           },
           {
-            "text": "by",
-            "start": 5.236,
-            "end": 5.364
+            "text": "them",
+            "start": 3.065,
+            "end": 3.193
           },
           {
-            "text": "path.",
-            "start": 5.457,
-            "end": 6.827
+            "text": "together.",
+            "start": 3.239,
+            "end": 4.133
           }
         ]
       },
       {
         "id": "step-1",
-        "path": "assets/audio/voice/managed-caddy/step-1.mp3",
-        "requestSha256": "aef0ccfd512660520e4d4a749d23210eb7b9ce4ec02d214e1d6b4d94a27ec486",
-        "duration": 3.575873,
+        "path": "assets/audio/voice/manifest-includes/step-1.mp3",
+        "requestSha256": "34239186f5e270ba0b60bcb5e1d0c71e144c5d0b6f5903e72fa788c7163c5936",
+        "duration": 4.92263,
         "words": [
           {
-            "text": "Two",
+            "text": "The",
             "start": 0,
-            "end": 0.232
+            "end": 0.163
           },
           {
-            "text": "services",
-            "start": 0.29,
-            "end": 0.755
+            "text": "root",
+            "start": 0.221,
+            "end": 0.395
           },
           {
-            "text": "share",
-            "start": 0.801,
-            "end": 1.057
+            "text": "manifest",
+            "start": 0.453,
+            "end": 0.952
           },
           {
-            "text": "one",
-            "start": 1.138,
-            "end": 1.358
+            "text": "declares",
+            "start": 0.998,
+            "end": 1.393
           },
           {
-            "text": "hostname,",
-            "start": 1.405,
-            "end": 1.974
+            "text": "no",
+            "start": 1.463,
+            "end": 1.567
           },
           {
-            "text": "split",
-            "start": 2.125,
-            "end": 2.415
+            "text": "services.",
+            "start": 1.649,
+            "end": 2.334
           },
           {
-            "text": "by",
-            "start": 2.461,
-            "end": 2.566
+            "text": "It",
+            "start": 2.577,
+            "end": 2.705
           },
           {
-            "text": "path.",
-            "start": 2.647,
-            "end": 3.576
+            "text": "includes",
+            "start": 2.752,
+            "end": 3.1
+          },
+          {
+            "text": "each",
+            "start": 3.146,
+            "end": 3.32
+          },
+          {
+            "text": "package's",
+            "start": 3.367,
+            "end": 3.808
+          },
+          {
+            "text": "manifest.",
+            "start": 3.866,
+            "end": 4.923
           }
         ]
       },
       {
         "id": "step-2",
-        "path": "assets/audio/voice/managed-caddy/step-2.mp3",
-        "requestSha256": "66f1402cf207132b8c93c549e3f943fd26b368d4b1ff20c7d6671afe58307920",
-        "duration": 1.578957,
+        "path": "assets/audio/voice/manifest-includes/step-2.mp3",
+        "requestSha256": "f33681fa70bc38ecd48c4cb3eca1888873596fa967fd91f37a92df095276df19",
+        "duration": 2.229116,
+        "words": [
+          {
+            "text": "Each",
+            "start": 0,
+            "end": 0.209
+          },
+          {
+            "text": "package",
+            "start": 0.267,
+            "end": 0.673
+          },
+          {
+            "text": "declares",
+            "start": 0.72,
+            "end": 1.08
+          },
+          {
+            "text": "its",
+            "start": 1.126,
+            "end": 1.231
+          },
+          {
+            "text": "own",
+            "start": 1.265,
+            "end": 1.393
+          },
+          {
+            "text": "service.",
+            "start": 1.44,
+            "end": 2.229
+          }
+        ]
+      },
+      {
+        "id": "step-3",
+        "path": "assets/audio/voice/manifest-includes/step-3.mp3",
+        "requestSha256": "f3fa4abf3e2c1d84e2562176e7c110b64fee858da9e50f07d84fa9aefa5f719e",
+        "duration": 1.114558,
+        "words": [
+          {
+            "text": "Start",
+            "start": 0,
+            "end": 0.29
+          },
+          {
+            "text": "from",
+            "start": 0.325,
+            "end": 0.453
+          },
+          {
+            "text": "the",
+            "start": 0.488,
+            "end": 0.557
+          },
+          {
+            "text": "root.",
+            "start": 0.592,
+            "end": 1.115
+          }
+        ]
+      },
+      {
+        "id": "step-4",
+        "path": "assets/audio/voice/manifest-includes/step-4.mp3",
+        "requestSha256": "d94a4b4f9b3126143396775618d2f0d843b0da62b5db7731bb35c4c163b1f5a2",
+        "duration": 2.182676,
+        "words": [
+          {
+            "text": "devhost",
+            "start": 0,
+            "end": 0.58
+          },
+          {
+            "text": "merges",
+            "start": 0.65,
+            "end": 0.94
+          },
+          {
+            "text": "them",
+            "start": 0.975,
+            "end": 1.091
+          },
+          {
+            "text": "into",
+            "start": 1.138,
+            "end": 1.277
+          },
+          {
+            "text": "one",
+            "start": 1.358,
+            "end": 1.533
+          },
+          {
+            "text": "stack.",
+            "start": 1.579,
+            "end": 2.183
+          }
+        ]
+      },
+      {
+        "id": "step-5",
+        "path": "assets/audio/voice/manifest-includes/step-5.mp3",
+        "requestSha256": "4146b80390bd472128332001118c4eac5ee6045ce1bc87cbc46d59463dfbb041",
+        "duration": 3.018594,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.128
+          },
+          {
+            "text": "merged",
+            "start": 0.197,
+            "end": 0.499
+          },
+          {
+            "text": "stack",
+            "start": 0.534,
+            "end": 0.836
+          },
+          {
+            "text": "answers",
+            "start": 0.917,
+            "end": 1.289
+          },
+          {
+            "text": "on",
+            "start": 1.347,
+            "end": 1.416
+          },
+          {
+            "text": "its",
+            "start": 1.463,
+            "end": 1.567
+          },
+          {
+            "text": "HTTPS",
+            "start": 1.602,
+            "end": 2.206
+          },
+          {
+            "text": "hostname.",
+            "start": 2.276,
+            "end": 3.019
+          }
+        ]
+      },
+      {
+        "id": "step-6",
+        "path": "assets/audio/voice/manifest-includes/step-6.mp3",
+        "requestSha256": "68a9d572b2f6450c7afab06e82b3f18f1859472aa40e1b251e6858e95bffc85f",
+        "duration": 1.300317,
+        "words": [
+          {
+            "text": "And",
+            "start": 0,
+            "end": 0.139
+          },
+          {
+            "text": "it",
+            "start": 0.186,
+            "end": 0.244
+          },
+          {
+            "text": "stops",
+            "start": 0.279,
+            "end": 0.604
+          },
+          {
+            "text": "as",
+            "start": 0.639,
+            "end": 0.72
+          },
+          {
+            "text": "one.",
+            "start": 0.789,
+            "end": 1.3
+          }
+        ]
+      }
+    ],
+    "react-highlight": [
+      {
+        "id": "intro",
+        "path": "assets/audio/voice/react-highlight/intro.mp3",
+        "requestSha256": "f57e0b423f6eacf2758b7a7063766d32e8742df6cfd15d6d071f36d3f3b5a539",
+        "duration": 3.018594,
+        "words": [
+          {
+            "text": "Connect",
+            "start": 0,
+            "end": 0.337
+          },
+          {
+            "text": "your",
+            "start": 0.372,
+            "end": 0.464
+          },
+          {
+            "text": "Neovim",
+            "start": 0.522,
+            "end": 0.871
+          },
+          {
+            "text": "cursor",
+            "start": 0.94,
+            "end": 1.265
+          },
+          {
+            "text": "to",
+            "start": 1.312,
+            "end": 1.37
+          },
+          {
+            "text": "the",
+            "start": 1.416,
+            "end": 1.486
+          },
+          {
+            "text": "page",
+            "start": 1.521,
+            "end": 1.8
+          },
+          {
+            "text": "running",
+            "start": 1.846,
+            "end": 2.078
+          },
+          {
+            "text": "in",
+            "start": 2.113,
+            "end": 2.159
+          },
+          {
+            "text": "your",
+            "start": 2.206,
+            "end": 2.31
+          },
+          {
+            "text": "browser.",
+            "start": 2.345,
+            "end": 3.019
+          }
+        ]
+      },
+      {
+        "id": "react-highlight-1",
+        "path": "assets/audio/voice/react-highlight/react-highlight-1.mp3",
+        "requestSha256": "3f29e3e0d0595ee0d416420c5225ee326f21a48ec5046c489a38dcaede2f30e8",
+        "duration": 4.736871,
+        "words": [
+          {
+            "text": "Start",
+            "start": 0,
+            "end": 0.418
+          },
+          {
+            "text": "Neovim",
+            "start": 0.592,
+            "end": 1.091
+          },
+          {
+            "text": "with",
+            "start": 1.161,
+            "end": 1.3
+          },
+          {
+            "text": "the",
+            "start": 1.324,
+            "end": 1.393
+          },
+          {
+            "text": "devhost",
+            "start": 1.474,
+            "end": 1.939
+          },
+          {
+            "text": "launcher.",
+            "start": 1.997,
+            "end": 2.496
+          },
+          {
+            "text": "Here,",
+            "start": 2.775,
+            "end": 3.181
+          },
+          {
+            "text": "it",
+            "start": 3.297,
+            "end": 3.46
+          },
+          {
+            "text": "runs",
+            "start": 3.518,
+            "end": 3.762
+          },
+          {
+            "text": "off",
+            "start": 3.82,
+            "end": 3.971
+          },
+          {
+            "text": "screen.",
+            "start": 4.029,
+            "end": 4.737
+          }
+        ]
+      },
+      {
+        "id": "react-highlight-2",
+        "path": "assets/audio/voice/react-highlight/react-highlight-2.mp3",
+        "requestSha256": "7378a857ade571067b9310956a9c3d22e25709c551fac8605674ac1ab926242f",
+        "duration": 3.390113,
+        "words": [
+          {
+            "text": "Move",
+            "start": 0,
+            "end": 0.313
+          },
+          {
+            "text": "the",
+            "start": 0.348,
+            "end": 0.418
+          },
+          {
+            "text": "Neovim",
+            "start": 0.464,
+            "end": 0.801
+          },
+          {
+            "text": "cursor",
+            "start": 0.859,
+            "end": 1.207
+          },
+          {
+            "text": "to",
+            "start": 1.265,
+            "end": 1.324
+          },
+          {
+            "text": "the",
+            "start": 1.393,
+            "end": 1.463
+          },
+          {
+            "text": "heading.",
+            "start": 1.509,
+            "end": 1.927
+          },
+          {
+            "text": "The",
+            "start": 2.101,
+            "end": 2.194
+          },
+          {
+            "text": "page",
+            "start": 2.241,
+            "end": 2.508
+          },
+          {
+            "text": "highlights",
+            "start": 2.543,
+            "end": 2.972
+          },
+          {
+            "text": "it.",
+            "start": 3.019,
+            "end": 3.39
+          }
+        ]
+      },
+      {
+        "id": "react-highlight-3",
+        "path": "assets/audio/voice/react-highlight/react-highlight-3.mp3",
+        "requestSha256": "8be63c3848813ebebf76376435e3e2b9ac42b3615ca9851cb11ed9796078f68a",
+        "duration": 3.065034,
+        "words": [
+          {
+            "text": "Move",
+            "start": 0,
+            "end": 0.279
+          },
+          {
+            "text": "the",
+            "start": 0.302,
+            "end": 0.372
+          },
+          {
+            "text": "cursor",
+            "start": 0.406,
+            "end": 0.731
+          },
+          {
+            "text": "again,",
+            "start": 0.778,
+            "end": 1.184
+          },
+          {
+            "text": "and",
+            "start": 1.207,
+            "end": 1.37
+          },
+          {
+            "text": "the",
+            "start": 1.416,
+            "end": 1.486
+          },
+          {
+            "text": "highlight",
+            "start": 1.521,
+            "end": 1.892
+          },
+          {
+            "text": "follows.",
+            "start": 1.939,
+            "end": 3.065
+          }
+        ]
+      },
+      {
+        "id": "react-highlight-4",
+        "path": "assets/audio/voice/react-highlight/react-highlight-4.mp3",
+        "requestSha256": "06d47e883027758e8652f7c06dd60a1c51a2496a9cce0e20f79d6cc29c625dfd",
+        "duration": 4.133152,
+        "words": [
+          {
+            "text": "Images",
+            "start": 0,
+            "end": 0.441
+          },
+          {
+            "text": "work",
+            "start": 0.499,
+            "end": 0.685
+          },
+          {
+            "text": "too.",
+            "start": 0.743,
+            "end": 1.138
+          },
+          {
+            "text": "Source",
+            "start": 1.521,
+            "end": 1.846
+          },
+          {
+            "text": "maps",
+            "start": 1.892,
+            "end": 2.148
+          },
+          {
+            "text": "match",
+            "start": 2.229,
+            "end": 2.461
+          },
+          {
+            "text": "the",
+            "start": 2.531,
+            "end": 2.601
+          },
+          {
+            "text": "JSX",
+            "start": 2.659,
+            "end": 3.135
+          },
+          {
+            "text": "to",
+            "start": 3.193,
+            "end": 3.251
+          },
+          {
+            "text": "the",
+            "start": 3.309,
+            "end": 3.379
+          },
+          {
+            "text": "page.",
+            "start": 3.413,
+            "end": 4.133
+          }
+        ]
+      },
+      {
+        "id": "react-highlight-5",
+        "path": "assets/audio/voice/react-highlight/react-highlight-5.mp3",
+        "requestSha256": "c83d983c43171e8d95e180877d9f843e8b77e77fee3508f750c1f39e2a6c82aa",
+        "duration": 2.414875,
+        "words": [
+          {
+            "text": "Leave",
+            "start": 0,
+            "end": 0.244
+          },
+          {
+            "text": "the",
+            "start": 0.279,
+            "end": 0.348
+          },
+          {
+            "text": "JSX,",
+            "start": 0.395,
+            "end": 0.917
+          },
+          {
+            "text": "and",
+            "start": 0.94,
+            "end": 1.08
+          },
+          {
+            "text": "the",
+            "start": 1.115,
+            "end": 1.184
+          },
+          {
+            "text": "highlight",
+            "start": 1.231,
+            "end": 1.614
+          },
+          {
+            "text": "clears.",
+            "start": 1.649,
+            "end": 2.415
+          }
+        ]
+      }
+    ],
+    "service-references": [
+      {
+        "id": "intro",
+        "path": "assets/audio/voice/service-references/intro.mp3",
+        "requestSha256": "08cadea95c70511d33d985c433ecca3904f6509eb9ca14ceeb6072bcc7543fe3",
+        "duration": 3.622313,
+        "words": [
+          {
+            "text": "Point",
+            "start": 0,
+            "end": 0.279
+          },
+          {
+            "text": "one",
+            "start": 0.348,
+            "end": 0.522
+          },
+          {
+            "text": "service",
+            "start": 0.557,
+            "end": 0.882
+          },
+          {
+            "text": "at",
+            "start": 0.906,
+            "end": 0.987
+          },
+          {
+            "text": "another,",
+            "start": 1.033,
+            "end": 1.463
+          },
+          {
+            "text": "even",
+            "start": 1.579,
+            "end": 1.834
+          },
+          {
+            "text": "when",
+            "start": 1.881,
+            "end": 2.009
+          },
+          {
+            "text": "its",
+            "start": 2.043,
+            "end": 2.148
+          },
+          {
+            "text": "port",
+            "start": 2.194,
+            "end": 2.403
+          },
+          {
+            "text": "is",
+            "start": 2.438,
+            "end": 2.508
+          },
+          {
+            "text": "assigned",
+            "start": 2.554,
+            "end": 2.856
+          },
+          {
+            "text": "at",
+            "start": 2.879,
+            "end": 2.937
+          },
+          {
+            "text": "start.",
+            "start": 2.984,
+            "end": 3.622
+          }
+        ]
+      },
+      {
+        "id": "step-1",
+        "path": "assets/audio/voice/service-references/step-1.mp3",
+        "requestSha256": "21f5333c7b49633cbe86c1918d181c3eb05fe8f65a6f74a1929461867fb22088",
+        "duration": 3.250794,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.221
+          },
+          {
+            "text": "API",
+            "start": 0.313,
+            "end": 0.755
+          },
+          {
+            "text": "address",
+            "start": 0.789,
+            "end": 1.115
+          },
+          {
+            "text": "is",
+            "start": 1.161,
+            "end": 1.242
+          },
+          {
+            "text": "a",
+            "start": 1.289,
+            "end": 1.324
+          },
+          {
+            "text": "reference,",
+            "start": 1.393,
+            "end": 1.985
+          },
+          {
+            "text": "not",
+            "start": 2.136,
+            "end": 2.31
+          },
+          {
+            "text": "a",
+            "start": 2.345,
+            "end": 2.368
+          },
+          {
+            "text": "fixed",
+            "start": 2.426,
+            "end": 2.659
+          },
+          {
+            "text": "port.",
+            "start": 2.694,
+            "end": 3.251
+          }
+        ]
+      },
+      {
+        "id": "step-2",
+        "path": "assets/audio/voice/service-references/step-2.mp3",
+        "requestSha256": "72b793e1d44329df7aec8bd1eb9e9f688e98b2ba6a966481c96471a85d754612",
+        "duration": 1.160998,
+        "words": [
+          {
+            "text": "Start",
+            "start": 0,
+            "end": 0.313
+          },
+          {
+            "text": "the",
+            "start": 0.36,
+            "end": 0.441
+          },
+          {
+            "text": "stack.",
+            "start": 0.488,
+            "end": 1.161
+          }
+        ]
+      },
+      {
+        "id": "step-3",
+        "path": "assets/audio/voice/service-references/step-3.mp3",
+        "requestSha256": "b5837c6f5cf29e0f2e013c7d05588927022e39ac4c5cfe9885cb7460f07f40e5",
+        "duration": 3.390113,
+        "words": [
+          {
+            "text": "devhost",
+            "start": 0,
+            "end": 0.499
+          },
+          {
+            "text": "fills",
+            "start": 0.546,
+            "end": 0.778
+          },
+          {
+            "text": "in",
+            "start": 0.824,
+            "end": 0.871
+          },
+          {
+            "text": "the",
+            "start": 0.906,
+            "end": 0.975
+          },
+          {
+            "text": "API's",
+            "start": 1.01,
+            "end": 1.463
+          },
+          {
+            "text": "port",
+            "start": 1.509,
+            "end": 1.741
+          },
+          {
+            "text": "and",
+            "start": 1.8,
+            "end": 1.904
+          },
+          {
+            "text": "starts",
+            "start": 1.962,
+            "end": 2.229
+          },
+          {
+            "text": "the",
+            "start": 2.252,
+            "end": 2.322
+          },
+          {
+            "text": "API",
+            "start": 2.368,
+            "end": 2.717
+          },
+          {
+            "text": "first.",
+            "start": 2.798,
+            "end": 3.39
+          }
+        ]
+      },
+      {
+        "id": "step-4",
+        "path": "assets/audio/voice/service-references/step-4.mp3",
+        "requestSha256": "c8cdda8b1ecf7ec2723a0d48fc7835e4df95a4e90cd59e88145f328b486b927e",
+        "duration": 2.739955,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.116
+          },
+          {
+            "text": "web",
+            "start": 0.163,
+            "end": 0.325
+          },
+          {
+            "text": "service",
+            "start": 0.383,
+            "end": 0.662
+          },
+          {
+            "text": "called",
+            "start": 0.697,
+            "end": 0.882
+          },
+          {
+            "text": "the",
+            "start": 0.906,
+            "end": 0.975
+          },
+          {
+            "text": "API",
+            "start": 1.033,
+            "end": 1.44
+          },
+          {
+            "text": "at",
+            "start": 1.498,
+            "end": 1.556
+          },
+          {
+            "text": "the",
+            "start": 1.591,
+            "end": 1.66
+          },
+          {
+            "text": "resolved",
+            "start": 1.707,
+            "end": 2.113
+          },
+          {
+            "text": "address.",
+            "start": 2.148,
+            "end": 2.74
+          }
+        ]
+      },
+      {
+        "id": "step-5",
+        "path": "assets/audio/voice/service-references/step-5.mp3",
+        "requestSha256": "00f638505c03c7993fab9b1fff3a485d7d21df6897be470517643e550d1efde8",
+        "duration": 2.136236,
+        "words": [
+          {
+            "text": "One",
+            "start": 0,
+            "end": 0.197
+          },
+          {
+            "text": "command",
+            "start": 0.232,
+            "end": 0.534
+          },
+          {
+            "text": "stops",
+            "start": 0.58,
+            "end": 0.906
+          },
+          {
+            "text": "both",
+            "start": 0.975,
+            "end": 1.184
+          },
+          {
+            "text": "services.",
+            "start": 1.242,
+            "end": 2.136
+          }
+        ]
+      }
+    ],
+    "shared-managed-caddy-settings": [
+      {
+        "id": "intro",
+        "path": "assets/audio/voice/shared-managed-caddy-settings/intro.mp3",
+        "requestSha256": "24b7b8fc359480304fc34e6ab86aae48794d542ba9222038178e9fba8c17dec9",
+        "duration": 4.411791,
+        "words": [
+          {
+            "text": "Your",
+            "start": 0,
+            "end": 0.209
+          },
+          {
+            "text": "stacks",
+            "start": 0.255,
+            "end": 0.557
+          },
+          {
+            "text": "share",
+            "start": 0.58,
+            "end": 0.778
+          },
+          {
+            "text": "one",
+            "start": 0.824,
+            "end": 0.975
+          },
+          {
+            "text": "Caddy.",
+            "start": 1.01,
+            "end": 1.463
+          },
+          {
+            "text": "Turn",
+            "start": 1.637,
+            "end": 1.858
+          },
+          {
+            "text": "on",
+            "start": 1.904,
+            "end": 1.985
+          },
+          {
+            "text": "plain",
+            "start": 2.043,
+            "end": 2.252
+          },
+          {
+            "text": "HTTP",
+            "start": 2.299,
+            "end": 2.833
+          },
+          {
+            "text": "and",
+            "start": 2.949,
+            "end": 3.03
+          },
+          {
+            "text": "choose",
+            "start": 3.065,
+            "end": 3.274
+          },
+          {
+            "text": "its",
+            "start": 3.309,
+            "end": 3.413
+          },
+          {
+            "text": "ports.",
+            "start": 3.46,
+            "end": 4.412
+          }
+        ]
+      },
+      {
+        "id": "step-1",
+        "path": "assets/audio/voice/shared-managed-caddy-settings/step-1.mp3",
+        "requestSha256": "8d27674e6c48afd94602fa9e4745aafbbfa8cdb47efefb321680d88b38358beb",
+        "duration": 3.900952,
+        "words": [
+          {
+            "text": "The",
+            "start": 0,
+            "end": 0.151
+          },
+          {
+            "text": "shared",
+            "start": 0.197,
+            "end": 0.464
+          },
+          {
+            "text": "Caddy",
+            "start": 0.511,
+            "end": 0.801
+          },
+          {
+            "text": "settings",
+            "start": 0.871,
+            "end": 1.196
+          },
+          {
+            "text": "turn",
+            "start": 1.242,
+            "end": 1.416
+          },
+          {
+            "text": "on",
+            "start": 1.463,
+            "end": 1.544
+          },
+          {
+            "text": "plain",
+            "start": 1.602,
+            "end": 1.811
+          },
+          {
+            "text": "HTTP",
+            "start": 1.858,
+            "end": 2.357
+          },
+          {
+            "text": "and",
+            "start": 2.508,
+            "end": 2.612
+          },
+          {
+            "text": "set",
+            "start": 2.682,
+            "end": 2.902
+          },
+          {
+            "text": "both",
+            "start": 2.972,
+            "end": 3.193
+          },
+          {
+            "text": "ports.",
+            "start": 3.251,
+            "end": 3.901
+          }
+        ]
+      },
+      {
+        "id": "step-2",
+        "path": "assets/audio/voice/shared-managed-caddy-settings/step-2.mp3",
+        "requestSha256": "442118f37677943316bb4915846371f14a0991d08208c6d5cb9b4e7346d4f6fa",
+        "duration": 1.300317,
         "words": [
           {
             "text": "Start",
@@ -1644,116 +3283,101 @@
           {
             "text": "stack.",
             "start": 0.476,
-            "end": 1.579
+            "end": 1.3
           }
         ]
       },
       {
         "id": "step-3",
-        "path": "assets/audio/voice/managed-caddy/step-3.mp3",
-        "requestSha256": "7d4bc112ceb2528220ed82a3b6bd623554e9ed1aa607980636193ed84eafc551",
-        "duration": 4.690431,
+        "path": "assets/audio/voice/shared-managed-caddy-settings/step-3.mp3",
+        "requestSha256": "7a1f4b565b6efae11ff9c3ea08429839757822a8109e8d36f12fcbc0cfb3af61",
+        "duration": 2.693515,
         "words": [
           {
-            "text": "devhost",
+            "text": "The",
             "start": 0,
-            "end": 0.476
-          },
-          {
-            "text": "starts",
-            "start": 0.511,
-            "end": 0.813
-          },
-          {
-            "text": "both",
-            "start": 0.894,
-            "end": 1.196
-          },
-          {
-            "text": "and",
-            "start": 1.254,
-            "end": 1.335
-          },
-          {
-            "text": "publishes",
-            "start": 1.405,
-            "end": 1.869
-          },
-          {
-            "text": "an",
-            "start": 1.927,
-            "end": 2.009
+            "end": 0.128
           },
           {
             "text": "HTTPS",
-            "start": 2.101,
-            "end": 3.007
+            "start": 0.186,
+            "end": 0.848
           },
           {
             "text": "address",
-            "start": 3.065,
-            "end": 3.367
+            "start": 0.906,
+            "end": 1.196
           },
           {
-            "text": "for",
-            "start": 3.402,
-            "end": 3.518
+            "text": "now",
+            "start": 1.254,
+            "end": 1.37
           },
           {
-            "text": "each.",
-            "start": 3.576,
-            "end": 4.69
+            "text": "uses",
+            "start": 1.44,
+            "end": 1.695
+          },
+          {
+            "text": "the",
+            "start": 1.741,
+            "end": 1.811
+          },
+          {
+            "text": "port",
+            "start": 1.846,
+            "end": 2.043
+          },
+          {
+            "text": "you",
+            "start": 2.078,
+            "end": 2.159
+          },
+          {
+            "text": "set.",
+            "start": 2.229,
+            "end": 2.694
           }
         ]
       },
       {
         "id": "step-4",
-        "path": "assets/audio/voice/managed-caddy/step-4.mp3",
-        "requestSha256": "f8aea6864321598b7d8461b798b1f871070201035f81bf581ea588fd8dda42db",
-        "duration": 2.600635,
+        "path": "assets/audio/voice/shared-managed-caddy-settings/step-4.mp3",
+        "requestSha256": "e18b33240465d5d4d302b8096ccd5276d64f5985d307a2b3c967ebeddfbf986e",
+        "duration": 2.321995,
         "words": [
           {
             "text": "The",
             "start": 0,
-            "end": 0.151
+            "end": 0.128
           },
           {
-            "text": "hostname",
-            "start": 0.209,
-            "end": 0.685
+            "text": "service",
+            "start": 0.186,
+            "end": 0.522
           },
           {
-            "text": "alone",
-            "start": 0.72,
-            "end": 1.103
+            "text": "answers",
+            "start": 0.557,
+            "end": 0.894
           },
           {
-            "text": "reaches",
-            "start": 1.161,
-            "end": 1.463
+            "text": "over",
+            "start": 0.952,
+            "end": 1.149
           },
           {
-            "text": "the",
-            "start": 1.509,
-            "end": 1.579
-          },
-          {
-            "text": "web",
-            "start": 1.625,
-            "end": 1.788
-          },
-          {
-            "text": "service.",
-            "start": 1.858,
-            "end": 2.601
+            "text": "HTTPS.",
+            "start": 1.196,
+            "end": 2.322
           }
         ]
       },
       {
         "id": "step-5",
-        "path": "assets/audio/voice/managed-caddy/step-5.mp3",
-        "requestSha256": "fc882b7060e0ec2c5d8b6551454e24356f3e3b2369956d759b87755ce71b78c8",
-        "duration": 2.693515,
+        "path": "assets/audio/voice/shared-managed-caddy-settings/step-5.mp3",
+        "requestSha256": "4f17c2e5a9570390db660d04387ce86297ab8f58ac7e754a7cee1b94ce313219",
+        "duration": 2.600635,
         "words": [
           {
             "text": "The",
@@ -1761,1681 +3385,57 @@
             "end": 0.116
           },
           {
-            "text": "API",
-            "start": 0.186,
-            "end": 0.604
+            "text": "same",
+            "start": 0.163,
+            "end": 0.383
           },
           {
-            "text": "path",
-            "start": 0.673,
-            "end": 0.929
-          },
-          {
-            "text": "reaches",
-            "start": 0.987,
-            "end": 1.265
-          },
-          {
-            "text": "the",
-            "start": 1.312,
-            "end": 1.382
-          },
-          {
-            "text": "API",
-            "start": 1.451,
-            "end": 1.834
-          },
-          {
-            "text": "service.",
-            "start": 1.927,
-            "end": 2.694
-          }
-        ]
-      },
-      {
-        "id": "step-6",
-        "path": "assets/audio/voice/managed-caddy/step-6.mp3",
-        "requestSha256": "21d6bab67b300f5a948bb5ecb6558de5436d0dd77b46384a17d26c65e07b4e19",
-        "duration": 2.229116,
-        "words": [
-          {
-            "text": "One",
-            "start": 0,
-            "end": 0.209
-          },
-          {
-            "text": "command",
-            "start": 0.244,
-            "end": 0.569
-          },
-          {
-            "text": "stops",
-            "start": 0.627,
-            "end": 0.964
-          },
-          {
-            "text": "both",
-            "start": 1.022,
-            "end": 1.254
-          },
-          {
-            "text": "services.",
-            "start": 1.312,
-            "end": 2.229
-          }
-        ]
-      }
-    ],
-    "managed-daemon-style-services": [
-      {
-        "id": "intro",
-        "path": "assets/audio/voice/managed-daemon-style-services/intro.mp3",
-        "requestSha256": "67432ca6181da208284e57b7d631850d7cc7ce90c835c2c7d49c9055eaa8bed7",
-        "duration": 4.179592,
-        "words": [
-          {
-            "text": "devhost",
-            "start": 0,
-            "end": 0.522
-          },
-          {
-            "text": "starts",
-            "start": 0.557,
-            "end": 0.848
-          },
-          {
-            "text": "a",
-            "start": 0.882,
-            "end": 0.917
-          },
-          {
-            "text": "background",
-            "start": 0.987,
-            "end": 1.405
-          },
-          {
-            "text": "daemon,",
-            "start": 1.486,
-            "end": 1.892
-          },
-          {
-            "text": "checks",
-            "start": 1.95,
-            "end": 2.252
-          },
-          {
-            "text": "on",
-            "start": 2.31,
-            "end": 2.403
-          },
-          {
-            "text": "it,",
-            "start": 2.45,
-            "end": 2.543
-          },
-          {
-            "text": "and",
-            "start": 2.566,
-            "end": 2.659
-          },
-          {
-            "text": "stops",
-            "start": 2.717,
-            "end": 3.053
-          },
-          {
-            "text": "it.",
-            "start": 3.1,
-            "end": 4.18
-          }
-        ]
-      },
-      {
-        "id": "step-1",
-        "path": "assets/audio/voice/managed-daemon-style-services/step-1.mp3",
-        "requestSha256": "e934cbf19319eb54aefbbe78bd07ca4ff83dc7c59b92d3b1f342636f754d6cfa",
-        "duration": 3.993832,
-        "words": [
-          {
-            "text": "This",
-            "start": 0,
-            "end": 0.244
-          },
-          {
-            "text": "daemon",
-            "start": 0.313,
-            "end": 0.58
-          },
-          {
-            "text": "has",
-            "start": 0.639,
-            "end": 0.813
-          },
-          {
-            "text": "three",
-            "start": 0.894,
-            "end": 1.126
-          },
-          {
-            "text": "commands:",
-            "start": 1.173,
-            "end": 1.834
-          },
-          {
-            "text": "start,",
-            "start": 2.009,
-            "end": 2.485
-          },
-          {
-            "text": "status,",
-            "start": 2.566,
-            "end": 3.088
-          },
-          {
-            "text": "and",
-            "start": 3.123,
-            "end": 3.228
-          },
-          {
-            "text": "stop.",
-            "start": 3.286,
-            "end": 3.994
-          }
-        ]
-      },
-      {
-        "id": "step-2",
-        "path": "assets/audio/voice/managed-daemon-style-services/step-2.mp3",
-        "requestSha256": "c7774d8f8b17817469758c3a0930cebb43438e28d7956f2b38f4b36152b983fd",
-        "duration": 1.718277,
-        "words": [
-          {
-            "text": "Start",
-            "start": 0,
-            "end": 0.337
-          },
-          {
-            "text": "the",
-            "start": 0.372,
-            "end": 0.441
-          },
-          {
-            "text": "stack.",
-            "start": 0.476,
-            "end": 1.718
-          }
-        ]
-      },
-      {
-        "id": "step-3",
-        "path": "assets/audio/voice/managed-daemon-style-services/step-3.mp3",
-        "requestSha256": "acdcaf396e4f68b0ce32d663fc1e614e5ed31203452e75fc0a5471e92218b21d",
-        "duration": 3.529433,
-        "words": [
-          {
-            "text": "devhost",
-            "start": 0,
-            "end": 0.499
-          },
-          {
-            "text": "runs",
-            "start": 0.569,
-            "end": 0.824
-          },
-          {
-            "text": "the",
-            "start": 0.894,
-            "end": 0.975
-          },
-          {
-            "text": "start",
-            "start": 1.033,
-            "end": 1.289
-          },
-          {
-            "text": "command",
-            "start": 1.324,
-            "end": 1.649
-          },
-          {
-            "text": "and",
-            "start": 1.695,
-            "end": 1.776
-          },
-          {
-            "text": "waits",
-            "start": 1.823,
-            "end": 2.032
-          },
-          {
-            "text": "for",
-            "start": 2.078,
-            "end": 2.183
-          },
-          {
-            "text": "the",
-            "start": 2.229,
-            "end": 2.299
-          },
-          {
-            "text": "health",
-            "start": 2.368,
-            "end": 2.612
-          },
-          {
-            "text": "check.",
-            "start": 2.67,
-            "end": 3.529
-          }
-        ]
-      },
-      {
-        "id": "step-4",
-        "path": "assets/audio/voice/managed-daemon-style-services/step-4.mp3",
-        "requestSha256": "65c73b766277845b3df45fddd31885f3f23fd577459b4aa3df49d89d80342f3b",
-        "duration": 3.808073,
-        "words": [
-          {
-            "text": "The",
-            "start": 0,
-            "end": 0.139
-          },
-          {
-            "text": "daemon",
-            "start": 0.197,
-            "end": 0.453
-          },
-          {
-            "text": "answers",
-            "start": 0.511,
-            "end": 0.836
-          },
-          {
-            "text": "on",
-            "start": 0.894,
-            "end": 0.998
-          },
-          {
-            "text": "its",
-            "start": 1.045,
-            "end": 1.184
-          },
-          {
-            "text": "HTTPS",
-            "start": 1.265,
-            "end": 2.218
-          },
-          {
-            "text": "hostname.",
-            "start": 2.334,
-            "end": 3.808
-          }
-        ]
-      },
-      {
-        "id": "step-5",
-        "path": "assets/audio/voice/managed-daemon-style-services/step-5.mp3",
-        "requestSha256": "6700f5476bb7697826114da7757d39cac7920d44f3ec08510d869f02cfcce6ec",
-        "duration": 2.739955,
-        "words": [
-          {
-            "text": "Stopping",
-            "start": 0,
-            "end": 0.406
-          },
-          {
-            "text": "the",
-            "start": 0.453,
-            "end": 0.522
-          },
-          {
-            "text": "stack",
-            "start": 0.557,
-            "end": 0.848
-          },
-          {
-            "text": "runs",
-            "start": 0.906,
-            "end": 1.091
-          },
-          {
-            "text": "the",
-            "start": 1.149,
-            "end": 1.219
-          },
-          {
-            "text": "daemon's",
-            "start": 1.289,
-            "end": 1.625
-          },
-          {
-            "text": "stop",
-            "start": 1.649,
-            "end": 1.892
-          },
-          {
-            "text": "command.",
-            "start": 1.95,
-            "end": 2.74
-          }
-        ]
-      },
-      {
-        "id": "step-6",
-        "path": "assets/audio/voice/managed-daemon-style-services/step-6.mp3",
-        "requestSha256": "426ee9c4287870c14aeaa5f71c9fad68ceddfec96e363465477ed6deee48bf98",
-        "duration": 1.857596,
-        "words": [
-          {
-            "text": "The",
-            "start": 0,
-            "end": 0.128
-          },
-          {
-            "text": "daemon",
-            "start": 0.174,
-            "end": 0.441
-          },
-          {
-            "text": "is",
-            "start": 0.499,
-            "end": 0.58
-          },
-          {
-            "text": "no",
-            "start": 0.65,
-            "end": 0.743
-          },
-          {
-            "text": "longer",
-            "start": 0.824,
-            "end": 1.115
-          },
-          {
-            "text": "running.",
-            "start": 1.184,
-            "end": 1.858
-          }
-        ]
-      }
-    ],
-    "manifest-includes": [
-      {
-        "id": "intro",
-        "path": "assets/audio/voice/manifest-includes/intro.mp3",
-        "requestSha256": "5f08a42aa467df1c92c4ba952d9d5d9aaf5277b3b1b814c03ce0809c19cf10bd",
-        "duration": 3.993832,
-        "words": [
-          {
-            "text": "Each",
-            "start": 0,
-            "end": 0.255
-          },
-          {
-            "text": "package",
-            "start": 0.325,
-            "end": 0.755
-          },
-          {
-            "text": "owns",
-            "start": 0.813,
-            "end": 1.057
-          },
-          {
-            "text": "its",
-            "start": 1.103,
-            "end": 1.231
-          },
-          {
-            "text": "services.",
-            "start": 1.265,
-            "end": 1.962
-          },
-          {
-            "text": "The",
-            "start": 2.171,
-            "end": 2.299
-          },
-          {
-            "text": "root",
-            "start": 2.368,
-            "end": 2.554
-          },
-          {
-            "text": "starts",
-            "start": 2.624,
-            "end": 2.914
-          },
-          {
-            "text": "them",
-            "start": 2.961,
-            "end": 3.088
-          },
-          {
-            "text": "together.",
-            "start": 3.135,
-            "end": 3.994
-          }
-        ]
-      },
-      {
-        "id": "step-1",
-        "path": "assets/audio/voice/manifest-includes/step-1.mp3",
-        "requestSha256": "245fabaf9bdfa4b454b673284ee8c8ce1d30b73493ca7d3075277c442900512b",
-        "duration": 4.87619,
-        "words": [
-          {
-            "text": "The",
-            "start": 0,
-            "end": 0.128
-          },
-          {
-            "text": "root",
-            "start": 0.174,
-            "end": 0.337
-          },
-          {
-            "text": "manifest",
-            "start": 0.406,
-            "end": 0.859
-          },
-          {
-            "text": "declares",
-            "start": 0.906,
-            "end": 1.312
-          },
-          {
-            "text": "no",
-            "start": 1.405,
-            "end": 1.544
-          },
-          {
-            "text": "services.",
-            "start": 1.614,
-            "end": 2.322
-          },
-          {
-            "text": "It",
-            "start": 2.403,
-            "end": 2.519
-          },
-          {
-            "text": "includes",
-            "start": 2.566,
-            "end": 2.926
-          },
-          {
-            "text": "each",
-            "start": 3.007,
-            "end": 3.181
-          },
-          {
-            "text": "package's",
-            "start": 3.239,
-            "end": 3.704
-          },
-          {
-            "text": "manifest.",
-            "start": 3.773,
-            "end": 4.876
-          }
-        ]
-      },
-      {
-        "id": "step-2",
-        "path": "assets/audio/voice/manifest-includes/step-2.mp3",
-        "requestSha256": "15290653ced83195e69ec7a8aa34410cf9fab0c0a19dd735bfe0596a16867da0",
-        "duration": 2.414875,
-        "words": [
-          {
-            "text": "Each",
-            "start": 0,
-            "end": 0.232
-          },
-          {
-            "text": "package",
-            "start": 0.302,
-            "end": 0.766
-          },
-          {
-            "text": "declares",
-            "start": 0.813,
-            "end": 1.207
-          },
-          {
-            "text": "its",
-            "start": 1.254,
-            "end": 1.382
-          },
-          {
-            "text": "own",
-            "start": 1.428,
-            "end": 1.579
-          },
-          {
-            "text": "service.",
-            "start": 1.649,
-            "end": 2.415
-          }
-        ]
-      },
-      {
-        "id": "step-3",
-        "path": "assets/audio/voice/manifest-includes/step-3.mp3",
-        "requestSha256": "d35edf54c6a08daf429325391861461b04b1d56962b041e2ba38c2b8c0508513",
-        "duration": 2.089796,
-        "words": [
-          {
-            "text": "Start",
-            "start": 0,
-            "end": 0.325
-          },
-          {
-            "text": "from",
-            "start": 0.36,
-            "end": 0.488
-          },
-          {
-            "text": "the",
-            "start": 0.534,
-            "end": 0.604
-          },
-          {
-            "text": "root.",
-            "start": 0.662,
-            "end": 2.09
-          }
-        ]
-      },
-      {
-        "id": "step-4",
-        "path": "assets/audio/voice/manifest-includes/step-4.mp3",
-        "requestSha256": "556f9590c2ac59a7c87df7252334f6ea2130c893fdb8fbcf549d8fb0eba6efc9",
-        "duration": 2.879274,
-        "words": [
-          {
-            "text": "devhost",
-            "start": 0,
-            "end": 0.488
-          },
-          {
-            "text": "merges",
-            "start": 0.557,
-            "end": 0.859
-          },
-          {
-            "text": "them",
-            "start": 0.906,
-            "end": 1.022
-          },
-          {
-            "text": "into",
-            "start": 1.068,
-            "end": 1.219
-          },
-          {
-            "text": "one",
-            "start": 1.335,
-            "end": 1.533
-          },
-          {
-            "text": "stack.",
-            "start": 1.567,
-            "end": 2.879
-          }
-        ]
-      },
-      {
-        "id": "step-5",
-        "path": "assets/audio/voice/manifest-includes/step-5.mp3",
-        "requestSha256": "abe5d259b2b4da4987ccd91279ec7753a1fda3f01d153ac9e3ea962dd5758add",
-        "duration": 3.761633,
-        "words": [
-          {
-            "text": "The",
-            "start": 0,
-            "end": 0.151
-          },
-          {
-            "text": "merged",
-            "start": 0.209,
-            "end": 0.476
-          },
-          {
-            "text": "stack",
-            "start": 0.499,
+            "text": "service",
+            "start": 0.43,
             "end": 0.778
           },
           {
             "text": "answers",
-            "start": 0.848,
-            "end": 1.196
+            "start": 0.813,
+            "end": 1.115
           },
           {
-            "text": "on",
-            "start": 1.265,
-            "end": 1.37
-          },
-          {
-            "text": "its",
-            "start": 1.416,
-            "end": 1.567
-          },
-          {
-            "text": "HTTPS",
-            "start": 1.66,
-            "end": 2.589
-          },
-          {
-            "text": "hostname.",
-            "start": 2.763,
-            "end": 3.762
-          }
-        ]
-      },
-      {
-        "id": "step-6",
-        "path": "assets/audio/voice/manifest-includes/step-6.mp3",
-        "requestSha256": "81460e7abcf0e9b6d5877465bcb7a7438e0a011081a3808cb8f927cf223f601f",
-        "duration": 1.393197,
-        "words": [
-          {
-            "text": "And",
-            "start": 0,
-            "end": 0.163
-          },
-          {
-            "text": "it",
-            "start": 0.209,
-            "end": 0.279
-          },
-          {
-            "text": "stops",
-            "start": 0.313,
-            "end": 0.65
-          },
-          {
-            "text": "as",
-            "start": 0.685,
-            "end": 0.766
-          },
-          {
-            "text": "one.",
-            "start": 0.848,
-            "end": 1.393
-          }
-        ]
-      }
-    ],
-    "react-highlight": [
-      {
-        "id": "intro",
-        "path": "assets/audio/voice/react-highlight/intro.mp3",
-        "requestSha256": "6f8cdb67ce3e515785ec0beda652660eb73e18d9df9a101c9c8ee8092f966840",
-        "duration": 3.761633,
-        "words": [
-          {
-            "text": "Connect",
-            "start": 0,
-            "end": 0.372
-          },
-          {
-            "text": "your",
-            "start": 0.406,
-            "end": 0.569
-          },
-          {
-            "text": "Neovim",
-            "start": 0.685,
-            "end": 1.126
-          },
-          {
-            "text": "cursor",
-            "start": 1.207,
-            "end": 1.556
-          },
-          {
-            "text": "to",
-            "start": 1.614,
-            "end": 1.672
-          },
-          {
-            "text": "the",
-            "start": 1.73,
-            "end": 1.8
-          },
-          {
-            "text": "page",
-            "start": 1.846,
-            "end": 2.159
-          },
-          {
-            "text": "running",
-            "start": 2.218,
-            "end": 2.461
-          },
-          {
-            "text": "in",
-            "start": 2.496,
-            "end": 2.554
-          },
-          {
-            "text": "your",
-            "start": 2.601,
-            "end": 2.717
-          },
-          {
-            "text": "browser.",
-            "start": 2.775,
-            "end": 3.762
-          }
-        ]
-      },
-      {
-        "id": "react-highlight-1",
-        "path": "assets/audio/voice/react-highlight/react-highlight-1.mp3",
-        "requestSha256": "97be86df576b3fe9f583dcdd07695c1da184093d4640605b61257874b81dd2ed",
-        "duration": 4.504671,
-        "words": [
-          {
-            "text": "Start",
-            "start": 0,
-            "end": 0.36
-          },
-          {
-            "text": "Neovim",
-            "start": 0.476,
-            "end": 0.987
-          },
-          {
-            "text": "with",
-            "start": 1.033,
-            "end": 1.149
-          },
-          {
-            "text": "the",
-            "start": 1.184,
-            "end": 1.254
-          },
-          {
-            "text": "devhost",
-            "start": 1.335,
-            "end": 1.788
-          },
-          {
-            "text": "launcher.",
-            "start": 1.846,
-            "end": 2.357
-          },
-          {
-            "text": "Here,",
-            "start": 2.531,
-            "end": 2.833
-          },
-          {
-            "text": "it",
-            "start": 2.856,
-            "end": 2.926
-          },
-          {
-            "text": "runs",
-            "start": 2.972,
-            "end": 3.17
-          },
-          {
-            "text": "off",
-            "start": 3.216,
-            "end": 3.344
-          },
-          {
-            "text": "screen.",
-            "start": 3.39,
-            "end": 4.505
-          }
-        ]
-      },
-      {
-        "id": "react-highlight-2",
-        "path": "assets/audio/voice/react-highlight/react-highlight-2.mp3",
-        "requestSha256": "8dbc8e0fb1a3a97970bcb5d0f7c2407d9d0a5e1426e3c79495f46f1de033da48",
-        "duration": 3.900952,
-        "words": [
-          {
-            "text": "Move",
-            "start": 0,
-            "end": 0.221
-          },
-          {
-            "text": "the",
-            "start": 0.255,
-            "end": 0.325
-          },
-          {
-            "text": "Neovim",
-            "start": 0.383,
-            "end": 0.813
-          },
-          {
-            "text": "cursor",
-            "start": 0.882,
-            "end": 1.219
-          },
-          {
-            "text": "to",
-            "start": 1.289,
+            "text": "over",
+            "start": 1.161,
             "end": 1.335
           },
           {
-            "text": "the",
-            "start": 1.393,
-            "end": 1.463
-          },
-          {
-            "text": "heading.",
-            "start": 1.521,
-            "end": 1.997
-          },
-          {
-            "text": "The",
-            "start": 2.438,
-            "end": 2.554
-          },
-          {
-            "text": "page",
-            "start": 2.601,
-            "end": 2.891
-          },
-          {
-            "text": "highlights",
-            "start": 2.949,
-            "end": 3.413
-          },
-          {
-            "text": "it.",
-            "start": 3.471,
-            "end": 3.901
-          }
-        ]
-      },
-      {
-        "id": "react-highlight-3",
-        "path": "assets/audio/voice/react-highlight/react-highlight-3.mp3",
-        "requestSha256": "0cffa5ea252944b3cfd18b475468b8eb7bc9a9955c5d2f4d679004f3a98c12d9",
-        "duration": 2.693515,
-        "words": [
-          {
-            "text": "Move",
-            "start": 0,
-            "end": 0.267
-          },
-          {
-            "text": "the",
-            "start": 0.302,
-            "end": 0.372
-          },
-          {
-            "text": "cursor",
-            "start": 0.418,
-            "end": 0.755
-          },
-          {
-            "text": "again,",
-            "start": 0.813,
-            "end": 1.115
-          },
-          {
-            "text": "and",
-            "start": 1.138,
-            "end": 1.219
-          },
-          {
-            "text": "the",
-            "start": 1.254,
-            "end": 1.324
-          },
-          {
-            "text": "highlight",
-            "start": 1.382,
-            "end": 1.753
-          },
-          {
-            "text": "follows.",
-            "start": 1.8,
-            "end": 2.694
-          }
-        ]
-      },
-      {
-        "id": "react-highlight-4",
-        "path": "assets/audio/voice/react-highlight/react-highlight-4.mp3",
-        "requestSha256": "47b3ab4bfaa0136c3a0ab778fdcfd833b0819a69f5ce0e8ba165b1c6d2d521e8",
-        "duration": 4.551111,
-        "words": [
-          {
-            "text": "Images",
-            "start": 0,
-            "end": 0.43
-          },
-          {
-            "text": "work",
-            "start": 0.499,
-            "end": 0.708
-          },
-          {
-            "text": "too.",
-            "start": 0.755,
-            "end": 1.207
-          },
-          {
-            "text": "Source",
-            "start": 1.591,
-            "end": 1.95
-          },
-          {
-            "text": "maps",
-            "start": 2.009,
-            "end": 2.276
-          },
-          {
-            "text": "match",
-            "start": 2.334,
-            "end": 2.554
-          },
-          {
-            "text": "the",
-            "start": 2.624,
-            "end": 2.694
-          },
-          {
-            "text": "JSX",
-            "start": 2.775,
-            "end": 3.309
-          },
-          {
-            "text": "to",
-            "start": 3.379,
-            "end": 3.437
-          },
-          {
-            "text": "the",
-            "start": 3.495,
-            "end": 3.564
-          },
-          {
-            "text": "page.",
-            "start": 3.611,
-            "end": 4.551
-          }
-        ]
-      },
-      {
-        "id": "react-highlight-5",
-        "path": "assets/audio/voice/react-highlight/react-highlight-5.mp3",
-        "requestSha256": "d99889be5f5e293b95bf1384b5ad705b1a3f22d91ec5dbb043181fa7d0e630a9",
-        "duration": 2.414875,
-        "words": [
-          {
-            "text": "Leave",
-            "start": 0,
-            "end": 0.279
-          },
-          {
-            "text": "the",
-            "start": 0.313,
-            "end": 0.383
-          },
-          {
-            "text": "JSX,",
-            "start": 0.441,
-            "end": 1.033
-          },
-          {
-            "text": "and",
-            "start": 1.057,
-            "end": 1.138
-          },
-          {
-            "text": "the",
-            "start": 1.184,
-            "end": 1.254
-          },
-          {
-            "text": "highlight",
-            "start": 1.312,
-            "end": 1.672
-          },
-          {
-            "text": "clears.",
-            "start": 1.707,
-            "end": 2.415
-          }
-        ]
-      }
-    ],
-    "service-references": [
-      {
-        "id": "intro",
-        "path": "assets/audio/voice/service-references/intro.mp3",
-        "requestSha256": "3a705f62c64901f35f027cfe0557ad40dd2a6c31f1122d259e3e8a9ba53e218a",
-        "duration": 4.551111,
-        "words": [
-          {
-            "text": "Point",
-            "start": 0,
-            "end": 0.325
-          },
-          {
-            "text": "one",
-            "start": 0.418,
-            "end": 0.627
-          },
-          {
-            "text": "service",
-            "start": 0.673,
-            "end": 1.033
-          },
-          {
-            "text": "at",
-            "start": 1.068,
-            "end": 1.149
-          },
-          {
-            "text": "another,",
-            "start": 1.196,
-            "end": 1.649
-          },
-          {
-            "text": "even",
-            "start": 1.718,
-            "end": 1.939
-          },
-          {
-            "text": "when",
-            "start": 1.974,
-            "end": 2.113
-          },
-          {
-            "text": "its",
-            "start": 2.148,
-            "end": 2.264
-          },
-          {
-            "text": "port",
-            "start": 2.31,
-            "end": 2.531
-          },
-          {
-            "text": "is",
-            "start": 2.577,
-            "end": 2.647
-          },
-          {
-            "text": "assigned",
-            "start": 2.705,
-            "end": 3.077
-          },
-          {
-            "text": "at",
-            "start": 3.111,
-            "end": 3.181
-          },
-          {
-            "text": "start.",
-            "start": 3.239,
-            "end": 4.551
-          }
-        ]
-      },
-      {
-        "id": "step-1",
-        "path": "assets/audio/voice/service-references/step-1.mp3",
-        "requestSha256": "8a4a0df0009aa227236a83970f10da4013eaa10c21ab525e08328e6dfa6d31ab",
-        "duration": 3.343673,
-        "words": [
-          {
-            "text": "The",
-            "start": 0,
-            "end": 0.151
-          },
-          {
-            "text": "API",
-            "start": 0.209,
-            "end": 0.627
-          },
-          {
-            "text": "address",
-            "start": 0.697,
-            "end": 1.033
-          },
-          {
-            "text": "is",
-            "start": 1.08,
-            "end": 1.161
-          },
-          {
-            "text": "a",
-            "start": 1.219,
-            "end": 1.254
-          },
-          {
-            "text": "reference,",
-            "start": 1.335,
-            "end": 1.846
-          },
-          {
-            "text": "not",
-            "start": 1.904,
-            "end": 2.067
-          },
-          {
-            "text": "a",
-            "start": 2.113,
-            "end": 2.136
-          },
-          {
-            "text": "fixed",
-            "start": 2.194,
-            "end": 2.485
-          },
-          {
-            "text": "port.",
-            "start": 2.543,
-            "end": 3.344
-          }
-        ]
-      },
-      {
-        "id": "step-2",
-        "path": "assets/audio/voice/service-references/step-2.mp3",
-        "requestSha256": "34de9714141d195a06178cd2e43c22107f4193e865406fc2e06a3c1aaa427111",
-        "duration": 1.253878,
-        "words": [
-          {
-            "text": "Start",
-            "start": 0,
-            "end": 0.302
-          },
-          {
-            "text": "the",
-            "start": 0.337,
-            "end": 0.406
-          },
-          {
-            "text": "stack.",
-            "start": 0.453,
-            "end": 1.254
-          }
-        ]
-      },
-      {
-        "id": "step-3",
-        "path": "assets/audio/voice/service-references/step-3.mp3",
-        "requestSha256": "02454bdb032896b2edd089829188bdc861d370d741217640ffc9f10b5ca1547b",
-        "duration": 4.411791,
-        "words": [
-          {
-            "text": "devhost",
-            "start": 0,
-            "end": 0.488
-          },
-          {
-            "text": "fills",
-            "start": 0.534,
-            "end": 0.778
-          },
-          {
-            "text": "in",
-            "start": 0.813,
-            "end": 0.871
-          },
-          {
-            "text": "the",
-            "start": 0.906,
-            "end": 0.975
-          },
-          {
-            "text": "API's",
-            "start": 1.033,
-            "end": 1.498
-          },
-          {
-            "text": "port",
-            "start": 1.567,
-            "end": 1.881
-          },
-          {
-            "text": "and",
-            "start": 1.927,
-            "end": 2.02
-          },
-          {
-            "text": "starts",
-            "start": 2.09,
-            "end": 2.415
-          },
-          {
-            "text": "the",
-            "start": 2.461,
-            "end": 2.543
-          },
-          {
-            "text": "API",
-            "start": 2.601,
-            "end": 3.007
-          },
-          {
-            "text": "first.",
-            "start": 3.123,
-            "end": 4.412
-          }
-        ]
-      },
-      {
-        "id": "step-4",
-        "path": "assets/audio/voice/service-references/step-4.mp3",
-        "requestSha256": "d7e9c9e918230b746dca7255ddcd6b19115cb07e118041b7ffa24d2b992682de",
-        "duration": 3.343673,
-        "words": [
-          {
-            "text": "The",
-            "start": 0,
-            "end": 0.163
-          },
-          {
-            "text": "web",
-            "start": 0.221,
-            "end": 0.383
-          },
-          {
-            "text": "service",
-            "start": 0.453,
-            "end": 0.778
-          },
-          {
-            "text": "called",
-            "start": 0.813,
-            "end": 1.045
-          },
-          {
-            "text": "the",
-            "start": 1.068,
-            "end": 1.138
-          },
-          {
-            "text": "API",
-            "start": 1.207,
-            "end": 1.695
-          },
-          {
-            "text": "at",
-            "start": 1.765,
-            "end": 1.834
-          },
-          {
-            "text": "the",
-            "start": 1.869,
-            "end": 1.939
-          },
-          {
-            "text": "resolved",
-            "start": 2.009,
-            "end": 2.426
-          },
-          {
-            "text": "address.",
-            "start": 2.461,
-            "end": 3.344
-          }
-        ]
-      },
-      {
-        "id": "step-5",
-        "path": "assets/audio/voice/service-references/step-5.mp3",
-        "requestSha256": "eb2226ad85d6f5b13a184f0f8212ec70450f169471aecf10a97cf3904b079a8a",
-        "duration": 2.275556,
-        "words": [
-          {
-            "text": "One",
-            "start": 0,
-            "end": 0.221
-          },
-          {
-            "text": "command",
-            "start": 0.267,
-            "end": 0.615
-          },
-          {
-            "text": "stops",
-            "start": 0.685,
-            "end": 1.01
-          },
-          {
-            "text": "both",
-            "start": 1.068,
-            "end": 1.289
-          },
-          {
-            "text": "services.",
-            "start": 1.347,
-            "end": 2.276
-          }
-        ]
-      }
-    ],
-    "shared-managed-caddy-settings": [
-      {
-        "id": "intro",
-        "path": "assets/audio/voice/shared-managed-caddy-settings/intro.mp3",
-        "requestSha256": "c7d138aab671c87825faa7e44109b5fe5b14e62988f907626807c3e41b3808dc",
-        "duration": 5.804989,
-        "words": [
-          {
-            "text": "Your",
-            "start": 0,
-            "end": 0.244
-          },
-          {
-            "text": "stacks",
-            "start": 0.313,
-            "end": 0.685
-          },
-          {
-            "text": "share",
-            "start": 0.708,
-            "end": 0.975
-          },
-          {
-            "text": "one",
-            "start": 1.045,
-            "end": 1.289
-          },
-          {
-            "text": "Caddy.",
-            "start": 1.347,
-            "end": 1.834
-          },
-          {
-            "text": "Turn",
-            "start": 2.043,
-            "end": 2.276
-          },
-          {
-            "text": "on",
-            "start": 2.334,
-            "end": 2.426
-          },
-          {
             "text": "plain",
-            "start": 2.496,
-            "end": 2.798
-          },
-          {
-            "text": "HTTP",
-            "start": 2.879,
-            "end": 3.611
-          },
-          {
-            "text": "and",
-            "start": 3.785,
-            "end": 3.889
-          },
-          {
-            "text": "choose",
-            "start": 3.959,
-            "end": 4.203
-          },
-          {
-            "text": "its",
-            "start": 4.238,
-            "end": 4.354
-          },
-          {
-            "text": "ports.",
-            "start": 4.412,
-            "end": 5.805
-          }
-        ]
-      },
-      {
-        "id": "step-1",
-        "path": "assets/audio/voice/shared-managed-caddy-settings/step-1.mp3",
-        "requestSha256": "3974e2be4dda660d4a12eb346ed7ce20f4f159feaa166fd9d58cbfc99d32fa8b",
-        "duration": 4.086712,
-        "words": [
-          {
-            "text": "The",
-            "start": 0,
-            "end": 0.139
-          },
-          {
-            "text": "shared",
-            "start": 0.186,
-            "end": 0.488
-          },
-          {
-            "text": "Caddy",
-            "start": 0.546,
-            "end": 0.848
-          },
-          {
-            "text": "settings",
-            "start": 0.906,
-            "end": 1.242
-          },
-          {
-            "text": "turn",
-            "start": 1.289,
-            "end": 1.474
-          },
-          {
-            "text": "on",
-            "start": 1.533,
-            "end": 1.614
-          },
-          {
-            "text": "plain",
-            "start": 1.66,
-            "end": 1.904
-          },
-          {
-            "text": "HTTP",
-            "start": 1.95,
-            "end": 2.589
-          },
-          {
-            "text": "and",
-            "start": 2.717,
-            "end": 2.798
-          },
-          {
-            "text": "set",
-            "start": 2.856,
-            "end": 3.03
-          },
-          {
-            "text": "both",
-            "start": 3.111,
-            "end": 3.344
-          },
-          {
-            "text": "ports.",
-            "start": 3.402,
-            "end": 4.087
-          }
-        ]
-      },
-      {
-        "id": "step-2",
-        "path": "assets/audio/voice/shared-managed-caddy-settings/step-2.mp3",
-        "requestSha256": "9c97be206adcdb48c0c59ff1d65e593fc31ea02dc2f46aafae302dc2d2afa48f",
-        "duration": 1.764717,
-        "words": [
-          {
-            "text": "Start",
-            "start": 0,
-            "end": 0.267
-          },
-          {
-            "text": "the",
-            "start": 0.302,
-            "end": 0.372
-          },
-          {
-            "text": "stack.",
-            "start": 0.418,
-            "end": 1.765
-          }
-        ]
-      },
-      {
-        "id": "step-3",
-        "path": "assets/audio/voice/shared-managed-caddy-settings/step-3.mp3",
-        "requestSha256": "603efbe996977df72ed96bef8909c26cddab2293417ff76a3704299d711c88bc",
-        "duration": 3.529433,
-        "words": [
-          {
-            "text": "The",
-            "start": 0,
-            "end": 0.151
-          },
-          {
-            "text": "HTTPS",
-            "start": 0.232,
-            "end": 1.08
-          },
-          {
-            "text": "address",
-            "start": 1.138,
-            "end": 1.509
-          },
-          {
-            "text": "now",
-            "start": 1.637,
-            "end": 1.811
-          },
-          {
-            "text": "uses",
-            "start": 1.892,
-            "end": 2.194
-          },
-          {
-            "text": "the",
-            "start": 2.252,
-            "end": 2.322
-          },
-          {
-            "text": "port",
-            "start": 2.368,
-            "end": 2.612
-          },
-          {
-            "text": "you",
-            "start": 2.647,
-            "end": 2.728
-          },
-          {
-            "text": "set.",
-            "start": 2.798,
-            "end": 3.529
-          }
-        ]
-      },
-      {
-        "id": "step-4",
-        "path": "assets/audio/voice/shared-managed-caddy-settings/step-4.mp3",
-        "requestSha256": "8217324f070d32ba8ee59eca20964e36a44d897aee911f041331dfd4b7e381c4",
-        "duration": 2.600635,
-        "words": [
-          {
-            "text": "The",
-            "start": 0,
-            "end": 0.139
-          },
-          {
-            "text": "service",
-            "start": 0.186,
-            "end": 0.511
-          },
-          {
-            "text": "answers",
-            "start": 0.546,
-            "end": 0.871
-          },
-          {
-            "text": "over",
-            "start": 0.952,
-            "end": 1.184
-          },
-          {
-            "text": "HTTPS.",
-            "start": 1.254,
-            "end": 2.601
-          }
-        ]
-      },
-      {
-        "id": "step-5",
-        "path": "assets/audio/voice/shared-managed-caddy-settings/step-5.mp3",
-        "requestSha256": "a9dbd589a161f0846de329988c67aeeb9f59906c4505c07da0d99e4bc7e08274",
-        "duration": 2.739955,
-        "words": [
-          {
-            "text": "The",
-            "start": 0,
-            "end": 0.163
-          },
-          {
-            "text": "same",
-            "start": 0.221,
-            "end": 0.441
-          },
-          {
-            "text": "service",
-            "start": 0.476,
-            "end": 0.801
-          },
-          {
-            "text": "answers",
-            "start": 0.836,
-            "end": 1.149
-          },
-          {
-            "text": "over",
-            "start": 1.196,
-            "end": 1.358
-          },
-          {
-            "text": "plain",
-            "start": 1.44,
-            "end": 1.741
+            "start": 1.428,
+            "end": 1.707
           },
           {
             "text": "HTTP.",
-            "start": 1.811,
-            "end": 2.74
+            "start": 1.753,
+            "end": 2.601
           }
         ]
       },
       {
         "id": "step-6",
         "path": "assets/audio/voice/shared-managed-caddy-settings/step-6.mp3",
-        "requestSha256": "c030589dec13e9ecc94c312b16b9b2367dc178bcf82999bf24d70d6d90f2ae60",
-        "duration": 1.253878,
+        "requestSha256": "2e37b335edefacd415e6ffebf0e9b8c9d269b2638b8228f9cd67063758859676",
+        "duration": 1.021678,
         "words": [
           {
             "text": "Stop",
             "start": 0,
-            "end": 0.29
+            "end": 0.313
           },
           {
             "text": "the",
-            "start": 0.36,
-            "end": 0.43
+            "start": 0.383,
+            "end": 0.453
           },
           {
             "text": "stack.",
-            "start": 0.476,
-            "end": 1.254
+            "start": 0.488,
+            "end": 1.022
           }
         ]
       }
@@ -3444,8 +3444,8 @@
       {
         "id": "intro",
         "path": "assets/audio/voice/troubleshooting/intro.mp3",
-        "requestSha256": "94658896a5765dd14cb292eba6b7ba16a6fb603ae1cc8f8176340cb10f522e87",
-        "duration": 4.96907,
+        "requestSha256": "364f8b95ee90522a34d2605781c91f52661baec5222d7e0a89a14b2fe3471a73",
+        "duration": 4.829751,
         "words": [
           {
             "text": "Save",
@@ -3459,114 +3459,114 @@
           },
           {
             "text": "broken",
-            "start": 0.406,
-            "end": 0.731
+            "start": 0.383,
+            "end": 0.685
           },
           {
             "text": "manifest",
-            "start": 0.801,
-            "end": 1.347
+            "start": 0.731,
+            "end": 1.265
           },
           {
             "text": "and",
-            "start": 1.393,
-            "end": 1.474
+            "start": 1.312,
+            "end": 1.393
           },
           {
             "text": "the",
-            "start": 1.509,
-            "end": 1.579
+            "start": 1.428,
+            "end": 1.498
           },
           {
             "text": "running",
-            "start": 1.625,
-            "end": 1.869
+            "start": 1.544,
+            "end": 1.788
           },
           {
             "text": "stack",
-            "start": 1.916,
-            "end": 2.183
+            "start": 1.834,
+            "end": 2.101
           },
           {
             "text": "stays",
-            "start": 2.241,
-            "end": 2.531
+            "start": 2.148,
+            "end": 2.438
           },
           {
             "text": "up.",
-            "start": 2.624,
-            "end": 2.914
+            "start": 2.496,
+            "end": 2.717
           },
           {
             "text": "Fix",
-            "start": 3.297,
-            "end": 3.599
+            "start": 3.1,
+            "end": 3.39
           },
           {
             "text": "it,",
-            "start": 3.68,
-            "end": 3.866
+            "start": 3.471,
+            "end": 3.669
           },
           {
             "text": "save",
-            "start": 3.959,
-            "end": 4.214
+            "start": 3.843,
+            "end": 4.122
           },
           {
             "text": "again.",
-            "start": 4.249,
-            "end": 4.969
+            "start": 4.156,
+            "end": 4.83
           }
         ]
       },
       {
         "id": "step-1",
         "path": "assets/audio/voice/troubleshooting/step-1.mp3",
-        "requestSha256": "5d70af86bdb0dfda67c7cc423d56103962858a238fbc3324a89583506cd1ae4a",
-        "duration": 1.625397,
+        "requestSha256": "6a6eb9f92182328274780c5b8fde5a29440c2151c58d6236c173d41eba5f1c7e",
+        "duration": 1.811156,
         "words": [
           {
             "text": "A",
             "start": 0,
-            "end": 0.081
+            "end": 0.151
           },
           {
             "text": "stack",
-            "start": 0.151,
-            "end": 0.418
+            "start": 0.244,
+            "end": 0.615
           },
           {
             "text": "with",
-            "start": 0.464,
-            "end": 0.604
+            "start": 0.673,
+            "end": 0.859
           },
           {
             "text": "one",
-            "start": 0.673,
-            "end": 0.871
+            "start": 0.929,
+            "end": 1.126
           },
           {
             "text": "service.",
-            "start": 0.917,
-            "end": 1.625
+            "start": 1.161,
+            "end": 1.811
           }
         ]
       },
       {
         "id": "step-2",
         "path": "assets/audio/voice/troubleshooting/step-2.mp3",
-        "requestSha256": "12f1854815dc0b9978b1439d0395cb20540ff2d90405c4470a9e103c85bca8c9",
+        "requestSha256": "9ac82842f74177331cc39e5d011cd5078c3ebd369983ddc857afe3e3c9ad813f",
         "duration": 1.021678,
         "words": [
           {
             "text": "Start",
             "start": 0,
-            "end": 0.313
+            "end": 0.29
           },
           {
             "text": "the",
-            "start": 0.348,
-            "end": 0.418
+            "start": 0.337,
+            "end": 0.406
           },
           {
             "text": "stack.",
@@ -3578,112 +3578,112 @@
       {
         "id": "step-3",
         "path": "assets/audio/voice/troubleshooting/step-3.mp3",
-        "requestSha256": "51a02b5e3cc01ee74eca92a51ae5bf0a865c36449c59191ae04f874067daf033",
-        "duration": 1.439637,
+        "requestSha256": "fe992119a3450161a81bfbb92de6fe8b45c8060589bb7c28d04fcca5a6111638",
+        "duration": 1.253878,
         "words": [
           {
             "text": "The",
             "start": 0,
-            "end": 0.163
+            "end": 0.139
           },
           {
             "text": "service",
-            "start": 0.209,
-            "end": 0.534
+            "start": 0.186,
+            "end": 0.522
           },
           {
             "text": "is",
-            "start": 0.569,
-            "end": 0.65
+            "start": 0.557,
+            "end": 0.627
           },
           {
             "text": "running.",
-            "start": 0.731,
-            "end": 1.44
+            "start": 0.685,
+            "end": 1.254
           }
         ]
       },
       {
         "id": "step-4",
         "path": "assets/audio/voice/troubleshooting/step-4.mp3",
-        "requestSha256": "967e2c830e738921113b6f100399a0262e9fad0846f9b97b9f1ccfa94484608d",
-        "duration": 1.950476,
+        "requestSha256": "a767f5293901ea0e8810f03e44224d457abc48204b8a4533b8d20fb33d391f68",
+        "duration": 1.671837,
         "words": [
           {
             "text": "Now",
             "start": 0,
-            "end": 0.163
+            "end": 0.209
           },
           {
             "text": "save",
-            "start": 0.244,
-            "end": 0.476
+            "start": 0.302,
+            "end": 0.65
           },
           {
             "text": "an",
-            "start": 0.499,
-            "end": 0.557
+            "start": 0.685,
+            "end": 0.755
           },
           {
             "text": "invalid",
-            "start": 0.592,
-            "end": 0.94
+            "start": 0.813,
+            "end": 1.149
           },
           {
             "text": "port.",
-            "start": 0.998,
-            "end": 1.95
+            "start": 1.184,
+            "end": 1.672
           }
         ]
       },
       {
         "id": "step-5",
         "path": "assets/audio/voice/troubleshooting/step-5.mp3",
-        "requestSha256": "3e6c259df2cd328c3553eef21d522f39aef82828b17bd85b2578aaed486c5b64",
-        "duration": 3.018594,
+        "requestSha256": "f5b4d189b73d64185fc36106f27d1838b950be6ff949ed23e0e5e2a8117fdc98",
+        "duration": 2.461315,
         "words": [
           {
             "text": "devhost",
             "start": 0,
-            "end": 0.522
+            "end": 0.464
           },
           {
             "text": "rejects",
-            "start": 0.592,
-            "end": 0.964
+            "start": 0.522,
+            "end": 0.836
           },
           {
             "text": "the",
-            "start": 0.998,
-            "end": 1.068
+            "start": 0.871,
+            "end": 0.94
           },
           {
             "text": "reload",
-            "start": 1.149,
-            "end": 1.544
+            "start": 0.998,
+            "end": 1.416
           },
           {
             "text": "and",
-            "start": 1.591,
-            "end": 1.683
+            "start": 1.451,
+            "end": 1.533
           },
           {
             "text": "says",
-            "start": 1.741,
-            "end": 1.962
+            "start": 1.579,
+            "end": 1.776
           },
           {
             "text": "why.",
-            "start": 2.043,
-            "end": 3.019
+            "start": 1.834,
+            "end": 2.461
           }
         ]
       },
       {
         "id": "step-6",
         "path": "assets/audio/voice/troubleshooting/step-6.mp3",
-        "requestSha256": "a6dea3cddf210e897a5b444a928c176b18932002b109d1a536f404d116d4149f",
-        "duration": 1.811156,
+        "requestSha256": "aab8bd3164506350cabea75e37867e2875ef9aec5aee1a995f41d3c9c8139468",
+        "duration": 1.950476,
         "words": [
           {
             "text": "The",
@@ -3692,157 +3692,153 @@
           },
           {
             "text": "running",
-            "start": 0.197,
-            "end": 0.418
+            "start": 0.209,
+            "end": 0.464
           },
           {
             "text": "stack",
-            "start": 0.453,
-            "end": 0.731
+            "start": 0.511,
+            "end": 0.801
           },
           {
             "text": "still",
-            "start": 0.801,
-            "end": 1.022
+            "start": 0.859,
+            "end": 1.057
           },
           {
             "text": "answers.",
-            "start": 1.103,
-            "end": 1.811
+            "start": 1.126,
+            "end": 1.95
           }
         ]
       },
       {
         "id": "step-7",
         "path": "assets/audio/voice/troubleshooting/step-7.mp3",
-        "requestSha256": "2143ea59596af82f0d6d2d72ae8cb1bb9bee2ab8404b410cd4da5a59b35d2010",
-        "duration": 2.089796,
+        "requestSha256": "725c467f1f89cea1c58d9c527084fc1be654b3769df2b9ab04ca305cd341d075",
+        "duration": 1.764717,
         "words": [
           {
             "text": "Save",
             "start": 0,
-            "end": 0.255
+            "end": 0.325
           },
           {
             "text": "a",
-            "start": 0.279,
-            "end": 0.313
+            "start": 0.348,
+            "end": 0.383
           },
           {
             "text": "corrected",
-            "start": 0.36,
-            "end": 0.778
+            "start": 0.43,
+            "end": 0.789
           },
           {
             "text": "manifest.",
-            "start": 0.871,
-            "end": 2.09
+            "start": 0.836,
+            "end": 1.765
           }
         ]
       },
       {
         "id": "step-8",
         "path": "assets/audio/voice/troubleshooting/step-8.mp3",
-        "requestSha256": "4a3c3294947297d001b54040a7207d79e9ae00d4a55205945dde1efedd276304",
-        "duration": 1.904036,
+        "requestSha256": "4c92a9605db4c4653c901a9721ca107b07bff3dbd0ffb422c95ead4140b6e9da",
+        "duration": 1.764717,
         "words": [
           {
             "text": "This",
             "start": 0,
-            "end": 0.221
+            "end": 0.255
           },
           {
             "text": "time",
-            "start": 0.279,
-            "end": 0.464
+            "start": 0.302,
+            "end": 0.511
           },
           {
             "text": "the",
-            "start": 0.499,
-            "end": 0.569
+            "start": 0.546,
+            "end": 0.615
           },
           {
             "text": "reload",
-            "start": 0.639,
-            "end": 1.022
+            "start": 0.673,
+            "end": 0.998
           },
           {
             "text": "is",
-            "start": 1.08,
-            "end": 1.149
+            "start": 1.033,
+            "end": 1.091
           },
           {
             "text": "applied.",
-            "start": 1.196,
-            "end": 1.904
+            "start": 1.126,
+            "end": 1.765
           }
         ]
       },
       {
         "id": "step-9",
         "path": "assets/audio/voice/troubleshooting/step-9.mp3",
-        "requestSha256": "52df56333ca91787c72fd5b3382b93854163e8a718d01131c94bbbf909d66a47",
-        "duration": 2.321995,
+        "requestSha256": "c90607078c60be202768934d0f1d9cc6d3bc8a992f595b5c4a51076957534d53",
+        "duration": 2.368435,
         "words": [
           {
             "text": "The",
             "start": 0,
-            "end": 0.163
+            "end": 0.151
           },
           {
             "text": "service",
-            "start": 0.221,
+            "start": 0.209,
             "end": 0.557
           },
           {
             "text": "shows",
             "start": 0.58,
-            "end": 0.789
+            "end": 0.801
           },
           {
             "text": "the",
-            "start": 0.848,
-            "end": 0.917
+            "start": 0.824,
+            "end": 0.894
           },
           {
             "text": "new",
-            "start": 0.975,
-            "end": 1.091
+            "start": 0.929,
+            "end": 1.022
           },
           {
             "text": "configuration.",
-            "start": 1.161,
-            "end": 2.322
+            "start": 1.068,
+            "end": 2.368
           }
         ]
       },
       {
         "id": "step-10",
         "path": "assets/audio/voice/troubleshooting/step-10.mp3",
-        "requestSha256": "4380c6f8cef1278ef1c7a6be31bb597643597919d70122cd657e8bcac1a503d9",
-        "duration": 1.253878,
+        "requestSha256": "0d771a9191ad1b3762835b34842d5c71b5b8445e7b313e6e546555bc6bcafc2b",
+        "duration": 1.160998,
         "words": [
           {
             "text": "Stop",
             "start": 0,
-            "end": 0.313
+            "end": 0.337
           },
           {
             "text": "the",
-            "start": 0.372,
-            "end": 0.441
+            "start": 0.395,
+            "end": 0.464
           },
           {
             "text": "stack.",
-            "start": 0.488,
-            "end": 1.254
+            "start": 0.511,
+            "end": 1.161
           }
         ]
       }
     ]
-  },
-  "music": {
-    "path": "assets/audio/music.mp3",
-    "duration": 50.04
   }
 }

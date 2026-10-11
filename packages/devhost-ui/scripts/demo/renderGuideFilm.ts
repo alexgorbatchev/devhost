@@ -39,7 +39,6 @@ export async function renderGuideFilm(options: IRenderGuideFilmOptions): Promise
     if (line === undefined) throw new Error(`No narration audio for ${slug} ${id}: run \`just demo audio-guides\``);
     return line;
   };
-  if (timings.music === undefined) throw new Error("The guide films have no music: run `just demo audio-guides`");
 
   const sources = await readPromoSources(directoryPath);
   const clips: IGuideClipInput[] = [];
@@ -60,9 +59,6 @@ export async function renderGuideFilm(options: IRenderGuideFilmOptions): Promise
     });
   }
   const plan = planGuideFilm({ text: script.intro, narrationSeconds: readLine("intro").duration }, clips);
-  if (timings.music.duration < plan.duration) {
-    throw new Error(`The guide music lasts ${timings.music.duration}s, but the ${slug} film lasts ${plan.duration}s`);
-  }
 
   // The film is rendered from a project of its own: the template filled for this guide, with only its audio.
   const projectSourcePath = join(directoryPath, "guide-source");
@@ -75,10 +71,6 @@ export async function renderGuideFilm(options: IRenderGuideFilmOptions): Promise
       await Bun.write(join(projectSourcePath, path), Bun.file(join(templatePath, line.path)));
       lines.push({ ...line, path });
     }
-    await Bun.write(
-      join(projectSourcePath, "assets/audio/music.mp3"),
-      Bun.file(join(templatePath, timings.music.path)),
-    );
     await Bun.write(join(projectSourcePath, "assets/audio/timings.json"), JSON.stringify({ lines }, null, 2) + "\n");
     await Bun.write(
       join(projectSourcePath, "narration.json"),

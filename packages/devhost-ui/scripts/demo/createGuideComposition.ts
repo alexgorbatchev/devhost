@@ -1,31 +1,7 @@
-import type { IGuideCueLine, IGuideFilm, IGuideFilmPlan, IVolumePoint } from "./types";
+import type { IGuideCueLine, IGuideFilm } from "./types";
 
 function round(seconds: number): number {
   return Math.round(seconds * 1_000) / 1_000;
-}
-
-// The bed opens at 0.3, drops under each line, comes back in a pause between lines, and fades out with the film.
-function createMusicLane(plan: IGuideFilmPlan, spoken: readonly IGuideCueLine[]): IVolumePoint[] {
-  const points: IVolumePoint[] = [{ t: 0, v: 0.3 }];
-  const add = (t: number, v: number): void => {
-    const last = points.at(-1);
-    points.push({ t: round(Math.min(plan.duration, Math.max(t, (last?.t ?? 0) + 0.01))), v });
-  };
-  for (const [index, line] of spoken.entries()) {
-    const spokenUntil = line.narrationStart + line.narrationSeconds;
-    const next = spoken[index + 1];
-    add(line.narrationStart - 0.1, points.at(-1)?.v ?? 0.3);
-    add(line.narrationStart + 0.2, 0.1);
-    add(spokenUntil + 0.1, 0.1);
-    // A pause of more than a second and a half is long enough to hear the bed again.
-    if (next === undefined || next.narrationStart - spokenUntil > 1.5) add(spokenUntil + 0.7, 0.24);
-  }
-  const outroStart = plan.duration - plan.outroSeconds;
-  add(outroStart, 0.24);
-  add(outroStart + 0.3, 0.34);
-  add(plan.duration - 0.8, 0.34);
-  points.push({ t: plan.duration, v: 0 });
-  return points;
 }
 
 // Fills the guide film's template with one guide: its title, clips, captions, narration and every duration.
@@ -97,7 +73,6 @@ export async function createGuideComposition(template: string, film: IGuideFilm)
     cuts: plan.beats.slice(1).map((beat) => beat.start),
     cues: cueData,
   });
-  const lane = JSON.stringify({ version: 1, lanes: [{ target: "volume", points: createMusicLane(plan, spoken) }] });
   return new HTMLRewriter()
     .on("#root", {
       element: (element): void => {
@@ -127,12 +102,6 @@ export async function createGuideComposition(template: string, film: IGuideFilm)
     .on("#narration", {
       element: (element): void => {
         element.setInnerContent(narration.join("\n"), { html: true });
-      },
-    })
-    .on("#music", {
-      element: (element): void => {
-        element.setAttribute("data-duration", String(plan.duration));
-        element.setAttribute("data-automation", lane);
       },
     })
     .on("script#guide-film", {
