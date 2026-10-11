@@ -14,6 +14,7 @@ import (
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
 )
 
@@ -32,6 +33,75 @@ func (w *shutdownOutput) snapshot() string {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	return w.Buffer.String()
+}
+
+func TestShutdownAnnouncementDoesNotWaitForStartup(t *testing.T) {
+	for _, sig := range []syscall.Signal{syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM} {
+		t.Run(sig.String(), func(t *testing.T) {
+			originalStart := startDevtoolsControlServer
+			originalRegister, originalUnregister := registerProcessSignals, unregisterProcessSignals
+			t.Cleanup(func() {
+				startDevtoolsControlServer = originalStart
+				registerProcessSignals, unregisterProcessSignals = originalRegister, originalUnregister
+			})
+			signals := make(chan chan<- os.Signal, 1)
+			registerProcessSignals = func(ch chan<- os.Signal) { signals <- ch }
+			unregisterProcessSignals = func(chan<- os.Signal) {}
+			starting := make(chan struct{})
+			release := make(chan struct{})
+			unblock := sync.OnceFunc(func() { close(release) })
+			startDevtoolsControlServer = func(options devtools.StartControlServerOptions) (*devtools.ControlServer, error) {
+				close(starting)
+				<-release
+				return originalStart(options)
+			}
+
+			paths := caddy.CreateManagedCaddyPaths(t.TempDir())
+			writeFakeCaddyExecutable(t, paths.ExecutablePath)
+			m := newResolvedManifest(t.TempDir(), caddytest.StartAdminServer(t))
+			m.Devtools.Status.Enabled = true
+			m.Services["web"] = ResolvedService{
+				Name: "web", Cwd: t.TempDir(), Command: helperCommandWithMode("exit-immediately"),
+				Env: map[string]string{"GO_WANT_HELPER_PROCESS": "1"}, Health: ResolvedHealthConfig{Kind: "process"},
+			}
+			var output shutdownOutput
+			finished := make(chan error, 1)
+			go func() {
+				code, err := StartStack(&m, []string{"web"}, StartStackOptions{CaddyPaths: paths, LogWriter: &output})
+				if err == nil && code != readSignalExitCode(sig) {
+					err = fmt.Errorf("exit code = %d, want %d", code, readSignalExitCode(sig))
+				}
+				finished <- err
+			}()
+			ch := <-signals
+			stop := sync.OnceFunc(func() { ch <- sig })
+			t.Cleanup(func() {
+				stop()
+				unblock()
+				select {
+				case err := <-finished:
+					if err != nil {
+						t.Errorf("shutdown: %v", err)
+					}
+				case <-time.After(10 * time.Second):
+					t.Error("shutdown did not finish")
+				}
+				message := fmt.Sprintf("[hello-stack] Received %s; shutting down the stack.\n", describeShutdownSignal(sig))
+				if logs := output.snapshot(); strings.Count(logs, message) != 1 {
+					t.Errorf("want exactly one shutdown announcement:\n%s", logs)
+				}
+			})
+			select {
+			case <-starting:
+			case <-time.After(5 * time.Second):
+				t.Fatal("control server startup did not begin")
+			}
+			stop()
+			waitForCondition(t, time.Second, func() bool {
+				return strings.Contains(output.snapshot(), "shutting down the stack.")
+			})
+		})
+	}
 }
 
 func playgroundShutdownService(t *testing.T, app string, port int) ResolvedService {

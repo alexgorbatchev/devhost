@@ -4,7 +4,7 @@ description: Use when running devhost or when reading, writing, or changing a de
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-11 10:22
+  last_modified: 2026-10-11 11:06
   status: current
 ---
 
@@ -52,7 +52,7 @@ devhost start
 
 Stop the stack with `devhost stop`, a shutdown signal, or an idle timeout. The shared Caddy keeps running until `devhost caddy stop`.
 
-The running stack prints `[stack-name] Stopping service <name>...` before signaling each managed foreground service or running a daemon's stop command, and `[stack-name] Stopped service <name>.` after its cleanup succeeds. `Stack stopped.` confirms service and routing cleanup completed successfully. Child stdout/stderr remains visible during shutdown, and cleanup failures report the affected services. Signal-driven shutdown retains the signal exit codes listed above.
+The running stack immediately acknowledges its first shutdown signal, before waiting for in-flight startup or reload work. Ctrl-C prints `[stack-name] Received SIGINT (Ctrl-C) (signal 2); shutting down the stack.` once; SIGHUP and SIGTERM also name the received signal. The stack prints `[stack-name] Stopping service <name>...` before signaling each managed foreground service or running a daemon's stop command, and `[stack-name] Stopped service <name>.` after its cleanup succeeds. `Stack stopped.` confirms service and routing cleanup completed successfully. Child stdout/stderr remains visible during shutdown, and cleanup failures report the affected services. Signal-driven shutdown retains the signal exit codes listed above.
 
 Read the preceding stack log to explain child signal `15` or exit code `143`: devhost prints the startup health failure before sending `SIGTERM (signal 15)` to a foreground service, names a repository and its services when startup failure stops that group, and announces a signal received by the stack before shutdown. Managed startup progress includes the TCP address or HTTP URL, elapsed time, and configured timeout. TCP failures retain the checked address and, when the other loopback address accepted a connection, a concrete `services.<name>.bindHost` hint in terminal and recovery errors. Verify the listener belongs to the app before applying the suggested `bindHost` setting; the probe establishes connectivity only. The mismatch warning appears once per startup attempt; checks continue against the configured target. HTTP failures name the URL and the required 2xx response.
 
