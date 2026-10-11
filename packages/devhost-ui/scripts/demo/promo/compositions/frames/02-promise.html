@@ -322,70 +322,70 @@
         0,
       );
       tl.fromTo("#promise-name", { x: 120, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "expo.out" }, 0.04);
-      tl.fromTo("#promise-brand", { y: 330, scale: 1.9 }, { y: 0, scale: 1, duration: 0.6, ease: "expo.inOut" }, 0.99);
+      tl.fromTo("#promise-brand", { y: 330, scale: 1.9 }, { y: 0, scale: 1, duration: 0.6, ease: "expo.inOut" }, 0.89);
       // The port from the hook is still in the address bar.
       tl.fromTo(
         "#promise-bar",
         { y: 120, opacity: 0, scale: 0.92 },
         { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: "expo.out" },
-        1.14,
+        1.04,
       );
       // "HTTPS hostnames": the port gives way to a name with a certificate.
-      tl.to("#promise-url-old", { y: -90, opacity: 0, duration: 0.26, ease: "power3.in" }, 1.75);
+      tl.to("#promise-url-old", { y: -90, opacity: 0, duration: 0.26, ease: "power3.in" }, 1.68);
       tl.fromTo(
         "#promise-url-new",
         { y: 90, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.42, ease: "expo.out" },
-        1.91,
+        1.83,
       );
-      tl.to("#promise-warning", { opacity: 0, scale: 0.4, duration: 0.2, ease: "power2.in" }, 1.75);
+      tl.to("#promise-warning", { opacity: 0, scale: 0.4, duration: 0.2, ease: "power2.in" }, 1.68);
       tl.fromTo(
         "#promise-lock",
         { opacity: 0, scale: 0.4 },
         { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(3)" },
-        1.91,
+        1.83,
       );
-      tl.to("#promise-bar", { borderColor: token("--dh-ok"), duration: 0.3 }, 1.91);
-      tl.fromTo("#promise-bar-glow", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 1.91);
+      tl.to("#promise-bar", { borderColor: token("--dh-ok"), duration: 0.3 }, 1.83);
+      tl.fromTo("#promise-bar-glow", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 1.83);
       tl.fromTo(
         "#promise-bar-api",
         { y: -50, opacity: 0, scale: 0.9 },
         { y: 0, opacity: 1, scale: 1, duration: 0.42, ease: "back.out(1.8)" },
-        2.76,
+        2.68,
       );
       // "through a managed Caddy": one hop from the name to the ports it hides.
       tl.fromTo(
         "#promise-node-browser",
         { y: 60, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.36, ease: "expo.out" },
-        3.48,
+        3.25,
       );
       tl.fromTo(
         "#promise-wire-in",
         { scaleX: 0, transformOrigin: "0% 50%" },
         { scaleX: 1, duration: 0.4, ease: "power2.inOut" },
-        3.74,
+        3.48,
       );
       tl.fromTo(
         "#promise-node-caddy",
         { scale: 0.5, opacity: 0 },
         { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(2.4)" },
-        4.26,
+        4.04,
       );
       tl.fromTo(
         "#promise-wire-out",
         { scaleX: 0, transformOrigin: "0% 50%" },
         { scaleX: 1, duration: 0.36, ease: "power2.inOut" },
-        4.58,
+        4.36,
       );
       tl.fromTo(
         services,
         { x: -50, opacity: 0 },
         { x: 0, opacity: 1, duration: 0.32, ease: "expo.out", stagger: 0.12 },
-        4.8,
+        4.56,
       );
       // "logins and cookies need more than a port".
-      [5.62, 6.19, 6.87].forEach((time, index) => {
+      [5.41, 6.03, 6.73].forEach((time, index) => {
         tl.fromTo(
           chips[index],
           { y: 60, opacity: 0, scale: 0.8 },

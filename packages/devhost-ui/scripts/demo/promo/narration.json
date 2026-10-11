@@ -26,10 +26,18 @@
     },
     {
       "id": "line-5",
-      "text": "Hold Alt, click an element, describe the change. A coding agent edits your source, and the page hot-reloads."
+      "text": "TanStack Query devtools are one click away."
     },
     {
       "id": "line-6",
+      "text": "Hold Alt, click an element, describe the change. A coding agent edits your source."
+    },
+    {
+      "id": "line-7",
+      "text": "And the page hot-reloads."
+    },
+    {
+      "id": "line-8",
       "text": "devhost. Open source, on GitHub. Stop juggling ports."
     }
   ]

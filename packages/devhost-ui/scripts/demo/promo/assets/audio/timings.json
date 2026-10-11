@@ -3,462 +3,511 @@
     {
       "id": "line-1",
       "path": "assets/audio/voice/line-1.mp3",
-      "duration": 4.086712,
+      "duration": 3.854512,
       "words": [
         {
           "text": "Localhost",
           "start": 0,
-          "end": 0.639
+          "end": 0.58
         },
         {
           "text": "three",
-          "start": 0.662,
-          "end": 0.848
+          "start": 0.604,
+          "end": 0.778
         },
         {
           "text": "thousand.",
-          "start": 0.882,
-          "end": 1.451
+          "start": 0.813,
+          "end": 1.312
         },
         {
           "text": "Four",
-          "start": 1.776,
-          "end": 1.997
+          "start": 1.637,
+          "end": 1.858
         },
         {
           "text": "thousand.",
-          "start": 2.055,
-          "end": 2.577
+          "start": 1.916,
+          "end": 2.392
         },
         {
           "text": "Which",
-          "start": 3.019,
-          "end": 3.216
+          "start": 2.995,
+          "end": 3.193
         },
         {
           "text": "port?",
-          "start": 3.274,
-          "end": 4.087
+          "start": 3.239,
+          "end": 3.855
         }
       ]
     },
     {
       "id": "line-2",
       "path": "assets/audio/voice/line-2.mp3",
-      "duration": 7.987664,
+      "duration": 8.126984,
       "words": [
         {
           "text": "devhost",
           "start": 0,
-          "end": 0.604
+          "end": 0.569
         },
         {
           "text": "puts",
-          "start": 0.685,
-          "end": 0.894
+          "start": 0.615,
+          "end": 0.789
         },
         {
           "text": "your",
-          "start": 0.929,
-          "end": 1.033
+          "start": 0.824,
+          "end": 0.929
         },
         {
           "text": "local",
-          "start": 1.091,
-          "end": 1.358
+          "start": 0.987,
+          "end": 1.277
         },
         {
           "text": "app",
-          "start": 1.428,
-          "end": 1.591
+          "start": 1.347,
+          "end": 1.521
         },
         {
           "text": "on",
-          "start": 1.66,
-          "end": 1.776
+          "start": 1.602,
+          "end": 1.707
         },
         {
           "text": "HTTPS",
-          "start": 1.869,
-          "end": 2.74
+          "start": 1.788,
+          "end": 2.659
         },
         {
           "text": "hostnames,",
-          "start": 2.81,
-          "end": 3.541
+          "start": 2.728,
+          "end": 3.32
         },
         {
           "text": "through",
-          "start": 3.599,
-          "end": 3.843
+          "start": 3.355,
+          "end": 3.576
         },
         {
           "text": "a",
-          "start": 3.878,
-          "end": 3.901
+          "start": 3.611,
+          "end": 3.634
         },
         {
           "text": "managed",
-          "start": 3.971,
-          "end": 4.354
+          "start": 3.727,
+          "end": 4.145
         },
         {
           "text": "Caddy.",
-          "start": 4.4,
-          "end": 4.969
+          "start": 4.191,
+          "end": 4.702
         },
         {
           "text": "For",
-          "start": 5.352,
-          "end": 5.492
+          "start": 5.085,
+          "end": 5.248
         },
         {
           "text": "when",
-          "start": 5.526,
-          "end": 5.654
+          "start": 5.294,
+          "end": 5.433
         },
         {
           "text": "logins",
-          "start": 5.724,
-          "end": 6.13
+          "start": 5.526,
+          "end": 5.956
         },
         {
           "text": "and",
-          "start": 6.165,
-          "end": 6.246
+          "start": 6.002,
+          "end": 6.084
         },
         {
           "text": "cookies",
-          "start": 6.293,
-          "end": 6.653
+          "start": 6.13,
+          "end": 6.502
         },
         {
           "text": "need",
-          "start": 6.699,
-          "end": 6.861
+          "start": 6.548,
+          "end": 6.711
         },
         {
           "text": "more",
-          "start": 6.92,
-          "end": 7.105
+          "start": 6.78,
+          "end": 7.047
         },
         {
           "text": "than",
-          "start": 7.14,
-          "end": 7.256
+          "start": 7.082,
+          "end": 7.198
         },
         {
           "text": "a",
-          "start": 7.279,
-          "end": 7.303
+          "start": 7.233,
+          "end": 7.256
         },
         {
           "text": "port.",
-          "start": 7.361,
-          "end": 7.988
+          "start": 7.303,
+          "end": 8.127
         }
       ]
     },
     {
       "id": "line-3",
       "path": "assets/audio/voice/line-3.mp3",
-      "duration": 6.408707,
+      "duration": 7.058866,
       "words": [
         {
           "text": "List",
           "start": 0,
-          "end": 0.255
+          "end": 0.244
         },
         {
           "text": "your",
-          "start": 0.29,
-          "end": 0.406
+          "start": 0.279,
+          "end": 0.383
         },
         {
           "text": "services",
-          "start": 0.453,
-          "end": 0.848
+          "start": 0.43,
+          "end": 0.836
         },
         {
           "text": "in",
-          "start": 0.894,
+          "start": 0.882,
           "end": 0.952
         },
         {
           "text": "one",
-          "start": 1.022,
-          "end": 1.173
+          "start": 1.033,
+          "end": 1.184
         },
         {
           "text": "file.",
           "start": 1.231,
-          "end": 1.683
+          "end": 1.718
         },
         {
           "text": "Then",
-          "start": 1.858,
-          "end": 2.067
+          "start": 1.997,
+          "end": 2.206
         },
         {
           "text": "one",
-          "start": 2.159,
-          "end": 2.31
+          "start": 2.276,
+          "end": 2.438
         },
         {
           "text": "command:",
-          "start": 2.345,
-          "end": 2.833
+          "start": 2.473,
+          "end": 2.914
         },
         {
           "text": "devhost",
-          "start": 3.042,
-          "end": 3.576
+          "start": 3.123,
+          "end": 3.727
         },
         {
           "text": "start.",
-          "start": 3.669,
-          "end": 4.075
+          "start": 3.843,
+          "end": 4.284
         },
         {
           "text": "Routes",
-          "start": 4.4,
-          "end": 4.656
+          "start": 4.795,
+          "end": 5.085
         },
         {
           "text": "open",
-          "start": 4.714,
-          "end": 4.923
+          "start": 5.143,
+          "end": 5.41
         },
         {
           "text": "when",
-          "start": 4.969,
-          "end": 5.108
+          "start": 5.468,
+          "end": 5.619
         },
         {
           "text": "health",
-          "start": 5.166,
-          "end": 5.364
+          "start": 5.677,
+          "end": 5.851
         },
         {
           "text": "checks",
-          "start": 5.41,
-          "end": 5.642
+          "start": 5.898,
+          "end": 6.13
         },
         {
           "text": "pass.",
-          "start": 5.677,
-          "end": 6.409
+          "start": 6.177,
+          "end": 7.059
         }
       ]
     },
     {
       "id": "line-4",
       "path": "assets/audio/voice/line-4.mp3",
-      "duration": 4.318912,
+      "duration": 4.551111,
       "words": [
         {
           "text": "Optional",
           "start": 0,
-          "end": 0.453
+          "end": 0.43
         },
         {
           "text": "devtools",
-          "start": 0.522,
-          "end": 1.045
+          "start": 0.499,
+          "end": 0.987
         },
         {
           "text": "add",
-          "start": 1.091,
-          "end": 1.254
+          "start": 1.033,
+          "end": 1.196
         },
         {
           "text": "real-time",
-          "start": 1.312,
-          "end": 1.753
+          "start": 1.265,
+          "end": 1.695
         },
         {
           "text": "logs",
-          "start": 1.788,
-          "end": 2.113
+          "start": 1.741,
+          "end": 2.067
         },
         {
           "text": "and",
-          "start": 2.148,
-          "end": 2.218
+          "start": 2.101,
+          "end": 2.194
         },
         {
           "text": "service",
-          "start": 2.264,
+          "start": 2.241,
           "end": 2.554
         },
         {
           "text": "controls,",
           "start": 2.577,
-          "end": 3.111
+          "end": 3.158
         },
         {
           "text": "right",
-          "start": 3.239,
-          "end": 3.413
-        },
-        {
-          "text": "in",
-          "start": 3.437,
+          "start": 3.309,
           "end": 3.483
         },
         {
+          "text": "in",
+          "start": 3.506,
+          "end": 3.553
+        },
+        {
           "text": "the",
-          "start": 3.518,
-          "end": 3.587
+          "start": 3.587,
+          "end": 3.657
         },
         {
           "text": "page.",
-          "start": 3.611,
-          "end": 4.319
+          "start": 3.692,
+          "end": 4.551
         }
       ]
     },
     {
       "id": "line-5",
       "path": "assets/audio/voice/line-5.mp3",
-      "duration": 7.801905,
+      "duration": 2.786395,
       "words": [
         {
-          "text": "Hold",
+          "text": "TanStack",
           "start": 0,
-          "end": 0.325
+          "end": 0.546
         },
         {
-          "text": "Alt,",
-          "start": 0.395,
-          "end": 0.731
+          "text": "Query",
+          "start": 0.58,
+          "end": 0.824
+        },
+        {
+          "text": "devtools",
+          "start": 0.871,
+          "end": 1.324
+        },
+        {
+          "text": "are",
+          "start": 1.37,
+          "end": 1.486
+        },
+        {
+          "text": "one",
+          "start": 1.556,
+          "end": 1.788
         },
         {
           "text": "click",
-          "start": 0.824,
-          "end": 1.033
+          "start": 1.823,
+          "end": 2.032
         },
         {
-          "text": "an",
-          "start": 1.068,
-          "end": 1.115
-        },
-        {
-          "text": "element,",
-          "start": 1.161,
-          "end": 1.695
-        },
-        {
-          "text": "describe",
-          "start": 1.869,
-          "end": 2.31
-        },
-        {
-          "text": "the",
-          "start": 2.334,
-          "end": 2.403
-        },
-        {
-          "text": "change.",
-          "start": 2.438,
-          "end": 2.972
-        },
-        {
-          "text": "A",
-          "start": 3.297,
-          "end": 3.413
-        },
-        {
-          "text": "coding",
-          "start": 3.564,
-          "end": 3.901
-        },
-        {
-          "text": "agent",
-          "start": 3.947,
-          "end": 4.214
-        },
-        {
-          "text": "edits",
-          "start": 4.272,
-          "end": 4.505
-        },
-        {
-          "text": "your",
-          "start": 4.54,
-          "end": 4.656
-        },
-        {
-          "text": "source,",
-          "start": 4.714,
-          "end": 5.097
-        },
-        {
-          "text": "and",
-          "start": 5.12,
-          "end": 5.317
-        },
-        {
-          "text": "the",
-          "start": 5.364,
-          "end": 5.433
-        },
-        {
-          "text": "page",
-          "start": 5.468,
-          "end": 5.956
-        },
-        {
-          "text": "hot-reloads.",
-          "start": 6.026,
-          "end": 7.802
+          "text": "away.",
+          "start": 2.09,
+          "end": 2.786
         }
       ]
     },
     {
       "id": "line-6",
       "path": "assets/audio/voice/line-6.mp3",
-      "duration": 3.947392,
+      "duration": 4.87619,
+      "words": [
+        {
+          "text": "Hold",
+          "start": 0,
+          "end": 0.29
+        },
+        {
+          "text": "Alt,",
+          "start": 0.348,
+          "end": 0.58
+        },
+        {
+          "text": "click",
+          "start": 0.731,
+          "end": 0.952
+        },
+        {
+          "text": "an",
+          "start": 0.987,
+          "end": 1.033
+        },
+        {
+          "text": "element,",
+          "start": 1.08,
+          "end": 1.509
+        },
+        {
+          "text": "describe",
+          "start": 1.66,
+          "end": 2.09
+        },
+        {
+          "text": "the",
+          "start": 2.113,
+          "end": 2.183
+        },
+        {
+          "text": "change.",
+          "start": 2.218,
+          "end": 2.705
+        },
+        {
+          "text": "A",
+          "start": 2.914,
+          "end": 2.995
+        },
+        {
+          "text": "coding",
+          "start": 3.077,
+          "end": 3.355
+        },
+        {
+          "text": "agent",
+          "start": 3.402,
+          "end": 3.669
+        },
+        {
+          "text": "edits",
+          "start": 3.738,
+          "end": 3.982
+        },
+        {
+          "text": "your",
+          "start": 4.017,
+          "end": 4.133
+        },
+        {
+          "text": "source.",
+          "start": 4.191,
+          "end": 4.876
+        }
+      ]
+    },
+    {
+      "id": "line-7",
+      "path": "assets/audio/voice/line-7.mp3",
+      "duration": 1.718277,
+      "words": [
+        {
+          "text": "And",
+          "start": 0,
+          "end": 0.186
+        },
+        {
+          "text": "the",
+          "start": 0.221,
+          "end": 0.29
+        },
+        {
+          "text": "page",
+          "start": 0.325,
+          "end": 0.65
+        },
+        {
+          "text": "hot-reloads.",
+          "start": 0.697,
+          "end": 1.718
+        }
+      ]
+    },
+    {
+      "id": "line-8",
+      "path": "assets/audio/voice/line-8.mp3",
+      "duration": 3.529433,
       "words": [
         {
           "text": "devhost.",
           "start": 0,
-          "end": 0.731
+          "end": 0.627
         },
         {
           "text": "Open",
-          "start": 0.859,
-          "end": 1.138
+          "start": 0.743,
+          "end": 1.022
         },
         {
           "text": "source,",
-          "start": 1.196,
-          "end": 1.649
+          "start": 1.08,
+          "end": 1.405
         },
         {
           "text": "on",
-          "start": 1.707,
-          "end": 1.881
+          "start": 1.44,
+          "end": 1.556
         },
         {
           "text": "GitHub.",
-          "start": 1.962,
-          "end": 2.438
+          "start": 1.614,
+          "end": 2.067
         },
         {
           "text": "Stop",
-          "start": 2.647,
-          "end": 2.949
+          "start": 2.218,
+          "end": 2.496
         },
         {
           "text": "juggling",
-          "start": 3.019,
-          "end": 3.344
+          "start": 2.566,
+          "end": 2.868
         },
         {
           "text": "ports.",
-          "start": 3.402,
-          "end": 3.947
+          "start": 2.914,
+          "end": 3.529
         }
       ]
     }

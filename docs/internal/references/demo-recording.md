@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-11 12:50
+last_modified: 2026-10-11 14:10
 status: current
 ---
 
@@ -211,7 +211,7 @@ The render fails on any HyperFrames lint finding. From a run's `promo/` director
 just demo audio
 ```
 
-The command speaks every line again. Each generation bills that ElevenLabs account, and a failed request is not retried. A new take has different lengths, so after regenerating: read `timings.json`, then update each narration clip's `data-start` and `data-duration` in `index.html`, the frames' durations and tween times, and the cut times in the `index.html` script. Each frame holds one line: keep a cue at the word it illustrates, and end a narration clip where its speech ends, which is before the end of its file. Run root `just fix` before committing regenerated files.
+The command speaks every line again. Each generation bills that ElevenLabs account, and a failed request is not retried. A new take has different lengths, so after regenerating: read `timings.json`, then update each narration clip's `data-start` and `data-duration` in `index.html`, the frames' durations and tween times, and the cut times in the `index.html` script. A frame cuts just before its first line starts, and the devtools and agent frames hold a second line over their last shot, so no shot plays in silence. Keep a cue at the word it illustrates, and end a narration clip where its speech ends, which is before the end of its file. Run root `just fix` before committing regenerated files.
 
 ### Guide narration
 
