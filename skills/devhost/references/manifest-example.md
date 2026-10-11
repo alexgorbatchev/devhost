@@ -17,6 +17,12 @@ killZombies = true
 # of sub-manifests to load and merge. Perfect for monorepos.
 includes = ["packages/*/devhost.toml", "apps/*/devhost.toml"]
 
+# Groups can live in each app's included manifest. Run devhost start app.
+# Members are service names from the merged manifest; dependsOn adds dependencies.
+# Group names are unique across includes and distinct from service names.
+[groups]
+app = ["web"]
+
 # Repository checkout picker: enabled by default, requires Git on PATH.
 # Set enabled = false to disable discovery and saved-selection restore.
 # [worktrees]

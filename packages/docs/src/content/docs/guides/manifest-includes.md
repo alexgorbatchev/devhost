@@ -45,6 +45,8 @@ devhost start web api
 
 The names can come from any included manifest, and `dependsOn` can cross from one included manifest to another. The services left out run no process and reserve no hostname or port. See [Starting part of a stack](../stack-lifecycle/#starting-part-of-a-stack) for the selection rules, a worked example, and how to start a stopped service later.
 
+Groups defined under `[groups]` merge alongside services. Each app can own its group in its local `devhost.toml`; the root needs only `includes`. Group members can reference services from any included manifest, and duplicate group names are rejected. See [Named service groups](../stack-lifecycle/#named-service-groups) for configuration, startup selection, and reload behavior.
+
 ## Changes while the stack is running
 
 Saving the root manifest or an included manifest reloads the merged service configuration. Adding or deleting files matching an `includes` glob adds or removes their services without restarting devhost. Devhost validates the whole candidate before changing running services; rejected edits leave the accepted configuration in place. Changing annotation actions requires stopping and restarting devhost, including when the actions come from an included file.
@@ -59,7 +61,7 @@ When a sub-manifest is run solo (by running `devhost start` from its local packa
 
 However, when included in a root manifest:
 
-1. Only local services (`services`) and annotation actions (`annotation.actions`) are extracted and merged.
+1. Local services (`services`), groups (`groups`), and annotation actions (`annotation.actions`) are extracted and merged.
 2. Root global settings (like stack name, Caddy proxy front door, and devtools toggle settings) remain authoritative and **cannot be overridden** by the sub-manifests.
 
 This enables you to use the exact same configuration files both for individual sub-application solo runs and as modular components of a large multi-service stack.

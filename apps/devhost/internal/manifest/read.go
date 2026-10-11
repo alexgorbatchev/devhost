@@ -117,6 +117,11 @@ func loadAndMergeManifests(manifestPath string, rootManifestDir string, visited 
 					continue
 				}
 
+				// Group members are service names, including for groups named watch;
+				// preserve them before the service-path rewriting below.
+				if err := mergeIncludedGroups(manifestValue, subManifest, absPath, matchAbs); err != nil {
+					return nil, nil, err
+				}
 				subManifestCopy := copyMap(subManifest)
 				preparedSub := prepareSubManifest(subManifestCopy, rootManifestDir, filepath.Dir(matchAbs))
 

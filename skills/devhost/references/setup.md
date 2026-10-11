@@ -91,6 +91,8 @@ For manual recovery, restart an individual service to reuse its assigned port. I
 
 Save service changes to the original root manifest or an included manifest while devhost is running. Files added or deleted under an `includes` glob also change the stack. Wait for `configuration reloaded`; invalid, conflicting, or restart-required edits print `configuration reload rejected` and leave the running stack unchanged.
 
+Define app-owned selections under `[groups]` in included manifests, such as `app = ["app-frontend"]`, and run `devhost start app` from the root. Groups merge alongside services. Each group contains a non-empty array of service names from the merged manifest, with dependencies supplied by `dependsOn`. Group names match service naming rules, are unique across includes, and are distinct from service names. Nested groups and unknown members are rejected. Selected groups use their current membership on reload; removing a selected group removes its selection while other requested names and `alwaysStart` services remain. Stack restarts retain the requested names.
+
 Keep stack `name`, `killZombies`, Caddy settings, devtools settings, annotation settings, and `[worktrees].enabled` unchanged in a live edit. Stop and restart devhost to apply those settings. An edit changing one of them rejects its service changes as well.
 
 Expect affected services, their dependents, and affected repository groups to restart in dependency order after stopping in reverse order. Compatible automatic ports and saved checkout selections are retained. Changing ports exported through `DEVHOST_PORT_*` can restart otherwise unchanged services. Existing terminal sessions and control connections remain available.

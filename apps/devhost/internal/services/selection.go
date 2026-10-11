@@ -2,7 +2,6 @@ package services
 
 import (
 	"fmt"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -10,11 +9,13 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
 
-// ValidateRequestedServices rejects service names the manifest does not define.
+// ValidateRequestedServices rejects names outside the manifest's services and groups.
 func ValidateRequestedServices(value manifest.Manifest, requested []string) error {
 	var unknown []string
 	for _, name := range requested {
-		if _, ok := value.Services[name]; !ok {
+		_, service := value.Services[name]
+		_, group := value.Groups[name]
+		if !service && !group {
 			unknown = append(unknown, strconv.Quote(name))
 		}
 	}
@@ -22,8 +23,11 @@ func ValidateRequestedServices(value manifest.Manifest, requested []string) erro
 		return nil
 	}
 
-	defined := make([]string, 0, len(value.Services))
+	defined := make([]string, 0, len(value.Services)+len(value.Groups))
 	for name := range value.Services {
+		defined = append(defined, name)
+	}
+	for name := range value.Groups {
 		defined = append(defined, name)
 	}
 	sort.Strings(defined)
@@ -32,13 +36,19 @@ func ValidateRequestedServices(value manifest.Manifest, requested []string) erro
 	if len(unknown) > 1 {
 		subject = "unknown services"
 	}
+	if len(value.Groups) > 0 {
+		subject = "unknown service or group"
+		if len(unknown) > 1 {
+			subject = "unknown services or groups"
+		}
+	}
 	return fmt.Errorf("%s: %s; the manifest defines: %s", subject, strings.Join(unknown, ", "), strings.Join(defined, ", "))
 }
 
 // startedServiceNames returns the services a run starts: every service when none
-// is requested, otherwise the requested and alwaysStart services together with
-// everything they depend on. A requested name the manifest no longer defines
-// selects nothing, so a reload that removes it keeps the rest of the selection.
+// is requested, otherwise the requested services, group members, and alwaysStart
+// services together with everything they depend on. A requested name the manifest
+// no longer defines selects nothing, so a reload keeps the rest of the selection.
 func startedServiceNames(value manifest.Manifest, requested []string) map[string]bool {
 	started := map[string]bool{}
 	if len(requested) == 0 {
@@ -48,7 +58,14 @@ func startedServiceNames(value manifest.Manifest, requested []string) map[string
 		return started
 	}
 
-	pending := slices.Clone(requested)
+	var pending []string
+	for _, name := range requested {
+		if members, ok := value.Groups[name]; ok {
+			pending = append(pending, members...)
+		} else {
+			pending = append(pending, name)
+		}
+	}
 	for name, service := range value.Services {
 		if service.AlwaysStart {
 			pending = append(pending, name)
