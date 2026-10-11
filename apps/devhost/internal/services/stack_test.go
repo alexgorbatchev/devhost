@@ -509,6 +509,7 @@ func TestStartStackRetriesAutoPortAndPrefixesOutput(t *testing.T) {
 		"[retry-stack] retrying web with a new auto port after a bind collision.",
 		fmt.Sprintf("[retry-stack] web (primary): http://127.0.0.1:%d", *finalPort),
 		"[retry-stack] web exited with code 0; devhost is waiting for a restart.",
+		"[retry-stack] Received SIGTERM (signal 15); shutting down the stack.",
 		"[retry-stack] Stopping service web...",
 		"[retry-stack] Stopped service web.",
 		"[retry-stack] Stack stopped.",
@@ -729,6 +730,7 @@ func TestStartStackActivatesRoutesAndCleansUpAfterShutdown(t *testing.T) {
 	wantInfo := []string{
 		"[route-stack] web (primary): https://hello.localhost",
 		"[route-stack] web exited with code 0; devhost is waiting for a restart.",
+		"[route-stack] Received SIGTERM (signal 15); shutting down the stack.",
 		"[route-stack] Stopping service web...",
 		"[route-stack] Stopped service web.",
 		"[route-stack] Stack stopped.",

@@ -900,6 +900,7 @@ func assertServiceExitOutput(t *testing.T, output string) {
 	t.Helper()
 	want := strings.Join([]string{
 		"[hello-stack] worker exited with code 0; devhost is waiting for a restart.",
+		"[hello-stack] Received SIGTERM (signal 15); shutting down the stack.",
 		"[hello-stack] Stopping service worker...",
 		"[hello-stack] Stopped service worker.",
 		"[hello-stack] Stack stopped.",

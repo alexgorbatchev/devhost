@@ -177,7 +177,8 @@ The token-free native browser WebSocket requires the exact current Origin/Host, 
 - Manifest logs must use the manifest `name` as the prefix label.
 - Pre-manifest logs must fall back to the `devhost` label.
 - Child process logs must remain prefixed with `[service-name]`.
-- Stack shutdown logs each managed service's stopping and successful cleanup once with the manifest prefix, then `Stack stopped.` only after service and routing cleanup succeeds. Keep child diagnostics visible and preserve signal exit codes.
+- Stack shutdown names the received signal before stopping services, logs each managed service's stopping and successful cleanup once with the manifest prefix, then `Stack stopped.` only after service and routing cleanup succeeds. Keep child diagnostics visible and preserve signal exit codes.
+- Startup health errors retain the checked target and actionable configuration hints in logs and recovery state. Explain health-check termination before signaling a foreground service, and name the repository and failing member before startup failure stops its group. Report a detected TCP loopback mismatch once per startup attempt while continuing to check the configured target.
 - Generated managed Caddyfiles must discard the default Caddy runtime logger so background Caddy stderr never leaks into default stack output.
 - Do not print successful Caddy reload chatter during default `devhost start` runs; only print it for `devhost start --debug` or explicit `devhost caddy ...` commands.
 - Surface Caddy output on failure, and surface successful reload output only for `devhost start --debug` or explicit `devhost caddy ...` commands.

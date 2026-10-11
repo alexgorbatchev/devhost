@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -18,12 +19,15 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
 )
 
-func startRecoveryStack(t *testing.T, timeout int, missingExecutable bool) (string, string, func(), *shutdownOutput) {
+func startRecoveryStack(t *testing.T, timeout int, missingExecutable, worktrees bool) (string, string, func(), *shutdownOutput) {
 	t.Helper()
 	paths := caddy.CreateManagedCaddyPaths(t.TempDir())
 	admin := caddytest.StartAdminServer(t)
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
 	root := t.TempDir()
+	if worktrees {
+		root, _ = createWorktreeRepository(t)
+	}
 	gate := filepath.Join(root, "serve")
 	port := nettest.ReservePort(t)
 	command := os.Args[0]
@@ -31,6 +35,7 @@ func startRecoveryStack(t *testing.T, timeout int, missingExecutable bool) (stri
 		command = filepath.Join(root, "missing-command")
 	}
 	m := newResolvedManifest(root, admin)
+	m.Worktrees.Enabled = worktrees
 	m.Devtools.Status.Enabled = false
 	m.Services["web"] = ResolvedService{
 		Name: "web", BindHost: "127.0.0.1", Cwd: root, Hosts: []string{"recover.localhost"}, Port: &port, PortSource: "fixed", InjectPort: true,
@@ -102,11 +107,18 @@ func readStartupRecoveryState(t *testing.T, url string) devtools.RecoveryState {
 }
 
 func TestStartupRecoveryRetainsTimeoutAndRestartsWithoutToolbar(t *testing.T) {
-	url, gate, _, _ := startRecoveryStack(t, 2000, false)
+	url, gate, _, output := startRecoveryStack(t, 2000, false, false)
 	waitForCondition(t, 5*time.Second, func() bool {
 		state := readStartupRecoveryState(t, url)
 		return state.CanRestart && strings.Contains(state.Message, "did not pass its health check within 2000ms")
 	})
+	logs := output.snapshot()
+	failureAt := strings.Index(logs, "Service web did not pass its health check within 2000ms.")
+	stopAt := strings.Index(logs, "Stopping service web because its startup health check failed; sending SIGTERM (signal 15).")
+	childAt := strings.Index(logs, "[web] received SIGTERM")
+	if failureAt < 0 || stopAt <= failureAt || childAt <= stopAt {
+		t.Fatalf("startup failure must explain termination before child signal output:\n%s", logs)
+	}
 	if page := readStartupRecoveryPage(t, url); !strings.Contains(page, "waiting for serve gate") || strings.Contains(page, "/__devhost__/inject.js") {
 		t.Fatalf("timeout page = %s", page)
 	}
@@ -147,7 +159,7 @@ func TestStartupRecoveryRetainsTimeoutAndRestartsWithoutToolbar(t *testing.T) {
 }
 
 func TestStartupPageWaitsForHealthBeforeServingApplication(t *testing.T) {
-	url, gate, _, _ := startRecoveryStack(t, 60000, false)
+	url, gate, _, _ := startRecoveryStack(t, 60000, false, false)
 	if page := readStartupRecoveryPage(t, url); !strings.Contains(page, "Starting web") {
 		t.Fatalf("startup page = %s", page)
 	}
@@ -158,7 +170,14 @@ func TestStartupPageWaitsForHealthBeforeServingApplication(t *testing.T) {
 }
 
 func TestShutdownCancelsStartupHealthWait(t *testing.T) {
-	url, _, stop, output := startRecoveryStack(t, 60000, false)
+	for _, name := range []string{"ungrouped", "repository"} {
+		t.Run(name, func(t *testing.T) { testShutdownCancelsStartupHealthWait(t, name == "repository") })
+	}
+}
+
+func testShutdownCancelsStartupHealthWait(t *testing.T, worktrees bool) {
+	t.Helper()
+	url, _, stop, output := startRecoveryStack(t, 60000, false, worktrees)
 	if page := readStartupRecoveryPage(t, url); !strings.Contains(page, "Starting web") {
 		t.Fatalf("startup page = %s", page)
 	}
@@ -166,6 +185,13 @@ func TestShutdownCancelsStartupHealthWait(t *testing.T) {
 		return strings.Contains(output.snapshot(), "waiting for serve gate")
 	})
 	stop()
+	logs := output.snapshot()
+	reasonAt := strings.Index(logs, "Received SIGTERM (signal 15); shutting down the stack.")
+	stopAt := strings.Index(logs, "Stopping service web...")
+	childAt := strings.Index(logs, "[web] received SIGTERM")
+	if reasonAt < 0 || stopAt <= reasonAt || childAt <= stopAt || strings.Contains(logs, "startup health check failed") || strings.Contains(logs, "failed to start") {
+		t.Fatalf("shutdown must explain cancellation before stopping services:\n%s", logs)
+	}
 	for _, message := range []string{"Stopping service web...", "Stopped service web."} {
 		if logs := output.snapshot(); strings.Count(logs, message) != 1 {
 			t.Errorf("want exactly one %q line:\n%s", message, logs)
@@ -174,7 +200,7 @@ func TestShutdownCancelsStartupHealthWait(t *testing.T) {
 }
 
 func TestStartupLaunchErrorRetainsRoutesForRecovery(t *testing.T) {
-	url, gate, _, _ := startRecoveryStack(t, 2000, true)
+	url, gate, _, _ := startRecoveryStack(t, 2000, true, false)
 	waitForCondition(t, 5*time.Second, func() bool {
 		return strings.Contains(readStartupRecoveryPage(t, url), "missing-command")
 	})
@@ -208,6 +234,13 @@ func TestStartupRecoveryServiceHelperProcess(t *testing.T) {
 	if os.Getenv("DEVHOST_STARTUP_RECOVERY_HELPER") != "1" {
 		return
 	}
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGTERM)
+	go func() {
+		<-signals
+		_, _ = io.WriteString(os.Stderr, "received SIGTERM\n")
+		os.Exit(0)
+	}()
 	fmtOutput := "waiting for serve gate\n"
 	_, _ = io.WriteString(os.Stdout, fmtOutput)
 	for {
