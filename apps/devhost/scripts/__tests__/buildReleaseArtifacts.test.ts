@@ -2,7 +2,7 @@ import { Archive } from "bun";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import assert from "node:assert";
 import { mkdir, mkdtemp, readdir, rm } from "node:fs/promises";
-import { basename, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { buildReleaseArtifacts } from "../buildReleaseArtifacts";
 
 const repositoryPath: string = resolve(import.meta.dir, "../../../..");
