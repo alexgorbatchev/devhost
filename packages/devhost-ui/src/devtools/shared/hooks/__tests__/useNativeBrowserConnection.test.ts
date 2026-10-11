@@ -49,7 +49,7 @@ function readRequest(transport: INativeBrowserTransportState, index: number): Na
 }
 
 afterEach(async () => {
-  await waitForTransport((transport) => expect(transport.activeSocketCount).toBe(0));
+  await waitForTransport((transport) => assert.strictEqual(transport.activeSocketCount, 0));
   await hookTransport.reset();
 });
 
