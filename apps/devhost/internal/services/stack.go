@@ -189,14 +189,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		RuntimeOS:    runtime.GOOS,
 	}
 	processSignals := make(chan os.Signal, 1)
-	shutdownMessages := make(chan string, 1)
-	announceSignalShutdown := func() {
-		select {
-		case message := <-shutdownMessages:
-			writeLogLine(options.LogWriter, manifest.Name, message)
-		default:
-		}
-	}
+	stackName := manifest.Name
 	registerProcessSignals(processSignals)
 	defer unregisterProcessSignals(processSignals)
 	signalForwardingDone := make(chan struct{})
@@ -204,7 +197,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		defer close(signalForwardingDone)
 		select {
 		case receivedSignal := <-processSignals:
-			shutdownMessages <- fmt.Sprintf("Received %s; shutting down the stack.", describeShutdownSignal(receivedSignal))
+			writeLogLine(options.LogWriter, stackName, fmt.Sprintf("Received %s; shutting down the stack.", describeShutdownSignal(receivedSignal)))
 			signalExits <- receivedSignal
 			cancelLifecycle()
 		case <-lifecycleCtx.Done():
@@ -224,7 +217,6 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 
 	defer func() {
 		cancelLifecycle()
-		announceSignalShutdown()
 		state.operationMu.Lock()
 		state.shuttingDown = true
 		wasReady := state.ready
@@ -598,7 +590,6 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	state.startupComplete = true
 	state.manifestMu.Unlock()
 	lastReloadError := ""
-	stackName := manifest.Name
 	var reloadResults <-chan error
 	defer func() {
 		cancelLifecycle()
@@ -639,7 +630,6 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			writeLogLine(options.LogWriter, stackName, fmt.Sprintf("%s exited with code %d; devhost is waiting for a restart.", result.serviceName, result.exitCode))
 		case receivedSignal := <-signalExits:
 			cancelLifecycle()
-			announceSignalShutdown()
 			state.startedMu.Lock()
 			startedServicesSnapshot := append([]*startedService{}, state.started...)
 			state.startedMu.Unlock()
