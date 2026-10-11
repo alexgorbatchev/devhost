@@ -128,6 +128,10 @@ Open a service's domain while it starts to see **Starting <service>**, its assig
 
 Stopping the stack during startup cancels the health wait and reports shutdown progress for every launched service.
 
+While a managed service starts, progress logs name the TCP address or HTTP URL being checked, elapsed time, and configured timeout. A failed check retains its target and a configuration hint in the error shown in logs and recovery pages. For a TCP loopback mismatch, devhost reports the alternative address that accepted a connection and the service's exact `bindHost` setting to change. That warning appears once per startup attempt; health checks continue against the configured target.
+
+Before terminating a foreground process that failed startup health checks, devhost prints the failure and explains that it is sending `SIGTERM (signal 15)`. If the failure stops a worktree repository's other services, a separate line names that repository, its services, and the failing member. Child command diagnostics remain visible after these explanations.
+
 If startup times out, the process exits, or the backend is unreachable, the same domain shows the recorded failure and recent service logs. **Restart <service>** becomes available for managed services after stack initialization and stays disabled during an active restart. Failed attempts show their error and remain retryable. External services show status and require recovery outside devhost.
 
 These pages work for aliases and path routes even when every devtools feature is disabled. They do not depend on the app or injected toolbar. With worktrees enabled, each repository has a checkout picker and **Switch worktree** action on the standalone page. **Refresh worktrees** discovers added and deleted checkouts. Switching restarts the repository's managed services together and reloads the current URL after success; failures stay visible and retryable. Restarting a member of a failed repository retries the whole group. If a member fails its health check, the group stops and every member's recovery page shows that member's error, replacing the switch progress message. Repositories containing external services show why switching is unavailable. When enabled on a root route, the toolbar also remains available for stack recovery.
@@ -169,6 +173,8 @@ Managed foreground-service shutdown is best-effort and platform-specific. On Lin
 ## Stopping a Stack
 
 Press **Ctrl-C** in the stack's terminal to stop it. Devhost prints `Stopping service <name>...` for each managed service as shutdown begins and `Stopped service <name>.` after its cleanup succeeds, all prefixed with the stack name. `Stack stopped.` confirms that service and routing cleanup finished successfully. Child stdout/stderr remains visible during shutdown, and cleanup failures report the affected services instead of claiming success. Ctrl-C exits with code `130`; SIGTERM exits with `143`.
+
+Signal-driven shutdown first names the received signal, for example `Received SIGTERM (signal 15); shutting down the stack.` This also appears when shutdown interrupts startup. A child command reporting signal `15` or exit code `143` after devhost announces termination is reporting the stop request; read the preceding devhost line for its cause.
 
 To shut down a running stack cleanly, you can run the `stop` command from your project's manifest directory, or point to it explicitly:
 

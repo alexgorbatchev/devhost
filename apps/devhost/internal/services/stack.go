@@ -189,6 +189,14 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		RuntimeOS:    runtime.GOOS,
 	}
 	processSignals := make(chan os.Signal, 1)
+	shutdownMessages := make(chan string, 1)
+	announceSignalShutdown := func() {
+		select {
+		case message := <-shutdownMessages:
+			writeLogLine(options.LogWriter, manifest.Name, message)
+		default:
+		}
+	}
 	registerProcessSignals(processSignals)
 	defer unregisterProcessSignals(processSignals)
 	signalForwardingDone := make(chan struct{})
@@ -196,6 +204,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		defer close(signalForwardingDone)
 		select {
 		case receivedSignal := <-processSignals:
+			shutdownMessages <- fmt.Sprintf("Received %s; shutting down the stack.", describeShutdownSignal(receivedSignal))
 			signalExits <- receivedSignal
 			cancelLifecycle()
 		case <-lifecycleCtx.Done():
@@ -215,6 +224,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 
 	defer func() {
 		cancelLifecycle()
+		announceSignalShutdown()
 		state.operationMu.Lock()
 		state.shuttingDown = true
 		wasReady := state.ready
@@ -437,6 +447,9 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		if isManagedService(service) && blocked[serviceName] == "" {
 			if groupedServices[serviceName] {
 				if err := state.start(lifecycleCtx, serviceName, runtimeStartOptions{RefreshRoute: true, AllowPortReassignment: true}); err != nil {
+					if lifecycleCtx.Err() != nil {
+						return 0, err
+					}
 					if err := state.failWorktreeStartup(serviceName, err); err != nil {
 						return 0, err
 					}
@@ -626,6 +639,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			writeLogLine(options.LogWriter, stackName, fmt.Sprintf("%s exited with code %d; devhost is waiting for a restart.", result.serviceName, result.exitCode))
 		case receivedSignal := <-signalExits:
 			cancelLifecycle()
+			announceSignalShutdown()
 			state.startedMu.Lock()
 			startedServicesSnapshot := append([]*startedService{}, state.started...)
 			state.startedMu.Unlock()
@@ -641,6 +655,22 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			return 0, nil
 		}
 	}
+}
+
+func describeShutdownSignal(sig os.Signal) string {
+	name := sig.String()
+	switch sig {
+	case syscall.SIGINT:
+		name = "SIGINT (Ctrl-C)"
+	case syscall.SIGHUP:
+		name = "SIGHUP"
+	case syscall.SIGTERM:
+		name = "SIGTERM"
+	}
+	if number, ok := sig.(syscall.Signal); ok {
+		return fmt.Sprintf("%s (signal %d)", name, number)
+	}
+	return name
 }
 
 func CreateInjectedServiceEnvironment(manifest ResolvedManifest, service ResolvedService) map[string]string {
@@ -841,42 +871,8 @@ func startServiceWithRetries(ctx context.Context, manifest *ResolvedManifest, st
 			return nil, err
 		}
 
-		var lastProgressLog time.Time
-		var lastAmbiguityWarning time.Time
-
-		err = WaitForServiceHealth(ctx, WaitForServiceHealthOptions{
-			Health:       service.Health,
-			ReadExitCode: started.ReadExitCode,
-			ServiceName:  service.Name,
-			OnProgress: func(attempts int, elapsed time.Duration) {
-				now := time.Now()
-				if elapsed >= 2*time.Second && (lastProgressLog.IsZero() || now.Sub(lastProgressLog) >= 5*time.Second) {
-					lastProgressLog = now
-					address := ""
-					if service.Health.Host != nil && service.Health.Port != nil {
-						address = fmt.Sprintf(" on %s:%d", *service.Health.Host, *service.Health.Port)
-					} else if service.Health.URL != nil {
-						address = fmt.Sprintf(" on %s", *service.Health.URL)
-					}
-					writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("Waiting for service %s to pass its health check%s (elapsed: %s)...", service.Name, address, elapsed.Round(time.Second)))
-
-					if service.Health.Kind == "tcp" && service.Health.Host != nil && service.Health.Port != nil && (lastAmbiguityWarning.IsZero() || now.Sub(lastAmbiguityWarning) >= 10*time.Second) {
-						altBindHost := readAlternativeBindHost(*service.Health.Host)
-						if altBindHost != "" {
-							proxyHost, err := caddy.ResolveProxyHost(altBindHost)
-							if err == nil && proxyHost != "" {
-								if canConnectToPort(ctx, proxyHost, *service.Health.Port, probeTimeoutFor(service.Health)) {
-									lastAmbiguityWarning = now
-									writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf(
-										"WARNING: Service %s is not responding on %s:%d, but a TCP connection succeeded on %s:%d. Consider setting services.%s.bindHost = %q in your manifest.",
-										service.Name, *service.Health.Host, *service.Health.Port, altBindHost, *service.Health.Port, service.Name, altBindHost,
-									))
-								}
-							}
-						}
-					}
-				}
-			},
+		err = waitForStartupHealth(ctx, service, startupHealthOptions{
+			stackName: manifest.Name, logWriter: options.LogWriter, readExitCode: started.ReadExitCode,
 		})
 		if err == nil {
 			if warning := ReadLoopbackBindHostAmbiguityWarning(service, manifest.Caddy.Global.HTTPSPort); warning != "" {
@@ -913,6 +909,9 @@ func startServiceWithRetries(ctx context.Context, manifest *ResolvedManifest, st
 		// to drain, so attemptOutput is complete below. Waiting before it could block on a surviving descendant that
 		// still holds the inherited output pipe.
 		exitedBeforeCleanup := started.ReadExitCode() != nil
+		if !exitedBeforeCleanup {
+			writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("%v Stopping service %s because its startup health check failed; sending SIGTERM (signal 15).", err, service.Name))
+		}
 		if stopError := stopStartedService(started, resolveGracePeriod(options.ShutdownGracePeriod)); stopError != nil {
 			return nil, joinCleanupError(err, stopError)
 		}
@@ -974,41 +973,8 @@ func startDaemonLifecycleService(
 		}
 	}
 
-	var lastProgressLog time.Time
-	var lastAmbiguityWarning time.Time
-
-	err = WaitForServiceHealth(ctx, WaitForServiceHealthOptions{
-		Health:      service.Health,
-		ServiceName: service.Name,
-		OnProgress: func(attempts int, elapsed time.Duration) {
-			now := time.Now()
-			if elapsed >= 2*time.Second && (lastProgressLog.IsZero() || now.Sub(lastProgressLog) >= 5*time.Second) {
-				lastProgressLog = now
-				address := ""
-				if service.Health.Host != nil && service.Health.Port != nil {
-					address = fmt.Sprintf(" on %s:%d", *service.Health.Host, *service.Health.Port)
-				} else if service.Health.URL != nil {
-					address = fmt.Sprintf(" on %s", *service.Health.URL)
-				}
-				writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("Waiting for service %s to pass its health check%s (elapsed: %s)...", service.Name, address, elapsed.Round(time.Second)))
-
-				if service.Health.Kind == "tcp" && service.Health.Host != nil && service.Health.Port != nil && (lastAmbiguityWarning.IsZero() || now.Sub(lastAmbiguityWarning) >= 10*time.Second) {
-					altBindHost := readAlternativeBindHost(*service.Health.Host)
-					if altBindHost != "" {
-						proxyHost, err := caddy.ResolveProxyHost(altBindHost)
-						if err == nil && proxyHost != "" {
-							if canConnectToPort(ctx, proxyHost, *service.Health.Port, probeTimeoutFor(service.Health)) {
-								lastAmbiguityWarning = now
-								writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf(
-									"WARNING: Service %s is not responding on %s:%d, but a TCP connection succeeded on %s:%d. Consider setting services.%s.bindHost = %q in your manifest.",
-									service.Name, *service.Health.Host, *service.Health.Port, altBindHost, *service.Health.Port, service.Name, altBindHost,
-								))
-							}
-						}
-					}
-				}
-			}
-		},
+	err = waitForStartupHealth(ctx, service, startupHealthOptions{
+		stackName: manifest.Name, logWriter: options.LogWriter,
 	})
 	if err != nil {
 		return err

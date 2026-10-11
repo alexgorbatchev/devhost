@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"net"
 	"net/http"
@@ -20,8 +21,14 @@ func TestWorktreeRecoveryAfterBindHostMismatch(t *testing.T) {
 	for _, host := range []string{"127.0.0.1", "::1"} {
 		t.Run(host, func(t *testing.T) {
 			f, url, bindFile := startWorktreeRecoveryStack(t, host, readAlternativeBindHost(host), 1000)
-			failure := "Service api did not pass its health check within 1000ms."
+			route := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "api.recovery.localhost_api_2f.json"))
+			address := net.JoinHostPort(host, fmt.Sprint(route.AppPort))
+			alternative := net.JoinHostPort(readAlternativeBindHost(host), fmt.Sprint(route.AppPort))
+			failure := fmt.Sprintf("Service api did not pass its health check within 1000ms. TCP health check could not connect to %s. A TCP connection to %s succeeded instead. Set services.api.bindHost = %q in your manifest, or configure the app to listen on %s.", address, alternative, readAlternativeBindHost(host), address)
 			assertWorktreeRecoveryFailure(t, f, url, failure)
+			if !f.logs.contains("Stopping repository shop services (api, web) because service api failed to start.") {
+				t.Fatal("startup failure did not explain why sibling services stop")
+			}
 			client := &http.Client{Timeout: 5 * time.Second}
 			restart := func() (int, string) {
 				t.Helper()
@@ -139,7 +146,7 @@ func assertWorktreeRecoveryFailure(t *testing.T, f *reloadStackFixture, url, fai
 	if state.Phase != "unavailable" || !state.CanRestart || state.Message != failure {
 		t.Fatalf("failed repository recovery state = %#v", state)
 	}
-	if page := readStartupRecoveryPage(t, url); !strings.Contains(page, failure) {
+	if page := readStartupRecoveryPage(t, url); !strings.Contains(html.UnescapeString(page), failure) {
 		t.Fatalf("recovery page hides repository failure: %s", page)
 	}
 	health, err := f.control.GetHealthResponse()

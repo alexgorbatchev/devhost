@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -410,6 +411,7 @@ func (r *stackRuntime) failWorktreeStartup(name string, err error) error {
 			if member != name {
 				continue
 			}
+			writeLogLine(r.options.LogWriter, r.manifest.Name, fmt.Sprintf("%v Stopping repository %s services (%s) because service %s failed to start.", err, repo.Name, strings.Join(r.orderedGroup(repo.ServiceNames), ", "), name))
 			err = joinCleanupError(err, r.stopGroup(r.orderedGroup(repo.ServiceNames)))
 			r.manifestMu.Lock()
 			for _, name := range repo.ServiceNames {

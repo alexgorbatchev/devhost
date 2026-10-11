@@ -59,7 +59,7 @@ On some machines, though, `http://localhost:5173` and `http://127.0.0.1:5173` do
 
 That can produce confusing behavior where the direct printed `localhost` URL works, but the routed `*.localhost` hostname lands on a different local process or response.
 
-When `devhost` detects that mismatch, it logs an explicit startup warning. If the configured TCP health-check address is unreachable but the other loopback address accepts a connection, the warning says "a TCP connection succeeded" on that address. This confirms connectivity only; verify that the listener belongs to your app before changing `bindHost`.
+When a TCP health check cannot connect to its configured address but a connection to the other loopback address succeeds, `devhost` logs one warning per startup attempt. Progress logs include the checked address and elapsed time alongside the configured timeout. The final error retains both addresses and a concrete `services.<name>.bindHost` hint, including on recovery pages. The probe establishes connectivity only; verify that the listener belongs to your app before changing `bindHost`.
 
 `bindHost` selects devhost's health-check and proxy target. The application owns its listener: changing the manifest alone does not reconfigure Vite's `server.host`. Configure Vite's `server.host` and `server.port` to match the manifest's address and assigned port, and use `server.strictPort = true` so it fails instead of moving to another port. See [Vite's server options](https://vite.dev/config/server-options).
 
@@ -85,6 +85,8 @@ curl -g -I 'http://[::1]:5173/'
 If those responses differ, match `bindHost` to the verified listener or configure the app to listen on devhost's address. Removing `bindHost` selects `127.0.0.1`, so it only resolves the mismatch if the app accepts IPv4 connections.
 
 A mismatch that prevents readiness ends with a health-check error after the configured timeout (30 seconds by default). The supervisor stays running and recovery remains retryable. With worktrees enabled, a failed repository restart stops the group and shows the failing service's error on every member's recovery page. Correct the listener configuration, then retry **Restart**.
+
+Before stopping a foreground process whose health check failed, devhost logs the health error and explains that it is sending `SIGTERM (signal 15)`. It also announces when a startup failure stops the repository's sibling services. Child messages such as `recipe dev was terminated ... by signal 15` or `script "dev" exited with code 143` can follow that stop request; the preceding devhost message explains the cause. If the stack itself received a signal, devhost names it in a `Received ...; shutting down the stack.` line before stopping services.
 
 ## Composite services
 
