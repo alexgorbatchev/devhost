@@ -222,14 +222,8 @@ export interface IPromoLineTiming {
   words: IPromoWord[];
 }
 
-export interface IPromoMusicTiming {
-  path: string;
-  duration: number;
-}
-
 export interface IPromoAudioTimings {
   lines: IPromoLineTiming[];
-  music?: IPromoMusicTiming;
 }
 
 export interface IGuideScript {
@@ -313,26 +307,10 @@ export interface ISpokenLine {
   words: IPromoWord[];
 }
 
-export interface IMusicSection {
-  name: string;
-  seconds: number;
-  styles: string[];
-  avoid: string[];
-}
-
-export interface IMusicRequest {
-  model: ElevenLabs.MusicModelId;
-  sections: IMusicSection[];
-}
-
 // Speaks narration lines.
 export interface ISpeechApi {
   speak: (
     voiceId: string,
     request: ElevenLabs.BodyTextToSpeechFullWithTimestamps,
   ) => Promise<ElevenLabs.AudioWithTimestampsResponse>;
-}
-
-export interface IPromoAudioApi extends ISpeechApi {
-  compose: (request: ElevenLabs.BodyComposeMusicV1MusicPost) => Promise<ReadableStream<Uint8Array>>;
 }

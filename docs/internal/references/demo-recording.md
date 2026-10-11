@@ -1,12 +1,12 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-11 11:30
+last_modified: 2026-10-11 12:50
 status: current
 ---
 
 # Refreshing the devhost demo
 
-Run the recording from the checkout whose UI you want to demonstrate. The recorder rebuilds the CLI and embedded UI and starts real services through devhost. The full sequence becomes a promo of at most 45 seconds: [HyperFrames](https://github.com/heygen-com/hyperframes) composes the captured scenes with narration and music. Each guide becomes a narrated film, without music, made the same way from its own recording. A single scene exports a silent, captioned H.264 MP4. The promo and single scenes stay in `.tmp/demos/`; guide recordings also update the docs site's media, which you review and then publish.
+Run the recording from the checkout whose UI you want to demonstrate. The recorder rebuilds the CLI and embedded UI and starts real services through devhost. The full sequence becomes a promo of at most 45 seconds: [HyperFrames](https://github.com/heygen-com/hyperframes) composes the captured scenes with narration. Each guide becomes a narrated film made the same way from its own recording. Neither has music: the narration is the only sound. A single scene exports a silent, captioned H.264 MP4. The promo and single scenes stay in `.tmp/demos/`; guide recordings also update the docs site's media, which you review and then publish.
 
 ## Prerequisites
 
@@ -30,7 +30,7 @@ The full sequence and annotation scene also require Pi on PATH with a working co
 
 The full sequence and every guide also need Node.js 22 or newer on PATH, which HyperFrames runs on. Before it captures anything, `just demo record` checks that version and has HyperFrames find or download its own Chrome build, about 114 MB on the first run; `just demo promo` does the same once it has checked the recording and before it changes anything in it. `just demo guides` and `just demo guide-film` run the same check before they record or render. An older Node.js or a failed download therefore stops the run before the capture and its Pi request.
 
-HyperFrames keeps that build under `~/.cache/hyperframes` and its own settings under `~/.hyperframes`; both follow `HOME`, so they cannot be moved into a run directory without downloading Chrome again for every run. Every render runs with `HYPERFRAMES_NO_TELEMETRY=1` and `HYPERFRAMES_SKIP_SKILLS=1`, so it reports no usage and installs no agent skills on your machine. A render needs no ElevenLabs key: the promo's narration and music and the guides' narration are committed files.
+HyperFrames keeps that build under `~/.cache/hyperframes` and its own settings under `~/.hyperframes`; both follow `HOME`, so they cannot be moved into a run directory without downloading Chrome again for every run. Every render runs with `HYPERFRAMES_NO_TELEMETRY=1` and `HYPERFRAMES_SKIP_SKILLS=1`, so it reports no usage and installs no agent skills on your machine. A render needs no ElevenLabs key: the narration of the promo and of the guides is committed.
 
 ## Record and refresh
 
@@ -82,7 +82,7 @@ just demo guides react-highlight
 just demo guides service-references
 ```
 
-The command discovers guide Markdown files and records each corresponding real workflow. Each guide becomes a narrated film of 1920 × 1080 at 30 fps and at most 45 seconds, rendered by the HyperFrames release the promo pins. A film opens on a title card with the guide's title from its front matter, shows the recording in a window while a voice explains each step, and closes on a card with the docs address. The narration is its only sound. The words of the current line appear under the window as they are spoken.
+The command discovers guide Markdown files and records each corresponding real workflow. Each guide becomes a narrated film of 1920 × 1080 at 30 fps and at most 45 seconds, rendered by the HyperFrames release the promo pins. A film opens on a title card with the guide's title from its front matter, shows the recording in a window while a voice explains each step, and closes on a card with the docs address. The words of the current line appear under the window as they are spoken.
 
 The command also updates the docs site's media. It writes the film's web encode, WebP poster, and English WebVTT captions to `packages/docs/public/demos/<slug>.*`, and replaces the guide's `guide-demo` block with a native video player at the top and a collapsed text transcript of the narration. The prose remains untouched. Assets use full `https://alexgorbatchev.github.io/devhost/demos/` URLs and ship through the existing Pages build. Players use `preload="none"` and play only when requested.
 
@@ -151,7 +151,7 @@ Sources live in `packages/devhost-ui/scripts/demo/`:
 | `findGuideStepWindows.ts` / `readFrameBrightness.ts`                        | Find a terminal guide's steps where its recording clears the screen             |
 | `renderGuide.ts` / `findGuideRecording.ts`                                  | Render a guide's film again from its latest recording                           |
 | `generateGuideAudio.ts` / `readGuideNarration.ts`                           | Generate the guide films' narration with ElevenLabs                             |
-| `speakLine.ts` / `composeMusic.ts` / `audioSchemas.ts`                      | Speak a line for either film; compose the promo's music                         |
+| `speakLine.ts` / `audioSchemas.ts`                                          | Speak one narration line, for the promo and the guide films                     |
 | `createSpeechRequest.ts` / `hashSpeechRequest.ts`                           | Build and hash a line's ElevenLabs request, so an unchanged line keeps its take |
 | `promo/`                                                                    | The promo's HyperFrames project: composition, narration, and audio              |
 | `renderPromo.ts` / `renderPromoComposition.ts`                              | Stage a copy of the project in the run directory, render it, and verify it      |
@@ -160,7 +160,7 @@ Sources live in `packages/devhost-ui/scripts/demo/`:
 | `readPromoSources.ts`                                                       | Name a run's captured videos the way frames request them                        |
 | `preparePromoRenderer.ts` / `createPromoRendererEnvironment.ts`             | Check Node.js and fetch HyperFrames' Chrome before a capture or a render        |
 | `removePromoRenderCaches.ts`                                                | Remove the renderer's frame cache and install from a run's `.tmp`               |
-| `generatePromoAudio.ts`                                                     | Generate the narration and music with ElevenLabs                                |
+| `generatePromoAudio.ts`                                                     | Generate the narration with ElevenLabs                                          |
 
 Use accessible roles and names for browser actions. Wait for rendered state or real responses before pacing pauses. Do not replace actual services, logs, restart requests, or native devtools with recording-only imitations. Scenes fail on missing UI, unsuccessful requests, or uncaught page errors, and retain a failure screenshot.
 
@@ -172,7 +172,7 @@ The copied playground has its own local Git repository on `main` and a real `ui-
 
 ## Editing the promo
 
-`packages/devhost-ui/scripts/demo/promo/` is a HyperFrames project. `index.html` places the frames, the narration, and the music on the timeline; `compositions/backdrop.html` and `compositions/frames/*.html` are its sub-compositions. `package.json` pins the HyperFrames release in its scripts, and the recorder runs the `browser` and `render` scripts with `bun run`, which starts the pinned release itself. Bun resolves that release from the npm registry each time, so the preflight and every render need the registry to be reachable even when Bun's cache already holds the packages. The pin fixes the HyperFrames release, not the packages it depends on, which it declares as version ranges. Change the pin with `bun x hyperframes@latest upgrade --project .` from the project directory, then render and review the promo.
+`packages/devhost-ui/scripts/demo/promo/` is a HyperFrames project. `index.html` places the frames and the narration on the timeline; `compositions/backdrop.html` and `compositions/frames/*.html` are its sub-compositions. `package.json` pins the HyperFrames release in its scripts, and the recorder runs the `browser` and `render` scripts with `bun run`, which starts the pinned release itself. Bun resolves that release from the npm registry each time, so the preflight and every render need the registry to be reachable even when Bun's cache already holds the packages. The pin fixes the HyperFrames release, not the packages it depends on, which it declares as version ranges. Change the pin with `bun x hyperframes@latest upgrade --project .` from the project directory, then render and review the promo.
 
 A frame asks for footage with a `<video>` element:
 
@@ -203,21 +203,19 @@ Edit the checkout's files, not that copy; the next render replaces it. Sub-compo
 
 The render fails on any HyperFrames lint finding. From a run's `promo/` directory, `bun run check` also audits layout and contrast.
 
-### Narration and music
+### Narration
 
-`promo/narration.json` holds the ElevenLabs voice, the spoken lines, and the music as timed sections. `promo/assets/audio/` holds what ElevenLabs generated from it: one MP3 per line, `music.mp3`, and `timings.json` with each file's measured length and word timings. Regenerate them with an exported `ELEVENLABS_API_KEY`:
+`promo/narration.json` holds the ElevenLabs voice and the spoken lines. The promo has no music. `promo/assets/audio/` holds what ElevenLabs generated from the narration: one MP3 per line, and `timings.json` with each file's measured length and word timings. Regenerate them with an exported `ELEVENLABS_API_KEY`:
 
 ```bash
 just demo audio
-just demo audio voice
-just demo audio music
 ```
 
-Each generation bills that ElevenLabs account, and a failed request is not retried. A new take has different lengths, so after regenerating: read `timings.json`, then update each narration clip's `data-start` and `data-duration` in `index.html`, the frames' durations and tween times, and the cut times in the `index.html` script. After new music, measure where its drop and final hit fall and set the music clip's `data-media-start` and volume lane to match the cuts. Run root `just fix` before committing regenerated files.
+The command speaks every line again. Each generation bills that ElevenLabs account, and a failed request is not retried. A new take has different lengths, so after regenerating: read `timings.json`, then update each narration clip's `data-start` and `data-duration` in `index.html`, the frames' durations and tween times, and the cut times in the `index.html` script. Each frame holds one line: keep a cue at the word it illustrates, and end a narration clip where its speech ends, which is before the end of its file. Run root `just fix` before committing regenerated files.
 
 ### Guide narration
 
-`guide/narration.json` holds the voice and the lines of every guide. A guide film has no music. `guide/assets/audio/` holds what ElevenLabs generated from the narration: `voice/<slug>/<clip>.mp3` for each line, and `timings.json`. Generate them with an exported `ELEVENLABS_API_KEY`:
+`guide/narration.json` holds the voice and the lines of every guide. `guide/assets/audio/` holds what ElevenLabs generated from the narration: `voice/<slug>/<clip>.mp3` for each line, and `timings.json`. Generate them with an exported `ELEVENLABS_API_KEY`:
 
 ```bash
 just demo audio-guides

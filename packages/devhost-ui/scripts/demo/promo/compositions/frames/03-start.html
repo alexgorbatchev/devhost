@@ -165,9 +165,9 @@
             src="assets/footage/start-footage.mp4"
             data-footage="startup"
             data-footage-to="-0.5"
-            data-start="3.5"
+            data-start="3.2"
             data-hf-media-start-basis="local"
-            data-duration="4.5"
+            data-duration="3.4"
             data-track-index="2"
             muted
             playsinline
@@ -222,31 +222,31 @@
         0.4,
       );
       // "Then one command": the file leaves and the terminal takes the stage.
-      tl.to("#start-file", { x: -900, scale: 0.7, opacity: 0, duration: 0.5, ease: "expo.in" }, 2.4);
+      tl.to("#start-file", { x: -900, scale: 0.7, opacity: 0, duration: 0.5, ease: "expo.in" }, 2.18);
       tl.fromTo(
         "#start-window",
         { y: 260, opacity: 0, rotationX: 24, transformPerspective: 1600 },
         { y: 0, opacity: 1, rotationX: 0, duration: 0.7, ease: "expo.out" },
-        2.55,
+        2.31,
       );
       tl.fromTo(
         "#start-command",
         { scale: 0.4, opacity: 0, rotation: -8 },
         { scale: 1, opacity: 1, rotation: 0, duration: 0.4, ease: "back.out(2.6)" },
-        2.8,
+        2.59,
       );
       // "Routes open when health checks pass."
       tl.fromTo(
         "#start-route",
         { scale: 1.5, opacity: 0 },
         { scale: 1, opacity: 1, duration: 0.36, ease: "back.out(2)" },
-        5.9,
+        4.78,
       );
       tl.fromTo(
         health,
         { y: 40, opacity: 0, scale: 0.85 },
         { y: 0, opacity: 1, scale: 1, duration: 0.32, ease: "back.out(2.4)", stagger: 0.26 },
-        6.66,
+        5.51,
       );
       window.__timelines["03-start"] = tl;
     }

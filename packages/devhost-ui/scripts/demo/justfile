@@ -6,9 +6,9 @@ record scene="all":
 promo recording="":
     DEVHOST_DEMO_RECORDING={{quote(recording)}} DEVHOST_DEMO_INVOCATION_DIRECTORY={{quote(invocation_directory())}} bun run ./renderPromo.ts
 
-# Regenerate the promo's ElevenLabs audio (all, voice, or music); this bills the ELEVENLABS_API_KEY account
-audio part="all":
-    DEVHOST_DEMO_AUDIO={{quote(part)}} bun run ./generatePromoAudio.ts
+# Regenerate the promo's ElevenLabs narration; this bills the ELEVENLABS_API_KEY account
+audio:
+    bun run ./generatePromoAudio.ts
 
 # Generate the guide films' ElevenLabs narration (one guide or all; keep unchanged lines' takes or retake them); this bills the ELEVENLABS_API_KEY account
 audio-guides guide="all" takes="keep":

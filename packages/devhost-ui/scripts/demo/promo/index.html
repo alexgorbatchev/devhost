@@ -47,25 +47,25 @@
     </style>
   </head>
   <body>
-    <div id="root" data-composition-id="main" data-start="0" data-duration="41.4" data-width="1920" data-height="1080">
+    <div id="root" data-composition-id="main" data-start="0" data-duration="38.7" data-width="1920" data-height="1080">
       <div
         id="el-backdrop"
         data-composition-id="backdrop"
         data-composition-src="compositions/backdrop.html"
         data-start="0"
-        data-duration="41.4"
+        data-duration="38.7"
         data-track-index="0"
         data-width="1920"
         data-height="1080"
       ></div>
 
-      <!-- Frames cut on the music: the drop at 4.2s, then every beat-aligned change, and the final hit at 36.2s. -->
+      <!-- Each frame holds one narration line and cuts just before the next line starts. -->
       <div
         id="el-01-hook"
         data-composition-id="01-hook"
         data-composition-src="compositions/frames/01-hook.html"
         data-start="0"
-        data-duration="4.2"
+        data-duration="4.6"
         data-track-index="1"
         data-width="1920"
         data-height="1080"
@@ -74,8 +74,8 @@
         id="el-02-promise"
         data-composition-id="02-promise"
         data-composition-src="compositions/frames/02-promise.html"
-        data-start="4.2"
-        data-duration="8.5"
+        data-start="4.6"
+        data-duration="7.4"
         data-track-index="1"
         data-width="1920"
         data-height="1080"
@@ -84,8 +84,8 @@
         id="el-03-start"
         data-composition-id="03-start"
         data-composition-src="compositions/frames/03-start.html"
-        data-start="12.7"
-        data-duration="8"
+        data-start="12"
+        data-duration="6.6"
         data-track-index="1"
         data-width="1920"
         data-height="1080"
@@ -94,8 +94,8 @@
         id="el-04-devtools"
         data-composition-id="04-devtools"
         data-composition-src="compositions/frames/04-devtools.html"
-        data-start="20.7"
-        data-duration="6"
+        data-start="18.6"
+        data-duration="5.7"
         data-track-index="1"
         data-width="1920"
         data-height="1080"
@@ -104,8 +104,8 @@
         id="el-05-agent"
         data-composition-id="05-agent"
         data-composition-src="compositions/frames/05-agent.html"
-        data-start="26.7"
-        data-duration="9.5"
+        data-start="24.3"
+        data-duration="9.6"
         data-track-index="1"
         data-width="1920"
         data-height="1080"
@@ -114,8 +114,8 @@
         id="el-06-close"
         data-composition-id="06-close"
         data-composition-src="compositions/frames/06-close.html"
-        data-start="36.2"
-        data-duration="5.2"
+        data-start="33.9"
+        data-duration="4.8"
         data-track-index="1"
         data-width="1920"
         data-height="1080"
@@ -135,7 +135,7 @@
         data-audio-group="voiceover"
         src="assets/audio/voice/line-1.mp3"
         data-start="0.25"
-        data-duration="3.35"
+        data-duration="3.78"
         data-track-index="10"
         data-volume="1"
       ></audio>
@@ -144,8 +144,8 @@
         data-narration="line-2"
         data-audio-group="voiceover"
         src="assets/audio/voice/line-2.mp3"
-        data-start="4.15"
-        data-duration="8.9"
+        data-start="4.55"
+        data-duration="7.75"
         data-track-index="10"
         data-volume="1"
       ></audio>
@@ -154,8 +154,8 @@
         data-narration="line-3"
         data-audio-group="voiceover"
         src="assets/audio/voice/line-3.mp3"
-        data-start="13.1"
-        data-duration="7.55"
+        data-start="12.4"
+        data-duration="6.19"
         data-track-index="10"
         data-volume="1"
       ></audio>
@@ -164,8 +164,8 @@
         data-narration="line-4"
         data-audio-group="voiceover"
         src="assets/audio/voice/line-4.mp3"
-        data-start="20.8"
-        data-duration="4.45"
+        data-start="18.7"
+        data-duration="4.14"
         data-track-index="10"
         data-volume="1"
       ></audio>
@@ -174,8 +174,8 @@
         data-narration="line-5"
         data-audio-group="voiceover"
         src="assets/audio/voice/line-5.mp3"
-        data-start="26.9"
-        data-duration="6.95"
+        data-start="24.5"
+        data-duration="7.04"
         data-track-index="10"
         data-volume="1"
       ></audio>
@@ -184,31 +184,16 @@
         data-narration="line-6"
         data-audio-group="voiceover"
         src="assets/audio/voice/line-6.mp3"
-        data-start="36.5"
-        data-duration="4.4"
+        data-start="34.2"
+        data-duration="3.9"
         data-track-index="10"
         data-volume="1"
-      ></audio>
-
-      <!--
-        The track starts 1.8s in, which puts its drop at 4.2s and its final hit at 36.2s. The lane keeps it under the
-        narration, lets it through at the drop, the unvoiced shot, and the ending, and fades it out with the film.
-      -->
-      <audio
-        id="music"
-        src="assets/audio/music.mp3"
-        data-start="0"
-        data-duration="41.4"
-        data-media-start="1.8"
-        data-track-index="11"
-        data-volume="1"
-        data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0.45},{"t":3.3,"v":0.45},{"t":4.1,"v":0.5},{"t":4.55,"v":0.45},{"t":4.95,"v":0.12},{"t":12.6,"v":0.12},{"t":12.75,"v":0.26},{"t":13.15,"v":0.12},{"t":20.5,"v":0.12},{"t":20.7,"v":0.26},{"t":20.9,"v":0.12},{"t":25.15,"v":0.12},{"t":25.5,"v":0.42},{"t":26.7,"v":0.42},{"t":27,"v":0.12},{"t":33.6,"v":0.12},{"t":34.1,"v":0.6},{"t":36.7,"v":0.6},{"t":37.1,"v":0.24},{"t":40.6,"v":0.24},{"t":41.4,"v":0}]}]}'
       ></audio>
     </div>
     <script>
       const tl = gsap.timeline({ paused: true });
-      // One white frame on each cut ties the picture to the beat.
-      for (const cut of [4.2, 12.7, 20.7, 26.7, 33.6, 36.2]) {
+      // One white frame marks each cut.
+      for (const cut of [4.6, 12, 18.6, 24.3, 31.3, 33.9]) {
         tl.set("#cut-flash", { opacity: 0.55 }, cut);
         tl.to("#cut-flash", { opacity: 0, duration: 0.28, ease: "power2.out" }, cut);
       }
