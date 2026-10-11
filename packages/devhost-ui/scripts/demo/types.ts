@@ -195,12 +195,6 @@ export interface IGuideCueLine {
   visibleUntil: number;
 }
 
-// One point of a HyperFrames volume lane: a level at a time in seconds.
-export interface IVolumePoint {
-  t: number;
-  v: number;
-}
-
 export interface IGuideFilm {
   title: string;
   // What the window shows, as its address bar names it: `terminal`, or the page's hostname.
@@ -252,7 +246,6 @@ export interface IGuideScriptLine {
 
 export interface IGuideNarration {
   voice: INarrationVoice;
-  music: IMusicRequest;
   guides: Record<string, IGuideScript>;
 }
 
@@ -294,7 +287,6 @@ export interface IGuideLineTiming extends IPromoLineTiming {
 export interface IGuideAudioTimings {
   // Each guide's lines, named after the clip they are spoken over.
   guides: Record<string, IGuideLineTiming[]>;
-  music?: IPromoMusicTiming;
 }
 
 export interface INarrationVoice {
@@ -333,10 +325,14 @@ export interface IMusicRequest {
   sections: IMusicSection[];
 }
 
-export interface IPromoAudioApi {
+// Speaks narration lines.
+export interface ISpeechApi {
   speak: (
     voiceId: string,
     request: ElevenLabs.BodyTextToSpeechFullWithTimestamps,
   ) => Promise<ElevenLabs.AudioWithTimestampsResponse>;
+}
+
+export interface IPromoAudioApi extends ISpeechApi {
   compose: (request: ElevenLabs.BodyComposeMusicV1MusicPost) => Promise<ReadableStream<Uint8Array>>;
 }

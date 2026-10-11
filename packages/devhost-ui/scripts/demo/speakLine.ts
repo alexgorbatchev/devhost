@@ -1,11 +1,11 @@
 import { createPromoWords } from "./createPromoWords";
 import { createSpeechRequest } from "./createSpeechRequest";
 import { readAudioDuration } from "./readAudioDuration";
-import type { IPromoAudioApi, ISpokenLine, ISpokenLineRequest } from "./types";
+import type { ISpeechApi, ISpokenLine, ISpokenLineRequest } from "./types";
 
 // Speaks one narration line into a file and measures it.
 export async function speakLine(
-  api: IPromoAudioApi,
+  api: ISpeechApi,
   request: ISpokenLineRequest,
   outputPath: string,
 ): Promise<ISpokenLine> {

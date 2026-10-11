@@ -3,14 +3,13 @@ import { join, resolve } from "node:path";
 import { afterAll, beforeAll, expect, it, mock } from "bun:test";
 import { generateGuideAudio } from "../generateGuideAudio";
 import { runCommand } from "../runCommand";
-import type { IGuideAudioTimings, IGuideNarration, IPromoAudioApi } from "../types";
+import type { IGuideAudioTimings, IGuideNarration, ISpeechApi } from "../types";
 
 let directoryPath = "";
 let speech = new Uint8Array();
 
 const narration: IGuideNarration = {
   voice: { id: "voice-123", name: "Narrator", model: "speech-model", stability: 0.4, similarityBoost: 0.7, style: 0.2 },
-  music: { model: "music_v2", sections: [{ name: "Bed", seconds: 50, styles: ["calm"], avoid: ["vocals"] }] },
   guides: {
     devtools: {
       intro: "See your stack.",
@@ -54,9 +53,9 @@ const shortenedNarration: IGuideNarration = {
 };
 
 // Stands in for ElevenLabs and notes the text of each line it is asked to speak.
-function createApi(spokenTexts: string[] = []): IPromoAudioApi {
+function createApi(spokenTexts: string[] = []): ISpeechApi {
   return {
-    speak: mock<IPromoAudioApi["speak"]>(async (_voiceId, request) => {
+    speak: mock<ISpeechApi["speak"]>(async (_voiceId, request) => {
       spokenTexts.push(request.text);
       return {
         audioBase64: Buffer.from(speech).toString("base64"),
@@ -67,22 +66,13 @@ function createApi(spokenTexts: string[] = []): IPromoAudioApi {
         },
       };
     }),
-    compose: mock<IPromoAudioApi["compose"]>(
-      async () =>
-        new ReadableStream<Uint8Array>({
-          pull: (controller): void => {
-            controller.enqueue(speech);
-            controller.close();
-          },
-        }),
-    ),
   };
 }
 
 // Answers the requests before the given one, then fails that one as ElevenLabs does when the account is spent.
-function createApiFailingAt(request: number): IPromoAudioApi {
+function createApiFailingAt(request: number): ISpeechApi {
   const api = createApi();
-  const speak = mock<IPromoAudioApi["speak"]>(api.speak);
+  const speak = mock<ISpeechApi["speak"]>(api.speak);
   for (let answered = 1; answered < request; answered += 1) speak.mockImplementationOnce(api.speak);
   speak.mockRejectedValueOnce(new Error("quota exceeded"));
   return { ...api, speak };
@@ -124,9 +114,8 @@ it("speaks every guide's intro and lines into that guide's directory and records
   const projectPath = await createProject("all");
   const api = createApi();
 
-  await generateGuideAudio(projectPath, "voice", "all", "keep", api);
+  await generateGuideAudio(projectPath, "all", "keep", api);
 
-  expect(api.compose).not.toHaveBeenCalled();
   expect(api.speak).toHaveBeenCalledTimes(5);
   // A line is spoken with its neighbours in the same guide as context, never with another guide's.
   expect(api.speak).toHaveBeenNthCalledWith(1, "voice-123", {
@@ -170,11 +159,11 @@ it("speaks every guide's intro and lines into that guide's directory and records
 
 it("keeps every take whose request has not changed", async () => {
   const projectPath = await createProject("unchanged");
-  await generateGuideAudio(projectPath, "voice", "all", "keep", createApi());
+  await generateGuideAudio(projectPath, "all", "keep", createApi());
   const taken = await readTimings(projectPath);
   const api = createApi();
 
-  await generateGuideAudio(projectPath, "voice", "all", "keep", api);
+  await generateGuideAudio(projectPath, "all", "keep", api);
 
   expect(api.speak).not.toHaveBeenCalled();
   expect(await readTimings(projectPath)).toEqual(taken);
@@ -216,11 +205,11 @@ it.each(narrationChanges)(
   "speaks only the lines whose request changed when $change",
   async ({ name, changed, spoken, recorded }) => {
     const projectPath = await createProject(name);
-    await generateGuideAudio(projectPath, "voice", "all", "keep", createApi());
+    await generateGuideAudio(projectPath, "all", "keep", createApi());
     await writeNarration(projectPath, changed);
     const spokenTexts: string[] = [];
 
-    await generateGuideAudio(projectPath, "voice", "all", "keep", createApi(spokenTexts));
+    await generateGuideAudio(projectPath, "all", "keep", createApi(spokenTexts));
 
     expect(spokenTexts).toEqual(spoken);
     expect(await readRecordedLines(projectPath)).toEqual({
@@ -232,53 +221,48 @@ it.each(narrationChanges)(
 
 it("speaks a line again when its file is gone", async () => {
   const projectPath = await createProject("missing-file");
-  await generateGuideAudio(projectPath, "voice", "all", "keep", createApi());
+  await generateGuideAudio(projectPath, "all", "keep", createApi());
   const linePath = join(projectPath, "assets/audio/voice/devtools/overview-1.mp3");
   await rm(linePath);
   const spokenTexts: string[] = [];
 
-  await generateGuideAudio(projectPath, "voice", "all", "keep", createApi(spokenTexts));
+  await generateGuideAudio(projectPath, "all", "keep", createApi(spokenTexts));
 
   expect(spokenTexts).toEqual(["Hover the minimap."]);
   expect(await Bun.file(linePath).bytes()).toEqual(speech);
 });
 
-it("retakes every line of one guide and keeps the other guides' takes and the music", async () => {
+it("retakes every line of one guide and keeps the other guides' takes", async () => {
   const projectPath = await createProject("one");
-  await generateGuideAudio(projectPath, "all", "all", "keep", createApi());
+  await generateGuideAudio(projectPath, "all", "keep", createApi());
   const taken = await readTimings(projectPath);
   const spokenTexts: string[] = [];
   const api = createApi(spokenTexts);
 
-  await generateGuideAudio(projectPath, "voice", "stack-lifecycle", "retake", api);
+  await generateGuideAudio(projectPath, "stack-lifecycle", "retake", api);
 
   expect(spokenTexts).toEqual(["Start dependencies first.", "Read the manifest."]);
-  expect(api.compose).not.toHaveBeenCalled();
   expect(await readTimings(projectPath)).toEqual(taken);
 });
 
 it("records each take as it is made, so the lines before a failed request are not spoken again", async () => {
   const projectPath = await createProject("failed");
 
-  await expect(generateGuideAudio(projectPath, "voice", "all", "keep", createApiFailingAt(3))).rejects.toThrow(
-    "quota exceeded",
-  );
+  await expect(generateGuideAudio(projectPath, "all", "keep", createApiFailingAt(3))).rejects.toThrow("quota exceeded");
 
   expect(await readRecordedLines(projectPath)).toEqual({ devtools: ["intro", "overview-1"] });
   const spokenTexts: string[] = [];
-  await generateGuideAudio(projectPath, "voice", "all", "keep", createApi(spokenTexts));
+  await generateGuideAudio(projectPath, "all", "keep", createApi(spokenTexts));
   expect(spokenTexts).toEqual(["Open Query devtools.", "Start dependencies first.", "Read the manifest."]);
 });
 
 it("forgets a line's take before asking for a new one, so a failed request leaves no timings of a replaced file", async () => {
   const projectPath = await createProject("replaced");
-  await generateGuideAudio(projectPath, "voice", "all", "keep", createApi());
+  await generateGuideAudio(projectPath, "all", "keep", createApi());
   await writeNarration(projectPath, rewordedNarration);
 
   // The reworded line is the second request: the line before it is spoken first, with its new neighbour.
-  await expect(generateGuideAudio(projectPath, "voice", "all", "keep", createApiFailingAt(2))).rejects.toThrow(
-    "quota exceeded",
-  );
+  await expect(generateGuideAudio(projectPath, "all", "keep", createApiFailingAt(2))).rejects.toThrow("quota exceeded");
 
   expect(await readRecordedLines(projectPath)).toEqual({
     devtools: ["intro", "overview-1"],
@@ -286,26 +270,26 @@ it("forgets a line's take before asking for a new one, so a failed request leave
   });
 });
 
-it("composes the shared bed without speaking a line", async () => {
-  const projectPath = await createProject("music");
-  const api = createApi();
+it("generates nothing but the narration", async () => {
+  const projectPath = await createProject("narration-only");
 
-  await generateGuideAudio(projectPath, "music", "all", "keep", api);
+  await generateGuideAudio(projectPath, "all", "keep", createApi());
 
-  expect(api.speak).not.toHaveBeenCalled();
-  expect(api.compose).toHaveBeenCalledWith({
-    modelId: "music_v2",
-    compositionPlan: {
-      chunks: [{ text: "[Bed]", durationMs: 50_000, positiveStyles: ["calm"], negativeStyles: ["vocals"] }],
-    },
-  });
-  expect(await Bun.file(join(projectPath, "assets/audio/music.mp3")).bytes()).toEqual(speech);
+  const audio = await Array.fromAsync(new Bun.Glob("**/*.mp3").scan({ cwd: join(projectPath, "assets/audio") }));
+  expect(audio.sort()).toEqual([
+    "voice/devtools/intro.mp3",
+    "voice/devtools/overview-1.mp3",
+    "voice/devtools/query-1.mp3",
+    "voice/stack-lifecycle/intro.mp3",
+    "voice/stack-lifecycle/step-1.mp3",
+  ]);
+  expect(Object.keys(await readTimings(projectPath))).toEqual(["guides"]);
 });
 
 it("rejects a guide the narration does not have", async () => {
   const projectPath = await createProject("unknown");
 
-  await expect(generateGuideAudio(projectPath, "voice", "missing-guide", "keep", createApi())).rejects.toThrow(
+  await expect(generateGuideAudio(projectPath, "missing-guide", "keep", createApi())).rejects.toThrow(
     "narration.json has no guide named missing-guide",
   );
 });
@@ -314,7 +298,7 @@ it("rejects a choice of takes other than keeping or retaking them", async () => 
   const projectPath = await createProject("unknown-takes");
   const api = createApi();
 
-  await expect(generateGuideAudio(projectPath, "voice", "all", "sometimes", api)).rejects.toThrow(
+  await expect(generateGuideAudio(projectPath, "all", "sometimes", api)).rejects.toThrow(
     "Choose what happens to the recorded takes: keep, retake",
   );
   expect(api.speak).not.toHaveBeenCalled();

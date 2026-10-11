@@ -1,12 +1,10 @@
 import { join } from "node:path";
 import { z } from "zod";
-import { musicSchema, voiceSchema } from "./audioSchemas";
+import { voiceSchema } from "./audioSchemas";
 import type { IGuideNarration } from "./types";
 
 const narrationSchema = z.object({
   voice: voiceSchema,
-  // One bed plays under every guide film.
-  music: musicSchema,
   guides: z.record(
     z.string().regex(/^[a-z][a-z0-9-]*$/),
     z.object({
