@@ -325,7 +325,7 @@ func TestClaimHostKillZombies(t *testing.T) {
 		t.Fatalf("ClaimHost(...) with KillZombies unexpected error = %v", err)
 	}
 
-	if !strings.Contains(buf.String(), fmt.Sprintf("Killing zombie PID %d claiming hello.localhost", zombie.pid)) {
+	if !strings.Contains(buf.String(), fmt.Sprintf("Stopped zombie PID %d claiming hello.localhost", zombie.pid)) {
 		t.Fatalf("ClaimHost(...) did not log expected zombie killing message: %q", buf.String())
 	}
 	zombie.assertKilled(t)
@@ -384,7 +384,7 @@ func TestClaimFixedPortKillZombies(t *testing.T) {
 		t.Fatalf("ClaimFixedPort(...) with KillZombies unexpected error = %v", err)
 	}
 
-	if !strings.Contains(buf.String(), fmt.Sprintf("Killing zombie PID %d claiming port 3000", zombie.pid)) {
+	if !strings.Contains(buf.String(), fmt.Sprintf("Stopped zombie PID %d claiming port 3000", zombie.pid)) {
 		t.Fatalf("ClaimFixedPort(...) did not log expected zombie killing message: %q", buf.String())
 	}
 	zombie.assertKilled(t)

@@ -31,6 +31,12 @@ devhost stop --manifest "$(devhost stack list | fzf | cut -f2)"
 
 Each line is the PID of the stack's devhost process, one tab, and its manifest path; the PID matches the one in the error. [Stopping a Stack](../stack-lifecycle/#stopping-a-stack) explains the command line piece by piece.
 
+## Zombie cleanup messages
+
+With `killZombies = true` (the default), devhost attempts to kill an existing owner from the same manifest when reclaiming a hostname or fixed port. It prints `Stopping zombie PID ...` before the attempt and `Stopped zombie PID ...` only after confirming that the owner has exited. If the kill fails, exit cannot be verified, or the owner does not exit within five seconds, devhost reports an error and leaves that claim unreclaimed.
+
+Each startup or configuration reload claim pass sends at most one kill attempt and prints at most one pair of messages per process identity, even when that process owns several route registrations, hostname claims, or fixed-port claims. Every claim is still checked and reclaimed separately. Claims from a different manifest remain conflicts.
+
 ## Automatic port conflict during restart
 
 A single-service restart reuses its assigned automatic port. If another process occupies it, devhost reports the conflict and leaves the service stopped. Choose **Restart stack with new ports** in the Services panel or recovery overlay to restart all managed services with fresh automatic ports and rebuilt port references and environments. External processes keep running, and fixed ports stay unchanged.

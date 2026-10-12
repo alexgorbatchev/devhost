@@ -4,7 +4,7 @@ description: Use when running devhost or when reading, writing, or changing a de
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-12 12:54
+  last_modified: 2026-10-12 13:44
   status: current
 ---
 
@@ -95,7 +95,7 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 
 - **Managed Caddy lifecycle**: Start the shared proxy with `devhost caddy start --manifest ./devhost.toml`; stop it manually with `devhost caddy stop --manifest ./devhost.toml`. Use matching custom management settings. Read [Setup](references/setup.md#5-managed-caddy-startup) before changing shared settings or starting after all stacks stop; follow its active HTTP votes, captured retirement, and empty-runtime rules.
 
-- **killZombies Option**: Optional boolean (default `true`) at the top level of `devhost.toml`. When `true`, devhost automatically finds, terminates, and reclaims zombie processes claiming the same ports or hosts from the same manifest path. Set `killZombies = false` to disable automatic recovery and report a standard collision error instead.
+- **killZombies Option**: Optional boolean (default `true`) at the top level of `devhost.toml`. When `true`, devhost automatically finds, terminates, and reclaims zombie processes claiming the same ports or hosts from the same manifest path. Each startup or reload claim pass attempts a kill at most once per process identity across route registrations, hostname claims, and fixed-port claims. `Stopping zombie PID ...` precedes the attempt; `Stopped zombie PID ...` confirms exit, with at most one message pair per identity. A failed kill, failed exit check, or five-second exit timeout reports an error and leaves the affected claim unreclaimed; each claim is checked separately. Set `killZombies = false` to disable automatic recovery and report a standard collision error instead.
 
 - **Annotation temporary files**: Set `[annotation].tempDir` in the root manifest to a non-empty path for all annotation actions. Resolve relative paths against devhost's startup working directory, independently of the manifest location and action `cwd`. Omit the key to use the system temp directory. See the [Agent Adapters guide](references/agent-adapters.md) for file lifecycle details.
 
