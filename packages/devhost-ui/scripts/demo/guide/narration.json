@@ -21,7 +21,7 @@
       "clips": [
         { "clip": "overview-1", "text": "Hover the log minimap for real-time output from your services." },
         { "clip": "overview-2", "text": "The Services panel lists every service, each with a restart control." },
-        { "clip": "overview-3", "text": "Browse your Git worktrees without leaving the page." },
+        { "clip": "overview-3", "text": "Search your Git worktrees without leaving the page." },
         { "clip": "query-1", "text": "TanStack Query's own devtools open from the same toolbar." }
       ]
     },

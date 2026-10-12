@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-11 14:10
+last_modified: 2026-10-12 11:30
 status: current
 ---
 
@@ -168,7 +168,7 @@ Run `just demo test` while editing helpers. Run root `just fix` and `just check`
 
 The annotation scene changes the copied heading and subtitle through Pi, waits for the rendered HMR result and Pi's idle state, and checks that the actual source changed. Its caption switches to “Pi is working on the annotated change.” when the terminal reports working, then “The heading updates live from Pi's source edit.” when the updated heading appears. Native Playwright screencast stop/start creates a video segment at each event; FFmpeg measures those segments to time both burned captions and the final SRT. Model timing varies; a single-scene video includes that real wait. Changes to the annotation task must also update its source/result assertions, the edit guard if another file is required, and the source lines the promo's `05-agent.html` frame shows.
 
-The copied playground has its own local Git repository on `main` and a real `ui-polish` worktree under its `.workspaces/`. Both checkouts contain usable frontend/backend directories and share the checkout's installed frontend dependencies. The picker demonstrates these isolated checkouts without switching. Pi uses the adapter's native working directory in the selected playground checkout. Its instructions provide the copied main layout's absolute path, and its guard permits edits only to that file. No worktree or commit is added to the contributor's repository.
+The copied playground has its own local Git repository on `main` and a real `ui-polish` worktree under its `.workspaces/`. Both checkouts contain usable frontend/backend directories and share the checkout's installed frontend dependencies. The overview scene opens the picker on these isolated checkouts and types `polish` into its search, which must narrow the list to the `ui-polish` checkout; it never switches. Pi uses the adapter's native working directory in the selected playground checkout. Its instructions provide the copied main layout's absolute path, and its guard permits edits only to that file. No worktree or commit is added to the contributor's repository.
 
 ## Editing the promo
 
