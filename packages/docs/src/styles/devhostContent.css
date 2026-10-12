@@ -169,4 +169,6 @@ h1#_top {
 .dh-diagram svg {
   display: block;
   height: auto;
+  /* A diagram narrower than the column sits in its middle; a wider one starts at the left edge and scrolls. */
+  margin-inline: auto;
 }

@@ -9,7 +9,7 @@ import {
   CODE_STYLE_OVERRIDES,
   DARK_CODE_THEME_PALETTE,
   LIGHT_CODE_THEME_PALETTE,
-  MERMAID_CONFIG,
+  MERMAID_RENDER_OPTIONS,
 } from "./src/theme/constants";
 import { createDevhostCodeTheme } from "./src/theme/createDevhostCodeTheme";
 
@@ -17,10 +17,7 @@ export default defineConfig({
   site: "https://alexgorbatchev.github.io",
   base: "/devhost",
   markdown: {
-    rehypePlugins: [
-      [rehypeMermaid, { strategy: "inline-svg", mermaidConfig: MERMAID_CONFIG }],
-      rehypeWrapMermaidDiagrams,
-    ],
+    rehypePlugins: [[rehypeMermaid, MERMAID_RENDER_OPTIONS], rehypeWrapMermaidDiagrams],
   },
   server: {
     allowedHosts: true,

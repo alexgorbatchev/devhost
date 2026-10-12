@@ -26,7 +26,7 @@ describe("astro config", () => {
     assert(rehypePluginsMatch);
 
     expect(rehypePluginsMatch[0].replace(/\s+/gu, " ")).toBe(
-      'rehypePlugins: [ [rehypeMermaid, { strategy: "inline-svg", mermaidConfig: MERMAID_CONFIG }], rehypeWrapMermaidDiagrams, ], }',
+      "rehypePlugins: [[rehypeMermaid, MERMAID_RENDER_OPTIONS], rehypeWrapMermaidDiagrams], }",
     );
   });
 

@@ -2,6 +2,8 @@ import { DESIGN_TOKENS } from "@alexgorbatchev/devhost-design";
 import { createInlineSvgUrl } from "@astrojs/starlight/expressive-code";
 import type { StyleOverrides } from "@astrojs/starlight/expressive-code";
 
+import type { RehypeMermaidOptions } from "rehype-mermaid";
+
 import type { ICodeThemePalette, MermaidConfig } from "./types";
 
 // Expressive Code resolves syntax colors at build time, so it takes the literal values from the shared design tokens
@@ -89,14 +91,22 @@ const MERMAID_THEME_CSS = `
   .labelText, .labelText > tspan, .loopText, .loopText > tspan { fill: var(--dh-fg); }
   .loopLine { stroke: var(--dh-line); }
   .activation0, .activation1, .activation2 { fill: var(--dh-surface-3); stroke: var(--dh-line); }
+  .node rect, .node polygon, .node path, .node circle { fill: var(--dh-surface-2); stroke: var(--dh-accent); stroke-width: 1px; }
+  .node .label text, .cluster-label text, .edgeLabel text { fill: var(--dh-fg); }
+  .cluster rect { fill: var(--dh-surface); stroke: var(--dh-line); }
+  .flowchart-link { stroke: var(--dh-fg-muted); stroke-width: 1.25px; }
+  .edgeLabel rect, .labelBkg { fill: var(--dh-term-bg); opacity: 1; }
 `;
 
 // Fonts are set in config rather than CSS because Mermaid measures text to size actor boxes and message spans.
 // The top-level `fontFamily` replaces the `arial,sans-serif` default that mermaid-isomorphic injects, which would
 // otherwise win over the per-diagram font settings.
-export const MERMAID_CONFIG: MermaidConfig = {
+const MERMAID_CONFIG: MermaidConfig = {
   fontFamily: MERMAID_FONT_FAMILY,
   fontSize: MERMAID_FONT_SIZE,
+  // Flowchart labels are SVG text. An HTML label is clipped to the size Mermaid measured for it, and the page
+  // serializer writes each of its line breaks twice.
+  htmlLabels: false,
   theme: "base",
   themeVariables: { fontFamily: MERMAID_FONT_FAMILY, fontSize: `${MERMAID_FONT_SIZE}px` },
   themeCSS: MERMAID_THEME_CSS,
@@ -108,4 +118,12 @@ export const MERMAID_CONFIG: MermaidConfig = {
     noteFontFamily: MERMAID_FONT_FAMILY,
     noteFontSize: MERMAID_FONT_SIZE,
   },
+};
+
+// Mermaid sizes each label from the text it measures while rendering. Without the docs font in that browser it
+// measures a fallback font, and the boxes it draws around labels come out too narrow for the text the page shows.
+export const MERMAID_RENDER_OPTIONS: RehypeMermaidOptions = {
+  strategy: "inline-svg",
+  mermaidConfig: MERMAID_CONFIG,
+  css: new URL("../styles/docsFontTheme.css", import.meta.url),
 };
