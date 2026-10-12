@@ -118,6 +118,7 @@ func TestRunStartsOnlyTheNamedServices(t *testing.T) {
 
 func testRunStartsSelection(t *testing.T, name string) {
 	t.Helper()
+	t.Setenv("AGENT", "1")
 	t.Setenv("DEVHOST_STATE_DIR", t.TempDir())
 
 	manifestDirectoryPath := t.TempDir()
@@ -154,7 +155,7 @@ func testRunStartsSelection(t *testing.T, name string) {
 		t.Fatalf("Run(start %s) exit code = %d, want 143 with stderr %q", name, exitCode, stderr.String())
 	}
 
-	if want := "[hello-stack] not started: idle\n"; !strings.Contains(stdout.String(), want) {
+	if want := "hello-stack: not started: idle\n"; !strings.Contains(stdout.String(), want) {
 		t.Fatalf("Run(start %s) stdout = %q, want it to report %q", name, stdout.String(), want)
 	}
 

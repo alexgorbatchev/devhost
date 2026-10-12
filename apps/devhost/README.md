@@ -66,7 +66,7 @@ $ AGENT=1 devhost star
 ERR: unknown command "star" for "devhost"; did you mean "start" or "stop"?
 ```
 
-Without the variable, a failure ends with an `[ERROR]` line and, where `devhost` knows the next step, an `[INFO]` hint. Warnings are split the same way: `[WARN]` for people and `WARN:` for agents. These lines go to stderr, and the exit code is the same in both modes. Stack logs, `--version`, completion scripts, and `devhost caddy print-root-cert` print the same text in both.
+Without the variable, a failure ends with an `[ERROR]` line and, where `devhost` knows the next step, an `[INFO]` hint. Warnings are split the same way: `[WARN]` for people and `WARN:` for agents. These lines go to stderr, and the exit code is the same in both modes. Human stack and service logs share aligned `name | ` prefixes, distinct terminal colors, and indented wrapping when the output width is known. Agent logs use compact `name: ` prefixes without padding, added colors, or wrapping. `--version`, completion scripts, and `devhost caddy print-root-cert` print the same text in both.
 
 ### Requirements
 

@@ -118,12 +118,14 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			idleTimeout = parsed
 		}
 
+		logNames := append([]string{strings.TrimSpace(resolvedManifest.Name)}, serviceOrder...)
+		serviceStdout, serviceStderr := cliout.ServiceOutputWriters(stdout, stderr, logNames)
 		startOptions := services.StartStackOptions{
 			Configuration:       &validatedManifest,
 			Environment:         readEnvironment(),
-			LogWriter:           stdout,
-			ServiceStdoutWriter: stdout,
-			ServiceStderrWriter: stderr,
+			LogWriter:           serviceStdout,
+			ServiceStdoutWriter: serviceStdout,
+			ServiceStderrWriter: serviceStderr,
 			IdleTimeout:         idleTimeout,
 		}
 		if arguments.Debug {
