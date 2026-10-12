@@ -191,7 +191,18 @@ Devhost checks each foreground service's assigned automatic port before launchin
 
 **Restart stack with new ports** is available in the Services panel and recovery overlay. It stops every managed service in reverse dependency order, assigns fresh automatic ports, rebuilds command templates and injected environments, and starts services in dependency order before updating routes. Fixed ports and selected worktrees are retained; external services keep running. The control listener, document recovery listeners, and existing terminal sessions stay available. The action uses the last accepted manifest, including when an edit on disk is invalid. Failed launches or route updates attempt to restore the previous stack and report restoration errors, with another stack restart available. Reassigning automatic ports cannot resolve a fixed-port conflict; free that port or change its manifest setting.
 
-`devhost`-owned logs use the manifest `name` when available and fall back to `[devhost]`. Child service logs remain prefixed with `[service-name]`.
+`devhost`-owned logs use the manifest `name` when available and fall back to `devhost`. In human mode (`AGENT=0` or unset), foreground stack logs and child stdout and stderr use names padded to a shared width, followed by one space and `| `:
+
+```text
+api      | listening
+devhost  | frontend: https://frontend.localhost
+frontend | a long line continues here
+         | with the same separator alignment
+```
+
+Each stack or service name has a distinct color on terminals; stdout and stderr share its color. `NO_COLOR` with a non-empty value or `TERM=dumb` disables these added colors, and redirected output has no added colors. When the destination terminal's width is available, long lines wrap with a blank name column and aligned separator. A positive `COLUMNS` value supplies the width when the terminal size is unavailable. Wrapping preserves child ANSI escapes and measures Unicode display width. Unknown widths and widths too small to fit the prefix leave lines unwrapped. Terminal resizing applies to subsequent lines.
+
+Agent mode (`AGENT=1`) uses compact `stack-name: ` and `service-name: ` prefixes without padding, added colors, or wrapping. Retained diagnostics and browser log records keep their original bracket prefixes in either mode.
 
 Managed Caddy runtime logs are discarded by the generated Caddyfile so background Caddy stderr does not leak into `devhost` stack output. Managed Caddy command output from stack route reloads is hidden by default during `devhost start` runs. Use `devhost start --debug` when you need to see those reload stdout/stderr lines while debugging routing. Explicit `devhost caddy ...` lifecycle and setup commands still print their normal command output.
 
