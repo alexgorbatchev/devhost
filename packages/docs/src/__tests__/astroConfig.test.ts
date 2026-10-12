@@ -40,11 +40,11 @@ describe("astro config", () => {
     );
   });
 
-  it("lists every guide and architecture page in the sidebar", () => {
+  it("lists every guide, architecture, and development page in the sidebar", () => {
     const astroConfigPath = join(docsPackagePath.pathname, "astro.config.mjs");
     const astroConfigText = readFileSync(astroConfigPath, "utf8");
     const contentPath = join(docsPackagePath.pathname, "src/content/docs");
-    const pageSlugs = ["guides", "architecture"].flatMap((section) =>
+    const pageSlugs = ["guides", "architecture", "development"].flatMap((section) =>
       readdirSync(join(contentPath, section), { recursive: true, encoding: "utf8" })
         .filter((relativePath) => relativePath.endsWith(".md"))
         .map((relativePath) => `${section}/${relativePath.replace(/\.md$/u, "")}`),
