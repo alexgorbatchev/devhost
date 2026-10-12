@@ -36,6 +36,10 @@ func TestParseCommandLineArgumentsPrintsTheSkillVerbatim(t *testing.T) {
 				t.Fatalf("ParseCommandLineArguments(skill) stdout is not the embedded SKILL.md byte for byte:\n%s", stdout.String())
 			}
 
+			if !strings.Contains(stdout.String(), "npx skills add alexgorbatchev/devhost --skill devhost\n") {
+				t.Fatalf("ParseCommandLineArguments(skill) output does not select the devhost skill:\n%s", stdout.String())
+			}
+
 			if stderr.String() != "" {
 				t.Fatalf("ParseCommandLineArguments(skill) stderr = %q, want empty", stderr.String())
 			}

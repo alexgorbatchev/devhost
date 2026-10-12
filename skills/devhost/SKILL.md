@@ -4,7 +4,7 @@ description: Use when running devhost or when reading, writing, or changing a de
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-11 11:06
+  last_modified: 2026-10-12 12:54
   status: current
 ---
 
@@ -25,7 +25,7 @@ Run `devhost` with `AGENT=1`: help becomes `key: value` text, and a failed comma
 - `devhost caddy trust`: install Caddy's root certificate into the system trust store, so browsers accept the HTTPS hostnames. It asks for the user's password and needs the shared Caddy running.
 - `devhost caddy print-root-cert`: print Caddy's root certificate to stdout. The certificate exists after the first `devhost caddy start`.
 - `devhost caddy trust-remote <ssh-target>`: on macOS, trust the Caddy certificate of another machine. `<ssh-target>` is an SSH host with `devhost` on its `PATH`, such as `devbox` or `user@devbox`. It prints the certificate's SHA-256 fingerprint and installs the certificate into the System keychain.
-- `devhost skill`: print instructions to install the AI skill via the Skills CLI and the skill URL. Takes no arguments.
+- `devhost skill`: print `npx skills add alexgorbatchev/devhost --skill devhost` to install the AI skill via the Skills CLI, followed by the skill URL. Takes no arguments.
 - `devhost help [command]`: print the help of a command, the screen `--help` prints for it.
 - `devhost completion bash`, `devhost completion fish`, `devhost completion powershell`, `devhost completion zsh`: print a completion script for that shell on stdout. `--no-descriptions` (bool) leaves the command descriptions out of the completions.
 
