@@ -9,35 +9,42 @@ The guide videos follow a separate, manual track. No workflow records or renders
 ## Pipeline
 
 ```mermaid
-sequenceDiagram
-    participant Dev as Maintainer
-    participant Media as Release media
-    participant Main as main
-    participant Publish as publish.yml
-    participant Pages as GitHub Pages
+flowchart TD
+    subgraph films["Guide films: by hand, only when a demo changed"]
+        audio["just demo audio-guides<br/>generate the narration"]
+        record["just demo guides<br/>record and render the films"]
+        review{"Films<br/>approved?"}
+        upload["just docs publish-media<br/>upload videos, rewrite pins"]
+        pins["Commit pins, posters,<br/>captions, guide pages"]
+        audio --> record --> review
+        review -- yes --> upload --> pins
+        review -- no --> record
+    end
 
-    Note over Dev,Media: Guide films, by hand
-    Dev->>Dev: just demo audio-guides
-    Dev->>Dev: just demo guides
-    Dev->>Dev: Review the films
-    Dev->>Media: just docs publish-media
-    Media-->>Dev: Pins
+    media[("GitHub release media<br/>video assets, never replaced")]
+    upload --> media
 
-    Note over Dev,Main: Merge
-    Dev->>Main: Pull request with pins
-    Media-->>Main: Pinned videos
-    Main->>Main: ci.yml: just check
-    Note over Main: No docs deploy
+    subgraph merge["Merge"]
+        pr["Pull request"]
+        ci["ci.yml: just check<br/>verifies the pinned videos"]
+        main["main<br/>no docs deploy"]
+        pr --> ci --> main
+    end
+    pins --> pr
+    media -. pinned videos .-> ci
 
-    Note over Dev,Pages: Release
-    Dev->>Main: Push tag v*
-    Main->>Publish: Start workflow
-    Publish->>Publish: Job publish
-    Media-->>Publish: Pinned videos
-    Publish->>Pages: Job docs
+    subgraph release["Release"]
+        tag["Set the version,<br/>push tag v*"]
+        publish["publish.yml job publish<br/>check, build, create release"]
+        docs["publish.yml job docs<br/>build the site from the tag"]
+        pages["GitHub Pages"]
+        tag --> publish --> docs --> pages
+    end
+    main --> tag
+    media -. pinned videos .-> docs
 ```
 
-The diagram has three stages. The films are made and published by hand, and only when a demo changed. A merge to `main` runs the checks and deploys nothing. A `v*` tag publishes the binaries and then the site. The dashed arrows are the pinned videos, which every docs build downloads from the `media` release.
+The diagram has three stages. The films are made and published by hand, and only when a demo changed. A merge to `main` runs the checks and deploys nothing. A `v*` tag publishes the binaries and then the site. The dotted arrows are the pinned videos, which every docs build downloads from the `media` release.
 
 ## How it works
 
