@@ -127,7 +127,7 @@ Routing guides capture native VHS terminal sessions and verify real HTTP respons
 
 Guide recording also needs `curl` and `setsid`; Docker needs a working local daemon and permission to pull the tiny public image. Guides are recorded serially because they use `demo.localhost`. The recording sources are `createGuideTerminalScene.ts`, `createGuideTape.ts`, `recordGuideTerminal.ts`, `recordReactHighlight.ts`, `recordGuides.ts`, and `publishGuideDemo.ts`; [Editing the sequence](#editing-the-sequence) lists the film's. Native publication tests use FFmpeg/ffprobe, which CI installs before `just check`.
 
-Review the new media, transcript, and Markdown changes, for example on the playground's `/videos` page. Then run `just docs publish-media` and commit `demo-media.json` together with the posters, captions, and guides. A push of those files to `main` uses `.github/workflows/docs.yml` to deploy them with the newly pinned videos. Agent consumers can follow the HTTPS guide links in `skills/devhost/SKILL.md` and read prose/transcripts without loading binary media.
+Review the new media, transcript, and Markdown changes, for example on the playground's `/videos` page. Then run `just docs publish-media` and commit `demo-media.json` together with the posters, captions, and guides. The next CLI release deploys them with the newly pinned videos: the docs site is built from the release tag, not from `main`. Agent consumers can follow the HTTPS guide links in `skills/devhost/SKILL.md` and read prose/transcripts without loading binary media.
 
 ## Editing the sequence
 

@@ -1,17 +1,8 @@
 name: Deploy docs to GitHub Pages
 
+# The published docs describe the released devhost. A release deploys them from its tag; a push to main does not.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/docs.yml"
-      - "apps/devhost/README.md"
-      - "apps/devhost/devhost.example.toml"
-      - "packages/docs/**"
-      - "packages/design/**"
-      - "package.json"
-      - "bun.lock"
+  workflow_call:
   workflow_dispatch:
 
 permissions:

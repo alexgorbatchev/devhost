@@ -90,3 +90,12 @@ jobs:
         run: |
           set -euo pipefail
           gh release upload "$GITHUB_REF_NAME" apps/devhost/dist/release/*.tar.gz --clobber
+
+  # Deploys the docs built from the release tag, and only after the release exists.
+  docs:
+    needs: publish
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/docs.yml

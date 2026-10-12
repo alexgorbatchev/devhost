@@ -58,6 +58,7 @@ A finished render is not a verified film.
 1. The user reviews the films on the playground's `/videos` page. Wait for their approval.
 2. After approval: `just docs publish-media`, then commit `packages/docs/demo-media.json` together with the guide's page, poster, and captions.
 3. `just docs check` passes again once the videos on disk are the pinned ones.
+4. The films reach the docs site with the next CLI release, which deploys the docs from its tag. Merging to `main` does not deploy them.
 
 Until step 2, leave the docs media uncommitted. The committed pins, pages, posters, and captions must always describe the published videos, so every commit builds.
 

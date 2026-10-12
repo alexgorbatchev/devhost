@@ -98,6 +98,9 @@ The `Publish release binaries` workflow does the following:
 - builds versioned release archives with `just devhost build-release-artifacts`
 - creates a GitHub Release for the tag if one does not already exist
 - uploads `apps/devhost/dist/release/*.tar.gz` to that GitHub Release with clobber enabled for reruns
+- after that job succeeds, builds the documentation site from the tag and deploys it to GitHub Pages through `.github/workflows/docs.yml`
+
+The documentation site is deployed only here, so it describes the released version. The `github-pages` environment must allow deployments from `v*` tags.
 
 ## Verify the release
 
@@ -105,6 +108,7 @@ The `Publish release binaries` workflow does the following:
 
 - The `Publish release binaries` GitHub Actions run for the tag must succeed.
 - The `Verify package`, `Build release artifacts`, `Create GitHub Release`, and `Upload GitHub Release assets` steps must succeed.
+- The `docs` job must succeed, and the documentation site must show the released documentation.
 
 ### 5. Verify npm and GitHub release state
 
