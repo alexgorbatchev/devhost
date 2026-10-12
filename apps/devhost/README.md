@@ -398,7 +398,7 @@ The command prints instructions to install the skill via the Skills CLI, togethe
 $ devhost skill
 Install the devhost skill using the Skills CLI:
 
-  npx skills add alexgorbatchev/devhost
+  npx skills add alexgorbatchev/devhost --skill devhost
 
 Skill:
 
@@ -416,7 +416,7 @@ command: devhost
 To install the skill directly into your coding agents:
 
 ```bash
-npx skills add alexgorbatchev/devhost -y
+npx skills add alexgorbatchev/devhost --skill devhost -y
 ```
 
 Omit `-y` to choose target agents interactively.

@@ -3,7 +3,7 @@ package skill
 
 const document = `Install the devhost skill using the Skills CLI:
 
-  npx skills add alexgorbatchev/devhost
+  npx skills add alexgorbatchev/devhost --skill devhost
 
 Skill:
 
