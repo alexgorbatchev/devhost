@@ -38,6 +38,7 @@ Public Astro + Starlight docs workspace for `devhost`, published to GitHub Pages
 - Prose link underlines use opaque `--dh-accent` because their text matches surrounding prose. Keep search shortcut text opaque and use `--dh-input-line` for form-control boundaries.
 - `just docs dev`, `just docs start`, and `just docs preview` bind the Astro server to `0.0.0.0` so the site is reachable from outside the current environment.
 - `astro.config.mjs` allows all dev/preview hosts for this workspace; treat the docs server as broadly reachable while it is running.
+- The site is deployed by a CLI release, not by a push to `main`: `.github/workflows/publish.yml` calls `.github/workflows/docs.yml` after it created the release, and the docs are built from the release tag. Docs on `main` describe unreleased behavior until then. The `github-pages` environment must allow deployments from `v*` tags as well as `main`.
 - The site ships from GitHub Pages at `/devhost`, so content should rely on relative links or Starlight routing instead of hard-coded root-relative `/...` paths.
 - `src/content/docs/index.mdx` and `src/content/docs/reference/devhost-example.md` are generated outputs; edit `apps/devhost/README.md` and `apps/devhost/devhost.example.toml` instead.
 - Do not add docs tests that snapshot whole static CSS files or literal font/theme declarations when the real contract is config registration or successful build integration.
