@@ -21,11 +21,12 @@ func (r *stackRuntime) claimReload(m ResolvedManifest) (func() error, error) {
 	previousPorts := slices.Clone(r.claimedFixedPorts)
 	rollback := func() error { return r.releaseClaimsExcept(previousHosts, previousPorts) }
 	paths := r.routes.paths
+	zombieCleanup := new(caddy.ZombieCleanup)
 	for _, port := range manifestFixedPortClaims(m) {
 		if slices.Contains(r.claimedFixedPorts, port) {
 			continue
 		}
-		if err := caddy.ClaimFixedPort(caddy.ClaimFixedPortOptions{BindHost: port.bindHost, Port: port.port, ManifestPath: m.ManifestPath, PortClaimsDirectoryPath: paths.PortClaimsDirectoryPath, KillZombies: m.KillZombies, LogWriter: r.options.LogWriter}); err != nil {
+		if err := caddy.ClaimFixedPort(caddy.ClaimFixedPortOptions{ZombieCleanup: zombieCleanup, BindHost: port.bindHost, Port: port.port, ManifestPath: m.ManifestPath, PortClaimsDirectoryPath: paths.PortClaimsDirectoryPath, KillZombies: m.KillZombies, LogWriter: r.options.LogWriter}); err != nil {
 			return rollback, err
 		}
 		r.claimedFixedPorts = append(r.claimedFixedPorts, port)
@@ -34,7 +35,7 @@ func (r *stackRuntime) claimReload(m ResolvedManifest) (func() error, error) {
 		if slices.Contains(r.claimedHosts, host) {
 			continue
 		}
-		if err := caddy.ClaimHost(caddy.ClaimHostOptions{Host: host, ManifestPath: m.ManifestPath, RegistrationsDirectoryPath: paths.RegistrationsDirectoryPath, KillZombies: m.KillZombies, LogWriter: r.options.LogWriter}); err != nil {
+		if err := caddy.ClaimHost(caddy.ClaimHostOptions{ZombieCleanup: zombieCleanup, Host: host, ManifestPath: m.ManifestPath, RegistrationsDirectoryPath: paths.RegistrationsDirectoryPath, KillZombies: m.KillZombies, LogWriter: r.options.LogWriter}); err != nil {
 			return rollback, err
 		}
 		r.claimedHosts = append(r.claimedHosts, host)

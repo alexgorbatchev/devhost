@@ -19,6 +19,7 @@ import (
 )
 
 type ClaimFixedPortOptions struct {
+	ZombieCleanup           *ZombieCleanup
 	BindHost                string
 	ManifestPath            string
 	Port                    int
@@ -28,6 +29,7 @@ type ClaimFixedPortOptions struct {
 }
 
 type ClaimHostOptions struct {
+	ZombieCleanup              *ZombieCleanup
 	Host                       string
 	ManifestPath               string
 	RegistrationsDirectoryPath string
@@ -183,6 +185,9 @@ var routeMutationRunManagedCaddyCommand = func(paths Paths, arguments []string, 
 }
 
 func ClaimFixedPort(options ClaimFixedPortOptions) error {
+	if options.ZombieCleanup == nil {
+		options.ZombieCleanup = new(ZombieCleanup)
+	}
 	claimPath := getFixedPortClaimPath(options.BindHost, options.Port, options.PortClaimsDirectoryPath)
 	claimText := createFixedPortClaimText(options.BindHost, options.ManifestPath, options.Port)
 
@@ -202,11 +207,8 @@ func ClaimFixedPort(options ClaimFixedPortOptions) error {
 	}
 	if !isFixedPortClaimStale(existingClaim) {
 		if options.KillZombies && existingClaim.ManifestPath == options.ManifestPath && existingClaim.OwnerPID != routeMutationProcessID() {
-			if options.LogWriter != nil {
-				_, _ = fmt.Fprintf(options.LogWriter, "[devhost] Killing zombie PID %d claiming port %d...\n", existingClaim.OwnerPID, options.Port)
-			}
-			if process, err := os.FindProcess(existingClaim.OwnerPID); err == nil {
-				_ = process.Kill()
+			if err := options.ZombieCleanup.kill(existingClaim.OwnerPID, existingClaim.OwnerStartIdentity, fmt.Sprintf("port %d", options.Port), options.LogWriter); err != nil {
+				return err
 			}
 			if err := removeIfExists(claimPath); err != nil {
 				return err
@@ -278,6 +280,9 @@ func CleanupStaleFixedPortClaims(portClaimsDirectoryPath string) error {
 }
 
 func ClaimHost(options ClaimHostOptions) error {
+	if options.ZombieCleanup == nil {
+		options.ZombieCleanup = new(ZombieCleanup)
+	}
 	if err := assertHostIsAvailable(options); err != nil {
 		return err
 	}
@@ -310,11 +315,8 @@ func ClaimHost(options ClaimHostOptions) error {
 	}
 
 	if options.KillZombies && existingClaim.ManifestPath == options.ManifestPath {
-		if options.LogWriter != nil {
-			_, _ = fmt.Fprintf(options.LogWriter, "[devhost] Killing zombie PID %d claiming %s...\n", existingClaim.OwnerPID, options.Host)
-		}
-		if process, err := os.FindProcess(existingClaim.OwnerPID); err == nil {
-			_ = process.Kill()
+		if err := options.ZombieCleanup.kill(existingClaim.OwnerPID, existingClaim.OwnerStartIdentity, options.Host, options.LogWriter); err != nil {
+			return err
 		}
 		if err := removeIfExists(hostClaimPath); err != nil {
 			return err
@@ -1251,11 +1253,8 @@ func assertHostIsAvailable(options ClaimHostOptions) error {
 			}
 
 			if options.KillZombies && registration.ManifestPath == options.ManifestPath {
-				if options.LogWriter != nil {
-					_, _ = fmt.Fprintf(options.LogWriter, "[devhost] Killing zombie PID %d claiming %s...\n", registration.OwnerPID, options.Host)
-				}
-				if process, err := os.FindProcess(registration.OwnerPID); err == nil {
-					_ = process.Kill()
+				if err := options.ZombieCleanup.kill(registration.OwnerPID, registration.OwnerStartIdentity, options.Host, options.LogWriter); err != nil {
+					return err
 				}
 				continue
 			}

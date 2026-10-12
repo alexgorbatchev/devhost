@@ -323,12 +323,14 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		return 0, joinCleanupError(err, cleanupError)
 	}
 
+	zombieCleanup := new(caddy.ZombieCleanup)
 	for _, service := range manifest.Services {
 		if service.PortSource != "fixed" || service.Port == nil {
 			continue
 		}
 
 		if err := caddy.ClaimFixedPort(caddy.ClaimFixedPortOptions{
+			ZombieCleanup:           zombieCleanup,
 			BindHost:                service.BindHost,
 			ManifestPath:            manifest.ManifestPath,
 			Port:                    *service.Port,
@@ -344,6 +346,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 
 	for _, host := range collectClaimedHosts(manifest.Services) {
 		if err := caddy.ClaimHost(caddy.ClaimHostOptions{
+			ZombieCleanup:              zombieCleanup,
 			Host:                       host,
 			ManifestPath:               manifest.ManifestPath,
 			RegistrationsDirectoryPath: paths.RegistrationsDirectoryPath,

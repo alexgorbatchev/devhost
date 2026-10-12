@@ -230,7 +230,7 @@ A repository containing a `managed = false` service cannot switch because devhos
 
 If a previous `devhost` run crashed, got aborted, or left behind dangling child processes (zombies) claiming the same port or public host, `devhost` will automatically clean them up.
 
-By default, `killZombies = true` is enabled at the manifest level. When `devhost` starts, if it detects a host or fixed-port claim that is already active from the **same manifest file path**, it will automatically find the owning process ID (PID), log a message, terminate/kill that process, and successfully reclaim the host or port.
+By default, `killZombies = true` is enabled at the manifest level. During startup or configuration reload, `devhost` reclaims active host or fixed-port claims from the **same manifest file path** by killing their owner. It logs `Stopping zombie PID ...` before the attempt and `Stopped zombie PID ...` after confirming exit, with at most one attempt and message pair per process identity in that claim pass. A failed kill or exit confirmation, including a five-second exit timeout, reports an error and leaves the affected claim unreclaimed.
 
 If you wish to disable this behavior and receive a standard port/host collision error instead, you can set `killZombies = false` at the top level of your `devhost.toml`:
 
