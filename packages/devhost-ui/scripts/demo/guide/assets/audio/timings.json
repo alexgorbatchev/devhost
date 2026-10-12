@@ -619,164 +619,164 @@
       {
         "id": "overview-2",
         "path": "assets/audio/voice/devtools/overview-2.mp3",
-        "requestSha256": "4dfc54432c982b759e23c9dc10cb29c62c90c626ce7ca37a57fa94a79bb58083",
-        "duration": 4.365351,
+        "requestSha256": "55a03a0fb67cb8b6a59299ac64ec352e004ff18e2f56323c4f53f8b9d25cd627",
+        "duration": 4.87619,
         "words": [
           {
             "text": "The",
             "start": 0,
-            "end": 0.151
+            "end": 0.163
           },
           {
             "text": "Services",
-            "start": 0.232,
-            "end": 0.708
+            "start": 0.221,
+            "end": 0.639
           },
           {
             "text": "panel",
-            "start": 0.766,
-            "end": 1.068
+            "start": 0.708,
+            "end": 0.964
           },
           {
             "text": "lists",
-            "start": 1.161,
-            "end": 1.474
+            "start": 1.045,
+            "end": 1.324
           },
           {
             "text": "every",
-            "start": 1.533,
-            "end": 1.765
+            "start": 1.382,
+            "end": 1.567
           },
           {
             "text": "service,",
-            "start": 1.834,
-            "end": 2.485
+            "start": 1.637,
+            "end": 2.194
           },
           {
             "text": "each",
-            "start": 2.635,
-            "end": 2.879
+            "start": 2.345,
+            "end": 2.601
           },
           {
             "text": "with",
-            "start": 2.926,
-            "end": 3.053
+            "start": 2.659,
+            "end": 2.798
           },
           {
             "text": "a",
-            "start": 3.1,
-            "end": 3.123
+            "start": 2.833,
+            "end": 2.856
           },
           {
             "text": "restart",
-            "start": 3.193,
-            "end": 3.622
+            "start": 2.926,
+            "end": 3.332
           },
           {
             "text": "control.",
-            "start": 3.669,
-            "end": 4.365
+            "start": 3.367,
+            "end": 4.876
           }
         ]
       },
       {
         "id": "overview-3",
         "path": "assets/audio/voice/devtools/overview-3.mp3",
-        "requestSha256": "45940807fd4d6479b00a480c251fa874800bdcfe59a9425c3cb43fa9cf2d3e1a",
-        "duration": 2.647075,
+        "requestSha256": "8233133f4d8f0207581fc19956085c765c3110d3e33aa037a15df02f98f9ba0e",
+        "duration": 3.715193,
         "words": [
           {
-            "text": "Browse",
+            "text": "Search",
             "start": 0,
-            "end": 0.372
+            "end": 0.313
           },
           {
             "text": "your",
-            "start": 0.395,
-            "end": 0.488
+            "start": 0.348,
+            "end": 0.453
           },
           {
             "text": "Git",
-            "start": 0.534,
-            "end": 0.662
+            "start": 0.499,
+            "end": 0.639
           },
           {
             "text": "worktrees",
-            "start": 0.708,
-            "end": 1.184
+            "start": 0.685,
+            "end": 1.115
           },
           {
             "text": "without",
-            "start": 1.219,
-            "end": 1.463
+            "start": 1.149,
+            "end": 1.405
           },
           {
             "text": "leaving",
-            "start": 1.521,
-            "end": 1.776
+            "start": 1.451,
+            "end": 1.707
           },
           {
             "text": "the",
-            "start": 1.823,
-            "end": 1.892
+            "start": 1.753,
+            "end": 1.823
           },
           {
             "text": "page.",
-            "start": 1.927,
-            "end": 2.647
+            "start": 1.858,
+            "end": 3.715
           }
         ]
       },
       {
         "id": "query-1",
         "path": "assets/audio/voice/devtools/query-1.mp3",
-        "requestSha256": "1074718d24e5e017a2bfc8aa884f93754b632f1408a59fbb76c0fc05e9b7c8ef",
-        "duration": 3.250794,
+        "requestSha256": "8ae3414e6a5513ba7042d80f4d83d888cb332f950bc043d540945ed741013e82",
+        "duration": 3.390113,
         "words": [
           {
             "text": "TanStack",
             "start": 0,
-            "end": 0.604
+            "end": 0.557
           },
           {
             "text": "Query's",
-            "start": 0.639,
-            "end": 0.964
+            "start": 0.604,
+            "end": 0.917
           },
           {
             "text": "own",
-            "start": 1.022,
-            "end": 1.138
+            "start": 0.975,
+            "end": 1.103
           },
           {
             "text": "devtools",
-            "start": 1.184,
-            "end": 1.637
+            "start": 1.138,
+            "end": 1.625
           },
           {
             "text": "open",
             "start": 1.695,
-            "end": 1.904
+            "end": 1.939
           },
           {
             "text": "from",
-            "start": 1.95,
-            "end": 2.078
+            "start": 1.997,
+            "end": 2.125
           },
           {
             "text": "the",
-            "start": 2.125,
-            "end": 2.194
+            "start": 2.171,
+            "end": 2.252
           },
           {
             "text": "same",
-            "start": 2.252,
-            "end": 2.508
+            "start": 2.322,
+            "end": 2.601
           },
           {
             "text": "toolbar.",
-            "start": 2.543,
-            "end": 3.251
+            "start": 2.635,
+            "end": 3.39
           }
         ]
       }

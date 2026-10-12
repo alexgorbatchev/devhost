@@ -36,9 +36,19 @@ export async function recordOverview(
     (await picker.getByRole("radio", { disabled: false }).count()) > 1,
     "The worktree picker did not discover multiple usable checkouts",
   );
-  await changeCaption("Browse your repository's worktrees without leaving the page.");
+  await changeCaption("Search your repository's worktrees without leaving the page.");
+  await page.waitForTimeout(1_500);
+  await picker
+    .getByRole("searchbox", { name: "Find worktree", exact: true })
+    .pressSequentially("polish", { delay: 120 });
+  await picker.getByRole("radio").nth(1).waitFor({ state: "detached" });
+  assert.equal(
+    await picker.getByRole("radio").count(),
+    1,
+    "The worktree search did not narrow the list to one checkout",
+  );
   await page.screenshot({ path: join(runtime.directoryPath, "worktrees.png") });
-  await page.waitForTimeout(4_000);
+  await page.waitForTimeout(3_000);
   await clickWithIndicator(page, picker.getByRole("button", { name: "Cancel", exact: true }));
   await clickWithIndicator(page, services);
   await page.waitForTimeout(1_000);
