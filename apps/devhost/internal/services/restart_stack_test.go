@@ -214,6 +214,9 @@ func TestStackRestartRejectsMissingSelectedCheckoutBeforeStoppingOtherServices(t
 	if webRepositoryID == "" {
 		t.Fatal("web repository was not discovered")
 	}
+	if err := os.WriteFile(filepath.Join(linked, "devhost.toml"), []byte(f.header+strings.ReplaceAll(web, root, linked)+workerBody), 0600); err != nil {
+		t.Fatal(err)
+	}
 	if err := f.control.SwitchWorktree(webRepositoryID, linked); err != nil {
 		t.Fatal(err)
 	}

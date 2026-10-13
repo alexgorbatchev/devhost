@@ -128,7 +128,7 @@ export const FuzzySearch: Story = {
     await userEvent.clear(search);
     await expect(canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" })).toBeChecked();
     await expect(canvas.getByRole("radio", { name: "feature/missing /worktrees/missing" })).toBeDisabled();
-    await userEvent.click(canvas.getByRole("button", { name: "Switch and restart 2 services" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Switch and restart stack" }));
     await expect(args.onSwitch).toHaveBeenCalledWith("shop", "/worktrees/cart");
   },
 };
@@ -157,7 +157,7 @@ export const HomeDirectoryPaths: Story = {
     await userEvent.click(feature);
     await expect(feature).toBeChecked();
     await waitFor(() => expect(canvas.getByText("~/worktrees/cart/web")).toBeVisible());
-    await userEvent.click(canvas.getByRole("button", { name: "Switch and restart 2 services" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Switch and restart stack" }));
     await expect(args.onSwitch).toHaveBeenCalledWith("shop", "/home/alex/worktrees/cart");
   },
 };
@@ -172,13 +172,13 @@ export const ChoicesAndPreview: Story = {
       expect(main).toBeVisible();
     });
     await expect(main).toBeChecked();
-    await expect(canvas.getByRole("button", { name: "Switch and restart 2 services" })).toBeDisabled();
+    await expect(canvas.getByRole("button", { name: "Switch and restart stack" })).toBeDisabled();
     await userEvent.click(main);
     await userEvent.click(canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" }));
     await expect(canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" })).toBeChecked();
     await waitFor(() => expect(canvas.getByText("/worktrees/cart/web")).toBeVisible());
     await expect(canvas.getByRole("radio", { name: "feature/missing /worktrees/missing" })).toBeDisabled();
-    await userEvent.click(canvas.getByRole("button", { name: "Switch and restart 2 services" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Switch and restart stack" }));
     await expect(args.onSwitch).toHaveBeenCalledWith("shop", "/worktrees/cart");
     await waitFor(() => expect(args.onBack).toHaveBeenCalled());
   },
@@ -195,7 +195,7 @@ export const DetachedCheckout: Story = {
     });
     await userEvent.click(detached);
     await waitFor(() => expect(canvas.getByText("/worktrees/experiment/api")).toBeVisible());
-    await userEvent.click(canvas.getByRole("button", { name: "Switch and restart 2 services" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Switch and restart stack" }));
     await expect(args.onSwitch).toHaveBeenCalledWith("shop", "/worktrees/experiment");
   },
 };
@@ -216,7 +216,7 @@ export const ExternalService: Story = {
     await expect(canvas.getByRole("alert")).toHaveTextContent(
       "Service api is external; devhost cannot switch every service in this repository.",
     );
-    await expect(canvas.getByRole("button", { name: "Switch and restart 2 services" })).toBeDisabled();
+    await expect(canvas.getByRole("button", { name: "Switch and restart stack" })).toBeDisabled();
   },
 };
 
@@ -225,9 +225,9 @@ export const Switching: Story = {
   play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
     await userEvent.click(await canvas.findByRole("button", { name: "Worktrees" }));
-    await waitFor(() => expect(canvas.getByRole("status")).toHaveTextContent("Switching and restarting services…"));
+    await waitFor(() => expect(canvas.getByRole("status")).toHaveTextContent("Switching and restarting stack…"));
     await expect(canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" })).toBeDisabled();
-    const back = canvas.getByRole("button", { name: "Back to services" });
+    const back = canvas.getByRole("button", { name: "Back to worktrees" });
     await expect(canvas.getByRole("status").getBoundingClientRect().bottom).toBeLessThanOrEqual(
       back.getBoundingClientRect().top,
     );
@@ -306,7 +306,7 @@ export const LaunchFailure: Story = {
     const feature = canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" });
     await waitFor(() => expect(feature).toBeEnabled());
     await userEvent.click(feature);
-    await userEvent.click(canvas.getByRole("button", { name: "Switch and restart 2 services" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Switch and restart stack" }));
     await waitFor(() => expect(canvas.getByRole("alert")).toHaveTextContent("Service web failed to start."));
     await expect(args.onBack).not.toHaveBeenCalled();
     await expect(canvas.getByRole("button", { name: "Cancel" })).toBeEnabled();
@@ -321,6 +321,6 @@ export const ServiceRestartInProgress: Story = {
     const feature = canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" });
     await waitFor(() => expect(feature).toBeEnabled());
     await userEvent.click(feature);
-    await expect(canvas.getByRole("button", { name: "Switch and restart 2 services" })).toBeDisabled();
+    await expect(canvas.getByRole("button", { name: "Switch and restart stack" })).toBeDisabled();
   },
 };

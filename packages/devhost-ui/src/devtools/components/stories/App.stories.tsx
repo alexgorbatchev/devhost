@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, userEvent, waitFor, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import type { JSX } from "react";
 
 import { App as DevtoolsApp } from "../App";
@@ -178,18 +178,27 @@ export const WorktreeRecovery: Story = {
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
     const services = await canvas.findByRole("button", {
-      name: "Services: 0 of 1 up, non-default branches: shop: feature/cart",
+      name: "Worktrees, non-default branches: shop: feature/cart",
     });
-    await expect(canvas.getByTestId("ServiceStatusPanel--worktree-indicator")).toBeVisible();
+    await expect(canvas.getByRole("button", { name: "Services: 0 of 1 up" })).toBeVisible();
     await expect(canvas.queryByRole("dialog", { name: "Service exited" })).toBeNull();
     await userEvent.click(services);
     await userEvent.click(canvas.getByRole("button", { name: "Choose worktree for shop" }));
     await expect(await canvas.findByRole("alert")).toHaveTextContent("Service api failed to start.");
     const recover = canvas.getByRole("button", { name: "Return to configured checkout" });
     await waitFor(() => expect(recover).toBeEnabled());
-    await userEvent.click(recover);
+    const navigation = Reflect.get(window, "navigation");
+    if (!(navigation instanceof EventTarget)) throw new Error("Navigation API unavailable");
+    const reload = fn((event: Event): void => event.preventDefault());
+    navigation.addEventListener("navigate", reload);
+    try {
+      await userEvent.click(recover);
+    } finally {
+      navigation.removeEventListener("navigate", reload);
+    }
+    await expect(reload).toHaveBeenCalledTimes(1);
     await expect(await canvas.findByRole("button", { name: "Services: 1 of 1 up" })).toBeVisible();
-    await expect(canvas.queryByTestId("ServiceStatusPanel--worktree-indicator")).toBeNull();
+    await expect(canvas.getByRole("button", { name: "Worktrees" })).toBeVisible();
     await expect(canvas.queryByRole("dialog", { name: "Service exited" })).toBeNull();
     await expect(await canvas.findByRole("button", { name: "Choose worktree for shop" })).toHaveTextContent("main");
   },

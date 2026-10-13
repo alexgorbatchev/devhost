@@ -65,6 +65,9 @@ func ReassignAutoPort(value ResolvedManifest, serviceName string) (ResolvedServi
 		if err != nil {
 			return ResolvedService{}, ResolvedManifest{}, err
 		}
+		nextManifest.ManifestPath = value.ManifestPath
+		nextManifest.Name = value.Name
+		nextManifest.ServiceOrder = value.ServiceOrder
 		// Port resolution uses configured paths; retain the selected worktree.
 		for name, selected := range value.Services {
 			next := nextManifest.Services[name]

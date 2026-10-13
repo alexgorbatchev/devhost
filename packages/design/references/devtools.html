@@ -2332,9 +2332,14 @@
               ${alert ? icon("alert") : ""}
               <span class="dots">${services.map((s) => `<span class="dot ${serviceDotClass(s)}" title="${esc(s.name)}: ${serviceStateText(s)}"></span>`).join("")}</span>
               <span>${upCount}/${services.length}</span>
-              ${worktreeSummary ? icon("branch") : ""}
               ${dirtyCount > 0 && !alert ? `<span class="tag warn">${dirtyCount} changed</span>` : ""}
             </button>`);
+        }
+
+        if (state.worktreesEnabled && state.repositories.length > 0) {
+          segments.push(
+            `<button class="seg tight" type="button" data-action="panel" data-panel="worktrees" title="${esc(worktreeSummary || "Worktrees")}" aria-label="Worktrees" aria-expanded="${panelOpen("worktrees")}">${icon("branch")}</button>`,
+          );
         }
 
         if (queues.length > 0 || state.queueError) {
@@ -2430,6 +2435,7 @@
 
       function readOpenPanel() {
         if (state.openPanel === "services") return renderServicesPanel();
+        if (state.openPanel === "worktrees") return renderWorktreesPanel();
         if (state.openPanel === "queues") return renderQueuesPanel();
         if (state.openPanel === "sessions") return renderSessionsPanel();
         return null;
@@ -2596,7 +2602,6 @@
 
       function renderServicesPanel() {
         if (state.stoppedServicesOpen && state.stoppedServices.length > 0) return renderStoppedServices();
-        if (state.worktreesEnabled && state.worktreePicker !== null) return renderWorktreePicker();
         const ungroupedServices = state.services.filter(
           (service) => !state.repositories.some((repo) => service.name in repo.serviceDirectories),
         );
@@ -2675,14 +2680,18 @@
           <header class="repo-head">
             <span class="repo-name grow trunc">${esc(repository.name)}</span>
             ${repository.phase ? `<span class="tag warn">switching</span>` : repository.error ? `<span class="tag danger">stopped</span>` : repository.restored ? `<span class="tag" title="Selection restored after devhost restart">restored</span>` : ""}
-            <button class="btn" type="button" data-action="worktree-open" data-id="${repository.id}"
-              data-focus-key="worktree-open-${repository.id}" aria-label="Choose worktree for ${esc(repository.name)}"
-              title="${esc(repository.selectedPath)}" aria-expanded="false">
-              ${icon("branch")}<span class="trunc">${esc(worktreeLabel(repository, repository.selectedPath))}</span>${icon("chevDown")}
-            </button>
           </header>
           ${renderServiceLists(repositoryServices(repository), repository)}
         </section>`;
+      }
+
+      function renderWorktreesPanel() {
+        if (state.worktreePicker !== null) return renderWorktreePicker();
+        return {
+          width: 380,
+          label: "Worktrees",
+          html: `<header class="panel-head"><span class="grow">Worktrees</span></header><div class="panel-body">${state.repositories.map((repository) => `<section class="repo-group"><header class="repo-head"><span class="repo-name grow trunc">${esc(repository.name)}</span><button class="btn" type="button" data-action="worktree-open" data-id="${repository.id}" data-focus-key="worktree-open-${repository.id}" aria-label="Choose worktree for ${esc(repository.name)}" title="${esc(repository.selectedPath)}">${icon("branch")}<span class="trunc">${esc(worktreeLabel(repository, repository.selectedPath))}</span>${icon("chevDown")}</button></header></section>`).join("")}</div>`,
+        };
       }
 
       function renderWorktreePicker() {
@@ -2727,7 +2736,7 @@
           label: `${repository.name} worktrees`,
           html: `
             <header class="panel-head">
-              <button class="btn icon ghost" type="button" data-action="worktree-back" data-focus-key="worktree-back" aria-label="Back to services">${icon("collapse")}</button>
+              <button class="btn icon ghost" type="button" data-action="worktree-back" data-focus-key="worktree-back" aria-label="Back to worktrees">${icon("collapse")}</button>
               <span class="grow">${esc(repository.name)} · Worktrees</span>
             </header>
             <div class="panel-body">
@@ -2743,10 +2752,10 @@
               ${isBusy ? `<p class="worktree-progress" role="status">${icon("restart", "spin")}${esc(repository.phase)}</p>` : ""}
               <div class="worktree-actions">
                 <button class="btn primary" type="button" data-action="worktree-apply" data-focus-key="worktree-apply" ${canApply ? "" : "disabled"}>
-                  ${repository.error && picker.path === repository.selectedPath ? "Retry" : `Switch and restart ${services.length} service${services.length === 1 ? "" : "s"}`}
+                  ${repository.error && picker.path === repository.selectedPath ? "Retry" : "Switch and restart stack"}
                 </button>
                 ${repository.error && repository.selectedPath !== repository.configuredPath ? `<button class="btn" type="button" data-action="worktree-return" ${isBusy ? "disabled" : ""}>Return to ${esc(worktreeLabel(repository, repository.configuredPath))}</button>` : ""}
-                <button class="btn" type="button" data-action="worktree-back">${isBusy ? "Back to services" : "Cancel"}</button>
+                <button class="btn" type="button" data-action="worktree-back">${isBusy ? "Back to worktrees" : "Cancel"}</button>
               </div>
             </footer>
             <div class="panel-body">
@@ -3181,14 +3190,17 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
 
       async function switchWorktree(repository, path) {
         const worktree = repository.worktrees.find((item) => item.path === path);
-        const services = repositoryServices(repository);
+        const services = state.services.filter((service) => service.managed);
         if (
           repository.phase ||
           !worktree?.available ||
           services.some((service) => !service.managed || service.restarting)
         )
           return;
-        // Applying a choice saves intent, including when the subsequent launch fails.
+        const previousPath = repository.selectedPath;
+        const previousRunningPath = repository.runningPath;
+        const previousServices = services.map((service) => ({ ...service }));
+        // The live implementation loads the target manifest and restarts the whole stack.
         state.savedWorktrees[repository.id] = path;
         repository.selectedPath = path;
         repository.restored = false;
@@ -3215,7 +3227,11 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
           service.status = !state.failWorktreeSwitch;
         });
         if (state.failWorktreeSwitch) {
-          repository.error = `Could not start ${services[0].name} in ${worktree.label}. All ${repository.name} services are stopped. Your selection is saved; retry or choose another worktree.`;
+          services.forEach((service, index) => Object.assign(service, previousServices[index]));
+          repository.selectedPath = previousPath;
+          repository.runningPath = previousRunningPath;
+          state.savedWorktrees[repository.id] = previousPath;
+          state.serviceError = `Could not start ${services[0].name} in ${worktree.label}. The previous stack was restored.`;
         } else {
           repository.runningPath = path;
         }

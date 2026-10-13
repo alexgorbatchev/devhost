@@ -326,13 +326,18 @@ describe("useServiceHealth", () => {
     expect(hook.result.current.services).toEqual([apiService]);
   });
 
-  test("switchWorktree posts the selection, then refreshes the health", async () => {
+  test("switchWorktree posts the selection, then reloads the current URL", async () => {
     const { hook } = await connectServiceHealth();
-    const health: HealthResponse = { repositories: [repository], services: [workerService] };
-
-    mockFetch.fetch.mockResolvedValueOnce(new Response("")).mockResolvedValueOnce(Response.json(health));
+    const navigation = Reflect.get(window, "navigation");
+    assert(navigation instanceof EventTarget);
+    const reload = vi.fn((event: Event): void => {
+      event.preventDefault();
+    });
+    navigation.addEventListener("navigate", reload);
+    mockFetch.fetch.mockResolvedValueOnce(new Response(""));
 
     const error: string | null = await act(() => hook.result.current.switchWorktree("shop", "/worktrees/cart"));
+    navigation.removeEventListener("navigate", reload);
 
     expect(error).toBeNull();
     expect(mockFetch.fetch.mock.calls).toEqual([
@@ -344,9 +349,9 @@ describe("useServiceHealth", () => {
           method: "POST",
         },
       ],
-      ["/__devhost__/worktrees", { body: undefined, headers: worktreeRequestHeaders, method: "GET" }],
     ]);
-    expect(hook.result.current.services).toEqual([workerService]);
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(Reflect.get(reload.mock.calls[0][0], "navigationType")).toBe("reload");
   });
 
   test("switchWorktree returns the server's refusal and still refreshes the health", async () => {

@@ -1,12 +1,5 @@
 import { useRef, useState, type JSX } from "react";
-import {
-  ArrowLeftIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  GitBranchIcon,
-  RotateCwIcon,
-  TriangleAlertIcon,
-} from "lucide-react";
+import { ArrowLeftIcon, ChevronRightIcon, RotateCwIcon, TriangleAlertIcon } from "lucide-react";
 
 import { Icon } from "../../../../components/ui/Icon";
 
@@ -26,9 +19,6 @@ import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtools
 import type { ServiceHealth, IStoppedService, IWorktreeRepository } from "../../../shared/types";
 
 import { StoppedServices } from "./StoppedServices";
-import { WorktreePicker } from "./WorktreePicker";
-import { formatWorktreePath } from "../formatWorktreePath";
-import { readNonDefaultBranches } from "../readNonDefaultBranches";
 
 interface IServiceStatusPanelProps {
   errorMessage: string | null;
@@ -36,8 +26,6 @@ interface IServiceStatusPanelProps {
   services: ServiceHealth[];
   stoppedServices?: IStoppedService[];
   repositories?: IWorktreeRepository[];
-  onRefreshWorktrees?: () => Promise<string | null>;
-  onSwitchWorktree?: (repositoryId: string, path: string) => Promise<string | null>;
   onStartServices?: (serviceNames: string[]) => Promise<string | null>;
 }
 
@@ -60,33 +48,25 @@ const serviceStateLabels: Record<ServiceDotState, string> = {
 const serviceNameCollator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
 
 export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element | null {
-  const { homeDirectoryPath, restartServicesShortcut, primaryService } = readInjectedDevtoolsConfig();
+  const { restartServicesShortcut, primaryService } = readInjectedDevtoolsConfig();
   const restartServiceNames = selectRestartServiceNames(props.services, primaryService);
-  const [repositoryId, setRepositoryId] = useState<string | null>(null);
   const [isStackRestarting, setIsStackRestarting] = useState<boolean>(false);
   const [isChoosingStoppedService, setIsChoosingStoppedService] = useState<boolean>(false);
-  const repositoryButtons = useRef<Map<string, HTMLButtonElement>>(new Map());
   const stoppedServicesButton = useRef<HTMLButtonElement | null>(null);
   const repositories = props.repositories ?? [];
   const stoppedServices = props.stoppedServices ?? [];
   const onStartServices = props.onStartServices;
-  const selectedRepository = repositories.find((repository) => repository.id === repositoryId);
   // The view closes by itself once its last service has started.
   const isShowingStoppedServices: boolean =
     isChoosingStoppedService && stoppedServices.length > 0 && onStartServices !== undefined;
-  const isShowingServices: boolean = selectedRepository === undefined && !isShowingStoppedServices;
+  const isShowingServices: boolean = !isShowingStoppedServices;
   const onBack = (): void => {
-    setRepositoryId(null);
     setIsChoosingStoppedService(false);
     requestAnimationFrame(() => {
-      if (repositoryId !== null) repositoryButtons.current.get(repositoryId)?.focus();
-      else stoppedServicesButton.current?.focus();
+      stoppedServicesButton.current?.focus();
     });
   };
   const hasError: boolean = props.errorMessage !== null;
-  const nonDefaultBranches = readNonDefaultBranches(repositories);
-  const worktreeSummary: string | undefined =
-    nonDefaultBranches.length > 0 ? `Non-default branches: ${nonDefaultBranches.join(", ")}` : undefined;
 
   if (!hasError && props.services.length === 0 && stoppedServices.length === 0) {
     return null;
@@ -127,14 +107,8 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
           </InlineNotice>
         ) : undefined
       }
-      panelLabel={
-        isShowingStoppedServices
-          ? "Stopped services"
-          : selectedRepository === undefined
-            ? "Services"
-            : selectedRepository.name + " · Worktrees"
-      }
-      panelWidth={isShowingServices ? "lg" : selectedRepository === undefined ? "sm" : "lg"}
+      panelLabel={isShowingStoppedServices ? "Stopped services" : "Services"}
+      panelWidth={isShowingServices ? "lg" : "sm"}
       testId="ServiceStatusPanel"
       triggerContent={
         <>
@@ -145,21 +119,12 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
             ))}
           </span>
           <span aria-hidden="true">{`${upCount}/${props.services.length}`}</span>
-          {worktreeSummary !== undefined ? (
-            <span data-testid="ServiceStatusPanel--worktree-indicator">
-              <Icon glyph={GitBranchIcon} />
-            </span>
-          ) : null}
           {changedCount > 0 && !hasError ? (
             <Badge aria-hidden="true" variant="warning">{`${changedCount} changed`}</Badge>
           ) : null}
         </>
       }
-      title={worktreeSummary}
-      triggerLabel={
-        readServicesTriggerLabel(upCount, props.services.length, changedCount, hasError) +
-        (worktreeSummary === undefined ? "" : `, non-default branches: ${nonDefaultBranches.join(", ")}`)
-      }
+      triggerLabel={readServicesTriggerLabel(upCount, props.services.length, changedCount, hasError)}
       triggerTone={hasError ? "alert" : "default"}
     >
       {isShowingStoppedServices && onStartServices !== undefined ? (
@@ -172,23 +137,9 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
           }
           onStart={onStartServices}
         />
-      ) : selectedRepository !== undefined &&
-        props.onRefreshWorktrees !== undefined &&
-        props.onSwitchWorktree !== undefined ? (
-        <WorktreePicker
-          key={selectedRepository.id}
-          repository={selectedRepository}
-          hasRestartingService={props.services.some(
-            (service) => selectedRepository.serviceNames.includes(service.name) && service.restarting === true,
-          )}
-          onBack={onBack}
-          onRefresh={props.onRefreshWorktrees}
-          onSwitch={props.onSwitchWorktree}
-        />
       ) : (
         <>
           {repositories.map((repository) => {
-            const selected = repository.worktrees.find((entry) => entry.path === repository.selectedPath);
             return (
               <section
                 key={repository.id}
@@ -202,23 +153,6 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
                   ) : repository.error !== undefined ? (
                     <Badge variant="destructive">stopped</Badge>
                   ) : null}
-                  <Button
-                    ref={(button): void => {
-                      if (button === null) repositoryButtons.current.delete(repository.id);
-                      else repositoryButtons.current.set(repository.id, button);
-                    }}
-                    aria-label={"Choose worktree for " + repository.name}
-                    title={formatWorktreePath(repository.selectedPath, homeDirectoryPath)}
-                    disabled={props.onSwitchWorktree === undefined}
-                    startEnhancer={<Icon glyph={GitBranchIcon} />}
-                    endEnhancer={<Icon glyph={ChevronDownIcon} />}
-                    onClick={(): void => {
-                      setRepositoryId(repository.id);
-                    }}
-                  >
-                    {selected?.branch ||
-                      (selected?.detached === true ? "Detached " + selected.head.slice(0, 7) : "Unavailable worktree")}
-                  </Button>
                 </header>
                 <ServiceLists
                   services={props.services.filter((service) => repository.serviceNames.includes(service.name))}

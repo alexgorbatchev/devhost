@@ -90,9 +90,17 @@ func TestShutdownCancelsWorktreeBindHostHealthWait(t *testing.T) {
 		t.Fatal(err)
 	}
 	repo := health.Repositories[0]
+	api := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "api.recovery.localhost_api_2f.json"))
+	path := filepath.Join(repo.SelectedPath, "devhost.toml")
+	configuration, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(strings.Replace(string(configuration), "port = \"auto\"", fmt.Sprintf("port = %d", api.AppPort), 1)), 0600); err != nil {
+		t.Fatal(err)
+	}
 	done := make(chan error, 1)
 	go func() { done <- f.control.SwitchWorktree(repo.ID, repo.SelectedPath) }()
-	api := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "api.recovery.localhost_api_2f.json"))
 	waitForCondition(t, 5*time.Second, func() bool {
 		return canConnectToPort(context.Background(), "::1", api.AppPort, minProbeTimeout)
 	})
@@ -136,6 +144,9 @@ func startWorktreeRecoveryStack(t *testing.T, host, listenHost string, timeout i
 	api += fmt.Sprintf("BIND_HOST_FILE = %q\n", bindFile)
 	web := strings.Replace(reloadServiceBody("web", "web", "web.recovery.localhost"), "command = ", fmt.Sprintf("cwd = %q\ndependsOn = [\"api\"]\ncommand = ", filepath.Join(root, "web")), 1)
 	f := startReloadStackConfiguration(t, api+web, true)
+	if err := os.WriteFile(filepath.Join(root, "devhost.toml"), []byte(f.header+api+web), 0600); err != nil {
+		t.Fatal(err)
+	}
 	route := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "web.recovery.localhost_web_2f.json"))
 	return f, serverURL(route.DocumentInjectionPort, "/review?example=review"), bindFile
 }

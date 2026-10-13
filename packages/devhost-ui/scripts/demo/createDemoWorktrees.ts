@@ -13,7 +13,12 @@ export async function createDemoWorktrees(runtime: IDemoRuntime): Promise<void> 
   await runCommand(["git", "config", "user.name", "Devhost Demo"], { cwd, env });
   await runCommand(["git", "config", "user.email", "demo@localhost"], { cwd, env });
   await Bun.write(join(cwd, ".gitignore"), "node_modules\n.workspaces/\n");
-  await runCommand(["git", "add", "--", ".gitignore", ...Object.keys(baseline)], { cwd, env });
+  const configuration = await Bun.file(runtime.manifestPath).text();
+  await Bun.write(
+    join(cwd, "devhost.toml"),
+    configuration.replaceAll("{{ env.DEVHOST_DEMO_RUNTIME }}/playground/", ""),
+  );
+  await runCommand(["git", "add", "--", ".gitignore", "devhost.toml", ...Object.keys(baseline)], { cwd, env });
   await runCommand(["git", "commit", "--quiet", "-m", "Initialize recording playground"], { cwd, env });
   const alternatePath = join(cwd, ".workspaces/ui-polish");
   await runCommand(["git", "worktree", "add", "--quiet", "-b", "ui-polish", alternatePath, "main"], { cwd, env });

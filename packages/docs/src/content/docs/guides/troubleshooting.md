@@ -61,7 +61,7 @@ If a replacement launch or route update fails, devhost attempts to restore the p
 
 ## Deleted selected worktree
 
-Open the Services checkout picker or press **Refresh** after adding or deleting worktrees. If the running checkout was deleted, devhost stops only that repository's services and retains the missing selection with a recovery error. Select an available checkout before restarting the stack. Editor and annotation launches into that repository remain blocked until checkout recovery; other repositories keep running.
+Open the Worktrees toolbar picker or press **Refresh** after adding or deleting worktrees. If the running checkout was deleted, devhost stops only that repository's services and retains the missing selection with a recovery error. Select an available checkout before restarting the stack. Editor and annotation launches into that repository remain blocked until checkout recovery; other repositories keep running.
 
 ## Vite bind-host mismatch
 

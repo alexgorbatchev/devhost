@@ -172,7 +172,7 @@ func TestFailedStartOfAStoppedServiceLeavesTheSliceRunning(t *testing.T) {
 	assertSliceHealth(t, f, []string{"web", "docs"}, nil)
 }
 
-func TestStartingAStoppedServiceKeepsItsRepositorySiblingsRunning(t *testing.T) {
+func TestWorktreeSwitchStartsTheTargetsEntireStack(t *testing.T) {
 	root, linked := createWorktreeRepository(t)
 	service := func(name, directory string) string {
 		return strings.Replace(sliceServiceBody(name), "command = ", fmt.Sprintf("cwd = %q\ncommand = ", filepath.Join(root, directory)), 1)
@@ -182,18 +182,15 @@ func TestStartingAStoppedServiceKeepsItsRepositorySiblingsRunning(t *testing.T) 
 	if err != nil || len(health.Repositories) != 1 || !slices.Equal(health.Repositories[0].ServiceNames, []string{"web"}) {
 		t.Fatalf("repository lists stopped services: %#v, %v", health, err)
 	}
+	if err := os.WriteFile(filepath.Join(linked, "devhost.toml"), []byte(f.header+strings.ReplaceAll(service("web", "web")+service("api", "api"), root, linked)), 0600); err != nil {
+		t.Fatal(err)
+	}
 	if err := f.control.SwitchWorktree(health.Repositories[0].ID, linked); err != nil {
 		t.Fatal(err)
 	}
 	web := readRestartRoute(t, sliceRoutePath(f, "web"))
-	pid := reloadPID(t, web.AppPort)
-
-	if err := f.control.StartService([]string{"api"}); err != nil {
-		t.Fatal(err)
-	}
-	if reloadPID(t, web.AppPort) != pid {
-		t.Fatal("starting a stopped service restarted its repository sibling")
-	}
+	assertRestartResponse(t, serverURL(web.AppPort, "/cwd"), filepath.Join(linked, "web"))
+	assertSliceHealth(t, f, []string{"web", "api"}, nil)
 	api := readRestartRoute(t, sliceRoutePath(f, "api"))
 	assertRestartResponse(t, serverURL(api.AppPort, "/cwd"), filepath.Join(linked, "api"))
 	health, err = f.control.GetHealthResponse()

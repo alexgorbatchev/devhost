@@ -13,12 +13,19 @@ import (
 func (r *stackRuntime) watchManifest() (*manifestWatcher, error) {
 	// A save made during startup can be incomplete. Track the partial inputs
 	// and let the initial reload report it while the accepted stack stays up.
-	raw, _ := manifest.ReadManifest(r.manifest.ManifestPath)
+	path := r.manifest.ManifestPath
+	if r.configured != nil {
+		path = r.configured.ManifestPath
+	}
+	raw, _ := manifest.ReadManifest(path)
 	return newManifestWatcher(raw.Inputs)
 }
 
 func (r *stackRuntime) reloadFromDisk(ctx context.Context, w *manifestWatcher) error {
-	raw, err := manifest.ReadManifest(r.manifest.ManifestPath)
+	r.operationMu.Lock()
+	defer r.operationMu.Unlock()
+	path := r.configured.ManifestPath
+	raw, err := manifest.ReadManifest(path)
 	inputs := raw.Inputs
 	if err != nil {
 		w.inputsMu.RLock()
@@ -30,11 +37,11 @@ func (r *stackRuntime) reloadFromDisk(ctx context.Context, w *manifestWatcher) e
 	if err := w.update(inputs); err != nil {
 		return err
 	}
-	candidate, err := manifest.ValidateManifest(r.manifest.ManifestPath, raw)
+	candidate, err := manifest.ValidateManifest(path, raw)
 	if err != nil {
 		return err
 	}
-	return r.reloadConfiguration(ctx, candidate, inputs.Files)
+	return r.reloadConfigurationLocked(ctx, candidate, inputs.Files)
 }
 
 func (r *stackRuntime) toolContext(name string) (devtools.ToolContext, error) {

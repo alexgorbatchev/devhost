@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"maps"
 	"os"
 	"path/filepath"
 	"sort"
@@ -24,13 +23,15 @@ type stackWorktrees struct {
 }
 
 type worktreeGroup struct {
-	view       devtools.WorktreeRepository
-	repository gitRepository
-	offsets    map[string]string
+	view           devtools.WorktreeRepository
+	repository     gitRepository
+	offsets        map[string]string
+	manifestOffset string
 }
 
 type savedWorktree struct {
-	Path string `json:"path"`
+	RepositoryID string `json:"repositoryId"`
+	Path         string `json:"path"`
 }
 
 func newStackWorktrees(m ResolvedManifest, stateDir string) (*stackWorktrees, error) {
@@ -46,6 +47,13 @@ func buildStackWorktrees(m ResolvedManifest, stateDir string, previous *stackWor
 		return nil, err
 	}
 	w := &stackWorktrees{stateDir: filepath.Join(stateDir, "worktrees", worktreeKey(manifestPath))}
+	var saved *savedWorktree
+	if previous == nil {
+		saved, err = w.readSelection()
+		if err != nil {
+			return nil, err
+		}
+	}
 	for _, name := range orderedManifestServiceNames(m) {
 		s := m.Services[name]
 		repo, cwd, err := configuredWorktreeRepository(s.Cwd, previous)
@@ -57,9 +65,24 @@ func buildStackWorktrees(m ResolvedManifest, stateDir string, previous *stackWor
 		}
 		g := w.group(worktreeKey(repo.commonDir))
 		if g == nil {
-			g = &worktreeGroup{repository: repo, offsets: map[string]string{}, view: devtools.WorktreeRepository{
+			offset, inside := pathWithin(repo.root, m.ManifestPath)
+			if m.configuration != nil {
+				offset, inside = pathWithin(repo.root, m.configuration.ManifestPath)
+			}
+			if !inside {
+				offset = filepath.Base(m.ManifestPath)
+			}
+			g = &worktreeGroup{repository: repo, manifestOffset: offset, offsets: map[string]string{}, view: devtools.WorktreeRepository{
 				ID: worktreeKey(repo.commonDir), Name: filepath.Base(repo.root), ConfiguredPath: repo.root, SelectedPath: repo.root,
 			}}
+			if previous != nil {
+				for _, old := range previous.snapshot() {
+					if old.ID == g.view.ID {
+						g.view.ConfiguredPath = old.ConfiguredPath
+						g.view.Name = old.Name
+					}
+				}
+			}
 			w.groups = append(w.groups, g)
 		}
 		if repo.root != g.repository.root {
@@ -76,15 +99,7 @@ func buildStackWorktrees(m ResolvedManifest, stateDir string, previous *stackWor
 		}
 	}
 	for _, g := range w.groups {
-		data, err := os.ReadFile(w.selectionPath(g.view.ID))
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			return nil, fmt.Errorf("read saved worktree: %w", err)
-		}
-		if err == nil {
-			var saved savedWorktree
-			if err := json.Unmarshal(data, &saved); err != nil || !filepath.IsAbs(saved.Path) {
-				return nil, fmt.Errorf("invalid saved worktree in %s", w.selectionPath(g.view.ID))
-			}
+		if saved != nil && saved.RepositoryID == g.view.ID {
 			g.view.SelectedPath = saved.Path
 		}
 		if err := g.refresh(); err != nil {
@@ -216,31 +231,17 @@ func (g *worktreeGroup) directories(root string) ([]devtools.WorktreeDirectory, 
 	if repo.root != root || repo.commonDir != g.repository.commonDir {
 		return nil, fmt.Errorf("Checkout %s no longer belongs to this repository.", root)
 	}
-	dirs := make([]devtools.WorktreeDirectory, 0, len(g.offsets))
-	for _, name := range g.view.ServiceNames {
-		cwd := filepath.Join(root, g.offsets[name])
-		info, err := os.Stat(cwd)
-		if err != nil {
-			return dirs, fmt.Errorf("Service %s directory is unavailable: %s", name, cwd)
-		}
-		if !info.IsDir() {
-			return dirs, fmt.Errorf("Service %s cwd is not a directory: %s", name, cwd)
-		}
-		resolved, err := filepath.EvalSymlinks(cwd)
-		if err != nil {
-			return dirs, err
-		}
-		if _, ok := pathWithin(root, resolved); !ok {
-			return dirs, fmt.Errorf("Service %s directory escapes checkout %s", name, root)
-		}
-		identity, err := discoverGitRepository(resolved)
-		if err != nil {
-			return dirs, err
-		}
-		if identity != repo {
-			return dirs, fmt.Errorf("Service %s directory belongs to a different repository", name)
-		}
-		dirs = append(dirs, devtools.WorktreeDirectory{Name: name, Cwd: cwd})
+	next, err := g.configuration(root)
+	if err != nil {
+		return nil, err
+	}
+	dirs := make([]devtools.WorktreeDirectory, 0, len(next.Services))
+	order, err := ResolveServiceOrder(next)
+	if err != nil {
+		return nil, err
+	}
+	for _, name := range order {
+		dirs = append(dirs, devtools.WorktreeDirectory{Name: name, Cwd: next.Services[name].Cwd})
 	}
 	return dirs, nil
 }
@@ -257,9 +258,19 @@ func (w *stackWorktrees) restore(m ResolvedManifest) (ResolvedManifest, map[stri
 	}
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	m.Services = maps.Clone(m.Services)
 	for _, g := range w.groups {
-		dirs, err := g.validateSelection(g.view.SelectedPath)
+		if g.view.SelectedPath == g.repository.root {
+			continue
+		}
+		_, err := g.validateSelection(g.view.SelectedPath)
+		var next ResolvedManifest
+		if err == nil {
+			var configuration manifest.Manifest
+			configuration, err = g.configuration(g.view.SelectedPath)
+			if err == nil {
+				next, err = resolveStackRestartPorts(configuration, m, nil)
+			}
+		}
 		if err != nil {
 			g.view.Error = err.Error()
 			for _, name := range g.view.ServiceNames {
@@ -267,8 +278,13 @@ func (w *stackWorktrees) restore(m ResolvedManifest) (ResolvedManifest, map[stri
 			}
 			continue
 		}
-		applyWorktreeDirectories(&m, dirs)
+		next.ManifestPath = m.ManifestPath
+		next.Name = m.Name
+		next.ServiceOrder = orderedServiceNames(*next.configuration)
+		m = next
+		break
 	}
+
 	return m, blocked
 }
 
@@ -288,14 +304,6 @@ func (g *worktreeGroup) validateSelection(path string) ([]devtools.WorktreeDirec
 	return nil, fmt.Errorf("Worktree %s is not registered with this repository", path)
 }
 
-func applyWorktreeDirectories(m *ResolvedManifest, dirs []devtools.WorktreeDirectory) {
-	for _, dir := range dirs {
-		s := m.Services[dir.Name]
-		s.Cwd = dir.Cwd
-		m.Services[dir.Name] = s
-	}
-}
-
 func (w *stackWorktrees) prepare(id, path string, m ResolvedManifest) (ResolvedManifest, error) {
 	if w == nil {
 		return m, fmt.Errorf("worktrees are not enabled")
@@ -312,17 +320,23 @@ func (w *stackWorktrees) prepare(id, path string, m ResolvedManifest) (ResolvedM
 	if err := g.refresh(); err != nil {
 		return m, err
 	}
-	dirs, err := g.validateSelection(path)
+	if _, err := g.validateSelection(path); err != nil {
+		return m, err
+	}
+	configuration, err := g.configuration(path)
 	if err != nil {
 		return m, err
 	}
+	next, err := resolveStackRestartPorts(configuration, m, nil)
+	if err != nil {
+		return m, err
+	}
+	next.ManifestPath = m.ManifestPath
 	if err := w.save(id, path); err != nil {
 		return m, err
 	}
 	g.view.SelectedPath, g.view.Switching, g.view.Error = path, true, ""
-	m.Services = maps.Clone(m.Services)
-	applyWorktreeDirectories(&m, dirs)
-	return m, nil
+	return next, nil
 }
 
 func (w *stackWorktrees) finish(id string, err error) {
@@ -407,15 +421,41 @@ func (w *stackWorktrees) toolContext(m ResolvedManifest, name string) (devtools.
 	return result, nil
 }
 
-func (w *stackWorktrees) selectionPath(id string) string {
-	return filepath.Join(w.stateDir, id+".json")
+func (w *stackWorktrees) selectionPath() string {
+	return filepath.Join(w.stateDir, "active.json")
+}
+
+func (w *stackWorktrees) readSelection() (*savedWorktree, error) {
+	data, err := os.ReadFile(w.selectionPath())
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("read saved worktree: %w", err)
+	}
+	var saved savedWorktree
+	if err := json.Unmarshal(data, &saved); err != nil || !filepath.IsAbs(saved.Path) || saved.RepositoryID == "" {
+		return nil, fmt.Errorf("invalid saved worktree in %s", w.selectionPath())
+	}
+	return &saved, nil
+}
+
+func (w *stackWorktrees) restoreSelection(saved *savedWorktree) error {
+	if saved != nil {
+		return w.save(saved.RepositoryID, saved.Path)
+	}
+	err := os.Remove(w.selectionPath())
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	return err
 }
 
 func (w *stackWorktrees) save(id, path string) error {
 	if err := os.MkdirAll(w.stateDir, 0o700); err != nil {
 		return fmt.Errorf("create worktree state: %w", err)
 	}
-	data, err := json.Marshal(savedWorktree{Path: path})
+	data, err := json.Marshal(savedWorktree{RepositoryID: id, Path: path})
 	if err != nil {
 		return err
 	}
@@ -435,7 +475,7 @@ func (w *stackWorktrees) save(id, path string) error {
 	if err := file.Close(); err != nil {
 		return err
 	}
-	if err := os.Rename(file.Name(), w.selectionPath(id)); err != nil {
+	if err := os.Rename(file.Name(), w.selectionPath()); err != nil {
 		return fmt.Errorf("save worktree selection: %w", err)
 	}
 	return nil

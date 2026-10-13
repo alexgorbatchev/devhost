@@ -131,14 +131,27 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		gracePeriod = shutdownGracePeriod
 	}
 
-	runtimeDevtoolsFeatures := resolveSupportedDevtoolsFeatures(manifest.Devtools, manifest.Annotation)
-	devtoolsEnabled := hasEnabledDevtools(manifest.Devtools) && hasEnabledRuntimeDevtools(runtimeDevtoolsFeatures)
 	worktrees, err := newStackWorktrees(*manifest, paths.StateDirectoryPath)
 	if err != nil {
 		return 0, err
 	}
 	initial, blocked := worktrees.restore(*manifest)
 	*manifest = initial
+	if initial.configuration != nil {
+		options.Configuration = initial.configuration
+		serviceOrder, err = ResolveServiceOrder(*initial.configuration)
+		if err != nil {
+			return 0, err
+		}
+		if len(blocked) == 0 {
+			worktrees, err = buildStackWorktrees(initial, paths.StateDirectoryPath, worktrees)
+			if err != nil {
+				return 0, err
+			}
+		}
+	}
+	runtimeDevtoolsFeatures := resolveSupportedDevtoolsFeatures(manifest.Devtools, manifest.Annotation)
+	devtoolsEnabled := hasEnabledDevtools(manifest.Devtools) && hasEnabledRuntimeDevtools(runtimeDevtoolsFeatures)
 	lifecycleCtx, cancelLifecycle := context.WithCancel(context.Background())
 	defer cancelLifecycle()
 	state := &stackRuntime{
@@ -585,6 +598,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		}
 		defer func() { returnedError = errors.Join(returnedError, manifestWatch.close()) }()
 		manifestEvents = manifestWatch.events
+		state.manifestWatch = manifestWatch
 	}
 	state.operationMu.Lock()
 	state.ready = true

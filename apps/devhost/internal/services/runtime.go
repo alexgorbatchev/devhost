@@ -20,6 +20,7 @@ type stackRuntime struct {
 	failures          map[string]string
 	startupComplete   bool
 	configured        *manifest.Manifest
+	manifestWatch     *manifestWatcher
 	pendingReload     map[string]devtools.ServiceHealth
 	routing           devtools.RoutingConfig
 	claimedFixedPorts []claimedFixedPort
@@ -140,7 +141,7 @@ func (r *stackRuntime) restart(ctx context.Context, serviceNames []string) error
 			}
 			for _, member := range repo.ServiceNames {
 				if member == name {
-					return r.switchWorktreeLocked(ctx, repo.ID, repo.SelectedPath)
+					return r.recoverWorktree(ctx, repo.ID)
 				}
 			}
 		}
@@ -328,60 +329,38 @@ func (r *stackRuntime) switchWorktree(ctx context.Context, id, path string) erro
 	return r.switchWorktreeLocked(ctx, id, path)
 }
 
-func (r *stackRuntime) switchWorktreeLocked(ctx context.Context, id, path string) (returnedError error) {
-	next, err := r.worktrees.prepare(id, path, *r.manifest)
+func (r *stackRuntime) switchWorktreeLocked(ctx context.Context, id, path string) error {
+	previous := r.worktrees
+	if previous == nil {
+		return fmt.Errorf("worktrees are not enabled")
+	}
+	saved, err := previous.readSelection()
 	if err != nil {
 		return err
 	}
-	var names []string
-	for _, repo := range r.worktrees.snapshot() {
+	var oldPath string
+	for _, repo := range previous.snapshot() {
 		if repo.ID == id {
-			names = repo.ServiceNames
-			break
+			oldPath = repo.SelectedPath
 		}
 	}
-	ordered := r.orderedGroup(names)
-	defer func() {
-		r.manifestMu.Lock()
-		for _, name := range ordered {
-			if returnedError != nil {
-				r.blocked[name] = returnedError.Error()
-			} else {
-				delete(r.blocked, name)
-			}
-		}
-		r.manifestMu.Unlock()
-		r.worktrees.finish(id, returnedError)
-		r.publish()
-	}()
-	r.publish()
-	for _, name := range ordered {
-		r.watcher.StopWatching(name)
-		r.dirty.SetDirty(name, false)
-	}
-	if err := r.stopGroup(ordered); err != nil {
+	next, err := previous.prepare(id, path, *r.manifest)
+	if err != nil {
 		return err
 	}
-	r.manifestMu.Lock()
-	r.manifest.Services = next.Services
-	r.manifestMu.Unlock()
-	for _, name := range ordered {
-		s := r.manifest.Services[name]
-		if err := r.watcher.StartWatching(name, s.Watch, s.Cwd); err != nil {
-			returnedError = err
-			break
+	r.publish()
+	err = r.applyConfiguration(ctx, *next.configuration, configurationChange{worktreeSwitch: true, restartStack: true, message: "worktree switched"})
+	if err != nil {
+		err = joinCleanupError(err, previous.restoreSelection(saved))
+		previous.mu.Lock()
+		if group := previous.group(id); group != nil {
+			group.view.SelectedPath = oldPath
 		}
-		if err := r.start(ctx, name, runtimeStartOptions{RefreshRoute: true}); err != nil {
-			returnedError = err
-			r.logFailure(name, err)
-			break
-		}
+		previous.mu.Unlock()
+		r.finishReloadWorktrees()
 	}
-	if returnedError != nil {
-		returnedError = joinCleanupError(returnedError, r.stopGroup(ordered))
-		return returnedError
-	}
-	return nil
+	r.publish()
+	return err
 }
 
 func (r *stackRuntime) orderedGroup(names []string) []string {

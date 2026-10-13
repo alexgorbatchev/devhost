@@ -62,6 +62,9 @@ it("provides isolated usable Git worktrees for the recorded picker", async () =>
       "branch refs/heads/main",
       "branch refs/heads/ui-polish",
     ]);
+    const configuration = await Bun.file(join(playgroundPath, ".workspaces/ui-polish/devhost.toml")).text();
+    const parsed = Bun.TOML.parse(configuration);
+    expect(parsed).toMatchObject({ services: { api: { cwd: "backend" }, web: { cwd: "frontend" } } });
   } finally {
     await rm(runtime.directoryPath, { recursive: true, force: true });
   }

@@ -90,7 +90,8 @@ export function useServiceHealth(): IUseServiceHealthResult {
   const switchWorktree = useCallback(
     async (repositoryId: string, path: string): Promise<string | null> => {
       const result = await requestWorktrees(pristineFetch, { repositoryId, path });
-      await refreshWorktrees();
+      if (result.error === null) window.location.reload();
+      else await refreshWorktrees();
       return result.error;
     },
     [refreshWorktrees],

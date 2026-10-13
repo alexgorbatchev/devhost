@@ -43,6 +43,10 @@ func TestStackSwitchesWholeRepositoryAndRecoversFailedSwitch(t *testing.T) {
 		}
 		m.Services[name] = service
 	}
+	configuration := writeWorktreeFixtureConfiguration(t, m, root)
+	writeWorktreeFixtureConfiguration(t, m, linked)
+	m.configuration = &configuration
+	m.Devtools, m.Caddy = configuration.Devtools, configuration.Caddy
 	configured := m
 	originalStart, originalRegister, originalUnregister := startDevtoolsControlServer, registerProcessSignals, unregisterProcessSignals
 	defer func() {
@@ -125,6 +129,9 @@ func TestStackSwitchesWholeRepositoryAndRecoversFailedSwitch(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, name := range m.ServiceOrder {
+		if m.Services[name].Port == nil {
+			t.Fatalf("selected service %s has no port: %#v", name, m.Services)
+		}
 		assertRestartResponse(t, serverURL(*m.Services[name].Port, "/"), filepath.Join(linked, name))
 	}
 	traceBytes, err := os.ReadFile(trace)
@@ -150,12 +157,12 @@ func TestStackSwitchesWholeRepositoryAndRecoversFailedSwitch(t *testing.T) {
 		t.Fatal("failed launch reported success")
 	}
 	health, _ = options.GetHealthResponse()
-	if health.Repositories[0].SelectedPath != root || health.Repositories[0].RunningPath != "" || health.Repositories[0].Switching || health.Repositories[0].Error == "" {
+	if health.Repositories[0].SelectedPath != linked || health.Repositories[0].RunningPath != linked || health.Repositories[0].Switching || health.Repositories[0].Error != "" {
 		t.Fatalf("failed switch = %#v", health.Repositories)
 	}
 	for _, service := range health.Services {
-		if service.Status || service.Restarting {
-			t.Fatalf("failed switch left a partial group running: %#v", health.Services)
+		if !service.Status || service.Restarting {
+			t.Fatalf("failed switch did not restore running stack: %#v", health.Services)
 		}
 	}
 	if err := os.Remove(filepath.Join(root, "web", "fail")); err != nil {
