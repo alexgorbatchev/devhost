@@ -5,9 +5,9 @@ import fuzzysort from "fuzzysort";
 import { Icon } from "../../../../components/ui/Icon";
 
 import { Badge } from "../../../../components/ui/Badge";
-import { cn } from "../../../../lib/utils";
 import { Button, InlineNotice } from "../../../shared";
 import { PanelActions } from "../../../shared/components/PanelActions";
+import { ToolbarPopover } from "../../../shared/components/ToolbarPopover";
 import type { IWorktree, IWorktreeRepository } from "../../../shared/types";
 import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
 import { formatWorktreePath } from "../formatWorktreePath";
@@ -91,70 +91,49 @@ export function WorktreePicker({
       {repository.blockedReason !== undefined ? (
         <InlineNotice tone="danger">{repository.blockedReason}</InlineNotice>
       ) : null}
-      <PanelActions>
-        <input
-          ref={searchReference}
-          type="search"
-          aria-label="Find worktree"
-          placeholder="Find branch or checkout path…"
-          className="h-6 min-w-0 flex-1 rounded-sm border border-input bg-background px-1.5 text-foreground placeholder:text-muted-foreground disabled:opacity-50"
-          disabled={isBusy || isLoading || !isLoaded}
-          value={query}
-          onChange={(event): void => setQuery(event.currentTarget.value)}
-        />
-        <Button
-          aria-label="Refresh worktrees"
-          disabled={isLoading || isBusy}
-          startEnhancer={<Icon glyph={RotateCwIcon} />}
-          onClick={(): void => {
-            setIsLoading(true);
-            void onRefresh().then((message) => {
-              setErrorMessage(message);
-              setIsLoaded(message === null);
-              setIsLoading(false);
-            });
-          }}
-        >
-          Refresh
-        </Button>
-      </PanelActions>
-      <fieldset className="m-0 min-w-0 border-0 p-0" disabled={isBusy || isLoading || !isLoaded}>
+
+      <fieldset className="m-0 min-w-0 border-0 p-0">
         <legend className="sr-only">Choose a checkout for {repository.name}</legend>
         {worktrees.map((entry) => (
-          <label
-            key={entry.path}
-            className={cn(
-              "flex cursor-pointer items-start gap-2 px-2 py-1.5 not-first:border-t hover:bg-secondary has-checked:bg-accent has-disabled:cursor-default has-disabled:opacity-50",
-            )}
-          >
-            <input
-              aria-label={`${worktreeLabel(entry)} ${formatWorktreePath(entry.path, homeDirectoryPath)}`}
-              className="mt-0.5 size-3.5 shrink-0 accent-primary"
-              type="radio"
-              name={name}
-              value={entry.path}
-              checked={path === entry.path}
-              disabled={!entry.available}
-              onChange={(): void => {
-                setPath(entry.path);
-                setErrorMessage(null);
-              }}
-            />
-            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="flex items-center gap-1.5">
-                <strong className="min-w-0 flex-1 truncate">{worktreeLabel(entry)}</strong>
-                {entry.path === repository.runningPath ? <Badge variant="success">running</Badge> : null}
-                {entry.path === repository.configuredPath ? <Badge>configured</Badge> : null}
-                {!entry.available ? <Badge variant="destructive">unavailable</Badge> : null}
+          <div key={entry.path} className="flex items-start gap-2 px-2 py-1.5 not-first:border-t has-checked:bg-accent">
+            <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-2 has-disabled:cursor-default">
+              <input
+                aria-label={`${worktreeLabel(entry)} ${formatWorktreePath(entry.path, homeDirectoryPath)}`}
+                className="mt-0.5 size-3.5 shrink-0 accent-primary"
+                type="radio"
+                name={name}
+                value={entry.path}
+                checked={path === entry.path}
+                disabled={!entry.available || isBusy || isLoading || !isLoaded}
+                onChange={(): void => {
+                  setPath(entry.path);
+                  setErrorMessage(null);
+                }}
+              />
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="flex items-center gap-1.5">
+                  <strong className="min-w-0 flex-1 truncate">{worktreeLabel(entry)}</strong>
+                  {entry.path === repository.runningPath ? <Badge variant="success">running</Badge> : null}
+                  {entry.path === repository.configuredPath ? <Badge>configured</Badge> : null}
+                </span>
+                <span className="text-muted-foreground [overflow-wrap:anywhere]">
+                  {formatWorktreePath(entry.path, homeDirectoryPath)}
+                </span>
               </span>
-              <span className="text-muted-foreground [overflow-wrap:anywhere]">
-                {formatWorktreePath(entry.path, homeDirectoryPath)}
-              </span>
-              {entry.reason !== undefined ? (
-                <span className="text-destructive [overflow-wrap:anywhere]">{entry.reason}</span>
-              ) : null}
-            </span>
-          </label>
+            </label>
+            {!entry.available ? (
+              <ToolbarPopover
+                panelLabel={`${worktreeLabel(entry)} · Unavailable`}
+                panelWidth="sm"
+                testId="WorktreePicker--unavailable"
+                triggerAppearance="button"
+                triggerContent={<Badge variant="destructive">unavailable</Badge>}
+                triggerLabel={`Why ${worktreeLabel(entry)} is unavailable`}
+              >
+                <p className="m-0 p-2 [overflow-wrap:anywhere]">{entry.reason ?? "This checkout is unavailable."}</p>
+              </ToolbarPopover>
+            ) : null}
+          </div>
         ))}
       </fieldset>
       {worktrees.length === 0 && isLoaded && !isLoading ? (
@@ -212,6 +191,33 @@ export function WorktreePicker({
           <Button onClick={onBack}>{isBusy ? "Back to services" : "Cancel"}</Button>
         </div>
       </footer>
+      <PanelActions>
+        <input
+          ref={searchReference}
+          type="search"
+          aria-label="Find worktree"
+          placeholder="Find branch or checkout path…"
+          className="h-6 min-w-0 flex-1 rounded-sm border border-input bg-background px-1.5 text-foreground placeholder:text-muted-foreground disabled:opacity-50"
+          disabled={isBusy || isLoading || !isLoaded}
+          value={query}
+          onChange={(event): void => setQuery(event.currentTarget.value)}
+        />
+        <Button
+          aria-label="Refresh worktrees"
+          disabled={isLoading || isBusy}
+          startEnhancer={<Icon glyph={RotateCwIcon} />}
+          onClick={(): void => {
+            setIsLoading(true);
+            void onRefresh().then((message) => {
+              setErrorMessage(message);
+              setIsLoaded(message === null);
+              setIsLoading(false);
+            });
+          }}
+        >
+          Refresh
+        </Button>
+      </PanelActions>
     </div>
   );
 }

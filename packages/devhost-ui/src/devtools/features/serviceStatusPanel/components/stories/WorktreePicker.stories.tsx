@@ -12,6 +12,7 @@ import { WorktreePicker } from "../WorktreePicker";
 import { DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "../../../../shared/constants";
 import { readInjectedDevtoolsConfig } from "../../../../shared/readInjectedDevtoolsConfig";
 import { factory_homeWorktreeRepository, factory_worktreeRepository } from "./fixtures";
+import { readContrastRatio } from "../../../../../../../../test-support/readContrastRatio";
 
 const meta: Meta<typeof WorktreePicker> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/serviceStatusPanel/components/WorktreePicker",
@@ -43,6 +44,51 @@ const meta: Meta<typeof WorktreePicker> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+export const UnavailableCheckout: Story = {
+  globals: { devhostTheme: "dark" },
+  play: async ({ args, canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Worktrees" }));
+    await waitFor(() => expect(canvas.getByRole("searchbox", { name: "Find worktree" })).toBeEnabled());
+    const checkout = canvas.getByRole("radio", { name: "feature/missing /worktrees/missing" });
+    await expect(checkout).toBeDisabled();
+    await waitFor(() =>
+      expect(readContrastRatio(canvas.getByText("feature/missing", { exact: true }))).toBeGreaterThanOrEqual(4.5),
+    );
+    await waitFor(() =>
+      expect(readContrastRatio(canvas.getByText("/worktrees/missing", { exact: true }))).toBeGreaterThanOrEqual(4.5),
+    );
+    await expect(canvas.queryByText("Checkout directory is missing.")).not.toBeVisible();
+    const badge = canvas.getByRole("button", { name: "Why feature/missing is unavailable" });
+    await waitFor(() => expect(readContrastRatio(within(badge).getByText("unavailable"))).toBeGreaterThanOrEqual(4.5));
+    await userEvent.click(badge);
+    const details = await canvas.findByRole("region", { name: "feature/missing · Unavailable" });
+    await waitFor(() => expect(details).toBeVisible());
+    await expect(within(details).getByText("Checkout directory is missing.")).toBeVisible();
+    await waitFor(() =>
+      expect(readContrastRatio(within(details).getByText("Checkout directory is missing."))).toBeGreaterThanOrEqual(
+        4.5,
+      ),
+    );
+    await expect(canvas.getByRole("region", { name: "shop · Worktrees" })).toBeVisible();
+    await expect(canvas.getByRole("radio", { name: "main /projects/shop" })).toBeChecked();
+    await userEvent.click(badge);
+    await waitFor(() => expect(details).not.toBeVisible());
+    await userEvent.click(badge);
+    await waitFor(() => expect(details).toBeVisible());
+    await userEvent.click(badge);
+    await waitFor(() => expect(details).not.toBeVisible());
+    await expect(canvas.getByRole("region", { name: "shop · Worktrees" })).toBeVisible();
+    await expect(args.onSwitch).not.toHaveBeenCalled();
+  },
+};
+
+export const UnavailableCheckoutLight: Story = {
+  ...UnavailableCheckout,
+  globals: { devhostTheme: "light" },
+  play: UnavailableCheckout.play,
+};
+
 export const FuzzySearch: Story = {
   render: (args, context) => (
     <StorybookThemeProvider globals={context.globals}>
@@ -53,13 +99,17 @@ export const FuzzySearch: Story = {
     const canvas = within(canvasElement);
     const search = canvas.getByRole("searchbox", { name: "Find worktree" });
     await waitFor(() => expect(search).toHaveFocus());
+    await expect(search.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+      canvas.getByRole("button", { name: "Cancel" }).getBoundingClientRect().bottom,
+    );
     await userEvent.type(search, "FCRT");
     await expect(canvas.getAllByRole("radio")).toHaveLength(1);
     const feature = canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" });
     await userEvent.tab();
     await expect(canvas.getByRole("button", { name: "Refresh worktrees" })).toHaveFocus();
-    await userEvent.tab();
-    await expect(feature).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    await expect(search).toHaveFocus();
+    await userEvent.click(feature);
     await userEvent.keyboard(" ");
     await expect(feature).toBeChecked();
     await userEvent.clear(search);
