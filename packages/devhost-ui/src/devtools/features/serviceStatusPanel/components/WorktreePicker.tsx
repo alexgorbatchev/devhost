@@ -15,7 +15,7 @@ import { formatWorktreePath } from "../formatWorktreePath";
 interface IWorktreePickerProps {
   repository: IWorktreeRepository;
   hasRestartingService: boolean;
-  onBack: () => void;
+  onClose: () => void;
   onRefresh: () => Promise<string | null>;
   onSwitch: (repositoryId: string, path: string) => Promise<string | null>;
 }
@@ -23,7 +23,7 @@ interface IWorktreePickerProps {
 export function WorktreePicker({
   repository,
   hasRestartingService,
-  onBack,
+  onClose,
   onRefresh,
   onSwitch,
 }: IWorktreePickerProps): JSX.Element {
@@ -80,7 +80,7 @@ export function WorktreePicker({
     const message = await onSwitch(repository.id, destination);
     setIsSubmitting(false);
     setErrorMessage(message);
-    if (message === null) onBack();
+    if (message === null) onClose();
   };
 
   return (
@@ -186,7 +186,7 @@ export function WorktreePicker({
               Return to configured checkout
             </Button>
           ) : null}
-          <Button onClick={onBack}>{isBusy ? "Back to worktrees" : "Cancel"}</Button>
+          <Button onClick={onClose}>{isBusy ? "Close" : "Cancel"}</Button>
         </div>
       </footer>
       <PanelActions>

@@ -20,7 +20,7 @@ const meta: Meta<typeof WorktreePicker> = {
   args: {
     repository: factory_worktreeRepository(),
     hasRestartingService: false,
-    onBack: fn(),
+    onClose: fn(),
     onRefresh: fn(async () => null),
     onSwitch: fn(async () => null),
   },
@@ -180,7 +180,7 @@ export const ChoicesAndPreview: Story = {
     await expect(canvas.getByRole("radio", { name: "feature/missing /worktrees/missing" })).toBeDisabled();
     await userEvent.click(canvas.getByRole("button", { name: "Switch and restart stack" }));
     await expect(args.onSwitch).toHaveBeenCalledWith("shop", "/worktrees/cart");
-    await waitFor(() => expect(args.onBack).toHaveBeenCalled());
+    await waitFor(() => expect(args.onClose).toHaveBeenCalled());
   },
 };
 
@@ -227,12 +227,12 @@ export const Switching: Story = {
     await userEvent.click(await canvas.findByRole("button", { name: "Worktrees" }));
     await waitFor(() => expect(canvas.getByRole("status")).toHaveTextContent("Switching and restarting stack…"));
     await expect(canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" })).toBeDisabled();
-    const back = canvas.getByRole("button", { name: "Back to worktrees" });
+    const back = canvas.getByRole("button", { name: "Close" });
     await expect(canvas.getByRole("status").getBoundingClientRect().bottom).toBeLessThanOrEqual(
       back.getBoundingClientRect().top,
     );
     await userEvent.click(back);
-    await expect(args.onBack).toHaveBeenCalled();
+    await expect(args.onClose).toHaveBeenCalled();
   },
 };
 
@@ -283,7 +283,7 @@ export const Loading: Story = {
     await expect(canvas.getByRole("status")).toHaveTextContent("Loading worktrees…");
     await expect(canvas.getByRole("radio", { name: "main /projects/shop" })).toBeDisabled();
     await userEvent.click(canvas.getByRole("button", { name: "Cancel" }));
-    await expect(args.onBack).toHaveBeenCalled();
+    await expect(args.onClose).toHaveBeenCalled();
   },
 };
 
@@ -308,7 +308,7 @@ export const LaunchFailure: Story = {
     await userEvent.click(feature);
     await userEvent.click(canvas.getByRole("button", { name: "Switch and restart stack" }));
     await waitFor(() => expect(canvas.getByRole("alert")).toHaveTextContent("Service web failed to start."));
-    await expect(args.onBack).not.toHaveBeenCalled();
+    await expect(args.onClose).not.toHaveBeenCalled();
     await expect(canvas.getByRole("button", { name: "Cancel" })).toBeEnabled();
   },
 };

@@ -31,7 +31,6 @@ export async function recordOverview(
   await clickWithIndicator(page, services);
   const worktrees = page.getByRole("button", { name: "Worktrees", exact: true });
   await clickWithIndicator(page, worktrees);
-  await clickWithIndicator(page, page.getByRole("button", { name: /^Choose worktree for / }));
   const picker = page.getByTestId("WorktreePicker");
   await picker.waitFor();
   await picker.getByRole("button", { name: "Refresh worktrees", exact: true, disabled: false }).waitFor();
@@ -53,6 +52,5 @@ export async function recordOverview(
   await page.screenshot({ path: join(runtime.directoryPath, "worktrees.png") });
   await page.waitForTimeout(3_000);
   await clickWithIndicator(page, picker.getByRole("button", { name: "Cancel", exact: true }));
-  await clickWithIndicator(page, worktrees);
   await page.waitForTimeout(1_000);
 }

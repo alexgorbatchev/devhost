@@ -11,6 +11,7 @@ interface IToolbarPopoverProps {
   children: ReactNode;
   headerEndEnhancer?: ReactNode;
   notice?: ReactNode;
+  onOpenChange?: (isOpen: boolean) => void;
   panelLabel: string;
   panelWidth: ToolbarPopoverWidth;
   testId: string;
@@ -39,6 +40,7 @@ export function ToolbarPopover({
   children,
   headerEndEnhancer,
   notice,
+  onOpenChange,
   panelLabel,
   panelWidth,
   testId,
@@ -87,7 +89,9 @@ export function ToolbarPopover({
         id={panelId}
         popover="auto"
         onToggle={(event: ToggleEvent<HTMLElement>): void => {
+          if (event.target !== event.currentTarget) return;
           setIsOpen(event.newState === "open");
+          onOpenChange?.(event.newState === "open");
         }}
       >
         <header className="flex h-6 shrink-0 items-center gap-1.5 border-b border-border pr-1 pl-2 font-bold">

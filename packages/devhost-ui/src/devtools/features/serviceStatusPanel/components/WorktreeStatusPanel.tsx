@@ -1,12 +1,9 @@
-import { useLayoutEffect, useRef, useState, type JSX } from "react";
-import { ArrowLeftIcon, ChevronRightIcon, GitBranchIcon } from "lucide-react";
+import { useRef, useState, type JSX } from "react";
+import { GitBranchIcon } from "lucide-react";
 
 import { Icon } from "../../../../components/ui/Icon";
-import { Button } from "../../../shared";
 import { ToolbarPopover } from "../../../shared/components/ToolbarPopover";
-import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
 import type { IWorktreeRepository, ServiceHealth } from "../../../shared/types";
-import { formatWorktreePath } from "../formatWorktreePath";
 import { readNonDefaultBranches } from "../readNonDefaultBranches";
 import { WorktreePicker } from "./WorktreePicker";
 
@@ -19,77 +16,72 @@ interface IWorktreeStatusPanelProps {
 
 export function WorktreeStatusPanel(props: IWorktreeStatusPanelProps): JSX.Element | null {
   const [repositoryId, setRepositoryId] = useState<string | null>(null);
-  const buttons = useRef<Map<string, HTMLButtonElement>>(new Map());
-  const returnFocus = useRef<string | null>(null);
-  const { homeDirectoryPath } = readInjectedDevtoolsConfig();
-  const selected = props.repositories.find((repository) => repository.id === repositoryId);
+  const [openCount, setOpenCount] = useState<number>(0);
+  const trigger = useRef<HTMLButtonElement | null>(null);
+  const selected = props.repositories.find((repository) => repository.id === repositoryId) ?? props.repositories[0];
   const branches = readNonDefaultBranches(props.repositories);
   const label = branches.length === 0 ? "Worktrees" : `Worktrees, non-default branches: ${branches.join(", ")}`;
-  const onBack = (): void => {
-    returnFocus.current = repositoryId;
-    setRepositoryId(null);
+  const currentCheckouts = props.repositories.map((repository) => {
+    const checkout = repository.worktrees.find((entry) => entry.path === repository.selectedPath);
+    const branch =
+      checkout?.branch ||
+      (checkout?.detached === true ? `Detached ${checkout.head.slice(0, 7)}` : "Unavailable worktree");
+    return props.repositories.length === 1 ? branch : `${repository.name}: ${branch}`;
+  });
+  const close = (): void => {
+    const popover = trigger.current?.popoverTargetElement;
+    if (popover instanceof HTMLElement) popover.hidePopover();
+    trigger.current?.focus();
   };
-  useLayoutEffect(() => {
-    if (repositoryId === null && returnFocus.current !== null) {
-      buttons.current.get(returnFocus.current)?.focus();
-      returnFocus.current = null;
-    }
-  }, [repositoryId]);
-  if (props.repositories.length === 0) return null;
+  if (selected === undefined) return null;
 
   return (
     <ToolbarPopover
       testId="WorktreeStatusPanel"
-      panelLabel={selected === undefined ? "Worktrees" : `${selected.name} · Worktrees`}
+      panelLabel={`${selected.name} · Worktrees`}
       panelWidth="lg"
       triggerLabel={label}
       title={label}
-      triggerContent={<Icon glyph={GitBranchIcon} />}
+      triggerReference={trigger}
+      triggerContent={
+        <>
+          <Icon glyph={GitBranchIcon} />
+          <span>{currentCheckouts.join(", ")}</span>
+        </>
+      }
+      onOpenChange={(isOpen): void => {
+        if (isOpen) setOpenCount((count) => count + 1);
+      }}
       headerEndEnhancer={
-        selected === undefined ? undefined : (
-          <Button
-            aria-label="Back to worktrees"
-            variant="ghost"
-            startEnhancer={<Icon glyph={ArrowLeftIcon} />}
-            onClick={onBack}
-          />
-        )
+        props.repositories.length > 1 ? (
+          <select
+            aria-label="Repository"
+            className="min-w-0 rounded-sm border border-input bg-background text-foreground"
+            value={selected.id}
+            onChange={(event): void => setRepositoryId(event.currentTarget.value)}
+          >
+            {props.repositories.map((repository) => (
+              <option key={repository.id} value={repository.id}>
+                {repository.name}
+              </option>
+            ))}
+          </select>
+        ) : undefined
       }
     >
-      {selected === undefined ? (
-        props.repositories.map((repository) => {
-          const checkout = repository.worktrees.find((entry) => entry.path === repository.selectedPath);
-          return (
-            <Button
-              key={repository.id}
-              ref={(button): void => {
-                if (button === null) buttons.current.delete(repository.id);
-                else buttons.current.set(repository.id, button);
-              }}
-              aria-label={`Choose worktree for ${repository.name}`}
-              title={formatWorktreePath(repository.selectedPath, homeDirectoryPath)}
-              endEnhancer={<Icon glyph={ChevronRightIcon} />}
-              onClick={(): void => setRepositoryId(repository.id)}
-            >
-              {repository.name}:{" "}
-              {checkout?.branch ||
-                (checkout?.detached === true ? `Detached ${checkout.head.slice(0, 7)}` : "Unavailable worktree")}
-            </Button>
-          );
-        })
-      ) : (
+      {openCount > 0 ? (
         <WorktreePicker
-          key={selected.id}
+          key={`${selected.id}:${openCount}`}
           repository={selected}
           hasRestartingService={
             props.services.some((service) => service.restarting === true) ||
             props.repositories.some((repository) => repository.switching)
           }
-          onBack={onBack}
+          onClose={close}
           onRefresh={props.onRefreshWorktrees}
           onSwitch={props.onSwitchWorktree}
         />
-      )}
+      ) : null}
     </ToolbarPopover>
   );
 }

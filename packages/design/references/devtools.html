@@ -1189,6 +1189,13 @@
         .panel-body {
           overflow: auto;
         }
+        .worktree-repository {
+          width: auto;
+          max-width: 50%;
+          min-width: 0;
+          padding: 0;
+          font-size: inherit;
+        }
         .row {
           display: flex;
           align-items: center;
@@ -2338,7 +2345,7 @@
 
         if (state.worktreesEnabled && state.repositories.length > 0) {
           segments.push(
-            `<button class="seg tight" type="button" data-action="panel" data-panel="worktrees" title="${esc(worktreeSummary || "Worktrees")}" aria-label="Worktrees" aria-expanded="${panelOpen("worktrees")}">${icon("branch")}</button>`,
+            `<button class="seg tight" type="button" data-action="panel" data-panel="worktrees" title="${esc(worktreeSummary || "Worktrees")}" aria-label="Worktrees" aria-expanded="${panelOpen("worktrees")}">${icon("branch")}<span>${esc(state.repositories.map((repository) => `${state.repositories.length > 1 ? repository.name + ": " : ""}${worktreeLabel(repository, repository.selectedPath)}`).join(", "))}</span></button>`,
           );
         }
 
@@ -2686,12 +2693,11 @@
       }
 
       function renderWorktreesPanel() {
-        if (state.worktreePicker !== null) return renderWorktreePicker();
-        return {
-          width: 380,
-          label: "Worktrees",
-          html: `<header class="panel-head"><span class="grow">Worktrees</span></header><div class="panel-body">${state.repositories.map((repository) => `<section class="repo-group"><header class="repo-head"><span class="repo-name grow trunc">${esc(repository.name)}</span><button class="btn" type="button" data-action="worktree-open" data-id="${repository.id}" data-focus-key="worktree-open-${repository.id}" aria-label="Choose worktree for ${esc(repository.name)}" title="${esc(repository.selectedPath)}">${icon("branch")}<span class="trunc">${esc(worktreeLabel(repository, repository.selectedPath))}</span>${icon("chevDown")}</button></header></section>`).join("")}</div>`,
-        };
+        if (state.worktreePicker === null) {
+          const repository = state.repositories[0];
+          state.worktreePicker = { repositoryId: repository.id, path: repository.selectedPath, query: "" };
+        }
+        return renderWorktreePicker();
       }
 
       function renderWorktreePicker() {
@@ -2736,8 +2742,8 @@
           label: `${repository.name} worktrees`,
           html: `
             <header class="panel-head">
-              <button class="btn icon ghost" type="button" data-action="worktree-back" data-focus-key="worktree-back" aria-label="Back to worktrees">${icon("collapse")}</button>
-              <span class="grow">${esc(repository.name)} · Worktrees</span>
+              <span class="grow trunc">${esc(repository.name)} · Worktrees</span>
+              ${state.repositories.length > 1 ? `<select class="input worktree-repository" aria-label="Repository" data-input="worktree-repository">${state.repositories.map((entry) => `<option value="${esc(entry.id)}" ${entry.id === repository.id ? "selected" : ""}>${esc(entry.name)}</option>`).join("")}</select>` : ""}
             </header>
             <div class="panel-body">
               ${repository.error ? renderNotice(repository.error, null) : ""}
@@ -2755,7 +2761,7 @@
                   ${repository.error && picker.path === repository.selectedPath ? "Retry" : "Switch and restart stack"}
                 </button>
                 ${repository.error && repository.selectedPath !== repository.configuredPath ? `<button class="btn" type="button" data-action="worktree-return" ${isBusy ? "disabled" : ""}>Return to ${esc(worktreeLabel(repository, repository.configuredPath))}</button>` : ""}
-                <button class="btn" type="button" data-action="worktree-back">${isBusy ? "Back to worktrees" : "Cancel"}</button>
+                <button class="btn" type="button" data-action="worktree-back">${isBusy ? "Close" : "Cancel"}</button>
               </div>
             </footer>
             <div class="panel-body">
@@ -3234,6 +3240,10 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
           state.serviceError = `Could not start ${services[0].name} in ${worktree.label}. The previous stack was restored.`;
         } else {
           repository.runningPath = path;
+          if (state.worktreePicker?.repositoryId === repository.id) {
+            state.worktreePicker = null;
+            state.openPanel = null;
+          }
         }
         render();
       }
@@ -3327,6 +3337,11 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
         }
       });
       shadow.addEventListener("change", (event) => {
+        if (event.target.dataset.input === "worktree-repository") {
+          const repository = state.repositories.find((entry) => entry.id === event.target.value);
+          state.worktreePicker = { repositoryId: repository.id, path: repository.selectedPath, query: "" };
+          render();
+        }
         if (event.target.dataset.input === "worktree") {
           state.worktreePicker.path = event.target.value;
           render();
@@ -3381,18 +3396,11 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
             state.openPanel = state.openPanel === panel ? null : panel;
             if (state.openPanel !== null) state.panelAnchor = state.openPanel;
             break;
-          case "worktree-open": {
-            const repository = state.repositories.find((repo) => repo.id === id);
-            state.worktreePicker = { repositoryId: id, path: repository.selectedPath, query: "" };
-            render();
-            surface("panel").querySelector('[data-input="worktree-search"]').focus();
-            return;
-          }
           case "worktree-back": {
-            const repositoryId = state.worktreePicker.repositoryId;
             state.worktreePicker = null;
+            state.openPanel = null;
             render();
-            surface("panel").querySelector(`[data-id="${repositoryId}"]`).focus();
+            surface("dock").querySelector('[data-panel="worktrees"]').focus();
             return;
           }
           case "worktree-apply": {

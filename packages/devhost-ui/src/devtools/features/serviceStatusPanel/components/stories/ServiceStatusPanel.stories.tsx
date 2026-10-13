@@ -435,17 +435,14 @@ export const GroupedServices: Story = {
         .getAllByRole("link")
         .map((link) => link.textContent),
     ).toEqual(["api", "web"]);
-    await expect(repository.queryByRole("button", { name: "Choose worktree for shop" })).toBeNull();
+    await expect(repository.queryByRole("button", { name: /^Worktrees/ })).toBeNull();
     await userEvent.click(canvas.getByRole("button", { name: "Worktrees" }));
-    await userEvent.click(canvas.getByRole("button", { name: "Choose worktree for shop" }));
     const feature = canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" });
     await waitFor(() => expect(feature).toBeEnabled());
     await userEvent.click(feature);
     await userEvent.click(canvas.getByRole("button", { name: "Switch and restart stack" }));
     await expect(args.onSwitchWorktree).toHaveBeenCalledWith("shop", "/worktrees/cart");
-    await waitFor(() =>
-      expect(canvas.getByRole("button", { name: "Choose worktree for shop" })).toHaveTextContent("feature/cart"),
-    );
+    await waitFor(() => expect(canvas.getByRole("button", { name: /^Worktrees/ })).toHaveTextContent("feature/cart"));
     await expect(canvas.getByRole("button", { name: "Services: 4 of 4 up, 1 changed" })).toBeVisible();
     await expect(canvas.getByRole("button", { name: /^Worktrees/ })).toBeVisible();
     await expect(
@@ -486,8 +483,6 @@ export const SingleManagedServiceWithWorktrees: Story = {
   play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
     await userEvent.click(await canvas.findByRole("button", { name: "Worktrees" }));
-    const picker = canvas.getByRole("button", { name: "Choose worktree for shop" });
-    await userEvent.click(picker);
     const feature = canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" });
     await waitFor(() => expect(feature).toBeEnabled());
     await userEvent.click(feature);
@@ -495,10 +490,10 @@ export const SingleManagedServiceWithWorktrees: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Cancel" }));
     await expect(args.onSwitchWorktree).not.toHaveBeenCalled();
     await waitFor(() => {
-      const button = canvas.getByRole("button", { name: "Choose worktree for shop" });
+      const button = canvas.getByRole("button", { name: /^Worktrees/ });
       expect(Reflect.get(button.getRootNode(), "activeElement")).toBe(button);
     });
-    await expect(canvas.getByRole("button", { name: "Choose worktree for shop" })).toHaveTextContent("main");
+    await expect(canvas.getByRole("button", { name: /^Worktrees/ })).toHaveTextContent("main");
   },
 };
 
@@ -515,14 +510,14 @@ export const CustomDefaultBranch: Story = {
     const trigger = await canvas.findByRole("button", { name: "Worktrees" });
     await expect(canvas.getByRole("button", { name: /^Worktrees/ })).toBeVisible();
     await userEvent.click(trigger);
-    await userEvent.click(canvas.getByRole("button", { name: "Choose worktree for shop" }));
     const feature = canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" });
     await waitFor(() => expect(feature).toBeEnabled());
     await userEvent.click(feature);
     await userEvent.click(canvas.getByRole("button", { name: "Switch and restart stack" }));
     await waitFor(() => expect(canvas.getByRole("button", { name: /^Worktrees/ })).toBeVisible());
     await expect(trigger).toHaveAccessibleName("Worktrees, non-default branches: shop: feature/cart");
-    await userEvent.click(canvas.getByRole("button", { name: "Choose worktree for shop" }));
+    await expect(trigger.textContent).toBe("feature/cart");
+    await userEvent.click(trigger);
     const trunk = canvas.getByRole("radio", { name: "trunk /projects/shop" });
     await waitFor(() => expect(trunk).toBeEnabled());
     await userEvent.click(trunk);
@@ -554,8 +549,13 @@ export const NonDefaultBranchAmongRepositories: Story = {
     });
     await expect(canvas.getByRole("button", { name: /^Worktrees/ })).toBeVisible();
     await userEvent.click(trigger);
-    await expect(canvas.getByRole("button", { name: "Choose worktree for shop" })).toHaveTextContent("main");
-    await expect(canvas.getByRole("button", { name: "Choose worktree for api" })).toHaveTextContent("main");
+    await expect(canvas.getByRole("button", { name: /^Worktrees/ })).toHaveTextContent("main");
+    await expect(trigger.textContent).toBe("api: main, shop: main");
+    const selector = canvas.getByRole("combobox", { name: "Repository" });
+    await expect(selector).toHaveValue("api");
+    await waitFor(() => expect(canvas.getByRole("group", { name: "Choose a checkout for api" })).toBeVisible());
+    await userEvent.selectOptions(selector, "shop");
+    await waitFor(() => expect(canvas.getByRole("group", { name: "Choose a checkout for shop" })).toBeVisible());
   },
 };
 
@@ -570,7 +570,7 @@ export const UnknownDefaultBranch: Story = {
     const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
     await userEvent.click(await canvas.findByRole("button", { name: "Worktrees" }));
     await expect(canvas.getByRole("button", { name: /^Worktrees/ })).toBeVisible();
-    await expect(canvas.getByRole("button", { name: "Choose worktree for shop" })).toHaveTextContent("feature/cart");
+    await expect(canvas.getByRole("button", { name: /^Worktrees/ })).toHaveTextContent("feature/cart");
   },
 };
 
@@ -589,8 +589,6 @@ export const DetachedCheckout: Story = {
     const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
     await userEvent.click(await canvas.findByRole("button", { name: "Worktrees" }));
     await expect(canvas.getByRole("button", { name: /^Worktrees/ })).toBeVisible();
-    await expect(canvas.getByRole("button", { name: "Choose worktree for shop" })).toHaveTextContent(
-      "Detached deadbee",
-    );
+    await expect(canvas.getByRole("button", { name: /^Worktrees/ })).toHaveTextContent("Detached deadbee");
   },
 };
