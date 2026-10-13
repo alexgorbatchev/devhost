@@ -1719,6 +1719,14 @@
           white-space: pre;
           overflow: hidden;
         }
+        .mm-preview li.mm-sizing {
+          visibility: hidden;
+          height: 0;
+        }
+        .mm-sizing > span {
+          display: grid;
+          height: 0;
+        }
         .mm-preview li .svc {
           color: var(--dh-fg-faint);
         }
@@ -3082,7 +3090,7 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
         overlay.innerHTML = `
           <div class="mm-window" style="top:${start * MM_ROW}px;height:${span * MM_ROW}px"></div>
           <div class="mm-preview frame" style="top:${previewTop}px">
-            <ol>${rows
+            <ol><li class="mm-sizing" aria-hidden="true"><span>${[...new Set([...state.services.map((service) => service.name), ...logEntries.map((entry) => entry.serviceName)])].map((name) => `<span>${esc(name)}</span>`).join("")}</span></li>${rows
               .map(
                 (row, index) =>
                   `<li class="${row.stream} ${start + index === hovered ? "focus" : ""}"><span class="svc">${esc(row.serviceName)}</span><span>${esc(row.line.startsWith(`[${row.serviceName}] `) ? row.line.slice(row.serviceName.length + 3) : row.line)}</span></li>`,

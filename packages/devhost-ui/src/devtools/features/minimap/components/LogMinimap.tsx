@@ -18,6 +18,7 @@ import { LogAnsiFragment } from "./LogAnsiFragment";
 
 interface ILogMinimapProps {
   entries: ServiceLogEntry[];
+  serviceNames?: string[];
   isHovered: boolean;
   onHoveredChange: (isHovered: boolean) => void;
 }
@@ -134,6 +135,9 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
     );
   }, [hoveredRowIndex, previewLayout]);
   const previewOverlay = resolveLogPreviewOverlay(marksReference.current, previewLayout?.range ?? null);
+  const serviceNames: string[] = [
+    ...new Set([...props.entries.map((entry) => entry.serviceName), ...(props.serviceNames ?? [])]),
+  ];
 
   if (props.entries.length === 0) {
     return null;
@@ -176,6 +180,13 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
           style={{ top: previewLayout.top }}
         >
           <ol className="m-0 grid grid-cols-[max-content_minmax(0,1fr)] list-none gap-x-2 gap-y-0 p-0">
+            <li aria-hidden="true" className="invisible col-span-2 grid h-0 grid-cols-subgrid px-2 whitespace-pre">
+              <span className="grid h-0">
+                {serviceNames.map((name) => (
+                  <span key={name}>{name}</span>
+                ))}
+              </span>
+            </li>
             {previewRows.map((row: IVisibleLogRow, rowIndex: number) => {
               const isFocusedRow: boolean = previewLayout.range.startIndex + rowIndex === hoveredRowIndex;
 

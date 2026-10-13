@@ -11,7 +11,7 @@ import { LogMinimap } from "../LogMinimap";
 import type { ServiceLogEntry } from "../../../../shared/types";
 import { readContrastRatio } from "../../../../../../../../test-support/readContrastRatio";
 import { fixture_ansiContrastEntries } from "./fixtures";
-import { LogMinimapThemeChangeHarness } from "./helpers";
+import { LogMinimapLiveEntriesHarness, LogMinimapThemeChangeHarness } from "./helpers";
 
 const mockEntries: ServiceLogEntry[] = Array.from({ length: 50 }).map((_, i) => ({
   id: i + 1,
@@ -179,6 +179,52 @@ export const ServiceColumns: Story = {
         expect(service.getBoundingClientRect().right).toBeLessThan(lines[0]!.getBoundingClientRect().left);
       }
     });
+  },
+};
+
+export const StableServiceColumn: Story = {
+  args: {
+    entries: Array.from({ length: 80 }, (_, index) => ({
+      id: index + 1,
+      serviceName: index === 0 ? "long-background-worker" : "api",
+      line: `Message ${index + 1}`,
+      stream: "stdout",
+    })),
+    isHovered: true,
+    onHoveredChange: fn(),
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    const minimap = canvas.getByTestId("LogMinimap");
+    await assertHoveredPreview(canvas);
+    const bounds = minimap.getBoundingClientRect();
+    await userEvent.pointer({ target: minimap, coords: { clientX: bounds.right - 1, clientY: bounds.bottom - 1 } });
+    await waitFor(() => expect(readPreviewServiceNames(canvas).every((name) => name === "api")).toBe(true));
+    const messageLeft = canvas.getAllByTestId("LogMinimap--preview-line")[0]!.getBoundingClientRect().left;
+    await userEvent.pointer({ target: minimap, coords: { clientX: bounds.right - 1, clientY: bounds.bottom - 238 } });
+    await waitFor(() => expect(readPreviewServiceNames(canvas)[0]).toBe("long-background-worker"));
+    await expect(canvas.getAllByTestId("LogMinimap--preview-line")[0]!.getBoundingClientRect().left).toBe(messageLeft);
+  },
+};
+
+export const LiveServiceColumn: Story = {
+  render: (_args, context) => (
+    <StorybookThemeProvider globals={context.globals}>
+      <LogMinimapLiveEntriesHarness />
+    </StorybookThemeProvider>
+  ),
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    await assertHoveredPreview(canvas);
+    await expect(readPreviewRowTexts(canvas)).toEqual(["Ready"]);
+    const messageLeft = canvas.getByTestId("LogMinimap--preview-line").getBoundingClientRect().left;
+    await userEvent.click(canvas.getByRole("button", { name: "Append worker output" }));
+    await assertHoveredPreview(canvas);
+    const minimap = canvas.getByTestId("LogMinimap");
+    const bounds = minimap.getBoundingClientRect();
+    await userEvent.pointer({ target: minimap, coords: { clientX: bounds.right - 1, clientY: bounds.bottom - 1 } });
+    await expect(readPreviewRowTexts(canvas)).toEqual(["Ready", "Working"]);
+    await expect(canvas.getAllByTestId("LogMinimap--preview-line")[0]!.getBoundingClientRect().left).toBe(messageLeft);
   },
 };
 
