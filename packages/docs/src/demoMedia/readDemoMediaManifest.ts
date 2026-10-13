@@ -1,4 +1,5 @@
 import { createDemoMediaAssetName } from "./createDemoMediaAssetName";
+import { isDemoMediaName } from "./isDemoMediaName";
 import type { IDemoMediaManifest, IDemoMediaPin } from "./types";
 
 function isPin(value: unknown): value is IDemoMediaPin {
@@ -25,8 +26,7 @@ function isManifest(value: unknown): value is IDemoMediaManifest {
   if (typeof value.files !== "object" || value.files === null || Array.isArray(value.files)) return false;
   return Object.entries(value.files).every(
     ([name, pin]) =>
-      // A file name is joined to the media directory, so it names a video and nothing else.
-      /^[a-z0-9][a-z0-9-]*\.mp4$/.test(name) &&
+      isDemoMediaName(name) &&
       isPin(pin) &&
       // The asset is named after the content, which keeps a hand-edited pin from pointing at another file.
       pin.asset === createDemoMediaAssetName(name, pin.sha256),

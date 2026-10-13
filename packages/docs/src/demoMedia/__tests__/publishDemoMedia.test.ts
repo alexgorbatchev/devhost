@@ -154,3 +154,16 @@ it("pins nothing when the release does not list an upload", async () => {
   );
   expect(await Bun.file(options.manifestPath).text()).toBe(manifest);
 });
+
+it("uploads and pins nothing when a video has a name the manifest does not accept", async () => {
+  const manifest = await writeManifest({ "annotations.mp4": "old annotations" });
+  await Bun.write(join(options.directoryPath, "annotations.mp4"), "new annotations");
+  await Bun.write(join(options.directoryPath, "Stack_Lifecycle.mp4"), "stack lifecycle");
+  const run = mock<RunCommand>();
+
+  await expect(publishDemoMedia({ ...options, run })).rejects.toThrow(
+    "Stack_Lifecycle.mp4 cannot be pinned: name a demo video with lowercase letters, digits, and hyphens",
+  );
+  expect(run).not.toHaveBeenCalled();
+  expect(await Bun.file(options.manifestPath).text()).toBe(manifest);
+});

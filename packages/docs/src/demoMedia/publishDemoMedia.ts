@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { createDemoMediaAssetName } from "./createDemoMediaAssetName";
 import { hashFile } from "./hashFile";
 import { inspectDemoMedia } from "./inspectDemoMedia";
+import { isDemoMediaName } from "./isDemoMediaName";
 import { readDemoMediaManifest } from "./readDemoMediaManifest";
 import type { IDemoMediaManifest, IDemoMediaPin, IPublishDemoMediaOptions, RunCommand } from "./types";
 
@@ -43,6 +44,10 @@ export async function publishDemoMedia(options: IPublishDemoMediaOptions): Promi
   for (const { name, state } of await inspectDemoMedia(manifest, directoryPath)) {
     // A pinned video that is not on disk keeps its pin: a checkout need not hold every video to publish one.
     if (state !== "different" && state !== "unpinned") continue;
+    // A pin under a name the manifest rejects would make the manifest unreadable, after the video is already public.
+    if (!isDemoMediaName(name)) {
+      throw new Error(`${name} cannot be pinned: name a demo video with lowercase letters, digits, and hyphens`);
+    }
     const path = join(directoryPath, name);
     const sha256 = await hashFile(path);
     uploads.push({ name, pin: { asset: createDemoMediaAssetName(name, sha256), sha256, bytes: Bun.file(path).size } });
