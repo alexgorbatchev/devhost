@@ -3,10 +3,12 @@ import { expect, userEvent, waitFor } from "storybook/test";
 
 import type { IStoppedService, IWorktreeRepository, ServiceHealth } from "../../../../shared/types";
 import { readDevtoolsStoryShadowCanvas } from "../../../../shared/components/stories/helpers";
+import { WorktreeStatusPanel } from "../WorktreeStatusPanel";
 import { ServiceStatusPanel } from "../ServiceStatusPanel";
 import { Button } from "../../../../shared";
 
-type ServiceStatusPanelProps = ComponentProps<typeof ServiceStatusPanel>;
+type ServiceStatusPanelProps = ComponentProps<typeof ServiceStatusPanel> &
+  Partial<ComponentProps<typeof WorktreeStatusPanel>>;
 
 export function ServiceHealthUpdatesHarness(args: ServiceStatusPanelProps): JSX.Element {
   const [services, setServices] = useState<ServiceHealth[]>(args.services);
@@ -105,7 +107,19 @@ export function WorktreePanelHarness(args: ServiceStatusPanelProps): JSX.Element
     },
     [onSwitchWorktree],
   );
-  return <ServiceStatusPanel {...args} repositories={repositories} onSwitchWorktree={onSwitch} />;
+  return (
+    <>
+      <ServiceStatusPanel {...args} repositories={repositories} />
+      {args.onRefreshWorktrees === undefined ? null : (
+        <WorktreeStatusPanel
+          repositories={repositories}
+          services={args.services}
+          onRefreshWorktrees={args.onRefreshWorktrees}
+          onSwitchWorktree={onSwitch}
+        />
+      )}
+    </>
+  );
 }
 
 /** Plays devhost's part after a start: a started service leaves the stopped list and joins the running ones. */

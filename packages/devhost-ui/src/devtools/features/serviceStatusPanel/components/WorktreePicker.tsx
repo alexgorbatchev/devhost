@@ -155,7 +155,7 @@ export function WorktreePicker({
         {isLoading || isBusy ? (
           <p className="m-0 flex items-center gap-1.5 text-warning" role="status">
             <Icon glyph={RotateCwIcon} isSpinning />
-            {isLoading ? "Loading worktrees…" : "Switching and restarting services…"}
+            {isLoading ? "Loading worktrees…" : "Switching and restarting stack…"}
           </p>
         ) : null}
         <div className="flex flex-wrap gap-1.5">
@@ -166,9 +166,7 @@ export function WorktreePicker({
               void apply(path);
             }}
           >
-            {repository.error !== undefined && path === repository.selectedPath
-              ? "Retry"
-              : `Switch and restart ${repository.serviceNames.length} service${repository.serviceNames.length === 1 ? "" : "s"}`}
+            {repository.error !== undefined && path === repository.selectedPath ? "Retry" : "Switch and restart stack"}
           </Button>
           {repository.error !== undefined && repository.selectedPath !== repository.configuredPath ? (
             <Button
@@ -188,7 +186,7 @@ export function WorktreePicker({
               Return to configured checkout
             </Button>
           ) : null}
-          <Button onClick={onBack}>{isBusy ? "Back to services" : "Cancel"}</Button>
+          <Button onClick={onBack}>{isBusy ? "Back to worktrees" : "Cancel"}</Button>
         </div>
       </footer>
       <PanelActions>

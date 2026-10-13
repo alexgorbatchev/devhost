@@ -21,6 +21,9 @@ func TestRecoveryPageSwitchesCheckoutWithToolbarDisabled(t *testing.T) {
 	body := strings.Replace(reloadServiceBody("web", "served", "recovery.localhost"), "command = ", fmt.Sprintf("cwd = %q\ncommand = ", filepath.Join(root, "web")), 1)
 	body = "[devtools.status]\nenabled = false\n[devtools.editor]\nenabled = false\n[devtools.minimap]\nenabled = false\n[devtools.externalToolbars]\nenabled = false\n" + body
 	f := startReloadStackConfiguration(t, body, true)
+	if err := os.WriteFile(filepath.Join(linked, "devhost.toml"), []byte(f.header+strings.ReplaceAll(body, root, linked)), 0600); err != nil {
+		t.Fatal(err)
+	}
 	route := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "recovery.localhost_web_2f.json"))
 	url := serverURL(route.DocumentInjectionPort, "/checkout-only?value=1")
 	request := func(method, action, payload string) *http.Response {

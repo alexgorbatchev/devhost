@@ -179,6 +179,7 @@ func TestWorktreeSelectionKeepsOtherRepositoriesIndependent(t *testing.T) {
 	m := worktreeTestManifest(root)
 	m.Services["docs"] = ResolvedService{Name: "docs", Cwd: filepath.Join(otherRoot, "web"), Managed: true, Command: []string{"service"}}
 	m.ServiceOrder = append(m.ServiceOrder, "docs")
+	writeWorktreeFixtureConfiguration(t, m, linked)
 	state := t.TempDir()
 	w, err := newStackWorktrees(m, state)
 	if err != nil {
@@ -333,6 +334,10 @@ func createWorktreeRepository(t *testing.T) (string, string) {
 		if err := os.WriteFile(filepath.Join(root, dir, "source.txt"), []byte("source"), 0o600); err != nil {
 			t.Fatal(err)
 		}
+	}
+	config := "name = \"shop\"\n[services.api]\ncwd = \"api\"\ncommand = [\"service\"]\nhealth.process = true\n[services.web]\ncwd = \"web\"\ncommand = [\"service\"]\ndependsOn = [\"api\"]\nhealth.process = true\n"
+	if err := os.WriteFile(filepath.Join(root, "devhost.toml"), []byte(config), 0600); err != nil {
+		t.Fatal(err)
 	}
 	runWorktreeGit(t, root, "init", "-b", "main")
 	runWorktreeGit(t, root, "add", ".")

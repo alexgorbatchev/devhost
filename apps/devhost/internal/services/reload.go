@@ -16,6 +16,7 @@ import (
 
 // configurationChange says how applyConfiguration differs from a plain reload.
 type configurationChange struct {
+	worktreeSwitch bool
 	// restartStack relaunches every managed service with fresh automatic ports.
 	restartStack bool
 	// requested replaces the names of the services to run.
@@ -27,6 +28,10 @@ type configurationChange struct {
 func (r *stackRuntime) reloadConfiguration(ctx context.Context, next manifest.Manifest, files []string) error {
 	r.operationMu.Lock()
 	defer r.operationMu.Unlock()
+	return r.reloadConfigurationLocked(ctx, next, files)
+}
+
+func (r *stackRuntime) reloadConfigurationLocked(ctx context.Context, next manifest.Manifest, files []string) error {
 	paths := make([]string, 0, len(files))
 	for _, file := range files {
 		path, err := filepath.Rel(filepath.Dir(r.manifest.ManifestPath), file)
@@ -97,7 +102,18 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 		}
 		*next.Annotation.TempDir = dir
 	}
-	if err := validateReloadBoundary(*r.configured, next); err != nil {
+	previousConfiguration := r.configured
+	if previousConfiguration == nil {
+		previousConfiguration = r.manifest.configuration
+	}
+	if previousConfiguration == nil {
+		return fmt.Errorf("configuration change requires an accepted manifest")
+	}
+	boundary := *previousConfiguration
+	if change.worktreeSwitch {
+		boundary.Name = next.Name
+	}
+	if err := validateReloadBoundary(boundary, next); err != nil {
 		return err
 	}
 	if !restartStack && reflect.DeepEqual(*r.configured, next) && slices.Equal(r.manifest.requested, change.requested) {
@@ -115,11 +131,18 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	if err != nil {
 		return err
 	}
+	candidate.ManifestPath = r.manifest.ManifestPath
+	// The control server, stack owner, and access log belong to this run.
+	candidate.Name = r.manifest.Name
+	candidate.ServiceOrder = orderedServiceNames(next)
 	worktrees, err := buildStackWorktrees(candidate, r.routes.paths.StateDirectoryPath, r.worktrees)
 	if err != nil {
 		return err
 	}
-	candidate, blocked := worktrees.restore(candidate)
+	blocked := map[string]string{}
+	if !change.worktreeSwitch {
+		candidate, blocked = worktrees.restore(candidate)
+	}
 	for name, service := range candidate.Services {
 		if restartStack && blocked[name] != "" {
 			return fmt.Errorf("cannot restart stack: service %s is stopped: %s; select an available worktree first", name, blocked[name])
@@ -164,6 +187,12 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 		return errors.Join(err, rollbackClaims())
 	}
 	previous, previousWorktrees, previousOrder := *r.manifest, r.worktrees, r.order
+	var previousInputs manifest.Inputs
+	if r.manifestWatch != nil {
+		r.manifestWatch.inputsMu.RLock()
+		previousInputs = r.manifestWatch.inputs
+		r.manifestWatch.inputsMu.RUnlock()
+	}
 	previousBlocked := maps.Clone(r.blocked)
 	oldNames, nextNames := reloadOrder(previousOrder, affected), reloadOrder(order, affected)
 	health, err := r.health()
@@ -195,6 +224,9 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	}
 	r.installReload(candidate, worktrees, order, blocked)
 	rollback := func(err error) error {
+		if r.manifestWatch != nil {
+			err = errors.Join(err, r.manifestWatch.update(previousInputs))
+		}
 		err = errors.Join(err, r.stopReloadServices(reloadOrder(order, affected)))
 		if ctx.Err() != nil {
 			// Shutdown owns final cleanup; do not launch restoration processes.
@@ -210,6 +242,15 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	}
 	if err := r.routes.replace(*r.manifest); err != nil {
 		return rollback(err)
+	}
+	if change.worktreeSwitch && r.manifestWatch != nil {
+		raw, err := manifest.ReadManifest(next.ManifestPath)
+		if err != nil {
+			return rollback(err)
+		}
+		if err := r.manifestWatch.update(raw.Inputs); err != nil {
+			return rollback(err)
+		}
 	}
 	if r.control != nil {
 		if err := r.control.UpdateRouting(collectRoutedServiceIdentities(r.manifest.Services), r.manifest.PrimaryService); err != nil {

@@ -112,14 +112,16 @@ app = ["web"]
 # Set enabled = false to disable discovery and saved-selection restore.
 # [worktrees]
 # enabled = false
-# Choices are remembered per manifest path and repository across devhost restarts.
+# The active stack choice is remembered per original manifest path across restarts.
 # Open the picker or press Refresh to discover added and deleted worktrees.
 # If the running checkout disappears, Refresh stops its services for explicit recovery.
-# All services in a repository share one checkout, preserving their cwd offsets.
-# Missing saved checkouts and failed launches keep the group stopped for recovery.
+# Switches load the checkout's manifest and includes and restart the whole managed stack.
+# Service membership, commands, directories, environments, and routes may differ.
+# Missing saved checkouts keep the group stopped; failed switches restore the prior stack.
 # Repositories containing managed = false services cannot switch.
-# Keep configured cwd values in one checkout per repository. The original manifest
-# remains authoritative; selecting a checkout does not load another manifest.
+# Keep configured cwd values in one checkout per repository. The target manifest uses
+# the same repository-relative path (or filename at the root for an outside manifest).
+# Listener, devtools, annotation, worktree enablement, and killZombies settings must match.
 
 [caddy.global]
 # `http` also serves the same routed hosts and the shared fallback page on plain HTTP.

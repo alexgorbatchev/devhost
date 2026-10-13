@@ -20,12 +20,15 @@ func TestManifestReloadPreservesSelectedCheckoutAndReconcilesMembership(t *testi
 		t.Fatalf("repository discovery: %#v, %v", health, err)
 	}
 	id := health.Repositories[0].ID
+	f.path = filepath.Join(linked, "devhost.toml")
+	write := func(body string) { f.write(t, strings.ReplaceAll(body, root, linked)) }
+	write(service("api", "api", "api") + service("web", "original", "web"))
 	if err := f.control.SwitchWorktree(id, linked); err != nil {
 		t.Fatal(err)
 	}
 	original := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "web.reload.localhost_web_2f.json"))
 	assertRestartResponse(t, serverURL(original.AppPort, "/cwd"), filepath.Join(linked, "web"))
-	f.write(t, service("web", "replacement", "web")+service("worker", "worker", "api"))
+	write(service("web", "replacement", "web") + service("worker", "worker", "api"))
 	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reloaded") })
 	health, err = f.control.GetHealthResponse()
 	if err != nil || health.Repositories[0].ID != id || health.Repositories[0].SelectedPath != linked || health.Repositories[0].RunningPath != linked || len(health.Repositories[0].ServiceNames) != 2 {
@@ -66,6 +69,9 @@ func TestManifestReloadSurvivesDeletedConfiguredCheckout(t *testing.T) {
 		t.Fatalf("repository discovery: %#v, %v", health, err)
 	}
 	id := health.Repositories[0].ID
+	f.path = filepath.Join(root, "devhost.toml")
+	write := func(body string) { f.write(t, strings.ReplaceAll(body, linked, root)) }
+	write(service("web", "original", "web"))
 	if err := f.control.SwitchWorktree(id, root); err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +79,7 @@ func TestManifestReloadSurvivesDeletedConfiguredCheckout(t *testing.T) {
 	if err := f.control.RefreshWorktrees(); err != nil {
 		t.Fatal(err)
 	}
-	f.write(t, service("web", "replacement", "web")+service("worker", "worker", "api"))
+	write(service("web", "replacement", "web") + service("worker", "worker", "api"))
 	waitForCondition(t, 5*time.Second, func() bool {
 		return f.logs.contains("configuration reloaded") || f.logs.contains("configuration reload rejected")
 	})

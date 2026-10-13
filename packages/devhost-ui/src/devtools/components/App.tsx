@@ -13,7 +13,12 @@ import { LogMinimap, useServiceLogs } from "../features/minimap";
 import { TerminalSessionChips, TerminalSessionHost, useTerminalSessions } from "../features/terminalSessions";
 import { useReactHighlightOverlay } from "../features/reactHighlight";
 import { ResourceUsagePanel, useResourceUsage } from "../features/resourceUsage";
-import { ServiceCrashOverlay, ServiceStatusPanel, useServiceHealth } from "../features/serviceStatusPanel";
+import {
+  ServiceCrashOverlay,
+  ServiceStatusPanel,
+  WorktreeStatusPanel,
+  useServiceHealth,
+} from "../features/serviceStatusPanel";
 import { pristineFetch } from "../shared/pristineFetch";
 import { useNativeBrowserConnection } from "../shared/hooks/useNativeBrowserConnection";
 import { NativeBrowserConnectionControl, NativeBrowserConnectionStatus } from "../features/nativeBrowserConnection";
@@ -260,12 +265,16 @@ function AppContent(): JSX.Element {
               services={services}
               stoppedServices={stoppedServices}
               repositories={repositories}
-              onRefreshWorktrees={refreshWorktrees}
-              onSwitchWorktree={switchWorktree}
               onStartServices={startStoppedServices}
               onSetErrorMessage={setErrorMessage}
             />
           ) : null}
+          <WorktreeStatusPanel
+            repositories={repositories}
+            services={services}
+            onRefreshWorktrees={refreshWorktrees}
+            onSwitchWorktree={switchWorktree}
+          />
           {annotationQueueEnabled ? (
             <AnnotationQueuePanel
               errorMessage={annotationQueueErrorMessage}
