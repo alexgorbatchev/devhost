@@ -5,7 +5,6 @@ import { XIcon } from "lucide-react";
 import { Icon } from "../../../../components/ui/Icon";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/Card";
-import { Kbd } from "../../../../components/ui/Kbd";
 import { Textarea } from "../../../../components/ui/Textarea";
 
 import { Button, InlineNotice, type IAnnotationAction } from "../../../shared";
@@ -309,7 +308,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
                 ) : (
                   <Button
                     disabled={trimmedComment.length === 0 || isSubmitting}
-                    endEnhancer={<Kbd>⌘↵</Kbd>}
+                    shortcut="⌘↵"
                     variant="primary"
                     onClick={(): void => {
                       void submitDraft();
@@ -319,7 +318,7 @@ export function AnnotationComposer(props: IAnnotationComposerProps): JSX.Element
                   </Button>
                 )}
                 <span className="flex-1" />
-                <Button disabled={isSubmitting} endEnhancer={<Kbd>Esc</Kbd>} variant="ghost" onClick={cancelDraft}>
+                <Button disabled={isSubmitting} shortcut="Esc" variant="ghost" onClick={cancelDraft}>
                   Cancel
                 </Button>
               </div>

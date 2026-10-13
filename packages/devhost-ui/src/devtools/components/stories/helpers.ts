@@ -179,6 +179,20 @@ export async function verifyRestartShortcut(canvasElement: HTMLElement): Promise
         { body: '{"serviceNames":["app"]}', headers: { "content-type": "application/json" }, method: "POST" },
       ],
     ]);
+    await user.click(shadowCanvas.getByRole("button", { name: "Services: 2 of 3 up" }));
+    const changed = await shadowCanvas.findByRole("button", { name: "Restart Changed" });
+    await waitFor(() => expect(changed).toBeVisible());
+    await user.click(changed);
+    expect(readRestartRequests()).toEqual([
+      [
+        RESTART_SERVICE_PATH,
+        { body: '{"serviceNames":["app"]}', headers: { "content-type": "application/json" }, method: "POST" },
+      ],
+      [
+        RESTART_SERVICE_PATH,
+        { body: '{"serviceNames":["app"]}', headers: { "content-type": "application/json" }, method: "POST" },
+      ],
+    ]);
   } finally {
     Reflect.set(globalThis, "fetch", originalFetch);
   }

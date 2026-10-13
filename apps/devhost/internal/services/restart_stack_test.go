@@ -79,7 +79,7 @@ func TestManualRestartPreservesAssignedPortAndStackRestartRecovers(t *testing.T)
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = occupied.Close() })
-	if err := f.control.RestartService([]string{"web"}); err == nil || !strings.Contains(err.Error(), "Restart stack with new ports") {
+	if err := f.control.RestartService([]string{"web"}); err == nil || !strings.Contains(err.Error(), "Restart Stack") {
 		t.Fatalf("manual restart = %v, want assigned-port conflict with recovery action", err)
 	}
 	if next := readRestartRoute(t, webPath); next.AppPort != web.AppPort || reloadPID(t, api.AppPort) != apiPID {

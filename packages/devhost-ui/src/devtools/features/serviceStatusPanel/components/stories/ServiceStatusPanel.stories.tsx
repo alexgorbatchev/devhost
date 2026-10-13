@@ -75,10 +75,66 @@ export const Default: Story = {
           method: "POST",
         }),
       );
-      await userEvent.click(shadowCanvas.getByRole("button", { name: "Restart stack with new ports" }));
+      await userEvent.click(shadowCanvas.getByRole("button", { name: "Restart Stack" }));
       await expect(restartFetch).toHaveBeenLastCalledWith("/__devhost__/restart-stack", {
         method: "POST",
       });
+    } finally {
+      Reflect.set(globalThis, "fetch", originalFetch);
+    }
+  },
+};
+
+export const RestartChanged: Story = {
+  args: {
+    errorMessage: null,
+    services: [
+      { managed: true, name: "api", status: true, dirty: true },
+      { managed: true, name: "web", status: true, dirty: true },
+      { managed: true, name: "worker", status: true },
+    ],
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Services: 3 of 3 up, 2 changed" }));
+    const changed = await canvas.findByRole("button", { name: "Restart Changed" });
+    const stack = canvas.getByRole("button", { name: "Restart Stack" });
+    await waitFor(() => expect(changed).toBeVisible());
+    await expect(within(changed).getByText("Alt+Ctrl+R")).toBeVisible();
+    const changedBounds = changed.getBoundingClientRect();
+    const stackBounds = stack.getBoundingClientRect();
+    const rowBounds = stack.parentElement!.getBoundingClientRect();
+    await expect(changedBounds.width).toBeGreaterThan(stackBounds.width);
+    await expect(changedBounds.left).toBeGreaterThan(rowBounds.left);
+    await expect(stackBounds.right).toBeCloseTo(rowBounds.right, 0);
+    await expect(stack.querySelector("svg")).toBeNull();
+    await expect(stackBounds.left).toBeGreaterThan(changedBounds.right);
+    const shortcut = within(changed).getByText("Alt+Ctrl+R");
+    const shortcutBounds = shortcut.getBoundingClientRect();
+    const label = changed.ownerDocument.createRange();
+    label.selectNodeContents(changed.childNodes[0]);
+    const labelBounds = label.getBoundingClientRect();
+    await expect(
+      Math.abs(labelBounds.top + labelBounds.height / 2 - shortcutBounds.top - shortcutBounds.height / 2),
+    ).toBeLessThan(2);
+    await expect(changed.scrollWidth).toBeLessThanOrEqual(changed.clientWidth);
+    await expect(stack.scrollWidth).toBeLessThanOrEqual(stack.clientWidth);
+    const request = fn(async () => new Response(null, { status: 204 }));
+    const originalFetch = globalThis.fetch;
+    Reflect.set(globalThis, "fetch", request);
+    try {
+      await userEvent.click(changed);
+      await expect(request).toHaveBeenCalledWith(
+        RESTART_SERVICE_PATH,
+        expect.objectContaining({
+          body: JSON.stringify({ serviceNames: ["api", "web"] }),
+          method: "POST",
+        }),
+      );
+      await userEvent.hover(stack);
+      await expect(stack).toHaveAttribute("title", "Restarts all managed services and reassigns automatic ports.");
+      await expect(canvas.queryByRole("button", { name: "About Restart Stack" })).toBeNull();
+      await expect(changed).toBeVisible();
     } finally {
       Reflect.set(globalThis, "fetch", originalFetch);
     }
@@ -115,7 +171,7 @@ export const RestartingService: Story = {
     await userEvent.click(await shadowCanvas.findByRole("button", { name: "Services: 1 of 1 up" }));
     await waitFor(() => expect(shadowCanvas.getByRole("region", { name: "Services" })).toBeVisible());
     await expect(shadowCanvas.getByRole("button", { name: "Restart api" })).toBeDisabled();
-    await expect(shadowCanvas.getByRole("button", { name: "Restart stack with new ports" })).toBeDisabled();
+    await expect(shadowCanvas.getByRole("button", { name: "Restart Stack" })).toBeDisabled();
   },
 };
 
@@ -415,7 +471,7 @@ export const GroupedServicesWhileSwitching: Story = {
     await expect(applications.getByRole("button", { name: "Restart web" })).toBeDisabled();
     const services = within(within(repository).getByRole("list", { name: "Services" }));
     await expect(services.getByRole("button", { name: "Restart worker" })).toBeDisabled();
-    await expect(canvas.getByRole("button", { name: "Restart stack with new ports" })).toBeDisabled();
+    await expect(canvas.getByRole("button", { name: "Restart Stack" })).toBeDisabled();
   },
 };
 

@@ -49,7 +49,7 @@ Each startup or configuration reload claim pass sends at most one kill attempt a
 
 ## Automatic port conflict during restart
 
-A single-service restart reuses its assigned automatic port. If another process occupies it, devhost reports the conflict and leaves the service stopped. Choose **Restart stack with new ports** in the Services panel or recovery overlay to restart all managed services with fresh automatic ports and rebuilt port references and environments. External processes keep running, and fixed ports stay unchanged.
+A single-service restart reuses its assigned automatic port. If another process occupies it, devhost reports the conflict and leaves the service stopped. Choose **Restart Stack** in the Services panel or recovery overlay to restart all managed services with fresh automatic ports and rebuilt port references and environments. External processes keep running, and fixed ports stay unchanged.
 
 This action uses the last accepted manifest, so an invalid edit on disk does not block recovery. Launch or routing failures display an error and remain retryable. A fixed-port conflict requires freeing the configured port or changing that service's `port` setting; automatic-port reassignment cannot resolve it.
 

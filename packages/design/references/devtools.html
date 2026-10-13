@@ -723,6 +723,12 @@
           background: var(--dh-surface-3);
           border-color: var(--dh-fg-faint);
         }
+        .restart-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: var(--dh-space-3);
+        }
         .btn.icon {
           width: var(--dh-control-h);
           padding: 0;
@@ -777,14 +783,25 @@
           cursor: not-allowed;
         }
         .kbd {
+          color: var(--dh-fg-muted);
+          font-weight: 400;
           display: inline-flex;
           align-items: center;
           height: 14px;
+          flex-shrink: 0;
+          white-space: nowrap;
           padding: 0 3px;
           border: 1px solid currentColor;
           border-radius: var(--dh-radius-sm);
           font-size: var(--dh-text-sm);
           line-height: 1;
+        }
+        .btn.primary .kbd,
+        .btn.warn .kbd,
+        .btn[aria-pressed="true"] .kbd,
+        .btn:disabled .kbd {
+          color: inherit;
+          opacity: 0.85;
         }
         .tag {
           display: inline-flex;
@@ -2590,12 +2607,11 @@
               : "")
           : renderServiceLists(state.services);
         return {
-          width: state.worktreesEnabled ? 380 : 300,
+          width: 440,
           label: "Services",
           html: `
             <header class="panel-head">
               <span class="grow">Services</span>
-              <span class="muted" style="font-weight:400" title="Restart changed services (or the primary service)"><span class="kbd">⌃⌥R</span></span>
             </header>
             ${state.serviceError ? renderNotice(state.serviceError, "dismiss-service-error") : ""}
             <div class="panel-body">${rows}${renderStoppedServicesEntry()}${renderStackRestart()}</div>`,
@@ -3124,10 +3140,14 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
         if (!state.services.some((service) => service.managed)) return "";
         const disabled =
           state.services.some((service) => service.restarting) || state.repositories.some((repo) => repo.phase);
-        return `<section class="panel-body" aria-label="Stack recovery">
-          <button class="btn" type="button" data-action="restart-stack" ${disabled ? "disabled" : ""}>
-            ${icon("restart")}${state.isStackRestarting ? "Restarting stack…" : "Restart stack with new ports"}
-          </button><p class="muted">Restarts all managed services and reassigns automatic ports.</p></section>`;
+        return `<section class="panel-body restart-actions" aria-label="Stack recovery">
+          <button class="btn" type="button" data-action="restart-changed" title="Restart changed services, or the primary service when none changed" ${disabled ? "disabled" : ""}>
+            Restart Changed<span class="kbd">Alt+Ctrl+R</span>
+          </button>
+          <button class="btn" type="button" data-action="restart-stack" title="Restarts all managed services and reassigns automatic ports." ${disabled ? "disabled" : ""}>
+            ${state.isStackRestarting ? "Restarting stack…" : "Restart Stack"}
+          </button>
+          </section>`;
       }
 
       async function restartServices(names, isStackRestart = false) {
@@ -3404,6 +3424,11 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
               true,
             );
             return;
+          case "restart-changed": {
+            const dirty = state.services.filter((service) => service.dirty).map((service) => service.name);
+            restartServices(dirty.length ? dirty : ["web"]);
+            return;
+          }
           case "dismiss-service-error":
             state.serviceError = null;
             break;

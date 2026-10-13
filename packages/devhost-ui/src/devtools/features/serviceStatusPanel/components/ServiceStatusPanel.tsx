@@ -11,12 +11,12 @@ import {
 import { Icon } from "../../../../components/ui/Icon";
 
 import { Badge } from "../../../../components/ui/Badge";
-import { Kbd } from "../../../../components/ui/Kbd";
 import { cn } from "../../../../lib/utils";
 
 import { Button, InlineNotice } from "../../../shared";
 import { pristineFetch } from "../../../shared/pristineFetch";
 import { restartServices } from "../../../shared/restartServices";
+import { selectRestartServiceNames } from "../../../shared/selectRestartServiceNames";
 import { PanelActions } from "../../../shared/components/PanelActions";
 import { ToolbarPopover } from "../../../shared/components/ToolbarPopover";
 import { RestartStackButton } from "../../../shared/components/RestartStackButton";
@@ -60,7 +60,8 @@ const serviceStateLabels: Record<ServiceDotState, string> = {
 const serviceNameCollator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
 
 export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element | null {
-  const { homeDirectoryPath, restartServicesShortcut } = readInjectedDevtoolsConfig();
+  const { homeDirectoryPath, restartServicesShortcut, primaryService } = readInjectedDevtoolsConfig();
+  const restartServiceNames = selectRestartServiceNames(props.services, primaryService);
   const [repositoryId, setRepositoryId] = useState<string | null>(null);
   const [isStackRestarting, setIsStackRestarting] = useState<boolean>(false);
   const [isChoosingStoppedService, setIsChoosingStoppedService] = useState<boolean>(false);
@@ -100,11 +101,7 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
   return (
     <ToolbarPopover
       headerEndEnhancer={
-        isShowingServices ? (
-          <Kbd title="Restart changed services, or the primary service when none changed">
-            {formatShortcutLabel(restartServicesShortcut ?? DEFAULT_RESTART_SERVICES_SHORTCUT)}
-          </Kbd>
-        ) : (
+        isShowingServices ? undefined : (
           <Button
             aria-label="Back to services"
             variant="ghost"
@@ -137,7 +134,7 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
             ? "Services"
             : selectedRepository.name + " · Worktrees"
       }
-      panelWidth={selectedRepository === undefined ? (repositories.length > 0 ? "md" : "sm") : "lg"}
+      panelWidth={isShowingServices ? "lg" : selectedRepository === undefined ? "sm" : "lg"}
       testId="ServiceStatusPanel"
       triggerContent={
         <>
@@ -259,6 +256,9 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
                 repositories.some((repository) => repository.switching)
               }
               onPendingChange={setIsStackRestarting}
+              onRestartChanged={() => restartServices(restartServiceNames, pristineFetch)}
+              isRestartChangedDisabled={restartServiceNames.length === 0}
+              restartChangedShortcut={formatShortcutLabel(restartServicesShortcut ?? DEFAULT_RESTART_SERVICES_SHORTCUT)}
             />
           ) : null}
         </>

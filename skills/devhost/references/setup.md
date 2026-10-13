@@ -1,6 +1,6 @@
 ---
 created_on: 2026-06-26 21:23
-last_modified: 2026-10-10 03:26
+last_modified: 2026-10-13 15:44
 status: current
 ---
 
@@ -87,7 +87,7 @@ Stop the shared proxy manually with `devhost caddy stop --manifest ./devhost.tom
 
 ## 6. Configuration Hot Reload
 
-For manual recovery, restart an individual service to reuse its assigned port. If an automatic port is occupied, choose **Restart stack with new ports** in Services or the recovery overlay. This relaunches all managed services using the last accepted manifest, refreshes automatic ports and their injected references, and retains fixed ports, selected checkouts, control listeners, and terminal sessions. External processes keep running. Check the response and retained logs for launch, routing, or restoration failures before claiming recovery, then retry the action after addressing the failure. A fixed-port conflict requires freeing the port or changing its manifest setting.
+For manual recovery, restart an individual service to reuse its assigned port. If an automatic port is occupied, choose **Restart Stack** in Services or the recovery overlay. This relaunches all managed services using the last accepted manifest, refreshes automatic ports and their injected references, and retains fixed ports, selected checkouts, control listeners, and terminal sessions. External processes keep running. Check the response and retained logs for launch, routing, or restoration failures before claiming recovery, then retry the action after addressing the failure. A fixed-port conflict requires freeing the port or changing its manifest setting.
 
 Save service changes to the original root manifest or an included manifest while devhost is running. Files added or deleted under an `includes` glob also change the stack. Wait for `configuration reloaded`; invalid, conflicting, or restart-required edits print `configuration reload rejected` and leave the running stack unchanged.
 

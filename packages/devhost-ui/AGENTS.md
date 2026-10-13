@@ -16,6 +16,7 @@ Local React workspace for the injected `devhost` browser UI that gets embedded i
 ## Local conventions
 
 - Keep the injected UI source under `src/devtools/` so the Go app and the public website can both consume the same entrypoint.
+- Render button keyboard hints through `Button`'s `shortcut` prop. It owns the shared `Kbd` treatment and keeps the hint outside the accessible button name. Reserve enhancers for icons or other content; use `Kbd` directly only for standalone hints.
 - Re-export public entrypoints through `package.json` exports. Consumers should use `@alexgorbatchev/devhost-ui` or `@alexgorbatchev/devhost-ui/main` instead of reaching into source paths.
 - Keep package-owned Storybook and browser tests inside this workspace. Storybook discovers owning stories in both `src/**` and `scripts/**`; the native fixture components' stories exercise their UI callbacks and host state, while genuine extension inspection remains in the separately provisioned native command.
 - Keep repeatable recording scenes under `scripts/demo/`. Capture real playground interactions through the compiled devhost, with accessible locators and observable readiness checks. Fixed pauses are allowed only for viewer pacing in recordings. The package TypeScript and Bun checks include these scripts and their unit tests.

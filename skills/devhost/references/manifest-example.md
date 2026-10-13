@@ -250,7 +250,7 @@ retries = 10
 
 [services.db]
 # `port = "auto"` allocates a free port; a timing-only health table customizes its TCP probe.
-# Individual restarts keep the assigned port; use "Restart stack with new ports" for automatic-port conflicts.
+# Individual restarts keep the assigned port; use "Restart Stack" for automatic-port conflicts.
 # Stack restart rebuilds port references and refreshes routes before reporting recovery.
 command = ["bun", "run", "db:dev"]
 cwd = "./db"
