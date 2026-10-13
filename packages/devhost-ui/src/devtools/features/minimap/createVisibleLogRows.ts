@@ -40,6 +40,16 @@ export function createVisibleLogRows(
   for (let entryIndex = entries.length - 1; entryIndex >= 0 && nextTop + markHeightInPixels > 0; entryIndex -= 1) {
     const entry: ServiceLogEntry = entries[entryIndex]!;
     const parsedLine = parseAnsiLogLine(entry.line);
+    const prefix: string = `[${entry.serviceName}] `;
+    if (parsedLine.text.startsWith(prefix)) {
+      parsedLine.text = parsedLine.text.slice(prefix.length);
+      let remainingPrefixLength: number = prefix.length;
+      parsedLine.fragments = parsedLine.fragments.flatMap((fragment) => {
+        const text: string = fragment.text.slice(remainingPrefixLength);
+        remainingPrefixLength = Math.max(0, remainingPrefixLength - fragment.text.length);
+        return text.length > 0 ? [{ ...fragment, text }] : [];
+      });
+    }
 
     rowsFromBottom.push({
       entryIndex,

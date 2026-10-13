@@ -171,11 +171,11 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
       ) : null}
       {props.isHovered && previewLayout !== null && hoveredRowIndex !== null && previewRows.length > 0 ? (
         <div
-          className="pointer-events-none absolute right-[calc(100%+6px)] z-(--devhost-z-overlay) w-[min(80ch,calc(100vw-140px))] overflow-hidden rounded-md border border-edge bg-card py-1 text-md text-card-foreground shadow-frame"
+          className="pointer-events-none absolute right-[calc(100%+7px)] z-(--devhost-z-overlay) w-[calc(100vw-100%-13px)] overflow-hidden rounded-md border border-edge bg-card py-1 text-md text-card-foreground shadow-frame"
           data-testid="LogMinimap--preview"
           style={{ top: previewLayout.top }}
         >
-          <ol className="m-0 grid list-none gap-0 p-0">
+          <ol className="m-0 grid grid-cols-[max-content_minmax(0,1fr)] list-none gap-x-2 gap-y-0 p-0">
             {previewRows.map((row: IVisibleLogRow, rowIndex: number) => {
               const isFocusedRow: boolean = previewLayout.range.startIndex + rowIndex === hoveredRowIndex;
 
@@ -183,16 +183,16 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
                 <li
                   key={`${row.id}-${row.top}`}
                   className={cn(
-                    "flex h-4.5 gap-2 overflow-hidden px-2 leading-4.5 whitespace-pre",
+                    "col-span-2 grid grid-cols-subgrid h-4.5 px-2 leading-4.5 whitespace-pre",
                     row.stream === "stderr" &&
                       "bg-destructive/5 text-destructive shadow-[inset_2px_0_0_var(--destructive)]",
                     isFocusedRow && (row.stream === "stderr" ? "bg-destructive/10" : "bg-accent"),
                   )}
                 >
-                  <span className="w-[7ch] shrink-0 truncate text-faint" data-testid="LogMinimap--preview-service">
+                  <span className="text-faint" data-testid="LogMinimap--preview-service">
                     {row.serviceName}
                   </span>
-                  <span className="min-w-0" data-testid="LogMinimap--preview-line">
+                  <span className="min-w-0 overflow-hidden" data-testid="LogMinimap--preview-line">
                     {row.fragments.length === 0
                       ? row.text
                       : row.fragments.map((fragment: ILogAnsiFragment, fragmentIndex: number) => {
