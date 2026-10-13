@@ -334,6 +334,8 @@
         color: var(--dh-fg-faint);
       }
       .kbd {
+        color: var(--dh-fg-muted);
+        font-weight: 400;
         display: inline-flex;
         align-items: center;
         height: var(--kbd-h);
@@ -342,6 +344,13 @@
         border-radius: var(--dh-radius-sm);
         font-size: var(--small-text);
         line-height: 1;
+      }
+      .btn.primary .kbd,
+      .btn.warn .kbd,
+      .btn[aria-pressed="true"] .kbd,
+      .btn:disabled .kbd {
+        color: inherit;
+        opacity: 0.85;
       }
       .tag {
         display: inline-flex;

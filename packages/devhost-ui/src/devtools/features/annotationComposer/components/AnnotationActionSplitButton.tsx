@@ -10,7 +10,6 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "../../../../components/ui/DropdownMenu";
-import { Kbd } from "../../../../components/ui/Kbd";
 import { cn } from "../../../../lib/utils";
 import { buttonVariants } from "@/components/ui/constants";
 
@@ -63,7 +62,7 @@ export function AnnotationActionSplitButton({
 
   return (
     <div ref={setRootElement} className="relative inline-flex" data-testid="AnnotationActionSplitButton">
-      <Button disabled={isRunDisabled} endEnhancer={<Kbd>⌘↵</Kbd>} joinedEdge="end" variant="primary" onClick={onRun}>
+      <Button disabled={isRunDisabled} shortcut="⌘↵" joinedEdge="end" variant="primary" onClick={onRun}>
         {runLabel}
       </Button>
       <DropdownMenu modal={false} open={isMenuOpen} onOpenChange={setIsMenuOpen}>

@@ -85,12 +85,14 @@ export const Warning: Story = {
 export const Ghost: Story = {
   args: {
     children: "Cancel",
+    shortcut: "Esc",
     variant: "ghost",
     onClick: fn(),
   },
   play: async ({ args, canvasElement }) => {
     const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
     const button = shadowCanvas.getByRole("button", { name: "Cancel" });
+    await expect(shadowCanvas.getByText("Esc", { selector: "kbd" })).toBeVisible();
     await userEvent.click(button);
     await expect(args.onClick).toHaveBeenCalledTimes(1);
   },
@@ -128,7 +130,7 @@ export const Disabled: Story = {
   args: {
     children: "Disabled Button",
     disabled: true,
-    endEnhancer: "Esc",
+    shortcut: "Esc",
     onClick: fn(),
   },
   play: async ({ args, canvasElement }) => {
@@ -160,10 +162,10 @@ export const WithEndEnhancer: Story = {
   },
 };
 
-export const WithStartAndEndEnhancers: Story = {
+export const WithShortcut: Story = {
   args: {
     children: "Restart service",
-    endEnhancer: "⌘R",
+    shortcut: "⌘R",
     onClick: fn(),
     startEnhancer: "↻",
   },
@@ -173,7 +175,11 @@ export const WithStartAndEndEnhancers: Story = {
 
     await expect(button).toBeInTheDocument();
     await expect(shadowCanvas.getByText("↻")).toBeInTheDocument();
-    await expect(shadowCanvas.getByText("⌘R")).toBeInTheDocument();
+    const shortcut = shadowCanvas.getByText("⌘R", { selector: "kbd" });
+    await expect(shortcut).toBeVisible();
+    await expect(button).toHaveAccessibleName("Restart service");
+    await expect(shortcut.getBoundingClientRect().height).toBeLessThan(button.getBoundingClientRect().height);
+    await expect(button.scrollWidth).toBeLessThanOrEqual(button.clientWidth);
 
     await userEvent.click(button);
     await expect(args.onClick).toHaveBeenCalledTimes(1);

@@ -29,6 +29,28 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+export const OnDefaultButton: Story = {
+  render: (_args, context) =>
+    renderInDevtoolsStoryShadowRoot(
+      <StorybookThemeProvider globals={context.globals}>
+        <Button shortcut="Alt+Ctrl+R">Restart Changed</Button>
+      </StorybookThemeProvider>,
+    ),
+  play: async ({ canvasElement }): Promise<void> => {
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const button = shadowCanvas.getByRole("button", { name: "Restart Changed" });
+    const shortcut = shadowCanvas.getByText("Alt+Ctrl+R");
+    await expect(readContrastRatio(shortcut)).toBeLessThan(readContrastRatio(button));
+    await expect(readContrastRatio(shortcut)).toBeGreaterThanOrEqual(4.5);
+  },
+};
+
+export const LightOnDefaultButton: Story = {
+  ...OnDefaultButton,
+  globals: { devhostTheme: "light" },
+  play: OnDefaultButton.play,
+};
+
 export const Default: Story = {
   play: async ({ canvasElement }): Promise<void> => {
     const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
@@ -43,15 +65,24 @@ export const LightOnPrimary: Story = {
   render: (_args, context) =>
     renderInDevtoolsStoryShadowRoot(
       <StorybookThemeProvider globals={context.globals}>
-        <Button variant="primary" endEnhancer={<Kbd>⌘↵</Kbd>}>
+        <Button variant="primary" shortcut="⌘↵">
           Claude Code
         </Button>
       </StorybookThemeProvider>,
     ),
   play: async ({ canvasElement }): Promise<void> => {
     const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
-    await expect(readContrastRatio(shadowCanvas.getByText("⌘↵"))).toBeGreaterThanOrEqual(4.5);
+    const shortcut = shadowCanvas.getByText("⌘↵");
+    const button = shadowCanvas.getByRole("button", { name: "Claude Code" });
+    await expect(readContrastRatio(shortcut)).toBeGreaterThanOrEqual(4.5);
+    await expect(readContrastRatio(shortcut)).toBeLessThan(readContrastRatio(button));
   },
+};
+
+export const DarkOnPrimary: Story = {
+  ...LightOnPrimary,
+  globals: { devhostTheme: "dark" },
+  play: LightOnPrimary.play,
 };
 
 export const LightOnSecondary: Story = {

@@ -31,6 +31,7 @@ import {
   useResolvedColorScheme,
 } from "../shared";
 import { DEFAULT_RESTART_SERVICES_SHORTCUT } from "../shared/constants";
+import { selectRestartServiceNames } from "../shared/selectRestartServiceNames";
 
 export function App(): JSX.Element {
   const hostColorScheme = useResolvedColorScheme();
@@ -147,20 +148,7 @@ function AppContent(): JSX.Element {
       event.preventDefault();
       event.stopPropagation();
 
-      const dirtyServices = services.filter((s) => s.dirty && !s.restarting);
-      const activeRestarts = services.filter((s) => s.restarting);
-      if (activeRestarts.length > 0) {
-        return;
-      }
-
-      let targetServiceNames: string[] = [];
-      if (dirtyServices.length === 1) {
-        targetServiceNames = [dirtyServices[0].name];
-      } else if (dirtyServices.length > 1) {
-        targetServiceNames = dirtyServices.map((s) => s.name);
-      } else if (primaryService) {
-        targetServiceNames = [primaryService];
-      }
+      const targetServiceNames = selectRestartServiceNames(services, primaryService);
 
       if (targetServiceNames.length === 0) {
         return;

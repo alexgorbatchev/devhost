@@ -36,7 +36,7 @@ Undocumented `DEVHOST_*` variables are reserved for internal supervision and may
   - the listening port selected by `devhost`
   - injected when the service defines `port`, including foreground services with `port = "auto"`, unless `injectPort = false`
   - for `port = "auto"`, startup and configuration reload may retry a clear bind collision; individual service restarts retain the assigned port
-  - **Restart stack with new ports** reassigns automatic ports and relaunches all managed services with refreshed port variables
+  - **Restart Stack** reassigns automatic ports and relaunches all managed services with refreshed port variables
   - not injected for services that do not define `port` or for unmanaged services
   - injection only adds `PORT` to the child process environment; it does not make `"$PORT"` expand inside a manifest `command`
   - `command = ["storybook", "dev", "--port", "$PORT"]` passes literal `$PORT`; use an explicit shell only when you intentionally need shell expansion
@@ -75,4 +75,4 @@ DEVHOST_PORT_POSTGRES=5433
 
 This allows programs to dynamically query ports directly from the environment at startup.
 
-These values are snapshots for each process invocation. A configuration reload restarts services whose injected port variables change, including otherwise unchanged consumers. **Restart stack with new ports** rebuilds these variables for every managed service. Individual restarts keep their assigned port, so other running services retain valid port references. Existing terminal sessions keep their launch environment. See [Stack lifecycle](./stack-lifecycle/) for recovery behavior.
+These values are snapshots for each process invocation. A configuration reload restarts services whose injected port variables change, including otherwise unchanged consumers. **Restart Stack** rebuilds these variables for every managed service. Individual restarts keep their assigned port, so other running services retain valid port references. Existing terminal sessions keep their launch environment. See [Stack lifecycle](./stack-lifecycle/) for recovery behavior.

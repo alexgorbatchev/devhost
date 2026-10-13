@@ -15,7 +15,7 @@ What it does well:
 - serves startup status at service domains and forwards browser pages once health checks pass
 - hot-reloads `devhost.toml` and included manifests, adding or removing services and applying configuration edits without restarting devhost
 - switches Git worktrees and refreshes added or deleted checkouts from the browser
-- recovers services from the browser, with stable ports for individual restarts and **Restart stack with new ports** for automatic-port conflicts
+- recovers services from the browser, with stable ports for individual restarts and **Restart Stack** for automatic-port conflicts
 - optionally injects browser devtools for logs, service status, annotations, browser-hosted Neovim sessions, hotkey-driven restarts, and aggregated third-party launcher buttons
 
 The injected log minimap is intentionally a compact preview: each log entry stays on a single row and clips horizontally instead of wrapping into a full log viewer.
@@ -153,11 +153,11 @@ With `[devtools.status].enabled = true`, an exited service opens a full-screen r
 
 When a page loses its connection to devhost, for example after the machine sleeps, the Services panel shows every service as unavailable and the injected UI reconnects on its own, retrying every one to ten seconds. Open terminals reattach to their sessions the same way. devhost also drops a page's connection when the page reads nothing for ten seconds while updates wait for it, for example while it is paused in a debugger; the page reconnects in the same way once it runs again.
 
-A foreground restart preserves its assigned automatic port and completes after the replacement passes its health check and its routes refresh. If the port is occupied, the service remains stopped and the error points to **Restart stack with new ports**. A routing failure restores the previous route registration, configuration, and document backend, stops the replacement, and keeps recovery retryable. The restart response and retained service logs include the error; restoration failures are also reported.
+A foreground restart preserves its assigned automatic port and completes after the replacement passes its health check and its routes refresh. If the port is occupied, the service remains stopped and the error points to **Restart Stack**. A routing failure restores the previous route registration, configuration, and document backend, stops the replacement, and keeps recovery retryable. The restart response and retained service logs include the error; restoration failures are also reported.
 
-Before launching a foreground service, devhost checks whether its assigned automatic port is available. Startup, manifest reload, and **Restart stack with new ports** retry detected bind collisions with another automatic port, up to three times. Individual restarts retain their assigned port and report a conflict instead.
+Before launching a foreground service, devhost checks whether its assigned automatic port is available. Startup, manifest reload, and **Restart Stack** retry detected bind collisions with another automatic port, up to three times. Individual restarts retain their assigned port and report a conflict instead.
 
-Use **Restart stack with new ports** in the Services panel or recovery overlay to reassign every managed automatic port. Devhost stops all managed services in reverse dependency order, rebuilds their port references and injected environments, and starts them in dependency order before refreshing routes. Fixed ports, selected worktrees, devtools listeners, and existing terminal sessions are retained; externally managed processes keep running. This action uses the last accepted manifest, so an invalid edit on disk does not block recovery. Launch or routing failures attempt to restore the previous stack and report any restoration errors; another stack restart remains available. Fixed-port conflicts require freeing the configured port or changing its manifest setting.
+Use **Restart Stack** in the Services panel or recovery overlay to reassign every managed automatic port. Devhost stops all managed services in reverse dependency order, rebuilds their port references and injected environments, and starts them in dependency order before refreshing routes. Fixed ports, selected worktrees, devtools listeners, and existing terminal sessions are retained; externally managed processes keep running. This action uses the last accepted manifest, so an invalid edit on disk does not block recovery. Launch or routing failures attempt to restore the previous stack and report any restoration errors; another stack restart remains available. Fixed-port conflicts require freeing the configured port or changing its manifest setting.
 
 ### Configuration Hot Reload
 

@@ -101,7 +101,7 @@ export const RestartFailure: Story = {
         "Failed to restart api: Service api exited with code 1.",
       );
       await waitFor(() => expect(canvas.getByRole("button", { name: "Restart api" })).toBeEnabled());
-      await userEvent.click(canvas.getByRole("button", { name: "Restart stack with new ports" }));
+      await userEvent.click(canvas.getByRole("button", { name: "Restart Stack" }));
       await expect(request).toHaveBeenLastCalledWith("/__devhost__/restart-stack", {
         method: "POST",
       });

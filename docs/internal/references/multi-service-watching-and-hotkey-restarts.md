@@ -1,6 +1,6 @@
 ---
 created_on: 2026-06-03 12:00
-last_modified: 2026-10-06 10:04
+last_modified: 2026-10-13 15:44
 status: current
 ---
 
@@ -48,7 +48,7 @@ The multi-service file watching and hotkey restart system has a Go backend and R
 
 Service file watches mark services changed; they do not restart them automatically. A separate manifest watcher reloads service configuration and include-glob membership. Reloads, service restarts, checkout refresh/switch operations, and full-stack restarts share the runtime operation lock.
 
-Individual manual or hotkey restarts preserve assigned automatic ports. An occupied automatic port leaves the service stopped with an error pointing to **Restart stack with new ports**. That action stops all managed services before relaunching them with fresh automatic ports, rebuilt command/environment references, and updated routes. Fixed ports, selected worktrees, control/document listeners, and terminal sessions are retained. External processes remain untouched, including unrelated listeners on an old service port.
+Individual manual or hotkey restarts preserve assigned automatic ports. An occupied automatic port leaves the service stopped with an error pointing to **Restart Stack**. That action stops all managed services before relaunching them with fresh automatic ports, rebuilt command/environment references, and updated routes. Fixed ports, selected worktrees, control/document listeners, and terminal sessions are retained. External processes remain untouched, including unrelated listeners on an old service port.
 
 The full-stack action uses the last accepted manifest, attempts restoration after launch or routing failure, and remains retryable if restoration fails. A missing selected checkout must be recovered through the picker before the stack can restart. See the [stack lifecycle guide](../../../packages/docs/src/content/docs/guides/stack-lifecycle.md) for reload boundaries and recovery guarantees.
 

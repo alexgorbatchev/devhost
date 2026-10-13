@@ -85,7 +85,7 @@ Its vital that when devtools are injected into the user's web application, CSS t
 
 ## Implementation intent
 
-- Keep **Restart stack with new ports** available in both Services and the crash recovery dialog. Use the dedicated stack endpoint, disable duplicate/conflicting restart actions while pending, report failures, and reload a recovery page after successful recovery. Individual service restart preserves its assigned port.
+- Keep **Restart Stack** available in both Services and the crash recovery dialog. Use the dedicated stack endpoint, disable duplicate/conflicting restart actions while pending, report failures, and reload a recovery page after successful recovery. Individual service restart preserves its assigned port.
 
 - `health.stoppedServices` lists the services a run left out. Keep them out of the service counts, dots, and rows: the Services panel reaches them through its **Stopped services** button and view, which closes by itself when the last one has started. The view's **Start** posts to `/__devhost__/start-service`; the started service arrives through the health stream, not the response. Disable **Start** while a service restarts, a repository switches, or the stack restarts, because devhost runs those operations one at a time.
 

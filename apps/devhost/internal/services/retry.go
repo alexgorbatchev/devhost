@@ -23,7 +23,7 @@ func validateAssignedAutoPort(service ResolvedService) error {
 }
 
 func assignedAutoPortConflict(service ResolvedService, err error) error {
-	return fmt.Errorf("service %s could not bind its assigned port %d; use Restart stack with new ports to recover: %w", service.Name, *service.Port, err)
+	return fmt.Errorf("service %s could not bind its assigned port %d; use Restart Stack to recover: %w", service.Name, *service.Port, err)
 }
 
 func ShouldRetryAutoPortStartup(service ResolvedService, startupError error, outputLines []string, retryCount int) bool {
