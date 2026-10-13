@@ -164,6 +164,9 @@ func TestManifestReloadChangesEnvironmentAndPreservesAutoPort(t *testing.T) {
 	assertRestartResponse(t, serverURL(original.AppPort, "/"), "original")
 	f.write(t, reloadServiceBody("web", "replacement", "reload.localhost"))
 	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reloaded") })
+	if !f.logs.contains("configuration reloaded: devhost.toml") {
+		t.Fatal("reload log omitted the root manifest")
+	}
 	next := readRestartRoute(t, path)
 	if next.AppPort != original.AppPort || next.DocumentInjectionPort != original.DocumentInjectionPort || next.DevtoolsControlPort != f.controlPort {
 		t.Fatalf("reload replaced ports: %#v -> %#v", original, next)
@@ -223,6 +226,9 @@ func TestManifestReloadReconcilesIncludesServicesRoutesAndClaims(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitForCondition(t, 5*time.Second, func() bool { return f.logs.count("configuration reloaded") == 1 })
+	if !f.logs.contains("configuration reloaded: devhost.toml, " + filepath.Join("services", "worker", "worker.toml")) {
+		t.Fatal("reload log omitted the included manifest")
+	}
 	workerRoute := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "worker.localhost_worker_2f.json"))
 	assertRestartResponse(t, serverURL(port, "/"), "worker")
 	if old := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "reload.localhost_web_2f.json")); old.AppPort != original.AppPort {
@@ -232,6 +238,9 @@ func TestManifestReloadReconcilesIncludesServicesRoutesAndClaims(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitForCondition(t, 5*time.Second, func() bool { return f.logs.count("configuration reloaded") == 2 })
+	if f.logs.count("configuration reloaded: devhost.toml\n") != 1 {
+		t.Fatal("reload log retained the deleted include")
+	}
 	if canConnectToPort(context.Background(), "127.0.0.1", port, minProbeTimeout) || canConnectToPort(context.Background(), "127.0.0.1", workerRoute.DocumentInjectionPort, minProbeTimeout) {
 		t.Fatal("removed service retained its listeners")
 	}

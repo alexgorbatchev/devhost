@@ -34,7 +34,7 @@ func (r *stackRuntime) reloadFromDisk(ctx context.Context, w *manifestWatcher) e
 	if err != nil {
 		return err
 	}
-	return r.reloadConfiguration(ctx, candidate)
+	return r.reloadConfiguration(ctx, candidate, inputs.Files)
 }
 
 func (r *stackRuntime) toolContext(name string) (devtools.ToolContext, error) {
