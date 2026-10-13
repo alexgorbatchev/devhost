@@ -65,6 +65,17 @@ export interface IMediaInfo {
   height: number;
 }
 
+// Picks the moment of a film its poster shows.
+export type PosterSeconds = (media: IMediaInfo) => number;
+
+export interface IDemoVideoBlock {
+  marker: string;
+  name: string;
+  label: string;
+  media: IMediaInfo;
+  transcript: string[];
+}
+
 export interface IGuideTerminalStep {
   command: string;
   waitPattern: string;

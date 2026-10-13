@@ -14,6 +14,7 @@ import { prepareDemoCaddy } from "./prepareDemoCaddy";
 import { preparePromoRenderer } from "./preparePromoRenderer";
 import { recordBrowserScene } from "./recordBrowserScene";
 import { renderGuideFilm } from "./renderGuideFilm";
+import { publishPromoDemo } from "./publishPromoDemo";
 import { renderPromo } from "./renderPromo";
 import { renderPromoComposition } from "./renderPromoComposition";
 import { runCommand } from "./runCommand";
@@ -173,6 +174,8 @@ export async function recordDemo(signal: AbortSignal, selectedScene: string, gui
         render: renderPromoComposition,
         signal,
       });
+      await publishPromoDemo(repositoryPath, runtime.directoryPath, join(import.meta.dir, "promo"));
+      console.log("Wrote promo media: packages/docs/public/demos/promo.mp4");
     } else {
       console.log("Assembling captioned MP4...");
       videoPath = await assembleDemo(runtime.directoryPath, clips);

@@ -67,6 +67,41 @@ describe("readDemoMedia", () => {
     ]);
   });
 
+  test("lists the promo once, as the docs site's copy, when the docs media include it", async () => {
+    await writeMedia(".tmp/demos/recording-first/devhost-demo.mp4", 1_000);
+    await writeMedia(".tmp/demos/recording-first/promo-footage.json", 1_000);
+    await writePins({ promo: "published promo" });
+    await writeMedia("packages/docs/public/demos/promo.mp4", 900, "published promo");
+    await writeMedia("packages/docs/public/demos/promo.vtt", 900);
+    await writeMedia("packages/docs/public/demos/annotations.mp4", 600, "a new render");
+
+    const media = await readDemoMedia(repositoryDirectory);
+
+    expect(media.videos).toEqual([
+      {
+        id: "promo",
+        kind: "promo",
+        title: "Promo",
+        state: "published",
+        src: "/demo-videos/guides/promo.mp4",
+        publishedSrc: releaseAddress("promo", "published promo"),
+        captions: "/demo-videos/guides/promo.vtt",
+        modified: "1970-01-01T00:15:00.000Z",
+        bytes: 15,
+      },
+      {
+        id: "guide-annotations",
+        kind: "guide",
+        title: "annotations",
+        state: "unpublished",
+        src: "/demo-videos/guides/annotations.mp4",
+        modified: "1970-01-01T00:10:00.000Z",
+        bytes: 12,
+      },
+    ]);
+    expect([...media.files.keys()]).not.toContain("/demo-videos/recordings/recording-first/devhost-demo.mp4");
+  });
+
   test("lists each guide once and tells a published video from a render that is not published", async () => {
     await writePins({ annotations: "published annotations", devtools: "published devtools" });
     await writeMedia("packages/docs/public/demos/annotations.mp4", 600, "published annotations");

@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { createLandingPage } from "./src/landingPage/createLandingPage";
+
 interface IMarkdownDocument {
   title: string;
   body: string;
@@ -11,6 +13,7 @@ const repositoryRootPath = path.resolve(docsPackagePath, "../..");
 const docsContentPath = path.join(docsPackagePath, "src/content/docs");
 const readmeSourcePath = path.join(repositoryRootPath, "apps/devhost/README.md");
 const manifestReferenceSourcePath = path.join(repositoryRootPath, "apps/devhost/devhost.example.toml");
+const promoBlockPath = path.join(docsPackagePath, "src/promoDemo.html");
 const publishedDocsBaseUrl = "https://alexgorbatchev.github.io/devhost";
 
 syncDocsSite();
@@ -29,7 +32,12 @@ function syncLandingPage(): void {
   );
   const indexPath: string = path.join(docsContentPath, "index.mdx");
 
-  fs.writeFileSync(indexPath, createLandingPage(readmeDocument.title, rewrittenBody));
+  // `just demo record` and `just demo promo` write this block beside the promo's media; it is committed with its pin.
+  const promoBlock: string | undefined = fs.existsSync(promoBlockPath)
+    ? fs.readFileSync(promoBlockPath, "utf8")
+    : undefined;
+
+  fs.writeFileSync(indexPath, createLandingPage(readmeDocument.title, rewrittenBody, promoBlock));
 }
 
 function syncManifestReference(): void {
@@ -232,12 +240,6 @@ function trimBlankLines(lines: string[]): string[] {
 }
 
 function createMarkdownPage(title: string, body: string): string {
-  const trimmedBody: string = body.trim();
-
-  return `---\ntitle: ${JSON.stringify(title)}\n---\n\n${trimmedBody}\n`;
-}
-
-function createLandingPage(title: string, body: string): string {
   const trimmedBody: string = body.trim();
 
   return `---\ntitle: ${JSON.stringify(title)}\n---\n\n${trimmedBody}\n`;

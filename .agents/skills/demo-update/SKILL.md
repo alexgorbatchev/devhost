@@ -9,7 +9,7 @@ Read `docs/internal/references/demo-recording.md` first. It is the reference for
 
 The recorder lives in `packages/devhost-ui/scripts/demo/`. There are two kinds of demo:
 
-- **The promo**: one hand-timed HyperFrames project under `promo/`, rendered by `just demo record` from four real scenes (`startup`, `overview`, `annotations`, `query`).
+- **The promo**: one hand-timed HyperFrames project under `promo/`, rendered by `just demo record` from four real scenes (`startup`, `overview`, `annotations`, `query`). It opens the docs landing page; every render writes its docs copy and the landing-page block `packages/docs/src/promoDemo.html`.
 - **Twelve guide films**: one template under `guide/`, timed automatically from each guide's narration. Three are browser films (`devtools`, `annotations`, `react-highlight`); nine are terminal films scripted in `createGuideTerminalScene.ts`.
 
 ## 1. Decide what is out of date
@@ -56,7 +56,7 @@ A finished render is not a verified film.
 ## 5. Review, publish, commit
 
 1. The user reviews the films on the playground's `/videos` page. Wait for their approval.
-2. After approval: `just docs publish-media`, then commit `packages/docs/demo-media.json` together with the guide's page, poster, and captions.
+2. After approval: `just docs publish-media`, then commit `packages/docs/demo-media.json` together with the guide's page, poster, and captions. For the promo, the files beside the pin are `packages/docs/src/promoDemo.html`, `promo.webp`, and `promo.vtt`.
 3. `just docs check` passes again once the videos on disk are the pinned ones.
 4. The films reach the docs site with the next CLI release, which deploys the docs from its tag. Merging to `main` does not deploy them.
 
@@ -65,7 +65,7 @@ Until step 2, leave the docs media uncommitted. The committed pins, pages, poste
 ## Do not
 
 - Do not publish or pin a video the user has not approved. `just docs publish-media` uploads to a public release.
-- Do not commit an MP4. Guide videos are release assets; the promo stays under `.tmp/demos/`.
+- Do not commit an MP4. The guide videos and the promo's docs copy are release assets; master renders stay under `.tmp/demos/`.
 - Do not commit a guide's page, poster, or captions before its video is published.
 - Do not re-create the interface in a composition. Films show real recordings; a composition declares the footage it needs with `data-footage`.
 - Do not re-record every demo for a change that touches one scene. Each recording takes minutes and the promo bills a Pi request.

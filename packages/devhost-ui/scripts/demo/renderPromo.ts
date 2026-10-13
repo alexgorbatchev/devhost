@@ -6,6 +6,7 @@ import { createPromoCaptions } from "./createPromoCaptions";
 import { findPromoRecording } from "./findPromoRecording";
 import { readMediaInfo } from "./readMediaInfo";
 import { preparePromoRenderer } from "./preparePromoRenderer";
+import { publishPromoDemo } from "./publishPromoDemo";
 import { readPromoFootageRequests } from "./readPromoFootageRequests";
 import { readPromoSources } from "./readPromoSources";
 import { renderPromoComposition } from "./renderPromoComposition";
@@ -129,6 +130,8 @@ if (import.meta.main) {
       signal: controller.signal,
     });
     console.log(`Promo saved: ${outputPath}`);
+    await publishPromoDemo(resolve(import.meta.dir, "../../../.."), directoryPath, projectSourcePath);
+    console.log("Wrote promo media: packages/docs/public/demos/promo.mp4");
   } catch (error) {
     console.error(error);
     process.exitCode = 1;

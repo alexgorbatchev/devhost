@@ -2,6 +2,8 @@ import { basename, dirname } from "node:path";
 import { DEMO_VIDEOS_PATH } from "./constants";
 import type { IDemoMedia, IDemoVideo } from "./types";
 
+type DemoVideoCard = Pick<IDemoVideo, "id" | "kind" | "title">;
+
 interface IPublishedPin {
   asset: string;
   sha256: string;
@@ -53,6 +55,9 @@ async function readPublishedVideos(repositoryDirectory: URL): Promise<Map<string
   return published;
 }
 
+const promoName = "promo";
+const promoCard: DemoVideoCard = { id: "promo", kind: "promo", title: "Promo" };
+
 // Reads the disk on every call, so a new render shows on reload.
 export async function readDemoMedia(repositoryDirectory: URL): Promise<IDemoMedia> {
   const media: IDemoMedia = { videos: [], files: new Map() };
@@ -61,6 +66,15 @@ export async function readDemoMedia(repositoryDirectory: URL): Promise<IDemoMedi
     return `${urlPath}${file}`;
   };
 
+  // `just demo guides` writes each guide's video, poster and captions into the docs site's public directory, and
+  // `just docs media` downloads the published videos there. A promo render writes its copy for the landing page
+  // there as well.
+  const guidesDirectory = new URL("packages/docs/public/demos/", repositoryDirectory);
+  const guidesPath = `${DEMO_VIDEOS_PATH}guides/`;
+  const published = await readPublishedVideos(repositoryDirectory);
+  const onDisk = (await scan(guidesDirectory, "*.mp4")).map((file) => basename(file, ".mp4"));
+  const names = [...new Set([...onDisk, ...published.keys()])].sort();
+
   // `just demo record` and `just demo promo` render the promo into a run's directory and note its footage there.
   // Runs of one scene or one guide render a video as well, and earlier promo renders remain on disk; neither is
   // the current promo.
@@ -68,7 +82,9 @@ export async function readDemoMedia(repositoryDirectory: URL): Promise<IDemoMedi
   const runsPath = `${DEMO_VIDEOS_PATH}recordings/`;
   let promo: IDemoVideo | undefined;
   let promoRun = "";
-  for (const footage of await scan(runsDirectory, "recording-*/promo-footage.json")) {
+  // Without a docs copy, the promo is the latest render a run holds.
+  const footageFiles = names.includes(promoName) ? [] : await scan(runsDirectory, "recording-*/promo-footage.json");
+  for (const footage of footageFiles) {
     const run = dirname(footage);
     const video = Bun.file(new URL(`${run}/devhost-demo.mp4`, runsDirectory));
     if (!(await video.exists())) continue;
@@ -76,9 +92,7 @@ export async function readDemoMedia(repositoryDirectory: URL): Promise<IDemoMedi
     if (promo?.modified !== undefined && promo.modified >= modified) continue;
     promoRun = run;
     promo = {
-      id: "promo",
-      kind: "promo",
-      title: "Promo",
+      ...promoCard,
       state: "local",
       src: `${runsPath}${run}/devhost-demo.mp4`,
       modified,
@@ -93,22 +107,16 @@ export async function readDemoMedia(repositoryDirectory: URL): Promise<IDemoMedi
     media.videos.push(promo);
   }
 
-  // `just demo guides` writes each guide's video, poster and captions into the docs site's public directory, and
-  // `just docs media` downloads the published videos there.
-  const guidesDirectory = new URL("packages/docs/public/demos/", repositoryDirectory);
-  const guidesPath = `${DEMO_VIDEOS_PATH}guides/`;
-  const published = await readPublishedVideos(repositoryDirectory);
-  const onDisk = (await scan(guidesDirectory, "*.mp4")).map((file) => basename(file, ".mp4"));
-  for (const name of [...new Set([...onDisk, ...published.keys()])].sort()) {
+  // The promo comes first, and its docs copy is the one the site shows.
+  for (const name of [...names.filter((name) => name === promoName), ...names.filter((name) => name !== promoName)]) {
+    const card: DemoVideoCard = name === promoName ? promoCard : { id: `guide-${name}`, kind: "guide", title: name };
     const pin = published.get(name);
     const file = Bun.file(new URL(`${name}.mp4`, guidesDirectory));
     let guide: IDemoVideo;
     if (onDisk.includes(name)) {
       const sha256 = new Bun.CryptoHasher("sha256").update(await file.bytes()).digest("hex");
       guide = {
-        id: `guide-${name}`,
-        kind: "guide",
-        title: name,
+        ...card,
         state: pin?.sha256 === sha256 ? "published" : "unpublished",
         src: list(guidesDirectory, guidesPath, `${name}.mp4`),
         modified: new Date(file.lastModified).toISOString(),
@@ -116,7 +124,7 @@ export async function readDemoMedia(repositoryDirectory: URL): Promise<IDemoMedi
       };
     } else if (pin !== undefined) {
       // A checkout that has not run `just docs media` still shows the guide: GitHub serves it.
-      guide = { id: `guide-${name}`, kind: "guide", title: name, state: "remote", src: pin.asset, bytes: pin.bytes };
+      guide = { ...card, state: "remote", src: pin.asset, bytes: pin.bytes };
     } else {
       continue;
     }

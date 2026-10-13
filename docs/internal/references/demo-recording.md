@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-12 11:30
+last_modified: 2026-10-12 14:30
 status: current
 ---
 
@@ -45,6 +45,8 @@ Each run prints its unique directory under `.tmp/demos/recording-*`. Open `devho
 The recorder captures terminal startup, the log minimap, the toolbar and worktree picker, Alt-click annotation, the real Pi terminal and live source edit, then native TanStack Query. Query is minimized before the final page hold. Full-sequence scenes are captured at 2560 × 1440, two device pixels per CSS pixel, so the promo can zoom into the devtools; the page still lays out at 1280 × 720. Gold rings mark actual mouse clicks. The browser requests reduced motion and verifies that the Bun background and React logo animations are disabled.
 
 The promo selects parts of those recordings and never re-creates the interface. A recording longer than its slot plays faster; a shorter one plays at its real speed and holds its last frame. The Pi segment shows the first seconds of the agent's run and carries an on-screen note that the recording is edited for length.
+
+Every promo render also writes the copy the docs landing page shows: a web encode, the end card as poster, and the captions as `packages/docs/public/demos/promo.{mp4,webp,vtt}`, plus the player and transcript block `packages/docs/src/promoDemo.html`. The transcript is the narration. `packages/docs/sync.ts` opens the landing page with that block. Publish and commit them as for a guide film: see [Where guide videos are stored](#where-guide-videos-are-stored).
 
 To render the promo again without capturing, reuse the footage of an earlier run:
 
