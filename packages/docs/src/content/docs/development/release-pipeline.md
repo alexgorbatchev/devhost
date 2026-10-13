@@ -4,7 +4,7 @@ title: "Release pipeline"
 
 A `devhost` release publishes two things from one Git tag: the binaries and this documentation site. The site is deployed only by a release, so it describes the released version and not unreleased work on `main`.
 
-The guide videos follow a separate, manual track. No workflow records or renders video. A release downloads the videos that were published earlier and checks each against the hash pinned in the repository.
+The guide videos and the promo on the landing page follow a separate, manual track. No workflow records or renders video. A release downloads the videos that were published earlier and checks each against the hash pinned in the repository.
 
 ## Pipeline
 
@@ -69,7 +69,7 @@ A tag carries its pins. The site built for a release therefore shows the videos 
 New videos need a Linux host with the recording tools, a coding-agent request, an ElevenLabs key, and a review of the result. For that reason they are made by hand before the release:
 
 1. `just demo audio-guides` generates the narration of changed lines.
-2. `just demo guides` records each guide and renders its film.
+2. `just demo guides` records each guide and renders its film. `just demo record` does the same for the promo.
 3. After the films are reviewed, `just docs publish-media` uploads them and rewrites their pins.
 4. The pins, posters, captions, and guide pages are committed together.
 

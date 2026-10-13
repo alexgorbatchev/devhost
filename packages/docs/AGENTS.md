@@ -16,7 +16,7 @@ Public Astro + Starlight docs workspace for `devhost`, published to GitHub Pages
 
 ## Local conventions
 
-- `apps/devhost/README.md` is the source of truth for the landing page.
+- `apps/devhost/README.md` is the source of truth for the landing page. `sync.ts` opens the page with the promo's player when `src/promoDemo.html` exists; a promo render writes that block together with `public/demos/promo.{mp4,webp,vtt}`. Commit the block, poster, captions, and pin together, and never without the pin: the page would name a video the build cannot fetch.
 - `apps/devhost/devhost.example.toml` is the source of truth for the manifest reference page.
 - `src/content/docs/guides/**/*.md` is the source of truth for the Guides section.
 - Every guide starts with a native video player and collapsed text transcript. Keep controls, inline playback, and `preload="none"`; use full HTTPS URLs under `https://alexgorbatchev.github.io/devhost/demos/` for its MP4, WebP poster, and English VTT captions. The recorder replaces only the `guide-demo` block and updates the `public/demos/` assets. Guide prose remains usable by agents without watching videos.

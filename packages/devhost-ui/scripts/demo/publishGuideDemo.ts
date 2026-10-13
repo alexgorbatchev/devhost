@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
-import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { readMediaInfo } from "./readMediaInfo";
-import { runCommand } from "./runCommand";
+import { createDemoVideoBlock } from "./createDemoVideoBlock";
+import { exportDemoMedia } from "./exportDemoMedia";
 
 export async function publishGuideDemo(repositoryPath: string, slug: string, recordingPath: string): Promise<void> {
   assert(/^[a-z][a-z0-9-]*$/.test(slug), "Invalid guide slug");
@@ -10,8 +9,6 @@ export async function publishGuideDemo(repositoryPath: string, slug: string, rec
   const original = await Bun.file(guidePath).text();
   const frontmatterEnd = original.indexOf("\n---\n", 4);
   assert(original.startsWith("---\n") && frontmatterEnd > 0, "Guide has no frontmatter");
-  const videoPath = join(recordingPath, "devhost-demo.mp4");
-  const media = await readMediaInfo(videoPath);
   const metadata: unknown = await Bun.file(join(recordingPath, "clips.json")).json();
   assert(typeof metadata === "object" && metadata !== null && "clips" in metadata && Array.isArray(metadata.clips));
   const captions = metadata.clips.map((clip: unknown): string => {
@@ -19,72 +16,14 @@ export async function publishGuideDemo(repositoryPath: string, slug: string, rec
     return clip.caption;
   });
   assert(captions.length > 0, "Demo has no transcript");
-  const publicPath = join(repositoryPath, "packages/docs/public/demos");
-  await mkdir(publicPath, { recursive: true });
-  await runCommand([
-    "ffmpeg",
-    "-v",
-    "error",
-    "-y",
-    "-ss",
-    String(Math.min(2, media.duration / 2)),
-    "-i",
-    videoPath,
-    "-frames:v",
-    "1",
-    "-c:v",
-    "libwebp",
-    join(publicPath, `${slug}.webp`),
-  ]);
-  await runCommand([
-    "ffmpeg",
-    "-v",
-    "error",
-    "-y",
-    "-i",
-    join(recordingPath, "devhost-demo.srt"),
-    join(publicPath, `${slug}.vtt`),
-  ]);
-  // The render is a master of several megabytes; the page gets an encode a quarter of that size, with the same
-  // picture and sound, that starts playing before it has downloaded.
-  await runCommand([
-    "ffmpeg",
-    "-v",
-    "error",
-    "-y",
-    "-i",
-    videoPath,
-    "-c:v",
-    "libx264",
-    "-preset",
-    "slow",
-    "-crf",
-    "27",
-    "-pix_fmt",
-    "yuv420p",
-    "-c:a",
-    "aac",
-    "-b:a",
-    "128k",
-    "-movflags",
-    "+faststart",
-    join(publicPath, `${slug}.mp4`),
-  ]);
-  const url = `https://alexgorbatchev.github.io/devhost/demos/${slug}`;
-  const block = [
-    "<!-- guide-demo -->",
-    `<video controls playsinline preload="none" width="${media.width}" height="${media.height}" style="width:100%;height:auto" poster="${url}.webp" aria-label="${slug.replaceAll("-", " ")} demo">`,
-    `  <source src="${url}.mp4" type="video/mp4">`,
-    `  <track kind="captions" src="${url}.vtt" srclang="en" label="English">`,
-    `  <a href="${url}.mp4">Watch the demo video</a>.`,
-    "</video>",
-    "",
-    "<details>",
-    "<summary>Demo transcript</summary>",
-    ...captions.map((caption) => `<p>${Bun.escapeHTML(caption)}</p>`),
-    "</details>",
-    "<!-- /guide-demo -->",
-  ].join("\n");
+  const media = await exportDemoMedia(repositoryPath, slug, recordingPath, ({ duration }) => Math.min(2, duration / 2));
+  const block = createDemoVideoBlock({
+    marker: "guide-demo",
+    name: slug,
+    label: `${slug.replaceAll("-", " ")} demo`,
+    media,
+    transcript: captions,
+  });
   const body = original
     .slice(frontmatterEnd + 5)
     .replace(/\n?<!-- guide-demo -->[\s\S]*?<!-- \/guide-demo -->\n?/u, "")
