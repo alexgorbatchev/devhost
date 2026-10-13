@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -344,12 +345,15 @@ func (r *stackRuntime) switchWorktreeLocked(ctx context.Context, id, path string
 			oldPath = repo.SelectedPath
 		}
 	}
+	transition := fmt.Sprintf("%s -> %s", filepath.Base(oldPath), filepath.Base(path))
 	next, err := previous.prepare(id, path, *r.manifest)
 	if err != nil {
+		r.logFailure("devhost", fmt.Errorf("Worktree switch failed: %s: %w", transition, err))
 		return err
 	}
+	writeLogLine(r.options.LogWriter, r.manifest.Name, "Switching worktree: "+transition+". Restarting stack.")
 	r.publish()
-	err = r.applyConfiguration(ctx, *next.configuration, configurationChange{worktreeSwitch: true, restartStack: true, message: "worktree switched"})
+	err = r.applyConfiguration(ctx, *next.configuration, configurationChange{worktreeSwitch: true, restartStack: true, message: "worktree switched: " + transition})
 	if err != nil {
 		err = joinCleanupError(err, previous.restoreSelection(saved))
 		previous.mu.Lock()
@@ -358,6 +362,7 @@ func (r *stackRuntime) switchWorktreeLocked(ctx context.Context, id, path string
 		}
 		previous.mu.Unlock()
 		r.finishReloadWorktrees()
+		r.logFailure("devhost", fmt.Errorf("Worktree switch failed: %s: %w", transition, err))
 	}
 	r.publish()
 	return err
