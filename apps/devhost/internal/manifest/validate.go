@@ -110,10 +110,13 @@ func validateAnnotation(rawValue any, manifestDirectoryPath string, schemaIssues
 	if !ok {
 		return ValidatedAnnotation{}
 	}
-	allowKeys(value, []string{"actions", "defaultAction", "tempDir"}, "annotation", schemaIssues)
+	allowKeys(value, []string{"agent", "actions", "defaultAction", "tempDir"}, "annotation", schemaIssues)
 	var tempDir *string
 	if configured, ok := readOptionalNonEmptyString(value, "tempDir", schemaIssues); ok {
 		tempDir = &configured
+	}
+	if _, hasAgent := value["agent"]; hasAgent {
+		return validateAnnotationAgent(value, tempDir, schemaIssues)
 	}
 	configuredDefaultActionID, hasConfiguredDefaultActionID := readOptionalNonEmptyString(value, "defaultAction", schemaIssues)
 
@@ -170,6 +173,31 @@ func validateAnnotation(rawValue any, manifestDirectoryPath string, schemaIssues
 	}
 
 	return ValidatedAnnotation{Actions: actions, DefaultActionID: defaultActionID, TempDir: tempDir}
+}
+
+func validateAnnotationAgent(value map[string]any, tempDir *string, issues *[]string) ValidatedAnnotation {
+	for _, key := range []string{"actions", "defaultAction"} {
+		if _, exists := value[key]; exists {
+			*issues = append(*issues, "annotation.agent cannot be combined with annotation."+key+".")
+		}
+	}
+	adapter, ok := readOptionalNonEmptyString(value, "agent", issues)
+	if !ok {
+		return ValidatedAnnotation{}
+	}
+	label, ok := adapterLabels[adapter]
+	if !ok {
+		*issues = append(*issues, "annotation.agent must be one of pi, claude-code, opencode, or codex.")
+		return ValidatedAnnotation{}
+	}
+	return ValidatedAnnotation{
+		Actions: []ValidatedAnnotationAction{{
+			ID: defaultAnnotationActionID, Kind: "agent", Label: label,
+			Agent: ValidatedAgent{Kind: adapter}, TempDir: tempDir,
+		}},
+		DefaultActionID: defaultAnnotationActionID,
+		TempDir:         tempDir,
+	}
 }
 
 func validateAnnotationAction(index int, value map[string]any, manifestDirectoryPath string, schemaIssues *[]string, validationIssues *[]string) ValidatedAnnotationAction {

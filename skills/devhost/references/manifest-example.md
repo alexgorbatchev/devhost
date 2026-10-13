@@ -116,6 +116,10 @@ restartServices = "alt+ctrl+r"
 idleTimeout = "1h"
 
 # Annotation actions configuration
+# For one built-in agent, replace the annotation configuration below with:
+# [annotation]
+# agent = "codex" # pi, claude-code, opencode, or codex
+# Optional tempDir applies; actions and defaultAction require the detailed form instead.
 [annotation]
 defaultAction = "fix"
 # Optional; omit to use the system temp directory ($TMPDIR on Unix, otherwise /tmp).
