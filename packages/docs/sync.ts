@@ -33,11 +33,11 @@ function syncLandingPage(): void {
   const indexPath: string = path.join(docsContentPath, "index.mdx");
 
   // `just demo record` and `just demo promo` write this block beside the promo's media; it is committed with its pin.
-  const promoBlock: string | undefined = fs.existsSync(promoBlockPath)
-    ? fs.readFileSync(promoBlockPath, "utf8")
+  const promoBlockImportPath: string | undefined = fs.existsSync(promoBlockPath)
+    ? path.relative(docsContentPath, promoBlockPath)
     : undefined;
 
-  fs.writeFileSync(indexPath, createLandingPage(readmeDocument.title, rewrittenBody, promoBlock));
+  fs.writeFileSync(indexPath, createLandingPage(readmeDocument.title, rewrittenBody, promoBlockImportPath));
 }
 
 function syncManifestReference(): void {
