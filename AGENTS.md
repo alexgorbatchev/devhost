@@ -87,7 +87,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 ## Shipping
 
 - CI: `.github/workflows/ci.yml` runs `just check` on every push to `main` and on pull requests. A second job runs `just devhost check` on macOS and reports without failing the workflow until it passes reliably.
-- Docs deploy entrypoint: a CLI release. After the release exists, `.github/workflows/publish.yml` calls `.github/workflows/docs.yml`, which builds `packages/docs` from the release tag and publishes it to GitHub Pages. A push to `main` does not deploy, so the published docs describe the released version. To publish a docs correction without a release, run the `Deploy docs to GitHub Pages` workflow by hand from the release tag or a branch cut from it; a run from `main` publishes unreleased documentation.
+- Docs deploy entrypoint: a CLI release. After the release exists, `.github/workflows/publish.yml` calls `.github/workflows/docs.yml`, which builds `packages/docs` from the release tag and publishes it to GitHub Pages. A push to `main` does not deploy, so the published docs describe the released version. A docs correction is published with the next release. The `github-pages` environment accepts deployments only from `main` and from `v*` tags, so a run of the `Deploy docs to GitHub Pages` workflow by hand can redeploy a release tag unchanged or deploy `main`, which also publishes the unreleased documentation `main` holds; it cannot deploy a correction branch.
 - CLI release entrypoint: push a tag like `v0.0.2`. `apps/devhost/RELEASE.md` and `.github/workflows/publish.yml` are the authoritative GitHub Release binary procedure.
 
 ## File Conventions
