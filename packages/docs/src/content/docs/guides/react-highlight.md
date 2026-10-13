@@ -5,7 +5,7 @@ sidebar:
 ---
 
 <!-- guide-demo -->
-<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/react-highlight.webp" aria-label="react highlight demo">
+<video controls playsinline preload="none" width="1920" height="1080" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/react-highlight.webp" aria-label="react highlight demo">
   <source src="https://alexgorbatchev.github.io/devhost/demos/react-highlight.mp4" type="video/mp4">
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/react-highlight.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/react-highlight.mp4">Watch the demo video</a>.
@@ -13,11 +13,12 @@ sidebar:
 
 <details>
 <summary>Demo transcript</summary>
-<p>Connect the JSX cursor in Neovim to your live page.</p>
-<p>Move to the heading in Neovim. Its live DOM element is highlighted.</p>
-<p>Move the JSX cursor again. The browser highlight follows.</p>
-<p>Source-map matching also connects JSX images to the live page.</p>
-<p>Move outside JSX to clear the highlight. Your page stays interactive.</p>
+<p>Connect your Neovim cursor to the page running in your browser.</p>
+<p>Start Neovim with the devhost launcher. Here, it runs off screen.</p>
+<p>Move the Neovim cursor to the heading. The page highlights it.</p>
+<p>Move the cursor again, and the highlight follows.</p>
+<p>Images work too. Source maps match the JSX to the page.</p>
+<p>Leave the JSX, and the highlight clears.</p>
 </details>
 <!-- /guide-demo -->
 

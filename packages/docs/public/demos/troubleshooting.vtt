@@ -1,4 +1,34 @@
 WEBVTT
 
-00:00.000 --> 00:40.200
-A rejected manifest leaves the running stack intact. Correct it and save again.
+00:00.350 --> 00:05.180
+Save a broken manifest and the running stack stays up. Fix it, save again.
+
+00:05.630 --> 00:07.441
+A stack with one service.
+
+00:08.830 --> 00:09.852
+Start the stack.
+
+00:10.302 --> 00:11.556
+The service is running.
+
+00:13.342 --> 00:15.014
+Now save an invalid port.
+
+00:15.464 --> 00:17.925
+devhost rejects the reload and says why.
+
+00:19.984 --> 00:21.934
+The running stack still answers.
+
+00:24.144 --> 00:25.909
+Save a corrected manifest.
+
+00:26.358 --> 00:28.123
+This time the reload is applied.
+
+00:29.918 --> 00:32.286
+The service shows the new configuration.
+
+00:34.358 --> 00:35.519
+Stop the stack.

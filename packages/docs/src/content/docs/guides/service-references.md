@@ -5,7 +5,7 @@ sidebar:
 ---
 
 <!-- guide-demo -->
-<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/service-references.webp" aria-label="service references demo">
+<video controls playsinline preload="none" width="1920" height="1080" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/service-references.webp" aria-label="service references demo">
   <source src="https://alexgorbatchev.github.io/devhost/demos/service-references.mp4" type="video/mp4">
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/service-references.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/service-references.mp4">Watch the demo video</a>.
@@ -13,7 +13,12 @@ sidebar:
 
 <details>
 <summary>Demo transcript</summary>
-<p>Resolve the API&#x27;s assigned port before starting its consumer.</p>
+<p>Point one service at another, even when its port is assigned at start.</p>
+<p>The API address is a reference, not a fixed port.</p>
+<p>Start the stack.</p>
+<p>devhost fills in the API&#x27;s port and starts the API first.</p>
+<p>The web service called the API at the resolved address.</p>
+<p>One command stops both services.</p>
 </details>
 <!-- /guide-demo -->
 

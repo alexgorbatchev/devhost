@@ -1,4 +1,31 @@
 WEBVTT
 
-00:00.000 --> 00:33.433
-Route a published Docker port. Its lifecycle stays with Docker.
+00:00.350 --> 00:06.062
+Give a Docker container a local HTTPS hostname. Docker still starts and stops it.
+
+00:06.512 --> 00:10.831
+This service is unmanaged: devhost routes to it but never starts it.
+
+00:11.281 --> 00:12.906
+Docker starts the container.
+
+00:14.441 --> 00:17.367
+Its port is published on the host's loopback address.
+
+00:17.817 --> 00:19.257
+Start the stack.
+
+00:19.706 --> 00:24.675
+devhost starts no process. It publishes the container's HTTPS address.
+
+00:25.125 --> 00:28.097
+The container answers on its HTTPS hostname.
+
+00:30.205 --> 00:31.970
+Stopping the stack removes the route.
+
+00:32.885 --> 00:34.510
+The container is still running.
+
+00:36.845 --> 00:38.795
+Removing it is Docker's job.

@@ -5,7 +5,7 @@ sidebar:
 ---
 
 <!-- guide-demo -->
-<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/devtools.webp" aria-label="devtools demo">
+<video controls playsinline preload="none" width="1920" height="1080" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/devtools.webp" aria-label="devtools demo">
   <source src="https://alexgorbatchev.github.io/devhost/demos/devtools.mp4" type="video/mp4">
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/devtools.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/devtools.mp4">Watch the demo video</a>.
@@ -13,10 +13,11 @@ sidebar:
 
 <details>
 <summary>Demo transcript</summary>
-<p>Hover the minimap to see live output from your services.</p>
-<p>Your stack and services are right in the toolbar.</p>
-<p>Browse your repository&#x27;s worktrees without leaving the page.</p>
-<p>Native Query devtools are here when you need them.</p>
+<p>Optional devtools put your stack&#x27;s logs and controls inside the page.</p>
+<p>Hover the log minimap for real-time output from your services.</p>
+<p>The Services panel lists every service, each with a restart control.</p>
+<p>Search your Git worktrees without leaving the page.</p>
+<p>TanStack Query&#x27;s own devtools open from the same toolbar.</p>
 </details>
 <!-- /guide-demo -->
 

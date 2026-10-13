@@ -1,4 +1,22 @@
 WEBVTT
 
-00:00.000 --> 00:25.133
+00:00.350 --> 00:04.483
 Each package owns its services. The root starts them together.
+
+00:04.933 --> 00:09.856
+The root manifest declares no services. It includes each package's manifest.
+
+00:10.306 --> 00:12.535
+Each package declares its own service.
+
+00:14.426 --> 00:15.541
+Start from the root.
+
+00:15.990 --> 00:18.173
+devhost merges them into one stack.
+
+00:18.790 --> 00:21.809
+The merged stack answers on its HTTPS hostname.
+
+00:24.230 --> 00:25.530
+And it stops as one.

@@ -1,4 +1,22 @@
 WEBVTT
 
-00:00.000 --> 00:25.833
-One proxy. Local HTTPS domains. Route each service by path.
+00:00.350 --> 00:05.783
+One proxy. Local HTTPS hostnames. Route each service by path.
+
+00:06.233 --> 00:09.577
+Two services share one hostname, split by path.
+
+00:10.033 --> 00:11.055
+Start the stack.
+
+00:11.505 --> 00:15.267
+devhost starts both and publishes an HTTPS address for each.
+
+00:15.716 --> 00:18.224
+The hostname alone reaches the web service.
+
+00:21.036 --> 00:23.497
+The API path reaches the API service.
+
+00:25.876 --> 00:28.012
+One command stops both services.

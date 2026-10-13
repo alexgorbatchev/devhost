@@ -5,7 +5,7 @@ sidebar:
 ---
 
 <!-- guide-demo -->
-<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/managed-daemon-style-services.webp" aria-label="managed daemon style services demo">
+<video controls playsinline preload="none" width="1920" height="1080" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/managed-daemon-style-services.webp" aria-label="managed daemon style services demo">
   <source src="https://alexgorbatchev.github.io/devhost/demos/managed-daemon-style-services.mp4" type="video/mp4">
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/managed-daemon-style-services.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/managed-daemon-style-services.mp4">Watch the demo video</a>.
@@ -13,7 +13,13 @@ sidebar:
 
 <details>
 <summary>Demo transcript</summary>
-<p>Own a background service through explicit start, status, and stop commands.</p>
+<p>devhost starts a background daemon, checks on it, and stops it.</p>
+<p>This daemon has three commands: start, status, and stop.</p>
+<p>Start the stack.</p>
+<p>devhost runs the start command and waits for the health check.</p>
+<p>The daemon answers on its HTTPS hostname.</p>
+<p>Stopping the stack runs the daemon&#x27;s stop command.</p>
+<p>The daemon is no longer running.</p>
 </details>
 <!-- /guide-demo -->
 

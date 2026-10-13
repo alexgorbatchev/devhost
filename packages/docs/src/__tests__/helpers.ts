@@ -13,6 +13,14 @@ const server = Bun.serve({
   port: 0,
   fetch: async (request): Promise<Response> => {
     const path = new URL(request.url).pathname;
+    if (path === "/devhost/") {
+      // The landing page opens with the block a promo render wrote; `sync.ts` puts it before the README's text.
+      const block = await Bun.file(join(packagePath, "src/promoDemo.html")).text();
+      return new Response(
+        `<!doctype html><html><head><title>devhost</title></head><body><main>${block}</main></body></html>`,
+        { headers: { "Content-Type": "text/html" } },
+      );
+    }
     const guide = path.match(/^\/devhost\/guides\/([a-z-]+)\/$/)?.[1];
     if (guide && slugs.includes(guide)) {
       const markdown = await Bun.file(join(guidePath, `${guide}.md`)).text();
@@ -39,7 +47,7 @@ const server = Bun.serve({
 });
 // The test that runs this script gives it a working directory of its own.
 const browser = await chromium.launch({ env: await createOwnedBrowserEnvironment(process.cwd()) });
-let guidesPlayed = 0;
+let pagesPlayed = 0;
 let captionsLoaded = 0;
 let transcriptsAvailable = 0;
 try {
@@ -49,8 +57,8 @@ try {
     await route.fulfill({ response });
     await response.dispose();
   });
-  for (const slug of slugs) {
-    const response = await page.goto(`https://alexgorbatchev.github.io/devhost/guides/${slug}/`);
+  for (const pagePath of ["", ...slugs.map((slug) => `guides/${slug}/`)]) {
+    const response = await page.goto(`https://alexgorbatchev.github.io/devhost/${pagePath}`);
     assert(response?.ok());
     assert.equal(await page.locator("video").count(), 1);
     const initial = await page.locator("video").evaluate((video: HTMLVideoElement) => ({
@@ -77,7 +85,7 @@ try {
         video.videoHeight === video.height
       );
     });
-    guidesPlayed += 1;
+    pagesPlayed += 1;
     await page.waitForFunction(() => (document.querySelector("video")?.textTracks[0]?.cues?.length ?? 0) > 0);
     captionsLoaded += 1;
     await page.getByText("Demo transcript", { exact: true }).click();
@@ -87,7 +95,7 @@ try {
       video.pause();
     });
   }
-  console.log(JSON.stringify({ guidesPlayed, captionsLoaded, transcriptsAvailable }));
+  console.log(JSON.stringify({ pagesPlayed, captionsLoaded, transcriptsAvailable }));
 } finally {
   await browser.close();
   await server.stop(true);

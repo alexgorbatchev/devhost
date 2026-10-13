@@ -1,4 +1,19 @@
 WEBVTT
 
-00:00.000 --> 00:20.400
-Automatic bind inputs and service context reach your application.
+00:00.350 --> 00:04.994
+devhost hands each service its port, its hostname, and your own variables.
+
+00:05.444 --> 00:07.998
+This service declares two variables of its own.
+
+00:08.924 --> 00:10.039
+Start the stack.
+
+00:10.489 --> 00:13.600
+devhost assigns a free port and starts the service.
+
+00:14.050 --> 00:18.183
+The service received its port, bind host, hostname, and your message.
+
+00:19.130 --> 00:20.245
+Stop the stack.

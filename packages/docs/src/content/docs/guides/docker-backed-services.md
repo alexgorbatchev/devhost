@@ -5,7 +5,7 @@ sidebar:
 ---
 
 <!-- guide-demo -->
-<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/docker-backed-services.webp" aria-label="docker backed services demo">
+<video controls playsinline preload="none" width="1920" height="1080" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/docker-backed-services.webp" aria-label="docker backed services demo">
   <source src="https://alexgorbatchev.github.io/devhost/demos/docker-backed-services.mp4" type="video/mp4">
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/docker-backed-services.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/docker-backed-services.mp4">Watch the demo video</a>.
@@ -13,7 +13,16 @@ sidebar:
 
 <details>
 <summary>Demo transcript</summary>
-<p>Route a published Docker port. Its lifecycle stays with Docker.</p>
+<p>Give a Docker container a local HTTPS hostname. Docker still starts and stops it.</p>
+<p>This service is unmanaged: devhost routes to it but never starts it.</p>
+<p>Docker starts the container.</p>
+<p>Its port is published on the host&#x27;s loopback address.</p>
+<p>Start the stack.</p>
+<p>devhost starts no process. It publishes the container&#x27;s HTTPS address.</p>
+<p>The container answers on its HTTPS hostname.</p>
+<p>Stopping the stack removes the route.</p>
+<p>The container is still running.</p>
+<p>Removing it is Docker&#x27;s job.</p>
 </details>
 <!-- /guide-demo -->
 

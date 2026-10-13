@@ -1,4 +1,19 @@
 WEBVTT
 
-00:00.000 --> 00:21.033
-Resolve the API's assigned port before starting its consumer.
+00:00.350 --> 00:03.972
+Point one service at another, even when its port is assigned at start.
+
+00:04.422 --> 00:07.673
+The API address is a reference, not a fixed port.
+
+00:08.123 --> 00:09.284
+Start the stack.
+
+00:09.734 --> 00:13.124
+devhost fills in the API's port and starts the API first.
+
+00:13.574 --> 00:16.314
+The web service called the API at the resolved address.
+
+00:18.574 --> 00:20.710
+One command stops both services.

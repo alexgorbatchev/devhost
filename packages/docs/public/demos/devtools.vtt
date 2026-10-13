@@ -1,13 +1,16 @@
 WEBVTT
 
-00:00.000 --> 00:05.033
-Hover the minimap to see live output from your services.
+00:00.350 --> 00:04.390
+Optional devtools put your stack's logs and controls inside the page.
 
-00:05.033 --> 00:12.000
-Your stack and services are right in the toolbar.
+00:04.840 --> 00:08.369
+Hover the log minimap for real-time output from your services.
 
-00:12.000 --> 00:20.767
-Browse your repository's worktrees without leaving the page.
+00:10.042 --> 00:14.918
+The Services panel lists every service, each with a restart control.
 
-00:20.767 --> 00:39.233
-Native Query devtools are here when you need them.
+00:17.087 --> 00:20.802
+Search your Git worktrees without leaving the page.
+
+00:26.299 --> 00:29.689
+TanStack Query's own devtools open from the same toolbar.

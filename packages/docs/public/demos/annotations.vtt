@@ -1,10 +1,13 @@
 WEBVTT
 
-00:00.000 --> 00:17.633
-Alt-click. Describe the change. Watch Pi fix the live page.
+00:00.350 --> 00:03.183
+Point at the problem, and let a coding agent fix it.
 
-00:17.633 --> 00:22.633
-Pi is working on the annotated change.
+00:03.633 --> 00:06.698
+Hold Alt, click an element, and describe the change.
 
-00:22.633 --> 00:30.367
-The heading updates live from Pi's source edit.
+00:22.273 --> 00:25.570
+The Pi coding agent takes the annotation and edits your source.
+
+00:28.953 --> 00:31.786
+The fix is on the page, without a full reload.

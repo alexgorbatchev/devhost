@@ -5,7 +5,7 @@ sidebar:
 ---
 
 <!-- guide-demo -->
-<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/environment-variables.webp" aria-label="environment variables demo">
+<video controls playsinline preload="none" width="1920" height="1080" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/environment-variables.webp" aria-label="environment variables demo">
   <source src="https://alexgorbatchev.github.io/devhost/demos/environment-variables.mp4" type="video/mp4">
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/environment-variables.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/environment-variables.mp4">Watch the demo video</a>.
@@ -13,7 +13,12 @@ sidebar:
 
 <details>
 <summary>Demo transcript</summary>
-<p>Automatic bind inputs and service context reach your application.</p>
+<p>devhost hands each service its port, its hostname, and your own variables.</p>
+<p>This service declares two variables of its own.</p>
+<p>Start the stack.</p>
+<p>devhost assigns a free port and starts the service.</p>
+<p>The service received its port, bind host, hostname, and your message.</p>
+<p>Stop the stack.</p>
 </details>
 <!-- /guide-demo -->
 
