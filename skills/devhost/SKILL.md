@@ -4,7 +4,7 @@ description: Use when running devhost or when reading, writing, or changing a de
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-13 16:15
+  last_modified: 2026-10-13 16:20
   status: current
 ---
 
@@ -15,6 +15,8 @@ Run `devhost` with `AGENT=1`: help becomes `key: value` text, and a failed comma
 Read foreground stack logs as `stack-name: message` and child stdout/stderr as `service-name: message` under `AGENT=1` (also `true` or `yes`). These prefixes have one space after the colon and omit alignment padding, added colors, and wrapping. The stack label is the manifest `name`, with `devhost` as the fallback. Retained diagnostics and browser log records keep their bracket prefixes.
 
 With `AGENT=0` or unset, stack and service logs share names padded to a common display width, followed by `|`. Long lines continue with a blank name column and the same aligned separator. Each label has a distinct terminal color shared between stdout and stderr; redirected output, a non-empty `NO_COLOR`, or `TERM=dumb` suppresses added colors. Wrapping uses the destination terminal's current width, falling back to a positive `COLUMNS` value, and preserves child ANSI escapes and Unicode display width. Unknown widths or widths too small for the prefix leave lines unwrapped; resizing applies to subsequent lines.
+
+Read `Switching worktree: source -> target. Restarting stack.` before a checkout switch and `worktree switched: source -> target` after success; source and target are checkout directory names. `Worktree switch failed: source -> target: error` reports rejected targets or switch failures, including restoration errors.
 
 ### Commands
 

@@ -36,6 +36,12 @@ func TestWorktreeSwitchLoadsTargetConfigurationAndWatchesIt(t *testing.T) {
 	if err := f.control.SwitchWorktree(id, linked); err != nil {
 		t.Fatal(err)
 	}
+	transition := fmt.Sprintf("%s -> %s", filepath.Base(root), filepath.Base(linked))
+	for _, message := range []string{"Switching worktree: " + transition + ". Restarting stack.", "worktree switched: " + transition} {
+		if !f.logs.contains(message) {
+			t.Fatalf("missing switch lifecycle log: %s", message)
+		}
+	}
 	route := filepath.Join(f.paths.RegistrationsDirectoryPath, "poc.localhost_poc_2f.json")
 	next := readRestartRoute(t, route)
 	assertRestartResponse(t, serverURL(next.AppPort, "/"), "new")
@@ -50,6 +56,9 @@ func TestWorktreeSwitchLoadsTargetConfigurationAndWatchesIt(t *testing.T) {
 	write("\n[services.poc]\ncommand = [")
 	if err := f.control.SwitchWorktree(id, linked); err == nil {
 		t.Fatal("invalid target configuration accepted")
+	}
+	if !f.logs.contains(fmt.Sprintf("Worktree switch failed: %s -> %s:", filepath.Base(linked), filepath.Base(linked))) {
+		t.Fatal("rejected worktree switch was not logged")
 	}
 	assertRestartResponse(t, serverURL(next.AppPort, "/"), "reloaded")
 }

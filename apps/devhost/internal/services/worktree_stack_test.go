@@ -53,6 +53,7 @@ func TestStackSwitchesWholeRepositoryAndRecoversFailedSwitch(t *testing.T) {
 		startDevtoolsControlServer, registerProcessSignals, unregisterProcessSignals = originalStart, originalRegister, originalUnregister
 	}()
 	controls := make(chan devtools.StartControlServerOptions, 1)
+	logs := &reloadLogs{}
 	signals := make(chan chan<- os.Signal, 1)
 	startDevtoolsControlServer = func(options devtools.StartControlServerOptions) (*devtools.ControlServer, error) {
 		s, err := devtools.StartControlServer(options)
@@ -66,7 +67,7 @@ func TestStackSwitchesWholeRepositoryAndRecoversFailedSwitch(t *testing.T) {
 	launch := func() (devtools.StartControlServerOptions, func()) {
 		done := make(chan error, 1)
 		go func() {
-			_, err := StartStack(&m, m.ServiceOrder, StartStackOptions{CaddyPaths: paths, Environment: map[string]string{"DEVHOST_STATE_DIR": state}, LogWriter: io.Discard, ServiceStdoutWriter: io.Discard, ServiceStderrWriter: io.Discard, ShutdownGracePeriod: time.Second})
+			_, err := StartStack(&m, m.ServiceOrder, StartStackOptions{CaddyPaths: paths, Environment: map[string]string{"DEVHOST_STATE_DIR": state}, LogWriter: logs, ServiceStdoutWriter: io.Discard, ServiceStderrWriter: io.Discard, ShutdownGracePeriod: time.Second})
 			done <- err
 		}()
 		ch := <-signals
@@ -155,6 +156,9 @@ func TestStackSwitchesWholeRepositoryAndRecoversFailedSwitch(t *testing.T) {
 	}
 	if err := options.SwitchWorktree(id, root); err == nil {
 		t.Fatal("failed launch reported success")
+	}
+	if !logs.contains(fmt.Sprintf("Worktree switch failed: %s -> %s:", filepath.Base(linked), filepath.Base(root))) {
+		t.Fatal("failed worktree launch was not logged")
 	}
 	health, _ = options.GetHealthResponse()
 	if health.Repositories[0].SelectedPath != linked || health.Repositories[0].RunningPath != linked || health.Repositories[0].Switching || health.Repositories[0].Error != "" {
