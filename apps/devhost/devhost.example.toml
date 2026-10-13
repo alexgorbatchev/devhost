@@ -286,7 +286,13 @@ restartServices = "alt+ctrl+r"
 # idleTimeout = "1h"
 
 # Annotation actions are configured only through `[annotation]`.
-# If `[annotation]` is present, `[[annotation.actions]]` must contain at least one action.
+# Pick one built-in agent in the root manifest:
+# [annotation]
+# agent = "codex" # "pi", "claude-code", "opencode", or "codex"
+# This creates one default action with ID "agent" and the adapter's display name.
+# Optional tempDir also works with this shorthand.
+# Use either agent or the detailed actions/defaultAction form below; combining them is invalid.
+# For multiple actions, custom commands, or extra agent flags, define at least one action.
 # If `[annotation]` is omitted, annotation submission is unavailable in the injected UI.
 #
 # [annotation]

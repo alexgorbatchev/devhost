@@ -309,15 +309,7 @@ For Codex, install and sign in to the [Codex CLI](https://learn.chatgpt.com/docs
 
 ```toml
 [annotation]
-defaultAction = "fix-codex"
-
-[[annotation.actions]]
-id = "fix-codex"
-kind = "agent"
-
-[annotation.actions.agent]
-adapter = "codex"
-args = ["-c", "model_reasoning_effort=high"]
+agent = "codex"
 ```
 
 Use a Codex CLI version that supports `--no-daemon` and lifecycle hooks; the adapter is validated
@@ -325,7 +317,8 @@ against 0.159.2. Devhost hands off the annotation prompt and launches an indepen
 session with working/finished hooks. Review and trust those hooks using `/hooks` inside the Codex
 terminal. Queued annotations wait until the hooks report readiness; they cannot drain while the
 hooks are untrusted, disabled, or restricted by a managed-hooks-only policy. Codex retains your
-authentication, sandbox, approval, and syntax theme settings. Optional `args` pass Codex CLI flags.
+authentication, sandbox, approval, and syntax theme settings. Use the detailed action configuration
+in the annotation guide to pass optional Codex CLI flags.
 If the initial annotation finishes before you trust the hooks, send another prompt after trusting
 them so Codex can report readiness and drain waiting annotations.
 

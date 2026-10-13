@@ -4,7 +4,7 @@ description: Use when running devhost or when reading, writing, or changing a de
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-13 15:44
+  last_modified: 2026-10-13 16:15
   status: current
 ---
 
@@ -93,6 +93,7 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 - **camelCase Rule**: All manifest properties and tables across the entire TOML file **must** use standard `camelCase` naming conventions (e.g., `idleTimeout`, `killZombies`, `externalToolbars`, `bindHost`, `httpPort`, `httpsPort`, `adminAddress`, `defaultAction`, `injectPort`, `dependsOn`, `primary`, etc.). devhost rejects a key written in kebab-case, snake_case, or mixed casing.
 - **Service Names**: Service keys inside `[services.<name>]` must match the regex `^[a-z][a-z0-9-]*$`.
 - **Service groups**: Define `[groups]` in each app's included manifest, with entries such as `app = ["app-frontend"]`, then run `devhost start app` from the root. Groups merge alongside services and annotation actions. Group names match service naming rules, are unique across included manifests, and are distinct from service names. Members form a non-empty array of service names from the complete merged manifest. Nested groups and unknown members are rejected. `devhost service list` prints individual services only. Selected groups use their current membership on reload; deleting a selected group removes its selection, retaining other requested selections and `alwaysStart` services. Stack restarts retain the requested group names. See [Setup](references/setup.md#6-configuration-hot-reload) for reload behavior.
+- **Annotation agent selection**: Set `[annotation].agent = "codex"` in the root manifest to select one built-in agent; accepted strings are `pi`, `claude-code`, `opencode`, and `codex`. This creates one default action with ID `agent` and the adapter's display name. Optional `tempDir` applies. Combining `agent` with `actions` or `defaultAction` is rejected. Use detailed actions for multiple choices, custom commands, or extra flags. Restart devhost to apply annotation changes.
 - **Annotation Action IDs**: Action ids under `[[annotation.actions]]` must match the regex `^[a-z][a-z0-9-]*$` and must be unique.
 
 ### Top-Level Configurations

@@ -178,7 +178,20 @@ When the host page is a React development build that exposes component source me
 
 ## Annotation actions
 
-Configure annotation launchers with a root-level `[annotation]` table and one or more `[[annotation.actions]]` entries.
+To select one built-in agent, set `agent` in the root manifest:
+
+```toml
+[annotation]
+agent = "codex"
+```
+
+Accepted values are `"pi"`, `"claude-code"`, `"opencode"`, and `"codex"`. This creates one default
+agent action with the internal ID `agent` and the adapter's display name. Optional `tempDir`
+works with this shorthand. Combining `agent` with `actions` or `defaultAction` is rejected.
+Restart devhost after changing annotation configuration.
+
+For multiple actions, custom commands, or extra agent flags, use a root-level `[annotation]`
+table and one or more `[[annotation.actions]]` entries instead of the shorthand.
 If you omit `[annotation]`, `devhost` does not expose annotation submission actions in the injected UI.
 Each action declares a stable `id` and a `kind`. The `label` names the action in the composer. Actions that use a built-in agent adapter default it to the adapter's name (`Pi`, `Claude Code`, `OpenCode`, or `Codex`); set `label` on them to tell apart actions that share an adapter. Custom agent actions and command actions require `label`. Set `defaultAction` when the UI should preselect an action other than the first one.
 
