@@ -4,6 +4,19 @@ import { createVisibleLogRows } from "../createVisibleLogRows";
 import type { ServiceLogEntry } from "../../../shared/types";
 
 describe("createVisibleLogRows", () => {
+  test.each([
+    ["[api] ready", "ready"],
+    ["[api]   indented", "  indented"],
+    ["[other] ready", "[other] ready"],
+    ["message [api] ready", "message [api] ready"],
+    ["[api] [api] ready", "[api] ready"],
+    ["\u001b[31m[ap\u001b[32mi] ready\u001b[0m", "ready"],
+  ])("removes only the matching leading service prefix from %s", (line, expected) => {
+    const [row] = createVisibleLogRows([{ id: 1, line, serviceName: "api", stream: "stdout" }], 8, 100);
+    expect(row?.text).toBe(expected);
+    expect(row?.fragments.map((fragment) => fragment.text).join("")).toBe(expected);
+  });
+
   test("keeps one visible row per log entry and clips width instead of wrapping", () => {
     const entries: ServiceLogEntry[] = [
       {

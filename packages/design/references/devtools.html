@@ -1695,18 +1695,23 @@
         }
         .mm-preview {
           position: absolute;
-          right: calc(100% + 6px);
-          width: min(80ch, calc(100vw - 140px));
+          right: calc(100% + 7px);
+          width: calc(100vw - 100% - 13px);
           overflow: hidden;
           pointer-events: none;
         }
         .mm-preview ol {
+          display: grid;
+          grid-template-columns: max-content minmax(0, 1fr);
+          column-gap: var(--dh-space-4);
           list-style: none;
           margin: 0;
           padding: var(--dh-space-2) 0;
         }
         .mm-preview li {
-          display: flex;
+          display: grid;
+          grid-column: span 2;
+          grid-template-columns: subgrid;
           gap: var(--dh-space-4);
           height: 18px;
           padding: 0 var(--dh-space-4);
@@ -1715,9 +1720,11 @@
           overflow: hidden;
         }
         .mm-preview li .svc {
-          flex: none;
-          width: 7ch;
           color: var(--dh-fg-faint);
+        }
+        .mm-preview li > span:last-child {
+          min-width: 0;
+          overflow: hidden;
         }
         .mm-preview li.stderr {
           color: var(--dh-danger);
@@ -3078,7 +3085,7 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
             <ol>${rows
               .map(
                 (row, index) =>
-                  `<li class="${row.stream} ${start + index === hovered ? "focus" : ""}"><span class="svc">${esc(row.serviceName)}</span><span>${esc(row.line)}</span></li>`,
+                  `<li class="${row.stream} ${start + index === hovered ? "focus" : ""}"><span class="svc">${esc(row.serviceName)}</span><span>${esc(row.line.startsWith(`[${row.serviceName}] `) ? row.line.slice(row.serviceName.length + 3) : row.line)}</span></li>`,
               )
               .join("")}</ol>
           </div>`;

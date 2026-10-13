@@ -152,6 +152,36 @@ export const AnsiStyled: Story = {
   },
 };
 
+export const ServiceColumns: Story = {
+  args: {
+    entries: [
+      { id: 1, serviceName: "api", line: "[api] Ready", stream: "stdout" },
+      { id: 2, serviceName: "long-background-worker", line: "[long-background-worker] Working", stream: "stdout" },
+    ],
+    isHovered: true,
+    onHoveredChange: fn(),
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    await assertHoveredPreview(canvas);
+    await expect(readPreviewRowTexts(canvas)).toEqual(["Ready", "Working"]);
+    const services = canvas.getAllByTestId("LogMinimap--preview-service");
+    const lines = canvas.getAllByTestId("LogMinimap--preview-line");
+    await waitFor(() => {
+      const preview = canvas.getByTestId("LogMinimap--preview").getBoundingClientRect();
+      const minimap = canvas.getByTestId("LogMinimap").getBoundingClientRect();
+      expect(Math.round(preview.left)).toBe(6);
+      expect(Math.round(preview.right)).toBe(Math.round(minimap.left - 6));
+      expect(lines[0]!.getBoundingClientRect().left).toBe(lines[1]!.getBoundingClientRect().left);
+      for (const service of services) {
+        expect(service.scrollWidth).toBeLessThanOrEqual(service.clientWidth);
+        expect(service.getBoundingClientRect().left).toBe(services[0]!.getBoundingClientRect().left);
+        expect(service.getBoundingClientRect().right).toBeLessThan(lines[0]!.getBoundingClientRect().left);
+      }
+    });
+  },
+};
+
 export const ClippedLines: Story = {
   args: {
     entries: clippedEntries,

@@ -71,6 +71,8 @@ Native React DevTools uses a separately configured, already running browser prof
 
 Terminal sessions (annotation agents, annotation commands, and Neovim) appear as chips in the toolbar. Clicking a chip opens its terminal window; minimizing returns it to the chip while the session keeps running and reporting its status. When the chips no longer fit, the rest collapse into a `+N` button that lists every session, and they return when the toolbar has room again. Terminal windows open fullscreen above the other injected surfaces; when the log minimap is shown, the window stops at the minimap strip. The minimap's hover preview stays beneath an open terminal window, so minimize the terminal to read it.
 
+Minimap log previews use the available page width beside the minimap. Service names form a shared column sized to the longest name in the preview, followed by a gap and the log message. A matching leading `[service] ` prefix is removed from the message so the name appears once. Log messages stay on one row and clip horizontally when needed.
+
 Minimap log previews preserve ANSI backgrounds and text decorations. Foreground colors adjust automatically to maintain at least 4.5:1 contrast against the rendered background in either theme, including focused and stderr rows. Dim text is softened only as far as that contrast requirement permits.
 
 When all devtools features are disabled, `devhost` does not mount these control routes for that stack.
