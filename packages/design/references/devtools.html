@@ -1239,8 +1239,22 @@
           box-shadow: inset 2px 0 var(--dh-accent);
         }
         .worktree-option:has(:disabled) {
-          color: var(--dh-fg-faint);
-          cursor: not-allowed;
+          cursor: default;
+        }
+        .worktree-error {
+          position: fixed;
+          position-anchor: auto;
+          position-area: top span-left;
+          position-try-fallbacks: flip-inline, flip-block;
+          margin: var(--dh-space-3);
+          padding: var(--dh-space-4);
+          width: 300px;
+          max-width: calc(100vw - 32px);
+          border: 1px solid var(--dh-line);
+          border-radius: var(--dh-radius-sm);
+          background: var(--dh-surface);
+          color: var(--dh-fg);
+          overflow-wrap: anywhere;
         }
         .worktree-option input {
           flex: none;
@@ -2676,19 +2690,20 @@
         const options = worktrees
           .map(
             (worktree, index) => `
-          <label class="worktree-option">
+          <div class="worktree-option">
             <input type="radio" name="worktree-${repository.id}" value="${esc(worktree.path)}"
               data-input="worktree" data-focus-key="worktree-${repository.id}-${index}"
+              id="worktree-${repository.id}-${index}"
               ${picker.path === worktree.path ? "checked" : ""} ${!worktree.available || isBusy ? "disabled" : ""} />
             <span class="worktree-meta">
-              <span class="worktree-title"><strong class="trunc grow">${esc(worktree.label)}</strong>
+              <span class="worktree-title"><label class="trunc grow" for="worktree-${repository.id}-${index}"><strong>${esc(worktree.label)}</strong></label>
                 ${worktree.path === repository.runningPath ? `<span class="tag ok">running</span>` : ""}
                 ${worktree.path === repository.configuredPath ? `<span class="tag">configured</span>` : ""}
-                ${!worktree.available ? `<span class="tag danger">missing</span>` : ""}
+                ${!worktree.available ? `<button type="button" class="tag danger" popovertarget="worktree-error-${repository.id}-${index}" aria-label="Why ${esc(worktree.label)} is unavailable">unavailable</button><span class="worktree-error" id="worktree-error-${repository.id}-${index}" popover="auto">${esc(worktree.reason ?? "Checkout directory is missing.")}</span>` : ""}
               </span>
               <span class="worktree-path">${esc(worktree.path)}</span>
             </span>
-          </label>`,
+          </div>`,
           )
           .join("");
         return {
@@ -2702,8 +2717,7 @@
             <div class="panel-body">
               ${repository.error ? renderNotice(repository.error, null) : ""}
               ${hasExternalService ? renderNotice("This repository has external services. devhost cannot switch all services together.", null) : ""}
-              <input class="input" type="search" aria-label="Find worktree" placeholder="Find branch or checkout path…"
-                data-input="worktree-search" data-focus-key="worktree-search" value="${esc(picker.query ?? "")}" ${isBusy ? "disabled" : ""} />
+
               <fieldset class="worktree-options"><legend class="sr-only">Choose a checkout for ${esc(repository.name)}</legend>${options}</fieldset>
               ${worktrees.length === 0 ? `<p role="status">No matching worktrees.</p>` : ""}
             </div>
@@ -2718,7 +2732,11 @@
                 ${repository.error && repository.selectedPath !== repository.configuredPath ? `<button class="btn" type="button" data-action="worktree-return" ${isBusy ? "disabled" : ""}>Return to ${esc(worktreeLabel(repository, repository.configuredPath))}</button>` : ""}
                 <button class="btn" type="button" data-action="worktree-back">${isBusy ? "Back to services" : "Cancel"}</button>
               </div>
-            </footer>`,
+            </footer>
+            <div class="panel-body">
+              <input class="input" type="search" aria-label="Find worktree" placeholder="Find branch or checkout path…"
+                data-input="worktree-search" data-focus-key="worktree-search" value="${esc(picker.query ?? "")}" ${isBusy ? "disabled" : ""} />
+            </div>`,
         };
       }
 
