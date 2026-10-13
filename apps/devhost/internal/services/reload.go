@@ -24,10 +24,19 @@ type configurationChange struct {
 	message string
 }
 
-func (r *stackRuntime) reloadConfiguration(ctx context.Context, next manifest.Manifest) error {
+func (r *stackRuntime) reloadConfiguration(ctx context.Context, next manifest.Manifest, files []string) error {
 	r.operationMu.Lock()
 	defer r.operationMu.Unlock()
-	return r.applyConfiguration(ctx, next, configurationChange{requested: r.manifest.requested, message: "configuration reloaded"})
+	paths := make([]string, 0, len(files))
+	for _, file := range files {
+		path, err := filepath.Rel(filepath.Dir(r.manifest.ManifestPath), file)
+		if err != nil {
+			return fmt.Errorf("format reloaded configuration path: %w", err)
+		}
+		paths = append(paths, path)
+	}
+	message := "configuration reloaded: " + strings.Join(paths, ", ")
+	return r.applyConfiguration(ctx, next, configurationChange{requested: r.manifest.requested, message: message})
 }
 
 // startServices starts services this run left stopped, with the services they
