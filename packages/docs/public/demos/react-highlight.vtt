@@ -1,16 +1,19 @@
 WEBVTT
 
-00:00.000 --> 00:02.267
-Connect the JSX cursor in Neovim to your live page.
+00:00.350 --> 00:03.369
+Connect your Neovim cursor to the page running in your browser.
 
-00:02.267 --> 00:07.267
-Move to the heading in Neovim. Its live DOM element is highlighted.
+00:03.819 --> 00:08.556
+Start Neovim with the devhost launcher. Here, it runs off screen.
 
-00:07.267 --> 00:12.267
-Move the JSX cursor again. The browser highlight follows.
+00:09.006 --> 00:12.396
+Move the Neovim cursor to the heading. The page highlights it.
 
-00:12.267 --> 00:17.600
-Source-map matching also connects JSX images to the live page.
+00:14.126 --> 00:17.191
+Move the cursor again, and the highlight follows.
 
-00:17.600 --> 00:20.533
-Move outside JSX to clear the highlight. Your page stays interactive.
+00:19.246 --> 00:23.379
+Images work too. Source maps match the JSX to the page.
+
+00:24.366 --> 00:26.781
+Leave the JSX, and the highlight clears.

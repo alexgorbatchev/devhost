@@ -5,7 +5,7 @@ sidebar:
 ---
 
 <!-- guide-demo -->
-<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/troubleshooting.webp" aria-label="troubleshooting demo">
+<video controls playsinline preload="none" width="1920" height="1080" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/troubleshooting.webp" aria-label="troubleshooting demo">
   <source src="https://alexgorbatchev.github.io/devhost/demos/troubleshooting.mp4" type="video/mp4">
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/troubleshooting.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/troubleshooting.mp4">Watch the demo video</a>.
@@ -13,7 +13,17 @@ sidebar:
 
 <details>
 <summary>Demo transcript</summary>
-<p>A rejected manifest leaves the running stack intact. Correct it and save again.</p>
+<p>Save a broken manifest and the running stack stays up. Fix it, save again.</p>
+<p>A stack with one service.</p>
+<p>Start the stack.</p>
+<p>The service is running.</p>
+<p>Now save an invalid port.</p>
+<p>devhost rejects the reload and says why.</p>
+<p>The running stack still answers.</p>
+<p>Save a corrected manifest.</p>
+<p>This time the reload is applied.</p>
+<p>The service shows the new configuration.</p>
+<p>Stop the stack.</p>
 </details>
 <!-- /guide-demo -->
 

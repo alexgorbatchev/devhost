@@ -5,7 +5,7 @@ sidebar:
 ---
 
 <!-- guide-demo -->
-<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/stack-lifecycle.webp" aria-label="stack lifecycle demo">
+<video controls playsinline preload="none" width="1920" height="1080" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/stack-lifecycle.webp" aria-label="stack lifecycle demo">
   <source src="https://alexgorbatchev.github.io/devhost/demos/stack-lifecycle.mp4" type="video/mp4">
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/stack-lifecycle.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/stack-lifecycle.mp4">Watch the demo video</a>.
@@ -14,6 +14,11 @@ sidebar:
 <details>
 <summary>Demo transcript</summary>
 <p>Start dependencies first. Stop the whole stack with one command.</p>
+<p>The web service depends on the API.</p>
+<p>Start the stack.</p>
+<p>devhost starts the API first, then the web service.</p>
+<p>The web service answers on its HTTPS hostname.</p>
+<p>Stopping takes one command.</p>
 </details>
 <!-- /guide-demo -->
 

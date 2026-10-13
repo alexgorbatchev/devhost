@@ -1,4 +1,22 @@
 WEBVTT
 
-00:00.000 --> 00:23.633
-Own a background service through explicit start, status, and stop commands.
+00:00.350 --> 00:04.065
+devhost starts a background daemon, checks on it, and stops it.
+
+00:04.515 --> 00:08.137
+This daemon has three commands: start, status, and stop.
+
+00:08.587 --> 00:10.120
+Start the stack.
+
+00:10.570 --> 00:13.681
+devhost runs the start command and waits for the health check.
+
+00:14.131 --> 00:16.871
+The daemon answers on its HTTPS hostname.
+
+00:19.451 --> 00:22.052
+Stopping the stack runs the daemon's stop command.
+
+00:22.502 --> 00:24.360
+The daemon is no longer running.

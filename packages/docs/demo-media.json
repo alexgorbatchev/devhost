@@ -3,64 +3,69 @@
   "release": "media",
   "files": {
     "annotations.mp4": {
-      "asset": "annotations-273a29aa49b00e5f.mp4",
-      "sha256": "273a29aa49b00e5fbacb99c6301a577b9c0ad1871299935da118311457a4400c",
-      "bytes": 1151684
+      "asset": "annotations-d87cd120187231d0.mp4",
+      "sha256": "d87cd120187231d0b3af5e7312dce90348937254550089ac8fa89d3afc22a58c",
+      "bytes": 2264823
     },
     "devtools.mp4": {
-      "asset": "devtools-828c3b1aa27cea7d.mp4",
-      "sha256": "828c3b1aa27cea7d446c1eaabd89d2a4f1c6bfd69a5d4250a3708ca62aa8b345",
-      "bytes": 1006527
+      "asset": "devtools-68dc6072e7cbaa05.mp4",
+      "sha256": "68dc6072e7cbaa05e175f1bb586ad795a17a20bb843d82b3b3155ff391c776d3",
+      "bytes": 2448263
     },
     "docker-backed-services.mp4": {
-      "asset": "docker-backed-services-35bd96f39bb7ded1.mp4",
-      "sha256": "35bd96f39bb7ded1c18096fb9ef9f049db3b2644280929890e1d5bff90163fa8",
-      "bytes": 265739
+      "asset": "docker-backed-services-3a00e2b8ae6ed11f.mp4",
+      "sha256": "3a00e2b8ae6ed11fc664f3c1498e94709cde4cb03b870f9edbe6306983612df6",
+      "bytes": 1828658
     },
     "environment-variables.mp4": {
-      "asset": "environment-variables-877a20206b383df5.mp4",
-      "sha256": "877a20206b383df51fe41651724f58bcc9f828b4000123e0a838025ea599a280",
-      "bytes": 207370
+      "asset": "environment-variables-d4946d3994ef2e0b.mp4",
+      "sha256": "d4946d3994ef2e0b4241039da3ad1edc332a10cfc8e2e95fa0fceac90d7a7005",
+      "bytes": 1320510
     },
     "managed-caddy.mp4": {
-      "asset": "managed-caddy-7929b5808d014a0a.mp4",
-      "sha256": "7929b5808d014a0a5cd735f07bd9dfe490e928d9829eb8cf8c425cb74165653d",
-      "bytes": 267210
+      "asset": "managed-caddy-53724d5facdde9a4.mp4",
+      "sha256": "53724d5facdde9a440089862ac21ced6e19505df1ad96f13314eb54156ce9e6a",
+      "bytes": 1506756
     },
     "managed-daemon-style-services.mp4": {
-      "asset": "managed-daemon-style-services-b124ca86998d8b8c.mp4",
-      "sha256": "b124ca86998d8b8cabfee4fd006635210572df7b96ed471e84ba8b48eef185d8",
-      "bytes": 223670
+      "asset": "managed-daemon-style-services-9ae935390a44af3b.mp4",
+      "sha256": "9ae935390a44af3b7ed920d52dbca3483e568551f0aef056f99381054436759a",
+      "bytes": 1448238
     },
     "manifest-includes.mp4": {
-      "asset": "manifest-includes-a49cf60f8c125cd8.mp4",
-      "sha256": "a49cf60f8c125cd82373ffa6c82027abb6b70e343e464f86c22b19536631297f",
-      "bytes": 271726
+      "asset": "manifest-includes-c1f756ac6dd11473.mp4",
+      "sha256": "c1f756ac6dd114738f18fe1d745c240ff374190c790c24528713e59e9c602c83",
+      "bytes": 1383118
+    },
+    "promo.mp4": {
+      "asset": "promo-537e4f514fcde029.mp4",
+      "sha256": "537e4f514fcde0295d3559dfea4954f065696492d9522cb158107a797b04561d",
+      "bytes": 4128755
     },
     "react-highlight.mp4": {
-      "asset": "react-highlight-9754896ffa0d330a.mp4",
-      "sha256": "9754896ffa0d330a8c10d893a86cba8767700fc402c45f198d0ef807c7c2ad0e",
-      "bytes": 444321
+      "asset": "react-highlight-e517f7976c5f24f3.mp4",
+      "sha256": "e517f7976c5f24f3a4c4dde7e7cf99ec4749869f33b691b3c5e7539ff1aaf660",
+      "bytes": 1914931
     },
     "service-references.mp4": {
-      "asset": "service-references-9a7d8540f6b9f080.mp4",
-      "sha256": "9a7d8540f6b9f080ead0603a35a60b4838abfb467f33471e745086f6b3de2fcf",
-      "bytes": 243527
+      "asset": "service-references-e7d10d47f0e67671.mp4",
+      "sha256": "e7d10d47f0e67671892bd90ebecbecb351a2cdedcec5df43e0717cb685b96084",
+      "bytes": 1275858
     },
     "shared-managed-caddy-settings.mp4": {
-      "asset": "shared-managed-caddy-settings-26b3814b4eb01062.mp4",
-      "sha256": "26b3814b4eb01062c7dbb2c06d1ae37180e3837c81cfdd9bde4459f3d46e638c",
-      "bytes": 251693
+      "asset": "shared-managed-caddy-settings-f671e01991d4669d.mp4",
+      "sha256": "f671e01991d4669d9f3f6584b032dd7d5f1b502250844377b0b91be72cff7747",
+      "bytes": 1415517
     },
     "stack-lifecycle.mp4": {
-      "asset": "stack-lifecycle-01e0d80225517e0a.mp4",
-      "sha256": "01e0d80225517e0adad7e7f704c6b6ca363fde01cd2ae6ecb5a7eeb344356c45",
-      "bytes": 218705
+      "asset": "stack-lifecycle-7b686a332fca6472.mp4",
+      "sha256": "7b686a332fca647298dd2556cd508b90d769eeadc9575fab1a42607adb17176b",
+      "bytes": 1214014
     },
     "troubleshooting.mp4": {
-      "asset": "troubleshooting-8ec3c13edc48c4ae.mp4",
-      "sha256": "8ec3c13edc48c4aea10097ee82d4041d21f567d7186d443a3e03d490e33be370",
-      "bytes": 372408
+      "asset": "troubleshooting-a61b03c69d2e0f45.mp4",
+      "sha256": "a61b03c69d2e0f45bc3f113ade05dfa427ca946d9ca6cde15c5fd6608380a54b",
+      "bytes": 1709392
     }
   }
 }

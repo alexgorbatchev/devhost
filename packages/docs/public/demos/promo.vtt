@@ -1,0 +1,25 @@
+WEBVTT
+
+00:00.250 --> 00:03.970
+Localhost three thousand. Four thousand. Which port?
+
+00:04.050 --> 00:11.730
+devhost puts your local app on HTTPS hostnames, through a managed Caddy. For when logins and cookies need more than a port.
+
+00:11.800 --> 00:18.490
+List your services in one file. Then one command: devhost start. Routes open when health checks pass.
+
+00:18.600 --> 00:22.790
+Optional devtools add real-time logs and service controls, right in the page.
+
+00:23.050 --> 00:25.640
+TanStack Query devtools are one click away.
+
+00:26.000 --> 00:30.780
+Hold Alt, click an element, describe the change. A coding agent edits your source.
+
+00:31.100 --> 00:32.740
+And the page hot-reloads.
+
+00:33.300 --> 00:36.720
+devhost. Open source, on GitHub. Stop juggling ports.

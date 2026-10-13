@@ -5,7 +5,7 @@ sidebar:
 ---
 
 <!-- guide-demo -->
-<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/annotations.webp" aria-label="annotations demo">
+<video controls playsinline preload="none" width="1920" height="1080" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/annotations.webp" aria-label="annotations demo">
   <source src="https://alexgorbatchev.github.io/devhost/demos/annotations.mp4" type="video/mp4">
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/annotations.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/annotations.mp4">Watch the demo video</a>.
@@ -13,9 +13,10 @@ sidebar:
 
 <details>
 <summary>Demo transcript</summary>
-<p>Alt-click. Describe the change. Watch Pi fix the live page.</p>
-<p>Pi is working on the annotated change.</p>
-<p>The heading updates live from Pi&#x27;s source edit.</p>
+<p>Point at the problem, and let a coding agent fix it.</p>
+<p>Hold Alt, click an element, and describe the change.</p>
+<p>The Pi coding agent takes the annotation and edits your source.</p>
+<p>The fix is on the page, without a full reload.</p>
 </details>
 <!-- /guide-demo -->
 

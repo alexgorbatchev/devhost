@@ -5,7 +5,7 @@ sidebar:
 ---
 
 <!-- guide-demo -->
-<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/shared-managed-caddy-settings.webp" aria-label="shared managed caddy settings demo">
+<video controls playsinline preload="none" width="1920" height="1080" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/shared-managed-caddy-settings.webp" aria-label="shared managed caddy settings demo">
   <source src="https://alexgorbatchev.github.io/devhost/demos/shared-managed-caddy-settings.mp4" type="video/mp4">
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/shared-managed-caddy-settings.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/shared-managed-caddy-settings.mp4">Watch the demo video</a>.
@@ -13,7 +13,13 @@ sidebar:
 
 <details>
 <summary>Demo transcript</summary>
-<p>Shared listener settings serve the same routed service over HTTP and HTTPS.</p>
+<p>Your stacks share one Caddy. Turn on plain HTTP and choose its ports.</p>
+<p>The shared Caddy settings turn on plain HTTP and set both ports.</p>
+<p>Start the stack.</p>
+<p>The HTTPS address now uses the port you set.</p>
+<p>The service answers over HTTPS.</p>
+<p>The same service answers over plain HTTP.</p>
+<p>Stop the stack.</p>
 </details>
 <!-- /guide-demo -->
 

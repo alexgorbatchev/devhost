@@ -5,7 +5,7 @@ sidebar:
 ---
 
 <!-- guide-demo -->
-<video controls playsinline preload="none" width="1280" height="860" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/manifest-includes.webp" aria-label="manifest includes demo">
+<video controls playsinline preload="none" width="1920" height="1080" style="width:100%;height:auto" poster="https://alexgorbatchev.github.io/devhost/demos/manifest-includes.webp" aria-label="manifest includes demo">
   <source src="https://alexgorbatchev.github.io/devhost/demos/manifest-includes.mp4" type="video/mp4">
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/manifest-includes.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/manifest-includes.mp4">Watch the demo video</a>.
@@ -14,6 +14,12 @@ sidebar:
 <details>
 <summary>Demo transcript</summary>
 <p>Each package owns its services. The root starts them together.</p>
+<p>The root manifest declares no services. It includes each package&#x27;s manifest.</p>
+<p>Each package declares its own service.</p>
+<p>Start from the root.</p>
+<p>devhost merges them into one stack.</p>
+<p>The merged stack answers on its HTTPS hostname.</p>
+<p>And it stops as one.</p>
 </details>
 <!-- /guide-demo -->
 
