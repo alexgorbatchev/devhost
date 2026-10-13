@@ -19,7 +19,7 @@ Sleep 300ms
 Show
 Type "devhost start"
 Enter
-Wait+Screen@30s /\[Devhost demo\] web \(primary\): https:/
+Wait+Screen@30s /Devhost demo +\| web \(primary\): https:/
 Sleep 6s
 Screenshot "startup.png"
 Sleep 300ms
