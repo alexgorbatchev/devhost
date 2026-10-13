@@ -320,7 +320,12 @@ function AppContent(): JSX.Element {
         />
       ) : null}
       {shouldRenderMinimap ? (
-        <LogMinimap entries={logEntries} isHovered={isMinimapHovered} onHoveredChange={setIsMinimapHovered} />
+        <LogMinimap
+          entries={logEntries}
+          serviceNames={[...services, ...stoppedServices].map((service) => service.name)}
+          isHovered={isMinimapHovered}
+          onHoveredChange={setIsMinimapHovered}
+        />
       ) : null}
       {statusEnabled && exitedServices.length > 0 ? (
         <ServiceCrashOverlay services={exitedServices} entries={logEntries} />
