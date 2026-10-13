@@ -1,6 +1,6 @@
 export type DemoVideoKind = "promo" | "guide";
 
-// `local`: a render that is never published from here, as the promo is today.
+// `local`: a render in a run directory, listed for the promo while the docs media do not include it.
 // `published`: the file on disk is the one the GitHub media release holds.
 // `unpublished`: a render on disk that the release does not hold yet.
 // `remote`: not on disk, so the page plays the release's copy.

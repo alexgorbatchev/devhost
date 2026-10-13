@@ -1,6 +1,7 @@
 name: Deploy docs to GitHub Pages
 
 # The published docs describe the released devhost. A release deploys them from its tag; a push to main does not.
+# A run by hand deploys only from main or a v* tag: the github-pages environment rejects every other ref.
 on:
   workflow_call:
   workflow_dispatch:

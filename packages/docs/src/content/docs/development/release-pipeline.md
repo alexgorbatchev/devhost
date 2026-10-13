@@ -56,9 +56,9 @@ Pushing a tag such as `v0.0.2` starts `.github/workflows/publish.yml`. The workf
 
 The `docs` job of the same workflow runs after the release exists. It calls `.github/workflows/docs.yml`, which checks out the tag, builds `packages/docs`, and deploys the result to GitHub Pages. A failed release deploys nothing.
 
-A push to `main` does not deploy the site. Documentation merged to `main` is published with the next release. To publish a correction between releases, run the `Deploy docs to GitHub Pages` workflow by hand from the release tag or from a branch cut from it. A run from `main` publishes unreleased documentation.
+A push to `main` does not deploy the site. Documentation merged to `main` is published with the next release. A correction to the documentation is published the same way, with the next release.
 
-The `github-pages` environment accepts deployments from `main` and from tags that match `v*`.
+The `github-pages` environment accepts deployments only from `main` and from tags that match `v*`. The `Deploy docs to GitHub Pages` workflow can also be run by hand, within those limits: a run from a release tag deploys that release's documentation again, unchanged, and a run from `main` deploys everything on `main`, including documentation of unreleased behavior. A branch that holds only a correction cannot be deployed.
 
 ### Guide videos
 

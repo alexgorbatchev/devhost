@@ -1,12 +1,12 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-12 14:30
+last_modified: 2026-10-13 14:00
 status: current
 ---
 
 # Refreshing the devhost demo
 
-Run the recording from the checkout whose UI you want to demonstrate. The recorder rebuilds the CLI and embedded UI and starts real services through devhost. The full sequence becomes a promo of at most 45 seconds: [HyperFrames](https://github.com/heygen-com/hyperframes) composes the captured scenes with narration. Each guide becomes a narrated film made the same way from its own recording. Neither has music: the narration is the only sound. A single scene exports a silent, captioned H.264 MP4. The promo and single scenes stay in `.tmp/demos/`; guide recordings also update the docs site's media, which you review and then publish.
+Run the recording from the checkout whose UI you want to demonstrate. The recorder rebuilds the CLI and embedded UI and starts real services through devhost. The full sequence becomes a promo of at most 45 seconds: [HyperFrames](https://github.com/heygen-com/hyperframes) composes the captured scenes with narration. Each guide becomes a narrated film made the same way from its own recording. Neither has music: the narration is the only sound. A single scene exports a silent, captioned H.264 MP4. Single scenes stay in `.tmp/demos/`; promo renders and guide recordings also update the docs site's media, which you review and then publish.
 
 ## Prerequisites
 
