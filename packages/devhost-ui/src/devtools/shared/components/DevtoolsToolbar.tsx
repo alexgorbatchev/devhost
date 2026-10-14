@@ -23,7 +23,7 @@ export function DevtoolsToolbar(props: IDevtoolsToolbarProps): JSX.Element {
   return (
     <div
       className={cn(
-        "group/toolbar pointer-events-auto fixed z-(--devhost-z-dock) flex items-end gap-1",
+        "group/toolbar pointer-events-auto fixed z-(--devhost-z-dock) flex max-h-[calc(100vh-var(--spacing)*4)] items-end gap-1",
         props.position === "top-right" ? "flex-col" : "flex-col-reverse",
         props.position === "top-right" ? "top-2" : "bottom-2",
         props.isMinimapVisible
@@ -35,14 +35,14 @@ export function DevtoolsToolbar(props: IDevtoolsToolbarProps): JSX.Element {
     >
       <div
         aria-label="devhost"
-        className="flex h-6.5 max-w-full items-stretch overflow-hidden rounded-md border border-edge bg-card text-card-foreground shadow-frame"
+        className="flex min-h-6.5 max-w-full shrink-0 flex-wrap items-stretch overflow-hidden rounded-md border border-edge bg-card text-card-foreground shadow-frame"
         data-testid="DevtoolsToolbar--bar"
         role="toolbar"
       >
         <button
           aria-expanded={!isCollapsed}
           aria-label={toggleLabel}
-          className="flex shrink-0 items-center gap-1 px-1 enabled:hover:bg-secondary"
+          className="flex min-h-6 max-w-full shrink-0 items-center gap-1 px-1 enabled:hover:bg-secondary"
           data-testid="DevtoolsToolbar--collapse"
           title={`${toggleLabel} (${props.stackName})`}
           type="button"
@@ -52,11 +52,11 @@ export function DevtoolsToolbar(props: IDevtoolsToolbarProps): JSX.Element {
         >
           <span
             aria-hidden="true"
-            className="grid size-4 place-items-center rounded-sm bg-foreground text-[10px] font-bold tracking-tight text-background"
+            className="grid size-4 shrink-0 place-items-center rounded-sm bg-foreground text-[10px] font-bold tracking-tight text-background"
           >
             dh
           </span>
-          {isCollapsed ? null : <span>{props.stackName}</span>}
+          {isCollapsed ? null : <span className="truncate">{props.stackName}</span>}
         </button>
         {isCollapsed ? (
           <span
@@ -71,7 +71,7 @@ export function DevtoolsToolbar(props: IDevtoolsToolbarProps): JSX.Element {
       </div>
       {!isCollapsed && props.readout !== undefined ? (
         <div
-          className="flex max-h-[calc(100vh-var(--spacing)*12)] w-96 max-w-full flex-col gap-1 overflow-auto rounded-md"
+          className="flex max-h-[calc(100vh-var(--spacing)*12)] min-h-0 w-96 max-w-full flex-col gap-1 overflow-auto rounded-md"
           data-testid="DevtoolsToolbar--readout"
         >
           {props.readout}

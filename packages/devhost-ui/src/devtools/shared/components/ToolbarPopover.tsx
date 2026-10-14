@@ -61,9 +61,9 @@ export function ToolbarPopover({
         aria-expanded={isOpen}
         aria-label={triggerLabel}
         className={cn(
-          "flex shrink-0 items-center gap-1.5 whitespace-nowrap enabled:hover:bg-secondary",
+          "flex min-h-5 max-w-full shrink-0 items-center gap-1.5 whitespace-nowrap enabled:hover:bg-secondary",
           triggerAppearance === "segment"
-            ? "border-l border-border px-2 aria-expanded:bg-accent aria-expanded:shadow-[inset_0_-2px_0_var(--primary)] group-data-[position=top-right]/toolbar:aria-expanded:shadow-[inset_0_2px_0_var(--primary)]"
+            ? "min-h-6 border-l border-border px-2 aria-expanded:bg-accent aria-expanded:shadow-[inset_0_-2px_0_var(--primary)] group-data-[position=top-right]/toolbar:aria-expanded:shadow-[inset_0_2px_0_var(--primary)]"
             : "h-5 rounded-sm border border-border bg-secondary px-1.5 aria-expanded:border-primary aria-expanded:shadow-[inset_0_0_0_1px_var(--primary)]",
           triggerTone === "alert" && "font-semibold",
         )}

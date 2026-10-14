@@ -41,12 +41,12 @@ export function WorktreeStatusPanel(props: IWorktreeStatusPanelProps): JSX.Eleme
       panelLabel="Worktrees"
       panelWidth="lg"
       triggerLabel={label}
-      title={label}
+      title={branches.length > 0 ? label : `Worktrees: ${currentCheckouts.join(", ")}`}
       triggerReference={trigger}
       triggerContent={
         <>
           <Icon glyph={GitBranchIcon} />
-          <span>{currentCheckouts.join(", ")}</span>
+          <span className="truncate">{currentCheckouts.join(", ")}</span>
         </>
       }
       onOpenChange={(isOpen): void => {
