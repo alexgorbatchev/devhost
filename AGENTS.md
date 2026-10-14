@@ -44,6 +44,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - When shared validation commands, release or publish procedures, or contributor expectations change, update the affected docs in the same change, including `packages/docs/AGENTS.md` and `apps/devhost/RELEASE.md` when applicable.
 - The public docs under `packages/docs/src/content/docs/` must always be kept up to date: document every user-visible feature and behavior change there, however small, in the same change.
 - After every behavior change, review the docs and `README.md` for statements the change made inaccurate, and correct each one.
+- When a change adds or alters a user-visible feature, update its row in the "Demo coverage" table of `docs/internal/references/demo-recording.md` in the same change: the film and clips that show it, or **No demo**. The `demo-update` skill in `.agents/skills/` covers changing a film.
 - `README.md` is an overview, not a feature list. Ask the user before adding a new feature, section, or option to it; correcting or removing existing README text needs no approval. `apps/devhost/AGENTS.md` has the full policy.
 - Root `README.md` is a symlink to `apps/devhost/README.md`. Update the app README, not the symlink.
 - Public docs source content lives in `apps/devhost/README.md`, `apps/devhost/devhost.example.toml`, and `packages/docs/src/content/docs/**`; edit those sources instead of hand-editing generated docs outputs.

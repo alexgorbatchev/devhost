@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-13 14:00
+last_modified: 2026-10-14 10:42
 status: current
 ---
 
@@ -130,6 +130,83 @@ Routing guides capture native VHS terminal sessions and verify real HTTP respons
 Guide recording also needs `curl` and `setsid`; Docker needs a working local daemon and permission to pull the tiny public image. Guides are recorded serially because they use `demo.localhost`. The recording sources are `createGuideTerminalScene.ts`, `createGuideTape.ts`, `recordGuideTerminal.ts`, `recordReactHighlight.ts`, `recordGuides.ts`, and `publishGuideDemo.ts`; [Editing the sequence](#editing-the-sequence) lists the film's. Native publication tests use FFmpeg/ffprobe, which CI installs before `just check`.
 
 Review the new media, transcript, and Markdown changes, for example on the playground's `/videos` page. Then run `just docs publish-media` and commit `demo-media.json` together with the posters, captions, and guides. The next CLI release deploys them with the newly pinned videos: the docs site is built from the release tag, not from `main`. Agent consumers can follow the HTTPS guide links in `skills/devhost/SKILL.md` and read prose/transcripts without loading binary media.
+
+## Demo coverage
+
+This table lists each user-visible feature, the page or section that documents it, and the clips that show it. A feature counts as shown only when a narration line names it: a control that happens to be on screen while the narration talks about something else is not covered. Clip IDs are the keys in `guide/narration.json`; `promo` lines are the IDs in `promo/narration.json`.
+
+When a change adds or alters a user-visible feature, update its row in the same change. Add a row for a new feature, with **No demo** when no film shows it. When a film is re-recorded, check the rows that point at it.
+
+### Stacks and services
+
+| Feature                                                     | Documented in                                                                                                             | Shown in                                         |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Start a stack in dependency order, stop it with one command | `guides/stack-lifecycle.md`                                                                                               | `stack-lifecycle` step-1 to step-5; promo line-3 |
+| Start part of a stack by naming services                    | `guides/stack-lifecycle.md`, "Starting part of a stack"                                                                   | No demo                                          |
+| Named service groups                                        | `guides/stack-lifecycle.md`, "Named service groups"                                                                       | No demo                                          |
+| Start a stopped service from the Services panel             | `guides/stack-lifecycle.md`, "Stopped services"; `guides/devtools.md`                                                     | No demo                                          |
+| Startup and recovery pages                                  | `guides/stack-lifecycle.md`, "Startup and recovery pages"                                                                 | No demo                                          |
+| Configuration hot reload, applied and rejected              | README, "Configuration Hot Reload"; `guides/stack-lifecycle.md`; `guides/troubleshooting.md`, "Manifest changes rejected" | `troubleshooting` step-4 to step-9               |
+| Unmanaged services, such as a Docker container              | `guides/docker-backed-services.md`                                                                                        | `docker-backed-services` step-1 to step-9        |
+| Daemon-style services with start, status, and stop commands | `guides/managed-daemon-style-services.md`                                                                                 | `managed-daemon-style-services` step-1 to step-6 |
+| Service commands run without a shell                        | README, "Service Commands"                                                                                                | No demo                                          |
+| Zombie process recovery                                     | README, "Zombie Process Recovery"; `guides/troubleshooting.md`, "Zombie cleanup messages"                                 | No demo                                          |
+| Development servers that require a local origin             | README, "Development Servers That Require a Local Origin"                                                                 | No demo                                          |
+
+### Manifest
+
+| Feature                                                              | Documented in                                                                 | Shown in                                 |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------- |
+| Port, bind host, hostname, and service variables passed to a service | `guides/environment-variables.md`                                             | `environment-variables` step-1 to step-4 |
+| Environment interpolation with `{{ env.NAME }}`                      | README, "Manifest Interpolation"                                              | No demo                                  |
+| Service references with `{{ services.<name>.<property> }}`           | README, "Late-Binding Service References"; `guides/service-references.md`     | `service-references` step-1 to step-4    |
+| Health checks with automatic ports                                   | `guides/service-references.md`, "Health checks with automatic ports"          | No demo                                  |
+| Manifest includes                                                    | README, "Manifest Includes"; `guides/manifest-includes.md`                    | `manifest-includes` step-1 to step-6     |
+| Running an included manifest on its own                              | `guides/manifest-includes.md`, "Sub-Manifest Solo Runs & Override Protection" | No demo                                  |
+
+### Routing
+
+| Feature                                              | Documented in                                                                                               | Shown in                                         |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| HTTPS hostnames through the managed Caddy            | `guides/managed-caddy.md`                                                                                   | `managed-caddy` step-3; promo line-2             |
+| Routing services by path on one hostname             | `guides/managed-caddy.md`                                                                                   | `managed-caddy` step-1, step-4, step-5           |
+| Multiple hostnames for one service                   | README, "Multiple Domains for One Service"; `guides/managed-caddy.md`, "Multiple hostnames for one service" | No demo                                          |
+| Shared Caddy settings: plain HTTP and listener ports | `guides/shared-managed-caddy-settings.md`                                                                   | `shared-managed-caddy-settings` step-1 to step-5 |
+
+### Devtools
+
+| Feature                                                                                                                    | Documented in                                             | Shown in                            |
+| -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------- |
+| Log minimap with real-time service output                                                                                  | `guides/devtools.md`                                      | `devtools` overview-1; promo line-4 |
+| Services panel with restart controls                                                                                       | `guides/devtools.md`                                      | `devtools` overview-2; promo line-4 |
+| Worktree picker and worktree search                                                                                        | README, "Git Worktrees"; `guides/devtools.md`             | `devtools` overview-3               |
+| Recovery dialog after a service exits                                                                                      | `guides/devtools.md`                                      | No demo                             |
+| Host resource usage                                                                                                        | `guides/devtools.md`, "Host resource usage"               | No demo                             |
+| Terminal session chips                                                                                                     | `guides/devtools.md`                                      | No demo                             |
+| Toolbar layout on narrow viewports                                                                                         | `guides/devtools.md`                                      | No demo                             |
+| TanStack Query devtools in the toolbar                                                                                     | `guides/devtools.md`; `architecture/external-devtools.md` | `devtools` query-1; promo line-5    |
+| Other third-party devtools: native React DevTools, Redux Toolkit, Zustand, Vue, the TanStack shell, React Hook Form, Jotai | `architecture/external-devtools.md`                       | No demo                             |
+| Open component source                                                                                                      | `guides/devtools.md`, "Open component source"             | No demo                             |
+| Automatic idle timeout                                                                                                     | `guides/devtools.md`, "Automatic Idle Timeout"            | No demo                             |
+| Control API                                                                                                                | `guides/devtools.md`, "Control API"                       | No demo                             |
+
+### Annotations and editor
+
+| Feature                                                     | Documented in                                                                      | Shown in                                                           |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Annotate an element and have a coding agent edit the source | README, "Annotation agents"; `guides/annotations.md`                               | `annotations` annotations-1 to annotations-3; promo line-6, line-7 |
+| Annotation actions and the annotation queue                 | `guides/annotations.md`, "Annotation actions"; `architecture/annotations/queue.md` | No demo                                                            |
+| React Highlight from the Neovim cursor                      | `guides/react-highlight.md`                                                        | `react-highlight` react-highlight-1 to react-highlight-5           |
+
+### CLI
+
+| Feature                             | Documented in                           | Shown in |
+| ----------------------------------- | --------------------------------------- | -------- |
+| Output for agents and scripts       | README, "Output for agents and scripts" | No demo  |
+| Shell completion                    | README, "Shell completion"              | No demo  |
+| The devhost skill for coding agents | README, "AI devhost skill"              | No demo  |
+
+Pages under `guides/` are in `packages/docs/src/content/docs/guides/`, and `architecture/` pages beside them; the README is `apps/devhost/README.md`. The table leaves out sections that describe setup or failure diagnosis rather than a feature, such as installation, requirements, and the troubleshooting entries other than reload.
 
 ## Editing the sequence
 

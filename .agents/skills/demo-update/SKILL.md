@@ -28,6 +28,8 @@ Re-record only the demos whose footage or narration the change made wrong. List 
 
 A message that appears only on a failure path, or in a log the guide never prints, does not make a terminal film out of date. Check the guide's steps before recording.
 
+To find out whether a feature has a demo at all, read the "Demo coverage" table in `docs/internal/references/demo-recording.md`. A new feature with no row is not filmed; add its row, as **No demo** unless this change films it. Filming it is the user's decision.
+
 ## 2. Change the scene, then the narration
 
 - To show a new feature, extend the scene's script (`recordOverview.ts`, `recordAnnotations.ts`, `recordQuery.ts`, `recordReactHighlight.ts`, or the guide's steps in `createGuideTerminalScene.ts`). Assert the state the film is meant to show, so a recording fails when the feature did not appear.
@@ -58,7 +60,8 @@ A finished render is not a verified film.
 1. The user reviews the films on the playground's `/videos` page. Wait for their approval.
 2. After approval: `just docs publish-media`, then commit `packages/docs/demo-media.json` together with the guide's page, poster, and captions. For the promo, the files beside the pin are `packages/docs/src/promoDemo.html`, `promo.webp`, and `promo.vtt`.
 3. `just docs check` passes again once the videos on disk are the pinned ones.
-4. The films reach the docs site with the next CLI release, which deploys the docs from its tag. Merging to `main` does not deploy them.
+4. Update the rows of the "Demo coverage" table that point at a re-recorded film, in the same commit.
+5. The films reach the docs site with the next CLI release, which deploys the docs from its tag. Merging to `main` does not deploy them.
 
 Until step 2, leave the docs media uncommitted. The committed pins, pages, posters, and captions must always describe the published videos, so every commit builds.
 
