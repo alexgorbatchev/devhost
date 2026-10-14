@@ -1,3 +1,4 @@
+import { rejects } from "node:assert/strict";
 import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, it, mock } from "bun:test";
@@ -67,8 +68,11 @@ it("rejects a download that is not the pinned content and writes nothing", async
   const fetcher = mock<DemoMediaFetcher>().mockResolvedValue(new Response("something else"));
   const url = `https://github.com/alexgorbatchev/devhost/releases/download/media/${assetName("annotations", "annotations video")}`;
 
-  await expect(fetchDemoMedia({ manifest, directoryPath, fetcher })).rejects.toThrow(
-    `${url} is not the pinned annotations.mp4: expected sha256 ${manifest.files["annotations.mp4"]?.sha256}, received ${new Bun.CryptoHasher("sha256").update("something else").digest("hex")}`,
+  await rejects(
+    fetchDemoMedia({ manifest, directoryPath, fetcher }),
+    new Error(
+      `${url} is not the pinned annotations.mp4: expected sha256 ${manifest.files["annotations.mp4"]?.sha256}, received ${new Bun.CryptoHasher("sha256").update("something else").digest("hex")}`,
+    ),
   );
   expect(await Bun.file(join(directoryPath, "annotations.mp4")).exists()).toBe(false);
 });
@@ -77,7 +81,8 @@ it("names the asset and the status when the release does not serve it", async ()
   const fetcher = mock<DemoMediaFetcher>().mockResolvedValue(new Response("Not Found", { status: 404 }));
   const url = `https://github.com/alexgorbatchev/devhost/releases/download/media/${assetName("annotations", "annotations video")}`;
 
-  await expect(
+  await rejects(
     fetchDemoMedia({ manifest: createManifest({ "annotations.mp4": "annotations video" }), directoryPath, fetcher }),
-  ).rejects.toThrow(`Cannot download annotations.mp4 from ${url}: HTTP 404`);
+    new Error(`Cannot download annotations.mp4 from ${url}: HTTP 404`),
+  );
 });
