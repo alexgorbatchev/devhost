@@ -79,3 +79,15 @@ export function factory_homeWorktreeRepository(): IWorktreeRepository {
     })),
   };
 }
+
+export function factory_longPathWorktreeRepository(): IWorktreeRepository {
+  const repository = factory_worktreeRepository();
+  const path = `/development/projects/${"long parent directory/".repeat(8)}.workspaces/worktree-stack-switch`;
+  return {
+    ...repository,
+    configuredPath: path,
+    selectedPath: path,
+    runningPath: path,
+    worktrees: [{ ...repository.worktrees[0]!, path }],
+  };
+}

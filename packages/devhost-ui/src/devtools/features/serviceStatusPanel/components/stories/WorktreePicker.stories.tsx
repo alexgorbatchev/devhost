@@ -11,7 +11,11 @@ import {
 import { WorktreePicker } from "../WorktreePicker";
 import { DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "../../../../shared/constants";
 import { readInjectedDevtoolsConfig } from "../../../../shared/readInjectedDevtoolsConfig";
-import { factory_homeWorktreeRepository, factory_worktreeRepository } from "./fixtures";
+import {
+  factory_homeWorktreeRepository,
+  factory_longPathWorktreeRepository,
+  factory_worktreeRepository,
+} from "./fixtures";
 import { readContrastRatio } from "../../../../../../../../test-support/readContrastRatio";
 
 const meta: Meta<typeof WorktreePicker> = {
@@ -102,6 +106,14 @@ export const FuzzySearch: Story = {
     await expect(search.getBoundingClientRect().top).toBeGreaterThanOrEqual(
       canvas.getByRole("button", { name: "Cancel" }).getBoundingClientRect().bottom,
     );
+    await waitFor(() => {
+      const filterBounds = search.getBoundingClientRect();
+      const refreshBounds = canvas.getByRole("button", { name: "Refresh worktrees" }).getBoundingClientRect();
+      expect(refreshBounds.left).toBeGreaterThan(filterBounds.right);
+      expect(
+        Math.abs((filterBounds.top + filterBounds.bottom - refreshBounds.top - refreshBounds.bottom) / 2),
+      ).toBeLessThan(1);
+    });
     await userEvent.type(search, "FCRT");
     await expect(canvas.getAllByRole("radio")).toHaveLength(1);
     const feature = canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" });
@@ -151,18 +163,18 @@ export const HomeDirectoryPaths: Story = {
     });
     await waitFor(() => {
       expect(canvas.getByText("~/projects/shop")).toBeVisible();
-      expect(canvas.getByText("~/projects/shop/api")).toBeVisible();
+      expect(canvas.queryByText("~/projects/shop/api")).toBeNull();
     });
     const feature = canvas.getByRole("radio", { name: "feature/cart ~/worktrees/cart" });
     await userEvent.click(feature);
     await expect(feature).toBeChecked();
-    await waitFor(() => expect(canvas.getByText("~/worktrees/cart/web")).toBeVisible());
+    await expect(canvas.queryByText("~/worktrees/cart/web")).toBeNull();
     await userEvent.click(canvas.getByRole("button", { name: "Switch and restart stack" }));
     await expect(args.onSwitch).toHaveBeenCalledWith("shop", "/home/alex/worktrees/cart");
   },
 };
 
-export const ChoicesAndPreview: Story = {
+export const Choices: Story = {
   play: async ({ args, canvasElement }): Promise<void> => {
     const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
     await userEvent.click(await canvas.findByRole("button", { name: "Worktrees" }));
@@ -176,7 +188,8 @@ export const ChoicesAndPreview: Story = {
     await userEvent.click(main);
     await userEvent.click(canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" }));
     await expect(canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" })).toBeChecked();
-    await waitFor(() => expect(canvas.getByText("/worktrees/cart/web")).toBeVisible());
+    await expect(canvas.queryByText("/worktrees/cart/web")).toBeNull();
+    await expect(canvas.queryByText("Your choice is remembered across devhost restarts.")).toBeNull();
     await expect(canvas.getByRole("radio", { name: "feature/missing /worktrees/missing" })).toBeDisabled();
     await userEvent.click(canvas.getByRole("button", { name: "Switch and restart stack" }));
     await expect(args.onSwitch).toHaveBeenCalledWith("shop", "/worktrees/cart");
@@ -194,7 +207,7 @@ export const DetachedCheckout: Story = {
       expect(detached).toBeVisible();
     });
     await userEvent.click(detached);
-    await waitFor(() => expect(canvas.getByText("/worktrees/experiment/api")).toBeVisible());
+    await expect(canvas.queryByText("/worktrees/experiment/api")).toBeNull();
     await userEvent.click(canvas.getByRole("button", { name: "Switch and restart stack" }));
     await expect(args.onSwitch).toHaveBeenCalledWith("shop", "/worktrees/experiment");
   },
@@ -322,5 +335,26 @@ export const ServiceRestartInProgress: Story = {
     await waitFor(() => expect(feature).toBeEnabled());
     await userEvent.click(feature);
     await expect(canvas.getByRole("button", { name: "Switch and restart stack" })).toBeDisabled();
+  },
+};
+
+export const LongCheckoutPaths: Story = {
+  args: { repository: factory_longPathWorktreeRepository() },
+  play: async ({ args, canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Worktrees" }));
+    const checkout = args.repository.worktrees[0]!;
+    const radio = canvas.getByRole("radio", { name: `main ${checkout.path}` });
+    await waitFor(() => expect(radio).toBeEnabled());
+    const path = canvas.getByText(checkout.path, { exact: true });
+    const label = radio.closest("label")!;
+    await waitFor(() => {
+      const range = document.createRange();
+      range.selectNodeContents(path);
+      expect(range.getClientRects()).toHaveLength(1);
+      expect(range.getBoundingClientRect().left).toBeLessThan(label.getBoundingClientRect().left);
+      expect(range.getBoundingClientRect().right).toBeLessThanOrEqual(label.getBoundingClientRect().right + 1);
+    });
+    await expect(radio).toBeChecked();
   },
 };
