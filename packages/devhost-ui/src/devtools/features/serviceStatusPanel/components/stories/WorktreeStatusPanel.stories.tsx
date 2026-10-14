@@ -37,7 +37,7 @@ export const DefaultBranch: Story = {
     await expect(trigger.textContent).toBe("main");
     await expect(args.onRefreshWorktrees).not.toHaveBeenCalled();
     await userEvent.click(trigger);
-    await waitFor(() => expect(canvas.getByRole("region", { name: "shop · Worktrees" })).toBeVisible());
+    await waitFor(() => expect(canvas.getByRole("region", { name: "Worktrees" })).toBeVisible());
     await waitFor(() => expect(args.onRefreshWorktrees).toHaveBeenCalledOnce());
     const alternative = await canvas.findByRole("radio", { name: "feature/cart /worktrees/cart" });
     await waitFor(() => expect(alternative).toBeEnabled());

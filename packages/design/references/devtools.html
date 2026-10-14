@@ -2744,7 +2744,7 @@
           label: `${repository.name} worktrees`,
           html: `
             <header class="panel-head">
-              <span class="grow trunc">${esc(repository.name)} · Worktrees</span>
+              <span class="grow trunc">Worktrees</span>
               ${state.repositories.length > 1 ? `<select class="input worktree-repository" aria-label="Repository" data-input="worktree-repository">${state.repositories.map((entry) => `<option value="${esc(entry.id)}" ${entry.id === repository.id ? "selected" : ""}>${esc(entry.name)}</option>`).join("")}</select>` : ""}
             </header>
             <div class="panel-body">
