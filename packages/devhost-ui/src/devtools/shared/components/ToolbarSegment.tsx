@@ -13,8 +13,8 @@ interface IToolbarSegmentProps {
 }
 
 /**
- * A grouped section of the devtools toolbar. `shrink` lets the segment give up width (with its overflow clipped)
- * so it can measure when its content no longer fits; the toolbar itself never overflows the viewport.
+ * A grouped section of the devtools toolbar. Fixed groups wrap their controls when wider than the viewport.
+ * `shrink` fills the remaining row width, reserving room for a terminal overflow trigger while its owner fits chips.
  */
 export function ToolbarSegment({
   ariaLabel,
@@ -28,8 +28,8 @@ export function ToolbarSegment({
       ref={ref}
       aria-label={ariaLabel}
       className={cn(
-        "flex items-center gap-1 border-l border-border px-1",
-        layout === "shrink" ? "min-w-0 shrink overflow-hidden" : "shrink-0",
+        "flex min-h-6 max-w-full items-center gap-1 border-l border-border px-1",
+        layout === "shrink" ? "min-w-12 flex-1 overflow-hidden" : "shrink-0 flex-wrap",
       )}
       data-devhost-instance-testid={testId}
       data-testid="ToolbarSegment"

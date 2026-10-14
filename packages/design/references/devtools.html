@@ -935,6 +935,7 @@
           align-items: flex-end;
           gap: var(--dh-space-3);
           max-width: calc(100vw - 16px);
+          max-height: calc(100vh - 16px);
         }
         .dock[data-position="top-right"] {
           top: 8px;
@@ -947,6 +948,7 @@
         }
         .native-readout {
           display: flex;
+          min-height: 0;
           flex-direction: column;
           gap: var(--dh-space-2);
           width: 384px;
@@ -976,13 +978,19 @@
         }
         .bar {
           display: flex;
+          flex-shrink: 0;
+          flex-wrap: wrap;
           align-items: stretch;
-          height: var(--dh-bar-h);
+          min-height: var(--dh-bar-h);
           max-width: 100%;
           overflow: hidden;
         }
         .seg {
           display: flex;
+          flex-wrap: wrap;
+          flex-shrink: 0;
+          min-height: 24px;
+          max-width: 100%;
           align-items: center;
           gap: var(--dh-space-3);
           padding: 0 var(--dh-space-4);
@@ -997,7 +1005,20 @@
           border-left: 0;
         }
         button.seg {
+          flex-wrap: nowrap;
           cursor: pointer;
+        }
+        .seg.sessions {
+          flex: 1;
+          flex-wrap: nowrap;
+          min-width: 48px;
+          overflow: hidden;
+        }
+        .stack-name,
+        .checkout-name {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
         button.seg:hover {
           background: var(--dh-surface-2);
@@ -1020,6 +1041,7 @@
           padding: 0 var(--dh-space-2);
         }
         .logo {
+          flex-shrink: 0;
           display: grid;
           place-items: center;
           width: 16px;
@@ -2318,7 +2340,7 @@
           <button class="seg tight" type="button" data-action="toggle-dock"
             title="${state.dockCollapsed ? "Expand" : "Collapse"} devhost (${esc(state.stackName)})"
             aria-label="${state.dockCollapsed ? "Expand" : "Collapse"} devhost toolbar">
-            <span class="logo">dh</span>${state.dockCollapsed ? "" : `<span>${esc(state.stackName)}</span>`}
+            <span class="logo">dh</span>${state.dockCollapsed ? "" : `<span class="stack-name">${esc(state.stackName)}</span>`}
           </button>`);
 
         if (state.dockCollapsed) {
@@ -2346,8 +2368,14 @@
         }
 
         if (state.worktreesEnabled && state.repositories.length > 0) {
+          const currentCheckouts = state.repositories
+            .map(
+              (repository) =>
+                `${state.repositories.length > 1 ? repository.name + ": " : ""}${worktreeLabel(repository, repository.selectedPath)}`,
+            )
+            .join(", ");
           segments.push(
-            `<button class="seg tight" type="button" data-action="panel" data-panel="worktrees" title="${esc(worktreeSummary || "Worktrees")}" aria-label="Worktrees" aria-expanded="${panelOpen("worktrees")}">${icon("branch")}<span>${esc(state.repositories.map((repository) => `${state.repositories.length > 1 ? repository.name + ": " : ""}${worktreeLabel(repository, repository.selectedPath)}`).join(", "))}</span></button>`,
+            `<button class="seg tight" type="button" data-action="panel" data-panel="worktrees" title="${esc(worktreeSummary || `Worktrees: ${currentCheckouts}`)}" aria-label="Worktrees" aria-expanded="${panelOpen("worktrees")}">${icon("branch")}<span class="checkout-name">${esc(currentCheckouts)}</span></button>`,
           );
         }
 
@@ -2393,7 +2421,7 @@
                   aria-expanded="${panelOpen("sessions")}" aria-label="All terminal sessions (${hidden.length} more)" title="All terminal sessions">
                   ${hiddenRunning ? `<span class="led running" aria-hidden="true"></span>` : ""}+${hidden.length}</button>`;
           segments.push(`
-            <span class="seg tight" role="group" aria-label="Terminal sessions">
+            <span class="seg tight sessions" role="group" aria-label="Terminal sessions">
               ${visible.map(renderSessionChip).join("")}${overflow}
             </span>`);
         }
@@ -2496,8 +2524,7 @@
         return sessions.filter((s) => kept.includes(s));
       }
 
-      // Measure-and-shrink: the bar never clips. Re-render with one fewer chip
-      // until the bar fits its available width (or no chips remain).
+      // Fixed groups wrap. Fold terminal chips until their segment fits the remaining row width.
       function renderDockFitted() {
         const dock = surface("dock");
         const bar = surface("bar");
@@ -2506,7 +2533,10 @@
         state.sessionChipLimit = Infinity;
         patch(bar, renderDock());
         let visibleCount = bar.querySelectorAll(".chip").length;
-        while (bar.scrollWidth > bar.clientWidth && visibleCount > 0) {
+        while (
+          bar.querySelector(".sessions")?.scrollWidth > bar.querySelector(".sessions")?.clientWidth &&
+          visibleCount > 0
+        ) {
           visibleCount -= 1;
           state.sessionChipLimit = visibleCount;
           patch(bar, renderDock());

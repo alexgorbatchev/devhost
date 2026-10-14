@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect } from "storybook/test";
+import { expect, within } from "storybook/test";
 
 import { Button } from "../../../../components/ui/Button";
 import { ToolbarSegment } from "../ToolbarSegment";
@@ -30,7 +30,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** A fixed segment keeps its content width, even when the row is too narrow for it. */
+/** A fixed segment wraps its controls when the row is narrower than the group. */
 export const Fixed: Story = {
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
@@ -38,7 +38,12 @@ export const Fixed: Story = {
     const segment = canvas.getByRole("group", { name: "Terminal sessions" });
 
     await expect(segment.scrollWidth).toBe(segment.clientWidth);
-    await expect(segment.getBoundingClientRect().right).toBeGreaterThan(row.getBoundingClientRect().right);
+    await expect(segment.getBoundingClientRect().right).toBeLessThanOrEqual(row.getBoundingClientRect().right);
+    const buttons = within(segment).getAllByRole("button");
+    for (const button of buttons) {
+      await expect(button.getBoundingClientRect().right).toBeLessThanOrEqual(segment.getBoundingClientRect().right);
+    }
+    await expect(buttons[2]!.getBoundingClientRect().top).toBeGreaterThan(buttons[0]!.getBoundingClientRect().top);
   },
 };
 
