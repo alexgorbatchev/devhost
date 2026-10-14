@@ -51,6 +51,9 @@ func TestShutdownAnnouncementDoesNotWaitForStartup(t *testing.T) {
 			release := make(chan struct{})
 			unblock := sync.OnceFunc(func() { close(release) })
 			startDevtoolsControlServer = func(options devtools.StartControlServerOptions) (*devtools.ControlServer, error) {
+				if options.OnLog != nil {
+					options.OnLog("devtools build diagnostic")
+				}
 				close(starting)
 				<-release
 				return originalStart(options)
@@ -87,6 +90,9 @@ func TestShutdownAnnouncementDoesNotWaitForStartup(t *testing.T) {
 					t.Error("shutdown did not finish")
 				}
 				message := fmt.Sprintf("[hello-stack] Received %s; shutting down the stack.\n", describeShutdownSignal(sig))
+				if logs := output.snapshot(); strings.Count(logs, "[hello-stack] devtools build diagnostic\n") != 1 {
+					t.Errorf("devtools diagnostic bypassed the stack logger:\n%s", logs)
+				}
 				if logs := output.snapshot(); strings.Count(logs, message) != 1 {
 					t.Errorf("want exactly one shutdown announcement:\n%s", logs)
 				}

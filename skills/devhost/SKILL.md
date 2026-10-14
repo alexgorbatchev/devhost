@@ -4,11 +4,13 @@ description: Use when running devhost or when reading, writing, or changing a de
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-13 16:58
+  last_modified: 2026-10-13 17:20
   status: current
 ---
 
 ## Command Line
+
+Read on-demand devtools asset rebuild notices and every line of compiler diagnostics with the same stack prefix and output formatting as other foreground stack logs.
 
 Run `devhost` with `AGENT=1`: help becomes `key: value` text, and a failed command ends with one `ERR:` line that holds the whole error. Without it, a failure ends with an `[ERROR]` line and, where the next step is known, an `[INFO]` hint. Failure lines and warnings (`WARN:`, or `[WARN]` without `AGENT=1`) go to stderr. Exit code `0` means success and `1` a failure. `devhost start` ended by a signal exits with `128` plus the signal number: `130` after Ctrl-C, `143` after SIGTERM.
 

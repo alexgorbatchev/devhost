@@ -109,6 +109,7 @@ type StartControlServerOptions struct {
 	AnnotationActions          []manifest.ValidatedAnnotationAction
 	ComponentEditor            string
 	DevSource                  *DevSourceCheckout
+	OnLog                      func(string)
 	FeatureToggles             FeatureToggles
 	GetHealthResponse          func() (HealthResponse, error)
 	IdleTerminalSessionTimeout time.Duration
@@ -160,6 +161,7 @@ type ControlServer struct {
 	tracker                    *ActivityTracker
 
 	devSource  *DevSourceCheckout
+	onLog      func(string)
 	configJSON []byte
 	ctx        context.Context
 	cancel     context.CancelFunc
@@ -316,6 +318,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		ctx:                        ctx,
 		cancel:                     cancel,
 		devSource:                  options.DevSource,
+		onLog:                      options.OnLog,
 		configJSON:                 configJSON,
 		annotationActions:          annotationActions,
 		componentEditor:            options.ComponentEditor,
@@ -747,7 +750,7 @@ func (s *ControlServer) checkAndBuildAssets(filename string) ([]byte, []byte, er
 		return s.readAsset(filename)
 	}
 
-	_, _ = fmt.Fprintln(os.Stderr, "[devhost] Changes detected in devtools UI source files. Rebuilding assets...")
+	s.logBuildMessage("Changes detected in devtools UI source files. Rebuilding assets...")
 
 	cmd := s.devSource.buildCommand(s.ctx)
 
@@ -760,7 +763,7 @@ func (s *ControlServer) checkAndBuildAssets(filename string) ([]byte, []byte, er
 		if errLog == "" {
 			errLog = runErr.Error()
 		}
-		_, _ = fmt.Fprintf(os.Stderr, "[devhost] Compilation failed:\n%s\n", errLog)
+		s.logBuildMessage("Compilation failed:\n" + errLog)
 
 		return nil, nil, fmt.Errorf("build devtools assets: %s", errLog)
 	}
@@ -771,11 +774,20 @@ func (s *ControlServer) checkAndBuildAssets(filename string) ([]byte, []byte, er
 	_, err = os.Stat(compiledPath)
 	if os.IsNotExist(err) {
 		missingBundleMessage := fmt.Sprintf("The %s recipe finished without writing %s.", devtoolsBundleRecipe, compiledPath)
-		_, _ = fmt.Fprintf(os.Stderr, "[devhost] %s\n", missingBundleMessage)
+		s.logBuildMessage(missingBundleMessage)
 		return nil, nil, fmt.Errorf("%s", missingBundleMessage)
 	}
 
 	return s.readAsset(filename)
+}
+
+func (s *ControlServer) logBuildMessage(message string) {
+	if s.onLog == nil {
+		return
+	}
+	for _, line := range strings.Split(strings.TrimRight(message, "\n"), "\n") {
+		s.onLog(line)
+	}
 }
 
 func (s *ControlServer) handleRestartService(writer http.ResponseWriter, request *http.Request) {
