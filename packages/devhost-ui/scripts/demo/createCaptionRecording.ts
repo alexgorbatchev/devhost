@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { viewport } from "./constants";
-import type { ICaptionRecording, IRecordedSourceClip, ScreencastControls } from "./types";
+import type { ICaptionRecording, IRecordedSourceClip, ReadClock, ScreencastControls } from "./types";
 
 export async function createCaptionRecording(
   screencast: ScreencastControls,
@@ -8,6 +8,7 @@ export async function createCaptionRecording(
   sceneId: string,
   initialCaption: string,
   captureScale: number = 1,
+  now: ReadClock = () => performance.now(),
 ): Promise<ICaptionRecording> {
   const size = { width: viewport.width * captureScale, height: viewport.height * captureScale };
   const clips: IRecordedSourceClip[] = [];
@@ -16,7 +17,13 @@ export async function createCaptionRecording(
     return { id, path: join(directoryPath, "raw", `${id}.webm`), caption };
   };
   let clip = createClip(initialCaption);
-  await screencast.start({ path: clip.path, size });
+  // A clip's footage starts once its screencast has started.
+  const startClip = async (): Promise<number> => {
+    await screencast.start({ path: clip.path, size });
+    return now();
+  };
+  let clipStartedAt = await startClip();
+  let isPosterMarked = false;
   const finishClip = async (): Promise<void> => {
     await screencast.stop();
     clips.push(clip);
@@ -25,7 +32,12 @@ export async function createCaptionRecording(
     changeCaption: async (caption: string): Promise<void> => {
       await finishClip();
       clip = createClip(caption);
-      await screencast.start({ path: clip.path, size });
+      clipStartedAt = await startClip();
+    },
+    markPoster: (): void => {
+      if (isPosterMarked) throw new Error(`The ${sceneId} scene already marked its poster frame`);
+      isPosterMarked = true;
+      clip.poster = Math.round(now() - clipStartedAt) / 1_000;
     },
     stop: async (): Promise<IRecordedSourceClip[]> => {
       await finishClip();

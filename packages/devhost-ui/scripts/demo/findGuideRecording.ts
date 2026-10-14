@@ -12,6 +12,7 @@ const recordSchema = z.object({
       z.object({
         clip: z.string().min(1),
         footage: z.object({ sourceId: z.string().min(1), from: z.number().optional(), to: z.number().optional() }),
+        poster: z.number().nonnegative().optional(),
       }),
     )
     .min(1),

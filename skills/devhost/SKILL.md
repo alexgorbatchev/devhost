@@ -167,7 +167,7 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 
 ### Reference Guides
 
-Published guides include a video at the top and a collapsible text transcript. Read the guide prose and transcript for operational instructions; watching or downloading the video is optional.
+Published guides include a video at the top. Read the guide prose for operational instructions; watching or downloading the video is optional.
 
 - [Managed Caddy and routing](https://alexgorbatchev.github.io/devhost/guides/managed-caddy/)
 - [Stack lifecycle](https://alexgorbatchev.github.io/devhost/guides/stack-lifecycle/)

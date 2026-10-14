@@ -10,16 +10,6 @@ sidebar:
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/stack-lifecycle.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/stack-lifecycle.mp4">Watch the demo video</a>.
 </video>
-
-<details>
-<summary>Demo transcript</summary>
-<p>Start dependencies first. Stop the whole stack with one command.</p>
-<p>The web service depends on the API.</p>
-<p>Start the stack.</p>
-<p>devhost starts the API first, then the web service.</p>
-<p>The web service answers on its HTTPS hostname.</p>
-<p>Stopping takes one command.</p>
-</details>
 <!-- /guide-demo -->
 
 The canonical manifest reference lives in [../devhost.example.toml](../reference/devhost-example/).

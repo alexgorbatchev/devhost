@@ -106,13 +106,8 @@ export async function renderGuideFilm(options: IRenderGuideFilmOptions): Promise
       render: options.render,
       signal,
     });
-    // The guide page's transcript is what the film says.
-    await Bun.write(
-      join(directoryPath, "clips.json"),
-      JSON.stringify({
-        clips: [script.intro, ...script.clips.map((line) => line.text)].map((caption) => ({ caption })),
-      }) + "\n",
-    );
+    // The guide page's poster is taken from the frame the plan names.
+    await Bun.write(join(directoryPath, "guide-film.json"), JSON.stringify(plan, null, 2) + "\n");
     return videoPath;
   } finally {
     await rm(projectSourcePath, { recursive: true, force: true });

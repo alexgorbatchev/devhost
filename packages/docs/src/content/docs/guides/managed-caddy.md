@@ -10,17 +10,6 @@ sidebar:
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/managed-caddy.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/managed-caddy.mp4">Watch the demo video</a>.
 </video>
-
-<details>
-<summary>Demo transcript</summary>
-<p>One proxy. Local HTTPS hostnames. Route each service by path.</p>
-<p>Two services share one hostname, split by path.</p>
-<p>Start the stack.</p>
-<p>devhost starts both and publishes an HTTPS address for each.</p>
-<p>The hostname alone reaches the web service.</p>
-<p>The API path reaches the API service.</p>
-<p>One command stops both services.</p>
-</details>
 <!-- /guide-demo -->
 
 `devhost` routes local apps through one shared managed Caddy instance.

@@ -10,17 +10,6 @@ sidebar:
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/manifest-includes.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/manifest-includes.mp4">Watch the demo video</a>.
 </video>
-
-<details>
-<summary>Demo transcript</summary>
-<p>Each package owns its services. The root starts them together.</p>
-<p>The root manifest declares no services. It includes each package&#x27;s manifest.</p>
-<p>Each package declares its own service.</p>
-<p>Start from the root.</p>
-<p>devhost merges them into one stack.</p>
-<p>The merged stack answers on its HTTPS hostname.</p>
-<p>And it stops as one.</p>
-</details>
 <!-- /guide-demo -->
 
 `devhost` supports splitting stack configurations across multiple files using the `includes` key. This is particularly valuable in monorepo environments, allowing each sub-application or workspace package to maintain and control its own service definitions locally without cluttering a single massive root-level manifest.

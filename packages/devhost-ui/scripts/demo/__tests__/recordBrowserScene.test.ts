@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { runCommand } from "../runCommand";
 
-it("records an already loaded page across scenes and rejects a captured reload", async () => {
+it("records an already loaded page across scenes, keeps the poster frame a scene marks, and rejects a captured reload", async () => {
   const parentPath = resolve(import.meta.dir, "../../../../../.tmp/demo-tests");
   await mkdir(parentPath, { recursive: true });
   const directoryPath = await mkdtemp(join(parentPath, "browser-"));
@@ -18,6 +18,8 @@ it("records an already loaded page across scenes and rejects a captured reload",
       loadsBeforeReload: 1,
       retainedValue: "Preserved between scenes",
       clips: 2,
+      // Only the second scene marked its poster frame.
+      markedPosters: [false, true],
       rejectedReload: true,
     });
   } finally {

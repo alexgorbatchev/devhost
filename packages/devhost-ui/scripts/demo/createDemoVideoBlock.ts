@@ -1,6 +1,6 @@
 import type { IDemoVideoBlock } from "./types";
 
-// The player and collapsed transcript a docs page shows for a film, between comments that mark it for replacement.
+// The player a docs page shows for a film, between comments that mark it for replacement.
 export function createDemoVideoBlock(block: IDemoVideoBlock): string {
   const url = `https://alexgorbatchev.github.io/devhost/demos/${block.name}`;
   return [
@@ -10,11 +10,6 @@ export function createDemoVideoBlock(block: IDemoVideoBlock): string {
     `  <track kind="captions" src="${url}.vtt" srclang="en" label="English">`,
     `  <a href="${url}.mp4">Watch the demo video</a>.`,
     "</video>",
-    "",
-    "<details>",
-    "<summary>Demo transcript</summary>",
-    ...block.transcript.map((line) => `<p>${Bun.escapeHTML(line)}</p>`),
-    "</details>",
     `<!-- /${block.marker} -->`,
   ].join("\n");
 }

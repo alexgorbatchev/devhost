@@ -10,14 +10,6 @@ sidebar:
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/annotations.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/annotations.mp4">Watch the demo video</a>.
 </video>
-
-<details>
-<summary>Demo transcript</summary>
-<p>Point at the problem, and let a coding agent fix it.</p>
-<p>Hold Alt, click an element, and describe the change.</p>
-<p>The Pi coding agent takes the annotation and edits your source.</p>
-<p>The fix is on the page, without a full reload.</p>
-</details>
 <!-- /guide-demo -->
 
 Annotations build on top of the injected devtools UI. For the overlay and routing model itself, see [Devtools](./devtools/).

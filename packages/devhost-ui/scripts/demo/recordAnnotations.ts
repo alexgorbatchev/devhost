@@ -2,13 +2,14 @@ import assert from "node:assert/strict";
 import { join } from "node:path";
 import type { Page } from "playwright";
 import { clickWithIndicator } from "./clickWithIndicator";
-import type { ChangeCaption, IDemoRuntime } from "./types";
+import type { ChangeCaption, IDemoRuntime, MarkPoster } from "./types";
 
 export async function recordAnnotations(
   page: Page,
   runtime: IDemoRuntime,
   signal: AbortSignal,
   changeCaption: ChangeCaption,
+  markPoster: MarkPoster,
 ): Promise<void> {
   const heading = page.getByRole("heading", { name: "Devtools playground", exact: true });
   await heading.waitFor();
@@ -28,6 +29,8 @@ export async function recordAnnotations(
     { delay: 25 },
   );
   await page.waitForTimeout(2_000);
+  // The finished draft shows what an annotation is; the Pi terminal that follows prints the recording machine's paths.
+  markPoster();
   await page.screenshot({ path: join(runtime.directoryPath, "annotation-draft.png") });
   await clickWithIndicator(page, page.getByRole("button", { name: "Pi", exact: true }));
   await clickWithIndicator(page, page.getByRole("button", { name: /^Pi terminal, / }));

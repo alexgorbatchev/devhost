@@ -49,7 +49,7 @@ const server = Bun.serve({
 const browser = await chromium.launch({ env: await createOwnedBrowserEnvironment(process.cwd()) });
 let pagesPlayed = 0;
 let captionsLoaded = 0;
-let transcriptsAvailable = 0;
+let postersShown = 0;
 try {
   const page = await browser.newPage({ viewport: { width: 640, height: 800 } });
   await page.route("https://alexgorbatchev.github.io/devhost/**", async (route): Promise<void> => {
@@ -61,6 +61,15 @@ try {
     const response = await page.goto(`https://alexgorbatchev.github.io/devhost/${pagePath}`);
     assert(response?.ok());
     assert.equal(await page.locator("video").count(), 1);
+    // Before anything plays, the page shows the poster: a picture of the film at its own size.
+    const posterSize = await page.locator("video").evaluate(async (video: HTMLVideoElement) => {
+      const poster = new Image();
+      poster.src = video.poster;
+      await poster.decode();
+      return [poster.naturalWidth, poster.naturalHeight, video.width, video.height];
+    });
+    assert.deepEqual(posterSize.slice(0, 2), posterSize.slice(2));
+    postersShown += 1;
     const initial = await page.locator("video").evaluate((video: HTMLVideoElement) => ({
       controls: video.controls,
       preload: video.preload,
@@ -88,14 +97,11 @@ try {
     pagesPlayed += 1;
     await page.waitForFunction(() => (document.querySelector("video")?.textTracks[0]?.cues?.length ?? 0) > 0);
     captionsLoaded += 1;
-    await page.getByText("Demo transcript", { exact: true }).click();
-    assert.equal((await page.locator("details[open] p").count()) > 0, true);
-    transcriptsAvailable += 1;
     await page.locator("video").evaluate((video: HTMLVideoElement) => {
       video.pause();
     });
   }
-  console.log(JSON.stringify({ pagesPlayed, captionsLoaded, transcriptsAvailable }));
+  console.log(JSON.stringify({ postersShown, pagesPlayed, captionsLoaded }));
 } finally {
   await browser.close();
   await server.stop(true);

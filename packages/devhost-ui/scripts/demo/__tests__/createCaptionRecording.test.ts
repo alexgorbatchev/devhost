@@ -49,3 +49,41 @@ it("preserves a single caption for scenes without a transition", async () => {
     { id: "query-1", path: "/recording/raw/query-1.webm", caption: "Inspect the query." },
   ]);
 });
+
+function createScreencast(): ScreencastControls {
+  return {
+    start: async () => ({
+      dispose: async (): Promise<void> => {},
+      [Symbol.asyncDispose]: async (): Promise<void> => {},
+    }),
+    stop: async (): Promise<void> => {},
+  };
+}
+
+it("marks the poster frame on the clip it was shown in, in seconds into that clip", async () => {
+  let milliseconds = 1_000;
+  const now = (): number => milliseconds;
+  const recording = await createCaptionRecording(
+    createScreencast(),
+    "/recording",
+    "annotations",
+    "Describe it.",
+    1,
+    now,
+  );
+  milliseconds = 2_500;
+  await recording.changeCaption("Pi is working.");
+  milliseconds = 6_750;
+  recording.markPoster();
+  expect(await recording.stop()).toEqual([
+    { id: "annotations-1", path: "/recording/raw/annotations-1.webm", caption: "Describe it." },
+    { id: "annotations-2", path: "/recording/raw/annotations-2.webm", caption: "Pi is working.", poster: 4.25 },
+  ]);
+});
+
+it("rejects a second poster frame in one scene", async () => {
+  const recording = await createCaptionRecording(createScreencast(), "/recording", "annotations", "Describe it.");
+  recording.markPoster();
+  await recording.changeCaption("Pi is working.");
+  expect(() => recording.markPoster()).toThrow("The annotations scene already marked its poster frame");
+});

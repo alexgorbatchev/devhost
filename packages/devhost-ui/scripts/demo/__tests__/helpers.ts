@@ -49,11 +49,12 @@ try {
     {
       id: "second",
       caption: "Second scene",
-      record: async (currentPage): Promise<void> => {
+      record: async (currentPage, _runtime, _signal, _changeCaption, markPoster): Promise<void> => {
         assert.equal(
           await currentPage.getByRole("textbox", { name: "Recorded value" }).inputValue(),
           "Preserved between scenes",
         );
+        markPoster();
       },
     },
     runtime,
@@ -92,6 +93,7 @@ try {
       loadsBeforeReload,
       retainedValue,
       clips: first.length + second.length,
+      markedPosters: [...first, ...second].map((clip) => clip.poster !== undefined),
       rejectedReload: reloadError instanceof AssertionError,
     }),
   );
