@@ -1,13 +1,72 @@
 package devtools
 
 import (
+	"bytes"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 )
+
+func TestDevSourceRebuildLogsUseStackOutput(t *testing.T) {
+	for _, agent := range []string{"0", "1"} {
+		t.Run("agent="+agent, func(t *testing.T) {
+			t.Setenv("AGENT", agent)
+			t.Setenv("COLUMNS", "")
+			for _, tc := range []struct {
+				name, recipe, diagnostic string
+			}{
+				{"success", writeBundleRecipe, ""},
+				{"failure", failingBundleRecipe, "Compilation failed:"},
+				{"missing bundle", silentBundleRecipe, "finished without writing"},
+			} {
+				t.Run(tc.name, func(t *testing.T) {
+					checkout, err := NewDevSourceCheckout(writeDevSourceCheckout(t, tc.recipe))
+					if err != nil {
+						t.Fatal(err)
+					}
+					var output bytes.Buffer
+					_, writer := cliout.ServiceOutputWriters(&output, &output, []string{devSourceTestStackName, "longer-service-name"})
+					s, err := StartControlServer(StartControlServerOptions{
+						DevSource:         checkout,
+						StackName:         devSourceTestStackName,
+						GetHealthResponse: func() (HealthResponse, error) { return HealthResponse{}, nil },
+						OnLog: func(message string) {
+							if _, err := fmt.Fprintf(writer, "[%s] %s\n", devSourceTestStackName, message); err != nil {
+								t.Error(err)
+							}
+						},
+					})
+					if err != nil {
+						t.Fatal(err)
+					}
+					t.Cleanup(func() { _ = s.Stop() })
+					getControlServerText(t, s, injectedScriptPath)
+					prefix := devSourceTestStackName + "    | "
+					if agent == "1" {
+						prefix = devSourceTestStackName + ": "
+					}
+					if !strings.HasPrefix(output.String(), prefix+"Changes detected in devtools UI source files. Rebuilding assets...\n") {
+						t.Fatalf("rebuild log has wrong stack prefix: %q", output.String())
+					}
+					if tc.diagnostic != "" && !strings.Contains(output.String(), tc.diagnostic) {
+						t.Fatalf("missing rebuild diagnostic %q: %q", tc.diagnostic, output.String())
+					}
+					for _, line := range strings.Split(strings.TrimSuffix(output.String(), "\n"), "\n") {
+						if !strings.HasPrefix(line, prefix) {
+							t.Fatalf("unprefixed rebuild diagnostic: %q", line)
+						}
+					}
+				})
+			}
+		})
+	}
+}
 
 const (
 	rebuiltBundleMarker    = "rebuilt from source"

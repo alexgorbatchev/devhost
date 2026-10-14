@@ -397,12 +397,15 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			AnnotationDefaultActionID: manifest.Annotation.DefaultActionID,
 			ComponentEditor:           manifest.Devtools.Editor.IDE,
 			DevSource:                 devSource,
-			FeatureToggles:            runtimeDevtoolsFeatures,
-			GetHealthResponse:         state.health,
-			ManifestPath:              manifest.ManifestPath,
-			Position:                  manifest.Devtools.Status.Position,
-			ProjectRootPath:           manifest.ManifestDirectoryPath,
-			PrimaryService:            manifest.PrimaryService,
+			OnLog: func(message string) {
+				writeLogLine(options.LogWriter, manifest.Name, message)
+			},
+			FeatureToggles:    runtimeDevtoolsFeatures,
+			GetHealthResponse: state.health,
+			ManifestPath:      manifest.ManifestPath,
+			Position:          manifest.Devtools.Status.Position,
+			ProjectRootPath:   manifest.ManifestDirectoryPath,
+			PrimaryService:    manifest.PrimaryService,
 			ResourceUsage: devtools.ResourceUsageOptions{
 				Intervals: resolveResourceIntervals(manifest.Devtools.Resources),
 				Readers:   hostusage.HostReaders(),

@@ -209,7 +209,7 @@ frontend | a long line continues here
 
 Each stack or service name has a distinct color on terminals; stdout and stderr share its color. `NO_COLOR` with a non-empty value or `TERM=dumb` disables these added colors, and redirected output has no added colors. When the destination terminal's width is available, long lines wrap with a blank name column and aligned separator. A positive `COLUMNS` value supplies the width when the terminal size is unavailable. Wrapping preserves child ANSI escapes and measures Unicode display width. Unknown widths and widths too small to fit the prefix leave lines unwrapped. Terminal resizing applies to subsequent lines.
 
-Agent mode (`AGENT=1`) uses compact `stack-name: ` and `service-name: ` prefixes without padding, added colors, or wrapping. Retained diagnostics and browser log records keep their original bracket prefixes in either mode.
+Agent mode (`AGENT=1`) uses compact `stack-name: ` and `service-name: ` prefixes without padding, added colors, or wrapping. On-demand devtools asset rebuild notices and every line of compiler diagnostics use the same stack prefix and output formatting. Retained diagnostics and browser log records keep their original bracket prefixes in either mode.
 
 Managed Caddy runtime logs are discarded by the generated Caddyfile so background Caddy stderr does not leak into `devhost` stack output. Managed Caddy command output from stack route reloads is hidden by default during `devhost start` runs. Use `devhost start --debug` when you need to see those reload stdout/stderr lines while debugging routing. Explicit `devhost caddy ...` lifecycle and setup commands still print their normal command output.
 
