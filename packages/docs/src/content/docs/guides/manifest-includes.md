@@ -65,6 +65,10 @@ To support local solo development, a sub-manifest (such as `packages/app1/devhos
 
 When a sub-manifest is run solo (by running `devhost start` from its local package directory), it runs as a first-class standalone stack.
 
+Within the same devhost state directory, each manifest file belongs to one running stack. Startup fails if the root manifest or any recursively included file is already used by another stack, including when two different roots share an include. This applies even when you select different services from the same manifest. Relative paths and symlink aliases identify the same file. The error names the conflicting file and owner PID and gives a `devhost stop --manifest` command for that stack; the existing stack keeps running regardless of `killZombies`.
+
+Hot reload reserves newly included files before changing services. An include owned by another stack rejects the reload and leaves the accepted configuration running. Removed includes become available to other stacks after a successful reload. Failed reloads retain the previous file reservations. Stopping a stack releases its reservations, and records belonging to exited processes do not prevent startup.
+
 However, when included in a root manifest:
 
 1. Local services (`services`), groups (`groups`), and annotation actions (`annotation.actions`) are extracted and merged.

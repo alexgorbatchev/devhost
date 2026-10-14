@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-14 10:42
+last_modified: 2026-10-14 14:47
 status: current
 ---
 
@@ -163,6 +163,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Health checks with automatic ports                                   | `guides/service-references.md`, "Health checks with automatic ports"          | No demo                                  |
 | Manifest includes                                                    | README, "Manifest Includes"; `guides/manifest-includes.md`                    | `manifest-includes` step-1 to step-6     |
 | Running an included manifest on its own                              | `guides/manifest-includes.md`, "Sub-Manifest Solo Runs & Override Protection" | No demo                                  |
+| Reject overlapping root and included manifests at startup and reload | `guides/manifest-includes.md`, "Sub-Manifest Solo Runs & Override Protection" | No demo                                  |
 
 ### Routing
 

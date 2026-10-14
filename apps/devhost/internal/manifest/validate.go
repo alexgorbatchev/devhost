@@ -70,6 +70,7 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 	}
 
 	return Manifest{
+		Inputs:                rawManifest.Inputs,
 		Annotation:            validatedAnnotation,
 		Caddy:                 validatedCaddy,
 		Devtools:              validatedDevtools,

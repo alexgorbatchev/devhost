@@ -4,7 +4,7 @@ description: Use when running devhost or when reading, writing, or changing a de
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-13 17:20
+  last_modified: 2026-10-14 14:45
   status: current
 ---
 
@@ -21,6 +21,8 @@ With `AGENT=0` or unset, stack and service logs share names padded to a common d
 Read `Switching worktree: source -> target. Restarting stack.` before a checkout switch and `worktree switched: source -> target` after success; source and target are checkout directory names. `Worktree switch failed: source -> target: error` reports rejected targets or switch failures, including restoration errors.
 
 ### Commands
+
+Within one devhost state directory, `devhost start` rejects a root or recursively included manifest already registered to another live stack, even with different service selections or `killZombies = true`. Relative paths and symlink aliases resolve to the same file. The error names the conflicting manifest, owner PID, and root manifest and supplies `devhost stop --manifest` for that owner. Stop that stack before retrying. Hot reload reserves added includes before changing services, rejects overlaps while preserving the accepted stack, and releases removed includes after success. Failed reloads retain previous reservations. Exited owners release their reservations for subsequent starts.
 
 - `devhost start [service...]`: start the manifest's services behind their HTTPS hostnames and stay in the foreground. With no `[service...]` argument every service starts. Arguments accept service names and group names from `[groups]`, including a mixture of both. Groups expand to their member services; devhost starts the selected services, every service they reach through `dependsOn`, and every service marked `alwaysStart = true` with its own `dependsOn` chain; the remaining services stay stopped. Shared services start once. A name the manifest lacks fails the command with `unknown service or group` when groups are defined, or `unknown service` otherwise, and the list of defined names. After startup stdout carries stack-labeled messages with one `service-name: url` per routed service that started and `not started: a, b` naming the stopped services when there are any. Stack and child logs use the mode-specific prefixes above. Routes are removed when it exits. Start the shared Caddy first.
 - `devhost service list`: print the name of every service in the manifest on stdout, one per line in alphabetical order, in the same form with and without `AGENT=1`. With `--startable` it prints only the services that start when named, leaving out those marked `alwaysStart = true`. Feed the output to a picker: `devhost start $(devhost service list --startable | fzf --multi)`.

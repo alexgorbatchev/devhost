@@ -155,7 +155,8 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	lifecycleCtx, cancelLifecycle := context.WithCancel(context.Background())
 	defer cancelLifecycle()
 	state := &stackRuntime{
-		starting: map[string]bool{}, failures: map[string]string{},
+		manifestFiles: stackManifestFiles(options.Configuration),
+		starting:      map[string]bool{}, failures: map[string]string{},
 		configured: options.Configuration,
 		routing:    devtools.RoutingConfig{RoutedServices: collectRoutedServiceIdentities(initial.Services), PrimaryService: initial.PrimaryService},
 		manifest:   manifest, order: append([]string{}, serviceOrder...), options: options, environment: environment,
@@ -310,6 +311,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		return 0, joinCleanupError(err, cleanupError)
 	}
 	if err := caddy.RegisterStack(caddy.RegisterStackOptions{
+		ManifestFiles:       stackManifestFiles(options.Configuration),
 		ManifestPath:        manifest.ManifestPath,
 		StackName:           manifest.Name,
 		StacksDirectoryPath: paths.StacksDirectoryPath,

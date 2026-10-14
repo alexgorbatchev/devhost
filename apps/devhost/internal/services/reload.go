@@ -81,7 +81,7 @@ func (r *stackRuntime) restartStack(ctx context.Context) error {
 	return err
 }
 
-func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Manifest, change configurationChange) error {
+func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Manifest, change configurationChange) (returnedError error) {
 	restartStack := change.restartStack
 	if err := ctx.Err(); err != nil {
 		return err
@@ -110,6 +110,16 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	if err := validateReloadBoundary(boundary, next); err != nil {
 		return err
 	}
+	finishReservation, err := r.reserveManifestFiles(stackManifestFiles(&next))
+	if err != nil {
+		return err
+	}
+	defer func() {
+		// Retiring old claims can fail after the new configuration is accepted.
+		// Keep its inputs reserved even when that final cleanup reports an error.
+		accepted := returnedError == nil || r.configured == &next
+		returnedError = errors.Join(returnedError, finishReservation(accepted))
+	}()
 	if !restartStack && reflect.DeepEqual(*r.configured, next) && slices.Equal(r.manifest.requested, change.requested) {
 		return nil
 	}
