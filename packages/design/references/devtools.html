@@ -1299,8 +1299,24 @@
         }
         .worktree-path {
           color: var(--dh-fg-muted);
-          overflow-wrap: anywhere;
+          display: flex;
+          justify-content: flex-end;
+          overflow: hidden;
           font-size: var(--dh-text-sm);
+        }
+        .worktree-path > span {
+          min-width: 100%;
+          flex-shrink: 0;
+          white-space: nowrap;
+        }
+        .worktree-filter {
+          display: flex;
+          align-items: center;
+          gap: var(--dh-space-3);
+        }
+        .worktree-filter input {
+          flex: 1;
+          min-width: 0;
         }
         .worktree-foot {
           display: flex;
@@ -1312,18 +1328,6 @@
         }
         .worktree-foot p {
           margin: 0;
-        }
-        .worktree-preview {
-          display: grid;
-          grid-template-columns: auto minmax(0, 1fr);
-          gap: var(--dh-space-2) var(--dh-space-4);
-          margin: 0;
-          font-size: var(--dh-text-sm);
-        }
-        .worktree-preview dd {
-          margin: 0;
-          overflow-wrap: anywhere;
-          color: var(--dh-fg-muted);
         }
         .worktree-actions {
           display: flex;
@@ -2732,7 +2736,7 @@
                 ${worktree.path === repository.configuredPath ? `<span class="tag">configured</span>` : ""}
                 ${!worktree.available ? `<button type="button" class="tag danger" popovertarget="worktree-error-${repository.id}-${index}" aria-label="Why ${esc(worktree.label)} is unavailable">unavailable</button><span class="worktree-error" id="worktree-error-${repository.id}-${index}" popover="auto">${esc(worktree.reason ?? "Checkout directory is missing.")}</span>` : ""}
               </span>
-              <span class="worktree-path">${esc(worktree.path)}</span>
+              <span class="worktree-path" title="${esc(worktree.path)}"><span>${esc(worktree.path)}</span></span>
             </span>
           </div>`,
           )
@@ -2753,8 +2757,6 @@
               ${worktrees.length === 0 ? `<p role="status">No matching worktrees.</p>` : ""}
             </div>
             <footer class="worktree-foot">
-              <p class="muted">Your choice is remembered across devhost restarts.</p>
-              <dl class="worktree-preview">${services.map((service) => `<dt><span aria-hidden="true">$ </span>${esc(service.name)}</dt><dd>${esc(picker.path + "/" + repository.serviceDirectories[service.name])}</dd>`).join("")}</dl>
               ${isBusy ? `<p class="worktree-progress" role="status">${icon("restart", "spin")}${esc(repository.phase)}</p>` : ""}
               <div class="worktree-actions">
                 <button class="btn primary" type="button" data-action="worktree-apply" data-focus-key="worktree-apply" ${canApply ? "" : "disabled"}>
@@ -2764,9 +2766,10 @@
                 <button class="btn" type="button" data-action="worktree-back">${isBusy ? "Close" : "Cancel"}</button>
               </div>
             </footer>
-            <div class="panel-body">
+            <div class="panel-body worktree-filter">
               <input class="input" type="search" aria-label="Find worktree" placeholder="Find branch or checkout path…"
                 data-input="worktree-search" data-focus-key="worktree-search" value="${esc(picker.query ?? "")}" ${isBusy ? "disabled" : ""} />
+              <button class="btn" type="button" data-action="worktree-refresh" aria-label="Refresh worktrees" ${isBusy ? "disabled" : ""}>${icon("restart")}Refresh</button>
             </div>`,
         };
       }
@@ -3395,6 +3398,8 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
             state.worktreePicker = null;
             state.openPanel = state.openPanel === panel ? null : panel;
             if (state.openPanel !== null) state.panelAnchor = state.openPanel;
+            break;
+          case "worktree-refresh":
             break;
           case "worktree-back": {
             state.worktreePicker = null;

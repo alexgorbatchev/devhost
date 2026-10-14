@@ -116,8 +116,10 @@ export function WorktreePicker({
                   {entry.path === repository.runningPath ? <Badge variant="success">running</Badge> : null}
                   {entry.path === repository.configuredPath ? <Badge>configured</Badge> : null}
                 </span>
-                <span className="text-muted-foreground [overflow-wrap:anywhere]">
-                  {formatWorktreePath(entry.path, homeDirectoryPath)}
+                <span className="flex justify-end overflow-hidden text-muted-foreground" title={entry.path}>
+                  <span className="min-w-full shrink-0 whitespace-nowrap">
+                    {formatWorktreePath(entry.path, homeDirectoryPath)}
+                  </span>
                 </span>
               </span>
             </label>
@@ -142,16 +144,6 @@ export function WorktreePicker({
         </p>
       ) : null}
       <footer className="flex flex-col gap-2 border-t-[3px] border-border p-2">
-        <p className="m-0 text-muted-foreground">Your choice is remembered across devhost restarts.</p>
-        <dl className="m-0 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-1">
-          {choice?.directories.map((directory) => (
-            <WorktreeCommand
-              key={directory.name}
-              name={directory.name}
-              cwd={formatWorktreePath(directory.cwd, homeDirectoryPath)}
-            />
-          ))}
-        </dl>
         {isLoading || isBusy ? (
           <p className="m-0 flex items-center gap-1.5 text-warning" role="status">
             <Icon glyph={RotateCwIcon} isSpinning />
@@ -217,23 +209,6 @@ export function WorktreePicker({
         </Button>
       </PanelActions>
     </div>
-  );
-}
-
-interface IWorktreeCommandProps {
-  name: string;
-  cwd: string;
-}
-
-function WorktreeCommand({ name, cwd }: IWorktreeCommandProps): JSX.Element {
-  return (
-    <>
-      <dt>
-        <span aria-hidden="true">$ </span>
-        {name}
-      </dt>
-      <dd className="m-0 text-muted-foreground [overflow-wrap:anywhere]">{cwd}</dd>
-    </>
   );
 }
 
