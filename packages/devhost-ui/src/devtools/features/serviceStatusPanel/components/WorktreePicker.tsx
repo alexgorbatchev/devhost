@@ -116,10 +116,8 @@ export function WorktreePicker({
                   {entry.path === repository.runningPath ? <Badge variant="success">running</Badge> : null}
                   {entry.path === repository.configuredPath ? <Badge>configured</Badge> : null}
                 </span>
-                <span className="flex justify-end overflow-hidden text-muted-foreground" title={entry.path}>
-                  <span className="min-w-full shrink-0 whitespace-nowrap">
-                    {formatWorktreePath(entry.path, homeDirectoryPath)}
-                  </span>
+                <span className="block truncate text-left text-muted-foreground [direction:rtl]" title={entry.path}>
+                  <bdi dir="ltr">{formatWorktreePath(entry.path, homeDirectoryPath)}</bdi>
                 </span>
               </span>
             </label>

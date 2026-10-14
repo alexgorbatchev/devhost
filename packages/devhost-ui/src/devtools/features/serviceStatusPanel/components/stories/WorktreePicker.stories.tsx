@@ -351,10 +351,14 @@ export const LongCheckoutPaths: Story = {
     await waitFor(() => {
       const range = document.createRange();
       range.selectNodeContents(path);
-      expect(range.getClientRects()).toHaveLength(1);
+      for (const rect of range.getClientRects()) {
+        expect(rect.top).toBe(range.getBoundingClientRect().top);
+        expect(rect.bottom).toBe(range.getBoundingClientRect().bottom);
+      }
       expect(range.getBoundingClientRect().left).toBeLessThan(label.getBoundingClientRect().left);
       expect(range.getBoundingClientRect().right).toBeLessThanOrEqual(label.getBoundingClientRect().right + 1);
     });
     await expect(radio).toBeChecked();
+    await expect(getComputedStyle(path.parentElement!).textOverflow).toBe("ellipsis");
   },
 };

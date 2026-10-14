@@ -1299,15 +1299,13 @@
         }
         .worktree-path {
           color: var(--dh-fg-muted);
-          display: flex;
-          justify-content: flex-end;
+          display: block;
           overflow: hidden;
-          font-size: var(--dh-text-sm);
-        }
-        .worktree-path > span {
-          min-width: 100%;
-          flex-shrink: 0;
+          text-overflow: ellipsis;
           white-space: nowrap;
+          direction: rtl;
+          text-align: left;
+          font-size: var(--dh-text-sm);
         }
         .worktree-filter {
           display: flex;
@@ -2736,7 +2734,7 @@
                 ${worktree.path === repository.configuredPath ? `<span class="tag">configured</span>` : ""}
                 ${!worktree.available ? `<button type="button" class="tag danger" popovertarget="worktree-error-${repository.id}-${index}" aria-label="Why ${esc(worktree.label)} is unavailable">unavailable</button><span class="worktree-error" id="worktree-error-${repository.id}-${index}" popover="auto">${esc(worktree.reason ?? "Checkout directory is missing.")}</span>` : ""}
               </span>
-              <span class="worktree-path" title="${esc(worktree.path)}"><span>${esc(worktree.path)}</span></span>
+              <span class="worktree-path" title="${esc(worktree.path)}"><bdi dir="ltr">${esc(worktree.path)}</bdi></span>
             </span>
           </div>`,
           )
