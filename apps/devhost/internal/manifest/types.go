@@ -16,6 +16,7 @@ type Inputs struct {
 }
 
 type Manifest struct {
+	Inputs                Inputs
 	Annotation            ValidatedAnnotation
 	Caddy                 CaddyConfig
 	Devtools              DevtoolsConfig

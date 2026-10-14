@@ -17,6 +17,7 @@ import (
 // stackRuntime owns process state. Startup and lifecycle operations are serialized;
 // the health stream reads snapshots while commands and probes run outside these locks.
 type stackRuntime struct {
+	manifestFiles     []string
 	starting          map[string]bool
 	failures          map[string]string
 	startupComplete   bool

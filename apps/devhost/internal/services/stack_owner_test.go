@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -31,9 +32,11 @@ const (
 	stackOwnerHostVariable     = "DEVHOST_STACK_OWNER_HOST"
 	stackOwnerBehaviorVariable = "DEVHOST_STACK_OWNER_BEHAVIOR"
 	stackOwnerReadyVariable    = "DEVHOST_STACK_OWNER_READY_FILE"
+	stackOwnerFilesVariable    = "DEVHOST_STACK_OWNER_MANIFEST_FILES"
 )
 
 type stackOwnerOptions struct {
+	ManifestFiles []string
 	// ManifestPath is the manifest the stand-in claims to run.
 	ManifestPath string
 	// Port is the fixed port it claims.
@@ -70,6 +73,15 @@ func runStackOwnerHelper() error {
 	}
 
 	manifestPath := os.Getenv(stackOwnerManifestVariable)
+	if files := os.Getenv(stackOwnerFilesVariable); files != "null" && files != "" {
+		var inputs []string
+		if err := json.Unmarshal([]byte(files), &inputs); err != nil {
+			return err
+		}
+		if err := caddy.RegisterStack(caddy.RegisterStackOptions{ManifestPath: manifestPath, ManifestFiles: inputs, StackName: "owner", StacksDirectoryPath: paths.StacksDirectoryPath}); err != nil {
+			return err
+		}
+	}
 	port, err := strconv.Atoi(os.Getenv(stackOwnerPortVariable))
 	if err != nil {
 		return err
@@ -132,7 +144,12 @@ func startStackOwner(t *testing.T, stateDirectoryPath string, options stackOwner
 	readyPath := filepath.Join(t.TempDir(), "ready")
 	command := exec.Command(os.Args[0], "-test.run=^TestStackOwnerHelperProcess$")
 	command.Stderr = os.Stderr
+	files, err := json.Marshal(options.ManifestFiles)
+	if err != nil {
+		t.Fatal(err)
+	}
 	command.Env = append(os.Environ(),
+		stackOwnerFilesVariable+"="+string(files),
 		stackOwnerHelperVariable+"=1",
 		"DEVHOST_STATE_DIR="+stateDirectoryPath,
 		stackOwnerManifestVariable+"="+options.ManifestPath,

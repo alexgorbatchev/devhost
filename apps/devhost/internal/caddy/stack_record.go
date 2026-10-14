@@ -13,22 +13,25 @@ import (
 // registrations exist only for the hostnames and fixed ports a stack holds;
 // this record exists for every stack, so one that holds neither is known too.
 type stackRecord struct {
-	CreatedAt          string `json:"createdAt"`
-	ManifestPath       string `json:"manifestPath"`
-	OwnerPID           int    `json:"ownerPid"`
-	OwnerStartIdentity string `json:"ownerStartIdentity,omitempty"`
-	StackName          string `json:"stackName"`
+	ManifestFiles      []string `json:"manifestFiles,omitempty"`
+	CreatedAt          string   `json:"createdAt"`
+	ManifestPath       string   `json:"manifestPath"`
+	OwnerPID           int      `json:"ownerPid"`
+	OwnerStartIdentity string   `json:"ownerStartIdentity,omitempty"`
+	StackName          string   `json:"stackName"`
 }
 
 type stackRecordJSON struct {
-	CreatedAt          *string `json:"createdAt"`
-	ManifestPath       *string `json:"manifestPath"`
-	OwnerPID           *int    `json:"ownerPid"`
-	OwnerStartIdentity *string `json:"ownerStartIdentity"`
-	StackName          *string `json:"stackName"`
+	ManifestFiles      []string `json:"manifestFiles"`
+	CreatedAt          *string  `json:"createdAt"`
+	ManifestPath       *string  `json:"manifestPath"`
+	OwnerPID           *int     `json:"ownerPid"`
+	OwnerStartIdentity *string  `json:"ownerStartIdentity"`
+	StackName          *string  `json:"stackName"`
 }
 
 type RegisterStackOptions struct {
+	ManifestFiles       []string
 	ManifestPath        string
 	StackName           string
 	StacksDirectoryPath string
@@ -38,6 +41,12 @@ type RegisterStackOptions struct {
 // record replaces any this process wrote before, and any left under its PID by
 // a process that has exited.
 func RegisterStack(options RegisterStackOptions) error {
+	return withStackRecordsLock(options.StacksDirectoryPath, func() error {
+		return registerStack(options)
+	})
+}
+
+func registerStack(options RegisterStackOptions) error {
 	if err := os.MkdirAll(options.StacksDirectoryPath, 0o755); err != nil {
 		return fmt.Errorf("create stack records directory %s: %w", options.StacksDirectoryPath, err)
 	}
@@ -48,6 +57,14 @@ func RegisterStack(options RegisterStackOptions) error {
 		OwnerPID:           routeMutationProcessID(),
 		OwnerStartIdentity: routeMutationOwnerStartIdentity(),
 		StackName:          options.StackName,
+	}
+	files, err := canonicalManifestFiles(append([]string{options.ManifestPath}, options.ManifestFiles...))
+	if err != nil {
+		return err
+	}
+	record.ManifestFiles = files
+	if err := checkManifestOverlap(options.StacksDirectoryPath, record); err != nil {
+		return err
 	}
 	recordText, _ := json.MarshalIndent(record, "", "  ") // Primitive-only fields cannot fail JSON marshaling.
 
@@ -78,12 +95,20 @@ func RegisterStack(options RegisterStackOptions) error {
 // UnregisterStack removes the record of this process. A process that never
 // registered has none, which is not an error.
 func UnregisterStack(stacksDirectoryPath string) error {
-	return removeIfExists(getStackRecordPath(stacksDirectoryPath))
+	return withStackRecordsLock(stacksDirectoryPath, func() error {
+		return removeIfExists(getStackRecordPath(stacksDirectoryPath))
+	})
 }
 
 // CleanupStaleStackRecords removes the records of stacks that exited without
 // unregistering.
 func CleanupStaleStackRecords(stacksDirectoryPath string) error {
+	return withStackRecordsLock(stacksDirectoryPath, func() error {
+		return cleanupStaleStackRecords(stacksDirectoryPath)
+	})
+}
+
+func cleanupStaleStackRecords(stacksDirectoryPath string) error {
 	entries, err := os.ReadDir(stacksDirectoryPath)
 	if err != nil {
 		return err
@@ -129,6 +154,7 @@ func parseStackRecord(recordText []byte) (stackRecord, error) {
 	}
 
 	record := stackRecord{CreatedAt: *value.CreatedAt, ManifestPath: *value.ManifestPath, OwnerPID: *value.OwnerPID, StackName: *value.StackName}
+	record.ManifestFiles = value.ManifestFiles
 	if value.OwnerStartIdentity != nil {
 		record.OwnerStartIdentity = *value.OwnerStartIdentity
 	}
