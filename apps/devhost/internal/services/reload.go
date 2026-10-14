@@ -25,12 +25,6 @@ type configurationChange struct {
 	message string
 }
 
-func (r *stackRuntime) reloadConfiguration(ctx context.Context, next manifest.Manifest, files []string) error {
-	r.operationMu.Lock()
-	defer r.operationMu.Unlock()
-	return r.reloadConfigurationLocked(ctx, next, files)
-}
-
 func (r *stackRuntime) reloadConfigurationLocked(ctx context.Context, next manifest.Manifest, files []string) error {
 	paths := make([]string, 0, len(files))
 	for _, file := range files {
