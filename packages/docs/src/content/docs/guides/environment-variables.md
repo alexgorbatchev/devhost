@@ -10,16 +10,6 @@ sidebar:
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/environment-variables.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/environment-variables.mp4">Watch the demo video</a>.
 </video>
-
-<details>
-<summary>Demo transcript</summary>
-<p>devhost hands each service its port, its hostname, and your own variables.</p>
-<p>This service declares two variables of its own.</p>
-<p>Start the stack.</p>
-<p>devhost assigns a free port and starts the service.</p>
-<p>The service received its port, bind host, hostname, and your message.</p>
-<p>Stop the stack.</p>
-</details>
 <!-- /guide-demo -->
 
 `devhost` injects environment variables into each managed service command invocation.

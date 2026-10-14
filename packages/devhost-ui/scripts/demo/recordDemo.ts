@@ -162,7 +162,11 @@ export async function recordDemo(signal: AbortSignal, selectedScene: string, gui
         slug: guide.slug,
         title: guide.title,
         address: new URL(runtime.url).host,
-        clips: guideSources.map((source) => ({ clip: source.id, footage: { sourceId: source.id } })),
+        clips: guideSources.map((source) => ({
+          clip: source.id,
+          footage: { sourceId: source.id },
+          poster: source.poster,
+        })),
         render: renderPromoComposition,
         signal,
       });
@@ -174,7 +178,7 @@ export async function recordDemo(signal: AbortSignal, selectedScene: string, gui
         render: renderPromoComposition,
         signal,
       });
-      await publishPromoDemo(repositoryPath, runtime.directoryPath, join(import.meta.dir, "promo"));
+      await publishPromoDemo(repositoryPath, runtime.directoryPath);
       console.log("Wrote promo media: packages/docs/public/demos/promo.mp4");
     } else {
       console.log("Assembling captioned MP4...");

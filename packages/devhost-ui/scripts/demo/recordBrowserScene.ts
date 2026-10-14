@@ -31,7 +31,7 @@ export async function recordBrowserScene(
       captureScale,
     );
     try {
-      await scene.record(page, runtime, signal, recording.changeCaption);
+      await scene.record(page, runtime, signal, recording.changeCaption, recording.markPoster);
     } finally {
       clips = await recording.stop();
     }

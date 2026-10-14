@@ -6,7 +6,7 @@ Use it when `localhost:3000` stops being good enough: auth callbacks, cookie/dom
 
 Documentation: [alexgorbatchev.github.io/devhost](https://alexgorbatchev.github.io/devhost/)
 
-The guides include short videos and text transcripts: start with [routing](https://alexgorbatchev.github.io/devhost/guides/managed-caddy/), [browser devtools](https://alexgorbatchev.github.io/devhost/guides/devtools/), or [annotations and live fixes](https://alexgorbatchev.github.io/devhost/guides/annotations/).
+The guides include short videos: start with [routing](https://alexgorbatchev.github.io/devhost/guides/managed-caddy/), [browser devtools](https://alexgorbatchev.github.io/devhost/guides/devtools/), or [annotations and live fixes](https://alexgorbatchev.github.io/devhost/guides/annotations/).
 
 What it does well:
 

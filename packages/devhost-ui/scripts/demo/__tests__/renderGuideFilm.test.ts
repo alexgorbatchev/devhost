@@ -4,7 +4,7 @@ import { afterAll, beforeAll, expect, it } from "bun:test";
 import { readPromoFootageSlots } from "../readPromoFootageSlots";
 import { renderGuideFilm } from "../renderGuideFilm";
 import { runCommand } from "../runCommand";
-import type { IGuideAudioTimings, IGuideLineTiming, RenderPromoComposition } from "../types";
+import type { IGuideAudioTimings, IGuideFilmPlan, IGuideLineTiming, RenderPromoComposition } from "../types";
 
 let directoryPath = "";
 let filmPath = "";
@@ -132,7 +132,7 @@ afterAll(async () => {
   await rm(directoryPath, { recursive: true, force: true });
 });
 
-it("renders a guide's steps under its narration, with the transcript the guide page shows", async () => {
+it("renders a guide's steps under its narration, and keeps when each step plays for its poster", async () => {
   const runPath = await createRun("complete");
 
   const videoPath = await renderGuideFilm({
@@ -167,9 +167,11 @@ it("renders a guide's steps under its narration, with the transcript the guide p
     address: "terminal",
     clips: steps,
   });
-  expect(await Bun.file(join(runPath, "clips.json")).json()).toEqual({
-    clips: [{ caption: "Start dependencies first." }, { caption: "Read the manifest." }, { caption: "Start it." }],
-  });
+  const plan: IGuideFilmPlan = await Bun.file(join(runPath, "guide-film.json")).json();
+  expect(plan.beats.map((beat) => [beat.clip, beat.start, beat.duration])).toEqual([
+    ["step-1", 2.4, 3.5],
+    ["step-2", 5.9, 2.5],
+  ]);
   expect({
     renderer: await Bun.file(join(runPath, "guide/package.json")).text(),
     // The film is staged with its narration and no other sound.

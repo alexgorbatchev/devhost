@@ -14,6 +14,8 @@ it("opens on the title card with the intro line, plays each clip under its own l
 
   expect(plan).toEqual({
     duration: 15.2,
+    // Without a marked frame, the poster is the end of the first step, past the title card every guide opens with.
+    poster: 8.3,
     introSeconds: 2.4,
     outroSeconds: 1.8,
     intro: { text: "Route services by path.", narrationStart: 0.35, narrationSeconds: 1.5 },
@@ -39,6 +41,46 @@ it("opens on the title card with the intro line, plays each clip under its own l
       },
     ],
   });
+});
+
+it("takes the poster from the frame a clip marked, where that clip plays in the film", () => {
+  const plan = planGuideFilm({ text: "Route services by path.", narrationSeconds: 1.5 }, [
+    createClip("overview-1", 6, 2),
+    { ...createClip("overview-2", 5, 3), poster: 1.5 },
+  ]);
+
+  // The second clip starts at 8.4 and plays at its recorded speed.
+  expect(plan.poster).toBe(9.9);
+});
+
+it("finds a marked frame in footage played faster to fit the limit", () => {
+  const plan = planGuideFilm({ text: "Intro.", narrationSeconds: 1 }, [
+    { ...createClip("step-1", 50, 3), poster: 20 },
+    createClip("step-2", 10, 8),
+  ]);
+
+  // 50 seconds play in 32.35, so 20 seconds in are 12.94 seconds after the clip starts at 2.4.
+  expect(plan.poster).toBe(15.34);
+});
+
+it("counts a marked frame from the start of the clip footage window", () => {
+  const plan = planGuideFilm({ text: "Intro.", narrationSeconds: 1 }, [
+    { ...createClip("step-1", 3.5, 1), footage: { sourceId: "guide", from: 0, to: 3.5 } },
+    { ...createClip("step-2", 2.5, 1), footage: { sourceId: "guide", from: 3.5, to: 6 }, poster: 5 },
+  ]);
+
+  // The second step starts at 2.4 + 3.5, and its frame is 1.5 seconds into its window.
+  expect(plan.poster).toBe(7.4);
+});
+
+it("keeps a marked frame within the clip that marked it", () => {
+  const plan = planGuideFilm({ text: "Intro.", narrationSeconds: 1 }, [
+    createClip("step-1", 3, 1),
+    { ...createClip("step-2", 3, 1), poster: 9 },
+  ]);
+
+  // The second step plays from 5.4 to 8.4; its last frame is the poster.
+  expect(plan.poster).toBe(8.3);
 });
 
 it("keeps the title card up until a long intro line has been spoken", () => {

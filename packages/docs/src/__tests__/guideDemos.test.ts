@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { expect, it } from "bun:test";
 
-it("plays the first video and loads English captions for the landing page and every guide, with usable controls and a transcript", async () => {
+it("plays the first video and loads English captions for the landing page and every guide, with its poster and usable controls", async () => {
   const parentPath = resolve(import.meta.dir, "../../../../.tmp/docs-demo-tests");
   await mkdir(parentPath, { recursive: true });
   const directoryPath = await mkdtemp(join(parentPath, "browser-"));
@@ -20,7 +20,7 @@ it("plays the first video and loads English captions for the landing page and ev
       subprocess.exited,
     ]);
     expect({ exitCode, errors }).toEqual({ exitCode: 0, errors: "" });
-    expect(JSON.parse(output)).toEqual({ pagesPlayed: 13, captionsLoaded: 13, transcriptsAvailable: 13 });
+    expect(JSON.parse(output)).toEqual({ postersShown: 13, pagesPlayed: 13, captionsLoaded: 13 });
   } finally {
     await rm(directoryPath, { recursive: true, force: true });
   }

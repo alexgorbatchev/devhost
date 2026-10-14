@@ -72,6 +72,16 @@ it.each([
   },
 );
 
+it("keeps the poster frame a clip marked, so a film rendered again keeps its poster", async () => {
+  const record: IGuideRecord = {
+    ...createRecord("annotations"),
+    clips: [{ clip: "annotations-1", footage: { sourceId: "annotations-1" }, poster: 10.6 }],
+  };
+  await createRun("recording-marked", record, 1_000);
+
+  expect((await findGuideRecording(parentPath, "annotations")).record).toEqual(record);
+});
+
 it("skips a run whose record is not a guide's", async () => {
   const usable = await createRun("recording-usable", createRecord("stack-lifecycle"), 1_000);
   await createRun("recording-broken", { slug: "stack-lifecycle", clips: "none" }, 2_000);

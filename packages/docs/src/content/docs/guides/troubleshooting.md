@@ -10,21 +10,6 @@ sidebar:
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/troubleshooting.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/troubleshooting.mp4">Watch the demo video</a>.
 </video>
-
-<details>
-<summary>Demo transcript</summary>
-<p>Save a broken manifest and the running stack stays up. Fix it, save again.</p>
-<p>A stack with one service.</p>
-<p>Start the stack.</p>
-<p>The service is running.</p>
-<p>Now save an invalid port.</p>
-<p>devhost rejects the reload and says why.</p>
-<p>The running stack still answers.</p>
-<p>Save a corrected manifest.</p>
-<p>This time the reload is applied.</p>
-<p>The service shows the new configuration.</p>
-<p>Stop the stack.</p>
-</details>
 <!-- /guide-demo -->
 
 ## Hostname already claimed

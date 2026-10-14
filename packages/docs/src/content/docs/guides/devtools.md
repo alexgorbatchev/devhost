@@ -10,15 +10,6 @@ sidebar:
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/devtools.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/devtools.mp4">Watch the demo video</a>.
 </video>
-
-<details>
-<summary>Demo transcript</summary>
-<p>Optional devtools put your stack&#x27;s logs and controls inside the page.</p>
-<p>Hover the log minimap for real-time output from your services.</p>
-<p>The Services panel lists every service, each with a restart control.</p>
-<p>Search your Git worktrees without leaving the page.</p>
-<p>TanStack Query&#x27;s own devtools open from the same toolbar.</p>
-</details>
 <!-- /guide-demo -->
 
 `devhost` routing works without the browser tooling layer. Enable `devtools` only when you want the injected overlay, service controls, annotations, or component-source navigation on top of routed local apps.

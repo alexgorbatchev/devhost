@@ -38,19 +38,34 @@ export interface IStartingStackState {
 export interface IBrowserScene {
   id: string;
   caption: string;
-  record: (page: Page, runtime: IDemoRuntime, signal: AbortSignal, changeCaption: ChangeCaption) => Promise<void>;
+  record: (
+    page: Page,
+    runtime: IDemoRuntime,
+    signal: AbortSignal,
+    changeCaption: ChangeCaption,
+    markPoster: MarkPoster,
+  ) => Promise<void>;
 }
 
 export type ChangeCaption = (caption: string) => Promise<void>;
+
+// Marks the frame on screen now as the poster of the scene's guide page.
+export type MarkPoster = () => void;
+
+// Milliseconds on a monotonic clock.
+export type ReadClock = () => number;
 
 export interface IRecordedSourceClip {
   id: string;
   path: string;
   caption: string;
+  // Seconds into the clip of the frame its scene marked as the poster.
+  poster?: number;
 }
 
 export interface ICaptionRecording {
   changeCaption: ChangeCaption;
+  markPoster: MarkPoster;
   stop: () => Promise<IRecordedSourceClip[]>;
 }
 
@@ -73,7 +88,6 @@ export interface IDemoVideoBlock {
   name: string;
   label: string;
   media: IMediaInfo;
-  transcript: string[];
 }
 
 export interface IGuideTerminalStep {
@@ -163,6 +177,8 @@ export interface IGuideClipInput {
   // The narration spoken over the clip, which is also its on-screen caption.
   text: string;
   footage: IGuideFootageWindow;
+  // Seconds into the footage's recording of the frame marked as the guide page's poster.
+  poster?: number;
   sourceSeconds: number;
   narrationSeconds: number;
 }
@@ -190,6 +206,8 @@ export interface IGuideIntro extends IGuideIntroInput {
 
 export interface IGuideFilmPlan {
   duration: number;
+  // Seconds into the film of the frame the guide page shows before it plays.
+  poster: number;
   introSeconds: number;
   outroSeconds: number;
   intro: IGuideIntro;
@@ -258,6 +276,8 @@ export interface IGuideNarration {
 export interface IGuideClipSource {
   clip: string;
   footage: IGuideFootageWindow;
+  // Seconds into the footage's recording of the frame marked as the guide page's poster.
+  poster?: number;
 }
 
 // What a run recorded for a guide. Kept in the run as `guide.json`, so its film can be rendered again.

@@ -10,17 +10,6 @@ sidebar:
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/shared-managed-caddy-settings.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/shared-managed-caddy-settings.mp4">Watch the demo video</a>.
 </video>
-
-<details>
-<summary>Demo transcript</summary>
-<p>Your stacks share one Caddy. Turn on plain HTTP and choose its ports.</p>
-<p>The shared Caddy settings turn on plain HTTP and set both ports.</p>
-<p>Start the stack.</p>
-<p>The HTTPS address now uses the port you set.</p>
-<p>The service answers over HTTPS.</p>
-<p>The same service answers over plain HTTP.</p>
-<p>Stop the stack.</p>
-</details>
 <!-- /guide-demo -->
 
 To also serve the same routed hosts through plain HTTP, add this top-level setting:

@@ -22,6 +22,6 @@ guide-film guide:
 test:
     bun test ./__tests__
 
-# Record and update the video, poster, captions, and transcript for each public guide
+# Record and update the video, poster, captions, and player block for each public guide
 guides guide="all":
     DEVHOST_DEMO_GUIDE={{quote(guide)}} bun run ./recordGuides.ts

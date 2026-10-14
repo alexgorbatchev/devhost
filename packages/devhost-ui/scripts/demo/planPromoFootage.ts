@@ -1,3 +1,4 @@
+import { planFootageSpeed } from "./planFootageSpeed";
 import type { IPromoFootagePlan, IPromoFootageSlot } from "./types";
 
 export function planPromoFootage(slot: IPromoFootageSlot, sourceDuration: number): IPromoFootagePlan {
@@ -11,8 +12,7 @@ export function planPromoFootage(slot: IPromoFootageSlot, sourceDuration: number
         `for ${slot.id}`,
     );
   }
-  // A recording never plays slower than it happened: a short one holds its last frame instead.
-  const speed = Math.max(1, sourceSeconds / slot.duration);
+  const speed = planFootageSpeed(sourceSeconds, slot.duration);
   return {
     startSeconds: start,
     sourceSeconds,

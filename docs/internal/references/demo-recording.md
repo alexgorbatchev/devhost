@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-14 14:47
+last_modified: 2026-10-14 15:37
 status: current
 ---
 
@@ -46,7 +46,7 @@ The recorder captures terminal startup, the log minimap, the toolbar and worktre
 
 The promo selects parts of those recordings and never re-creates the interface. A recording longer than its slot plays faster; a shorter one plays at its real speed and holds its last frame. The Pi segment shows the first seconds of the agent's run and carries an on-screen note that the recording is edited for length.
 
-Every promo render also writes the copy the docs landing page shows: a web encode, the end card as poster, and the captions as `packages/docs/public/demos/promo.{mp4,webp,vtt}`, plus the player and transcript block `packages/docs/src/promoDemo.html`. The transcript is the narration. `packages/docs/sync.ts` opens the landing page with that block. Publish and commit them as for a guide film: see [Where guide videos are stored](#where-guide-videos-are-stored).
+Every promo render also writes the copy the docs landing page shows: a web encode, the end card's last frame as poster, and the captions as `packages/docs/public/demos/promo.{mp4,webp,vtt}`, plus the player block `packages/docs/src/promoDemo.html`. `packages/docs/sync.ts` opens the landing page with that block. Publish and commit them as for a guide film: see [Where guide videos are stored](#where-guide-videos-are-stored).
 
 To render the promo again without capturing, reuse the footage of an earlier run:
 
@@ -86,7 +86,7 @@ just demo guides service-references
 
 The command discovers guide Markdown files and records each corresponding real workflow. Each guide becomes a narrated film of 1920 × 1080 at 30 fps and at most 45 seconds, rendered by the HyperFrames release the promo pins. A film opens on a title card with the guide's title from its front matter, shows the recording in a window while a voice explains each step, and closes on a card with the docs address. The words of the current line appear under the window as they are spoken.
 
-The command also updates the docs site's media. It writes the film's web encode, WebP poster, and English WebVTT captions to `packages/docs/public/demos/<slug>.*`, and replaces the guide's `guide-demo` block with a native video player at the top and a collapsed text transcript of the narration. The prose remains untouched. Assets use full `https://alexgorbatchev.github.io/devhost/demos/` URLs and ship through the existing Pages build. Players use `preload="none"` and play only when requested.
+The command also updates the docs site's media. It writes the film's web encode, WebP poster, and English WebVTT captions to `packages/docs/public/demos/<slug>.*`, and replaces the guide's `guide-demo` block with a native video player at the top. The poster is the frame a browser scene marks by calling its `markPoster` argument while that frame is on screen, such as the annotations scene's finished draft. A guide with no mark shows the frame at the end of its first step, which shows that step's result; the title card before it looks the same in every guide. `planGuideFilm.ts` maps the mark to its time in the film, following the clip's window and playback speed, and keeps it inside the clip's step. The prose remains untouched. Assets use full `https://alexgorbatchev.github.io/devhost/demos/` URLs and ship through the existing Pages build. Players use `preload="none"` and play only when requested.
 
 The docs site does not get the render itself. `publishGuideDemo.ts` encodes it again for the web: H.264 at CRF 27 with AAC audio at 128 kbit/s, and its index first so playback starts while the file downloads.
 
@@ -129,7 +129,7 @@ Routing guides capture native VHS terminal sessions and verify real HTTP respons
 
 Guide recording also needs `curl` and `setsid`; Docker needs a working local daemon and permission to pull the tiny public image. Guides are recorded serially because they use `demo.localhost`. The recording sources are `createGuideTerminalScene.ts`, `createGuideTape.ts`, `recordGuideTerminal.ts`, `recordReactHighlight.ts`, `recordGuides.ts`, and `publishGuideDemo.ts`; [Editing the sequence](#editing-the-sequence) lists the film's. Native publication tests use FFmpeg/ffprobe, which CI installs before `just check`.
 
-Review the new media, transcript, and Markdown changes, for example on the playground's `/videos` page. Then run `just docs publish-media` and commit `demo-media.json` together with the posters, captions, and guides. The next CLI release deploys them with the newly pinned videos: the docs site is built from the release tag, not from `main`. Agent consumers can follow the HTTPS guide links in `skills/devhost/SKILL.md` and read prose/transcripts without loading binary media.
+Review the new media, posters, and Markdown changes, for example on the playground's `/videos` page. Then run `just docs publish-media` and commit `demo-media.json` together with the posters, captions, and guides. The next CLI release deploys them with the newly pinned videos: the docs site is built from the release tag, not from `main`. Agent consumers can follow the HTTPS guide links in `skills/devhost/SKILL.md` and read the guide prose without loading binary media.
 
 ## Demo coverage
 
@@ -213,34 +213,34 @@ Pages under `guides/` are in `packages/docs/src/content/docs/guides/`, and `arch
 
 Sources live in `packages/devhost-ui/scripts/demo/`:
 
-| Source                                                                      | Purpose                                                                         |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `startup.tape` / `scaleTape.ts`                                             | Terminal typing, readiness wait, hold, and hidden shutdown; the promo's 2× size |
-| `recordOverview.ts` / `recordAnnotations.ts` / `recordQuery.ts`             | Minimap, toolbar/worktrees, annotation/Pi/HMR, and Query scenes                 |
-| `createCaptionRecording.ts`                                                 | Event-triggered caption changes using native video segments                     |
-| `createDemoPage.ts` / `recordBrowserScene.ts`                               | Load once outside capture, preserve the page, and reject captured reloads       |
-| `launchDemoBrowser.ts`                                                      | Chromium, with its own device scale for the promo's 2× capture                  |
-| `createBrowserScenes.ts`                                                    | Browser interactions, captions, and deliberate viewer pauses                    |
-| `devhost.toml`                                                              | Real service manifest; environment templates select checkout and hostname       |
-| `constants.ts`                                                              | Viewport, caption band, capture scales, card lengths, and the length limit      |
-| `isDemoStackReady.ts` / `startDemoStack.ts`                                 | Start the stack and wait until a browser navigation reaches the playground      |
-| `exportClip.ts` / `assembleDemo.ts`                                         | Single scenes: normalize clips, burn captions, and concatenate                  |
-| `film.css`                                                                  | The window, label, and backdrop styles the promo and the guide films share      |
-| `guide/`                                                                    | The guide films' HyperFrames template, narration, and audio                     |
-| `renderGuideFilm.ts` / `planGuideFilm.ts` / `createGuideComposition.ts`     | Time a guide's clips to its narration, fill the template, and render it         |
-| `findGuideStepWindows.ts` / `readFrameBrightness.ts`                        | Find a terminal guide's steps where its recording clears the screen             |
-| `renderGuide.ts` / `findGuideRecording.ts`                                  | Render a guide's film again from its latest recording                           |
-| `generateGuideAudio.ts` / `readGuideNarration.ts`                           | Generate the guide films' narration with ElevenLabs                             |
-| `speakLine.ts` / `audioSchemas.ts`                                          | Speak one narration line, for the promo and the guide films                     |
-| `createSpeechRequest.ts` / `hashSpeechRequest.ts`                           | Build and hash a line's ElevenLabs request, so an unchanged line keeps its take |
-| `promo/`                                                                    | The promo's HyperFrames project: composition, narration, and audio              |
-| `renderPromo.ts` / `renderPromoComposition.ts`                              | Stage a copy of the project in the run directory, render it, and verify it      |
-| `readPromoFootageSlots.ts` / `planPromoFootage.ts` / `stagePromoFootage.ts` | Fit each recording into the slot a frame declares                               |
-| `readPromoFootageRequests.ts` / `findPromoRecording.ts`                     | List the footage the composition requests and find a recording that has it all  |
-| `readPromoSources.ts`                                                       | Name a run's captured videos the way frames request them                        |
-| `preparePromoRenderer.ts` / `createPromoRendererEnvironment.ts`             | Check Node.js and fetch HyperFrames' Chrome before a capture or a render        |
-| `removePromoRenderCaches.ts`                                                | Remove the renderer's frame cache and install from a run's `.tmp`               |
-| `generatePromoAudio.ts`                                                     | Generate the narration with ElevenLabs                                          |
+| Source                                                                      | Purpose                                                                          |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `startup.tape` / `scaleTape.ts`                                             | Terminal typing, readiness wait, hold, and hidden shutdown; the promo's 2× size  |
+| `recordOverview.ts` / `recordAnnotations.ts` / `recordQuery.ts`             | Minimap, toolbar/worktrees, annotation/Pi/HMR, and Query scenes                  |
+| `createCaptionRecording.ts`                                                 | Event-triggered caption changes using native video segments, and the poster mark |
+| `createDemoPage.ts` / `recordBrowserScene.ts`                               | Load once outside capture, preserve the page, and reject captured reloads        |
+| `launchDemoBrowser.ts`                                                      | Chromium, with its own device scale for the promo's 2× capture                   |
+| `createBrowserScenes.ts`                                                    | Browser interactions, captions, and deliberate viewer pauses                     |
+| `devhost.toml`                                                              | Real service manifest; environment templates select checkout and hostname        |
+| `constants.ts`                                                              | Viewport, caption band, capture scales, card lengths, and the length limit       |
+| `isDemoStackReady.ts` / `startDemoStack.ts`                                 | Start the stack and wait until a browser navigation reaches the playground       |
+| `exportClip.ts` / `assembleDemo.ts`                                         | Single scenes: normalize clips, burn captions, and concatenate                   |
+| `film.css`                                                                  | The window, label, and backdrop styles the promo and the guide films share       |
+| `guide/`                                                                    | The guide films' HyperFrames template, narration, and audio                      |
+| `renderGuideFilm.ts` / `planGuideFilm.ts` / `createGuideComposition.ts`     | Time a guide's clips to its narration, fill the template, and render it          |
+| `findGuideStepWindows.ts` / `readFrameBrightness.ts`                        | Find a terminal guide's steps where its recording clears the screen              |
+| `renderGuide.ts` / `findGuideRecording.ts`                                  | Render a guide's film again from its latest recording                            |
+| `generateGuideAudio.ts` / `readGuideNarration.ts`                           | Generate the guide films' narration with ElevenLabs                              |
+| `speakLine.ts` / `audioSchemas.ts`                                          | Speak one narration line, for the promo and the guide films                      |
+| `createSpeechRequest.ts` / `hashSpeechRequest.ts`                           | Build and hash a line's ElevenLabs request, so an unchanged line keeps its take  |
+| `promo/`                                                                    | The promo's HyperFrames project: composition, narration, and audio               |
+| `renderPromo.ts` / `renderPromoComposition.ts`                              | Stage a copy of the project in the run directory, render it, and verify it       |
+| `readPromoFootageSlots.ts` / `planPromoFootage.ts` / `stagePromoFootage.ts` | Fit each recording into the slot a frame declares                                |
+| `readPromoFootageRequests.ts` / `findPromoRecording.ts`                     | List the footage the composition requests and find a recording that has it all   |
+| `readPromoSources.ts`                                                       | Name a run's captured videos the way frames request them                         |
+| `preparePromoRenderer.ts` / `createPromoRendererEnvironment.ts`             | Check Node.js and fetch HyperFrames' Chrome before a capture or a render         |
+| `removePromoRenderCaches.ts`                                                | Remove the renderer's frame cache and install from a run's `.tmp`                |
+| `generatePromoAudio.ts`                                                     | Generate the narration with ElevenLabs                                           |
 
 Use accessible roles and names for browser actions. Wait for rendered state or real responses before pacing pauses. Do not replace actual services, logs, restart requests, or native devtools with recording-only imitations. Scenes fail on missing UI, unsuccessful requests, or uncaught page errors, and retain a failure screenshot.
 
@@ -312,7 +312,7 @@ Each request bills that ElevenLabs account, and a failed request is not retried.
 
 ## Artifacts and cleanup
 
-A promo run's directory contains `devhost-demo.mp4`, the narration captions in `devhost-demo.srt`, `poster.png` from the closing card, `promo-footage.json` with each slot's source window and playback speed, `promo-render.log`, the staged `promo/` project, raw VHS/Playwright videos, per-scene screenshots, and tool/revision metadata in `versions.json`. A guide run's directory contains `devhost-demo.mp4`, the narration captions in `devhost-demo.srt`, `poster.png`, `guide.json` with the clips that were recorded, `guide-footage.json` with each clip's source window and playback speed, `promo-render.log`, the staged `guide/` project, the transcript in `clips.json`, and the raw VHS/Playwright videos. A single-scene run instead contains its captioned MP4, `devhost-demo.srt`, `poster.png`, measured `clips.json`, per-scene SRT files, and normalized `clips/*.mp4`.
+A promo run's directory contains `devhost-demo.mp4`, the narration captions in `devhost-demo.srt`, `poster.png` from the closing card, `promo-footage.json` with each slot's source window and playback speed, `promo-render.log`, the staged `promo/` project, raw VHS/Playwright videos, per-scene screenshots, and tool/revision metadata in `versions.json`. A guide run's directory contains `devhost-demo.mp4`, the narration captions in `devhost-demo.srt`, `poster.png`, `guide.json` with the clips that were recorded and the poster frame a scene marked, `guide-footage.json` with each clip's source window and playback speed, `promo-render.log`, the staged `guide/` project, `guide-film.json` with when each clip plays in the film and the time of its poster, and the raw VHS/Playwright videos. A single-scene run instead contains its captioned MP4, `devhost-demo.srt`, `poster.png`, measured `clips.json`, per-scene SRT files, and normalized `clips/*.mp4`.
 
 Each browser scene writes `<scene>-navigations.json` with captured full-page requests; successful scenes contain an empty array. Annotation screenshots include the draft, Pi terminal, and live fix. `pi-changes.json` preserves the edited source for review; `playground-baseline.json` records the original copy. Pi sessions and annotation prompts stay under the run's `.tmp`. Logs include `vhs.log`, browser-stack logs, `cleanup.log`, and `recording-error.log` on failures.
 

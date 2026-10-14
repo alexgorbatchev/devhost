@@ -10,17 +10,6 @@ sidebar:
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/managed-daemon-style-services.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/managed-daemon-style-services.mp4">Watch the demo video</a>.
 </video>
-
-<details>
-<summary>Demo transcript</summary>
-<p>devhost starts a background daemon, checks on it, and stops it.</p>
-<p>This daemon has three commands: start, status, and stop.</p>
-<p>Start the stack.</p>
-<p>devhost runs the start command and waits for the health check.</p>
-<p>The daemon answers on its HTTPS hostname.</p>
-<p>Stopping the stack runs the daemon&#x27;s stop command.</p>
-<p>The daemon is no longer running.</p>
-</details>
 <!-- /guide-demo -->
 
 Use daemon lifecycle mode when `devhost` should own a service, but the service runs in the background or is managed through explicit `start` / `stop` commands rather than one long-lived foreground process.

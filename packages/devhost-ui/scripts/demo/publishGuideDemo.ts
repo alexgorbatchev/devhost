@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { join } from "node:path";
+import { z } from "zod";
 import { createDemoVideoBlock } from "./createDemoVideoBlock";
 import { exportDemoMedia } from "./exportDemoMedia";
+
+const planSchema = z.object({ poster: z.number().nonnegative() });
 
 export async function publishGuideDemo(repositoryPath: string, slug: string, recordingPath: string): Promise<void> {
   assert(/^[a-z][a-z0-9-]*$/.test(slug), "Invalid guide slug");
@@ -9,20 +12,18 @@ export async function publishGuideDemo(repositoryPath: string, slug: string, rec
   const original = await Bun.file(guidePath).text();
   const frontmatterEnd = original.indexOf("\n---\n", 4);
   assert(original.startsWith("---\n") && frontmatterEnd > 0, "Guide has no frontmatter");
-  const metadata: unknown = await Bun.file(join(recordingPath, "clips.json")).json();
-  assert(typeof metadata === "object" && metadata !== null && "clips" in metadata && Array.isArray(metadata.clips));
-  const captions = metadata.clips.map((clip: unknown): string => {
-    assert(typeof clip === "object" && clip !== null && "caption" in clip && typeof clip.caption === "string");
-    return clip.caption;
+  const planFile = Bun.file(join(recordingPath, "guide-film.json"));
+  if (!(await planFile.exists())) throw new Error(`${planFile.name} is missing: render the guide film again`);
+  const { poster } = planSchema.parse(await planFile.json());
+  const media = await exportDemoMedia(repositoryPath, slug, recordingPath, ({ duration }) => {
+    assert(poster < duration, `${planFile.name} plans a film longer than the ${duration}s one in ${recordingPath}`);
+    return poster;
   });
-  assert(captions.length > 0, "Demo has no transcript");
-  const media = await exportDemoMedia(repositoryPath, slug, recordingPath, ({ duration }) => Math.min(2, duration / 2));
   const block = createDemoVideoBlock({
     marker: "guide-demo",
     name: slug,
     label: `${slug.replaceAll("-", " ")} demo`,
     media,
-    transcript: captions,
   });
   const body = original
     .slice(frontmatterEnd + 5)

@@ -10,16 +10,6 @@ sidebar:
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/react-highlight.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/react-highlight.mp4">Watch the demo video</a>.
 </video>
-
-<details>
-<summary>Demo transcript</summary>
-<p>Connect your Neovim cursor to the page running in your browser.</p>
-<p>Start Neovim with the devhost launcher. Here, it runs off screen.</p>
-<p>Move the Neovim cursor to the heading. The page highlights it.</p>
-<p>Move the cursor again, and the highlight follows.</p>
-<p>Images work too. Source maps match the JSX to the page.</p>
-<p>Leave the JSX, and the highlight clears.</p>
-</details>
 <!-- /guide-demo -->
 
 React Highlight mirrors the active JSX cursor position from Neovim into the routed browser page. It is part of the injected devtools overlay and uses the same instance-scoped control server as the rest of the devtools runtime.

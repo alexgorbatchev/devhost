@@ -10,16 +10,6 @@ sidebar:
   <track kind="captions" src="https://alexgorbatchev.github.io/devhost/demos/service-references.vtt" srclang="en" label="English">
   <a href="https://alexgorbatchev.github.io/devhost/demos/service-references.mp4">Watch the demo video</a>.
 </video>
-
-<details>
-<summary>Demo transcript</summary>
-<p>Point one service at another, even when its port is assigned at start.</p>
-<p>The API address is a reference, not a fixed port.</p>
-<p>Start the stack.</p>
-<p>devhost fills in the API&#x27;s port and starts the API first.</p>
-<p>The web service called the API at the resolved address.</p>
-<p>One command stops both services.</p>
-</details>
 <!-- /guide-demo -->
 
 `devhost` supports late-binding/runtime service references using `{{ services.<name>.<property> }}` placeholders. This allows services to dynamically discover configuration from other services in the stack (such as auto-allocated ports or bind hosts) right before they are launched.

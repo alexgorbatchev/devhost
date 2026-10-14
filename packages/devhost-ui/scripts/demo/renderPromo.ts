@@ -130,7 +130,7 @@ if (import.meta.main) {
       signal: controller.signal,
     });
     console.log(`Promo saved: ${outputPath}`);
-    await publishPromoDemo(resolve(import.meta.dir, "../../../.."), directoryPath, projectSourcePath);
+    await publishPromoDemo(resolve(import.meta.dir, "../../../.."), directoryPath);
     console.log("Wrote promo media: packages/docs/public/demos/promo.mp4");
   } catch (error) {
     console.error(error);
