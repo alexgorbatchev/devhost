@@ -38,7 +38,7 @@ export function WorktreeStatusPanel(props: IWorktreeStatusPanelProps): JSX.Eleme
   return (
     <ToolbarPopover
       testId="WorktreeStatusPanel"
-      panelLabel={`${selected.name} · Worktrees`}
+      panelLabel="Worktrees"
       panelWidth="lg"
       triggerLabel={label}
       title={label}
