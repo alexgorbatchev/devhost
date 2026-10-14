@@ -1,3 +1,4 @@
+import { rejects } from "node:assert/strict";
 import { readdir, rm } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { afterEach, beforeEach, expect, it, mock } from "bun:test";
@@ -138,8 +139,9 @@ it("pins nothing when the release reports other content for an upload", async ()
     .mockResolvedValueOnce("")
     .mockResolvedValueOnce(listAssets({ [asset]: "truncated" }));
 
-  await expect(publishDemoMedia({ ...options, run })).rejects.toThrow(
-    `Release media holds ${asset} as sha256:${hash("truncated")}, not sha256:${hash("new annotations")}`,
+  await rejects(
+    publishDemoMedia({ ...options, run }),
+    new Error(`Release media holds ${asset} as sha256:${hash("truncated")}, not sha256:${hash("new annotations")}`),
   );
   expect(await Bun.file(options.manifestPath).text()).toBe(manifest);
 });
@@ -149,8 +151,9 @@ it("pins nothing when the release does not list an upload", async () => {
   await Bun.write(join(options.directoryPath, "annotations.mp4"), "new annotations");
   const run = mock<RunCommand>().mockResolvedValue(listAssets({}));
 
-  await expect(publishDemoMedia({ ...options, run })).rejects.toThrow(
-    `Release media does not hold ${assetName("annotations", "new annotations")} after the upload`,
+  await rejects(
+    publishDemoMedia({ ...options, run }),
+    new Error(`Release media does not hold ${assetName("annotations", "new annotations")} after the upload`),
   );
   expect(await Bun.file(options.manifestPath).text()).toBe(manifest);
 });
@@ -161,8 +164,9 @@ it("uploads and pins nothing when a video has a name the manifest does not accep
   await Bun.write(join(options.directoryPath, "Stack_Lifecycle.mp4"), "stack lifecycle");
   const run = mock<RunCommand>();
 
-  await expect(publishDemoMedia({ ...options, run })).rejects.toThrow(
-    "Stack_Lifecycle.mp4 cannot be pinned: name a demo video with lowercase letters, digits, and hyphens",
+  await rejects(
+    publishDemoMedia({ ...options, run }),
+    new Error("Stack_Lifecycle.mp4 cannot be pinned: name a demo video with lowercase letters, digits, and hyphens"),
   );
   expect(run).not.toHaveBeenCalled();
   expect(await Bun.file(options.manifestPath).text()).toBe(manifest);

@@ -1,3 +1,4 @@
+import { rejects } from "node:assert/strict";
 import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, it } from "bun:test";
@@ -46,5 +47,5 @@ it.each([
 ])("rejects %s", async (_name, content) => {
   await Bun.write(manifestPath, JSON.stringify(content));
 
-  await expect(readDemoMediaManifest(manifestPath)).rejects.toThrow(`${manifestPath} is not a demo media manifest`);
+  await rejects(readDemoMediaManifest(manifestPath), new Error(`${manifestPath} is not a demo media manifest`));
 });
