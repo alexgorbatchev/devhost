@@ -73,7 +73,7 @@ export default defineConfig({
         },
         {
           label: "Reference",
-          items: [{ label: "Manifest reference", link: "/reference/devhost-example/" }],
+          items: ["reference/files", { label: "Manifest reference", link: "/reference/devhost-example/" }],
         },
         {
           label: "Development",

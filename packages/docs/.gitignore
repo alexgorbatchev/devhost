@@ -6,7 +6,7 @@ dist/
 
 # generated docs content
 src/content/docs/index.mdx
-src/content/docs/reference/
+src/content/docs/reference/devhost-example.md
 
 # dependencies
 node_modules/

@@ -47,6 +47,10 @@ func createHelpCatalog() cobrahelptree.TechCatalog {
 	manifestOnly := cobrahelptree.TechInfo{Env: []cobrahelptree.EnvSpec{manifestEnvironmentSpec}}
 
 	catalog := cobrahelptree.TechCatalog{
+		"devhost files serve": {
+			Args:       []cobrahelptree.ArgSpec{{Name: "[directory]", Description: "Directory to serve; defaults to the current directory"}},
+			Quickstart: []cobrahelptree.QuickstartItem{{Command: "devhost files serve --domain notes.localhost", Comment: "serve the current folder"}},
+		},
 		rootCommandName: {
 			Quickstart: []cobrahelptree.QuickstartItem{
 				{Command: "devhost caddy download", Comment: "one-time setup"},

@@ -1,0 +1,175 @@
+package services
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"syscall"
+	"testing"
+	"time"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
+)
+
+func TestFilesSessionAttemptsCaddyStartAndCleansUpFailure(t *testing.T) {
+	dir := t.TempDir()
+	paths := caddy.CreateManagedCaddyPaths(t.TempDir())
+	admin := caddytest.StartAdminServer(t)
+	fallback := caddy.ManagedCaddyConfigFallback{AdminAddress: admin}
+	if err := caddy.EnsureManagedCaddyConfig(paths, fallback); err != nil {
+		t.Fatal(err)
+	}
+	writeFakeCaddyExecutable(t, paths.ExecutablePath)
+	if err := caddy.ActivateRoute(caddy.ActivateRouteOptions{Host: "other.localhost", Path: "/", ServiceName: "other", AppBindHost: "127.0.0.1", AppPort: nettest.ReservePort(t), CaddyAdminAddress: admin}, "/other/devhost.toml", paths.RoutesDirectoryPath); err != nil {
+		t.Fatal(err)
+	}
+	// Retain an active registration's management vote, with its proxy now down.
+	entries, err := os.ReadDir(paths.RegistrationsDirectoryPath)
+	if err != nil || len(entries) != 1 {
+		t.Fatalf("route fixture: %v %v", entries, err)
+	}
+	registrationPath := filepath.Join(paths.RegistrationsDirectoryPath, entries[0].Name())
+	data, err := os.ReadFile(registrationPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var registration map[string]any
+	if err := json.Unmarshal(data, &registration); err != nil {
+		t.Fatal(err)
+	}
+	registration["caddyAdminAddress"] = caddytest.UnusedAdminAddress(t)
+	data, err = json.Marshal(registration)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(registrationPath, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	script := "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$0.args\"\nexit 1\n"
+	if err := os.WriteFile(paths.ExecutablePath, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	_, err = StartFiles(dir, "files.localhost", StartStackOptions{CaddyPaths: paths, LogWriter: io.Discard})
+	if err == nil {
+		t.Fatal("expected failed proxy startup")
+	}
+	args, readErr := os.ReadFile(paths.ExecutablePath + ".args")
+	if readErr != nil || !strings.HasPrefix(string(args), "start\n--pidfile\n") {
+		t.Fatalf("proxy start was not attempted: %q %v; session error: %v", args, readErr, err)
+	}
+	assertDirectoryEntries(t, paths.StacksDirectoryPath, nil)
+	assertDirectoryEntries(t, dir, nil)
+	state, readErr := os.ReadDir(paths.StateDirectoryPath)
+	if readErr != nil || len(state) != 1 || state[0].Name() != "caddy" {
+		t.Errorf("session state left behind: %v %v", state, readErr)
+	}
+}
+
+func TestFilesSessionServesWithDevtoolsAndCleansUp(t *testing.T) {
+	var log strings.Builder
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "index.md"), []byte("# Files session"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	paths := caddy.CreateManagedCaddyPaths(t.TempDir())
+	admin := caddytest.StartAdminServer(t)
+	fallback := caddy.ManagedCaddyConfigFallback{AdminAddress: admin}
+	if err := caddy.EnsureManagedCaddyConfig(paths, fallback); err != nil {
+		t.Fatal(err)
+	}
+	writeFakeCaddyExecutable(t, paths.ExecutablePath)
+	if err := caddy.ActivateRoute(caddy.ActivateRouteOptions{Host: "other.localhost", Path: "/", ServiceName: "other", AppBindHost: "127.0.0.1", AppPort: nettest.ReservePort(t), CaddyAdminAddress: admin, CaddyHTTPSPort: 8443}, "/other/devhost.toml", paths.RoutesDirectoryPath); err != nil {
+		t.Fatal(err)
+	}
+	originalRegister, originalUnregister, originalDocument := registerProcessSignals, unregisterProcessSignals, startDocumentInjectionServer
+	defer func() {
+		registerProcessSignals, unregisterProcessSignals, startDocumentInjectionServer = originalRegister, originalUnregister, originalDocument
+	}()
+	signals := make(chan chan<- os.Signal, 1)
+	documents := make(chan *devtools.DocumentInjectionServer, 1)
+	registerProcessSignals = func(ch chan<- os.Signal) { signals <- ch }
+	unregisterProcessSignals = func(chan<- os.Signal) {}
+	startDocumentInjectionServer = func(opts devtools.StartDocumentInjectionServerOptions) (*devtools.DocumentInjectionServer, error) {
+		s, err := devtools.StartDocumentInjectionServer(opts)
+		if err == nil {
+			documents <- s
+		}
+		return s, err
+	}
+	type result struct {
+		code int
+		err  error
+	}
+	done := make(chan result, 1)
+	go func() {
+		code, err := StartFiles(dir, "files.localhost", StartStackOptions{CaddyPaths: paths, LogWriter: &log})
+		done <- result{code, err}
+	}()
+	var signalChannel chan<- os.Signal
+	select {
+	case signalChannel = <-signals:
+	case got := <-done:
+		t.Fatalf("exited before signals: %#v", got)
+	case <-time.After(10 * time.Second):
+		t.Fatal("startup timed out")
+	}
+	t.Cleanup(func() {
+		signalChannel <- syscall.SIGINT
+		select {
+		case got := <-done:
+			if got.code != 130 || got.err != nil {
+				t.Errorf("shutdown = %#v", got)
+			}
+			if !strings.Contains(log.String(), "https://files.localhost:8443") {
+				t.Errorf("startup did not print the shared proxy URL: %s", log.String())
+			}
+		case <-time.After(10 * time.Second):
+			t.Error("shutdown timed out")
+		}
+		assertDirectoryEntries(t, paths.StacksDirectoryPath, nil)
+		assertDirectoryEntries(t, paths.HostClaimsDirectoryPath, nil)
+		entriesRemaining, readErr := os.ReadDir(paths.RegistrationsDirectoryPath)
+		if readErr != nil || len(entriesRemaining) != 1 {
+			t.Errorf("other session's route changed: %v %v", entriesRemaining, readErr)
+		}
+		entries, err := os.ReadDir(dir)
+		if err != nil || len(entries) != 1 {
+			t.Errorf("served directory changed: %v %v", entries, err)
+		}
+		resp, err := http.Get("http://" + admin + "/config/")
+		if err != nil {
+			t.Errorf("shared proxy stopped: %v", err)
+		} else {
+			resp.Body.Close()
+		}
+	})
+	var document *devtools.DocumentInjectionServer
+	select {
+	case document = <-documents:
+	case got := <-done:
+		t.Fatalf("startup: %#v", got)
+	case <-time.After(10 * time.Second):
+		t.Fatal("no document server")
+	}
+	waitForCondition(t, 10*time.Second, func() bool {
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/", document.Port()), nil)
+		if err != nil {
+			return false
+		}
+		req.Host = "files.localhost"
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return false
+		}
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		return err == nil && strings.Contains(string(body), "<h1>Files session</h1>") && strings.Contains(string(body), "/__devhost__/")
+	})
+}

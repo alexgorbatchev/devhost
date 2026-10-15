@@ -1,0 +1,37 @@
+---
+title: "Serve files without a manifest"
+---
+
+Serve the current directory over local HTTPS:
+
+```bash
+devhost files serve --domain notes.localhost
+```
+
+Or choose a directory, including paths with spaces:
+
+```bash
+devhost files serve "./my notes" --domain notes.localhost
+```
+
+Open `https://notes.localhost` after devhost prints the URL. `--domain` (or `-d`) is required and accepts a hostname, without a scheme, port, or path. The hostname must resolve to the machine running devhost. A `.localhost` hostname works for local access; another domain needs DNS or a hosts-file entry pointing here.
+
+This command serves existing files. It runs no build, installs no project dependencies, and reads no `devhost.toml`, including one selected by `DEVHOST_MANIFEST`. Relative directory paths resolve from the current working directory. Omitting the directory serves that directory itself.
+
+## HTTPS and stopping
+
+Devhost starts its shared Caddy proxy automatically when needed. On Linux, prepare privileged ports once with `devhost caddy privileged-ports`; use `devhost caddy trust` to trust its local HTTPS certificate. See [Managed Caddy](../../guides/managed-caddy/) for setup and troubleshooting.
+
+The session stays in the foreground. **Ctrl-C** stops its file server and removes its routes and ownership records, while leaving Caddy and other sessions running. Ctrl-C exits with `130`; SIGTERM exits with `143`. The served directory receives no manifest or runtime files. Temporary session state lives in devhost's state directory and is removed on normal shutdown.
+
+File sessions use the usual hostname ownership checks, so a hostname already held by another live session is rejected. Use distinct hostnames to serve directories concurrently. `devhost stack list` and `devhost stop --manifest` operate on manifest-backed stacks; stop a file session from its terminal or by signaling its devhost process.
+
+## Files and Markdown
+
+Directories serve `index.html` first, then `index.md`. A directory with neither gets a clickable listing. Files are read on each request, so reloading shows changes and newly created files. Ordinary assets support GET, HEAD, and byte ranges. This is a static server: an unmatched URL returns 404 rather than falling back to a single-page application's entry point.
+
+Markdown files (`.md`, case-insensitive) render with GitHub styling, including tables, task lists, and strikethrough. Colors follow the browser's light or dark preference. Raw Markdown HTML and unsafe link destinations are suppressed in the rendered view.
+
+Use the small **Show source** button to view the original Markdown and **Show rendered** to return. The choice is saved in browser local storage for that origin and applies to other Markdown pages, reloads, and later sessions on the same origin. If browser storage is unavailable, the toggle still works for the current page.
+
+HTML documents, including rendered Markdown, receive the usual devhost toolbar. Dotfiles and directories beginning with `.` are hidden from listings and direct requests. Symlinks work within the served root; links to hidden paths or outside the root are excluded. Only regular files and directories are served.

@@ -54,15 +54,19 @@ var signalExitCodes = map[syscall.Signal]int{
 }
 
 type StartStackOptions struct {
-	Configuration       *manifest.Manifest
-	CaddyOutputWriters  caddy.RouteCommandOutputWriters
-	CaddyPaths          caddy.Paths
-	Environment         map[string]string
-	LogWriter           io.Writer
-	ServiceStdoutWriter io.Writer
-	ServiceStderrWriter io.Writer
-	ShutdownGracePeriod time.Duration
-	IdleTimeout         time.Duration
+	// File sessions own their backend and report unexpected listener failures.
+	runtimeErrors        <-chan error
+	runtimeDirectoryPath string
+	fileSession          bool
+	Configuration        *manifest.Manifest
+	CaddyOutputWriters   caddy.RouteCommandOutputWriters
+	CaddyPaths           caddy.Paths
+	Environment          map[string]string
+	LogWriter            io.Writer
+	ServiceStdoutWriter  io.Writer
+	ServiceStderrWriter  io.Writer
+	ShutdownGracePeriod  time.Duration
+	IdleTimeout          time.Duration
 }
 
 type startedService struct {
@@ -164,6 +168,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		exits: make(chan serviceExitResult, len(serviceOrder)),
 	}
 	signalExits := make(chan os.Signal, 1)
+	runtimeErrors := make(chan error, 1)
 	documentInjectionServers := map[string]*devtools.DocumentInjectionServer{}
 	var devtoolsControlServer *devtools.ControlServer
 	var cleanupError error
@@ -214,6 +219,9 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			writeLogLine(options.LogWriter, stackName, fmt.Sprintf("Received %s; shutting down the stack.", describeShutdownSignal(receivedSignal)))
 			signalExits <- receivedSignal
 			cancelLifecycle()
+		case err := <-options.runtimeErrors:
+			runtimeErrors <- err
+			cancelLifecycle()
 		case <-lifecycleCtx.Done():
 		}
 	}()
@@ -224,6 +232,8 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			select {
 			case sig := <-signalExits:
 				exitCode, returnedError = readSignalExitCode(sig), nil
+			case err := <-runtimeErrors:
+				returnedError = err
 			default:
 			}
 		}
@@ -327,6 +337,14 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		return 0, joinCleanupError(err, cleanupError)
 	}
 	routes.settings = settings
+	if options.fileSession {
+		// A manifest-free session inherits the shared proxy's complete settings,
+		// including the port used in startup output and devtools service links.
+		global := &manifest.Caddy.Global
+		global.AdminAddress, global.BindHost = settings.AdminAddress, settings.BindHost
+		global.HTTP, global.HTTPPort, global.HTTPSPort = settings.HTTPEnabled, settings.HTTPPort, settings.HTTPSPort
+		routes.manifest = *manifest
+	}
 	managedCaddyAdminAddress = settings.AdminAddress
 	fallback = caddy.ManagedCaddyConfigFallback{AdminAddress: settings.AdminAddress, BindHost: settings.BindHost, HTTPEnabled: settings.HTTPEnabled, HTTPPort: settings.HTTPPort, HTTPSPort: settings.HTTPSPort, RuntimeOS: runtime.GOOS}
 
@@ -335,7 +353,15 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	}
 
 	if err := caddy.EnsureManagedCaddyAdminAvailable(caddy.CreateCaddyAdminAPIURL(managedCaddyAdminAddress), caddy.AdminAvailabilityDependencies{}); err != nil {
-		return 0, joinCleanupError(err, cleanupError)
+		if !options.fileSession {
+			return 0, joinCleanupError(err, cleanupError)
+		}
+		if _, err := caddy.RunManagedCaddyLifecycleCommand(caddy.LifecycleStart, options.LogWriter, paths, fallback, caddy.ManagedCaddyLifecycleDependencies{RuntimeOS: runtime.GOOS}); err != nil {
+			return 0, joinCleanupError(err, cleanupError)
+		}
+		if err := caddy.EnsureManagedCaddyAdminAvailable(caddy.CreateCaddyAdminAPIURL(managedCaddyAdminAddress), caddy.AdminAvailabilityDependencies{}); err != nil {
+			return 0, joinCleanupError(err, cleanupError)
+		}
 	}
 
 	zombieCleanup := new(caddy.ZombieCleanup)
@@ -402,12 +428,13 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			OnLog: func(message string) {
 				writeLogLine(options.LogWriter, manifest.Name, message)
 			},
-			FeatureToggles:    runtimeDevtoolsFeatures,
-			GetHealthResponse: state.health,
-			ManifestPath:      manifest.ManifestPath,
-			Position:          manifest.Devtools.Status.Position,
-			ProjectRootPath:   manifest.ManifestDirectoryPath,
-			PrimaryService:    manifest.PrimaryService,
+			FeatureToggles:       runtimeDevtoolsFeatures,
+			GetHealthResponse:    state.health,
+			ManifestPath:         manifest.ManifestPath,
+			Position:             manifest.Devtools.Status.Position,
+			ProjectRootPath:      manifest.ManifestDirectoryPath,
+			RuntimeDirectoryPath: options.runtimeDirectoryPath,
+			PrimaryService:       manifest.PrimaryService,
 			ResourceUsage: devtools.ResourceUsageOptions{
 				Intervals: resolveResourceIntervals(manifest.Devtools.Resources),
 				Readers:   hostusage.HostReaders(),
@@ -657,6 +684,8 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			state.startedMu.Unlock()
 			forwardStartedServicesSignal(startedServicesSnapshot, receivedSignal, shutdownProgress.stopping)
 			return readSignalExitCode(receivedSignal), nil
+		case err := <-runtimeErrors:
+			return 0, err
 		case <-idleShutdownChan:
 			cancelLifecycle()
 			writeLogLine(options.LogWriter, stackName, fmt.Sprintf("Idle timeout of %s reached. Automatically shutting down the stack...", finalIdleTimeout))

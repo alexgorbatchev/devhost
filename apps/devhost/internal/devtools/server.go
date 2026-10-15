@@ -129,6 +129,7 @@ type StartControlServerOptions struct {
 	RestartServicesShortcut string
 	RoutedServices          []RoutedServiceIdentity
 	StateDirectoryPath      string
+	RuntimeDirectoryPath    string
 	StartTerminalSession    terminalSessionStarter
 	StackName               string
 }
@@ -363,6 +364,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 			options.ProjectRootPath,
 			options.StackName,
 			fmt.Sprintf("http://127.0.0.1:%d%s", controlServer.Port(), reactHighlightCursorPath),
+			options.RuntimeDirectoryPath,
 		)
 		if err != nil {
 			_ = listener.Close()
