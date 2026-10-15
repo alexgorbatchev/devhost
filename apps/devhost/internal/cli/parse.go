@@ -18,7 +18,8 @@ import (
 type Kind string
 
 const (
-	KindStart Kind = "start"
+	KindStart      Kind = "start"
+	KindFilesServe Kind = "files-serve"
 	// KindHelp, KindVersion, KindCompletion, and KindSkill mean the requested
 	// output has already been written to stdout.
 	KindHelp               Kind = "help"
@@ -69,6 +70,8 @@ const (
 
 type CommandLineArguments struct {
 	Kind         Kind
+	Directory    string
+	Domain       string
 	ManifestPath *string
 	Action       CaddyLifecycleAction
 	SSHTarget    string
@@ -206,6 +209,7 @@ func createRootCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 		Version: version.String(),
 		Args:    rejectUnknownCommand,
 		SubCmds: boa.SubCmds(
+			createFilesCommand(result),
 			createCaddyCommand(result),
 			createServiceCommand(result),
 			createStackCommand(result),
@@ -321,11 +325,11 @@ func createServiceCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 
 const stackDescription = `Inspect the stacks running on this machine.`
 
-const stackListDescription = `Print every stack running on this machine, one per line:
+const stackListDescription = `Print manifest-backed stacks on this machine, one per line:
 its PID, a tab, and the absolute path of its devhost.toml.
 
 Stop one of them from any folder by passing its path to
-devhost stop --manifest.`
+devhost stop --manifest. File sessions use Ctrl+C instead.`
 
 func createStackCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 	return boa.CmdT[boa.NoParams]{
@@ -336,7 +340,7 @@ func createStackCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 		SubCmds: boa.SubCmds(
 			boa.CmdT[boa.NoParams]{
 				Use:   stackListCommandName,
-				Short: "Print the PID and manifest of every running stack",
+				Short: "Print the PID and manifest of running stacks",
 				Long:  stackListDescription,
 				Args:  cobra.NoArgs,
 				RunFunc: func(_ *boa.NoParams, _ *cobra.Command, _ []string) {

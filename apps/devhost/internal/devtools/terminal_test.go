@@ -73,7 +73,7 @@ func TestCreateNeovimPluginShellIntegrationFilesWritesLauncher(t *testing.T) {
 	t.Parallel()
 
 	projectRootPath := t.TempDir()
-	files, err := createNeovimPluginShellIntegrationFiles(projectRootPath, "hello stack", "http://127.0.0.1:49152/__devhost__/react-highlight/cursor")
+	files, err := createNeovimPluginShellIntegrationFiles(projectRootPath, "hello stack", "http://127.0.0.1:49152/__devhost__/react-highlight/cursor", "")
 	if err != nil {
 		t.Fatalf("createNeovimPluginShellIntegrationFiles(...) error = %v", err)
 	}

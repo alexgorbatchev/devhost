@@ -493,7 +493,7 @@ func createNeovimPluginSessionFiles(projectRootPath string, stackName string) (*
 	}, nil
 }
 
-func createNeovimPluginShellIntegrationFiles(projectRootPath string, stackName string, endpoint string) (*neovimPluginShellIntegrationFiles, error) {
+func createNeovimPluginShellIntegrationFiles(projectRootPath string, stackName string, endpoint string, runtimeDirectoryPath string) (*neovimPluginShellIntegrationFiles, error) {
 	if projectRootPath == "" {
 		return nil, fmt.Errorf("project root path is required to prepare the devhost Neovim plugin")
 	}
@@ -501,7 +501,10 @@ func createNeovimPluginShellIntegrationFiles(projectRootPath string, stackName s
 		return nil, fmt.Errorf("react highlight endpoint is required to prepare the devhost Neovim launcher")
 	}
 
-	integrationDirectoryPath := filepath.Join(projectRootPath, ".tmp", "devhost", sanitizeNeovimSessionName(stackName), "nvim-shell")
+	if runtimeDirectoryPath == "" {
+		runtimeDirectoryPath = filepath.Join(projectRootPath, ".tmp", "devhost", sanitizeNeovimSessionName(stackName))
+	}
+	integrationDirectoryPath := filepath.Join(runtimeDirectoryPath, "nvim-shell")
 	sitePath := filepath.Join(integrationDirectoryPath, "site")
 	pluginPath := filepath.Join(sitePath, "pack", "devhost", "start", neovimReactHighlightPackageName)
 	if err := writeBundledNeovimPlugin(pluginPath); err != nil {

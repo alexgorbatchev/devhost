@@ -121,6 +121,7 @@ The token-free native browser WebSocket requires the exact current Origin/Host, 
 - `internal/cli/` — command definitions (boa on top of cobra) and help screens; help is rendered by `cobra-help-tree/v2`, which documents positional arguments, environment variables, and quickstart examples from the catalog in `internal/cli/help.go` because cobra has no fields for them. Long descriptions print verbatim, so keep their lines at 60 columns or less.
 - `internal/skill/` — carries the skill instructions and skill URL that `devhost skill` prints. The canonical AI agent skill lives at `skills/devhost/` at the repository root so `npx skills add alexgorbatchev/devhost` discovers it as a standard skill. `cobra-help-tree` adds the `skill` command and the alert that opens every agent help screen.
 - `internal/manifest/` — manifest discovery, parsing, validation, and defaults
+- `internal/files/` — manifest-free static serving and safe GFM rendering; the embedded GitHub Markdown CSS retains its upstream version/source and MIT license
 - `internal/services/` — child process orchestration, health checks, port resolution, and cleanup
 - `internal/caddy/` — managed Caddy lifecycle, paths, config, and routing
 - `internal/caddy/caddytest/`, `internal/nettest/`, `internal/testenv/` — test support: stand-ins for Caddy's admin endpoint, reserved loopback ports, and the test process environment

@@ -17,6 +17,8 @@ Use that file as the documented source of truth for top-level sections, allowed 
 
 Copy it to `devhost.toml` in your project root and trim it down to the services you actually run.
 
+For a directory of static files or Markdown, use [`devhost files serve`](../../reference/files/) to serve it without a manifest.
+
 Each TOML table must be declared once. Keep all fields for a service inside a single `[services.<name>]` block instead of reopening that table later.
 
 When you run `devhost start`, it:
@@ -219,7 +221,7 @@ devhost stop
 devhost stop --manifest path/to/devhost.toml
 ```
 
-A stack is identified by the absolute path of its manifest, whichever way `--manifest` was written when it started. `devhost stack list` prints every stack running on the machine, one per line in manifest path order, and prints nothing when none runs. Each line is the PID of the stack's devhost process, one tab, and the absolute manifest path; the path runs to the end of the line, so it stays one field when it holds spaces. Every running stack is listed, including one whose services have no hostname and no port. Use it to stop a stack from another directory, such as one that holds a hostname you need:
+A stack is identified by the absolute path of its manifest, whichever way `--manifest` was written when it started. `devhost stack list` prints every manifest-backed stack running on the machine, one per line in manifest path order, and prints nothing when none runs. Each line is the PID of the stack's devhost process, one tab, and the absolute manifest path; the path runs to the end of the line, so it stays one field when it holds spaces. Manifest-backed stacks are listed even when their services have no hostname and no port. File sessions are stopped from their terminal or by signaling their devhost process. Use the list to stop a stack from another directory, such as one that holds a hostname you need:
 
 ```bash
 devhost stack list

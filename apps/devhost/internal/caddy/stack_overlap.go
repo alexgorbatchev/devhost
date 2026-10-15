@@ -37,6 +37,9 @@ func withStackRecordsLock(dir string, mutate func() error) (err error) {
 func canonicalManifestFiles(files []string) ([]string, error) {
 	result := make([]string, 0, len(files))
 	for _, file := range files {
+		if file == "" {
+			continue
+		}
 		path, err := filepath.Abs(file)
 		if err != nil {
 			return nil, fmt.Errorf("resolve manifest path %s: %w", file, err)

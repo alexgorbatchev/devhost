@@ -415,16 +415,22 @@ func validateCaddy(rawValue any, schemaIssues *[]string) CaddyConfig {
 	return result
 }
 
-func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
-	result := DevtoolsConfig{
+// DefaultDevtools supplies the toolbar defaults for manifest and file sessions.
+func DefaultDevtools() DevtoolsConfig {
+	var schemaIssues []string
+	return DevtoolsConfig{
 		Browser:          DevtoolsBrowserConfig{ReactExtensionID: defaultReactExtensionID},
 		Editor:           DevtoolsEditorConfig{Enabled: true, IDE: defaultDevtoolsEditor},
 		ExternalToolbars: DevtoolsToggleConfig{Enabled: true},
 		Minimap:          DevtoolsMinimapConfig{Enabled: true},
-		Resources:        validateDevtoolsResources(nil, schemaIssues),
+		Resources:        validateDevtoolsResources(nil, &schemaIssues),
 		Status:           DevtoolsStatusConfig{Enabled: true, Position: defaultDevtoolsStatusPosition},
 		Shortcuts:        DevtoolsShortcutsConfig{RestartServices: "alt+ctrl+r"},
 	}
+}
+
+func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
+	result := DefaultDevtools()
 
 	if rawValue == nil {
 		return result
@@ -718,7 +724,7 @@ func validateService(
 	}
 	seenHosts := map[string]struct{}{}
 	for i, host := range hosts {
-		if !isValidHost(host) {
+		if !IsValidHost(host) {
 			*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.host must be a valid hostname, received: %s", serviceName, host))
 		}
 		host = strings.ToLower(host)
@@ -1397,7 +1403,8 @@ func isSupportedEditor(value string) bool {
 	return value == "cursor" || value == "neovim" || value == "vscode" || value == "vscode-insiders" || value == "webstorm"
 }
 
-func isValidHost(host string) bool {
+// IsValidHost accepts the hostnames supported by devhost's HTTPS routes.
+func IsValidHost(host string) bool {
 	return host == "localhost" || hostPattern.MatchString(host)
 }
 
