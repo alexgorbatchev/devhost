@@ -1,30 +1,44 @@
 ---
-title: "Serve files without a manifest"
+title: "Serve files or a port without a manifest"
 ---
 
 Serve the current directory over local HTTPS:
 
 ```bash
-devhost files serve --domain notes.localhost
+devhost serve --domain notes.localhost
 ```
 
 Or choose a directory, including paths with spaces:
 
 ```bash
-devhost files serve "./my notes" --domain notes.localhost
+devhost serve --dir "./my notes" --domain notes.localhost
 ```
 
 Open `https://notes.localhost` after devhost prints the URL. `--domain` (or `-d`) is required and accepts a hostname, without a scheme, port, or path. The hostname must resolve to the machine running devhost. A `.localhost` hostname works for local access; another domain needs DNS or a hosts-file entry pointing here.
 
-This command serves existing files. It runs no build, installs no project dependencies, and reads no `devhost.toml`, including one selected by `DEVHOST_MANIFEST`. Relative directory paths resolve from the current working directory. Omitting the directory serves that directory itself.
+`--dir` and `--port` are mutually exclusive. With neither, devhost serves the current directory. Directory paths resolve from the current working directory. Positional arguments are rejected.
+
+The command runs no build, installs no project dependencies, and reads no `devhost.toml`, including one selected by `DEVHOST_MANIFEST`.
+
+## Route an existing port
+
+Expose an HTTP service already listening on `127.0.0.1:3000`:
+
+```bash
+devhost serve --port 3000 --domain app.localhost
+```
+
+Open `https://app.localhost` after devhost prints the URL. `--port` (or `-p`) accepts an integer from `1` through `65535`. The upstream service must be reachable on IPv4 loopback and speak HTTP; this is HTTP reverse proxying, not a tunnel for arbitrary TCP protocols. For Docker, publish the container port onto the host first.
+
+Devhost checks TCP readiness and routes requests through its usual stack routing, including the toolbar in HTML documents. It does not start, restart, or stop the external service. Start and manage that process separately. Ctrl-C removes the devhost route while leaving the service running. Use a manifest when you need custom health checks, service commands, or other stack configuration.
 
 ## HTTPS and stopping
 
 Devhost starts its shared Caddy proxy automatically when needed. On Linux, prepare privileged ports once with `devhost caddy privileged-ports`; use `devhost caddy trust` to trust its local HTTPS certificate. See [Managed Caddy](../../guides/managed-caddy/) for setup and troubleshooting.
 
-The session stays in the foreground. **Ctrl-C** stops its file server and removes its routes and ownership records, while leaving Caddy and other sessions running. Ctrl-C exits with `130`; SIGTERM exits with `143`. The served directory receives no manifest or runtime files. Temporary session state lives in devhost's state directory and is removed on normal shutdown.
+The session stays in the foreground. **Ctrl-C** removes its routes and ownership records and, in directory mode, stops its file server. Caddy, external services, and other sessions remain running. Ctrl-C exits with `130`; SIGTERM exits with `143`. The working or served directory receives no manifest or runtime files. Temporary session state lives in devhost's state directory and is removed on normal shutdown.
 
-File sessions use the usual hostname ownership checks, so a hostname already held by another live session is rejected. Use distinct hostnames to serve directories concurrently. `devhost stack list` and `devhost stop --manifest` operate on manifest-backed stacks; stop a file session from its terminal or by signaling its devhost process.
+Serve sessions use the usual hostname ownership checks, so a hostname already held by another live session is rejected. Use distinct hostnames for concurrent sessions. `devhost stack list` and `devhost stop --manifest` operate on manifest-backed stacks; stop a serve session from its terminal or by signaling its devhost process.
 
 ## Files and Markdown
 

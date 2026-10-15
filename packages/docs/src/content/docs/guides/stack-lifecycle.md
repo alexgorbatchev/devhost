@@ -17,7 +17,7 @@ Use that file as the documented source of truth for top-level sections, allowed 
 
 Copy it to `devhost.toml` in your project root and trim it down to the services you actually run.
 
-For a directory of static files or Markdown, use [`devhost files serve`](../../reference/files/) to serve it without a manifest.
+For static files, Markdown, or an existing local HTTP port, use [`devhost serve`](../../reference/files/) without a manifest. Select `--dir <directory>` or `--port <port>`; omitting both serves the current directory.
 
 Each TOML table must be declared once. Keep all fields for a service inside a single `[services.<name>]` block instead of reopening that table later.
 

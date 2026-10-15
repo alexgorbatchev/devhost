@@ -57,7 +57,7 @@ type StartStackOptions struct {
 	// File sessions own their backend and report unexpected listener failures.
 	runtimeErrors        <-chan error
 	runtimeDirectoryPath string
-	fileSession          bool
+	serveSession         bool
 	Configuration        *manifest.Manifest
 	CaddyOutputWriters   caddy.RouteCommandOutputWriters
 	CaddyPaths           caddy.Paths
@@ -337,7 +337,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		return 0, joinCleanupError(err, cleanupError)
 	}
 	routes.settings = settings
-	if options.fileSession {
+	if options.serveSession {
 		// A manifest-free session inherits the shared proxy's complete settings,
 		// including the port used in startup output and devtools service links.
 		global := &manifest.Caddy.Global
@@ -353,7 +353,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	}
 
 	if err := caddy.EnsureManagedCaddyAdminAvailable(caddy.CreateCaddyAdminAPIURL(managedCaddyAdminAddress), caddy.AdminAvailabilityDependencies{}); err != nil {
-		if !options.fileSession {
+		if !options.serveSession {
 			return 0, joinCleanupError(err, cleanupError)
 		}
 		if _, err := caddy.RunManagedCaddyLifecycleCommand(caddy.LifecycleStart, options.LogWriter, paths, fallback, caddy.ManagedCaddyLifecycleDependencies{RuntimeOS: runtime.GOOS}); err != nil {

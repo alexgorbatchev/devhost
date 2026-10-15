@@ -18,8 +18,8 @@ import (
 type Kind string
 
 const (
-	KindStart      Kind = "start"
-	KindFilesServe Kind = "files-serve"
+	KindStart Kind = "start"
+	KindServe Kind = "serve"
 	// KindHelp, KindVersion, KindCompletion, and KindSkill mean the requested
 	// output has already been written to stdout.
 	KindHelp               Kind = "help"
@@ -71,6 +71,7 @@ const (
 type CommandLineArguments struct {
 	Kind         Kind
 	Directory    string
+	Port         int
 	Domain       string
 	ManifestPath *string
 	Action       CaddyLifecycleAction
@@ -209,7 +210,7 @@ func createRootCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 		Version: version.String(),
 		Args:    rejectUnknownCommand,
 		SubCmds: boa.SubCmds(
-			createFilesCommand(result),
+			createServeCommand(result),
 			createCaddyCommand(result),
 			createServiceCommand(result),
 			createStackCommand(result),

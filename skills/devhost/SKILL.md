@@ -1,10 +1,10 @@
 ---
 name: devhost
-description: Use when running devhost, serving static files or Markdown, reading or changing devhost.toml, bootstrapping a manifest, or operating a stack or the shared Caddy proxy.
+description: Use when running devhost, serving static files or Markdown, routing an existing HTTP port, reading or changing devhost.toml, bootstrapping a manifest, or operating a stack or the shared Caddy proxy.
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-15 13:10
+  last_modified: 2026-10-15 14:17
   status: current
 ---
 
@@ -22,7 +22,7 @@ Read `Switching worktree: source -> target. Restarting stack.` before a checkout
 
 ### Commands
 
-- `devhost files serve [directory]`: serve static files over the required `--domain` hostname, with the usual devhost toolbar in HTML pages. `[directory]` is an optional string; its empty default selects the current directory, and relative paths resolve from there. The command reads existing files on each request and runs independently of manifests, `DEVHOST_MANIFEST`, build commands, and dependency installation. Caddy starts automatically when needed and remains running after shutdown. Stdout prints the service URL with stack label `files-<domain>` and service name `files`. Stop with Ctrl-C (`130`), SIGTERM (`143`), or another shutdown signal. Routes, ownership records, and temporary state are removed on normal exit; runtime files live in devhost's state directory, leaving the served directory untouched. File sessions participate in hostname ownership checks and use distinct domains for concurrency. `devhost stack list` and `devhost stop --manifest` address manifest-backed stacks; signal a file session's devhost process or stop it from its terminal.
+- `devhost serve`: serve files with `--dir <directory>` or route an existing HTTP service on `127.0.0.1` with `--port <port>`, over the required `--domain` hostname. With neither option, serve the current directory. HTML pages receive the usual devhost toolbar. File mode reads existing files on each request; port mode checks TCP readiness and leaves process startup, restart, and shutdown to the external owner. The command runs independently of manifests, `DEVHOST_MANIFEST`, build commands, and dependency installation. Caddy starts automatically when needed and remains running after shutdown. Stdout prints the service URL with stack label `serve-<domain>` and service name `serve`. Stop with Ctrl-C (`130`), SIGTERM (`143`), or another shutdown signal. Routes, ownership records, and temporary state are removed on normal exit; runtime files live in devhost's state directory, leaving the working or served directory untouched. Shutdown closes the directory server in file mode and leaves the external service running in port mode. Serve sessions participate in hostname ownership checks and use distinct domains for concurrency. `devhost stack list` and `devhost stop --manifest` address manifest-backed stacks; signal a serve session's devhost process or stop it from its terminal.
 
 Directories serve `index.html`, then `index.md`, then a clickable listing. Ordinary files support GET, HEAD, and byte ranges; missing paths return 404. Markdown (`.md`, case-insensitive) uses GitHub styling, GFM tables, task lists, and strikethrough, following the browser's light/dark preference. Raw HTML and dangerous link destinations are suppressed in rendered Markdown. **Show source** / **Show rendered** toggles original text; browser local storage remembers the choice per origin across pages, reloads, and later sessions. With storage unavailable the toggle works for the current page. Dotfiles, hidden directories, links to hidden paths, links outside the served root, and non-regular files are excluded. Symlinks within the root work. See [file serving](https://alexgorbatchev.github.io/devhost/reference/files/).
 
@@ -43,11 +43,13 @@ Within one devhost state directory, `devhost start` rejects a root or recursivel
 - `devhost help [command]`: print the help of a command, the screen `--help` prints for it.
 - `devhost completion bash`, `devhost completion fish`, `devhost completion powershell`, `devhost completion zsh`: print a completion script for that shell on stdout. `--no-descriptions` (bool) leaves the command descriptions out of the completions.
 
-`devhost`, `devhost files`, `devhost caddy`, `devhost service`, `devhost stack`, and `devhost completion` are groups. Run one without a command to print its help, which lists everything below it.
+`devhost`, `devhost caddy`, `devhost service`, `devhost stack`, and `devhost completion` are groups. Run one without a command to print its help, which lists everything below it.
 
 ### Flags and Environment
 
-- `--domain <hostname>`, `-d <hostname>` (string): `devhost files serve` only. Required hostname, such as `notes.localhost`, with scheme, port, and path omitted. The empty parser default fails validation. The hostname must resolve to this machine. Invalid or missing values, extra directories, and `--manifest` are rejected; inaccessible directories fail startup. Use `devhost caddy privileged-ports` once on Linux and `devhost caddy trust` for trusted HTTPS.
+- `--domain <hostname>`, `-d <hostname>` (string): `devhost serve` only. Required hostname, such as `notes.localhost`, with scheme, port, and path omitted. The empty parser default fails validation. The hostname must resolve to this machine. Invalid or missing values, positional arguments, and `--manifest` are rejected; inaccessible directories fail startup. Use `devhost caddy privileged-ports` once on Linux and `devhost caddy trust` for trusted HTTPS.
+- `--dir <directory>` (string): `devhost serve` only. Empty default selects the current directory; relative paths resolve from there. Mutually exclusive with `--port`, including an explicitly empty `--dir`.
+- `--port <port>`, `-p <port>` (int): `devhost serve` only. Route HTTP to `127.0.0.1:<port>`. Accepts `1` through `65535`; explicitly passing the parser default `0` fails validation. Omission selects directory mode. Mutually exclusive with `--dir`. Start the upstream separately; Docker services require a host-published port. This routes HTTP rather than arbitrary TCP protocols.
 
 - `--manifest <path>`, `-m <path>` (string): the `devhost.toml` to use; the file must have that name. A relative path resolves against the current directory, and a running stack is identified by the absolute path. Accepted by `devhost start`, `devhost stop`, `devhost service list`, `devhost caddy start`, `devhost caddy stop`, and `devhost caddy trust`. `DEVHOST_MANIFEST` supplies the same path, and the flag wins when both are set. Without either, `devhost start`, `devhost stop`, and `devhost service list` use the nearest `devhost.toml` in the current directory or a parent, looking no higher than the directory that holds `.git`, and the `caddy` commands use the settings of the stacks already running, or the defaults.
 - `--debug`, `-d` (bool): `devhost start` only. Show Caddy's own output while the stack runs.

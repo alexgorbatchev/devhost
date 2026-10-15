@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,7 +20,7 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
 )
 
-func TestFilesSessionAttemptsCaddyStartAndCleansUpFailure(t *testing.T) {
+func TestServeSessionAttemptsCaddyStartAndCleansUpFailure(t *testing.T) {
 	dir := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(t.TempDir())
 	admin := caddytest.StartAdminServer(t)
@@ -56,7 +58,7 @@ func TestFilesSessionAttemptsCaddyStartAndCleansUpFailure(t *testing.T) {
 	if err := os.WriteFile(paths.ExecutablePath, []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	_, err = StartFiles(dir, "files.localhost", StartStackOptions{CaddyPaths: paths, LogWriter: io.Discard})
+	_, err = StartServe(dir, "files.localhost", 0, StartStackOptions{CaddyPaths: paths, LogWriter: io.Discard})
 	if err == nil {
 		t.Fatal("expected failed proxy startup")
 	}
@@ -72,10 +74,34 @@ func TestFilesSessionAttemptsCaddyStartAndCleansUpFailure(t *testing.T) {
 	}
 }
 
-func TestFilesSessionServesWithDevtoolsAndCleansUp(t *testing.T) {
+func TestServeSessionServesWithDevtoolsAndCleansUp(t *testing.T) {
+	for _, mode := range []string{"directory", "port"} {
+		t.Run(mode, func(t *testing.T) { testServeSession(t, mode == "port") })
+	}
+}
+
+func testServeSession(t *testing.T, external bool) {
+	t.Helper()
 	var log strings.Builder
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "index.md"), []byte("# Files session"), 0o644); err != nil {
+	port := 0
+	var upstream *httptest.Server
+	if external {
+		port = nettest.ReservePort(t)
+		listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+		if err != nil {
+			t.Fatal(err)
+		}
+		upstream = httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			fmt.Fprint(w, "<html><body><h1>Files session</h1></body></html>")
+		}))
+		upstream.Listener.Close()
+		upstream.Listener = listener
+		upstream.Start()
+		t.Cleanup(upstream.Close)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "index.md"), []byte("# Directory session"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	paths := caddy.CreateManagedCaddyPaths(t.TempDir())
@@ -109,7 +135,7 @@ func TestFilesSessionServesWithDevtoolsAndCleansUp(t *testing.T) {
 	}
 	done := make(chan result, 1)
 	go func() {
-		code, err := StartFiles(dir, "files.localhost", StartStackOptions{CaddyPaths: paths, LogWriter: &log})
+		code, err := StartServe(dir, "files.localhost", port, StartStackOptions{CaddyPaths: paths, LogWriter: &log})
 		done <- result{code, err}
 	}()
 	var signalChannel chan<- os.Signal
@@ -135,6 +161,14 @@ func TestFilesSessionServesWithDevtoolsAndCleansUp(t *testing.T) {
 		}
 		assertDirectoryEntries(t, paths.StacksDirectoryPath, nil)
 		assertDirectoryEntries(t, paths.HostClaimsDirectoryPath, nil)
+		if external {
+			resp, err := http.Get(upstream.URL)
+			if err != nil {
+				t.Errorf("external service stopped: %v", err)
+			} else {
+				resp.Body.Close()
+			}
+		}
 		entriesRemaining, readErr := os.ReadDir(paths.RegistrationsDirectoryPath)
 		if readErr != nil || len(entriesRemaining) != 1 {
 			t.Errorf("other session's route changed: %v %v", entriesRemaining, readErr)
@@ -158,6 +192,10 @@ func TestFilesSessionServesWithDevtoolsAndCleansUp(t *testing.T) {
 	case <-time.After(10 * time.Second):
 		t.Fatal("no document server")
 	}
+	wantHeading := "<h1>Directory session</h1>"
+	if external {
+		wantHeading = "<h1>Files session</h1>"
+	}
 	waitForCondition(t, 10*time.Second, func() bool {
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/", document.Port()), nil)
 		if err != nil {
@@ -170,6 +208,6 @@ func TestFilesSessionServesWithDevtoolsAndCleansUp(t *testing.T) {
 		}
 		defer resp.Body.Close()
 		body, err := io.ReadAll(resp.Body)
-		return err == nil && strings.Contains(string(body), "<h1>Files session</h1>") && strings.Contains(string(body), "/__devhost__/")
+		return err == nil && strings.Contains(string(body), wantHeading) && strings.Contains(string(body), "/__devhost__/")
 	})
 }
