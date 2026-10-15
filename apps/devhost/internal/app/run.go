@@ -26,15 +26,15 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 	}
 
 	switch arguments.Kind {
-	case cli.KindFilesServe:
+	case cli.KindServe:
 		directory := arguments.Directory
 		if directory == "" {
 			directory = cwd
 		} else if !filepath.IsAbs(directory) {
 			directory = filepath.Join(cwd, directory)
 		}
-		serviceStdout, serviceStderr := cliout.ServiceOutputWriters(stdout, stderr, []string{"files-" + arguments.Domain, "files"})
-		code, err := services.StartFiles(directory, arguments.Domain, services.StartStackOptions{
+		serviceStdout, serviceStderr := cliout.ServiceOutputWriters(stdout, stderr, []string{"serve-" + arguments.Domain, "serve"})
+		code, err := services.StartServe(directory, arguments.Domain, arguments.Port, services.StartStackOptions{
 			Environment: readEnvironment(), LogWriter: serviceStdout, ServiceStdoutWriter: serviceStdout, ServiceStderrWriter: serviceStderr,
 		})
 		if err != nil {
