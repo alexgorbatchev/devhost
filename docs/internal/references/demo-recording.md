@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-15 14:17
+last_modified: 2026-10-15 16:26
 status: current
 ---
 
@@ -182,6 +182,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Log minimap with real-time service output                                                                                  | `guides/devtools.md`                                      | `devtools` overview-1; promo line-4 |
 | Services panel with restart controls                                                                                       | `guides/devtools.md`                                      | `devtools` overview-2; promo line-4 |
 | Worktree picker and worktree search                                                                                        | README, "Git Worktrees"; `guides/devtools.md`             | `devtools` overview-3               |
+| Service status updates with unavailable checkouts                                                                          | `guides/devtools.md`                                      | **No demo**                         |
 | Recovery dialog after a service exits                                                                                      | `guides/devtools.md`                                      | No demo                             |
 | Host resource usage                                                                                                        | `guides/devtools.md`, "Host resource usage"               | No demo                             |
 | Terminal session chips                                                                                                     | `guides/devtools.md`                                      | No demo                             |

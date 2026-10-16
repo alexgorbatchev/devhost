@@ -209,11 +209,13 @@ func (g *worktreeGroup) refresh() error {
 		if entry.Reason != "" {
 			continue
 		}
-		entry.Directories, err = g.directories(entry.Path)
-		entry.Available = err == nil
+		directories, err := g.directories(entry.Path)
 		if err != nil {
 			entry.Reason = err.Error()
+			continue
 		}
+		entry.Directories = directories
+		entry.Available = true
 	}
 	if !foundSelected {
 		entries = append(entries, devtools.Worktree{Path: g.view.SelectedPath, Reason: "Saved checkout is no longer registered with Git.", Directories: []devtools.WorktreeDirectory{}})
