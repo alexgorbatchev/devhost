@@ -51,7 +51,10 @@ type stackRuntime struct {
 	blocked           map[string]string
 }
 
-func (r *stackRuntime) health() (devtools.HealthResponse, error) {
+func (r *stackRuntime) health(ctx context.Context) (devtools.HealthResponse, error) {
+	if err := ctx.Err(); err != nil {
+		return devtools.HealthResponse{}, err
+	}
 	r.manifestMu.RLock()
 	m := *r.manifest
 	worktrees := r.worktrees
@@ -86,6 +89,9 @@ func (r *stackRuntime) health() (devtools.HealthResponse, error) {
 				}
 			}
 		}
+	}
+	if err := ctx.Err(); err != nil {
+		return devtools.HealthResponse{}, err
 	}
 	return h, nil
 }

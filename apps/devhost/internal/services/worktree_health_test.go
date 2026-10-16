@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -38,7 +39,7 @@ func TestWorktreeHealthKeepsInvalidCheckoutDirectoriesAsArray(t *testing.T) {
 						t.Fatal(err)
 					}
 				}
-				health, err := runtime.health()
+				health, err := runtime.health(context.Background())
 				if err != nil {
 					t.Fatal(err)
 				}

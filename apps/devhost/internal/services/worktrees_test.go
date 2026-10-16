@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -115,7 +116,7 @@ func TestWorktreeHealthPreservesIndividualAndGroupRestartState(t *testing.T) {
 	child := &startedService{service: m.Services["web"]}
 	runtime := &stackRuntime{manifest: &m, worktrees: w, started: []*startedService{child}}
 	child.setRestarting(true)
-	health, err := runtime.health()
+	health, err := runtime.health(context.Background())
 	if err != nil || !health.Services[1].Restarting || health.Services[0].Restarting {
 		t.Fatalf("individual restart state = %#v, %v", health.Services, err)
 	}
@@ -123,12 +124,12 @@ func TestWorktreeHealthPreservesIndividualAndGroupRestartState(t *testing.T) {
 	if _, err := w.prepare(w.snapshot()[0].ID, linked, m); err != nil {
 		t.Fatal(err)
 	}
-	health, err = runtime.health()
+	health, err = runtime.health(context.Background())
 	if err != nil || !health.Services[0].Restarting || !health.Services[1].Restarting {
 		t.Fatalf("group restart state = %#v, %v", health.Services, err)
 	}
 	w.finish(w.snapshot()[0].ID, nil)
-	health, err = runtime.health()
+	health, err = runtime.health(context.Background())
 	if err != nil || health.Services[0].Restarting || health.Services[1].Restarting {
 		t.Fatalf("completed restart state = %#v, %v", health.Services, err)
 	}
