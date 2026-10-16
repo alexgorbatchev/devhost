@@ -428,8 +428,10 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			OnLog: func(message string) {
 				writeLogLine(options.LogWriter, manifest.Name, message)
 			},
-			FeatureToggles:       runtimeDevtoolsFeatures,
-			GetHealthResponse:    state.health,
+			FeatureToggles: runtimeDevtoolsFeatures,
+			GetHealthResponse: func() (devtools.HealthResponse, error) {
+				return state.health(lifecycleCtx)
+			},
 			ManifestPath:         manifest.ManifestPath,
 			Position:             manifest.Devtools.Status.Position,
 			ProjectRootPath:      manifest.ManifestDirectoryPath,

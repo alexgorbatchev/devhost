@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-15 16:26
+last_modified: 2026-10-15 17:11
 status: current
 ---
 
@@ -183,7 +183,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Services panel with restart controls                                                                                       | `guides/devtools.md`                                      | `devtools` overview-2; promo line-4 |
 | Worktree picker and worktree search                                                                                        | README, "Git Worktrees"; `guides/devtools.md`             | `devtools` overview-3               |
 | Service status updates with unavailable checkouts                                                                          | `guides/devtools.md`                                      | **No demo**                         |
-| Recovery dialog after a service exits                                                                                      | `guides/devtools.md`                                      | No demo                             |
+| Recovery dialog after a service exits; stack shutdown preserves the loaded app without flashing recovery                   | `guides/devtools.md`, `guides/stack-lifecycle.md`         | No demo                             |
 | Host resource usage                                                                                                        | `guides/devtools.md`, "Host resource usage"               | No demo                             |
 | Terminal session chips                                                                                                     | `guides/devtools.md`                                      | No demo                             |
 | Toolbar layout on narrow viewports                                                                                         | `guides/devtools.md`                                      | No demo                             |

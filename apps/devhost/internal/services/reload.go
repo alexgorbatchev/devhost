@@ -199,7 +199,7 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	}
 	previousBlocked := maps.Clone(r.blocked)
 	oldNames, nextNames := reloadOrder(previousOrder, affected), reloadOrder(order, affected)
-	health, err := r.health()
+	health, err := r.health(ctx)
 	if err != nil {
 		return errors.Join(err, rollbackClaims())
 	}

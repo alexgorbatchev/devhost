@@ -4,7 +4,7 @@ description: Use when running devhost, serving static files or Markdown, routing
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-15 14:17
+  last_modified: 2026-10-15 17:11
   status: current
 ---
 
@@ -69,6 +69,8 @@ devhost start
 ```
 
 Stop the stack with `devhost stop`, a shutdown signal, or an idle timeout. The shared Caddy keeps running until `devhost caddy stop`.
+
+Stack shutdown preserves the loaded app without opening service-crash recovery. Browser health updates stop when shutdown begins, including results from probes already in flight.
 
 The running stack immediately acknowledges its first shutdown signal, before waiting for in-flight startup or reload work. Under `AGENT=1`, Ctrl-C prints `stack-name: Received SIGINT (Ctrl-C) (signal 2); shutting down the stack.` once; SIGHUP and SIGTERM also name the received signal. The stack prints `stack-name: Stopping service <name>...` before signaling each managed foreground service or running a daemon's stop command, and `stack-name: Stopped service <name>.` after its cleanup succeeds. Human mode uses the aligned stack prefix described above for the same messages. `Stack stopped.` confirms service and routing cleanup completed successfully. Child stdout/stderr remains visible during shutdown, and cleanup failures report the affected services. Signal-driven shutdown retains the signal exit codes listed above.
 
