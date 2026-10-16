@@ -2,6 +2,7 @@ package services
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -199,13 +200,18 @@ func TestPlaygroundStartupFailureKeepsDiagnostics(t *testing.T) {
 	for _, app := range []string{"backend", "frontend"} {
 		t.Run(app, func(t *testing.T) {
 			port := nettest.ReservePort(t)
-			// Bun listens on the IPv4 wildcard address. Occupy that same address:
-			// macOS can allow a wildcard listener alongside a loopback-only listener.
-			listener, err := net.Listen("tcp4", fmt.Sprintf("0.0.0.0:%d", port))
-			if err != nil {
-				t.Fatal(err)
+			// Bun tries IPv6 before IPv4. Occupy both families so macOS cannot
+			// accept the other wildcard listener on the same port.
+			for network, host := range map[string]string{"tcp4": "0.0.0.0", "tcp6": "::"} {
+				listener, err := net.Listen(network, net.JoinHostPort(host, fmt.Sprint(port)))
+				if network == "tcp6" && (errors.Is(err, syscall.EAFNOSUPPORT) || errors.Is(err, syscall.EPROTONOSUPPORT) || errors.Is(err, syscall.EADDRNOTAVAIL)) {
+					continue // IPv4 is the only family available to Bun on this host.
+				}
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer listener.Close()
 			}
-			defer listener.Close()
 			var output shutdownOutput
 			service := playgroundShutdownService(t, app, port)
 			started, err := startServiceProcess(ResolvedManifest{}, service, processStartOptions{
