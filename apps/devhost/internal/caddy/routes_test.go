@@ -531,15 +531,15 @@ func TestRenderHostRouteSnippet(t *testing.T) {
 	}
 }
 
-func TestRenderHostRouteSnippetWithStackName(t *testing.T) {
+func TestRenderHostRouteSnippetWritesTheStackAccessLog(t *testing.T) {
 	registrations := []routeRegistration{
 		mustParseRouteRegistration(t, createRouteRegistrationText(ActivateRouteOptions{
-			AppBindHost: "127.0.0.1",
-			AppPort:     3001,
-			Host:        "hello.localhost",
-			Path:        "/",
-			ServiceName: "api",
-			StackName:   "my-awesome-stack",
+			AppBindHost:   "127.0.0.1",
+			AppPort:       3001,
+			Host:          "hello.localhost",
+			Path:          "/",
+			ServiceName:   "api",
+			AccessLogName: "stack-0123456789ab",
 		}, "/tmp/project/devhost.toml")),
 	}
 
@@ -551,7 +551,10 @@ func TestRenderHostRouteSnippetWithStackName(t *testing.T) {
 	}
 
 	// Verify the log block exists and points to the correct location
-	expectedLogPath := filepath.ToSlash(filepath.Join(tempDir, "caddy", "logs", "my-awesome-stack_access.log"))
+	expectedLogPath := filepath.ToSlash(AccessLogPath(CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath), "stack-0123456789ab"))
+	if want := filepath.Join(tempDir, "caddy", "logs", "stack-0123456789ab_access.log"); filepath.FromSlash(expectedLogPath) != want {
+		t.Fatalf("AccessLogPath(...) = %q, want %q", expectedLogPath, want)
+	}
 	expectedSnippet := `    log {
         output file "` + expectedLogPath + `"
     }`

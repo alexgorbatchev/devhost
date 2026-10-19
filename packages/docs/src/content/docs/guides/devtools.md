@@ -22,19 +22,19 @@ When `devtools` are enabled, routed traffic is split like this:
 
 That keeps assets, HMR, fetches, SSE, and WebSockets off the injection path. The control server also owns the websocket status stream used by the injected UI.
 
-The injected `devtools` UI mounts inside its own Shadow DOM container so its runtime styles do not leak into the host page. The devtools stylesheet is built from Tailwind v4 and shadcn-compatible CSS variables, then installed into that Shadow DOM root at runtime and in Storybook. Tailwind Preflight is scoped to that root only, not to the host document. The shadow host also resets anything the host page's CSS would otherwise pass down (such as letter spacing or text transforms), and all devtools sizes are in pixels, so a host page's root font size does not rescale the UI. Keys pressed while devtools have focus, in the chat composer or on a devtools button, do not reach the host page, so page shortcuts like Space to play or pause a video leave your typing and devtools controls alone. Click the page to give its shortcuts the keyboard again.
+The injected `devtools` UI mounts inside its own Shadow DOM container so its runtime styles do not leak into the host page. The devtools stylesheet is built from Tailwind v4 and shadcn-compatible CSS variables, then installed into that Shadow DOM root at runtime and in Storybook. Tailwind Preflight is scoped to that root only, not to the host document. The shadow host also resets anything the host page's CSS would otherwise pass down (such as letter spacing or text transforms), and all devtools sizes are in pixels, so a host page's root font size does not rescale the UI.
 
 Browsers ignore `@font-face` rules inside a Shadow DOM, so the devtools register their monospace font with the page's font set through the `FontFace` API under a `devhost`-prefixed family name. Font subsets are served separately and downloaded only when needed. This adds no stylesheet to the host document and cannot collide with fonts the host page declares.
 
-The production `inject.js` script contains no instance configuration. Before mounting, it fetches fresh configuration from `/__devhost__/config.json`, which uses `Cache-Control: no-store`. JavaScript and styles are gzip-compressed when the browser accepts gzip.
+The production `inject.js` script contains no instance configuration. Before mounting, it fetches fresh configuration from `/__devhost__/config.json`, which uses `Cache-Control: no-store`. JavaScript and terminal styles are gzip-compressed when the browser accepts gzip. The terminal runtime loads only when a terminal session mounts; minimized sessions stay connected after loading.
 
-Production entry scripts, Redux inspector modules/styles, content-hashed JavaScript chunks, and fonts use one-year immutable browser caching. Unversioned entry, inspector-module, and stylesheet URLs redirect without caching to their current content version, so upgrades select fresh assets while unchanged bundles can be reused across stack restarts. In the source-checkout development loop, entry and inspector assets stay uncached so page reloads pick up edits. The native Redux inspector stylesheet loads only in its separate browser popup.
+Production entry scripts, Redux inspector modules/styles, terminal styles, content-hashed JavaScript chunks, and fonts use one-year immutable browser caching. Unversioned entry, inspector-module, and stylesheet URLs redirect without caching to their current content version, so upgrades select fresh assets while unchanged bundles can be reused across stack restarts. In the source-checkout development loop, entry and inspector assets stay uncached so page reloads pick up edits. The native Redux inspector stylesheet loads only in its separate browser popup.
 
-The injected overlay is a compact toolbar docked to the right edge of the browser. It shows the stack name, service health, native CLI chat, and supported third-party devtools toggles. As the viewport narrows, controls wrap into additional rows, including within groups that are wider than the available space. Long stack and branch names truncate visually; hover their buttons for the full names. The toolbar stays beside the log minimap when it is visible. Use `[devtools.status].position` to switch between `top-right` and `bottom-right`; toolbar panels open above their button, or below it at `top-right`. Clicking the stack name collapses the toolbar to a single stack-health dot.
+The injected overlay is a compact toolbar docked to the right edge of the browser. It shows the stack name, service health, annotation queues, supported third-party devtools toggles, and terminal sessions. As the viewport narrows, controls wrap into additional rows, including within groups that are wider than the available space. Long stack and branch names truncate visually; hover their buttons for the full names. The toolbar stays beside the log minimap when it is visible. Use `[devtools.status].position` to switch between `top-right` and `bottom-right`; toolbar panels open above their button, or below it at `top-right`. Clicking the stack name collapses the toolbar to a single stack-health dot.
 
 Toolbar panels, including Services, fade out in place when dismissed, staying beside their trigger until the animation finishes. With reduced motion enabled, they close immediately.
 
-Every injected surface renders in the browser's top layer: above page content whatever `z-index` or clipping the page uses, and without blocking clicks on the page around it. The surfaces keep one order among themselves, bottom to top: cursor highlights, the component-source menu, toolbar, log minimap and chat panel, then annotation highlights and drawings, with the floating annotation tools above them. This lets you annotate the devhost UI itself. While selecting, clicks select devhost controls without activating them; Escape restores ordinary interaction. Native toolbar popovers and modal dialogs open in separate top-layer entries above the drawing canvas.
+Every injected surface renders in the browser's top layer: above page content whatever `z-index` or clipping the page uses, and without blocking clicks on the page around it. The surfaces keep one order among themselves, bottom to top: selection and cursor highlights, annotation drafts and the component-source menu, the toolbar, the log minimap, then terminal windows. Toolbar panels and the recovery dialog open above all of them.
 
 When the page opens a popover or a modal dialog, the injected UI moves back above it. A popover inside a web component's shadow root gives the page no signal, so the injected UI moves above it the next time a selection or cursor highlight appears. An open toolbar panel or recovery dialog postpones the move until it closes; a fading toolbar panel postpones it until its exit animation finishes. While a page's modal dialog is open, the browser makes everything outside that dialog non-interactive, the injected UI included.
 
@@ -42,31 +42,29 @@ The toolbar also shows how much of the machine is in use: **CPU**, **RAM**, and 
 
 The services panel lists every started service with its state in two groups: **Applications** for entries with a routed browser URL, followed by **Services** for entries without one. Each list sorts names alphabetically, ignoring case and ordering numbered names naturally (for example, `worker2` before `worker10`). Empty groups are hidden, and health changes do not change the order. Applications become links automatically, and clicking one opens that service URL in a new browser tab or window by default. Routed APIs and tools such as Mailpit also appear under Applications. Externally owned services are tagged `external`; only `devhost`-managed services expose restart controls. Services with watched file changes are marked `changed` until they restart.
 
-When the toolbar shows the `changed` badge, the adjacent reload icon restarts changed managed services without opening the panel. It is disabled while a restart or checkout switch is in progress, or when no changed service is managed. Restart failures appear in the Services panel.
-
 When `devhost start` named the services to run, the panel also shows **Stopped services** with the number of services left out. It opens a list of them; **Start** on a row starts that service and the services it depends on without restarting the ones that run. See [Starting part of a stack](../stack-lifecycle/#starting-part-of-a-stack).
 
 The separate **Worktrees** toolbar button shows the current branch beside its fork icon, including on the default branch. Opening it shows the checkout list immediately under the **Worktrees** heading. For stacks with multiple repositories, use the **Repository** selector in the popout header to choose which list to view. The Services panel keeps Applications and Services grouped by repository. Opening a checkout picker or pressing **Refresh** discovers added and deleted Git worktrees. Selecting a checkout loads its manifest and includes and restarts the entire managed stack. Service names, directories, commands, environments, and routes come from that configuration. Repositories containing externally managed services cannot switch checkouts. If the running checkout disappears, its repository services remain stopped until you select an available checkout.
 
 Use **Find worktree** at the bottom of the popout to fuzzy-search branch names, checkout paths, or detached commit IDs. Matches are ranked by relevance; clear the search to show every checkout again. Filtering keeps your selection and does not restart services. The adjacent **Refresh** button reloads the checkout list. Checkout paths stay on one line and show an ellipsis on the left when space is limited, keeping the end visible; hover over a path to read it in full. Choose a checkout, then press **Switch and restart stack** to apply it.
 
-Unavailable checkouts remain readable but cannot be selected. Click their **unavailable** badge to open the detailed reason in a popover. A missing or invalid checkout manifest or service directory marks that checkout unavailable while service status continues updating. When a configured checkout has no local manifest, it uses its owning stack's manifest, including one outside the service repository; returning to that checkout retains the association. An existing checkout-local manifest takes precedence. New target checkouts use the same manifest path relative to their repository, or its filename at the checkout root when the owning manifest is outside that repository. Availability checks that manifest and its service directories, so a different app layout is supported. A successful switch reloads the current browser URL. If that app no longer has a route, the proxy's 404 page lists available routes. Invalid configurations leave the current stack running; launch failures attempt to restore it. Listener, devtools, worktree enablement, and zombie-management settings must match the running instance.
+Unavailable checkouts remain readable but cannot be selected. Click their **unavailable** badge to open the detailed reason in a popover. A missing or invalid checkout manifest or service directory marks that checkout unavailable while service status continues updating. Availability checks the target checkout's manifest and its service directories, so a different app layout is supported. The manifest uses the same path relative to its repository; when the original manifest is outside that repository, its filename is used at the checkout root. A successful switch reloads the current browser URL. If that app no longer has a route, the proxy's 404 page lists available routes. Invalid configurations leave the current stack running; launch failures attempt to restore it. The stack takes the target manifest's name; its devtools, annotation, worktree enablement, and zombie-management settings must match the running instance.
 
-The **Worktrees** button displays each selected branch; detached checkouts show their abbreviated commit ID. Its fork icon turns red when a selected checkout is unavailable or a repository has an error or blocked operation. Open the panel for details; the toolbar omits unavailable-checkout text. Unavailable alternatives alone leave the icon unchanged. Its tooltip identifies selected non-default branches. Devhost reads the default branch from Git's locally recorded remote `HEAD` references, without contacting a remote or assuming a branch name. Submodule repositories use their actual checkout directories, including when Git lists the main checkout as a metadata directory. The button remains visible for default, detached, and unknown branches whenever repositories are available. Opening the picker or pressing **Refresh** also refreshes this information.
+The **Worktrees** button displays each selected branch; detached checkouts show their abbreviated commit ID, and missing selections show **Unavailable worktree**. Its tooltip identifies selected non-default branches. Devhost reads the default branch from Git's locally recorded remote `HEAD` references, without contacting a remote or assuming a branch name. The button remains visible for default, detached, and unknown branches whenever repositories are available. Opening the picker or pressing **Refresh** also refreshes this information.
 
 The Services panel has **Restart Changed** and **Restart Stack** buttons aligned to the right with a gap, each sized to its content. **Restart Changed** restarts every service marked changed, or the primary service when none changed; its button shows the configured keyboard shortcut (default **Alt+Ctrl+R**). Hover **Restart Stack** for a tooltip explaining that it restarts all managed services and reassigns automatic ports. Labels, icons, and shortcuts stay together on one line. Shortcut keycaps use muted text; filled buttons use a subdued contrasting keycap.
 
-Individual service restarts retain their assigned automatic ports. If a port is occupied, use **Restart Stack** in the Services panel or recovery dialog. It restarts all managed services with fresh automatic ports and rebuilt port references and environments, while retaining fixed ports, selected checkouts, control listeners, and chat sessions. External processes keep running. Failures display an error and allow another attempt. See [Stack lifecycle](./stack-lifecycle/) for hot reload, restart ordering, and restoration behavior.
+Individual service restarts retain their assigned automatic ports. If a port is occupied, use **Restart Stack** in the Services panel or recovery dialog. It restarts all managed services with fresh automatic ports and rebuilt port references and environments, while retaining fixed ports, selected checkouts, control listeners, and terminal sessions. External processes keep running. Failures display an error and allow another attempt. See [Stack lifecycle](./stack-lifecycle/) for hot reload, restart ordering, and restoration behavior.
 
 When a managed foreground service exits while the stack is running and status devtools are enabled, a full-screen recovery dialog shows the service's exit code, retained stdout/stderr logs, and a **Restart** button. The supervisor and other services keep running. Logs continue updating during recovery; a failed restart displays its error and allows another attempt. The dialog closes when the service recovers. Stack shutdown, intentional restarts, failed health probes, and lost control connections alone do not trigger the crash dialog.
 
-Opening or refreshing a routed app before it is ready returns a standalone startup or recovery page with status, recent logs, and a restart button for managed services. A missing app path also shows this page with HTTP 404 and **Page not found**. Application HTTP 5xx responses show recovery controls and logs even when the app returns an empty body, preserving the original error status. With worktrees enabled, the standalone page includes **Switch worktree** and **Refresh worktrees**, including when the injected toolbar is disabled. This works for aliases and path routes even with devtools disabled. The restart button becomes available after stack initialization; successful recovery reloads the existing tab at its original URL once that path returns neither 404 nor 5xx. API and asset error responses pass through. Devhost does not launch a browser. Daemon lifecycle and externally managed services use health status instead of foreground exit recovery. See [Startup and recovery pages](./stack-lifecycle/#startup-and-recovery-pages).
+Opening or refreshing a routed app before it is ready returns a standalone startup or recovery page with status, recent logs, and a restart button for managed services. A missing app path also shows this page with HTTP 404 and **Page not found**. With worktrees enabled, the standalone page includes **Switch worktree** and **Refresh worktrees**, including when the injected toolbar is disabled. This works for aliases and path routes even with devtools disabled. The restart button becomes available after stack initialization; successful recovery reloads the existing tab at its original URL once that path is available. API and asset 404 responses pass through. Devhost does not launch a browser. Daemon lifecycle and externally managed services use health status instead of foreground exit recovery. See [Startup and recovery pages](./stack-lifecycle/#startup-and-recovery-pages).
 
 When `[devtools.externalToolbars].enabled = true` (the default), `devhost` also detects supported third-party devtools buttons on the host page, hides the native controls, and re-renders them as toggles in the toolbar. The native panels themselves stay owned by the host tools.
 
 Native React DevTools uses a separately configured, already running browser profile. Set `[devtools.browser].endpoint` explicitly and choose **Connect browser control** directly in the dock. When a uniquely identified mounted React host and original extension are detected, **React DevTools** opens native DevTools for that document; choose Components or Profiler in the upstream window. **Disconnect browser control** releases devhost resources while preserving that browser-owned window and profile. Tall diagnostics scroll within the space left by the toolbar on short screens. Collapsing the toolbar preserves the connection. Window presence does not certify live inspection, and native-session loss remains unavailable. Read [Native React DevTools](../architecture/external-devtools/#native-react-devtools) for exact versions, setup, route authority and recovery boundaries.
 
-Open **Chat** for native Codex or Claude Code conversations. Use **Select element**, **Arrow**, **Line**, and **Box** to add page context; sending that context requests a browser-approved tab snapshot. The panel can collapse or move between viewport sides while its session remains available. See [Browser chat and page context](./annotations/).
+Terminal sessions (annotation agents, annotation commands, and Neovim) appear as chips in the toolbar. Clicking a chip opens its terminal window; minimizing returns it to the chip while the session keeps running and reporting its status. When the chips no longer fit, the rest collapse into a `+N` button that lists every session, and they return when the toolbar has room again. Terminal windows open fullscreen above the other injected surfaces; when the log minimap is shown, the window stops at the minimap strip. The minimap's hover preview stays beneath an open terminal window, so minimize the terminal to read it.
 
 Minimap log previews use the available page width beside the minimap. Service names form a shared column sized to the longest known service name across the service list and buffered logs, including services that have not produced output yet, followed by a gap and the log message. A matching leading `[service] ` prefix is removed from the message so the name appears once. Log messages stay on one row and clip horizontally when needed.
 
@@ -74,7 +72,7 @@ Minimap log previews preserve ANSI backgrounds and text decorations. Foreground 
 
 When all devtools features are disabled, `devhost` does not mount these control routes for that stack.
 
-For chat, selected context, drawing tools, and tab sharing, see [Browser chat and page context](./annotations/).
+For annotation workflows, action configuration, and queue behavior, see [Annotations](./annotations/).
 
 ## Host resource usage
 
@@ -123,7 +121,7 @@ pollInterval = "10m"
 - `cpu`, `memory`, and `disk` each take `enabled` and `pollInterval`.
 - Changing these keys requires restarting devhost.
 
-The readouts appear in the toolbar that the other devtools features bring. With chat, annotations, editor, external toolbars, minimap, and status features all disabled, nothing is injected and no readout is shown.
+The readouts appear in the toolbar that the other devtools features bring. With the editor, external toolbars, minimap, and status features all disabled, nothing is injected and no readout is shown.
 
 ### When a readout is missing
 
@@ -133,34 +131,36 @@ The readouts appear in the toolbar that the other devtools features bring. With 
 
 ## Control API
 
-Devtools controls are designed for trusted local development. HTTP requests and WebSocket connections use no authentication token. Independent stacks stay isolated through their own control servers, routed hosts, project roots, and native chat session IDs.
+Devtools controls are designed for trusted local development. HTTP requests and WebSocket connections use no authentication token. Independent stacks stay isolated through their own control servers, routed hosts, project roots, and terminal session IDs.
 
 ### Instance configuration
 
 Before mounting, the browser entry fetches `GET /__devhost__/config.json` from the page's origin with `cache: "no-store"`. The response includes the stack name, project root, enabled features, and UI settings, and uses `Cache-Control: no-store`. The entry rejects unsuccessful responses and configurations with a missing or empty stack name.
 
-Instance configuration is kept out of `inject.js`, lazy JavaScript chunks and fonts. Content-versioned entry and stylesheet URLs use `?v=` for browser caching. Configuration stays uncached so page reloads pick up the running instance's settings.
+Instance configuration is kept out of `inject.js`, lazy JavaScript chunks, fonts, and terminal styles. Content-versioned entry and stylesheet URLs use `?v=` for browser caching. Configuration stays uncached so page reloads pick up the running instance's settings.
 
 ### HTTP requests
 
 All paths below are relative to the routed app's origin. Requests with JSON bodies use `Content-Type: application/json`.
 
-| Endpoint                                         | Methods       | Purpose                                                 |
-| ------------------------------------------------ | ------------- | ------------------------------------------------------- |
-| `/__devhost__/chat/harnesses?pageURL=<page-url>` | `GET`         | Discover installed native clients and model catalogs    |
-| `/__devhost__/chat/sessions`                     | `GET`, `POST` | List sessions or start/resume a native conversation     |
-| `/__devhost__/chat/sessions/<id>`                | `DELETE`      | End the owned native process                            |
-| `/__devhost__/restart-service`                   | `POST`        | Restart managed services                                |
-| `/__devhost__/restart-stack`                     | `POST`        | Restart all managed services with fresh automatic ports |
-| `/__devhost__/worktrees`                         | `GET`, `POST` | Refresh worktree state or switch the selected checkout  |
-| `/__devhost__/react-highlight/cursor`            | `POST`        | Publish an editor cursor update                         |
+| Endpoint                                           | Methods           | Purpose                                                      |
+| -------------------------------------------------- | ----------------- | ------------------------------------------------------------ |
+| `/__devhost__/terminal-sessions`                   | `GET`, `POST`     | List terminal sessions or start an annotation/editor session |
+| `/__devhost__/annotation-queues`                   | `GET`             | List annotation queues                                       |
+| `/__devhost__/annotation-queues/<entry-id>`        | `PATCH`, `DELETE` | Edit or delete a queued annotation                           |
+| `/__devhost__/annotation-queues/<queue-id>/resume` | `POST`            | Resume an annotation queue                                   |
+| `/__devhost__/restart-service`                     | `POST`            | Restart managed services                                     |
+| `/__devhost__/restart-stack`                       | `POST`            | Restart all managed services with fresh automatic ports      |
+| `/__devhost__/worktrees`                           | `GET`, `POST`     | Refresh worktree state or switch the selected checkout       |
+| `/__devhost__/react-highlight/cursor`              | `POST`            | Publish an editor cursor update                              |
 
 Handlers still validate methods, payloads, enabled features, and session state. Malformed requests can produce `400 Bad Request`, unsupported methods produce `405 Method Not Allowed`, and unavailable controls can produce `501 Not Implemented`.
 
 ### WebSocket connections
 
 ```text
-/__devhost__/ws/chat?sessionId=<session-id>
+/__devhost__/ws/terminal?sessionId=<session-id>
+/__devhost__/ws/annotation-queues
 /__devhost__/ws/react-highlight
 /__devhost__/ws/health
 /__devhost__/ws/logs
@@ -168,15 +168,28 @@ Handlers still validate methods, payloads, enabled features, and session state. 
 /__devhost__/ws/native-browser
 ```
 
-Use the page's routed host with ws:// for HTTP or wss:// for HTTPS. Chat requires an existing sessionId: missing IDs produce 400, unknown IDs produce 404 before upgrading. Chat mutations and WebSocket attachments require an Origin matching the request authority. The browser constructs these requests automatically.
+Use the page's routed host with `ws://` for HTTP or `wss://` for HTTPS. The terminal connection requires the ID of an existing session: a missing `sessionId` produces `400`, and an unknown session produces `404` before the WebSocket upgrade. The injected UI constructs these URLs automatically.
 
-Health, logs, resource usage, React Highlight and chat connections reconnect after a loss, retrying from one second up to ten seconds. Services become unavailable while health is disconnected; logs keep buffered entries; resource readings disappear; React Highlight clears its highlight. Chat reconnects through its retained native snapshot and live events. Native browser control reconnects only through its explicit Connect action.
+The injected UI reopens its health, logs, resource usage, annotation queue, React Highlight, and terminal connections when they are lost, for example after the machine sleeps or devhost restarts behind the same host. It tries again after one second and doubles the wait after each failed attempt, up to ten seconds. The native browser-control connection is the exception: it reconnects only when you choose **Connect browser control** again.
 
-Stack shutdown closes streams with 1001 (going away); explicitly closing a chat session uses 1000 (normal closure). See [Browser chat sessions](../architecture/chat/) for the native event and pending-request contract.
+While a connection is down:
+
+- the Services panel shows every service as unavailable
+- the minimap keeps the log entries it already has
+- the CPU, memory, and disk readouts disappear, because a reading that has stopped updating would pass for the current one
+- the queue panel reports that its stream is disconnected
+- React Highlight shows no highlight until the editor reports its cursor again
+- a terminal shows `disconnected` and keeps its output
+
+Each recovers when its connection reopens. A reattached terminal replaces its output with the session's retained output. A terminal stops reconnecting when its session has finished or is gone, and then reports that the session is no longer running.
+
+devhost ends a connection with a WebSocket close frame. It closes with `1001` (going away) when the stack stops, and the injected UI reconnects. It closes a terminal connection with `1000` (normal closure) when the session ends while a page is attached: another page closed it, or the stack stopped. A session that ended while the page was not attached answers `404`, which a browser reports like any failed connection, so the injected UI then asks `GET /__devhost__/terminal-sessions` whether the session is still listed.
 
 An active native browser-control WebSocket also keeps the stack from idle shutdown. Disconnecting releases that activity and restarts the normal idle buffer.
 
 Native browser control negotiates the nonsecret `devhost-native-browser.v1` codec and validates the current routed origin and exact instance/document binding. Fresh uncached configuration publishes only whether it is configured and its current instance identity; the private debugging endpoint is never included.
+
+The generated Neovim launcher supplies the instance's cursor-update endpoint through `DEVHOST_REACT_HIGHLIGHT_URL`, together with its project root, stack name, and plugin path. Stopping and starting devhost can change the local control port, so use the current launcher after starting a new instance. Manifest hot reload and **Restart Stack** retain the control port and existing editor connections. See [React Highlight](../react-highlight/) for integration requirements.
 
 Authentication configured by an upstream proxy remains separate. Clients must satisfy that proxy's requirements; a sign-in redirect can prevent a WebSocket connection from reaching devhost.
 
@@ -184,7 +197,10 @@ Authentication configured by an upstream proxy remains separate. Clients must sa
 
 The shipped Go runtime supports `Alt` + `right-click` component-source navigation whenever `[devtools.editor].enabled = true`.
 
-Supported editors are VS Code, VS Code Insiders, Cursor, and WebStorm. Navigation uses the editor's external URL handler and copies the formatted source path. Source links remap to the selected checkout. There is no embedded terminal or Vim launcher.
+- When `[devtools.editor].ide = "neovim"`, `devhost` launches Neovim inside the injected xterm terminal, so `nvim` must be available on the machine running `devhost`.
+- Other supported editors use their direct external-editor URL launch path instead of the embedded terminal.
+
+Embedded terminal sessions normalize their terminal environment to `TERM=xterm-256color` and `COLORTERM=truecolor` so terminal UIs like Neovim render against the xterm.js emulator instead of inheriting incompatible host-terminal identities. Neovim component-source sessions expand to fill the available viewport when opened as a modal.
 
 ## Automatic Idle Timeout
 
@@ -212,8 +228,8 @@ idleTimeout = "1h"
 `devhost` passive activity tracking combines three signals:
 
 - **WebSocket connections:** Any active WS connection to the devhost control server (such as the browser overlay, logs viewer, health monitor) keeps the daemon alive. When browser tabs are closed or reloaded, active WebSockets momentarily drop to 0. To prevent naive instant shutdowns during reloads, the daemon restarts the idle timer on drop to 0, providing a full timeout buffer.
-- **Application traffic:** Any HTTP/HTTPS requests proxied by Caddy to your backend services are passively monitored. The daemon periodically polls the modification time of stack-isolated Caddy access logs (`os.Stat` on `<caddy-paths>/logs/<stack_name>_access.log`) without locking, which avoids Windows portability sharing violations.
-- **Native chat turns:** An in-flight turn or unanswered native request keeps the stack alive even when its page disconnects. Idle conversations alone do not prevent the configured idle timeout.
+- **Application traffic:** Any HTTP/HTTPS requests proxied by Caddy to your backend services are passively monitored. The daemon periodically polls the modification time of stack-isolated Caddy access logs (`os.Stat` on a per-stack log in the managed Caddy `logs` directory, named after the root manifest path so it survives a rename) without locking, which avoids Windows portability sharing violations.
+- **Terminal sessions:** The daemon will never shut down if there is an active interactive terminal session (such as a Neovim integration session), even if no HTTP requests are arriving.
 
 Any of these active signals resets the idle timer. When no activity has been detected for the configured timeout, `devhost` triggers a clean, graceful cascading teardown of all managed services and routing configurations.
 

@@ -263,7 +263,7 @@ func TestDaemonShutdownProgressReportsOnlySuccessfulCleanup(t *testing.T) {
 
 func TestShutdownProgressGroupsProcessesOfOneService(t *testing.T) {
 	var output shutdownOutput
-	progress := newShutdownProgress(&output, "test-stack")
+	progress := newShutdownProgress(&output, func() string { return "test-stack" })
 	var processes []*startedService
 	defer func() {
 		for _, started := range processes {

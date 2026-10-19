@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-21 11:25
+last_modified: 2026-10-19 16:20
 status: current
 ---
 
@@ -14,12 +14,10 @@ The recording workflow has been validated on Linux. It uses the existing managed
 
 Install the repository dependencies with `bun install`. Recording uses the existing pinned Playwright dependency and Chromium installed by `just ui install-browser`. Also provide Git, `just`, Caddy, [VHS](https://github.com/charmbracelet/vhs), `ttyd`, Bash, `ln`, and FFmpeg/ffprobe on PATH. FFmpeg must support H.264 (`libx264`) and subtitles (`libass`). Install the DejaVu fonts and Noto Color Emoji to render captions and the playground's terminal emoji; verify with `fc-match 'DejaVu Sans Mono'` and `fc-match 'Noto Color Emoji'`. A custom [Fontconfig configuration](https://fontconfig.pages.freedesktop.org/fontconfig/fontconfig-user.html) can be supplied through `FONTCONFIG_FILE` when fonts are kept in the checkout.
 
-`just demo test` also requires Xvfb on Linux. The headed-window regression owns an automatically allocated display with TCP disabled and verifies the native 1280 × 720 content area and 2560 × 1440 capture. The recorder uses Chromium's `Browser.setContentsSize` command so browser decorations do not shrink the captured viewport. This test records only its fixture; it does not run an agent or record a demo film.
-
 VHS may download its own Chromium on the first run. Where that Chromium reports "No usable sandbox", explicitly opt into VHS's sandbox override:
 
 ```bash
-VHS_NO_SANDBOX=1 DEVHOST_DEMO_INTERACTIVE=1 just demo record
+VHS_NO_SANDBOX=1 just demo record
 ```
 
 This happens in Linux containers and on hosts that restrict unprivileged user namespaces, such as Ubuntu with `kernel.apparmor_restrict_unprivileged_userns=1`; VHS then fails with "could not start browser". The recorder does not set that override itself.
@@ -28,9 +26,9 @@ Start the managed Caddy with `devhost caddy start` if it is not already running.
 
 Health checks verify HTTPS using the existing root certificate returned by `devhost caddy print-root-cert`. The owned Playwright context ignores certificate errors because a fresh Chromium profile may not trust that local CA. The workflow does not install certificates into your trust store.
 
-The full sequence and annotation scene require Codex on PATH with its normal configured account. Set `DEVHOST_DEMO_INTERACTIVE=1` and provide a graphical desktop: this scene opens headed Chromium. An operator must choose the current tab in the native sharing picker and review any native agent permission requests. The recorder does not auto-approve requests, fake a snapshot, select a model, or override CLI configuration. The prompt requests edits only to the copied `PlaygroundLayout.tsx`; review proposed changes before approval. Query and startup scenes do not require Codex.
+The full sequence and annotation scene also require Pi on PATH with a working configured provider/model. This is a real model request and uses that provider's normal billing. The recorder limits Pi to read/edit tools and guards edits to the copied `PlaygroundLayout.tsx`. It keeps provider extensions but skips skills, context files, prompt templates, and local approval configuration for this isolated fixture. Query and startup scenes do not require Pi.
 
-The full sequence and every guide also need Node.js 22 or newer on PATH, which HyperFrames runs on. Before it captures anything, `just demo record` checks that version and has HyperFrames find or download its own Chrome build, about 114 MB on the first run; `just demo promo` does the same once it has checked the recording and before it changes anything in it. `just demo guides` and `just demo guide-film` run the same check before they record or render. An older Node.js or a failed download therefore stops the run before the capture and its native agent request.
+The full sequence and every guide also need Node.js 22 or newer on PATH, which HyperFrames runs on. Before it captures anything, `just demo record` checks that version and has HyperFrames find or download its own Chrome build, about 114 MB on the first run; `just demo promo` does the same once it has checked the recording and before it changes anything in it. `just demo guides` and `just demo guide-film` run the same check before they record or render. An older Node.js or a failed download therefore stops the run before the capture and its Pi request.
 
 HyperFrames keeps that build under `~/.cache/hyperframes` and its own settings under `~/.hyperframes`; both follow `HOME`, so they cannot be moved into a run directory without downloading Chrome again for every run. Every render runs with `HYPERFRAMES_NO_TELEMETRY=1` and `HYPERFRAMES_SKIP_SKILLS=1`, so it reports no usage and installs no agent skills on your machine. A render needs no ElevenLabs key: the narration of the promo and of the guides is committed.
 
@@ -39,14 +37,14 @@ HyperFrames keeps that build under `~/.cache/hyperframes` and its own settings u
 From the repository root:
 
 ```bash
-DEVHOST_DEMO_INTERACTIVE=1 just demo record
+just demo record
 ```
 
 Each run prints its unique directory under `.tmp/demos/recording-*`. Open `devhost-demo.mp4` there. The promo is 1920 × 1080 at 30 fps with a stereo AAC track, and the recorder fails a render longer than 45 seconds or without audio.
 
-The recorder captures terminal startup, the log minimap, toolbar and worktree picker, selected page context in native chat, a genuine tab-sharing request and native Codex source edit, then TanStack Query. Full-sequence scenes retain their 2560 × 1440 capture and 1280 × 720 layout. Gold rings mark actual clicks. Reduced motion disables the playground background and React logo animations.
+The recorder captures terminal startup, the log minimap, the toolbar and worktree picker, Alt-click annotation, the real Pi terminal and live source edit, then native TanStack Query. Query is minimized before the final page hold. Full-sequence scenes are captured at 2560 × 1440, two device pixels per CSS pixel, so the promo can zoom into the devtools; the page still lays out at 1280 × 720. Gold rings mark actual mouse clicks. The browser requests reduced motion and verifies that the Bun background and React logo animations are disabled.
 
-The promo selects real recordings rather than recreating the interface. The existing published promo and guide narration still describe the retired Pi/Vim workflows. Before rendering replacement annotation or React Highlight films, update the narration, regenerate the affected audio with billing authorization, and inspect the promo's agent frame. No new film has been recorded or approved for these flows.
+The promo selects parts of those recordings and never re-creates the interface. A recording longer than its slot plays faster; a shorter one plays at its real speed and holds its last frame. The Pi segment shows the first seconds of the agent's run and carries an on-screen note that the recording is edited for length.
 
 Every promo render also writes the copy the docs landing page shows: a web encode, the end card's last frame as poster, and the captions as `packages/docs/public/demos/promo.{mp4,webp,vtt}`, plus the player block `packages/docs/src/promoDemo.html`. `packages/docs/sync.ts` opens the landing page with that block. Publish and commit them as for a guide film: see [Where guide videos are stored](#where-guide-videos-are-stored).
 
@@ -65,7 +63,7 @@ To iterate on one scene:
 ```bash
 just demo record startup
 just demo record overview
-DEVHOST_DEMO_INTERACTIVE=1 just demo record annotations
+just demo record annotations
 just demo record query
 ```
 
@@ -81,7 +79,7 @@ Record all twelve guides or refresh one by its documentation slug:
 
 ```bash
 just demo guides
-DEVHOST_DEMO_INTERACTIVE=1 just demo guides annotations
+just demo guides annotations
 just demo guides react-highlight
 just demo guides service-references
 ```
@@ -117,7 +115,7 @@ Git tracks each guide's poster and captions but not its video. `packages/docs/de
 | `just docs media`         | Downloads the pinned videos this checkout lacks into `packages/docs/public/demos/`             |
 | `just docs publish-media` | Uploads each new or re-rendered video to the release and rewrites its pin in `demo-media.json` |
 
-`just docs run`, `just docs test`, and `just docs build` run `just docs media` first, so the docs deploy and CI download the videos by themselves and need no token: the release is public. A download is written only after its SHA-256 matches the pin. `just docs check` also fails while a video on disk is not the pinned one, which is the state between a new render and its publication.
+`just docs dev`, `just docs test`, and `just docs build` run `just docs media` first, so the docs deploy and CI download the videos by themselves and need no token: the release is public. A download is written only after its SHA-256 matches the pin. `just docs check` also fails while a video on disk is not the pinned one, which is the state between a new render and its publication.
 
 A release asset is named after its content, such as `annotations-273a29aa49b00e5f.mp4`, and is never replaced. An earlier commit therefore keeps building with the videos it pinned, and a re-render adds an asset instead of overwriting one. `just docs publish-media` needs the GitHub CLI signed in with write access to the repository. It never removes a pin; delete an entry from `demo-media.json` by hand when a guide is removed.
 
@@ -125,7 +123,7 @@ A release asset is named after its content, such as `annotations-273a29aa49b00e5
 
 To see what is published, open the release at <https://github.com/alexgorbatchev/devhost/releases/tag/media>, or the playground's `/videos` page: each guide's card says whether the video on disk is the published one and links to the published copy in the release.
 
-Browser source-highlight recording publishes real JSX locators to `/__devhost__/react-highlight/cursor`, waits for a matching `devhost:react-highlight` diagnostic with a positive match count, and verifies the native overlay. It clears the highlight with a null locator. This does not launch Vim or require a Tree-sitter parser. The annotation scene requires an operator for native tab sharing and native approvals.
+Browser guides cover the minimap, toolbar, worktrees and Query; real Pi annotation/live fixes; and React Highlight. The React Highlight scene launches the stack's generated `devhost-nvim` with a clean headless Neovim configuration, loads its native start packages with `packloadall!`, starts a real TSX Tree-sitter highlighter, moves its actual JSX cursor, and waits for a matching native browser diagnostic and overlay. Set `DEVHOST_DEMO_TSX_PARSER` to an installed `tsx.so` when it is not at the normal `nvim/site/parser/tsx.so` under the host's XDG data directory.
 
 Routing guides capture native VHS terminal sessions and verify real HTTP responses. Docker uses a per-run BusyBox 1.37.0 container with a published loopback port and an unmanaged devhost service; stopping devhost leaves Docker running, then the demo removes its owned container. Daemon mode uses cooperative start/status/stop scripts and checks that its listener disappears. Troubleshooting records a rejected manifest edit, a still-working route, and a corrected live reload. The shared-listener guide owns a separate Caddy state directory, admin endpoint, and allocated HTTP/HTTPS ports, demonstrates both protocols, and stops only that Caddy. Its explicitly configured listener ports are intentionally visible; the other guides use portless HTTPS.
 
@@ -141,35 +139,32 @@ When a change adds or alters a user-visible feature, update its row in the same 
 
 ### Stacks and services
 
-| Feature                                                                                   | Documented in                                                                                                             | Shown in                                         |
-| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| Serve files or a port without a manifest; shared-design listings and Markdown source view | `reference/files.md`                                                                                                      | No demo                                          |
-| Managed Caddy defaults to all IPv4/IPv6 interfaces with HTTPS only                        | `guides/managed-caddy.md`, "Managed Caddy defaults"; `guides/shared-managed-caddy-settings.md`                            | No demo                                          |
-| Prefixed, screened Caddy diagnostics and actionable startup failures                      | `guides/troubleshooting.md`, "Caddy is unavailable or cannot start"; `guides/stack-lifecycle.md`                          | No demo                                          |
-| Local CA trusted once when devhost starts Caddy; untrusted-CA warning                     | `guides/managed-caddy.md`, "Prepare Caddy"; `guides/troubleshooting.md`, "Browsers reject devhost HTTPS certificates"     | No demo                                          |
-| Start a stack in dependency order, stop it with one command                               | `guides/stack-lifecycle.md`                                                                                               | `stack-lifecycle` step-1 to step-5; promo line-3 |
-| Start part of a stack by naming services                                                  | `guides/stack-lifecycle.md`, "Starting part of a stack"                                                                   | No demo                                          |
-| Named service groups                                                                      | `guides/stack-lifecycle.md`, "Named service groups"                                                                       | No demo                                          |
-| Start a stopped service from the Services panel                                           | `guides/stack-lifecycle.md`, "Stopped services"; `guides/devtools.md`                                                     | No demo                                          |
-| Shared-design 404, startup and recovery pages; development page gallery                   | `guides/stack-lifecycle.md`, "Startup and recovery pages"; `development/page-previews.md`                                 | No demo                                          |
-| Configuration hot reload, applied and rejected                                            | README, "Configuration Hot Reload"; `guides/stack-lifecycle.md`; `guides/troubleshooting.md`, "Manifest changes rejected" | `troubleshooting` step-4 to step-9               |
-| Unmanaged services, such as a Docker container                                            | `guides/docker-backed-services.md`                                                                                        | `docker-backed-services` step-1 to step-9        |
-| Daemon-style services with start, status, and stop commands                               | `guides/managed-daemon-style-services.md`                                                                                 | `managed-daemon-style-services` step-1 to step-6 |
-| Service commands run without a shell                                                      | README, "Service Commands"                                                                                                | No demo                                          |
-| Zombie process recovery                                                                   | README, "Zombie Process Recovery"; `guides/troubleshooting.md`, "Zombie cleanup messages"                                 | No demo                                          |
-| Development servers that require a local origin                                           | README, "Development Servers That Require a Local Origin"                                                                 | No demo                                          |
+| Feature                                                                                | Documented in                                                                                                             | Shown in                                         |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Serve files or an existing HTTP port without a manifest; remember Markdown source view | `reference/files.md`                                                                                                      | No demo                                          |
+| Start a stack in dependency order, stop it with one command                            | `guides/stack-lifecycle.md`                                                                                               | `stack-lifecycle` step-1 to step-5; promo line-3 |
+| Start part of a stack by naming services                                               | `guides/stack-lifecycle.md`, "Starting part of a stack"                                                                   | No demo                                          |
+| Named service groups                                                                   | `guides/stack-lifecycle.md`, "Named service groups"                                                                       | No demo                                          |
+| Start a stopped service from the Services panel                                        | `guides/stack-lifecycle.md`, "Stopped services"; `guides/devtools.md`                                                     | No demo                                          |
+| Startup and recovery pages                                                             | `guides/stack-lifecycle.md`, "Startup and recovery pages"                                                                 | No demo                                          |
+| Configuration hot reload, applied and rejected                                         | README, "Configuration Hot Reload"; `guides/stack-lifecycle.md`; `guides/troubleshooting.md`, "Manifest changes rejected" | `troubleshooting` step-4 to step-9               |
+| Unmanaged services, such as a Docker container                                         | `guides/docker-backed-services.md`                                                                                        | `docker-backed-services` step-1 to step-9        |
+| Daemon-style services with start, status, and stop commands                            | `guides/managed-daemon-style-services.md`                                                                                 | `managed-daemon-style-services` step-1 to step-6 |
+| Service commands run without a shell                                                   | README, "Service Commands"                                                                                                | No demo                                          |
+| Zombie process recovery                                                                | README, "Zombie Process Recovery"; `guides/troubleshooting.md`, "Zombie cleanup messages"                                 | No demo                                          |
+| Development servers that require a local origin                                        | README, "Development Servers That Require a Local Origin"                                                                 | No demo                                          |
 
 ### Manifest
 
-| Feature                                                                                                                                          | Documented in                                                                                              | Shown in                                 |
-| ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| Port, bind host, hostname, and service variables passed to a service                                                                             | `guides/environment-variables.md`                                                                          | `environment-variables` step-1 to step-4 |
-| Environment interpolation with `{{ env.NAME }}`                                                                                                  | README, "Manifest Interpolation"                                                                           | No demo                                  |
-| Service references with `{{ services.<name>.<property> }}`                                                                                       | README, "Late-Binding Service References"; `guides/service-references.md`                                  | `service-references` step-1 to step-4    |
-| Health checks with automatic ports                                                                                                               | `guides/service-references.md`, "Health checks with automatic ports"                                       | No demo                                  |
-| Manifest includes                                                                                                                                | README, "Manifest Includes"; `guides/manifest-includes.md`                                                 | `manifest-includes` step-1 to step-6     |
-| Running an included manifest on its own                                                                                                          | `guides/manifest-includes.md`, "Sub-Manifest Solo Runs & Override Protection"                              | No demo                                  |
-| Reject overlapping root and included manifests at startup and reload; startup error prefix, home-path shortening, and context-aware stop command | `guides/manifest-includes.md`, "Sub-Manifest Solo Runs & Override Protection"; `guides/troubleshooting.md` | No demo                                  |
+| Feature                                                              | Documented in                                                                 | Shown in                                 |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------- |
+| Port, bind host, hostname, and service variables passed to a service | `guides/environment-variables.md`                                             | `environment-variables` step-1 to step-4 |
+| Environment interpolation with `{{ env.NAME }}`                      | README, "Manifest Interpolation"                                              | No demo                                  |
+| Service references with `{{ services.<name>.<property> }}`           | README, "Late-Binding Service References"; `guides/service-references.md`     | `service-references` step-1 to step-4    |
+| Health checks with automatic ports                                   | `guides/service-references.md`, "Health checks with automatic ports"          | No demo                                  |
+| Manifest includes                                                    | README, "Manifest Includes"; `guides/manifest-includes.md`                    | `manifest-includes` step-1 to step-6     |
+| Running an included manifest on its own                              | `guides/manifest-includes.md`, "Sub-Manifest Solo Runs & Override Protection" | No demo                                  |
+| Reject overlapping root and included manifests at startup and reload | `guides/manifest-includes.md`, "Sub-Manifest Solo Runs & Override Protection" | No demo                                  |
 
 ### Routing
 
@@ -183,44 +178,37 @@ When a change adds or alters a user-visible feature, update its row in the same 
 
 ### Devtools
 
-| Feature                                                                                                                                         | Documented in                                             | Shown in                                                              |
-| ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------- |
-| Log minimap with real-time service output                                                                                                       | `guides/devtools.md`                                      | `devtools` overview-1; promo line-4                                   |
-| Services panel with restart controls                                                                                                            | `guides/devtools.md`                                      | `devtools` overview-2; promo line-4; toolbar reload icon: **No demo** |
-| Worktree picker and worktree search                                                                                                             | README, "Git Worktrees"; `guides/devtools.md`             | `devtools` overview-3                                                 |
-| Submodule checkout discovery, external owning manifests, and red worktree error icon                                                            | `guides/devtools.md`                                      | **No demo**                                                           |
-| Service status updates with unavailable checkouts                                                                                               | `guides/devtools.md`                                      | **No demo**                                                           |
-| Recovery dialog after a service exits; stack shutdown preserves the loaded app without flashing recovery and cancels health polling immediately | `guides/devtools.md`, `guides/stack-lifecycle.md`         | No demo                                                               |
-| Host resource usage                                                                                                                             | `guides/devtools.md`, "Host resource usage"               | No demo                                                               |
-| Toolbar layout on narrow viewports                                                                                                              | `guides/devtools.md`                                      | No demo                                                               |
-| TanStack Query devtools in the toolbar                                                                                                          | `guides/devtools.md`; `architecture/external-devtools.md` | `devtools` query-1; promo line-5                                      |
-| Other third-party devtools: native React DevTools, Redux Toolkit, Zustand, Vue, the TanStack shell, React Hook Form, Jotai                      | `architecture/external-devtools.md`                       | No demo                                                               |
-| Open component source                                                                                                                           | `guides/devtools.md`, "Open component source"             | No demo                                                               |
-| Automatic idle timeout                                                                                                                          | `guides/devtools.md`, "Automatic Idle Timeout"            | No demo                                                               |
-| Control API                                                                                                                                     | `guides/devtools.md`, "Control API"                       | No demo                                                               |
+| Feature                                                                                                                    | Documented in                                             | Shown in                            |
+| -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------- |
+| Log minimap with real-time service output                                                                                  | `guides/devtools.md`                                      | `devtools` overview-1; promo line-4 |
+| Services panel with restart controls                                                                                       | `guides/devtools.md`                                      | `devtools` overview-2; promo line-4 |
+| Worktree picker and worktree search                                                                                        | README, "Git Worktrees"; `guides/devtools.md`             | `devtools` overview-3               |
+| Service status updates with unavailable checkouts                                                                          | `guides/devtools.md`                                      | **No demo**                         |
+| Recovery dialog after a service exits; stack shutdown preserves the loaded app without flashing recovery                   | `guides/devtools.md`, `guides/stack-lifecycle.md`         | No demo                             |
+| Host resource usage                                                                                                        | `guides/devtools.md`, "Host resource usage"               | No demo                             |
+| Terminal session chips                                                                                                     | `guides/devtools.md`                                      | No demo                             |
+| Toolbar layout on narrow viewports                                                                                         | `guides/devtools.md`                                      | No demo                             |
+| TanStack Query devtools in the toolbar                                                                                     | `guides/devtools.md`; `architecture/external-devtools.md` | `devtools` query-1; promo line-5    |
+| Other third-party devtools: native React DevTools, Redux Toolkit, Zustand, Vue, the TanStack shell, React Hook Form, Jotai | `architecture/external-devtools.md`                       | No demo                             |
+| Open component source                                                                                                      | `guides/devtools.md`, "Open component source"             | No demo                             |
+| Automatic idle timeout                                                                                                     | `guides/devtools.md`, "Automatic Idle Timeout"            | No demo                             |
+| Control API                                                                                                                | `guides/devtools.md`, "Control API"                       | No demo                             |
 
-### Browser chat, context and editor
+### Annotations and editor
 
-| Feature                                                                                                                                                 | Documented in                                                         | Shown in    |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ----------- |
-| Browser chat through installed Codex or Claude Code, using native catalogs and configured accounts                                                      | README, "Browser chat and page context"; `guides/annotations.md`      | **No demo** |
-| Chat Settings captures pointer input above page controls and restores page interaction when closed                                                      | `guides/annotations.md`, "Connect an installed CLI"                   | **No demo** |
-| Native turn interruption, conversation replay, explicit approvals and questions                                                                         | `guides/annotations.md`; `architecture/chat.md`                       | **No demo** |
-| Restore chat visibility, side, conversation, text draft, harness/model and scroll after navigation and reload; New Conversation beside Share Tab        | `guides/annotations.md`; `architecture/chat.md`                       | **No demo** |
-| Composer stays at the panel bottom; settings dialog; collapsed sent context and contrasting user bubbles                                                | `guides/annotations.md`                                               | **No demo** |
-| Composer focus on open and new page context; replies followed only at the bottom; devtools keys kept from host shortcuts; Escape in composer interrupts | `guides/annotations.md`; `guides/devtools.md`; `architecture/chat.md` | **No demo** |
-| Select page and devhost UI elements with source metadata; host-page selection plugins                                                                   | `guides/annotations.md`, "Select page context"                        | **No demo** |
-| Drawing tools above devhost UI; move arrows, lines and boxes; retain annotated chat in snapshots; remove context                                        | `guides/annotations.md`, "Draw over the page"                         | **No demo** |
-| Share Tab beside Send; reuse an active share for snapshots; clear context after confirmed submission                                                    | `guides/annotations.md`, "Share one tab snapshot"                     | **No demo** |
-| Source-locator highlights through the retained instance control API                                                                                     | `guides/react-highlight.md`                                           | **No demo** |
+| Feature                                                     | Documented in                                                                      | Shown in                                                           |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Annotate an element and have a coding agent edit the source | README, "Annotation agents"; `guides/annotations.md`                               | `annotations` annotations-1 to annotations-3; promo line-6, line-7 |
+| Annotation actions and the annotation queue                 | `guides/annotations.md`, "Annotation actions"; `architecture/annotations/queue.md` | No demo                                                            |
+| React Highlight from the Neovim cursor                      | `guides/react-highlight.md`                                                        | `react-highlight` react-highlight-1 to react-highlight-5           |
 
 ### CLI
 
-| Feature                                                                            | Documented in                                                        | Shown in                                                                                                             |
-| ---------------------------------------------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Output for agents and scripts; shared diagnostic prefixes and home-path formatting | README, "Output for agents and scripts"; `guides/stack-lifecycle.md` | No demo for errors or home-path formatting; stop progress appears in the final stop step of all nine terminal guides |
-| Shell completion                                                                   | README, "Shell completion"                                           | No demo                                                                                                              |
-| The devhost skill for coding agents                                                | README, "AI devhost skill"                                           | No demo                                                                                                              |
+| Feature                             | Documented in                           | Shown in |
+| ----------------------------------- | --------------------------------------- | -------- |
+| Output for agents and scripts       | README, "Output for agents and scripts" | No demo  |
+| Shell completion                    | README, "Shell completion"              | No demo  |
+| The devhost skill for coding agents | README, "AI devhost skill"              | No demo  |
 
 Pages under `guides/` are in `packages/docs/src/content/docs/guides/`, and `architecture/` pages beside them; the README is `apps/devhost/README.md`. The table leaves out sections that describe setup or failure diagnosis rather than a feature, such as installation, requirements, and the troubleshooting entries other than reload.
 
@@ -231,7 +219,7 @@ Sources live in `packages/devhost-ui/scripts/demo/`:
 | Source                                                                      | Purpose                                                                          |
 | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | `startup.tape` / `scaleTape.ts`                                             | Terminal typing, readiness wait, hold, and hidden shutdown; the promo's 2× size  |
-| `recordOverview.ts` / `recordAnnotations.ts` / `recordQuery.ts`             | Minimap, toolbar/worktrees, native chat/context/HMR, and Query scenes            |
+| `recordOverview.ts` / `recordAnnotations.ts` / `recordQuery.ts`             | Minimap, toolbar/worktrees, annotation/Pi/HMR, and Query scenes                  |
 | `createCaptionRecording.ts`                                                 | Event-triggered caption changes using native video segments, and the poster mark |
 | `createDemoPage.ts` / `recordBrowserScene.ts`                               | Load once outside capture, preserve the page, and reject captured reloads        |
 | `launchDemoBrowser.ts`                                                      | Chromium, with its own device scale for the promo's 2× capture                   |
@@ -261,9 +249,9 @@ Use accessible roles and names for browser actions. Wait for rendered state or r
 
 Run `just demo test` while editing helpers. Run root `just fix` and `just check` after changing the workflow; the UI package check includes recorder TypeScript and Bun tests. Also run the affected scene, inspect frames at its beginning/middle/end, and play the exported video before publishing.
 
-The annotation scene selects an actual heading, fills the native chat composer, uses Codex with its configured default model, and sends selected page context through the native tab picker. It waits for the real running state, HMR heading update, actual copied-source edit, and idle state. It never decides permissions for the operator. The source script has not been filmed against the integrated workflow; the coverage table remains **No demo** until a replacement film is reviewed.
+The annotation scene changes the copied heading and subtitle through Pi, waits for the rendered HMR result and Pi's idle state, and checks that the actual source changed. Its caption switches to “Pi is working on the annotated change.” when the terminal reports working, then “The heading updates live from Pi's source edit.” when the updated heading appears. Native Playwright screencast stop/start creates a video segment at each event; FFmpeg measures those segments to time both burned captions and the final SRT. Model timing varies; a single-scene video includes that real wait. Changes to the annotation task must also update its source/result assertions, the edit guard if another file is required, and the source lines the promo's `05-agent.html` frame shows.
 
-The copied playground has an isolated Git repository and a real `ui-polish` worktree. Both contain usable frontend/backend directories and share installed frontend dependencies. The overview scene searches these checkouts without switching. The native chat retains the selected checkout's actual working directory; the recording prompt names the copied layout's absolute path. No worktree or commit is added to the contributor's repository.
+The copied playground has its own local Git repository on `main` and a real `ui-polish` worktree under its `.workspaces/`. Both checkouts contain usable frontend/backend directories and share the checkout's installed frontend dependencies. The overview scene opens the picker on these isolated checkouts and types `polish` into its search, which must narrow the list to the `ui-polish` checkout; it never switches. Pi uses the adapter's native working directory in the selected playground checkout. Its instructions provide the copied main layout's absolute path, and its guard permits edits only to that file. No worktree or commit is added to the contributor's repository.
 
 ## Editing the promo
 
@@ -329,14 +317,14 @@ Each request bills that ElevenLabs account, and a failed request is not retried.
 
 A promo run's directory contains `devhost-demo.mp4`, the narration captions in `devhost-demo.srt`, `poster.png` from the closing card, `promo-footage.json` with each slot's source window and playback speed, `promo-render.log`, the staged `promo/` project, raw VHS/Playwright videos, per-scene screenshots, and tool/revision metadata in `versions.json`. A guide run's directory contains `devhost-demo.mp4`, the narration captions in `devhost-demo.srt`, `poster.png`, `guide.json` with the clips that were recorded and the poster frame a scene marked, `guide-footage.json` with each clip's source window and playback speed, `promo-render.log`, the staged `guide/` project, `guide-film.json` with when each clip plays in the film and the time of its poster, and the raw VHS/Playwright videos. A single-scene run instead contains its captioned MP4, `devhost-demo.srt`, `poster.png`, measured `clips.json`, per-scene SRT files, and normalized `clips/*.mp4`.
 
-Each browser scene writes `<scene>-navigations.json`; successful scenes contain no full-page navigations. Annotation screenshots include the draft, native agent progress, and live fix. `agent-changes.json` retains edited copied source for review, while `playground-baseline.json` retains the original. Native CLI session persistence follows the user's configured CLI behavior rather than recording-only Pi session flags. Logs include stack output, `cleanup.log`, and `recording-error.log`.
+Each browser scene writes `<scene>-navigations.json` with captured full-page requests; successful scenes contain an empty array. Annotation screenshots include the draft, Pi terminal, and live fix. `pi-changes.json` preserves the edited source for review; `playground-baseline.json` records the original copy. Pi sessions and annotation prompts stay under the run's `.tmp`. Logs include `vhs.log`, browser-stack logs, `cleanup.log`, and `recording-error.log` on failures.
 
 A render extracts every source frame and installs HyperFrames under the run's `.tmp`, several hundred megabytes together, and removes both when it ends, whether it succeeded or failed. The check before a capture or a render installs HyperFrames in a `promo-preflight-*` directory of its own under `.tmp/demos/` and removes that directory the same way, so runs started together never share an install.
 
 Browser profiles, artifacts, a copy of the public Caddy root certificate, and the runtime manifest are isolated under that directory. Caddy state and its privileged HTTPS listener are shared with normal devhost stacks; routes belong to the recording manifest. Editor integration is enabled only for the React Highlight guide; worktrees are enabled for the copied Git fixture. Temporary Chromium paths, including those of the promo's render, use a relative `.tmp` inside the recording directory to fit Linux's Unix socket path limit in deep worktrees.
 
-The recorder closes its browser, stops its stack, and runs manifest-scoped `devhost stop` to collect a terminal scene's stack and remove only its routes. A promo run closes the browser and stops the stack before it renders. It restores the copied playground after stopping native chat processes, preserving the actual edits in `agent-changes.json`. Checkout source files are never edited or reset. It leaves the shared Caddy running. SIGINT/SIGTERM request cleanup; a forced SIGKILL cannot execute it. Failed runs retain their logs and media for diagnosis. Remove a run directory only after its processes have stopped. Publish only the reviewed media, not runtime logs and configuration.
+The recorder closes its browser, stops its stack, and runs manifest-scoped `devhost stop` to collect a terminal scene's stack and remove only its routes. A promo run closes the browser and stops the stack before it renders. It restores the copied playground after stopping Pi, preserving the actual edits in `pi-changes.json`. Checkout source files are never edited or reset. It leaves the shared Caddy running. SIGINT/SIGTERM request cleanup; a forced SIGKILL cannot execute it. Failed runs retain their logs and media for diagnosis. Remove a run directory only after its processes have stopped. Publish only the reviewed media, not runtime logs and configuration.
 
-Recorded CLI output and native chat may expose local paths, account information, tool input, and model details. Review footage and native permission details before approving publication.
+Recorded terminals show absolute paths under the checkout, and the Pi terminal shows the configured provider and model. Review a video for anything you would not publish before sharing it.
 
 There is no automatic upload or scheduled refresh. `just demo record` retains its media locally. `just demo guides` writes the docs site's media locally; only `just docs publish-media`, run by a person after review, uploads a video, and the Pages deployment serves it after an authorized push of its pin.
