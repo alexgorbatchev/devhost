@@ -39,20 +39,21 @@ func (d *DirtyTracker) IsDirty(serviceName string) bool {
 }
 
 type WatchManager struct {
-	tracker          *DirtyTracker
-	watchers         map[string]*fsnotify.Watcher
-	watcherDone      map[string]chan struct{}
-	watchersMu       sync.RWMutex
-	debounceTimers   map[string]*time.Timer
-	timersMu         sync.Mutex
-	onDirty          func(string)
-	onTimerDone      func(string)
-	logWriter        io.Writer
-	manifestName     string
+	tracker        *DirtyTracker
+	watchers       map[string]*fsnotify.Watcher
+	watcherDone    map[string]chan struct{}
+	watchersMu     sync.RWMutex
+	debounceTimers map[string]*time.Timer
+	timersMu       sync.Mutex
+	onDirty        func(string)
+	onTimerDone    func(string)
+	logWriter      io.Writer
+	// label reads the stack's name when a line is written; nil writes "devhost".
+	label            func() string
 	debounceDuration time.Duration
 }
 
-func NewWatchManager(tracker *DirtyTracker, onDirty func(string), logWriter io.Writer, manifestName string) *WatchManager {
+func NewWatchManager(tracker *DirtyTracker, onDirty func(string), logWriter io.Writer, label func() string) *WatchManager {
 	return &WatchManager{
 		tracker:          tracker,
 		watchers:         make(map[string]*fsnotify.Watcher),
@@ -60,7 +61,7 @@ func NewWatchManager(tracker *DirtyTracker, onDirty func(string), logWriter io.W
 		debounceTimers:   make(map[string]*time.Timer),
 		onDirty:          onDirty,
 		logWriter:        logWriter,
-		manifestName:     manifestName,
+		label:            label,
 		debounceDuration: 200 * time.Millisecond,
 	}
 }
@@ -98,7 +99,10 @@ func (wm *WatchManager) writeLog(message string) {
 		_, _ = fmt.Fprintln(os.Stderr, message)
 		return
 	}
-	trimmedLabel := strings.TrimSpace(wm.manifestName)
+	trimmedLabel := ""
+	if wm.label != nil {
+		trimmedLabel = strings.TrimSpace(wm.label())
+	}
 	if trimmedLabel == "" {
 		trimmedLabel = "devhost"
 	}

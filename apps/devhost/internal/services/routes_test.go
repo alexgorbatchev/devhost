@@ -32,6 +32,22 @@ func TestProxyLocalOriginResolution(t *testing.T) {
 	}
 }
 
+func TestStackRoutesNameTheAccessLogAfterTheStackIdentity(t *testing.T) {
+	service := ResolvedService{Name: "web", Hosts: []string{"app.localhost"}, BindHost: "127.0.0.1", Port: intPointer(3000)}
+	nameOf := func(m ResolvedManifest) string { return (&stackRoutes{manifest: m}).options(service).AccessLogName }
+	before := nameOf(ResolvedManifest{ManifestPath: "/project/devhost.toml", Name: "before"})
+	if after := nameOf(ResolvedManifest{ManifestPath: "/project/devhost.toml", Name: "after"}); after != before {
+		t.Fatalf("renaming the stack moved its access log from %q to %q", before, after)
+	}
+	if other := nameOf(ResolvedManifest{ManifestPath: "/other/devhost.toml", Name: "before"}); other == before {
+		t.Fatalf("two manifests share the access log %q", other)
+	}
+	// A manifest-free session has no manifest path; its domain names it for the whole run.
+	if serve := nameOf(ResolvedManifest{Name: "serve-notes.localhost"}); serve == nameOf(ResolvedManifest{Name: "serve-docs.localhost"}) {
+		t.Fatalf("two serve sessions share the access log %q", serve)
+	}
+}
+
 func TestStackRoutesRestoresDocumentBackendOnReloadFailure(t *testing.T) {
 	paths := caddy.CreateManagedCaddyPaths(t.TempDir())
 	admin := caddytest.StartAdminServer(t)

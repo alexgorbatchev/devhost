@@ -396,7 +396,6 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 				}
 			},
 			routedServices:     options.RoutedServices,
-			stackName:          options.StackName,
 			stateDirectoryPath: options.StateDirectoryPath,
 			startAgentSession: func(actionID string, annotation annotationSubmitDetail, colorScheme agentColorScheme) (string, error) {
 				return controlServer.createTerminalSession(terminalSessionRequest{ActionID: actionID, Annotation: &annotation, ColorScheme: colorScheme, Kind: terminalSessionRequestKindAgent})

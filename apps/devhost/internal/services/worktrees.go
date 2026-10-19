@@ -281,7 +281,6 @@ func (w *stackWorktrees) restore(m ResolvedManifest) (ResolvedManifest, map[stri
 			continue
 		}
 		next.ManifestPath = m.ManifestPath
-		next.Name = m.Name
 		next.ServiceOrder = orderedServiceNames(*next.configuration)
 		m = next
 		break

@@ -103,11 +103,7 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	if previousConfiguration == nil {
 		return fmt.Errorf("configuration change requires an accepted manifest")
 	}
-	boundary := *previousConfiguration
-	if change.worktreeSwitch {
-		boundary.Name = next.Name
-	}
-	if err := validateReloadBoundary(boundary, next); err != nil {
+	if err := validateReloadBoundary(*previousConfiguration, next); err != nil {
 		return err
 	}
 	finishReservation, err := r.reserveManifestFiles(stackManifestFiles(&next))
@@ -135,9 +131,9 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	if err != nil {
 		return err
 	}
+	// The stack is identified by the root manifest path, which a worktree switch
+	// keeps; its name is a label that follows the configuration.
 	candidate.ManifestPath = r.manifest.ManifestPath
-	// The control server, stack owner, and access log belong to this run.
-	candidate.Name = r.manifest.Name
 	candidate.ServiceOrder = orderedServiceNames(next)
 	worktrees, err := buildStackWorktrees(candidate, r.routes.paths.StateDirectoryPath, r.worktrees)
 	if err != nil {
