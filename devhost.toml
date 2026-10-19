@@ -1,10 +1,5 @@
 name = "devhost"
 
-[caddy.global]
-http = true
-httpPort = 80
-bindHost = "0.0.0.0"
-
 [devtools.shortcuts]
 restartServices = "alt+ctrl+r"
 

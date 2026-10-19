@@ -104,7 +104,7 @@ func TestStackShutdownDoesNotPublishServiceCrash(t *testing.T) {
 			output := &shutdownHealthWriter{stopped: make(chan struct{}), resume: make(chan struct{})}
 			done := make(chan error, 1)
 			go func() {
-				_, err := StartStack(&m, []string{"web"}, StartStackOptions{
+				_, err := startTestStack(t, &m, []string{"web"}, StartStackOptions{
 					CaddyPaths: paths, LogWriter: output, ServiceStdoutWriter: io.Discard, ServiceStderrWriter: io.Discard,
 				})
 				done <- err

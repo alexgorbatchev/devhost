@@ -1,7 +1,6 @@
 import type { IGuideTerminalScene, IGuideTerminalStep } from "./types";
 
-const header =
-  'name = "Guide demo"\nkillZombies = false\n\n[worktrees]\nenabled = false\n\n[caddy.global]\nadminAddress = "{{ env.DEVHOST_DEMO_ADMIN }}"\n';
+const header = 'name = "Guide demo"\nkillZombies = false\n\n[worktrees]\nenabled = false\n';
 const web =
   '\n[services.web]\nprimary = true\ncommand = ["bun", "serveGuideService.ts"]\nport = "auto"\nhost = "{{ env.DEVHOST_DEMO_HOST }}"\n';
 const api =
@@ -157,13 +156,14 @@ export function createGuideTerminalScene(slug: string, port: number): IGuideTerm
       return {
         slug,
         isPrivateCaddy: true,
-        manifest:
-          header.replace(
-            'adminAddress = "{{ env.DEVHOST_DEMO_ADMIN }}"\n',
-            'adminAddress = "{{ env.DEVHOST_DEMO_ADMIN }}"\nhttp = true\nhttpPort = {{ env.DEVHOST_DEMO_HTTP_PORT }}\nhttpsPort = {{ env.DEVHOST_DEMO_HTTPS_PORT }}\n',
-          ) + web,
+        manifest: header + web,
+        caddyLines: [
+          "http = true",
+          "httpPort = {{ env.DEVHOST_DEMO_HTTP_PORT }}",
+          "httpsPort = {{ env.DEVHOST_DEMO_HTTPS_PORT }}",
+        ],
         steps: [
-          config,
+          { command: 'cat "$DEVHOST_CONFIG_DIR/config.toml"', waitPattern: "^httpsPort = ", holdMs: 4_000 },
           start,
           logs,
           {

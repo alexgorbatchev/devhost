@@ -23,7 +23,7 @@ func TestCaddyCommandOutput(t *testing.T) {
 				t.Setenv("COLUMNS", "1000")
 				state := t.TempDir()
 				t.Setenv("DEVHOST_STATE_DIR", state)
-				manifest := writeManifestWithAdminAddress(t, t.TempDir(), caddytest.UnusedAdminAddress(t))
+				useSharedCaddyAdmin(t, caddytest.UnusedAdminAddress(t))
 				bin := t.TempDir()
 				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 				script := "#!/bin/sh\nprintf 'started\\nsecond line'\nprintf 'diagnostic\\n' >&2\n"
@@ -32,7 +32,7 @@ func TestCaddyCommandOutput(t *testing.T) {
 				}
 				writeExecutable(t, filepath.Join(bin, "caddy"), script)
 				var stdout, stderr strings.Builder
-				code := Run([]string{"caddy", "start", "--manifest", manifest}, state, &stdout, &stderr)
+				code := Run([]string{"caddy", "start"}, state, &stdout, &stderr)
 				if failed {
 					hint := "devhost caddy privileged-ports"
 					if runtime.GOOS == "darwin" {
@@ -79,7 +79,7 @@ func TestCaddyTrustOutput(t *testing.T) {
 	if err := os.WriteFile(paths.PidFilePath, []byte("1\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	manifest := writeManifestWithAdminAddress(t, t.TempDir(), caddytest.StartAdminServer(t))
+	useSharedCaddyAdmin(t, caddytest.StartAdminServer(t))
 	bin := t.TempDir()
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 	promptPath := filepath.Join(t.TempDir(), "prompt")
@@ -91,7 +91,7 @@ func TestCaddyTrustOutput(t *testing.T) {
 	}, "\n")+"\n")
 
 	var stdout, stderr strings.Builder
-	if code := Run([]string{"caddy", "trust", "--manifest", manifest}, state, &stdout, &stderr); code != 0 {
+	if code := Run([]string{"caddy", "trust"}, state, &stdout, &stderr); code != 0 {
 		t.Fatalf("exit %d: %s", code, stderr.String())
 	}
 	want := "devhost | managed caddy is installing its local CA into the system trust store so browsers accept devhost HTTPS certificates. This may ask for your password.\n" +
@@ -114,7 +114,8 @@ func TestCaddyTrustOutput(t *testing.T) {
 func TestCaddyUnavailableHumanMessage(t *testing.T) {
 	t.Setenv("AGENT", "0")
 	t.Setenv("DEVHOST_STATE_DIR", t.TempDir())
-	manifest := writeDevtoolsDisabledProcessManifest(t, t.TempDir(), caddytest.UnusedAdminAddress(t))
+	useSharedCaddyAdmin(t, caddytest.UnusedAdminAddress(t))
+	manifest := writeDevtoolsDisabledProcessManifest(t, t.TempDir())
 	var stdout, stderr strings.Builder
 	if code := Run([]string{"start", "--manifest", manifest}, filepath.Dir(manifest), &stdout, &stderr); code != 1 {
 		t.Fatalf("exit %d", code)

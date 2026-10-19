@@ -149,7 +149,8 @@ func TestRunPrintsTheSkill(t *testing.T) {
 
 func TestRunReportsFailuresForTheReader(t *testing.T) {
 	missingManifestPath := filepath.Join(t.TempDir(), "devhost.toml")
-	manifestPath := writeDevtoolsDisabledProcessManifest(t, t.TempDir(), caddytest.UnusedAdminAddress(t))
+	useSharedCaddyAdmin(t, caddytest.UnusedAdminAddress(t))
+	manifestPath := writeDevtoolsDisabledProcessManifest(t, t.TempDir())
 
 	// A .git directory ends the upward search, so no manifest above the temporary
 	// directory can be found.
@@ -267,7 +268,8 @@ func TestRunExplicitManifestBypassesUpwardDiscovery(t *testing.T) {
 	adminAddress := caddytest.StartAdminServer(t)
 
 	manifestDirectoryPath := t.TempDir()
-	manifestPath := writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath, adminAddress)
+	useSharedCaddyAdmin(t, adminAddress)
+	manifestPath := writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath)
 
 	cwd := filepath.Join(t.TempDir(), "nested", "workspace")
 	if err := os.MkdirAll(cwd, 0o755); err != nil {
@@ -298,7 +300,8 @@ func TestRunManifestFromEnvironmentBypassesUpwardDiscovery(t *testing.T) {
 	adminAddress := caddytest.StartAdminServer(t)
 
 	manifestDirectoryPath := t.TempDir()
-	manifestPath := writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath, adminAddress)
+	useSharedCaddyAdmin(t, adminAddress)
+	manifestPath := writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath)
 	t.Setenv("DEVHOST_MANIFEST", manifestPath)
 
 	cwd := filepath.Join(t.TempDir(), "nested", "workspace")
@@ -330,7 +333,8 @@ func TestRunManifestModeStartsStackWhenDevtoolsDisabled(t *testing.T) {
 	adminAddress := caddytest.StartAdminServer(t)
 
 	manifestDirectoryPath := t.TempDir()
-	manifestPath := writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath, adminAddress)
+	useSharedCaddyAdmin(t, adminAddress)
+	manifestPath := writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath)
 
 	var stdout strings.Builder
 	var stderr strings.Builder
@@ -355,7 +359,8 @@ func TestRunManifestModeStartsStackWithoutExplicitManifestPath(t *testing.T) {
 	adminAddress := caddytest.StartAdminServer(t)
 
 	manifestDirectoryPath := t.TempDir()
-	_ = writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath, adminAddress)
+	useSharedCaddyAdmin(t, adminAddress)
+	_ = writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath)
 
 	var stdout strings.Builder
 	var stderr strings.Builder
@@ -377,15 +382,13 @@ func TestRunManifestModeReportsExistingSameManifestFixedPortClaim(t *testing.T) 
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
 
 	adminAddress := caddytest.StartAdminServer(t)
+	useSharedCaddyAdmin(t, adminAddress)
 
 	manifestDirectoryPath := t.TempDir()
 	manifestPath := filepath.Join(manifestDirectoryPath, "devhost.toml")
 	manifestText := strings.Join([]string{
 		`name = "hello-stack"`,
 		`killZombies = false`,
-		"",
-		"[caddy.global]",
-		`adminAddress = "` + adminAddress + `"`,
 		"",
 		"[services.web]",
 		`command = "bun run dev"`,
@@ -395,7 +398,9 @@ func TestRunManifestModeReportsExistingSameManifestFixedPortClaim(t *testing.T) 
 		t.Fatalf("WriteFile(...) error = %v", err)
 	}
 	paths := caddy.CreateManagedCaddyPaths(stateDirectoryPath)
-	if err := caddy.EnsureManagedCaddyConfig(paths, caddy.ManagedCaddyConfigFallback{AdminAddress: adminAddress}); err != nil {
+	settings := caddy.DefaultManagedCaddyGlobalSettings()
+	settings.AdminAddress = adminAddress
+	if err := caddy.EnsureManagedCaddyConfig(paths, settings, runtime.GOOS); err != nil {
 		t.Fatalf("EnsureManagedCaddyConfig(...) error = %v", err)
 	}
 	if err := caddy.ClaimFixedPort(caddy.ClaimFixedPortOptions{
@@ -516,7 +521,7 @@ func TestRunCaddyPrivilegedPortsUsesLifecyclePath(t *testing.T) {
 	}
 }
 
-func TestRunCaddyStartUsesManifestGlobalSettings(t *testing.T) {
+func TestRunCaddyStartUsesSharedConfigSettings(t *testing.T) {
 	t.Setenv("AGENT", "0")
 	for _, tc := range []struct {
 		name          string
@@ -556,13 +561,12 @@ func TestRunCaddyStartUsesManifestGlobalSettings(t *testing.T) {
 				"exit 0",
 			}, "\n"))
 
-			manifestDirectoryPath := t.TempDir()
 			adminAddress := caddytest.UnusedAdminAddress(t)
-			manifestPath := writeManifestWithAdminAddress(t, manifestDirectoryPath, adminAddress, tc.globalOptions...)
+			useSharedConfig(t, append([]string{`adminAddress = "` + adminAddress + `"`}, tc.globalOptions...)...)
 
 			var stdout strings.Builder
 			var stderr strings.Builder
-			exitCode := Run([]string{"--manifest", manifestPath, "caddy", "start"}, manifestDirectoryPath, &stdout, &stderr)
+			exitCode := Run([]string{"caddy", "start"}, t.TempDir(), &stdout, &stderr)
 			if exitCode != 0 {
 				t.Fatalf("Run(...) exit code = %d, want 0 with stderr %q", exitCode, stderr.String())
 			}
@@ -579,7 +583,7 @@ func TestRunCaddyStartUsesManifestGlobalSettings(t *testing.T) {
 				t.Fatalf("ReadFile(...) error = %v", err)
 			}
 			if !strings.Contains(string(caddyfile), "    admin "+adminAddress) {
-				t.Fatalf("Caddyfile = %q, want manifest admin address", string(caddyfile))
+				t.Fatalf("Caddyfile = %q, want configured admin address", string(caddyfile))
 			}
 			for _, want := range tc.want {
 				if !strings.Contains(string(caddyfile), want) {
@@ -607,12 +611,11 @@ func TestRunCaddyStopWithoutRunningProcess(t *testing.T) {
 	t.Setenv("AGENT", "0")
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
-	manifestDirectoryPath := t.TempDir()
-	manifestPath := writeManifestWithAdminAddress(t, manifestDirectoryPath, caddytest.UnusedAdminAddress(t))
+	useSharedCaddyAdmin(t, caddytest.UnusedAdminAddress(t))
 
 	var stdout strings.Builder
 	var stderr strings.Builder
-	exitCode := Run([]string{"--manifest", manifestPath, "caddy", "stop"}, stateDirectoryPath, &stdout, &stderr)
+	exitCode := Run([]string{"caddy", "stop"}, stateDirectoryPath, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Run(...) exit code = %d, want 0", exitCode)
 	}
@@ -629,12 +632,11 @@ func TestRunCaddyTrustRequiresRunningManagedCaddy(t *testing.T) {
 
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
-	manifestDirectoryPath := t.TempDir()
-	manifestPath := writeManifestWithAdminAddress(t, manifestDirectoryPath, caddytest.UnusedAdminAddress(t))
+	useSharedCaddyAdmin(t, caddytest.UnusedAdminAddress(t))
 
 	var stdout strings.Builder
 	var stderr strings.Builder
-	exitCode := Run([]string{"--manifest", manifestPath, "caddy", "trust"}, stateDirectoryPath, &stdout, &stderr)
+	exitCode := Run([]string{"caddy", "trust"}, stateDirectoryPath, &stdout, &stderr)
 	if exitCode != 1 {
 		t.Fatalf("Run(...) exit code = %d, want 1", exitCode)
 	}
@@ -674,7 +676,8 @@ func TestRunPreservesSignalExitCodes(t *testing.T) {
 			manifestDirectoryPath := t.TempDir()
 			startTracePath := filepath.Join(t.TempDir(), "signal-start.txt")
 			stopTracePath := filepath.Join(t.TempDir(), "signal-stop.txt")
-			manifestPath := writeSignalProcessManifest(t, manifestDirectoryPath, adminAddress, startTracePath, stopTracePath)
+			useSharedCaddyAdmin(t, adminAddress)
+			manifestPath := writeSignalProcessManifest(t, manifestDirectoryPath, startTracePath, stopTracePath)
 
 			command := exec.Command(os.Args[0], "-test.run=TestRunSignalProcessHelper", "--")
 			command.Env = append(os.Environ(),
@@ -738,34 +741,27 @@ func writeExecutable(t *testing.T, path string, text string) {
 	}
 }
 
-func writeManifestWithAdminAddress(t *testing.T, directoryPath string, adminAddress string, globalOptions ...string) string {
+// useSharedConfig points devhost at a config file of the test's own, so no test
+// reads the machine's, with the given lines in its [caddy] table.
+func useSharedConfig(t *testing.T, caddyLines ...string) {
 	t.Helper()
-	manifestPath := filepath.Join(directoryPath, "devhost.toml")
-	lines := []string{
-		`name = "hello-stack"`,
-		"",
-		"[caddy.global]",
-		`adminAddress = "` + adminAddress + `"`,
-	}
-	lines = append(lines, globalOptions...)
-	lines = append(lines,
-		"",
-		"[services.web]",
-		`command = "bun run dev"`,
-		"port = 3000",
-	)
-	manifestText := strings.Join(lines, "\n")
-	if err := os.WriteFile(manifestPath, []byte(manifestText), 0o644); err != nil {
+	directoryPath := t.TempDir()
+	t.Setenv("DEVHOST_CONFIG_DIR", directoryPath)
+	text := strings.Join(append([]string{"[caddy]"}, caddyLines...), "\n") + "\n"
+	if err := os.WriteFile(filepath.Join(directoryPath, "config.toml"), []byte(text), 0o644); err != nil {
 		t.Fatalf("WriteFile(...) error = %v", err)
 	}
+}
 
-	return manifestPath
+// useSharedCaddyAdmin points devhost at a shared Caddy served on adminAddress.
+func useSharedCaddyAdmin(t *testing.T, adminAddress string) {
+	t.Helper()
+	useSharedConfig(t, `adminAddress = "`+adminAddress+`"`)
 }
 
 func writeSignalProcessManifest(
 	t *testing.T,
 	directoryPath string,
-	adminAddress string,
 	startTracePath string,
 	stopTracePath string,
 ) string {
@@ -779,9 +775,6 @@ func writeSignalProcessManifest(
 	}, " ")
 	manifestText := strings.Join([]string{
 		`name = "hello-stack"`,
-		"",
-		"[caddy.global]",
-		`adminAddress = "` + adminAddress + `"`,
 		"",
 		"[devtools.editor]",
 		"enabled = false",
@@ -813,15 +806,12 @@ func writeSignalProcessManifest(
 	return manifestPath
 }
 
-func writeDevtoolsDisabledProcessManifest(t *testing.T, directoryPath string, adminAddress string) string {
+func writeDevtoolsDisabledProcessManifest(t *testing.T, directoryPath string) string {
 	t.Helper()
 
 	manifestPath := filepath.Join(directoryPath, "devhost.toml")
 	manifestText := strings.Join([]string{
 		`name = "hello-stack"`,
-		"",
-		"[caddy.global]",
-		`adminAddress = "` + adminAddress + `"`,
 		"",
 		"[devtools.editor]",
 		"enabled = false",

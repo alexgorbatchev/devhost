@@ -92,9 +92,5 @@ func createHelpCatalog() cobrahelptree.TechCatalog {
 		},
 	}
 
-	for _, action := range []CaddyLifecycleAction{CaddyStart, CaddyStop, CaddyTrust} {
-		catalog[caddyCommandPath+" "+string(action)] = manifestOnly
-	}
-
 	return catalog
 }
