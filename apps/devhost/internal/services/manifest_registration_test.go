@@ -48,7 +48,7 @@ func TestStartStackRejectsOverlappingManifestInputs(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			_, err = StartStack(&resolved, []string{"worker"}, StartStackOptions{Configuration: &configuration, CaddyPaths: paths, LogWriter: io.Discard})
+			_, err = startTestStack(t, &resolved, []string{"worker"}, StartStackOptions{Configuration: &configuration, CaddyPaths: paths, LogWriter: io.Discard})
 			if err == nil || !strings.Contains(err.Error(), "already running") || !strings.Contains(err.Error(), ownerPath) {
 				t.Fatalf("overlapping startup error: %v", err)
 			}

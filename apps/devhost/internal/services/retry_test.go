@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
 
@@ -31,7 +32,7 @@ func TestReassignAutoPort(t *testing.T) {
 	t.Parallel()
 
 	manifestValue := ResolvedManifest{
-		Caddy:                 manifest.CaddyConfig{Global: manifest.CaddyGlobalConfig{AdminAddress: "127.0.0.1:20197", BindHost: "127.0.0.1", HTTPPort: 80, HTTPSPort: 443}},
+		Caddy:                 caddy.DefaultManagedCaddyGlobalSettings(),
 		Devtools:              manifest.DevtoolsConfig{Editor: manifest.DevtoolsEditorConfig{Enabled: true, IDE: "vscode"}, ExternalToolbars: manifest.DevtoolsToggleConfig{Enabled: true}, Minimap: manifest.DevtoolsMinimapConfig{Enabled: true}, Status: manifest.DevtoolsStatusConfig{Enabled: true, Position: "bottom-right"}},
 		ManifestDirectoryPath: "/tmp/project",
 		ManifestPath:          "/tmp/project/devhost.toml",

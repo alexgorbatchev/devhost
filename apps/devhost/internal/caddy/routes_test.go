@@ -46,14 +46,9 @@ func TestCreateRouteRegistrationText(t *testing.T) {
 	got = createRouteRegistrationText(ActivateRouteOptions{
 		AppBindHost:           "127.0.0.1",
 		AppPort:               3000,
-		CaddyAdminAddress:     "127.0.0.1:22000",
-		CaddyBindHost:         "127.0.0.1",
-		CaddyHTTPPort:         8080,
-		CaddyHTTPSPort:        4443,
 		DevtoolsControlPort:   4100,
 		DocumentInjectionPort: 4200,
 		Host:                  "hello.localhost",
-		HTTPEnabled:           true,
 		Path:                  "/",
 		ServiceName:           "web",
 	}, "/tmp/project/devhost.toml")
@@ -68,12 +63,7 @@ func TestCreateRouteRegistrationText(t *testing.T) {
 		`  "path": "/",`,
 		`  "serviceName": "web",`,
 		`  "devtoolsControlPort": 4100,`,
-		`  "documentInjectionPort": 4200,`,
-		`  "httpEnabled": true,`,
-		`  "caddyAdminAddress": "127.0.0.1:22000",`,
-		`  "caddyBindHost": "127.0.0.1",`,
-		`  "caddyHttpPort": 8080,`,
-		`  "caddyHttpsPort": 4443`,
+		`  "documentInjectionPort": 4200`,
 		"}",
 	}, "\n")
 	if got != want {
@@ -606,7 +596,7 @@ func TestSyncHostRouteOrdersRegistrations(t *testing.T) {
 		ServiceName: "web",
 	}, "/tmp/project/devhost.toml"))
 
-	if err := syncHostRoute("hello.localhost", paths.RoutesDirectoryPath, &ManagedCaddyGlobalSettings{AdminAddress: DefaultManagedCaddyAdminAddress, BindHost: defaultManagedCaddyBindHost, HTTPPort: defaultManagedCaddyHTTPPort, HTTPSPort: defaultManagedCaddyHTTPSPort}); err != nil {
+	if err := syncHostRoute("hello.localhost", paths.RoutesDirectoryPath, DefaultManagedCaddyGlobalSettings()); err != nil {
 		t.Fatalf("syncHostRoute(...) unexpected error = %v", err)
 	}
 
@@ -694,12 +684,11 @@ func TestActivateRouteRollbackOnReloadFailure(t *testing.T) {
 	})
 
 	err = ActivateRoute(ActivateRouteOptions{
-		AppBindHost:    "127.0.0.1",
-		AppPort:        3000,
-		CaddyHTTPSPort: 4443,
-		Host:           "hello.localhost",
-		Path:           "/",
-		ServiceName:    "web",
+		AppBindHost: "127.0.0.1",
+		AppPort:     3000,
+		Host:        "hello.localhost",
+		Path:        "/",
+		ServiceName: "web",
 	}, "/tmp/project/devhost.toml", paths.RoutesDirectoryPath)
 	if err == nil || err.Error() != "Caddy reload failed. Is Caddy already running?\nstderr line\nstdout line" {
 		t.Fatalf("ActivateRoute(...) error = %v, want exact reload failure", err)
@@ -742,7 +731,7 @@ func TestActivateRoutesUpdateRestoresPreviousConfiguration(t *testing.T) {
 			routeMutationRunManagedCaddyCommand = func(Paths, []string, ManagedCaddyCommandOptions) CommandResult {
 				return CommandResult{Success: true}
 			}
-			options := ActivateRouteOptions{AppBindHost: "127.0.0.1", AppPort: 3000, CaddyHTTPSPort: 4443, Host: "hello.localhost", Path: "/", ServiceName: "web"}
+			options := ActivateRouteOptions{AppBindHost: "127.0.0.1", AppPort: 3000, Host: "hello.localhost", Path: "/", ServiceName: "web"}
 			if err := ActivateRoute(options, "/project/devhost.toml", paths.RoutesDirectoryPath); err != nil {
 				t.Fatal(err)
 			}
@@ -753,7 +742,6 @@ func TestActivateRoutesUpdateRestoresPreviousConfiguration(t *testing.T) {
 			}
 			other := options
 			other.Host, other.ServiceName, other.AppPort = "other.localhost", "worker", 3002
-			other.CaddyHTTPSPort = 0
 			if err := ActivateRoute(other, "/other/devhost.toml", paths.RoutesDirectoryPath); err != nil {
 				t.Fatal(err)
 			}
@@ -777,14 +765,13 @@ func TestActivateRoutesUpdateRestoresPreviousConfiguration(t *testing.T) {
 			}
 			options.AppPort = 3001
 			if failure == "reload" {
-				options.CaddyHTTPSPort = 8443
 				routeMutationRunManagedCaddyCommand = func(Paths, []string, ManagedCaddyCommandOptions) CommandResult {
 					return CommandResult{Stderr: []byte("reload rejected"), Success: false}
 				}
 			} else {
 				options.AppBindHost = "invalid host"
 			}
-			alias.AppPort, alias.CaddyHTTPSPort = options.AppPort, options.CaddyHTTPSPort
+			alias.AppPort = options.AppPort
 			if err := ActivateRoutes([]ActivateRouteOptions{alias, options}, "/project/devhost.toml", paths.RoutesDirectoryPath); err == nil {
 				t.Fatal("route update unexpectedly succeeded")
 			} else if failure == "reload" && !strings.Contains(err.Error(), "reload rejected") {
@@ -852,10 +839,10 @@ func TestActivateRouteSuccessfulReloadOutput(t *testing.T) {
 			t.Fatalf("ActivateRoute(...) unexpected error = %v", err)
 		}
 
-		if stdout.String() != "[caddy] noisy stdout\n" {
+		if stdout.String() != "noisy stdout\n" {
 			t.Fatalf("ActivateRoute(...) stdout = %q, want caddy stdout", stdout.String())
 		}
-		if stderr.String() != "[caddy] noisy stderr\n" {
+		if stderr.String() != "noisy stderr\n" {
 			t.Fatalf("ActivateRoute(...) stderr = %q, want caddy stderr", stderr.String())
 		}
 	})
@@ -879,7 +866,7 @@ func TestUnregisterRoute(t *testing.T) {
 		Path:        "/",
 		ServiceName: "web",
 	}, "/tmp/project/devhost.toml"))
-	if err := syncHostRoute("hello.localhost", paths.RoutesDirectoryPath, &ManagedCaddyGlobalSettings{AdminAddress: DefaultManagedCaddyAdminAddress, BindHost: defaultManagedCaddyBindHost, HTTPPort: defaultManagedCaddyHTTPPort, HTTPSPort: defaultManagedCaddyHTTPSPort}); err != nil {
+	if err := syncHostRoute("hello.localhost", paths.RoutesDirectoryPath, DefaultManagedCaddyGlobalSettings()); err != nil {
 		t.Fatalf("syncHostRoute(...) unexpected error = %v", err)
 	}
 
@@ -894,14 +881,14 @@ func TestUnregisterRoute(t *testing.T) {
 		}
 	})
 
-	if err := UnregisterRoute("web", "hello.localhost", "/", "/tmp/other/devhost.toml", paths.RegistrationsDirectoryPath, ManagedCaddyConfigFallback{}, RouteCommandOutputWriters{}); err != nil {
+	if err := UnregisterRoute("web", "hello.localhost", "/", "/tmp/other/devhost.toml", paths.RegistrationsDirectoryPath, RouteCommandOutputWriters{}); err != nil {
 		t.Fatalf("UnregisterRoute(...) wrong manifest unexpected error = %v", err)
 	}
 	if reloadCalls != 0 {
 		t.Fatalf("reload calls after ignored unregister = %d, want 0", reloadCalls)
 	}
 
-	if err := UnregisterRoute("web", "hello.localhost", "/", "/tmp/project/devhost.toml", paths.RegistrationsDirectoryPath, ManagedCaddyConfigFallback{}, RouteCommandOutputWriters{}); err != nil {
+	if err := UnregisterRoute("web", "hello.localhost", "/", "/tmp/project/devhost.toml", paths.RegistrationsDirectoryPath, RouteCommandOutputWriters{}); err != nil {
 		t.Fatalf("UnregisterRoute(...) unexpected error = %v", err)
 	}
 	if reloadCalls != 1 {
@@ -953,7 +940,7 @@ func TestCleanupStaleRegistrations(t *testing.T) {
 		`  "ownerPid": 999999`,
 		"}",
 	}, "\n"))
-	if err := syncHostRoute("live.localhost", paths.RoutesDirectoryPath, &ManagedCaddyGlobalSettings{AdminAddress: DefaultManagedCaddyAdminAddress, BindHost: defaultManagedCaddyBindHost, HTTPPort: defaultManagedCaddyHTTPPort, HTTPSPort: defaultManagedCaddyHTTPSPort}); err != nil {
+	if err := syncHostRoute("live.localhost", paths.RoutesDirectoryPath, DefaultManagedCaddyGlobalSettings()); err != nil {
 		t.Fatalf("syncHostRoute(...) unexpected error = %v", err)
 	}
 
@@ -967,7 +954,7 @@ func TestCleanupStaleRegistrations(t *testing.T) {
 		}
 	})
 
-	if err := CleanupStaleRegistrations(paths.RegistrationsDirectoryPath, ManagedCaddyConfigFallback{}); err != nil {
+	if err := CleanupStaleRegistrations(paths.RegistrationsDirectoryPath); err != nil {
 		t.Fatalf("CleanupStaleRegistrations(...) unexpected error = %v", err)
 	}
 	for _, stalePath := range []string{
@@ -1045,10 +1032,20 @@ func withRouteMutationTestHooks(t *testing.T, hooks routeMutationTestHooks) {
 
 func newManagedCaddyPaths(t *testing.T) Paths {
 	t.Helper()
+	return newManagedCaddyPathsWithSettings(t, DefaultManagedCaddyGlobalSettings())
+}
+
+// newManagedCaddyPathsWithSettings prepares state for a managed Caddy that
+// runs settings.
+func newManagedCaddyPathsWithSettings(t *testing.T, settings ManagedCaddyGlobalSettings) Paths {
+	t.Helper()
 	paths := CreateManagedCaddyPaths(t.TempDir())
 	// Route changes render the Caddyfile for the operating system they run on, so the starting point does too.
-	if err := ensureManagedCaddyConfig(paths, ManagedCaddyConfigFallback{RuntimeOS: runtime.GOOS}); err != nil {
-		t.Fatalf("ensureManagedCaddyConfig(...) unexpected error = %v", err)
+	if err := EnsureManagedCaddyConfig(paths, settings, runtime.GOOS); err != nil {
+		t.Fatalf("EnsureManagedCaddyConfig(...) unexpected error = %v", err)
+	}
+	if err := writeAppliedManagedCaddySettings(paths, settings); err != nil {
+		t.Fatal(err)
 	}
 
 	return paths

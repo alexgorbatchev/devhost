@@ -24,7 +24,8 @@ func startListedStack(t *testing.T, stateDirectoryPath string) (*exec.Cmd, strin
 	manifestDirectoryPath := t.TempDir()
 	startTracePath := filepath.Join(t.TempDir(), "started.txt")
 	stopTracePath := filepath.Join(t.TempDir(), "stopped.txt")
-	manifestPath := writeSignalProcessManifest(t, manifestDirectoryPath, caddytest.StartAdminServer(t), startTracePath, stopTracePath)
+	useSharedCaddyAdmin(t, caddytest.StartAdminServer(t))
+	manifestPath := writeSignalProcessManifest(t, manifestDirectoryPath, startTracePath, stopTracePath)
 
 	command := exec.Command(os.Args[0], "-test.run=TestRunSignalProcessHelper", "--")
 	command.Dir = manifestDirectoryPath

@@ -4,7 +4,7 @@
 # Rename it to `devhost.toml` in your project root when you actually want to use it.
 # Saving this file or its includes hot-reloads service configuration. Invalid edits
 # leave the current stack running. Include glob additions and removals are observed.
-# Changes to name, killZombies, caddy, devtools or worktrees.enabled
+# Changes to name, killZombies, devtools, annotation, or worktrees.enabled
 # require restarting devhost; an edit containing those changes is rejected in full.
 # Single-service restart keeps its assigned automatic port. If that port is occupied,
 # use "Restart Stack" in Services or recovery to restart all managed
@@ -16,7 +16,6 @@
 # - `includes` (optional; string or string array of file glob patterns to merge multiple sub-manifests)
 # - `[groups]` (optional; named selections of services for `devhost start <name>`)
 # - `[worktrees]` (optional; Git checkout selection for repository service groups, enabled by default)
-# - `[caddy.global]` (optional)
 # - `[devtools]` (optional)
 # - `[devtools.browser]` (optional; explicitly configured native browser control)
 # - `[devtools.editor]` (optional)
@@ -25,8 +24,7 @@
 # - `[devtools.resources]` (optional; host CPU, memory, and disk readouts, enabled by default)
 # - `[devtools.status]` (optional)
 # - `[devtools.shortcuts]` (optional)
-# - `[devtools.chat]` (optional; installed CLI chat, enabled by default)
-# - `[devtools.annotations]` (optional; context selector, enabled by default)
+# - `[annotation]` and `[[annotation.actions]]` (optional; annotation actions are unavailable when omitted)
 # - `[services.<name>]` (required; at least one service)
 #
 # Hard validation rules:
@@ -46,6 +44,7 @@
 # - `command` is best written as a string array; string form is supported but split on whitespace
 # - fixed numeric bind ports are reserved across live devhost processes before spawn
 # - hostname ownership is exclusive across projects, but one manifest may mount multiple services under the same host on distinct paths
+# - annotation action ids must match `^[a-z][a-z0-9-]*$` and be unique
 # - string values support environment-variable interpolation with `{{ env.NAME }}` placeholders
 # - placeholder names must start with a letter or underscore and then use letters, digits, or underscores
 # - other text stays literal
@@ -67,7 +66,7 @@ name = "hello-stack"
 # `includes` lists file paths or glob patterns (relative to this manifest's directory)
 # of sub-manifests to load and merge. This is perfect for monorepos where each sub-application
 # maintains its own services.
-# - Included manifests' services and groups are recursively merged.
+# - Included manifests' services, groups, and annotation actions are recursively merged.
 # - Service names must be unique across all merged manifests.
 # - Relative paths (like `cwd` and `watch` folders) in included manifests are automatically
 #   rewritten to be relative to the root manifest's directory.
@@ -94,15 +93,11 @@ app = ["web"]
 
 # Managed Caddy lifecycle is shared and manual.
 # Start it explicitly with `devhost caddy start` before running one or more stacks.
-# Pass `--manifest ./devhost.toml` to use this manifest's admin address, bind host,
-# HTTP enablement, and listener ports when generating the shared proxy configuration.
-# Active stack registrations take precedence for the admin address, bind host, and ports.
 # All stacks share the same managed Caddy instance and the same global 404 hostname list.
-# Stacks retain the resolved management binding for updates and retirement. Default/sparse
-# siblings inherit non-default bindings while active; explicit non-default conflicts fail.
-# Final retirement keeps the captured listener settings and leaves Caddy running.
-# Use matching custom settings when a manifest may start with no active stacks; an empty
-# runtime does not discover a custom endpoint from a different manifest.
+# Its admin address, bind host, HTTP enablement, and listener ports are machine settings,
+# not manifest settings: set them in the `[caddy]` table of the devhost config file,
+# `config.toml` in `$DEVHOST_CONFIG_DIR`, `$XDG_CONFIG_HOME/devhost`, or `~/.config/devhost`.
+# A manifest with a `[caddy]` table is rejected.
 
 # The `devtools.*` sections control the browser-side devhost overlay injected into
 # routed HTML document navigations. If all devtools features are disabled, apps
@@ -121,59 +116,7 @@ app = ["web"]
 # Repositories containing managed = false services cannot switch.
 # Keep configured cwd values in one checkout per repository. The target manifest uses
 # the same repository-relative path (or filename at the root for an outside manifest).
-# Listener, devtools, worktree enablement, and killZombies settings must match.
-
-[caddy.global]
-# `http` also serves the same routed hosts and the shared fallback page on plain HTTP.
-# - `false` (default): serve through HTTPS only.
-# - `true`: also serve the same routes through HTTP on `httpPort`.
-# `httpPort` selects the managed Caddy HTTP listener port.
-# - `80` (default): standard privileged HTTP.
-# - any other integer from `1` to `65535`: alternate HTTP listener port.
-# `httpsPort` selects the managed Caddy HTTPS listener port.
-# - `443` (default): standard privileged HTTPS.
-# - any other integer from `1` to `65535`: alternate HTTPS listener port.
-# `bindHost` controls which interfaces the managed Caddy HTTP/HTTPS listeners bind.
-# - `"127.0.0.1"`: loopback only on Linux; macOS retains wildcard listeners for rootless HTTPS.
-# - `"0.0.0.0"` (default): expose the managed Caddy front door on all IPv4/IPv6 interfaces.
-# - `"::1"`: IPv6 loopback only.
-# - `"::"`: expose the managed Caddy front door on all IPv6 interfaces.
-# `adminAddress` controls which loopback address/port the managed Caddy admin API listens on.
-# - `"127.0.0.1:20197"` (default): the default devhost-managed admin endpoint.
-# - any other host:port string Caddy accepts: alternate admin endpoint.
-#
-# Important: this is a shared managed-Caddy setting, not an isolated per-stack listener.
-# If any active stack enables `caddy.global.http = true`, the shared Caddy instance serves
-# HTTP for all active stacks. Retiring the last true voter disables HTTP while false/default
-# sibling registrations remain. Final-registration retirement retains the stack's captured
-# HTTP setting; stop shared Caddy manually with a matching manifest when done.
-# Active stacks must also agree on any non-default `adminAddress`, `bindHost`, `httpPort`, and `httpsPort` values.
-adminAddress = "127.0.0.1:20197"
-bindHost = "0.0.0.0"
-httpPort = 80
-http = false
-httpsPort = 443
-
-[devtools]
-# `idleTimeout` sets the automatic idle shutdown duration (e.g. 30s, 1m, 1h).
-# If the daemon receives no routed Caddy traffic and has no persistent browser WebSocket
-# connections or in-flight native chat turns for this duration, it automatically
-# stops all started services and cleanly shuts down the stack.
-# - string (e.g. "1h"): enable auto-shutdown after the given duration.
-# - empty/negative/0 (default): disable auto-shutdown.
-# idleTimeout = "1h"
-
-[devtools.chat]
-# Native Codex app-server and Claude Code stream-json clients are discovered from PATH.
-# Keep each CLI signed in with its normal configuration; no API key is entered into devhost.
-# Native model catalogs supply the choices. Omitting a model keeps the CLI configured default.
-# Conversations run in the selected checkout and survive browser reloads. Native approvals
-# require an explicit response. Capture attachments are PNG/JPEG data URLs, bounded to 8 MiB.
-enabled = true
-
-[devtools.annotations]
-# Enable the browser context selector. Sending selected context also requires chat enabled.
-enabled = true
+# Devtools, annotation, worktree enablement, and killZombies settings must match.
 
 [devtools.editor]
 # `enabled` controls whether editor integration is available in the injected overlay.
@@ -185,6 +128,11 @@ enabled = true
 # - `"vscode-insiders"`: open VS Code Insiders via its browser URL handler.
 # - `"cursor"`: open Cursor via its browser URL handler.
 # - `"webstorm"`: open WebStorm via its browser URL handler.
+# - `"neovim"`: open Neovim inside devhost's embedded terminal UI; requires `nvim` and `curl` on PATH.
+#   Devhost loads its bundled Neovim plugin for that terminal session so cursor movement in TSX/JSX buffers can
+#   highlight the matching React component in the routed browser page for the same devhost instance.
+#   While the stack runs, `.tmp/devhost/<stack-name>/nvim-shell/bin/devhost-nvim` launches Neovim from a shell with
+#   the same token-free instance cursor endpoint, project root, and plugin path.
 ide = "vscode"
 
 [devtools.browser]
@@ -294,6 +242,95 @@ position = "bottom-right"
 # Syntaxes must be separated by "+", for example: "ctrl+shift+x".
 # If invalid syntax is provided or if omitted, it defaults back to "alt+ctrl+r".
 restartServices = "alt+ctrl+r"
+
+# `idleTimeout` sets the automatic idle shutdown duration (e.g. 30s, 1m, 1h).
+# If the daemon receives no routed Caddy traffic and has no persistent browser WebSocket
+# connections or active interactive terminal sessions for this duration, it automatically
+# stops all started services and cleanly shuts down the stack.
+# - string (e.g. "1h"): enable auto-shutdown after the given duration.
+# - empty/negative/0 (default): disable auto-shutdown.
+# idleTimeout = "1h"
+
+# Annotation actions are configured only through `[annotation]`.
+# Pick one built-in agent in the root manifest:
+# [annotation]
+# agent = "codex" # "pi", "claude-code", "opencode", or "codex"
+# This creates one default action with ID "agent" and the adapter's display name.
+# Optional tempDir also works with this shorthand.
+# Use either agent or the detailed actions/defaultAction form below; combining them is invalid.
+# For multiple actions, custom commands, or extra agent flags, define at least one action.
+# If `[annotation]` is omitted, annotation submission is unavailable in the injected UI.
+#
+# [annotation]
+# defaultAction = "fix"
+# Optional parent for annotation JSON, prompts, and agent support files for all actions.
+# Omit to use the system temp directory ($TMPDIR on Unix, otherwise /tmp).
+# Relative paths resolve against devhost's startup cwd, not the manifest or action cwd.
+# Absolute paths are accepted; empty strings are invalid. Configure in the root manifest.
+# Missing parents are created; failures are reported without a fallback.
+# Each session gets a unique private subdirectory removed during session cleanup.
+# The parent directory and durable queue storage are unaffected by cleanup.
+# tempDir = ".tmp/annotations"
+#
+# [[annotation.actions]]
+# id = "fix"
+# kind = "agent"
+#
+# [annotation.actions.agent]
+# adapter = "claude-code"
+# args = ["--thinking", "high"]
+#
+# Agent actions support the built-in adapters `"pi"`, `"claude-code"`, `"opencode"`, and `"codex"`.
+# Built-in adapters accept an optional `args` string array to pass extra CLI flags (e.g. model,
+# thinking level, or permission modes) while preserving built-in status reporting and prompt handoff.
+# Custom agent actions omit `adapter` and use `command`, optional `cwd`, and optional `env`
+# inside `[annotation.actions.agent]` (`args` is valid only with `adapter`).
+# `label` names an action in the annotation composer. Built-in adapters default it to their name:
+# "Pi", "Claude Code", "OpenCode", or "Codex". Set `label` to tell apart actions that share an adapter.
+# Custom agent actions and command actions require `label`.
+#
+# Codex example (requires the Codex CLI on PATH with --no-daemon and lifecycle hooks):
+# [[annotation.actions]]
+# id = "fix-codex"
+# kind = "agent"
+#
+# [annotation.actions.agent]
+# adapter = "codex"
+# args = ["-c", "model_reasoning_effort=high"]
+#
+# Codex runs interactively with session-local status hooks. Use /hooks in its terminal to
+# review and trust the devhost hooks; queues cannot drain until those hooks are trusted.
+# Codex sandbox, approval, authentication, and syntax theme settings remain user-controlled.
+#
+# [[annotation.actions]]
+# id = "jira"
+# label = "Create Jira Ticket"
+# kind = "command"
+#
+# [annotation.actions.command]
+# command = ["bun", "./scripts/mock-jira-ticket.ts"]
+# cwd = "."
+#
+# [annotation.actions.command.env]
+# JIRA_BASE_URL = "https://example.atlassian.net"
+# JIRA_PROJECT_KEY = "WEB"
+#
+# Command actions run directly in a devhost terminal with annotation context files exposed via:
+# - `DEVHOST_ANNOTATION_ACTION_ID`
+# - `DEVHOST_ANNOTATION_ACTION_KIND`
+# - `DEVHOST_ANNOTATION_ACTION_LABEL`
+# - `DEVHOST_ANNOTATION_FILE`
+# - `DEVHOST_ANNOTATION_PROMPT_FILE`
+# - `DEVHOST_ANNOTATION_TRANSPORT=files`
+# - `DEVHOST_PROJECT_ROOT`
+# - `DEVHOST_STACK_NAME`
+#
+# A Jira ticket integration should be modeled as a `kind = "command"` action like the
+# example above. `devhost` does not provide a built-in Jira adapter; your script or CLI
+# should read `DEVHOST_ANNOTATION_FILE` or `DEVHOST_ANNOTATION_PROMPT_FILE` and create
+# the ticket itself.
+#
+# Durable annotation queues are supported for agent actions only.
 
 # -----------------------------------------------------------------------------
 # services

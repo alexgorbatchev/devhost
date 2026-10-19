@@ -47,6 +47,7 @@ func (l *reloadLogs) count(text string) int {
 type reloadStackFixture struct {
 	path        string
 	header      string
+	configPath  string
 	paths       caddy.Paths
 	control     devtools.StartControlServerOptions
 	controlPort int
@@ -71,7 +72,8 @@ func startReloadStackRequested(t *testing.T, body string, worktreesEnabled bool,
 	root, state := t.TempDir(), t.TempDir()
 	admin := caddytest.StartAdminServer(t)
 	f := &reloadStackFixture{path: filepath.Join(root, "devhost.toml"), paths: caddy.CreateManagedCaddyPaths(state), logs: &reloadLogs{}}
-	f.header = fmt.Sprintf("name = \"reload\"\n[worktrees]\nenabled = %t\n[caddy.global]\nadminAddress = %q\n", worktreesEnabled, admin)
+	f.header = fmt.Sprintf("name = \"reload\"\n[worktrees]\nenabled = %t\n", worktreesEnabled)
+	f.configPath = writeTestSharedConfig(t, testCaddySettings(admin))
 	f.write(t, body)
 	raw, err := manifest.ReadManifest(f.path)
 	if err != nil {
@@ -109,7 +111,7 @@ func startReloadStackRequested(t *testing.T, body string, worktreesEnabled bool,
 	unregisterProcessSignals = func(chan<- os.Signal) {}
 	done := make(chan error, 1)
 	go func() {
-		_, err := StartStack(&m, order, StartStackOptions{Configuration: &configured, CaddyPaths: f.paths, Environment: readCurrentEnvironment(), LogWriter: f.logs, ServiceStdoutWriter: io.Discard, ServiceStderrWriter: io.Discard, ShutdownGracePeriod: 100 * time.Millisecond})
+		_, err := StartStack(&m, order, StartStackOptions{Configuration: &configured, CaddyPaths: f.paths, ConfigPath: f.configPath, Environment: readCurrentEnvironment(), LogWriter: f.logs, ServiceStdoutWriter: io.Discard, ServiceStderrWriter: io.Discard, ShutdownGracePeriod: 100 * time.Millisecond})
 		done <- err
 	}()
 	var ch chan<- os.Signal

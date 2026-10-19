@@ -24,20 +24,24 @@ func ActivateRoutes(options []ActivateRouteOptions, manifestPath string, routesD
 
 // ReplaceRoutes publishes additions, updates, and removals with one reload.
 // Rollback touches only these registrations and retains other stacks' routes.
+// Routes render for the listener settings Caddy runs, which only
+// ApplyManagedCaddySettings changes.
 func ReplaceRoutes(previous, options []ActivateRouteOptions, manifestPath string, routesDirectoryPath string) error {
 	affected := append(append([]ActivateRouteOptions{}, options...), previous...)
 	if len(affected) == 0 {
 		return nil
 	}
 	paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
-	previousSettings, err := ReadManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
-	if err != nil {
-		return err
-	}
-	fallback := ManagedCaddyConfigFallback{
-		AdminAddress: previousSettings.AdminAddress, BindHost: previousSettings.BindHost,
-		HTTPPort: previousSettings.HTTPPort, HTTPSPort: previousSettings.HTTPSPort,
-	}
+	return withRouteMutationLock(paths, func() error {
+		settings, err := readRunningSettings(paths, DefaultManagedCaddyGlobalSettings())
+		if err != nil {
+			return err
+		}
+		return replaceRoutesLocked(previous, options, affected, manifestPath, routesDirectoryPath, settings)
+	})
+}
+
+func replaceRoutesLocked(previous, options, affected []ActivateRouteOptions, manifestPath string, routesDirectoryPath string, settings ManagedCaddyGlobalSettings) error {
 	snapshots, err := snapshotRouteRegistrations(affected, routesDirectoryPath)
 	if err != nil {
 		return err
@@ -48,27 +52,16 @@ func ReplaceRoutes(previous, options []ActivateRouteOptions, manifestPath string
 			return errors.Join(originalError, restoreError)
 		}
 		// Re-read registrations so rollback retains other stacks' current routes.
-		fallback := ManagedCaddyConfigFallback{
-			AdminAddress: previousSettings.AdminAddress, BindHost: previousSettings.BindHost,
-			HTTPEnabled: previousSettings.HTTPEnabled, HTTPPort: previousSettings.HTTPPort, HTTPSPort: previousSettings.HTTPSPort,
-		}
-		nextSettings, settingsError := ReadManagedCaddyGlobalSettings(paths, fallback)
-		if settingsError != nil {
-			return errors.Join(originalError, fmt.Errorf("read restored route settings: %w", settingsError))
-		}
-		if syncError := syncManagedCaddyGlobalState(routesDirectoryPath, nextSettings); syncError != nil {
-			return errors.Join(originalError, fmt.Errorf("restore managed Caddy configuration: %w", syncError))
-		}
-		if syncError := syncActivatedHostRoutes(affected, routesDirectoryPath, nextSettings); syncError != nil {
+		if syncError := syncActivatedHostRoutes(affected, routesDirectoryPath, settings); syncError != nil {
 			return errors.Join(originalError, fmt.Errorf("restore host routes: %w", syncError))
 		}
-		if syncError := syncManagedCaddyNotFoundSite(routesDirectoryPath, nextSettings.HTTPSPort); syncError != nil {
+		if syncError := syncManagedCaddyNotFoundSite(routesDirectoryPath, settings.HTTPSPort); syncError != nil {
 			return errors.Join(originalError, fmt.Errorf("restore not-found site: %w", syncError))
 		}
 		if reloadAttempted {
 			for _, snapshot := range snapshots {
 				if snapshot.existed {
-					if reloadError := reloadManagedCaddy(nextSettings.AdminAddress, routesDirectoryPath, affected[0].CaddyOutputWriters); reloadError != nil {
+					if reloadError := reloadManagedCaddy(settings.AdminAddress, routesDirectoryPath, affected[0].CaddyOutputWriters); reloadError != nil {
 						return errors.Join(originalError, fmt.Errorf("reload restored Caddy configuration: %w", reloadError))
 					}
 					break
@@ -108,23 +101,14 @@ func ReplaceRoutes(previous, options []ActivateRouteOptions, manifestPath string
 			return rollback(err)
 		}
 	}
-	nextSettings, err := ReadManagedCaddyGlobalSettings(paths, fallback)
-	if err != nil {
+	if err := syncActivatedHostRoutes(affected, routesDirectoryPath, settings); err != nil {
 		return rollback(err)
 	}
-	if didManagedCaddyGlobalSettingsChange(previousSettings, nextSettings) {
-		if err := syncManagedCaddyGlobalState(routesDirectoryPath, nextSettings); err != nil {
-			return rollback(err)
-		}
-	}
-	if err := syncActivatedHostRoutes(affected, routesDirectoryPath, nextSettings); err != nil {
-		return rollback(err)
-	}
-	if err := syncManagedCaddyNotFoundSite(routesDirectoryPath, nextSettings.HTTPSPort); err != nil {
+	if err := syncManagedCaddyNotFoundSite(routesDirectoryPath, settings.HTTPSPort); err != nil {
 		return rollback(err)
 	}
 	reloadAttempted = true
-	if err := reloadManagedCaddy(nextSettings.AdminAddress, routesDirectoryPath, affected[0].CaddyOutputWriters); err != nil {
+	if err := reloadManagedCaddy(settings.AdminAddress, routesDirectoryPath, affected[0].CaddyOutputWriters); err != nil {
 		return rollback(err)
 	}
 	return nil
@@ -171,7 +155,7 @@ func syncActivatedHostRoutes(options []ActivateRouteOptions, routesDirectoryPath
 			continue
 		}
 		seenHosts[route.Host] = struct{}{}
-		if err := syncHostRoute(route.Host, routesDirectoryPath, &settings); err != nil {
+		if err := syncHostRoute(route.Host, routesDirectoryPath, settings); err != nil {
 			return err
 		}
 	}

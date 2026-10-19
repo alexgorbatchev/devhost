@@ -1,9 +1,6 @@
 name = "Devhost demo"
 killZombies = false
 
-[caddy.global]
-adminAddress = "{{ env.DEVHOST_DEMO_ADMIN }}"
-
 [worktrees]
 enabled = true
 

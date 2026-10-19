@@ -102,6 +102,8 @@ export interface IGuideTerminalScene {
   steps: IGuideTerminalStep[];
   manifest: string;
   files?: Record<string, string>;
+  // Lines the scene adds to the [caddy] table of its devhost config file.
+  caddyLines?: string[];
   isPrivateCaddy?: boolean;
   isDocker?: boolean;
   daemonPort?: number;

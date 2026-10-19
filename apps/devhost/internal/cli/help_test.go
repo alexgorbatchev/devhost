@@ -106,10 +106,10 @@ func TestParseCommandLineArgumentsRendersTreeHelp(t *testing.T) {
 			wantMissing: []string{"--debug", "--idle-timeout"},
 		},
 		{
-			name:        "caddy lifecycle help lists only the manifest flag",
+			name:        "caddy lifecycle help takes no manifest",
 			rawArgs:     []string{"caddy", "start", "--help"},
-			wantAll:     []string{"--manifest", "DEVHOST_MANIFEST"},
-			wantMissing: []string{"--debug", "--idle-timeout"},
+			wantAll:     []string{"devhost caddy start"},
+			wantMissing: []string{"--manifest", "DEVHOST_MANIFEST", "--debug", "--idle-timeout"},
 		},
 		{
 			name:    "group help renders only the caddy subtree",

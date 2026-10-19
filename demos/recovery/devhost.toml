@@ -3,11 +3,6 @@ name = "recovery-demo"
 [worktrees]
 enabled = false
 
-[caddy.global]
-http = true
-httpPort = 80
-bindHost = "0.0.0.0"
-
 [devtools.editor]
 enabled = false
 

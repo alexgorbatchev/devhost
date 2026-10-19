@@ -1,6 +1,6 @@
 ---
 created_on: 2026-06-26 21:23
-last_modified: 2026-10-20 16:41
+last_modified: 2026-10-19 15:48
 status: current
 ---
 
@@ -64,23 +64,23 @@ For fixed or automatic ports, customize the implicit TCP readiness budget with `
 
 Worktree support is enabled by default. When configuring repository services or selecting a checkout:
 
-1. Run `git -C <service-cwd> worktree list --porcelain` for each service repository. Require Git on `PATH` and keep configured directories in one checkout per repository. For a submodule whose main entry names its Git metadata directory, use `git -C <metadata-directory> rev-parse --show-toplevel` to read the actual checkout; devhost resolves that entry automatically.
+1. Run `git -C <service-cwd> worktree list --porcelain` for each service repository. Require Git on `PATH` and keep configured directories in one checkout per repository.
 2. Omit `[worktrees]` to keep checkout selection enabled. An empty table or `enabled = true` also enables it. Set `[worktrees].enabled = false` only to disable discovery and saved-selection restore; services then use their configured directories. `enabled` is the only key of that table: a selection covers a whole repository and is saved automatically.
 3. Open the separate **Worktrees** toolbar button to see checkout choices directly. For multiple repositories, use the header selector. Use **Switch and restart stack**. Read the current branch beside the fork icon, including on the default branch; detached checkouts show their abbreviated commit ID. Use **Find worktree** at the bottom to filter; click an unavailable badge for its reason.
-4. Load the selected checkout's manifest and includes. Configured checkouts without a local manifest use their owning stack's manifest, including one outside their repository. An existing checkout-local manifest takes precedence. For new target checkouts, locate it at the same repository-relative path, or at the checkout root under the original filename when the original manifest is outside the repository. Expect the entire managed stack to restart using that configuration's services, commands, environments, directories, and routes. Preserve the running instance's startup name and ownership path; allow the target manifest name to differ. Keep Caddy, devtools, annotation, worktree enablement, and killZombies settings equal to the running instance.
+4. Load the selected checkout's manifest and includes. Locate it at the same repository-relative path, or at the checkout root under the original filename when the original manifest is outside the repository. Expect the entire managed stack to restart using that configuration's services, commands, environments, directories, and routes. Preserve the running instance's startup name and ownership path; allow the target manifest name to differ. Keep devtools, annotation, worktree enablement, and killZombies settings equal to the running instance.
 5. Explain that one active stack selection is saved per original manifest path and restored before services start on the next run. Invalid targets leave the current stack running; launch or routing failures attempt restoration of the prior stack and selection. Read restoration errors and recover stopped services explicitly. Expect later edits to reload from the selected manifest and includes.
 6. Refresh the checkout picker to discover newly created or deleted worktrees. A missing running checkout stops its repository services and blocks new tools there until an available checkout is selected. Use the standalone recovery page when the toolbar is disabled. A successful switch reloads the current browser URL; when the target lacks that app route, use the proxy's 404 list of available routes.
 7. Report blocked switches for repositories containing externally owned services. Existing terminal sessions retain their launch directories; resume a paused queue to launch an agent in the selected checkout.
 
 ## 5. Managed Caddy Startup
 
-Start the shared proxy before launching stacks. Pass `--manifest <path>` to `devhost caddy start` to generate its configuration using `caddy.global.adminAddress`, `bindHost`, `http`, `httpPort`, and `httpsPort`. `DEVHOST_MANIFEST` supplies the same path when the flag is omitted; an explicit flag wins. `devhost caddy stop` and `trust` accept the same manifest option.
+Start the shared proxy with `devhost caddy start` before launching stacks, and stop it manually with `devhost caddy stop` after its stacks stop.
 
-Keep non-default global settings consistent across stacks sharing the proxy; explicit conflicts fail. Active registrations take precedence when generating the shared admin address, bind host, and listener ports. While registrations remain, enable HTTP only through active stacks' `caddy.global.http` votes: any true voter enables HTTP, and retiring the last true voter disables it while false/default siblings remain. A supplied manifest's true HTTP fallback does not override those active votes. With no active registrations, generated configuration uses the supplied manifest's settings, including HTTP.
+Set the proxy's listeners in the devhost config file, which every stack on the machine shares: `config.toml` in `$DEVHOST_CONFIG_DIR`, else in `$XDG_CONFIG_HOME/devhost`, else in `~/.config/devhost`. Its `[caddy]` table takes `adminAddress` (default `"127.0.0.1:20197"`), `bindHost` (`"127.0.0.1"`, `"0.0.0.0"`, `"::1"`, or `"::"`; default `"127.0.0.1"`), `http` (default `false`), `httpPort` (default `80`), and `httpsPort` (default `443`). A missing file uses the defaults; unknown keys, out-of-range ports, and an empty admin address are rejected. A manifest `[caddy]` table is rejected with an error naming the config file.
 
-Preserve each stack's captured shared management binding after startup stale cleanup. Sparse/default route settings inherit that binding. Stack retirement removes its host snippets, keeps the captured admin/listeners, and preserves live siblings and their HTTP votes. Final-registration cleanup retains the retiring stack's captured settings, including HTTP; it leaves Caddy running.
+`devhost caddy start` starts the proxy with the config file's settings, and each stack applies them when it starts. Every running stack watches the file: saving it moves the proxy with one reload sent to the admin address it runs, so `adminAddress` changes like any port, and each stack prints its service URLs again. Services, routes, and sessions keep running. An invalid file, or settings Caddy rejects, prints `shared Caddy settings rejected` with the reason and leaves the proxy on the settings it runs; check for that line before reporting a change applied.
 
-Stop the shared proxy manually with `devhost caddy stop --manifest ./devhost.toml` after its stacks stop. Use a manifest with matching custom admin and listener settings for Caddy lifecycle commands and for any new stack starting after all registrations are gone. Lifecycle commands contact the manifest-selected admin endpoint; neither they nor a new stack discover an empty custom runtime from its Caddyfile. Keep that manual shared lifecycle explicit when configuring multiple projects.
+The proxy keeps its settings when the last route is removed. `devhost caddy stop` and `devhost caddy trust` reach it through the admin address it runs.
 
 ## 6. Configuration Hot Reload
 
@@ -90,7 +90,7 @@ Save service changes to the active checkout's manifest or an included manifest w
 
 Define app-owned selections under `[groups]` in included manifests, such as `app = ["app-frontend"]`, and run `devhost start app` from the root. Groups merge alongside services. Each group contains a non-empty array of service names from the merged manifest, with dependencies supplied by `dependsOn`. Group names match service naming rules, are unique across includes, and are distinct from service names. Nested groups and unknown members are rejected. Selected groups use their current membership on reload; removing a selected group removes its selection while other requested names and `alwaysStart` services remain. Stack restarts retain the requested names.
 
-Keep stack `name`, `killZombies`, Caddy settings, devtools settings, annotation settings, and `[worktrees].enabled` unchanged in a live edit. Stop and restart devhost to apply those settings. An edit changing one of them rejects its service changes as well.
+Keep stack `name`, `killZombies`, devtools settings, annotation settings, and `[worktrees].enabled` unchanged in a live edit. Stop and restart devhost to apply those settings. An edit changing one of them rejects its service changes as well.
 
 Expect affected services, their dependents, and affected repository groups to restart in dependency order after stopping in reverse order. Compatible automatic ports and saved checkout selections are retained. Changing ports exported through `DEVHOST_PORT_*` can restart otherwise unchanged services. Existing terminal sessions and control connections remain available.
 

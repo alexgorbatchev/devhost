@@ -10,6 +10,7 @@ import (
 const DefaultManagedCaddyAdminAddress = "127.0.0.1:20197"
 
 type Paths struct {
+	AppliedSettingsPath        string
 	CaddyDirectoryPath         string
 	CaddyfilePath              string
 	ExecutablePath             string
@@ -87,6 +88,7 @@ func CreateManagedCaddyPaths(stateDirectoryPath string) Paths {
 	}
 
 	return Paths{
+		AppliedSettingsPath:        filepath.Join(caddyDirectoryPath, "applied.json"),
 		CaddyDirectoryPath:         caddyDirectoryPath,
 		CaddyfilePath:              filepath.Join(caddyDirectoryPath, "Caddyfile"),
 		ExecutablePath:             filepath.Join(caddyDirectoryPath, executableFileName),

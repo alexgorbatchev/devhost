@@ -1,7 +1,6 @@
 package services
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -24,41 +23,16 @@ func TestServeSessionAttemptsCaddyStartAndCleansUpFailure(t *testing.T) {
 	dir := t.TempDir()
 	paths := caddy.CreateManagedCaddyPaths(t.TempDir())
 	admin := caddytest.StartAdminServer(t)
-	fallback := caddy.ManagedCaddyConfigFallback{AdminAddress: admin}
-	if err := caddy.EnsureManagedCaddyConfig(paths, fallback); err != nil {
-		t.Fatal(err)
-	}
-	writeFakeCaddyExecutable(t, paths.ExecutablePath)
-	if err := caddy.ActivateRoute(caddy.ActivateRouteOptions{Host: "other.localhost", Path: "/", ServiceName: "other", AppBindHost: "127.0.0.1", AppPort: nettest.ReservePort(t), CaddyAdminAddress: admin}, "/other/devhost.toml", paths.RoutesDirectoryPath); err != nil {
-		t.Fatal(err)
-	}
-	// Retain an active registration's management vote, with its proxy now down.
-	entries, err := os.ReadDir(paths.RegistrationsDirectoryPath)
-	if err != nil || len(entries) != 1 {
-		t.Fatalf("route fixture: %v %v", entries, err)
-	}
-	registrationPath := filepath.Join(paths.RegistrationsDirectoryPath, entries[0].Name())
-	data, err := os.ReadFile(registrationPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var registration map[string]any
-	if err := json.Unmarshal(data, &registration); err != nil {
-		t.Fatal(err)
-	}
-	registration["caddyAdminAddress"] = caddytest.UnusedAdminAddress(t)
-	data, err = json.Marshal(registration)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(registrationPath, data, 0o600); err != nil {
+	// The shared Caddy last ran on an admin address that no longer answers.
+	runTestCaddy(t, paths, testCaddySettings(caddytest.UnusedAdminAddress(t)))
+	if err := caddy.ActivateRoute(caddy.ActivateRouteOptions{Host: "other.localhost", Path: "/", ServiceName: "other", AppBindHost: "127.0.0.1", AppPort: nettest.ReservePort(t)}, "/other/devhost.toml", paths.RoutesDirectoryPath); err != nil {
 		t.Fatal(err)
 	}
 	script := "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$0.args\"\nexit 1\n"
 	if err := os.WriteFile(paths.ExecutablePath, []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	_, err = StartServe(dir, "files.localhost", 0, StartStackOptions{CaddyPaths: paths, LogWriter: io.Discard})
+	_, err := StartServe(dir, "files.localhost", 0, StartStackOptions{CaddyPaths: paths, ConfigPath: writeTestSharedConfig(t, testCaddySettings(admin)), LogWriter: io.Discard})
 	if err == nil {
 		t.Fatal("expected failed proxy startup")
 	}
@@ -105,15 +79,13 @@ func testServeSession(t *testing.T, external bool) {
 		t.Fatal(err)
 	}
 	paths := caddy.CreateManagedCaddyPaths(t.TempDir())
-	admin := caddytest.StartAdminServer(t)
-	fallback := caddy.ManagedCaddyConfigFallback{AdminAddress: admin}
-	if err := caddy.EnsureManagedCaddyConfig(paths, fallback); err != nil {
+	shared := testCaddySettings(caddytest.StartAdminServer(t))
+	shared.HTTPSPort = 8443
+	runTestCaddy(t, paths, shared)
+	if err := caddy.ActivateRoute(caddy.ActivateRouteOptions{Host: "other.localhost", Path: "/", ServiceName: "other", AppBindHost: "127.0.0.1", AppPort: nettest.ReservePort(t)}, "/other/devhost.toml", paths.RoutesDirectoryPath); err != nil {
 		t.Fatal(err)
 	}
-	writeFakeCaddyExecutable(t, paths.ExecutablePath)
-	if err := caddy.ActivateRoute(caddy.ActivateRouteOptions{Host: "other.localhost", Path: "/", ServiceName: "other", AppBindHost: "127.0.0.1", AppPort: nettest.ReservePort(t), CaddyAdminAddress: admin, CaddyHTTPSPort: 8443}, "/other/devhost.toml", paths.RoutesDirectoryPath); err != nil {
-		t.Fatal(err)
-	}
+	configPath := writeTestSharedConfig(t, shared)
 	originalRegister, originalUnregister, originalDocument := registerProcessSignals, unregisterProcessSignals, startDocumentInjectionServer
 	defer func() {
 		registerProcessSignals, unregisterProcessSignals, startDocumentInjectionServer = originalRegister, originalUnregister, originalDocument
@@ -135,7 +107,7 @@ func testServeSession(t *testing.T, external bool) {
 	}
 	done := make(chan result, 1)
 	go func() {
-		code, err := StartServe(dir, "files.localhost", port, StartStackOptions{CaddyPaths: paths, LogWriter: &log})
+		code, err := StartServe(dir, "files.localhost", port, StartStackOptions{CaddyPaths: paths, ConfigPath: configPath, LogWriter: &log})
 		done <- result{code, err}
 	}()
 	var signalChannel chan<- os.Signal
@@ -177,7 +149,7 @@ func testServeSession(t *testing.T, external bool) {
 		if err != nil || len(entries) != 1 {
 			t.Errorf("served directory changed: %v %v", entries, err)
 		}
-		resp, err := http.Get("http://" + admin + "/config/")
+		resp, err := http.Get("http://" + shared.AdminAddress + "/config/")
 		if err != nil {
 			t.Errorf("shared proxy stopped: %v", err)
 		} else {

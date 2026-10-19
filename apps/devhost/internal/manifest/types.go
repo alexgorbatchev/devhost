@@ -17,7 +17,7 @@ type Inputs struct {
 
 type Manifest struct {
 	Inputs                Inputs
-	Caddy                 CaddyConfig
+	Annotation            ValidatedAnnotation
 	Devtools              DevtoolsConfig
 	Worktrees             WorktreesConfig
 	ManifestDirectoryPath string
@@ -34,16 +34,22 @@ type WorktreesConfig struct {
 	Enabled bool
 }
 
-type CaddyConfig struct {
-	Global CaddyGlobalConfig
+type ValidatedAnnotation struct {
+	TempDir         *string
+	Actions         []ValidatedAnnotationAction
+	DefaultActionID string
 }
 
-type CaddyGlobalConfig struct {
-	AdminAddress string
-	BindHost     string
-	HTTP         bool
-	HTTPPort     int
-	HTTPSPort    int
+type ValidatedAnnotationAction struct {
+	// TempDir is inherited from the stack's annotation configuration.
+	TempDir *string
+	Agent   ValidatedAgent
+	Command []string
+	Cwd     string
+	Env     map[string]string
+	ID      string
+	Kind    string
+	Label   string
 }
 
 type DevtoolsBrowserConfig struct {
@@ -52,8 +58,6 @@ type DevtoolsBrowserConfig struct {
 }
 
 type DevtoolsConfig struct {
-	Chat             DevtoolsToggleConfig
-	Annotations      DevtoolsToggleConfig
 	Browser          DevtoolsBrowserConfig
 	Editor           DevtoolsEditorConfig
 	ExternalToolbars DevtoolsToggleConfig
@@ -99,6 +103,14 @@ type DevtoolsResourceConfig struct {
 type DevtoolsStatusConfig struct {
 	Enabled  bool
 	Position string
+}
+
+type ValidatedAgent struct {
+	Args    []string
+	Command []string
+	Cwd     string
+	Env     map[string]string
+	Kind    string
 }
 
 type ValidatedService struct {
