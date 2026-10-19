@@ -12,7 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -40,20 +39,21 @@ func (d *DirtyTracker) IsDirty(serviceName string) bool {
 }
 
 type WatchManager struct {
-	tracker          *DirtyTracker
-	watchers         map[string]*fsnotify.Watcher
-	watcherDone      map[string]chan struct{}
-	watchersMu       sync.RWMutex
-	debounceTimers   map[string]*time.Timer
-	timersMu         sync.Mutex
-	onDirty          func(string)
-	onTimerDone      func(string)
-	logWriter        io.Writer
-	manifestName     string
+	tracker        *DirtyTracker
+	watchers       map[string]*fsnotify.Watcher
+	watcherDone    map[string]chan struct{}
+	watchersMu     sync.RWMutex
+	debounceTimers map[string]*time.Timer
+	timersMu       sync.Mutex
+	onDirty        func(string)
+	onTimerDone    func(string)
+	logWriter      io.Writer
+	// label reads the stack's name when a line is written; nil writes "devhost".
+	label            func() string
 	debounceDuration time.Duration
 }
 
-func NewWatchManager(tracker *DirtyTracker, onDirty func(string), logWriter io.Writer, manifestName string) *WatchManager {
+func NewWatchManager(tracker *DirtyTracker, onDirty func(string), logWriter io.Writer, label func() string) *WatchManager {
 	return &WatchManager{
 		tracker:          tracker,
 		watchers:         make(map[string]*fsnotify.Watcher),
@@ -61,7 +61,7 @@ func NewWatchManager(tracker *DirtyTracker, onDirty func(string), logWriter io.W
 		debounceTimers:   make(map[string]*time.Timer),
 		onDirty:          onDirty,
 		logWriter:        logWriter,
-		manifestName:     manifestName,
+		label:            label,
 		debounceDuration: 200 * time.Millisecond,
 	}
 }
@@ -96,11 +96,17 @@ func (wm *WatchManager) IsWatchingPath(serviceName string, path string) bool {
 
 func (wm *WatchManager) writeLog(message string) {
 	if wm.logWriter == nil {
-		stdout, _ := cliout.ServiceOutputWriters(os.Stderr, os.Stderr, []string{wm.manifestName})
-		cliout.Log(stdout, wm.manifestName, message)
+		_, _ = fmt.Fprintln(os.Stderr, message)
 		return
 	}
-	cliout.Log(wm.logWriter, wm.manifestName, message)
+	trimmedLabel := ""
+	if wm.label != nil {
+		trimmedLabel = strings.TrimSpace(wm.label())
+	}
+	if trimmedLabel == "" {
+		trimmedLabel = "devhost"
+	}
+	_, _ = fmt.Fprintf(wm.logWriter, "[%s] %s\n", trimmedLabel, message)
 }
 
 var excludedDirectories = map[string]bool{
@@ -147,7 +153,7 @@ var limitWarningLogged sync.Once
 
 func (wm *WatchManager) logLimitWarning() {
 	limitWarningLogged.Do(func() {
-		wm.writeLog(cliout.Warning("File watching limit reached (no space left on device or too many open files)."))
+		wm.writeLog("WARNING: File watching limit reached (no space left on device or too many open files).")
 		wm.writeLog("To increase watch limits, run: `sudo sysctl -w fs.inotify.max_user_watches=524288`")
 	})
 }
@@ -192,7 +198,7 @@ func (wm *WatchManager) StartWatching(serviceName string, watchPaths []string, b
 		absPath = filepath.Clean(absPath)
 		info, err := os.Stat(absPath)
 		if err != nil {
-			wm.writeLog(cliout.Warning(fmt.Sprintf("watch path %q for service %s does not exist", absPath, serviceName)))
+			wm.writeLog(fmt.Sprintf("WARNING: watch path %q for service %s does not exist", absPath, serviceName))
 			continue
 		}
 

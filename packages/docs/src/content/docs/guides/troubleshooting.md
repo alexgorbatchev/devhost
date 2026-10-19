@@ -12,37 +12,6 @@ sidebar:
 </video>
 <!-- /guide-demo -->
 
-## Caddy is unavailable or cannot start
-
-When the shared Caddy proxy is unavailable, `devhost` prints `Caddy is not available.` and asks you to run:
-
-```bash
-devhost caddy start
-```
-
-Human output omits the underlying admin API connection error. `AGENT=1` retains that technical detail.
-
-If Caddy cannot bind HTTPS port 443 on Linux because it lacks permission, the error explains the missing setup and gives these recovery commands:
-
-```bash
-devhost caddy privileged-ports
-devhost caddy start
-```
-
-Setup may ask for your password. Run it again if the managed Caddy binary is replaced and loses its bind capability.
-
-Lines Caddy writes use the `caddy` label: `caddy | ` in human mode and `caddy: ` in agent mode. Devhost's own messages about Caddy use `devhost | ` and `devhost: `. After a Caddy command succeeds, devhost shows only Caddy's warnings and errors; after a failure it also shows Caddy's other lines. It leaves out the lines it reports itself, or that no setting of yours can change: the start confirmation, the trust-store lines of a local CA installation (such as `not NSS security databases found` and `define JAVA_HOME environment variable to use the Java trust`, which mean that no Firefox or Java trust store exists to install into), and the notes about the Caddyfile devhost generates. Runtime logs are retained in `<state-dir>/caddy/caddy.runtime.log`, with automatic rotation. Startup stdout and stderr are retained in `caddy.stdout.log` and `caddy.stderr.log` beside it; each start replaces those two files. The default state directory is `~/.local/state/devhost`; `XDG_STATE_HOME` and `DEVHOST_STATE_DIR` select other locations as described in [Managed Caddy defaults](../managed-caddy/#managed-caddy-defaults).
-
-## Browsers reject devhost HTTPS certificates
-
-`managed caddy local CA is not trusted, so browsers will reject devhost HTTPS certificates.` means the system does not trust Caddy's local certificate authority. Devhost prints it when the installation was declined or failed, when it cannot ask for a password, and when a stack starts while the authority is untrusted. Install the authority from a terminal:
-
-```bash
-devhost caddy trust
-```
-
-It may ask for your password, and reports when the authority is already trusted. See [Managed Caddy](../managed-caddy/#prepare-caddy).
-
 ## Hostname already claimed
 
 `devhost start` fails with `<host> is already claimed by PID <pid> from <manifest>.` when another running stack routes that hostname. The stack may have been started from a different manifest, so `devhost stop` in your project folder reports that nothing is running there and points to `devhost stack list`.
@@ -59,7 +28,7 @@ Each line is the PID of the stack's devhost process, one tab, and its manifest p
 
 ## Zombie cleanup messages
 
-An `already running` startup error means another live stack in the same state directory owns the root manifest or an included file. The error uses the `devhost |` log prefix (`devhost:` in agent mode) and shortens home-directory paths to `~/`. Use its suggested stop command before starting this stack: it shows `devhost stop` when manifest discovery or `DEVHOST_MANIFEST` selects the owner, and includes `--manifest` otherwise. Explicit paths are shell-quoted while leaving `~/` expandable. The same conflict rejects an include change during hot reload. `killZombies` leaves registered live stacks running.
+An `already running` startup error means another live stack in the same state directory owns the root manifest or an included file. Use the `devhost stop --manifest` command in the error to stop that stack before starting this one. The same conflict rejects an include change during hot reload. `killZombies` leaves registered live stacks running.
 
 With `killZombies = true` (the default), devhost attempts to kill an existing owner from the same manifest when reclaiming a hostname or fixed port. It prints `Stopping zombie PID ...` before the attempt and `Stopped zombie PID ...` only after confirming that the owner has exited. If the kill fails, exit cannot be verified, or the owner does not exit within five seconds, devhost reports an error and leaves that claim unreclaimed.
 
@@ -73,13 +42,13 @@ This action uses the last accepted manifest, so an invalid edit on disk does not
 
 ## Manifest changes rejected
 
-Saving `devhost.toml` or an included manifest reloads service configuration. A `configuration reload rejected` log names the reason an edit could not apply. Correct parse or validation errors and save again. Edits to `name`, `killZombies`, Caddy, devtools or worktree enablement require stopping and restarting devhost; the entire edit is rejected if it changes any of those settings.
+Saving `devhost.toml` or an included manifest reloads service configuration. A `configuration reload rejected` log names the reason an edit could not apply. Correct parse or validation errors and save again. Edits to `killZombies`, devtools, annotation settings, or worktree enablement require stopping and restarting devhost; the entire edit is rejected if it changes any of those settings.
 
 If a replacement launch or route update fails, devhost attempts to restore the previous stack. Read the retained logs for restoration errors and recover stopped services explicitly. See [Stack lifecycle](./stack-lifecycle/) for the reload and recovery contract.
 
 ## Deleted selected worktree
 
-Open the Worktrees toolbar picker or press **Refresh** after adding or deleting worktrees. If the running checkout was deleted, devhost stops only that repository's services and retains the missing selection with a recovery error. Select an available checkout before restarting the stack. External editor links and new chat sessions into that repository remain blocked until checkout recovery; other repositories keep running.
+Open the Worktrees toolbar picker or press **Refresh** after adding or deleting worktrees. If the running checkout was deleted, devhost stops only that repository's services and retains the missing selection with a recovery error. Select an available checkout before restarting the stack. Editor and annotation launches into that repository remain blocked until checkout recovery; other repositories keep running.
 
 ## Vite bind-host mismatch
 
