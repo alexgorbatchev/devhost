@@ -99,6 +99,17 @@ func (r *stackRoutes) options(service ResolvedService) caddy.ActivateRouteOption
 		AppBindHost:      service.BindHost, AppPort: *service.Port,
 		CaddyOutputWriters: r.outputWriters,
 		Host:               service.Hosts[0],
-		Path:               path, ServiceName: service.Name, StackName: r.manifest.Name,
+		Path:               path, ServiceName: service.Name, AccessLogName: stackAccessLogName(r.manifest),
 	}
+}
+
+// stackAccessLogName names the access log after the stack's identity, its root
+// manifest path, so the idle timeout keeps seeing traffic across renames. A
+// manifest-free session has no manifest path, and its name, which holds its
+// domain, does not change while it runs.
+func stackAccessLogName(m ResolvedManifest) string {
+	if m.ManifestPath == "" {
+		return m.Name
+	}
+	return "stack-" + worktreeKey(m.ManifestPath)[:12]
 }

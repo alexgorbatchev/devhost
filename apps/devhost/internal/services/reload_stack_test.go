@@ -176,6 +176,31 @@ func TestManifestReloadChangesEnvironmentAndPreservesAutoPort(t *testing.T) {
 	assertRestartResponse(t, serverURL(next.AppPort, "/"), "replacement")
 }
 
+func TestManifestReloadRenamesTheRunningStack(t *testing.T) {
+	body := reloadServiceBody("web", "original", "reload.localhost")
+	f := startReloadStack(t, body)
+	route := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "reload.localhost_web_2f.json"))
+	pid := reloadPID(t, route.AppPort)
+	f.header = strings.Replace(f.header, `name = "reload"`, `name = "renamed"`, 1)
+	f.write(t, body)
+	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("[renamed] configuration reloaded") })
+	if reloadPID(t, route.AppPort) != pid {
+		t.Fatal("renaming the stack restarted its service")
+	}
+	if renamed := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "reload.localhost_web_2f.json")); renamed.AppPort != route.AppPort {
+		t.Fatalf("renaming the stack moved its route: %#v -> %#v", route, renamed)
+	}
+	f.stop()
+	for _, line := range []string{"[renamed] Stopping service web...", "[renamed] Stopped service web.", "[renamed] Stack stopped."} {
+		if !f.logs.contains(line) {
+			t.Errorf("shutdown logs lack %q", line)
+		}
+	}
+	if f.logs.contains("[reload] Stopping service") {
+		t.Error("shutdown kept the name the stack started with")
+	}
+}
+
 func TestManifestReloadRejectsInvalidAndRestartRequiredEdits(t *testing.T) {
 	body := reloadServiceBody("web", "original", "reload.localhost")
 	f := startReloadStack(t, body)
