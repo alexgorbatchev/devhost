@@ -81,7 +81,6 @@ type StoppedService struct {
 }
 
 type HealthResponse struct {
-	Routing  *RoutingConfig  `json:"routing,omitempty"`
 	Services []ServiceHealth `json:"services"`
 	// StoppedServices lists the services left out by a run that named the ones to start.
 	StoppedServices []StoppedService     `json:"stoppedServices,omitempty"`
@@ -135,13 +134,14 @@ type StartControlServerOptions struct {
 }
 
 type ControlServer struct {
-	nativeBrowser              manifest.DevtoolsBrowserConfig
+	// settings are what a hot reload changes; mu guards them with configJSON.
+	settings                   ControlSettings
 	nativeBrowserInstanceID    string
+	homeDirectoryPath          string
+	runtimeDirectoryPath       string
 	allowsNativeBrowserURL     func(int, string) (bool, error)
 	listener                   net.Listener
 	server                     *http.Server
-	componentEditor            string
-	featureToggles             FeatureToggles
 	idleTerminalSessionTimeout time.Duration
 	websocketWriteTimeout      time.Duration
 	restartService             func([]string) error
@@ -150,12 +150,8 @@ type ControlServer struct {
 	switchWorktree             func(string, string) error
 	refreshWorktrees           func() error
 	getToolContext             func(string) (ToolContext, error)
-	routedServices             []RoutedServiceIdentity
-	primaryService             string
 	getHealth                  func() (HealthResponse, error)
-	annotationActions          []manifest.ValidatedAnnotationAction
 	projectRootPath            string
-	stackName                  string
 	startTerminalSession       terminalSessionStarter
 	annotationQueueStore       *annotationQueueStore
 	neovimShellIntegration     *neovimPluginShellIntegrationFiles
@@ -178,6 +174,9 @@ type ControlServer struct {
 	lastPublishedHealth    string
 	lastPublishedResources string
 	resourceSampler        *hostusage.Sampler
+	cancelResourceSampler  context.CancelFunc
+	resourceReaders        hostusage.Readers
+	onResourceFailure      func(readout string, err error)
 	resourceClients        map[*websocketClient]struct{}
 	nextLogEntryID         int
 	retainedLogEntries     []ServiceLogEntry
@@ -271,8 +270,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		return nil, fmt.Errorf("start devtools control listener: %w", err)
 	}
 
-	annotationActions := append([]manifest.ValidatedAnnotationAction{}, options.AnnotationActions...)
-	annotationDefaultActionID := normalizeAnnotationDefaultActionID(options.AnnotationDefaultActionID, annotationActions)
+	settings := options.settings().normalized()
 	home, err := os.UserHomeDir()
 	if err != nil {
 		// Path abbreviation is optional; keep absolute paths when no home is available.
@@ -283,47 +281,19 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		_ = listener.Close() // The identity error is authoritative; no listener is retained.
 		return nil, fmt.Errorf("create native browser instance identity: %w", err)
 	}
-	config := injectedConfig{
-		NativeBrowserConfigured:   options.NativeBrowser.Endpoint != "",
-		NativeBrowserInstanceID:   instanceID,
-		AnnotationDefaultActionID: annotationDefaultActionID,
-		AnnotationActions:         createInjectedAnnotationActions(annotationActions),
-		AnnotationEnabled:         options.FeatureToggles.AnnotationEnabled,
-		AnnotationQueueEnabled:    options.FeatureToggles.AnnotationQueueEnabled,
-		ComponentEditor:           options.ComponentEditor,
-		HomeDirectoryPath:         home,
-		EditorEnabled:             options.FeatureToggles.EditorEnabled,
-		ExternalToolbarsEnabled:   options.FeatureToggles.ExternalToolbarsEnabled,
-		MinimapEnabled:            options.FeatureToggles.MinimapEnabled,
-		Position:                  options.Position,
-		ProjectRootPath:           options.ProjectRootPath,
-		RoutedServices:            append([]RoutedServiceIdentity{}, options.RoutedServices...),
-		StackName:                 options.StackName,
-		StatusEnabled:             options.FeatureToggles.StatusEnabled,
-		ResourcesEnabled:          options.ResourceUsage.isEnabled(),
-		TerminalEnabled:           options.FeatureToggles.TerminalEnabled,
-		RestartServicesShortcut:   options.RestartServicesShortcut,
-		PrimaryService:            options.PrimaryService,
-	}
-	configJSON, err := json.Marshal(config)
-	if err != nil {
-		_ = listener.Close()
-		return nil, fmt.Errorf("marshal devtools config: %w", err)
-	}
-
 	ctx, cancel := context.WithCancel(context.Background())
 	controlServer := &ControlServer{
-		nativeBrowser:              options.NativeBrowser,
+		settings:                   settings,
 		nativeBrowserInstanceID:    instanceID,
+		homeDirectoryPath:          home,
+		runtimeDirectoryPath:       options.RuntimeDirectoryPath,
 		allowsNativeBrowserURL:     options.AllowsNativeBrowserURL,
 		ctx:                        ctx,
 		cancel:                     cancel,
 		devSource:                  options.DevSource,
 		onLog:                      options.OnLog,
-		configJSON:                 configJSON,
-		annotationActions:          annotationActions,
-		componentEditor:            options.ComponentEditor,
-		featureToggles:             options.FeatureToggles,
+		resourceReaders:            options.ResourceUsage.Readers,
+		onResourceFailure:          options.ResourceUsage.OnFailure,
 		annotationQueueClients:     map[*websocketClient]struct{}{},
 		getHealth:                  options.GetHealthResponse,
 		healthClients:              map[*websocketClient]struct{}{},
@@ -341,9 +311,6 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		switchWorktree:             options.SwitchWorktree,
 		refreshWorktrees:           options.RefreshWorktrees,
 		getToolContext:             options.GetToolContext,
-		routedServices:             append([]RoutedServiceIdentity{}, options.RoutedServices...),
-		primaryService:             options.PrimaryService,
-		stackName:                  options.StackName,
 		startTerminalSession:       options.StartTerminalSession,
 		terminalSessions:           map[string]*terminalSessionState{},
 		tracker:                    NewActivityTracker(),
@@ -359,94 +326,94 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	if controlServer.websocketWriteTimeout <= 0 {
 		controlServer.websocketWriteTimeout = defaultWebsocketWriteTimeout
 	}
-	if options.FeatureToggles.EditorEnabled {
-		neovimShellIntegration, err := createNeovimPluginShellIntegrationFiles(
-			options.ProjectRootPath,
-			options.StackName,
-			fmt.Sprintf("http://127.0.0.1:%d%s", controlServer.Port(), reactHighlightCursorPath),
-			options.RuntimeDirectoryPath,
-		)
-		if err != nil {
-			_ = listener.Close()
-			return nil, err
-		}
-		controlServer.neovimShellIntegration = neovimShellIntegration
+	configJSON, err := controlServer.renderInjectedConfig(settings)
+	if err != nil {
+		_ = listener.Close()
+		return nil, err
 	}
-	if options.FeatureToggles.AnnotationQueueEnabled {
-		controlServer.annotationQueueStore = newAnnotationQueueStore(annotationQueueStoreOptions{
-			manifestPath: options.ManifestPath,
-			onQueuesChanged: func(queues []annotationQueueSnapshot) {
-				controlServer.publishAnnotationQueues(queues)
-			},
-			readLiveAgentSession: func(sessionID string) *liveAgentSessionSnapshot {
-				controlServer.mu.Lock()
-				defer controlServer.mu.Unlock()
+	controlServer.configJSON = configJSON
+	if err := controlServer.updateNeovimShellIntegration(ControlSettings{}, settings); err != nil {
+		_ = listener.Close()
+		return nil, err
+	}
+	// The store exists whether or not queues are on, so turning them on in a
+	// reload finds their saved state.
+	controlServer.annotationQueueStore = newAnnotationQueueStore(annotationQueueStoreOptions{
+		manifestPath: options.ManifestPath,
+		onQueuesChanged: func(queues []annotationQueueSnapshot) {
+			controlServer.publishAnnotationQueues(queues)
+		},
+		readLiveAgentSession: func(sessionID string) *liveAgentSessionSnapshot {
+			controlServer.mu.Lock()
+			defer controlServer.mu.Unlock()
 
-				session := controlServer.terminalSessions[sessionID]
-				if session == nil || session.closed || session.exited != nil || session.request.Kind != terminalSessionRequestKindAgent || session.request.Annotation == nil {
-					return nil
-				}
-
-				return &liveAgentSessionSnapshot{
-					actionID:    session.request.ActionID,
-					agentStatus: session.agentStatus,
-					annotation:  *session.request.Annotation,
-					colorScheme: session.request.ColorScheme,
-					sessionID:   sessionID,
-				}
-			},
-			routedServices:     options.RoutedServices,
-			stateDirectoryPath: options.StateDirectoryPath,
-			startAgentSession: func(actionID string, annotation annotationSubmitDetail, colorScheme agentColorScheme) (string, error) {
-				return controlServer.createTerminalSession(terminalSessionRequest{ActionID: actionID, Annotation: &annotation, ColorScheme: colorScheme, Kind: terminalSessionRequestKindAgent})
-			},
-			writeAnnotationToSession: func(actionID string, sessionID string, annotation annotationSubmitDetail) error {
-				action, ok := findAnnotationAction(annotationActions, actionID)
-				if !ok || action.Kind != terminalSessionRequestKindAgent {
-					return fmt.Errorf("Annotation action %s is not available.", actionID)
-				}
-				toolContext, err := controlServer.toolContext(terminalSessionRequest{Annotation: &annotation})
-				if err != nil {
-					return err
-				}
-				controlServer.mu.Lock()
-				session := controlServer.terminalSessions[sessionID]
-				if session == nil || session.closed || session.exited != nil || session.request.Kind != terminalSessionRequestKindAgent || session.request.ActionID != actionID {
-					controlServer.mu.Unlock()
-					return fmt.Errorf("Agent terminal session %s is not available.", sessionID)
-				}
-				if session.projectRootPath != toolContext.ProjectRootPath {
-					controlServer.mu.Unlock()
-					return fmt.Errorf("Agent session belongs to the previous checkout; resume the queue to start a session in the selected worktree.")
-				}
-				session.request.Annotation = &annotation
-				write := session.write
-				controlServer.mu.Unlock()
-
-				// The agent is already running with its adapter support files, so the handoff needs only the annotation.
-				sessionFiles, err := createAnnotationSessionFiles(agentSessionDirectoryPrefix, annotationSessionFilesOptions{
-					action:          action,
-					annotation:      annotation,
-					projectRootPath: toolContext.ProjectRootPath,
-					stackName:       options.StackName,
-				})
-				if err != nil {
-					return err
-				}
-				controlServer.mu.Lock()
-				activeSession := controlServer.terminalSessions[sessionID]
-				if activeSession == nil || activeSession.closed {
-					controlServer.mu.Unlock()
-					sessionFiles.cleanup()
-					return fmt.Errorf("Agent terminal session %s is not available.", sessionID)
-				}
-				activeSession.cleanup = chainCleanup(activeSession.cleanup, sessionFiles.cleanup)
-				controlServer.mu.Unlock()
-				// The carriage return submits the instruction to the running agent.
-				write(createAnnotationPromptInstruction(sessionFiles.promptFilePath) + "\r")
+			session := controlServer.terminalSessions[sessionID]
+			if session == nil || session.closed || session.exited != nil || session.request.Kind != terminalSessionRequestKindAgent || session.request.Annotation == nil {
 				return nil
-			},
-		})
+			}
+
+			return &liveAgentSessionSnapshot{
+				actionID:    session.request.ActionID,
+				agentStatus: session.agentStatus,
+				annotation:  *session.request.Annotation,
+				colorScheme: session.request.ColorScheme,
+				sessionID:   sessionID,
+			}
+		},
+		routedServices:     options.RoutedServices,
+		stateDirectoryPath: options.StateDirectoryPath,
+		startAgentSession: func(actionID string, annotation annotationSubmitDetail, colorScheme agentColorScheme) (string, error) {
+			return controlServer.createTerminalSession(terminalSessionRequest{ActionID: actionID, Annotation: &annotation, ColorScheme: colorScheme, Kind: terminalSessionRequestKindAgent})
+		},
+		writeAnnotationToSession: func(actionID string, sessionID string, annotation annotationSubmitDetail) error {
+			settings := controlServer.currentSettings()
+			action, ok := findAnnotationAction(settings.AnnotationActions, actionID)
+			if !ok || action.Kind != terminalSessionRequestKindAgent {
+				return fmt.Errorf("Annotation action %s is not available.", actionID)
+			}
+			toolContext, err := controlServer.toolContext(terminalSessionRequest{Annotation: &annotation})
+			if err != nil {
+				return err
+			}
+			controlServer.mu.Lock()
+			session := controlServer.terminalSessions[sessionID]
+			if session == nil || session.closed || session.exited != nil || session.request.Kind != terminalSessionRequestKindAgent || session.request.ActionID != actionID {
+				controlServer.mu.Unlock()
+				return fmt.Errorf("Agent terminal session %s is not available.", sessionID)
+			}
+			if session.projectRootPath != toolContext.ProjectRootPath {
+				controlServer.mu.Unlock()
+				return fmt.Errorf("Agent session belongs to the previous checkout; resume the queue to start a session in the selected worktree.")
+			}
+			session.request.Annotation = &annotation
+			write := session.write
+			controlServer.mu.Unlock()
+
+			// The agent is already running with its adapter support files, so the handoff needs only the annotation.
+			sessionFiles, err := createAnnotationSessionFiles(agentSessionDirectoryPrefix, annotationSessionFilesOptions{
+				action:          action,
+				annotation:      annotation,
+				projectRootPath: toolContext.ProjectRootPath,
+				stackName:       settings.StackName,
+			})
+			if err != nil {
+				return err
+			}
+			controlServer.mu.Lock()
+			activeSession := controlServer.terminalSessions[sessionID]
+			if activeSession == nil || activeSession.closed {
+				controlServer.mu.Unlock()
+				sessionFiles.cleanup()
+				return fmt.Errorf("Agent terminal session %s is not available.", sessionID)
+			}
+			activeSession.cleanup = chainCleanup(activeSession.cleanup, sessionFiles.cleanup)
+			controlServer.mu.Unlock()
+			// The carriage return submits the instruction to the running agent.
+			write(createAnnotationPromptInstruction(sessionFiles.promptFilePath) + "\r")
+			return nil
+		},
+	})
+	if settings.FeatureToggles.AnnotationQueueEnabled {
 		if err := controlServer.annotationQueueStore.resumePersistedQueues(); err != nil {
 			_ = listener.Close()
 			return nil, err
@@ -475,9 +442,9 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	mux.HandleFunc(startServicePath, controlServer.handleStartService)
 	mux.HandleFunc(worktreesPath, controlServer.handleWorktrees)
 	mux.HandleFunc(healthWebsocketPath, controlServer.handleHealthWebsocket)
-	if options.ResourceUsage.isEnabled() {
-		mux.HandleFunc(resourcesWebsocketPath, controlServer.handleResourcesWebsocket)
-		controlServer.startResourceSampler(options.ResourceUsage)
+	mux.HandleFunc(resourcesWebsocketPath, controlServer.handleResourcesWebsocket)
+	if settings.resourcesEnabled() {
+		controlServer.startResourceSampler(settings.ResourceIntervals)
 	}
 	mux.HandleFunc(logsWebsocketPath, controlServer.handleLogsWebsocket)
 	controlServer.server = &http.Server{Handler: controlServer.trackerMiddleware(mux)}
@@ -650,9 +617,7 @@ func (s *ControlServer) Stop() error {
 	s.resourceClients = map[*websocketClient]struct{}{}
 	s.neovimShellIntegration = nil
 	s.mu.Unlock()
-	if s.annotationQueueStore != nil {
-		_ = s.annotationQueueStore.prepareForShutdown()
-	}
+	_ = s.annotationQueueStore.prepareForShutdown()
 
 	for _, sessionID := range terminalSessionIDs {
 		s.closeTerminalSession(sessionID)
@@ -885,7 +850,7 @@ func (s *ControlServer) handleReactHighlightCursor(writer http.ResponseWriter, r
 		Kind:        "cursor",
 		Locator:     payload.Locator,
 		ProjectRoot: s.projectRootPath,
-		StackName:   s.stackName,
+		StackName:   s.currentSettings().StackName,
 		Timestamp:   time.Now().UnixMilli(),
 	})
 	if err != nil {
@@ -923,12 +888,24 @@ func (s *ControlServer) resolveHealthMessage() (string, error) {
 		return "", err
 	}
 
-	message, err := json.Marshal(healthResponse)
+	// Pages read their configuration from each health message, so an edit
+	// reaches them without reloading the page.
+	s.mu.Lock()
+	config := s.configJSON
+	s.mu.Unlock()
+	message, err := json.Marshal(healthMessage{HealthResponse: healthResponse, Config: config})
 	if err != nil {
 		return "", err
 	}
 
 	return string(message), nil
+}
+
+// healthMessage is a health response with the configuration config.json
+// serves, as the page applies it.
+type healthMessage struct {
+	HealthResponse
+	Config json.RawMessage `json:"config"`
 }
 
 func (s *ControlServer) upgrade(writer http.ResponseWriter, request *http.Request) (*websocketClient, error) {

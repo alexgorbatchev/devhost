@@ -97,9 +97,6 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	if previousConfiguration == nil {
 		return fmt.Errorf("configuration change requires an accepted manifest")
 	}
-	if err := validateReloadBoundary(*previousConfiguration, next); err != nil {
-		return err
-	}
 	finishReservation, err := r.reserveManifestFiles(stackManifestFiles(&next))
 	if err != nil {
 		return err
@@ -129,6 +126,11 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	// keeps; its name is a label that follows the configuration.
 	candidate.ManifestPath = r.manifest.ManifestPath
 	candidate.ServiceOrder = orderedServiceNames(next)
+	if r.worktrees == nil && candidate.Worktrees.Enabled {
+		if err := forgetWorktreeSelection(candidate.ManifestPath, r.routes.paths.StateDirectoryPath); err != nil {
+			return err
+		}
+	}
 	worktrees, err := buildStackWorktrees(candidate, r.routes.paths.StateDirectoryPath, r.worktrees)
 	if err != nil {
 		return err
@@ -247,7 +249,9 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 		}
 	}
 	if r.control != nil {
-		if err := r.control.UpdateRouting(collectRoutedServiceIdentities(r.manifest.Services), r.manifest.PrimaryService); err != nil {
+		// Pages learn the accepted routes and settings only now, after routing
+		// accepted them.
+		if err := r.control.UpdateSettings(devtoolsControlSettings(*r.manifest)); err != nil {
 			return rollback(err)
 		}
 	}
@@ -255,9 +259,11 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	r.removeRetiredServices()
 	r.finishReloadWorktrees()
 	r.manifestMu.Lock()
-	r.routing = devtools.RoutingConfig{RoutedServices: collectRoutedServiceIdentities(r.manifest.Services), PrimaryService: r.manifest.PrimaryService}
 	r.pendingReload = nil
 	r.manifestMu.Unlock()
+	if r.idle != nil {
+		r.idle.set(resolveIdleTimeout(r.options.IdleTimeout, r.manifest.Devtools))
+	}
 	r.publish()
 	cliout.Log(r.options.LogWriter, r.manifest.Name, change.message)
 	LogServiceURLs(*r.manifest, r.options.LogWriter)

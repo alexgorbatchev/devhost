@@ -41,6 +41,13 @@ func (r *stackRuntime) reloadFromDisk(ctx context.Context, w *manifestWatcher) e
 	if err != nil {
 		return err
 	}
+	// Turning worktrees off while another checkout runs goes back to the root
+	// checkout first; that checkout's manifest then decides.
+	if !candidate.Worktrees.Enabled {
+		if id, root, ok := r.worktrees.selectionAwayFromRoot(); ok {
+			return r.switchWorktreeLocked(ctx, id, root)
+		}
+	}
 	return r.reloadConfigurationLocked(ctx, candidate, inputs.Files)
 }
 

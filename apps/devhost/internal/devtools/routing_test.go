@@ -4,18 +4,60 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
+	"strings"
 	"testing"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
 
-func TestUpdateRoutingChangesToolLaunchSelection(t *testing.T) {
+func TestUpdateSettingsRoutingPreservesLiveTerminalAndInjectedSettings(t *testing.T) {
+	t.Parallel()
+	server := startAnnotationLifecycleServer(t, terminalSessionRequestKindAgent)
+	annotation := testAnnotationDetail("Running annotation", 1, "https://app.localhost/dashboard")
+	sessionID := startAnnotationLifecycleSession(t, server, terminalSessionRequestKindAgent, annotation)
+	socket := mustDialWebsocket(t, terminalWebsocketURL(server.Port(), sessionID))
+	defer socket.Close()
+	readWebsocketText(t, socket)
+	before := readRoutingInjectedConfig(t, server)
+	routes := []RoutedServiceIdentity{{Host: "app.localhost", Path: "/", ServiceName: "replacement"}}
+	if err := updateTestRouting(server, routes, "replacement"); err != nil {
+		t.Fatal(err)
+	}
+	after := readRoutingInjectedConfig(t, server)
+	if !reflect.DeepEqual(after.RoutedServices, routes) || after.PrimaryService != "replacement" {
+		t.Fatalf("script retained old routes: %#v", after)
+	}
+	after.RoutedServices, after.PrimaryService = before.RoutedServices, before.PrimaryService
+	if !reflect.DeepEqual(before, after) {
+		t.Fatal("routing update changed token, settings, or project identity")
+	}
+	assertAnnotationLifecycleSession(t, server, sessionID)
+	if err := socket.WriteJSON(map[string]string{"type": "input", "data": "finish\n"}); err != nil {
+		t.Fatal(err)
+	}
+	for {
+		if strings.Contains(readWebsocketText(t, socket), "SetAgentStatus=finished") {
+			break
+		}
+	}
+	server.annotationQueueStore.mu.Lock()
+	key := resolveRoutedServiceKeyForAnnotation(server.annotationQueueStore.routedServices, annotation)
+	server.annotationQueueStore.mu.Unlock()
+	if key == nil || *key != "replacement" {
+		t.Fatalf("queue retained old service identity: %v", key)
+	}
+}
+
+func TestUpdateSettingsRoutingChangesToolLaunchSelection(t *testing.T) {
 	t.Parallel()
 	var selected string
 	server, err := StartControlServer(StartControlServerOptions{
-		StackName: "routing", PrimaryService: "old",
+		ManifestPath: t.TempDir() + "/devhost.toml", StackName: "routing", PrimaryService: "old",
 		GetHealthResponse: func() (HealthResponse, error) { return HealthResponse{Services: []ServiceHealth{}}, nil },
 		GetToolContext: func(name string) (ToolContext, error) {
 			selected = name
-			return ToolContext{}, nil
+			return ToolContext{AnnotationActions: []manifest.ValidatedAnnotationAction{}}, nil
 		},
 	})
 	if err != nil {
@@ -26,17 +68,24 @@ func TestUpdateRoutingChangesToolLaunchSelection(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	if err := server.UpdateRouting([]RoutedServiceIdentity{{Host: "api.localhost", Path: "/", ServiceName: "api"}}, "web"); err != nil {
+	if err := updateTestRouting(server, []RoutedServiceIdentity{{Host: "api.localhost", Path: "/", ServiceName: "api"}}, "web"); err != nil {
 		t.Fatal(err)
 	}
 	for _, tc := range []struct{ url, want string }{{"https://api.localhost/items", "api"}, {"https://other.localhost/", "web"}} {
-		if _, err := server.toolContext(tc.url); err != nil {
+		if _, err := server.toolContext(terminalSessionRequest{PageURL: tc.url}); err != nil {
 			t.Fatal(err)
 		}
 		if selected != tc.want {
 			t.Fatalf("tool launch selected %s; want %s", selected, tc.want)
 		}
 	}
+}
+
+// updateTestRouting changes only the routing, as a reload that moves routes does.
+func updateTestRouting(server *ControlServer, routes []RoutedServiceIdentity, primary string) error {
+	settings := server.currentSettings()
+	settings.RoutedServices, settings.PrimaryService = routes, primary
+	return server.UpdateSettings(settings)
 }
 
 func readRoutingInjectedConfig(t *testing.T, server *ControlServer) injectedConfig {
@@ -56,17 +105,17 @@ func readRoutingInjectedConfig(t *testing.T, server *ControlServer) injectedConf
 	return config
 }
 
-func TestUpdateRoutingPublishesConsistentConfigWhileServing(t *testing.T) {
+func TestUpdateSettingsRoutingPublishesConsistentConfigWhileServing(t *testing.T) {
 	t.Parallel()
 	server := startAssetTestServer(t)
-	if err := server.UpdateRouting([]RoutedServiceIdentity{{Host: "app.localhost", Path: "/", ServiceName: "initial"}}, "initial"); err != nil {
+	if err := updateTestRouting(server, []RoutedServiceIdentity{{Host: "app.localhost", Path: "/", ServiceName: "initial"}}, "initial"); err != nil {
 		t.Fatal(err)
 	}
 	done := make(chan error, 1)
 	go func() {
 		for i := range 1000 {
 			name := fmt.Sprintf("service-%d", i)
-			if err := server.UpdateRouting([]RoutedServiceIdentity{{Host: "app.localhost", Path: "/", ServiceName: name}}, name); err != nil {
+			if err := updateTestRouting(server, []RoutedServiceIdentity{{Host: "app.localhost", Path: "/", ServiceName: name}}, name); err != nil {
 				done <- err
 				return
 			}

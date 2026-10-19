@@ -1,28 +1,8 @@
 package services
 
 import (
-	"fmt"
 	"reflect"
-
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
-
-func validateReloadBoundary(previous, next manifest.Manifest) error {
-	checks := []struct {
-		name           string
-		previous, next any
-	}{
-		{"devtools", previous.Devtools, next.Devtools},
-		{"worktrees.enabled", previous.Worktrees, next.Worktrees},
-		{"killZombies", previous.KillZombies, next.KillZombies},
-	}
-	for _, check := range checks {
-		if !reflect.DeepEqual(check.previous, check.next) {
-			return fmt.Errorf("changing %s requires restarting devhost; no configuration changes were applied", check.name)
-		}
-	}
-	return nil
-}
 
 func affectedReloadServices(previous, next ResolvedManifest) map[string]bool {
 	affected := map[string]bool{}

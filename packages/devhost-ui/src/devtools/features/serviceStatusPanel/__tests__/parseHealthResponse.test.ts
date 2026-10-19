@@ -41,6 +41,14 @@ describe("parseHealthResponse", () => {
     expect(parseHealthResponse(JSON.stringify(payload))).toEqual(payload);
   });
 
+  test("retains the page configuration devhost sends with the health", () => {
+    const payload = {
+      services: [{ name: "web", managed: true, status: true }],
+      config: { stackName: "shop", minimapEnabled: false },
+    };
+    expect(parseHealthResponse(JSON.stringify(payload))).toEqual(payload);
+  });
+
   test.each([
     "not json",
     JSON.stringify({ services: [], stoppedServices: "docs" }),
@@ -49,11 +57,9 @@ describe("parseHealthResponse", () => {
     JSON.stringify({ services: [{ name: "web", managed: true, status: "up" }] }),
     JSON.stringify({ services: [], repositories: [{ id: "shop" }] }),
     JSON.stringify({ services: [], repositories: "shop" }),
-    JSON.stringify({ services: [], routing: { primaryService: "web", routedServices: "invalid" } }),
-    JSON.stringify({
-      services: [],
-      routing: { primaryService: "web", routedServices: [{ host: "app.localhost", path: "/", serviceName: 42 }] },
-    }),
+    JSON.stringify({ services: [], config: "invalid" }),
+    JSON.stringify({ services: [], config: null }),
+    JSON.stringify({ services: [], config: [] }),
   ])("rejects malformed health data: %s", (message) => {
     expect(parseHealthResponse(message)).toBeNull();
   });

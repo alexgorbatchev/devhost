@@ -15,7 +15,6 @@ type stackRoutes struct {
 	outputWriters   caddy.RouteCommandOutputWriters
 	controlServer   *devtools.ControlServer
 	runtime         *stackRuntime
-	injectDevtools  bool
 	restartService  func(string) error
 	documentServers map[string]*devtools.DocumentInjectionServer
 	active          map[string]caddy.ActivateRouteOptions
@@ -60,10 +59,10 @@ func (r *stackRoutes) prepare(service ResolvedService) (caddy.ActivateRouteOptio
 		}
 		documentServer, err = startDocumentInjectionServer(devtools.StartDocumentInjectionServerOptions{
 			BackendHost: host, BackendPort: *service.Port,
-			DisableInjection: !r.injectDevtools || !isRootCompatibleServicePath(service.Path),
-			GetRecovery:      func() devtools.RecoveryState { return r.runtime.recovery(name) },
-			Restart:          func() error { return r.restartService(name) },
-			Worktrees:        worktrees,
+			ShouldInject: func() bool { return r.runtime.injectsDevtools(name) },
+			GetRecovery:  func() devtools.RecoveryState { return r.runtime.recovery(name) },
+			Restart:      func() error { return r.restartService(name) },
+			Worktrees:    worktrees,
 		})
 		if err != nil {
 			return options, nil, err
@@ -72,11 +71,27 @@ func (r *stackRoutes) prepare(service ResolvedService) (caddy.ActivateRouteOptio
 	} else {
 		documentServer.SetBackend(host, *service.Port)
 	}
-	if r.controlServer != nil && r.injectDevtools && isRootCompatibleServicePath(service.Path) {
+	if r.controlServer != nil && injectsDevtools(r.manifest, service) {
 		options.DevtoolsControlPort = r.controlServer.Port()
 	}
 	options.DocumentInjectionPort = documentServer.Port()
 	return options, documentServer, nil
+}
+
+// injectsDevtools reports whether service's documents carry the devtools under
+// m: some devtools feature is on and the service is mounted where the injected
+// script's root-relative URLs reach the control server.
+func injectsDevtools(m ResolvedManifest, service ResolvedService) bool {
+	return hasEnabledDevtools(m.Devtools) && isRootCompatibleServicePath(service.Path)
+}
+
+// injectsDevtools reads the running configuration for each document, so a
+// reload turns injection on or off without replacing the document server.
+func (r *stackRuntime) injectsDevtools(name string) bool {
+	r.manifestMu.RLock()
+	defer r.manifestMu.RUnlock()
+	service, ok := r.manifest.Services[name]
+	return ok && injectsDevtools(*r.manifest, service)
 }
 
 func serviceRouteRegistrations(service ResolvedService, options caddy.ActivateRouteOptions) []caddy.ActivateRouteOptions {
