@@ -15,6 +15,7 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cli"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/config"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/services"
 )
@@ -185,32 +186,20 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			return exitCode
 		}
 
-		fallback := caddy.ManagedCaddyConfigFallback{}
-		if arguments.ManifestPath != nil {
-			rawManifest, readError := manifest.ReadManifest(*arguments.ManifestPath)
-			if readError != nil {
-				return fail(stderr, describeManifestReadError(*arguments.ManifestPath, readError))
-			}
-
-			validatedManifest, validateError := manifest.ValidateManifest(*arguments.ManifestPath, rawManifest)
-			if validateError != nil {
-				return fail(stderr, validateError)
-			}
-
-			fallback = caddy.ManagedCaddyConfigFallback{
-				AdminAddress: validatedManifest.Caddy.Global.AdminAddress,
-				BindHost:     validatedManifest.Caddy.Global.BindHost,
-				HTTPEnabled:  validatedManifest.Caddy.Global.HTTP,
-				HTTPPort:     validatedManifest.Caddy.Global.HTTPPort,
-				HTTPSPort:    validatedManifest.Caddy.Global.HTTPSPort,
-			}
+		configPath, err := config.Path(readEnvironment())
+		if err != nil {
+			return fail(stderr, err)
+		}
+		shared, err := config.Read(configPath)
+		if err != nil {
+			return fail(stderr, err)
 		}
 
 		exitCode, err := caddy.RunManagedCaddyLifecycleCommand(
 			caddy.LifecycleAction(arguments.Action),
 			caddyStderr,
 			paths,
-			fallback,
+			shared.Caddy,
 			caddy.ManagedCaddyLifecycleDependencies{RuntimeOS: runtime.GOOS},
 		)
 		if err != nil {

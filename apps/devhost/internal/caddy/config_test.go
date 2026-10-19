@@ -10,117 +10,70 @@ import (
 func TestEnsureManagedCaddyConfig(t *testing.T) {
 	t.Parallel()
 
-	paths := CreateManagedCaddyPaths(t.TempDir())
-	if err := os.MkdirAll(paths.RegistrationsDirectoryPath, 0o755); err != nil {
-		t.Fatalf("MkdirAll(...) error = %v", err)
-	}
-	writeRegistration(t, filepath.Join(paths.RegistrationsDirectoryPath, "hello.localhost_web.json"), `{"appBindHost":"127.0.0.1","host":"hello.localhost","path":"/","httpEnabled":false}`)
-	writeRegistration(t, filepath.Join(paths.RegistrationsDirectoryPath, "api.localhost_api.json"), `{"appBindHost":"127.0.0.1","host":"api.localhost","path":"/v1","httpEnabled":true,"caddyAdminAddress":"127.0.0.1:22000","caddyBindHost":"0.0.0.0","caddyHttpPort":8080,"caddyHttpsPort":4443}`)
-	writeRouteFile(t, filepath.Join(paths.RoutesDirectoryPath, "hello.localhost.caddy"))
-	writeRouteFile(t, filepath.Join(paths.RoutesDirectoryPath, "api.localhost.caddy"))
-
-	if err := ensureManagedCaddyConfig(paths, ManagedCaddyConfigFallback{AdminAddress: "127.0.0.1:23000", RuntimeOS: "linux"}); err != nil {
-		t.Fatalf("ensureManagedCaddyConfig(...) unexpected error = %v", err)
-	}
-
-	for _, directoryPath := range []string{paths.CaddyDirectoryPath, paths.RoutesDirectoryPath, paths.HostClaimsDirectoryPath, paths.PortClaimsDirectoryPath, paths.RegistrationsDirectoryPath, paths.StorageDirectoryPath} {
-		if !pathExists(directoryPath) {
-			t.Fatalf("ensureManagedCaddyConfig(...) missing directory %q", directoryPath)
-		}
-	}
-
-	caddyfile, err := os.ReadFile(paths.CaddyfilePath)
-	if err != nil {
-		t.Fatalf("ReadFile(...) error = %v", err)
-	}
-	caddyfileText := string(caddyfile)
-	if !strings.Contains(caddyfileText, "    admin 127.0.0.1:22000") || !strings.Contains(caddyfileText, "    default_bind 0.0.0.0 [::]") {
-		t.Fatalf("caddyfileText = %q, want registration settings to win", caddyfileText)
-	}
-	if !strings.Contains(caddyfileText, "http://:8080 {") || !strings.Contains(caddyfileText, "https://:4443 {") {
-		t.Fatalf("caddyfileText = %q, want merged listener ports", caddyfileText)
-	}
-
-	sitePaths := createManagedCaddyNotFoundSitePaths(paths.CaddyDirectoryPath)
-	pageText, err := os.ReadFile(sitePaths.PagePath)
-	if err != nil {
-		t.Fatalf("ReadFile(...) error = %v", err)
-	}
-	if !strings.Contains(string(pageText), `href="https://api.localhost:4443/v1"`) {
-		t.Fatalf("pageText = %q, want synced not-found page", string(pageText))
-	}
-}
-
-func TestEnsureManagedCaddyConfigFallbackAdminAddress(t *testing.T) {
-	t.Parallel()
-
-	paths := CreateManagedCaddyPaths(t.TempDir())
-	if err := ensureManagedCaddyConfig(paths, ManagedCaddyConfigFallback{AdminAddress: "127.0.0.1:23000", RuntimeOS: "linux"}); err != nil {
-		t.Fatalf("ensureManagedCaddyConfig(...) unexpected error = %v", err)
-	}
-
-	caddyfile, err := os.ReadFile(paths.CaddyfilePath)
-	if err != nil {
-		t.Fatalf("ReadFile(...) error = %v", err)
-	}
-	if !strings.Contains(string(caddyfile), "    admin 127.0.0.1:23000") {
-		t.Fatalf("caddyfile = %q, want fallback admin address", string(caddyfile))
-	}
-}
-
-func TestReadManagedCaddyGlobalSettingsRejectsConflicts(t *testing.T) {
-	t.Parallel()
-
+	configured := ManagedCaddyGlobalSettings{AdminAddress: "127.0.0.1:23000", BindHost: "0.0.0.0", HTTPEnabled: true, HTTPPort: 8080, HTTPSPort: 4443}
+	running := ManagedCaddyGlobalSettings{AdminAddress: "127.0.0.1:22000", BindHost: "127.0.0.1", HTTPPort: 80, HTTPSPort: 5443}
 	tests := []struct {
-		first     string
 		name      string
-		second    string
-		wantError string
+		applied   *ManagedCaddyGlobalSettings
+		wantLines []string
+		wantLink  string
 	}{
 		{
-			name:      "admin address",
-			first:     `{"appBindHost":"127.0.0.1","caddyAdminAddress":"127.0.0.1:22000"}`,
-			second:    `{"appBindHost":"127.0.0.1","caddyAdminAddress":"127.0.0.1:23000"}`,
-			wantError: "Managed Caddy admin address is inconsistent across active stacks: 127.0.0.1:22000, 127.0.0.1:23000.",
+			name:      "a Caddy that has not started uses the configured settings",
+			wantLines: []string{"    admin 127.0.0.1:23000", "    default_bind 0.0.0.0 [::]", "http://:8080 {", "https://:4443 {"},
+			wantLink:  `href="https://api.localhost:4443/v1"`,
 		},
 		{
-			name:      "bind host",
-			first:     `{"appBindHost":"127.0.0.1","caddyBindHost":"0.0.0.0"}`,
-			second:    `{"appBindHost":"127.0.0.1","caddyBindHost":"127.0.0.1"}`,
-			wantError: "Managed Caddy bind host is inconsistent across active stacks: 0.0.0.0, 127.0.0.1.",
-		},
-		{
-			name:      "http port",
-			first:     `{"appBindHost":"127.0.0.1","caddyHttpPort":8080}`,
-			second:    `{"appBindHost":"127.0.0.1","caddyHttpPort":9090}`,
-			wantError: "Managed Caddy HTTP port is inconsistent across active stacks: 8080, 9090.",
-		},
-		{
-			name:      "https port",
-			first:     `{"appBindHost":"127.0.0.1","caddyHttpsPort":4443}`,
-			second:    `{"appBindHost":"127.0.0.1","caddyHttpsPort":5443}`,
-			wantError: "Managed Caddy HTTPS port is inconsistent across active stacks: 4443, 5443.",
+			name:      "a running Caddy keeps the settings it runs",
+			applied:   &running,
+			wantLines: []string{"    admin 127.0.0.1:22000", "    default_bind 127.0.0.1 [::1]", "https://:5443 {"},
+			wantLink:  `href="https://api.localhost:5443/v1"`,
 		},
 	}
 
-	for _, tt := range tests {
-		tc := tt
+	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			paths := CreateManagedCaddyPaths(t.TempDir())
 			if err := os.MkdirAll(paths.RegistrationsDirectoryPath, 0o755); err != nil {
-				t.Fatalf("MkdirAll(...) error = %v", err)
+				t.Fatal(err)
 			}
-			writeRegistration(t, filepath.Join(paths.RegistrationsDirectoryPath, "one.json"), tc.first)
-			writeRegistration(t, filepath.Join(paths.RegistrationsDirectoryPath, "two.json"), tc.second)
+			writeRegistration(t, filepath.Join(paths.RegistrationsDirectoryPath, "api.localhost_api.json"), `{"appBindHost":"127.0.0.1","host":"api.localhost","path":"/v1"}`)
+			writeRouteFile(t, filepath.Join(paths.RoutesDirectoryPath, "api.localhost.caddy"))
+			if tc.applied != nil {
+				if err := writeAppliedManagedCaddySettings(paths, *tc.applied); err != nil {
+					t.Fatal(err)
+				}
+			}
 
-			_, err := ReadManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
-			if err == nil {
-				t.Fatalf("ReadManagedCaddyGlobalSettings(...) error = nil, want %q", tc.wantError)
+			if err := EnsureManagedCaddyConfig(paths, configured, "linux"); err != nil {
+				t.Fatalf("EnsureManagedCaddyConfig(...) unexpected error = %v", err)
 			}
-			if err.Error() != tc.wantError {
-				t.Fatalf("ReadManagedCaddyGlobalSettings(...) error = %q, want %q", err.Error(), tc.wantError)
+
+			for _, directoryPath := range []string{paths.CaddyDirectoryPath, paths.RoutesDirectoryPath, paths.HostClaimsDirectoryPath, paths.PortClaimsDirectoryPath, paths.RegistrationsDirectoryPath, paths.StorageDirectoryPath} {
+				if !pathExists(directoryPath) {
+					t.Fatalf("EnsureManagedCaddyConfig(...) missing directory %q", directoryPath)
+				}
+			}
+			caddyfile, err := os.ReadFile(paths.CaddyfilePath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, line := range tc.wantLines {
+				if !strings.Contains(string(caddyfile), line) {
+					t.Fatalf("Caddyfile = %q, want %q", caddyfile, line)
+				}
+			}
+			if strings.Contains(string(caddyfile), "http://:8080") != (tc.applied == nil) {
+				t.Fatalf("Caddyfile = %q, HTTP listener follows the wrong settings", caddyfile)
+			}
+			pageText, err := os.ReadFile(createManagedCaddyNotFoundSitePaths(paths.CaddyDirectoryPath).PagePath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(string(pageText), tc.wantLink) {
+				t.Fatalf("not-found page = %q, want %s", pageText, tc.wantLink)
 			}
 		})
 	}

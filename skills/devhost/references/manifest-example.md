@@ -4,8 +4,9 @@ Below is a complete, production-grade `devhost.toml` manifest illustrating every
 
 ```toml
 # Service changes and include-file additions/removals reload while devhost runs.
-# Invalid edits leave the stack running. Changes to name, killZombies, Caddy,
-# devtools, annotation, or worktree enablement require restarting devhost.
+# Invalid edits leave the stack running. Changes to name, killZombies, devtools,
+# annotation, or worktree enablement require restarting devhost. The shared Caddy
+# listeners belong to config.toml in the devhost config directory, not to a manifest.
 # `name` identifies the stack in logs, state, and injected metadata.
 name = "hello-stack"
 
@@ -30,20 +31,6 @@ app = ["web"]
 # All repository services share one saved choice across devhost restarts.
 # Repositories containing managed = false services cannot switch.
 # Missing checkouts and failed group launches remain stopped for explicit recovery.
-
-[caddy.global]
-# `http` also serves the same routed hosts and the shared fallback page on plain HTTP.
-# - `false` (default): serve through HTTPS only.
-# - `true`: also serve the same routes through HTTP on `httpPort`.
-http = false
-# `httpPort` selects the managed Caddy HTTP listener port (default: 80).
-httpPort = 80
-# `httpsPort` selects the managed Caddy HTTPS listener port (default: 443).
-httpsPort = 443
-# `bindHost` controls which interfaces Caddy's HTTP/HTTPS listeners bind (default: "0.0.0.0", all IPv4/IPv6 interfaces).
-bindHost = "0.0.0.0"
-# `adminAddress` controls which loopback port the managed Caddy admin API listens on (default: "127.0.0.1:20197").
-adminAddress = "127.0.0.1:20197"
 
 [devtools.editor]
 # `enabled` controls whether Alt + right-click component-source navigation is enabled (default: true).

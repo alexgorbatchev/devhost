@@ -122,7 +122,8 @@ func testRunStartsSelection(t *testing.T, name string) {
 	t.Setenv("DEVHOST_STATE_DIR", t.TempDir())
 
 	manifestDirectoryPath := t.TempDir()
-	manifestPath := writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath, caddytest.StartAdminServer(t))
+	useSharedCaddyAdmin(t, caddytest.StartAdminServer(t))
+	manifestPath := writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath)
 	tracePath := filepath.Join(manifestDirectoryPath, "idle-started")
 	idleService := strings.Join([]string{
 		"",

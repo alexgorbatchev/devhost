@@ -16,6 +16,7 @@ import { renderPromoComposition } from "./renderPromoComposition";
 import { runCommand } from "./runCommand";
 import { scaleTape } from "./scaleTape";
 import type { IGuideClipSource, IGuideRun } from "./types";
+import { applyPrivateDemoCaddyConfig } from "./applyPrivateDemoCaddyConfig";
 
 export async function recordGuideTerminal(
   repositoryPath: string,
@@ -40,10 +41,12 @@ export async function recordGuideTerminal(
   runtime.env.CURL_CA_BUNDLE = runtime.certificatePath;
   if (scene.daemonPort) runtime.env.DEVHOST_DEMO_DAEMON_PID = join(runtime.directoryPath, "daemon.pid");
   runtime.env.DEVHOST_DEMO_CONTAINER = `devhost-guide-${runtime.directoryPath.split("/").at(-1)}`;
-  const manifest = scene.manifest
-    .replaceAll("{{ env.DEVHOST_DEMO_HTTP_PORT }}", runtime.env.DEVHOST_DEMO_HTTP_PORT ?? "")
-    .replaceAll("{{ env.DEVHOST_DEMO_HTTPS_PORT }}", runtime.env.DEVHOST_DEMO_HTTPS_PORT ?? "");
-  await Bun.write(runtime.manifestPath, manifest);
+  const fillPorts = (text: string): string =>
+    text
+      .replaceAll("{{ env.DEVHOST_DEMO_HTTP_PORT }}", runtime.env.DEVHOST_DEMO_HTTP_PORT ?? "")
+      .replaceAll("{{ env.DEVHOST_DEMO_HTTPS_PORT }}", runtime.env.DEVHOST_DEMO_HTTPS_PORT ?? "");
+  await Bun.write(runtime.manifestPath, scene.manifest);
+  if (scene.isPrivateCaddy) await applyPrivateDemoCaddyConfig(runtime, (scene.caddyLines ?? []).map(fillPorts));
   for (const [path, text] of Object.entries(scene.files ?? {})) {
     await mkdir(dirname(join(runtime.directoryPath, path)), { recursive: true });
     await Bun.write(join(runtime.directoryPath, path), text);

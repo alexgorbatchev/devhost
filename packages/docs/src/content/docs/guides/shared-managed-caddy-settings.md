@@ -12,50 +12,55 @@ sidebar:
 </video>
 <!-- /guide-demo -->
 
-To also serve the same routed hosts through plain HTTP, add this top-level setting:
+Every stack on a machine routes through one managed Caddy, so its listeners belong to the machine, not to a project. Set them in the `[caddy]` table of the devhost config file, `config.toml`:
+
+- `$DEVHOST_CONFIG_DIR/config.toml` when `DEVHOST_CONFIG_DIR` is set
+- otherwise `$XDG_CONFIG_HOME/devhost/config.toml` when `XDG_CONFIG_HOME` is set
+- otherwise `~/.config/devhost/config.toml`, on every platform
+
+Without the file, every setting keeps its default. A project manifest with a `[caddy]` table is rejected, and the error names the config file.
+
+To also serve the routed hosts and the shared fallback page through plain HTTP:
 
 ```toml
-[caddy.global]
+[caddy]
 http = true
 ```
 
-This is a global managed-Caddy toggle, not an isolated per-stack listener. While stack registrations remain, HTTP is enabled if any active stack sets `caddy.global.http = true`. Removing the last true voter disables HTTP while false/default siblings remain; a supplied manifest's `http = true` does not override those active votes. With no active registrations, configuration uses the supplied manifest's HTTP setting.
-
-To move the shared managed Caddy listeners off the default privileged ports, set one or both listener ports:
+To move the listeners off the default privileged ports, set one or both listener ports:
 
 ```toml
-[caddy.global]
+[caddy]
 httpPort = 8080
 httpsPort = 4443
 ```
 
-Those are shared managed-Caddy settings too. Active stacks must agree on any non-default `caddy.global.httpPort` and `caddy.global.httpsPort` values because they all route through the same Caddy instance.
-
-Managed Caddy's shared listener bind host defaults to all IPv4 and IPv6 interfaces:
+To expose the managed Caddy front door beyond loopback, set the listener bind host to `0.0.0.0` or `::`; `127.0.0.1` (the default) and `::1` keep it on loopback:
 
 ```toml
-[caddy.global]
+[caddy]
 bindHost = "0.0.0.0"
 ```
 
-That setting affects only the managed Caddy HTTP/HTTPS listeners. HTTPS remains the default protocol (`http = false`). The admin API stays on `127.0.0.1`, and routed backends can keep their own `services.<name>.bindHost` on loopback behind Caddy. On Linux, choose `bindHost = "127.0.0.1"` to restrict public listeners to loopback. On macOS, this value retains wildcard listeners for rootless HTTPS; strict loopback-only privileged HTTPS needs a privileged launcher.
-Active stacks must agree on any non-default `caddy.global.bindHost` value because they share one managed Caddy instance.
+That widens only the HTTP/HTTPS listeners. The admin API keeps its own address, and routed backends can keep their own `services.<name>.bindHost` on loopback behind Caddy.
 
-To move the managed Caddy admin API off the default endpoint, set:
+To move the managed Caddy admin API off the default endpoint `127.0.0.1:20197`:
 
 ```toml
-[caddy.global]
+[caddy]
 adminAddress = "127.0.0.1:22000"
 ```
 
-Active stacks must agree on any non-default `caddy.global.adminAddress` value because they share one managed Caddy instance.
+Ports must be integers from `1` to `65535`, and `adminAddress` must be a non-empty address. Any other key in the file is rejected.
 
-## Stack retirement and an empty runtime
+## Changing the settings while stacks run
 
-Each stack captures the resolved shared admin address, bind host, listener ports, and HTTP setting after startup stale cleanup. Sparse/default route settings inherit that management binding; explicit non-default conflicts are still rejected. Route cleanup keeps the captured management endpoint and listener settings, removes the retiring host snippets, and preserves live siblings and their HTTP votes.
+`devhost caddy start` starts Caddy with the config file's settings, and every stack applies them when it starts. Every running stack watches the file. Saving it moves the shared Caddy to the new settings with one reload, sent to the admin address Caddy is listening on, so changing `adminAddress` works the same way as changing a port. Nothing restarts: services, routes, terminals, and agent sessions keep running, and every running stack prints its service URLs again with the new port and shows them in devtools.
 
-When the final registration is removed, cleanup retains that stack's captured settings, including HTTP, and leaves the shared Caddy process running. Stop Caddy manually with `devhost caddy stop --manifest ./devhost.toml`, using a manifest that matches its custom management settings.
+An invalid file, or settings Caddy rejects, such as a port another program holds, leave Caddy on the settings it runs. Each stack prints `shared Caddy settings rejected` with the reason, once for each different error, and applies the file at its next save.
 
-A new stack or explicit Caddy lifecycle command does not discover an empty custom runtime from its existing configuration. Once all registrations are gone, supply matching custom settings in the manifest used for `devhost start` and `devhost caddy start|stop|trust`. See [Managed Caddy and routing](../managed-caddy/) for the manual lifecycle.
+## When the last stack stops
 
-For same-host composition within one manifest, use distinct paths such as `/api/*` and `/admin/*`, or combine one root-mounted fallback service with more specific subpath services on the same hostname.
+Caddy keeps the settings it runs when the last route is removed, and runs until `devhost caddy stop`. The next `devhost caddy start` uses the config file's settings.
+
+For same-host composition within one manifest, use distinct paths such as `/api/*` and `/admin/*`, or combine one root-mounted fallback service with more specific subpath services on the same hostname. See [Managed Caddy and routing](../managed-caddy/) for the manual lifecycle.

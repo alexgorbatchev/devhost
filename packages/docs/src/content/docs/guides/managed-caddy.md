@@ -35,11 +35,7 @@ That command downloads the managed Caddy binary first when needed, then runs `su
 > [!IMPORTANT]
 > To get HTTPS working, Caddy uses a self-signed certificate that is not trusted by default.
 >
-> When devhost starts Caddy and the system does not trust Caddy's local certificate authority yet, devhost installs it into the system trust store once. That may ask for your password; the prompt starts with `caddy | `. `devhost caddy trust` does the same at any time, or reports that the authority is already trusted.
-
-Devhost starts Caddy with `devhost caddy start`, and `devhost serve` starts it when it is not running. Without a terminal, or under `AGENT=1`, devhost prints a warning naming `devhost caddy trust` instead of asking for a password. A declined or failed installation prints the same warning; Caddy keeps running, and browsers warn about its certificates until the authority is trusted. A stack that starts while the authority is untrusted prints that warning once.
-
-Caddy itself never installs the authority: the generated Caddyfile sets `skip_install_trust`, so route reloads never ask for a password.
+> `devhost caddy trust` prompts for your password and installs Caddy's CA into the system trust store.
 
 If you want to trust that same managed Caddy CA from another macOS machine without exposing the Caddy admin API, run this from the client machine:
 
@@ -57,17 +53,7 @@ Start the shared managed Caddy instance before running one or more stacks:
 devhost caddy start
 ```
 
-Pass the manifest explicitly to use its `caddy.global.adminAddress`, `bindHost`, `http`, `httpPort`, and `httpsPort` settings when generating the shared proxy configuration. This applies to `devhost caddy start`, `stop`, and `trust`:
-
-```bash
-devhost caddy start --manifest ./devhost.toml
-```
-
-Active stack registrations take precedence when generating the shared admin address, bind host, and listener ports. While registrations remain, plain HTTP is the OR of active stacks' `caddy.global.http` votes; a supplied manifest cannot enable HTTP over false/default active votes. Without active registrations, generated configuration uses the supplied manifest's settings, including HTTP.
-
-Lifecycle commands contact the admin endpoint selected by the supplied manifest, so use matching custom settings when managing a custom shared proxy. They do not discover an empty runtime's settings from its existing Caddyfile.
-
-You can also set `DEVHOST_MANIFEST=./devhost.toml` as the environment-backed equivalent of `--manifest` for `devhost start`, `devhost stop`, and `devhost caddy start|stop|trust`. If both are set for the same command, the CLI flag wins.
+Its admin address, bind host, plain HTTP, and listener ports come from the `[caddy]` table of the devhost config file, `config.toml`, which every stack on the machine shares. See [Shared managed Caddy settings](../shared-managed-caddy-settings/) for where the file lives and what it sets.
 
 Stop it when you are done with all stacks:
 
@@ -75,17 +61,11 @@ Stop it when you are done with all stacks:
 devhost caddy stop
 ```
 
-For a custom proxy, pass the matching manifest to stop it:
+`devhost caddy stop` and `devhost caddy trust` reach Caddy through the admin address it runs, recorded when devhost last started or reloaded it, so they work after `adminAddress` changes. A stopped Caddy starts again from the config file's settings.
 
-```bash
-devhost caddy stop --manifest ./devhost.toml
-```
+Managed Caddy lifecycle is shared and manual. `devhost` stack startup requires the managed Caddy admin API to already be available, and starting a stack applies the config file's settings to it.
 
-Managed Caddy lifecycle is shared and manual. `devhost` stack startup requires the managed Caddy admin API to already be available.
-
-Each stack captures the resolved shared management settings after startup stale cleanup. Sparse/default route settings inherit that binding; explicit non-default conflicts still fail. Stack shutdown removes its host snippets and keeps the captured management endpoint and listeners. Live sibling registrations remain authoritative for HTTP: removing the last true voter disables HTTP while false/default siblings remain.
-
-Final-registration cleanup retains the retiring stack's captured settings, including HTTP, and leaves Caddy running for manual stop. Once no registrations remain, a newly started stack must supply matching custom settings in its manifest; it does not automatically discover the empty custom runtime. See [Shared managed Caddy settings](../shared-managed-caddy-settings/) for the shared-vote rules.
+Stack shutdown removes its host snippets and leaves Caddy running with the settings it runs, even when no route remains.
 
 ## Hostname and DNS expectations
 
@@ -95,8 +75,6 @@ Your chosen hostnames must already resolve to this machine or the browser will n
 For custom domains, that means loopback resolution, such as exact `A` / `AAAA` records to `127.0.0.1` / `::1`, wildcard DNS records on your domain, or local host entries for exact names. `/etc/hosts` can be used, but it only handles exact hostnames.
 
 Good out-of-the-box choices are `localhost` and subdomains under `*.localhost`, such as `foo.localhost` and `api.foo.localhost`, because they work without additional DNS configuration.
-
-These names address the device running the browser. Use `https://foo.localhost` on the dev machine. For another device, configure a routed hostname that resolves to the dev machine's network address. Managed Caddy listens on all network interfaces by default; the backend service can keep listening on loopback. HTTPS clients also need to trust Caddy's CA.
 
 ## Multiple hostnames for one service
 
@@ -111,7 +89,7 @@ host = ["app.localhost", "alias.localhost"]
 
 Every hostname uses the same backend port and `path`, and must resolve to the machine running `devhost`. The array must contain at least one valid, unique hostname. Each hostname is claimed independently, so a conflict on any domain prevents startup and releases the claims already acquired.
 
-The first hostname supplies `DEVHOST_HOST`, `{{ services.web.host }}`, and the devtools service link. Startup logs show every routed URL. New native chat sessions resolve the service checkout from their routed hostname and path.
+The first hostname supplies `DEVHOST_HOST`, `{{ services.web.host }}`, and the devtools service link. Startup logs show every routed URL. All domains share the service's annotation queues for each annotation action.
 
 All domains follow the service's port on restart, including after an automatic port retry. Route updates publish together; a failed refresh restores every domain's previous route and leaves the service available for recovery in devtools.
 
@@ -132,22 +110,23 @@ The routing contract is strict:
 The generated Caddy config uses these defaults:
 
 - state dir: `DEVHOST_STATE_DIR`, else `XDG_STATE_HOME/devhost`, else `~/.local/state/devhost`
-- admin API: `127.0.0.1:20197` by default via `caddy.global.adminAddress`
-- HTTPS listener port: `443` by default via `caddy.global.httpsPort = 443`
-- listener binding: all IPv4 and IPv6 interfaces by default via `caddy.global.bindHost = "0.0.0.0"`, rendered as Caddy `default_bind 0.0.0.0 [::]`; the admin API and default backend listeners remain on loopback
-- plain HTTP: disabled by default; any active stack with `caddy.global.http = true` enables the same routed hosts and shared fallback page on HTTP for all active stacks
-- HTTP listener port: `80` by default via `caddy.global.httpPort = 80`
+- admin API: `127.0.0.1:20197` by default via `adminAddress` in the `[caddy]` table of `config.toml`
+- HTTPS listener port: `443` by default via `httpsPort`
+- listener binding on macOS: wildcard listeners, because macOS denies rootless loopback-specific binds on the default privileged HTTPS port
+- listener binding on non-macOS: loopback only by default via `bindHost = "127.0.0.1"`, rendered as Caddy `default_bind 127.0.0.1 [::1]`
+- plain HTTP: disabled by default; `http = true` serves the same routed hosts and shared fallback page on HTTP for every stack
+- HTTP listener port: `80` by default via `httpPort`
 - unmatched hostnames: a generated 404 page listing the active `devhost` hostnames as HTTPS links
 
 ## Platform caveats
 
 On macOS, the managed Caddy instance starts rootlessly by avoiding loopback-specific listener binding.
-The default wildcard binding supports access from other devices as well as the dev machine. On Linux, set `caddy.global.bindHost = "127.0.0.1"` for loopback-only access. On macOS, that value retains the wildcard-listener behavior for rootless HTTPS.
+That keeps startup unprivileged, but it also means the managed Caddy instance is not loopback-only on that platform.
 If you need strict loopback-only HTTPS on privileged ports, use a privileged launcher such as `launchd` socket activation; wildcard binding is not an equivalent substitute.
 
-On non-macOS platforms, opening HTTPS on the configured `caddy.global.httpsPort` still requires privileged-port setup outside `devhost` when that port is privileged.
-Enabling `caddy.global.http = true` adds the same requirement for `caddy.global.httpPort` when that port is privileged.
+On non-macOS platforms, opening HTTPS on the configured `httpsPort` still requires privileged-port setup outside `devhost` when that port is privileged.
+Enabling `http = true` adds the same requirement for `httpPort` when that port is privileged.
 On Linux, `devhost caddy privileged-ports` configures the managed Caddy binary for this with `setcap`.
 `devhost` does not configure `authbind` or firewall redirection for you.
 
-`caddy.global.bindHost`, `caddy.global.httpPort`, and `caddy.global.httpsPort` only change the public HTTP/HTTPS listeners. `caddy.global.adminAddress` configures the separate managed Caddy admin API endpoint.
+`bindHost`, `httpPort`, and `httpsPort` only change the public HTTP/HTTPS listeners. `adminAddress` configures the separate managed Caddy admin API endpoint.

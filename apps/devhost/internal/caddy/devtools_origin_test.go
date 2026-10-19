@@ -16,9 +16,17 @@ func TestAllowsDevtoolsURLUsesCurrentSharedRoutes(t *testing.T) {
 	root := ActivateRouteOptions{AppBindHost: "127.0.0.1", AppPort: 3000, Host: "project.localhost", Path: "/", ServiceName: "web", DevtoolsControlPort: owner.ControlPort}
 	rootFile := filepath.Join(paths.RegistrationsDirectoryPath, "root.json")
 	writeRegistration(t, rootFile, createRouteRegistrationText(root, owner.ManifestPath))
-	other := ActivateRouteOptions{AppBindHost: "127.0.0.1", AppPort: 3001, Host: "project.localhost", Path: "/api/*", ServiceName: "api", DevtoolsControlPort: 43002, HTTPEnabled: true, CaddyHTTPPort: 8080, CaddyHTTPSPort: 4443}
+	other := ActivateRouteOptions{AppBindHost: "127.0.0.1", AppPort: 3001, Host: "project.localhost", Path: "/api/*", ServiceName: "api", DevtoolsControlPort: 43002}
 	otherFile := filepath.Join(paths.RegistrationsDirectoryPath, "other.json")
 	writeRegistration(t, otherFile, createRouteRegistrationText(other, "/other/devhost.toml"))
+	if got, err := AllowsDevtoolsURL(paths, owner, "https://project.localhost/"); err != nil || got {
+		t.Fatalf("a Caddy with no applied settings serves no devtools: %v, %v", got, err)
+	}
+	running := DefaultManagedCaddyGlobalSettings()
+	running.HTTPEnabled, running.HTTPPort, running.HTTPSPort = true, 8080, 4443
+	if err := writeAppliedManagedCaddySettings(paths, running); err != nil {
+		t.Fatal(err)
+	}
 	for _, tt := range []struct {
 		text string
 		want bool
@@ -44,8 +52,12 @@ func TestAllowsDevtoolsURLUsesCurrentSharedRoutes(t *testing.T) {
 			}
 		})
 	}
-	// Withdrawal changes both path ownership and effective global ports immediately.
+	// Withdrawal changes path ownership, and applied listener settings change
+	// the ports, immediately.
 	if err := os.Remove(otherFile); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeAppliedManagedCaddySettings(paths, DefaultManagedCaddyGlobalSettings()); err != nil {
 		t.Fatal(err)
 	}
 	for _, tt := range []struct {

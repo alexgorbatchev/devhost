@@ -2,14 +2,14 @@ package caddy
 
 import (
 	"os"
-	"strings"
 	"testing"
 	"time"
 )
 
 func TestReplaceRoutesRemovesFinalHostAndRetainsCustomCaddyAddress(t *testing.T) {
 	withRouteMutationTestHooks(t, routeMutationTestHooks{now: time.Now(), processID: 4321})
-	paths := newManagedCaddyPaths(t)
+	running := ManagedCaddyGlobalSettings{AdminAddress: "127.0.0.1:22019", BindHost: "127.0.0.1", HTTPEnabled: true, HTTPPort: 28080, HTTPSPort: 28443}
+	paths := newManagedCaddyPathsWithSettings(t, running)
 	original := routeMutationRunManagedCaddyCommand
 	t.Cleanup(func() { routeMutationRunManagedCaddyCommand = original })
 	var addresses []string
@@ -17,14 +17,14 @@ func TestReplaceRoutesRemovesFinalHostAndRetainsCustomCaddyAddress(t *testing.T)
 		addresses = append(addresses, options.AdminAddress)
 		return CommandResult{Success: true}
 	}
-	routes := []ActivateRouteOptions{{AppBindHost: "127.0.0.1", AppPort: 3000, Host: "last.localhost", Path: "/", ServiceName: "web", CaddyAdminAddress: "127.0.0.1:22019", CaddyHTTPPort: 28080, CaddyHTTPSPort: 28443, HTTPEnabled: true}}
+	routes := []ActivateRouteOptions{{AppBindHost: "127.0.0.1", AppPort: 3000, Host: "last.localhost", Path: "/", ServiceName: "web"}}
 	if err := ActivateRoutes(routes, "/project/devhost.toml", paths.RoutesDirectoryPath); err != nil {
 		t.Fatal(err)
 	}
 	if err := ReplaceRoutes(routes, nil, "/project/devhost.toml", paths.RoutesDirectoryPath); err != nil {
 		t.Fatal(err)
 	}
-	if len(addresses) != 2 || addresses[1] != routes[0].CaddyAdminAddress {
+	if len(addresses) != 2 || addresses[1] != running.AdminAddress {
 		t.Fatalf("removal changed the Caddy listener: %#v", addresses)
 	}
 	if _, err := os.Stat(getHostRoutePath("last.localhost", paths.RoutesDirectoryPath)); !os.IsNotExist(err) {
@@ -68,10 +68,6 @@ func TestReplaceRoutesRollbackRetainsAnotherStacksConcurrentUpdate(t *testing.T)
 	contents, err := os.ReadFile(otherPath)
 	if err != nil || string(contents) != updated {
 		t.Fatalf("rollback overwrote another stack: %v", err)
-	}
-	snippet, err := os.ReadFile(getHostRoutePath(other.Host, paths.RoutesDirectoryPath))
-	if err != nil || !strings.Contains(string(snippet), "127.0.0.1:6000") {
-		t.Fatalf("rollback used stale foreign routes: %s, %v", snippet, err)
 	}
 }
 

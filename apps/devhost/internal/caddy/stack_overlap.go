@@ -7,35 +7,26 @@ import (
 	"path/filepath"
 	"slices"
 
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"golang.org/x/sys/unix"
 )
 
-// ManifestOverlapError identifies the live stack that owns a requested input.
-type ManifestOverlapError struct {
-	ManifestPath string
-	Owner        StackOwner
-	StackName    string
+// Hold the stack records lock only for record mutations, never service startup.
+func withStackRecordsLock(dir string, mutate func() error) error {
+	return withFileLock(dir+".lock", "stack records", mutate)
 }
 
-func (e *ManifestOverlapError) Error() string {
-	return e.Message("devhost stop --manifest " + cliout.ShellPath(e.Owner.ManifestPath))
-}
-
-// Message formats the conflict with a stop command resolved by the CLI.
-func (e *ManifestOverlapError) Message(stopCommand string) string {
-	return fmt.Sprintf("devhost is already running with manifest %s (PID %d, stack %s, root %s); stop that stack with %s before starting this one", cliout.DisplayPath(e.ManifestPath), e.Owner.PID, e.StackName, cliout.DisplayPath(e.Owner.ManifestPath), stopCommand)
-}
-
+// withFileLock runs mutate while this process holds an exclusive lock on
+// lockPath, which serializes it with every devhost process locking that path.
 // The lock file stays in place: unlinking it could let concurrent openers lock
-// different inodes. Hold it only for record mutations, never service startup.
-func withStackRecordsLock(dir string, mutate func() error) (err error) {
-	if err := os.MkdirAll(filepath.Dir(dir), 0o755); err != nil {
-		return fmt.Errorf("create stack state directory: %w", err)
+// different inodes. A lock is per open file, so mutate must not take the same
+// lock again.
+func withFileLock(lockPath string, description string, mutate func() error) (err error) {
+	if err := os.MkdirAll(filepath.Dir(lockPath), 0o755); err != nil {
+		return fmt.Errorf("create %s lock directory: %w", description, err)
 	}
-	f, err := os.OpenFile(dir+".lock", os.O_CREATE|os.O_RDWR, 0o600)
+	f, err := os.OpenFile(lockPath, os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {
-		return fmt.Errorf("open stack records lock: %w", err)
+		return fmt.Errorf("open %s lock: %w", description, err)
 	}
 	defer func() { err = errors.Join(err, f.Close()) }()
 	for {
@@ -44,7 +35,7 @@ func withStackRecordsLock(dir string, mutate func() error) (err error) {
 			continue
 		}
 		if err != nil {
-			return fmt.Errorf("lock stack records: %w", err)
+			return fmt.Errorf("lock %s: %w", description, err)
 		}
 		break
 	}
@@ -99,7 +90,7 @@ func checkManifestOverlap(dir string, candidate stackRecord) error {
 		}
 		for _, file := range candidate.ManifestFiles {
 			if slices.Contains(files, file) {
-				return &ManifestOverlapError{ManifestPath: file, StackName: owner.StackName, Owner: StackOwner{PID: owner.OwnerPID, ManifestPath: owner.ManifestPath}}
+				return fmt.Errorf("devhost is already running with manifest %s (PID %d, stack %s, root %s); stop that stack with devhost stop --manifest %q before starting this one", file, owner.OwnerPID, owner.StackName, owner.ManifestPath, owner.ManifestPath)
 			}
 		}
 	}
