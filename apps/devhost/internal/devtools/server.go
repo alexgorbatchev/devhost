@@ -75,7 +75,6 @@ type StoppedService struct {
 }
 
 type HealthResponse struct {
-	Routing  *RoutingConfig  `json:"routing,omitempty"`
 	Services []ServiceHealth `json:"services"`
 	// StoppedServices lists the services left out by a run that named the ones to start.
 	StoppedServices []StoppedService     `json:"stoppedServices,omitempty"`
@@ -122,13 +121,14 @@ type StartControlServerOptions struct {
 }
 
 type ControlServer struct {
+	// settings are what a hot reload changes; mu guards them with configJSON.
+	settings                ControlSettings
 	chat                    *chatStore
-	nativeBrowser           manifest.DevtoolsBrowserConfig
 	nativeBrowserInstanceID string
+	homeDirectoryPath       string
 	allowsNativeBrowserURL  func(int, string) (bool, error)
 	listener                net.Listener
 	server                  *http.Server
-	featureToggles          FeatureToggles
 	websocketWriteTimeout   time.Duration
 	restartService          func([]string) error
 	restartStack            func() error
@@ -136,11 +136,8 @@ type ControlServer struct {
 	switchWorktree          func(string, string) error
 	refreshWorktrees        func() error
 	getToolContext          func(string) (ToolContext, error)
-	routedServices          []RoutedServiceIdentity
-	primaryService          string
 	getHealth               func() (HealthResponse, error)
 	projectRootPath         string
-	stackName               string
 	tracker                 *ActivityTracker
 
 	devSource  *DevSourceCheckout
@@ -160,6 +157,9 @@ type ControlServer struct {
 	lastPublishedHealth    string
 	lastPublishedResources string
 	resourceSampler        *hostusage.Sampler
+	cancelResourceSampler  context.CancelFunc
+	resourceReaders        hostusage.Readers
+	onResourceFailure      func(readout string, err error)
 	resourceClients        map[*websocketClient]struct{}
 	nextLogEntryID         int
 	retainedLogEntries     []ServiceLogEntry
@@ -240,6 +240,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		return nil, fmt.Errorf("start devtools control listener: %w", err)
 	}
 
+	settings := options.settings().normalized()
 	home, err := os.UserHomeDir()
 	if err != nil {
 		// Path abbreviation is optional; keep absolute paths when no home is available.
@@ -250,42 +251,18 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		_ = listener.Close() // The identity error is authoritative; no listener is retained.
 		return nil, fmt.Errorf("create native browser instance identity: %w", err)
 	}
-	config := injectedConfig{
-		ChatEnabled:             options.FeatureToggles.ChatEnabled,
-		NativeBrowserConfigured: options.NativeBrowser.Endpoint != "",
-		NativeBrowserInstanceID: instanceID,
-		AnnotationEnabled:       options.FeatureToggles.AnnotationEnabled,
-		ComponentEditor:         options.ComponentEditor,
-		HomeDirectoryPath:       home,
-		EditorEnabled:           options.FeatureToggles.EditorEnabled,
-		ExternalToolbarsEnabled: options.FeatureToggles.ExternalToolbarsEnabled,
-		MinimapEnabled:          options.FeatureToggles.MinimapEnabled,
-		Position:                options.Position,
-		ProjectRootPath:         options.ProjectRootPath,
-		RoutedServices:          append([]RoutedServiceIdentity{}, options.RoutedServices...),
-		StackName:               options.StackName,
-		StatusEnabled:           options.FeatureToggles.StatusEnabled,
-		ResourcesEnabled:        options.ResourceUsage.isEnabled(),
-		RestartServicesShortcut: options.RestartServicesShortcut,
-		PrimaryService:          options.PrimaryService,
-	}
-	configJSON, err := json.Marshal(config)
-	if err != nil {
-		_ = listener.Close()
-		return nil, fmt.Errorf("marshal devtools config: %w", err)
-	}
-
 	ctx, cancel := context.WithCancel(context.Background())
 	controlServer := &ControlServer{
-		nativeBrowser:           options.NativeBrowser,
+		settings:                settings,
 		nativeBrowserInstanceID: instanceID,
+		homeDirectoryPath:       home,
 		allowsNativeBrowserURL:  options.AllowsNativeBrowserURL,
 		ctx:                     ctx,
 		cancel:                  cancel,
 		devSource:               options.DevSource,
 		onLog:                   options.OnLog,
-		configJSON:              configJSON,
-		featureToggles:          options.FeatureToggles,
+		resourceReaders:         options.ResourceUsage.Readers,
+		onResourceFailure:       options.ResourceUsage.OnFailure,
 		getHealth:               options.GetHealthResponse,
 		healthClients:           map[*websocketClient]struct{}{},
 		websocketWriteTimeout:   options.WebsocketWriteTimeout,
@@ -301,9 +278,6 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		switchWorktree:          options.SwitchWorktree,
 		refreshWorktrees:        options.RefreshWorktrees,
 		getToolContext:          options.GetToolContext,
-		routedServices:          append([]RoutedServiceIdentity{}, options.RoutedServices...),
-		primaryService:          options.PrimaryService,
-		stackName:               options.StackName,
 		tracker:                 NewActivityTracker(),
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(*http.Request) bool {
@@ -314,17 +288,21 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	if controlServer.websocketWriteTimeout <= 0 {
 		controlServer.websocketWriteTimeout = defaultWebsocketWriteTimeout
 	}
+	configJSON, err := controlServer.renderInjectedConfig(settings)
+	if err != nil {
+		_ = listener.Close()
+		return nil, err
+	}
+	controlServer.configJSON = configJSON
 	mux := http.NewServeMux()
 	if controlServer.devSource != nil {
 		mux.HandleFunc(pagePreviewPath, controlServer.handlePagePreview)
 	}
 	controlServer.chat = newChatStore(controlServer.ctx)
-	if options.FeatureToggles.ChatEnabled {
-		mux.HandleFunc(chatHarnessesPath, controlServer.handleChatHarnesses)
-		mux.HandleFunc(chatSessionsPath, controlServer.handleChatSessions)
-		mux.HandleFunc(chatSessionsPath+"/", controlServer.handleChatSessions)
-		mux.HandleFunc(chatWebsocketPath, controlServer.handleChatWebsocket)
-	}
+	mux.HandleFunc(chatHarnessesPath, controlServer.whileChatEnabled(controlServer.handleChatHarnesses))
+	mux.HandleFunc(chatSessionsPath, controlServer.whileChatEnabled(controlServer.handleChatSessions))
+	mux.HandleFunc(chatSessionsPath+"/", controlServer.whileChatEnabled(controlServer.handleChatSessions))
+	mux.HandleFunc(chatWebsocketPath, controlServer.whileChatEnabled(controlServer.handleChatWebsocket))
 	mux.HandleFunc(nativeBrowserWebsocketPath, controlServer.handleNativeBrowserWebsocket)
 	mux.HandleFunc(injectedScriptPath, controlServer.handleInjectedScript)
 	mux.HandleFunc(injectedConfigPath, controlServer.handleInjectedConfig)
@@ -340,9 +318,9 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	mux.HandleFunc(startServicePath, controlServer.handleStartService)
 	mux.HandleFunc(worktreesPath, controlServer.handleWorktrees)
 	mux.HandleFunc(healthWebsocketPath, controlServer.handleHealthWebsocket)
-	if options.ResourceUsage.isEnabled() {
-		mux.HandleFunc(resourcesWebsocketPath, controlServer.handleResourcesWebsocket)
-		controlServer.startResourceSampler(options.ResourceUsage)
+	mux.HandleFunc(resourcesWebsocketPath, controlServer.handleResourcesWebsocket)
+	if settings.resourcesEnabled() {
+		controlServer.startResourceSampler(settings.ResourceIntervals)
 	}
 	mux.HandleFunc(logsWebsocketPath, controlServer.handleLogsWebsocket)
 	controlServer.server = &http.Server{Handler: controlServer.trackerMiddleware(mux)}
@@ -718,7 +696,7 @@ func (s *ControlServer) handleReactHighlightCursor(writer http.ResponseWriter, r
 		Kind:        "cursor",
 		Locator:     payload.Locator,
 		ProjectRoot: s.projectRootPath,
-		StackName:   s.stackName,
+		StackName:   s.currentSettings().StackName,
 		Timestamp:   time.Now().UnixMilli(),
 	})
 	if err != nil {
@@ -756,12 +734,24 @@ func (s *ControlServer) resolveHealthMessage() (string, error) {
 		return "", err
 	}
 
-	message, err := json.Marshal(healthResponse)
+	// Pages read their configuration from each health message, so an edit
+	// reaches them without reloading the page.
+	s.mu.Lock()
+	config := s.configJSON
+	s.mu.Unlock()
+	message, err := json.Marshal(healthMessage{HealthResponse: healthResponse, Config: config})
 	if err != nil {
 		return "", err
 	}
 
 	return string(message), nil
+}
+
+// healthMessage is a health response with the configuration config.json
+// serves, as the page applies it.
+type healthMessage struct {
+	HealthResponse
+	Config json.RawMessage `json:"config"`
 }
 
 func (s *ControlServer) upgrade(writer http.ResponseWriter, request *http.Request) (*websocketClient, error) {

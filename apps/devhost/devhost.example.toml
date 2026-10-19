@@ -4,8 +4,8 @@
 # Rename it to `devhost.toml` in your project root when you actually want to use it.
 # Saving this file or its includes hot-reloads service configuration. Invalid edits
 # leave the current stack running. Include glob additions and removals are observed.
-# Changes to killZombies, devtools or worktrees.enabled
-# require restarting devhost; an edit containing those changes is rejected in full.
+# Every setting reloads, including name, killZombies, devtools, and worktrees.enabled;
+# devtools edits restart no service.
 # Single-service restart keeps its assigned automatic port. If that port is occupied,
 # use "Restart Stack" in Services or recovery to restart all managed
 # services with fresh auto ports and rebuilt port references. Fixed ports are retained.
@@ -117,7 +117,8 @@ app = ["web"]
 # Repositories containing managed = false services cannot switch.
 # Keep configured cwd values in one checkout per repository. The target manifest uses
 # the same repository-relative path (or filename at the root for an outside manifest).
-# Devtools, worktree enablement, and killZombies settings must match.
+# The stack takes the selected checkout's manifest settings, including its name.
+# Turning worktrees off while another checkout runs switches back to the root checkout.
 
 [devtools]
 # `idleTimeout` sets the automatic idle shutdown duration (e.g. 30s, 1m, 1h).

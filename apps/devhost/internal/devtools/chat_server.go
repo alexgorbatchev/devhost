@@ -19,6 +19,18 @@ func chatOrigin(w http.ResponseWriter, r *http.Request, required bool) bool {
 	}
 	return true
 }
+
+// whileChatEnabled answers 404 while chat is off, so the routes follow the toggle across hot reloads. Running
+// sessions keep running; a page reaches them again once chat is back on.
+func (s *ControlServer) whileChatEnabled(handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !s.currentSettings().FeatureToggles.ChatEnabled {
+			http.NotFound(w, r)
+			return
+		}
+		handler(w, r)
+	}
+}
 func chatJSON(w http.ResponseWriter, value any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")

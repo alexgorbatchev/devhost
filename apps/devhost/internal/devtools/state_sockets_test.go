@@ -6,7 +6,28 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
+
+// readHealthWithoutConfig reads a health message, checks that it carries the
+// page configuration, and returns the rest of it.
+func readHealthWithoutConfig(t *testing.T, socket *websocket.Conn) string {
+	t.Helper()
+	var message map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(readWebsocketText(t, socket)), &message); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := message["config"]; !ok {
+		t.Fatalf("health message %v carries no configuration", message)
+	}
+	delete(message, "config")
+	encoded, err := json.Marshal(message)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(encoded)
+}
 
 // A client that attaches reads the stack's health afresh. Clients attached earlier must receive that health too:
 // the next publish compares equal to what the newcomer was sent, so it would never reach them.
@@ -37,19 +58,19 @@ func TestControlServerSendsHealthReadForNewClientToEarlierClients(t *testing.T) 
 
 	earlierSocket := mustDialWebsocket(t, websocketURL(controlServer.Port(), healthWebsocketPath))
 	defer earlierSocket.Close()
-	if message := readWebsocketText(t, earlierSocket); message != healthy {
+	if message := readHealthWithoutConfig(t, earlierSocket); message != healthy {
 		t.Fatalf("earlier client's first health = %q, want %q", message, healthy)
 	}
 
 	isHealthy.Store(false)
 	laterSocket := mustDialWebsocket(t, websocketURL(controlServer.Port(), healthWebsocketPath))
 	defer laterSocket.Close()
-	if message := readWebsocketText(t, laterSocket); message != unhealthy {
+	if message := readHealthWithoutConfig(t, laterSocket); message != unhealthy {
 		t.Fatalf("later client's first health = %q, want %q", message, unhealthy)
 	}
 
 	_ = earlierSocket.SetReadDeadline(time.Now().Add(5 * time.Second))
-	if message := readWebsocketText(t, earlierSocket); message != unhealthy {
+	if message := readHealthWithoutConfig(t, earlierSocket); message != unhealthy {
 		t.Fatalf("earlier client's next health = %q, want %q", message, unhealthy)
 	}
 }

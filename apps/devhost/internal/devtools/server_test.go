@@ -169,14 +169,14 @@ func TestControlServerHealthAndLogsWebsockets(t *testing.T) {
 
 	healthSocket := mustDialWebsocket(t, websocketURL(controlServer.Port(), healthWebsocketPath))
 	defer healthSocket.Close()
-	if message := readWebsocketText(t, healthSocket); message != `{"services":[{"managed":true,"name":"web","status":true}]}` {
+	if message := readHealthWithoutConfig(t, healthSocket); message != `{"services":[{"managed":true,"name":"web","status":true}]}` {
 		t.Fatalf("health snapshot = %q", message)
 	}
 	healthResponse = HealthResponse{Services: []ServiceHealth{{Managed: false, Name: "web", Status: false}}}
 	if err := controlServer.PublishHealthResponse(); err != nil {
 		t.Fatalf("PublishHealthResponse(next) error = %v", err)
 	}
-	if message := readWebsocketText(t, healthSocket); message != `{"services":[{"managed":false,"name":"web","status":false}]}` {
+	if message := readHealthWithoutConfig(t, healthSocket); message != `{"services":[{"managed":false,"name":"web","status":false}]}` {
 		t.Fatalf("updated health snapshot = %q", message)
 	}
 	if err := controlServer.PublishHealthResponse(); err != nil {

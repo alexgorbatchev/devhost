@@ -44,7 +44,7 @@ Groups defined under `[groups]` merge alongside services. Each app can own its g
 
 ## Changes while the stack is running
 
-Saving the root manifest or an included manifest reloads the merged service configuration. Adding or deleting files matching an `includes` glob adds or removes their services without restarting devhost. Devhost validates the whole candidate before changing running services; rejected edits leave the accepted configuration in place. Changing devtools configuration, including chat and page-selection enablement, requires stopping and restarting devhost.
+Saving the root manifest or an included manifest reloads the merged service configuration. Adding or deleting files matching an `includes` glob adds or removes their services without restarting devhost. Devhost validates the whole candidate before changing running services; rejected edits leave the accepted configuration in place. Devtools settings reload too, including chat and page-selection enablement, from an included file as well as the root manifest.
 
 Affected services, their dependents, and affected repository groups restart together. Compatible automatic ports and selected checkouts are retained. Selecting a worktree loads that checkout's root manifest and includes, restarts the whole managed stack, and watches those files for subsequent edits. See [Stack lifecycle](./stack-lifecycle/) for reload boundaries and restoration after launch or routing failures.
 

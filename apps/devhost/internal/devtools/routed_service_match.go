@@ -1,38 +1,12 @@
 package devtools
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/url"
-	"slices"
 	"strings"
 )
 
-type RoutingConfig struct {
-	RoutedServices []RoutedServiceIdentity `json:"routedServices"`
-	PrimaryService string                  `json:"primaryService"`
-}
-
-// UpdateRouting preserves the control listener, connected clients, and sessions.
-func (s *ControlServer) UpdateRouting(routes []RoutedServiceIdentity, primary string) error {
-	s.mu.Lock()
-	var config injectedConfig
-	if err := json.Unmarshal(s.configJSON, &config); err != nil {
-		s.mu.Unlock()
-		return fmt.Errorf("read injected routing configuration: %w", err)
-	}
-	config.RoutedServices, config.PrimaryService = slices.Clone(routes), primary
-	encoded, err := json.Marshal(config)
-	if err != nil {
-		s.mu.Unlock()
-		return fmt.Errorf("encode injected routing configuration: %w", err)
-	}
-	s.configJSON = encoded
-	s.routedServices, s.primaryService = slices.Clone(routes), primary
-	s.mu.Unlock()
-	return nil
-}
-
+// resolveRoutedServiceForURL finds the service whose route serves urlText: the longest matching path on its host,
+// with a more specific exact path winning over a prefix of the same length.
 func resolveRoutedServiceForURL(routedServices []RoutedServiceIdentity, urlText string) *RoutedServiceIdentity {
 	parsedURL, err := url.Parse(urlText)
 	if err != nil || parsedURL.Hostname() == "" {

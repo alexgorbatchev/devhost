@@ -105,7 +105,7 @@ func serveRecoveryControl(w http.ResponseWriter, r *http.Request, options StartD
 		state := options.GetRecovery()
 		if r.Header.Get(recoveryHeader) == "probe" {
 			if state.Phase != "ready" {
-				serveRecoveryPage(w, r, state, http.StatusServiceUnavailable, !options.DisableInjection)
+				serveRecoveryPage(w, r, state, http.StatusServiceUnavailable, options.shouldInject())
 				return
 			}
 			proxy.ServeHTTP(w, r)

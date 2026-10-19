@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestUpdateRoutingChangesToolLaunchSelection(t *testing.T) {
+func TestUpdateSettingsRoutingChangesToolLaunchSelection(t *testing.T) {
 	t.Parallel()
 	var selected string
 	server, err := StartControlServer(StartControlServerOptions{
@@ -26,7 +26,7 @@ func TestUpdateRoutingChangesToolLaunchSelection(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	if err := server.UpdateRouting([]RoutedServiceIdentity{{Host: "api.localhost", Path: "/", ServiceName: "api"}}, "web"); err != nil {
+	if err := updateTestRouting(server, []RoutedServiceIdentity{{Host: "api.localhost", Path: "/", ServiceName: "api"}}, "web"); err != nil {
 		t.Fatal(err)
 	}
 	for _, tc := range []struct{ url, want string }{{"https://api.localhost/items", "api"}, {"https://other.localhost/", "web"}} {
@@ -37,6 +37,13 @@ func TestUpdateRoutingChangesToolLaunchSelection(t *testing.T) {
 			t.Fatalf("tool launch selected %s; want %s", selected, tc.want)
 		}
 	}
+}
+
+// updateTestRouting changes only the routing, as a reload that moves routes does.
+func updateTestRouting(server *ControlServer, routes []RoutedServiceIdentity, primary string) error {
+	settings := server.currentSettings()
+	settings.RoutedServices, settings.PrimaryService = routes, primary
+	return server.UpdateSettings(settings)
 }
 
 func readRoutingInjectedConfig(t *testing.T, server *ControlServer) injectedConfig {
@@ -56,17 +63,17 @@ func readRoutingInjectedConfig(t *testing.T, server *ControlServer) injectedConf
 	return config
 }
 
-func TestUpdateRoutingPublishesConsistentConfigWhileServing(t *testing.T) {
+func TestUpdateSettingsRoutingPublishesConsistentConfigWhileServing(t *testing.T) {
 	t.Parallel()
 	server := startAssetTestServer(t)
-	if err := server.UpdateRouting([]RoutedServiceIdentity{{Host: "app.localhost", Path: "/", ServiceName: "initial"}}, "initial"); err != nil {
+	if err := updateTestRouting(server, []RoutedServiceIdentity{{Host: "app.localhost", Path: "/", ServiceName: "initial"}}, "initial"); err != nil {
 		t.Fatal(err)
 	}
 	done := make(chan error, 1)
 	go func() {
 		for i := range 1000 {
 			name := fmt.Sprintf("service-%d", i)
-			if err := server.UpdateRouting([]RoutedServiceIdentity{{Host: "app.localhost", Path: "/", ServiceName: name}}, name); err != nil {
+			if err := updateTestRouting(server, []RoutedServiceIdentity{{Host: "app.localhost", Path: "/", ServiceName: name}}, name); err != nil {
 				done <- err
 				return
 			}

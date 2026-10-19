@@ -50,7 +50,7 @@ The separate **Worktrees** toolbar button shows the current branch beside its fo
 
 Use **Find worktree** at the bottom of the popout to fuzzy-search branch names, checkout paths, or detached commit IDs. Matches are ranked by relevance; clear the search to show every checkout again. Filtering keeps your selection and does not restart services. The adjacent **Refresh** button reloads the checkout list. Checkout paths stay on one line and show an ellipsis on the left when space is limited, keeping the end visible; hover over a path to read it in full. Choose a checkout, then press **Switch and restart stack** to apply it.
 
-Unavailable checkouts remain readable but cannot be selected. Click their **unavailable** badge to open the detailed reason in a popover. A missing or invalid checkout manifest or service directory marks that checkout unavailable while service status continues updating. When a configured checkout has no local manifest, it uses its owning stack's manifest, including one outside the service repository; returning to that checkout retains the association. An existing checkout-local manifest takes precedence. New target checkouts use the same manifest path relative to their repository, or its filename at the checkout root when the owning manifest is outside that repository. Availability checks that manifest and its service directories, so a different app layout is supported. A successful switch reloads the current browser URL. If that app no longer has a route, the proxy's 404 page lists available routes. Invalid configurations leave the current stack running; launch failures attempt to restore it. The stack takes the target manifest's name; its devtools, worktree enablement, and zombie-management settings must match the running instance.
+Unavailable checkouts remain readable but cannot be selected. Click their **unavailable** badge to open the detailed reason in a popover. A missing or invalid checkout manifest or service directory marks that checkout unavailable while service status continues updating. When a configured checkout has no local manifest, it uses its owning stack's manifest, including one outside the service repository; returning to that checkout retains the association. An existing checkout-local manifest takes precedence. New target checkouts use the same manifest path relative to their repository, or its filename at the checkout root when the owning manifest is outside that repository. Availability checks that manifest and its service directories, so a different app layout is supported. A successful switch reloads the current browser URL. If that app no longer has a route, the proxy's 404 page lists available routes. Invalid configurations leave the current stack running; launch failures attempt to restore it. The stack takes the target manifest's settings, including its name.
 
 The **Worktrees** button displays each selected branch; detached checkouts show their abbreviated commit ID. Its fork icon turns red when a selected checkout is unavailable or a repository has an error or blocked operation. Open the panel for details; the toolbar omits unavailable-checkout text. Unavailable alternatives alone leave the icon unchanged. Its tooltip identifies selected non-default branches. Devhost reads the default branch from Git's locally recorded remote `HEAD` references, without contacting a remote or assuming a branch name. Submodule repositories use their actual checkout directories, including when Git lists the main checkout as a metadata directory. The button remains visible for default, detached, and unknown branches whenever repositories are available. Opening the picker or pressing **Refresh** also refreshes this information.
 
@@ -121,7 +121,7 @@ pollInterval = "10m"
 - `pollInterval` is a duration string such as `"500ms"`, `"5s"`, or `"1m"`, of at least `"250ms"`.
 - A readout uses its own `pollInterval` when it has one, then the shared `[devtools.resources].pollInterval`, then its default. A shared interval therefore also replaces the one-minute default for disk.
 - `cpu`, `memory`, and `disk` each take `enabled` and `pollInterval`.
-- Changing these keys requires restarting devhost.
+- Saving changes to these keys starts, stops, or retimes the readouts without restarting devhost.
 
 The readouts appear in the toolbar that the other devtools features bring. With chat, annotations, editor, external toolbars, minimap, and status features all disabled, nothing is injected and no readout is shown.
 
@@ -206,6 +206,8 @@ For example, to configure a 1-hour idle timeout directly in your manifest:
 [devtools]
 idleTimeout = "1h"
 ```
+
+Saving a new `devtools.idleTimeout` while the stack runs applies it without a restart, unless the flag or the environment variable sets the timeout: devhost logs `Idle timeout enabled: <duration>` or `Idle timeout disabled.`, and the idle period starts over.
 
 ### How activity is tracked
 
