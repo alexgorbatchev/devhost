@@ -155,6 +155,31 @@ func (f *reloadStackFixture) write(t *testing.T, body string) {
 	}
 }
 
+// readInjectedConfig reads the configuration the stack's pages load.
+func readInjectedConfig(t *testing.T, f *reloadStackFixture) map[string]json.RawMessage {
+	t.Helper()
+	response, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/__devhost__/config.json", f.controlPort))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	var config map[string]json.RawMessage
+	if err := json.NewDecoder(response.Body).Decode(&config); err != nil {
+		t.Fatal(err)
+	}
+	return config
+}
+
+// readInjectedRoutes reads the routes the stack's pages know.
+func readInjectedRoutes(t *testing.T, f *reloadStackFixture) []devtools.RoutedServiceIdentity {
+	t.Helper()
+	var routes []devtools.RoutedServiceIdentity
+	if err := json.Unmarshal(readInjectedConfig(t, f)["routedServices"], &routes); err != nil {
+		t.Fatal(err)
+	}
+	return routes
+}
+
 func reloadServiceBody(name, value, host string) string {
 	return fmt.Sprintf("\n[services.%s]\ncommand = [%q, \"-test.run=TestReloadServiceHelperProcess\", \"--\"]\nport = \"auto\"\nhost = %q\n[services.%s.env]\nDEVHOST_RELOAD_HELPER = \"1\"\nVALUE = %q\n", name, os.Args[0], host, name, value)
 }
@@ -201,7 +226,7 @@ func TestManifestReloadRenamesTheRunningStack(t *testing.T) {
 	}
 }
 
-func TestManifestReloadRejectsInvalidAndRestartRequiredEdits(t *testing.T) {
+func TestManifestReloadRejectsInvalidEditsAndAppliesDevtoolsEdits(t *testing.T) {
 	body := reloadServiceBody("web", "original", "reload.localhost")
 	f := startReloadStack(t, body)
 	route := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "reload.localhost_web_2f.json"))
@@ -211,13 +236,18 @@ func TestManifestReloadRejectsInvalidAndRestartRequiredEdits(t *testing.T) {
 	if reloadPID(t, route.AppPort) != pid {
 		t.Fatal("invalid edit restarted the service")
 	}
-	f.write(t, "\n[devtools.shortcuts]\nrestartServices = \"ctrl+r\"\n"+body)
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("changing devtools requires restarting devhost") })
+	// Devtools settings apply without restarting services.
+	f.write(t, "\n[devtools.shortcuts]\nrestartServices = \"ctrl+r\"\n[devtools.minimap]\nenabled = false\n[devtools.chat]\nenabled = false\n"+body)
+	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reloaded") })
 	if reloadPID(t, route.AppPort) != pid {
-		t.Fatal("unsupported edit partially applied")
+		t.Fatal("a devtools edit restarted the service")
+	}
+	config := readInjectedConfig(t, f)
+	if string(config["restartServicesShortcut"]) != `"ctrl+r"` || string(config["minimapEnabled"]) != "false" || string(config["chatEnabled"]) != "false" {
+		t.Fatalf("pages were not given the edited settings: %s, %s, %s", config["restartServicesShortcut"], config["minimapEnabled"], config["chatEnabled"])
 	}
 	f.write(t, reloadServiceBody("web", "repaired", "reload.localhost"))
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reloaded") })
+	waitForCondition(t, 5*time.Second, func() bool { return f.logs.count("configuration reloaded") == 2 })
 	assertRestartResponse(t, serverURL(route.AppPort, "/"), "repaired")
 }
 
@@ -282,8 +312,8 @@ func TestManifestReloadReconcilesIncludesServicesRoutesAndClaims(t *testing.T) {
 	}
 	assertRestartResponse(t, serverURL(original.DocumentInjectionPort, "/"), "moved")
 	health, err := f.control.GetHealthResponse()
-	if err != nil || len(health.Services) != 1 || health.Routing.RoutedServices[0].Host != "new.localhost" {
-		t.Fatalf("health retained removed services or routes: %#v, %v", health, err)
+	if routes := readInjectedRoutes(t, f); err != nil || len(health.Services) != 1 || len(routes) != 1 || routes[0].Host != "new.localhost" {
+		t.Fatalf("health retained removed services or routes: %#v, %#v, %v", health, routes, err)
 	}
 }
 
@@ -398,6 +428,11 @@ func TestReloadServiceHelperProcess(t *testing.T) {
 			}
 			if r.URL.Path == "/env" {
 				_ = json.NewEncoder(w).Encode(map[string]string{"WEB": os.Getenv("DEVHOST_PORT_WEB"), "REFERENCE": os.Getenv("REFERENCE")})
+				return
+			}
+			if r.URL.Path == "/page" {
+				w.Header().Set("content-type", "text/html; charset=utf-8")
+				_, _ = io.WriteString(w, "<html><body>"+os.Getenv("VALUE")+"</body></html>")
 				return
 			}
 			if r.URL.Path == "/cwd" {

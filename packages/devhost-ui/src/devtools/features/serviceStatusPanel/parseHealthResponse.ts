@@ -5,9 +5,7 @@ import type {
   ServiceHealth,
   IStoppedService,
   IWorktreeRepository,
-  IRoutingConfig,
 } from "../../shared/types";
-import type { IRoutedServiceIdentity } from "../../shared/routedServices";
 
 export function parseHealthResponse(message: string): HealthResponse | null {
   try {
@@ -22,30 +20,14 @@ function isHealthResponse(value: unknown): value is HealthResponse {
   if (typeof value !== "object" || value === null) return false;
   const services: unknown = Reflect.get(value, "services");
   const repositories: unknown = Reflect.get(value, "repositories");
-  const routing: unknown = Reflect.get(value, "routing");
+  const config: unknown = Reflect.get(value, "config");
   const stoppedServices: unknown = Reflect.get(value, "stoppedServices");
   return (
     Array.isArray(services) &&
     services.every(isServiceHealth) &&
     (stoppedServices === undefined || (Array.isArray(stoppedServices) && stoppedServices.every(isStoppedService))) &&
-    (routing === undefined || isRoutingConfig(routing)) &&
+    (config === undefined || (typeof config === "object" && config !== null && !Array.isArray(config))) &&
     (repositories === undefined || (Array.isArray(repositories) && repositories.every(isRepository)))
-  );
-}
-
-function isRoutingConfig(value: unknown): value is IRoutingConfig {
-  if (typeof value !== "object" || value === null) return false;
-  const routes: unknown = Reflect.get(value, "routedServices");
-  return (
-    typeof Reflect.get(value, "primaryService") === "string" && Array.isArray(routes) && routes.every(isRoutedService)
-  );
-}
-
-function isRoutedService(value: unknown): value is IRoutedServiceIdentity {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    ["host", "path", "serviceName"].every((key) => typeof Reflect.get(value, key) === "string")
   );
 }
 

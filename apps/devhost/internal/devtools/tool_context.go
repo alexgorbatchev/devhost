@@ -9,11 +9,10 @@ func (s *ControlServer) toolContext(pageURL string) (ToolContext, error) {
 	if s.getToolContext == nil {
 		return ToolContext{ProjectRootPath: s.projectRootPath}, nil
 	}
-	s.mu.Lock()
-	name := s.primaryService
-	if route := resolveRoutedServiceForURL(s.routedServices, pageURL); route != nil {
+	settings := s.currentSettings()
+	name := settings.PrimaryService
+	if route := resolveRoutedServiceForURL(settings.RoutedServices, pageURL); route != nil {
 		name = route.ServiceName
 	}
-	s.mu.Unlock()
 	return s.getToolContext(name)
 }

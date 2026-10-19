@@ -1,5 +1,4 @@
 import type { IStandardSourceShape } from "./reactSourceInspection";
-import type { IRoutedServiceIdentity } from "./routedServices";
 import type { StoreApi } from "zustand/vanilla";
 import type { StateStorage } from "zustand/middleware";
 
@@ -53,16 +52,12 @@ export interface IStoppedService {
 }
 
 export type HealthResponse = {
-  routing?: IRoutingConfig;
+  // The configuration `/__devhost__/config.json` serves, current at the time of the message.
+  config?: object;
   services: ServiceHealth[];
   stoppedServices?: IStoppedService[];
   repositories?: IWorktreeRepository[];
 };
-
-export interface IRoutingConfig {
-  primaryService: string;
-  routedServices: IRoutedServiceIdentity[];
-}
 
 export interface IWorktreeDirectory {
   name: string;

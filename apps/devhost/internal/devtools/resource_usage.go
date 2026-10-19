@@ -8,7 +8,7 @@ import (
 )
 
 // ResourceUsageOptions selects the host readouts shown in the toolbar. Leaving every interval at zero turns the
-// feature off: nothing is sampled and the stream is not served.
+// feature off: nothing is sampled and the stream is not served. A reload changes the intervals with UpdateSettings.
 type ResourceUsageOptions struct {
 	Intervals hostusage.Intervals
 	Readers   hostusage.Readers
@@ -20,20 +20,11 @@ func (o ResourceUsageOptions) isEnabled() bool {
 	return o.Intervals.CPU > 0 || o.Intervals.Memory > 0 || o.Intervals.Disk > 0
 }
 
-func (s *ControlServer) startResourceSampler(options ResourceUsageOptions) {
-	sampler := hostusage.Start(s.ctx, hostusage.Options{
-		Intervals: options.Intervals,
-		Readers:   options.Readers,
-		OnChange:  func() { s.publishResourceUsage(nil) },
-		OnFailure: options.OnFailure,
-	})
-
-	s.mu.Lock()
-	s.resourceSampler = sampler
-	s.mu.Unlock()
-}
-
 func (s *ControlServer) handleResourcesWebsocket(writer http.ResponseWriter, request *http.Request) {
+	if !s.currentSettings().resourcesEnabled() {
+		http.NotFound(writer, request)
+		return
+	}
 	client, err := s.upgrade(writer, request)
 	if err != nil {
 		return

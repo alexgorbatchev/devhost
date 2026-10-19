@@ -66,7 +66,9 @@ func (s *ControlServer) handleNativeBrowserWebsocket(w http.ResponseWriter, r *h
 		http.Error(w, "Native browser origin or protocol rejected", http.StatusForbidden)
 		return
 	}
-	if s.nativeBrowser.Endpoint == "" || !s.featureToggles.ExternalToolbarsEnabled || s.allowsNativeBrowserURL == nil {
+	// A connection keeps the endpoint it opened with; a reload reaches the next one.
+	settings := s.currentSettings()
+	if settings.NativeBrowser.Endpoint == "" || !settings.FeatureToggles.ExternalToolbarsEnabled || s.allowsNativeBrowserURL == nil {
 		http.Error(w, "Native browser control is not configured", http.StatusServiceUnavailable)
 		return
 	}
@@ -154,8 +156,8 @@ func (s *ControlServer) handleNativeBrowserWebsocket(w http.ResponseWriter, r *h
 		return conn.WriteJSON(update)
 	}
 	options := nativebrowser.Options{
-		Endpoint:         s.nativeBrowser.Endpoint,
-		ReactExtensionID: s.nativeBrowser.ReactExtensionID,
+		Endpoint:         settings.NativeBrowser.Endpoint,
+		ReactExtensionID: settings.NativeBrowser.ReactExtensionID,
 		InitialRequestID: first.ID,
 		AllowsURL:        func(href string) (bool, error) { return s.allowsNativeBrowserURL(s.Port(), href) },
 	}
