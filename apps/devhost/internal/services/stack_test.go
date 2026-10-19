@@ -180,7 +180,7 @@ func TestLogServiceURLs(t *testing.T) {
 		t.Parallel()
 
 		manifestValue := ResolvedManifest{
-			Caddy:          manifest.CaddyConfig{Global: manifest.CaddyGlobalConfig{HTTPSPort: 443}},
+			Caddy:          caddy.ManagedCaddyGlobalSettings{HTTPSPort: 443},
 			Name:           "hello-stack",
 			PrimaryService: "web",
 			ServiceOrder:   []string{"api", "web", "worker"},
@@ -237,7 +237,7 @@ func TestCollectServicesHealthIncludesUnmanagedServices(t *testing.T) {
 
 	port := tcpAddress.Port
 	manifestValue := ResolvedManifest{
-		Caddy:        manifest.CaddyConfig{Global: manifest.CaddyGlobalConfig{HTTPSPort: 443}},
+		Caddy:        caddy.ManagedCaddyGlobalSettings{HTTPSPort: 443},
 		ServiceOrder: []string{"managed", "external"},
 		Services: map[string]ResolvedService{
 			"managed": {
@@ -353,7 +353,7 @@ func testStartupCrashRecovery(t *testing.T, worktreesEnabled, inRepository bool)
 		ShutdownGracePeriod: 100 * time.Millisecond,
 	}
 	go func() {
-		code, err := StartStack(&manifestValue, []string{"web"}, options)
+		code, err := startTestStack(t, &manifestValue, []string{"web"}, options)
 		done <- startupResult{code, err}
 	}()
 	var signalChannel chan<- os.Signal
@@ -431,7 +431,7 @@ func TestStartStackHealthTimeoutReleasesClaimsOnIdleShutdown(t *testing.T) {
 		Port:   intPointer(port), PortSource: "fixed", Hosts: []string{"timeout.localhost"},
 	}
 	var logs strings.Builder
-	_, err := StartStack(&m, []string{"web"}, StartStackOptions{CaddyPaths: paths, Environment: map[string]string{"DEVHOST_STATE_DIR": statePath}, LogWriter: &logs, ServiceStdoutWriter: ioDiscard{}, ServiceStderrWriter: ioDiscard{}, ShutdownGracePeriod: 100 * time.Millisecond, IdleTimeout: 10 * time.Millisecond})
+	_, err := startTestStack(t, &m, []string{"web"}, StartStackOptions{CaddyPaths: paths, Environment: map[string]string{"DEVHOST_STATE_DIR": statePath}, LogWriter: &logs, ServiceStdoutWriter: ioDiscard{}, ServiceStderrWriter: ioDiscard{}, ShutdownGracePeriod: 100 * time.Millisecond, IdleTimeout: 10 * time.Millisecond})
 	if err != nil || !strings.Contains(logs.String(), "Service web did not pass its health check within 100ms.") {
 		t.Fatalf("shutdown error = %v, logs = %s", err, logs.String())
 	}
@@ -544,7 +544,7 @@ func TestStartStackVerifiesManagedCaddyAdminBeforeServiceStartup(t *testing.T) {
 		Name:       "web",
 	}
 
-	_, err := StartStack(&manifestValue, []string{"web"}, StartStackOptions{
+	_, err := startTestStack(t, &manifestValue, []string{"web"}, StartStackOptions{
 		CaddyPaths:          paths,
 		Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 		LogWriter:           ioDiscard{},
@@ -1104,7 +1104,7 @@ func TestStartStackRestartServiceDoesNotStallOnRedundantHealthLoop(t *testing.T)
 		err      error
 	}, 1)
 	go func() {
-		exitCode, err := StartStack(&manifestValue, []string{"web"}, StartStackOptions{
+		exitCode, err := startTestStack(t, &manifestValue, []string{"web"}, StartStackOptions{
 			CaddyPaths:          paths,
 			Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 			LogWriter:           ioDiscard{},
@@ -1247,7 +1247,7 @@ func TestStartStackRestartServiceFailsPromptlyWithinHealthTimeout(t *testing.T) 
 		err      error
 	}, 1)
 	go func() {
-		exitCode, err := StartStack(&manifestValue, []string{"web"}, StartStackOptions{
+		exitCode, err := startTestStack(t, &manifestValue, []string{"web"}, StartStackOptions{
 			CaddyPaths:          paths,
 			Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 			LogWriter:           ioDiscard{},
@@ -1359,7 +1359,7 @@ func TestStartStackGracefulIdleTimeoutShutdown(t *testing.T) {
 	var err error
 
 	go func() {
-		exitCode, err = StartStack(&manifestValue, []string{"web"}, startOptions)
+		exitCode, err = startTestStack(t, &manifestValue, []string{"web"}, startOptions)
 		close(doneChan)
 	}()
 
@@ -1463,7 +1463,7 @@ func TestStartStackReturnsSignalExitCodeAndUnregistersHandlers(t *testing.T) {
 				error    error
 			}, 1)
 			go func() {
-				exitCode, startError := StartStack(&manifestValue, []string{"web"}, StartStackOptions{
+				exitCode, startError := startTestStack(t, &manifestValue, []string{"web"}, StartStackOptions{
 					CaddyPaths:          paths,
 					Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 					LogWriter:           ioDiscard{},
@@ -2301,7 +2301,7 @@ func TestStartStackRunsDaemonLifecycleCommands(t *testing.T) {
 		error    error
 	}, 1)
 	go func() {
-		exitCode, err := StartStack(&manifestValue, []string{"api"}, StartStackOptions{
+		exitCode, err := startTestStack(t, &manifestValue, []string{"api"}, StartStackOptions{
 			CaddyPaths:          paths,
 			Environment:         map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath},
 			LogWriter:           &output,
@@ -2366,7 +2366,7 @@ func TestCollectServicesHealthChecksDaemonLifecycleServicesWithoutForegroundProc
 
 	port := tcpAddress.Port
 	manifestValue := ResolvedManifest{
-		Caddy:        manifest.CaddyConfig{Global: manifest.CaddyGlobalConfig{HTTPSPort: 443}},
+		Caddy:        caddy.ManagedCaddyGlobalSettings{HTTPSPort: 443},
 		ServiceOrder: []string{"daemon"},
 		Services: map[string]ResolvedService{
 			"daemon": {
@@ -2463,9 +2463,72 @@ func (ioDiscard) Write(value []byte) (int, error) {
 	return len(value), nil
 }
 
+// startTestStack starts the stack with a devhost config file of its own, set to
+// the shared Caddy settings m names, so no test reads the machine's config.
+func startTestStack(t *testing.T, m *ResolvedManifest, order []string, options StartStackOptions) (int, error) {
+	t.Helper()
+	if options.ConfigPath == "" {
+		options.ConfigPath = writeTestSharedConfig(t, m.Caddy)
+	}
+	return StartStack(m, order, options)
+}
+
+// testCaddySettings returns the default shared Caddy settings with the admin
+// endpoint a test serves.
+func testCaddySettings(adminAddress string) caddy.ManagedCaddyGlobalSettings {
+	settings := caddy.DefaultManagedCaddyGlobalSettings()
+	if adminAddress != "" {
+		settings.AdminAddress = adminAddress
+	}
+	return settings
+}
+
+// runTestCaddy prepares a shared Caddy that runs settings, as devhost caddy
+// start leaves it, through the fake executable at paths.
+func runTestCaddy(t *testing.T, paths caddy.Paths, settings caddy.ManagedCaddyGlobalSettings) {
+	t.Helper()
+	writeFakeCaddyExecutable(t, paths.ExecutablePath)
+	if err := caddy.EnsureManagedCaddyConfig(paths, settings, runtime.GOOS); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := caddy.ApplyManagedCaddySettings(paths, settings, caddy.RouteCommandOutputWriters{}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// writeTestSharedConfig writes a devhost config file with the non-zero shared
+// Caddy settings and returns its path. Tests call it from service goroutines
+// too, so it reports a failure without stopping the test there.
+func writeTestSharedConfig(t *testing.T, settings caddy.ManagedCaddyGlobalSettings) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "config.toml")
+	writeTestSharedConfigFile(t, path, settings)
+	return path
+}
+
+func writeTestSharedConfigFile(t *testing.T, path string, settings caddy.ManagedCaddyGlobalSettings) {
+	t.Helper()
+	text := fmt.Sprintf("[caddy]\nhttp = %t\n", settings.HTTPEnabled)
+	if settings.AdminAddress != "" {
+		text += fmt.Sprintf("adminAddress = %q\n", settings.AdminAddress)
+	}
+	if settings.BindHost != "" {
+		text += fmt.Sprintf("bindHost = %q\n", settings.BindHost)
+	}
+	if settings.HTTPPort != 0 {
+		text += fmt.Sprintf("httpPort = %d\n", settings.HTTPPort)
+	}
+	if settings.HTTPSPort != 0 {
+		text += fmt.Sprintf("httpsPort = %d\n", settings.HTTPSPort)
+	}
+	if err := os.WriteFile(path, []byte(text), 0o600); err != nil {
+		t.Errorf("write devhost config: %v", err)
+	}
+}
+
 func newResolvedManifest(manifestDirectoryPath string, adminAddress string) ResolvedManifest {
 	return ResolvedManifest{
-		Caddy: manifest.CaddyConfig{Global: manifest.CaddyGlobalConfig{AdminAddress: adminAddress, BindHost: "127.0.0.1", HTTP: false, HTTPPort: 80, HTTPSPort: 443}},
+		Caddy: caddy.ManagedCaddyGlobalSettings{AdminAddress: adminAddress, BindHost: "127.0.0.1", HTTPPort: 80, HTTPSPort: 443},
 		Devtools: manifest.DevtoolsConfig{
 			Editor:           manifest.DevtoolsEditorConfig{Enabled: false, IDE: "vscode"},
 			ExternalToolbars: manifest.DevtoolsToggleConfig{Enabled: false},

@@ -4,6 +4,12 @@ import "fmt"
 
 const defaultManagedCaddyBindHost = "127.0.0.1"
 
+// IsSupportedManagedCaddyBindHost reports whether the managed Caddy can listen
+// on bindHost: a loopback or wildcard address of either IP family.
+func IsSupportedManagedCaddyBindHost(bindHost string) bool {
+	return bindHost == "127.0.0.1" || bindHost == "0.0.0.0" || bindHost == "::1" || bindHost == "::"
+}
+
 func ResolveManagedCaddyBindDirective(runtimeOS string, bindHost string) (string, error) {
 	if bindHost == "" {
 		bindHost = defaultManagedCaddyBindHost

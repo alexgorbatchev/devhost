@@ -47,9 +47,6 @@ func writeWorktreeFixtureConfiguration(t *testing.T, m ResolvedManifest, root st
 			"externalToolbars": map[string]any{"enabled": m.Devtools.ExternalToolbars.Enabled},
 		},
 	}
-	if m.Caddy.Global.AdminAddress != "" {
-		value["caddy"] = map[string]any{"global": map[string]any{"adminAddress": m.Caddy.Global.AdminAddress}}
-	}
 	var buffer bytes.Buffer
 	if err := toml.NewEncoder(&buffer).Encode(value); err != nil {
 		t.Fatal(err)

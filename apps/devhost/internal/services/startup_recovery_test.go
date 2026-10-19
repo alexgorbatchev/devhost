@@ -51,7 +51,7 @@ func startRecoveryStack(t *testing.T, timeout int, missingExecutable, worktrees 
 	done := make(chan error, 1)
 	var output shutdownOutput
 	go func() {
-		_, err := StartStack(&m, []string{"web"}, StartStackOptions{CaddyPaths: paths, Environment: readCurrentEnvironment(), LogWriter: &output, ServiceStdoutWriter: &output, ServiceStderrWriter: &output, ShutdownGracePeriod: 100 * time.Millisecond})
+		_, err := startTestStack(t, &m, []string{"web"}, StartStackOptions{CaddyPaths: paths, Environment: readCurrentEnvironment(), LogWriter: &output, ServiceStdoutWriter: &output, ServiceStderrWriter: &output, ShutdownGracePeriod: 100 * time.Millisecond})
 		done <- err
 	}()
 	stop := sync.OnceFunc(func() {

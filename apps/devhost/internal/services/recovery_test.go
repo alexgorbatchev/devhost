@@ -67,7 +67,7 @@ func TestStartStackKeepsExitedServicesRestartable(t *testing.T) {
 
 			done := make(chan error, 1)
 			go func() {
-				_, err := StartStack(&m, m.ServiceOrder, StartStackOptions{CaddyPaths: paths, Environment: map[string]string{"DEVHOST_STATE_DIR": statePath}, LogWriter: io.Discard, ServiceStdoutWriter: io.Discard, ServiceStderrWriter: io.Discard, ShutdownGracePeriod: 100 * time.Millisecond})
+				_, err := startTestStack(t, &m, m.ServiceOrder, StartStackOptions{CaddyPaths: paths, Environment: map[string]string{"DEVHOST_STATE_DIR": statePath}, LogWriter: io.Discard, ServiceStdoutWriter: io.Discard, ServiceStderrWriter: io.Discard, ShutdownGracePeriod: 100 * time.Millisecond})
 				done <- err
 			}()
 			signalChannel := <-signals

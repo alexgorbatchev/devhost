@@ -359,9 +359,11 @@ func createCaddyCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 		Long:  caddyDescription,
 		Args:  rejectUnknownCommand,
 		SubCmds: boa.SubCmds(
-			createCaddyLifecycleCommand(result, CaddyStart, "Start the shared Caddy server"),
-			createCaddyLifecycleCommand(result, CaddyStop, "Stop the shared Caddy server"),
-			createCaddyLifecycleCommand(result, CaddyTrust, "Trust Caddy's certificate on this machine (asks for your password)"),
+			// The shared Caddy's settings come from the devhost config file, the
+			// same for every stack, so its lifecycle commands take no manifest.
+			createCaddyNoArgsCommand(result, caddyNoArgsCommand{use: string(CaddyStart), description: "Start the shared Caddy server", kind: KindCaddyLifecycle, action: CaddyStart}),
+			createCaddyNoArgsCommand(result, caddyNoArgsCommand{use: string(CaddyStop), description: "Stop the shared Caddy server", kind: KindCaddyLifecycle, action: CaddyStop}),
+			createCaddyNoArgsCommand(result, caddyNoArgsCommand{use: string(CaddyTrust), description: "Trust Caddy's certificate on this machine (asks for your password)", kind: KindCaddyLifecycle, action: CaddyTrust}),
 			createCaddyNoArgsCommand(result, caddyNoArgsCommand{
 				use:         string(CaddyDownload),
 				description: "Download the Caddy server devhost uses",
@@ -381,26 +383,6 @@ func createCaddyCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 			}),
 			createTrustRemoteCommand(result),
 		),
-	}
-}
-
-func createCaddyLifecycleCommand(result *CommandLineArguments, action CaddyLifecycleAction, description string) boa.CmdT[ManifestOptions] {
-	return boa.CmdT[ManifestOptions]{
-		Use:   string(action),
-		Short: description,
-		Args:  cobra.NoArgs,
-		RunFuncE: func(options *ManifestOptions, _ *cobra.Command, _ []string) error {
-			if err := validateManifestPath(options.ManifestPath); err != nil {
-				return err
-			}
-
-			*result = CommandLineArguments{
-				Kind:         KindCaddyLifecycle,
-				Action:       action,
-				ManifestPath: options.ManifestPath,
-			}
-			return nil
-		},
 	}
 }
 

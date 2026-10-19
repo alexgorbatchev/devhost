@@ -9,13 +9,17 @@ import (
 func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 	t.Parallel()
 
+	configured := ManagedCaddyGlobalSettings{AdminAddress: "127.0.0.1:22000", BindHost: "127.0.0.1", HTTPPort: 80, HTTPSPort: 443}
+	running := ManagedCaddyGlobalSettings{AdminAddress: "127.0.0.1:22009", BindHost: "127.0.0.1", HTTPPort: 80, HTTPSPort: 8443}
 	tests := []struct {
 		action               LifecycleAction
+		applied              *ManagedCaddyGlobalSettings
 		available            bool
 		hasPidFile           bool
 		hasRootCert          bool
 		name                 string
 		runResult            CommandResult
+		wantApplied          *ManagedCaddyGlobalSettings
 		wantCommandArguments [][]string
 		wantCommandOptions   []ManagedCaddyCommandOptions
 		wantError            string
@@ -30,10 +34,32 @@ func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 			hasRootCert:          false,
 			name:                 "starts managed caddy when admin api is unavailable",
 			runResult:            CommandResult{Success: true},
-			wantCommandArguments: [][]string{{"start", "--pidfile", "/tmp/devhost-state/caddy/caddy.pid"}},
+			wantApplied:          &configured,
+			wantCommandArguments: [][]string{{"start", "--pidfile", "<state>/caddy/caddy.pid"}},
 			wantCommandOptions:   []ManagedCaddyCommandOptions{{InheritStdio: true}},
 			wantExitCode:         0,
-			wantLog:              "[devhost] managed caddy may prompt for your password on first start so it can install its local CA into the system trust store.\n[devhost] managed caddy started with /tmp/devhost-state/caddy/Caddyfile\n",
+			wantLog:              "[devhost] managed caddy may prompt for your password on first start so it can install its local CA into the system trust store.\n[devhost] managed caddy started with <state>/caddy/Caddyfile\n",
+		},
+		{
+			action:               LifecycleStart,
+			hasRootCert:          true,
+			name:                 "records nothing when caddy fails to start",
+			runResult:            CommandResult{Stderr: []byte("listen tcp :443: address already in use")},
+			wantCommandArguments: [][]string{{"start", "--pidfile", "<state>/caddy/caddy.pid"}},
+			wantCommandOptions:   []ManagedCaddyCommandOptions{{InheritStdio: true}},
+			wantError:            "Caddy start failed.\nlisten tcp :443: address already in use",
+		},
+		{
+			action:               LifecycleStop,
+			applied:              &running,
+			available:            true,
+			hasPidFile:           true,
+			name:                 "stops caddy through the admin address it runs",
+			runResult:            CommandResult{Success: true},
+			wantCommandArguments: [][]string{{"stop"}},
+			wantCommandOptions:   []ManagedCaddyCommandOptions{{AdminAddress: running.AdminAddress}},
+			wantLog:              "[devhost] managed caddy stopped.\n",
+			wantRemovedPidFile:   true,
 		},
 		{
 			action:       LifecycleStart,
@@ -42,7 +68,7 @@ func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 			hasRootCert:  true,
 			name:         "returns success when managed caddy is already running",
 			wantExitCode: 0,
-			wantLog:      "[devhost] managed caddy is already running with /tmp/devhost-state/caddy/Caddyfile\n",
+			wantLog:      "[devhost] managed caddy is already running with <state>/caddy/Caddyfile\n",
 		},
 		{
 			action:      LifecycleStart,
@@ -114,14 +140,29 @@ func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			paths := CreateManagedCaddyPaths("/tmp/devhost-state")
+			stateDirectoryPath := t.TempDir()
+			paths := CreateManagedCaddyPaths(stateDirectoryPath)
+			if err := EnsureManagedCaddyConfig(paths, configured, "linux"); err != nil {
+				t.Fatal(err)
+			}
+			if tc.applied != nil {
+				if err := writeAppliedManagedCaddySettings(paths, *tc.applied); err != nil {
+					t.Fatal(err)
+				}
+			}
+			for index := range tc.wantCommandArguments {
+				for argument := range tc.wantCommandArguments[index] {
+					tc.wantCommandArguments[index][argument] = strings.ReplaceAll(tc.wantCommandArguments[index][argument], "<state>", stateDirectoryPath)
+				}
+			}
+			tc.wantLog = strings.ReplaceAll(tc.wantLog, "<state>", stateDirectoryPath)
 			var logOutput strings.Builder
 			var callOrder []string
 			var gotArguments [][]string
 			var gotOptions []ManagedCaddyCommandOptions
 			removedPidFile := false
 
-			exitCode, err := RunManagedCaddyLifecycleCommand(tc.action, &logOutput, paths, ManagedCaddyConfigFallback{AdminAddress: "127.0.0.1:22000"}, ManagedCaddyLifecycleDependencies{
+			exitCode, err := RunManagedCaddyLifecycleCommand(tc.action, &logOutput, paths, configured, ManagedCaddyLifecycleDependencies{
 				EnsureManagedCaddyConfig: func() error {
 					callOrder = append(callOrder, "ensure")
 					return nil
@@ -178,6 +219,14 @@ func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 			}
 			if len(callOrder) > 0 && callOrder[0] != "ensure" {
 				t.Fatalf("RunManagedCaddyLifecycleCommand(...) call order = %#v, want ensure first", callOrder)
+			}
+			wantApplied := tc.wantApplied
+			if wantApplied == nil && !tc.wantRemovedPidFile {
+				wantApplied = tc.applied
+			}
+			applied, ok, err := ReadAppliedManagedCaddySettings(paths)
+			if err != nil || ok != (wantApplied != nil) || (ok && applied != *wantApplied) {
+				t.Fatalf("applied settings = %#v, %v, %v, want %#v", applied, ok, err, wantApplied)
 			}
 		})
 	}

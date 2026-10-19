@@ -636,9 +636,7 @@ func TestReadManifestGlobalSettingsOverrideNotAllowed(t *testing.T) {
 	rootText := strings.Join([]string{
 		`name = "root-stack"`,
 		`includes = ["sub.toml"]`,
-		"",
-		`[caddy.global]`,
-		`http = true`,
+		`killZombies = false`,
 		"",
 		`[services.root-svc]`,
 		`command = ["echo", "root"]`,
@@ -651,10 +649,10 @@ func TestReadManifestGlobalSettingsOverrideNotAllowed(t *testing.T) {
 	subPath := filepath.Join(tmpDir, "sub.toml")
 	subText := strings.Join([]string{
 		`name = "sub-stack"`,
+		`killZombies = true`,
 		"",
-		`[caddy.global]`,
-		`http = false`,
-		`httpPort = 8081`,
+		`[worktrees]`,
+		`enabled = false`,
 		"",
 		`[devtools.shortcuts]`,
 		`restartServices = "ctrl+q"`,
@@ -678,21 +676,12 @@ func TestReadManifestGlobalSettingsOverrideNotAllowed(t *testing.T) {
 		t.Fatalf("name = %q, want %q", name, "root-stack")
 	}
 
-	// caddy.global.http must remain true, and other fields must not be inherited
-	caddyVal, ok := rawManifest.value["caddy"].(map[string]any)
-	if !ok {
-		t.Fatal("missing caddy table")
+	// killZombies must remain false, and worktrees must not be inherited
+	if killZombies, ok := rawManifest.value["killZombies"].(bool); !ok || killZombies {
+		t.Fatalf("killZombies = %v, want false", rawManifest.value["killZombies"])
 	}
-	globalVal, ok := caddyVal["global"].(map[string]any)
-	if !ok {
-		t.Fatal("missing caddy.global table")
-	}
-	httpVal, ok := globalVal["http"].(bool)
-	if !ok || !httpVal {
-		t.Fatalf("caddy.global.http = %v, want true", globalVal["http"])
-	}
-	if _, exists := globalVal["httpPort"]; exists {
-		t.Fatalf("sub-manifest caddy.global.httpPort was unexpectedly merged")
+	if _, exists := rawManifest.value["worktrees"]; exists {
+		t.Fatalf("sub-manifest worktrees was unexpectedly merged")
 	}
 
 	// devtools must not be inherited from sub-manifest

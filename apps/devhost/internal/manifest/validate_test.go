@@ -99,10 +99,6 @@ func TestValidateManifestReturnsNormalizedDefaults(t *testing.T) {
 		t.Fatalf("manifest.Annotation = %#v, want no annotation actions by default", manifest.Annotation)
 	}
 
-	if manifest.Caddy.Global.AdminAddress != defaultManagedCaddyAdminAddress || manifest.Caddy.Global.BindHost != defaultManagedCaddyBindHost || manifest.Caddy.Global.HTTP || manifest.Caddy.Global.HTTPPort != defaultManagedCaddyHTTPPort || manifest.Caddy.Global.HTTPSPort != defaultManagedCaddyHTTPSPort {
-		t.Fatalf("manifest.Caddy.Global = %#v, want default caddy config", manifest.Caddy.Global)
-	}
-
 	if !manifest.Devtools.Editor.Enabled || manifest.Devtools.Editor.IDE != defaultDevtoolsEditor {
 		t.Fatalf("manifest.Devtools.Editor = %#v, want enabled %q", manifest.Devtools.Editor, defaultDevtoolsEditor)
 	}
@@ -420,18 +416,11 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 			wantError: "killZombies must be a boolean",
 		},
 		{
-			name: "rejects unsupported caddy bind host",
+			name: "rejects shared caddy settings, which the devhost config file holds",
 			manifest: rawManifestWithServices(map[string]any{
-				"caddy": map[string]any{"global": map[string]any{"bindHost": "192.168.1.10"}},
+				"caddy": map[string]any{"global": map[string]any{"httpsPort": int64(8443)}},
 			}),
-			wantError: "caddy.global.bindHost",
-		},
-		{
-			name: "rejects unsupported caddy http port",
-			manifest: rawManifestWithServices(map[string]any{
-				"caddy": map[string]any{"global": map[string]any{"httpPort": int64(0)}},
-			}),
-			wantError: "caddy.global.httpPort",
+			wantError: "Manifest schema is invalid:\ncaddy moved to the devhost config file: set the shared Caddy listeners in the [caddy] table of config.toml in the devhost config directory, and remove [caddy] from the manifest.",
 		},
 		{
 			name: "rejects unsupported minimap position key",
@@ -446,13 +435,6 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 				"devtools": map[string]any{"status": map[string]any{"enabled": true, "position": "top-left"}},
 			}),
 			wantError: "devtools.status.position",
-		},
-		{
-			name: "rejects unsupported caddy key",
-			manifest: rawManifestWithServices(map[string]any{
-				"caddy": map[string]any{"autostop": true},
-			}),
-			wantError: "Manifest schema is invalid:\ncaddy Unrecognized key: \"autostop\"",
 		},
 		{
 			name: "rejects duplicate annotation action ids",

@@ -3,6 +3,7 @@ import { rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { createDemoRuntime } from "../createDemoRuntime";
 import { runCommand } from "../runCommand";
+import { resolveDevhostConfigDirectory } from "../resolveDevhostConfigDirectory";
 
 const repositoryPath = resolve(import.meta.dir, "../../../../..");
 
@@ -18,6 +19,17 @@ it("uses portless HTTPS and separate manifests for recordings on distinct hosts"
     expect(first.env.DEVHOST_STATE_DIR).toBe(process.env.DEVHOST_STATE_DIR);
   } finally {
     await Promise.all([first, second].map((runtime) => rm(runtime.directoryPath, { recursive: true, force: true })));
+  }
+});
+
+it("applies the user's shared Caddy settings to the managed Caddy it shares", async () => {
+  const runtime = await createDemoRuntime(repositoryPath, "demo.localhost");
+  try {
+    expect(runtime.env.XDG_CONFIG_HOME).toBe(join(runtime.directoryPath, "config"));
+    expect(runtime.env.DEVHOST_CONFIG_DIR).toBe(resolveDevhostConfigDirectory(process.env));
+    expect(await Bun.file(join(runtime.directoryPath, "config/devhost/config.toml")).exists()).toBe(false);
+  } finally {
+    await rm(runtime.directoryPath, { recursive: true, force: true });
   }
 });
 

@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/config"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/hostusage"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
@@ -61,12 +62,15 @@ type StartStackOptions struct {
 	Configuration        *manifest.Manifest
 	CaddyOutputWriters   caddy.RouteCommandOutputWriters
 	CaddyPaths           caddy.Paths
-	Environment          map[string]string
-	LogWriter            io.Writer
-	ServiceStdoutWriter  io.Writer
-	ServiceStderrWriter  io.Writer
-	ShutdownGracePeriod  time.Duration
-	IdleTimeout          time.Duration
+	// ConfigPath names the devhost config file the stack applies and watches;
+	// empty resolves it from Environment.
+	ConfigPath          string
+	Environment         map[string]string
+	LogWriter           io.Writer
+	ServiceStdoutWriter io.Writer
+	ServiceStderrWriter io.Writer
+	ShutdownGracePeriod time.Duration
+	IdleTimeout         time.Duration
 }
 
 type startedService struct {
@@ -198,14 +202,15 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		}
 	}
 
-	managedCaddyAdminAddress := caddy.ResolveManagedCaddyAdminAddress(manifest.Caddy.Global.AdminAddress)
-	fallback := caddy.ManagedCaddyConfigFallback{
-		AdminAddress: manifest.Caddy.Global.AdminAddress,
-		BindHost:     manifest.Caddy.Global.BindHost,
-		HTTPEnabled:  manifest.Caddy.Global.HTTP,
-		HTTPPort:     manifest.Caddy.Global.HTTPPort,
-		HTTPSPort:    manifest.Caddy.Global.HTTPSPort,
-		RuntimeOS:    runtime.GOOS,
+	configPath := options.ConfigPath
+	if configPath == "" {
+		if configPath, err = config.Path(environment); err != nil {
+			return 0, err
+		}
+	}
+	shared, err := config.Read(configPath)
+	if err != nil {
+		return 0, err
 	}
 	processSignals := make(chan os.Signal, 1)
 	stackName := manifest.Name
@@ -286,11 +291,11 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		}
 
 		for _, route := range routes.registrations() {
-			cleanupError = appendCleanupError(cleanupError, caddy.UnregisterRoute(route.ServiceName, route.Host, route.Path, manifest.ManifestPath, paths.RegistrationsDirectoryPath, fallback, options.CaddyOutputWriters))
+			cleanupError = appendCleanupError(cleanupError, caddy.UnregisterRoute(route.ServiceName, route.Host, route.Path, manifest.ManifestPath, paths.RegistrationsDirectoryPath, options.CaddyOutputWriters))
 		}
 
 		for _, host := range state.claimedHosts {
-			cleanupError = appendCleanupError(cleanupError, caddy.SyncManagedHostRoute(host, managedCaddyAdminAddress, paths.RoutesDirectoryPath, options.CaddyOutputWriters))
+			cleanupError = appendCleanupError(cleanupError, caddy.SyncManagedHostRoute(host, paths.RoutesDirectoryPath, options.CaddyOutputWriters))
 		}
 
 		for _, claim := range state.claimedFixedPorts {
@@ -313,7 +318,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		}
 	}()
 
-	if err := caddy.EnsureManagedCaddyConfig(paths, fallback); err != nil {
+	if err := caddy.EnsureManagedCaddyConfig(paths, shared.Caddy, runtime.GOOS); err != nil {
 		return 0, joinCleanupError(err, cleanupError)
 	}
 
@@ -329,40 +334,22 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		return 0, joinCleanupError(err, cleanupError)
 	}
 
-	if err := caddy.CleanupStaleRegistrations(paths.RegistrationsDirectoryPath, fallback); err != nil {
+	if err := caddy.CleanupStaleRegistrations(paths.RegistrationsDirectoryPath); err != nil {
 		return 0, joinCleanupError(err, cleanupError)
 	}
-	settings, err := caddy.ReadManagedCaddyGlobalSettings(paths, fallback)
-	if err != nil {
-		return 0, joinCleanupError(err, cleanupError)
-	}
-	routes.settings = settings
-	if options.serveSession {
-		// A manifest-free session inherits the shared proxy's complete settings,
-		// including the port used in startup output and devtools service links.
-		global := &manifest.Caddy.Global
-		global.AdminAddress, global.BindHost = settings.AdminAddress, settings.BindHost
-		global.HTTP, global.HTTPPort, global.HTTPSPort = settings.HTTPEnabled, settings.HTTPPort, settings.HTTPSPort
-		routes.manifest = *manifest
-	}
-	managedCaddyAdminAddress = settings.AdminAddress
-	fallback = caddy.ManagedCaddyConfigFallback{AdminAddress: settings.AdminAddress, BindHost: settings.BindHost, HTTPEnabled: settings.HTTPEnabled, HTTPPort: settings.HTTPPort, HTTPSPort: settings.HTTPSPort, RuntimeOS: runtime.GOOS}
-
 	if err := caddy.CleanupStaleFixedPortClaims(paths.PortClaimsDirectoryPath); err != nil {
 		return 0, joinCleanupError(err, cleanupError)
 	}
-
-	if err := caddy.EnsureManagedCaddyAdminAvailable(caddy.CreateCaddyAdminAPIURL(managedCaddyAdminAddress), caddy.AdminAvailabilityDependencies{}); err != nil {
-		if !options.serveSession {
-			return 0, joinCleanupError(err, cleanupError)
-		}
-		if _, err := caddy.RunManagedCaddyLifecycleCommand(caddy.LifecycleStart, options.LogWriter, paths, fallback, caddy.ManagedCaddyLifecycleDependencies{RuntimeOS: runtime.GOOS}); err != nil {
-			return 0, joinCleanupError(err, cleanupError)
-		}
-		if err := caddy.EnsureManagedCaddyAdminAvailable(caddy.CreateCaddyAdminAPIURL(managedCaddyAdminAddress), caddy.AdminAvailabilityDependencies{}); err != nil {
-			return 0, joinCleanupError(err, cleanupError)
-		}
+	if err := ensureManagedCaddyRunning(paths, shared.Caddy, options); err != nil {
+		return 0, joinCleanupError(err, cleanupError)
 	}
+	// Starting a stack applies the devhost config file, so an edit made while no
+	// stack watched it takes effect now.
+	if _, err := caddy.ApplyManagedCaddySettings(paths, shared.Caddy, options.CaddyOutputWriters); err != nil {
+		return 0, joinCleanupError(fmt.Errorf("apply the devhost config file %s: %w", configPath, err), cleanupError)
+	}
+	manifest.Caddy = shared.Caddy
+	routes.manifest = *manifest
 
 	zombieCleanup := new(caddy.ZombieCleanup)
 	for _, service := range manifest.Services {
@@ -518,7 +505,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			continue
 		}
 
-		if warning := ReadLoopbackBindHostAmbiguityWarning(service, manifest.Caddy.Global.HTTPSPort); warning != "" {
+		if warning := ReadLoopbackBindHostAmbiguityWarning(service, manifest.Caddy.HTTPSPort); warning != "" {
 			writeLogLine(options.LogWriter, manifest.Name, warning)
 		}
 
@@ -634,18 +621,27 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		manifestEvents = manifestWatch.events
 		state.manifestWatch = manifestWatch
 	}
+	configWatch, err := watchSharedConfig(configPath)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { returnedError = errors.Join(returnedError, configWatch.close()) }()
+	configEvents := configWatch.events
 	state.operationMu.Lock()
 	state.ready = true
 	state.operationMu.Unlock()
 	state.manifestMu.Lock()
 	state.startupComplete = true
 	state.manifestMu.Unlock()
-	lastReloadError := ""
-	var reloadResults <-chan error
+	lastReloadError, lastConfigError := "", ""
+	var reloadResults, configResults <-chan error
 	defer func() {
 		cancelLifecycle()
 		if reloadResults != nil {
 			<-reloadResults
+		}
+		if configResults != nil {
+			<-configResults
 		}
 	}()
 	if manifestWatch != nil {
@@ -654,8 +650,30 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		// once.
 		manifestWatch.check()
 	}
+	configWatch.check()
 	for {
 		select {
+		case err := <-configEvents:
+			completed := make(chan error, 1)
+			configResults = completed
+			configEvents = nil
+			go func() {
+				if err == nil {
+					err = state.applySharedConfig(configPath, configWatch)
+				}
+				completed <- err
+			}()
+		case err := <-configResults:
+			configResults = nil
+			configEvents = configWatch.events
+			if err != nil {
+				if message := err.Error(); message != lastConfigError {
+					writeLogLine(options.LogWriter, stackName, fmt.Sprintf("shared Caddy settings rejected: %v", err))
+					lastConfigError = message
+				}
+			} else {
+				lastConfigError = ""
+			}
 		case err := <-manifestEvents:
 			completed := make(chan error, 1)
 			reloadResults = completed
@@ -774,7 +792,7 @@ func LogServiceURLs(manifest ResolvedManifest, writer io.Writer) {
 		if service.Name == manifest.PrimaryService {
 			displayName = fmt.Sprintf("%s (primary)", service.Name)
 		}
-		for _, serviceURL := range readServiceURLs(service, manifest.Caddy.Global.HTTPSPort) {
+		for _, serviceURL := range readServiceURLs(service, manifest.Caddy.HTTPSPort) {
 			writeLogLine(writer, manifest.Name, fmt.Sprintf("%s: %s", displayName, serviceURL))
 		}
 	}
@@ -918,7 +936,7 @@ func startServiceWithRetries(ctx context.Context, manifest *ResolvedManifest, st
 			stackName: manifest.Name, logWriter: options.LogWriter, readExitCode: started.ReadExitCode,
 		})
 		if err == nil {
-			if warning := ReadLoopbackBindHostAmbiguityWarning(service, manifest.Caddy.Global.HTTPSPort); warning != "" {
+			if warning := ReadLoopbackBindHostAmbiguityWarning(service, manifest.Caddy.HTTPSPort); warning != "" {
 				writeLogLine(options.LogWriter, manifest.Name, warning)
 			}
 
@@ -1618,7 +1636,7 @@ func collectServicesHealth(manifest ResolvedManifest, startedServices []*started
 			Managed:    managed,
 			Name:       service.Name,
 			Status:     status,
-			URL:        readManagedServiceURL(service, manifest.Caddy.Global.HTTPSPort),
+			URL:        readManagedServiceURL(service, manifest.Caddy.HTTPSPort),
 			Dirty:      dirty,
 			Restarting: restarting,
 			ExitCode:   exitCode,

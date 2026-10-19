@@ -17,3 +17,18 @@ func UsePhysicalTempDir() error {
 	}
 	return os.Setenv("TMPDIR", physical)
 }
+
+// IsolateDevhostConfig points DEVHOST_CONFIG_DIR at a new empty directory, so
+// that no test reads or watches the devhost config file of the machine running
+// it. A test that needs settings writes its own file and points devhost at it.
+// The returned function removes the directory.
+func IsolateDevhostConfig() (func(), error) {
+	directoryPath, err := os.MkdirTemp("", "devhost-config-")
+	if err != nil {
+		return nil, fmt.Errorf("create the test config directory: %w", err)
+	}
+	if err := os.Setenv("DEVHOST_CONFIG_DIR", directoryPath); err != nil {
+		return nil, fmt.Errorf("isolate the devhost config: %w", err)
+	}
+	return func() { _ = os.RemoveAll(directoryPath) }, nil // best-effort cleanup of an empty directory
+}

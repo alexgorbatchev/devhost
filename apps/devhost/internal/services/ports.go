@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
 
@@ -28,9 +29,11 @@ type ResolvedManifest struct {
 	configuration *manifest.Manifest
 	// requested holds the service or group names given to devhost start and services started
 	// since; empty means every service runs.
-	requested             []string
-	Annotation            manifest.ValidatedAnnotation
-	Caddy                 manifest.CaddyConfig
+	requested  []string
+	Annotation manifest.ValidatedAnnotation
+	// Caddy holds the listener settings the shared managed Caddy runs, which
+	// service URLs use. The devhost config file sets them, not the manifest.
+	Caddy                 caddy.ManagedCaddyGlobalSettings
 	Devtools              manifest.DevtoolsConfig
 	Worktrees             manifest.WorktreesConfig
 	ManifestDirectoryPath string
@@ -219,7 +222,6 @@ func resolveServicePorts(value manifest.Manifest, options portResolutionOptions)
 		configuration:         &value,
 		requested:             slices.Clone(options.Requested),
 		Annotation:            value.Annotation,
-		Caddy:                 value.Caddy,
 		Devtools:              value.Devtools,
 		Worktrees:             value.Worktrees,
 		ManifestDirectoryPath: value.ManifestDirectoryPath,
