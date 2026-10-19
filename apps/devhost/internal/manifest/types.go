@@ -18,7 +18,6 @@ type Inputs struct {
 type Manifest struct {
 	Inputs                Inputs
 	Annotation            ValidatedAnnotation
-	Caddy                 CaddyConfig
 	Devtools              DevtoolsConfig
 	Worktrees             WorktreesConfig
 	ManifestDirectoryPath string
@@ -51,18 +50,6 @@ type ValidatedAnnotationAction struct {
 	ID      string
 	Kind    string
 	Label   string
-}
-
-type CaddyConfig struct {
-	Global CaddyGlobalConfig
-}
-
-type CaddyGlobalConfig struct {
-	AdminAddress string
-	BindHost     string
-	HTTP         bool
-	HTTPPort     int
-	HTTPSPort    int
 }
 
 type DevtoolsBrowserConfig struct {

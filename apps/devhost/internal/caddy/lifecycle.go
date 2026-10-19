@@ -28,22 +28,27 @@ type ManagedCaddyLifecycleDependencies struct {
 	RuntimeOS                string
 }
 
+// RunManagedCaddyLifecycleCommand starts, stops, or trusts the managed Caddy.
+// A running Caddy is reached through the admin address recorded as applied;
+// settings, from the devhost config file, are what a new Caddy starts with.
 func RunManagedCaddyLifecycleCommand(
 	action LifecycleAction,
 	logWriter io.Writer,
 	paths Paths,
-	fallback ManagedCaddyConfigFallback,
+	settings ManagedCaddyGlobalSettings,
 	dependencies ManagedCaddyLifecycleDependencies,
 ) (int, error) {
-	managedCaddyAdminAddress := ResolveManagedCaddyAdminAddress(fallback.AdminAddress)
 	runtimeOS := dependencies.RuntimeOS
+	running, err := readRunningSettings(paths, settings)
+	if err != nil {
+		return 0, err
+	}
+	managedCaddyAdminAddress := ResolveManagedCaddyAdminAddress(running.AdminAddress)
 
 	ensureConfig := dependencies.EnsureManagedCaddyConfig
 	if ensureConfig == nil {
 		ensureConfig = func() error {
-			fallback.RuntimeOS = runtimeOS
-			fallback.AdminAddress = managedCaddyAdminAddress
-			return ensureManagedCaddyConfig(paths, fallback)
+			return EnsureManagedCaddyConfig(paths, settings, runtimeOS)
 		}
 	}
 	hasManagedPidFile := dependencies.HasManagedPidFile
@@ -88,9 +93,20 @@ func RunManagedCaddyLifecycleCommand(
 
 	switch action {
 	case LifecycleStart:
-		return startManagedCaddy(logWriter, paths, runtimeOS, managedCaddyAdminAddress, hasManagedPidFile, hasManagedRootCert, isManagedCaddyAvailable, runManagedCaddyCommand)
+		start := func() CommandResult {
+			return startManagedCaddyProcess(paths, settings, runtimeOS, runManagedCaddyCommand)
+		}
+		return startManagedCaddy(logWriter, paths, runtimeOS, hasManagedPidFile, hasManagedRootCert, isManagedCaddyAvailable, start)
 	case LifecycleStop:
-		return stopManagedCaddy(logWriter, managedCaddyAdminAddress, hasManagedPidFile, isManagedCaddyAvailable, removeManagedPidFile, runManagedCaddyCommand)
+		// A Caddy that no longer runs has no applied settings; the next start
+		// uses the configured ones.
+		forget := func() error {
+			if err := removeManagedPidFile(); err != nil {
+				return err
+			}
+			return removeAppliedManagedCaddySettings(paths)
+		}
+		return stopManagedCaddy(logWriter, managedCaddyAdminAddress, hasManagedPidFile, isManagedCaddyAvailable, forget, runManagedCaddyCommand)
 	case LifecycleTrust:
 		return trustManagedCaddy(logWriter, managedCaddyAdminAddress, hasManagedPidFile, isManagedCaddyAvailable, runManagedCaddyCommand)
 	default:
@@ -98,15 +114,35 @@ func RunManagedCaddyLifecycleCommand(
 	}
 }
 
+// startManagedCaddyProcess renders every route for settings, starts Caddy
+// with them, and records them as applied once Caddy runs.
+func startManagedCaddyProcess(paths Paths, settings ManagedCaddyGlobalSettings, runtimeOS string, runManagedCaddyCommand func([]string, ManagedCaddyCommandOptions) CommandResult) CommandResult {
+	var result CommandResult
+	err := withRouteMutationLock(paths, func() error {
+		if err := renderManagedCaddySettings(paths, settings, runtimeOS); err != nil {
+			return err
+		}
+		result = runManagedCaddyCommand([]string{"start", "--pidfile", paths.PidFilePath}, ManagedCaddyCommandOptions{InheritStdio: true})
+		if !result.Success {
+			return nil
+		}
+		return writeAppliedManagedCaddySettings(paths, settings)
+	})
+	if err != nil {
+		return CommandResult{Stderr: []byte(err.Error())}
+	}
+
+	return result
+}
+
 func startManagedCaddy(
 	logWriter io.Writer,
 	paths Paths,
 	runtimeOS string,
-	adminAddress string,
 	hasManagedPidFile func() bool,
 	hasManagedRootCert func() bool,
 	isManagedCaddyAvailable func() bool,
-	runManagedCaddyCommand func([]string, ManagedCaddyCommandOptions) CommandResult,
+	start func() CommandResult,
 ) (int, error) {
 	if !hasManagedRootCert() {
 		if err := logInfo(logWriter, "managed caddy may prompt for your password on first start so it can install its local CA into the system trust store."); err != nil {
@@ -125,7 +161,7 @@ func startManagedCaddy(
 		return 0, errors.New(foreignManagedCaddyError)
 	}
 
-	result := runManagedCaddyCommand([]string{"start", "--pidfile", paths.PidFilePath}, ManagedCaddyCommandOptions{InheritStdio: true})
+	result := start()
 	if !result.Success {
 		return 0, errors.New(CreateManagedCaddyStartErrorMessage(result, runtimeOS))
 	}
@@ -134,7 +170,6 @@ func startManagedCaddy(
 		return 0, fmt.Errorf("log managed caddy start success: %w", err)
 	}
 
-	_ = adminAddress
 	return 0, nil
 }
 

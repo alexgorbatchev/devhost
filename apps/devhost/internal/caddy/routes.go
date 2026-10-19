@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 	"syscall"
@@ -41,15 +40,10 @@ type ActivateRouteOptions struct {
 	ProxyLocalOrigin      bool
 	AppBindHost           string
 	AppPort               int
-	CaddyAdminAddress     string
-	CaddyBindHost         string
 	CaddyOutputWriters    RouteCommandOutputWriters
-	CaddyHTTPPort         int
-	CaddyHTTPSPort        int
 	DevtoolsControlPort   int
 	DocumentInjectionPort int
 	Host                  string
-	HTTPEnabled           bool
 	Path                  string
 	ServiceName           string
 	StackName             string
@@ -78,24 +72,19 @@ type fixedPortClaim struct {
 }
 
 type routeRegistration struct {
-	ProxyLocalOrigin      bool    `json:"proxyLocalOrigin,omitempty"`
-	AppBindHost           string  `json:"appBindHost"`
-	AppPort               int     `json:"appPort"`
-	CreatedAt             string  `json:"createdAt"`
-	Host                  string  `json:"host"`
-	ManifestPath          string  `json:"manifestPath"`
-	OwnerPID              int     `json:"ownerPid"`
-	OwnerStartIdentity    string  `json:"ownerStartIdentity,omitempty"`
-	Path                  string  `json:"path"`
-	ServiceName           string  `json:"serviceName"`
-	DevtoolsControlPort   *int    `json:"devtoolsControlPort,omitempty"`
-	DocumentInjectionPort *int    `json:"documentInjectionPort,omitempty"`
-	HTTPEnabled           *bool   `json:"httpEnabled,omitempty"`
-	CaddyAdminAddress     *string `json:"caddyAdminAddress,omitempty"`
-	CaddyBindHost         *string `json:"caddyBindHost,omitempty"`
-	CaddyHTTPPort         *int    `json:"caddyHttpPort,omitempty"`
-	CaddyHTTPSPort        *int    `json:"caddyHttpsPort,omitempty"`
-	StackName             string  `json:"stackName,omitempty"`
+	ProxyLocalOrigin      bool   `json:"proxyLocalOrigin,omitempty"`
+	AppBindHost           string `json:"appBindHost"`
+	AppPort               int    `json:"appPort"`
+	CreatedAt             string `json:"createdAt"`
+	Host                  string `json:"host"`
+	ManifestPath          string `json:"manifestPath"`
+	OwnerPID              int    `json:"ownerPid"`
+	OwnerStartIdentity    string `json:"ownerStartIdentity,omitempty"`
+	Path                  string `json:"path"`
+	ServiceName           string `json:"serviceName"`
+	DevtoolsControlPort   *int   `json:"devtoolsControlPort,omitempty"`
+	DocumentInjectionPort *int   `json:"documentInjectionPort,omitempty"`
+	StackName             string `json:"stackName,omitempty"`
 }
 
 type legacyRouteRegistration struct {
@@ -110,15 +99,10 @@ type managedRouteRecord struct {
 	ProxyLocalOrigin      bool
 	AppBindHost           string
 	AppPort               int
-	CaddyAdminAddress     string
-	CaddyBindHost         string
-	CaddyHTTPPort         int
-	CaddyHTTPSPort        int
 	CreatedAt             string
 	DevtoolsControlPort   int
 	DocumentInjectionPort int
 	Host                  string
-	HTTPEnabled           bool
 	IsLegacy              bool
 	ManifestPath          string
 	OwnerPID              int
@@ -137,11 +121,6 @@ type routeRegistrationJSON struct {
 	DevtoolsControlPort   *int    `json:"devtoolsControlPort"`
 	DocumentInjectionPort *int    `json:"documentInjectionPort"`
 	Host                  *string `json:"host"`
-	CaddyAdminAddress     *string `json:"caddyAdminAddress"`
-	CaddyBindHost         *string `json:"caddyBindHost"`
-	CaddyHTTPPort         *int    `json:"caddyHttpPort"`
-	CaddyHTTPSPort        *int    `json:"caddyHttpsPort"`
-	HTTPEnabled           *bool   `json:"httpEnabled"`
 	ManifestPath          *string `json:"manifestPath"`
 	OwnerPID              *int    `json:"ownerPid"`
 	OwnerStartIdentity    *string `json:"ownerStartIdentity"`
@@ -348,14 +327,22 @@ func ReleaseHostClaim(options ClaimHostOptions) error {
 	return removeIfExists(claimPath)
 }
 
-func CleanupStaleRegistrations(registrationsDirectoryPath string, fallback ManagedCaddyConfigFallback) error {
+// CleanupStaleRegistrations removes the routes of stacks that no longer run
+// and renders their hosts again. It leaves the reload to the caller's next
+// route change, so it needs no running Caddy.
+func CleanupStaleRegistrations(registrationsDirectoryPath string) error {
 	routesDirectoryPath := filepath.Clean(filepath.Join(registrationsDirectoryPath, ".."))
 	paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
-	previousSettings, err := ReadManagedCaddyGlobalSettings(paths, fallback)
-	if err != nil {
-		return err
-	}
+	return withRouteMutationLock(paths, func() error {
+		settings, err := readRunningSettings(paths, DefaultManagedCaddyGlobalSettings())
+		if err != nil {
+			return err
+		}
+		return cleanupStaleRegistrationsLocked(registrationsDirectoryPath, routesDirectoryPath, paths, settings)
+	})
+}
 
+func cleanupStaleRegistrationsLocked(registrationsDirectoryPath string, routesDirectoryPath string, paths Paths, settings ManagedCaddyGlobalSettings) error {
 	entries, err := os.ReadDir(registrationsDirectoryPath)
 	if err != nil {
 		return err
@@ -400,22 +387,12 @@ func CleanupStaleRegistrations(registrationsDirectoryPath string, fallback Manag
 		return err
 	}
 	for _, host := range affectedHosts {
-		if err := syncHostRoute(host, routesDirectoryPath, nil); err != nil {
-			return err
-		}
-	}
-
-	nextSettings, err := ReadManagedCaddyGlobalSettings(paths, fallback)
-	if err != nil {
-		return err
-	}
-	if didManagedCaddyGlobalSettingsChange(previousSettings, nextSettings) {
-		if err := syncManagedCaddyGlobalState(routesDirectoryPath, nextSettings); err != nil {
+		if err := syncHostRoute(host, routesDirectoryPath, settings); err != nil {
 			return err
 		}
 	}
 	if len(affectedHosts) > 0 {
-		if err := syncManagedCaddyNotFoundSite(routesDirectoryPath, nextSettings.HTTPSPort); err != nil {
+		if err := syncManagedCaddyNotFoundSite(routesDirectoryPath, settings.HTTPSPort); err != nil {
 			return err
 		}
 	}
@@ -423,63 +400,65 @@ func CleanupStaleRegistrations(registrationsDirectoryPath string, fallback Manag
 	return nil
 }
 
+// UnregisterRoute removes one route this stack registered. The managed Caddy
+// keeps its listener settings, even when no route remains.
 func UnregisterRoute(
 	serviceName string,
 	host string,
 	path string,
 	manifestPath string,
 	registrationsDirectoryPath string,
-	fallback ManagedCaddyConfigFallback,
 	outputWriters RouteCommandOutputWriters,
 ) error {
 	routesDirectoryPath := filepath.Clean(filepath.Join(registrationsDirectoryPath, ".."))
 	paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
 	registrationPath := getRouteRegistrationPath(serviceName, host, path, routesDirectoryPath)
-	previousSettings, err := ReadManagedCaddyGlobalSettings(paths, fallback)
-	if err != nil {
-		return err
-	}
-
-	registrationText, err := os.ReadFile(registrationPath)
-	if err != nil {
-		return nil
-	}
-	registration, err := parseRouteRegistration(registrationText)
-	if err != nil {
-		return nil
-	}
-	if registration.OwnerPID != routeMutationProcessID() || registration.ManifestPath != manifestPath {
-		return nil
-	}
-
-	if err := removeIfExists(registrationPath); err != nil {
-		return err
-	}
-	nextSettings, err := ReadManagedCaddyGlobalSettings(paths, fallback)
-	if err != nil {
-		return err
-	}
-	if didManagedCaddyGlobalSettingsChange(previousSettings, nextSettings) {
-		if err := syncManagedCaddyGlobalState(routesDirectoryPath, nextSettings); err != nil {
+	return withRouteMutationLock(paths, func() error {
+		registrationText, err := os.ReadFile(registrationPath)
+		if err != nil {
+			return nil
+		}
+		registration, err := parseRouteRegistration(registrationText)
+		if err != nil {
+			return nil
+		}
+		if registration.OwnerPID != routeMutationProcessID() || registration.ManifestPath != manifestPath {
+			return nil
+		}
+		settings, err := readRunningSettings(paths, DefaultManagedCaddyGlobalSettings())
+		if err != nil {
 			return err
 		}
-	}
-	if err := syncHostRoute(host, routesDirectoryPath, &nextSettings); err != nil {
-		return err
-	}
-	if err := syncManagedCaddyNotFoundSite(routesDirectoryPath, nextSettings.HTTPSPort); err != nil {
-		return err
-	}
 
-	return reloadManagedCaddy(previousSettings.AdminAddress, routesDirectoryPath, outputWriters)
+		if err := removeIfExists(registrationPath); err != nil {
+			return err
+		}
+		if err := syncHostRoute(host, routesDirectoryPath, settings); err != nil {
+			return err
+		}
+		if err := syncManagedCaddyNotFoundSite(routesDirectoryPath, settings.HTTPSPort); err != nil {
+			return err
+		}
+
+		return reloadManagedCaddy(settings.AdminAddress, routesDirectoryPath, outputWriters)
+	})
 }
 
-func SyncManagedHostRoute(host string, adminAddress string, routesDirectoryPath string, outputWriters RouteCommandOutputWriters) error {
-	if err := syncHostRoute(host, routesDirectoryPath, nil); err != nil {
-		return err
-	}
+// SyncManagedHostRoute renders host from its current registrations and
+// reloads the managed Caddy.
+func SyncManagedHostRoute(host string, routesDirectoryPath string, outputWriters RouteCommandOutputWriters) error {
+	paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
+	return withRouteMutationLock(paths, func() error {
+		settings, err := readRunningSettings(paths, DefaultManagedCaddyGlobalSettings())
+		if err != nil {
+			return err
+		}
+		if err := syncHostRoute(host, routesDirectoryPath, settings); err != nil {
+			return err
+		}
 
-	return reloadManagedCaddy(adminAddress, routesDirectoryPath, outputWriters)
+		return reloadManagedCaddy(settings.AdminAddress, routesDirectoryPath, outputWriters)
+	})
 }
 
 func ResolveProxyHost(bindHost string) (string, error) {
@@ -552,26 +531,6 @@ func createRouteRegistrationText(options ActivateRouteOptions, manifestPath stri
 	}
 	if options.DocumentInjectionPort != 0 {
 		registration.DocumentInjectionPort = &options.DocumentInjectionPort
-	}
-	if options.HTTPEnabled {
-		enabled := true
-		registration.HTTPEnabled = &enabled
-	}
-	if options.CaddyAdminAddress != "" && ResolveManagedCaddyAdminAddress(options.CaddyAdminAddress) != DefaultManagedCaddyAdminAddress {
-		adminAddress := ResolveManagedCaddyAdminAddress(options.CaddyAdminAddress)
-		registration.CaddyAdminAddress = &adminAddress
-	}
-	if options.CaddyBindHost != "" && options.CaddyBindHost != defaultManagedCaddyBindHost {
-		bindHost := options.CaddyBindHost
-		registration.CaddyBindHost = &bindHost
-	}
-	if options.CaddyHTTPPort != 0 && options.CaddyHTTPPort != defaultManagedCaddyHTTPPort {
-		httpPort := options.CaddyHTTPPort
-		registration.CaddyHTTPPort = &httpPort
-	}
-	if options.CaddyHTTPSPort != 0 && options.CaddyHTTPSPort != defaultManagedCaddyHTTPSPort {
-		httpsPort := options.CaddyHTTPSPort
-		registration.CaddyHTTPSPort = &httpsPort
 	}
 	text, _ := json.MarshalIndent(registration, "", "  ") // Primitive-only fields cannot fail JSON marshaling.
 	return string(text)
@@ -765,7 +724,7 @@ func readAppTarget(registration routeRegistration) (string, error) {
 	return FormatProxyAddress(host, registration.AppPort), nil
 }
 
-func syncHostRoute(host string, routesDirectoryPath string, settings *ManagedCaddyGlobalSettings) error {
+func syncHostRoute(host string, routesDirectoryPath string, settings ManagedCaddyGlobalSettings) error {
 	registrations, err := readHostRegistrations(host, routesDirectoryPath)
 	if err != nil {
 		return err
@@ -775,18 +734,7 @@ func syncHostRoute(host string, routesDirectoryPath string, settings *ManagedCad
 		return removeIfExists(hostRoutePath)
 	}
 
-	effectiveSettings := ManagedCaddyGlobalSettings{}
-	if settings != nil {
-		effectiveSettings = *settings
-	} else {
-		paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
-		effectiveSettings, err = ReadManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
-		if err != nil {
-			return err
-		}
-	}
-
-	snippet, err := renderHostRouteSnippet(registrations, effectiveSettings.HTTPEnabled, effectiveSettings.HTTPPort, effectiveSettings.HTTPSPort, routesDirectoryPath)
+	snippet, err := renderHostRouteSnippet(registrations, settings.HTTPEnabled, settings.HTTPPort, settings.HTTPSPort, routesDirectoryPath)
 	if err != nil {
 		return err
 	}
@@ -916,21 +864,6 @@ func parseManagedRouteRecord(registrationText []byte) (managedRouteRecord, error
 		if modernValue.DocumentInjectionPort != nil {
 			record.DocumentInjectionPort = *modernValue.DocumentInjectionPort
 		}
-		if modernValue.HTTPEnabled != nil {
-			record.HTTPEnabled = *modernValue.HTTPEnabled
-		}
-		if modernValue.CaddyAdminAddress != nil {
-			record.CaddyAdminAddress = *modernValue.CaddyAdminAddress
-		}
-		if modernValue.CaddyBindHost != nil {
-			record.CaddyBindHost = *modernValue.CaddyBindHost
-		}
-		if modernValue.CaddyHTTPPort != nil {
-			record.CaddyHTTPPort = *modernValue.CaddyHTTPPort
-		}
-		if modernValue.CaddyHTTPSPort != nil {
-			record.CaddyHTTPSPort = *modernValue.CaddyHTTPSPort
-		}
 		if modernValue.StackName != nil {
 			record.StackName = *modernValue.StackName
 		}
@@ -992,22 +925,6 @@ func routeRegistrationFromRecord(record managedRouteRecord) routeRegistration {
 	if record.DocumentInjectionPort != 0 {
 		registration.DocumentInjectionPort = &record.DocumentInjectionPort
 	}
-	if record.HTTPEnabled {
-		enabled := true
-		registration.HTTPEnabled = &enabled
-	}
-	if record.CaddyAdminAddress != "" {
-		registration.CaddyAdminAddress = &record.CaddyAdminAddress
-	}
-	if record.CaddyBindHost != "" {
-		registration.CaddyBindHost = &record.CaddyBindHost
-	}
-	if record.CaddyHTTPPort != 0 {
-		registration.CaddyHTTPPort = &record.CaddyHTTPPort
-	}
-	if record.CaddyHTTPSPort != 0 {
-		registration.CaddyHTTPSPort = &record.CaddyHTTPSPort
-	}
 	if record.StackName != "" {
 		registration.StackName = record.StackName
 	}
@@ -1023,8 +940,7 @@ func isRouteRegistrationJSON(value routeRegistrationJSON) bool {
 		value.ManifestPath != nil &&
 		value.OwnerPID != nil &&
 		value.Path != nil &&
-		value.ServiceName != nil &&
-		(value.HTTPEnabled == nil || *value.HTTPEnabled)
+		value.ServiceName != nil
 }
 
 func isLegacyRouteRegistrationJSON(value legacyRouteRegistrationJSON) bool {
@@ -1300,15 +1216,7 @@ func cleanupStaleHostClaims(hostClaimsDirectoryPath string) error {
 	return nil
 }
 
-func didManagedCaddyGlobalSettingsChange(previousSettings ManagedCaddyGlobalSettings, nextSettings ManagedCaddyGlobalSettings) bool {
-	return previousSettings.AdminAddress != nextSettings.AdminAddress ||
-		previousSettings.BindHost != nextSettings.BindHost ||
-		previousSettings.HTTPEnabled != nextSettings.HTTPEnabled ||
-		previousSettings.HTTPPort != nextSettings.HTTPPort ||
-		previousSettings.HTTPSPort != nextSettings.HTTPSPort
-}
-
-func syncManagedCaddyGlobalState(routesDirectoryPath string, settings ManagedCaddyGlobalSettings) error {
+func syncManagedCaddyGlobalState(routesDirectoryPath string, settings ManagedCaddyGlobalSettings, runtimeOS string) error {
 	paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
 	entries, err := os.ReadDir(paths.RegistrationsDirectoryPath)
 	if err != nil {
@@ -1342,23 +1250,11 @@ func syncManagedCaddyGlobalState(routesDirectoryPath string, settings ManagedCad
 		hosts = append(hosts, registration.Host)
 	}
 
-	caddyfile, err := renderManagedCaddyfile(renderManagedCaddyfileOptions{
-		AdminAddress: settings.AdminAddress,
-		BindHost:     settings.BindHost,
-		EnableHTTP:   settings.HTTPEnabled,
-		HTTPPort:     settings.HTTPPort,
-		HTTPSPort:    settings.HTTPSPort,
-		Paths:        paths,
-		RuntimeOS:    runtime.GOOS,
-	})
-	if err != nil {
-		return err
-	}
-	if err := os.WriteFile(paths.CaddyfilePath, []byte(caddyfile), 0o644); err != nil {
+	if err := writeManagedCaddyfile(paths, settings, runtimeOS); err != nil {
 		return err
 	}
 	for _, host := range hosts {
-		if err := syncHostRoute(host, routesDirectoryPath, &settings); err != nil {
+		if err := syncHostRoute(host, routesDirectoryPath, settings); err != nil {
 			return err
 		}
 	}

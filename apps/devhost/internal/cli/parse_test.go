@@ -92,26 +92,6 @@ func TestParseCommandLineArguments(t *testing.T) {
 			},
 		},
 		{
-			name:    "parses caddy lifecycle with explicit manifest",
-			rawArgs: []string{"caddy", "start", "--manifest", manifestPath},
-			want: CommandLineArguments{
-				Action:       CaddyStart,
-				Kind:         KindCaddyLifecycle,
-				ManifestPath: &manifestPath,
-			},
-			comparePath: true,
-		},
-		{
-			name:    "parses root manifest before caddy subcommand",
-			rawArgs: []string{"--manifest", manifestPath, "caddy", "start"},
-			want: CommandLineArguments{
-				Action:       CaddyStart,
-				Kind:         KindCaddyLifecycle,
-				ManifestPath: &manifestPath,
-			},
-			comparePath: true,
-		},
-		{
 			name:    "parses print root cert",
 			rawArgs: []string{"caddy", "print-root-cert"},
 			want: CommandLineArguments{
@@ -231,17 +211,15 @@ func TestParseCommandLineArguments(t *testing.T) {
 			comparePath: true,
 		},
 		{
-			name:    "parses caddy lifecycle manifest from environment",
+			name:    "caddy lifecycle ignores the manifest environment",
 			rawArgs: []string{"caddy", "start"},
 			env: map[string]string{
 				"DEVHOST_MANIFEST": manifestPath,
 			},
 			want: CommandLineArguments{
-				Action:       CaddyStart,
-				Kind:         KindCaddyLifecycle,
-				ManifestPath: &manifestPath,
+				Action: CaddyStart,
+				Kind:   KindCaddyLifecycle,
 			},
-			comparePath: true,
 		},
 		{
 			name:    "cli manifest overrides environment",
@@ -283,9 +261,9 @@ func TestParseCommandLineArguments(t *testing.T) {
 			wantError: "unknown command \"now\" for \"devhost caddy start\"",
 		},
 		{
-			name:      "rejects invalid caddy manifest suffix",
-			rawArgs:   []string{"--manifest", "./other.toml", "caddy", "start"},
-			wantError: "--manifest must point to a file named devhost.toml, received: ./other.toml",
+			name:      "rejects a manifest for the shared caddy",
+			rawArgs:   []string{"caddy", "start", "--manifest", "./devhost.toml"},
+			wantError: "unknown option: --manifest",
 		},
 		{
 			name:      "rejects missing trust remote target",

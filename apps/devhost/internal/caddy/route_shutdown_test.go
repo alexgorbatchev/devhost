@@ -9,18 +9,12 @@ import (
 
 func TestUnregisterLastRouteRetainsIsolatedCaddy(t *testing.T) {
 	withRouteMutationTestHooks(t, routeMutationTestHooks{processID: 4321})
-	paths := newManagedCaddyPaths(t)
-	route := ActivateRouteOptions{
-		AppBindHost: "127.0.0.1", AppPort: 3000, Host: "demo.localhost", Path: "/", ServiceName: "web",
-		CaddyAdminAddress: "127.0.0.1:22000", CaddyBindHost: "127.0.0.1", HTTPEnabled: true, CaddyHTTPPort: 28080, CaddyHTTPSPort: 28443,
-	}
+	running := ManagedCaddyGlobalSettings{AdminAddress: "127.0.0.1:22000", BindHost: "127.0.0.1", HTTPEnabled: true, HTTPPort: 28080, HTTPSPort: 28443}
+	paths := newManagedCaddyPathsWithSettings(t, running)
+	route := ActivateRouteOptions{AppBindHost: "127.0.0.1", AppPort: 3000, Host: "demo.localhost", Path: "/", ServiceName: "web"}
 	manifestPath := filepath.Join(paths.StateDirectoryPath, "devhost.toml")
 	writeRegistration(t, getRouteRegistrationPath(route.ServiceName, route.Host, route.Path, paths.RoutesDirectoryPath), createRouteRegistrationText(route, manifestPath))
-	initial, err := ReadManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := syncManagedCaddyGlobalState(paths.RoutesDirectoryPath, initial); err != nil {
+	if err := syncHostRoute(route.Host, paths.RoutesDirectoryPath, running); err != nil {
 		t.Fatal(err)
 	}
 	originalRun := routeMutationRunManagedCaddyCommand
@@ -30,17 +24,13 @@ func TestUnregisterLastRouteRetainsIsolatedCaddy(t *testing.T) {
 		reloadAddress = options.AdminAddress
 		return CommandResult{Success: true}
 	}
-	if err := UnregisterRoute(route.ServiceName, route.Host, route.Path, manifestPath, paths.RegistrationsDirectoryPath, ManagedCaddyConfigFallback{AdminAddress: route.CaddyAdminAddress, BindHost: route.CaddyBindHost, HTTPEnabled: route.HTTPEnabled, HTTPPort: route.CaddyHTTPPort, HTTPSPort: route.CaddyHTTPSPort}, RouteCommandOutputWriters{}); err != nil {
+	if err := UnregisterRoute(route.ServiceName, route.Host, route.Path, manifestPath, paths.RegistrationsDirectoryPath, RouteCommandOutputWriters{}); err != nil {
 		t.Fatal(err)
 	}
-	if reloadAddress != route.CaddyAdminAddress {
-		t.Fatalf("reload targets %q, want isolated admin %q", reloadAddress, route.CaddyAdminAddress)
+	if reloadAddress != running.AdminAddress {
+		t.Fatalf("reload targets %q, want isolated admin %q", reloadAddress, running.AdminAddress)
 	}
-	settings, err := ReadManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{AdminAddress: route.CaddyAdminAddress, BindHost: route.CaddyBindHost, HTTPEnabled: route.HTTPEnabled, HTTPPort: route.CaddyHTTPPort, HTTPSPort: route.CaddyHTTPSPort})
-	if err != nil {
-		t.Fatal(err)
-	}
-	rendered, err := renderManagedCaddyfile(renderManagedCaddyfileOptions{AdminAddress: settings.AdminAddress, BindHost: settings.BindHost, EnableHTTP: settings.HTTPEnabled, HTTPPort: settings.HTTPPort, HTTPSPort: settings.HTTPSPort, Paths: paths, RuntimeOS: runtime.GOOS})
+	rendered, err := renderManagedCaddyfile(renderManagedCaddyfileOptions{AdminAddress: running.AdminAddress, BindHost: running.BindHost, EnableHTTP: running.HTTPEnabled, HTTPPort: running.HTTPPort, HTTPSPort: running.HTTPSPort, Paths: paths, RuntimeOS: runtime.GOOS})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,6 +41,9 @@ func TestUnregisterLastRouteRetainsIsolatedCaddy(t *testing.T) {
 	// With no routes, retain the current listener configuration rather than exposing default ports.
 	if string(actual) != rendered {
 		t.Fatalf("Caddyfile after shutdown = %q, want %q", actual, rendered)
+	}
+	if applied, _, _ := ReadAppliedManagedCaddySettings(paths); applied != running {
+		t.Fatalf("applied settings after shutdown = %#v, want %#v", applied, running)
 	}
 	if _, err := os.Stat(getHostRoutePath(route.Host, paths.RoutesDirectoryPath)); !os.IsNotExist(err) {
 		t.Fatalf("removed host route still exists: %v", err)

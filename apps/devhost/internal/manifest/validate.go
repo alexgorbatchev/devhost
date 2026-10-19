@@ -14,14 +14,10 @@ import (
 )
 
 const (
-	defaultManagedCaddyAdminAddress = "127.0.0.1:20197"
-	defaultManagedCaddyBindHost     = "127.0.0.1"
-	defaultManagedCaddyHTTPPort     = 80
-	defaultManagedCaddyHTTPSPort    = 443
-	defaultDevtoolsEditor           = "vscode"
-	defaultDevtoolsStatusPosition   = "bottom-right"
-	defaultAnnotationActionID       = "agent"
-	defaultServiceBindHost          = "127.0.0.1"
+	defaultDevtoolsEditor         = "vscode"
+	defaultDevtoolsStatusPosition = "bottom-right"
+	defaultAnnotationActionID     = "agent"
+	defaultServiceBindHost        = "127.0.0.1"
 )
 
 var (
@@ -35,6 +31,11 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 	validationIssues := []string{}
 	manifestValue := rawManifest.value
 
+	// The shared Caddy listeners belong to every stack on the machine, so they
+	// are not a project setting; name where they live instead of an unknown key.
+	if _, ok := manifestValue["caddy"]; ok {
+		schemaIssues = append(schemaIssues, "caddy moved to the devhost config file: set the shared Caddy listeners in the [caddy] table of config.toml in the devhost config directory, and remove [caddy] from the manifest.")
+	}
 	allowKeys(manifestValue, []string{"annotation", "caddy", "devtools", "worktrees", "name", "services", "groups", "includes", "killZombies"}, "", &schemaIssues)
 
 	name, ok := readRequiredNonEmptyString(manifestValue, "name", &schemaIssues)
@@ -48,7 +49,6 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 	}
 
 	validatedAnnotation := validateAnnotation(manifestValue["annotation"], manifestDirectoryPath, &schemaIssues, &validationIssues)
-	validatedCaddy := validateCaddy(manifestValue["caddy"], &schemaIssues)
 	validatedDevtools := validateDevtools(manifestValue["devtools"], &schemaIssues)
 	validatedWorktrees := validateWorktrees(manifestValue["worktrees"], &schemaIssues)
 	validatedServices, primaryService := validateServices(
@@ -72,7 +72,6 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 	return Manifest{
 		Inputs:                rawManifest.Inputs,
 		Annotation:            validatedAnnotation,
-		Caddy:                 validatedCaddy,
 		Devtools:              validatedDevtools,
 		Worktrees:             validatedWorktrees,
 		ManifestDirectoryPath: manifestDirectoryPath,
@@ -356,63 +355,6 @@ func validateAgentActionFields(path string, value map[string]any, manifestDirect
 		Env:     validatedEnv,
 		Kind:    "configured",
 	}
-}
-
-func validateCaddy(rawValue any, schemaIssues *[]string) CaddyConfig {
-	result := CaddyConfig{Global: CaddyGlobalConfig{
-		AdminAddress: defaultManagedCaddyAdminAddress,
-		BindHost:     defaultManagedCaddyBindHost,
-		HTTP:         false,
-		HTTPPort:     defaultManagedCaddyHTTPPort,
-		HTTPSPort:    defaultManagedCaddyHTTPSPort,
-	}}
-
-	if rawValue == nil {
-		return result
-	}
-
-	value, ok := readMap(rawValue, "caddy", schemaIssues)
-	if !ok {
-		return result
-	}
-
-	allowKeys(value, []string{"global"}, "caddy", schemaIssues)
-	if value["global"] == nil {
-		return result
-	}
-
-	globalValue, ok := readMap(value["global"], "caddy.global", schemaIssues)
-	if !ok {
-		return result
-	}
-
-	allowKeys(globalValue, []string{"adminAddress", "bindHost", "http", "httpPort", "httpsPort"}, "caddy.global", schemaIssues)
-
-	if adminAddress, ok := readOptionalNonEmptyString(globalValue, "adminAddress", schemaIssues); ok {
-		result.Global.AdminAddress = adminAddress
-	}
-
-	if bindHost, ok := readOptionalString(globalValue, "bindHost", schemaIssues); ok {
-		if isAllowedBindHost(bindHost) {
-			result.Global.BindHost = bindHost
-		} else {
-			*schemaIssues = append(*schemaIssues, "caddy.global.bindHost must be one of 127.0.0.1, 0.0.0.0, ::1, or ::.")
-		}
-	}
-
-	if httpEnabled, ok := readOptionalBool(globalValue, "http", schemaIssues); ok {
-		result.Global.HTTP = httpEnabled
-	}
-
-	if httpPort, ok := readOptionalPort(globalValue, "httpPort", "caddy.global.httpPort", schemaIssues); ok {
-		result.Global.HTTPPort = httpPort
-	}
-
-	if httpsPort, ok := readOptionalPort(globalValue, "httpsPort", "caddy.global.httpsPort", schemaIssues); ok {
-		result.Global.HTTPSPort = httpsPort
-	}
-
-	return result
 }
 
 // DefaultDevtools supplies the toolbar defaults for manifest and file sessions.

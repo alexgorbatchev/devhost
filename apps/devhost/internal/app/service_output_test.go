@@ -18,7 +18,8 @@ func TestRunServiceOutputModes(t *testing.T) {
 			t.Setenv("COLUMNS", "40")
 			t.Setenv("DEVHOST_STATE_DIR", t.TempDir())
 			directory := t.TempDir()
-			path := writeDevtoolsDisabledProcessManifest(t, directory, caddytest.StartAdminServer(t))
+			useSharedCaddyAdmin(t, caddytest.StartAdminServer(t))
+			path := writeDevtoolsDisabledProcessManifest(t, directory)
 			manifest, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatal(err)

@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -26,7 +27,7 @@ import (
 
 func TestMultipleHostMetadata(t *testing.T) {
 	service := ResolvedService{Name: "web", Hosts: []string{"app.localhost", "alias.localhost"}, Path: stringPointer("/api/*"), Port: intPointer(3000)}
-	value := ResolvedManifest{Name: "hosts", PrimaryService: "web", Services: map[string]ResolvedService{"web": service}, Caddy: manifest.CaddyConfig{Global: manifest.CaddyGlobalConfig{HTTPSPort: 4443}}}
+	value := ResolvedManifest{Name: "hosts", PrimaryService: "web", Services: map[string]ResolvedService{"web": service}, Caddy: caddy.ManagedCaddyGlobalSettings{HTTPSPort: 4443}}
 	var output strings.Builder
 	LogServiceURLs(value, &output)
 	if want := "[hosts] web (primary): https://app.localhost:4443/api/\n[hosts] web (primary): https://alias.localhost:4443/api/\n"; output.String() != want {
@@ -153,12 +154,13 @@ func TestStartStackMultipleHosts(t *testing.T) {
 			}
 			port := nettest.ReservePort(t)
 			trace := filepath.Join(t.TempDir(), "starts")
-			text := fmt.Sprintf("name = \"hosts\"\n[caddy.global]\nadminAddress = %q\n[services.web]\ncommand = [%q, \"-test.run=TestMultipleHostBackendProcess\"]\nport = %d\nhost = [\"app.localhost\", \"alias.localhost\"]\nenv = { DEVHOST_MULTI_HOST_HELPER = \"1\", START_TRACE_PATH = %q }\n", admin, os.Args[0], port, trace)
+			text := fmt.Sprintf("name = \"hosts\"\n[services.web]\ncommand = [%q, \"-test.run=TestMultipleHostBackendProcess\"]\nport = %d\nhost = [\"app.localhost\", \"alias.localhost\"]\nenv = { DEVHOST_MULTI_HOST_HELPER = \"1\", START_TRACE_PATH = %q }\n", os.Args[0], port, trace)
 			value := resolveHostTestManifest(t, text)
+			value.Caddy = testCaddySettings(admin)
 			ready := &hostReadyWriter{ready: make(chan struct{})}
 			done := make(chan error, 1)
 			go func() {
-				_, err := StartStack(&value, []string{"web"}, StartStackOptions{CaddyPaths: paths, LogWriter: ready, ServiceStdoutWriter: ioDiscard{}, ServiceStderrWriter: ioDiscard{}, ShutdownGracePeriod: 100 * time.Millisecond})
+				_, err := startTestStack(t, &value, []string{"web"}, StartStackOptions{CaddyPaths: paths, LogWriter: ready, ServiceStdoutWriter: ioDiscard{}, ServiceStderrWriter: ioDiscard{}, ShutdownGracePeriod: 100 * time.Millisecond})
 				done <- err
 			}()
 			var stop chan<- os.Signal
@@ -275,7 +277,7 @@ func TestStartStackAliasClaimConflictReleasesOwnClaims(t *testing.T) {
 	paths := caddy.CreateManagedCaddyPaths(t.TempDir())
 	admin := caddytest.StartAdminServer(t)
 	writeFakeCaddyExecutable(t, paths.ExecutablePath)
-	if err := caddy.EnsureManagedCaddyConfig(paths, caddy.ManagedCaddyConfigFallback{AdminAddress: admin}); err != nil {
+	if err := caddy.EnsureManagedCaddyConfig(paths, testCaddySettings(admin), runtime.GOOS); err != nil {
 		t.Fatal(err)
 	}
 	claim := caddy.ClaimHostOptions{Host: "z-blocked.localhost", ManifestPath: filepath.Join(t.TempDir(), "other.toml"), RegistrationsDirectoryPath: paths.RegistrationsDirectoryPath}
@@ -291,7 +293,7 @@ func TestStartStackAliasClaimConflictReleasesOwnClaims(t *testing.T) {
 	value.Services["web"] = ResolvedService{
 		Name: "web", BindHost: "127.0.0.1", Hosts: []string{"app.localhost", "z-blocked.localhost"}, Path: stringPointer("/"), Port: intPointer(nettest.ReservePort(t)), PortSource: "fixed",
 	}
-	_, err := StartStack(&value, []string{"web"}, StartStackOptions{CaddyPaths: paths, LogWriter: ioDiscard{}})
+	_, err := startTestStack(t, &value, []string{"web"}, StartStackOptions{CaddyPaths: paths, LogWriter: ioDiscard{}})
 	if err == nil || !strings.Contains(err.Error(), "z-blocked.localhost is already claimed") {
 		t.Fatalf("claim conflict error = %v", err)
 	}

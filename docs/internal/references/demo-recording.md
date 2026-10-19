@@ -22,7 +22,7 @@ VHS_NO_SANDBOX=1 just demo record
 
 This happens in Linux containers and on hosts that restrict unprivileged user namespaces, such as Ubuntu with `kernel.apparmor_restrict_unprivileged_userns=1`; VHS then fails with "could not start browser". The recorder does not set that override itself.
 
-Start the managed Caddy with `devhost caddy start` if it is not already running. The recorder checks its admin endpoint and HTTPS listener before capturing scenes. It inherits `DEVHOST_STATE_DIR` and `XDG_STATE_HOME` so route registration uses the same shared state as your normal devhost stacks. `DEVHOST_DEMO_ADMIN` can override the default admin address `127.0.0.1:20197`; this is a control endpoint, not the public demo URL.
+Start the managed Caddy with `devhost caddy start` if it is not already running. The recorder checks its admin endpoint and HTTPS listener before capturing scenes. It inherits `DEVHOST_STATE_DIR` and `XDG_STATE_HOME` so route registration uses the same shared state as your normal devhost stacks. `DEVHOST_DEMO_ADMIN` can override the default admin address `127.0.0.1:20197`; this is a control endpoint, not the public demo URL. Each recording writes that address into the `[caddy]` table of its own devhost config file, `config/devhost/config.toml` under the run directory, which its `XDG_CONFIG_HOME` points at.
 
 Health checks verify HTTPS using the existing root certificate returned by `devhost caddy print-root-cert`. The owned Playwright context ignores certificate errors because a fresh Chromium profile may not trust that local CA. The workflow does not install certificates into your trust store.
 
@@ -168,12 +168,13 @@ When a change adds or alters a user-visible feature, update its row in the same 
 
 ### Routing
 
-| Feature                                              | Documented in                                                                                               | Shown in                                         |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| HTTPS hostnames through the managed Caddy            | `guides/managed-caddy.md`                                                                                   | `managed-caddy` step-3; promo line-2             |
-| Routing services by path on one hostname             | `guides/managed-caddy.md`                                                                                   | `managed-caddy` step-1, step-4, step-5           |
-| Multiple hostnames for one service                   | README, "Multiple Domains for One Service"; `guides/managed-caddy.md`, "Multiple hostnames for one service" | No demo                                          |
-| Shared Caddy settings: plain HTTP and listener ports | `guides/shared-managed-caddy-settings.md`                                                                   | `shared-managed-caddy-settings` step-1 to step-5 |
+| Feature                                                               | Documented in                                                                                               | Shown in                                         |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| HTTPS hostnames through the managed Caddy                             | `guides/managed-caddy.md`                                                                                   | `managed-caddy` step-3; promo line-2             |
+| Routing services by path on one hostname                              | `guides/managed-caddy.md`                                                                                   | `managed-caddy` step-1, step-4, step-5           |
+| Multiple hostnames for one service                                    | README, "Multiple Domains for One Service"; `guides/managed-caddy.md`, "Multiple hostnames for one service" | No demo                                          |
+| Shared Caddy settings in `config.toml`: plain HTTP and listener ports | `guides/shared-managed-caddy-settings.md`                                                                   | `shared-managed-caddy-settings` step-1 to step-5 |
+| Saving `config.toml` moves the running shared Caddy                   | README; `guides/shared-managed-caddy-settings.md`, "Changing the settings while stacks run"                 | No demo                                          |
 
 ### Devtools
 
