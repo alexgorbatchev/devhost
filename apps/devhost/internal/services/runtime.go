@@ -96,6 +96,14 @@ func (r *stackRuntime) health(ctx context.Context) (devtools.HealthResponse, err
 	return h, nil
 }
 
+// stackName reads the stack's name, which labels its logs. A reload can rename
+// the stack while other goroutines log.
+func (r *stackRuntime) stackName() string {
+	r.manifestMu.RLock()
+	defer r.manifestMu.RUnlock()
+	return r.manifest.Name
+}
+
 func (r *stackRuntime) publish() {
 	r.controlMu.RLock()
 	control := r.control

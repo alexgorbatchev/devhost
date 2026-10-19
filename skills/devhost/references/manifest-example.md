@@ -4,10 +4,10 @@ Below is a complete, production-grade `devhost.toml` manifest illustrating every
 
 ```toml
 # Service changes and include-file additions/removals reload while devhost runs.
-# Invalid edits leave the stack running. Changes to name, killZombies, devtools,
+# Invalid edits leave the stack running. Changes to killZombies, devtools,
 # annotation, or worktree enablement require restarting devhost. The shared Caddy
 # listeners belong to config.toml in the devhost config directory, not to a manifest.
-# `name` identifies the stack in logs, state, and injected metadata.
+# `name` labels the stack in logs and devtools; saving a new name renames the running stack.
 name = "hello-stack"
 
 # `killZombies` automatically terminates processes from the same manifest path

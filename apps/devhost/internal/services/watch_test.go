@@ -31,7 +31,7 @@ func TestWatchManagerMovesServiceToAnotherCheckout(t *testing.T) {
 	old, next := t.TempDir(), t.TempDir()
 	tracker := NewDirtyTracker()
 	events := make(chan string, 10)
-	w := NewWatchManager(tracker, func(name string) { events <- name }, nil, "")
+	w := NewWatchManager(tracker, func(name string) { events <- name }, nil, nil)
 	defer w.StopAll()
 	if err := w.StartWatching("web", []string{"."}, old); err != nil {
 		t.Fatal(err)
@@ -80,7 +80,7 @@ func TestWatchManagerDebounceAndDynamicDir(t *testing.T) {
 	dirtyCh := make(chan string, 10)
 	wm := NewWatchManager(tracker, func(svc string) {
 		dirtyCh <- svc
-	}, nil, "")
+	}, nil, nil)
 	defer wm.StopAll()
 
 	if err := wm.StartWatching("web", []string{"src/"}, tmpDir); err != nil {
@@ -139,7 +139,7 @@ func TestWatchManagerCancelTimer(t *testing.T) {
 		dirtyCh := make(chan string, 2)
 		wm := NewWatchManager(tracker, func(svc string) {
 			dirtyCh <- svc
-		}, nil, "")
+		}, nil, nil)
 		defer wm.StopAll()
 
 		const debounce = time.Second
@@ -204,7 +204,7 @@ func TestWatchManagerDebounceTimerNotDeletedByPriorTimer(t *testing.T) {
 			close(firstFired)
 			<-holdFirst
 		}
-	}, nil, "")
+	}, nil, nil)
 	defer wm.StopAll()
 
 	wm.SetDebounceDuration(5 * time.Millisecond)

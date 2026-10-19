@@ -176,7 +176,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	documentInjectionServers := map[string]*devtools.DocumentInjectionServer{}
 	var devtoolsControlServer *devtools.ControlServer
 	var cleanupError error
-	shutdownProgress := newShutdownProgress(options.LogWriter, manifest.Name)
+	shutdownProgress := newShutdownProgress(options.LogWriter, state.stackName)
 	routes := stackRoutes{manifest: *manifest, paths: paths, outputWriters: options.CaddyOutputWriters, documentServers: documentInjectionServers, active: map[string]caddy.ActivateRouteOptions{}}
 	routes.runtime, routes.injectDevtools = state, devtoolsEnabled
 	routes.restartService = func(name string) error { return state.restart(lifecycleCtx, []string{name}) }
@@ -190,7 +190,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	onDirty := func(serviceName string) {
 		state.publish()
 	}
-	watchManager := NewWatchManager(dirtyTracker, onDirty, options.LogWriter, manifest.Name)
+	watchManager := NewWatchManager(dirtyTracker, onDirty, options.LogWriter, state.stackName)
 	state.watcher, state.dirty, state.routes = watchManager, dirtyTracker, &routes
 
 	defer watchManager.StopAll()
@@ -213,7 +213,6 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		return 0, err
 	}
 	processSignals := make(chan os.Signal, 1)
-	stackName := manifest.Name
 	registerProcessSignals(processSignals)
 	defer unregisterProcessSignals(processSignals)
 	signalForwardingDone := make(chan struct{})
@@ -221,7 +220,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		defer close(signalForwardingDone)
 		select {
 		case receivedSignal := <-processSignals:
-			writeLogLine(options.LogWriter, stackName, fmt.Sprintf("Received %s; shutting down the stack.", describeShutdownSignal(receivedSignal)))
+			writeLogLine(options.LogWriter, state.stackName(), fmt.Sprintf("Received %s; shutting down the stack.", describeShutdownSignal(receivedSignal)))
 			signalExits <- receivedSignal
 			cancelLifecycle()
 		case err := <-options.runtimeErrors:
@@ -413,7 +412,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			ComponentEditor:           manifest.Devtools.Editor.IDE,
 			DevSource:                 devSource,
 			OnLog: func(message string) {
-				writeLogLine(options.LogWriter, manifest.Name, message)
+				writeLogLine(options.LogWriter, state.stackName(), message)
 			},
 			FeatureToggles: runtimeDevtoolsFeatures,
 			GetHealthResponse: func() (devtools.HealthResponse, error) {
@@ -428,7 +427,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 				Intervals: resolveResourceIntervals(manifest.Devtools.Resources),
 				Readers:   hostusage.HostReaders(),
 				OnFailure: func(readout string, err error) {
-					writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("devtools %s usage is unavailable: %v", readout, err))
+					writeLogLine(options.LogWriter, state.stackName(), fmt.Sprintf("devtools %s usage is unavailable: %v", readout, err))
 				},
 			},
 			RestartService:          func(names []string) error { return state.restart(lifecycleCtx, names) },
@@ -536,7 +535,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 
 	idleShutdownChan := make(chan struct{}, 1)
 	if finalIdleTimeout > 0 && devtoolsControlServer != nil {
-		logFilePath := filepath.Join(paths.CaddyDirectoryPath, "logs", fmt.Sprintf("%s_access.log", manifest.Name))
+		logFilePath := caddy.AccessLogPath(paths, stackAccessLogName(*manifest))
 		_ = os.MkdirAll(filepath.Dir(logFilePath), 0o755)
 		if runtime.GOOS != "windows" {
 			if f, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644); err == nil {
@@ -668,7 +667,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			configEvents = configWatch.events
 			if err != nil {
 				if message := err.Error(); message != lastConfigError {
-					writeLogLine(options.LogWriter, stackName, fmt.Sprintf("shared Caddy settings rejected: %v", err))
+					writeLogLine(options.LogWriter, state.stackName(), fmt.Sprintf("shared Caddy settings rejected: %v", err))
 					lastConfigError = message
 				}
 			} else {
@@ -689,14 +688,14 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			manifestEvents = manifestWatch.events
 			if err != nil {
 				if message := err.Error(); message != lastReloadError {
-					writeLogLine(options.LogWriter, stackName, fmt.Sprintf("configuration reload rejected: %v", err))
+					writeLogLine(options.LogWriter, state.stackName(), fmt.Sprintf("configuration reload rejected: %v", err))
 					lastReloadError = message
 				}
 			} else {
 				lastReloadError = ""
 			}
 		case result := <-state.exits:
-			writeLogLine(options.LogWriter, stackName, fmt.Sprintf("%s exited with code %d; devhost is waiting for a restart.", result.serviceName, result.exitCode))
+			writeLogLine(options.LogWriter, state.stackName(), fmt.Sprintf("%s exited with code %d; devhost is waiting for a restart.", result.serviceName, result.exitCode))
 		case receivedSignal := <-signalExits:
 			cancelLifecycle()
 			state.startedMu.Lock()
@@ -708,7 +707,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			return 0, err
 		case <-idleShutdownChan:
 			cancelLifecycle()
-			writeLogLine(options.LogWriter, stackName, fmt.Sprintf("Idle timeout of %s reached. Automatically shutting down the stack...", finalIdleTimeout))
+			writeLogLine(options.LogWriter, state.stackName(), fmt.Sprintf("Idle timeout of %s reached. Automatically shutting down the stack...", finalIdleTimeout))
 			state.startedMu.Lock()
 			startedServicesSnapshot := append([]*startedService{}, state.started...)
 			state.startedMu.Unlock()
@@ -1084,7 +1083,7 @@ func stopDaemonLifecycleServices(
 	devtoolsControlServer *devtools.ControlServer,
 ) error {
 	var cleanupError error
-	progress := newShutdownProgress(options.LogWriter, manifest.Name)
+	progress := newShutdownProgress(options.LogWriter, func() string { return manifest.Name })
 
 	for index := len(startedServices) - 1; index >= 0; index-- {
 		service := startedServices[index].service

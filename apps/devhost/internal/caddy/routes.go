@@ -46,7 +46,9 @@ type ActivateRouteOptions struct {
 	Host                  string
 	Path                  string
 	ServiceName           string
-	StackName             string
+	// AccessLogName names the access log of the stack that owns the route; see
+	// AccessLogPath.
+	AccessLogName string
 }
 
 type RouteCommandOutputWriters struct {
@@ -84,7 +86,7 @@ type routeRegistration struct {
 	ServiceName           string `json:"serviceName"`
 	DevtoolsControlPort   *int   `json:"devtoolsControlPort,omitempty"`
 	DocumentInjectionPort *int   `json:"documentInjectionPort,omitempty"`
-	StackName             string `json:"stackName,omitempty"`
+	AccessLogName         string `json:"accessLogName,omitempty"`
 }
 
 type legacyRouteRegistration struct {
@@ -110,7 +112,7 @@ type managedRouteRecord struct {
 	Path                  string
 	Port                  int
 	ServiceName           string
-	StackName             string
+	AccessLogName         string
 }
 
 type routeRegistrationJSON struct {
@@ -126,7 +128,7 @@ type routeRegistrationJSON struct {
 	OwnerStartIdentity    *string `json:"ownerStartIdentity"`
 	Path                  *string `json:"path"`
 	ServiceName           *string `json:"serviceName"`
-	StackName             *string `json:"stackName"`
+	AccessLogName         *string `json:"accessLogName"`
 }
 
 type legacyRouteRegistrationJSON struct {
@@ -524,7 +526,7 @@ func createRouteRegistrationText(options ActivateRouteOptions, manifestPath stri
 		OwnerStartIdentity: routeMutationOwnerStartIdentity(),
 		Path:               normalizeRoutePath(options.Path),
 		ServiceName:        options.ServiceName,
-		StackName:          options.StackName,
+		AccessLogName:      options.AccessLogName,
 	}
 	if options.DevtoolsControlPort != 0 {
 		registration.DevtoolsControlPort = &options.DevtoolsControlPort
@@ -593,22 +595,20 @@ func renderHostRouteSiteBlock(
 	}
 	lines = append(lines, "")
 
-	var stackName string
-	if rootRegistration != nil && rootRegistration.StackName != "" {
-		stackName = rootRegistration.StackName
+	var accessLogName string
+	if rootRegistration != nil && rootRegistration.AccessLogName != "" {
+		accessLogName = rootRegistration.AccessLogName
 	} else {
 		for _, reg := range nonRootRegistrations {
-			if reg.StackName != "" {
-				stackName = reg.StackName
+			if reg.AccessLogName != "" {
+				accessLogName = reg.AccessLogName
 				break
 			}
 		}
 	}
 
-	if stackName != "" {
-		paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
-		logFilePath := filepath.Join(paths.CaddyDirectoryPath, "logs", fmt.Sprintf("%s_access.log", stackName))
-		logFileSlash := filepath.ToSlash(logFilePath)
+	if accessLogName != "" {
+		logFileSlash := filepath.ToSlash(AccessLogPath(CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath), accessLogName))
 		lines = append(lines, "    log {")
 		lines = append(lines, "        output file \""+logFileSlash+"\"")
 		lines = append(lines, "    }")
@@ -648,6 +648,12 @@ func renderHostRouteSiteBlock(
 	lines = append(lines, "}\n")
 
 	return lines, nil
+}
+
+// AccessLogPath is where Caddy logs the requests to a stack's routes, which the
+// stack's idle timeout watches. name is the AccessLogName its routes carry.
+func AccessLogPath(paths Paths, name string) string {
+	return filepath.Join(paths.CaddyDirectoryPath, "logs", name+"_access.log")
 }
 
 func renderNamedProxyHandleLines(matcher string, handleName string, port int) []string {
@@ -864,8 +870,8 @@ func parseManagedRouteRecord(registrationText []byte) (managedRouteRecord, error
 		if modernValue.DocumentInjectionPort != nil {
 			record.DocumentInjectionPort = *modernValue.DocumentInjectionPort
 		}
-		if modernValue.StackName != nil {
-			record.StackName = *modernValue.StackName
+		if modernValue.AccessLogName != nil {
+			record.AccessLogName = *modernValue.AccessLogName
 		}
 		if modernValue.ProxyLocalOrigin != nil {
 			record.ProxyLocalOrigin = *modernValue.ProxyLocalOrigin
@@ -925,8 +931,8 @@ func routeRegistrationFromRecord(record managedRouteRecord) routeRegistration {
 	if record.DocumentInjectionPort != 0 {
 		registration.DocumentInjectionPort = &record.DocumentInjectionPort
 	}
-	if record.StackName != "" {
-		registration.StackName = record.StackName
+	if record.AccessLogName != "" {
+		registration.AccessLogName = record.AccessLogName
 	}
 
 	return registration

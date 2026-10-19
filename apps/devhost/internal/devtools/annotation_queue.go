@@ -147,7 +147,6 @@ type annotationQueueStoreOptions struct {
 	onQueuesChanged          func([]annotationQueueSnapshot)
 	readLiveAgentSession     func(string) *liveAgentSessionSnapshot
 	routedServices           []RoutedServiceIdentity
-	stackName                string
 	startAgentSession        func(string, annotationSubmitDetail, agentColorScheme) (string, error)
 	stateDirectoryPath       string
 	writeAnnotationToSession func(string, string, annotationSubmitDetail) error
@@ -166,7 +165,7 @@ type annotationQueueStore struct {
 }
 
 func newAnnotationQueueStore(options annotationQueueStoreOptions) *annotationQueueStore {
-	queueFilePath := createAnnotationQueueFilePath(options.stateDirectoryPath, options.stackName, options.manifestPath)
+	queueFilePath := createAnnotationQueueFilePath(options.stateDirectoryPath, options.manifestPath)
 	persistedState := loadPersistedAnnotationQueueState(queueFilePath)
 	queues := map[string]*runtimeAnnotationQueueRecord{}
 	queueOrder := make([]string, 0, len(persistedState.Queues))
@@ -776,24 +775,11 @@ func createAnnotationQueueSnapshotMessage(queues []annotationQueueSnapshot) anno
 	return annotationQueuesSnapshotMessage{Queues: queues, Type: "snapshot"}
 }
 
-func createAnnotationQueueFilePath(stateDirectoryPath string, stackName string, manifestPath string) string {
-	fileName := fmt.Sprintf("%s-%s.json", sanitizeFileSegment(stackName), shortManifestHash(manifestPath))
+// createAnnotationQueueFilePath names the file after the root manifest path, the
+// stack's identity, so the queues survive renaming the stack.
+func createAnnotationQueueFilePath(stateDirectoryPath string, manifestPath string) string {
+	fileName := shortManifestHash(manifestPath) + ".json"
 	return filepath.Join(stateDirectoryPath, "devtools", annotationQueuesDirectoryName, fileName)
-}
-
-func sanitizeFileSegment(value string) string {
-	if value == "" {
-		return "devhost"
-	}
-	builder := strings.Builder{}
-	for _, r := range value {
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '.' || r == '_' || r == '-' {
-			builder.WriteRune(r)
-			continue
-		}
-		builder.WriteByte('-')
-	}
-	return builder.String()
 }
 
 func shortManifestHash(manifestPath string) string {

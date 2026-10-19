@@ -138,7 +138,6 @@ func TestAnnotationQueueStoreCarriesColorSchemeToAgentSessions(t *testing.T) {
 	restartedStore := newAnnotationQueueStore(annotationQueueStoreOptions{
 		manifestPath:         harness.manifestPath,
 		readLiveAgentSession: func(string) *liveAgentSessionSnapshot { return nil },
-		stackName:            "hello-stack",
 		stateDirectoryPath:   harness.stateDirectoryPath,
 		startAgentSession: func(_ string, _ annotationSubmitDetail, colorScheme agentColorScheme) (string, error) {
 			restartColorSchemes = append(restartColorSchemes, colorScheme)
@@ -154,12 +153,35 @@ func TestAnnotationQueueStoreCarriesColorSchemeToAgentSessions(t *testing.T) {
 	}
 }
 
+func TestAnnotationQueuesSurviveAStackRename(t *testing.T) {
+	t.Parallel()
+
+	// The store has no stack name: the queues belong to the root manifest path.
+	stateDirectoryPath, manifestPath := t.TempDir(), filepath.Join(t.TempDir(), "devhost.toml")
+	newStore := func() *annotationQueueStore {
+		return newAnnotationQueueStore(annotationQueueStoreOptions{
+			manifestPath:             manifestPath,
+			readLiveAgentSession:     func(string) *liveAgentSessionSnapshot { return nil },
+			stateDirectoryPath:       stateDirectoryPath,
+			startAgentSession:        func(string, annotationSubmitDetail, agentColorScheme) (string, error) { return "session-1", nil },
+			writeAnnotationToSession: func(string, string, annotationSubmitDetail) error { return nil },
+		})
+	}
+	store := newStore()
+	if _, err := store.enqueue(defaultAnnotationActionID, testAnnotationDetail("Kept across a rename", 1, "https://example.test/path"), agentColorSchemeLight, nil); err != nil {
+		t.Fatalf("enqueue(...) error = %v", err)
+	}
+	if snapshot := newStore().getSnapshot(); len(snapshot) != 1 {
+		t.Fatalf("queues after a rename = %#v, want the queue saved under the old name", snapshot)
+	}
+}
+
 func TestAnnotationQueueStoreRepairsCorruptPersistedQueues(t *testing.T) {
 	t.Parallel()
 
 	stateDirectoryPath := t.TempDir()
 	manifestPath := "/tmp/project/devhost.toml"
-	queueFilePath := createAnnotationQueueFilePath(stateDirectoryPath, "hello-stack", manifestPath)
+	queueFilePath := createAnnotationQueueFilePath(stateDirectoryPath, manifestPath)
 	if err := os.MkdirAll(filepath.Dir(queueFilePath), 0o755); err != nil {
 		t.Fatalf("MkdirAll(...) error = %v", err)
 	}
@@ -170,7 +192,6 @@ func TestAnnotationQueueStoreRepairsCorruptPersistedQueues(t *testing.T) {
 	store := newAnnotationQueueStore(annotationQueueStoreOptions{
 		manifestPath:             manifestPath,
 		readLiveAgentSession:     func(string) *liveAgentSessionSnapshot { return nil },
-		stackName:                "hello-stack",
 		startAgentSession:        func(string, annotationSubmitDetail, agentColorScheme) (string, error) { return "session-1", nil },
 		stateDirectoryPath:       stateDirectoryPath,
 		writeAnnotationToSession: func(string, string, annotationSubmitDetail) error { return nil },
@@ -279,7 +300,7 @@ func TestAnnotationQueueStoreRepairsLegacyEntriesWithDefaultActionID(t *testing.
 
 	stateDirectoryPath := t.TempDir()
 	manifestPath := "/tmp/project/devhost.toml"
-	queueFilePath := createAnnotationQueueFilePath(stateDirectoryPath, "hello-stack", manifestPath)
+	queueFilePath := createAnnotationQueueFilePath(stateDirectoryPath, manifestPath)
 	if err := os.MkdirAll(filepath.Dir(queueFilePath), 0o755); err != nil {
 		t.Fatalf("MkdirAll(...) error = %v", err)
 	}
@@ -290,7 +311,6 @@ func TestAnnotationQueueStoreRepairsLegacyEntriesWithDefaultActionID(t *testing.
 	store := newAnnotationQueueStore(annotationQueueStoreOptions{
 		manifestPath:             manifestPath,
 		readLiveAgentSession:     func(string) *liveAgentSessionSnapshot { return nil },
-		stackName:                "hello-stack",
 		startAgentSession:        func(string, annotationSubmitDetail, agentColorScheme) (string, error) { return "session-1", nil },
 		stateDirectoryPath:       stateDirectoryPath,
 		writeAnnotationToSession: func(string, string, annotationSubmitDetail) error { return nil },
@@ -307,7 +327,7 @@ func TestAnnotationQueueStoreResumePersistedQueuesSkipsUserTerminated(t *testing
 
 	stateDirectoryPath := t.TempDir()
 	manifestPath := "/tmp/project/devhost.toml"
-	queueFilePath := createAnnotationQueueFilePath(stateDirectoryPath, "hello-stack", manifestPath)
+	queueFilePath := createAnnotationQueueFilePath(stateDirectoryPath, manifestPath)
 	if err := os.MkdirAll(filepath.Dir(queueFilePath), 0o755); err != nil {
 		t.Fatalf("MkdirAll(...) error = %v", err)
 	}
@@ -321,7 +341,6 @@ func TestAnnotationQueueStoreResumePersistedQueuesSkipsUserTerminated(t *testing
 		readLiveAgentSession: func(string) *liveAgentSessionSnapshot {
 			return nil
 		},
-		stackName:          "hello-stack",
 		stateDirectoryPath: stateDirectoryPath,
 		startAgentSession: func(actionID string, annotation annotationSubmitDetail, _ agentColorScheme) (string, error) {
 			harness.startedAnnotations = append(harness.startedAnnotations, annotation)
@@ -363,7 +382,7 @@ func TestAnnotationQueueStoreRenamesCorruptQueueFilesAside(t *testing.T) {
 
 	stateDirectoryPath := t.TempDir()
 	manifestPath := "/tmp/project/devhost.toml"
-	queueFilePath := createAnnotationQueueFilePath(stateDirectoryPath, "hello-stack", manifestPath)
+	queueFilePath := createAnnotationQueueFilePath(stateDirectoryPath, manifestPath)
 	if err := os.MkdirAll(filepath.Dir(queueFilePath), 0o755); err != nil {
 		t.Fatalf("MkdirAll(...) error = %v", err)
 	}
@@ -374,7 +393,6 @@ func TestAnnotationQueueStoreRenamesCorruptQueueFilesAside(t *testing.T) {
 	store := newAnnotationQueueStore(annotationQueueStoreOptions{
 		manifestPath:             manifestPath,
 		readLiveAgentSession:     func(string) *liveAgentSessionSnapshot { return nil },
-		stackName:                "hello-stack",
 		startAgentSession:        func(string, annotationSubmitDetail, agentColorScheme) (string, error) { return "session-1", nil },
 		stateDirectoryPath:       stateDirectoryPath,
 		writeAnnotationToSession: func(string, string, annotationSubmitDetail) error { return nil },
@@ -535,7 +553,7 @@ func newAnnotationQueueHarness(t *testing.T, routedServices []RoutedServiceIdent
 	harness := &annotationQueueHarness{
 		liveSessions:        map[string]*liveAgentSessionSnapshot{},
 		manifestPath:        manifestPath,
-		queueFilePath:       createAnnotationQueueFilePath(stateDirectoryPath, "hello-stack", manifestPath),
+		queueFilePath:       createAnnotationQueueFilePath(stateDirectoryPath, manifestPath),
 		stateDirectoryPath:  stateDirectoryPath,
 		startedAnnotations:  []annotationSubmitDetail{},
 		writtenAnnotations:  []writtenAnnotationRecord{},
@@ -547,7 +565,6 @@ func newAnnotationQueueHarness(t *testing.T, routedServices []RoutedServiceIdent
 			return harness.liveSessions[sessionID]
 		},
 		routedServices:     routedServices,
-		stackName:          "hello-stack",
 		stateDirectoryPath: stateDirectoryPath,
 		startAgentSession: func(actionID string, annotation annotationSubmitDetail, colorScheme agentColorScheme) (string, error) {
 			sessionID := fmt.Sprintf("session-%d", harness.nextSessionSequence)
