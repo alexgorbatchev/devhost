@@ -9,18 +9,17 @@ type ToolContext struct {
 }
 
 func (s *ControlServer) toolContext(request terminalSessionRequest) (ToolContext, error) {
+	settings := s.currentSettings()
 	if s.getToolContext == nil {
-		return ToolContext{ProjectRootPath: s.projectRootPath, AnnotationActions: s.annotationActions}, nil
+		return ToolContext{ProjectRootPath: s.projectRootPath, AnnotationActions: settings.AnnotationActions}, nil
 	}
 	pageURL := request.PageURL
 	if request.Annotation != nil {
 		pageURL = request.Annotation.URL
 	}
-	s.mu.Lock()
-	name := s.primaryService
-	if route := resolveRoutedServiceForURL(s.routedServices, pageURL); route != nil {
+	name := settings.PrimaryService
+	if route := resolveRoutedServiceForURL(settings.RoutedServices, pageURL); route != nil {
 		name = route.ServiceName
 	}
-	s.mu.Unlock()
 	return s.getToolContext(name)
 }

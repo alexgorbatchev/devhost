@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -192,6 +193,14 @@ func newAnnotationQueueStore(options annotationQueueStoreOptions) *annotationQue
 		startAgentSession:        options.startAgentSession,
 		writeAnnotationToSession: options.writeAnnotationToSession,
 	}
+}
+
+// setRoutedServices replaces the routes queues use to tell which service an
+// annotation belongs to, as a reload changes them.
+func (s *annotationQueueStore) setRoutedServices(routes []RoutedServiceIdentity) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.routedServices = slices.Clone(routes)
 }
 
 func (s *annotationQueueStore) getSnapshot() []annotationQueueSnapshot {

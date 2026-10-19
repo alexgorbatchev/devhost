@@ -73,7 +73,7 @@ func TestTerminalLaunchUsesSelectedCheckoutAndRetainsExistingSessionRoot(t *test
 }
 
 func TestToolContextResolvesEditorAndAnnotationServiceFromPageURL(t *testing.T) {
-	s := &ControlServer{primaryService: "web", routedServices: []RoutedServiceIdentity{{Host: "shop.localhost", Path: "/", ServiceName: "web"}, {Host: "shop.localhost", Path: "/api/*", ServiceName: "api"}}, getToolContext: func(name string) (ToolContext, error) { return ToolContext{ProjectRootPath: name}, nil }}
+	s := &ControlServer{settings: ControlSettings{PrimaryService: "web", RoutedServices: []RoutedServiceIdentity{{Host: "shop.localhost", Path: "/", ServiceName: "web"}, {Host: "shop.localhost", Path: "/api/*", ServiceName: "api"}}}, getToolContext: func(name string) (ToolContext, error) { return ToolContext{ProjectRootPath: name}, nil }}
 	for _, tc := range []struct {
 		request terminalSessionRequest
 		want    string

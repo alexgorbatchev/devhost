@@ -8,7 +8,7 @@ import {
   type IInstalledMockWebSocket,
 } from "../../../../../../test-support/installMockWebSocket";
 import { DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "../../../../shared/constants";
-import type { HealthResponse, IRoutingConfig, IWorktreeRepository, ServiceHealth } from "../../../../shared/types";
+import type { HealthResponse, IWorktreeRepository, ServiceHealth } from "../../../../shared/types";
 import { useServiceHealth } from "../useServiceHealth";
 
 type ServerAction = () => void;
@@ -125,29 +125,26 @@ describe("useServiceHealth", () => {
     );
   });
 
-  test("applies the routing of a health message to the injected configuration", async () => {
+  test("applies the configuration of a health message to the injected configuration", async () => {
     const injectedConfig: Record<string, unknown> = { primaryService: "api", routedServices: [], stackName: "shop" };
-    const routing: IRoutingConfig = {
+    const config = {
       primaryService: "web",
       routedServices: [{ host: "shop.localhost", path: "/", serviceName: "web" }],
+      stackName: "renamed",
     };
 
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, injectedConfig);
     const { connection } = await connectServiceHealth();
 
-    await settle(() => connection.send({ routing, services: [apiService] }));
+    await settle(() => connection.send({ config, services: [apiService] }));
 
     const appliedConfig: unknown = Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME);
 
-    expect(appliedConfig).toEqual({
-      primaryService: "web",
-      routedServices: [{ host: "shop.localhost", path: "/", serviceName: "web" }],
-      stackName: "shop",
-    });
-    // New routing is published as a new object, so readers can tell a change by identity.
+    expect(appliedConfig).toEqual(config);
+    // A changed configuration is published as a new object, so readers can tell a change by identity.
     expect(injectedConfig).toEqual({ primaryService: "api", routedServices: [], stackName: "shop" });
 
-    await settle(() => connection.send({ routing, services: [apiService, workerService] }));
+    await settle(() => connection.send({ config: { ...config }, services: [apiService, workerService] }));
     expect(Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME)).toBe(appliedConfig);
   });
 

@@ -14,7 +14,7 @@ const (
 )
 
 func (s *ControlServer) handleAnnotationQueues(writer http.ResponseWriter, request *http.Request) {
-	if s.annotationQueueStore == nil {
+	if !s.currentSettings().FeatureToggles.AnnotationQueueEnabled {
 		http.Error(writer, "Annotation queues are not configured.", http.StatusNotImplemented)
 		return
 	}
@@ -108,7 +108,7 @@ func (s *ControlServer) handleAnnotationQueueResume(writer http.ResponseWriter, 
 }
 
 func (s *ControlServer) handleAnnotationQueueWebsocket(writer http.ResponseWriter, request *http.Request) {
-	if s.annotationQueueStore == nil {
+	if !s.currentSettings().FeatureToggles.AnnotationQueueEnabled {
 		http.Error(writer, "Annotation queues are not configured.", http.StatusNotImplemented)
 		return
 	}

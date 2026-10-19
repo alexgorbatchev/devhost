@@ -10,7 +10,7 @@ import { parseHealthResponse } from "../parseHealthResponse";
 import { requestWorktrees } from "../requestWorktrees";
 import { startServices } from "../startServices";
 import { markServicesAsUnavailable } from "../markServicesAsUnavailable";
-import { updateInjectedRouting } from "../updateInjectedRouting";
+import { updateInjectedConfig } from "../updateInjectedConfig";
 
 interface IUseServiceHealthResult {
   errorMessage: string | null;
@@ -34,7 +34,7 @@ export function useServiceHealth(): IUseServiceHealthResult {
     Reflect.set(
       globalThis,
       DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME,
-      updateInjectedRouting(health.routing, Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME)),
+      updateInjectedConfig(health.config, Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME)),
     );
     setServices(health.services);
     setStoppedServices(health.stoppedServices ?? []);

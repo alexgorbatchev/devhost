@@ -180,7 +180,8 @@ agent = "codex"
 Accepted values are `"pi"`, `"claude-code"`, `"opencode"`, and `"codex"`. This creates one default
 agent action with the internal ID `agent` and the adapter's display name. Optional `tempDir`
 works with this shorthand. Combining `agent` with `actions` or `defaultAction` is rejected.
-Restart devhost after changing annotation configuration.
+Saving annotation changes applies them without restarting devhost: the toolbar offers the new
+actions, and agent sessions already running keep the action they started with.
 
 For multiple actions, custom commands, or extra agent flags, use a root-level `[annotation]`
 table and one or more `[[annotation.actions]]` entries instead of the shorthand.

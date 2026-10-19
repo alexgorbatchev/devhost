@@ -24,7 +24,6 @@ type stackRuntime struct {
 	configured        *manifest.Manifest
 	manifestWatch     *manifestWatcher
 	pendingReload     map[string]devtools.ServiceHealth
-	routing           devtools.RoutingConfig
 	claimedFixedPorts []claimedFixedPort
 	claimedHosts      []string
 	manifest          *ResolvedManifest
@@ -49,6 +48,7 @@ type stackRuntime struct {
 	dirty             *DirtyTracker
 	worktrees         *stackWorktrees
 	blocked           map[string]string
+	idle              *idleWatch
 }
 
 func (r *stackRuntime) health(ctx context.Context) (devtools.HealthResponse, error) {
@@ -61,7 +61,6 @@ func (r *stackRuntime) health(ctx context.Context) (devtools.HealthResponse, err
 	pending := maps.Clone(r.pendingReload)
 	failures := maps.Clone(r.failures)
 	starting := maps.Clone(r.starting)
-	routing := r.routing
 	r.startedMu.Lock()
 	started := append([]*startedService{}, r.started...)
 	r.startedMu.Unlock()
@@ -72,7 +71,6 @@ func (r *stackRuntime) health(ctx context.Context) (devtools.HealthResponse, err
 	r.manifestMu.RUnlock()
 	h := collectServicesHealth(m, started, r.dirty)
 	h.Repositories = worktrees.snapshot()
-	h.Routing = &routing
 	for i := range h.Services {
 		s := &h.Services[i]
 		if previous, exists := pending[s.Name]; exists {
