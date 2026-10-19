@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"path/filepath"
 	"runtime"
 	"slices"
 	"sort"
@@ -158,15 +157,12 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			}
 		}
 	}
-	runtimeDevtoolsFeatures := resolveSupportedDevtoolsFeatures(manifest.Devtools, manifest.Annotation)
-	devtoolsEnabled := hasEnabledDevtools(manifest.Devtools) && hasEnabledRuntimeDevtools(runtimeDevtoolsFeatures)
 	lifecycleCtx, cancelLifecycle := context.WithCancel(context.Background())
 	defer cancelLifecycle()
 	state := &stackRuntime{
 		manifestFiles: stackManifestFiles(options.Configuration),
 		starting:      map[string]bool{}, failures: map[string]string{},
 		configured: options.Configuration,
-		routing:    devtools.RoutingConfig{RoutedServices: collectRoutedServiceIdentities(initial.Services), PrimaryService: initial.PrimaryService},
 		manifest:   manifest, order: append([]string{}, serviceOrder...), options: options, environment: environment,
 		gracePeriod: gracePeriod, worktrees: worktrees, blocked: blocked, failedRoutes: map[string]*startedService{},
 		exits: make(chan serviceExitResult, len(serviceOrder)),
@@ -178,7 +174,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	var cleanupError error
 	shutdownProgress := newShutdownProgress(options.LogWriter, state.stackName)
 	routes := stackRoutes{manifest: *manifest, paths: paths, outputWriters: options.CaddyOutputWriters, documentServers: documentInjectionServers, active: map[string]caddy.ActivateRouteOptions{}}
-	routes.runtime, routes.injectDevtools = state, devtoolsEnabled
+	routes.runtime = state
 	routes.restartService = func(name string) error { return state.restart(lifecycleCtx, []string{name}) }
 	for name, service := range manifest.Services {
 		if isManagedService(service) {
@@ -386,8 +382,9 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		state.claimedHosts = append(state.claimedHosts, host)
 	}
 
-	routedServices := collectRoutedServiceIdentities(manifest.Services)
-	if devtoolsEnabled || len(routedServices) > 0 {
+	// The control server runs for the stack's whole life, whatever the devtools
+	// settings, so a reload that turns them on or off keeps its sessions.
+	{
 		devSource, err := loadDevSourceCheckout(environment, manifest.ManifestDirectoryPath)
 		if err != nil {
 			return 0, joinCleanupError(err, cleanupError)
@@ -396,35 +393,33 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("Rebuilding devtools assets on demand from source checkout: %s", devSource.RootPath()))
 		}
 
-		var switchWorktree func(string, string) error
-		var refreshWorktrees func() error
-		if worktrees != nil {
-			switchWorktree = func(id, path string) error { return state.switchWorktree(lifecycleCtx, id, path) }
-			refreshWorktrees = state.refreshWorktrees
-		}
+		// The worktree picker calls through whether or not worktrees are on; the
+		// runtime refuses it while they are off, and a reload can turn them on.
+		switchWorktree := func(id, path string) error { return state.switchWorktree(lifecycleCtx, id, path) }
+		settings := devtoolsControlSettings(*manifest)
 		controlServer, err := startDevtoolsControlServer(devtools.StartControlServerOptions{
-			NativeBrowser: manifest.Devtools.Browser,
+			NativeBrowser: settings.NativeBrowser,
 			AllowsNativeBrowserURL: func(port int, href string) (bool, error) {
 				return caddy.AllowsDevtoolsURL(paths, caddy.DevtoolsRouteOwner{ManifestPath: manifest.ManifestPath, ControlPort: port}, href)
 			},
-			AnnotationActions:         manifest.Annotation.Actions,
-			AnnotationDefaultActionID: manifest.Annotation.DefaultActionID,
-			ComponentEditor:           manifest.Devtools.Editor.IDE,
+			AnnotationActions:         settings.AnnotationActions,
+			AnnotationDefaultActionID: settings.AnnotationDefaultActionID,
+			ComponentEditor:           settings.ComponentEditor,
 			DevSource:                 devSource,
 			OnLog: func(message string) {
 				writeLogLine(options.LogWriter, state.stackName(), message)
 			},
-			FeatureToggles: runtimeDevtoolsFeatures,
+			FeatureToggles: settings.FeatureToggles,
 			GetHealthResponse: func() (devtools.HealthResponse, error) {
 				return state.health(lifecycleCtx)
 			},
 			ManifestPath:         manifest.ManifestPath,
-			Position:             manifest.Devtools.Status.Position,
+			Position:             settings.Position,
 			ProjectRootPath:      manifest.ManifestDirectoryPath,
 			RuntimeDirectoryPath: options.runtimeDirectoryPath,
-			PrimaryService:       manifest.PrimaryService,
+			PrimaryService:       settings.PrimaryService,
 			ResourceUsage: devtools.ResourceUsageOptions{
-				Intervals: resolveResourceIntervals(manifest.Devtools.Resources),
+				Intervals: settings.ResourceIntervals,
 				Readers:   hostusage.HostReaders(),
 				OnFailure: func(readout string, err error) {
 					writeLogLine(options.LogWriter, state.stackName(), fmt.Sprintf("devtools %s usage is unavailable: %v", readout, err))
@@ -434,12 +429,12 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			StartService:            func(names []string) error { return state.startServices(lifecycleCtx, names) },
 			RestartStack:            func() error { return state.restartStack(lifecycleCtx) },
 			SwitchWorktree:          switchWorktree,
-			RefreshWorktrees:        refreshWorktrees,
+			RefreshWorktrees:        state.refreshWorktrees,
 			GetToolContext:          state.toolContext,
-			RestartServicesShortcut: manifest.Devtools.Shortcuts.RestartServices,
-			RoutedServices:          routedServices,
+			RestartServicesShortcut: settings.RestartServicesShortcut,
+			RoutedServices:          settings.RoutedServices,
 			StateDirectoryPath:      paths.StateDirectoryPath,
-			StackName:               manifest.Name,
+			StackName:               settings.StackName,
 		})
 		if err != nil {
 			return 0, joinCleanupError(err, cleanupError)
@@ -522,92 +517,10 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	LogServiceURLs(*manifest, options.LogWriter)
 	logStoppedServices(*manifest, options.LogWriter)
 
-	finalIdleTimeout := options.IdleTimeout
-	if finalIdleTimeout == 0 && manifest.Devtools.IdleTimeout != "" {
-		if d, err := time.ParseDuration(manifest.Devtools.IdleTimeout); err == nil {
-			finalIdleTimeout = d
-		}
-	}
-
-	if finalIdleTimeout > 0 {
-		writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("Idle timeout enabled: %s (will automatically shut down when inactive)", finalIdleTimeout))
-	}
-
-	idleShutdownChan := make(chan struct{}, 1)
-	if finalIdleTimeout > 0 && devtoolsControlServer != nil {
-		logFilePath := caddy.AccessLogPath(paths, stackAccessLogName(*manifest))
-		_ = os.MkdirAll(filepath.Dir(logFilePath), 0o755)
-		if runtime.GOOS != "windows" {
-			if f, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644); err == nil {
-				_ = f.Close()
-			}
-		}
-
-		pollerCtx, pollerCancel := context.WithCancel(context.Background())
-		defer pollerCancel()
-
-		go func() {
-			var lastModTime time.Time
-			if info, err := os.Stat(logFilePath); err == nil {
-				lastModTime = info.ModTime()
-			}
-
-			statInterval := 2 * time.Second
-			if finalIdleTimeout < statInterval {
-				statInterval = finalIdleTimeout / 2
-				if statInterval < 10*time.Millisecond {
-					statInterval = 10 * time.Millisecond
-				}
-			}
-			ticker := time.NewTicker(statInterval)
-			defer ticker.Stop()
-
-			for {
-				select {
-				case <-pollerCtx.Done():
-					return
-				case <-ticker.C:
-					info, err := os.Stat(logFilePath)
-					if err == nil {
-						modTime := info.ModTime()
-						if lastModTime.IsZero() {
-							lastModTime = modTime
-						} else if modTime.After(lastModTime) {
-							lastModTime = modTime
-							devtoolsControlServer.Tracker().RecordActivity()
-						}
-					}
-				}
-			}
-		}()
-
-		go func() {
-			checkInterval := 5 * time.Second
-			if finalIdleTimeout < checkInterval {
-				checkInterval = finalIdleTimeout / 2
-				if checkInterval < 10*time.Millisecond {
-					checkInterval = 10 * time.Millisecond
-				}
-			}
-			ticker := time.NewTicker(checkInterval)
-			defer ticker.Stop()
-
-			for {
-				select {
-				case <-pollerCtx.Done():
-					return
-				case <-ticker.C:
-					if devtoolsControlServer.Tracker().IsIdle(finalIdleTimeout) && !devtoolsControlServer.HasActiveTerminalSessions() {
-						select {
-						case idleShutdownChan <- struct{}{}:
-						default:
-						}
-						return
-					}
-				}
-			}
-		}()
-	}
+	idle := newIdleWatch(devtoolsControlServer, caddy.AccessLogPath(paths, stackAccessLogName(*manifest)), options.LogWriter, state.stackName)
+	state.idle = idle
+	defer idle.stop()
+	idle.set(resolveIdleTimeout(options.IdleTimeout, manifest.Devtools))
 
 	var manifestEvents <-chan error
 	var manifestWatch *manifestWatcher
@@ -705,9 +618,9 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			return readSignalExitCode(receivedSignal), nil
 		case err := <-runtimeErrors:
 			return 0, err
-		case <-idleShutdownChan:
+		case timeout := <-idle.expired:
 			cancelLifecycle()
-			writeLogLine(options.LogWriter, state.stackName(), fmt.Sprintf("Idle timeout of %s reached. Automatically shutting down the stack...", finalIdleTimeout))
+			writeLogLine(options.LogWriter, state.stackName(), fmt.Sprintf("Idle timeout of %s reached. Automatically shutting down the stack...", timeout))
 			state.startedMu.Lock()
 			startedServicesSnapshot := append([]*startedService{}, state.started...)
 			state.startedMu.Unlock()
@@ -1496,6 +1409,24 @@ func hasEnabledDevtools(config manifest.DevtoolsConfig) bool {
 	return config.Editor.Enabled || config.ExternalToolbars.Enabled || config.Minimap.Enabled || config.Status.Enabled
 }
 
+// devtoolsControlSettings are the settings of m the control server applies, at
+// startup and after each accepted reload.
+func devtoolsControlSettings(m ResolvedManifest) devtools.ControlSettings {
+	return devtools.ControlSettings{
+		AnnotationActions:         m.Annotation.Actions,
+		AnnotationDefaultActionID: m.Annotation.DefaultActionID,
+		ComponentEditor:           m.Devtools.Editor.IDE,
+		FeatureToggles:            resolveSupportedDevtoolsFeatures(m.Devtools, m.Annotation),
+		NativeBrowser:             m.Devtools.Browser,
+		Position:                  m.Devtools.Status.Position,
+		PrimaryService:            m.PrimaryService,
+		ResourceIntervals:         resolveResourceIntervals(m.Devtools.Resources),
+		RestartServicesShortcut:   m.Devtools.Shortcuts.RestartServices,
+		RoutedServices:            collectRoutedServiceIdentities(m.Services),
+		StackName:                 m.Name,
+	}
+}
+
 func resolveSupportedDevtoolsFeatures(config manifest.DevtoolsConfig, annotation manifest.ValidatedAnnotation) devtools.FeatureToggles {
 	devtoolsEnabled := hasEnabledDevtools(config)
 	hasAnnotationActions := len(annotation.Actions) > 0
@@ -1535,16 +1466,6 @@ func resolveResourceIntervals(config manifest.DevtoolsResourcesConfig) hostusage
 	}
 
 	return intervals
-}
-
-func hasEnabledRuntimeDevtools(features devtools.FeatureToggles) bool {
-	return features.AnnotationEnabled ||
-		features.AnnotationQueueEnabled ||
-		features.EditorEnabled ||
-		features.ExternalToolbarsEnabled ||
-		features.MinimapEnabled ||
-		features.StatusEnabled ||
-		features.TerminalEnabled
 }
 
 func collectRoutedServiceIdentities(services map[string]ResolvedService) []devtools.RoutedServiceIdentity {

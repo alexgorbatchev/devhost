@@ -31,7 +31,7 @@ func (s *ControlServer) handleTerminalSessions(writer http.ResponseWriter, reque
 		var sessionID string
 		var err error
 		if terminalRequest.Kind == terminalSessionRequestKindAgent {
-			if s.annotationQueueStore == nil || terminalRequest.Annotation == nil {
+			if !s.currentSettings().FeatureToggles.AnnotationQueueEnabled || terminalRequest.Annotation == nil {
 				http.Error(writer, "Invalid terminal session payload.", http.StatusBadRequest)
 				return
 			}
@@ -107,10 +107,12 @@ func (s *ControlServer) handleTerminalWebsocket(writer http.ResponseWriter, requ
 }
 
 func (s *ControlServer) createTerminalSession(request terminalSessionRequest) (string, error) {
-	if !s.featureToggles.TerminalEnabled {
+	// A session starts with the settings of its launch and keeps them across reloads.
+	settings := s.currentSettings()
+	if !settings.FeatureToggles.TerminalEnabled {
 		return "", fmt.Errorf("Terminal session launching is not configured.")
 	}
-	if request.Kind == terminalSessionRequestKindEditor && !s.featureToggles.EditorEnabled {
+	if request.Kind == terminalSessionRequestKindEditor && !settings.FeatureToggles.EditorEnabled {
 		return "", fmt.Errorf("Terminal session launching is not configured.")
 	}
 	toolContext, err := s.toolContext(request)
@@ -126,8 +128,8 @@ func (s *ControlServer) createTerminalSession(request terminalSessionRequest) (s
 	starter := s.startTerminalSession
 	if starter == nil {
 		starter = func(request terminalSessionRequest) (*launchedTerminalSession, error) {
-			command, err := createTerminalSessionCommand(toolContext.AnnotationActions, s.componentEditor, toolContext.ProjectRootPath, request, s.stackName, editorTerminalIntegration{
-				endpoint: fmt.Sprintf("http://127.0.0.1:%d%s", s.Port(), reactHighlightCursorPath),
+			command, err := createTerminalSessionCommand(toolContext.AnnotationActions, settings.ComponentEditor, toolContext.ProjectRootPath, request, settings.StackName, editorTerminalIntegration{
+				endpoint: s.reactHighlightEndpoint(),
 			})
 			if err != nil {
 				return nil, err
@@ -224,9 +226,7 @@ func (s *ControlServer) appendTerminalSessionOutput(sessionID string, data []byt
 	s.mu.Unlock()
 
 	for _, status := range statuses {
-		if s.annotationQueueStore != nil {
-			_ = s.annotationQueueStore.handleAgentStatus(sessionID, status)
-		}
+		_ = s.annotationQueueStore.handleAgentStatus(sessionID, status)
 	}
 	s.broadcastTerminalMessage(clients, createTerminalSessionOutputMessage(outputChunk), sessionID)
 }
@@ -278,12 +278,10 @@ func (s *ControlServer) finishTerminalSession(sessionID string, exitStatus termi
 	s.mu.Unlock()
 
 	for _, status := range statuses {
-		if s.annotationQueueStore != nil {
-			_ = s.annotationQueueStore.handleAgentStatus(sessionID, status)
-		}
+		_ = s.annotationQueueStore.handleAgentStatus(sessionID, status)
 	}
 	s.broadcastTerminalMessage(clients, exitStatus, sessionID)
-	if s.annotationQueueStore != nil && session.request.Kind == terminalSessionRequestKindAgent {
+	if session.request.Kind == terminalSessionRequestKindAgent {
 		_ = s.annotationQueueStore.handleSessionExited(sessionID)
 	}
 }
@@ -338,9 +336,7 @@ func (s *ControlServer) readTerminalMessages(sessionID string, client *websocket
 		}
 		s.mu.Unlock()
 
-		if s.annotationQueueStore != nil {
-			_ = s.annotationQueueStore.handleUserClosedSession(sessionID)
-		}
+		_ = s.annotationQueueStore.handleUserClosedSession(sessionID)
 		s.closeTerminalSession(sessionID)
 		return
 	}
@@ -419,9 +415,7 @@ func (s *ControlServer) scheduleIdleTerminalSessionShutdownLocked(sessionID stri
 		return
 	}
 	session.idleTimer = time.AfterFunc(s.idleTerminalSessionTimeout, func() {
-		if s.annotationQueueStore != nil {
-			_ = s.annotationQueueStore.handleSessionExited(sessionID)
-		}
+		_ = s.annotationQueueStore.handleSessionExited(sessionID)
 		s.closeTerminalSession(sessionID)
 	})
 }

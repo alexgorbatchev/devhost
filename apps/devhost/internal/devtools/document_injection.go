@@ -14,12 +14,18 @@ import (
 )
 
 type StartDocumentInjectionServerOptions struct {
-	BackendHost      string
-	BackendPort      int
-	DisableInjection bool
-	GetRecovery      func() RecoveryState
-	Restart          func() error
-	Worktrees        http.Handler
+	BackendHost string
+	BackendPort int
+	// ShouldInject reports, for each document, whether to inject the devtools;
+	// nil injects none. A reload can turn the devtools on or off.
+	ShouldInject func() bool
+	GetRecovery  func() RecoveryState
+	Restart      func() error
+	Worktrees    http.Handler
+}
+
+func (o StartDocumentInjectionServerOptions) shouldInject() bool {
+	return o.ShouldInject != nil && o.ShouldInject()
 }
 
 type DocumentInjectionServer struct {
@@ -62,7 +68,7 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 				if len(state.Repositories) > 0 {
 					state.Message = "This path does not exist in the current checkout. Choose another worktree below or check the URL."
 				}
-				document, err := renderRecoveryDocument(state, http.StatusNotFound, !options.DisableInjection)
+				document, err := renderRecoveryDocument(state, http.StatusNotFound, options.shouldInject())
 				if err != nil {
 					return err
 				}
@@ -82,7 +88,7 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 				response.Header = http.Header{"Cache-Control": []string{"no-store"}}
 				return nil
 			}
-			if options.DisableInjection || !isHTMLResponse(response) {
+			if !options.shouldInject() || !isHTMLResponse(response) {
 				return nil
 			}
 
@@ -105,7 +111,7 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 				state := options.GetRecovery()
 				state.Phase, state.Title = "unavailable", state.Service+" could not load"
 				state.Message = "The service could not return a document: " + err.Error()
-				serveRecoveryPage(writer, request, state, http.StatusBadGateway, !options.DisableInjection)
+				serveRecoveryPage(writer, request, state, http.StatusBadGateway, options.shouldInject())
 				return
 			}
 			writer.Header().Set("cache-control", "no-store")
@@ -125,7 +131,7 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 			}
 			state := options.GetRecovery()
 			if state.Phase != "ready" {
-				serveRecoveryPage(w, r, state, http.StatusServiceUnavailable, !options.DisableInjection)
+				serveRecoveryPage(w, r, state, http.StatusServiceUnavailable, options.shouldInject())
 				return
 			}
 		}

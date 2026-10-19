@@ -24,7 +24,7 @@ func TestRecoveryProbeWaitsForDocumentTransport(t *testing.T) {
 	t.Cleanup(backend.Close)
 	address := backend.Listener.Addr().(*net.TCPAddr)
 	server, err := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{
-		BackendHost: address.IP.String(), BackendPort: address.Port,
+		BackendHost: address.IP.String(), BackendPort: address.Port, ShouldInject: alwaysInject,
 		GetRecovery: func() RecoveryState { return RecoveryState{Phase: "ready", Title: "web is ready", CanRestart: true} },
 	})
 	if err != nil {
@@ -60,7 +60,7 @@ func TestMissingDocumentOffersRecoveryWithoutReloadLoop(t *testing.T) {
 	t.Cleanup(backend.Close)
 	address := backend.Listener.Addr().(*net.TCPAddr)
 	server, err := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{
-		BackendHost: address.IP.String(), BackendPort: address.Port, DisableInjection: true,
+		BackendHost: address.IP.String(), BackendPort: address.Port,
 		GetRecovery: func() RecoveryState {
 			return RecoveryState{Phase: "ready", Service: "web", Repositories: []WorktreeRepository{{ID: "repo", Name: "project", SelectedPath: "/main", Worktrees: []Worktree{{Path: "/main", Branch: "main", Available: true}, {Path: "/feature", Branch: "feature", Available: true}}}}}
 		},
@@ -109,7 +109,8 @@ func TestMissingDocumentOffersRecoveryWithoutReloadLoop(t *testing.T) {
 func TestRecoveryKeepsEnabledToolbarAvailable(t *testing.T) {
 	t.Parallel()
 	server, err := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{
-		GetRecovery: func() RecoveryState { return RecoveryState{Phase: "unavailable", Title: "web exited"} },
+		ShouldInject: alwaysInject,
+		GetRecovery:  func() RecoveryState { return RecoveryState{Phase: "unavailable", Title: "web exited"} },
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -142,7 +143,7 @@ func TestRecoveryDocumentsPreserveApplicationResponses(t *testing.T) {
 		t.Run(phase, func(t *testing.T) {
 			address := backend.Listener.Addr().(*net.TCPAddr)
 			server, err := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{
-				BackendHost: address.IP.String(), BackendPort: address.Port, DisableInjection: true,
+				BackendHost: address.IP.String(), BackendPort: address.Port,
 				GetRecovery: func() RecoveryState {
 					return RecoveryState{Service: "web", Phase: phase, Title: "Starting web", Message: "failure <script>alert(1)</script>", Logs: []string{"log <img src=x onerror=alert(1)>"}}
 				},

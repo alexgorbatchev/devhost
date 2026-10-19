@@ -4,7 +4,7 @@ Use this reference when a `devhost.toml` manifest needs an annotation `kind = "a
 
 ## Decision rules
 
-- For one built-in agent with its existing CLI settings, set `[annotation].agent = "codex"` in the root manifest. Accepted strings are `pi`, `claude-code`, `opencode`, and `codex`. This creates one default action with ID `agent` and the adapter's display name. Optional `tempDir` applies. Combining this shorthand with `actions` or `defaultAction` is rejected. Restart devhost to apply annotation changes.
+- For one built-in agent with its existing CLI settings, set `[annotation].agent = "codex"` in the root manifest. Accepted strings are `pi`, `claude-code`, `opencode`, and `codex`. This creates one default action with ID `agent` and the adapter's display name. Optional `tempDir` applies. Combining this shorthand with `actions` or `defaultAction` is rejected. Saved annotation changes apply without restarting devhost; running agent sessions keep the action they started with.
 - Use the detailed action form below for multiple choices, custom commands, or extra CLI flags.
 - Use `adapter` only for built-ins: `"pi"`, `"claude-code"`, `"opencode"`, or `"codex"`.
 - Built-in adapters accept an optional `args = ["..."]` string array to pass extra CLI flags (e.g., model, thinking level, or permission modes) while preserving built-in status reporting and prompt handoff. An empty array `args = []` is accepted when no extra arguments are passed.

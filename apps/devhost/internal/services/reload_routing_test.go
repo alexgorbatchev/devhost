@@ -26,15 +26,14 @@ func TestManifestReloadPublishesRoutingOnlyAfterAcceptance(t *testing.T) {
 	if health.Services[0].Status || !health.Services[0].Restarting {
 		t.Fatalf("service reported ready before routes: %#v", health)
 	}
-	if health.Routing.RoutedServices[0].Host != "reload.localhost" {
-		t.Fatalf("unaccepted routes were published: %#v", health.Routing)
+	if routes := readInjectedRoutes(t, f); len(routes) != 1 || routes[0].Host != "reload.localhost" {
+		t.Fatalf("unaccepted routes were published: %#v", routes)
 	}
 	if err := os.WriteFile(release, nil, 0600); err != nil {
 		t.Fatal(err)
 	}
 	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reloaded") })
-	health, err = f.control.GetHealthResponse()
-	if err != nil || health.Routing.RoutedServices[0].Host != "new.localhost" {
-		t.Fatalf("accepted routes were not published: %#v, %v", health, err)
+	if routes := readInjectedRoutes(t, f); len(routes) != 1 || routes[0].Host != "new.localhost" {
+		t.Fatalf("accepted routes were not published: %#v", routes)
 	}
 }

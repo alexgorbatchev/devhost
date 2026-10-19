@@ -42,11 +42,11 @@ func buildStackWorktrees(m ResolvedManifest, stateDir string, previous *stackWor
 	if !m.Worktrees.Enabled {
 		return nil, nil
 	}
-	manifestPath, err := filepath.Abs(m.ManifestPath)
+	worktreeStateDir, err := worktreeStateDirectory(m.ManifestPath, stateDir)
 	if err != nil {
 		return nil, err
 	}
-	w := &stackWorktrees{stateDir: filepath.Join(stateDir, "worktrees", worktreeKey(manifestPath))}
+	w := &stackWorktrees{stateDir: worktreeStateDir}
 	var saved *savedWorktree
 	if previous == nil {
 		saved, err = w.readSelection()
@@ -420,6 +420,38 @@ func (w *stackWorktrees) toolContext(m ResolvedManifest, name string) (devtools.
 		break
 	}
 	return result, nil
+}
+
+// worktreeStateDirectory is where the selection of the stack with the root
+// manifest at manifestPath is saved.
+func worktreeStateDirectory(manifestPath string, stateDir string) (string, error) {
+	absolutePath, err := filepath.Abs(manifestPath)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(stateDir, "worktrees", worktreeKey(absolutePath)), nil
+}
+
+// forgetWorktreeSelection removes the stack's saved selection, so turning
+// worktrees on keeps the checkout the stack runs instead of restoring a
+// selection from an earlier run, now and at the next start.
+func forgetWorktreeSelection(manifestPath string, stateDir string) error {
+	worktreeStateDir, err := worktreeStateDirectory(manifestPath, stateDir)
+	if err != nil {
+		return err
+	}
+	return (&stackWorktrees{stateDir: worktreeStateDir}).restoreSelection(nil)
+}
+
+// selectionAwayFromRoot returns the repository running a checkout other than
+// the configured one, and that configured checkout.
+func (w *stackWorktrees) selectionAwayFromRoot() (id string, configuredPath string, ok bool) {
+	for _, repo := range w.snapshot() {
+		if repo.SelectedPath != repo.ConfiguredPath {
+			return repo.ID, repo.ConfiguredPath, true
+		}
+	}
+	return "", "", false
 }
 
 func (w *stackWorktrees) selectionPath() string {
