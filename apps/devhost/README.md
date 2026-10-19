@@ -159,7 +159,7 @@ Service additions, removals, commands, environment, working directories, health 
 
 Routes and reservations follow the accepted configuration, and open devtools connections and chat sessions remain available. A failed replacement launch or route update triggers restoration of the previous services and routing. Restoration failures are reported and remain available for explicit recovery; unrelated edits retain stopped services' recovery state. A successful reload prints `configuration reloaded: <files>`, listing the root manifest and all current included manifests relative to the root manifest directory. Shutdown signals interrupt replacement health waits, stop the replacement, and clean up the stack without launching restoration services.
 
-Changes to `name`, `killZombies`, `[caddy]`, `[devtools]` or `[worktrees].enabled` require stopping and restarting devhost. An edit changing any of these settings is rejected as a whole, including any service changes in that edit. Selecting a worktree loads its manifest and includes; its manifest name may differ, while the running instance retains its startup name and the other settings above must match.
+Changes to `name`, `killZombies`, `[devtools]` or `[worktrees].enabled` require stopping and restarting devhost. An edit changing any of these settings is rejected as a whole, including any service changes in that edit. Selecting a worktree loads its manifest and includes; its manifest name may differ, while the running instance retains its startup name and the other settings above must match.
 
 ### Multiple Domains for One Service
 
@@ -293,16 +293,14 @@ is also subject to the manifest interpolation rules above.
 
 On Linux, run `devhost caddy privileged-ports` once before the first HTTPS start if you want Caddy to bind privileged ports without running the whole stack as root.
 
-Use `devhost caddy start --manifest ./devhost.toml` to start the shared proxy with the manifest's
-`caddy.global.adminAddress`, `bindHost`, `http`, `httpPort`, and `httpsPort` settings.
-Active stack registrations take precedence for the shared admin address, bind host, and listener ports.
-Each running stack retains that resolved management binding for route updates and cleanup. Sparse/default
-siblings inherit its non-default settings; explicit conflicting non-default requests still fail. Removing
-the last HTTP-enabled stack disables HTTP while false/default siblings remain. When the final registration
-is removed, cleanup retains the retiring stack's captured listener settings and removes its host snippets;
-it leaves the shared Caddy process running until `devhost caddy stop --manifest ./devhost.toml`.
-Configure the same custom management settings in manifests that may start after all stacks have stopped;
-an empty runtime does not discover a custom endpoint from another manifest.
+The shared proxy's `adminAddress`, `bindHost`, `http`, `httpPort`, and `httpsPort` are settings of the
+machine, not of a project: set them in the `[caddy]` table of the devhost config file, `config.toml` in
+`$DEVHOST_CONFIG_DIR`, `$XDG_CONFIG_HOME/devhost`, or `~/.config/devhost`. `devhost caddy start` starts the
+proxy with them, and every stack applies them when it starts. Saving `config.toml` while stacks run moves
+the shared proxy to the new settings without restarting anything, and every running stack's service URLs
+follow. An invalid file, or a listener Caddy cannot open, leaves the proxy on the settings it runs and
+prints `shared Caddy settings rejected` with the reason. The proxy keeps its settings when the last route
+is removed and runs until `devhost caddy stop`.
 
 ## Build from source
 

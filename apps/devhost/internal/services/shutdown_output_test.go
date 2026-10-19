@@ -71,7 +71,7 @@ func TestShutdownAnnouncementDoesNotWaitForStartup(t *testing.T) {
 			var output shutdownOutput
 			finished := make(chan error, 1)
 			go func() {
-				code, err := StartStack(&m, []string{"web"}, StartStackOptions{CaddyPaths: paths, LogWriter: &output})
+				code, err := startTestStack(t, &m, []string{"web"}, StartStackOptions{CaddyPaths: paths, LogWriter: &output})
 				if err == nil && code != readSignalExitCode(sig) {
 					err = fmt.Errorf("exit code = %d, want %d", code, readSignalExitCode(sig))
 				}
@@ -145,7 +145,7 @@ func TestPlaygroundStackShutdownOutput(t *testing.T) {
 			var output shutdownOutput
 			finished := make(chan error, 1)
 			go func() {
-				code, err := StartStack(&m, order, StartStackOptions{
+				code, err := startTestStack(t, &m, order, StartStackOptions{
 					CaddyPaths: paths, LogWriter: &output, ServiceStdoutWriter: &output, ServiceStderrWriter: &output,
 				})
 				if err == nil && code != readSignalExitCode(sig) {

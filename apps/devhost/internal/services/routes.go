@@ -19,7 +19,6 @@ type stackRoutes struct {
 	restartService  func(string) error
 	documentServers map[string]*devtools.DocumentInjectionServer
 	active          map[string]caddy.ActivateRouteOptions
-	settings        caddy.ManagedCaddyGlobalSettings
 }
 
 func (r *stackRoutes) activate(service ResolvedService) error {
@@ -95,14 +94,11 @@ func (r *stackRoutes) options(service ResolvedService) caddy.ActivateRouteOption
 	if service.Path != nil {
 		path = *service.Path
 	}
-	options := caddy.ActivateRouteOptions{
+	return caddy.ActivateRouteOptions{
 		ProxyLocalOrigin: service.ProxyLocalOrigin,
 		AppBindHost:      service.BindHost, AppPort: *service.Port,
-		CaddyAdminAddress: caddy.ResolveManagedCaddyAdminAddress(r.manifest.Caddy.Global.AdminAddress),
-		CaddyBindHost:     r.manifest.Caddy.Global.BindHost, CaddyOutputWriters: r.outputWriters,
-		CaddyHTTPPort: r.manifest.Caddy.Global.HTTPPort, CaddyHTTPSPort: r.manifest.Caddy.Global.HTTPSPort,
-		Host: service.Hosts[0], HTTPEnabled: r.manifest.Caddy.Global.HTTP,
-		Path: path, ServiceName: service.Name, StackName: r.manifest.Name,
+		CaddyOutputWriters: r.outputWriters,
+		Host:               service.Hosts[0],
+		Path:               path, ServiceName: service.Name, StackName: r.manifest.Name,
 	}
-	return caddy.ResolveManagedCaddyRouteOptions(options, r.settings)
 }

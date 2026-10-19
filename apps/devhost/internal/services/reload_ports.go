@@ -17,7 +17,7 @@ func resolveReloadPorts(next manifest.Manifest, current ResolvedManifest, reques
 			preserved[name] = *old.Port
 		}
 	}
-	return resolveServicePorts(next, portResolutionOptions{Preserved: preserved, Requested: requested})
+	return resolveRunningServicePorts(next, current, portResolutionOptions{Preserved: preserved, Requested: requested})
 }
 
 func resolveStackRestartPorts(next manifest.Manifest, current ResolvedManifest, requested []string) (ResolvedManifest, error) {
@@ -31,5 +31,13 @@ func resolveStackRestartPorts(next manifest.Manifest, current ResolvedManifest, 
 		}
 		options.Excluded[service.BindHost][*service.Port] = struct{}{}
 	}
-	return resolveServicePorts(next, options)
+	return resolveRunningServicePorts(next, current, options)
+}
+
+// resolveRunningServicePorts resolves next for the running stack, which keeps
+// the shared Caddy settings it runs: a manifest does not set them.
+func resolveRunningServicePorts(next manifest.Manifest, current ResolvedManifest, options portResolutionOptions) (ResolvedManifest, error) {
+	resolved, err := resolveServicePorts(next, options)
+	resolved.Caddy = current.Caddy
+	return resolved, err
 }

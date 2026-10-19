@@ -46,17 +46,26 @@ type managedCaddyLifecycle struct {
 	removeManagedPidFile     func() error
 	runManagedCaddyCommand   func([]string, ManagedCaddyCommandOptions) CommandResult
 	runtimeOS                string
+	// settings are what a new Caddy starts with.
+	settings ManagedCaddyGlobalSettings
 }
 
+// RunManagedCaddyLifecycleCommand starts, stops, or trusts the managed Caddy.
+// A running Caddy is reached through the admin address recorded as applied;
+// settings, from the devhost config file, are what a new Caddy starts with.
 func RunManagedCaddyLifecycleCommand(
 	action LifecycleAction,
 	logWriter io.Writer,
 	paths Paths,
-	fallback ManagedCaddyConfigFallback,
+	settings ManagedCaddyGlobalSettings,
 	dependencies ManagedCaddyLifecycleDependencies,
 ) (int, error) {
+	running, err := readRunningSettings(paths, settings)
+	if err != nil {
+		return 0, err
+	}
 	l := managedCaddyLifecycle{
-		adminAddress:             ResolveManagedCaddyAdminAddress(fallback.AdminAddress),
+		adminAddress:             ResolveManagedCaddyAdminAddress(running.AdminAddress),
 		canPromptForPassword:     dependencies.CanPromptForPassword,
 		hasManagedPidFile:        dependencies.HasManagedPidFile,
 		isManagedCaddyAvailable:  dependencies.IsManagedCaddyAvailable,
@@ -67,14 +76,13 @@ func RunManagedCaddyLifecycleCommand(
 		removeManagedPidFile:     dependencies.RemoveManagedPidFile,
 		runManagedCaddyCommand:   dependencies.RunManagedCaddyCommand,
 		runtimeOS:                dependencies.RuntimeOS,
+		settings:                 settings,
 	}
 
 	ensureConfig := dependencies.EnsureManagedCaddyConfig
 	if ensureConfig == nil {
 		ensureConfig = func() error {
-			fallback.RuntimeOS = l.runtimeOS
-			fallback.AdminAddress = l.adminAddress
-			return ensureManagedCaddyConfig(paths, fallback)
+			return EnsureManagedCaddyConfig(paths, settings, l.runtimeOS)
 		}
 	}
 	if l.canPromptForPassword == nil {
@@ -138,7 +146,7 @@ func (l managedCaddyLifecycle) start() (int, error) {
 		return 0, l.trustAfterStart()
 	}
 
-	result := l.runManagedCaddyCommand([]string{"start", "--pidfile", l.paths.PidFilePath}, ManagedCaddyCommandOptions{})
+	result := l.startProcess()
 	if !result.Success {
 		failure, handled := managedCaddyStartFailure(result, l.runtimeOS, l.paths.CaddyDirectoryPath)
 		if !handled || cliout.IsAgentMode() {
@@ -157,6 +165,36 @@ func (l managedCaddyLifecycle) start() (int, error) {
 	}
 
 	return 0, l.trustAfterStart()
+}
+
+// startProcess renders every route for the settings, starts Caddy with them,
+// and records them as applied once Caddy runs. The route lock keeps another
+// stack from rendering routes for other settings in between.
+func (l managedCaddyLifecycle) startProcess() CommandResult {
+	var result CommandResult
+	err := withRouteMutationLock(l.paths, func() error {
+		if err := renderManagedCaddySettings(l.paths, l.settings, l.runtimeOS); err != nil {
+			return err
+		}
+		result = l.runManagedCaddyCommand([]string{"start", "--pidfile", l.paths.PidFilePath}, ManagedCaddyCommandOptions{})
+		if !result.Success {
+			return nil
+		}
+		return writeAppliedManagedCaddySettings(l.paths, l.settings)
+	})
+	if err != nil {
+		return CommandResult{Stderr: []byte(err.Error())}
+	}
+	return result
+}
+
+// forget removes the pid file and the applied settings of a Caddy that no
+// longer runs, so the next start uses the configured settings.
+func (l managedCaddyLifecycle) forget() error {
+	if err := l.removeManagedPidFile(); err != nil {
+		return err
+	}
+	return removeAppliedManagedCaddySettings(l.paths)
 }
 
 // trustAfterStart installs the local CA once Caddy runs, which is when Caddy
@@ -198,7 +236,7 @@ func (l managedCaddyLifecycle) stop() (int, error) {
 	isManagedProcessAvailable := l.isManagedCaddyAvailable()
 	if !isManagedProcessAvailable {
 		if isManagedProcessKnown {
-			if err := l.removeManagedPidFile(); err != nil {
+			if err := l.forget(); err != nil {
 				return 0, fmt.Errorf("remove stale managed caddy pid file: %w", err)
 			}
 			if err := cliout.WriteLog(l.logWriter, "devhost", "managed caddy is not running. Removed the stale pid file."); err != nil {
@@ -225,7 +263,7 @@ func (l managedCaddyLifecycle) stop() (int, error) {
 		return 0, err
 	}
 
-	if err := l.removeManagedPidFile(); err != nil {
+	if err := l.forget(); err != nil {
 		return 0, fmt.Errorf("remove managed caddy pid file after stop: %w", err)
 	}
 	if err := cliout.WriteLog(l.logWriter, "devhost", "managed caddy stopped."); err != nil {
@@ -309,7 +347,7 @@ func managedCaddyStartFailure(result CommandResult, runtimeOS, directory string)
 	if handled {
 		if runtimeOS == "darwin" {
 			failure.Summary = "Caddy cannot bind HTTPS port 443 to loopback without privileges on macOS."
-			failure.Hint = "Use wildcard listeners by omitting caddy.global.bindHost, or use a privileged launcher for loopback-only HTTPS."
+			failure.Hint = "Use wildcard listeners by leaving bindHost out of the [caddy] table of config.toml, or use a privileged launcher for loopback-only HTTPS."
 		} else {
 			failure.Summary = "Caddy cannot listen on HTTPS port 443 without privileged-port setup."
 			failure.Hint = "Run 'devhost caddy privileged-ports', then 'devhost caddy start'."

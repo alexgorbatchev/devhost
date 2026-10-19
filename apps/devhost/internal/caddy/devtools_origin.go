@@ -14,8 +14,8 @@ type DevtoolsRouteOwner struct {
 	ControlPort  int
 }
 
-// AllowsDevtoolsURL reads the same registrations and shared listener settings
-// used to render managed routes. Re-reading on every action also withdraws a
+// AllowsDevtoolsURL reads the same registrations and listener settings Caddy
+// runs that managed routes render. Re-reading on every action also withdraws a
 // document whose route moved to another stack.
 func AllowsDevtoolsURL(paths Paths, owner DevtoolsRouteOwner, text string) (bool, error) {
 	u, err := url.Parse(text)
@@ -25,9 +25,12 @@ func AllowsDevtoolsURL(paths Paths, owner DevtoolsRouteOwner, text string) (bool
 	if u.User != nil || u.Opaque != "" || u.Hostname() == "" || (u.Scheme != "http" && u.Scheme != "https") {
 		return false, nil
 	}
-	settings, err := ReadManagedCaddyGlobalSettings(paths, ManagedCaddyConfigFallback{})
+	settings, ok, err := ReadAppliedManagedCaddySettings(paths)
 	if err != nil {
 		return false, fmt.Errorf("read native browser route settings: %w", err)
+	}
+	if !ok {
+		return false, nil
 	}
 	port := settings.HTTPSPort
 	if u.Scheme == "http" {

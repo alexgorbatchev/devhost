@@ -17,7 +17,6 @@ type Inputs struct {
 
 type Manifest struct {
 	Inputs                Inputs
-	Caddy                 CaddyConfig
 	Devtools              DevtoolsConfig
 	Worktrees             WorktreesConfig
 	ManifestDirectoryPath string
@@ -32,18 +31,6 @@ type Manifest struct {
 
 type WorktreesConfig struct {
 	Enabled bool
-}
-
-type CaddyConfig struct {
-	Global CaddyGlobalConfig
-}
-
-type CaddyGlobalConfig struct {
-	AdminAddress string
-	BindHost     string
-	HTTP         bool
-	HTTPPort     int
-	HTTPSPort    int
 }
 
 type DevtoolsBrowserConfig struct {

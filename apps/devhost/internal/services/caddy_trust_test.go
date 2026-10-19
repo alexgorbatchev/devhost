@@ -30,7 +30,7 @@ func TestStartStackWarnsOnceAboutAnUntrustedLocalCA(t *testing.T) {
 	var output shutdownOutput
 	finished := make(chan error, 1)
 	go func() {
-		_, err := StartStack(&m, []string{"web"}, StartStackOptions{CaddyPaths: paths, LogWriter: &output})
+		_, err := startTestStack(t, &m, []string{"web"}, StartStackOptions{CaddyPaths: paths, LogWriter: &output})
 		finished <- err
 	}()
 	ch := <-signals

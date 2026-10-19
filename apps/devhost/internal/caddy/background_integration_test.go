@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os/exec"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -20,7 +21,9 @@ func TestNativeCaddyStartupDiagnostics(t *testing.T) {
 			ports := nettest.ReservePorts(t, 2)
 			admin := fmt.Sprintf("127.0.0.1:%d", ports[0])
 			paths := CreateManagedCaddyPaths(t.TempDir())
-			if err := EnsureManagedCaddyConfig(paths, ManagedCaddyConfigFallback{AdminAddress: admin, HTTPSPort: ports[1]}); err != nil {
+			settings := DefaultManagedCaddyGlobalSettings()
+			settings.AdminAddress, settings.HTTPSPort = admin, ports[1]
+			if err := EnsureManagedCaddyConfig(paths, settings, runtime.GOOS); err != nil {
 				t.Fatal(err)
 			}
 			if occupied {

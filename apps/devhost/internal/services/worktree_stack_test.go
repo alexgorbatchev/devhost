@@ -46,7 +46,7 @@ func TestStackSwitchesWholeRepositoryAndRecoversFailedSwitch(t *testing.T) {
 	configuration := writeWorktreeFixtureConfiguration(t, m, root)
 	writeWorktreeFixtureConfiguration(t, m, linked)
 	m.configuration = &configuration
-	m.Devtools, m.Caddy = configuration.Devtools, configuration.Caddy
+	m.Devtools = configuration.Devtools
 	configured := m
 	originalStart, originalRegister, originalUnregister := startDevtoolsControlServer, registerProcessSignals, unregisterProcessSignals
 	defer func() {
@@ -67,7 +67,7 @@ func TestStackSwitchesWholeRepositoryAndRecoversFailedSwitch(t *testing.T) {
 	launch := func() (devtools.StartControlServerOptions, func()) {
 		done := make(chan error, 1)
 		go func() {
-			_, err := StartStack(&m, m.ServiceOrder, StartStackOptions{CaddyPaths: paths, Environment: map[string]string{"DEVHOST_STATE_DIR": state}, LogWriter: logs, ServiceStdoutWriter: io.Discard, ServiceStderrWriter: io.Discard, ShutdownGracePeriod: time.Second})
+			_, err := startTestStack(t, &m, m.ServiceOrder, StartStackOptions{CaddyPaths: paths, Environment: map[string]string{"DEVHOST_STATE_DIR": state}, LogWriter: logs, ServiceStdoutWriter: io.Discard, ServiceStderrWriter: io.Discard, ShutdownGracePeriod: time.Second})
 			done <- err
 		}()
 		ch := <-signals

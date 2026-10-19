@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
@@ -53,7 +54,9 @@ func TestNativeManagedCaddyfileLeavesTrustInstallationToDevhost(t *testing.T) {
 		t.Skip("native Caddy is unavailable")
 	}
 	paths := CreateManagedCaddyPaths(t.TempDir())
-	if err := EnsureManagedCaddyConfig(paths, ManagedCaddyConfigFallback{AdminAddress: caddytest.UnusedAdminAddress(t)}); err != nil {
+	settings := DefaultManagedCaddyGlobalSettings()
+	settings.AdminAddress = caddytest.UnusedAdminAddress(t)
+	if err := EnsureManagedCaddyConfig(paths, settings, runtime.GOOS); err != nil {
 		t.Fatal(err)
 	}
 	result := RunCommand([]string{executable, "adapt", "--config", paths.CaddyfilePath, "--adapter", "caddyfile"}, RunCommandOptions{WorkingDir: paths.CaddyDirectoryPath})

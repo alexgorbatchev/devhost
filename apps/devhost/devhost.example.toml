@@ -4,7 +4,7 @@
 # Rename it to `devhost.toml` in your project root when you actually want to use it.
 # Saving this file or its includes hot-reloads service configuration. Invalid edits
 # leave the current stack running. Include glob additions and removals are observed.
-# Changes to name, killZombies, caddy, devtools or worktrees.enabled
+# Changes to name, killZombies, devtools or worktrees.enabled
 # require restarting devhost; an edit containing those changes is rejected in full.
 # Single-service restart keeps its assigned automatic port. If that port is occupied,
 # use "Restart Stack" in Services or recovery to restart all managed
@@ -16,7 +16,6 @@
 # - `includes` (optional; string or string array of file glob patterns to merge multiple sub-manifests)
 # - `[groups]` (optional; named selections of services for `devhost start <name>`)
 # - `[worktrees]` (optional; Git checkout selection for repository service groups, enabled by default)
-# - `[caddy.global]` (optional)
 # - `[devtools]` (optional)
 # - `[devtools.browser]` (optional; explicitly configured native browser control)
 # - `[devtools.editor]` (optional)
@@ -94,15 +93,11 @@ app = ["web"]
 
 # Managed Caddy lifecycle is shared and manual.
 # Start it explicitly with `devhost caddy start` before running one or more stacks.
-# Pass `--manifest ./devhost.toml` to use this manifest's admin address, bind host,
-# HTTP enablement, and listener ports when generating the shared proxy configuration.
-# Active stack registrations take precedence for the admin address, bind host, and ports.
 # All stacks share the same managed Caddy instance and the same global 404 hostname list.
-# Stacks retain the resolved management binding for updates and retirement. Default/sparse
-# siblings inherit non-default bindings while active; explicit non-default conflicts fail.
-# Final retirement keeps the captured listener settings and leaves Caddy running.
-# Use matching custom settings when a manifest may start with no active stacks; an empty
-# runtime does not discover a custom endpoint from a different manifest.
+# Its admin address, bind host, HTTP enablement, and listener ports are machine settings,
+# not manifest settings: set them in the `[caddy]` table of the devhost config file,
+# `config.toml` in `$DEVHOST_CONFIG_DIR`, `$XDG_CONFIG_HOME/devhost`, or `~/.config/devhost`.
+# A manifest with a `[caddy]` table is rejected.
 
 # The `devtools.*` sections control the browser-side devhost overlay injected into
 # routed HTML document navigations. If all devtools features are disabled, apps
@@ -121,38 +116,7 @@ app = ["web"]
 # Repositories containing managed = false services cannot switch.
 # Keep configured cwd values in one checkout per repository. The target manifest uses
 # the same repository-relative path (or filename at the root for an outside manifest).
-# Listener, devtools, worktree enablement, and killZombies settings must match.
-
-[caddy.global]
-# `http` also serves the same routed hosts and the shared fallback page on plain HTTP.
-# - `false` (default): serve through HTTPS only.
-# - `true`: also serve the same routes through HTTP on `httpPort`.
-# `httpPort` selects the managed Caddy HTTP listener port.
-# - `80` (default): standard privileged HTTP.
-# - any other integer from `1` to `65535`: alternate HTTP listener port.
-# `httpsPort` selects the managed Caddy HTTPS listener port.
-# - `443` (default): standard privileged HTTPS.
-# - any other integer from `1` to `65535`: alternate HTTPS listener port.
-# `bindHost` controls which interfaces the managed Caddy HTTP/HTTPS listeners bind.
-# - `"127.0.0.1"`: loopback only on Linux; macOS retains wildcard listeners for rootless HTTPS.
-# - `"0.0.0.0"` (default): expose the managed Caddy front door on all IPv4/IPv6 interfaces.
-# - `"::1"`: IPv6 loopback only.
-# - `"::"`: expose the managed Caddy front door on all IPv6 interfaces.
-# `adminAddress` controls which loopback address/port the managed Caddy admin API listens on.
-# - `"127.0.0.1:20197"` (default): the default devhost-managed admin endpoint.
-# - any other host:port string Caddy accepts: alternate admin endpoint.
-#
-# Important: this is a shared managed-Caddy setting, not an isolated per-stack listener.
-# If any active stack enables `caddy.global.http = true`, the shared Caddy instance serves
-# HTTP for all active stacks. Retiring the last true voter disables HTTP while false/default
-# sibling registrations remain. Final-registration retirement retains the stack's captured
-# HTTP setting; stop shared Caddy manually with a matching manifest when done.
-# Active stacks must also agree on any non-default `adminAddress`, `bindHost`, `httpPort`, and `httpsPort` values.
-adminAddress = "127.0.0.1:20197"
-bindHost = "0.0.0.0"
-httpPort = 80
-http = false
-httpsPort = 443
+# Devtools, worktree enablement, and killZombies settings must match.
 
 [devtools]
 # `idleTimeout` sets the automatic idle shutdown duration (e.g. 30s, 1m, 1h).
