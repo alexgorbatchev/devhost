@@ -8,10 +8,14 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
 )
+
+// alwaysInject turns the devtools on for every document a test server serves.
+func alwaysInject() bool { return true }
 
 func TestDocumentInjectionServerRewritesHTMLDocuments(t *testing.T) {
 	t.Parallel()
@@ -45,8 +49,9 @@ func TestDocumentInjectionServerRewritesHTMLDocuments(t *testing.T) {
 	}
 
 	documentServer, err := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{
-		BackendHost: backendHost,
-		BackendPort: backendPort,
+		BackendHost:  backendHost,
+		BackendPort:  backendPort,
+		ShouldInject: alwaysInject,
 	})
 	if err != nil {
 		t.Fatalf("StartDocumentInjectionServer(...) error = %v", err)
@@ -115,6 +120,48 @@ func TestDocumentInjectionServerRewritesHTMLDocuments(t *testing.T) {
 	}
 }
 
+func TestDocumentInjectionFollowsTheInjectionSettingOnEachRequest(t *testing.T) {
+	t.Parallel()
+
+	backendServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		writer.Header().Set("content-type", "text/html; charset=utf-8")
+		_, _ = writer.Write([]byte("<html><body>page</body></html>"))
+	}))
+	defer backendServer.Close()
+	address := backendServer.Listener.Addr().(*net.TCPAddr)
+	var isEnabled atomic.Bool
+	documentServer, err := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{
+		BackendHost: address.IP.String(), BackendPort: address.Port, ShouldInject: isEnabled.Load,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = documentServer.Stop() })
+
+	read := func() string {
+		response, err := http.Get("http://" + net.JoinHostPort("127.0.0.1", strconv.Itoa(documentServer.Port())) + "/")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer response.Body.Close()
+		body, err := io.ReadAll(response.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(body)
+	}
+	const injected = `<html><body>page<script type="module" src="/__devhost__/inject.js"></script></body></html>`
+	for _, step := range []struct {
+		isEnabled bool
+		want      string
+	}{{false, "<html><body>page</body></html>"}, {true, injected}, {false, "<html><body>page</body></html>"}} {
+		isEnabled.Store(step.isEnabled)
+		if got := read(); got != step.want {
+			t.Fatalf("document with injection %v = %q, want %q", step.isEnabled, got, step.want)
+		}
+	}
+}
+
 func TestDocumentInjectionBackendCanChangeDuringRequests(t *testing.T) {
 	t.Parallel()
 	backend := func(text string) *httptest.Server {
@@ -127,7 +174,7 @@ func TestDocumentInjectionBackendCanChangeDuringRequests(t *testing.T) {
 	defer first.Close()
 	defer second.Close()
 	firstAddress, secondAddress := first.Listener.Addr().(*net.TCPAddr), second.Listener.Addr().(*net.TCPAddr)
-	server, err := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{BackendHost: firstAddress.IP.String(), BackendPort: firstAddress.Port})
+	server, err := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{BackendHost: firstAddress.IP.String(), BackendPort: firstAddress.Port, ShouldInject: alwaysInject})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +221,7 @@ func TestDocumentInjectionBackendCanChangeDuringRequests(t *testing.T) {
 func TestDocumentInjectionServerServesRecoveryPageWhenBackendExits(t *testing.T) {
 	t.Parallel()
 	// An exited backend refuses connections, as a reserved port that nothing listens on does.
-	server, err := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{BackendHost: "127.0.0.1", BackendPort: nettest.ReservePort(t)})
+	server, err := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{BackendHost: "127.0.0.1", BackendPort: nettest.ReservePort(t), ShouldInject: alwaysInject})
 	if err != nil {
 		t.Fatal(err)
 	}

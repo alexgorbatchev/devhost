@@ -14,12 +14,18 @@ import (
 )
 
 type StartDocumentInjectionServerOptions struct {
-	BackendHost      string
-	BackendPort      int
-	DisableInjection bool
-	GetRecovery      func() RecoveryState
-	Restart          func() error
-	Worktrees        http.Handler
+	BackendHost string
+	BackendPort int
+	// ShouldInject reports, for each document, whether to inject the devtools;
+	// nil injects none. A reload can turn the devtools on or off.
+	ShouldInject func() bool
+	GetRecovery  func() RecoveryState
+	Restart      func() error
+	Worktrees    http.Handler
+}
+
+func (o StartDocumentInjectionServerOptions) shouldInject() bool {
+	return o.ShouldInject != nil && o.ShouldInject()
 }
 
 type DocumentInjectionServer struct {
@@ -54,22 +60,26 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 			request.Header.Set("x-forwarded-proto", "https")
 		},
 		ModifyResponse: func(response *http.Response) error {
-			if options.GetRecovery != nil && (response.StatusCode == http.StatusNotFound || response.StatusCode >= http.StatusInternalServerError) &&
+			if options.GetRecovery != nil && response.StatusCode == http.StatusNotFound &&
 				(response.Request.Header.Get("Sec-Fetch-Dest") == "document" || response.Request.Header.Get(recoveryHeader) == "probe") {
 				state := options.GetRecovery()
-				setDocumentRecoveryError(&state, response.StatusCode)
-				document, err := renderRecoveryDocument(state, response.StatusCode, !options.DisableInjection)
+				state.Phase, state.Title = "not-found", "Page not found"
+				state.Message = "This path does not exist in the current checkout. Check the URL."
+				if len(state.Repositories) > 0 {
+					state.Message = "This path does not exist in the current checkout. Choose another worktree below or check the URL."
+				}
+				document, err := renderRecoveryDocument(state, http.StatusNotFound, options.shouldInject())
 				if err != nil {
 					return err
 				}
-				_ = response.Body.Close() // The failed application's document is replaced by recovery controls.
+				_ = response.Body.Close() // The missing application's document is replaced by recovery controls.
 				response.Body = io.NopCloser(strings.NewReader(document))
 				response.ContentLength = -1
 				response.Header = http.Header{"Content-Type": {"text/html; charset=utf-8"}, "Cache-Control": {"no-store"}}
 				return nil
 			}
 			if options.GetRecovery != nil && response.Request.Header.Get(recoveryHeader) == "probe" {
-				// An upstream response other than a missing page or server error, including a redirect,
+				// An upstream response other than a missing page, including an error or redirect,
 				// proves document transport works. Keep the probe from navigating or
 				// downloading the app before the browser performs its real navigation.
 				_ = response.Body.Close()
@@ -78,7 +88,7 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 				response.Header = http.Header{"Cache-Control": []string{"no-store"}}
 				return nil
 			}
-			if options.DisableInjection || !isHTMLResponse(response) {
+			if !options.shouldInject() || !isHTMLResponse(response) {
 				return nil
 			}
 
@@ -101,7 +111,7 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 				state := options.GetRecovery()
 				state.Phase, state.Title = "unavailable", state.Service+" could not load"
 				state.Message = "The service could not return a document: " + err.Error()
-				serveRecoveryPage(writer, request, state, http.StatusBadGateway, !options.DisableInjection)
+				serveRecoveryPage(writer, request, state, http.StatusBadGateway, options.shouldInject())
 				return
 			}
 			writer.Header().Set("cache-control", "no-store")
@@ -109,8 +119,7 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 			writer.WriteHeader(http.StatusBadGateway)
 			// Keep the injected control UI available when a document's backend is down.
 			// A disconnected browser cannot receive the recovery response, so delivery is best-effort.
-			document := renderUnavailableDocument()
-			_, _ = io.WriteString(writer, injectDevtoolsScript(document))
+			_, _ = io.WriteString(writer, injectDevtoolsScript(`<!doctype html><html><head><meta charset="utf-8"><title>Service unavailable · devhost</title></head><body data-devhost-recovery><p>Service unavailable. Use devhost to view logs and restart it.</p></body></html>`))
 		},
 	}
 
@@ -122,7 +131,7 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 			}
 			state := options.GetRecovery()
 			if state.Phase != "ready" {
-				serveRecoveryPage(w, r, state, http.StatusServiceUnavailable, !options.DisableInjection)
+				serveRecoveryPage(w, r, state, http.StatusServiceUnavailable, options.shouldInject())
 				return
 			}
 		}
@@ -138,19 +147,6 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 	}()
 
 	return documentServer, nil
-}
-
-func setDocumentRecoveryError(state *RecoveryState, status int) {
-	if status != http.StatusNotFound {
-		state.Phase, state.Title = "unavailable", state.Service+" could not load"
-		state.Message = fmt.Sprintf("The application returned HTTP %d. Review the service logs and restart after addressing the error.", status)
-		return
-	}
-	state.Phase, state.Title = "not-found", "Page not found"
-	state.Message = "This path does not exist in the current checkout. Check the URL."
-	if len(state.Repositories) > 0 {
-		state.Message = "This path does not exist in the current checkout. Choose another worktree below or check the URL."
-	}
 }
 
 func (s *DocumentInjectionServer) SetBackend(host string, port int) {

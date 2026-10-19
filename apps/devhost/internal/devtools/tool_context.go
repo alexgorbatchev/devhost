@@ -1,19 +1,25 @@
 package devtools
 
+import "github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
+
 type ToolContext struct {
-	ProjectRootPath string
-	ResolvePath     func(string) string
+	ProjectRootPath   string
+	AnnotationActions []manifest.ValidatedAnnotationAction
+	ResolvePath       func(string) string
 }
 
-func (s *ControlServer) toolContext(pageURL string) (ToolContext, error) {
+func (s *ControlServer) toolContext(request terminalSessionRequest) (ToolContext, error) {
+	settings := s.currentSettings()
 	if s.getToolContext == nil {
-		return ToolContext{ProjectRootPath: s.projectRootPath}, nil
+		return ToolContext{ProjectRootPath: s.projectRootPath, AnnotationActions: settings.AnnotationActions}, nil
 	}
-	s.mu.Lock()
-	name := s.primaryService
-	if route := resolveRoutedServiceForURL(s.routedServices, pageURL); route != nil {
+	pageURL := request.PageURL
+	if request.Annotation != nil {
+		pageURL = request.Annotation.URL
+	}
+	name := settings.PrimaryService
+	if route := resolveRoutedServiceForURL(settings.RoutedServices, pageURL); route != nil {
 		name = route.ServiceName
 	}
-	s.mu.Unlock()
 	return s.getToolContext(name)
 }
