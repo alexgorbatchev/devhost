@@ -40,20 +40,21 @@ func (d *DirtyTracker) IsDirty(serviceName string) bool {
 }
 
 type WatchManager struct {
-	tracker          *DirtyTracker
-	watchers         map[string]*fsnotify.Watcher
-	watcherDone      map[string]chan struct{}
-	watchersMu       sync.RWMutex
-	debounceTimers   map[string]*time.Timer
-	timersMu         sync.Mutex
-	onDirty          func(string)
-	onTimerDone      func(string)
-	logWriter        io.Writer
-	manifestName     string
+	tracker        *DirtyTracker
+	watchers       map[string]*fsnotify.Watcher
+	watcherDone    map[string]chan struct{}
+	watchersMu     sync.RWMutex
+	debounceTimers map[string]*time.Timer
+	timersMu       sync.Mutex
+	onDirty        func(string)
+	onTimerDone    func(string)
+	logWriter      io.Writer
+	// label reads the stack's name when a line is written; nil writes "devhost".
+	label            func() string
 	debounceDuration time.Duration
 }
 
-func NewWatchManager(tracker *DirtyTracker, onDirty func(string), logWriter io.Writer, manifestName string) *WatchManager {
+func NewWatchManager(tracker *DirtyTracker, onDirty func(string), logWriter io.Writer, label func() string) *WatchManager {
 	return &WatchManager{
 		tracker:          tracker,
 		watchers:         make(map[string]*fsnotify.Watcher),
@@ -61,7 +62,7 @@ func NewWatchManager(tracker *DirtyTracker, onDirty func(string), logWriter io.W
 		debounceTimers:   make(map[string]*time.Timer),
 		onDirty:          onDirty,
 		logWriter:        logWriter,
-		manifestName:     manifestName,
+		label:            label,
 		debounceDuration: 200 * time.Millisecond,
 	}
 }
@@ -95,12 +96,16 @@ func (wm *WatchManager) IsWatchingPath(serviceName string, path string) bool {
 }
 
 func (wm *WatchManager) writeLog(message string) {
+	label := ""
+	if wm.label != nil {
+		label = wm.label()
+	}
 	if wm.logWriter == nil {
-		stdout, _ := cliout.ServiceOutputWriters(os.Stderr, os.Stderr, []string{wm.manifestName})
-		cliout.Log(stdout, wm.manifestName, message)
+		stdout, _ := cliout.ServiceOutputWriters(os.Stderr, os.Stderr, []string{label})
+		cliout.Log(stdout, label, message)
 		return
 	}
-	cliout.Log(wm.logWriter, wm.manifestName, message)
+	cliout.Log(wm.logWriter, label, message)
 }
 
 var excludedDirectories = map[string]bool{

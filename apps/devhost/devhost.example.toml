@@ -4,7 +4,7 @@
 # Rename it to `devhost.toml` in your project root when you actually want to use it.
 # Saving this file or its includes hot-reloads service configuration. Invalid edits
 # leave the current stack running. Include glob additions and removals are observed.
-# Changes to name, killZombies, devtools or worktrees.enabled
+# Changes to killZombies, devtools or worktrees.enabled
 # require restarting devhost; an edit containing those changes is rejected in full.
 # Single-service restart keeps its assigned automatic port. If that port is occupied,
 # use "Restart Stack" in Services or recovery to restart all managed
@@ -52,7 +52,8 @@
 # - referencing an undefined valid placeholder is a manifest read error
 # - defined placeholders may expand to the empty string
 
-# `name` identifies the stack in logs, state, and injected metadata.
+# `name` labels the stack in logs and devtools. Saving a new name renames the running stack;
+# the stack is identified by the path of its root manifest.
 # You can interpolate environment variables in string values, for example:
 # `name = "{{ env.USER }}-stack"` or `host = "devhost-{{ env.USER }}.localhost"`.
 name = "hello-stack"
