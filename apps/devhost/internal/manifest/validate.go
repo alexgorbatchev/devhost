@@ -15,7 +15,7 @@ import (
 
 const (
 	defaultManagedCaddyAdminAddress = "127.0.0.1:20197"
-	defaultManagedCaddyBindHost     = "127.0.0.1"
+	defaultManagedCaddyBindHost     = "0.0.0.0"
 	defaultManagedCaddyHTTPPort     = 80
 	defaultManagedCaddyHTTPSPort    = 443
 	defaultDevtoolsEditor           = "vscode"

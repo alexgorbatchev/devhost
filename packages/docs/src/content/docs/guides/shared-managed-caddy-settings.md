@@ -31,14 +31,14 @@ httpsPort = 4443
 
 Those are shared managed-Caddy settings too. Active stacks must agree on any non-default `caddy.global.httpPort` and `caddy.global.httpsPort` values because they all route through the same Caddy instance.
 
-To expose the managed Caddy front door beyond loopback, set a shared listener bind host:
+Managed Caddy's shared listener bind host defaults to all IPv4 and IPv6 interfaces:
 
 ```toml
 [caddy.global]
 bindHost = "0.0.0.0"
 ```
 
-That widens only the managed Caddy HTTP/HTTPS listeners. The admin API stays on `127.0.0.1`, and routed backends can keep their own `services.<name>.bindHost` on loopback behind Caddy.
+That setting affects only the managed Caddy HTTP/HTTPS listeners. HTTPS remains the default protocol (`http = false`). The admin API stays on `127.0.0.1`, and routed backends can keep their own `services.<name>.bindHost` on loopback behind Caddy. On Linux, choose `bindHost = "127.0.0.1"` to restrict public listeners to loopback. On macOS, this value retains wildcard listeners for rootless HTTPS; strict loopback-only privileged HTTPS needs a privileged launcher.
 Active stacks must agree on any non-default `caddy.global.bindHost` value because they share one managed Caddy instance.
 
 To move the managed Caddy admin API off the default endpoint, set:

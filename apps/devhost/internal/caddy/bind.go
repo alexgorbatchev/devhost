@@ -2,14 +2,14 @@ package caddy
 
 import "fmt"
 
-const defaultManagedCaddyBindHost = "127.0.0.1"
+const defaultManagedCaddyBindHost = "0.0.0.0"
 
 func ResolveManagedCaddyBindDirective(runtimeOS string, bindHost string) (string, error) {
 	if bindHost == "" {
 		bindHost = defaultManagedCaddyBindHost
 	}
 
-	if runtimeOS == "darwin" && bindHost == defaultManagedCaddyBindHost {
+	if runtimeOS == "darwin" && bindHost == "127.0.0.1" {
 		return "", nil
 	}
 

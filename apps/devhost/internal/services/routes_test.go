@@ -33,7 +33,7 @@ func TestProxyLocalOriginResolution(t *testing.T) {
 
 func TestStackRoutesPreservesExplicitManagementVotes(t *testing.T) {
 	paths := caddy.CreateManagedCaddyPaths(t.TempDir())
-	fallback := caddy.ManagedCaddyConfigFallback{AdminAddress: "127.0.0.1:44723", BindHost: "0.0.0.0", HTTPPort: 36009, HTTPSPort: 43273}
+	fallback := caddy.ManagedCaddyConfigFallback{AdminAddress: "127.0.0.1:44723", BindHost: "::", HTTPPort: 36009, HTTPSPort: 43273}
 	if err := caddy.EnsureManagedCaddyConfig(paths, fallback); err != nil {
 		t.Fatal(err)
 	}
@@ -41,12 +41,15 @@ func TestStackRoutesPreservesExplicitManagementVotes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	loopback := settings
+	loopback.BindHost = "127.0.0.1"
 	for _, tc := range []struct {
 		name    string
 		request manifest.CaddyGlobalConfig
 		want    caddy.ManagedCaddyGlobalSettings
 	}{
-		{name: "sparse defaults inherit binding", request: manifest.CaddyGlobalConfig{AdminAddress: caddy.DefaultManagedCaddyAdminAddress, BindHost: "127.0.0.1", HTTPPort: 80, HTTPSPort: 443}, want: settings},
+		{name: "sparse defaults inherit binding", request: manifest.CaddyGlobalConfig{AdminAddress: caddy.DefaultManagedCaddyAdminAddress, BindHost: "0.0.0.0", HTTPPort: 80, HTTPSPort: 443}, want: settings},
+		{name: "explicit loopback vote retained", request: manifest.CaddyGlobalConfig{AdminAddress: caddy.DefaultManagedCaddyAdminAddress, BindHost: "127.0.0.1", HTTPPort: 80, HTTPSPort: 443}, want: loopback},
 		{name: "explicit differing votes retained", request: manifest.CaddyGlobalConfig{AdminAddress: "127.0.0.1:44724", BindHost: "::1", HTTPPort: 36010, HTTPSPort: 43274}, want: caddy.ManagedCaddyGlobalSettings{AdminAddress: "127.0.0.1:44724", BindHost: "::1", HTTPPort: 36010, HTTPSPort: 43274}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

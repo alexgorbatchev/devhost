@@ -18,6 +18,7 @@ func TestRenderManagedCaddyfile(t *testing.T) {
 		"{",
 		"    admin 127.0.0.1:20197",
 		"    auto_https disable_redirects",
+		"    default_bind 0.0.0.0 [::]",
 		"    log {",
 		"        output file \"/tmp/devhost state/caddy/caddy.runtime.log\"",
 		"    }",
@@ -57,7 +58,7 @@ func TestRenderManagedCaddyfile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("renderManagedCaddyfile(...) unexpected error = %v", err)
 	}
-	if !strings.Contains(linuxCaddyfile, "    default_bind 127.0.0.1 [::1]") {
+	if !strings.Contains(linuxCaddyfile, "    default_bind 0.0.0.0 [::]") {
 		t.Fatalf("renderManagedCaddyfile(...) linux output missing default bind directive: %q", linuxCaddyfile)
 	}
 	if !strings.Contains(linuxCaddyfile, strings.Join([]string{

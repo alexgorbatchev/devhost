@@ -92,6 +92,8 @@ For custom domains, that means loopback resolution, such as exact `A` / `AAAA` r
 
 Good out-of-the-box choices are `localhost` and subdomains under `*.localhost`, such as `foo.localhost` and `api.foo.localhost`, because they work without additional DNS configuration.
 
+These names address the device running the browser. Use `https://foo.localhost` on the dev machine. For another device, configure a routed hostname that resolves to the dev machine's network address. Managed Caddy listens on all network interfaces by default; the backend service can keep listening on loopback. HTTPS clients also need to trust Caddy's CA.
+
 ## Multiple hostnames for one service
 
 Use an array in `host` to route several hostnames to one service process:
@@ -128,8 +130,7 @@ The generated Caddy config uses these defaults:
 - state dir: `DEVHOST_STATE_DIR`, else `XDG_STATE_HOME/devhost`, else `~/.local/state/devhost`
 - admin API: `127.0.0.1:20197` by default via `caddy.global.adminAddress`
 - HTTPS listener port: `443` by default via `caddy.global.httpsPort = 443`
-- listener binding on macOS: wildcard listeners, because macOS denies rootless loopback-specific binds on the default privileged HTTPS port
-- listener binding on non-macOS: loopback only by default via `caddy.global.bindHost = "127.0.0.1"`, rendered as Caddy `default_bind 127.0.0.1 [::1]`
+- listener binding: all IPv4 and IPv6 interfaces by default via `caddy.global.bindHost = "0.0.0.0"`, rendered as Caddy `default_bind 0.0.0.0 [::]`; the admin API and default backend listeners remain on loopback
 - plain HTTP: disabled by default; any active stack with `caddy.global.http = true` enables the same routed hosts and shared fallback page on HTTP for all active stacks
 - HTTP listener port: `80` by default via `caddy.global.httpPort = 80`
 - unmatched hostnames: a generated 404 page listing the active `devhost` hostnames as HTTPS links
@@ -137,7 +138,7 @@ The generated Caddy config uses these defaults:
 ## Platform caveats
 
 On macOS, the managed Caddy instance starts rootlessly by avoiding loopback-specific listener binding.
-That keeps startup unprivileged, but it also means the managed Caddy instance is not loopback-only on that platform.
+The default wildcard binding supports access from other devices as well as the dev machine. On Linux, set `caddy.global.bindHost = "127.0.0.1"` for loopback-only access. On macOS, that value retains the wildcard-listener behavior for rootless HTTPS.
 If you need strict loopback-only HTTPS on privileged ports, use a privileged launcher such as `launchd` socket activation; wildcard binding is not an equivalent substitute.
 
 On non-macOS platforms, opening HTTPS on the configured `caddy.global.httpsPort` still requires privileged-port setup outside `devhost` when that port is privileged.
