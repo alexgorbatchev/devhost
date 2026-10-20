@@ -33,7 +33,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 		} else if !filepath.IsAbs(directory) {
 			directory = filepath.Join(cwd, directory)
 		}
-		serviceStdout, serviceStderr := cliout.ServiceOutputWriters(stdout, stderr, []string{"serve-" + arguments.Domain, "serve"})
+		serviceStdout, serviceStderr := cliout.ServiceOutputWriters(stdout, stderr, []string{"serve-" + arguments.Domain, "serve", "devhost", "caddy"})
 		code, err := services.StartServe(directory, arguments.Domain, arguments.Port, services.StartStackOptions{
 			Environment: readEnvironment(), LogWriter: serviceStdout, ServiceStdoutWriter: serviceStdout, ServiceStderrWriter: serviceStderr,
 			CaddyOutputWriters: caddy.RouteCommandOutputWriters{StdoutWriter: serviceStdout, StderrWriter: serviceStderr, Quiet: true},
@@ -134,7 +134,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			idleTimeout = parsed
 		}
 
-		logNames := append([]string{strings.TrimSpace(resolvedManifest.Name), "devhost"}, serviceOrder...)
+		logNames := append([]string{strings.TrimSpace(resolvedManifest.Name), "devhost", "caddy"}, serviceOrder...)
 		serviceStdout, serviceStderr := cliout.ServiceOutputWriters(stdout, stderr, logNames)
 		startOptions := services.StartStackOptions{
 			Configuration:       &validatedManifest,
@@ -165,7 +165,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 
 		return exitCode
 	case cli.KindCaddyLifecycle:
-		_, caddyStderr := cliout.ServiceOutputWriters(stdout, stderr, []string{"devhost"})
+		_, caddyStderr := cliout.ServiceOutputWriters(stdout, stderr, []string{"devhost", "caddy"})
 		paths, err := caddy.CreateManagedCaddyPathsFromEnvironment(readEnvironment())
 		if err != nil {
 			return fail(stderr, err)

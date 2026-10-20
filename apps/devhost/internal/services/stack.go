@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/hostusage"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
@@ -356,12 +357,15 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		if !options.serveSession {
 			return 0, joinCleanupError(err, cleanupError)
 		}
-		if _, err := caddy.RunManagedCaddyLifecycleCommand(caddy.LifecycleStart, options.LogWriter, paths, fallback, caddy.ManagedCaddyLifecycleDependencies{RuntimeOS: runtime.GOOS}); err != nil {
+		// Starting Caddy also installs its local CA when the system does not trust it.
+		if _, err := caddy.RunManagedCaddyLifecycleCommand(caddy.LifecycleStart, options.LogWriter, paths, fallback, caddy.ManagedCaddyLifecycleDependencies{Quiet: options.CaddyOutputWriters.Quiet, RuntimeOS: runtime.GOOS}); err != nil {
 			return 0, joinCleanupError(err, cleanupError)
 		}
 		if err := caddy.EnsureManagedCaddyAdminAvailable(caddy.CreateCaddyAdminAPIURL(managedCaddyAdminAddress), caddy.AdminAvailabilityDependencies{}); err != nil {
 			return 0, joinCleanupError(err, cleanupError)
 		}
+	} else if warning := caddy.RootCertificateTrustWarning(paths.RootCertificatePath); warning != "" {
+		writeLogLine(options.LogWriter, manifest.Name, cliout.Warning(warning))
 	}
 
 	zombieCleanup := new(caddy.ZombieCleanup)

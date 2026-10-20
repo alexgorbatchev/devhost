@@ -127,11 +127,12 @@ Then prepare Caddy once and start your stack:
 
 ```bash
 devhost caddy download
-devhost caddy trust
 devhost caddy start
 npm run dev
 open https://foo.localhost
 ```
+
+The first `devhost caddy start` installs Caddy's local HTTPS certificate authority into the system trust store, which may ask for your password.
 
 (`pnpm dev`, `yarn dev`, and `bun run dev` work the same way when they invoke the same script.)
 

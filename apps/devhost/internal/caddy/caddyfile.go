@@ -48,6 +48,10 @@ func renderManagedCaddyfile(options renderManagedCaddyfileOptions) (string, erro
 		globalLines = append(globalLines, bindDirective)
 	}
 	globalLines = append(globalLines,
+		// Caddy installs an untrusted root CA on every configuration load, so each
+		// route reload would run sudo again from the background process. devhost
+		// installs it once, in the foreground (installManagedCaddyTrust).
+		"    skip_install_trust",
 		"    log {",
 		fmt.Sprintf("        output file %s", filepathQuote(options.Paths.CaddyDirectoryPath+"/caddy.runtime.log")),
 		"    }",

@@ -18,7 +18,9 @@ type CommandResult struct {
 type RunCommandOptions struct {
 	InheritStdio bool
 	Background   bool
-	WorkingDir   string
+	// Environment holds variables added to the inherited environment.
+	Environment []string
+	WorkingDir  string
 }
 
 func RunCommand(arguments []string, options RunCommandOptions) CommandResult {
@@ -28,6 +30,9 @@ func RunCommand(arguments []string, options RunCommandOptions) CommandResult {
 
 	command := exec.Command(arguments[0], arguments[1:]...)
 	command.Dir = options.WorkingDir
+	if len(options.Environment) > 0 {
+		command.Env = append(os.Environ(), options.Environment...)
+	}
 	if options.Background {
 		return runBackgroundCommand(command)
 	}
@@ -54,6 +59,7 @@ func RunCommand(arguments []string, options RunCommandOptions) CommandResult {
 
 type ManagedCaddyCommandOptions struct {
 	AdminAddress string
+	Environment  []string
 	RuntimeOS    string
 }
 
@@ -104,7 +110,7 @@ func RunManagedCaddyCommand(paths Paths, arguments []string, options ManagedCadd
 
 	executablePath := ResolveManagedCaddyExecutablePath(paths, resolvedRuntimeOS, dependencies.Stat)
 	commandArguments := append([]string{executablePath}, CreateManagedCaddyCommandArguments(paths, arguments, options)...)
-	return runCommand(commandArguments, RunCommandOptions{Background: len(arguments) > 0 && arguments[0] == "start", WorkingDir: paths.CaddyDirectoryPath})
+	return runCommand(commandArguments, RunCommandOptions{Background: len(arguments) > 0 && arguments[0] == "start", Environment: options.Environment, WorkingDir: paths.CaddyDirectoryPath})
 }
 
 func CreateManagedCaddyCommandErrorMessage(commandName string, result CommandResult) string {

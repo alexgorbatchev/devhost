@@ -3,7 +3,6 @@ package caddy
 import (
 	"fmt"
 	"net"
-	"os"
 	"os/exec"
 	"strings"
 	"testing"
@@ -22,15 +21,6 @@ func TestNativeCaddyStartupDiagnostics(t *testing.T) {
 			admin := fmt.Sprintf("127.0.0.1:%d", ports[0])
 			paths := CreateManagedCaddyPaths(t.TempDir())
 			if err := EnsureManagedCaddyConfig(paths, ManagedCaddyConfigFallback{AdminAddress: admin, HTTPSPort: ports[1]}); err != nil {
-				t.Fatal(err)
-			}
-			config, err := os.ReadFile(paths.CaddyfilePath)
-			if err != nil {
-				t.Fatal(err)
-			}
-			// Native tests generate an isolated CA, without changing system trust.
-			config = []byte(strings.Replace(string(config), "{\n", "{\n    skip_install_trust\n", 1))
-			if err := os.WriteFile(paths.CaddyfilePath, config, 0o600); err != nil {
 				t.Fatal(err)
 			}
 			if occupied {

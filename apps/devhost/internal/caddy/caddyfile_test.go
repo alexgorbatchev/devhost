@@ -19,6 +19,7 @@ func TestRenderManagedCaddyfile(t *testing.T) {
 		"    admin 127.0.0.1:20197",
 		"    auto_https disable_redirects",
 		"    default_bind 0.0.0.0 [::]",
+		"    skip_install_trust",
 		"    log {",
 		"        output file \"/tmp/devhost state/caddy/caddy.runtime.log\"",
 		"    }",

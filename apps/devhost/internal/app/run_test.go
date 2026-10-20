@@ -679,7 +679,6 @@ func TestRunCaddyTrustRequiresRunningManagedCaddy(t *testing.T) {
 		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
 	}
 	wantStderr := strings.Join([]string{
-		"devhost | managed caddy trust may prompt for your password because installing a root CA into the system trust store is privileged.",
 		"[ERROR] Managed Caddy is not running. Run 'devhost caddy start' first.",
 		"",
 	}, "\n")

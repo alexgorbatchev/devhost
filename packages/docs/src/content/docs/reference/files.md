@@ -34,7 +34,7 @@ Devhost checks TCP readiness and routes requests through its usual stack routing
 
 ## HTTPS and stopping
 
-Devhost starts its shared Caddy proxy automatically when needed. On Linux, prepare privileged ports once with `devhost caddy privileged-ports`; use `devhost caddy trust` to trust its local HTTPS certificate. See [Managed Caddy](../../guides/managed-caddy/) for setup and troubleshooting.
+Devhost starts its shared Caddy proxy automatically when needed. When it does and the system does not trust Caddy's local HTTPS certificate authority yet, it installs the authority once, which may ask for your password; `devhost caddy trust` does the same later. On Linux, prepare privileged ports once with `devhost caddy privileged-ports`. See [Managed Caddy](../../guides/managed-caddy/) for setup and troubleshooting.
 
 The session stays in the foreground. **Ctrl-C** removes its routes and ownership records and, in directory mode, stops its file server. Caddy, external services, and other sessions remain running. Ctrl-C exits with `130`; SIGTERM exits with `143`. The working or served directory receives no manifest or runtime files. Temporary session state lives in devhost's state directory and is removed on normal shutdown.
 

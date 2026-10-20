@@ -31,7 +31,17 @@ devhost caddy start
 
 Setup may ask for your password. Run it again if the managed Caddy binary is replaced and loses its bind capability.
 
-Caddy command messages use `devhost | ` in human mode and `devhost: ` in agent mode. Runtime logs are retained in `<state-dir>/caddy/caddy.runtime.log`, with automatic rotation. Startup stdout and stderr are retained in `caddy.stdout.log` and `caddy.stderr.log` beside it; each start replaces those two files. The default state directory is `~/.local/state/devhost`; `XDG_STATE_HOME` and `DEVHOST_STATE_DIR` select other locations as described in [Managed Caddy defaults](../managed-caddy/#managed-caddy-defaults).
+Lines Caddy writes use the `caddy` label: `caddy | ` in human mode and `caddy: ` in agent mode. Devhost's own messages about Caddy use `devhost | ` and `devhost: `. After a Caddy command succeeds, devhost shows only Caddy's warnings and errors; after a failure it also shows Caddy's other lines. It leaves out the lines it reports itself, or that no setting of yours can change: the start confirmation, the trust-store lines of a local CA installation (such as `not NSS security databases found` and `define JAVA_HOME environment variable to use the Java trust`, which mean that no Firefox or Java trust store exists to install into), and the notes about the Caddyfile devhost generates. Runtime logs are retained in `<state-dir>/caddy/caddy.runtime.log`, with automatic rotation. Startup stdout and stderr are retained in `caddy.stdout.log` and `caddy.stderr.log` beside it; each start replaces those two files. The default state directory is `~/.local/state/devhost`; `XDG_STATE_HOME` and `DEVHOST_STATE_DIR` select other locations as described in [Managed Caddy defaults](../managed-caddy/#managed-caddy-defaults).
+
+## Browsers reject devhost HTTPS certificates
+
+`managed caddy local CA is not trusted, so browsers will reject devhost HTTPS certificates.` means the system does not trust Caddy's local certificate authority. Devhost prints it when the installation was declined or failed, when it cannot ask for a password, and when a stack starts while the authority is untrusted. Install the authority from a terminal:
+
+```bash
+devhost caddy trust
+```
+
+It may ask for your password, and reports when the authority is already trusted. See [Managed Caddy](../managed-caddy/#prepare-caddy).
 
 ## Hostname already claimed
 

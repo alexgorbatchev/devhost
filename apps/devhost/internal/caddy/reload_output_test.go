@@ -14,8 +14,8 @@ func TestReloadCommandOutput(t *testing.T) {
 		stdout, stderr string
 	}{
 		{name: "quiet success", success: true, quiet: true},
-		{name: "verbose success", success: true, stdout: "[devhost] response\n", stderr: "[devhost] diagnostic\n"},
-		{name: "quiet failure", quiet: true, stderr: "[devhost] diagnostic\n[devhost] response\n"},
+		{name: "verbose success", success: true, stdout: "[caddy] response\n", stderr: "[caddy] diagnostic\n"},
+		{name: "quiet failure", quiet: true, stderr: "[caddy] diagnostic\n[caddy] response\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			routeMutationRunManagedCaddyCommand = func(Paths, []string, ManagedCaddyCommandOptions) CommandResult {
