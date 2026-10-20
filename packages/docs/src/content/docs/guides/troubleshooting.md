@@ -12,6 +12,27 @@ sidebar:
 </video>
 <!-- /guide-demo -->
 
+## Caddy is unavailable or cannot start
+
+When the shared Caddy proxy is unavailable, `devhost` prints `Caddy is not available.` and asks you to run:
+
+```bash
+devhost caddy start
+```
+
+Human output omits the underlying admin API connection error. `AGENT=1` retains that technical detail.
+
+If Caddy cannot bind HTTPS port 443 on Linux because it lacks permission, the error explains the missing setup and gives these recovery commands:
+
+```bash
+devhost caddy privileged-ports
+devhost caddy start
+```
+
+Setup may ask for your password. Run it again if the managed Caddy binary is replaced and loses its bind capability.
+
+Caddy command messages use `devhost | ` in human mode and `devhost: ` in agent mode. Runtime logs are retained in `<state-dir>/caddy/caddy.runtime.log`, with automatic rotation. Startup stdout and stderr are retained in `caddy.stdout.log` and `caddy.stderr.log` beside it; each start replaces those two files. The default state directory is `~/.local/state/devhost`; `XDG_STATE_HOME` and `DEVHOST_STATE_DIR` select other locations as described in [Managed Caddy defaults](../managed-caddy/#managed-caddy-defaults).
+
 ## Hostname already claimed
 
 `devhost start` fails with `<host> is already claimed by PID <pid> from <manifest>.` when another running stack routes that hostname. The stack may have been started from a different manifest, so `devhost stop` in your project folder reports that nothing is running there and points to `devhost stack list`.

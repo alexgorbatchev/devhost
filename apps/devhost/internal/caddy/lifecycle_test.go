@@ -31,7 +31,7 @@ func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 			name:                 "starts managed caddy when admin api is unavailable",
 			runResult:            CommandResult{Success: true},
 			wantCommandArguments: [][]string{{"start", "--pidfile", "/tmp/devhost-state/caddy/caddy.pid"}},
-			wantCommandOptions:   []ManagedCaddyCommandOptions{{InheritStdio: true}},
+			wantCommandOptions:   []ManagedCaddyCommandOptions{{}},
 			wantExitCode:         0,
 			wantLog:              "[devhost] managed caddy may prompt for your password on first start so it can install its local CA into the system trust store.\n[devhost] managed caddy started with /tmp/devhost-state/caddy/Caddyfile\n",
 		},
@@ -103,7 +103,7 @@ func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 			name:                 "trusts managed caddy local ca",
 			runResult:            CommandResult{Success: true},
 			wantCommandArguments: [][]string{{"trust"}},
-			wantCommandOptions:   []ManagedCaddyCommandOptions{{AdminAddress: "127.0.0.1:22000", InheritStdio: true}},
+			wantCommandOptions:   []ManagedCaddyCommandOptions{{AdminAddress: "127.0.0.1:22000"}},
 			wantExitCode:         0,
 			wantLog:              "[devhost] managed caddy trust may prompt for your password because installing a root CA into the system trust store is privileged.\n[devhost] managed caddy local CA trusted.\n",
 		},
@@ -183,14 +183,23 @@ func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 	}
 }
 
-func TestCreateManagedCaddyStartErrorMessage(t *testing.T) {
+func TestManagedCaddyStartFailure(t *testing.T) {
 	t.Parallel()
 
 	result := CommandResult{Stderr: []byte("listen tcp 127.0.0.1:443: bind: permission denied\n"), Success: false}
-	if got := CreateManagedCaddyStartErrorMessage(result, "darwin"); got != "Caddy start failed.\nlisten tcp 127.0.0.1:443: bind: permission denied\nmacOS allows rootless binds on :443 only with wildcard listeners, not loopback-specific ones." {
-		t.Fatalf("CreateManagedCaddyStartErrorMessage(...) = %q", got)
+	for _, tc := range []struct{ os, hint string }{{"darwin", "Use wildcard listeners"}, {"linux", "devhost caddy privileged-ports"}} {
+		failure, handled := managedCaddyStartFailure(result, tc.os, "/state/caddy")
+		if !handled || !strings.Contains(failure.Hint, tc.hint) || strings.Contains(failure.Error(), "listen tcp") {
+			t.Fatalf("managedCaddyStartFailure(%s) = %+v, handled %v", tc.os, failure, handled)
+		}
 	}
-	if got := CreateManagedCaddyStartErrorMessage(result, "linux"); got != "Caddy start failed.\nlisten tcp 127.0.0.1:443: bind: permission denied\nOpening HTTPS on :443 requires privileged-port setup on this platform. Run 'devhost caddy privileged-ports' to configure the managed Caddy binary." {
-		t.Fatalf("CreateManagedCaddyStartErrorMessage(...) = %q", got)
+}
+
+func TestManagedCaddyStartFailurePreservesUnknownFailures(t *testing.T) {
+	t.Parallel()
+	result := CommandResult{Stderr: []byte("listen tcp 127.0.0.1:4433: bind: permission denied\n")}
+	failure, handled := managedCaddyStartFailure(result, "linux", "/state/caddy")
+	if handled || strings.Contains(failure.Hint, "privileged-ports") {
+		t.Fatalf("non-privileged port misclassified: %+v", failure)
 	}
 }

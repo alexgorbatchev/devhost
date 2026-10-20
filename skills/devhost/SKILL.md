@@ -4,7 +4,7 @@ description: Use when running devhost, serving static files or Markdown, routing
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-15 17:11
+  last_modified: 2026-10-20 15:16
   status: current
 ---
 
@@ -13,6 +13,8 @@ metadata:
 Read on-demand devtools asset rebuild notices and every line of compiler diagnostics with the same stack prefix and output formatting as other foreground stack logs.
 
 Run `devhost` with `AGENT=1`: help becomes `key: value` text, and a failed command ends with one `ERR:` line that holds the whole error. Without it, a failure ends with an `[ERROR]` line and, where the next step is known, an `[INFO]` hint. Failure lines and warnings (`WARN:`, or `[WARN]` without `AGENT=1`) go to stderr. Exit code `0` means success and `1` a failure. `devhost start` ended by a signal exits with `128` plus the signal number: `130` after Ctrl-C, `143` after SIGTERM.
+
+Read Caddy command diagnostics with the `devhost` log label: `devhost | ` in human mode and `devhost: ` in agent mode. Successful route reloads are quiet unless `--debug` is selected; failed reloads display diagnostics. Human admin-availability errors give the recovery command, while agent errors also retain the transport detail. For a Linux HTTPS port 443 permission failure, run `devhost caddy privileged-ports`, then `devhost caddy start`. Runtime logs stay in `<state-dir>/caddy/caddy.runtime.log` with Caddy's automatic rotation. Startup `caddy.stdout.log` and `caddy.stderr.log` beside it are replaced on each start. Background Caddy output remains in these files after the command exits.
 
 Read foreground stack logs as `stack-name: message` and child stdout/stderr as `service-name: message` under `AGENT=1` (also `true` or `yes`). These prefixes have one space after the colon and omit alignment padding, added colors, and wrapping. The stack label is the manifest `name`, with `devhost` as the fallback. Retained diagnostics and browser log records keep their bracket prefixes.
 
