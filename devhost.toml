@@ -50,14 +50,14 @@ host = "{{ env.DEVHOST_STORYBOOK }}"
 __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS = "{{ env.DEVHOST_STORYBOOK }}"
 
 [services.playground-backend]
-command = ["just", "dev"]
+command = ["just", "run"]
 cwd = "packages/playground/backend"
 port = "auto"
 host = "{{ env.DEVHOST_PLAYGROUND }}"
 path = "/api/*"
 
 [services.playground-frontend]
-command = ["just", "dev"]
+command = ["just", "run"]
 cwd = "packages/playground/frontend"
 bindHost = "127.0.0.1"
 port = "auto"

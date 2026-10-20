@@ -1,6 +1,6 @@
 # Run playground backend in development
 [no-exit-message]
-dev:
+run:
     bun src/index.ts
 
 # Run playground backend in production

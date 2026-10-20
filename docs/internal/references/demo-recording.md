@@ -115,7 +115,7 @@ Git tracks each guide's poster and captions but not its video. `packages/docs/de
 | `just docs media`         | Downloads the pinned videos this checkout lacks into `packages/docs/public/demos/`             |
 | `just docs publish-media` | Uploads each new or re-rendered video to the release and rewrites its pin in `demo-media.json` |
 
-`just docs dev`, `just docs test`, and `just docs build` run `just docs media` first, so the docs deploy and CI download the videos by themselves and need no token: the release is public. A download is written only after its SHA-256 matches the pin. `just docs check` also fails while a video on disk is not the pinned one, which is the state between a new render and its publication.
+`just docs run`, `just docs test`, and `just docs build` run `just docs media` first, so the docs deploy and CI download the videos by themselves and need no token: the release is public. A download is written only after its SHA-256 matches the pin. `just docs check` also fails while a video on disk is not the pinned one, which is the state between a new render and its publication.
 
 A release asset is named after its content, such as `annotations-273a29aa49b00e5f.mp4`, and is never replaced. An earlier commit therefore keeps building with the videos it pinned, and a re-render adds an asset instead of overwriting one. `just docs publish-media` needs the GitHub CLI signed in with write access to the repository. It never removes a pin; delete an entry from `demo-media.json` by hand when a guide is removed.
 

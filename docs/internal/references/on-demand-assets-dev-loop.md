@@ -115,7 +115,7 @@ The option is read purely from the environment (`DEVHOST_DEV_SOURCE_DIR`); no pu
 
 ## 9. Validation rules
 
-- **Relative Resolution Context:** A relative `DEVHOST_DEV_SOURCE_DIR` (e.g. `.` as set by root `just dev`) is converted to an absolute path using the active manifest's `ManifestDirectoryPath` as the parent directory, during stack bootstrap.
+- **Relative Resolution Context:** A relative `DEVHOST_DEV_SOURCE_DIR` (e.g. `.` as set by root `just run`) is converted to an absolute path using the active manifest's `ManifestDirectoryPath` as the parent directory, during stack bootstrap.
 - **Errors as Warnings:** Disk reading failures, subprocess spawning failures (e.g., missing `just` in `PATH`), or permission errors must never crash or block requests; the server must log a stderr warning and fall back instantly to serve embedded code.
 
 ---
@@ -133,7 +133,7 @@ No new HTTP routes or WS channels are added. The existing routes serve dynamic c
 
 1. **Config Path Resolution:** Resolve `DEVHOST_DEV_SOURCE_DIR` to an absolute checkout path in `stack.go` and pass it to devtools start options.
 2. **Dynamic Asset Handler:** Implement disk checking, on-demand `just` rebuilds, and fallback loading in `server.go`.
-3. **E2E verification:** Set `DEVHOST_DEV_SOURCE_DIR` (or run root `just dev`), make changes in `packages/devhost-ui`, refresh the browser, and confirm assets are compiled and reloaded on the fly.
+3. **E2E verification:** Set `DEVHOST_DEV_SOURCE_DIR` (or run root `just run`), make changes in `packages/devhost-ui`, refresh the browser, and confirm assets are compiled and reloaded on the fly.
 
 ---
 
@@ -146,7 +146,7 @@ No new HTTP routes or WS channels are added. The existing routes serve dynamic c
 
 ### Manual Verification
 
-- Run root `just dev`, which sets `DEVHOST_DEV_SOURCE_DIR=.`.
+- Run root `just run`, which sets `DEVHOST_DEV_SOURCE_DIR=.`.
 - Edit a TSX UI file in `packages/devhost-ui/src/devtools/components/App.tsx`.
 - Reload the browser tab. Confirm that `devhost` immediately compiles the assets and serves the updated UI on the fly without any manual build commands.
 

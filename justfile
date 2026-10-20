@@ -7,7 +7,7 @@ mod playground-backend 'packages/playground/backend/justfile'
 mod playground-frontend 'packages/playground/frontend/justfile'
 
 # Run devhost from source in the calling directory
-run *args: (devhost::run args)
+cli *args: (devhost::run args)
 
 # Run devhost from source in the calling directory with agent-facing output
 run-ai *args: (devhost::run-ai args)
@@ -42,9 +42,14 @@ dev-bootstrap $dotfiles_dir=(env_var("HOME") / ".dotfiles"):
     bun run ./apps/devhost/scripts/devBootstrap.ts
 
 # Start the root devhost stack locally
-dev: devhost::build-devtools-bundle
+run: devhost::build-devtools-bundle
     DEVHOST_DEV_SOURCE_DIR=. apps/devhost/scripts/runFromSource.sh start --manifest devhost.toml
 
 # Clean all node_modules directories across the repository
 clean:
     find . -name "node_modules" -type d -prune -exec rm -rf '{}' +
+
+# Prepare dependencies for local development.
+setup:
+    bun install --frozen-lockfile
+    just devhost setup
