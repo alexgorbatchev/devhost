@@ -563,7 +563,7 @@ func TestRunCaddyStartUsesManifestGlobalSettings(t *testing.T) {
 	}{
 		{
 			name:        "defaults",
-			want:        []string{"https:// {"},
+			want:        []string{"https:// {", "default_bind 0.0.0.0 [::]"},
 			wantMissing: []string{"http:// {"},
 		},
 		{

@@ -99,7 +99,7 @@ func TestValidateManifestReturnsNormalizedDefaults(t *testing.T) {
 		t.Fatalf("manifest.Annotation = %#v, want no annotation actions by default", manifest.Annotation)
 	}
 
-	if manifest.Caddy.Global.AdminAddress != defaultManagedCaddyAdminAddress || manifest.Caddy.Global.BindHost != defaultManagedCaddyBindHost || manifest.Caddy.Global.HTTP || manifest.Caddy.Global.HTTPPort != defaultManagedCaddyHTTPPort || manifest.Caddy.Global.HTTPSPort != defaultManagedCaddyHTTPSPort {
+	if manifest.Caddy.Global.AdminAddress != defaultManagedCaddyAdminAddress || manifest.Caddy.Global.BindHost != "0.0.0.0" || manifest.Caddy.Global.HTTP || manifest.Caddy.Global.HTTPPort != defaultManagedCaddyHTTPPort || manifest.Caddy.Global.HTTPSPort != defaultManagedCaddyHTTPSPort {
 		t.Fatalf("manifest.Caddy.Global = %#v, want default caddy config", manifest.Caddy.Global)
 	}
 

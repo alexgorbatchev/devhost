@@ -40,8 +40,8 @@ http = false
 httpPort = 80
 # `httpsPort` selects the managed Caddy HTTPS listener port (default: 443).
 httpsPort = 443
-# `bindHost` controls which interfaces Caddy's HTTP/HTTPS listeners bind (default: "127.0.0.1").
-bindHost = "127.0.0.1"
+# `bindHost` controls which interfaces Caddy's HTTP/HTTPS listeners bind (default: "0.0.0.0", all IPv4/IPv6 interfaces).
+bindHost = "0.0.0.0"
 # `adminAddress` controls which loopback port the managed Caddy admin API listens on (default: "127.0.0.1:20197").
 adminAddress = "127.0.0.1:20197"
 

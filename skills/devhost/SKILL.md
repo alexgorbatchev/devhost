@@ -4,7 +4,7 @@ description: Use when running devhost, serving static files or Markdown, routing
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-20 15:16
+  last_modified: 2026-10-20 15:53
   status: current
 ---
 
@@ -117,6 +117,8 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 ### Top-Level Configurations
 
 - **Managed Caddy lifecycle**: Start the shared proxy with `devhost caddy start --manifest ./devhost.toml`; stop it manually with `devhost caddy stop --manifest ./devhost.toml`. Use matching custom management settings. Read [Setup](references/setup.md#5-managed-caddy-startup) before changing shared settings or starting after all stacks stop; follow its active HTTP votes, captured retirement, and empty-runtime rules.
+
+  Managed Caddy's `caddy.global.bindHost` defaults to `0.0.0.0`, binding all IPv4 and IPv6 interfaces. `caddy.global.http` defaults to `false`, retaining HTTPS-only public routes. The admin API stays on `127.0.0.1:20197`, and service `bindHost` defaults to `127.0.0.1`. Use `foo.localhost` on the dev machine; other devices need a routed hostname resolving to that machine's network address.
 
 - **killZombies Option**: Optional boolean (default `true`) at the top level of `devhost.toml`. When `true`, devhost automatically finds, terminates, and reclaims zombie processes claiming the same ports or hosts from the same manifest path. Each startup or reload claim pass attempts a kill at most once per process identity across route registrations, hostname claims, and fixed-port claims. `Stopping zombie PID ...` precedes the attempt; `Stopped zombie PID ...` confirms exit, with at most one message pair per identity. A failed kill, failed exit check, or five-second exit timeout reports an error and leaves the affected claim unreclaimed; each claim is checked separately. Set `killZombies = false` to disable automatic recovery and report a standard collision error instead.
 

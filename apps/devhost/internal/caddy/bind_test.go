@@ -5,15 +5,15 @@ import "testing"
 func TestResolveManagedCaddyBindDirective(t *testing.T) {
 	t.Parallel()
 
-	if got, err := ResolveManagedCaddyBindDirective("darwin", defaultManagedCaddyBindHost); err != nil || got != "" {
-		t.Fatalf("ResolveManagedCaddyBindDirective(...) = %q, %v, want empty directive and nil error", got, err)
-	}
-
-	if got, err := ResolveManagedCaddyBindDirective("linux", defaultManagedCaddyBindHost); err != nil || got != "    default_bind 127.0.0.1 [::1]" {
-		t.Fatalf("ResolveManagedCaddyBindDirective(...) = %q, %v, want %q", got, err, "    default_bind 127.0.0.1 [::1]")
-	}
-
-	if got, err := ResolveManagedCaddyBindDirective("linux", "0.0.0.0"); err != nil || got != "    default_bind 0.0.0.0 [::]" {
-		t.Fatalf("ResolveManagedCaddyBindDirective(...) = %q, %v, want %q", got, err, "    default_bind 0.0.0.0 [::]")
+	for _, tc := range []struct{ os, bind, want string }{
+		{"linux", "", "    default_bind 0.0.0.0 [::]"},
+		{"darwin", "", "    default_bind 0.0.0.0 [::]"},
+		{"linux", "0.0.0.0", "    default_bind 0.0.0.0 [::]"},
+		{"linux", "127.0.0.1", "    default_bind 127.0.0.1 [::1]"},
+		{"darwin", "127.0.0.1", ""},
+	} {
+		if got, err := ResolveManagedCaddyBindDirective(tc.os, tc.bind); err != nil || got != tc.want {
+			t.Fatalf("ResolveManagedCaddyBindDirective(%q, %q) = %q, %v, want %q", tc.os, tc.bind, got, err, tc.want)
+		}
 	}
 }

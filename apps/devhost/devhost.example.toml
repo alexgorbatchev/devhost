@@ -134,8 +134,8 @@ app = ["web"]
 # - `443` (default): standard privileged HTTPS.
 # - any other integer from `1` to `65535`: alternate HTTPS listener port.
 # `bindHost` controls which interfaces the managed Caddy HTTP/HTTPS listeners bind.
-# - `"127.0.0.1"` (default): loopback only.
-# - `"0.0.0.0"`: expose the managed Caddy front door on all IPv4/IPv6 interfaces.
+# - `"127.0.0.1"`: loopback only on Linux; macOS retains wildcard listeners for rootless HTTPS.
+# - `"0.0.0.0"` (default): expose the managed Caddy front door on all IPv4/IPv6 interfaces.
 # - `"::1"`: IPv6 loopback only.
 # - `"::"`: expose the managed Caddy front door on all IPv6 interfaces.
 # `adminAddress` controls which loopback address/port the managed Caddy admin API listens on.
@@ -149,7 +149,7 @@ app = ["web"]
 # HTTP setting; stop shared Caddy manually with a matching manifest when done.
 # Active stacks must also agree on any non-default `adminAddress`, `bindHost`, `httpPort`, and `httpsPort` values.
 adminAddress = "127.0.0.1:20197"
-bindHost = "127.0.0.1"
+bindHost = "0.0.0.0"
 httpPort = 80
 http = false
 httpsPort = 443
