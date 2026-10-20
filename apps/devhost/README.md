@@ -357,11 +357,14 @@ an empty runtime does not discover a custom endpoint from another manifest.
 If you are working from this repository and want a current-platform binary instead of a release download:
 
 ```bash
+just setup
 just devhost compile
 ./apps/devhost/bin/devhost --version
 ```
 
 That build refreshes the embedded injected devtools bundle and writes the CLI binary to `apps/devhost/bin/devhost` with the version from `apps/devhost/metadata.json` embedded into `devhost --version`.
+
+Run `just cli <args>` to use the CLI from source. `just run` starts the repository's development stack; `just setup` installs the locked workspace dependencies, downloads the Go modules, and prepares the embedded devtools bundle for both commands.
 
 ## Frontend UI development
 
@@ -371,7 +374,7 @@ Devtools controls use no authentication token for trusted local development. Eac
 
 If you are modifying the injected browser devtools UI (`packages/devhost-ui/`) and want to test your changes instantly without manually rebuilding the Go app or restarting the service stack, you can use the built-in on-demand asset dev loop:
 
-1. Set `DEVHOST_DEV_SOURCE_DIR` to the root of your devhost checkout. A relative path resolves against the manifest directory, so `DEVHOST_DEV_SOURCE_DIR=.` works for the repo-root `devhost.toml`; `just dev` sets it for you.
+1. Set `DEVHOST_DEV_SOURCE_DIR` to the root of your devhost checkout. A relative path resolves against the manifest directory, so `DEVHOST_DEV_SOURCE_DIR=.` works for the repo-root `devhost.toml`; `just run` sets it for you.
 2. On every browser page refresh, `devhost` checks whether any file under `packages/devhost-ui/src/devtools/` in that checkout is newer than `apps/devhost/internal/devtools/dist/devtools.js`.
 3. If so, it runs `just --justfile <checkout>/apps/devhost/justfile build-devtools-bundle`, one build at a time, and serves the fresh development bundle without caching once the build finishes. Content-hashed chunks from earlier page loads remain available for active tabs.
 4. If the build fails, or finishes without writing `devtools.js`, the page shows a `DEVHOST COMPILATION ERROR` banner with the details, and the next reload tries again.

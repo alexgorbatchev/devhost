@@ -7,10 +7,11 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Install all workspaces when `node_modules/` is missing: `bun install`
 - Ensure Playwright Chromium is available for Storybook workflows: `just ui install-browser`
 - Check the full repo: `just check`
+- Prepare the workspace dependencies and embedded bundle: `just setup`
 - Repo-wide formatting command: `just fix` (`oxfmt` for the repo, `gofmt -w` for `apps/devhost`)
 - Refresh the generated embedded devtools bundle: `just devhost build-devtools-bundle`
 - Check `devhost` app-only validations: `just devhost check`
-- Run `devhost` from source in the current directory with agent-facing output: `just run-ai <args>` (`just run <args>` is the human-mode equivalent); both forward to the `devhost` workspace recipes of the same name
+- Run `devhost` from source in the current directory with agent-facing output: `just run-ai <args>` (`just cli <args>` is the human-mode equivalent); they forward to `devhost run-ai` and `devhost run`, respectively
 - Run every workspace test suite: `just test`
 - Run `devhost` Go tests only: `just devhost test`
 - Build `devhost` release tarballs: `just devhost build-release-artifacts`
@@ -29,11 +30,11 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Refresh all public guide demos: `just demo guides` (or `just demo guides annotations` for one guide). This records each guide, renders its narrated film, and updates the docs media and the guide's first video block; review before publishing and committing.
 - Render one guide's film again from its latest recording: `just demo guide-film <guide-slug>`.
 - Generate the guide films' ElevenLabs narration: `just demo audio-guides` (or `just demo audio-guides <guide-slug>`). A line whose request is unchanged keeps its take; append `retake` after the guide to speak the selected lines again. This needs `ELEVENLABS_API_KEY` and bills that account.
-- Download the pinned guide videos a checkout lacks: `just docs media` (`just docs dev`, `test`, and `build` run it first).
+- Download the pinned guide videos a checkout lacks: `just docs media` (`just docs run`, `test`, and `build` run it first).
 - Upload reviewed guide videos to the `media` release and pin them: `just docs publish-media`. This needs the GitHub CLI signed in with write access; commit the rewritten `packages/docs/demo-media.json`.
-- Start the root devhost stack locally: `just dev`
+- Start the root devhost stack locally: `just run`
 - Preview startup timeout and recovery pages: `just devhost demo-recovery`; configure `DEVHOST_RECOVERY` through `.envrc` / `.envrc.local`.
-- Start the docs site locally: `just docs` (or `just docs dev`)
+- Start the docs site locally: `just docs` (or `just docs run`)
 - Open the injected devtools UI design reference (`packages/design/references/devtools.html`) in the default browser: `just design devtools`
 - Open the docs site design reference (`packages/design/references/docs.html`) in the default browser: `just design docs`
 - Open the general design reference document (`packages/design/references/design-system.html`) in the default browser: `just design system`
@@ -61,7 +62,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 
 - Root `package.json` owns the shared TypeScript AI policy tooling and the shared `oxfmt` / `oxlint` configs. Keep workspace-local copies out unless the workspaces genuinely diverge.
 - Root `just check` runs `typescript-ai-policy check` first (wrapping the shared `oxfmt` / `oxlint` enforcement and excluding `packages/playground/**`), then delegates to package-specific checks.
-- `packages/playground/**` is a local dev harness and is intentionally excluded from shared root lint/format enforcement. Its two apps keep their own `justfile`, which the root links as `playground-backend` and `playground-frontend` (`just playground-backend dev`); the stack starts them through `just dev`. Its frontend tests are enforced all the same: `just playground-frontend check` runs them, and root `just check` and `just test` include it, because that server decides which files under a run directory it serves.
+- `packages/playground/**` is a local dev harness and is intentionally excluded from shared root lint/format enforcement. Its two apps keep their own `justfile`, which the root links as `playground-backend` and `playground-frontend` (`just playground-backend run`); the stack starts them through `just run`. Its frontend tests are enforced all the same: `just playground-frontend check` runs them, and root `just check` and `just test` include it, because that server decides which files under a run directory it serves.
 - The root `justfile` links every nested `justfile` with a `mod` line. Add one in the same change as a new `justfile`.
 - `packages/devhost-ui/scripts/demo/` owns the recording workflow and uses the real playground services through the managed Caddy on HTTPS port 443. Preserve portless public URLs, manifest-scoped route cleanup, and per-run artifacts under ignored `.tmp/demos/`. Stop owned processes on failure as well as success; leave the shared Caddy running. Concurrent recordings must use distinct `.localhost` hostnames.
 - `packages/devhost-ui/scripts/demo/promo/` is the promo's HyperFrames project. Its `package.json` pins the HyperFrames release and is not a workspace; keep it out of the root `workspaces` list. The ElevenLabs narration under `promo/assets/audio/` is tracked, so a render needs no key. Footage, fonts, GSAP, and the design tokens are staged into each run's copy under `.tmp/demos/` and are never committed.
@@ -69,12 +70,12 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Recording annotations runs real Pi against a per-run playground copy. Restrict edits to its layout component, retain actual edits in `pi-changes.json`, and restore copied source during cleanup. Never reset checkout files to undo recording edits.
 - Guide demo WebP posters and VTT captions under `packages/docs/public/demos/` are published site assets and stay tracked. The promo's poster and captions there, and its landing-page block `packages/docs/src/promoDemo.html`, are tracked the same way. Guide videos and the promo's video are never committed: `packages/docs/demo-media.json` pins each by SHA-256, the files are assets of the `media` GitHub release, and that directory's `*.mp4` files are ignored. The `media` release is not a devhost version; keep it out of "Latest" and never give it a `v` tag, which would start the binary release workflow. Runtime files stay in `.tmp/demos/`. Agent readers use guide prose and HTTPS links instead of reading binary media as text. CI installs FFmpeg for native publication tests.
 - Workspace `justfile` recipes are package-local validation only; do not duplicate shared lint/format enforcement there unless a workspace intentionally diverges.
-- The root `justfile` keeps the three entry points every CLI repository provides: `run` and `run-ai` forward to the `devhost` workspace, and `test` runs the `test` recipe of the `devhost`, `design`, `ui`, `docs`, and `playground-frontend` workspaces. Invoke every other workspace recipe directly with `just <workspace> <recipe>`; keep the remaining root recipes for repository-wide work and do not add further forwarding recipes.
+- The root `justfile` uses `run` for the development stack, `cli` and `run-ai` for the human and agent CLI entrypoints, and `test` for the `test` recipes of the `devhost`, `design`, `ui`, `docs`, and `playground-frontend` workspaces. Invoke other workspace recipes directly with `just <workspace> <recipe>`; keep the remaining root recipes for repository-wide work and do not add further forwarding recipes.
 - `just devhost check` refreshes the generated embedded devtools bundle, then runs `just devhost lint` (fails on any `gofmt -l` output, then `go vet ./...`, `go tool predeclared ./...`, and `go mod tidy -diff`) and the Bun script tests and `go test ./...` in `apps/devhost/`. Fix formatting failures with root `just fix`.
 - `just ui check` runs the package TypeScript/unused-export checks, then `just ui test`: three test runs in `packages/devhost-ui/`, each with coverage: `bun test`, the hook and `*.browser.test.ts` tests (`bun vitest run -c vitest.browser.config.ts`), and the stories (`NODE_ENV=development bun vitest run -c vitest.storybook.config.ts`). It then merges their reports into one line-coverage table and fails below the floor set in the package `justfile` (`just ui coverage`). The command-scoped development runtime exercises native devtools event clients; Vitest otherwise defaults `NODE_ENV` to `test`. Vite `--mode` does not select `NODE_ENV`.
 - `packages/design` is the single source of the devhost colors, radii, and host markers for the devtools UI, the docs site, and design references. Change values only in `packages/design/src/constants.ts` and regenerate `tokens.css`; its `just design check` fails while the committed file is stale.
 - `just docs check` downloads the pinned guide videos, then runs `bun test`, the content sync, the check that the videos on disk are the pinned ones, `astro check`, and `astro build`.
-- `just docs dev` (or `just docs`) binds Astro to `0.0.0.0` so the docs site can be reached from outside the current environment.
+- `just docs run` (or `just docs`) binds Astro to `0.0.0.0` so the docs site can be reached from outside the current environment.
 - `packages/docs` allows all dev/preview hosts in `astro.config.mjs`, so the docs server should be treated as broadly reachable while it is running.
 - `just ui storybook` starts the interactive Storybook dev server for manual inspection; it does not replace the automated coverage already included in the workspace `check` recipe.
 - `just devhost test-nvim` is intentionally standalone and not part of root `just check` or CI; use it when changing the Neovim React Highlight plugin under `apps/devhost/internal/devtools/nvim/devhost-react-highlight.nvim/`.

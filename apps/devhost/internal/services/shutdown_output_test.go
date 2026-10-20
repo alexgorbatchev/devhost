@@ -118,7 +118,7 @@ func playgroundShutdownService(t *testing.T, app string, port int) ResolvedServi
 		t.Fatal(err)
 	}
 	return ResolvedService{
-		Name: "playground-" + app, Cwd: cwd, Command: []string{"just", "dev"},
+		Name: "playground-" + app, Cwd: cwd, Command: []string{"just", "run"},
 		BindHost: "127.0.0.1", Port: &port, InjectPort: true,
 		Env:    map[string]string{"NODE_ENV": "development"},
 		Health: ResolvedHealthConfig{Kind: "tcp", Host: stringPointer("127.0.0.1"), Port: &port, Timeout: 5000},

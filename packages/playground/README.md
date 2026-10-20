@@ -12,7 +12,7 @@ Because they are routed on the same host using `devhost`'s managed Caddy routing
 Start the root devhost stack from the repository root:
 
 ```bash
-just dev
+just run
 ```
 
 The root manifest assigns each service an available port, routes `/api/*` to the backend and `/` to the frontend, and enables the injected devtools overlay.
@@ -60,4 +60,4 @@ The page is a document of its own, outside the router. `just demo record` and `j
 
 ## Notes
 
-- The root `just dev` command starts the repo-root `devhost.toml`, which includes this playground split services and Storybook.
+- The root `just run` command starts the repo-root `devhost.toml`, which includes this playground split services and Storybook.
