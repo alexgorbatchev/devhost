@@ -49,7 +49,7 @@ func renderManagedCaddyfile(options renderManagedCaddyfileOptions) (string, erro
 	}
 	globalLines = append(globalLines,
 		"    log {",
-		"        output discard",
+		fmt.Sprintf("        output file %s", filepathQuote(options.Paths.CaddyDirectoryPath+"/caddy.runtime.log")),
 		"    }",
 		"    persist_config off",
 		fmt.Sprintf("    storage file_system %s", filepathQuote(options.Paths.StorageDirectoryPath)),

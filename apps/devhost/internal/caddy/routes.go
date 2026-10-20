@@ -56,6 +56,7 @@ type ActivateRouteOptions struct {
 }
 
 type RouteCommandOutputWriters struct {
+	Quiet        bool
 	StderrWriter io.Writer
 	StdoutWriter io.Writer
 }
@@ -1370,26 +1371,36 @@ func reloadManagedCaddy(adminAddress string, routesDirectoryPath string, outputW
 	paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
 	result := routeMutationRunManagedCaddyCommand(paths, []string{"reload"}, ManagedCaddyCommandOptions{AdminAddress: adminAddress})
 	if result.Success {
-		if err := writeSuccessfulCommandOutput(outputWriters.StderrWriter, result.Stderr); err != nil {
+		if outputWriters.Quiet {
+			return nil
+		}
+		if err := writeCommandOutput(outputWriters.StderrWriter, result.Stderr); err != nil {
 			return fmt.Errorf("write caddy reload stderr: %w", err)
 		}
-		if err := writeSuccessfulCommandOutput(outputWriters.StdoutWriter, result.Stdout); err != nil {
+		if err := writeCommandOutput(outputWriters.StdoutWriter, result.Stdout); err != nil {
 			return fmt.Errorf("write caddy reload stdout: %w", err)
 		}
 
 		return nil
 	}
 
+	if outputWriters.StderrWriter != nil {
+		return logManagedCaddyFailure(outputWriters.StderrWriter, "reload", result)
+	}
 	return errors.New(CreateManagedCaddyReloadErrorMessage(result.Stdout, result.Stderr))
 }
 
-func writeSuccessfulCommandOutput(writer io.Writer, output []byte) error {
+func writeCommandOutput(writer io.Writer, output []byte) error {
 	if writer == nil || len(output) == 0 {
 		return nil
 	}
 
-	_, err := writer.Write(output)
-	return err
+	for _, line := range strings.Split(strings.TrimRight(string(output), "\n"), "\n") {
+		if err := logInfo(writer, strings.TrimSuffix(line, "\r")); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func formatRouteMutationTimestamp(value time.Time) string {

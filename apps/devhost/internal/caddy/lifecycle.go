@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 )
 
 type LifecycleAction string
@@ -78,7 +80,13 @@ func RunManagedCaddyLifecycleCommand(
 	if runManagedCaddyCommand == nil {
 		runManagedCaddyCommand = func(arguments []string, options ManagedCaddyCommandOptions) CommandResult {
 			options.RuntimeOS = runtimeOS
-			return RunManagedCaddyCommand(paths, arguments, options, ManagedCaddyCommandDependencies{})
+			result := RunManagedCaddyCommand(paths, arguments, options, ManagedCaddyCommandDependencies{})
+			if result.Success {
+				if err := writeManagedCaddyCommandOutput(logWriter, result); err != nil {
+					return commandFailure(err)
+				}
+			}
+			return result
 		}
 	}
 
@@ -125,9 +133,15 @@ func startManagedCaddy(
 		return 0, errors.New(foreignManagedCaddyError)
 	}
 
-	result := runManagedCaddyCommand([]string{"start", "--pidfile", paths.PidFilePath}, ManagedCaddyCommandOptions{InheritStdio: true})
+	result := runManagedCaddyCommand([]string{"start", "--pidfile", paths.PidFilePath}, ManagedCaddyCommandOptions{})
 	if !result.Success {
-		return 0, errors.New(CreateManagedCaddyStartErrorMessage(result, runtimeOS))
+		failure, handled := managedCaddyStartFailure(result, runtimeOS, paths.CaddyDirectoryPath)
+		if !handled || cliout.IsAgentMode() {
+			if err := writeManagedCaddyCommandOutput(logWriter, result); err != nil {
+				return 0, err
+			}
+		}
+		return 0, failure
 	}
 
 	if err := logInfo(logWriter, fmt.Sprintf("managed caddy started with %s", paths.CaddyfilePath)); err != nil {
@@ -171,7 +185,7 @@ func stopManagedCaddy(
 
 	result := runManagedCaddyCommand([]string{"stop"}, ManagedCaddyCommandOptions{AdminAddress: adminAddress})
 	if !result.Success {
-		return 0, errors.New(CreateManagedCaddyCommandErrorMessage("stop", result))
+		return 0, logManagedCaddyFailure(logWriter, "stop", result)
 	}
 
 	if err := removeManagedPidFile(); err != nil {
@@ -202,9 +216,9 @@ func trustManagedCaddy(
 		return 0, errors.New(foreignManagedCaddyError)
 	}
 
-	result := runManagedCaddyCommand([]string{"trust"}, ManagedCaddyCommandOptions{AdminAddress: adminAddress, InheritStdio: true})
+	result := runManagedCaddyCommand([]string{"trust"}, ManagedCaddyCommandOptions{AdminAddress: adminAddress})
 	if !result.Success {
-		return 0, errors.New(CreateManagedCaddyCommandErrorMessage("trust", result))
+		return 0, logManagedCaddyFailure(logWriter, "trust", result)
 	}
 
 	if err := logInfo(logWriter, "managed caddy local CA trusted."); err != nil {
@@ -214,28 +228,33 @@ func trustManagedCaddy(
 	return 0, nil
 }
 
-func CreateManagedCaddyStartErrorMessage(result CommandResult, runtimeOS string) string {
-	baseMessage := CreateManagedCaddyCommandErrorMessage("start", result)
-	combinedOutput := strings.Join(filterEmptyStrings([]string{strings.TrimSpace(string(result.Stderr)), strings.TrimSpace(string(result.Stdout))}), "\n")
-	if !strings.Contains(combinedOutput, "bind: permission denied") || !strings.Contains(combinedOutput, ":443") {
-		return baseMessage
+func logManagedCaddyFailure(writer io.Writer, action string, result CommandResult) error {
+	if err := writeManagedCaddyCommandOutput(writer, result); err != nil {
+		return err
 	}
-
-	bindDirective, err := ResolveManagedCaddyBindDirective(runtimeOS, defaultManagedCaddyBindHost)
-	if err == nil && bindDirective == "" {
-		return baseMessage + "\nmacOS allows rootless binds on :443 only with wildcard listeners, not loopback-specific ones."
-	}
-
-	return baseMessage + "\nOpening HTTPS on :443 requires privileged-port setup on this platform. Run 'devhost caddy privileged-ports' to configure the managed Caddy binary."
+	return fmt.Errorf("Caddy %s failed. Check the Caddy diagnostics above.", action)
 }
 
-func filterEmptyStrings(values []string) []string {
-	filteredValues := make([]string, 0, len(values))
-	for _, value := range values {
-		if value != "" {
-			filteredValues = append(filteredValues, value)
+func writeManagedCaddyCommandOutput(writer io.Writer, result CommandResult) error {
+	if err := writeCommandOutput(writer, result.Stderr); err != nil {
+		return err
+	}
+	return writeCommandOutput(writer, result.Stdout)
+}
+
+func managedCaddyStartFailure(result CommandResult, runtimeOS, directory string) (*cliout.Failure, bool) {
+	output := string(result.Stderr) + "\n" + string(result.Stdout)
+	handled := strings.Contains(output, ":443: bind: permission denied")
+	failure := &cliout.Failure{Summary: "Caddy start failed.", Hint: "Check the Caddy logs in " + directory + "."}
+	if handled {
+		if runtimeOS == "darwin" {
+			failure.Summary = "Caddy cannot bind HTTPS port 443 to loopback without privileges on macOS."
+			failure.Hint = "Use wildcard listeners by omitting caddy.global.bindHost, or use a privileged launcher for loopback-only HTTPS."
+		} else {
+			failure.Summary = "Caddy cannot listen on HTTPS port 443 without privileged-port setup."
+			failure.Hint = "Run 'devhost caddy privileged-ports', then 'devhost caddy start'."
 		}
 	}
-
-	return filteredValues
+	failure.Err = errors.New(failure.Summary + " " + failure.Hint)
+	return failure, handled
 }

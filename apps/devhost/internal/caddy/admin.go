@@ -2,11 +2,12 @@ package caddy
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 )
 
 const caddyAdminTimeout = time.Second
@@ -26,21 +27,25 @@ func EnsureManagedCaddyAdminAvailable(adminAPIURL string, dependencies AdminAvai
 
 	request, err := http.NewRequestWithContext(requestContext, http.MethodGet, adminAPIURL, nil)
 	if err != nil {
-		return errors.New(CreateManagedCaddyAdminUnavailableErrorMessage(err.Error()))
+		return managedCaddyAdminFailure(err.Error())
 	}
 
 	response, err := httpClient.Do(request)
 	if err != nil {
-		return errors.New(CreateManagedCaddyAdminUnavailableErrorMessage(err.Error()))
+		return managedCaddyAdminFailure(err.Error())
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		detail := strings.TrimSpace(fmt.Sprintf("HTTP %s", response.Status))
-		return errors.New(CreateManagedCaddyAdminUnavailableErrorMessage(detail))
+		return managedCaddyAdminFailure(detail)
 	}
 
 	return nil
+}
+
+func managedCaddyAdminFailure(detail string) error {
+	return &cliout.Failure{Err: fmt.Errorf("%s", CreateManagedCaddyAdminUnavailableErrorMessage(detail)), Summary: "Caddy is not available.", Hint: "Run 'devhost caddy start' first."}
 }
 
 func CreateManagedCaddyAdminUnavailableErrorMessage(detail string) string {

@@ -36,6 +36,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 		serviceStdout, serviceStderr := cliout.ServiceOutputWriters(stdout, stderr, []string{"serve-" + arguments.Domain, "serve"})
 		code, err := services.StartServe(directory, arguments.Domain, arguments.Port, services.StartStackOptions{
 			Environment: readEnvironment(), LogWriter: serviceStdout, ServiceStdoutWriter: serviceStdout, ServiceStderrWriter: serviceStderr,
+			CaddyOutputWriters: caddy.RouteCommandOutputWriters{StdoutWriter: serviceStdout, StderrWriter: serviceStderr, Quiet: true},
 		})
 		if err != nil {
 			return fail(stderr, err)
@@ -133,7 +134,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			idleTimeout = parsed
 		}
 
-		logNames := append([]string{strings.TrimSpace(resolvedManifest.Name)}, serviceOrder...)
+		logNames := append([]string{strings.TrimSpace(resolvedManifest.Name), "devhost"}, serviceOrder...)
 		serviceStdout, serviceStderr := cliout.ServiceOutputWriters(stdout, stderr, logNames)
 		startOptions := services.StartStackOptions{
 			Configuration:       &validatedManifest,
@@ -142,12 +143,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			ServiceStdoutWriter: serviceStdout,
 			ServiceStderrWriter: serviceStderr,
 			IdleTimeout:         idleTimeout,
-		}
-		if arguments.Debug {
-			startOptions.CaddyOutputWriters = caddy.RouteCommandOutputWriters{
-				StdoutWriter: stdout,
-				StderrWriter: stderr,
-			}
+			CaddyOutputWriters:  caddy.RouteCommandOutputWriters{StdoutWriter: serviceStdout, StderrWriter: serviceStderr, Quiet: !arguments.Debug},
 		}
 
 		exitCode, startError := services.StartStack(&resolvedManifest, serviceOrder, startOptions)
@@ -169,13 +165,14 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 
 		return exitCode
 	case cli.KindCaddyLifecycle:
+		_, caddyStderr := cliout.ServiceOutputWriters(stdout, stderr, []string{"devhost"})
 		paths, err := caddy.CreateManagedCaddyPathsFromEnvironment(readEnvironment())
 		if err != nil {
 			return fail(stderr, err)
 		}
 
 		if arguments.Action == cli.CaddyDownload {
-			if err := caddy.DownloadCaddy(stderr, runtime.GOOS, runtime.GOARCH, paths, caddy.DownloadDependencies{}); err != nil {
+			if err := caddy.DownloadCaddy(caddyStderr, runtime.GOOS, runtime.GOARCH, paths, caddy.DownloadDependencies{}); err != nil {
 				return fail(stderr, err)
 			}
 
@@ -183,7 +180,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 		}
 
 		if arguments.Action == cli.CaddyPrivilegedPorts {
-			exitCode, err := caddy.ConfigureManagedCaddyPrivilegedPorts(stderr, runtime.GOOS, runtime.GOARCH, paths, caddy.PrivilegedPortsDependencies{})
+			exitCode, err := caddy.ConfigureManagedCaddyPrivilegedPorts(caddyStderr, runtime.GOOS, runtime.GOARCH, paths, caddy.PrivilegedPortsDependencies{})
 			if err != nil {
 				return fail(stderr, err)
 			}
@@ -214,7 +211,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 
 		exitCode, err := caddy.RunManagedCaddyLifecycleCommand(
 			caddy.LifecycleAction(arguments.Action),
-			stderr,
+			caddyStderr,
 			paths,
 			fallback,
 			caddy.ManagedCaddyLifecycleDependencies{RuntimeOS: runtime.GOOS},
@@ -225,7 +222,8 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 
 		return exitCode
 	case cli.KindCaddyTrustRemote:
-		exitCode, err := caddy.TrustManagedCaddyRemoteCertificate(arguments.SSHTarget, stderr, runtime.GOOS, caddy.TrustRemoteDependencies{})
+		_, caddyStderr := cliout.ServiceOutputWriters(stdout, stderr, []string{"devhost"})
+		exitCode, err := caddy.TrustManagedCaddyRemoteCertificate(arguments.SSHTarget, caddyStderr, runtime.GOOS, caddy.TrustRemoteDependencies{})
 		if err != nil {
 			return fail(stderr, err)
 		}

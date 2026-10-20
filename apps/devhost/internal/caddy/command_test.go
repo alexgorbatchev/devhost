@@ -45,7 +45,7 @@ func TestRunManagedCaddyCommand(t *testing.T) {
 	var gotArguments []string
 	var gotOptions RunCommandOptions
 
-	result := RunManagedCaddyCommand(paths, []string{"trust"}, ManagedCaddyCommandOptions{AdminAddress: "127.0.0.1:22000", InheritStdio: true, RuntimeOS: "linux"}, ManagedCaddyCommandDependencies{
+	result := RunManagedCaddyCommand(paths, []string{"trust"}, ManagedCaddyCommandOptions{AdminAddress: "127.0.0.1:22000", RuntimeOS: "linux"}, ManagedCaddyCommandDependencies{
 		RunCommand: func(arguments []string, options RunCommandOptions) CommandResult {
 			gotArguments = append([]string{}, arguments...)
 			gotOptions = options
@@ -68,8 +68,8 @@ func TestRunManagedCaddyCommand(t *testing.T) {
 		t.Fatalf("RunManagedCaddyCommand(...) arguments = %#v, want %#v", gotArguments, wantArguments)
 	}
 
-	if gotOptions.WorkingDir != paths.CaddyDirectoryPath || !gotOptions.InheritStdio {
-		t.Fatalf("RunManagedCaddyCommand(...) options = %#v, want working dir %q and inherit stdio", gotOptions, paths.CaddyDirectoryPath)
+	if gotOptions.WorkingDir != paths.CaddyDirectoryPath || gotOptions.InheritStdio {
+		t.Fatalf("RunManagedCaddyCommand(...) options = %#v, want working dir %q and captured stdio", gotOptions, paths.CaddyDirectoryPath)
 	}
 }
 

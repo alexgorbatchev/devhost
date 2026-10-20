@@ -506,6 +506,7 @@ func TestRunTrustRemoteRejectsUnsupportedPlatform(t *testing.T) {
 }
 
 func TestRunCaddyPrivilegedPortsUsesLifecyclePath(t *testing.T) {
+	t.Setenv("AGENT", "0")
 	if runtime.GOOS != "linux" {
 		t.Skip("linux-specific privileged-ports behavior")
 	}
@@ -539,7 +540,7 @@ func TestRunCaddyPrivilegedPortsUsesLifecyclePath(t *testing.T) {
 	if stdout.String() != "" {
 		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
 	}
-	if !strings.Contains(stderr.String(), "[devhost] managed caddy low-port binding enabled for "+managedCaddyPath) {
+	if !strings.Contains(stderr.String(), "devhost | managed caddy low-port binding enabled for "+managedCaddyPath) {
 		t.Fatalf("Run(...) stderr = %q, want privileged-port success log", stderr.String())
 	}
 
@@ -553,6 +554,7 @@ func TestRunCaddyPrivilegedPortsUsesLifecyclePath(t *testing.T) {
 }
 
 func TestRunCaddyStartUsesManifestGlobalSettings(t *testing.T) {
+	t.Setenv("AGENT", "0")
 	for _, tc := range []struct {
 		name          string
 		globalOptions []string
@@ -604,7 +606,7 @@ func TestRunCaddyStartUsesManifestGlobalSettings(t *testing.T) {
 			if stdout.String() != "" {
 				t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
 			}
-			if !strings.Contains(stderr.String(), "[devhost] managed caddy started with ") {
+			if !strings.Contains(stderr.String(), "devhost | managed caddy started with ") {
 				t.Fatalf("Run(...) stderr = %q, want managed caddy start log", stderr.String())
 			}
 
@@ -639,6 +641,7 @@ func TestRunCaddyStartUsesManifestGlobalSettings(t *testing.T) {
 }
 
 func TestRunCaddyStopWithoutRunningProcess(t *testing.T) {
+	t.Setenv("AGENT", "0")
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
 	manifestDirectoryPath := t.TempDir()
@@ -653,7 +656,7 @@ func TestRunCaddyStopWithoutRunningProcess(t *testing.T) {
 	if stdout.String() != "" {
 		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
 	}
-	if !strings.Contains(stderr.String(), "[devhost] managed caddy is not running.\n") {
+	if !strings.Contains(stderr.String(), "devhost | managed caddy is not running.\n") {
 		t.Fatalf("Run(...) stderr = %q, want managed caddy stop idle log", stderr.String())
 	}
 }
@@ -676,7 +679,7 @@ func TestRunCaddyTrustRequiresRunningManagedCaddy(t *testing.T) {
 		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
 	}
 	wantStderr := strings.Join([]string{
-		"[devhost] managed caddy trust may prompt for your password because installing a root CA into the system trust store is privileged.",
+		"devhost | managed caddy trust may prompt for your password because installing a root CA into the system trust store is privileged.",
 		"[ERROR] Managed Caddy is not running. Run 'devhost caddy start' first.",
 		"",
 	}, "\n")
