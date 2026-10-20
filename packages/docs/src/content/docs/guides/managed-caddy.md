@@ -35,7 +35,11 @@ That command downloads the managed Caddy binary first when needed, then runs `su
 > [!IMPORTANT]
 > To get HTTPS working, Caddy uses a self-signed certificate that is not trusted by default.
 >
-> `devhost caddy trust` prompts for your password and installs Caddy's CA into the system trust store.
+> When devhost starts Caddy and the system does not trust Caddy's local certificate authority yet, devhost installs it into the system trust store once. That may ask for your password; the prompt starts with `caddy | `. `devhost caddy trust` does the same at any time, or reports that the authority is already trusted.
+
+Devhost starts Caddy with `devhost caddy start`, and `devhost serve` starts it when it is not running. Without a terminal, or under `AGENT=1`, devhost prints a warning naming `devhost caddy trust` instead of asking for a password. A declined or failed installation prints the same warning; Caddy keeps running, and browsers warn about its certificates until the authority is trusted. A stack that starts while the authority is untrusted prints that warning once.
+
+Caddy itself never installs the authority: the generated Caddyfile sets `skip_install_trust`, so route reloads never ask for a password.
 
 If you want to trust that same managed Caddy CA from another macOS machine without exposing the Caddy admin API, run this from the client machine:
 

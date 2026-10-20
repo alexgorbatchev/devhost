@@ -1374,10 +1374,10 @@ func reloadManagedCaddy(adminAddress string, routesDirectoryPath string, outputW
 		if outputWriters.Quiet {
 			return nil
 		}
-		if err := writeCommandOutput(outputWriters.StderrWriter, result.Stderr); err != nil {
+		if err := writeCaddyOutput(outputWriters.StderrWriter, result.Stderr, false); err != nil {
 			return fmt.Errorf("write caddy reload stderr: %w", err)
 		}
-		if err := writeCommandOutput(outputWriters.StdoutWriter, result.Stdout); err != nil {
+		if err := writeCaddyOutput(outputWriters.StdoutWriter, result.Stdout, false); err != nil {
 			return fmt.Errorf("write caddy reload stdout: %w", err)
 		}
 
@@ -1388,19 +1388,6 @@ func reloadManagedCaddy(adminAddress string, routesDirectoryPath string, outputW
 		return logManagedCaddyFailure(outputWriters.StderrWriter, "reload", result)
 	}
 	return errors.New(CreateManagedCaddyReloadErrorMessage(result.Stdout, result.Stderr))
-}
-
-func writeCommandOutput(writer io.Writer, output []byte) error {
-	if writer == nil || len(output) == 0 {
-		return nil
-	}
-
-	for _, line := range strings.Split(strings.TrimRight(string(output), "\n"), "\n") {
-		if err := logInfo(writer, strings.TrimSuffix(line, "\r")); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func formatRouteMutationTimestamp(value time.Time) string {

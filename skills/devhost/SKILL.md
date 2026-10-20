@@ -4,7 +4,7 @@ description: Use when running devhost, serving static files or Markdown, routing
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-20 15:53
+  last_modified: 2026-10-20 16:28
   status: current
 ---
 
@@ -14,7 +14,7 @@ Read on-demand devtools asset rebuild notices and every line of compiler diagnos
 
 Run `devhost` with `AGENT=1`: help becomes `key: value` text, and a failed command ends with one `ERR:` line that holds the whole error. Without it, a failure ends with an `[ERROR]` line and, where the next step is known, an `[INFO]` hint. Failure lines and warnings (`WARN:`, or `[WARN]` without `AGENT=1`) go to stderr. Exit code `0` means success and `1` a failure. `devhost start` ended by a signal exits with `128` plus the signal number: `130` after Ctrl-C, `143` after SIGTERM.
 
-Read Caddy command diagnostics with the `devhost` log label: `devhost | ` in human mode and `devhost: ` in agent mode. Successful route reloads are quiet unless `--debug` is selected; failed reloads display diagnostics. Human admin-availability errors give the recovery command, while agent errors also retain the transport detail. For a Linux HTTPS port 443 permission failure, run `devhost caddy privileged-ports`, then `devhost caddy start`. Runtime logs stay in `<state-dir>/caddy/caddy.runtime.log` with Caddy's automatic rotation. Startup `caddy.stdout.log` and `caddy.stderr.log` beside it are replaced on each start. Background Caddy output remains in these files after the command exits.
+Read lines Caddy writes with the `caddy` log label (`caddy | ` in human mode, `caddy: ` in agent mode) and devhost's messages about Caddy with the `devhost` label. After a successful Caddy command devhost shows Caddy's warnings and errors only; after a failure it shows Caddy's other lines too. It leaves out lines it reports itself or that no setting changes, such as the Firefox and Java trust-store skips of a local CA installation. Successful route reloads are quiet unless `--debug` is selected; failed reloads display diagnostics. Human admin-availability errors give the recovery command, while agent errors also retain the transport detail. For a Linux HTTPS port 443 permission failure, run `devhost caddy privileged-ports`, then `devhost caddy start`. Runtime logs stay in `<state-dir>/caddy/caddy.runtime.log` with Caddy's automatic rotation. Startup `caddy.stdout.log` and `caddy.stderr.log` beside it are replaced on each start. Background Caddy output remains in these files after the command exits.
 
 Read foreground stack logs as `stack-name: message` and child stdout/stderr as `service-name: message` under `AGENT=1` (also `true` or `yes`). These prefixes have one space after the colon and omit alignment padding, added colors, and wrapping. The stack label is the manifest `name`, with `devhost` as the fallback. Retained diagnostics and browser log records keep their bracket prefixes.
 
@@ -36,9 +36,9 @@ Within one devhost state directory, `devhost start` rejects a root or recursivel
 - `devhost stack list`: print every manifest-backed stack running on the machine on stdout, one per line in manifest path order, in the same form with and without `AGENT=1`. A line is the PID of the stack's devhost process, one tab, and the absolute manifest path, which runs to the end of the line and may hold spaces. It takes no flags, reads no manifest, and prints nothing when no manifest-backed stack runs. Manifest-backed stacks are listed whatever their services are. Take the path with `cut -f2` and pass it to `devhost stop --manifest` to stop that stack from any directory: `devhost stop --manifest "$(devhost stack list | fzf | cut -f2)"`.
 - `devhost caddy download`: download the Caddy server devhost manages. Run it once on a machine that has no `caddy` on `PATH`.
 - `devhost caddy privileged-ports`: on Linux, let the managed Caddy listen on ports 80 and 443 without root. It downloads Caddy first when needed and runs `sudo setcap` once. On macOS it reports that no setup is needed.
-- `devhost caddy start`: start the shared Caddy server in the background. Every stack on the machine routes through it.
+- `devhost caddy start`: start the shared Caddy server in the background. Every stack on the machine routes through it. When the system does not trust Caddy's root certificate, it installs the certificate once, which asks for the user's password at a terminal. Under `AGENT=1` or without a terminal it prints `managed caddy local CA is not trusted, ...` as a warning instead; ask the user to run `devhost caddy trust` in their terminal. `devhost serve` does the same when it starts Caddy, and `devhost start` prints that warning once while the certificate is untrusted.
 - `devhost caddy stop`: stop the shared Caddy server.
-- `devhost caddy trust`: install Caddy's root certificate into the system trust store, so browsers accept the HTTPS hostnames. It asks for the user's password and needs the shared Caddy running.
+- `devhost caddy trust`: install Caddy's root certificate into the system trust store, so browsers accept the HTTPS hostnames. It asks for the user's password, needs the shared Caddy running, and reports when the certificate is already trusted.
 - `devhost caddy print-root-cert`: print Caddy's root certificate to stdout. The certificate exists after the first `devhost caddy start`.
 - `devhost caddy trust-remote <ssh-target>`: on macOS, trust the Caddy certificate of another machine. `<ssh-target>` is an SSH host with `devhost` on its `PATH`, such as `devbox` or `user@devbox`. It prints the certificate's SHA-256 fingerprint and installs the certificate into the System keychain.
 - `devhost skill`: print `npx skills add alexgorbatchev/devhost --skill devhost` to install the AI skill via the Skills CLI, followed by the skill URL. Takes no arguments.
@@ -65,8 +65,7 @@ Within one devhost state directory, `devhost start` rejects a root or recursivel
 ```bash
 devhost caddy download          # once, on a machine with no caddy on PATH
 devhost caddy privileged-ports  # once, on Linux
-devhost caddy start
-devhost caddy trust             # once per machine
+devhost caddy start             # trusts Caddy's certificate once per machine
 devhost start
 ```
 

@@ -49,6 +49,21 @@ func ServiceOutputWriters(stdout, stderr io.Writer, names []string) (io.Writer, 
 	return newServiceOutputWriter(stdout, layout), newServiceOutputWriter(stderr, layout)
 }
 
+// Prefix returns the label writer puts before a record from name. It is for text
+// that another process writes to the terminal on devhost's behalf, such as a
+// password prompt, so that text lines up with the records around it. A writer
+// without the shared layout gets the record form itself.
+func Prefix(writer io.Writer, name string) string {
+	record := "[" + name + "] "
+	w, ok := writer.(*serviceOutputWriter)
+	if !ok {
+		return record
+	}
+	w.layout.mu.Lock()
+	defer w.layout.mu.Unlock()
+	return w.format(record)
+}
+
 func newServiceOutputWriter(writer io.Writer, layout *serviceOutputLayout) *serviceOutputWriter {
 	w := &serviceOutputWriter{writer: writer, layout: layout}
 	if f, ok := writer.(*os.File); ok {
