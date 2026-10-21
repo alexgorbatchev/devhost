@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Standalone page previews · devhost</title>
+    <script>
+      {{.ThemeScript}}
+    </script>
+    <style>
+      {{.Styles}}
+    </style>
+  </head>
+  <body>
+    <main class="devhost-status">
+      <p class="devhost-status__brand">devhost / development</p>
+      <h1 class="devhost-status__title">Standalone page previews</h1>
+      <p class="devhost-status__body">
+        These examples use the real page renderers with sample data. Restart and worktree actions stay in the preview
+        and cannot change running services. Error pages retain their HTTP status.
+      </p>
+      <section class="devhost-status__routes" aria-labelledby="routing">
+        <h2 class="devhost-status__label" id="routing">Routing</h2>
+        <ul class="devhost-status__list">
+          <li>
+            <a class="devhost-status__link" href="route-not-found"
+              >404 · Active hostname list <span class="devhost-status__arrow" aria-hidden="true">↗</span></a
+            >
+          </li>
+          <li>
+            <a class="devhost-status__link" href="route-not-found-empty"
+              >404 · No active hostnames <span class="devhost-status__arrow" aria-hidden="true">↗</span></a
+            >
+          </li>
+          <li>
+            <a class="devhost-status__link" href="backend-unavailable"
+              >502 · Unavailable backend <span class="devhost-status__arrow" aria-hidden="true">↗</span></a
+            >
+          </li>
+        </ul>
+      </section>
+      <section class="devhost-status__routes" aria-labelledby="recovery">
+        <h2 class="devhost-status__label" id="recovery">Startup and recovery</h2>
+        <ul class="devhost-status__list">
+          <li><a class="devhost-status__link" href="starting">Starting service</a></li>
+          <li><a class="devhost-status__link" href="failed">Exited service</a></li>
+          <li><a class="devhost-status__link" href="external">External service · Restart disabled</a></li>
+          <li><a class="devhost-status__link" href="404">404 · Missing application page</a></li>
+          <li><a class="devhost-status__link" href="500">500 · Internal server error</a></li>
+          <li><a class="devhost-status__link" href="502">502 · Bad gateway</a></li>
+          <li><a class="devhost-status__link" href="503">503 · Service unavailable</a></li>
+          <li><a class="devhost-status__link" href="504">504 · Gateway timeout</a></li>
+          <li><a class="devhost-status__link" href="worktrees">Worktree selection</a></li>
+        </ul>
+      </section>
+      <section class="devhost-status__routes" aria-labelledby="files">
+        <h2 class="devhost-status__label" id="files">Files</h2>
+        <ul class="devhost-status__list">
+          <li><a class="devhost-status__link" href="files/">Directory listing</a></li>
+          <li><a class="devhost-status__link" href="files/notes.md">Markdown · Rendered and source views</a></li>
+        </ul>
+      </section>
+      <p class="devhost-status__body">
+        Use your browser's light or dark preference to inspect both themes. Restart <code>just run</code> after editing
+        Go templates or styles to rebuild the embedded pages.
+      </p>
+    </main>
+  </body>
+</html>

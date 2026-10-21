@@ -29,8 +29,7 @@ type ResolvedManifest struct {
 	configuration *manifest.Manifest
 	// requested holds the service or group names given to devhost start and services started
 	// since; empty means every service runs.
-	requested  []string
-	Annotation manifest.ValidatedAnnotation
+	requested []string
 	// Caddy holds the listener settings the shared managed Caddy runs, which
 	// service URLs use. The devhost config file sets them, not the manifest.
 	Caddy                 caddy.ManagedCaddyGlobalSettings
@@ -219,9 +218,9 @@ func resolveServicePorts(value manifest.Manifest, options portResolutionOptions)
 	}
 
 	return ResolvedManifest{
-		configuration:         &value,
-		requested:             slices.Clone(options.Requested),
-		Annotation:            value.Annotation,
+		configuration: &value,
+		requested:     slices.Clone(options.Requested),
+
 		Devtools:              value.Devtools,
 		Worktrees:             value.Worktrees,
 		ManifestDirectoryPath: value.ManifestDirectoryPath,

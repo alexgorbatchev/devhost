@@ -37,12 +37,3 @@ export interface IAnnotationMarkerPayload {
   selectedText?: string;
   sourceLocation?: IAnnotationSourceLocation;
 }
-
-export interface IAnnotationSubmitDetail {
-  comment: string;
-  markers: IAnnotationMarkerPayload[];
-  stackName: string;
-  submittedAt: number;
-  title: string;
-  url: string;
-}

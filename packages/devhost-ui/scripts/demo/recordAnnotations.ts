@@ -11,54 +11,51 @@ export async function recordAnnotations(
   changeCaption: ChangeCaption,
   markPoster: MarkPoster,
 ): Promise<void> {
+  assert.equal(
+    runtime.env.DEVHOST_DEMO_INTERACTIVE,
+    "1",
+    "This scene needs an operator to share the current tab and review native requests",
+  );
   const heading = page.getByRole("heading", { name: "Devtools playground", exact: true });
   await heading.waitFor();
-  await page.waitForTimeout(2_000);
   await page.keyboard.down("Alt");
   try {
-    await heading.hover();
-    await page.waitForTimeout(1_500);
     await clickWithIndicator(page, heading);
   } finally {
     await page.keyboard.up("Alt");
   }
-  await page.getByRole("dialog", { name: "Annotation draft", exact: true }).waitFor();
-  const comment = page.getByRole("textbox", { name: "Annotation comment", exact: true });
-  await comment.pressSequentially(
-    "Change #1 to 'Local domains. Live fixes.' Replace the subtitle with 'Alt-click. Describe it. Watch Pi fix it.'",
-    { delay: 25 },
-  );
-  await page.waitForTimeout(2_000);
-  // The finished draft shows what an annotation is; the Pi terminal that follows prints the recording machine's paths.
+  const chat = page.getByRole("complementary", { name: "Agent chat", exact: true });
+  await chat.waitFor();
+  await clickWithIndicator(page, chat.getByRole("button", { name: "Chat Settings", exact: true }));
+  const settings = page.getByRole("dialog", { name: "Chat Settings", exact: true });
+  await settings.getByRole("combobox", { name: "Harness", exact: true }).selectOption("codex");
+  await settings.getByRole("combobox", { name: "Model", exact: true }).selectOption("");
+  await page.keyboard.press("Escape");
+  const sourcePath = runtime.env.DEVHOST_DEMO_EDIT_FILE;
+  assert(sourcePath);
+  await chat
+    .getByPlaceholder("Send a message...", { exact: true })
+    .fill(
+      `This is an isolated recording fixture. Edit only ${sourcePath}. Change the heading 'Devtools playground' to 'Local domains. Live fixes.' Preserve all other source, imports, JSX and attributes. Do not run commands, install dependencies, or commit. Describe the edit briefly.`,
+    );
   markPoster();
   await page.screenshot({ path: join(runtime.directoryPath, "annotation-draft.png") });
-  await clickWithIndicator(page, page.getByRole("button", { name: "Pi", exact: true }));
-  await clickWithIndicator(page, page.getByRole("button", { name: /^Pi terminal, / }));
-  await page.getByTestId("TerminalSessionPanel--content").waitFor();
-  await page
-    .getByTestId("TerminalSessionPanel--header")
-    .getByText("working", { exact: true })
-    .waitFor({ timeout: 60_000 });
-  await changeCaption("Pi is working on the annotated change.");
-  const headingUpdated = page
-    .getByRole("heading", { name: "Local domains. Live fixes.", exact: true })
-    .waitFor({ timeout: 120_000 })
-    .then(async (): Promise<void> => {
-      await changeCaption("The heading updates live from Pi's source edit.");
-    });
-  const showPi = async (): Promise<void> => {
-    await Promise.race([page.waitForTimeout(4_000), headingUpdated]);
-    await page.screenshot({ path: join(runtime.directoryPath, "pi-working.png") });
-    await clickWithIndicator(page, page.getByRole("button", { name: "Minimize", exact: true }));
-  };
-  await Promise.all([headingUpdated, showPi()]);
+  console.log(
+    "Choose this current tab in the browser sharing picker. Review native requests in chat; the recorder never approves them.",
+  );
+  await clickWithIndicator(page, chat.getByRole("button", { name: "Send Message", exact: true }));
+  await chat.getByRole("status").filter({ hasText: "codex · running" }).waitFor({ timeout: 180_000 });
+  await changeCaption("Codex is working on the selected page context.");
+  await page.screenshot({ path: join(runtime.directoryPath, "agent-working.png") });
+  await page.getByRole("heading", { name: "Local domains. Live fixes.", exact: true }).waitFor({ timeout: 180_000 });
   signal.throwIfAborted();
-  await page.getByText("Alt-click. Describe it. Watch Pi fix it.", { exact: true }).waitFor();
-  const source = await Bun.file(
-    join(runtime.directoryPath, "playground/frontend/src/components/PlaygroundLayout.tsx"),
-  ).text();
-  assert(source.includes("Local domains. Live fixes."), "Pi did not edit the real playground source");
-  await page.getByRole("button", { name: "Pi terminal, idle", exact: true }).waitFor({ timeout: 120_000 });
-  await page.screenshot({ path: join(runtime.directoryPath, "pi-live-fix.png") });
+  assert(
+    (await Bun.file(sourcePath).text()).includes("Local domains. Live fixes."),
+    "The native agent did not edit the copied playground source",
+  );
+  await changeCaption("The heading updates live from the source edit.");
+  await chat.getByRole("status").filter({ hasText: "codex · idle" }).waitFor({ timeout: 180_000 });
+  await clickWithIndicator(page, chat.getByRole("button", { name: "Collapse Chat", exact: true }));
+  await page.screenshot({ path: join(runtime.directoryPath, "agent-live-fix.png") });
   await page.waitForTimeout(6_000);
 }

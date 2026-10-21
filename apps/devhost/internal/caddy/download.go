@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 )
 
 type DownloadDependencies struct {
@@ -52,7 +54,7 @@ func DownloadCaddy(logWriter io.Writer, runtimeOS string, runtimeArch string, pa
 	}
 
 	url := fmt.Sprintf("https://caddyserver.com/api/download?os=%s&arch=%s", targetOS, targetArch)
-	if err := logInfo(logWriter, fmt.Sprintf("Downloading Caddy for %s-%s from %s...", targetOS, targetArch, url)); err != nil {
+	if err := cliout.WriteLog(logWriter, "devhost", fmt.Sprintf("Downloading Caddy for %s-%s from %s...", targetOS, targetArch, url)); err != nil {
 		return fmt.Errorf("log caddy download start: %w", err)
 	}
 
@@ -85,7 +87,7 @@ func DownloadCaddy(logWriter io.Writer, runtimeOS string, runtimeArch string, pa
 		}
 	}
 
-	if err := logInfo(logWriter, fmt.Sprintf("Caddy downloaded to %s", destinationPath)); err != nil {
+	if err := cliout.WriteLog(logWriter, "devhost", fmt.Sprintf("Caddy downloaded to %s", destinationPath)); err != nil {
 		return fmt.Errorf("log caddy download success: %w", err)
 	}
 

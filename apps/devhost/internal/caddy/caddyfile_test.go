@@ -18,8 +18,10 @@ func TestRenderManagedCaddyfile(t *testing.T) {
 		"{",
 		"    admin 127.0.0.1:20197",
 		"    auto_https disable_redirects",
+		"    default_bind 0.0.0.0 [::]",
+		"    skip_install_trust",
 		"    log {",
-		"        output discard",
+		"        output file \"/tmp/devhost state/caddy/caddy.runtime.log\"",
 		"    }",
 		"    persist_config off",
 		`    storage file_system "/tmp/devhost state/caddy/storage"`,
@@ -57,15 +59,15 @@ func TestRenderManagedCaddyfile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("renderManagedCaddyfile(...) unexpected error = %v", err)
 	}
-	if !strings.Contains(linuxCaddyfile, "    default_bind 127.0.0.1 [::1]") {
+	if !strings.Contains(linuxCaddyfile, "    default_bind 0.0.0.0 [::]") {
 		t.Fatalf("renderManagedCaddyfile(...) linux output missing default bind directive: %q", linuxCaddyfile)
 	}
 	if !strings.Contains(linuxCaddyfile, strings.Join([]string{
 		"    log {",
-		"        output discard",
+		"        output file \"/tmp/devhost state/caddy/caddy.runtime.log\"",
 		"    }",
 	}, "\n")) {
-		t.Fatalf("renderManagedCaddyfile(...) linux output missing quiet managed caddy logger: %q", linuxCaddyfile)
+		t.Fatalf("renderManagedCaddyfile(...) linux output missing retained managed caddy logger: %q", linuxCaddyfile)
 	}
 
 	httpCaddyfile, err := renderManagedCaddyfile(renderManagedCaddyfileOptions{EnableHTTP: true, HTTPPort: 8080, HTTPSPort: 4443, Paths: paths, RuntimeOS: "linux"})

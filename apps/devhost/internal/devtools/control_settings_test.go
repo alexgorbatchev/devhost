@@ -12,11 +12,10 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func TestUpdateSettingsAppliesWithoutEndingSessions(t *testing.T) {
-	t.Parallel()
-
-	server := startAnnotationLifecycleServer(t, terminalSessionRequestKindAgent)
-	sessionID := startAnnotationLifecycleSession(t, server, terminalSessionRequestKindAgent, testAnnotationDetail("Before the edit", 1, "https://app.localhost/"))
+// A reload replaces the settings and keeps the chat sessions: turning chat off hides its routes, and a running
+// session keeps answering on its open socket.
+func TestUpdateSettingsAppliesWithoutEndingChatSessions(t *testing.T) {
+	server, session, conn := startChatAckTest(t)
 
 	settings := server.currentSettings()
 	settings.StackName = "renamed"
@@ -27,7 +26,6 @@ func TestUpdateSettingsAppliesWithoutEndingSessions(t *testing.T) {
 	if err := server.UpdateSettings(settings); err != nil {
 		t.Fatalf("UpdateSettings(...) error = %v", err)
 	}
-
 	var config map[string]any
 	if err := json.Unmarshal([]byte(getControlServerText(t, server, injectedConfigPath)), &config); err != nil {
 		t.Fatal(err)
@@ -35,16 +33,49 @@ func TestUpdateSettingsAppliesWithoutEndingSessions(t *testing.T) {
 	if config["stackName"] != "renamed" || config["minimapEnabled"] != true || config["position"] != "top-right" || config["primaryService"] != "web" {
 		t.Fatalf("injected config after the edit = %#v", config)
 	}
-	assertAnnotationLifecycleSession(t, server, sessionID)
 
-	settings.FeatureToggles.TerminalEnabled = false
+	settings.FeatureToggles.ChatEnabled = false
 	if err := server.UpdateSettings(settings); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := server.createTerminalSession(terminalSessionRequest{Kind: terminalSessionRequestKindCommand, ActionID: terminalSessionRequestKindAgent}); err == nil || err.Error() != "Terminal session launching is not configured." {
-		t.Fatalf("createTerminalSession(...) with terminals turned off = %v", err)
+	if err := conn.WriteJSON(map[string]any{"type": "send", "commandId": "after-the-edit", "text": "Still here"}); err != nil {
+		t.Fatal(err)
 	}
-	assertAnnotationLifecycleSession(t, server, sessionID)
+	if message := readChatAckTest(t, conn); message.Type != "command_result" || message.SessionID != session.snapshot().ID || message.Error != "" {
+		t.Fatalf("a running session after chat turned off answered %+v", message)
+	}
+}
+
+// The chat routes answer 404 while chat is off and come back when a reload turns it on, without a restart.
+func TestChatRoutesFollowTheToggle(t *testing.T) {
+	t.Parallel()
+	server, err := StartControlServer(StartControlServerOptions{
+		GetHealthResponse: func() (HealthResponse, error) { return HealthResponse{Services: []ServiceHealth{}}, nil },
+		ProjectRootPath:   t.TempDir(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = server.Stop() })
+	readSessionsStatus := func() int {
+		response, err := http.Get(serverURL(server.Port(), chatSessionsPath))
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = response.Body.Close() // Only the status matters.
+		return response.StatusCode
+	}
+	if status := readSessionsStatus(); status != http.StatusNotFound {
+		t.Fatalf("sessions with chat off = %d, want %d", status, http.StatusNotFound)
+	}
+	settings := server.currentSettings()
+	settings.FeatureToggles.ChatEnabled = true
+	if err := server.UpdateSettings(settings); err != nil {
+		t.Fatal(err)
+	}
+	if status := readSessionsStatus(); status != http.StatusOK {
+		t.Fatalf("sessions after a reload turned chat on = %d, want %d", status, http.StatusOK)
+	}
 }
 
 func TestUpdateSettingsSendsTheConfigurationToOpenPages(t *testing.T) {

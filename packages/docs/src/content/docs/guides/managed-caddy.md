@@ -35,7 +35,11 @@ That command downloads the managed Caddy binary first when needed, then runs `su
 > [!IMPORTANT]
 > To get HTTPS working, Caddy uses a self-signed certificate that is not trusted by default.
 >
-> `devhost caddy trust` prompts for your password and installs Caddy's CA into the system trust store.
+> When devhost starts Caddy and the system does not trust Caddy's local certificate authority yet, devhost installs it into the system trust store once. That may ask for your password; the prompt starts with `caddy | `. `devhost caddy trust` does the same at any time, or reports that the authority is already trusted.
+
+Devhost starts Caddy with `devhost caddy start`, and `devhost serve` starts it when it is not running. Without a terminal, or under `AGENT=1`, devhost prints a warning naming `devhost caddy trust` instead of asking for a password. A declined or failed installation prints the same warning; Caddy keeps running, and browsers warn about its certificates until the authority is trusted. A stack that starts while the authority is untrusted prints that warning once.
+
+Caddy itself never installs the authority: the generated Caddyfile sets `skip_install_trust`, so route reloads never ask for a password.
 
 If you want to trust that same managed Caddy CA from another macOS machine without exposing the Caddy admin API, run this from the client machine:
 
@@ -76,6 +80,8 @@ For custom domains, that means loopback resolution, such as exact `A` / `AAAA` r
 
 Good out-of-the-box choices are `localhost` and subdomains under `*.localhost`, such as `foo.localhost` and `api.foo.localhost`, because they work without additional DNS configuration.
 
+These names address the device running the browser. Use `https://foo.localhost` on the dev machine. For another device, configure a routed hostname that resolves to the dev machine's network address. Managed Caddy listens on all network interfaces by default; the backend service can keep listening on loopback. HTTPS clients also need to trust Caddy's CA.
+
 ## Multiple hostnames for one service
 
 Use an array in `host` to route several hostnames to one service process:
@@ -89,7 +95,7 @@ host = ["app.localhost", "alias.localhost"]
 
 Every hostname uses the same backend port and `path`, and must resolve to the machine running `devhost`. The array must contain at least one valid, unique hostname. A single string, such as `host = "app.localhost"`, routes one hostname. Each hostname is claimed independently, so a conflict on any domain prevents startup and releases the claims already acquired.
 
-The first hostname supplies `DEVHOST_HOST`, `{{ services.web.host }}`, and the devtools service link. Startup logs show every routed URL. All domains share the service's annotation queues for each annotation action.
+The first hostname supplies `DEVHOST_HOST`, `{{ services.web.host }}`, and the devtools service link. Startup logs show every routed URL. New native chat sessions resolve the service checkout from their routed hostname and path.
 
 All domains follow the service's port on restart, including after an automatic port retry. Route updates publish together; a failed refresh restores every domain's previous route and leaves the service available for recovery in devtools.
 
@@ -129,8 +135,7 @@ The generated Caddy config uses these defaults:
 - state dir: `DEVHOST_STATE_DIR`, else `XDG_STATE_HOME/devhost`, else `~/.local/state/devhost`
 - admin API: `127.0.0.1:20197` by default via `adminAddress` in the `[caddy]` table of `config.toml`
 - HTTPS listener port: `443` by default via `httpsPort`
-- listener binding on macOS: wildcard listeners, because macOS denies rootless loopback-specific binds on the default privileged HTTPS port
-- listener binding on non-macOS: loopback only by default via `bindHost = "127.0.0.1"`, rendered as Caddy `default_bind 127.0.0.1 [::1]`
+- listener binding: all IPv4 and IPv6 interfaces by default via `bindHost = "0.0.0.0"`, rendered as Caddy `default_bind 0.0.0.0 [::]`; the admin API and default backend listeners remain on loopback
 - plain HTTP: disabled by default; `http = true` serves the same routed hosts and shared fallback page on HTTP for every stack
 - HTTP listener port: `80` by default via `httpPort`
 - unmatched hostnames: a generated 404 page listing the active `devhost` hostnames as HTTPS links
@@ -138,7 +143,7 @@ The generated Caddy config uses these defaults:
 ## Platform caveats
 
 On macOS, the managed Caddy instance starts rootlessly by avoiding loopback-specific listener binding.
-That keeps startup unprivileged, but it also means the managed Caddy instance is not loopback-only on that platform.
+The default wildcard binding supports access from other devices as well as the dev machine. On Linux, set `caddy.global.bindHost = "127.0.0.1"` for loopback-only access. On macOS, that value retains the wildcard-listener behavior for rootless HTTPS.
 If you need strict loopback-only HTTPS on privileged ports, use a privileged launcher such as `launchd` socket activation; wildcard binding is not an equivalent substitute.
 
 On non-macOS platforms, opening HTTPS on the configured `httpsPort` still requires privileged-port setup outside `devhost` when that port is privileged.

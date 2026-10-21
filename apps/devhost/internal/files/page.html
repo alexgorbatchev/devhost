@@ -5,20 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
     <title>{{.Title}}</title>
+    <script>
+      {{.ThemeScript}}
+    </script>
     <style>
       {{.CSS}}
     </style>
     <style>
-      body {
-        margin: 0;
-        background: var(--bgColor-default, #fff);
+      {{.Styles}}
+
+      .devhost-files {
+        width: min(980px, 100%);
       }
-      .markdown-body {
-        box-sizing: border-box;
-        min-width: 200px;
-        max-width: 980px;
-        margin: 0 auto;
-        padding: 24px;
+      .devhost-files .markdown-body {
+        --bgColor-default: var(--dh-surface);
+        --bgColor-muted: var(--dh-surface-2);
+        --bgColor-neutral-muted: var(--dh-surface-3);
+        --fgColor-default: var(--dh-fg);
+        --fgColor-muted: var(--dh-fg-muted);
+        --fgColor-accent: var(--dh-accent);
+        --borderColor-default: var(--dh-line);
+        --borderColor-muted: var(--dh-line);
+        --borderColor-accent-emphasis: var(--dh-accent);
+        min-width: 0;
+        font-family: inherit;
       }
       header {
         display: flex;
@@ -26,22 +36,24 @@
         justify-content: space-between;
         gap: 16px;
         margin-bottom: 24px;
+        flex-wrap: wrap;
+        padding-bottom: 24px;
+        border-bottom: 1px solid var(--dh-line);
       }
-      header span {
-        overflow-wrap: anywhere;
+      header .devhost-status__brand {
+        margin: 0;
       }
       button {
-        color: inherit;
-        background: var(--bgColor-muted);
-        border: 1px solid var(--borderColor-default);
-        border-radius: 6px;
-        padding: 6px 10px;
+        color: var(--dh-fg);
+        background: var(--dh-surface-2);
+        border: 1px solid var(--dh-input-line);
+        border-radius: var(--dh-radius-md);
+        padding: 10px 14px;
         cursor: pointer;
         flex-shrink: 0;
       }
-      button:focus-visible {
-        outline: 2px solid var(--fgColor-accent);
-        outline-offset: 3px;
+      button:hover {
+        background: var(--dh-surface-3);
       }
       #source {
         display: none;
@@ -53,11 +65,6 @@
       }
       html[data-view="source"] #rendered {
         display: none;
-      }
-      @media (prefers-color-scheme: dark) {
-        body {
-          background: #0d1117;
-        }
       }
     </style>
     {{if .Markdown}}
@@ -89,20 +96,29 @@
     {{end}}
   </head>
   <body>
-    <main class="markdown-body">
+    <main class="devhost-status devhost-files">
       <header>
-        <span>{{.Title}}</span>{{if .Markdown}}<button id="toggle-source" type="button" aria-controls="source rendered">
+        <span class="devhost-status__brand">devhost / {{.Title}}</span>{{if .Markdown}}<button
+          id="toggle-source"
+          type="button"
+          aria-controls="source rendered"
+        >
           Show source</button
         >{{end}}
       </header>
       {{if .Markdown}}
-      <article id="rendered">{{.Content}}</article>
-      <pre id="source"><code>{{.Source}}</code></pre>
+      <article class="markdown-body" id="rendered">{{.Content}}</article>
+      <pre class="devhost-status__body" id="source"><code>{{.Source}}</code></pre>
       {{else}}
-      <h1>Directory listing</h1>
-      <ul>
+      <h1 class="devhost-status__label">Directory listing</h1>
+      <ul class="devhost-status__list">
         {{range .Entries}}
-        <li><a href="{{.Href}}">{{.Name}}</a></li>
+        <li>
+          <a class="devhost-status__link" href="{{.Href}}"
+            ><span class="devhost-status__route">{{.Name}}</span
+            ><span class="devhost-status__arrow" aria-hidden="true">↗</span></a
+          >
+        </li>
         {{end}}
       </ul>
       {{end}}

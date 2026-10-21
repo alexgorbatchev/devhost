@@ -9,13 +9,13 @@ export function createBrowserScenes(): IBrowserScene[] {
     { id: "overview", caption: "Hover the minimap to see live output from your services.", record: recordOverview },
     {
       id: "annotations",
-      caption: "Alt-click. Describe the change. Watch Pi fix the live page.",
+      caption: "Select page context. Share the current tab. Chat with your configured agent.",
       record: recordAnnotations,
     },
     { id: "query", caption: "Native Query devtools are here when you need them.", record: recordQuery },
     {
       id: "react-highlight",
-      caption: "Connect the JSX cursor in Neovim to your live page.",
+      caption: "Connect source locators to your live page through the native API.",
       record: recordReactHighlight,
     },
   ];

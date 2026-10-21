@@ -50,7 +50,7 @@ func isStateChangingRequest(request *http.Request) bool {
 	return true
 }
 
-// servesRequestHost accepts the loopback names tools such as the Neovim plugin use to reach the listener directly,
+// servesRequestHost accepts the loopback names local tools use to reach the listener directly,
 // and the routed hosts whose /__devhost__/ requests Caddy sends to this stack.
 func (s *ControlServer) servesRequestHost(request *http.Request) bool {
 	hostname := request.Host

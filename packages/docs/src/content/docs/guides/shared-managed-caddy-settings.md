@@ -35,14 +35,14 @@ httpPort = 8080
 httpsPort = 4443
 ```
 
-To expose the managed Caddy front door beyond loopback, set the listener bind host to `0.0.0.0` or `::`; `127.0.0.1` (the default) and `::1` keep it on loopback:
+The listener bind host defaults to all IPv4 and IPv6 interfaces:
 
 ```toml
 [caddy]
 bindHost = "0.0.0.0"
 ```
 
-That widens only the HTTP/HTTPS listeners. The admin API keeps its own address, and routed backends can keep their own `services.<name>.bindHost` on loopback behind Caddy.
+That setting affects only the managed Caddy HTTP/HTTPS listeners. The admin API keeps its own address, and routed backends can keep their own `services.<name>.bindHost` on loopback behind Caddy. On Linux, set `bindHost = "127.0.0.1"` to keep the listeners on loopback. On macOS, that value keeps wildcard listeners for rootless HTTPS; strict loopback-only privileged HTTPS needs a privileged launcher.
 
 To move the managed Caddy admin API off the default endpoint `127.0.0.1:20197`:
 

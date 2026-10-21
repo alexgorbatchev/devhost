@@ -105,7 +105,7 @@ func TestRunServiceListReportsAWriteFailure(t *testing.T) {
 		t.Fatalf("Run(service list) exit code = %d, want 1", exitCode)
 	}
 
-	if want := "ERR: writing service names: io: read/write on closed pipe\n"; stderr.String() != want {
+	if want := "devhost: ERR: writing service names: io: read/write on closed pipe\n"; stderr.String() != want {
 		t.Fatalf("Run(service list) stderr = %q, want %q", stderr.String(), want)
 	}
 }

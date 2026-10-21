@@ -138,7 +138,7 @@ func TestRunStackListReportsAWriteFailure(t *testing.T) {
 		t.Fatalf("Run(stack list) exit code = %d, want 1", exitCode)
 	}
 
-	if want := "ERR: writing running stacks: io: read/write on closed pipe\n"; stderr.String() != want {
+	if want := "devhost: ERR: writing running stacks: io: read/write on closed pipe\n"; stderr.String() != want {
 		t.Fatalf("Run(stack list) stderr = %q, want %q", stderr.String(), want)
 	}
 }

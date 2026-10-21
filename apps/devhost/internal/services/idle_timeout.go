@@ -10,13 +10,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
 
 // idleWatch shuts the stack down after a stretch with neither routed traffic,
 // which Caddy writes to the stack's access log, nor a devtools connection or
-// terminal session. A reload can change, start, or stop it.
+// a chat turn in progress. A reload can change, start, or stop it.
 type idleWatch struct {
 	control   *devtools.ControlServer
 	logPath   string
@@ -58,10 +59,10 @@ func (w *idleWatch) set(timeout time.Duration) {
 	w.stopLocked()
 	w.timeout = timeout
 	if timeout <= 0 {
-		writeLogLine(w.logWriter, w.label(), "Idle timeout disabled.")
+		cliout.Log(w.logWriter, w.label(), "Idle timeout disabled.")
 		return
 	}
-	writeLogLine(w.logWriter, w.label(), fmt.Sprintf("Idle timeout enabled: %s (will automatically shut down when inactive)", timeout))
+	cliout.Log(w.logWriter, w.label(), fmt.Sprintf("Idle timeout enabled: %s (will automatically shut down when inactive)", timeout))
 	w.truncateLog()
 	w.control.Tracker().RecordActivity()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -123,7 +124,7 @@ func (w *idleWatch) run(ctx context.Context, timeout time.Duration, done chan<- 
 				w.control.Tracker().RecordActivity()
 			}
 		case <-check.C:
-			if w.control.Tracker().IsIdle(timeout) && !w.control.HasActiveTerminalSessions() {
+			if w.control.Tracker().IsIdle(timeout) && !w.control.HasActiveChatSessions() {
 				select {
 				case w.expired <- timeout:
 				default:

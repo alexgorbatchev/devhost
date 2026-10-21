@@ -1,23 +1,10 @@
-import type {
-  IAnnotationQueueSnapshot,
-  IAnnotationQueuesSnapshotMessage,
-} from "../src/devtools/features/annotationQueue/types";
 import type { IConfigFile } from "../src/devtools/features/configEditor/types";
 import type { IResourceUsage } from "../src/devtools/features/resourceUsage";
-import type {
-  ActiveTerminalSessionSnapshot,
-  IListTerminalSessionsResponse,
-  ITerminalSessionSnapshotMessage,
-} from "../src/devtools/features/terminalSessions/types";
 import {
-  ANNOTATION_QUEUES_WEBSOCKET_PATH,
   DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME,
   HEALTH_WEBSOCKET_PATH,
   LOGS_WEBSOCKET_PATH,
   RESOURCES_WEBSOCKET_PATH,
-  TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME,
-  TERMINAL_SESSION_START_PATH,
-  TERMINAL_SESSION_WEBSOCKET_PATH,
 } from "../src/devtools/shared/constants";
 import type { IInjectedDevtoolsConfig } from "../src/devtools/shared/readInjectedDevtoolsConfig";
 import type {
@@ -34,32 +21,27 @@ import {
   CONFIG_VALIDATE_PATH,
 } from "../src/devtools/features/configEditor/constants";
 
-type FetchRequestInput = Parameters<typeof fetch>[0];
-type FetchRequestInit = Parameters<typeof fetch>[1];
-
 /** The devhost control plane a story runs against: the injected configuration and every snapshot the server sends. */
 export interface IDevhostStoryStack {
-  annotationQueues: IAnnotationQueueSnapshot[];
   config: IInjectedDevtoolsConfig;
   /** The files the config editor lists; absent, its routes are not answered. */
   configFiles?: IConfigFile[];
   /** The reloads of each configuration source the health stream reports. */
   configuration?: IConfigurationStatus[];
-  /** Sent to terminal sessions that have no entry in `terminalSnapshots`; `null` sends nothing. */
-  fallbackTerminalSnapshot: string | null;
   logEntries: ServiceLogEntry[];
   /** Sent on the resource usage stream; `null` sends nothing. */
   resourceUsage: IResourceUsage | null;
   services: ServiceHealth[];
-  terminalSessions: ActiveTerminalSessionSnapshot[];
-  terminalSnapshots: Record<string, string>;
 }
+
+type FetchRequestInput = Parameters<typeof fetch>[0];
+type FetchRequestInit = Parameters<typeof fetch>[1];
 
 export interface IDevhostStackMock {
   uninstall: () => void;
 }
 
-/** Replaces the injected configuration, `WebSocket`, and `fetch` with a server that answers from `stack`. */
+/** Installs the injected configuration and native control-stream snapshots from `stack`. */
 export function installDevhostStackMock(stack: IDevhostStoryStack): IDevhostStackMock {
   const originalConfig: unknown = Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME);
   const originalWebSocket: unknown = Reflect.get(globalThis, "WebSocket");
@@ -77,19 +59,6 @@ export function installDevhostStackMock(stack: IDevhostStoryStack): IDevhostStac
       if (stack.resourceUsage !== null) {
         connection.send(stack.resourceUsage);
       }
-    } else if (connection.url.pathname === ANNOTATION_QUEUES_WEBSOCKET_PATH) {
-      const queues: IAnnotationQueuesSnapshotMessage = { queues: stack.annotationQueues, type: "snapshot" };
-
-      connection.send(queues);
-    } else if (connection.url.pathname === TERMINAL_SESSION_WEBSOCKET_PATH) {
-      const sessionId: string = connection.url.searchParams.get(TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME) ?? "";
-      const data: string | null = stack.terminalSnapshots[sessionId] ?? stack.fallbackTerminalSnapshot;
-
-      if (data !== null) {
-        const terminal: ITerminalSessionSnapshotMessage = { data, type: "snapshot" };
-
-        connection.send(terminal);
-      }
     }
   };
 
@@ -98,12 +67,6 @@ export function installDevhostStackMock(stack: IDevhostStoryStack): IDevhostStac
   globalThis.fetch = Object.assign(
     async (input: FetchRequestInput, init?: FetchRequestInit): Promise<Response> => {
       const requestUrl = new URL(input instanceof Request ? input.url : String(input), window.location.href);
-
-      if (requestUrl.pathname === TERMINAL_SESSION_START_PATH) {
-        const sessions: IListTerminalSessionsResponse = { sessions: stack.terminalSessions };
-
-        return Response.json(sessions);
-      }
 
       if (stack.configFiles !== undefined && requestUrl.pathname === CONFIG_FILES_PATH) {
         return Response.json({ files: stack.configFiles });

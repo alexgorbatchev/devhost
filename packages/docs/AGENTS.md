@@ -6,7 +6,7 @@ Public Astro + Starlight docs workspace for `devhost`, published to GitHub Pages
 
 - Open the docs site design reference in the default browser: `just design docs`
 - Sync the generated landing page and manifest reference: `just docs sync`
-- Start the local docs server: `just docs` (or `just docs dev`)
+- Start the local docs server: `just docs` (or `just docs run`)
 - Check package-local validations: `just docs check`
 - Build the static site: `just docs build`
 - Preview the production build: `just docs preview`
@@ -33,17 +33,17 @@ Public Astro + Starlight docs workspace for `devhost`, published to GitHub Pages
 
 - This workspace uses the repo-root `bun.lock`. Do not add a package-local lockfile.
 - Shared `oxfmt` / `oxlint` enforcement runs from the repo root, not from this workspace `check` recipe.
-- `just docs check` downloads the pinned guide videos, then runs `bun test`, content sync, the check that the videos on disk are the pinned ones, `astro check`, and `astro build`. `just docs dev`, `test`, and `build` download the videos first too, so they need network access until the videos are on disk.
+- `just docs check` downloads the pinned guide videos, then runs `bun test`, content sync, the check that the videos on disk are the pinned ones, `astro check`, and `astro build`. `just docs run`, `test`, and `build` download the videos first too, so they need network access until the videos are on disk.
 - `just docs check` fails while a video in `public/demos/` differs from its pin or has none. After `just demo guides`, publish the render with `just docs publish-media`, or delete the file and run `just docs media` to return to the published video.
 - The style tests render real CSS in Playwright Chromium to verify prose link indicators and search shortcuts. Chromium is installed by root `bun install`; use `just ui install-browser` if its cached binary is missing.
 - Prose link underlines use opaque `--dh-accent` because their text matches surrounding prose. Keep search shortcut text opaque and use `--dh-input-line` for form-control boundaries.
-- `just docs dev`, `just docs start`, and `just docs preview` bind the Astro server to `0.0.0.0` so the site is reachable from outside the current environment.
+- `just docs run`, `just docs start`, and `just docs preview` bind the Astro server to `0.0.0.0` so the site is reachable from outside the current environment.
 - `astro.config.mjs` allows all dev/preview hosts for this workspace; treat the docs server as broadly reachable while it is running.
 - The site is deployed by a CLI release, not by a push to `main`: `.github/workflows/publish.yml` calls `.github/workflows/docs.yml` after it created the release, and the docs are built from the release tag. Docs on `main` describe unreleased behavior until then. The `github-pages` environment must allow deployments from `v*` tags as well as `main`.
 - The site ships from GitHub Pages at `/devhost`, so content should rely on relative links or Starlight routing instead of hard-coded root-relative `/...` paths.
 - `src/content/docs/index.mdx` and `src/content/docs/reference/devhost-example.md` are generated outputs; edit `apps/devhost/README.md` and `apps/devhost/devhost.example.toml` instead.
 - Do not add docs tests that snapshot whole static CSS files or literal font/theme declarations when the real contract is config registration or successful build integration.
-- The public devtools asset/configuration contract lives in `src/content/docs/guides/devtools.md`: static production scripts, lazy terminal chunks, and fonts are cached by content version; instance configuration is uncached. Keep that guide aligned with the Go server and browser entry.
+- The public devtools asset/configuration contract lives in `src/content/docs/guides/devtools.md`: static production scripts, lazy JavaScript chunks, and fonts are cached by content version; instance configuration is uncached. Keep that guide aligned with the Go server and browser entry.
 - Astro caches rendered Markdown in `node_modules/.astro/data-store.json` and only invalidates it when `astro.config.mjs` itself changes. After editing a module the config imports (rehype plugins, Mermaid or code theme constants), delete that file before `just docs build`, or the build reuses stale content.
 - Starlight ships its CSS inside `@layer`, so the unlayered stylesheets override it without `!important`. They target Starlight 0.38 markup (for example `.sidebar-content .top-level`, `starlight-toc`, `site-search`); recheck the site visually after Starlight upgrades.
 

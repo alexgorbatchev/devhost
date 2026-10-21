@@ -45,7 +45,7 @@ func TestRunManagedCaddyCommand(t *testing.T) {
 	var gotArguments []string
 	var gotOptions RunCommandOptions
 
-	result := RunManagedCaddyCommand(paths, []string{"trust"}, ManagedCaddyCommandOptions{AdminAddress: "127.0.0.1:22000", InheritStdio: true, RuntimeOS: "linux"}, ManagedCaddyCommandDependencies{
+	result := RunManagedCaddyCommand(paths, []string{"trust"}, ManagedCaddyCommandOptions{AdminAddress: "127.0.0.1:22000", Environment: []string{"SUDO_PROMPT=Password: "}, RuntimeOS: "linux"}, ManagedCaddyCommandDependencies{
 		RunCommand: func(arguments []string, options RunCommandOptions) CommandResult {
 			gotArguments = append([]string{}, arguments...)
 			gotOptions = options
@@ -68,8 +68,23 @@ func TestRunManagedCaddyCommand(t *testing.T) {
 		t.Fatalf("RunManagedCaddyCommand(...) arguments = %#v, want %#v", gotArguments, wantArguments)
 	}
 
-	if gotOptions.WorkingDir != paths.CaddyDirectoryPath || !gotOptions.InheritStdio {
-		t.Fatalf("RunManagedCaddyCommand(...) options = %#v, want working dir %q and inherit stdio", gotOptions, paths.CaddyDirectoryPath)
+	if gotOptions.WorkingDir != paths.CaddyDirectoryPath || gotOptions.InheritStdio {
+		t.Fatalf("RunManagedCaddyCommand(...) options = %#v, want working dir %q and captured stdio", gotOptions, paths.CaddyDirectoryPath)
+	}
+	if !reflect.DeepEqual(gotOptions.Environment, []string{"SUDO_PROMPT=Password: "}) {
+		t.Fatalf("RunManagedCaddyCommand(...) environment = %#v, want the sudo prompt", gotOptions.Environment)
+	}
+}
+
+func TestRunCommandAddsEnvironment(t *testing.T) {
+	t.Setenv("DEVHOST_TEST_INHERITED", "kept")
+
+	result := RunCommand([]string{"sh", "-c", `printf '%s|%s' "$DEVHOST_TEST_INHERITED" "$SUDO_PROMPT"`}, RunCommandOptions{Environment: []string{"SUDO_PROMPT=caddy | Password: "}})
+	if !result.Success {
+		t.Fatalf("RunCommand(...) failed: %s", result.Stderr)
+	}
+	if got := string(result.Stdout); got != "kept|caddy | Password: " {
+		t.Fatalf("RunCommand(...) environment = %q, want the inherited and added variables", got)
 	}
 }
 

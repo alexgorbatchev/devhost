@@ -1,5 +1,5 @@
 ---
-title: "Annotations"
+title: "Browser Chat and Page Context"
 sidebar:
   order: 10
 ---
@@ -12,25 +12,72 @@ sidebar:
 </video>
 <!-- /guide-demo -->
 
-Annotations build on top of the injected devtools UI. For the overlay and routing model itself, see [Devtools](./devtools/).
+:::note[Video coverage]
+The published film demonstrates the terminal-based annotation workflow. Browser chat, drawing tools, and tab sharing are described below and have no current demo film.
+:::
 
-## AI annotations
+Open **Chat** in the injected toolbar to talk to an installed coding agent while working on your page. The chat panel can move to either side of the viewport or collapse while its conversation continues. The message composer stays at the bottom of the panel, including before your first message.
 
-- hold `Alt` (`Option` on macOS) to enter annotation selection mode
-- click one or more page elements while holding `Alt` to place numbered markers
-- release `Alt` to leave selection mode while keeping the current draft open
-- write a comment that references markers like `#1` and `#2`
-- click `Submit` or press `⌘ ↵` / `Ctrl + Enter` to start the selected annotation action with the draft
-- when `Append to active session queue` is enabled, the draft is added to the matching routed service's active agent queue instead of being injected immediately into a busy terminal
-- queued annotations are grouped by service name and annotation action, shared across the service's domains, and survive browser reloads and `devhost` restarts
-- running agent and command annotation sessions continue across page reloads, closed tabs, and browser closure; reopening a routed page reconnects to existing sessions with retained terminal output
-- queued annotations drain automatically when the agent emits `OSC 1337;SetAgentStatus=finished`
-- by default, the queue stays collapsed into a compact progress summary until you expand it to edit or delete queued or paused items
-- click `Cancel` or press `Escape` to discard the draft
+## Connect an installed CLI
 
-Annotation selection runs through a selector plugin. The built-in DOM picker is one plugin in that registry, so custom host pages can replace it with a higher-priority selector when the selectable surface is not plain DOM.
+Install and sign in to the [Codex CLI](https://learn.chatgpt.com/docs/cli) or [Claude Code](https://code.claude.com/docs/en/cli-reference) on the machine running devhost. Devhost launches the installed client with its existing account, settings, environment, and selected checkout. Enter no API key into the browser.
 
-`devhost` exposes that registry through the host page at runtime so mirrored previews, canvas-based UIs, terminal surfaces, and other non-DOM inspection targets can participate in the same annotation draft, queue, and submission flow.
+Open **Chat Settings** using the gear button. Choose **Harness**, then select a model advertised by that client's native catalog. **Configured default** restores the CLI's configured model for the next turn, including after selecting another model or resuming a conversation. **Refresh Harnesses** repeats discovery; discovery can succeed even when the account needs to sign in before inference. A native authentication failure is displayed in the conversation; sign in through the CLI and retry.
+
+Chat Settings receives pointer input above the page and chat panel. Its backdrop blocks clicks on page controls until the dialog closes; closing it restores ordinary page interaction.
+
+Type a message and send it through the browser composer. Agent replies and native tool activity stream into the conversation, which keeps the latest reply in view while you are at the bottom; scroll back and the conversation stays where you left it until you return to the bottom. Claude Code confirms receipt by replaying the actual user message into the conversation; a later model or authentication failure keeps that submitted message in history. **New Conversation** starts a separate native session; **Conversation** selects an existing session. Collapsing the panel does not terminate it. Interrupt cancels the current turn, while **Close Conversation** ends its owned process.
+
+Live sessions and retained events belong to the running devhost stack, so a page reload can reconnect. Stopping devhost ends its processes. Session replay in the browser is not a separate durable queue or an automatic replay of prompts after a stack restart.
+
+Reloading the same page restores whether chat is expanded or collapsed, its side, unsent text, harness and model choices, and the selected live conversation. The conversation's scroll position is restored after its history arrives; a view left at the bottom opens at the latest reply. These settings use browser local storage, separately for each project and full page URL. A missing or closed conversation is not restarted automatically, and an unavailable model returns to **Configured default**. Prompts and permission responses are never resent on reload.
+
+If browser storage is unavailable or full, chat continues working but cannot save further changes across reloads. Page selections, drawings, and tab sharing do not survive reload.
+
+Client-side navigation within the same project keeps the conversation, draft, and selected harness and model. Switching to a different project resets the browser panel's project-specific state. Context sent with a message uses the current page URL.
+
+## Select page context
+
+1. Choose **Select Elements** in the floating toolbar at the top of the page, or hold Alt (Option on macOS).
+2. Click one or more page elements to add numbered markers. Releasing Alt ends selection mode without discarding the context.
+3. Write your request in the chat composer, referring to markers such as #1 and #2.
+4. Send the message. If you have not already shared the tab, choose the current tab in the browser's sharing picker.
+
+Selecting elements opens chat. Escape leaves selection or drawing mode so the page accepts ordinary interactions. The instruction tip follows the pointer without moving the chat layout. Use the remove button beside any element or drawing to discard just that item, or **Clear Page Context** to discard all context. A successfully submitted message clears its markers and drawings so the next message starts with fresh context. Cancelled sharing and failed sends retain context. In conversation history, the attached **Page Context** section is collapsed by default; expand it to inspect the metadata.
+
+Selected element metadata includes its path, nearby text, accessibility information, bounds and computed styles. React development source locations and fetchable source maps are used when the host exposes them; source resolution remains best effort.
+
+## Draw over the page
+
+Choose **Arrow**, **Line**, or **Box** from the floating toolbar, then drag on the visible page. Each completed drawing returns control to the page and appears in **Page context**. Drag an existing drawing by its stroke to move it. Escape cancels an in-progress move or drawing. Use **Undo Drawing** to remove the most recent shape, or remove any drawing individually from the context list. Drawing coordinates and selected element metadata accompany the captured image.
+
+## Share one tab snapshot
+
+Sending text without page context does not open the sharing picker. Use **Share Tab** beside **Send Message** to share ahead of time. Sending selected elements or drawings captures the active share, or opens the sharing picker when there is no active share, so the agent receives the visible page and its annotations as one PNG image.
+
+Choose the current tab so the image matches the selected elements and drawings. The browser owns that choice; preferring the current tab does not prevent choosing another browser tab. Window and entire-screen captures are rejected. Screen capture requires a supporting browser in a secure context, such as the routed HTTPS page.
+
+A share opened through **Share Tab** stays active for subsequent snapshots until you choose **Stop Sharing**, stop it in the browser, reload, or unmount the chat integration. Collapsing chat keeps that share active. Each message takes a fresh snapshot; it does not send continuous video. A share opened directly by sending a message stops after that snapshot, including on failure. Browser sharing permission is not persisted after the stream ends. Cancelling the picker retains the message draft and sends no context. Conversation, harness, and model controls stay locked while a send is being prepared or confirmed, so sharing cannot redirect it to another conversation. The complete encoded message, including PNG/JPEG attachments, must fit within 8 MiB; the selected client and model must accept the image input.
+
+The configured coding agent receives the message, selected metadata, page URL/title, drawing coordinates, and image. Review what is visible before sharing.
+
+## Native permissions and questions
+
+Native tool approval and user-input requests require an explicit answer. Devhost forwards the native request details and never approves them automatically. A resolved or cancelled request cannot be answered again. If a native prompt is unsupported by the browser controls, its preserved details remain available; no response is fabricated.
+
+## Configuration
+
+Both settings default to true:
+
+```toml
+[devtools.chat]
+enabled = true
+
+[devtools.annotations]
+enabled = true
+```
+
+Disable annotations to keep ordinary chat without page-selection and drawing controls. Disable chat to remove the browser chat entry and its native control routes. Changing devtools settings requires restarting the stack. External IDE source links use the separate editor setting.
 
 ## Annotation selection plugin contract
 
@@ -110,7 +157,7 @@ Selection semantics:
 - the active selector is the highest-priority matching plugin
 - when priorities tie, the earlier-registered matching plugin stays active
 - returning `null` from `resolveCandidate(...)` means that event does not produce a candidate
-- `readRect()` controls the draft highlight box; return `null` when there is nothing to highlight
+- `readRect()` controls the selection highlight box; return `null` when there is nothing to highlight
 - `getCursorStyleText()` returns raw CSS text that `devhost` injects only while annotation selection mode is active; return `null` or omit it for no cursor override
 
 Register a host-page plugin directly against the runtime registry:
@@ -164,206 +211,8 @@ if (registry) {
 }
 ```
 
-The submitted draft includes the current stack name, page URL and title, comment text, and collected per-marker element metadata.
+Messages with selected page context include the page URL and title, per-marker element metadata, drawing coordinates, and captured image dimensions alongside your message text.
 
 When the host page is a React development build that exposes component source metadata, each marker captures the nearest available component source location. When the host app serves fetchable source maps, `devhost` attempts to symbolicate generated bundle locations back to original source files before storing the annotation.
 
-## Annotation actions
-
-To select one built-in agent, set `agent` in the root manifest:
-
-```toml
-[annotation]
-agent = "codex"
-```
-
-Accepted values are `"pi"`, `"claude-code"`, `"opencode"`, and `"codex"`. This creates one default
-agent action with the internal ID `agent` and the adapter's display name. Optional `tempDir`
-works with this shorthand. Combining `agent` with `actions` or `defaultAction` is rejected.
-Saving annotation changes applies them without restarting devhost: the toolbar offers the new
-actions, and agent sessions already running keep the action they started with.
-
-For multiple actions, custom commands, or extra agent flags, use a root-level `[annotation]`
-table and one or more `[[annotation.actions]]` entries instead of the shorthand.
-If you omit `[annotation]`, `devhost` does not expose annotation submission actions in the injected UI.
-Each action declares a stable `id` and a `kind`. The `label` names the action in the composer. Actions that use a built-in agent adapter default it to the adapter's name (`Pi`, `Claude Code`, `OpenCode`, or `Codex`); set `label` on them to tell apart actions that share an adapter. Custom agent actions and command actions require `label`. Set `defaultAction` when the UI should preselect an action other than the first one.
-
-Agent actions use the existing built-in integrations:
-
-```toml
-[annotation]
-defaultAction = "fix"
-
-[[annotation.actions]]
-id = "fix"
-kind = "agent"
-
-[annotation.actions.agent]
-adapter = "claude-code"
-args = ["--thinking", "high"]
-```
-
-Supported agent adapters are `"pi"`, `"claude-code"`, `"opencode"`, and `"codex"`. Built-in adapters accept an optional `args` string array to pass harness flags (such as a model, thinking level, or permission mode) while keeping status reporting, hooks, and prompt file arguments intact.
-For a custom agent action, omit `adapter`, set `command` inside `[annotation.actions.agent]`, and give the action a `label` (`args` is valid only with `adapter`).
-
-For Codex, install and sign in to the [Codex CLI](https://learn.chatgpt.com/docs/cli), then use:
-
-```toml
-[[annotation.actions]]
-id = "fix-codex"
-kind = "agent"
-
-[annotation.actions.agent]
-adapter = "codex"
-args = ["-c", "model_reasoning_effort=high"]
-```
-
-The Codex adapter requires a CLI version supporting `--no-daemon` and lifecycle hooks and is validated
-against 0.159.2. It launches an independent interactive session, keeps your authentication, sandbox, and
-approval settings, and passes an instruction to read the annotation prompt file.
-Use `/hooks` in the embedded Codex terminal to review and trust the devhost status hooks.
-Codex skips untrusted hooks, so queues cannot drain until those hooks are trusted and enabled.
-A managed-hooks-only policy also prevents these session hooks from running. Devhost does not
-bypass hook trust or change that policy. See [Codex hooks](https://learn.chatgpt.com/docs/hooks).
-If the initial annotation finishes before hook review, send another prompt after trusting the
-hooks so Codex can report readiness and drain waiting annotations.
-
-Generic command actions run directly in a `devhost` terminal and receive the annotation through context files:
-
-```toml
-[annotation]
-
-[[annotation.actions]]
-id = "lint"
-label = "Run lint"
-kind = "command"
-
-[annotation.actions.command]
-command = ["bun", "run", "lint"]
-cwd = "."
-
-[annotation.actions.command.env]
-CI = "1"
-```
-
-`devhost` executes command actions directly, not through a shell string. Command actions receive:
-
-- `DEVHOST_ANNOTATION_ACTION_ID`
-- `DEVHOST_ANNOTATION_ACTION_KIND`
-- `DEVHOST_ANNOTATION_ACTION_LABEL`
-- `DEVHOST_ANNOTATION_FILE`
-- `DEVHOST_ANNOTATION_PROMPT_FILE`
-- `DEVHOST_ANNOTATION_TRANSPORT=files`
-- `DEVHOST_PROJECT_ROOT`
-- `DEVHOST_STACK_NAME`
-
-Use command actions for non-agent automations such as creating a Jira ticket, running a linter, or handing the annotation off to another project-local CLI. `devhost` does not ship a built-in Jira adapter; the intended integration point is a `kind = "command"` action that reads the annotation files and performs the external side effect itself.
-
-Example manifest for a Jira handoff:
-
-```toml
-[annotation]
-defaultAction = "jira"
-
-[[annotation.actions]]
-id = "jira"
-label = "Create Jira Ticket"
-kind = "command"
-
-[annotation.actions.command]
-command = ["bun", "./scripts/mock-jira-ticket.ts"]
-cwd = "."
-
-[annotation.actions.command.env]
-JIRA_BASE_URL = "https://example.atlassian.net"
-JIRA_PROJECT_KEY = "WEB"
-```
-
-Basic mock CLI for illustration:
-
-```ts
-interface AnnotationMarker {
-  element: string;
-  fullPath: string;
-  nearbyText: string;
-}
-
-interface AnnotationPayload {
-  comment: string;
-  markers: AnnotationMarker[];
-  stackName: string;
-  submittedAt: number;
-  title: string;
-  url: string;
-}
-
-const annotationFile = process.env.DEVHOST_ANNOTATION_FILE;
-
-if (!annotationFile) {
-  throw new Error("DEVHOST_ANNOTATION_FILE is required");
-}
-
-const annotation = (await Bun.file(annotationFile).json()) as AnnotationPayload;
-const projectKey = process.env.JIRA_PROJECT_KEY ?? "UNKNOWN";
-const ticketSummary = `[${projectKey}] ${annotation.title}`;
-const ticketDescription = [
-  `Comment: ${annotation.comment}`,
-  `URL: ${annotation.url}`,
-  `Stack: ${annotation.stackName}`,
-  "Markers:",
-  ...annotation.markers.map((marker, index) => {
-    return `${index + 1}. ${marker.element} — ${marker.fullPath} — ${marker.nearbyText}`;
-  }),
-].join("\n");
-
-console.log("Mock Jira CLI would create ticket", {
-  baseUrl: process.env.JIRA_BASE_URL,
-  description: ticketDescription,
-  summary: ticketSummary,
-});
-```
-
-Replace the `console.log(...)` with your real Jira client or HTTP call. The important part is that the script reads the annotation from `DEVHOST_ANNOTATION_FILE` or `DEVHOST_ANNOTATION_PROMPT_FILE` rather than expecting `devhost` to provide a first-class Jira integration.
-
-Agent actions continue to support durable annotation queues. Command actions start standalone terminal sessions and are not queued.
-Running annotation sessions keep the stack alive through its idle timeout. Use the terminal's terminate action or stop `devhost` to end a running session.
-Terminal output is retained from process startup, including output from commands that exit quickly.
-
-The injected config includes UI-safe action metadata as `annotationActions`, with each action exposing `id`, `kind`, `label`, and `queueEnabled`, plus `annotationDefaultActionId` for the selected default.
-
-`devhost` executes custom agent commands directly, not through a shell string. For configured commands, `devhost` writes the annotation JSON and rendered prompt to temp files and injects their paths as `DEVHOST_ANNOTATION_FILE` and `DEVHOST_ANNOTATION_PROMPT_FILE`. Agent commands receive every variable listed for command actions; `DEVHOST_ANNOTATION_ACTION_LABEL` carries the action's label. Built-in adapters receive the rendered prompt natively via command-line arguments. Devhost writes adapter support files, such as hook and settings files, only for the built-in adapter an action selects. A custom agent receives the annotation JSON and prompt files and nothing else.
-
-### Annotation temporary files
-
-Set `tempDir` under `[annotation]` to choose the parent directory for the annotation JSON, prompt files, and agent support files shared by all annotation actions:
-
-```toml
-[annotation]
-tempDir = ".tmp/annotations"
-```
-
-Omit `tempDir` to use the system temporary directory (`$TMPDIR` when set on Unix, otherwise `/tmp`). Relative paths resolve against the working directory where you start `devhost`, independently of the manifest location and action `cwd`; absolute paths are used directly. Set the option in the root manifest when using includes. Empty values are invalid.
-
-`devhost` creates missing parent directories and a unique private directory for each session. Session cleanup removes that session's files and directory, leaving the configured parent and other sessions intact. Directory creation failures are reported without falling back to another location. This setting does not change durable queue storage.
-
-All built-in adapters integrate terminal OSC sequences to reflect working and idle states during embedded session execution, and the durable annotation queue uses those same status events to decide when to drain queued work:
-
-- `pi` leverages an injected extension to capture `agent_start` and `agent_end` hooks
-- `claude-code` utilizes its `--settings` API mapping commands to its native session and user prompt hooks
-- `opencode` integrates via an inline `--config` plugin listening for `session.status` events
-- `codex` uses session-local config overrides for `SessionStart`, `UserPromptSubmit`, `Stop`, `Interrupt`, and `SessionEnd`; trusted hooks write status to that session's PTY instead of captured hook stdout
-
-Agent sessions render inside the devtools terminal. Theme handling depends on the adapter:
-
-- `pi` is launched with `--use-theme light` or `--use-theme dark`
-- `claude-code` receives `"theme": "light"` or `"theme": "dark"` in its generated `--settings` file, which overrides the user's own theme for that session
-- `opencode` runs as `opencode run`, which has no interactive theme to set
-- `codex` retains your configured syntax theme; set `tui.theme` through `args` if you want a session-specific override
-
-Queued work keeps the color scheme it was submitted with. Resuming a paused queue relaunches the agent with the color scheme the devtools show at that moment.
-
-Custom annotation agents must emit `OSC 1337;SetAgentStatus=working` when they begin handling an annotation and `OSC 1337;SetAgentStatus=finished` when they are ready for the next queued item. `devhost` accepts either BEL (`\x07`) or ST (`\x1b\\`) OSC terminators.
-
-For the queue internals and server-owned drain model, see [Durable annotation queues](../architecture/annotations/queue/).
-
-For the external toolbar aggregation architecture, see [External devtools launcher aggregation](../architecture/external-devtools/).
+For native session transport and replay, see [Browser chat sessions](../architecture/chat/). For the rest of the injected overlay, see [Devtools](./devtools/).

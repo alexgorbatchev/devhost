@@ -1,4 +1,3 @@
-export { AnnotationComposer } from "./components/AnnotationComposer";
 export { AnnotationMarkerList } from "./components/AnnotationMarkerList";
 export { AnnotationSelectionOverlay } from "./components/AnnotationSelectionOverlay";
 export {

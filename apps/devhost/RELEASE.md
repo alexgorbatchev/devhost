@@ -24,6 +24,8 @@ just devhost build-release-artifacts
 
 The preflight is not optional. The publish workflow repeats the same validations before attaching binaries to the GitHub Release.
 
+`just check` includes the Go logging-boundary analyzer (`go tool logpolicy ./...`) through `just devhost lint`. Resolve its findings through `internal/cliout` before release; `just devhost lint-logging` runs that check alone.
+
 ## Local standalone executable
 
 To build a native executable for the current platform:

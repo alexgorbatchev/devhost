@@ -15,7 +15,7 @@ func TestControlServerAssetCompression(t *testing.T) {
 	s := startAssetTestServer(t)
 	client := &http.Client{Transport: &http.Transport{DisableCompression: true}}
 	t.Cleanup(client.CloseIdleConnections)
-	for _, path := range []string{injectedScriptPath, xtermStylesheetPath, reduxRegistrationScriptPath, reduxMonitorScriptPath, reduxMonitorStylesheetPath} {
+	for _, path := range []string{injectedScriptPath, reduxRegistrationScriptPath, reduxMonitorScriptPath, reduxMonitorStylesheetPath} {
 		plain := getControlServerText(t, s, path)
 		for _, tc := range []struct {
 			name, method, accept, encoding string
@@ -95,8 +95,8 @@ func TestControlServerServesSplitAssets(t *testing.T) {
 	if strings.Contains(script, "Invalid hook call. Hooks can only be called") {
 		t.Fatal("injected script contains React development diagnostics")
 	}
-	if strings.Contains(script, "xterm-viewport") {
-		t.Fatal("xterm is eagerly included in the entry script")
+	if strings.Contains(script, "Send a message...") {
+		t.Fatal("native agent chat is eagerly included in the entry script")
 	}
 	imports := regexp.MustCompile(`import\("([^"]+\.js)"\)`).FindAllStringSubmatch(script, -1)
 	if len(imports) == 0 {

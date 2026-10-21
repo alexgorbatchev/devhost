@@ -1,6 +1,7 @@
 package devtools
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -22,7 +23,11 @@ func writeFileDurably(filePath string, payload []byte, mode os.FileMode) (return
 	if err := os.MkdirAll(directoryPath, 0o700); err != nil {
 		return err
 	}
-	temporaryPath := filePath + "." + mustCreateID() + ".tmp"
+	id, err := createRandomID()
+	if err != nil {
+		return fmt.Errorf("name the temporary file for %s: %w", filePath, err)
+	}
+	temporaryPath := filePath + "." + id + ".tmp"
 	file, err := durableOpenFile(temporaryPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode)
 	if err != nil {
 		return err

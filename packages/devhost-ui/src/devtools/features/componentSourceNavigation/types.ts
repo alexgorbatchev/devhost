@@ -5,32 +5,21 @@ export interface IComponentSourceProperty {
   title?: string;
 }
 
-interface IComponentSourceMenuItemBase {
+export interface IComponentSourceMenuItem {
   displayName: string;
   key: string;
   props: IComponentSourceProperty[];
   source: ISourceLocation;
   sourceLabel: string;
-}
-
-export interface IExternalEditorComponentSourceMenuItem extends IComponentSourceMenuItemBase {
   action: {
     kind: "external-editor";
     sourceUrl: string;
   };
 }
 
-export interface INeovimComponentSourceMenuItem extends IComponentSourceMenuItemBase {
-  action: {
-    kind: "neovim";
-  };
-}
-
-export type ComponentSourceMenuItem = IExternalEditorComponentSourceMenuItem | INeovimComponentSourceMenuItem;
-
 export interface IComponentSourceMenuState {
   errorMessage?: string;
-  items: ComponentSourceMenuItem[];
+  items: IComponentSourceMenuItem[];
   title: string;
   x: number;
   y: number;

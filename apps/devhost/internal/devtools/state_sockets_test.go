@@ -2,13 +2,11 @@ package devtools
 
 import (
 	"encoding/json"
-	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/gorilla/websocket"
 )
 
@@ -189,111 +187,3 @@ func TestControlServerLogsClientReceivesSnapshotBeforeLiveEntries(t *testing.T) 
 
 // The browser replaces its queues with every snapshot it receives, so the snapshot a client is sent on attach must
 // not arrive after a newer one.
-func TestControlServerAnnotationQueueClientReceivesSnapshotsInOrder(t *testing.T) {
-	t.Parallel()
-
-	starter := newTestTerminalStarter()
-	controlServer, err := StartControlServer(StartControlServerOptions{
-		AnnotationActions: []manifest.ValidatedAnnotationAction{{
-			Agent: manifest.ValidatedAgent{Kind: "pi"},
-			Label: "Pi",
-			ID:    defaultAnnotationActionID,
-			Kind:  "agent",
-		}},
-		AnnotationDefaultActionID: defaultAnnotationActionID,
-		ComponentEditor:           "vscode",
-		FeatureToggles: FeatureToggles{
-			AnnotationEnabled:      true,
-			AnnotationQueueEnabled: true,
-			StatusEnabled:          true,
-			TerminalEnabled:        true,
-		},
-		GetHealthResponse: func() (HealthResponse, error) {
-			return HealthResponse{Services: []ServiceHealth{}}, nil
-		},
-		ManifestPath:         "/tmp/project/devhost.toml",
-		Position:             "bottom-right",
-		ProjectRootPath:      "/tmp/project",
-		StackName:            "hello-stack",
-		StartTerminalSession: starter.start,
-		StateDirectoryPath:   t.TempDir(),
-	})
-	if err != nil {
-		t.Fatalf("StartControlServer(...) error = %v", err)
-	}
-	t.Cleanup(func() {
-		_ = controlServer.Stop()
-	})
-
-	sessionID := startTerminalTestSession(t, controlServer, `{"annotation":{"comment":"First annotation","markers":[],"stackName":"hello-stack","submittedAt":1,"title":"Example","url":"https://app.localhost/dashboard"},"colorScheme":"light","kind":"agent"}`)
-	starter.sessions[0].emit("\x1b]1337;SetAgentStatus=working\x07")
-	waitForCondition(t, 5*time.Second, func() bool {
-		queues := controlServer.annotationQueueStore.getSnapshot()
-		return len(queues) == 1 && queues[0].Status == annotationQueueStatusWorking
-	})
-	startTerminalTestSession(t, controlServer, `{"annotation":{"comment":"Second annotation","markers":[],"stackName":"hello-stack","submittedAt":2,"title":"Example","url":"https://app.localhost/settings"},"kind":"agent","targetSessionId":"`+sessionID+`"}`)
-	queues := controlServer.annotationQueueStore.getSnapshot()
-	if len(queues) != 1 || len(queues[0].Entries) != 2 {
-		t.Fatalf("queues = %#v, want one queue with an active and a queued entry", queues)
-	}
-	queuedEntryID := queues[0].Entries[1].EntryID
-
-	// Every change carries the next revision in the queued entry's comment. Odd revisions are large, so a snapshot
-	// taken of one is slow to encode, which is when the small revision that follows used to overtake it.
-	padding := strings.Repeat("x", 8<<20)
-	if err := controlServer.annotationQueueStore.updateEntryComment(queuedEntryID, "0"); err != nil {
-		t.Fatalf("updateEntryComment(0) error = %v", err)
-	}
-	stopChanges := make(chan struct{})
-	changesStopped := make(chan struct{})
-	go func() {
-		defer close(changesStopped)
-		for revision := 1; ; revision++ {
-			select {
-			case <-stopChanges:
-				return
-			default:
-			}
-			comment := strconv.Itoa(revision)
-			if revision%2 == 1 {
-				comment += " " + padding
-			}
-			if err := controlServer.annotationQueueStore.updateEntryComment(queuedEntryID, comment); err != nil {
-				t.Errorf("updateEntryComment(%d) error = %v", revision, err)
-				return
-			}
-		}
-	}()
-	defer func() {
-		close(stopChanges)
-		<-changesStopped
-	}()
-
-	for attempt := range 30 {
-		queueSocket := mustDialWebsocket(t, annotationQueueWebsocketURL(controlServer.Port()))
-		first := readAnnotationQueueRevision(t, queueSocket)
-		second := readAnnotationQueueRevision(t, queueSocket)
-		queueSocket.Close()
-		if second < first {
-			t.Fatalf("attach %d: received revision %d after revision %d", attempt, second, first)
-		}
-	}
-}
-
-func readAnnotationQueueRevision(t *testing.T, queueSocket *websocket.Conn) int {
-	t.Helper()
-
-	var message annotationQueuesSnapshotMessage
-	if err := json.Unmarshal([]byte(readWebsocketText(t, queueSocket)), &message); err != nil {
-		t.Fatalf("Unmarshal(queue snapshot) error = %v", err)
-	}
-	if len(message.Queues) != 1 || len(message.Queues[0].Entries) != 2 {
-		t.Fatalf("queue snapshot has %d queues, want one queue with two entries", len(message.Queues))
-	}
-	revisionText, _, _ := strings.Cut(message.Queues[0].Entries[1].Annotation.Comment, " ")
-	revision, err := strconv.Atoi(revisionText)
-	if err != nil {
-		t.Fatalf("queued entry comment starts with %q, want a revision number", revisionText)
-	}
-	return revision
-}

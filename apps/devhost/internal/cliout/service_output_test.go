@@ -42,6 +42,32 @@ func TestServiceOutput(t *testing.T) {
 	}
 }
 
+func TestServiceOutputPrefix(t *testing.T) {
+	for _, tc := range []struct {
+		name, agent, want string
+		layout            bool
+	}{
+		{"human aligned", "0", "caddy    | ", true},
+		{"agent", "1", "caddy: ", true},
+		{"writer without layout", "0", "[caddy] ", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("AGENT", tc.agent)
+			var output bytes.Buffer
+			var writer io.Writer = &output
+			if tc.layout {
+				writer, _ = ServiceOutputWriters(&output, io.Discard, []string{"api", "frontend"})
+			}
+			if got := Prefix(writer, "caddy"); got != tc.want {
+				t.Fatalf("Prefix = %q, want %q", got, tc.want)
+			}
+			if output.Len() != 0 {
+				t.Fatalf("Prefix wrote %q", output.String())
+			}
+		})
+	}
+}
+
 func TestServiceOutputSharedStreamsAndReload(t *testing.T) {
 	t.Setenv("AGENT", "0")
 	t.Setenv("COLUMNS", "100")

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 )
 
 // stopGracePeriod is how long a stack is given to stop after SIGTERM before it
@@ -47,16 +48,16 @@ func stopStack(manifestPath string, environment map[string]string, gracePeriod t
 	}
 
 	if len(activePIDs) == 0 {
-		_, _ = fmt.Fprintf(stdout, "No active devhost stack process found for manifest: %s\n", absoluteTargetManifestPath)
+		cliout.Log(stdout, "devhost", fmt.Sprintf("No active devhost stack process found for manifest: %s", absoluteTargetManifestPath))
 		if len(owners) > 0 {
 			// The stack the caller means may run from another manifest, such as the one
 			// that holds a hostname they need.
-			_, _ = fmt.Fprintln(stdout, "Other stacks are running. Run \"devhost stack list\" to print their PIDs and manifests.")
+			cliout.Log(stdout, "devhost", "Other stacks are running. Run \"devhost stack list\" to print their PIDs and manifests.")
 		}
 		return nil
 	}
 
-	_, _ = fmt.Fprintf(stdout, "Stopping %d active stack process(es) associated with manifest...\n", len(activePIDs))
+	cliout.Log(stdout, "devhost", fmt.Sprintf("Stopping %d active stack process(es) associated with manifest...", len(activePIDs)))
 
 	for _, pid := range activePIDs {
 		if err := stopProcess(pid, gracePeriod, stdout, stderr); err != nil {
@@ -88,10 +89,10 @@ func stopProcess(pid int, gracePeriod time.Duration, stdout io.Writer, stderr io
 		return fmt.Errorf("find process %d: %w", pid, err)
 	}
 
-	_, _ = fmt.Fprintf(stdout, "Sending SIGTERM to process %d...\n", pid)
+	cliout.Log(stdout, "devhost", fmt.Sprintf("Sending SIGTERM to process %d...", pid))
 	if err := proc.Signal(syscall.SIGTERM); err != nil {
 		if err == os.ErrProcessDone || isNoSuchProcessError(err) {
-			_, _ = fmt.Fprintf(stdout, "Process %d already stopped.\n", pid)
+			cliout.Log(stdout, "devhost", fmt.Sprintf("Process %d already stopped.", pid))
 			return nil
 		}
 		return fmt.Errorf("signal process %d with SIGTERM: %w", pid, err)
@@ -102,16 +103,16 @@ func stopProcess(pid int, gracePeriod time.Duration, stdout io.Writer, stderr io
 
 	for time.Now().Before(deadline) {
 		if !processExists(pid) {
-			_, _ = fmt.Fprintf(stdout, "Process %d stopped cleanly.\n", pid)
+			cliout.Log(stdout, "devhost", fmt.Sprintf("Process %d stopped cleanly.", pid))
 			return nil
 		}
 		time.Sleep(pollInterval)
 	}
 
-	_, _ = fmt.Fprintf(stderr, "Process %d did not stop in time. Sending SIGKILL...\n", pid)
+	cliout.Log(stderr, "devhost", fmt.Sprintf("Process %d did not stop in time. Sending SIGKILL...", pid))
 	if err := proc.Kill(); err != nil {
 		if err == os.ErrProcessDone || isNoSuchProcessError(err) {
-			_, _ = fmt.Fprintf(stdout, "Process %d already stopped.\n", pid)
+			cliout.Log(stdout, "devhost", fmt.Sprintf("Process %d already stopped.", pid))
 			return nil
 		}
 		return fmt.Errorf("kill process %d: %w", pid, err)
@@ -120,7 +121,7 @@ func stopProcess(pid int, gracePeriod time.Duration, stdout io.Writer, stderr io
 	// Short wait to verify kill succeeded
 	for i := 0; i < 10; i++ {
 		if !processExists(pid) {
-			_, _ = fmt.Fprintf(stdout, "Process %d terminated.\n", pid)
+			cliout.Log(stdout, "devhost", fmt.Sprintf("Process %d terminated.", pid))
 			return nil
 		}
 		time.Sleep(100 * time.Millisecond)

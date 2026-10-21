@@ -454,6 +454,15 @@
     <details id="proto-controls" open>
       <summary>Prototype controls</summary>
       <p>
+        Chat design: the page-top annotation toolbar uses 40px controls for Select Elements, Arrow, Line, Box, and Undo
+        Drawing. Drawings move by dragging their strokes; context rows have individual remove actions. Selection
+        instructions follow the pointer. Chat Settings opens the harness, model, and conversation dialog. Share Tab sits
+        beside Send Message. Sent context starts collapsed and clears from the page after submission. User bubbles use a
+        foreground-tinted secondary fill, foreground text, and an input-color border. The interactive reference for
+        these surfaces is the PageChat and ChatUserText Storybook stories; the annotation-draft and queue simulation
+        below depicts the retired workflow.
+      </p>
+      <p>
         Hold <b>Alt</b> and click page elements to annotate. <b>Alt + right-click</b> opens component source.
         <b>⌃⌥R</b> restarts changed services.
       </p>
@@ -900,8 +909,8 @@
           align-items: center;
           gap: var(--dh-space-3);
           padding: var(--dh-space-2) var(--dh-space-4);
-          background: var(--dh-danger);
-          color: var(--dh-on-danger);
+          background: var(--dh-danger-strong);
+          color: var(--dh-on-danger-strong);
           font-size: var(--dh-text-md);
           font-weight: 600;
         }
@@ -1052,6 +1061,9 @@
           font-weight: 600;
         }
         .seg.alert > .ic {
+          color: var(--dh-danger);
+        }
+        .ic.danger {
           color: var(--dh-danger);
         }
         .seg.tight {
@@ -2592,17 +2604,35 @@
               <span>${upCount}/${services.length}</span>
               ${dirtyCount > 0 && !alert ? `<span class="tag warn">${dirtyCount} changed</span>` : ""}
             </button>`);
+          if (dirtyCount > 0 && !alert) {
+            const disabled =
+              !services.some((service) => service.dirty && service.managed) ||
+              state.isStackRestarting ||
+              services.some((service) => service.restarting) ||
+              state.repositories.some((repository) => repository.phase);
+            segments.push(
+              `<button class="btn icon ghost" type="button" data-action="restart-changed" aria-label="Restart changed services" title="Restart changed services" ${disabled ? "disabled" : ""}>${icon("restart")}</button>`,
+            );
+          }
         }
 
         if (state.worktreesEnabled && state.repositories.length > 0) {
+          const hasWorktreeError = state.repositories.some(
+            (repository) =>
+              repository.error ||
+              repository.blockedReason ||
+              !repository.worktrees.some((entry) => entry.path === repository.selectedPath && entry.available),
+          );
           const currentCheckouts = state.repositories
-            .map(
-              (repository) =>
-                `${state.repositories.length > 1 ? repository.name + ": " : ""}${worktreeLabel(repository, repository.selectedPath)}`,
-            )
+            .flatMap((repository) => {
+              const checkout = repository.worktrees.find((entry) => entry.path === repository.selectedPath);
+              return checkout
+                ? [`${state.repositories.length > 1 ? repository.name + ": " : ""}${checkout.label}`]
+                : [];
+            })
             .join(", ");
           segments.push(
-            `<button class="seg tight" type="button" data-action="panel" data-panel="worktrees" title="${esc(worktreeSummary || `Worktrees: ${currentCheckouts}`)}" aria-label="Worktrees" aria-expanded="${panelOpen("worktrees")}">${icon("branch")}<span class="checkout-name">${esc(currentCheckouts)}</span></button>`,
+            `<button class="seg tight" type="button" data-action="panel" data-panel="worktrees" title="${esc(worktreeSummary || `Worktrees: ${currentCheckouts}`)}" aria-label="Worktrees${hasWorktreeError ? ", attention required" : ""}" aria-expanded="${panelOpen("worktrees")}">${icon("branch", hasWorktreeError ? "danger" : "")}<span class="checkout-name">${esc(currentCheckouts)}</span></button>`,
           );
         }
 

@@ -1,7 +1,9 @@
 package services
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
@@ -9,6 +11,11 @@ import (
 
 func (g *worktreeGroup) configuration(root string) (manifest.Manifest, error) {
 	path := filepath.Join(root, g.manifestOffset)
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		if owningPath, known := g.configurationPaths[root]; known {
+			path = owningPath
+		}
+	}
 	raw, err := manifest.ReadManifest(path)
 	if err != nil {
 		return manifest.Manifest{}, fmt.Errorf("load checkout configuration %s: %w", path, err)

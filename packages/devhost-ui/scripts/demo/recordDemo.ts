@@ -37,14 +37,20 @@ export async function recordDemo(signal: AbortSignal, selectedScene: string, gui
   const dependencies = ["bun", "just", "git", "caddy", "ffmpeg", "ffprobe", "vhs", "ttyd", "bash", "ln"];
   // HyperFrames runs on Node.js; Bun starts it from the promo project's pinned script.
   if (isPromo || guide) dependencies.push("node");
-  if (isPromo || selectedScene === "annotations") dependencies.push("pi");
-  if (selectedScene === "react-highlight") dependencies.push("nvim");
+  if (isPromo || selectedScene === "annotations") {
+    dependencies.push("codex");
+    assert.equal(
+      process.env.DEVHOST_DEMO_INTERACTIVE,
+      "1",
+      "Annotation recording requires DEVHOST_DEMO_INTERACTIVE=1 and an operator to choose the current tab and review native permission requests",
+    );
+  }
   for (const executable of dependencies) {
     if (!Bun.which(executable)) throw new Error(`Missing recording dependency: ${executable}`);
   }
   await assertDemoFfmpeg(runCommand, signal);
   if (isPromo) {
-    // An unusable renderer stops the run here, before the capture and its Pi request.
+    // An unusable renderer stops the run before capture and its native agent request.
     await preparePromoRenderer(runCommand, join(import.meta.dir, "promo"), join(repositoryPath, ".tmp/demos"), signal);
   }
   const versions = await Promise.all([

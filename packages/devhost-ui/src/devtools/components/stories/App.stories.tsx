@@ -84,7 +84,7 @@ export const SelectionHighlightsBelowDevtoolsSurfaces: Story = {
   },
 };
 
-/** Bottom to top: selection highlights, annotation drafts, the toolbar and minimap, terminal windows. */
+/** Bottom to top: selection highlights, the toolbar and minimap, and the browser chat panel. */
 export const SurfacesStackInOrder: Story = {
   render: () => <SelectionLayeringScene />,
   play: async ({ canvasElement }): Promise<void> => {
@@ -102,7 +102,7 @@ export const DevtoolsStayClickableDuringSelection: Story = {
 
 /**
  * The restart shortcut restarts the primary service, and leaves keystrokes typed into a field, editable content, or
- * the terminal alone.
+ * the chat composer alone.
  */
 export const RestartShortcut: Story = {
   render: () => <RestartShortcutScene />,
@@ -128,24 +128,18 @@ export const App: Story = {
 
     await waitFor(() => {
       expect(within(toolbar).getByRole("button", { name: "Services: 2 of 3 up" })).toBeVisible();
-      expect(within(toolbar).getByRole("button", { name: /^Annotation queues: / })).toBeVisible();
       expect(within(toolbar).getByRole("meter", { name: "CPU usage" })).toHaveValue(18);
       expect(within(toolbar).getByRole("meter", { name: "Disk usage" })).toHaveValue(41);
-      expect(within(toolbar).getByRole("button", { name: /^Pi terminal, / })).toBeVisible();
-      expect(within(toolbar).getByRole("button", { name: /^<Header> terminal, / })).toBeVisible();
+      expect(within(toolbar).getByRole("button", { name: "Chat" })).toBeVisible();
       expect(shadowRoot.querySelector("[data-testid='LogMinimap--canvas']")).not.toBeNull();
-      expect(shadowRoot.querySelector("[data-testid='AnnotationComposer']")).not.toBeNull();
+      expect(shadowRoot.querySelector("[data-testid='AnnotationSelectionOverlay']")).not.toBeNull();
     });
 
-    // Restored sessions stay minimized: their windows are mounted but not shown.
-    await expect(shadowCanvas.queryByRole("dialog")).toBeNull();
-
-    await userEvent.click(within(toolbar).getByRole("button", { name: /^Pi terminal, / }));
-    await waitFor(async () => {
-      await expect(await shadowCanvas.findByRole("dialog", { name: "Pi terminal" })).toBeVisible();
-    });
-    await userEvent.click(shadowCanvas.getByRole("button", { name: "Minimize" }));
-    await waitFor(() => expect(shadowCanvas.queryByRole("dialog", { name: "Pi terminal" })).toBeNull());
+    await expect(shadowCanvas.queryByRole("complementary", { name: "Agent chat" })).toBeNull();
+    await userEvent.click(within(toolbar).getByRole("button", { name: "Chat" }));
+    await expect(await shadowCanvas.findByRole("complementary", { name: "Agent chat" })).toBeVisible();
+    await userEvent.click(shadowCanvas.getByRole("button", { name: "Collapse Chat" }));
+    await expect(shadowCanvas.queryByRole("complementary", { name: "Agent chat" })).toBeNull();
   },
 };
 
@@ -215,8 +209,11 @@ export const WorktreeRecovery: Story = {
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
     const services = await canvas.findByRole("button", {
-      name: "Worktrees, non-default branches: shop: feature/cart",
+      name: "Worktrees, non-default branches: shop: feature/cart, attention required",
     });
+    await expect(getComputedStyle(within(services).getByTestId("Icon")).color).not.toBe(
+      getComputedStyle(services).color,
+    );
     await expect(canvas.getByRole("button", { name: "Services: 0 of 1 up" })).toBeVisible();
     await expect(canvas.queryByRole("dialog", { name: "Service exited" })).toBeNull();
     await userEvent.click(services);
@@ -237,6 +234,8 @@ export const WorktreeRecovery: Story = {
     await expect(canvas.getByRole("button", { name: "Worktrees" })).toBeVisible();
     await expect(canvas.queryByRole("dialog", { name: "Service exited" })).toBeNull();
     await expect(await canvas.findByRole("button", { name: "Worktrees" })).toHaveTextContent("main");
+    const recovered = canvas.getByRole("button", { name: "Worktrees" });
+    await expect(getComputedStyle(within(recovered).getByTestId("Icon")).color).toBe(getComputedStyle(recovered).color);
   },
 };
 
@@ -311,7 +310,9 @@ export const InjectedUnmount: Story = {
 
     await waitFor(() => {
       expect(
-        document.getElementById(DEVTOOLS_HOST_ID)?.shadowRoot?.querySelector("[data-testid='AnnotationComposer']"),
+        document
+          .getElementById(DEVTOOLS_HOST_ID)
+          ?.shadowRoot?.querySelector("[data-testid='AnnotationSelectionOverlay']"),
       ).not.toBeNull();
     });
     // Selection mode replaces the page's cursors: plain text shows the default arrow instead of its own cursor.
@@ -353,27 +354,25 @@ export const DesignOverview: Story = {
     const user = userEvent.setup();
 
     await within(toolbar).findByRole("button", { name: "Services: 6 of 6 up" });
-    await within(toolbar).findByRole("button", { name: /^Pi terminal, / });
-    await within(toolbar).findByRole("button", { name: /^<WelcomeSection> terminal, / });
+    await within(toolbar).findByRole("button", { name: "Chat" });
 
     await user.keyboard("{Alt>}");
-    await shadowCanvas.findByRole("status", { name: "Annotation selection" });
     await user.click(canvas.getByRole("button", { name: "Get Started" }));
     await user.click(canvas.getByRole("heading", { name: "Service Health status" }));
     await user.keyboard("{/Alt}");
 
-    const draft = await shadowCanvas.findByRole("dialog", { name: "Annotation draft" });
-    const comment = within(draft).getByRole("textbox", { name: "Annotation comment" });
+    const draft = await shadowCanvas.findByRole("complementary", { name: "Agent chat" });
+    const comment = within(draft).getByRole("textbox");
 
     // The draft fades in, so its contents become visible a moment after it mounts.
     await waitFor(() => {
-      expect(draft).toHaveTextContent("2 markers");
-      expect(within(draft).getByText("WelcomeSection > button")).toBeVisible();
-      expect(within(draft).getByText("ServiceHealthPanel")).toBeVisible();
+      expect(within(draft).getByRole("region", { name: "Page context" })).toBeVisible();
+      expect(within(draft).getByText("#1 WelcomeSection > button")).toBeVisible();
+      expect(within(draft).getByText("#2 ServiceHealthPanel")).toBeVisible();
     });
 
     // user-event cannot reach React's change tracking inside a shadow root, so only the typed text is checked here;
-    // the AnnotationComposer stories cover drafting and submitting.
+    // native chat runtime tests cover drafting and sending.
     await user.type(comment, designOverviewComment);
     await expect(comment).toHaveValue(designOverviewComment);
   },

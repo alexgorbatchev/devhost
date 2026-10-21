@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 )
 
 func PrintManagedCaddyRootCertificate(stdout io.Writer, paths Paths) (int, error) {
@@ -17,7 +19,7 @@ func PrintManagedCaddyRootCertificate(stdout io.Writer, paths Paths) (int, error
 		return 0, err
 	}
 
-	if _, err := stdout.Write(certificate); err != nil {
+	if err := cliout.WriteData(stdout, certificate); err != nil {
 		return 0, fmt.Errorf("write managed caddy root certificate: %w", err)
 	}
 

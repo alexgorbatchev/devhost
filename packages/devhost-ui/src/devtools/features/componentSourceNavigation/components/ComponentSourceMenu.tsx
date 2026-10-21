@@ -6,12 +6,12 @@ import { Card, CardHeader, CardTitle } from "../../../../components/ui/Card";
 
 import { InlineNotice } from "../../../shared";
 import { FloatingSurface } from "../../../shared/components/FloatingSurface";
-import type { ComponentSourceMenuItem } from "../types";
+import type { IComponentSourceMenuItem } from "../types";
 
 interface IComponentSourceMenuProps {
   errorMessage?: string;
   isOpen: boolean;
-  items: ComponentSourceMenuItem[];
+  items: IComponentSourceMenuItem[];
   onItemClick: (index: number) => void;
   position: {
     x: number;
@@ -78,7 +78,7 @@ export function ComponentSourceMenu({
         </CardHeader>
         {errorMessage !== undefined ? <InlineNotice tone="danger">{errorMessage}</InlineNotice> : null}
         <div className="max-h-[min(60vh,480px)] overflow-auto">
-          {items.map((item: ComponentSourceMenuItem, index: number) => {
+          {items.map((item: IComponentSourceMenuItem, index: number) => {
             return (
               <button
                 key={item.key}

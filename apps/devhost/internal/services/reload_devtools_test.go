@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-const allDevtoolsOff = "\n[devtools.editor]\nenabled = false\n[devtools.externalToolbars]\nenabled = false\n[devtools.minimap]\nenabled = false\n[devtools.status]\nenabled = false\n"
+const allDevtoolsOff = "\n[devtools.chat]\nenabled = false\n[devtools.annotations]\nenabled = false\n[devtools.editor]\nenabled = false\n[devtools.externalToolbars]\nenabled = false\n[devtools.minimap]\nenabled = false\n[devtools.status]\nenabled = false\n"
 
 func TestManifestReloadTurnsDevtoolsInjectionOffAndOn(t *testing.T) {
 	body := reloadServiceBody("web", "page", "reload.localhost")

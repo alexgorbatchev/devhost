@@ -153,6 +153,27 @@ export const ChangedService: Story = {
     const trigger = await shadowCanvas.findByRole("button", { name: "Services: 2 of 2 up, 1 changed" });
 
     await expect(trigger).toHaveTextContent("1 changed");
+    const reload = await shadowCanvas.findByRole("button", { name: "Restart changed services", exact: true });
+    const triggerBounds = trigger.getBoundingClientRect();
+    const reloadBounds = reload.getBoundingClientRect();
+    await expect(reloadBounds.left).toBeCloseTo(triggerBounds.right, 0);
+    await expect(reloadBounds.top + reloadBounds.height / 2).toBeCloseTo(
+      triggerBounds.top + triggerBounds.height / 2,
+      0,
+    );
+    const request = fn(async () => new Response(null, { status: 204 }));
+    const originalFetch = globalThis.fetch;
+    Reflect.set(globalThis, "fetch", request);
+    try {
+      await userEvent.click(reload);
+      await expect(request).toHaveBeenCalledWith(
+        RESTART_SERVICE_PATH,
+        expect.objectContaining({ body: JSON.stringify({ serviceNames: ["api"] }), method: "POST" }),
+      );
+      await expect(trigger).toHaveAttribute("aria-expanded", "false");
+    } finally {
+      Reflect.set(globalThis, "fetch", originalFetch);
+    }
     await userEvent.click(trigger);
     await waitFor(() => expect(shadowCanvas.getByRole("region", { name: "Services" })).toBeVisible());
     await expect(shadowCanvas.getByRole("button", { name: "Restart api" })).toBeEnabled();
@@ -171,6 +192,58 @@ export const RestartingService: Story = {
     await waitFor(() => expect(shadowCanvas.getByRole("region", { name: "Services" })).toBeVisible());
     await expect(shadowCanvas.getByRole("button", { name: "Restart api" })).toBeDisabled();
     await expect(shadowCanvas.getByRole("button", { name: "Restart Stack" })).toBeDisabled();
+  },
+};
+
+export const ToolbarRestartFailure: Story = {
+  args: ChangedService.args,
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const pending = Promise.withResolvers<Response>();
+    const request = fn(() => pending.promise);
+    const originalFetch = globalThis.fetch;
+    Reflect.set(globalThis, "fetch", request);
+    try {
+      const reload = await canvas.findByRole("button", { name: "Restart changed services", exact: true });
+      await userEvent.click(reload);
+      await expect(reload).toBeDisabled();
+      await userEvent.click(canvas.getByRole("button", { name: "Services: 2 of 2 up, 1 changed" }));
+      await waitFor(() => expect(canvas.getByRole("region", { name: "Services" })).toBeVisible());
+      await expect(await canvas.findByRole("button", { name: "Restart Stack" })).toBeDisabled();
+      await expect(canvas.getByRole("button", { name: "Restart api", exact: true })).toBeDisabled();
+      pending.resolve(new Response("busy", { status: 409 }));
+      await waitFor(() => expect(canvas.getByText("Failed to restart api: busy")).toBeVisible());
+      await userEvent.click(canvas.getByRole("button", { name: "Dismiss", exact: true }));
+      await expect(await canvas.findByRole("button", { name: "Restart changed services", exact: true })).toBeEnabled();
+    } finally {
+      pending.resolve(new Response(null, { status: 204 }));
+      Reflect.set(globalThis, "fetch", originalFetch);
+    }
+  },
+};
+
+export const ToolbarRestartBlocked: Story = {
+  args: {
+    errorMessage: null,
+    services: [
+      { managed: true, name: "api", status: true, dirty: true },
+      { managed: true, name: "web", status: true, restarting: true },
+    ],
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    await expect(await canvas.findByRole("button", { name: "Restart changed services", exact: true })).toBeDisabled();
+  },
+};
+
+export const ChangedExternalService: Story = {
+  args: {
+    errorMessage: null,
+    services: [{ managed: false, name: "external", status: true, dirty: true }],
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    await expect(await canvas.findByRole("button", { name: "Restart changed services", exact: true })).toBeDisabled();
   },
 };
 

@@ -6,7 +6,7 @@
     "packages/playground/frontend"
   ],
   "type": "module",
-  "packageManager": "bun@1.4.0",
+  "packageManager": "bun@1.4.2",
   "scripts": {
     "postinstall": "just ui install-browser",
     "prepare": "husky"
@@ -24,6 +24,7 @@
     "ts-unused": "^3.2.0"
   },
   "patchedDependencies": {
-    "jotai-devtools@0.14.0": "patches/jotai-devtools@0.14.0.patch"
+    "jotai-devtools@0.14.0": "patches/jotai-devtools@0.14.0.patch",
+    "@alexgorbatchev/shadcn@0.0.16": "patches/@alexgorbatchev%2Fshadcn@0.0.16.patch"
   }
 }

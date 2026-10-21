@@ -1087,8 +1087,8 @@
         align-items: center;
         gap: var(--dh-space-3);
         padding: var(--dh-space-2) var(--dh-space-4);
-        background: var(--dh-danger);
-        color: var(--dh-on-danger);
+        background: var(--dh-danger-strong);
+        color: var(--dh-on-danger-strong);
         font-size: var(--dh-text-md);
         font-weight: 600;
       }
@@ -3069,9 +3069,11 @@
           </div>
         </div>
         <p>
-          Errors get louder with scope. A panel-wide failure is a <code>.notice</code> (filled <code>danger</code>). A
-          per-item cause is a <code>.reason</code> (<code>danger</code> text on <code>danger-soft</code>). An inline
-          destructive confirmation is a <code>.confirm</code> strip. An error on a toolbar segment uses a
+          Errors get louder with scope. A panel-wide failure is a <code>.notice</code>: filled
+          <code>danger-strong</code> with <code>on-danger-strong</code> text, because a message must call for attention,
+          while a one- or two-word <code>danger</code> tag or button label stays quiet. A per-item cause is a
+          <code>.reason</code> (<code>danger</code> text on <code>danger-soft</code>). An inline destructive
+          confirmation is a <code>.confirm</code> strip. An error on a toolbar segment uses a
           <code>danger</code> warning icon and semibold text (<code>.seg.alert</code>). The segment keeps its neutral
           surface and normal foreground through hover and open states so the count and service status dots stay
           readable.
@@ -3807,6 +3809,8 @@
           ["danger", "Down service, errors, paused queues, destructive actions, stderr", "on-danger"],
           ["on-danger", "Text and icons on danger"],
           ["danger-soft", "Down-dot ring, reason and confirm strips, stderr lines, danger asides"],
+          ["danger-strong", "Error notices: a message that must call for attention", "on-danger-strong"],
+          ["on-danger-strong", "Text and icons on danger-strong"],
         ],
         markers: [
           ["mark", "Annotation ring, marker badges and counters", "mark-ink"],

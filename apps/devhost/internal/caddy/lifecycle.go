@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 )
 
 type LifecycleAction string
@@ -19,13 +21,33 @@ const (
 const foreignManagedCaddyError = "A Caddy admin API is already listening on the devhost-managed address, but it was not started by devhost."
 
 type ManagedCaddyLifecycleDependencies struct {
+	CanPromptForPassword     func() bool
 	EnsureManagedCaddyConfig func() error
 	HasManagedPidFile        func() bool
-	HasManagedRootCert       func() bool
 	IsManagedCaddyAvailable  func() bool
+	// Quiet leaves out the output of Caddy commands that succeed, for a stack
+	// that starts the shared Caddy as part of its own startup.
+	Quiet                    bool
+	ReadRootCertificateTrust func() (RootCertificateTrust, error)
 	RemoveManagedPidFile     func() error
 	RunManagedCaddyCommand   func([]string, ManagedCaddyCommandOptions) CommandResult
 	RuntimeOS                string
+}
+
+type managedCaddyLifecycle struct {
+	adminAddress             string
+	canPromptForPassword     func() bool
+	hasManagedPidFile        func() bool
+	isManagedCaddyAvailable  func() bool
+	logWriter                io.Writer
+	paths                    Paths
+	quiet                    bool
+	readRootCertificateTrust func() (RootCertificateTrust, error)
+	removeManagedPidFile     func() error
+	runManagedCaddyCommand   func([]string, ManagedCaddyCommandOptions) CommandResult
+	runtimeOS                string
+	// settings are what a new Caddy starts with.
+	settings ManagedCaddyGlobalSettings
 }
 
 // RunManagedCaddyLifecycleCommand starts, stops, or trusts the managed Caddy.
@@ -38,40 +60,51 @@ func RunManagedCaddyLifecycleCommand(
 	settings ManagedCaddyGlobalSettings,
 	dependencies ManagedCaddyLifecycleDependencies,
 ) (int, error) {
-	runtimeOS := dependencies.RuntimeOS
 	running, err := readRunningSettings(paths, settings)
 	if err != nil {
 		return 0, err
 	}
-	managedCaddyAdminAddress := ResolveManagedCaddyAdminAddress(running.AdminAddress)
+	l := managedCaddyLifecycle{
+		adminAddress:             ResolveManagedCaddyAdminAddress(running.AdminAddress),
+		canPromptForPassword:     dependencies.CanPromptForPassword,
+		hasManagedPidFile:        dependencies.HasManagedPidFile,
+		isManagedCaddyAvailable:  dependencies.IsManagedCaddyAvailable,
+		logWriter:                logWriter,
+		paths:                    paths,
+		quiet:                    dependencies.Quiet,
+		readRootCertificateTrust: dependencies.ReadRootCertificateTrust,
+		removeManagedPidFile:     dependencies.RemoveManagedPidFile,
+		runManagedCaddyCommand:   dependencies.RunManagedCaddyCommand,
+		runtimeOS:                dependencies.RuntimeOS,
+		settings:                 settings,
+	}
 
 	ensureConfig := dependencies.EnsureManagedCaddyConfig
 	if ensureConfig == nil {
 		ensureConfig = func() error {
-			return EnsureManagedCaddyConfig(paths, settings, runtimeOS)
+			return EnsureManagedCaddyConfig(paths, settings, l.runtimeOS)
 		}
 	}
-	hasManagedPidFile := dependencies.HasManagedPidFile
-	if hasManagedPidFile == nil {
-		hasManagedPidFile = func() bool {
+	if l.canPromptForPassword == nil {
+		l.canPromptForPassword = canPromptForPassword
+	}
+	if l.hasManagedPidFile == nil {
+		l.hasManagedPidFile = func() bool {
 			return pathExists(paths.PidFilePath)
 		}
 	}
-	hasManagedRootCert := dependencies.HasManagedRootCert
-	if hasManagedRootCert == nil {
-		hasManagedRootCert = func() bool {
-			return pathExists(paths.RootCertificatePath)
+	if l.isManagedCaddyAvailable == nil {
+		l.isManagedCaddyAvailable = func() bool {
+			return EnsureManagedCaddyAdminAvailable(CreateCaddyAdminAPIURL(l.adminAddress), AdminAvailabilityDependencies{}) == nil
 		}
 	}
-	isManagedCaddyAvailable := dependencies.IsManagedCaddyAvailable
-	if isManagedCaddyAvailable == nil {
-		isManagedCaddyAvailable = func() bool {
-			return EnsureManagedCaddyAdminAvailable(CreateCaddyAdminAPIURL(managedCaddyAdminAddress), AdminAvailabilityDependencies{}) == nil
+	if l.readRootCertificateTrust == nil {
+		l.readRootCertificateTrust = func() (RootCertificateTrust, error) {
+			return ReadRootCertificateTrust(paths.RootCertificatePath)
 		}
 	}
-	removeManagedPidFile := dependencies.RemoveManagedPidFile
-	if removeManagedPidFile == nil {
-		removeManagedPidFile = func() error {
+	if l.removeManagedPidFile == nil {
+		l.removeManagedPidFile = func() error {
 			err := os.Remove(paths.PidFilePath)
 			if err != nil && !os.IsNotExist(err) {
 				return err
@@ -79,10 +112,9 @@ func RunManagedCaddyLifecycleCommand(
 			return nil
 		}
 	}
-	runManagedCaddyCommand := dependencies.RunManagedCaddyCommand
-	if runManagedCaddyCommand == nil {
-		runManagedCaddyCommand = func(arguments []string, options ManagedCaddyCommandOptions) CommandResult {
-			options.RuntimeOS = runtimeOS
+	if l.runManagedCaddyCommand == nil {
+		l.runManagedCaddyCommand = func(arguments []string, options ManagedCaddyCommandOptions) CommandResult {
+			options.RuntimeOS = l.runtimeOS
 			return RunManagedCaddyCommand(paths, arguments, options, ManagedCaddyCommandDependencies{})
 		}
 	}
@@ -93,108 +125,127 @@ func RunManagedCaddyLifecycleCommand(
 
 	switch action {
 	case LifecycleStart:
-		start := func() CommandResult {
-			return startManagedCaddyProcess(paths, settings, runtimeOS, runManagedCaddyCommand)
-		}
-		return startManagedCaddy(logWriter, paths, runtimeOS, hasManagedPidFile, hasManagedRootCert, isManagedCaddyAvailable, start)
+		return l.start()
 	case LifecycleStop:
-		// A Caddy that no longer runs has no applied settings; the next start
-		// uses the configured ones.
-		forget := func() error {
-			if err := removeManagedPidFile(); err != nil {
-				return err
-			}
-			return removeAppliedManagedCaddySettings(paths)
-		}
-		return stopManagedCaddy(logWriter, managedCaddyAdminAddress, hasManagedPidFile, isManagedCaddyAvailable, forget, runManagedCaddyCommand)
+		return l.stop()
 	case LifecycleTrust:
-		return trustManagedCaddy(logWriter, managedCaddyAdminAddress, hasManagedPidFile, isManagedCaddyAvailable, runManagedCaddyCommand)
+		return l.trust()
 	default:
 		return 0, fmt.Errorf("unsupported managed caddy lifecycle action: %s", action)
 	}
 }
 
-// startManagedCaddyProcess renders every route for settings, starts Caddy
-// with them, and records them as applied once Caddy runs.
-func startManagedCaddyProcess(paths Paths, settings ManagedCaddyGlobalSettings, runtimeOS string, runManagedCaddyCommand func([]string, ManagedCaddyCommandOptions) CommandResult) CommandResult {
+func (l managedCaddyLifecycle) start() (int, error) {
+	if l.isManagedCaddyAvailable() {
+		if !l.hasManagedPidFile() {
+			return 0, errors.New(foreignManagedCaddyError)
+		}
+		if err := cliout.WriteLog(l.logWriter, "devhost", fmt.Sprintf("managed caddy is already running with %s", l.paths.CaddyfilePath)); err != nil {
+			return 0, fmt.Errorf("log managed caddy already running: %w", err)
+		}
+		return 0, l.trustAfterStart()
+	}
+
+	result := l.startProcess()
+	if !result.Success {
+		failure, handled := managedCaddyStartFailure(result, l.runtimeOS, l.paths.CaddyDirectoryPath)
+		if !handled || cliout.IsAgentMode() {
+			if err := writeManagedCaddyCommandOutput(l.logWriter, result); err != nil {
+				return 0, err
+			}
+		}
+		return 0, failure
+	}
+	if err := l.writeSuccessfulOutput(result); err != nil {
+		return 0, err
+	}
+
+	if err := cliout.WriteLog(l.logWriter, "devhost", fmt.Sprintf("managed caddy started with %s", l.paths.CaddyfilePath)); err != nil {
+		return 0, fmt.Errorf("log managed caddy start success: %w", err)
+	}
+
+	return 0, l.trustAfterStart()
+}
+
+// startProcess renders every route for the settings, starts Caddy with them,
+// and records them as applied once Caddy runs. The route lock keeps another
+// stack from rendering routes for other settings in between.
+func (l managedCaddyLifecycle) startProcess() CommandResult {
 	var result CommandResult
-	err := withRouteMutationLock(paths, func() error {
-		if err := renderManagedCaddySettings(paths, settings, runtimeOS); err != nil {
+	err := withRouteMutationLock(l.paths, func() error {
+		if err := renderManagedCaddySettings(l.paths, l.settings, l.runtimeOS); err != nil {
 			return err
 		}
-		result = runManagedCaddyCommand([]string{"start", "--pidfile", paths.PidFilePath}, ManagedCaddyCommandOptions{InheritStdio: true})
+		result = l.runManagedCaddyCommand([]string{"start", "--pidfile", l.paths.PidFilePath}, ManagedCaddyCommandOptions{})
 		if !result.Success {
 			return nil
 		}
-		return writeAppliedManagedCaddySettings(paths, settings)
+		return writeAppliedManagedCaddySettings(l.paths, l.settings)
 	})
 	if err != nil {
 		return CommandResult{Stderr: []byte(err.Error())}
 	}
-
 	return result
 }
 
-func startManagedCaddy(
-	logWriter io.Writer,
-	paths Paths,
-	runtimeOS string,
-	hasManagedPidFile func() bool,
-	hasManagedRootCert func() bool,
-	isManagedCaddyAvailable func() bool,
-	start func() CommandResult,
-) (int, error) {
-	if !hasManagedRootCert() {
-		if err := logInfo(logWriter, "managed caddy may prompt for your password on first start so it can install its local CA into the system trust store."); err != nil {
-			return 0, fmt.Errorf("log managed caddy first-start trust warning: %w", err)
-		}
+// forget removes the pid file and the applied settings of a Caddy that no
+// longer runs, so the next start uses the configured settings.
+func (l managedCaddyLifecycle) forget() error {
+	if err := l.removeManagedPidFile(); err != nil {
+		return err
 	}
-
-	if isManagedCaddyAvailable() {
-		if hasManagedPidFile() {
-			if err := logInfo(logWriter, fmt.Sprintf("managed caddy is already running with %s", paths.CaddyfilePath)); err != nil {
-				return 0, fmt.Errorf("log managed caddy already running: %w", err)
-			}
-			return 0, nil
-		}
-
-		return 0, errors.New(foreignManagedCaddyError)
-	}
-
-	result := start()
-	if !result.Success {
-		return 0, errors.New(CreateManagedCaddyStartErrorMessage(result, runtimeOS))
-	}
-
-	if err := logInfo(logWriter, fmt.Sprintf("managed caddy started with %s", paths.CaddyfilePath)); err != nil {
-		return 0, fmt.Errorf("log managed caddy start success: %w", err)
-	}
-
-	return 0, nil
+	return removeAppliedManagedCaddySettings(l.paths)
 }
 
-func stopManagedCaddy(
-	logWriter io.Writer,
-	adminAddress string,
-	hasManagedPidFile func() bool,
-	isManagedCaddyAvailable func() bool,
-	removeManagedPidFile func() error,
-	runManagedCaddyCommand func([]string, ManagedCaddyCommandOptions) CommandResult,
-) (int, error) {
-	isManagedProcessKnown := hasManagedPidFile()
-	isManagedProcessAvailable := isManagedCaddyAvailable()
+// trustAfterStart installs the local CA once Caddy runs, which is when Caddy
+// has created it. A start still succeeds without trust: HTTPS works, and a
+// browser warns about the certificate until 'devhost caddy trust' succeeds.
+func (l managedCaddyLifecycle) trustAfterStart() error {
+	trust, err := l.readRootCertificateTrust()
+	if err != nil {
+		return l.warn(rootCertificateTrustCheckWarning(err))
+	}
+	if trust != RootCertificateUntrusted {
+		return nil
+	}
+	if !l.canPromptForPassword() {
+		return l.warn(UntrustedRootCertificateWarning)
+	}
+
+	result, err := installManagedCaddyTrust(l.logWriter, l.adminAddress, l.runManagedCaddyCommand)
+	if err != nil {
+		return err
+	}
+	if !result.Success {
+		if err := writeManagedCaddyCommandOutput(l.logWriter, result); err != nil {
+			return err
+		}
+		return l.warn(UntrustedRootCertificateWarning)
+	}
+	if err := l.writeSuccessfulOutput(result); err != nil {
+		return err
+	}
+	if err := cliout.WriteLog(l.logWriter, "devhost", "managed caddy local CA trusted."); err != nil {
+		return fmt.Errorf("log managed caddy trust success: %w", err)
+	}
+	return nil
+}
+
+func (l managedCaddyLifecycle) stop() (int, error) {
+	isManagedProcessKnown := l.hasManagedPidFile()
+	isManagedProcessAvailable := l.isManagedCaddyAvailable()
 	if !isManagedProcessAvailable {
 		if isManagedProcessKnown {
-			if err := removeManagedPidFile(); err != nil {
+			if err := l.forget(); err != nil {
 				return 0, fmt.Errorf("remove stale managed caddy pid file: %w", err)
 			}
-			if err := logInfo(logWriter, "managed caddy is not running. Removed the stale pid file."); err != nil {
+			if err := cliout.WriteLog(l.logWriter, "devhost", "managed caddy is not running. Removed the stale pid file."); err != nil {
 				return 0, fmt.Errorf("log managed caddy stale pidfile cleanup: %w", err)
 			}
 			return 0, nil
 		}
 
-		if err := logInfo(logWriter, "managed caddy is not running."); err != nil {
+		if err := cliout.WriteLog(l.logWriter, "devhost", "managed caddy is not running."); err != nil {
 			return 0, fmt.Errorf("log managed caddy not running: %w", err)
 		}
 		return 0, nil
@@ -204,73 +255,104 @@ func stopManagedCaddy(
 		return 0, errors.New(foreignManagedCaddyError)
 	}
 
-	result := runManagedCaddyCommand([]string{"stop"}, ManagedCaddyCommandOptions{AdminAddress: adminAddress})
+	result := l.runManagedCaddyCommand([]string{"stop"}, ManagedCaddyCommandOptions{AdminAddress: l.adminAddress})
 	if !result.Success {
-		return 0, errors.New(CreateManagedCaddyCommandErrorMessage("stop", result))
+		return 0, logManagedCaddyFailure(l.logWriter, "stop", result)
+	}
+	if err := l.writeSuccessfulOutput(result); err != nil {
+		return 0, err
 	}
 
-	if err := removeManagedPidFile(); err != nil {
+	if err := l.forget(); err != nil {
 		return 0, fmt.Errorf("remove managed caddy pid file after stop: %w", err)
 	}
-	if err := logInfo(logWriter, "managed caddy stopped."); err != nil {
+	if err := cliout.WriteLog(l.logWriter, "devhost", "managed caddy stopped."); err != nil {
 		return 0, fmt.Errorf("log managed caddy stop success: %w", err)
 	}
 
 	return 0, nil
 }
 
-func trustManagedCaddy(
-	logWriter io.Writer,
-	adminAddress string,
-	hasManagedPidFile func() bool,
-	isManagedCaddyAvailable func() bool,
-	runManagedCaddyCommand func([]string, ManagedCaddyCommandOptions) CommandResult,
-) (int, error) {
-	if err := logInfo(logWriter, "managed caddy trust may prompt for your password because installing a root CA into the system trust store is privileged."); err != nil {
-		return 0, fmt.Errorf("log managed caddy trust warning: %w", err)
-	}
-
-	if !isManagedCaddyAvailable() {
+func (l managedCaddyLifecycle) trust() (int, error) {
+	if !l.isManagedCaddyAvailable() {
 		return 0, errors.New("Managed Caddy is not running. Run 'devhost caddy start' first.")
 	}
-	if !hasManagedPidFile() {
+	if !l.hasManagedPidFile() {
 		return 0, errors.New(foreignManagedCaddyError)
 	}
 
-	result := runManagedCaddyCommand([]string{"trust"}, ManagedCaddyCommandOptions{AdminAddress: adminAddress, InheritStdio: true})
-	if !result.Success {
-		return 0, errors.New(CreateManagedCaddyCommandErrorMessage("trust", result))
+	trust, err := l.readRootCertificateTrust()
+	if err != nil {
+		return 0, err
+	}
+	if trust == RootCertificateTrusted {
+		if err := cliout.WriteLog(l.logWriter, "devhost", "managed caddy local CA is already trusted."); err != nil {
+			return 0, fmt.Errorf("log managed caddy trust state: %w", err)
+		}
+		return 0, nil
 	}
 
-	if err := logInfo(logWriter, "managed caddy local CA trusted."); err != nil {
+	// A missing certificate is left to caddy trust, which reads the local CA
+	// from the admin API rather than from storage.
+	result, err := installManagedCaddyTrust(l.logWriter, l.adminAddress, l.runManagedCaddyCommand)
+	if err != nil {
+		return 0, err
+	}
+	if !result.Success {
+		return 0, logManagedCaddyFailure(l.logWriter, "trust", result)
+	}
+	if err := l.writeSuccessfulOutput(result); err != nil {
+		return 0, err
+	}
+
+	if err := cliout.WriteLog(l.logWriter, "devhost", "managed caddy local CA trusted."); err != nil {
 		return 0, fmt.Errorf("log managed caddy trust success: %w", err)
 	}
 
 	return 0, nil
 }
 
-func CreateManagedCaddyStartErrorMessage(result CommandResult, runtimeOS string) string {
-	baseMessage := CreateManagedCaddyCommandErrorMessage("start", result)
-	combinedOutput := strings.Join(filterEmptyStrings([]string{strings.TrimSpace(string(result.Stderr)), strings.TrimSpace(string(result.Stdout))}), "\n")
-	if !strings.Contains(combinedOutput, "bind: permission denied") || !strings.Contains(combinedOutput, ":443") {
-		return baseMessage
+func (l managedCaddyLifecycle) writeSuccessfulOutput(result CommandResult) error {
+	if l.quiet {
+		return nil
 	}
-
-	bindDirective, err := ResolveManagedCaddyBindDirective(runtimeOS, defaultManagedCaddyBindHost)
-	if err == nil && bindDirective == "" {
-		return baseMessage + "\nmacOS allows rootless binds on :443 only with wildcard listeners, not loopback-specific ones."
-	}
-
-	return baseMessage + "\nOpening HTTPS on :443 requires privileged-port setup on this platform. Run 'devhost caddy privileged-ports' to configure the managed Caddy binary."
+	return writeManagedCaddyCommandOutput(l.logWriter, result)
 }
 
-func filterEmptyStrings(values []string) []string {
-	filteredValues := make([]string, 0, len(values))
-	for _, value := range values {
-		if value != "" {
-			filteredValues = append(filteredValues, value)
+func (l managedCaddyLifecycle) warn(message string) error {
+	if err := cliout.WriteLog(l.logWriter, "devhost", cliout.Warning(message)); err != nil {
+		return fmt.Errorf("log managed caddy warning: %w", err)
+	}
+	return nil
+}
+
+func logManagedCaddyFailure(writer io.Writer, action string, result CommandResult) error {
+	if err := writeManagedCaddyCommandOutput(writer, result); err != nil {
+		return err
+	}
+	return fmt.Errorf("Caddy %s failed. Check the Caddy diagnostics above.", action)
+}
+
+func writeManagedCaddyCommandOutput(writer io.Writer, result CommandResult) error {
+	if err := writeCaddyOutput(writer, result.Stderr, !result.Success); err != nil {
+		return err
+	}
+	return writeCaddyOutput(writer, result.Stdout, !result.Success)
+}
+
+func managedCaddyStartFailure(result CommandResult, runtimeOS, directory string) (*cliout.Failure, bool) {
+	output := string(result.Stderr) + "\n" + string(result.Stdout)
+	handled := strings.Contains(output, ":443: bind: permission denied")
+	failure := &cliout.Failure{Summary: "Caddy start failed.", Hint: "Check the Caddy logs in " + directory + "."}
+	if handled {
+		if runtimeOS == "darwin" {
+			failure.Summary = "Caddy cannot bind HTTPS port 443 to loopback without privileges on macOS."
+			failure.Hint = "Use wildcard listeners by leaving bindHost out of the [caddy] table of config.toml, or use a privileged launcher for loopback-only HTTPS."
+		} else {
+			failure.Summary = "Caddy cannot listen on HTTPS port 443 without privileged-port setup."
+			failure.Hint = "Run 'devhost caddy privileged-ports', then 'devhost caddy start'."
 		}
 	}
-
-	return filteredValues
+	failure.Err = errors.New(failure.Summary + " " + failure.Hint)
+	return failure, handled
 }

@@ -31,7 +31,11 @@ const config: StorybookConfig = {
       },
     },
   },
-  stories: ["../src/**/*.stories.@(ts|tsx)", "../scripts/**/*.stories.@(ts|tsx)"],
+  stories: [
+    "../src/**/*.stories.@(ts|tsx)",
+    "../scripts/**/*.stories.@(ts|tsx)",
+    "../test-support/**/*.stories.@(ts|tsx)",
+  ],
   addons: ["@storybook/addon-vitest"],
   viteFinal(existingConfig) {
     if (storybookAllowedHosts.length === 0) {

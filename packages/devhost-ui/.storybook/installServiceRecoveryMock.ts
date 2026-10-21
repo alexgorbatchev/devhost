@@ -39,11 +39,10 @@ export function installServiceRecoveryMock(hasWorktreeFailure: boolean): IServic
   const config: IInjectedDevtoolsConfig = {
     ...readInjectedDevtoolsConfig(),
     annotationEnabled: false,
-    annotationQueueEnabled: false,
+    chatEnabled: false,
     editorEnabled: false,
     externalToolbarsEnabled: false,
     minimapEnabled: false,
-    terminalEnabled: false,
     statusEnabled: true,
   };
   const connections: IMockWebSocketConnection[] = [];

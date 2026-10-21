@@ -5,7 +5,7 @@ import (
 	"slices"
 )
 
-const defaultManagedCaddyBindHost = "127.0.0.1"
+const defaultManagedCaddyBindHost = "0.0.0.0"
 
 // IsSupportedManagedCaddyBindHost reports whether the managed Caddy can listen
 // on bindHost: a loopback or wildcard address of either IP family.
@@ -21,7 +21,7 @@ func ResolveManagedCaddyBindDirective(runtimeOS string, bindHost string) (string
 		bindHost = defaultManagedCaddyBindHost
 	}
 
-	if runtimeOS == "darwin" && bindHost == defaultManagedCaddyBindHost {
+	if runtimeOS == "darwin" && bindHost == "127.0.0.1" {
 		return "", nil
 	}
 

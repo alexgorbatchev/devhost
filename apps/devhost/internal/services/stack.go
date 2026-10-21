@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/config"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/hostusage"
@@ -27,7 +28,6 @@ import (
 )
 
 const (
-	defaultLogLabel             = "devhost"
 	maxAttemptOutputLines       = 50
 	shutdownGracePeriod         = 10 * time.Second
 	lateListenerMonitorDuration = 2 * time.Second
@@ -217,7 +217,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		defer close(signalForwardingDone)
 		select {
 		case receivedSignal := <-processSignals:
-			writeLogLine(options.LogWriter, state.stackName(), fmt.Sprintf("Received %s; shutting down the stack.", describeShutdownSignal(receivedSignal)))
+			cliout.Log(options.LogWriter, state.stackName(), fmt.Sprintf("Received %s; shutting down the stack.", describeShutdownSignal(receivedSignal)))
 			signalExits <- receivedSignal
 			cancelLifecycle()
 		case err := <-options.runtimeErrors:
@@ -310,7 +310,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		if cleanupError != nil {
 			returnedError = joinCleanupError(returnedError, cleanupError)
 		} else if wasReady || len(startedServicesSnapshot) > 0 || len(startedDaemonServicesSnapshot) > 0 {
-			writeLogLine(options.LogWriter, manifest.Name, "Stack stopped.")
+			cliout.Log(options.LogWriter, manifest.Name, "Stack stopped.")
 		}
 	}()
 
@@ -336,7 +336,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	if err := caddy.CleanupStaleFixedPortClaims(paths.PortClaimsDirectoryPath); err != nil {
 		return 0, joinCleanupError(err, cleanupError)
 	}
-	if err := ensureManagedCaddyRunning(paths, shared.Caddy, options); err != nil {
+	if err := ensureManagedCaddyRunning(paths, shared.Caddy, options, manifest.Name); err != nil {
 		return 0, joinCleanupError(err, cleanupError)
 	}
 	// Starting a stack applies the devhost config file, so an edit made while no
@@ -391,7 +391,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			return 0, joinCleanupError(err, cleanupError)
 		}
 		if devSource != nil {
-			writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("Rebuilding devtools assets on demand from source checkout: %s", devSource.RootPath()))
+			cliout.Log(options.LogWriter, manifest.Name, fmt.Sprintf("Rebuilding devtools assets on demand from source checkout: %s", devSource.RootPath()))
 		}
 
 		// The worktree picker calls through whether or not worktrees are on; the
@@ -403,27 +403,23 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			OwnsDocumentURL: func(port int, href string) (bool, error) {
 				return caddy.AllowsDevtoolsURL(paths, caddy.DevtoolsRouteOwner{ManifestPath: manifest.ManifestPath, ControlPort: port}, href)
 			},
-			AnnotationActions:         settings.AnnotationActions,
-			AnnotationDefaultActionID: settings.AnnotationDefaultActionID,
-			ComponentEditor:           settings.ComponentEditor,
-			DevSource:                 devSource,
+			ComponentEditor: settings.ComponentEditor,
+			DevSource:       devSource,
 			OnLog: func(message string) {
-				writeLogLine(options.LogWriter, state.stackName(), message)
+				cliout.Log(options.LogWriter, state.stackName(), message)
 			},
 			FeatureToggles: settings.FeatureToggles,
 			GetHealthResponse: func() (devtools.HealthResponse, error) {
 				return state.health(lifecycleCtx)
 			},
-			ManifestPath:         manifest.ManifestPath,
-			Position:             settings.Position,
-			ProjectRootPath:      manifest.ManifestDirectoryPath,
-			RuntimeDirectoryPath: options.runtimeDirectoryPath,
-			PrimaryService:       settings.PrimaryService,
+			Position:        settings.Position,
+			ProjectRootPath: manifest.ManifestDirectoryPath,
+			PrimaryService:  settings.PrimaryService,
 			ResourceUsage: devtools.ResourceUsageOptions{
 				Intervals: settings.ResourceIntervals,
 				Readers:   hostusage.HostReaders(),
 				OnFailure: func(readout string, err error) {
-					writeLogLine(options.LogWriter, state.stackName(), fmt.Sprintf("devtools %s usage is unavailable: %v", readout, err))
+					cliout.Log(options.LogWriter, state.stackName(), fmt.Sprintf("devtools %s usage is unavailable: %v", readout, err))
 				},
 			},
 			RestartService:          func(names []string) error { return state.restart(lifecycleCtx, names) },
@@ -436,7 +432,6 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			GetToolContext:          state.toolContext,
 			RestartServicesShortcut: settings.RestartServicesShortcut,
 			RoutedServices:          settings.RoutedServices,
-			StateDirectoryPath:      paths.StateDirectoryPath,
 			StackName:               settings.StackName,
 		})
 		if err != nil {
@@ -503,7 +498,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		}
 
 		if warning := ReadLoopbackBindHostAmbiguityWarning(service, manifest.Caddy.HTTPSPort); warning != "" {
-			writeLogLine(options.LogWriter, manifest.Name, warning)
+			cliout.Log(options.LogWriter, manifest.Name, warning)
 		}
 
 	}
@@ -581,7 +576,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			configResults = nil
 			configEvents = configWatch.events
 			if state.recordConfigurationResult(devtools.ConfigurationSourceConfig, err) && err != nil {
-				writeLogLine(options.LogWriter, state.stackName(), fmt.Sprintf("shared Caddy settings rejected: %v", err))
+				cliout.Log(options.LogWriter, state.stackName(), fmt.Sprintf("shared Caddy settings rejected: %v", err))
 			}
 		case err := <-manifestEvents:
 			completed := make(chan error, 1)
@@ -597,10 +592,10 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			reloadResults = nil
 			manifestEvents = manifestWatch.events
 			if state.recordConfigurationResult(devtools.ConfigurationSourceManifest, err) && err != nil {
-				writeLogLine(options.LogWriter, state.stackName(), fmt.Sprintf("configuration reload rejected: %v", err))
+				cliout.Log(options.LogWriter, state.stackName(), fmt.Sprintf("configuration reload rejected: %v", err))
 			}
 		case result := <-state.exits:
-			writeLogLine(options.LogWriter, state.stackName(), fmt.Sprintf("%s exited with code %d; devhost is waiting for a restart.", result.serviceName, result.exitCode))
+			cliout.Log(options.LogWriter, state.stackName(), fmt.Sprintf("%s exited with code %d; devhost is waiting for a restart.", result.serviceName, result.exitCode))
 		case receivedSignal := <-signalExits:
 			cancelLifecycle()
 			state.startedMu.Lock()
@@ -612,7 +607,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			return 0, err
 		case timeout := <-idle.expired:
 			cancelLifecycle()
-			writeLogLine(options.LogWriter, state.stackName(), fmt.Sprintf("Idle timeout of %s reached. Automatically shutting down the stack...", timeout))
+			cliout.Log(options.LogWriter, state.stackName(), fmt.Sprintf("Idle timeout of %s reached. Automatically shutting down the stack...", timeout))
 			state.startedMu.Lock()
 			startedServicesSnapshot := append([]*startedService{}, state.started...)
 			state.startedMu.Unlock()
@@ -697,7 +692,7 @@ func LogServiceURLs(manifest ResolvedManifest, writer io.Writer) {
 			displayName = fmt.Sprintf("%s (primary)", service.Name)
 		}
 		for _, serviceURL := range readServiceURLs(service, manifest.Caddy.HTTPSPort) {
-			writeLogLine(writer, manifest.Name, fmt.Sprintf("%s: %s", displayName, serviceURL))
+			cliout.Log(writer, manifest.Name, fmt.Sprintf("%s: %s", displayName, serviceURL))
 		}
 	}
 }
@@ -705,7 +700,7 @@ func LogServiceURLs(manifest ResolvedManifest, writer io.Writer) {
 // logStoppedServices names the services a run that started only some of them left out.
 func logStoppedServices(manifest ResolvedManifest, writer io.Writer) {
 	if stopped := stoppedServiceNames(manifest); len(stopped) > 0 {
-		writeLogLine(writer, manifest.Name, fmt.Sprintf("not started: %s", strings.Join(stopped, ", ")))
+		cliout.Log(writer, manifest.Name, fmt.Sprintf("not started: %s", strings.Join(stopped, ", ")))
 	}
 }
 
@@ -841,7 +836,7 @@ func startServiceWithRetries(ctx context.Context, manifest *ResolvedManifest, st
 		})
 		if err == nil {
 			if warning := ReadLoopbackBindHostAmbiguityWarning(service, manifest.Caddy.HTTPSPort); warning != "" {
-				writeLogLine(options.LogWriter, manifest.Name, warning)
+				cliout.Log(options.LogWriter, manifest.Name, warning)
 			}
 
 			go func(startedService *startedService) {
@@ -875,7 +870,7 @@ func startServiceWithRetries(ctx context.Context, manifest *ResolvedManifest, st
 		// still holds the inherited output pipe.
 		exitedBeforeCleanup := started.ReadExitCode() != nil
 		if !exitedBeforeCleanup {
-			writeLogLine(options.LogWriter, manifest.Name, fmt.Sprintf("%v Stopping service %s because its startup health check failed; sending SIGTERM (signal 15).", err, service.Name))
+			cliout.Log(options.LogWriter, manifest.Name, fmt.Sprintf("%v Stopping service %s because its startup health check failed; sending SIGTERM (signal 15).", err, service.Name))
 		}
 		if stopError := stopStartedService(started, resolveGracePeriod(options.ShutdownGracePeriod)); stopError != nil {
 			return nil, joinCleanupError(err, stopError)
@@ -903,7 +898,7 @@ func startServiceWithRetries(ctx context.Context, manifest *ResolvedManifest, st
 }
 
 func reassignStartupAutoPort(m *ResolvedManifest, serviceName string, logWriter io.Writer) error {
-	writeLogLine(logWriter, m.Name, fmt.Sprintf("retrying %s with a new auto port after a bind collision.", serviceName))
+	cliout.Log(logWriter, m.Name, fmt.Sprintf("retrying %s with a new auto port after a bind collision.", serviceName))
 	_, next, err := ReassignAutoPort(*m, serviceName)
 	if err != nil {
 		return err
@@ -1052,7 +1047,7 @@ func runServiceCommand(
 	}
 
 	stdoutWriter := newLifecycleCommandOutputWriter(
-		fmt.Sprintf("[%s] ", service.Name),
+		cliout.Prefix(nil, service.Name),
 		resolveStdoutWriter(options.ServiceStdoutWriter),
 		func(line string) {
 			if devtoolsControlServer != nil {
@@ -1061,7 +1056,7 @@ func runServiceCommand(
 		},
 	)
 	stderrWriter := newLifecycleCommandOutputWriter(
-		fmt.Sprintf("[%s] ", service.Name),
+		cliout.Prefix(nil, service.Name),
 		resolveStderrWriter(options.ServiceStderrWriter),
 		func(line string) {
 			if devtoolsControlServer != nil {
@@ -1158,8 +1153,8 @@ func startServiceProcess(manifest ResolvedManifest, service ResolvedService, opt
 	}
 
 	startedService.outputWG.Add(2)
-	go pipeServiceOutput(stdout.reader, fmt.Sprintf("[%s] ", service.Name), resolveStdoutWriter(options.stdoutWriter), options.attemptOutput, options.onStdoutLine, &startedService.outputWG)
-	go pipeServiceOutput(stderr.reader, fmt.Sprintf("[%s] ", service.Name), resolveStderrWriter(options.stderrWriter), options.attemptOutput, options.onStderrLine, &startedService.outputWG)
+	go pipeServiceOutput(stdout.reader, cliout.Prefix(nil, service.Name), resolveStdoutWriter(options.stdoutWriter), options.attemptOutput, options.onStdoutLine, &startedService.outputWG)
+	go pipeServiceOutput(stderr.reader, cliout.Prefix(nil, service.Name), resolveStderrWriter(options.stderrWriter), options.attemptOutput, options.onStderrLine, &startedService.outputWG)
 	go startedService.waitForExit()
 
 	return startedService, nil
@@ -1322,7 +1317,7 @@ func pipeProcessOutput(reader io.Reader, prefix string, writer io.Writer, attemp
 	for scanner.Scan() {
 		line := prefix + scanner.Text()
 		attemptOutput.append(line)
-		_, _ = fmt.Fprintln(writer, line)
+		_ = cliout.WriteChildLine(writer, line)
 		if onLine != nil {
 			onLine(line)
 		}
@@ -1398,47 +1393,34 @@ func collectClaimedHosts(services map[string]ResolvedService) []string {
 }
 
 func hasEnabledDevtools(config manifest.DevtoolsConfig) bool {
-	return config.ConfigEditor.Enabled || config.Editor.Enabled || config.ExternalToolbars.Enabled || config.Minimap.Enabled || config.Status.Enabled
+	return config.Chat.Enabled || config.Annotations.Enabled || config.ConfigEditor.Enabled || config.Editor.Enabled || config.ExternalToolbars.Enabled || config.Minimap.Enabled || config.Status.Enabled
 }
 
 // devtoolsControlSettings are the settings of m the control server applies, at
 // startup and after each accepted reload.
 func devtoolsControlSettings(m ResolvedManifest) devtools.ControlSettings {
 	return devtools.ControlSettings{
-		AnnotationActions:         m.Annotation.Actions,
-		AnnotationDefaultActionID: m.Annotation.DefaultActionID,
-		ComponentEditor:           m.Devtools.Editor.IDE,
-		FeatureToggles:            resolveSupportedDevtoolsFeatures(m.Devtools, m.Annotation),
-		NativeBrowser:             m.Devtools.Browser,
-		Position:                  m.Devtools.Status.Position,
-		PrimaryService:            m.PrimaryService,
-		ResourceIntervals:         resolveResourceIntervals(m.Devtools.Resources),
-		RestartServicesShortcut:   m.Devtools.Shortcuts.RestartServices,
-		RoutedServices:            collectRoutedServiceIdentities(m.Services),
-		StackName:                 m.Name,
+		ComponentEditor:         m.Devtools.Editor.IDE,
+		FeatureToggles:          resolveSupportedDevtoolsFeatures(m.Devtools),
+		NativeBrowser:           m.Devtools.Browser,
+		Position:                m.Devtools.Status.Position,
+		PrimaryService:          m.PrimaryService,
+		ResourceIntervals:       resolveResourceIntervals(m.Devtools.Resources),
+		RestartServicesShortcut: m.Devtools.Shortcuts.RestartServices,
+		RoutedServices:          collectRoutedServiceIdentities(m.Services),
+		StackName:               m.Name,
 	}
 }
 
-func resolveSupportedDevtoolsFeatures(config manifest.DevtoolsConfig, annotation manifest.ValidatedAnnotation) devtools.FeatureToggles {
-	devtoolsEnabled := hasEnabledDevtools(config)
-	hasAnnotationActions := len(annotation.Actions) > 0
-	hasQueuedAnnotationActions := false
-	for _, action := range annotation.Actions {
-		if action.Kind == "agent" {
-			hasQueuedAnnotationActions = true
-			break
-		}
-	}
-
+func resolveSupportedDevtoolsFeatures(config manifest.DevtoolsConfig) devtools.FeatureToggles {
 	return devtools.FeatureToggles{
-		AnnotationEnabled:       devtoolsEnabled && hasAnnotationActions,
-		AnnotationQueueEnabled:  devtoolsEnabled && hasQueuedAnnotationActions,
+		ChatEnabled:             config.Chat.Enabled,
+		AnnotationEnabled:       config.Annotations.Enabled,
 		ConfigEditorEnabled:     config.ConfigEditor.Enabled,
 		EditorEnabled:           config.Editor.Enabled,
 		ExternalToolbarsEnabled: config.ExternalToolbars.Enabled,
 		MinimapEnabled:          config.Minimap.Enabled,
 		StatusEnabled:           config.Status.Enabled,
-		TerminalEnabled:         devtoolsEnabled,
 	}
 }
 
@@ -1701,19 +1683,6 @@ func createChildEnvironment(base map[string]string, values ...map[string]string)
 	}
 
 	return result
-}
-
-func writeLogLine(writer io.Writer, label string, message string) {
-	if writer == nil {
-		return
-	}
-
-	trimmedLabel := strings.TrimSpace(label)
-	if trimmedLabel == "" {
-		trimmedLabel = defaultLogLabel
-	}
-
-	_, _ = fmt.Fprintf(writer, "[%s] %s\n", trimmedLabel, message)
 }
 
 func joinCleanupError(runError error, cleanupError error) error {

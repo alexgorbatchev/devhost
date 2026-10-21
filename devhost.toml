@@ -7,37 +7,6 @@ restartServices = "alt+ctrl+r"
 [devtools.browser]
 endpoint = "{{ env.DEVHOST_BROWSER_ENDPOINT }}"
 
-[annotation]
-defaultAction = "fix"
-
-[[annotation.actions]]
-id = "fix"
-kind = "agent"
-
-[annotation.actions.agent]
-adapter = "pi"
-
-[[annotation.actions]]
-id = "fix-claude-code"
-kind = "agent"
-
-[annotation.actions.agent]
-adapter = "claude-code"
-
-[[annotation.actions]]
-id = "fix-opencode"
-kind = "agent"
-
-[annotation.actions.agent]
-adapter = "opencode"
-
-[[annotation.actions]]
-id = "fix-codex"
-kind = "agent"
-
-[annotation.actions.agent]
-adapter = "codex"
-
 [services.storybook]
 primary = true
 command = ["sh", "-c", "exec ./node_modules/.bin/storybook dev --ci --port \"$PORT\""]
@@ -49,14 +18,14 @@ host = "{{ env.DEVHOST_STORYBOOK }}"
 __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS = "{{ env.DEVHOST_STORYBOOK }}"
 
 [services.playground-backend]
-command = ["just", "dev"]
+command = ["just", "run"]
 cwd = "packages/playground/backend"
 port = "auto"
 host = "{{ env.DEVHOST_PLAYGROUND }}"
 path = "/api/*"
 
 [services.playground-frontend]
-command = ["just", "dev"]
+command = ["just", "run"]
 cwd = "packages/playground/frontend"
 bindHost = "127.0.0.1"
 port = "auto"

@@ -2,11 +2,11 @@ package files
 
 import (
 	"context"
+	"encoding/json"
 	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -15,13 +15,16 @@ import (
 
 func TestMarkdownSourcePreferenceInBrowser(t *testing.T) {
 	// Use the browser installed by the repository's normal install workflow.
-	command := exec.Command("bun", "-e", `import { chromium } from "playwright"; console.log(chromium.executablePath())`)
+	command := exec.Command("bun", "-e", `import { chromium } from "playwright"; import { readContrastRatio } from "../../test-support/readContrastRatio"; console.log(JSON.stringify({path: chromium.executablePath(), contrast: readContrastRatio.toString()}))`)
 	command.Dir = "../../../../packages/devhost-ui"
 	output, err := command.CombinedOutput()
 	if err != nil {
 		t.Fatalf("locate repository Chromium: %v: %s", err, output)
 	}
-	browserPath := strings.TrimSpace(string(output))
+	var tools struct{ Path, Contrast string }
+	if err := json.Unmarshal(output, &tools); err != nil {
+		t.Fatal(err)
+	}
 	runRoot := filepath.Join(os.TempDir(), "devhost-e2e")
 	if err := os.MkdirAll(runRoot, 0o700); err != nil {
 		t.Fatal(err)
@@ -57,7 +60,7 @@ func TestMarkdownSourcePreferenceInBrowser(t *testing.T) {
 	t.Cleanup(server.Close)
 	visit := func(restarted bool) {
 		t.Helper()
-		opts := append(chromedp.DefaultExecAllocatorOptions[:], chromedp.ExecPath(browserPath), chromedp.UserDataDir(filepath.Join(runDir, "profile")), chromedp.NoSandbox)
+		opts := append(chromedp.DefaultExecAllocatorOptions[:], chromedp.ExecPath(tools.Path), chromedp.UserDataDir(filepath.Join(runDir, "profile")), chromedp.NoSandbox)
 		allocator, stop := chromedp.NewExecAllocator(context.Background(), opts...)
 		defer stop()
 		browser, closeBrowser := chromedp.NewContext(allocator)
@@ -85,6 +88,12 @@ func TestMarkdownSourcePreferenceInBrowser(t *testing.T) {
 			ok, err := chromedp.Run(ctx, chromedp.Evaluate[bool](`document.querySelector('#source').textContent.includes('**bold**') && document.querySelector('#toggle-source').textContent === 'Show rendered' && !document.querySelector('#toggle-source').hasAttribute('aria-pressed') && getComputedStyle(document.querySelector('#rendered')).display === 'none' && window.pwned === undefined`))
 			if err != nil || !ok {
 				t.Fatalf("source view is incorrect: %v %v", ok, err)
+			}
+			for _, selector := range []string{"#source", "#toggle-source", "header span"} {
+				ratio, err := chromedp.Run(ctx, chromedp.Evaluate[float64](`(`+tools.Contrast+`)(document.querySelector('`+selector+`'))`))
+				if err != nil || ratio < 4.5 {
+					t.Errorf("%s contrast=%v, err=%v; want at least 4.5", selector, ratio, err)
+				}
 			}
 		}
 		assertSource()

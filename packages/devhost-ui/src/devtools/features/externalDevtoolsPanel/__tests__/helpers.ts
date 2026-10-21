@@ -105,6 +105,7 @@ export async function startNativeVueHost(options: INativeVueHostOptions = {}): P
         "@vitejs/devtools-kit": "0.7.6",
         "@devframes/hub": devframeVersion,
         "@devframes/hub-ui": devframeVersion,
+        "@devframes/agentic": devframeVersion,
         devframe: devframeVersion,
       },
       overrides: Object.fromEntries(DEVFRAME_PACKAGE_NAMES.map((name) => [name, devframeVersion])),

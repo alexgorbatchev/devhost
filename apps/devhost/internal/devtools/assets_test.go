@@ -52,11 +52,4 @@ func TestBundledDevtoolsAssetsAreEmbedded(t *testing.T) {
 		t.Fatal("embedded script did not include the bundled devtools runtime")
 	}
 
-	stylesheetBytes, err := bundledAssets.ReadFile("dist/xterm.css")
-	if err != nil {
-		t.Fatalf("read terminal stylesheet: %v", err)
-	}
-	if !strings.Contains(string(stylesheetBytes), ".xterm") {
-		t.Fatal("embedded stylesheet did not include xterm styles")
-	}
 }
