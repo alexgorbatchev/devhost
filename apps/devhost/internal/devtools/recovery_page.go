@@ -34,8 +34,9 @@ var recoveryTemplate = template.Must(template.New("recovery").Parse(recoveryDocu
 
 type recoveryPageData struct {
 	RecoveryState
-	Status int
-	Styles template.CSS
+	Status      int
+	Styles      template.CSS
+	ThemeScript template.JS
 }
 
 func serveRecoveryPage(w http.ResponseWriter, r *http.Request, state RecoveryState, status int, injectToolbar bool) {
@@ -61,7 +62,7 @@ func serveRecoveryPage(w http.ResponseWriter, r *http.Request, state RecoverySta
 func renderRecoveryDocument(state RecoveryState, status int, injectToolbar bool) (string, error) {
 	var body bytes.Buffer
 	// The trusted stylesheet is embedded at build time; service data remains escaped.
-	page := recoveryPageData{RecoveryState: state, Status: status, Styles: template.CSS(statuspage.CSS)}
+	page := recoveryPageData{RecoveryState: state, Status: status, Styles: template.CSS(statuspage.CSS), ThemeScript: template.JS(statuspage.ThemeScript)}
 	if err := recoveryTemplate.Execute(&body, page); err != nil {
 		return "", err
 	}

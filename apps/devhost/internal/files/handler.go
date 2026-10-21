@@ -19,6 +19,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/statuspage"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 )
@@ -227,12 +228,14 @@ type listingEntry struct {
 	Href string
 }
 type pageData struct {
-	Title    string
-	Markdown bool
-	CSS      template.CSS
-	Source   string
-	Content  template.HTML
-	Entries  []listingEntry
+	Title       string
+	Markdown    bool
+	CSS         template.CSS
+	Styles      template.CSS
+	ThemeScript template.JS
+	Source      string
+	Content     template.HTML
+	Entries     []listingEntry
 }
 
 func (h *Handler) directory(w http.ResponseWriter, r *http.Request, dir *os.File, name string) {
@@ -278,7 +281,9 @@ func (h *Handler) directory(w http.ResponseWriter, r *http.Request, dir *os.File
 }
 
 func (h *Handler) document(w http.ResponseWriter, r *http.Request, data pageData) {
-	data.CSS = template.CSS(markdownCSS) // Pinned, embedded upstream stylesheet.
+	data.CSS = template.CSS(markdownCSS)                   // Pinned, embedded upstream stylesheet.
+	data.Styles = template.CSS(statuspage.CSS)             // Trusted bundled design stylesheet.
+	data.ThemeScript = template.JS(statuspage.ThemeScript) // Embedded script; no user data.
 	var body bytes.Buffer
 	if err := page.Execute(&body, data); err != nil {
 		http.Error(w, "Could not render page", http.StatusInternalServerError)

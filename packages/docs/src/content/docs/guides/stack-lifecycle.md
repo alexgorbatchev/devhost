@@ -148,7 +148,7 @@ Exited foreground services remain stopped until explicit recovery or a configura
 
 ## Startup and recovery pages
 
-Open a service's domain while it starts to see **Starting <service>**, its assigned address, and recent stdout/stderr. Startup and recovery pages share the managed proxy's 404 page styling: a centered monospace card with light and dark themes following your browser preference. The existing tab reloads its original path and query string once health checks and routing succeed. Devhost never launches a browser.
+Open a service's domain while it starts to see **Starting <service>**, its assigned address, and recent stdout/stderr. Startup, recovery, and managed proxy 404 pages use devhost's shared design: monospace type, neutral surfaces, magenta accents, compact borders, and left-aligned content. Light and dark themes follow your browser preference, including changes while the page is open. The existing tab reloads its original path and query string once health checks and routing succeed. Devhost never launches a browser.
 
 Stopping the stack during startup cancels the health wait and reports shutdown progress for every launched service.
 

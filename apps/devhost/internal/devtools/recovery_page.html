@@ -4,34 +4,26 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{.Title}} · devhost</title>
+    <script>
+      {{.ThemeScript}}
+    </script>
     <style>
       {{.Styles}}
 
-      .devhost-recovery__brand {
-        margin: 24px 0 0;
-      }
-      .devhost-recovery .devhost-status__body {
-        overflow-wrap: anywhere;
-      }
       .devhost-recovery__restart {
         margin-top: 24px;
         padding: 14px 20px;
-        border: 1px solid var(--border-strong);
-        border-radius: var(--radius-md);
-        background: var(--primary);
-        color: var(--primary-foreground);
-        box-shadow: var(--shadow-soft);
+        border: 1px solid var(--dh-input-line);
+        border-radius: var(--dh-radius-md);
+        background: var(--dh-accent);
+        color: var(--dh-on-accent);
         font: inherit;
         font-weight: 600;
         cursor: pointer;
       }
       .devhost-recovery__restart:hover:enabled {
-        background: var(--foreground);
-      }
-      .devhost-recovery__restart:focus-visible,
-      .devhost-recovery__logs summary:focus-visible {
-        outline: 2px solid var(--ring);
-        outline-offset: 3px;
+        background: var(--dh-surface-3);
+        color: var(--dh-fg);
       }
       .devhost-recovery__restart:disabled {
         cursor: default;
@@ -40,9 +32,9 @@
       .devhost-recovery__logs {
         margin-top: 32px;
         padding: 20px;
-        border: 1px solid var(--border-subtle);
-        border-radius: var(--radius-md);
-        background: var(--surface-subtle);
+        border: 1px solid var(--dh-line);
+        border-radius: var(--dh-radius-md);
+        background: var(--dh-surface-2);
         text-align: left;
         min-width: 0;
       }
@@ -56,7 +48,7 @@
         max-height: 24rem;
         white-space: pre-wrap;
         overflow-wrap: anywhere;
-        color: var(--foreground);
+        color: var(--dh-fg);
         font: inherit;
         font-size: 0.8125rem;
         line-height: 1.65;
@@ -83,28 +75,31 @@
         margin: 0;
       }
       .devhost-recovery__worktrees fieldset {
+        min-width: 0;
+        margin-inline: 0;
         margin-top: 16px;
         padding: 16px;
-        border: 1px solid var(--border-strong);
-        border-radius: var(--radius-md);
+        border: 1px solid var(--dh-input-line);
+        border-radius: var(--dh-radius-md);
       }
       .devhost-recovery__worktrees select {
         display: block;
         width: 100%;
+        min-width: 0;
         margin-top: 12px;
         padding: 12px;
-        background: var(--surface-subtle);
-        color: var(--foreground);
-        border: 1px solid var(--border-strong);
-        border-radius: var(--radius-md);
+        background: var(--dh-surface-2);
+        color: var(--dh-fg);
+        border: 1px solid var(--dh-input-line);
+        border-radius: var(--dh-radius-md);
         font: inherit;
       }
     </style>
   </head>
   <body data-devhost-recovery>
     <main class="devhost-status devhost-recovery">
+      <p class="devhost-status__brand">devhost / {{.Stack}}</p>
       <p class="devhost-status__code">{{.Status}}</p>
-      <p class="devhost-status__label devhost-recovery__brand">devhost · {{.Stack}}</p>
       <h1 class="devhost-status__title" id="title">{{.Title}}</h1>
       <p class="devhost-status__body" id="message" role="status">{{.Message}}</p>
       <p class="devhost-status__body">Service: <strong>{{.Service}}</strong> · <code>{{.Address}}</code></p>

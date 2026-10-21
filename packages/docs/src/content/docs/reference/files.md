@@ -44,7 +44,7 @@ Serve sessions use the usual hostname ownership checks, so a hostname already he
 
 Directories serve `index.html` first, then `index.md`. A directory with neither gets a clickable listing. Files are read on each request, so reloading shows changes and newly created files. Ordinary assets support GET, HEAD, and byte ranges. This is a static server: an unmatched URL returns 404 rather than falling back to a single-page application's entry point.
 
-Markdown files (`.md`, case-insensitive) render with GitHub styling, including tables, task lists, and strikethrough. Colors follow the browser's light or dark preference. Raw Markdown HTML and unsafe link destinations are suppressed in the rendered view.
+Directory listings and Markdown pages share devhost's monospace page chrome, neutral surfaces, compact borders, and magenta accents. Markdown files (`.md`, case-insensitive) retain GitHub Markdown formatting, including tables, task lists, and strikethrough. Colors follow the browser's light or dark preference. Raw Markdown HTML and unsafe link destinations are suppressed in the rendered view.
 
 Use the small **Show source** button to view the original Markdown and **Show rendered** to return. The choice is saved in browser local storage for that origin and applies to other Markdown pages, reloads, and later sessions on the same origin. If browser storage is unavailable, the toggle still works for the current page.
 
