@@ -10,14 +10,13 @@ import { readNativeReactBinding } from "./readNativeReactBinding";
 import { waitForNativeReactCondition } from "./waitForNativeReactCondition";
 import { activateNativeReactFixtureControl } from "./activateNativeReactFixtureControl";
 import { forwardNativeReactFixtureStream } from "./forwardNativeReactFixtureStream";
-import type { INativeReactAutomation, INativeReactProject } from "./types";
+import type { INativeReactProject } from "./types";
 
 interface INativeReactPendingActionOptions {
   browser: Browser;
   context: BrowserContext;
   endpoint: string;
   extensionId: string;
-  automation: INativeReactAutomation;
   project: INativeReactProject;
   outputPath: string;
 }
@@ -59,6 +58,7 @@ export async function exerciseNativeReactPendingAction(options: INativeReactPend
   let originalDocument: JSHandle<Document> | null = null;
   let originalApp: NativeReactElementHandle | null = null;
   let hostSession: CDPSession | null = null;
+  let inspector: NativeReactInspector | null = null;
   let continuity: unknown = null;
   let failure: unknown;
   try {
@@ -146,12 +146,12 @@ export async function exerciseNativeReactPendingAction(options: INativeReactPend
     const initialTarget: unknown = await hostSession.send("Target.getTargetInfo");
     const originalTargetId = targetIdentitySchema.parse(initialTarget).targetInfo.targetId;
     await page.getByRole("button", { name: "React DevTools", exact: true }).click();
-    const inspector = new NativeReactInspector({
+    inspector = new NativeReactInspector({
       browser: options.browser,
       host: page,
       endpoint: options.endpoint,
       extensionId: options.extensionId,
-      automation: options.automation,
+      evidencePath: options.outputPath,
       projectName: options.project.name,
     });
     await inspector.assertComponents(0);
@@ -249,9 +249,10 @@ export async function exerciseNativeReactPendingAction(options: INativeReactPend
       resolve(options.outputPath, "pending-runtime-diagnostics.json"),
       JSON.stringify({ exceptions, executionContexts, scripts, socketEvents }, null, 2),
     );
-    // There is no public WebSocket unroute API in installed Playwright 1.59.1.
+    // Playwright has no public WebSocket unroute API.
     // Disposing only this Page releases its route and genuine App document.
     const handleCleanup = await Promise.allSettled([
+      inspector?.close(),
       originalDocument?.dispose(),
       originalApp?.dispose(),
       hostSession?.detach(),

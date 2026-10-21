@@ -21,7 +21,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Regenerate `packages/design/tokens.css` after editing `packages/design/src/constants.ts`: `just design write-tokens`
 - Check the injected devtools UI package: `just ui check`
 - Check the docs package-only validations: `just docs check`
-- Run provisioned native React acceptance from the repository root: `just ui test-native-react` (see `packages/devhost-ui/AGENTS.md` for mandatory assets and additional coverage)
+- Run native React acceptance from the repository root on macOS or Linux x64: `just ui test-native-react` (it downloads the current Chrome for Testing and React Developer Tools; see `packages/devhost-ui/AGENTS.md` for its coverage)
 - Record the real scenes and render the promo on Linux: `DEVHOST_DEMO_INTERACTIVE=1 just demo record` (or append `annotations` for one captioned scene). Annotation recording needs a graphical browser and an operator for native tab sharing and agent approvals; follow `docs/internal/references/demo-recording.md` for narration refresh and other prerequisites.
 - Render the promo again from an earlier recording's footage: `just demo promo` (or `just demo promo .tmp/demos/recording-AbC123`). Every promo render also writes the docs landing page's copy: `packages/docs/public/demos/promo.{mp4,webp,vtt}` and `packages/docs/src/promoDemo.html`; review before publishing and committing.
 - Regenerate the promo's ElevenLabs narration, its only sound: `just demo audio`. This needs `ELEVENLABS_API_KEY` and bills that account.
@@ -33,6 +33,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Upload reviewed guide videos to the `media` release and pin them: `just docs publish-media`. This needs the GitHub CLI signed in with write access; commit the rewritten `packages/docs/demo-media.json`.
 - Start the root devhost stack locally: `just run`
 - Preview standalone 404, recovery, error, directory, and Markdown pages while that stack runs: open `/__devhost__/pages/` on a root-routed development domain. The gallery requires `DEVHOST_DEV_SOURCE_DIR`, which `just run` sets.
+- Start the dedicated Chrome for Testing with React Developer Tools that native React DevTools attaches to: `just dev-browser` (or `just dev-browser <port>`); set `DEVHOST_BROWSER_ENDPOINT` in `.envrc.local` to its endpoint, such as `http://127.0.0.1:9222`, and restart `just run`
 - Preview startup timeout and recovery pages: `just devhost demo-recovery`; configure `DEVHOST_RECOVERY` through `.envrc` / `.envrc.local`.
 - Start the docs site locally: `just docs` (or `just docs run`)
 - Open the injected devtools UI design reference (`packages/design/references/devtools.html`) in the default browser: `just design devtools`
