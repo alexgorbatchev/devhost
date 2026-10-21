@@ -52,6 +52,17 @@ Unavailable checkouts remain readable but cannot be selected. Click their **unav
 
 The **Worktrees** button displays each selected branch; detached checkouts show their abbreviated commit ID, and missing selections show **Unavailable worktree**. Its tooltip identifies selected non-default branches. Devhost reads the default branch from Git's locally recorded remote `HEAD` references, without contacting a remote or assuming a branch name. The button remains visible for default, detached, and unknown branches whenever repositories are available. Opening the picker or pressing **Refresh** also refreshes this information.
 
+Checkout selection is enabled by default and requires Git on `PATH`. To disable discovery and saved-selection restore:
+
+```toml
+[worktrees]
+enabled = false
+```
+
+Configure service `cwd` values in one checkout per repository. One active selection is saved locally per original manifest path, shared across browser tabs, and restored before the next run starts services. A missing saved checkout leaves its repository's services stopped with a recovery error; choose an available checkout from the toolbar or the standalone recovery page.
+
+New browser-launched editors and annotation actions use the selected checkout, remapping configured action directories inside that repository. Existing terminal sessions keep their original directories. A queued handoff to a session from another checkout pauses with an error; resume the queue to launch a session in the selected checkout.
+
 The Services panel has **Restart Changed** and **Restart Stack** buttons aligned to the right with a gap, each sized to its content. **Restart Changed** restarts every service marked changed, or the primary service when none changed; its button shows the configured keyboard shortcut (default **Alt+Ctrl+R**). Hover **Restart Stack** for a tooltip explaining that it restarts all managed services and reassigns automatic ports. Labels, icons, and shortcuts stay together on one line. Shortcut keycaps use muted text; filled buttons use a subdued contrasting keycap.
 
 Individual service restarts retain their assigned automatic ports. If a port is occupied, use **Restart Stack** in the Services panel or recovery dialog. It restarts all managed services with fresh automatic ports and rebuilt port references and environments, while retaining fixed ports, selected checkouts, control listeners, and terminal sessions. External processes keep running. Failures display an error and allow another attempt. See [Stack lifecycle](./stack-lifecycle/) for hot reload, restart ordering, and restoration behavior.
@@ -171,6 +182,8 @@ Handlers still validate methods, payloads, enabled features, and session state. 
 Use the page's routed host with `ws://` for HTTP or `wss://` for HTTPS. The terminal connection requires the ID of an existing session: a missing `sessionId` produces `400`, and an unknown session produces `404` before the WebSocket upgrade. The injected UI constructs these URLs automatically.
 
 The injected UI reopens its health, logs, resource usage, annotation queue, React Highlight, and terminal connections when they are lost, for example after the machine sleeps or devhost restarts behind the same host. It tries again after one second and doubles the wait after each failed attempt, up to ten seconds. The native browser-control connection is the exception: it reconnects only when you choose **Connect browser control** again.
+
+devhost also drops a page's connection when the page reads nothing for ten seconds while updates wait for it, for example while it is paused in a debugger; the page reconnects the same way once it runs again.
 
 While a connection is down:
 

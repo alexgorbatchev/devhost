@@ -219,8 +219,8 @@ args = ["-c", "model_reasoning_effort=high"]
 ```
 
 The Codex adapter requires a CLI version supporting `--no-daemon` and lifecycle hooks and is validated
-against 0.159.2. It launches an independent interactive session, keeps your authentication and
-permission settings, and passes an instruction to read the annotation prompt file.
+against 0.159.2. It launches an independent interactive session, keeps your authentication, sandbox, and
+approval settings, and passes an instruction to read the annotation prompt file.
 Use `/hooks` in the embedded Codex terminal to review and trust the devhost status hooks.
 Codex skips untrusted hooks, so queues cannot drain until those hooks are trusted and enabled.
 A managed-hooks-only policy also prevents these session hooks from running. Devhost does not
@@ -327,10 +327,24 @@ Replace the `console.log(...)` with your real Jira client or HTTP call. The impo
 
 Agent actions continue to support durable annotation queues. Command actions start standalone terminal sessions and are not queued.
 Running annotation sessions keep the stack alive through its idle timeout. Use the terminal's terminate action or stop `devhost` to end a running session.
+Terminal output is retained from process startup, including output from commands that exit quickly.
 
 The injected config includes UI-safe action metadata as `annotationActions`, with each action exposing `id`, `kind`, `label`, and `queueEnabled`, plus `annotationDefaultActionId` for the selected default.
 
 `devhost` executes custom agent commands directly, not through a shell string. For configured commands, `devhost` writes the annotation JSON and rendered prompt to temp files and injects their paths as `DEVHOST_ANNOTATION_FILE` and `DEVHOST_ANNOTATION_PROMPT_FILE`. Agent commands receive every variable listed for command actions; `DEVHOST_ANNOTATION_ACTION_LABEL` carries the action's label. Built-in adapters receive the rendered prompt natively via command-line arguments. Devhost writes adapter support files, such as hook and settings files, only for the built-in adapter an action selects. A custom agent receives the annotation JSON and prompt files and nothing else.
+
+### Annotation temporary files
+
+Set `tempDir` under `[annotation]` to choose the parent directory for the annotation JSON, prompt files, and agent support files shared by all annotation actions:
+
+```toml
+[annotation]
+tempDir = ".tmp/annotations"
+```
+
+Omit `tempDir` to use the system temporary directory (`$TMPDIR` when set on Unix, otherwise `/tmp`). Relative paths resolve against the working directory where you start `devhost`, independently of the manifest location and action `cwd`; absolute paths are used directly. Set the option in the root manifest when using includes. Empty values are invalid.
+
+`devhost` creates missing parent directories and a unique private directory for each session. Session cleanup removes that session's files and directory, leaving the configured parent and other sessions intact. Directory creation failures are reported without falling back to another location. This setting does not change durable queue storage.
 
 All built-in adapters integrate terminal OSC sequences to reflect working and idle states during embedded session execution, and the durable annotation queue uses those same status events to decide when to drain queued work:
 
