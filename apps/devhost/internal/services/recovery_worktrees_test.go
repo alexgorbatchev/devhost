@@ -19,7 +19,7 @@ func TestRecoveryPageSwitchesCheckoutWithToolbarDisabled(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := strings.Replace(reloadServiceBody("web", "served", "recovery.localhost"), "command = ", fmt.Sprintf("cwd = %q\ncommand = ", filepath.Join(root, "web")), 1)
-	body = "[devtools.status]\nenabled = false\n[devtools.editor]\nenabled = false\n[devtools.minimap]\nenabled = false\n[devtools.externalToolbars]\nenabled = false\n" + body
+	body = "[devtools.chat]\nenabled = false\n[devtools.annotations]\nenabled = false\n[devtools.status]\nenabled = false\n[devtools.editor]\nenabled = false\n[devtools.minimap]\nenabled = false\n[devtools.externalToolbars]\nenabled = false\n" + body
 	f := startReloadStackConfiguration(t, body, true)
 	if err := os.WriteFile(filepath.Join(linked, "devhost.toml"), []byte(f.header+strings.ReplaceAll(body, root, linked)), 0600); err != nil {
 		t.Fatal(err)

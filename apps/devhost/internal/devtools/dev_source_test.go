@@ -163,20 +163,6 @@ func TestControlServerDevSourceRetriesBuildThatWritesNoBundle(t *testing.T) {
 	}
 }
 
-func TestControlServerDevSourceServesXtermStylesheetFromCheckout(t *testing.T) {
-	t.Parallel()
-
-	checkoutPath := writeDevSourceCheckout(t, failingBundleRecipe)
-	stylesheetPath := filepath.Join(checkoutPath, "apps", "devhost", "internal", "devtools", "dist", "xterm.css")
-	writeTestFile(t, stylesheetPath, "/* css from checkout */")
-
-	controlServer := startDevSourceControlServer(t, checkoutPath)
-
-	if body := getControlServerText(t, controlServer, xtermStylesheetPath); body != "/* css from checkout */" {
-		t.Fatalf("xterm.css = %q, want the checkout stylesheet", body)
-	}
-}
-
 func TestNewDevSourceCheckoutRejectsIncompleteCheckouts(t *testing.T) {
 	t.Parallel()
 

@@ -154,7 +154,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			}
 		}
 	}
-	runtimeDevtoolsFeatures := resolveSupportedDevtoolsFeatures(manifest.Devtools, manifest.Annotation)
+	runtimeDevtoolsFeatures := resolveSupportedDevtoolsFeatures(manifest.Devtools)
 	devtoolsEnabled := hasEnabledDevtools(manifest.Devtools) && hasEnabledRuntimeDevtools(runtimeDevtoolsFeatures)
 	lifecycleCtx, cancelLifecycle := context.WithCancel(context.Background())
 	defer cancelLifecycle()
@@ -424,10 +424,8 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			AllowsNativeBrowserURL: func(port int, href string) (bool, error) {
 				return caddy.AllowsDevtoolsURL(paths, caddy.DevtoolsRouteOwner{ManifestPath: manifest.ManifestPath, ControlPort: port}, href)
 			},
-			AnnotationActions:         manifest.Annotation.Actions,
-			AnnotationDefaultActionID: manifest.Annotation.DefaultActionID,
-			ComponentEditor:           manifest.Devtools.Editor.IDE,
-			DevSource:                 devSource,
+			ComponentEditor: manifest.Devtools.Editor.IDE,
+			DevSource:       devSource,
 			OnLog: func(message string) {
 				cliout.Log(options.LogWriter, manifest.Name, message)
 			},
@@ -435,11 +433,9 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			GetHealthResponse: func() (devtools.HealthResponse, error) {
 				return state.health(lifecycleCtx)
 			},
-			ManifestPath:         manifest.ManifestPath,
-			Position:             manifest.Devtools.Status.Position,
-			ProjectRootPath:      manifest.ManifestDirectoryPath,
-			RuntimeDirectoryPath: options.runtimeDirectoryPath,
-			PrimaryService:       manifest.PrimaryService,
+			Position:        manifest.Devtools.Status.Position,
+			ProjectRootPath: manifest.ManifestDirectoryPath,
+			PrimaryService:  manifest.PrimaryService,
 			ResourceUsage: devtools.ResourceUsageOptions{
 				Intervals: resolveResourceIntervals(manifest.Devtools.Resources),
 				Readers:   hostusage.HostReaders(),
@@ -455,7 +451,6 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			GetToolContext:          state.toolContext,
 			RestartServicesShortcut: manifest.Devtools.Shortcuts.RestartServices,
 			RoutedServices:          routedServices,
-			StateDirectoryPath:      paths.StateDirectoryPath,
 			StackName:               manifest.Name,
 		})
 		if err != nil {
@@ -614,7 +609,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 				case <-pollerCtx.Done():
 					return
 				case <-ticker.C:
-					if devtoolsControlServer.Tracker().IsIdle(finalIdleTimeout) && !devtoolsControlServer.HasActiveTerminalSessions() {
+					if devtoolsControlServer.Tracker().IsIdle(finalIdleTimeout) && !devtoolsControlServer.HasActiveChatSessions() {
 						select {
 						case idleShutdownChan <- struct{}{}:
 						default:
@@ -1479,29 +1474,11 @@ func collectClaimedHosts(services map[string]ResolvedService) []string {
 }
 
 func hasEnabledDevtools(config manifest.DevtoolsConfig) bool {
-	return config.Editor.Enabled || config.ExternalToolbars.Enabled || config.Minimap.Enabled || config.Status.Enabled
+	return config.Chat.Enabled || config.Annotations.Enabled || config.Editor.Enabled || config.ExternalToolbars.Enabled || config.Minimap.Enabled || config.Status.Enabled
 }
 
-func resolveSupportedDevtoolsFeatures(config manifest.DevtoolsConfig, annotation manifest.ValidatedAnnotation) devtools.FeatureToggles {
-	devtoolsEnabled := hasEnabledDevtools(config)
-	hasAnnotationActions := len(annotation.Actions) > 0
-	hasQueuedAnnotationActions := false
-	for _, action := range annotation.Actions {
-		if action.Kind == "agent" {
-			hasQueuedAnnotationActions = true
-			break
-		}
-	}
-
-	return devtools.FeatureToggles{
-		AnnotationEnabled:       devtoolsEnabled && hasAnnotationActions,
-		AnnotationQueueEnabled:  devtoolsEnabled && hasQueuedAnnotationActions,
-		EditorEnabled:           config.Editor.Enabled,
-		ExternalToolbarsEnabled: config.ExternalToolbars.Enabled,
-		MinimapEnabled:          config.Minimap.Enabled,
-		StatusEnabled:           config.Status.Enabled,
-		TerminalEnabled:         devtoolsEnabled,
-	}
+func resolveSupportedDevtoolsFeatures(config manifest.DevtoolsConfig) devtools.FeatureToggles {
+	return devtools.FeatureToggles{ChatEnabled: config.Chat.Enabled, AnnotationEnabled: config.Annotations.Enabled, EditorEnabled: config.Editor.Enabled, ExternalToolbarsEnabled: config.ExternalToolbars.Enabled, MinimapEnabled: config.Minimap.Enabled, StatusEnabled: config.Status.Enabled}
 }
 
 // resolveResourceIntervals returns the poll interval of every readout that is on; an off readout keeps zero.
@@ -1525,12 +1502,11 @@ func resolveResourceIntervals(config manifest.DevtoolsResourcesConfig) hostusage
 
 func hasEnabledRuntimeDevtools(features devtools.FeatureToggles) bool {
 	return features.AnnotationEnabled ||
-		features.AnnotationQueueEnabled ||
+		features.ChatEnabled ||
 		features.EditorEnabled ||
 		features.ExternalToolbarsEnabled ||
 		features.MinimapEnabled ||
-		features.StatusEnabled ||
-		features.TerminalEnabled
+		features.StatusEnabled
 }
 
 func collectRoutedServiceIdentities(services map[string]ResolvedService) []devtools.RoutedServiceIdentity {

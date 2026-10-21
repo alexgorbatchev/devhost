@@ -1,215 +1,103 @@
 import { afterEach, describe, expect, test } from "bun:test";
-
 import { DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "../constants";
 import { readInjectedDevtoolsConfig } from "../readInjectedDevtoolsConfig";
 
-const originalInjectedConfig: unknown = Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME);
-
+const original: unknown = Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME);
 afterEach(() => {
-  Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, originalInjectedConfig);
+  Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, original);
 });
 
 describe("readInjectedDevtoolsConfig", () => {
-  test("reads the home directory for path display", () => {
-    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, { homeDirectoryPath: "/home/alex" });
-    expect(readInjectedDevtoolsConfig().homeDirectoryPath).toBe("/home/alex");
+  test("keeps chat and capture off without server configuration", () => {
+    Reflect.deleteProperty(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME);
+    const config = readInjectedDevtoolsConfig();
+    expect(config.chatEnabled).toBe(false);
+    expect(config.annotationEnabled).toBe(false);
   });
-
-  test("ignores an invalid home directory", () => {
-    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, { homeDirectoryPath: 42 });
-    expect(readInjectedDevtoolsConfig().homeDirectoryPath).toBe("");
+  test.each([
+    { chatEnabled: true, annotationEnabled: false },
+    { chatEnabled: false, annotationEnabled: true },
+    { chatEnabled: true, annotationEnabled: true },
+  ])("reads independent server feature gates: %j", (gates) => {
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, gates);
+    expect(readInjectedDevtoolsConfig()).toMatchObject(gates);
   });
-
-  test("turns the resource readouts on only when the server says so", () => {
-    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, { resourcesEnabled: true });
-    expect(readInjectedDevtoolsConfig().resourcesEnabled).toBe(true);
-
-    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, { resourcesEnabled: "yes" });
-    expect(readInjectedDevtoolsConfig().resourcesEnabled).toBe(false);
-  });
-
-  test("returns defaults when the injected config is unavailable", () => {
-    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, undefined);
-
-    expect(readInjectedDevtoolsConfig()).toEqual({
-      nativeBrowserConfigured: false,
-      nativeBrowserInstanceId: "",
-      annotationActions: [],
-      annotationDefaultActionId: "",
-      componentEditor: "vscode",
-      homeDirectoryPath: "",
-      position: "bottom-right",
-      projectRootPath: "",
-      routedServices: [],
-      stackName: "devhost",
-      annotationEnabled: false,
-      annotationQueueEnabled: false,
-      editorEnabled: true,
-      externalToolbarsEnabled: true,
-      minimapEnabled: true,
-      resourcesEnabled: false,
-      statusEnabled: true,
-      terminalEnabled: true,
-      restartServicesShortcut: "alt+ctrl+r",
-      primaryService: "",
-    });
-  });
-
-  test("reads the injected editor and project-root config", () => {
+  test("ignores malformed flags and obsolete adapter metadata", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
-      annotationActions: [{ id: "agent", kind: "agent", label: "Claude Code", queueEnabled: true }],
+      chatEnabled: "yes",
+      annotationEnabled: 1,
+      annotationActions: [{ id: "agent", kind: "agent", label: "Legacy", queueEnabled: true }],
       annotationDefaultActionId: "agent",
-      componentEditor: "neovim",
-      homeDirectoryPath: "",
-      position: "top-right",
-      projectRootPath: "/tmp/project",
-      routedServices: [{ host: "app.localhost", path: "/api/*", serviceName: "api" }],
-      stackName: "hello-stack",
-    });
-
-    expect(readInjectedDevtoolsConfig()).toEqual({
-      nativeBrowserConfigured: false,
-      nativeBrowserInstanceId: "",
-      annotationActions: [{ id: "agent", kind: "agent", label: "Claude Code", queueEnabled: true }],
-      annotationDefaultActionId: "agent",
-      componentEditor: "neovim",
-      homeDirectoryPath: "",
-      position: "top-right",
-      projectRootPath: "/tmp/project",
-      routedServices: [{ host: "app.localhost", path: "/api/*", serviceName: "api" }],
-      stackName: "hello-stack",
-      annotationEnabled: true,
       annotationQueueEnabled: true,
-      editorEnabled: true,
-      externalToolbarsEnabled: true,
-      minimapEnabled: true,
-      resourcesEnabled: false,
-      statusEnabled: true,
       terminalEnabled: true,
-      restartServicesShortcut: "alt+ctrl+r",
-      primaryService: "",
+    });
+    const config = readInjectedDevtoolsConfig();
+    expect(config.chatEnabled).toBe(false);
+    expect(config.annotationEnabled).toBe(false);
+    for (const key of ["annotationActions", "annotationDefaultActionId", "annotationQueueEnabled", "terminalEnabled"])
+      expect(Reflect.has(config, key)).toBe(false);
+  });
+  test("reads external editor, checkout, home and routed service metadata", () => {
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
+      componentEditor: "cursor",
+      projectRootPath: "/workspaces/shop",
+      homeDirectoryPath: "/home/alex",
+      stackName: "shop",
+      position: "top-right",
+      resourcesEnabled: true,
+      primaryService: "web",
+      routedServices: [
+        { host: "shop.localhost", path: "/*", serviceName: "web" },
+        { host: 3, path: "/", serviceName: "invalid" },
+      ],
+    });
+    expect(readInjectedDevtoolsConfig()).toMatchObject({
+      componentEditor: "cursor",
+      projectRootPath: "/workspaces/shop",
+      homeDirectoryPath: "/home/alex",
+      stackName: "shop",
+      position: "top-right",
+      resourcesEnabled: true,
+      primaryService: "web",
+      routedServices: [{ host: "shop.localhost", path: "/", serviceName: "web" }],
     });
   });
-
-  test("falls back to the default status position for removed left-side values", () => {
+  test("falls back for removed Vim launching and invalid presentation fields", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
+      componentEditor: "neovim",
+      homeDirectoryPath: 42,
       position: "top-left",
+      resourcesEnabled: "yes",
     });
-
-    expect(readInjectedDevtoolsConfig()).toEqual({
-      nativeBrowserConfigured: false,
-      nativeBrowserInstanceId: "",
-      annotationActions: [],
-      annotationDefaultActionId: "",
+    expect(readInjectedDevtoolsConfig()).toMatchObject({
       componentEditor: "vscode",
       homeDirectoryPath: "",
       position: "bottom-right",
-      projectRootPath: "",
-      routedServices: [],
-      stackName: "devhost",
-      annotationEnabled: false,
-      annotationQueueEnabled: false,
-      editorEnabled: true,
-      externalToolbarsEnabled: true,
-      minimapEnabled: true,
       resourcesEnabled: false,
-      statusEnabled: true,
-      terminalEnabled: true,
-      restartServicesShortcut: "alt+ctrl+r",
-      primaryService: "",
     });
   });
-
-  test("reads capability gates from the injected config", () => {
+  test("preserves only a valid native browser instance identity", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
-      annotationEnabled: false,
-      annotationQueueEnabled: false,
-      terminalEnabled: false,
+      nativeBrowserConfigured: true,
+      nativeBrowserInstanceId: "a".repeat(32),
     });
-
-    expect(readInjectedDevtoolsConfig()).toEqual({
-      nativeBrowserConfigured: false,
-      nativeBrowserInstanceId: "",
-      annotationActions: [],
-      annotationDefaultActionId: "",
-      componentEditor: "vscode",
-      homeDirectoryPath: "",
-      position: "bottom-right",
-      projectRootPath: "",
-      routedServices: [],
-      stackName: "devhost",
-      annotationEnabled: false,
-      annotationQueueEnabled: false,
-      editorEnabled: true,
-      externalToolbarsEnabled: true,
-      minimapEnabled: true,
-      resourcesEnabled: false,
-      statusEnabled: true,
-      terminalEnabled: false,
-      restartServicesShortcut: "alt+ctrl+r",
-      primaryService: "",
+    expect(readInjectedDevtoolsConfig()).toMatchObject({
+      nativeBrowserConfigured: true,
+      nativeBrowserInstanceId: "a".repeat(32),
     });
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, { nativeBrowserInstanceId: "invalid" });
+    expect(readInjectedDevtoolsConfig().nativeBrowserInstanceId).toBe("");
   });
-
-  test("reads annotation actions from the injected config", () => {
+  test("reuses parsed routing until the injected object is replaced", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
-      annotationActions: [
-        { id: "ask-agent", kind: "agent", label: "Pi", queueEnabled: true },
-        { id: "create-ticket", kind: "command", label: "Create Ticket", queueEnabled: false },
-      ],
-      annotationDefaultActionId: "create-ticket",
+      homeDirectoryPath: "/home/first",
+      routedServices: [{ host: "shop.localhost", path: "/", serviceName: "web" }],
     });
-
-    expect(readInjectedDevtoolsConfig()).toEqual({
-      nativeBrowserConfigured: false,
-      nativeBrowserInstanceId: "",
-      annotationActions: [
-        { id: "ask-agent", kind: "agent", label: "Pi", queueEnabled: true },
-        { id: "create-ticket", kind: "command", label: "Create Ticket", queueEnabled: false },
-      ],
-      annotationDefaultActionId: "create-ticket",
-      componentEditor: "vscode",
-      homeDirectoryPath: "",
-      position: "bottom-right",
-      projectRootPath: "",
-      routedServices: [],
-      stackName: "devhost",
-      annotationEnabled: true,
-      annotationQueueEnabled: true,
-      editorEnabled: true,
-      externalToolbarsEnabled: true,
-      minimapEnabled: true,
-      resourcesEnabled: false,
-      statusEnabled: true,
-      terminalEnabled: true,
-      restartServicesShortcut: "alt+ctrl+r",
-      primaryService: "",
-    });
-  });
-
-  test("returns the same configuration while the injected object is unchanged", () => {
-    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
-      annotationActions: [{ id: "agent", kind: "agent", label: "Pi", queueEnabled: true }],
-      routedServices: [{ host: "app.localhost", path: "/", serviceName: "web" }],
-    });
-
-    const firstRead = readInjectedDevtoolsConfig();
-    const secondRead = readInjectedDevtoolsConfig();
-
-    // Components read the configuration during render; a new object or array each time would retrigger every
-    // effect and callback that depends on it.
-    expect(secondRead).toBe(firstRead);
-    expect(secondRead.annotationActions).toBe(firstRead.annotationActions);
-    expect(secondRead.routedServices).toBe(firstRead.routedServices);
-  });
-
-  test("reads again when the injected object is replaced", () => {
-    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, { homeDirectoryPath: "/home/first" });
-    const firstRead = readInjectedDevtoolsConfig();
-
+    const first = readInjectedDevtoolsConfig();
+    expect(readInjectedDevtoolsConfig()).toBe(first);
+    expect(readInjectedDevtoolsConfig().routedServices).toBe(first.routedServices);
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, { homeDirectoryPath: "/home/second" });
-
-    expect(firstRead.homeDirectoryPath).toBe("/home/first");
+    expect(first.homeDirectoryPath).toBe("/home/first");
     expect(readInjectedDevtoolsConfig().homeDirectoryPath).toBe("/home/second");
   });
 });

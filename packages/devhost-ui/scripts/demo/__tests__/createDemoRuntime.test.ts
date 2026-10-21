@@ -16,6 +16,8 @@ it("uses portless HTTPS and separate manifests for recordings on distinct hosts"
     expect(second.url).toBe("https://second-demo.localhost");
     expect(first.env.XDG_STATE_HOME).toBe(process.env.XDG_STATE_HOME);
     expect(first.env.DEVHOST_STATE_DIR).toBe(process.env.DEVHOST_STATE_DIR);
+    expect(first.env.XDG_CONFIG_HOME).toBe(process.env.XDG_CONFIG_HOME);
+    expect(first.env.XDG_DATA_HOME).toBe(process.env.XDG_DATA_HOME);
   } finally {
     await Promise.all([first, second].map((runtime) => rm(runtime.directoryPath, { recursive: true, force: true })));
   }

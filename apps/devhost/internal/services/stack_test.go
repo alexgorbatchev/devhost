@@ -878,6 +878,8 @@ func TestStartStackLeavesDevtoolsRoutesUnmountedWhenAllFeaturesAreDisabled(t *te
 
 	manifestValue := newResolvedManifest(t.TempDir(), adminAddress)
 	manifestValue.Name = "devtools-disabled-stack"
+	manifestValue.Devtools.Chat.Enabled = false
+	manifestValue.Devtools.Annotations.Enabled = false
 	manifestValue.PrimaryService = "web"
 	manifestValue.Devtools.Editor.Enabled = false
 	manifestValue.Devtools.ExternalToolbars.Enabled = false

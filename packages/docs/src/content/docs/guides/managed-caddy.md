@@ -111,7 +111,7 @@ host = ["app.localhost", "alias.localhost"]
 
 Every hostname uses the same backend port and `path`, and must resolve to the machine running `devhost`. The array must contain at least one valid, unique hostname. Each hostname is claimed independently, so a conflict on any domain prevents startup and releases the claims already acquired.
 
-The first hostname supplies `DEVHOST_HOST`, `{{ services.web.host }}`, and the devtools service link. Startup logs show every routed URL. All domains share the service's annotation queues for each annotation action.
+The first hostname supplies `DEVHOST_HOST`, `{{ services.web.host }}`, and the devtools service link. Startup logs show every routed URL. New native chat sessions resolve the service checkout from their routed hostname and path.
 
 All domains follow the service's port on restart, including after an automatic port retry. Route updates publish together; a failed refresh restores every domain's previous route and leaves the service available for recovery in devtools.
 

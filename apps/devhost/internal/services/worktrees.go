@@ -385,7 +385,7 @@ func (w *stackWorktrees) projectRoot(configured, name string) string {
 }
 
 func (w *stackWorktrees) toolContext(m ResolvedManifest, name string) (devtools.ToolContext, error) {
-	result := devtools.ToolContext{ProjectRootPath: m.ManifestDirectoryPath, AnnotationActions: append([]manifest.ValidatedAnnotationAction{}, m.Annotation.Actions...)}
+	result := devtools.ToolContext{ProjectRootPath: m.ManifestDirectoryPath}
 	if w == nil {
 		return result, nil
 	}
@@ -419,11 +419,6 @@ func (w *stackWorktrees) toolContext(m ResolvedManifest, name string) (devtools.
 			result.ProjectRootPath = filepath.Join(selected, rel)
 		} else {
 			result.ProjectRootPath = selected
-		}
-		for i := range result.AnnotationActions {
-			action := &result.AnnotationActions[i]
-			action.Cwd = result.ResolvePath(action.Cwd)
-			action.Agent.Cwd = result.ResolvePath(action.Agent.Cwd)
 		}
 		break
 	}

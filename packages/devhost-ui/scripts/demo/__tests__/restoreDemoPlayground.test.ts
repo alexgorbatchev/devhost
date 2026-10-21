@@ -14,7 +14,7 @@ it("restores the recorded source and retains the actual agent edit for review", 
     await Bun.write(fixturePath, edited);
     await restoreDemoPlayground(runtime);
     expect(await Bun.file(fixturePath).text()).toBe(original);
-    expect(await Bun.file(join(runtime.directoryPath, "pi-changes.json")).json()).toEqual({ [file]: edited });
+    expect(await Bun.file(join(runtime.directoryPath, "agent-changes.json")).json()).toEqual({ [file]: edited });
   } finally {
     await rm(runtime.directoryPath, { recursive: true, force: true });
   }

@@ -90,13 +90,6 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	if err := r.checkReady(); err != nil {
 		return err
 	}
-	if next.Annotation.TempDir != nil {
-		dir, err := filepath.Abs(*next.Annotation.TempDir)
-		if err != nil {
-			return err
-		}
-		*next.Annotation.TempDir = dir
-	}
 	previousConfiguration := r.configured
 	if previousConfiguration == nil {
 		previousConfiguration = r.manifest.configuration

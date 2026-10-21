@@ -1,30 +1,13 @@
-export const defaultAnnotationActionId = "agent";
-
-export type AnnotationActionKind = "agent" | "command";
-
-export interface IAnnotationAction {
-  id: string;
-  kind: AnnotationActionKind;
-  label: string;
-  queueEnabled: boolean;
-}
-
 export type DevtoolsPosition = "top-right" | "bottom-right";
 
-export const supportedDevtoolsComponentEditors = ["cursor", "neovim", "vscode", "vscode-insiders", "webstorm"] as const;
+export const supportedDevtoolsComponentEditors = ["cursor", "vscode", "vscode-insiders", "webstorm"] as const;
 
 export type DevtoolsComponentEditor = (typeof supportedDevtoolsComponentEditors)[number];
 
 export const defaultDevtoolsComponentEditor: DevtoolsComponentEditor = "vscode";
 
 export function isDevtoolsComponentEditor(value: unknown): value is DevtoolsComponentEditor {
-  return (
-    value === "cursor" ||
-    value === "neovim" ||
-    value === "vscode" ||
-    value === "vscode-insiders" ||
-    value === "webstorm"
-  );
+  return value === "cursor" || value === "vscode" || value === "vscode-insiders" || value === "webstorm";
 }
 
 export function readDevtoolsComponentEditorValue(value: unknown): DevtoolsComponentEditor {
@@ -35,8 +18,6 @@ export function readDevtoolsComponentEditorLabel(editor: DevtoolsComponentEditor
   switch (editor) {
     case "cursor":
       return "Cursor";
-    case "neovim":
-      return "Neovim";
     case "vscode-insiders":
       return "VS Code Insiders";
     case "webstorm":

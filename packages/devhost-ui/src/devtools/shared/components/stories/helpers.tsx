@@ -3,8 +3,6 @@ import { ResourceUsagePanel } from "../../../features/resourceUsage/components/R
 import { fixture_calmUsage } from "../../../features/resourceUsage/components/stories/fixtures";
 import { WorktreeStatusPanel } from "../../../features/serviceStatusPanel/components/WorktreeStatusPanel";
 import { factory_worktreeRepository } from "../../../features/serviceStatusPanel/components/stories/fixtures";
-import { TerminalSessionChips } from "../../../features/terminalSessions/components/TerminalSessionChips";
-import { factory_agentSessions } from "../../../features/terminalSessions/components/stories/fixtures";
 import type { DevtoolsPosition } from "../../devtoolsConfig";
 import { DevtoolsToolbar } from "../DevtoolsToolbar";
 import { ToolbarPopover } from "../ToolbarPopover";
@@ -362,12 +360,6 @@ export function ResponsiveToolbarScene({
           { id: "tanstack", label: "TanStack", title: "TanStack", isOpen: false },
         ]}
         onToggleLauncher={() => {}}
-      />
-      <TerminalSessionChips
-        sessions={factory_agentSessions(16)}
-        onExpandSession={() => {}}
-        onMinimizeSession={() => {}}
-        onRemoveSession={() => {}}
       />
     </DevtoolsToolbar>
   );

@@ -73,13 +73,13 @@ This action uses the last accepted manifest, so an invalid edit on disk does not
 
 ## Manifest changes rejected
 
-Saving `devhost.toml` or an included manifest reloads service configuration. A `configuration reload rejected` log names the reason an edit could not apply. Correct parse or validation errors and save again. Edits to `name`, `killZombies`, Caddy, devtools, annotation settings, or worktree enablement require stopping and restarting devhost; the entire edit is rejected if it changes any of those settings.
+Saving `devhost.toml` or an included manifest reloads service configuration. A `configuration reload rejected` log names the reason an edit could not apply. Correct parse or validation errors and save again. Edits to `name`, `killZombies`, Caddy, devtools or worktree enablement require stopping and restarting devhost; the entire edit is rejected if it changes any of those settings.
 
 If a replacement launch or route update fails, devhost attempts to restore the previous stack. Read the retained logs for restoration errors and recover stopped services explicitly. See [Stack lifecycle](./stack-lifecycle/) for the reload and recovery contract.
 
 ## Deleted selected worktree
 
-Open the Worktrees toolbar picker or press **Refresh** after adding or deleting worktrees. If the running checkout was deleted, devhost stops only that repository's services and retains the missing selection with a recovery error. Select an available checkout before restarting the stack. Editor and annotation launches into that repository remain blocked until checkout recovery; other repositories keep running.
+Open the Worktrees toolbar picker or press **Refresh** after adding or deleting worktrees. If the running checkout was deleted, devhost stops only that repository's services and retains the missing selection with a recovery error. Select an available checkout before restarting the stack. External editor links and new chat sessions into that repository remain blocked until checkout recovery; other repositories keep running.
 
 ## Vite bind-host mismatch
 

@@ -58,11 +58,3 @@ check: lint test
 # Build versioned release archives
 build-release-artifacts *args: build-devtools-bundle
     bun run ./scripts/buildReleaseArtifacts.ts {{ args }}
-
-# Start Neovim with playground project
-nvim *args:
-    bun run ./scripts/startNvim.ts {{ args }}
-
-# Run standalone React Highlight Neovim plugin tests
-test-nvim:
-    bun run ./internal/devtools/nvim/devhost-react-highlight.nvim/tests/run.ts

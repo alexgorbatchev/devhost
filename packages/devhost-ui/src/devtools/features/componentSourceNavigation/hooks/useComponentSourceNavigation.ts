@@ -4,34 +4,30 @@ import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../../shared/constants";
 import { resolveWorktreeSourcePath } from "../../../shared/resolveWorktreeSourcePath";
 import type { IWorktreeRepository } from "../../../shared/types";
 import { readDevtoolsComponentEditorLabel, type DevtoolsComponentEditor } from "../../../shared";
-import { isEventTargetTerminalKeyboardInput } from "../../../shared/isEventTargetTerminalKeyboardInput";
 import { resolveAnnotationTarget } from "../../annotationComposer/resolveAnnotationTarget";
-import type { ITerminalSessionStartResult } from "../../terminalSessions/types";
 import { createComponentSourceUrl, formatComponentSourcePath } from "../componentSourceUtils";
 import { inspectComponentElement } from "../inspectComponentElement";
-import type { ComponentSourceMenuItem, IComponentSourceMenuState, ISetComponentMenuFunction } from "../types";
+import type { IComponentSourceMenuItem, IComponentSourceMenuState, ISetComponentMenuFunction } from "../types";
 
-type UseComponentSourceNavigationParams = {
+interface IUseComponentSourceNavigationParams {
   componentEditor: DevtoolsComponentEditor;
   projectRootPath: string;
   worktreeRepository?: IWorktreeRepository;
-  startComponentSourceSession: (menuItem: ComponentSourceMenuItem) => Promise<ITerminalSessionStartResult>;
   enabled?: boolean;
-};
+}
 
-type UseComponentSourceNavigationResult = {
+interface IUseComponentSourceNavigationResult {
   closeComponentMenu: () => void;
   componentMenu: IComponentSourceMenuState | null;
   openComponentSource: (index: number) => Promise<void>;
-};
+}
 
 export function useComponentSourceNavigation({
   componentEditor,
   projectRootPath,
   worktreeRepository,
-  startComponentSourceSession,
   enabled = true,
-}: UseComponentSourceNavigationParams): UseComponentSourceNavigationResult {
+}: IUseComponentSourceNavigationParams): IUseComponentSourceNavigationResult {
   const [componentMenu, setComponentMenu] = useState<IComponentSourceMenuState | null>(null);
 
   const closeComponentMenu = useCallback((): void => {
@@ -42,22 +38,9 @@ export function useComponentSourceNavigation({
     closeComponentMenu();
   }, [closeComponentMenu, worktreeRepository?.selectedPath, worktreeRepository?.switching, worktreeRepository?.error]);
 
-  const setComponentMenuErrorMessage = useCallback((errorMessage: string): void => {
-    setComponentMenu((currentMenu: IComponentSourceMenuState | null): IComponentSourceMenuState | null => {
-      if (currentMenu === null) {
-        return null;
-      }
-
-      return {
-        ...currentMenu,
-        errorMessage,
-      };
-    });
-  }, []);
-
   const openComponentSource = useCallback(
     async (index: number): Promise<void> => {
-      const menuItem: ComponentSourceMenuItem | undefined = componentMenu?.items[index];
+      const menuItem: IComponentSourceMenuItem | undefined = componentMenu?.items[index];
 
       if (menuItem === undefined) {
         return;
@@ -73,22 +56,10 @@ export function useComponentSourceNavigation({
         }
       }
 
-      if (menuItem.action.kind === "external-editor") {
-        window.location.assign(menuItem.action.sourceUrl);
-        closeComponentMenu();
-        return;
-      }
-
-      const startResult: ITerminalSessionStartResult = await startComponentSourceSession(menuItem);
-
-      if (!startResult.success) {
-        setComponentMenuErrorMessage(startResult.errorMessage ?? "Failed to start the Neovim session.");
-        return;
-      }
-
+      window.location.assign(menuItem.action.sourceUrl);
       closeComponentMenu();
     },
-    [closeComponentMenu, componentMenu, projectRootPath, setComponentMenuErrorMessage, startComponentSourceSession],
+    [closeComponentMenu, componentMenu, projectRootPath],
   );
 
   useEffect(() => {
@@ -147,11 +118,6 @@ export function useComponentSourceNavigation({
       closeComponentMenu();
     };
     const handleKeyDown = (event: KeyboardEvent): void => {
-      const target = event.composedPath()[0] || event.target;
-      if (isEventTargetTerminalKeyboardInput(target)) {
-        return;
-      }
-
       if (event.key !== "Escape") {
         return;
       }
@@ -193,7 +159,7 @@ async function openComponentMenu(
   }
 
   setComponentMenu({
-    items: inspectedComponents.map((inspection, index): ComponentSourceMenuItem => {
+    items: inspectedComponents.map((inspection, index): IComponentSourceMenuItem => {
       const source = {
         ...inspection.source,
         fileName: resolveWorktreeSourcePath(inspection.source.fileName, worktreeRepository),
@@ -214,26 +180,13 @@ function createMenuItem(
   sourceLabel: string,
   componentEditor: DevtoolsComponentEditor,
   projectRootPath: string,
-): ComponentSourceMenuItem {
+): IComponentSourceMenuItem {
   const props = Object.entries(inspection.props).map(([name, value]) => {
     return {
       name,
       title: `${name}=${value}`,
     };
   });
-
-  if (componentEditor === "neovim") {
-    return {
-      action: {
-        kind: "neovim",
-      },
-      displayName: inspection.displayName,
-      key: `${sourceLabel}:${index}`,
-      props,
-      source: inspection.source,
-      sourceLabel,
-    };
-  }
 
   return {
     action: {

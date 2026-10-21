@@ -363,10 +363,6 @@ func TestWorktreeDiscoveryHandlesDetachedAndLockedPaths(t *testing.T) {
 func TestWorktreeToolsFollowSelection(t *testing.T) {
 	root, linked := createWorktreeRepository(t)
 	m := worktreeTestManifest(root)
-	m.Annotation.Actions = []manifest.ValidatedAnnotationAction{
-		{ID: "command", Kind: "command", Cwd: filepath.Join(root, "api")},
-		{ID: "agent", Kind: "agent", Agent: manifest.ValidatedAgent{Kind: "configured", Cwd: filepath.Join(root, "web")}},
-	}
 	w, err := newStackWorktrees(m, t.TempDir())
 	if err != nil {
 		t.Fatal(err)
@@ -383,7 +379,7 @@ func TestWorktreeToolsFollowSelection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if context.ProjectRootPath != linked || context.AnnotationActions[0].Cwd != filepath.Join(linked, "api") || context.AnnotationActions[1].Agent.Cwd != filepath.Join(linked, "web") {
+	if context.ProjectRootPath != linked {
 		t.Fatalf("tool context = %#v", context)
 	}
 	if context.ResolvePath(filepath.Join(root, "web", "file.tsx")) != filepath.Join(linked, "web", "file.tsx") {
