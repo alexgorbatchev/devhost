@@ -12,9 +12,7 @@ export async function captureTabSnapshot(options: ITabCaptureOptions): Promise<I
     if (track?.getSettings().displaySurface !== "browser") {
       throw new Error("Select this browser tab to include the page and its annotations.");
     }
-    await options.prepare();
-    options.signal?.throwIfAborted();
-    return await readSharedTabFrame(options.document, stream, options.signal);
+    return await readSharedTabFrame(options.document, stream, options.signal, options.prepare);
   } finally {
     if (!options.sharedStream) for (const track of stream.getTracks()) track.stop();
   }

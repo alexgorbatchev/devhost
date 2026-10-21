@@ -2,6 +2,7 @@ import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../shared/constants";
 import { createDomAnnotationSelectionCandidateForElement } from "./createDomAnnotationSelectionCandidateForElement";
 import { getElementSourceLocation } from "./getElementSourceLocation";
 import { resolveAnnotationTarget } from "./resolveAnnotationTarget";
+import { isAnnotationControlsEvent } from "./isAnnotationControlsEvent";
 import type { IAnnotationSelectionPlugin } from "./annotationSelectionPluginTypes";
 
 export const defaultDomAnnotationSelectionPlugin: IAnnotationSelectionPlugin = {
@@ -9,8 +10,8 @@ export const defaultDomAnnotationSelectionPlugin: IAnnotationSelectionPlugin = {
   id: "dom-elements",
   label: "DOM elements",
   priority: 0,
-  resolveCandidate: async (event, intent, context) => {
-    if (context.isDevtoolsEventTarget(event.target)) {
+  resolveCandidate: async (event, intent) => {
+    if (isAnnotationControlsEvent(event)) {
       return null;
     }
 

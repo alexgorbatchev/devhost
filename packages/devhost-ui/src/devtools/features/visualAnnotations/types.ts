@@ -9,7 +9,7 @@ export interface ITabCaptureOptions {
   mediaDevices: Pick<MediaDevices, "getDisplayMedia">;
   signal?: AbortSignal;
   sharedStream?: MediaStream;
-  prepare: () => Promise<void>;
+  prepare?: () => Promise<void>;
 }
 
 export interface ITabDisplayMediaOptions extends DisplayMediaStreamOptions {

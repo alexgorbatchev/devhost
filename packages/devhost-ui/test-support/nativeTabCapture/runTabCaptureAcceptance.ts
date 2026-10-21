@@ -6,9 +6,11 @@ import { chromium } from "playwright";
 import { createOwnedBrowserEnvironment } from "../../../../test-support/createOwnedBrowserEnvironment";
 import { buildTabCaptureFixture } from "./buildTabCaptureFixture";
 import { serveTabCaptureFixture } from "./serveTabCaptureFixture";
-import type { ITabCaptureAcceptanceProof, ITabCaptureTrackProof } from "./types";
+import type { ITabCaptureAcceptanceOptions, ITabCaptureAcceptanceProof, ITabCaptureTrackProof } from "./types";
 
-export async function runTabCaptureAcceptance(): Promise<ITabCaptureAcceptanceProof> {
+export async function runTabCaptureAcceptance(
+  options: ITabCaptureAcceptanceOptions = {},
+): Promise<ITabCaptureAcceptanceProof> {
   const temporaryRoot = join(tmpdir(), "devhost-e2e");
   await mkdir(temporaryRoot, { recursive: true });
   const directory = await mkdtemp(join(temporaryRoot, "tab-capture-"));
@@ -51,6 +53,10 @@ export async function runTabCaptureAcceptance(): Promise<ITabCaptureAcceptancePr
           };
         });
         await page.goto(String(fixture.server.url));
+        if (options.isSharingAheadOfTime) {
+          await page.getByRole("button", { name: "Share Tab", exact: true }).click();
+          await page.getByRole("button", { name: "Stop Sharing", exact: true }).waitFor();
+        }
         await page.getByRole("button", { name: "Box", exact: true }).click();
         await page.mouse.move(180, 230);
         await page.mouse.down();
@@ -61,6 +67,13 @@ export async function runTabCaptureAcceptance(): Promise<ITabCaptureAcceptancePr
         const dock = await page.getByTestId("DevtoolsToolbar--bar").boundingBox();
         assert(panel);
         assert(dock);
+        if (options.isChatAnnotated) {
+          await page.getByRole("button", { name: "Select Elements", exact: true }).click();
+          await page.getByRole("button", { name: "Chat Settings", exact: true }).click();
+          await page.getByRole("button", { name: "Remove Element 1", exact: true }).waitFor();
+          assert.equal(await page.getByRole("dialog", { name: "Chat Settings", exact: true }).count(), 0);
+          await page.keyboard.press("Escape");
+        }
         await page.getByRole("textbox").fill("Review this annotated page.");
         await page.getByRole("button", { name: "Send Message", exact: true }).click();
         const command = await Promise.race([
@@ -81,6 +94,8 @@ export async function runTabCaptureAcceptance(): Promise<ITabCaptureAcceptancePr
         assert(Array.isArray(serializedContext.shapes));
         assert.equal(serializedContext.shapes.length, 1);
         assert.equal(serializedContext.shapes[0].kind, "box");
+        assert("markers" in serializedContext && Array.isArray(serializedContext.markers));
+        assert.equal(serializedContext.markers.length, options.isChatAnnotated ? 1 : 0);
         assert(Array.isArray(command.images));
         await page.getByRole("region", { name: "Page context", exact: true }).waitFor({ state: "detached" });
         assert.equal(await page.getByRole("img", { name: "box annotation", exact: true }).count(), 0);
@@ -108,8 +123,9 @@ export async function runTabCaptureAcceptance(): Promise<ITabCaptureAcceptancePr
             };
             const root = document.getElementById("devhost-devtools-host")?.shadowRoot;
             const annotation = root?.querySelector('[data-testid="AnnotationCanvas"]');
+            const chat = root?.querySelector('[data-testid="AgentChatPanel"]');
             const host = document.getElementById("host-target");
-            if (!annotation || !host) throw new Error("Actual annotation and host must remain mounted.");
+            if (!annotation || !host || !chat) throw new Error("Actual annotation, chat and host must remain mounted.");
             return {
               width: source.width,
               height: source.height,
@@ -120,10 +136,19 @@ export async function runTabCaptureAcceptance(): Promise<ITabCaptureAcceptancePr
               expectedShape: color(getComputedStyle(annotation).color),
               expectedHost: color(getComputedStyle(host).backgroundColor),
               expectedPage: color(getComputedStyle(document.body).backgroundColor),
+              expectedPanel: color(getComputedStyle(chat).backgroundColor),
             };
           },
           { dataURL, panel, dock },
         );
+        if (options.isSharingAheadOfTime) {
+          const stoppedTrackCount = await page.evaluate(() => {
+            const stopped: MediaStreamTrack[] = Reflect.get(window, "nativeCaptureStoppedTracks");
+            return stopped.length;
+          });
+          assert.equal(stoppedTrackCount, 0);
+          await page.getByRole("button", { name: "Stop Sharing", exact: true }).click();
+        }
         const tracks = await page.evaluate((): ITabCaptureTrackProof[] => {
           const stopped: MediaStreamTrack[] = Reflect.get(window, "nativeCaptureStoppedTracks");
           const surfaces: (string | undefined)[] = Reflect.get(window, "nativeCaptureSurfaces");
@@ -139,7 +164,7 @@ export async function runTabCaptureAcceptance(): Promise<ITabCaptureAcceptancePr
         for (const [actual, expected] of [
           [image.shape, image.expectedShape],
           [image.host, image.expectedHost],
-          [image.panel, image.expectedPage],
+          [image.panel, options.isChatAnnotated ? image.expectedPanel : image.expectedPage],
           [image.dock, image.expectedPage],
         ]) {
           assert(actual && expected);

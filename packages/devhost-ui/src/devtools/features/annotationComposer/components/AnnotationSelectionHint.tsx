@@ -26,9 +26,10 @@ export function AnnotationSelectionHint({
   return (
     <div
       aria-label="Annotation selection"
-      className="devhost-fade pointer-events-none fixed z-(--devhost-z-popover) flex max-w-[calc(100vw-16px)] items-center gap-2 rounded-md border border-edge bg-card px-2 py-1 text-card-foreground shadow-frame"
+      className="devhost-fade pointer-events-none fixed z-(--devhost-z-annotation-controls) flex max-w-[calc(100vw-16px)] items-center gap-2 rounded-md border border-edge bg-card px-2 py-1 text-card-foreground shadow-frame"
       style={{ left: point.x, top: point.y }}
       data-devhost-capture-exclude=""
+      data-devhost-annotation-controls=""
       data-testid="AnnotationSelectionHint"
       hidden={!isVisible}
       role="status"

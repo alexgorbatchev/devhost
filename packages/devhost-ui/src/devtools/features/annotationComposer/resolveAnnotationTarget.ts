@@ -27,17 +27,17 @@ export function resolveAnnotationTarget(clientX: number, clientY: number): HTMLE
   let smallestArea: number = Number.POSITIVE_INFINITY;
 
   for (const candidateElement of candidateElements) {
-    if (isSkippableCandidate(candidateElement)) {
-      continue;
-    }
-
     const piercedElement: HTMLElement = pierceShadowDom(candidateElement, clientX, clientY);
 
     if (isSkippableCandidate(piercedElement) || isEffectivelyInvisible(piercedElement)) {
       continue;
     }
 
-    if (hasDirectContent(piercedElement)) {
+    // A devhost surface occludes the page even when the pointer lands on an empty part of its panel.
+    if (
+      piercedElement.closest(`[${DEVTOOLS_ROOT_ATTRIBUTE_NAME}], #${DEVTOOLS_ROOT_ID}`) !== null ||
+      hasDirectContent(piercedElement)
+    ) {
       return piercedElement;
     }
 
@@ -57,7 +57,11 @@ function pierceShadowDom(element: HTMLElement, clientX: number, clientY: number)
   let currentElement: HTMLElement = element;
 
   while (currentElement.shadowRoot !== null) {
-    const deeperElement: Element | null = currentElement.shadowRoot.elementFromPoint(clientX, clientY);
+    let deeperElement: Element | null = currentElement.shadowRoot.elementFromPoint(clientX, clientY);
+    // An icon's SVG belongs to its nearest HTML control for element annotations.
+    while (deeperElement !== null && !(deeperElement instanceof HTMLElement)) {
+      deeperElement = deeperElement.parentElement;
+    }
 
     if (!(deeperElement instanceof HTMLElement) || deeperElement === currentElement) {
       break;
@@ -121,5 +125,7 @@ function isSkippableCandidate(element: HTMLElement): boolean {
     return true;
   }
 
-  return element.closest(`[${DEVTOOLS_ROOT_ATTRIBUTE_NAME}], #${DEVTOOLS_ROOT_ID}`) !== null;
+  return (
+    element.hasAttribute(DEVTOOLS_ROOT_ATTRIBUTE_NAME) || element.closest("[data-devhost-annotation-controls]") !== null
+  );
 }

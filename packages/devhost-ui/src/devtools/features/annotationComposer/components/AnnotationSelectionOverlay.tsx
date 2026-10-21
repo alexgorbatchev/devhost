@@ -40,6 +40,7 @@ export function AnnotationSelectionOverlay({
     <div className="contents" data-testid="AnnotationSelectionOverlay">
       {hoverHighlights.length > 0 ? (
         <HighlightOverlay
+          layer="annotation"
           appearance="hover"
           highlights={hoverHighlights}
           highlightTestId={`${testIdPrefix}--hover-highlight`}
@@ -49,6 +50,7 @@ export function AnnotationSelectionOverlay({
       ) : null}
       {selectedHighlights.length > 0 ? (
         <HighlightOverlay
+          layer="annotation"
           badgeTestId={`${testIdPrefix}--marker`}
           highlightTestId={`${testIdPrefix}--selection-highlight`}
           highlights={selectedHighlights}

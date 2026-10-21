@@ -1,4 +1,8 @@
 import type { Server } from "bun";
+export interface ITabCaptureAcceptanceOptions {
+  isChatAnnotated?: boolean;
+  isSharingAheadOfTime?: boolean;
+}
 export interface ITabCaptureFixtureServer {
   server: Server<undefined>;
   readCommands: () => readonly unknown[];
@@ -14,6 +18,7 @@ export interface ITabCapturePixelProof {
   expectedShape: number[];
   expectedHost: number[];
   expectedPage: number[];
+  expectedPanel: number[];
 }
 export interface ITabCaptureTrackProof {
   state: MediaStreamTrackState;

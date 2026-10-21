@@ -77,14 +77,14 @@ export const ReactHighlightsAboveHostShadowPopover: Story = {
   },
 };
 
-export const SelectionHighlightsBelowDevtoolsSurfaces: Story = {
+export const SelectionHighlightsAboveDevtoolsSurfaces: Story = {
   render: () => <SelectionLayeringScene />,
   play: async ({ canvasElement }): Promise<void> => {
     await verifySelectionLayering(canvasElement);
   },
 };
 
-/** Bottom to top: selection highlights, the toolbar and minimap, and the browser chat panel. */
+/** Passive annotation highlights leave ordinary toolbar and chat interactions available. */
 export const SurfacesStackInOrder: Story = {
   render: () => <SelectionLayeringScene />,
   play: async ({ canvasElement }): Promise<void> => {
@@ -92,8 +92,8 @@ export const SurfacesStackInOrder: Story = {
   },
 };
 
-/** While Alt-selection is active, clicks on devtools surfaces reach them instead of marking the page beneath. */
-export const DevtoolsStayClickableDuringSelection: Story = {
+/** While Alt-selection is active, devtools controls become context instead of activating. */
+export const DevtoolsBecomeSelectionContext: Story = {
   render: () => <SelectionLayeringScene />,
   play: async ({ canvasElement }): Promise<void> => {
     await verifyDevtoolsClickDuringSelection(canvasElement);

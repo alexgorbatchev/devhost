@@ -7,6 +7,7 @@ import {
 import {
   devtoolsStoryShadowRootHostTestId,
   expectDevtoolsSurfaceOnTop,
+  expectDevtoolsSurfaceAbove,
   readDevtoolsStoryShadowCanvas,
   readShadowRoot,
 } from "../../shared/components/stories/helpers";
@@ -55,15 +56,10 @@ export async function verifySelectionLayering(canvasElement: HTMLElement): Promi
   await user.keyboard("{/Alt}");
   const chat = await shadowCanvas.findByRole("complementary", { name: "Agent chat" });
   const highlight = await shadowCanvas.findByTestId("AnnotationSelectionOverlay--selection-highlight");
-  highlight.style.pointerEvents = "auto";
-  try {
-    await waitFor(() => {
-      expectDevtoolsSurfaceOnTop(shadowRoot, chat);
-      expectDevtoolsSurfaceOnTop(shadowRoot, toolbar);
-    });
-  } finally {
-    highlight.style.removeProperty("pointer-events");
-  }
+  await waitFor(() => {
+    expectDevtoolsSurfaceAbove(shadowRoot, highlight, chat);
+    expectDevtoolsSurfaceAbove(shadowRoot, highlight, toolbar);
+  });
   expect(highlight).toBeVisible();
 }
 
@@ -80,7 +76,7 @@ export async function verifyDevtoolsClickDuringSelection(canvasElement: HTMLElem
     target: button,
   });
   await expect(await shadowCanvas.findByRole("complementary", { name: "Agent chat" })).toBeVisible();
-  expect(shadowCanvas.queryByRole("region", { name: "Page context" })).toBeNull();
+  await expect(await shadowCanvas.findByRole("region", { name: "Page context" })).toHaveTextContent("#1");
   await user.keyboard("{/Alt}");
 }
 

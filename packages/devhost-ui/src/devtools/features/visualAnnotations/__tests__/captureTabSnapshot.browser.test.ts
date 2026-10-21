@@ -8,7 +8,7 @@ describe("captureTabSnapshot", () => {
     const fixture = createSharedTabFixture();
     const picker = vi.spyOn(fixture.mediaDevices, "getDisplayMedia");
     try {
-      const snapshot = await captureTabSnapshot({ ...fixture, sharedStream: fixture.stream, prepare: async () => {} });
+      const snapshot = await captureTabSnapshot({ ...fixture, sharedStream: fixture.stream });
       expect(snapshot.width).toBe(64);
       expect(picker).not.toHaveBeenCalled();
       expect(fixture.stream.active).toBe(true);

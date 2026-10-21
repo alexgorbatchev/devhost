@@ -2,14 +2,21 @@ import { DEVTOOLS_ROOT_ATTRIBUTE_NAME, DEVTOOLS_ROOT_ID } from "../../shared/con
 
 import { readActiveAnnotationSelectionPlugin } from "./annotationSelectionPluginRegistry";
 import type { AnnotationSelectionIntent, IAnnotationSelectionCandidate } from "./annotationSelectionPluginTypes";
+import { defaultDomAnnotationSelectionPlugin } from "./defaultDomAnnotationSelectionPlugin";
+import { isAnnotationControlsEvent } from "./isAnnotationControlsEvent";
 
 export async function resolveAnnotationSelectionCandidate(
   plugin: ReturnType<typeof readActiveAnnotationSelectionPlugin>,
   event: MouseEvent,
   intent: AnnotationSelectionIntent,
 ): Promise<IAnnotationSelectionCandidate | null> {
+  if (isAnnotationControlsEvent(event)) return null;
+  // Host plugins describe host surfaces. Devhost's own controls always use the DOM selector.
+  const selector = event.composedPath().some(isInteractionInsideDevtools)
+    ? defaultDomAnnotationSelectionPlugin
+    : plugin;
   try {
-    const candidate = await plugin.resolveCandidate(event, intent, {
+    const candidate = await selector.resolveCandidate(event, intent, {
       isDevtoolsEventTarget: isInteractionInsideDevtools,
     });
 

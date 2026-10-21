@@ -1,7 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, waitFor, within } from "storybook/test";
 import { userEvent } from "vitest/browser";
-import { PageChatScene, installPageChatCatalog } from "./helpers";
+import { PageChatScene, ShadowPageChatScene, installPageChatCatalog } from "./helpers";
+import {
+  devtoolsStoryShadowRootHostTestId,
+  readDevtoolsStoryShadowCanvas,
+  readShadowRoot,
+} from "../../../../shared/components/stories/helpers";
 import { PageChat } from "../PageChat";
 
 const meta: Meta<typeof PageChat> = {
@@ -100,5 +105,40 @@ export const DrawAndUndo: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Undo Drawing" }));
     await expect(canvas.queryByRole("img", { name: "arrow annotation" })).not.toBeInTheDocument();
     await expect(canvas.queryByRole("region", { name: "Page context" })).not.toBeInTheDocument();
+  },
+};
+
+export const AnnotateDevhostUI: Story = {
+  render: () => <ShadowPageChatScene />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const shadowRoot = readShadowRoot(
+      canvas.getByTestId(devtoolsStoryShadowRootHostTestId),
+      "The story did not attach a devtools shadow root.",
+    );
+    const select = await shadowCanvas.findByRole("button", { name: "Select Elements" });
+    const settings = shadowCanvas.getByRole("button", { name: "Chat Settings" });
+    await userEvent.click(select);
+    await userEvent.click(settings);
+    await expect(await shadowCanvas.findByRole("region", { name: "Page context" })).toHaveTextContent("#1");
+    expect(shadowCanvas.queryByRole("dialog", { name: "Chat Settings" })).toBeNull();
+    await userEvent.click(select);
+    await expect(select).toHaveAttribute("aria-pressed", "false");
+    await userEvent.click(shadowCanvas.getByRole("button", { name: "Box" }));
+    const surface = shadowCanvas.getByRole("img", { name: "Annotation drawing canvas" });
+    const chat = shadowCanvas.getByRole("complementary", { name: "Agent chat" }).getBoundingClientRect();
+    const x = chat.left + 30;
+    const y = chat.top + 60;
+    expect(shadowRoot.elementFromPoint(x, y)).toBe(surface);
+    await userEvent.dragAndDrop(surface, surface, {
+      sourcePosition: { x, y },
+      targetPosition: { x: x + 120, y: y + 80 },
+    });
+    await expect(shadowCanvas.getByRole("img", { name: "box annotation" })).toBeVisible();
+    await expect(shadowCanvas.getByRole("button", { name: "Box" })).toHaveAttribute("aria-pressed", "false");
+    await userEvent.click(settings);
+    const dialog = await shadowCanvas.findByRole("dialog", { name: "Chat Settings" });
+    await waitFor(() => expect(dialog).toBeVisible());
   },
 };
