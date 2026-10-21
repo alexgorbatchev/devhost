@@ -5,12 +5,11 @@ import { resolve } from "node:path";
 import { chromium, type Browser } from "playwright";
 import type { Server } from "bun";
 import { readNativeReactProvisioning } from "./nativeReact/readNativeReactProvisioning";
-import { prepareNativeReactAssets } from "./nativeReact/prepareNativeReactAssets";
+import { provisionNativeReactAssets } from "./nativeReact/provisionNativeReactAssets";
 import { buildNativeReactFixture } from "./nativeReact/buildNativeReactFixture";
 import { serveNativeReactFixture } from "./nativeReact/serveNativeReactFixture";
 import { startNativeReactBrowser } from "./nativeReact/startNativeReactBrowser";
 import { startNativeReactStack } from "./nativeReact/startNativeReactStack";
-import { createNativeReactAutomation } from "./nativeReact/createNativeReactAutomation";
 import { NativeReactInspector } from "./nativeReact/NativeReactInspector";
 import {
   connectNativeReactControl,
@@ -25,12 +24,11 @@ import { finishNativeReactCleanup } from "./nativeReact/finishNativeReactCleanup
 import { assertNativeReactDockLayout } from "./nativeReact/assertNativeReactDockLayout";
 import { activateNativeReactFixtureControl } from "./nativeReact/activateNativeReactFixtureControl";
 import { assertNativeReactCompiledAssets } from "./nativeReact/assertNativeReactCompiledAssets";
-import type { INativeReactAutomation, INativeReactBrowser, INativeReactStack } from "./nativeReact/types";
+import type { INativeReactBrowser, INativeReactStack } from "./nativeReact/types";
 
 export async function runNativeReactAcceptance(): Promise<void> {
   const repositoryRoot = resolve(import.meta.dir, "../../..");
   assert.equal(process.cwd(), repositoryRoot, "Run native acceptance from the repository root.");
-  const provisioning = await readNativeReactProvisioning(Bun.env.DEVHOST_NATIVE_REACT_ASSETS);
   const outputPath = resolve(E2E_TEMPORARY_PATH, "native-react-acceptance", crypto.randomUUID());
   await mkdir(outputPath, { recursive: true });
   console.log(`Native React acceptance evidence: ${outputPath}`);
@@ -43,12 +41,17 @@ export async function runNativeReactAcceptance(): Promise<void> {
   const controlFrames: unknown[] = [];
   const fixtureConfigurations: unknown[] = [];
   let ownedBrowser: INativeReactBrowser | null = null;
-  let automation: INativeReactAutomation | null = null;
+  const inspectors: NativeReactInspector[] = [];
   let browser: Browser | null = null;
   let stack: INativeReactStack | null = null;
   let failure: unknown;
   try {
-    const assets = await prepareNativeReactAssets(provisioning, assetsPath);
+    const provisioning = await readNativeReactProvisioning(repositoryRoot);
+    // Chrome archives are reused across runs; a run downloads again only when Chrome for Testing Stable moves.
+    const assets = await provisionNativeReactAssets(
+      assetsPath,
+      resolve(E2E_TEMPORARY_PATH, "native-browser-downloads"),
+    );
     await Bun.write(
       resolve(outputPath, "provisioning-proof.json"),
       await Bun.file(resolve(assetsPath, "provisioning-proof.json")).bytes(),
@@ -56,7 +59,12 @@ export async function runNativeReactAcceptance(): Promise<void> {
     await buildNativeReactFixture(resolve(outputPath, "fixture"), repositoryRoot);
     fixture = serveNativeReactFixture(resolve(outputPath, "fixture"));
     siblingFixture = serveNativeReactFixture(resolve(outputPath, "fixture"));
-    ownedBrowser = await startNativeReactBrowser({ ...assets, outputPath, repositoryRoot });
+    ownedBrowser = await startNativeReactBrowser({
+      chromeExecutablePath: assets.chromeExecutablePath,
+      reactExtensionDirectoryPath: assets.reactExtensionDirectoryPath,
+      outputPath,
+      repositoryRoot,
+    });
     browser = await chromium.connectOverCDP(ownedBrowser.endpoint);
     const context = browser.contexts()[0];
     assert(context);
@@ -80,7 +88,6 @@ export async function runNativeReactAcceptance(): Promise<void> {
           responses.push({ url: response.url(), status: response.status(), headers: response.headers() });
       });
     });
-    automation = createNativeReactAutomation(ownedBrowser.endpoint, outputPath, repositoryRoot);
     assert(fixture.port && siblingFixture.port);
     assert.notEqual(fixture.port, siblingFixture.port);
     stack = await startNativeReactStack({
@@ -106,9 +113,10 @@ export async function runNativeReactAcceptance(): Promise<void> {
       host: sibling,
       endpoint: ownedBrowser.endpoint,
       extensionId: ownedBrowser.extensionId,
-      automation,
+      evidencePath: outputPath,
       projectName: "B",
     });
+    inspectors.push(siblingInspector);
     await siblingInspector.assertWindowPreserved();
     await siblingInspector.assertComponents(0);
     await sibling.setViewportSize({ width: 360, height: 480 });
@@ -149,9 +157,10 @@ export async function runNativeReactAcceptance(): Promise<void> {
       host,
       endpoint: ownedBrowser.endpoint,
       extensionId: ownedBrowser.extensionId,
-      automation,
+      evidencePath: outputPath,
       projectName: "A",
     });
+    inspectors.push(inspector);
     await exerciseNativeReactLifecycle({ host, inspector, project: first, outputPath, sibling, siblingInspector });
     await assertNativeReactRequestRejected({
       page: host,
@@ -178,9 +187,10 @@ export async function runNativeReactAcceptance(): Promise<void> {
       host: shipped,
       endpoint: ownedBrowser.endpoint,
       extensionId: ownedBrowser.extensionId,
-      automation,
+      evidencePath: outputPath,
       projectName: "A",
     });
+    inspectors.push(shippedInspector);
     await shippedInspector.assertComponents(0);
     await shippedInspector.startRecording();
     await activateNativeReactFixtureControl(shipped, "Increment host A", outputPath, "compiled host increment 1");
@@ -223,7 +233,6 @@ export async function runNativeReactAcceptance(): Promise<void> {
       context,
       endpoint: ownedBrowser.endpoint,
       extensionId: ownedBrowser.extensionId,
-      automation,
       project: first,
       outputPath,
     });
@@ -240,6 +249,8 @@ export async function runNativeReactAcceptance(): Promise<void> {
           hasCompiledInjectionAcceptance: true,
           hasNativeComponentsAndProfiler: true,
           provisioning,
+          chromeVersion: assets.chromeVersion,
+          reactExtensionVersion: assets.reactExtensionVersion,
         },
         null,
         2,
@@ -276,7 +287,7 @@ export async function runNativeReactAcceptance(): Promise<void> {
     await Bun.write(resolve(outputPath, "runtime-errors.json"), JSON.stringify(runtimeErrors, null, 2));
     await Bun.write(resolve(outputPath, "runtime-error-details.json"), JSON.stringify(runtimeErrorDetails, null, 2));
     await Bun.write(resolve(outputPath, "asset-responses.json"), JSON.stringify(responses, null, 2));
-    const cleanup = await Promise.allSettled([automation?.stop(), stack?.stop()]);
+    const cleanup = await Promise.allSettled([...inspectors.map((inspector) => inspector.close()), stack?.stop()]);
     // Playwright only connects to this run's fresh owned browser. Production
     // disconnect/Stop assertions above never close a browser-owned target.
     // Snapshot/join Chrome's owned child processes before disconnecting the
