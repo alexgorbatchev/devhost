@@ -1,5 +1,5 @@
 export interface IContrastTarget {
-  property?: "color" | "borderTopColor" | "textDecorationColor";
+  property?: "backgroundColor" | "color" | "borderTopColor" | "textDecorationColor";
   pseudoElement?: "::placeholder";
   useParentBackground?: boolean;
 }

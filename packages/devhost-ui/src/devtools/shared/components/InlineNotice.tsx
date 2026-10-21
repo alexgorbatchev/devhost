@@ -92,19 +92,22 @@ export function InlineNotice({
   return (
     <Alert data-testid={testId} variant={tone === "danger" ? "destructive" : "default"}>
       {tone === "danger" ? <Icon glyph={TriangleAlertIcon} /> : null}
-      {title !== undefined ? <AlertTitle ref={titleReference}>{title}</AlertTitle> : null}
-      <AlertDescription ref={descriptionReference}>
-        {children}
-        {copyState.kind === "error" ? (
-          <span
-            className="mt-0.5 block text-sm font-normal opacity-90"
-            data-testid="InlineNotice--copy-error"
-            role="status"
-          >
-            {copyState.message}
-          </span>
-        ) : null}
-      </AlertDescription>
+      {/* Stacks the message under its title so a long message wraps beneath the title instead of beside it. */}
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        {title !== undefined ? <AlertTitle ref={titleReference}>{title}</AlertTitle> : null}
+        <AlertDescription ref={descriptionReference}>
+          {children}
+          {copyState.kind === "error" ? (
+            <span
+              className="mt-0.5 block text-sm font-normal opacity-90"
+              data-testid="InlineNotice--copy-error"
+              role="status"
+            >
+              {copyState.message}
+            </span>
+          ) : null}
+        </AlertDescription>
+      </div>
       {hasAction ? (
         <AlertAction>
           {action}
