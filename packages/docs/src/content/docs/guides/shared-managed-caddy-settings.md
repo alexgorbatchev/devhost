@@ -12,7 +12,7 @@ sidebar:
 </video>
 <!-- /guide-demo -->
 
-Every stack on a machine routes through one managed Caddy, so its listeners belong to the machine, not to a project. Set them in the `[caddy]` table of the devhost config file, `config.toml`:
+Every stack on a machine routes through one managed Caddy, so its listeners belong to the machine, not to a project. Set them in the `[caddy]` table of the devhost config file, `config.toml`, or edit that file from the devtools [config editor](../devtools/#config-editor):
 
 - `$DEVHOST_CONFIG_DIR/config.toml` when `DEVHOST_CONFIG_DIR` is set
 - otherwise `$XDG_CONFIG_HOME/devhost/config.toml` when `XDG_CONFIG_HOME` is set

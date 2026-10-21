@@ -6,11 +6,14 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/choices"
 )
 
 const (
@@ -35,14 +38,14 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 	if _, ok := manifestValue["caddy"]; ok {
 		schemaIssues = append(schemaIssues, "caddy moved to the devhost config file: set the shared Caddy listeners in the [caddy] table of config.toml in the devhost config directory, and remove [caddy] from the manifest.")
 	}
-	allowKeys(manifestValue, []string{"caddy", "devtools", "worktrees", "name", "services", "groups", "includes", "killZombies"}, "", &schemaIssues)
+	allowKeys(manifestValue, "", "", &schemaIssues)
 
-	name, ok := readRequiredNonEmptyString(manifestValue, "name", &schemaIssues)
+	name, ok := readRequiredNonEmptyString(manifestValue, "", "name", &schemaIssues)
 	if !ok {
 		name = ""
 	}
 
-	killZombies, hasKillZombies := readOptionalBool(manifestValue, "killZombies", &schemaIssues)
+	killZombies, hasKillZombies := readOptionalBool(manifestValue, "", "killZombies", &schemaIssues)
 	if !hasKillZombies {
 		killZombies = true
 	}
@@ -60,15 +63,16 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 	groups := validateGroups(manifestValue["groups"], validatedServices, &schemaIssues, &validationIssues)
 
 	if len(schemaIssues) > 0 {
-		return Manifest{}, fmt.Errorf("Manifest schema is invalid:\n%s", strings.Join(schemaIssues, "\n"))
+		return Manifest{}, &ValidationError{Heading: "Manifest schema is invalid", Issues: schemaIssues}
 	}
 
 	if len(validationIssues) > 0 {
-		return Manifest{}, fmt.Errorf("Manifest validation failed:\n%s", strings.Join(validationIssues, "\n"))
+		return Manifest{}, &ValidationError{Heading: "Manifest validation failed", Issues: validationIssues}
 	}
 
 	return Manifest{
-		Inputs:                rawManifest.Inputs,
+		Inputs: rawManifest.Inputs,
+
 		Devtools:              validatedDevtools,
 		Worktrees:             validatedWorktrees,
 		ManifestDirectoryPath: manifestDirectoryPath,
@@ -91,8 +95,8 @@ func validateWorktrees(raw any, issues *[]string) WorktreesConfig {
 	if !ok {
 		return config
 	}
-	allowKeys(value, []string{"enabled"}, "worktrees", issues)
-	if enabled, ok := readOptionalBool(value, "enabled", issues); ok {
+	allowKeys(value, "worktrees", "worktrees", issues)
+	if enabled, ok := readOptionalBool(value, "worktrees", "enabled", issues); ok {
 		config.Enabled = enabled
 	}
 	return config
@@ -114,6 +118,23 @@ func DefaultDevtools() DevtoolsConfig {
 	}
 }
 
+// readDevtoolsToggle reads the enabled key of a devtools table that holds only that key.
+func readDevtoolsToggle(devtools map[string]any, key string, enabled *bool, schemaIssues *[]string) {
+	raw := devtools[key]
+	if raw == nil {
+		return
+	}
+	table := "devtools." + key
+	value, ok := readMap(raw, table, schemaIssues)
+	if !ok {
+		return
+	}
+	allowKeys(value, table, table, schemaIssues)
+	if configured, ok := readOptionalBool(value, table, "enabled", schemaIssues); ok {
+		*enabled = configured
+	}
+}
+
 func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 	result := DefaultDevtools()
 
@@ -126,70 +147,46 @@ func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 		return result
 	}
 
-	allowKeys(value, []string{"chat", "annotations", "browser", "editor", "externalToolbars", "idleTimeout", "minimap", "resources", "status", "shortcuts"}, "devtools", schemaIssues)
+	allowKeys(value, "devtools", "devtools", schemaIssues)
 
-	for name, target := range map[string]*DevtoolsToggleConfig{"chat": &result.Chat, "annotations": &result.Annotations} {
-		if raw := value[name]; raw != nil {
-			if table, ok := readMap(raw, "devtools."+name, schemaIssues); ok {
-				allowKeys(table, []string{"enabled"}, "devtools."+name, schemaIssues)
-				if enabled, ok := readOptionalBool(table, "enabled", schemaIssues); ok {
-					target.Enabled = enabled
-				}
-			}
-		}
-	}
+	readDevtoolsToggle(value, "chat", &result.Chat.Enabled, schemaIssues)
+	readDevtoolsToggle(value, "annotations", &result.Annotations.Enabled, schemaIssues)
 	result.Browser = validateNativeBrowser(value["browser"], schemaIssues)
 	result.Resources = validateDevtoolsResources(value["resources"], schemaIssues)
 
 	if rawEditor := value["editor"]; rawEditor != nil {
 		editorValue, ok := readMap(rawEditor, "devtools.editor", schemaIssues)
 		if ok {
-			allowKeys(editorValue, []string{"enabled", "ide"}, "devtools.editor", schemaIssues)
-			if enabled, ok := readOptionalBool(editorValue, "enabled", schemaIssues); ok {
+			allowKeys(editorValue, "devtools.editor", "devtools.editor", schemaIssues)
+			if enabled, ok := readOptionalBool(editorValue, "devtools.editor", "enabled", schemaIssues); ok {
 				result.Editor.Enabled = enabled
 			}
-			if ide, ok := readOptionalString(editorValue, "ide", schemaIssues); ok {
-				if isSupportedEditor(ide) {
+			if ide, ok := readOptionalString(editorValue, "devtools.editor", "ide", schemaIssues); ok {
+				if slices.Contains(componentEditors, ide) {
 					result.Editor.IDE = ide
 				} else {
-					*schemaIssues = append(*schemaIssues, "devtools.editor.ide must be one of cursor, vscode, vscode-insiders, or webstorm.")
+					*schemaIssues = append(*schemaIssues, "devtools.editor.ide must be one of "+choices.Format(componentEditors)+".")
 				}
 			}
 		}
 	}
 
-	if rawExternalToolbars := value["externalToolbars"]; rawExternalToolbars != nil {
-		externalToolbarsValue, ok := readMap(rawExternalToolbars, "devtools.externalToolbars", schemaIssues)
-		if ok {
-			allowKeys(externalToolbarsValue, []string{"enabled"}, "devtools.externalToolbars", schemaIssues)
-			if enabled, ok := readOptionalBool(externalToolbarsValue, "enabled", schemaIssues); ok {
-				result.ExternalToolbars.Enabled = enabled
-			}
-		}
-	}
-
-	if rawMinimap := value["minimap"]; rawMinimap != nil {
-		minimapValue, ok := readMap(rawMinimap, "devtools.minimap", schemaIssues)
-		if ok {
-			allowKeys(minimapValue, []string{"enabled"}, "devtools.minimap", schemaIssues)
-			if enabled, ok := readOptionalBool(minimapValue, "enabled", schemaIssues); ok {
-				result.Minimap.Enabled = enabled
-			}
-		}
-	}
+	readDevtoolsToggle(value, "configEditor", &result.ConfigEditor.Enabled, schemaIssues)
+	readDevtoolsToggle(value, "externalToolbars", &result.ExternalToolbars.Enabled, schemaIssues)
+	readDevtoolsToggle(value, "minimap", &result.Minimap.Enabled, schemaIssues)
 
 	if rawStatus := value["status"]; rawStatus != nil {
 		statusValue, ok := readMap(rawStatus, "devtools.status", schemaIssues)
 		if ok {
-			allowKeys(statusValue, []string{"enabled", "position"}, "devtools.status", schemaIssues)
-			if enabled, ok := readOptionalBool(statusValue, "enabled", schemaIssues); ok {
+			allowKeys(statusValue, "devtools.status", "devtools.status", schemaIssues)
+			if enabled, ok := readOptionalBool(statusValue, "devtools.status", "enabled", schemaIssues); ok {
 				result.Status.Enabled = enabled
 			}
-			if position, ok := readOptionalString(statusValue, "position", schemaIssues); ok {
-				if position == "top-right" || position == "bottom-right" {
+			if position, ok := readOptionalString(statusValue, "devtools.status", "position", schemaIssues); ok {
+				if slices.Contains(devtoolsStatusPositions, position) {
 					result.Status.Position = position
 				} else {
-					*schemaIssues = append(*schemaIssues, "devtools.status.position must be top-right or bottom-right.")
+					*schemaIssues = append(*schemaIssues, "devtools.status.position must be "+choices.Format(devtoolsStatusPositions)+".")
 				}
 			}
 		}
@@ -198,8 +195,8 @@ func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 	if rawShortcuts := value["shortcuts"]; rawShortcuts != nil {
 		shortcutsValue, ok := readMap(rawShortcuts, "devtools.shortcuts", schemaIssues)
 		if ok {
-			allowKeys(shortcutsValue, []string{"restartServices"}, "devtools.shortcuts", schemaIssues)
-			if restartServices, ok := readOptionalString(shortcutsValue, "restartServices", schemaIssues); ok {
+			allowKeys(shortcutsValue, "devtools.shortcuts", "devtools.shortcuts", schemaIssues)
+			if restartServices, ok := readOptionalString(shortcutsValue, "devtools.shortcuts", "restartServices", schemaIssues); ok {
 				if isValidShortcut(restartServices) {
 					result.Shortcuts.RestartServices = restartServices
 				} else {
@@ -209,7 +206,7 @@ func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 		}
 	}
 
-	if idleTimeout, ok := readOptionalString(value, "idleTimeout", schemaIssues); ok {
+	if idleTimeout, ok := readOptionalString(value, "devtools", "idleTimeout", schemaIssues); ok {
 		if _, err := time.ParseDuration(idleTimeout); err != nil {
 			*schemaIssues = append(*schemaIssues, fmt.Sprintf("devtools.idleTimeout must be a valid duration: %v", err))
 		} else {
@@ -302,10 +299,11 @@ func validateService(
 	schemaIssues *[]string,
 	validationIssues *[]string,
 ) (ValidatedService, bool) {
-	allowKeys(value, []string{"alwaysStart", "bindHost", "command", "cwd", "dependsOn", "env", "health", "host", "injectPort", "lifecycle", "managed", "path", "port", "primary", "proxyLocalOrigin", "watch"}, fmt.Sprintf("services.%s", serviceName), schemaIssues)
+	servicePath := "services." + serviceName
+	allowKeys(value, "services.*", servicePath, schemaIssues)
 
 	watch := []string{}
-	if watchValues, ok := readOptionalStringArray(value, "watch", schemaIssues); ok {
+	if watchValues, ok := readOptionalStringArray(value, servicePath, "watch", schemaIssues); ok {
 		for _, p := range watchValues {
 			resolvedPath := filepath.Clean(filepath.Join(manifestDirectoryPath, p))
 			relativePath, err := filepath.Rel(manifestDirectoryPath, resolvedPath)
@@ -316,7 +314,7 @@ func validateService(
 		}
 	}
 
-	managed, hasManaged := readOptionalBool(value, "managed", schemaIssues)
+	managed, hasManaged := readOptionalBool(value, servicePath, "managed", schemaIssues)
 	if !hasManaged {
 		managed = true
 	}
@@ -326,19 +324,19 @@ func validateService(
 	command := []string{}
 	hasCommand := false
 	if lifecycle.Mode == "daemon" {
-		command, hasCommand = readOptionalCommand(value, "command", schemaIssues)
+		command, hasCommand = readOptionalCommand(value, servicePath, "command", schemaIssues)
 		if !hasCommand {
 			command = []string{}
 		}
 	} else if managed {
 		var ok bool
-		command, ok = readRequiredCommand(value, "command", schemaIssues)
+		command, ok = readRequiredCommand(value, servicePath, "command", schemaIssues)
 		hasCommand = ok
 		if !ok {
 			command = []string{}
 		}
 	} else {
-		command, hasCommand = readOptionalCommand(value, "command", schemaIssues)
+		command, hasCommand = readOptionalCommand(value, servicePath, "command", schemaIssues)
 		if !hasCommand {
 			command = []string{}
 		}
@@ -369,23 +367,23 @@ func validateService(
 		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.lifecycle.stop is only supported when lifecycle.mode = \"daemon\".", serviceName))
 	}
 
-	primary, _ := readOptionalBool(value, "primary", schemaIssues)
-	alwaysStart, _ := readOptionalBool(value, "alwaysStart", schemaIssues)
-	bindHost, bindHostSet := readOptionalString(value, "bindHost", schemaIssues)
+	primary, _ := readOptionalBool(value, servicePath, "primary", schemaIssues)
+	alwaysStart, _ := readOptionalBool(value, servicePath, "alwaysStart", schemaIssues)
+	bindHost, bindHostSet := readOptionalString(value, servicePath, "bindHost", schemaIssues)
 	if !bindHostSet {
 		bindHost = defaultServiceBindHost
-	} else if !isAllowedBindHost(bindHost) {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("services.%s.bindHost must be one of 127.0.0.1, 0.0.0.0, ::1, or ::.", serviceName))
+	} else if !slices.Contains(serviceBindHosts, bindHost) {
+		*schemaIssues = append(*schemaIssues, fmt.Sprintf("services.%s.bindHost must be one of %s.", serviceName, choices.Format(serviceBindHosts)))
 	}
 
 	cwd := "."
-	if valueCwd, ok := readOptionalString(value, "cwd", schemaIssues); ok {
+	if valueCwd, ok := readOptionalString(value, servicePath, "cwd", schemaIssues); ok {
 		cwd = valueCwd
 	}
 	resolvedCwd := resolveConstrainedPath(fmt.Sprintf("services.%s.cwd", serviceName), cwd, manifestDirectoryPath, validationIssues)
 
 	dependsOn := []string{}
-	if values, ok := readOptionalStringArray(value, "dependsOn", schemaIssues); ok {
+	if values, ok := readOptionalStringArray(value, servicePath, "dependsOn", schemaIssues); ok {
 		dependsOn = values
 	}
 	for _, dependencyName := range dependsOn {
@@ -395,12 +393,12 @@ func validateService(
 	}
 
 	env := map[string]string{}
-	if values, ok := readOptionalStringMap(value, "env", schemaIssues); ok {
+	if values, ok := readOptionalStringMap(value, servicePath, "env", schemaIssues); ok {
 		env = values
 	}
 
-	port, hasPort := readOptionalServicePort(value, "port", schemaIssues)
-	injectPort, hasInjectPort := readOptionalBool(value, "injectPort", schemaIssues)
+	port, hasPort := readOptionalServicePort(value, servicePath, "port", schemaIssues)
+	injectPort, hasInjectPort := readOptionalBool(value, servicePath, "injectPort", schemaIssues)
 	if !hasInjectPort {
 		if !managed {
 			injectPort = false
@@ -412,8 +410,8 @@ func validateService(
 		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must omit injectPort when managed = false.", serviceName))
 	}
 
-	hosts, hasHost := readServiceHosts(value, schemaIssues)
-	proxyLocalOrigin, _ := readOptionalBool(value, "proxyLocalOrigin", schemaIssues)
+	hosts, hasHost := readServiceHosts(value, servicePath, schemaIssues)
+	proxyLocalOrigin, _ := readOptionalBool(value, servicePath, "proxyLocalOrigin", schemaIssues)
 	if proxyLocalOrigin && !hasHost {
 		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.proxyLocalOrigin requires host.", serviceName))
 	}
@@ -433,7 +431,7 @@ func validateService(
 	var normalizedPath *string
 	if hasHost {
 		rawPath := "/"
-		if pathValue, ok := readOptionalNonEmptyString(value, "path", schemaIssues); ok {
+		if pathValue, ok := readOptionalNonEmptyString(value, servicePath, "path", schemaIssues); ok {
 			rawPath = pathValue
 		}
 		validatedPath := validateRoutePath(serviceName, rawPath, validationIssues)
@@ -452,7 +450,7 @@ func validateService(
 		}
 	}
 
-	health, hasHealth := readOptionalHealth(value, "health", schemaIssues)
+	health, hasHealth := readOptionalHealth(value, servicePath, "health", schemaIssues)
 	if hasHealth && health.Process && hasHost {
 		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must not use health.process on a routed service.", serviceName))
 	}
@@ -672,30 +670,6 @@ func parseValidatedRoutePath(path string) validatedRoutePath {
 	return validatedRoutePath{basePath: path, kind: "exact"}
 }
 
-func allowKeys(value map[string]any, allowedKeys []string, path string, schemaIssues *[]string) {
-	allowedKeySet := map[string]struct{}{}
-	for _, allowedKey := range allowedKeys {
-		allowedKeySet[allowedKey] = struct{}{}
-	}
-
-	unknownKeys := []string{}
-	for key := range value {
-		if _, ok := allowedKeySet[key]; ok {
-			continue
-		}
-		unknownKeys = append(unknownKeys, key)
-	}
-	sort.Strings(unknownKeys)
-
-	for _, unknownKey := range unknownKeys {
-		issuePath := path
-		if issuePath == "" {
-			issuePath = "manifest"
-		}
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s Unrecognized key: \"%s\"", issuePath, unknownKey))
-	}
-}
-
 func readMap(rawValue any, path string, schemaIssues *[]string) (map[string]any, bool) {
 	value, ok := rawValue.(map[string]any)
 	if !ok {
@@ -706,23 +680,31 @@ func readMap(rawValue any, path string, schemaIssues *[]string) (map[string]any,
 	return value, true
 }
 
-func readRequiredNonEmptyString(value map[string]any, key string, schemaIssues *[]string) (string, bool) {
+// settingPath names key in the table at table, the way issues name a setting; the root table is "".
+func settingPath(table string, key string) string {
+	if table == "" {
+		return key
+	}
+	return table + "." + key
+}
+
+func readRequiredNonEmptyString(value map[string]any, table string, key string, schemaIssues *[]string) (string, bool) {
 	rawValue, ok := value[key]
 	if !ok {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s Expected a non-empty string.", key))
+		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s Expected a non-empty string.", settingPath(table, key)))
 		return "", false
 	}
 
 	stringValue, ok := rawValue.(string)
 	if !ok || strings.TrimSpace(stringValue) == "" {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s Expected a non-empty string.", key))
+		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s Expected a non-empty string.", settingPath(table, key)))
 		return "", false
 	}
 
 	return stringValue, true
 }
 
-func readOptionalNonEmptyString(value map[string]any, key string, schemaIssues *[]string) (string, bool) {
+func readOptionalNonEmptyString(value map[string]any, table string, key string, schemaIssues *[]string) (string, bool) {
 	rawValue, ok := value[key]
 	if !ok {
 		return "", false
@@ -730,14 +712,14 @@ func readOptionalNonEmptyString(value map[string]any, key string, schemaIssues *
 
 	stringValue, ok := rawValue.(string)
 	if !ok || strings.TrimSpace(stringValue) == "" {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s Expected a non-empty string.", key))
+		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s Expected a non-empty string.", settingPath(table, key)))
 		return "", false
 	}
 
 	return stringValue, true
 }
 
-func readOptionalString(value map[string]any, key string, schemaIssues *[]string) (string, bool) {
+func readOptionalString(value map[string]any, table string, key string, schemaIssues *[]string) (string, bool) {
 	rawValue, ok := value[key]
 	if !ok {
 		return "", false
@@ -745,14 +727,14 @@ func readOptionalString(value map[string]any, key string, schemaIssues *[]string
 
 	stringValue, ok := rawValue.(string)
 	if !ok {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must be a string.", key))
+		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must be a string.", settingPath(table, key)))
 		return "", false
 	}
 
 	return stringValue, true
 }
 
-func readOptionalBool(value map[string]any, key string, schemaIssues *[]string) (bool, bool) {
+func readOptionalBool(value map[string]any, table string, key string, schemaIssues *[]string) (bool, bool) {
 	rawValue, ok := value[key]
 	if !ok {
 		return false, false
@@ -760,44 +742,25 @@ func readOptionalBool(value map[string]any, key string, schemaIssues *[]string) 
 
 	boolValue, ok := rawValue.(bool)
 	if !ok {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must be a boolean.", key))
+		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must be a boolean.", settingPath(table, key)))
 		return false, false
 	}
 
 	return boolValue, true
 }
 
-func readOptionalPort(value map[string]any, key string, path string, schemaIssues *[]string) (int, bool) {
-	rawValue, ok := value[key]
-	if !ok {
-		return 0, false
-	}
-
-	portValue, ok := readPortNumber(rawValue)
-	if !ok || portValue < 1 || portValue > 65535 {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must be an integer between 1 and 65535.", path))
-		return 0, false
-	}
-
-	return portValue, true
-}
-
-func readServiceHosts(value map[string]any, schemaIssues *[]string) ([]string, bool) {
+func readServiceHosts(value map[string]any, table string, schemaIssues *[]string) ([]string, bool) {
 	if host, ok := value["host"].(string); ok {
 		return []string{host}, true
 	}
-	return readOptionalStringArray(value, "host", schemaIssues)
+	return readOptionalStringArray(value, table, "host", schemaIssues)
 }
 
-func readOptionalStringArray(value map[string]any, key string, schemaIssues *[]string) ([]string, bool) {
-	return parseOptionalStringArray(value, key, schemaIssues, false)
+func readOptionalStringArray(value map[string]any, table string, key string, schemaIssues *[]string) ([]string, bool) {
+	return parseOptionalStringArray(value, table, key, schemaIssues, false)
 }
 
-func readOptionalStringArrayAllowEmpty(value map[string]any, key string, schemaIssues *[]string) ([]string, bool) {
-	return parseOptionalStringArray(value, key, schemaIssues, true)
-}
-
-func parseOptionalStringArray(value map[string]any, key string, schemaIssues *[]string, allowEmpty bool) ([]string, bool) {
+func parseOptionalStringArray(value map[string]any, table string, key string, schemaIssues *[]string, allowEmpty bool) ([]string, bool) {
 	rawValue, ok := value[key]
 	if !ok {
 		return nil, false
@@ -805,7 +768,7 @@ func parseOptionalStringArray(value map[string]any, key string, schemaIssues *[]
 
 	arrayValue, ok := rawValue.([]any)
 	if !ok {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must be a string array.", key))
+		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must be a string array.", settingPath(table, key)))
 		return nil, false
 	}
 
@@ -813,21 +776,21 @@ func parseOptionalStringArray(value map[string]any, key string, schemaIssues *[]
 	for _, item := range arrayValue {
 		stringValue, ok := item.(string)
 		if !ok || strings.TrimSpace(stringValue) == "" {
-			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must contain only non-empty strings.", key))
+			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must contain only non-empty strings.", settingPath(table, key)))
 			return nil, false
 		}
 		result = append(result, stringValue)
 	}
 
 	if !allowEmpty && len(result) == 0 {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must contain at least one string.", key))
+		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must contain at least one string.", settingPath(table, key)))
 		return nil, false
 	}
 
 	return result, true
 }
 
-func readOptionalStringMap(value map[string]any, key string, schemaIssues *[]string) (map[string]string, bool) {
+func readOptionalStringMap(value map[string]any, table string, key string, schemaIssues *[]string) (map[string]string, bool) {
 	rawValue, ok := value[key]
 	if !ok {
 		return nil, false
@@ -835,7 +798,7 @@ func readOptionalStringMap(value map[string]any, key string, schemaIssues *[]str
 
 	mapValue, ok := rawValue.(map[string]any)
 	if !ok {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must be a string map.", key))
+		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must be a string map.", settingPath(table, key)))
 		return nil, false
 	}
 
@@ -849,7 +812,7 @@ func readOptionalStringMap(value map[string]any, key string, schemaIssues *[]str
 	for _, itemKey := range keys {
 		stringValue, ok := mapValue[itemKey].(string)
 		if !ok {
-			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.%s must be a string.", key, itemKey))
+			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.%s must be a string.", settingPath(table, key), itemKey))
 			return nil, false
 		}
 		result[itemKey] = stringValue
@@ -858,23 +821,23 @@ func readOptionalStringMap(value map[string]any, key string, schemaIssues *[]str
 	return result, true
 }
 
-func readRequiredCommand(value map[string]any, key string, schemaIssues *[]string) ([]string, bool) {
+func readRequiredCommand(value map[string]any, table string, key string, schemaIssues *[]string) ([]string, bool) {
 	rawValue, ok := value[key]
 	if !ok {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must be a non-empty string or string array.", key))
+		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must be a non-empty string or string array.", settingPath(table, key)))
 		return nil, false
 	}
 
 	if stringValue, ok := rawValue.(string); ok {
 		command := strings.Fields(stringValue)
 		if len(command) == 0 {
-			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s Expected a non-empty string.", key))
+			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s Expected a non-empty string.", settingPath(table, key)))
 			return nil, false
 		}
 		return command, true
 	}
 
-	command, ok := readOptionalStringArray(value, key, schemaIssues)
+	command, ok := readOptionalStringArray(value, table, key, schemaIssues)
 	if !ok {
 		return nil, false
 	}
@@ -882,7 +845,7 @@ func readRequiredCommand(value map[string]any, key string, schemaIssues *[]strin
 	return command, true
 }
 
-func readOptionalCommand(value map[string]any, key string, schemaIssues *[]string) ([]string, bool) {
+func readOptionalCommand(value map[string]any, table string, key string, schemaIssues *[]string) ([]string, bool) {
 	rawValue, ok := value[key]
 	if !ok {
 		return nil, false
@@ -891,13 +854,13 @@ func readOptionalCommand(value map[string]any, key string, schemaIssues *[]strin
 	if stringValue, ok := rawValue.(string); ok {
 		command := strings.Fields(stringValue)
 		if len(command) == 0 {
-			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s Expected a non-empty string.", key))
+			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s Expected a non-empty string.", settingPath(table, key)))
 			return nil, false
 		}
 		return command, true
 	}
 
-	command, ok := readOptionalStringArray(value, key, schemaIssues)
+	command, ok := readOptionalStringArray(value, table, key, schemaIssues)
 	if !ok {
 		return nil, false
 	}
@@ -905,7 +868,7 @@ func readOptionalCommand(value map[string]any, key string, schemaIssues *[]strin
 	return command, true
 }
 
-func readOptionalServicePort(value map[string]any, key string, schemaIssues *[]string) (*PortConfig, bool) {
+func readOptionalServicePort(value map[string]any, table string, key string, schemaIssues *[]string) (*PortConfig, bool) {
 	rawValue, ok := value[key]
 	if !ok {
 		return nil, false
@@ -913,7 +876,7 @@ func readOptionalServicePort(value map[string]any, key string, schemaIssues *[]s
 
 	if stringValue, ok := rawValue.(string); ok {
 		if stringValue != "auto" {
-			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must be an integer between 1 and 65535 or \"auto\".", key))
+			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must be an integer between 1 and 65535 or \"auto\".", settingPath(table, key)))
 			return nil, false
 		}
 		return &PortConfig{Auto: true}, true
@@ -921,32 +884,33 @@ func readOptionalServicePort(value map[string]any, key string, schemaIssues *[]s
 
 	portValue, ok := readPortNumber(rawValue)
 	if !ok || portValue < 1 || portValue > 65535 {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must be an integer between 1 and 65535 or \"auto\".", key))
+		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must be an integer between 1 and 65535 or \"auto\".", settingPath(table, key)))
 		return nil, false
 	}
 
 	return &PortConfig{Number: portValue}, true
 }
 
-func readOptionalHealth(value map[string]any, key string, schemaIssues *[]string) (*HealthConfig, bool) {
+func readOptionalHealth(value map[string]any, table string, key string, schemaIssues *[]string) (*HealthConfig, bool) {
 	rawValue, ok := value[key]
 	if !ok {
 		return nil, false
 	}
 
-	healthValue, ok := readMap(rawValue, key, schemaIssues)
+	healthPath := settingPath(table, key)
+	healthValue, ok := readMap(rawValue, healthPath, schemaIssues)
 	if !ok {
 		return nil, false
 	}
 
-	allowKeys(healthValue, []string{"http", "interval", "process", "retries", "tcp", "timeout"}, key, schemaIssues)
+	allowKeys(healthValue, "services.*.health", healthPath, schemaIssues)
 
 	result := &HealthConfig{}
 	kinds := 0
 	if tcpValue, ok := healthValue["tcp"]; ok {
 		portValue, portOK := readPortNumber(tcpValue)
 		if !portOK || portValue < 1 || portValue > 65535 {
-			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.tcp must be an integer between 1 and 65535.", key))
+			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.tcp must be an integer between 1 and 65535.", settingPath(table, key)))
 		} else {
 			result.TCP = &portValue
 			kinds += 1
@@ -956,7 +920,7 @@ func readOptionalHealth(value map[string]any, key string, schemaIssues *[]string
 	if httpValue, ok := healthValue["http"]; ok {
 		stringValue, ok := httpValue.(string)
 		if !ok {
-			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.http must be a string.", key))
+			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.http must be a string.", settingPath(table, key)))
 		} else {
 			result.HTTP = &stringValue
 			kinds += 1
@@ -966,7 +930,7 @@ func readOptionalHealth(value map[string]any, key string, schemaIssues *[]string
 	if processValue, ok := healthValue["process"]; ok {
 		boolValue, ok := processValue.(bool)
 		if !ok || !boolValue {
-			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.process must be true.", key))
+			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.process must be true.", settingPath(table, key)))
 		} else {
 			result.Process = true
 			kinds += 1
@@ -981,7 +945,7 @@ func readOptionalHealth(value map[string]any, key string, schemaIssues *[]string
 				minimum = 0
 			}
 			if !intOK || intValue < minimum {
-				*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.%s must be an integer >= %d.", key, timedKey, minimum))
+				*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.%s must be an integer >= %d.", healthPath, timedKey, minimum))
 				continue
 			}
 
@@ -997,7 +961,7 @@ func readOptionalHealth(value map[string]any, key string, schemaIssues *[]string
 	}
 
 	if kinds > 1 {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must define at most one of tcp, http, or process.", key))
+		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must define at most one of tcp, http, or process.", settingPath(table, key)))
 		return nil, false
 	}
 
@@ -1016,12 +980,12 @@ func readOptionalServiceLifecycle(value map[string]any, key string, schemaIssues
 		return result, false
 	}
 
-	allowKeys(lifecycleValue, []string{"mode", "start", "status", "stop"}, key, schemaIssues)
+	allowKeys(lifecycleValue, "services.*.lifecycle", key, schemaIssues)
 
 	if modeValue, ok := lifecycleValue["mode"]; ok {
 		mode, ok := modeValue.(string)
-		if !ok || (mode != "foreground" && mode != "daemon") {
-			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.mode must be one of foreground or daemon.", key))
+		if !ok || !slices.Contains(serviceLifecycleModes, mode) {
+			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.mode must be one of %s.", key, choices.Format(serviceLifecycleModes)))
 		} else {
 			result.Mode = mode
 		}
@@ -1088,14 +1052,6 @@ func readInteger(rawValue any) (int, bool) {
 	default:
 		return 0, false
 	}
-}
-
-func isAllowedBindHost(value string) bool {
-	return value == "127.0.0.1" || value == "0.0.0.0" || value == "::1" || value == "::"
-}
-
-func isSupportedEditor(value string) bool {
-	return value == "cursor" || value == "vscode" || value == "vscode-insiders" || value == "webstorm"
 }
 
 // IsValidHost accepts the hostnames supported by devhost's HTTPS routes.

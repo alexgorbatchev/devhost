@@ -30,7 +30,7 @@ The production `inject.js` script contains no instance configuration. Before mou
 
 Production entry scripts, Redux inspector modules/styles, content-hashed JavaScript chunks, and fonts use one-year immutable browser caching. Unversioned entry, inspector-module, and stylesheet URLs redirect without caching to their current content version, so upgrades select fresh assets while unchanged bundles can be reused across stack restarts. In the source-checkout development loop, entry and inspector assets stay uncached so page reloads pick up edits. The native Redux inspector stylesheet loads only in its separate browser popup.
 
-The injected overlay is a compact toolbar docked to the right edge of the browser. It shows the stack name, service health, native CLI chat, and supported third-party devtools toggles. As the viewport narrows, controls wrap into additional rows, including within groups that are wider than the available space. Long stack and branch names truncate visually; hover their buttons for the full names. The toolbar stays beside the log minimap when it is visible. Use `[devtools.status].position` to switch between `top-right` and `bottom-right`; toolbar panels open above their button, or below it at `top-right`. Clicking the stack name collapses the toolbar to a single stack-health dot.
+The injected overlay is a compact toolbar docked to the right edge of the browser. It shows the stack name, service health, native CLI chat, supported third-party devtools toggles, and the **Config** button of the [config editor](#config-editor) when it is on. As the viewport narrows, controls wrap into additional rows, including within groups that are wider than the available space. Long stack and branch names truncate visually; hover their buttons for the full names. The toolbar stays beside the log minimap when it is visible. Use `[devtools.status].position` to switch between `top-right` and `bottom-right`; toolbar panels open above their button, or below it at `top-right`. Clicking the stack name collapses the toolbar to a single stack-health dot.
 
 Toolbar panels, including Services, fade out in place when dismissed, staying beside their trigger until the animation finishes. With reduced motion enabled, they close immediately.
 
@@ -86,6 +86,35 @@ Minimap log previews preserve ANSI backgrounds and text decorations. Foreground 
 When all devtools features are disabled, `devhost` does not mount these control routes for that stack.
 
 For chat, selected context, drawing tools, and tab sharing, see [Browser chat and page context](./annotations/).
+
+## Config editor
+
+The config editor changes the stack's configuration from the browser, and the stack applies each save through [configuration hot reload](../stack-lifecycle/#configuration-hot-reload) without a restart. It is off by default, because a manifest sets the commands devhost runs. Turn it on in the manifest:
+
+```toml
+[devtools.configEditor]
+enabled = true
+```
+
+The setting reloads like the other devtools settings, so open pages show the **Config** button in the toolbar after the save. **Config** opens a window with the files the stack reads, chosen from its **File** list:
+
+- the manifest the stack runs; after a worktree switch, the manifest in the selected checkout
+- every file its `includes` reach
+- the devhost config file every stack on the machine shares, `config.toml` (see [Shared managed Caddy settings](../shared-managed-caddy-settings/))
+
+The editor edits these files and creates `config.toml` when it does not exist yet; it does not create include files. Unsaved changes stay with their file while you switch files and while the window is closed; **Revert** discards the changes to the file shown. The editor highlights TOML and completes table names, keys, and the values of settings that take one of a fixed list, such as `devtools.status.position`. Completions for keys and tables open as you type a name; press Ctrl+Space (or Option+I on macOS) to list them anywhere else.
+
+After each pause in typing, devhost checks the text with the checks a reload makes before it stops any service: TOML syntax, the settings each table accepts and their values, dependency cycles, ports, and service working directories. The editor marks each issue at its line and lists every issue under the text. An issue that devhost cannot place, such as a dependency cycle, is marked at the start of the file.
+
+**Save** (Meta+S on macOS, Ctrl+S elsewhere) writes the file only when it passes those checks. The window then reports **Saved and applied.** once the reload that follows finishes, or the reason that reload was rejected, such as a hostname another stack already routes. A rejected reload leaves the stack running the configuration it accepted before. The file keeps its permissions, and a symbolic link keeps pointing at the saved file.
+
+A file that changed on disk after the editor opened it is not saved over. The window says **The file changed on disk** and offers **Load from disk**, which replaces your unsaved changes to that file with the version on disk. The editor loads the files again each time it opens; a file with unsaved changes keeps the version it was opened at.
+
+Only a browser on the machine devhost runs on can save. When the shared Caddy listens on every interface (`bindHost = "0.0.0.0"`), devhost refuses a save that Caddy received from another machine.
+
+### Rejected reloads
+
+When devhost rejects a reload of the manifest or of `config.toml`, the toolbar shows why below its bar until a later reload of that file is accepted, whether or not the config editor is on. With the editor on, **Edit** in that notice opens it, and the **Config** button turns red.
 
 ## Host resource usage
 
@@ -146,6 +175,15 @@ The readouts appear in the toolbar that the other devtools features bring. With 
 
 Devtools controls are designed for trusted local development. HTTP requests and WebSocket connections use no authentication token. Independent stacks stay isolated through their own control servers, routed hosts, project roots, and native chat session IDs.
 
+Requests that change something, and every WebSocket connection, are accepted only from the routed page itself or from a tool that sends no browser headers, such as `curl`:
+
+- A request a browser marks as coming from another origin, through `Origin` or `Sec-Fetch-Site`, is refused with `403 Forbidden`. A WebSocket whose `Origin` names another host is refused the same way.
+- The request's host must be a route of this stack or a loopback name such as `127.0.0.1` or `localhost`. This refuses a page whose own domain was pointed at the control server's address.
+- A request with a body must send `Content-Type: application/json`; anything else gets `415 Unsupported Media Type`.
+- Chat requests that start, resume, or end a session, and the chat session WebSocket, must also carry an `Origin`, so only a page can drive an agent; a request without one gets `403 Forbidden`.
+
+The config editor's routes apply the host rule to reads as well, since they return file contents. The controls on [startup and recovery pages](./stack-lifecycle/#startup-and-recovery-pages) follow the first rule only: those pages are served on the service's own host.
+
 ### Instance configuration
 
 Before mounting, the browser entry fetches `GET /__devhost__/config.json` from the page's origin with `cache: "no-store"`. The response includes the stack name, project root, enabled features, and UI settings, and uses `Cache-Control: no-store`. The entry rejects unsuccessful responses and configurations with a missing or empty stack name.
@@ -156,17 +194,21 @@ Instance configuration is kept out of `inject.js`, lazy JavaScript chunks and fo
 
 All paths below are relative to the routed app's origin. Requests with JSON bodies use `Content-Type: application/json`.
 
-| Endpoint                                         | Methods       | Purpose                                                 |
-| ------------------------------------------------ | ------------- | ------------------------------------------------------- |
-| `/__devhost__/chat/harnesses?pageURL=<page-url>` | `GET`         | Discover installed native clients and model catalogs    |
-| `/__devhost__/chat/sessions`                     | `GET`, `POST` | List sessions or start/resume a native conversation     |
-| `/__devhost__/chat/sessions/<id>`                | `DELETE`      | End the owned native process                            |
-| `/__devhost__/restart-service`                   | `POST`        | Restart managed services                                |
-| `/__devhost__/restart-stack`                     | `POST`        | Restart all managed services with fresh automatic ports |
-| `/__devhost__/worktrees`                         | `GET`, `POST` | Refresh worktree state or switch the selected checkout  |
-| `/__devhost__/react-highlight/cursor`            | `POST`        | Publish an editor cursor update                         |
+| Endpoint                                         | Methods       | Purpose                                                    |
+| ------------------------------------------------ | ------------- | ---------------------------------------------------------- |
+| `/__devhost__/chat/harnesses?pageURL=<page-url>` | `GET`         | Discover installed native clients and model catalogs       |
+| `/__devhost__/chat/sessions`                     | `GET`, `POST` | List sessions or start/resume a native conversation        |
+| `/__devhost__/chat/sessions/<id>`                | `DELETE`      | End the owned native process                               |
+| `/__devhost__/restart-service`                   | `POST`        | Restart managed services                                   |
+| `/__devhost__/restart-stack`                     | `POST`        | Restart all managed services with fresh automatic ports    |
+| `/__devhost__/worktrees`                         | `GET`, `POST` | Refresh worktree state or switch the selected checkout     |
+| `/__devhost__/react-highlight/cursor`            | `POST`        | Publish an editor cursor update                            |
+| `/__devhost__/config/files`                      | `GET`         | List the files the config editor can change, with contents |
+| `/__devhost__/config/schema`                     | `GET`         | Describe the settings each kind of file accepts            |
+| `/__devhost__/config/validate`                   | `POST`        | Check unsaved content with the checks a reload makes       |
+| `/__devhost__/config/save`                       | `POST`        | Write checked content over the version it was edited from  |
 
-Handlers still validate methods, payloads, enabled features, and session state. Malformed requests can produce `400 Bad Request`, unsupported methods produce `405 Method Not Allowed`, and unavailable controls can produce `501 Not Implemented`.
+Handlers still validate methods, payloads, enabled features, and session state. Malformed requests can produce `400 Bad Request`, unsupported methods produce `405 Method Not Allowed`, and unavailable controls can produce `501 Not Implemented`. The config routes answer `404 Not Found` while the config editor is off. A save answers `403 Forbidden` for a file the editor does not list or a client on another machine, `409 Conflict` with the file on disk when it changed since the editor read it, and `422 Unprocessable Entity` with the issues when the content fails the checks.
 
 ### WebSocket connections
 

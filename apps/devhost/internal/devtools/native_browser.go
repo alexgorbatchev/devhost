@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nativebrowser"
@@ -25,18 +24,6 @@ const nativeWriteTimeout = 2 * time.Second
 
 var nativeIdentityPattern = regexp.MustCompile(`^[a-f0-9]{32}$`)
 var nativeRequestIDPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,64}$`)
-
-func nativeRequestOrigin(r *http.Request) (string, error) {
-	origins := r.Header.Values("Origin")
-	if len(origins) != 1 {
-		return "", fmt.Errorf("one Origin is required")
-	}
-	u, err := url.Parse(origins[0])
-	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.User != nil || u.Opaque != "" || u.Path != "" || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || strings.Contains(origins[0], "#") || !strings.EqualFold(u.Host, r.Host) || u.Hostname() == "" {
-		return "", fmt.Errorf("Origin must match the request authority")
-	}
-	return u.String(), nil
-}
 
 func decodeNativeRequest(data []byte) (nativebrowser.Request, error) {
 	var request nativebrowser.Request
@@ -60,19 +47,19 @@ func (s *ControlServer) handleNativeBrowserWebsocket(w http.ResponseWriter, r *h
 		http.Error(w, "GET required", http.StatusMethodNotAllowed)
 		return
 	}
-	origin, err := nativeRequestOrigin(r)
 	protocols := websocket.Subprotocols(r)
-	if err != nil || len(protocols) != 1 || protocols[0] != nativeBrowserProtocol {
-		http.Error(w, "Native browser origin or protocol rejected", http.StatusForbidden)
+	if len(protocols) != 1 || protocols[0] != nativeBrowserProtocol {
+		http.Error(w, "Native browser protocol rejected", http.StatusForbidden)
 		return
 	}
 	// A connection keeps the endpoint it opened with; a reload reaches the next one.
 	settings := s.currentSettings()
-	if settings.NativeBrowser.Endpoint == "" || !settings.FeatureToggles.ExternalToolbarsEnabled || s.allowsNativeBrowserURL == nil {
+	if settings.NativeBrowser.Endpoint == "" || !settings.FeatureToggles.ExternalToolbarsEnabled || s.ownsDocumentURL == nil {
 		http.Error(w, "Native browser control is not configured", http.StatusServiceUnavailable)
 		return
 	}
-	allowed, err := s.allowsNativeBrowserURL(s.Port(), origin+"/")
+	origin := requestDocumentOrigin(r)
+	allowed, err := s.ownsDocumentURL(s.Port(), origin+"/")
 	if err != nil || !allowed {
 		http.Error(w, "Native browser origin is not an active project route", http.StatusForbidden)
 		return
@@ -86,7 +73,7 @@ func (s *ControlServer) handleNativeBrowserWebsocket(w http.ResponseWriter, r *h
 	s.serverWG.Add(1)
 	s.mu.Unlock()
 	defer s.serverWG.Done()
-	upgrader := websocket.Upgrader{HandshakeTimeout: nativeHandshakeTimeout, Subprotocols: []string{nativeBrowserProtocol}, CheckOrigin: func(*http.Request) bool { return true }}
+	upgrader := websocket.Upgrader{HandshakeTimeout: nativeHandshakeTimeout, Subprotocols: []string{nativeBrowserProtocol}}
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
@@ -118,7 +105,7 @@ func (s *ControlServer) handleNativeBrowserWebsocket(w http.ResponseWriter, r *h
 	if err != nil || href.Scheme+"://"+href.Host != origin {
 		return
 	}
-	allowed, err = s.allowsNativeBrowserURL(s.Port(), first.Binding.Href)
+	allowed, err = s.ownsDocumentURL(s.Port(), first.Binding.Href)
 	if err != nil || !allowed {
 		return
 	}
@@ -159,7 +146,7 @@ func (s *ControlServer) handleNativeBrowserWebsocket(w http.ResponseWriter, r *h
 		Endpoint:         settings.NativeBrowser.Endpoint,
 		ReactExtensionID: settings.NativeBrowser.ReactExtensionID,
 		InitialRequestID: first.ID,
-		AllowsURL:        func(href string) (bool, error) { return s.allowsNativeBrowserURL(s.Port(), href) },
+		AllowsURL:        func(href string) (bool, error) { return s.ownsDocumentURL(s.Port(), href) },
 	}
 	if err := nativebrowser.Run(ctx, options, first.Binding, requests, publish); err != nil && ctx.Err() == nil {
 		// Errors exposed here are deliberate actionable messages; library errors

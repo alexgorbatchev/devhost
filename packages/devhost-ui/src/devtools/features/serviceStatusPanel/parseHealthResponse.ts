@@ -1,5 +1,6 @@
 import type {
   HealthResponse,
+  IConfigurationStatus,
   IWorktree,
   IWorktreeDirectory,
   ServiceHealth,
@@ -22,11 +23,13 @@ function isHealthResponse(value: unknown): value is HealthResponse {
   const repositories: unknown = Reflect.get(value, "repositories");
   const config: unknown = Reflect.get(value, "config");
   const stoppedServices: unknown = Reflect.get(value, "stoppedServices");
+  const configuration: unknown = Reflect.get(value, "configuration");
   return (
     Array.isArray(services) &&
     services.every(isServiceHealth) &&
     (stoppedServices === undefined || (Array.isArray(stoppedServices) && stoppedServices.every(isStoppedService))) &&
     (config === undefined || (typeof config === "object" && config !== null && !Array.isArray(config))) &&
+    (configuration === undefined || (Array.isArray(configuration) && configuration.every(isConfigurationStatus))) &&
     (repositories === undefined || (Array.isArray(repositories) && repositories.every(isRepository)))
   );
 }
@@ -42,6 +45,16 @@ function isServiceHealth(value: unknown): value is ServiceHealth {
     optional(value, "restarting", "boolean") &&
     optional(value, "exitCode", "number") &&
     optional(value, "projectRootPath", "string")
+  );
+}
+
+function isConfigurationStatus(value: unknown): value is IConfigurationStatus {
+  if (typeof value !== "object" || value === null) return false;
+  const source: unknown = Reflect.get(value, "source");
+  return (
+    (source === "manifest" || source === "config") &&
+    Number.isInteger(Reflect.get(value, "reloads")) &&
+    optional(value, "error", "string")
   );
 }
 

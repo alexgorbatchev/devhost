@@ -208,13 +208,6 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 			wantError: "killZombies must be a boolean",
 		},
 		{
-			name: "rejects shared caddy settings, which the devhost config file holds",
-			manifest: rawManifestWithServices(map[string]any{
-				"caddy": map[string]any{"global": map[string]any{"httpsPort": int64(8443)}},
-			}),
-			wantError: "Manifest schema is invalid:\ncaddy moved to the devhost config file: set the shared Caddy listeners in the [caddy] table of config.toml in the devhost config directory, and remove [caddy] from the manifest.",
-		},
-		{
 			name: "rejects unsupported minimap position key",
 			manifest: rawManifestWithServices(map[string]any{
 				"devtools": map[string]any{"minimap": map[string]any{"enabled": true, "position": "left"}},
@@ -566,6 +559,19 @@ func TestValidateManifestRejectsInvalidCases(t *testing.T) {
 				t.Fatalf("ValidateManifest(...) error = %q, want substring %q", err.Error(), tc.wantError)
 			}
 		})
+	}
+}
+
+// A manifest that still sets the shared Caddy listeners gets one issue, naming the devhost config file, rather than
+// that issue and an unrecognized key.
+func TestValidateManifestRejectsSharedCaddySettings(t *testing.T) {
+	t.Parallel()
+
+	raw := rawManifestWithServices(map[string]any{"caddy": map[string]any{"global": map[string]any{"httpsPort": int64(8443)}}})
+	_, err := ValidateManifest(filepath.Join(string(filepath.Separator), "tmp", "project", "devhost.toml"), raw)
+	want := "Manifest schema is invalid:\ncaddy moved to the devhost config file: set the shared Caddy listeners in the [caddy] table of config.toml in the devhost config directory, and remove [caddy] from the manifest."
+	if err == nil || err.Error() != want {
+		t.Fatalf("ValidateManifest(...) error = %v, want %q", err, want)
 	}
 }
 

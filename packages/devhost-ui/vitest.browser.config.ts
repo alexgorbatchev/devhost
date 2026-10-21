@@ -13,7 +13,21 @@ export default mergeConfig(
     cacheDir: "./.cache/vite-browser",
     plugins: [nativeBrowserTransport()],
     optimizeDeps: {
-      include: ["@testing-library/react", "react", "react-dom", "react-dom/client", "react/jsx-dev-runtime"],
+      include: [
+        "@codemirror/autocomplete",
+        "@codemirror/commands",
+        "@codemirror/language",
+        "@codemirror/legacy-modes/mode/toml",
+        "@codemirror/lint",
+        "@codemirror/state",
+        "@codemirror/view",
+        "@lezer/highlight",
+        "@testing-library/react",
+        "react",
+        "react-dom",
+        "react-dom/client",
+        "react/jsx-dev-runtime",
+      ],
     },
     test: {
       browser: {

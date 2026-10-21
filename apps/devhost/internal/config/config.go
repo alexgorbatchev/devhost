@@ -9,11 +9,14 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/BurntSushi/toml"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/choices"
 )
 
 const fileName = "config.toml"
@@ -66,26 +69,46 @@ func resolvePath(environment map[string]string, home string) (string, error) {
 // Read reads and validates the config file at path. A file that does not exist
 // leaves every setting at its default.
 func Read(path string) (Config, error) {
+	content, err := os.ReadFile(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return Config{Caddy: caddy.DefaultManagedCaddyGlobalSettings()}, nil
+	}
+	if err != nil {
+		return Config{}, fmt.Errorf("read devhost config %s: %w", path, err)
+	}
+	return Parse(path, content)
+}
+
+// ValidationError lists every problem the settings of a config file have.
+type ValidationError struct {
+	Path   string
+	Issues []string
+}
+
+func (e *ValidationError) Error() string {
+	return fmt.Sprintf("devhost config %s is invalid:\n%s", e.Path, strings.Join(e.Issues, "\n"))
+}
+
+// Parse validates content as the config file at path, which names the file in
+// errors, so content that is not saved yet can be checked.
+func Parse(path string, content []byte) (Config, error) {
 	result := Config{Caddy: caddy.DefaultManagedCaddyGlobalSettings()}
 	var contents fileContents
-	metadata, err := toml.DecodeFile(path, &contents)
-	if errors.Is(err, fs.ErrNotExist) {
-		return result, nil
-	}
+	metadata, err := toml.Decode(string(content), &contents)
 	if err != nil {
 		return Config{}, fmt.Errorf("read devhost config %s: %w", path, err)
 	}
 
 	issues := []string{}
 	for _, key := range metadata.Undecoded() {
-		issues = append(issues, fmt.Sprintf("Unrecognized key: %q", key.String()))
+		issues = append(issues, unrecognizedKeyPrefix+strconv.Quote(key.String()))
 	}
 	sort.Strings(issues)
 	if contents.Caddy != nil {
 		issues = append(issues, applyCaddy(*contents.Caddy, &result.Caddy)...)
 	}
 	if len(issues) > 0 {
-		return Config{}, fmt.Errorf("devhost config %s is invalid:\n%s", path, strings.Join(issues, "\n"))
+		return Config{}, &ValidationError{Path: path, Issues: issues}
 	}
 
 	return result, nil
@@ -104,7 +127,7 @@ func applyCaddy(contents caddyContents, settings *caddy.ManagedCaddyGlobalSettin
 		if caddy.IsSupportedManagedCaddyBindHost(*contents.BindHost) {
 			settings.BindHost = *contents.BindHost
 		} else {
-			issues = append(issues, "caddy.bindHost must be one of 127.0.0.1, 0.0.0.0, ::1, or ::.")
+			issues = append(issues, "caddy.bindHost must be one of "+choices.Format(caddy.SupportedManagedCaddyBindHosts)+".")
 		}
 	}
 	if contents.HTTP != nil {

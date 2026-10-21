@@ -148,6 +148,20 @@ func TestChatRoutesValidateRequestsBeforeStartingClients(t *testing.T) {
 	}
 }
 
+// A session socket streams and steers a coding agent, so a client that sends no Origin, which no browser page
+// does, cannot open one.
+func TestChatSessionSocketRequiresAPageOrigin(t *testing.T) {
+	s, session, _ := startChatAckTest(t)
+	url := fmt.Sprintf("ws://127.0.0.1:%d%s?sessionId=%s", s.Port(), chatWebsocketPath, session.snapshot().ID)
+	conn, response, err := websocket.DefaultDialer.Dial(url, nil)
+	if conn != nil {
+		_ = conn.Close() // The assertions below report the unexpected upgrade.
+	}
+	if err == nil || response == nil || response.StatusCode != http.StatusForbidden {
+		t.Fatalf("dial without Origin = %v, %v, want %d", response, err, http.StatusForbidden)
+	}
+}
+
 func TestChatReplacesObsoleteTerminalRoutes(t *testing.T) {
 	s := startChatControlServer(t)
 	for _, path := range []string{"/terminal-sessions", "/ws/terminal", "/xterm.css", "/annotation-queues", "/ws/annotation-queues"} {

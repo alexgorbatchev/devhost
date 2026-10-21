@@ -1,4 +1,5 @@
-export function formatWorktreePath(path: string, homeDirectoryPath: string): string {
+/** Shortens a path inside the home directory to start with `~`. */
+export function formatHomePath(path: string, homeDirectoryPath: string): string {
   const homePath = homeDirectoryPath.replace(/\/+$/, "");
   if (homePath.length === 0) return path;
   if (path === homePath) return "~";

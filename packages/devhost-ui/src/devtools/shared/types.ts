@@ -51,9 +51,22 @@ export interface IStoppedService {
   name: string;
 }
 
+/** A configuration a reload reads: the manifest with the files it includes, or the shared devhost config file. */
+export type ConfigurationSource = "manifest" | "config";
+
+/** The reloads of one configuration source. */
+export interface IConfigurationStatus {
+  source: ConfigurationSource;
+  /** Finished reloads, accepted or rejected, so a page that saved a file can tell when the next one is done. */
+  reloads: number;
+  /** Why the last reload was rejected; absent after an accepted one. */
+  error?: string;
+}
+
 export type HealthResponse = {
   // The configuration `/__devhost__/config.json` serves, current at the time of the message.
   config?: object;
+  configuration?: IConfigurationStatus[];
   services: ServiceHealth[];
   stoppedServices?: IStoppedService[];
   repositories?: IWorktreeRepository[];

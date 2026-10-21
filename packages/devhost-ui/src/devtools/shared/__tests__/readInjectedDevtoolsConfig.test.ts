@@ -37,6 +37,14 @@ describe("readInjectedDevtoolsConfig", () => {
     for (const key of ["annotationActions", "annotationDefaultActionId", "annotationQueueEnabled", "terminalEnabled"])
       expect(Reflect.has(config, key)).toBe(false);
   });
+  test("turns the config editor on only when the server says so", () => {
+    Reflect.deleteProperty(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME);
+    expect(readInjectedDevtoolsConfig().configEditorEnabled).toBe(false);
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, { configEditorEnabled: true });
+    expect(readInjectedDevtoolsConfig().configEditorEnabled).toBe(true);
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, { configEditorEnabled: "yes" });
+    expect(readInjectedDevtoolsConfig().configEditorEnabled).toBe(false);
+  });
   test("reads external editor, checkout, home and routed service metadata", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
       componentEditor: "cursor",

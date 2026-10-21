@@ -89,6 +89,7 @@ func TestChatSessionsStayWithinResolvedProject(t *testing.T) {
 			t.Fatal(err)
 		}
 		request.Header.Set("Origin", base)
+		request.Header.Set("Content-Type", jsonMediaType)
 		response, err := http.DefaultClient.Do(request)
 		if err != nil {
 			t.Fatal(err)
