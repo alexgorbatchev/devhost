@@ -4,6 +4,8 @@ import { DEVTOOLS_ROOT_ID, TOP_LAYER_ELEMENT_SELECTOR } from "../constants";
 import type { INativeBrowserBinding } from "../nativeBrowser/types";
 import { promoteDevtoolsTopLayer } from "../promoteDevtoolsTopLayer";
 
+const KEYBOARD_EVENT_TYPES: readonly string[] = ["keydown", "keypress", "keyup"];
+
 interface IDevtoolsTopLayerProps {
   children: ReactNode;
   nativeBrowserBinding?: INativeBrowserBinding | null;
@@ -57,13 +59,30 @@ export function DevtoolsTopLayer({ children, nativeBrowserBinding, ref }: IDevto
       }
     };
 
+    // Keyboard events leave the shadow root retargeted to its host, so host shortcuts cannot tell that a devtools
+    // field or control has focus: a page that toggles video playback on Space cancels the key, which swallows a
+    // typed space and keeps a focused devtools button from activating. Every key pressed in devtools ends its
+    // propagation at the shadow root, after devtools listeners, including React's on the mount node and document
+    // capture listeners, have handled it.
+    const rootNode: Node = topLayerElement.getRootNode();
+    const keyboardBoundary: ShadowRoot | null = rootNode instanceof ShadowRoot ? rootNode : null;
+    const handleDevtoolsKeyboardEvent = (event: Event): void => {
+      event.stopPropagation();
+    };
+
     topLayerElement.showPopover();
+    for (const type of KEYBOARD_EVENT_TYPES) {
+      keyboardBoundary?.addEventListener(type, handleDevtoolsKeyboardEvent);
+    }
     ownerDocument.addEventListener("toggle", handleHostToggle, true);
     topLayerElement.addEventListener("toggle", handleOwnTopLayerChange, true);
     topLayerElement.addEventListener("transitionend", handleOwnOverlayTransition);
     topLayerElement.addEventListener("transitioncancel", handleOwnOverlayTransition);
 
     return () => {
+      for (const type of KEYBOARD_EVENT_TYPES) {
+        keyboardBoundary?.removeEventListener(type, handleDevtoolsKeyboardEvent);
+      }
       ownerDocument.removeEventListener("toggle", handleHostToggle, true);
       topLayerElement.removeEventListener("toggle", handleOwnTopLayerChange, true);
       topLayerElement.removeEventListener("transitionend", handleOwnOverlayTransition);

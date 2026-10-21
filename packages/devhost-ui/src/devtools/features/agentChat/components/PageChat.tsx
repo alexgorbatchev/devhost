@@ -60,8 +60,9 @@ export function PageChat({
         stopSelection();
       }
     };
-    document.addEventListener("keydown", stop);
-    return () => document.removeEventListener("keydown", stop);
+    // Captured: keys typed into devtools fields, such as the composer, end their propagation at the shadow root.
+    document.addEventListener("keydown", stop, true);
+    return () => document.removeEventListener("keydown", stop, true);
   }, [isSelectionMode, stopSelection, tool]);
 
   const beforeSend: ChatBeforeSend = useCallback(
