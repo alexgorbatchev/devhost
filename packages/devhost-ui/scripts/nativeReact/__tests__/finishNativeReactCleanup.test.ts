@@ -4,7 +4,6 @@ import assert from "node:assert/strict";
 import { lstat, mkdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { finishNativeReactCleanup } from "../finishNativeReactCleanup";
-import { verifyNativeReactAsset } from "../verifyNativeReactAsset";
 
 test("asset-cleanup rejection retains both the original provisioning error and genuine filesystem failure", async () => {
   const outputPath = resolve(E2E_TEMPORARY_PATH, `native-cleanup-failure-${crypto.randomUUID()}`);
@@ -15,11 +14,7 @@ test("asset-cleanup rejection retains both the original provisioning error and g
   await mkdir(resolve(outputPath, "extracted-assets-manifest.json"));
   await Bun.write(extractedPath, "retained partial bytes");
   try {
-    const primaryError: unknown = await verifyNativeReactAsset(missingPath, "0".repeat(64)).catch(
-      (error: unknown) => error,
-    );
-    assert(primaryError instanceof Error);
-    expect(primaryError.message).toBe(`Required native asset is missing: ${missingPath}`);
+    const primaryError = new Error(`Download failed (404): ${missingPath}`);
     const outcome: unknown = await finishNativeReactCleanup(
       directoryPath,
       outputPath,

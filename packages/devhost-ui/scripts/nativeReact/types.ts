@@ -6,10 +6,19 @@ export interface INativeReactAssetProof {
 }
 
 export interface INativeReactProvisioning {
-  chromeArchivePath: string;
-  reactCrxPath: string;
   caddyExecutablePath: string;
   devhostExecutablePath: string;
+}
+
+export interface IChromeForTestingPlatform {
+  name: string;
+  // The executable inside the platform's archive.
+  executablePath: string;
+}
+
+export interface IChromeForTestingRelease {
+  version: string;
+  url: string;
 }
 
 export interface INativeReactTarget {
@@ -38,11 +47,6 @@ export interface INativeReactProject {
 
 export interface INativeReactStack {
   projects: INativeReactProject[];
-  stop: () => Promise<void>;
-}
-
-export interface INativeReactAutomation {
-  run: (targetId: string, label: string, argumentsList: string[]) => Promise<string>;
   stop: () => Promise<void>;
 }
 
