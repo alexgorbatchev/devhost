@@ -16,10 +16,6 @@ import (
 // session keeps answering on its open socket.
 func TestUpdateSettingsAppliesWithoutEndingChatSessions(t *testing.T) {
 	server, session, conn := startChatAckTest(t)
-	health := mustDialWebsocket(t, websocketURL(server.Port(), healthWebsocketPath))
-	defer health.Close()
-	_ = health.SetReadDeadline(time.Now().Add(5 * time.Second))
-	readWebsocketText(t, health)
 
 	settings := server.currentSettings()
 	settings.StackName = "renamed"
@@ -36,10 +32,6 @@ func TestUpdateSettingsAppliesWithoutEndingChatSessions(t *testing.T) {
 	}
 	if config["stackName"] != "renamed" || config["minimapEnabled"] != true || config["position"] != "top-right" || config["primaryService"] != "web" {
 		t.Fatalf("injected config after the edit = %#v", config)
-	}
-	// Open pages learn the configuration from the health stream.
-	if message := readWebsocketText(t, health); !strings.Contains(message, `"stackName":"renamed"`) || !strings.Contains(message, `"position":"top-right"`) {
-		t.Fatalf("health after the edit = %s, want the new configuration", message)
 	}
 
 	settings.FeatureToggles.ChatEnabled = false
@@ -83,6 +75,37 @@ func TestChatRoutesFollowTheToggle(t *testing.T) {
 	}
 	if status := readSessionsStatus(); status != http.StatusOK {
 		t.Fatalf("sessions after a reload turned chat on = %d, want %d", status, http.StatusOK)
+	}
+}
+
+func TestUpdateSettingsSendsTheConfigurationToOpenPages(t *testing.T) {
+	t.Parallel()
+
+	server, err := StartControlServer(StartControlServerOptions{
+		GetHealthResponse: func() (HealthResponse, error) { return HealthResponse{Services: []ServiceHealth{}}, nil },
+		// Only the edit itself can send the new configuration before the test ends.
+		HealthPollInterval: time.Hour,
+		Position:           "bottom-right",
+		ProjectRootPath:    t.TempDir(),
+		StackName:          "hello-stack",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = server.Stop() })
+	health := mustDialWebsocket(t, websocketURL(server.Port(), healthWebsocketPath))
+	defer health.Close()
+	_ = health.SetReadDeadline(time.Now().Add(5 * time.Second))
+	readWebsocketText(t, health)
+
+	settings := server.currentSettings()
+	settings.StackName = "renamed"
+	settings.Position = "top-right"
+	if err := server.UpdateSettings(settings); err != nil {
+		t.Fatal(err)
+	}
+	if message := readWebsocketText(t, health); !strings.Contains(message, `"stackName":"renamed"`) || !strings.Contains(message, `"position":"top-right"`) {
+		t.Fatalf("health after the edit = %s, want the new configuration", message)
 	}
 }
 

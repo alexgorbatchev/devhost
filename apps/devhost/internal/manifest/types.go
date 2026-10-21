@@ -42,6 +42,7 @@ type DevtoolsConfig struct {
 	Chat             DevtoolsToggleConfig
 	Annotations      DevtoolsToggleConfig
 	Browser          DevtoolsBrowserConfig
+	ConfigEditor     DevtoolsToggleConfig
 	Editor           DevtoolsEditorConfig
 	ExternalToolbars DevtoolsToggleConfig
 	Minimap          DevtoolsMinimapConfig

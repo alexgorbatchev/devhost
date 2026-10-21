@@ -31,6 +31,11 @@ app = ["web"]
 # Repositories containing managed = false services cannot switch.
 # Missing checkouts and failed group launches remain stopped for explicit recovery.
 
+[devtools.configEditor]
+# `enabled` shows the toolbar's Config button, which edits this manifest, its includes, and config.toml (default: false).
+# Saves pass the checks a reload makes, then hot reload. Only a browser on this machine can save.
+enabled = false
+
 [devtools.editor]
 # `enabled` controls whether Alt + right-click component-source navigation is enabled (default: true).
 enabled = true

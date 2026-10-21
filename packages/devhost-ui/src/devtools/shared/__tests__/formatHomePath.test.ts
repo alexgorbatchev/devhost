@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
-import { formatWorktreePath } from "../formatWorktreePath";
+import { formatHomePath } from "../formatHomePath";
 
-describe("formatWorktreePath", () => {
+describe("formatHomePath", () => {
   test.each([
     ["/home/alex/projects/shop", "/home/alex", "~/projects/shop"],
     ["/Users/alex/worktrees/cart/web", "/Users/alex", "~/worktrees/cart/web"],
@@ -15,6 +15,6 @@ describe("formatWorktreePath", () => {
     ["/home/alex/projects/shop", "", "/home/alex/projects/shop"],
     ["/home/alex/projects/shop", "/", "/home/alex/projects/shop"],
   ])("formats %s with home %s as %s", (path, homeDirectoryPath, expected) => {
-    expect(formatWorktreePath(path, homeDirectoryPath)).toBe(expected);
+    expect(formatHomePath(path, homeDirectoryPath)).toBe(expected);
   });
 });

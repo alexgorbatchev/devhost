@@ -110,22 +110,14 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	if !restartStack && reflect.DeepEqual(*r.configured, next) && slices.Equal(r.manifest.requested, change.requested) {
 		return nil
 	}
-	order, err := ResolveServiceOrder(next)
-	if err != nil {
-		return err
-	}
 	resolvePorts := resolveReloadPorts
 	if restartStack {
 		resolvePorts = resolveStackRestartPorts
 	}
-	candidate, err := resolvePorts(next, *r.manifest, change.requested)
+	candidate, order, err := resolveReloadCandidate(next, *r.manifest, change.requested, resolvePorts)
 	if err != nil {
 		return err
 	}
-	// The stack is identified by the root manifest path, which a worktree switch
-	// keeps; its name is a label that follows the configuration.
-	candidate.ManifestPath = r.manifest.ManifestPath
-	candidate.ServiceOrder = orderedServiceNames(next)
 	if r.worktrees == nil && candidate.Worktrees.Enabled {
 		if err := forgetWorktreeSelection(candidate.ManifestPath, r.routes.paths.StateDirectoryPath); err != nil {
 			return err
@@ -139,15 +131,13 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	if !change.worktreeSwitch {
 		candidate, blocked = worktrees.restore(candidate)
 	}
-	for name, service := range candidate.Services {
+	for _, name := range slices.Sorted(maps.Keys(candidate.Services)) {
 		if restartStack && blocked[name] != "" {
 			return fmt.Errorf("cannot restart stack: service %s is stopped: %s; select an available worktree first", name, blocked[name])
 		}
-		if isManagedService(service) && blocked[name] == "" {
-			if err := validateServiceWorkingDirectory(service); err != nil {
-				return err
-			}
-		}
+	}
+	if err := validateServiceWorkingDirectories(candidate, blocked); err != nil {
+		return err
 	}
 	affected := affectedReloadServices(*r.manifest, candidate)
 	if restartStack {

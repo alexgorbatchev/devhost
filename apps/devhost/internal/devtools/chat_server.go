@@ -9,12 +9,15 @@ import (
 	"strings"
 )
 
-func chatOrigin(w http.ResponseWriter, r *http.Request, required bool) bool {
-	if !required && len(r.Header.Values("Origin")) == 0 && r.Header.Get("Sec-Fetch-Site") != "cross-site" {
+// requireChatPage refuses a chat request that changes a session or opens a session socket unless a browser page
+// sent it. Chat runs a coding agent in the project, so only the routed page may start or steer one; the control
+// guard has already refused an Origin from another site, so this only adds that an Origin must be present.
+func requireChatPage(w http.ResponseWriter, r *http.Request) bool {
+	if r.Method == http.MethodGet && !websocket.IsWebSocketUpgrade(r) {
 		return true
 	}
-	if _, err := nativeRequestOrigin(r); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
+	if len(r.Header.Values("Origin")) == 0 {
+		http.Error(w, "Chat requests must come from the routed page.", http.StatusForbidden)
 		return false
 	}
 	return true
@@ -44,9 +47,6 @@ func (s *ControlServer) handleChatHarnesses(w http.ResponseWriter, r *http.Reque
 		http.Error(w, "method not allowed", 405)
 		return
 	}
-	if !chatOrigin(w, r, false) {
-		return
-	}
 	tool, err := s.toolContext(r.URL.Query().Get("pageURL"))
 	if err != nil {
 		http.Error(w, err.Error(), 400)
@@ -59,7 +59,7 @@ func (s *ControlServer) handleChatHarnesses(w http.ResponseWriter, r *http.Reque
 }
 
 func (s *ControlServer) handleChatSessions(w http.ResponseWriter, r *http.Request) {
-	if !chatOrigin(w, r, r.Method != http.MethodGet) {
+	if !requireChatPage(w, r) {
 		return
 	}
 	id := strings.TrimPrefix(r.URL.Path, chatSessionsPath+"/")
@@ -143,7 +143,7 @@ func (s *ControlServer) handleChatWebsocket(w http.ResponseWriter, r *http.Reque
 		http.Error(w, "GET required", http.StatusMethodNotAllowed)
 		return
 	}
-	if !chatOrigin(w, r, true) {
+	if !requireChatPage(w, r) {
 		return
 	}
 	s.mu.Lock()

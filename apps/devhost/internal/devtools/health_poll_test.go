@@ -12,7 +12,7 @@ func TestHealthPollingStopsWithoutWaitingForTick(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		server := &ControlServer{ctx: ctx}
+		server := &ControlServer{ctx: ctx, healthPollInterval: defaultHealthPollInterval}
 		server.serverWG.Add(1)
 		go server.pollHealth()
 		synctest.Wait()

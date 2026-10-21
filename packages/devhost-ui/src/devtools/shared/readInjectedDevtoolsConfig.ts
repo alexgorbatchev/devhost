@@ -22,6 +22,7 @@ export interface IInjectedDevtoolsConfig {
   stackName: string;
   annotationEnabled: boolean;
   chatEnabled: boolean;
+  configEditorEnabled: boolean;
   editorEnabled: boolean;
   externalToolbarsEnabled: boolean;
   minimapEnabled: boolean;
@@ -42,6 +43,7 @@ const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
   stackName: DEVHOST_SERVICE_NAME,
   annotationEnabled: false,
   chatEnabled: false,
+  configEditorEnabled: false,
   editorEnabled: true,
   externalToolbarsEnabled: true,
   minimapEnabled: true,
@@ -85,6 +87,7 @@ function parseInjectedDevtoolsConfig(injectedConfig: object): IInjectedDevtoolsC
   const stackName: string = readStackNameValue(injectedConfig);
   const chatEnabled: boolean = readBooleanValue(injectedConfig, "chatEnabled", false);
   const annotationEnabled: boolean = readBooleanValue(injectedConfig, "annotationEnabled", false);
+  const configEditorEnabled: boolean = readBooleanValue(injectedConfig, "configEditorEnabled", false);
   const editorEnabled: boolean = readBooleanValue(injectedConfig, "editorEnabled", true);
   const externalToolbarsEnabled: boolean = readBooleanValue(injectedConfig, "externalToolbarsEnabled", true);
   const minimapEnabled: boolean = readBooleanValue(injectedConfig, "minimapEnabled", true);
@@ -106,6 +109,7 @@ function parseInjectedDevtoolsConfig(injectedConfig: object): IInjectedDevtoolsC
     annotationEnabled,
     chatEnabled,
     componentEditor,
+    configEditorEnabled,
     homeDirectoryPath: typeof homeDirectoryPath === "string" ? homeDirectoryPath : "",
     position,
     projectRootPath,

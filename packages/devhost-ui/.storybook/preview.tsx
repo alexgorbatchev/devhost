@@ -32,6 +32,7 @@ const storybookInjectedConfig: IInjectedDevtoolsConfig = {
   annotationEnabled: false,
   chatEnabled: false,
   componentEditor: "vscode",
+  configEditorEnabled: false,
   homeDirectoryPath: "/home/alex",
   editorEnabled: true,
   externalToolbarsEnabled: true,

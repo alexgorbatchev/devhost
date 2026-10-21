@@ -10,7 +10,7 @@ import { PanelActions } from "../../../shared/components/PanelActions";
 import { ToolbarPopover } from "../../../shared/components/ToolbarPopover";
 import type { IWorktree, IWorktreeRepository } from "../../../shared/types";
 import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
-import { formatWorktreePath } from "../formatWorktreePath";
+import { formatHomePath } from "../../../shared/formatHomePath";
 
 interface IWorktreePickerProps {
   repository: IWorktreeRepository;
@@ -98,7 +98,7 @@ export function WorktreePicker({
           <div key={entry.path} className="flex items-start gap-2 px-2 py-1.5 not-first:border-t has-checked:bg-accent">
             <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-2 has-disabled:cursor-default">
               <input
-                aria-label={`${worktreeLabel(entry)} ${formatWorktreePath(entry.path, homeDirectoryPath)}`}
+                aria-label={`${worktreeLabel(entry)} ${formatHomePath(entry.path, homeDirectoryPath)}`}
                 className="mt-0.5 size-3.5 shrink-0 accent-primary"
                 type="radio"
                 name={name}
@@ -117,7 +117,7 @@ export function WorktreePicker({
                   {entry.path === repository.configuredPath ? <Badge>configured</Badge> : null}
                 </span>
                 <span className="block truncate text-left text-muted-foreground [direction:rtl]" title={entry.path}>
-                  <bdi dir="ltr">{formatWorktreePath(entry.path, homeDirectoryPath)}</bdi>
+                  <bdi dir="ltr">{formatHomePath(entry.path, homeDirectoryPath)}</bdi>
                 </span>
               </span>
             </label>

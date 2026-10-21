@@ -17,9 +17,25 @@ var duplicateTableIndicatorPattern = regexp.MustCompile(`(?i)(already been defin
 var parseErrorLinePattern = regexp.MustCompile(`line (\d+)`)
 
 func ReadManifest(manifestPath string) (RawManifest, error) {
+	return readManifest(manifestPath, os.ReadFile)
+}
+
+// ReadManifestWithOverrides reads the manifest as ReadManifest does, but takes the content of each file named by an
+// absolute path in overrides from there instead of from disk, so unsaved edits can be checked before they are written.
+// Include patterns still match the files on disk.
+func ReadManifestWithOverrides(manifestPath string, overrides map[string][]byte) (RawManifest, error) {
+	return readManifest(manifestPath, func(path string) ([]byte, error) {
+		if content, ok := overrides[path]; ok {
+			return content, nil
+		}
+		return os.ReadFile(path)
+	})
+}
+
+func readManifest(manifestPath string, readFile func(string) ([]byte, error)) (RawManifest, error) {
 	visited := map[string]bool{}
 	inputs := Inputs{}
-	manifestValue, serviceOrder, err := loadAndMergeManifests(manifestPath, "", visited, &inputs)
+	manifestValue, serviceOrder, err := loadAndMergeManifests(manifestPath, "", visited, &inputs, readFile)
 	if err != nil {
 		return RawManifest{Inputs: inputs}, err
 	}
@@ -40,7 +56,7 @@ func ReadManifest(manifestPath string) (RawManifest, error) {
 	}, nil
 }
 
-func loadAndMergeManifests(manifestPath string, rootManifestDir string, visited map[string]bool, inputs *Inputs) (map[string]any, []string, error) {
+func loadAndMergeManifests(manifestPath string, rootManifestDir string, visited map[string]bool, inputs *Inputs, readFile func(string) ([]byte, error)) (map[string]any, []string, error) {
 	absPath, err := filepath.Abs(manifestPath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("resolve manifest absolute path: %w", err)
@@ -52,7 +68,7 @@ func loadAndMergeManifests(manifestPath string, rootManifestDir string, visited 
 	visited[absPath] = true
 	inputs.Files = append(inputs.Files, absPath)
 
-	manifestBytes, err := os.ReadFile(absPath)
+	manifestBytes, err := readFile(absPath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("read manifest %s: %w", absPath, err)
 	}
@@ -60,7 +76,7 @@ func loadAndMergeManifests(manifestPath string, rootManifestDir string, visited 
 	manifestText := string(manifestBytes)
 	manifestValue := map[string]any{}
 	if _, err := toml.Decode(manifestText, &manifestValue); err != nil {
-		return nil, nil, fmt.Errorf("Failed to parse %s: %s", absPath, formatManifestParseError(manifestText, err))
+		return nil, nil, newParseError(absPath, manifestText, err)
 	}
 
 	serviceOrder := readServiceOrder(manifestText)
@@ -108,7 +124,7 @@ func loadAndMergeManifests(manifestPath string, rootManifestDir string, visited 
 					return nil, nil, fmt.Errorf("resolve include absolute path: %w", err)
 				}
 
-				subManifest, subServiceOrder, err := loadAndMergeManifests(matchAbs, rootManifestDir, visited, inputs)
+				subManifest, subServiceOrder, err := loadAndMergeManifests(matchAbs, rootManifestDir, visited, inputs, readFile)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -511,8 +527,7 @@ func readServiceOrder(manifestText string) []string {
 	seenServiceNames := map[string]struct{}{}
 	serviceOrder := []string{}
 
-	for lineIndex, rawLine := range strings.Split(manifestText, "\n") {
-		_ = lineIndex
+	for _, rawLine := range strings.Split(manifestText, "\n") {
 		trimmedLine := strings.TrimSpace(rawLine)
 		match := serviceHeaderPattern.FindStringSubmatch(trimmedLine)
 		if match == nil {

@@ -184,7 +184,34 @@ For an always-available gallery of the 404, server-error, recovery, directory, a
 
 ## Configuration hot reload
 
-Saving the root manifest or an included manifest reloads service configuration. Added and deleted files matching an `includes` pattern change service membership. The whole candidate must parse, validate, and have a valid dependency order before devhost changes running services. Invalid edits print `configuration reload rejected` and leave the stack running.
+Saving the root manifest or an included manifest reloads service configuration, including saves from editors that replace the file. Added and deleted files matching an `includes` pattern change service membership. The whole candidate must parse, validate, and have a valid dependency order before devhost changes running services. Invalid edits print `configuration reload rejected` and leave the stack running; open pages show the reason below the toolbar until a later reload is accepted. Saves from the devtools [config editor](../devtools/#config-editor) take this same path, and the editor reports when the reload that follows its save finishes.
+
+```mermaid
+flowchart TD
+    save["Save devhost.toml or an include,<br/>or add or delete an included file"]
+    wait["Wait 200 ms for more saves"]
+    valid{"Does the whole<br/>manifest validate?"}
+    rejected["Print configuration<br/>reload rejected; the<br/>accepted manifest<br/>keeps running"]
+    plan["Find affected services:<br/>changed ones, their<br/>dependents and their<br/>repository groups"]
+    claim{"New hostnames and<br/>fixed ports free?"}
+    stop["Stop them,<br/>dependents first"]
+    start["Start replacements,<br/>wait for health checks"]
+    routes["Publish every route<br/>in one Caddy reload"]
+    restore["Roll back<br/>services<br/>and routes"]
+    accept["Accept the manifest:<br/>apply its settings,<br/>update open pages,<br/>print configuration<br/>reloaded"]
+
+    save --> wait --> valid
+    valid -- no --> rejected
+    valid -- yes --> plan --> claim
+    claim -- no --> rejected
+    claim -- yes --> stop --> start --> routes --> accept
+    stop -. fails .-> restore
+    start -. fails .-> restore
+    routes -. fails .-> restore
+    restore --> rejected
+```
+
+Services the edit does not affect keep running throughout, and so do chat sessions.
 
 Service commands, environment, working directories, health checks, dependencies, routes, watch paths, additions/removals, and primary-service selection reload. Compatible automatic ports and selected Git checkouts are preserved. Affected services and their dependents stop in reverse dependency order and start in dependency order; an affected repository restarts as a group. A service that joins a repository, whether added to the manifest or started from **Stopped services**, starts in the checkout that repository runs from and leaves its other services running. Changes to injected `DEVHOST_PORT_*` values can require restarting otherwise unchanged services.
 
