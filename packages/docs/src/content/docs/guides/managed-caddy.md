@@ -69,7 +69,7 @@ devhost caddy stop
 
 Managed Caddy lifecycle is shared and manual. `devhost` stack startup requires the managed Caddy admin API to already be available, and starting a stack applies the config file's settings to it.
 
-Stack shutdown removes its host snippets and leaves Caddy running with the settings it runs, even when no route remains.
+Stack shutdown removes its host snippets and leaves Caddy running with the settings it runs, even when no route remains. Each devhost state directory has its own managed Caddy, and a stack's shutdown changes only the Caddy of its own state directory.
 
 ## Hostname and DNS expectations
 
@@ -93,11 +93,28 @@ port = 3000
 host = ["app.localhost", "alias.localhost"]
 ```
 
-Every hostname uses the same backend port and `path`, and must resolve to the machine running `devhost`. The array must contain at least one valid, unique hostname. Each hostname is claimed independently, so a conflict on any domain prevents startup and releases the claims already acquired.
+Every hostname uses the same backend port and `path`, and must resolve to the machine running `devhost`. The array must contain at least one valid, unique hostname. A single string, such as `host = "app.localhost"`, routes one hostname. Each hostname is claimed independently, so a conflict on any domain prevents startup and releases the claims already acquired.
 
 The first hostname supplies `DEVHOST_HOST`, `{{ services.web.host }}`, and the devtools service link. Startup logs show every routed URL. New native chat sessions resolve the service checkout from their routed hostname and path.
 
 All domains follow the service's port on restart, including after an automatic port retry. Route updates publish together; a failed refresh restores every domain's previous route and leaves the service available for recovery in devtools.
+
+## Development servers that require a local origin
+
+For a development server such as Bun's HTML/HMR server that rejects the public hostname, enable `proxyLocalOrigin` on that service:
+
+```toml
+[services.web]
+command = ["bun", "src/index.ts"]
+bindHost = "127.0.0.1"
+port = "auto"
+host = "app.localhost"
+proxyLocalOrigin = true
+```
+
+The option defaults to `false` and requires `host`. When enabled, the backend receives its local socket address in `Host`. Requests with an `Origin` matching `http://` or `https://` plus the incoming public authority receive the local HTTP origin instead. Requests without `Origin` keep it absent; foreign, opaque, and duplicate origins receive `403` before reaching the service. This applies to documents, assets, subpath routes, and WebSocket upgrades, and follows automatic port changes. `X-Forwarded-Host` retains the public authority. Enable it only for services that require local-origin requests; services that use cross-origin API requests should leave it disabled.
+
+The local address comes from the service's `bindHost` and resolved `port`. `bindHost` defaults to `127.0.0.1`; wildcard addresses use loopback for proxy connections (`0.0.0.0` becomes `127.0.0.1`, and `::` becomes `::1`). With `port = "auto"`, the proxy uses the port devhost assigns and exports as `PORT` by default. The app must listen on that address and port. If the app selects another port itself, set the service's `port` to match; devhost does not discover the app's listener from its startup output.
 
 ## Shared multi-stack behavior
 

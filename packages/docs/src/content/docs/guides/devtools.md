@@ -54,6 +54,17 @@ Unavailable checkouts remain readable but cannot be selected. Click their **unav
 
 The **Worktrees** button displays each selected branch; detached checkouts show their abbreviated commit ID. Its fork icon turns red when a selected checkout is unavailable or a repository has an error or blocked operation. Open the panel for details; the toolbar omits unavailable-checkout text. Unavailable alternatives alone leave the icon unchanged. Its tooltip identifies selected non-default branches. Devhost reads the default branch from Git's locally recorded remote `HEAD` references, without contacting a remote or assuming a branch name. Submodule repositories use their actual checkout directories, including when Git lists the main checkout as a metadata directory. The button remains visible for default, detached, and unknown branches whenever repositories are available. Opening the picker or pressing **Refresh** also refreshes this information.
 
+Checkout selection is enabled by default and requires Git on `PATH`. To disable discovery and saved-selection restore:
+
+```toml
+[worktrees]
+enabled = false
+```
+
+Configure service `cwd` values in one checkout per repository. One active selection is saved locally per original manifest path, shared across browser tabs, and restored before the next run starts services. A missing saved checkout leaves its repository's services stopped with a recovery error; choose an available checkout from the toolbar or the standalone recovery page.
+
+External editor source links and new chat conversations use the selected checkout. Existing chat sessions keep their original directories; start a new conversation after switching when you want the agent to work in the selected checkout.
+
 The Services panel has **Restart Changed** and **Restart Stack** buttons aligned to the right with a gap, each sized to its content. **Restart Changed** restarts every service marked changed, or the primary service when none changed; its button shows the configured keyboard shortcut (default **Alt+Ctrl+R**). Hover **Restart Stack** for a tooltip explaining that it restarts all managed services and reassigns automatic ports. Labels, icons, and shortcuts stay together on one line. Shortcut keycaps use muted text; filled buttons use a subdued contrasting keycap.
 
 Individual service restarts retain their assigned automatic ports. If a port is occupied, use **Restart Stack** in the Services panel or recovery dialog. It restarts all managed services with fresh automatic ports and rebuilt port references and environments, while retaining fixed ports, selected checkouts, control listeners, and chat sessions. External processes keep running. Failures display an error and allow another attempt. See [Stack lifecycle](./stack-lifecycle/) for hot reload, restart ordering, and restoration behavior.
@@ -171,6 +182,8 @@ Handlers still validate methods, payloads, enabled features, and session state. 
 Use the page's routed host with ws:// for HTTP or wss:// for HTTPS. Chat requires an existing sessionId: missing IDs produce 400, unknown IDs produce 404 before upgrading. Chat mutations and WebSocket attachments require an Origin matching the request authority. The browser constructs these requests automatically.
 
 Health, logs, resource usage, React Highlight and chat connections reconnect after a loss, retrying from one second up to ten seconds. Services become unavailable while health is disconnected; logs keep buffered entries; resource readings disappear; React Highlight clears its highlight. Chat reconnects through its retained native snapshot and live events. Native browser control reconnects only through its explicit Connect action.
+
+devhost also drops a page's connection when the page reads nothing for ten seconds while updates wait for it, for example while it is paused in a debugger; the page reconnects the same way once it runs again.
 
 Stack shutdown closes streams with 1001 (going away); explicitly closing a chat session uses 1000 (normal closure). See [Browser chat sessions](../architecture/chat/) for the native event and pending-request contract.
 

@@ -1506,8 +1506,9 @@ open https://foo.localhost</code></pre>
                 </li>
                 <li>
                   <strong>Application traffic:</strong> Requests proxied by Caddy are monitored by polling the
-                  modification time of stack-isolated Caddy access logs
-                  (<code>&lt;caddy-paths&gt;/logs/&lt;stack_name&gt;_access.log</code>).
+                  modification time of stack-isolated Caddy access logs (<code
+                    >&lt;caddy-paths&gt;/logs/stack-&lt;manifest path hash&gt;_access.log</code
+                  >).
                 </li>
                 <li>
                   <strong>Terminal sessions:</strong> The daemon will never shut down if there is an active interactive
@@ -1667,7 +1668,6 @@ open https://foo.localhost</code></pre>
 # - `name` (required)
 # - `killZombies` (optional; boolean to automatically kill zombie processes from the same manifest, default `true`)
 # - `includes` (optional; string or string array of file glob patterns to merge multiple sub-manifests)
-# - `[caddy.global]` (optional)
 # - `[devtools]` (optional)
 # - `[devtools.editor]` (optional)
 # - `[devtools.externalToolbars]` (optional)

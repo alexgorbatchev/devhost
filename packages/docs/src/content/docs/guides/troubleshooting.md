@@ -65,6 +65,13 @@ With `killZombies = true` (the default), devhost attempts to kill an existing ow
 
 Each startup or configuration reload claim pass sends at most one kill attempt and prints at most one pair of messages per process identity, even when that process owns several route registrations, hostname claims, or fixed-port claims. Every claim is still checked and reclaimed separately. Claims from a different manifest remain conflicts.
 
+This cleanup handles processes a previous run left behind when it crashed, was aborted, or left child processes holding the same hostname or port. To get the ordinary hostname or port conflict error instead, set `killZombies = false` at the top level of the manifest:
+
+```toml
+name = "hello-stack"
+killZombies = false
+```
+
 ## Automatic port conflict during restart
 
 A single-service restart reuses its assigned automatic port. If another process occupies it, devhost reports the conflict and leaves the service stopped. Choose **Restart Stack** in the Services panel or recovery overlay to restart all managed services with fresh automatic ports and rebuilt port references and environments. External processes keep running, and fixed ports stay unchanged.
@@ -73,7 +80,7 @@ This action uses the last accepted manifest, so an invalid edit on disk does not
 
 ## Manifest changes rejected
 
-Saving `devhost.toml` or an included manifest reloads service configuration. A `configuration reload rejected` log names the reason an edit could not apply. Correct parse or validation errors and save again.
+Saving `devhost.toml` or an included manifest reloads service configuration. A `configuration reload rejected` log names the reason an edit could not apply, and pages with devhost's toolbar show it below the toolbar. A syntax error gives the file, line, and column; each validation issue starts with the full path of the setting it concerns, such as `services.api.port`. Correct the errors and save again.
 
 If a replacement launch or route update fails, devhost attempts to restore the previous stack. Read the retained logs for restoration errors and recover stopped services explicitly. See [Stack lifecycle](./stack-lifecycle/) for the reload and recovery contract.
 
