@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 )
 
 const allDevtoolsOff = "\n[devtools.editor]\nenabled = false\n[devtools.externalToolbars]\nenabled = false\n[devtools.minimap]\nenabled = false\n[devtools.status]\nenabled = false\n"
@@ -20,14 +19,14 @@ func TestManifestReloadTurnsDevtoolsInjectionOffAndOn(t *testing.T) {
 	assertDocumentInjection(t, route.DocumentInjectionPort, true)
 
 	f.write(t, allDevtoolsOff+body)
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.count("configuration reloaded") == 1 })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.count("configuration reloaded") == 1 })
 	assertDocumentInjection(t, route.DocumentInjectionPort, false)
 	if off := readRestartRoute(t, routePath); off.DevtoolsControlPort != 0 || off.DocumentInjectionPort != route.DocumentInjectionPort {
 		t.Fatalf("route with every devtools feature off = %#v, want the document route without the control route", off)
 	}
 
 	f.write(t, body)
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.count("configuration reloaded") == 2 })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.count("configuration reloaded") == 2 })
 	assertDocumentInjection(t, route.DocumentInjectionPort, true)
 	if on := readRestartRoute(t, routePath); on.DevtoolsControlPort != f.controlPort {
 		t.Fatalf("route with devtools back on = %#v, want control port %d", on, f.controlPort)
@@ -42,9 +41,9 @@ func TestManifestReloadStartsTheIdleTimeout(t *testing.T) {
 	f := startReloadStack(t, body)
 	// The test waits for this short timeout to run out.
 	f.write(t, "\n[devtools]\nidleTimeout = \"100ms\"\n"+body)
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("Idle timeout enabled: 100ms") })
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("Idle timeout of 100ms reached") })
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("Stack stopped.") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("Idle timeout enabled: 100ms") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("Idle timeout of 100ms reached") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("Stack stopped.") })
 }
 
 func assertDocumentInjection(t *testing.T, documentPort int, want bool) {

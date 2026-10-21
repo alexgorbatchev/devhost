@@ -94,8 +94,10 @@ func TestCreateNeovimPluginShellIntegrationFilesWritesLauncher(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Stat(launcher) error = %v", err)
 	}
-	if launcherInfo.Mode().Perm() != 0o755 {
-		t.Fatalf("launcher mode = %v, want 0755", launcherInfo.Mode().Perm())
+	// The process umask narrows the mode, so check what the launcher needs: its owner runs it, and nobody else
+	// can rewrite it.
+	if mode := launcherInfo.Mode().Perm(); mode&0o700 != 0o700 || mode&0o022 != 0 {
+		t.Fatalf("launcher mode = %v, want owner read, write, and execute, and no group or other write", mode)
 	}
 
 	launcherPayload, err := os.ReadFile(files.launcherPath)

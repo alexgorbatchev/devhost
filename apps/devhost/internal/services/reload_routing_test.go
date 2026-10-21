@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 )
 
 func TestManifestReloadPublishesRoutingOnlyAfterAcceptance(t *testing.T) {
@@ -18,7 +17,7 @@ func TestManifestReloadPublishesRoutingOnlyAfterAcceptance(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = os.WriteFile(release, nil, 0600) })
 	f.write(t, reloadServiceBody("web", "replacement", "new.localhost"))
-	waitForCondition(t, 5*time.Second, func() bool { _, err := os.Stat(marker); return err == nil })
+	waitForCondition(t, stackChangeTimeout, func() bool { _, err := os.Stat(marker); return err == nil })
 	health, err := f.control.GetHealthResponse()
 	if err != nil {
 		t.Fatal(err)
@@ -32,7 +31,7 @@ func TestManifestReloadPublishesRoutingOnlyAfterAcceptance(t *testing.T) {
 	if err := os.WriteFile(release, nil, 0600); err != nil {
 		t.Fatal(err)
 	}
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reloaded") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reloaded") })
 	if routes := readInjectedRoutes(t, f); len(routes) != 1 || routes[0].Host != "new.localhost" {
 		t.Fatalf("accepted routes were not published: %#v", routes)
 	}

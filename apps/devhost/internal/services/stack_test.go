@@ -388,7 +388,7 @@ func testStartupCrashRecovery(t *testing.T, worktreesEnabled, inRepository bool)
 	}
 	// Recovery is observable in health, independently of whether Git groups this cwd.
 	// A startup failure must leave the supervisor alive until we explicitly signal it.
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		if control.RestartService(nil) != nil {
 			return false
 		}
@@ -1131,7 +1131,7 @@ func TestStartStackRestartServiceDoesNotStallOnRedundantHealthLoop(t *testing.T)
 		}
 	}()
 
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		restartMu.Lock()
 		fn := restartService
 		restartMu.Unlock()
@@ -1274,7 +1274,7 @@ func TestStartStackRestartServiceFailsPromptlyWithinHealthTimeout(t *testing.T) 
 		}
 	}()
 
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		restartMu.Lock()
 		fn := restartService
 		restartMu.Unlock()
@@ -1477,7 +1477,7 @@ func TestStartStackReturnsSignalExitCodeAndUnregistersHandlers(t *testing.T) {
 				}{exitCode: exitCode, error: startError}
 			}()
 
-			waitForCondition(t, 5*time.Second, func() bool {
+			waitForCondition(t, stackChangeTimeout, func() bool {
 				_, err := os.Stat(startTracePath)
 				return err == nil && getSignalChannel() != nil
 			})
@@ -1583,7 +1583,7 @@ func TestStopStartedServicesStopsRunningServicesGracefully(t *testing.T) {
 		t.Fatalf("startServiceProcess(second) error = %v", err)
 	}
 
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		_, err1 := os.Stat(firstReadyPath)
 		_, err2 := os.Stat(secondReadyPath)
 		return err1 == nil && err2 == nil
@@ -1638,7 +1638,7 @@ func TestStopStartedServiceStopsDescendantProcesses(t *testing.T) {
 		t.Fatalf("startServiceProcess(...) error = %v", err)
 	}
 
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
 		if err != nil {
 			return false
@@ -1651,7 +1651,7 @@ func TestStopStartedServiceStopsDescendantProcesses(t *testing.T) {
 		t.Fatalf("stopStartedService(...) error = %v", err)
 	}
 
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
 		if err != nil {
 			return true
@@ -1694,7 +1694,7 @@ func TestStopStartedServiceStopsDetachedDescendantProcesses(t *testing.T) {
 		t.Fatalf("startServiceProcess(...) error = %v", err)
 	}
 
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
 		if err != nil {
 			return false
@@ -1707,7 +1707,7 @@ func TestStopStartedServiceStopsDetachedDescendantProcesses(t *testing.T) {
 		t.Fatalf("stopStartedService(...) error = %v", err)
 	}
 
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
 		if err != nil {
 			return true
@@ -1756,7 +1756,7 @@ func TestStopStartedServiceStopsDescendantsSpawnedDuringSignalHandling(t *testin
 		t.Fatalf("startServiceProcess(...) error = %v", err)
 	}
 
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		_, err := os.Stat(readyPath)
 		return err == nil
 	})
@@ -1765,7 +1765,7 @@ func TestStopStartedServiceStopsDescendantsSpawnedDuringSignalHandling(t *testin
 		t.Fatalf("stopStartedService(...) error = %v", err)
 	}
 
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		_, err := os.Stat(childPidPath)
 		return err == nil
 	})
@@ -1778,9 +1778,9 @@ func TestStopStartedServiceStopsDescendantsSpawnedDuringSignalHandling(t *testin
 	if err != nil {
 		t.Fatal(err)
 	}
-	waitForCondition(t, 5*time.Second, func() bool { return !processExists(childPID) })
+	waitForCondition(t, stackChangeTimeout, func() bool { return !processExists(childPID) })
 
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
 		if err != nil {
 			return true
@@ -1828,7 +1828,7 @@ func TestStopStartedServiceStopsDetachedDescendantsExitedDuringStartup(t *testin
 		t.Fatalf("startServiceProcess(...) error = %v", err)
 	}
 
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
 		if err != nil {
 			return false
@@ -1841,7 +1841,7 @@ func TestStopStartedServiceStopsDetachedDescendantsExitedDuringStartup(t *testin
 		t.Fatalf("stopStartedService(...) error = %v", err)
 	}
 
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", servicePort), 50*time.Millisecond)
 		if err != nil {
 			return true
@@ -1909,7 +1909,7 @@ func TestStopStartedServicePreservesLateExternalPortRespawns(t *testing.T) {
 		t.Fatalf("stopStartedService(...) error = %v", err)
 	}
 
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		_, err := os.Stat(childPIDPath)
 		return err == nil
 	})
@@ -2141,7 +2141,7 @@ func TestReadListeningProcessIDsForBindHostSeparatesInterfaces(t *testing.T) {
 	startBoundListener("127.0.0.1", ipv4PIDPath)
 	startBoundListener("::1", ipv6PIDPath)
 
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		_, ipv4Error := os.Stat(ipv4PIDPath)
 		_, ipv6Error := os.Stat(ipv6PIDPath)
 		return ipv4Error == nil && ipv6Error == nil
@@ -2237,7 +2237,7 @@ func TestStopStartedServiceEscalatesToSIGKILL(t *testing.T) {
 		t.Fatalf("startServiceProcess(...) error = %v", err)
 	}
 
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		_, err := os.Stat(readyPath)
 		return err == nil
 	})
@@ -2324,7 +2324,7 @@ func TestStartStackRunsDaemonLifecycleCommands(t *testing.T) {
 	}()
 	// The start trace precedes launching the daemon. The URL is logged only after
 	// the start command and health check finish, so shutdown cannot cancel startup.
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		return strings.Contains(output.snapshot(), fmt.Sprintf("[hello-stack] api (primary): http://127.0.0.1:%d\n", servicePort))
 	})
 
@@ -2410,8 +2410,8 @@ func TestServiceHelperProcess(t *testing.T) {
 		runRecordStartServeAndExitHelper()
 	case "record-start-and-wait":
 		runRecordStartAndWaitHelper()
-	case "stderr-around-fifo-handshake-and-exit":
-		runStderrAroundFIFOHandshakeAndExitHelper()
+	case "stderr-around-handshake-and-exit":
+		runStderrAroundHandshakeAndExitHelper()
 	case "serve-until-health-probe-and-exit":
 		runServeUntilHealthProbeAndExitHelper()
 	case "serve-then-probe-exit-on-restart":
@@ -2553,6 +2553,11 @@ func helperCommandWithMode(mode string) []string {
 func serverURL(port int, path string) string {
 	return fmt.Sprintf("http://127.0.0.1:%d%s", port, path)
 }
+
+// stackChangeTimeout bounds a wait for a stack to start, reload, or restart services. Each stop of a service with a
+// port then watches that port for lateListenerMonitorDuration, and one reload can stop a service more than once, so
+// such a wait takes seconds on a healthy run.
+const stackChangeTimeout = 5*time.Second + 5*lateListenerMonitorDuration
 
 func waitForCondition(t *testing.T, timeout time.Duration, condition func() bool) {
 	t.Helper()

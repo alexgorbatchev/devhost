@@ -25,7 +25,7 @@ func TestStackRestartRefreshesRoutesAfterAutoPortCollision(t *testing.T) {
 			f := startReloadStack(t, body)
 			paths, options, controlPort := f.paths, f.control, f.controlPort
 			registrationPath := filepath.Join(paths.RegistrationsDirectoryPath, "recover.localhost_web_2f.json")
-			waitForCondition(t, 5*time.Second, func() bool { _, err := os.Stat(registrationPath); return err == nil })
+			waitForCondition(t, stackChangeTimeout, func() bool { _, err := os.Stat(registrationPath); return err == nil })
 			registration := readRestartRoute(t, registrationPath)
 			oldPort := registration.AppPort
 			aliasPath := filepath.Join(paths.RegistrationsDirectoryPath, "alias.recover.localhost_web_2f.json")
@@ -41,7 +41,7 @@ func TestStackRestartRefreshesRoutesAfterAutoPortCollision(t *testing.T) {
 			if err := os.WriteFile(trigger, nil, 0o600); err != nil {
 				t.Fatal(err)
 			}
-			waitForCondition(t, 5*time.Second, func() bool { h, _ := options.GetHealthResponse(); return h.Services[0].ExitCode != nil })
+			waitForCondition(t, stackChangeTimeout, func() bool { h, _ := options.GetHealthResponse(); return h.Services[0].ExitCode != nil })
 			if err := os.Remove(trigger); err != nil {
 				t.Fatal(err)
 			}
@@ -131,7 +131,7 @@ func restartWithRoutingGate(t *testing.T, options devtools.StartControlServerOpt
 	}
 	done := make(chan error, 1)
 	go func() { done <- options.RestartStack() }()
-	waitForCondition(t, 5*time.Second, func() bool { _, err := os.Stat(entered); return err == nil })
+	waitForCondition(t, stackChangeTimeout, func() bool { _, err := os.Stat(entered); return err == nil })
 	select {
 	case err := <-done:
 		t.Fatalf("restart finished before routing completed: %v", err)

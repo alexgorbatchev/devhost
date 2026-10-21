@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestManifestReloadRejectsMissingWorkingDirectoryBeforeStoppingServices(t *testing.T) {
@@ -17,7 +16,7 @@ func TestManifestReloadRejectsMissingWorkingDirectoryBeforeStoppingServices(t *t
 	body := reloadServiceBody("web", "changed", "reload.localhost")
 	body = strings.Replace(body, "[services.web]", "[services.web]\ncwd = \"missing\"", 1)
 	f.write(t, body)
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reload rejected") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reload rejected") })
 	if reloadPID(t, route.AppPort) != pid {
 		t.Fatal("invalid working directory stopped the previous service")
 	}
@@ -30,7 +29,7 @@ func TestManifestReloadRebindsAllTemplatesAndEnvironmentsAfterAutoPortRetry(t *t
 	marker := filepath.Join(filepath.Dir(f.path), "collision")
 	next := strings.Replace(body, "VALUE = \"original\"", fmt.Sprintf("VALUE = \"replacement\"\nCOLLISION_MARKER = %q", marker), 1)
 	f.write(t, next)
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reloaded") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reloaded") })
 	web := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "reload.localhost_web_2f.json"))
 	api := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "api.localhost_api_2f.json"))
 	if web.AppPort == original.AppPort {

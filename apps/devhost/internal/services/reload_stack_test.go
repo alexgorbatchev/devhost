@@ -144,7 +144,7 @@ func startReloadStackRequested(t *testing.T, body string, worktreesEnabled bool,
 	case <-time.After(5 * time.Second):
 		t.Fatal("control startup timed out")
 	}
-	waitForCondition(t, 5*time.Second, func() bool { return f.control.RestartService(nil) == nil })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.control.RestartService(nil) == nil })
 	return f
 }
 
@@ -190,7 +190,7 @@ func TestManifestReloadChangesEnvironmentAndPreservesAutoPort(t *testing.T) {
 	original := readRestartRoute(t, path)
 	assertRestartResponse(t, serverURL(original.AppPort, "/"), "original")
 	f.write(t, reloadServiceBody("web", "replacement", "reload.localhost"))
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reloaded") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reloaded") })
 	if !f.logs.contains("configuration reloaded: devhost.toml") {
 		t.Fatal("reload log omitted the root manifest")
 	}
@@ -208,7 +208,7 @@ func TestManifestReloadRenamesTheRunningStack(t *testing.T) {
 	pid := reloadPID(t, route.AppPort)
 	f.header = strings.Replace(f.header, `name = "reload"`, `name = "renamed"`, 1)
 	f.write(t, body)
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("[renamed] configuration reloaded") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("[renamed] configuration reloaded") })
 	if reloadPID(t, route.AppPort) != pid {
 		t.Fatal("renaming the stack restarted its service")
 	}
@@ -232,13 +232,13 @@ func TestManifestReloadRejectsInvalidEditsAndAppliesDevtoolsAndAnnotationEdits(t
 	route := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "reload.localhost_web_2f.json"))
 	pid := reloadPID(t, route.AppPort)
 	f.write(t, "\n[services.web]\ncommand = [")
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reload rejected") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reload rejected") })
 	if reloadPID(t, route.AppPort) != pid {
 		t.Fatal("invalid edit restarted the service")
 	}
 	// Devtools and annotation settings apply without restarting services.
 	f.write(t, "\n[devtools.shortcuts]\nrestartServices = \"ctrl+r\"\n[devtools.minimap]\nenabled = false\n[annotation]\nagent = \"pi\"\n"+body)
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reloaded") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reloaded") })
 	if reloadPID(t, route.AppPort) != pid {
 		t.Fatal("a devtools edit restarted the service")
 	}
@@ -247,7 +247,7 @@ func TestManifestReloadRejectsInvalidEditsAndAppliesDevtoolsAndAnnotationEdits(t
 		t.Fatalf("pages were not given the edited settings: %s, %s, %s", config["restartServicesShortcut"], config["minimapEnabled"], config["annotationActions"])
 	}
 	f.write(t, reloadServiceBody("web", "repaired", "reload.localhost"))
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.count("configuration reloaded") == 2 })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.count("configuration reloaded") == 2 })
 	assertRestartResponse(t, serverURL(route.AppPort, "/"), "repaired")
 }
 
@@ -255,14 +255,14 @@ func TestManifestReloadRestoresPreviousServicesAfterFailedLaunch(t *testing.T) {
 	f := startReloadStack(t, reloadServiceBody("web", "original", "reload.localhost"))
 	route := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "reload.localhost_web_2f.json"))
 	f.write(t, reloadServiceBody("web", "fail", "reload.localhost"))
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reload rejected") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reload rejected") })
 	assertRestartResponse(t, serverURL(route.DocumentInjectionPort, "/"), "original")
 	health, err := f.control.GetHealthResponse()
 	if err != nil || !health.Services[0].Status || health.Services[0].Restarting {
 		t.Fatalf("rollback left recovery pending: %#v, %v", health, err)
 	}
 	f.write(t, reloadServiceBody("web", "recovered", "reload.localhost"))
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reloaded") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reloaded") })
 	assertRestartResponse(t, serverURL(route.AppPort, "/"), "recovered")
 }
 
@@ -282,7 +282,7 @@ func TestManifestReloadReconcilesIncludesServicesRoutesAndClaims(t *testing.T) {
 	if err := os.WriteFile(child, []byte(worker), 0600); err != nil {
 		t.Fatal(err)
 	}
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.count("configuration reloaded") == 1 })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.count("configuration reloaded") == 1 })
 	if !f.logs.contains("configuration reloaded: devhost.toml, " + filepath.Join("services", "worker", "worker.toml")) {
 		t.Fatal("reload log omitted the included manifest")
 	}
@@ -294,7 +294,7 @@ func TestManifestReloadReconcilesIncludesServicesRoutesAndClaims(t *testing.T) {
 	if err := os.Remove(child); err != nil {
 		t.Fatal(err)
 	}
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.count("configuration reloaded") == 2 })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.count("configuration reloaded") == 2 })
 	if f.logs.count("configuration reloaded: devhost.toml\n") != 1 {
 		t.Fatal("reload log retained the deleted include")
 	}
@@ -306,7 +306,7 @@ func TestManifestReloadReconcilesIncludesServicesRoutesAndClaims(t *testing.T) {
 	}
 	waitForCondition(t, time.Second, func() bool { ports, _ := os.ReadDir(f.paths.PortClaimsDirectoryPath); return len(ports) == 0 })
 	f.write(t, reloadServiceBody("web", "moved", "new.localhost"))
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.count("configuration reloaded") == 3 })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.count("configuration reloaded") == 3 })
 	if _, err := os.Stat(filepath.Join(f.paths.RegistrationsDirectoryPath, "reload.localhost_web_2f.json")); !os.IsNotExist(err) {
 		t.Fatalf("obsolete alias remains: %v", err)
 	}
@@ -327,7 +327,7 @@ func TestManifestReloadRestoresRoutesAfterCaddyRejectsReplacement(t *testing.T) 
 		t.Fatal(err)
 	}
 	f.write(t, reloadServiceBody("web", "replacement", "new.localhost"))
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reload rejected") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reload rejected") })
 	assertRestartResponse(t, serverURL(original.DocumentInjectionPort, "/"), "original")
 	if restored := readRestartRoute(t, path); restored.AppPort != original.AppPort {
 		t.Fatalf("route rollback changed port: %#v", restored)
@@ -337,7 +337,7 @@ func TestManifestReloadRestoresRoutesAfterCaddyRejectsReplacement(t *testing.T) 
 	}
 	writeFakeCaddyExecutable(t, f.paths.ExecutablePath)
 	f.write(t, reloadServiceBody("web", "recovered", "new.localhost"))
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reloaded") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reloaded") })
 	assertRestartResponse(t, serverURL(original.DocumentInjectionPort, "/"), "recovered")
 }
 
@@ -348,7 +348,7 @@ func TestManifestReloadShutdownInterruptsReplacementHealth(t *testing.T) {
 	body = strings.Replace(body, "[services.web.env]", fmt.Sprintf("[services.web.health]\nhttp = %q\ntimeout = 5000\ninterval = 2000\n[services.web.env]", serverURL(route.AppPort, "/health")), 1)
 	body += "HEALTH_STATUS = \"503\"\n"
 	f.write(t, body)
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		response, err := http.Get(serverURL(route.AppPort, "/health"))
 		if err != nil {
 			return false

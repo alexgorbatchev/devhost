@@ -72,7 +72,7 @@ func TestStackSwitchesWholeRepositoryAndRecoversFailedSwitch(t *testing.T) {
 		}()
 		ch := <-signals
 		options := <-controls
-		waitForCondition(t, 5*time.Second, func() bool {
+		waitForCondition(t, stackChangeTimeout, func() bool {
 			h, _ := options.GetHealthResponse()
 			return len(h.Repositories) == 1 && (h.Repositories[0].RunningPath != "" || h.Repositories[0].Error != "") && options.RestartService(nil) == nil
 		})

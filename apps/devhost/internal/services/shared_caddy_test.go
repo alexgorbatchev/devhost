@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
@@ -26,7 +25,7 @@ func TestSharedConfigEditsApplyToTheRunningStack(t *testing.T) {
 	moved := running
 	moved.AdminAddress, moved.HTTPSPort = caddytest.StartAdminServer(t), 8443
 	writeTestSharedConfigFile(t, f.configPath, moved)
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		applied, _, err := caddy.ReadAppliedManagedCaddySettings(f.paths)
 		return err == nil && applied == moved
 	})
@@ -34,7 +33,7 @@ func TestSharedConfigEditsApplyToTheRunningStack(t *testing.T) {
 	if err != nil || strings.TrimSpace(string(addresses)) != running.AdminAddress {
 		t.Fatalf("Caddy reloads went to %q, %v; want only the admin address it ran, %s", addresses, err, running.AdminAddress)
 	}
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("https://reload.localhost:8443") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("https://reload.localhost:8443") })
 	assertHealthURL(t, f, "https://reload.localhost:8443")
 	assertFileHas(t, filepath.Join(f.paths.RoutesDirectoryPath, "reload.localhost.caddy"), "https://reload.localhost:8443 {")
 	assertFileHas(t, f.paths.CaddyfilePath, "admin "+moved.AdminAddress)
@@ -46,7 +45,7 @@ func TestSharedConfigEditsApplyToTheRunningStack(t *testing.T) {
 	rejected := moved
 	rejected.HTTPSPort = 9443
 	writeTestSharedConfigFile(t, f.configPath, rejected)
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("shared Caddy settings rejected") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("shared Caddy settings rejected") })
 	if !f.logs.contains("address already in use") {
 		t.Fatal("the rejection does not say why Caddy rejected the settings")
 	}
@@ -60,7 +59,7 @@ func TestSharedConfigEditsApplyToTheRunningStack(t *testing.T) {
 	if err := os.WriteFile(f.configPath, []byte("[caddy]\nhttpsPort = 0\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("caddy.httpsPort must be an integer between 1 and 65535.") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("caddy.httpsPort must be an integer between 1 and 65535.") })
 	assertHealthURL(t, f, "https://reload.localhost:8443")
 }
 
