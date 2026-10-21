@@ -1,6 +1,6 @@
 ---
 created_on: 2026-06-26 21:23
-last_modified: 2026-10-13 16:58
+last_modified: 2026-10-20 16:41
 status: current
 ---
 
@@ -64,10 +64,10 @@ For fixed or automatic ports, customize the implicit TCP readiness budget with `
 
 Worktree support is enabled by default. When configuring repository services or selecting a checkout:
 
-1. Run `git -C <service-cwd> worktree list --porcelain` for each service repository. Require Git on `PATH` and keep configured directories in one checkout per repository.
+1. Run `git -C <service-cwd> worktree list --porcelain` for each service repository. Require Git on `PATH` and keep configured directories in one checkout per repository. For a submodule whose main entry names its Git metadata directory, use `git -C <metadata-directory> rev-parse --show-toplevel` to read the actual checkout; devhost resolves that entry automatically.
 2. Omit `[worktrees]` to keep checkout selection enabled. An empty table or `enabled = true` also enables it. Set `[worktrees].enabled = false` only to disable discovery and saved-selection restore; services then use their configured directories. `enabled` is the only key of that table: a selection covers a whole repository and is saved automatically.
 3. Open the separate **Worktrees** toolbar button to see checkout choices directly. For multiple repositories, use the header selector. Use **Switch and restart stack**. Read the current branch beside the fork icon, including on the default branch; detached checkouts show their abbreviated commit ID. Use **Find worktree** at the bottom to filter; click an unavailable badge for its reason.
-4. Load the selected checkout's manifest and includes. Locate it at the same repository-relative path, or at the checkout root under the original filename when the original manifest is outside the repository. Expect the entire managed stack to restart using that configuration's services, commands, environments, directories, and routes. Preserve the running instance's startup name and ownership path; allow the target manifest name to differ. Keep Caddy, devtools, annotation, worktree enablement, and killZombies settings equal to the running instance.
+4. Load the selected checkout's manifest and includes. Configured checkouts without a local manifest use their owning stack's manifest, including one outside their repository. An existing checkout-local manifest takes precedence. For new target checkouts, locate it at the same repository-relative path, or at the checkout root under the original filename when the original manifest is outside the repository. Expect the entire managed stack to restart using that configuration's services, commands, environments, directories, and routes. Preserve the running instance's startup name and ownership path; allow the target manifest name to differ. Keep Caddy, devtools, annotation, worktree enablement, and killZombies settings equal to the running instance.
 5. Explain that one active stack selection is saved per original manifest path and restored before services start on the next run. Invalid targets leave the current stack running; launch or routing failures attempt restoration of the prior stack and selection. Read restoration errors and recover stopped services explicitly. Expect later edits to reload from the selected manifest and includes.
 6. Refresh the checkout picker to discover newly created or deleted worktrees. A missing running checkout stops its repository services and blocks new tools there until an available checkout is selected. Use the standalone recovery page when the toolbar is disabled. A successful switch reloads the current browser URL; when the target lacks that app route, use the proxy's 404 list of available routes.
 7. Report blocked switches for repositories containing externally owned services. Existing terminal sessions retain their launch directories; resume a paused queue to launch an agent in the selected checkout.

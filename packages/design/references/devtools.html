@@ -1036,6 +1036,9 @@
         .seg.alert > .ic {
           color: var(--dh-danger);
         }
+        .ic.danger {
+          color: var(--dh-danger);
+        }
         .seg.tight {
           gap: var(--dh-space-2);
           padding: 0 var(--dh-space-2);
@@ -2368,14 +2371,22 @@
         }
 
         if (state.worktreesEnabled && state.repositories.length > 0) {
+          const hasWorktreeError = state.repositories.some(
+            (repository) =>
+              repository.error ||
+              repository.blockedReason ||
+              !repository.worktrees.some((entry) => entry.path === repository.selectedPath && entry.available),
+          );
           const currentCheckouts = state.repositories
-            .map(
-              (repository) =>
-                `${state.repositories.length > 1 ? repository.name + ": " : ""}${worktreeLabel(repository, repository.selectedPath)}`,
-            )
+            .flatMap((repository) => {
+              const checkout = repository.worktrees.find((entry) => entry.path === repository.selectedPath);
+              return checkout
+                ? [`${state.repositories.length > 1 ? repository.name + ": " : ""}${checkout.label}`]
+                : [];
+            })
             .join(", ");
           segments.push(
-            `<button class="seg tight" type="button" data-action="panel" data-panel="worktrees" title="${esc(worktreeSummary || `Worktrees: ${currentCheckouts}`)}" aria-label="Worktrees" aria-expanded="${panelOpen("worktrees")}">${icon("branch")}<span class="checkout-name">${esc(currentCheckouts)}</span></button>`,
+            `<button class="seg tight" type="button" data-action="panel" data-panel="worktrees" title="${esc(worktreeSummary || `Worktrees: ${currentCheckouts}`)}" aria-label="Worktrees${hasWorktreeError ? ", attention required" : ""}" aria-expanded="${panelOpen("worktrees")}">${icon("branch", hasWorktreeError ? "danger" : "")}<span class="checkout-name">${esc(currentCheckouts)}</span></button>`,
           );
         }
 

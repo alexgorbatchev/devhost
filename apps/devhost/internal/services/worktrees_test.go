@@ -61,6 +61,88 @@ func TestWorktreeDefaultDiscoversAndRestoresUnlessDisabled(t *testing.T) {
 	}
 }
 
+func TestWorktreeSubmoduleDiscoversMainAndLinkedCheckouts(t *testing.T) {
+	source, _ := createWorktreeRepository(t)
+	super := t.TempDir()
+	runWorktreeGit(t, super, "init", "-b", "main")
+	runWorktreeGit(t, super, "-c", "protocol.file.allow=always", "submodule", "add", source, "packages/shop")
+	root := filepath.Join(super, "packages", "shop")
+	linked := filepath.Join(t.TempDir(), "linked shop")
+	runWorktreeGit(t, root, "worktree", "add", "-b", "feature/submodule", linked)
+	m := worktreeTestManifest(root)
+	w, err := newStackWorktrees(m, t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	groups := w.snapshot()
+	if len(groups) != 1 || len(groups[0].Worktrees) != 2 {
+		t.Fatalf("submodule checkouts = %#v", groups)
+	}
+	for _, path := range []string{root, linked} {
+		if _, err := w.prepare(groups[0].ID, path, m); err != nil {
+			t.Fatalf("select submodule checkout %s: %v", path, err)
+		}
+		w.finish(groups[0].ID, nil)
+	}
+}
+
+func TestWorktreeExternalManifestKeepsConfiguredCheckoutAvailable(t *testing.T) {
+	root, linked := createWorktreeRepository(t)
+	if err := os.Remove(filepath.Join(root, "devhost.toml")); err != nil {
+		t.Fatal(err)
+	}
+	m := worktreeTestManifest(root)
+	m.ManifestDirectoryPath = t.TempDir()
+	m.ManifestPath = filepath.Join(m.ManifestDirectoryPath, "devhost.toml")
+	configuration := writeWorktreeFixtureConfiguration(t, m, m.ManifestDirectoryPath)
+	m.configuration = &configuration
+	state := t.TempDir()
+	w, err := newStackWorktrees(m, state)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := w.snapshot()[0].ID
+	if _, err := w.prepare(id, root, m); err != nil {
+		t.Fatalf("configured checkout with owning manifest outside repository: %v", err)
+	}
+	w.finish(id, nil)
+	next, err := w.prepare(id, linked, m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w.finish(id, nil)
+	w, err = buildStackWorktrees(next, state, w)
+	if err != nil {
+		t.Fatal(err)
+	}
+	returned, err := w.prepare(id, root, next)
+	if err != nil {
+		t.Fatalf("return to externally configured checkout: %v", err)
+	}
+	if returned.Services["api"].Cwd != filepath.Join(root, "api") {
+		t.Fatalf("returned service directory = %s", returned.Services["api"].Cwd)
+	}
+	localPath := filepath.Join(root, "devhost.toml")
+	local := "name = \"local\"\n[services.web]\ncwd = \"web\"\ncommand = [\"local-server\"]\nhealth.process = true\n"
+	if err := os.WriteFile(localPath, []byte(local), 0600); err != nil {
+		t.Fatal(err)
+	}
+	selected, err := w.prepare(id, root, returned)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(selected.Services) != 1 || selected.Services["web"].Command[0] != "local-server" {
+		t.Fatalf("checkout-local manifest did not take precedence: %#v", selected.Services)
+	}
+	w.finish(id, nil)
+	if err := os.WriteFile(localPath, []byte("[services."), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.prepare(id, root, selected); err == nil {
+		t.Fatal("invalid checkout-local manifest was replaced by owning configuration")
+	}
+}
+
 func TestWorktreeSelectionGroupsServicesAndSurvivesRestart(t *testing.T) {
 	root, linked := createWorktreeRepository(t)
 	m := worktreeTestManifest(root)

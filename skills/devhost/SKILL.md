@@ -4,7 +4,7 @@ description: Use when running devhost, serving static files or Markdown, routing
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-20 16:28
+  last_modified: 2026-10-20 16:41
   status: current
 ---
 
@@ -125,7 +125,7 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 
 - **Host resource readouts**: Omit `[devtools.resources]` to show host CPU, memory, and disk usage (percent used) in the toolbar, with CPU and memory read every `2s` and disk every `1m`. Set `[devtools.resources].enabled = false` to turn all three off. Set `[devtools.resources].pollInterval` to a duration string of at least `250ms` (for example `"5s"`) to read all three at one rate. Give `[devtools.resources.cpu]`, `[devtools.resources.memory]`, or `[devtools.resources.disk]` its own `enabled` or `pollInterval` to hide one readout or override the shared rate for it. Disk counts fixed local filesystems; on Linux, USB-attached and removable drives are left out, and on macOS the startup disk is reported. Changing these keys requires restarting devhost.
 
-- **Git worktrees**: Omit `[worktrees]` to use checkout selection, which is enabled by default. Set `[worktrees].enabled = false` only to disable discovery and saved-selection restore. Inspect `git worktree list --porcelain` and configure all service `cwd` values from one checkout per repository. Read the current branch beside the fork icon and open Worktrees to see checkout choices directly; use the header selector for multiple repositories. Use the picker to load the target checkout's manifest and restart the whole managed stack. Follow the persistence and recovery procedure in [Setup](references/setup.md#4-git-worktree-selection). Worktree group startup failures remain recoverable instead of terminating the supervisor.
+- **Git worktrees**: Omit `[worktrees]` to use checkout selection, which is enabled by default. Set `[worktrees].enabled = false` only to disable discovery and saved-selection restore. Inspect `git worktree list --porcelain` and configure all service `cwd` values from one checkout per repository. Devhost resolves submodule metadata entries to their actual checkout directories. Read the current branch beside the fork icon and open Worktrees to see checkout choices directly; use the header selector for multiple repositories. A red fork icon signals an unavailable selection, repository error, or blocked operation; open the panel for details. Use the picker to load the target checkout's manifest and restart the whole managed stack. Follow the persistence and recovery procedure in [Setup](references/setup.md#4-git-worktree-selection). Worktree group startup failures remain recoverable instead of terminating the supervisor.
 
 ### External Devtools Launchers
 
