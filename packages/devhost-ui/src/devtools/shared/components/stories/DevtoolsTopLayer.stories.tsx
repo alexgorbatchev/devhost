@@ -1,8 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type JSX, type ReactNode } from "react";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
+import { userEvent as nativeUserEvent } from "vitest/browser";
 
 import { Textarea } from "../../../../components/ui/Textarea";
+import { isEventTargetEditingSurface } from "../../isEventTargetEditingSurface";
 import { DevtoolsToolbar } from "../DevtoolsToolbar";
 import { DevtoolsTopLayer } from "../DevtoolsTopLayer";
 import { HighlightOverlay, type IHighlightOverlayItem } from "../HighlightOverlay";
@@ -24,7 +26,6 @@ type HostLayerKind = "auto-popover" | "manual-popover" | "shadow-popover" | "sta
 // Covers the viewport at the highest z-index a page can use, so every devtools surface overlaps it.
 const hostLayerStyle: CSSProperties = hostLayerStyles.viewport;
 const hostLayerTestId: string = "HostLayer";
-const hostLayerShortcutKey: string = "F2";
 
 interface IHostLayerProps {
   children: ReactNode;
@@ -34,26 +35,6 @@ interface IHostLayerProps {
 /** Host-page content that competes with devtools for the top of the page. Popover kinds start closed. */
 function HostLayer({ children, kind }: IHostLayerProps): JSX.Element {
   const layerId: string = useId();
-  const [manualLayerElement, setManualLayerElement] = useState<HTMLDivElement | null>(null);
-
-  useLayoutEffect(() => {
-    if (manualLayerElement === null) {
-      return;
-    }
-
-    // The host page opens its layer from a keyboard shortcut, so a story can open it without moving focus.
-    const handleKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === hostLayerShortcutKey) {
-        manualLayerElement.showPopover();
-      }
-    };
-
-    manualLayerElement.ownerDocument.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      manualLayerElement.ownerDocument.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [manualLayerElement]);
 
   if (kind === "shadow-popover") {
     return (
@@ -71,9 +52,10 @@ function HostLayer({ children, kind }: IHostLayerProps): JSX.Element {
     );
   }
 
+  // Stories open the manual layer as a host script would, with `showPopover()`, which leaves focus where it is.
   if (kind === "manual-popover") {
     return (
-      <div data-testid={hostLayerTestId} popover="manual" ref={setManualLayerElement} style={hostLayerStyle}>
+      <div data-testid={hostLayerTestId} popover="manual" style={hostLayerStyle}>
         {children}
       </div>
     );
@@ -88,6 +70,37 @@ function HostLayer({ children, kind }: IHostLayerProps): JSX.Element {
         {children}
       </div>
     </>
+  );
+}
+
+/**
+ * A host media player that toggles playback when Space is pressed anywhere on the page, as video sites do. Like
+ * them, it leaves keys typed into the page's own fields alone and cancels the Space it handles.
+ */
+function HostPlayer(): JSX.Element {
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+
+  useLayoutEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== " " || isEventTargetEditingSurface(event.target)) {
+        return;
+      }
+
+      event.preventDefault();
+      setIsPlaying((currentValue) => !currentValue);
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  return (
+    <p role="status" aria-label="Host player">
+      {isPlaying ? "Playing" : "Paused"}
+    </p>
   );
 }
 
@@ -123,6 +136,7 @@ function ModalDialog({ closeLabel, isDevtoolsOwned = false, label, openLabel }: 
 interface ITopLayerSceneProps {
   globals: Partial<Record<string, unknown>>;
   hasHostDialog?: boolean;
+  hasHostPlayer?: boolean;
   hasNote?: boolean;
   hasOwnDialog?: boolean;
   hostLayer: HostLayerKind;
@@ -132,6 +146,7 @@ interface ITopLayerSceneProps {
 function TopLayerScene({
   globals,
   hasHostDialog = false,
+  hasHostPlayer = false,
   hasNote = false,
   hasOwnDialog = false,
   hostLayer,
@@ -195,6 +210,7 @@ function TopLayerScene({
         >
           Toggle host highlight
         </button>
+        {hasHostPlayer ? <HostPlayer /> : null}
       </HostLayer>
       {hasHostDialog ? (
         <ModalDialog closeLabel="Close host dialog" label="Host dialog" openLabel="Open host dialog" />
@@ -335,7 +351,7 @@ export const KeepsFocusWhenHostPopoverOpens: Story = {
 
     await user.click(note);
     await user.keyboard("before");
-    await user.keyboard(`{${hostLayerShortcutKey}}`);
+    hostLayer.showPopover();
     await waitFor(() => {
       expect(hostLayer.matches(":popover-open")).toBe(true);
       expectDevtoolsSurfaceOnTop(shadowRoot, note);
@@ -344,6 +360,36 @@ export const KeepsFocusWhenHostPopoverOpens: Story = {
     await user.keyboard(" after");
     expect(note).toHaveValue("before after");
     expect(shadowRoot.activeElement).toBe(note);
+  },
+};
+
+export const KeepsDevtoolsKeysFromHostShortcuts: Story = {
+  render: (_args, context) => (
+    <TopLayerScene globals={context.globals} hasHostPlayer hasNote hostLayer="stacking-context" />
+  ),
+  play: async ({ canvasElement }): Promise<void> => {
+    const { canvas, shadowCanvas, shadowRoot, toolbar } = await readTopLayerStory(canvasElement);
+    const note = shadowCanvas.getByRole("textbox", { name: "Devtools note" });
+    const trigger = within(toolbar).getByRole("button", { name: "Services" });
+    const player = canvas.getByRole("status", { name: "Host player" });
+
+    await nativeUserEvent.click(note);
+    await nativeUserEvent.keyboard("play pause");
+    expect(note).toHaveValue("play pause");
+    expect(shadowRoot.activeElement).toBe(note);
+    await expect(player).toHaveTextContent("Paused");
+
+    // Space on a focused devtools button activates the button and leaves the host shortcut alone.
+    await nativeUserEvent.click(trigger);
+    await waitFor(() => expect(trigger).toHaveAttribute("aria-expanded", "true"));
+    expect(shadowRoot.activeElement).toBe(trigger);
+    await nativeUserEvent.keyboard(" ");
+    await waitFor(() => expect(trigger).toHaveAttribute("aria-expanded", "false"));
+    await expect(player).toHaveTextContent("Paused");
+
+    await nativeUserEvent.click(player);
+    await nativeUserEvent.keyboard(" ");
+    await expect(player).toHaveTextContent("Playing");
   },
 };
 
@@ -374,7 +420,7 @@ export const KeepsOwnPopoverAnchored: Story = {
     expectPanelAnchored(panel);
 
     const hostLayerOpened = waitForToggle(hostLayer);
-    await userEvent.keyboard(`{${hostLayerShortcutKey}}`);
+    hostLayer.showPopover();
     await hostLayerOpened;
 
     // Re-entering the top layer now would drop the open panel below the root and detach it from its trigger.
@@ -438,7 +484,7 @@ export const StaysBelowOwnModalDialog: Story = {
     // itself: re-entering the top layer fires `beforetoggle` on it.
     topLayer.addEventListener("beforetoggle", handleReentry);
     const hostLayerOpened = waitForToggle(hostLayer);
-    await userEvent.keyboard(`{${hostLayerShortcutKey}}`);
+    hostLayer.showPopover();
     await hostLayerOpened;
 
     expect(hostLayer.matches(":popover-open")).toBe(true);

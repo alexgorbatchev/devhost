@@ -54,13 +54,14 @@ export function AnnotationCanvas({
     const escape = (event: KeyboardEvent): void => {
       if (event.key === "Escape") cancel();
     };
-    window.addEventListener("keydown", escape);
+    // Captured: keys pressed in devtools, where focus stays while dragging, end their propagation at the shadow root.
+    window.addEventListener("keydown", escape, true);
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", refresh);
       window.removeEventListener("scroll", refresh);
       window.removeEventListener("blur", cancel);
-      window.removeEventListener("keydown", escape);
+      window.removeEventListener("keydown", escape, true);
     };
   }, []);
   useEffect(() => {
