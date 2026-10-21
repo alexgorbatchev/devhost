@@ -77,7 +77,7 @@ export default defineConfig({
         },
         {
           label: "Development",
-          items: ["development/release-pipeline"],
+          items: ["development/page-previews", "development/release-pipeline"],
         },
       ],
     }),

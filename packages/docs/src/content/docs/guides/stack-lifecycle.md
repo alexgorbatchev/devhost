@@ -170,6 +170,8 @@ just devhost demo-recovery
 
 Open that hostname manually. The separate `demos/recovery/devhost.toml` starts a service that deliberately leaves its automatic port closed: the page shows startup progress, then a health timeout after ten seconds with its logs and a **Restart unhealthy** button. Restart repeats the deliberate failure. The demo disables the injected toolbar so you can inspect the standalone recovery page. Press **Ctrl-C** to stop the demo stack.
 
+For an always-available gallery of the 404, server-error, recovery, directory, and Markdown pages, run `just run` in the checkout and open `/__devhost__/pages/` on a root-routed development domain. See [Preview standalone pages](../../development/page-previews/) for the examples and development-mode requirements.
+
 ## Configuration hot reload
 
 Saving the root manifest or an included manifest reloads service configuration. Added and deleted files matching an `includes` pattern change service membership. The whole candidate must parse, validate, and have a valid dependency order before devhost changes running services. Invalid edits print `configuration reload rejected` and leave the stack running.

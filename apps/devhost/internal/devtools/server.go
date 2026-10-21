@@ -315,6 +315,9 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		controlServer.websocketWriteTimeout = defaultWebsocketWriteTimeout
 	}
 	mux := http.NewServeMux()
+	if controlServer.devSource != nil {
+		mux.HandleFunc(pagePreviewPath, controlServer.handlePagePreview)
+	}
 	controlServer.chat = newChatStore(controlServer.ctx)
 	if options.FeatureToggles.ChatEnabled {
 		mux.HandleFunc(chatHarnessesPath, controlServer.handleChatHarnesses)
