@@ -3,7 +3,6 @@ package services
 import (
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestGroupSelectionReloadAndRestart(t *testing.T) {
@@ -19,7 +18,7 @@ func TestGroupSelectionReloadAndRestart(t *testing.T) {
 	}
 
 	f.write(t, strings.Replace(groups, "app = [\"web\"]", "app = [\"web\", \"docs\"]", 1)+body)
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.count("configuration reloaded") == 1 })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.count("configuration reloaded") == 1 })
 	assertSliceHealth(t, f, []string{"web", "api", "db", "docs", "mail"}, []string{"extra"})
 
 	if err := f.control.RestartStack(); err != nil {
@@ -28,16 +27,16 @@ func TestGroupSelectionReloadAndRestart(t *testing.T) {
 	assertSliceHealth(t, f, []string{"web", "api", "db", "docs", "mail"}, []string{"extra"})
 
 	f.write(t, groups+body)
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.count("configuration reloaded") == 2 })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.count("configuration reloaded") == 2 })
 	assertSliceHealth(t, f, []string{"web", "api", "db", "mail"}, []string{"docs", "extra"})
 
 	// Invalid membership leaves the accepted selection running.
 	f.write(t, strings.Replace(groups, "app = [\"web\"]", "app = [\"missing\"]", 1)+body)
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reload rejected") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reload rejected") })
 	assertSliceHealth(t, f, []string{"web", "api", "db", "mail"}, []string{"docs", "extra"})
 
 	// Removing the selected group leaves only the always-start services.
 	f.write(t, "[groups]\nadmin = [\"docs\"]\n"+body)
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.count("configuration reloaded") == 3 })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.count("configuration reloaded") == 3 })
 	assertSliceHealth(t, f, []string{"mail"}, []string{"web", "api", "db", "docs", "extra"})
 }

@@ -111,7 +111,7 @@ func TestWatchManagerDebounceAndDynamicDir(t *testing.T) {
 		t.Fatalf("failed to create components dir: %v", err)
 	}
 
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		return wm.IsWatchingPath("web", subDir)
 	})
 

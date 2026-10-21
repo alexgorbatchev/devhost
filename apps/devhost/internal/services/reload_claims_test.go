@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
@@ -44,7 +43,7 @@ func TestManifestReloadRejectsClaimConflictsBeforeStoppingServices(t *testing.T)
 			}
 			worker := strings.ReplaceAll(reloadServiceBody("worker", "worker", "worker.localhost"), "port = \"auto\"", fmt.Sprintf("port = %d", port))
 			f.write(t, body+worker)
-			waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reload rejected") })
+			waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reload rejected") })
 			if reloadPID(t, route.AppPort) != pid {
 				t.Fatal("claim conflict stopped a healthy service")
 			}
@@ -64,7 +63,7 @@ func TestManifestReloadShutdownCleansDynamicallyAddedResources(t *testing.T) {
 	port := nettest.ReservePort(t)
 	worker := strings.ReplaceAll(reloadServiceBody("worker", "worker", "worker.localhost"), "port = \"auto\"", fmt.Sprintf("port = %d", port))
 	f.write(t, body+worker)
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reloaded") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reloaded") })
 	assertRestartResponse(t, serverURL(port, "/"), "worker")
 	route := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "worker.localhost_worker_2f.json"))
 	f.stop()
