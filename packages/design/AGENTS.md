@@ -20,7 +20,7 @@ Single source of the devhost design tokens (colors, radii, host markers, termina
 - `references/devtools.html` and `references/docs.html` are the visual design references for the devtools UI and the docs site. Keep them in sync with the product when the design intentionally changes.
 - Product-specific sizing (devtools px type scale, docs rem type scale, layout metrics) stays in each consumer, not here.
 - `--dh-input-line` identifies form-control boundaries; `--dh-line` remains a decorative separator. Readable faint text meets 4.5:1 on all three neutral surfaces and the terminal background in both themes.
-- Contrast regressions measure rendered foregrounds, backgrounds, and opacity through the shared `test-support/readContrastRatio.ts` browser helper. Assert minimum ratios instead of exact colors or stylesheets.
+- Contrast regressions measure rendered foregrounds, backgrounds, and opacity through the shared `test-support/readContrastRatio.ts` browser helper. Assert minimum ratios instead of exact colors or stylesheets: test the effect a color must have, not its value. Text needs 4.5:1 against what is behind it; a filled surface that must stand out, such as an error notice, needs 3:1 against the surface it sits on.
 
 ## Boundaries
 

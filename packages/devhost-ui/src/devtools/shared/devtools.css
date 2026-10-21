@@ -63,6 +63,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-strong: var(--destructive-strong);
+  --color-destructive-strong-foreground: var(--destructive-strong-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
@@ -163,6 +165,8 @@
   --accent-foreground: var(--dh-fg);
   --destructive: var(--dh-danger);
   --destructive-foreground: var(--dh-on-danger);
+  --destructive-strong: var(--dh-danger-strong);
+  --destructive-strong-foreground: var(--dh-on-danger-strong);
   --success: var(--dh-ok);
   --success-foreground: var(--dh-on-ok);
   --warning: var(--dh-warn);

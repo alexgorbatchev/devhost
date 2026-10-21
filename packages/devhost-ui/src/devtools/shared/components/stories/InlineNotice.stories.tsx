@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fn, userEvent, waitFor } from "storybook/test";
 
+import { Card } from "../../../../components/ui/Card";
 import { InlineNotice } from "../InlineNotice";
 import { readDevtoolsStoryShadowCanvas, renderInDevtoolsStoryShadowRoot } from "./helpers";
 import { StorybookThemeProvider } from "./helpers";
+import { readContrastRatio } from "../../../../../../../test-support/readContrastRatio";
 
 const meta: Meta<typeof InlineNotice> = {
   title: "@alexgorbatchev/devhost-ui/devtools/shared/components/InlineNotice",
@@ -33,6 +35,43 @@ export const Default: Story = {
 
     await expect(shadowCanvas.getByRole("alert")).toHaveTextContent("Connection failed");
     await expect(shadowCanvas.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+
+    // The message reads below its title, starting at the same edge, rather than continuing the title's line.
+    const title = shadowCanvas.getByTestId("AlertTitle").getBoundingClientRect();
+    const description = shadowCanvas.getByTestId("AlertDescription").getBoundingClientRect();
+    await expect(description.top).toBeGreaterThanOrEqual(title.bottom);
+    await expect(description.left).toBe(title.left);
+  },
+};
+
+// An error message must call for attention: its strip stands out from the panel it sits in, and its text stays
+// clearly readable on that strip, in either theme.
+export const DangerDark: Story = {
+  args: {
+    children: "Failed to restart stack: TypeError: Failed to fetch",
+    title: "Stack restart failed",
+    tone: "danger",
+  },
+  globals: { devhostTheme: "dark" },
+  render: (args, context) => {
+    return renderInDevtoolsStoryShadowRoot(
+      <StorybookThemeProvider globals={context.globals}>
+        <Card>
+          <InlineNotice {...args} />
+        </Card>
+      </StorybookThemeProvider>,
+    );
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    await expectErrorNoticeToStandOut(canvasElement);
+  },
+};
+
+export const DangerLight: Story = {
+  ...DangerDark,
+  globals: { devhostTheme: "light" },
+  play: async ({ canvasElement }): Promise<void> => {
+    await expectErrorNoticeToStandOut(canvasElement);
   },
 };
 
@@ -105,6 +144,18 @@ export const Dismissible: Story = {
     await expect(args.onDismiss).toHaveBeenCalledTimes(1);
   },
 };
+
+// WCAG 2.2 minimums: 4.5:1 for text (1.4.3) and 3:1 for a component against its surroundings (1.4.11).
+async function expectErrorNoticeToStandOut(canvasElement: HTMLElement): Promise<void> {
+  const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+  const notice = shadowCanvas.getByRole("alert");
+
+  await expect(
+    readContrastRatio(notice, { property: "backgroundColor", useParentBackground: true }),
+  ).toBeGreaterThanOrEqual(3);
+  await expect(readContrastRatio(shadowCanvas.getByTestId("AlertTitle"))).toBeGreaterThanOrEqual(4.5);
+  await expect(readContrastRatio(shadowCanvas.getByTestId("AlertDescription"))).toBeGreaterThanOrEqual(4.5);
+}
 
 interface IClipboardStub {
   writeText: (value: string) => Promise<void>;
