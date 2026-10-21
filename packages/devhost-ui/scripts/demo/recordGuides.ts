@@ -1,3 +1,4 @@
+import { assertDemoFfmpeg } from "./assertDemoFfmpeg";
 import assert from "node:assert/strict";
 import { dirname, join, resolve } from "node:path";
 import { preparePromoRenderer } from "./preparePromoRenderer";
@@ -13,21 +14,10 @@ export async function recordGuides(signal: AbortSignal, selectedGuide: string): 
   const files = await Array.fromAsync(new Bun.Glob("*.md").scan({ cwd: guidePath, onlyFiles: true }));
   const slugs = files.map((file) => file.replace(/\.md$/, "")).sort();
   assert(selectedGuide === "all" || slugs.includes(selectedGuide), `Unknown guide: ${selectedGuide}`);
-  for (const executable of [
-    "bun",
-    "just",
-    "git",
-    "caddy",
-    "ffmpeg",
-    "ffprobe",
-    "vhs",
-    "ttyd",
-    "curl",
-    "setsid",
-    "node",
-  ]) {
+  for (const executable of ["bun", "just", "git", "caddy", "ffmpeg", "ffprobe", "vhs", "ttyd", "curl", "node"]) {
     assert(Bun.which(executable), `Missing recording dependency: ${executable}`);
   }
+  await assertDemoFfmpeg(runCommand, signal);
   // An unusable renderer stops the run here, before anything is recorded.
   await preparePromoRenderer(runCommand, join(import.meta.dir, "promo"), join(repositoryPath, ".tmp/demos"), signal);
   await runCommand(["just", "devhost", "compile"], { cwd: repositoryPath, signal });
