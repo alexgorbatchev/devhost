@@ -148,7 +148,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 
 		exitCode, startError := services.StartStack(&resolvedManifest, serviceOrder, startOptions)
 		if startError != nil {
-			return fail(stderr, startError)
+			return failStart(stderr, serviceStderr, cwd, startError)
 		}
 
 		return exitCode
