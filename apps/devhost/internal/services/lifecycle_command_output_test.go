@@ -17,22 +17,23 @@ import (
 )
 
 // reapGatedWriter blocks on the first line it receives until the command has been reaped by Cmd.Wait, which is the
-// moment Cmd.StdoutPipe/StderrPipe-based readers lose their pipe. The first write also releases the helper's FIFO
+// moment Cmd.StdoutPipe/StderrPipe-based readers lose their pipe. The first write also releases the helper's
 // handshake, so the helper's second line is still unread in the pipe at that moment.
 type reapGatedWriter struct {
-	fifoPath string
-	pidPath  string
-	once     sync.Once
-	mu       sync.Mutex
-	output   strings.Builder
+	pidPath string
+	once    sync.Once
+	mu      sync.Mutex
+	output  strings.Builder
 }
 
 func (w *reapGatedWriter) Write(p []byte) (int, error) {
 	w.once.Do(func() {
 		pid := readPIDFile(w.pidPath)
-		fifo, err := os.OpenFile(w.fifoPath, os.O_WRONLY, 0)
-		if err == nil {
-			_ = fifo.Close()
+		// The helper publishes its PID once it listens for the signal, so the signal cannot arrive early.
+		if pid > 0 {
+			if err := syscall.Kill(pid, syscall.SIGUSR1); err != nil {
+				panic(fmt.Sprintf("release the helper's handshake: %v", err))
+			}
 		}
 		// kill(pid, 0) keeps succeeding while the exited helper is an unreaped zombie and returns ESRCH once Wait
 		// has reaped it. This polls for that event rather than sleeping for a guessed duration.
@@ -78,17 +79,10 @@ func newLifecycleCommandService(t *testing.T, env map[string]string) ResolvedSer
 }
 
 func TestRunServiceCommandKeepsOutputWrittenBeforeExit(t *testing.T) {
-	directoryPath := t.TempDir()
-	fifoPath := filepath.Join(directoryPath, "handshake.fifo")
-	pidPath := filepath.Join(directoryPath, "helper.pid")
-	if err := syscall.Mkfifo(fifoPath, 0o600); err != nil {
-		t.Fatalf("Mkfifo(...) error = %v", err)
-	}
-
-	stderrWriter := &reapGatedWriter{fifoPath: fifoPath, pidPath: pidPath}
+	pidPath := filepath.Join(t.TempDir(), "helper.pid")
+	stderrWriter := &reapGatedWriter{pidPath: pidPath}
 	service := newLifecycleCommandService(t, map[string]string{
-		"DEVHOST_HELPER_MODE": "stderr-around-fifo-handshake-and-exit",
-		"HANDSHAKE_FIFO_PATH": fifoPath,
+		"DEVHOST_HELPER_MODE": "stderr-around-handshake-and-exit",
 		"HELPER_PID_PATH":     pidPath,
 	})
 	err := runServiceCommand(context.Background(), newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), service, helperCommand(), "daemon start",

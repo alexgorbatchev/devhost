@@ -2,9 +2,8 @@ package services
 
 import (
 	"fmt"
-	"io"
 	"os"
-	"path/filepath"
+	"os/signal"
 	"slices"
 	"strconv"
 	"sync"
@@ -13,32 +12,27 @@ import (
 )
 
 // exitGatedWriter blocks on the first line it receives until the service process has exited. The first write also
-// releases the helper's FIFO handshake, so the helper writes its second line and exits while this writer is still
+// releases the helper's handshake, so the helper writes its second line and exits while this writer is still
 // blocked: the second line is guaranteed to be sitting unread in the pipe when the process exit is observed.
 type exitGatedWriter struct {
-	fifoPath string
-	started  chan *startedService
-	once     sync.Once
+	started chan *startedService
+	once    sync.Once
 }
 
 func (w *exitGatedWriter) Write(p []byte) (int, error) {
 	w.once.Do(func() {
-		fifo, err := os.OpenFile(w.fifoPath, os.O_WRONLY, 0)
-		if err == nil {
-			_ = fifo.Close()
+		started := <-w.started
+		// The helper listens for the signal before it writes its first line, so the signal cannot arrive early.
+		if err := started.cmd.Process.Signal(syscall.SIGUSR1); err != nil {
+			panic(fmt.Sprintf("release the helper's handshake: %v", err))
 		}
-		<-(<-w.started).exited
+		<-started.exited
 	})
 	return len(p), nil
 }
 
 func TestStartServiceProcessKeepsOutputWrittenBeforeExit(t *testing.T) {
-	fifoPath := filepath.Join(t.TempDir(), "handshake.fifo")
-	if err := syscall.Mkfifo(fifoPath, 0o600); err != nil {
-		t.Fatalf("Mkfifo(...) error = %v", err)
-	}
-
-	stderrWriter := &exitGatedWriter{fifoPath: fifoPath, started: make(chan *startedService, 1)}
+	stderrWriter := &exitGatedWriter{started: make(chan *startedService, 1)}
 	attemptOutput := &attemptOutputLines{}
 	started, err := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 		BindHost: "127.0.0.1",
@@ -46,8 +40,7 @@ func TestStartServiceProcessKeepsOutputWrittenBeforeExit(t *testing.T) {
 		Cwd:      t.TempDir(),
 		Env: map[string]string{
 			"GO_WANT_HELPER_PROCESS": "1",
-			"DEVHOST_HELPER_MODE":    "stderr-around-fifo-handshake-and-exit",
-			"HANDSHAKE_FIFO_PATH":    fifoPath,
+			"DEVHOST_HELPER_MODE":    "stderr-around-handshake-and-exit",
 		},
 		Health: ResolvedHealthConfig{Kind: "process"},
 		Name:   "web",
@@ -69,17 +62,18 @@ func TestStartServiceProcessKeepsOutputWrittenBeforeExit(t *testing.T) {
 	}
 }
 
-func runStderrAroundFIFOHandshakeAndExitHelper() {
+// runStderrAroundHandshakeAndExitHelper writes one stderr line, waits for SIGUSR1, writes a second line, and exits.
+// It waits for a signal rather than for the end of a FIFO: on macOS a reader blocked on a FIFO can stay blocked after
+// the last writer closes it, which hung this helper and its test until the go test deadline.
+func runStderrAroundHandshakeAndExitHelper() {
+	released := make(chan os.Signal, 1)
+	signal.Notify(released, syscall.SIGUSR1)
+	// The PID is published only once the signal is handled, so a test that reads it cannot signal too early.
 	if pidPath := os.Getenv("HELPER_PID_PATH"); pidPath != "" {
 		_ = os.WriteFile(pidPath, []byte(strconv.Itoa(os.Getpid())), 0o644)
 	}
 	_, _ = fmt.Fprintln(os.Stderr, "before-handshake")
-	fifo, err := os.Open(os.Getenv("HANDSHAKE_FIFO_PATH"))
-	if err != nil {
-		os.Exit(2)
-	}
-	_, _ = io.Copy(io.Discard, fifo)
-	_ = fifo.Close()
+	<-released
 	_, _ = fmt.Fprintln(os.Stderr, "after-handshake")
 	os.Exit(0)
 }

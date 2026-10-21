@@ -101,7 +101,7 @@ func TestShutdownCancelsWorktreeBindHostHealthWait(t *testing.T) {
 	}
 	done := make(chan error, 1)
 	go func() { done <- f.control.SwitchWorktree(repo.ID, repo.SelectedPath) }()
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		return canConnectToPort(context.Background(), "::1", api.AppPort, minProbeTimeout)
 	})
 	state := readStartupRecoveryState(t, url)

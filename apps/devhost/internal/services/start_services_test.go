@@ -7,7 +7,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 )
@@ -119,7 +118,7 @@ func TestSliceSurvivesManifestReloadAndStackRestart(t *testing.T) {
 
 	// A service added to the manifest stays stopped unless it is marked alwaysStart.
 	f.write(t, body+sliceServiceBody("extra")+alwaysStartServiceBody("db"))
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.count("configuration reloaded") == 1 })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.count("configuration reloaded") == 1 })
 	assertSliceHealth(t, f, []string{"web", "db"}, []string{"docs", "extra"})
 	if _, err := os.Stat(sliceRoutePath(f, "extra")); !os.IsNotExist(err) {
 		t.Fatalf("a service added while a slice runs was started: %v", err)
@@ -128,7 +127,7 @@ func TestSliceSurvivesManifestReloadAndStackRestart(t *testing.T) {
 	// An edit to a stopped service changes nothing that runs.
 	pid := reloadPID(t, web.AppPort)
 	f.write(t, body+reloadServiceBody("extra", "edited", "extra.slice.localhost")+alwaysStartServiceBody("db"))
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.count("configuration reloaded") == 2 })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.count("configuration reloaded") == 2 })
 	if reloadPID(t, web.AppPort) != pid {
 		t.Fatal("editing a stopped service restarted a running one")
 	}
@@ -165,7 +164,7 @@ func TestFailedStartOfAStoppedServiceLeavesTheSliceRunning(t *testing.T) {
 	}
 
 	f.write(t, sliceServiceBody("web")+sliceServiceBody("docs"))
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reloaded") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reloaded") })
 	if err := f.control.StartService([]string{"docs"}); err != nil {
 		t.Fatalf("retry after repairing the service: %v", err)
 	}

@@ -219,7 +219,7 @@ func TestStartStackMultipleHosts(t *testing.T) {
 				if err != nil || len(nonEmptyLines(string(starts))) != 1 {
 					t.Fatalf("starts = %q, error = %v", starts, err)
 				}
-				waitForCondition(t, 5*time.Second, func() bool {
+				waitForCondition(t, stackChangeTimeout, func() bool {
 					err := control.RestartService([]string{"web"})
 					if err != nil && err.Error() != "devhost is still starting the stack" {
 						t.Fatal(err)
