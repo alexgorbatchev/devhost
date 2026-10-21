@@ -1,3 +1,4 @@
+import { assertDemoFfmpeg } from "./assertDemoFfmpeg";
 import { join, resolve } from "node:path";
 import { findGuideRecording } from "./findGuideRecording";
 import { preparePromoRenderer } from "./preparePromoRenderer";
@@ -11,6 +12,7 @@ export async function renderGuide(slug: string, signal: AbortSignal): Promise<st
   const repositoryPath = resolve(import.meta.dir, "../../../..");
   const recordingsPath = join(repositoryPath, ".tmp/demos");
   const { directoryPath, record } = await findGuideRecording(recordingsPath, slug);
+  await assertDemoFfmpeg(runCommand, signal);
   await preparePromoRenderer(runCommand, join(import.meta.dir, "promo"), recordingsPath, signal);
   console.log(`Rendering the ${slug} guide film from ${directoryPath}`);
   const videoPath = await renderGuideFilm({
