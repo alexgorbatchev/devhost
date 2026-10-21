@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-19 16:20
+last_modified: 2026-10-20 14:19
 status: current
 ---
 
@@ -151,31 +151,31 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Every manifest setting reloads: name, devtools, annotation, worktrees, killZombies     | README, "Configuration Hot Reload"; `guides/stack-lifecycle.md`                                                           | No demo                                          |
 | Unmanaged services, such as a Docker container                                         | `guides/docker-backed-services.md`                                                                                        | `docker-backed-services` step-1 to step-9        |
 | Daemon-style services with start, status, and stop commands                            | `guides/managed-daemon-style-services.md`                                                                                 | `managed-daemon-style-services` step-1 to step-6 |
-| Service commands run without a shell                                                   | README, "Service Commands"                                                                                                | No demo                                          |
-| Zombie process recovery                                                                | README, "Zombie Process Recovery"; `guides/troubleshooting.md`, "Zombie cleanup messages"                                 | No demo                                          |
-| Development servers that require a local origin                                        | README, "Development Servers That Require a Local Origin"                                                                 | No demo                                          |
+| Service commands run without a shell                                                   | `guides/stack-lifecycle.md`, "Service commands and working directories"                                                   | No demo                                          |
+| Zombie process recovery                                                                | `guides/troubleshooting.md`, "Zombie cleanup messages"                                                                    | No demo                                          |
+| Development servers that require a local origin                                        | `guides/managed-caddy.md`, "Development servers that require a local origin"                                              | No demo                                          |
 
 ### Manifest
 
 | Feature                                                              | Documented in                                                                 | Shown in                                 |
 | -------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------- |
 | Port, bind host, hostname, and service variables passed to a service | `guides/environment-variables.md`                                             | `environment-variables` step-1 to step-4 |
-| Environment interpolation with `{{ env.NAME }}`                      | README, "Manifest Interpolation"                                              | No demo                                  |
-| Service references with `{{ services.<name>.<property> }}`           | README, "Late-Binding Service References"; `guides/service-references.md`     | `service-references` step-1 to step-4    |
+| Environment interpolation with `{{ env.NAME }}`                      | `guides/environment-variables.md`, "Environment variables in the manifest"    | No demo                                  |
+| Service references with `{{ services.<name>.<property> }}`           | `guides/service-references.md`                                                | `service-references` step-1 to step-4    |
 | Health checks with automatic ports                                   | `guides/service-references.md`, "Health checks with automatic ports"          | No demo                                  |
-| Manifest includes                                                    | README, "Manifest Includes"; `guides/manifest-includes.md`                    | `manifest-includes` step-1 to step-6     |
+| Manifest includes                                                    | `guides/manifest-includes.md`                                                 | `manifest-includes` step-1 to step-6     |
 | Running an included manifest on its own                              | `guides/manifest-includes.md`, "Sub-Manifest Solo Runs & Override Protection" | No demo                                  |
 | Reject overlapping root and included manifests at startup and reload | `guides/manifest-includes.md`, "Sub-Manifest Solo Runs & Override Protection" | No demo                                  |
 
 ### Routing
 
-| Feature                                                               | Documented in                                                                                               | Shown in                                         |
-| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| HTTPS hostnames through the managed Caddy                             | `guides/managed-caddy.md`                                                                                   | `managed-caddy` step-3; promo line-2             |
-| Routing services by path on one hostname                              | `guides/managed-caddy.md`                                                                                   | `managed-caddy` step-1, step-4, step-5           |
-| Multiple hostnames for one service                                    | README, "Multiple Domains for One Service"; `guides/managed-caddy.md`, "Multiple hostnames for one service" | No demo                                          |
-| Shared Caddy settings in `config.toml`: plain HTTP and listener ports | `guides/shared-managed-caddy-settings.md`                                                                   | `shared-managed-caddy-settings` step-1 to step-5 |
-| Saving `config.toml` moves the running shared Caddy                   | README; `guides/shared-managed-caddy-settings.md`, "Changing the settings while stacks run"                 | No demo                                          |
+| Feature                                                               | Documented in                                                                               | Shown in                                         |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| HTTPS hostnames through the managed Caddy                             | `guides/managed-caddy.md`                                                                   | `managed-caddy` step-3; promo line-2             |
+| Routing services by path on one hostname                              | `guides/managed-caddy.md`                                                                   | `managed-caddy` step-1, step-4, step-5           |
+| Multiple hostnames for one service                                    | `guides/managed-caddy.md`, "Multiple hostnames for one service"                             | No demo                                          |
+| Shared Caddy settings in `config.toml`: plain HTTP and listener ports | `guides/shared-managed-caddy-settings.md`                                                   | `shared-managed-caddy-settings` step-1 to step-5 |
+| Saving `config.toml` moves the running shared Caddy                   | README; `guides/shared-managed-caddy-settings.md`, "Changing the settings while stacks run" | No demo                                          |
 
 ### Devtools
 
@@ -183,7 +183,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------- |
 | Log minimap with real-time service output                                                                                  | `guides/devtools.md`                                      | `devtools` overview-1; promo line-4 |
 | Services panel with restart controls                                                                                       | `guides/devtools.md`                                      | `devtools` overview-2; promo line-4 |
-| Worktree picker and worktree search                                                                                        | README, "Git Worktrees"; `guides/devtools.md`             | `devtools` overview-3               |
+| Worktree picker and worktree search                                                                                        | `guides/devtools.md`                                      | `devtools` overview-3               |
 | Service status updates with unavailable checkouts                                                                          | `guides/devtools.md`                                      | **No demo**                         |
 | Recovery dialog after a service exits; stack shutdown preserves the loaded app without flashing recovery                   | `guides/devtools.md`, `guides/stack-lifecycle.md`         | No demo                             |
 | Host resource usage                                                                                                        | `guides/devtools.md`, "Host resource usage"               | No demo                             |
@@ -193,23 +193,25 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Other third-party devtools: native React DevTools, Redux Toolkit, Zustand, Vue, the TanStack shell, React Hook Form, Jotai | `architecture/external-devtools.md`                       | No demo                             |
 | Open component source                                                                                                      | `guides/devtools.md`, "Open component source"             | No demo                             |
 | Automatic idle timeout                                                                                                     | `guides/devtools.md`, "Automatic Idle Timeout"            | No demo                             |
-| Control API                                                                                                                | `guides/devtools.md`, "Control API"                       | No demo                             |
+| Config editor: edit, check, and save the manifest, its includes, and `config.toml`; conflicts on disk                      | `guides/devtools.md`, "Config editor"                     | No demo                             |
+| Rejected reloads shown below the toolbar                                                                                   | `guides/devtools.md`, "Rejected reloads"                  | No demo                             |
+| Control API, refusing requests from other sites                                                                            | `guides/devtools.md`, "Control API"                       | No demo                             |
 
 ### Annotations and editor
 
 | Feature                                                     | Documented in                                                                      | Shown in                                                           |
 | ----------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Annotate an element and have a coding agent edit the source | README, "Annotation agents"; `guides/annotations.md`                               | `annotations` annotations-1 to annotations-3; promo line-6, line-7 |
+| Annotate an element and have a coding agent edit the source | `guides/annotations.md`                                                            | `annotations` annotations-1 to annotations-3; promo line-6, line-7 |
 | Annotation actions and the annotation queue                 | `guides/annotations.md`, "Annotation actions"; `architecture/annotations/queue.md` | No demo                                                            |
 | React Highlight from the Neovim cursor                      | `guides/react-highlight.md`                                                        | `react-highlight` react-highlight-1 to react-highlight-5           |
 
 ### CLI
 
-| Feature                             | Documented in                           | Shown in |
-| ----------------------------------- | --------------------------------------- | -------- |
-| Output for agents and scripts       | README, "Output for agents and scripts" | No demo  |
-| Shell completion                    | README, "Shell completion"              | No demo  |
-| The devhost skill for coding agents | README, "AI devhost skill"              | No demo  |
+| Feature                             | Documented in                                                        | Shown in |
+| ----------------------------------- | -------------------------------------------------------------------- | -------- |
+| Output for agents and scripts       | README, "Output for agents and scripts"; `guides/stack-lifecycle.md` | No demo  |
+| Shell completion                    | README, "Shell completion"                                           | No demo  |
+| The devhost skill for coding agents | README, "AI devhost skill"                                           | No demo  |
 
 Pages under `guides/` are in `packages/docs/src/content/docs/guides/`, and `architecture/` pages beside them; the README is `apps/devhost/README.md`. The table leaves out sections that describe setup or failure diagnosis rather than a feature, such as installation, requirements, and the troubleshooting entries other than reload.
 

@@ -34,6 +34,16 @@ When you run `devhost start`, it:
 9. keeps the stack, sibling services, routes, and retained logs available after service launch errors, health timeouts, and foreground process exits, including exit code `0`, for explicit recovery
 10. removes routes and reservations on explicit shutdown, idle timeout, or fatal startup errors, forwards shutdown signals to managed foreground services through the service-containment backend for the current platform, and runs daemon `lifecycle.stop` commands for managed daemon services
 
+After startup, devhost prints one line for each URL of each started service, such as `web (primary): https://app.localhost`. A routed service lists every public URL; a service without a route but with a port lists its direct `http://` address. The primary service is marked `(primary)`.
+
+## Service commands and working directories
+
+Service commands run directly, not through an implicit shell. `command = ["storybook", "dev", "--port", "$PORT"]` passes the literal string `$PORT` as an argument, while `command = ["sh", "-c", "exec storybook dev --port \"$PORT\""]` lets the shell expand `$PORT` from the child process environment. [Manifest interpolation](../environment-variables/#environment-variables-in-the-manifest) still runs before launch, so `{{ env.NAME }}` placeholders in command arguments are replaced first.
+
+Service and annotation action `cwd` values accept absolute paths or paths relative to the manifest directory. Absolute paths are used directly and may point outside the manifest directory. Relative paths resolve against the manifest directory and must stay within it.
+
+Before launching a foreground service, devhost checks that its working directory exists and is a directory. If it is not, the error names `services.<name>.cwd`, shows the resolved path, and asks you to check the configured path. Other launch failures show the executable and working directory alongside the operating-system error.
+
 ## Starting part of a stack
 
 A monorepo manifest describes every app and backend in the repository, often merged from one file per package with [manifest includes](../manifest-includes/). A single task usually touches one or two of those apps, and plain `devhost start` launches all of them. Name the services you are working on to start one slice of the stack:
@@ -144,7 +154,7 @@ The requested service and group names last for the run. Manifest reloads and **R
 devhost start $(devhost service list --startable | fzf --multi)
 ```
 
-Exited foreground services remain stopped until explicit recovery or a configuration edit affecting them. With status devtools enabled, exited services appear in a full-screen recovery overlay with their exit code, retained stdout/stderr logs, and a restart button. Failed attempts remain retryable. Executable launch errors and startup health timeouts also keep the supervisor running for recovery; daemon lifecycle and external services report health separately from foreground process exits.
+Exited foreground services, including ones that exit before their startup health check passes, remain stopped until explicit recovery or a configuration edit affecting them; the stack keeps running until `devhost stop`, a shutdown signal, or the configured idle timeout stops it. With status devtools enabled, exited services appear in a full-screen recovery overlay with their exit code, retained stdout/stderr logs, and a restart button. Failed attempts remain retryable. Executable launch errors and startup health timeouts also keep the supervisor running for recovery; daemon lifecycle and external services report health separately from foreground process exits.
 
 ## Startup and recovery pages
 
@@ -202,6 +212,8 @@ frontend | a long line continues here
 Each stack or service name has a distinct color on terminals; stdout and stderr share its color. `NO_COLOR` with a non-empty value or `TERM=dumb` disables these added colors, and redirected output has no added colors. When the destination terminal's width is available, long lines wrap with a blank name column and aligned separator. A positive `COLUMNS` value supplies the width when the terminal size is unavailable. Wrapping preserves child ANSI escapes and measures Unicode display width. Unknown widths and widths too small to fit the prefix leave lines unwrapped. Terminal resizing applies to subsequent lines.
 
 Agent mode (`AGENT=1`) uses compact `stack-name: ` and `service-name: ` prefixes without padding, added colors, or wrapping. On-demand devtools asset rebuild notices and every line of compiler diagnostics use the same stack prefix and output formatting. Retained diagnostics and browser log records keep their original bracket prefixes in either mode.
+
+`AGENT=1` (or `true`, or `yes`) also changes the lines devhost writes outside the logs. Help screens become compact `key: value` text without tree glyphs or column padding, each listing every command below the one asked about. A failing command ends with one `ERR:` line that carries the whole error, and warnings start with `WARN:`. Without the variable, a failure ends with an `[ERROR]` line and, where devhost knows the next step, an `[INFO]` hint, and warnings start with `[WARN]`. These lines go to stderr, and the exit code is the same in both modes. `--version`, completion scripts, and `devhost caddy print-root-cert` print the same text in both.
 
 Managed Caddy runtime logs are discarded by the generated Caddyfile so background Caddy stderr does not leak into `devhost` stack output. Managed Caddy command output from stack route reloads is hidden by default during `devhost start` runs. Use `devhost start --debug` when you need to see those reload stdout/stderr lines while debugging routing. Explicit `devhost caddy ...` lifecycle and setup commands still print their normal command output.
 
