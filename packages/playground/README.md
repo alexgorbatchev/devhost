@@ -24,6 +24,7 @@ Open the playground host configured by `DEVHOST_PLAYGROUND`. The overlay include
 - **API tester** (`/`): Send GET or PUT requests to the backend.
 - **Query demo** (`/query`): Fetch `/api/hello` through TanStack Query. Click **Refetch query** to repeat the request and inspect `["playground", "hello"]` in Query devtools. Navigate back to the API tester to see the query become inactive.
 - Open **Router** and switch between the pages to inspect the route matches and current location.
+- **Inspectors** (`/inspectors`): Every other third-party inspector the overlay gathers, each fed by a real library: the unified TanStack shell with its Form, Table, and Pacer plugins, React Hook Form, Jotai, and Redux Toolkit and Zustand stores registered with devhost's **Redux** inspector. The overlay shows **TanStack**, **Form 1**, **Jotai 1**, and **Redux** while this page is open in a development run; the stores register only when devhost serves the page, which provides `/__devhost__/redux.js`.
 
 ## Design prototypes
 
