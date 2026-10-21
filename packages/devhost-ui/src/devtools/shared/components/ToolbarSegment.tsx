@@ -14,7 +14,7 @@ interface IToolbarSegmentProps {
 
 /**
  * A grouped section of the devtools toolbar. Fixed groups wrap their controls when wider than the viewport.
- * `shrink` fills the remaining row width, reserving room for a terminal overflow trigger while its owner fits chips.
+ * `shrink` fills the remaining row width and clips content for owners that measure overflow.
  */
 export function ToolbarSegment({
   ariaLabel,

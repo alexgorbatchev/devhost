@@ -6,7 +6,6 @@ import {
 } from "../../features/reactHighlight/reactHighlightOverlay";
 import {
   devtoolsStoryShadowRootHostTestId,
-  expectDevtoolsSurfaceAbove,
   expectDevtoolsSurfaceOnTop,
   readDevtoolsStoryShadowCanvas,
   readShadowRoot,
@@ -25,38 +24,20 @@ export async function verifySurfaceOrder(canvasElement: HTMLElement): Promise<vo
     "Missing story shadow root.",
   );
   const toolbar = await shadowCanvas.findByRole("toolbar", { name: "devhost" });
-  const minimap = await shadowCanvas.findByTestId("LogMinimap");
-  await within(toolbar).findByRole("button", { name: /^Pi terminal, / });
-  const cornerTarget = canvas.getByRole("button", { name: "Corner target" });
-  const cornerRectangle = cornerTarget.getBoundingClientRect();
-  // One session keeps the Alt key state between calls, so releasing it dispatches the keyup that ends selection.
+  const target = canvas.getByRole("button", { name: "Corner target" });
+  const rectangle = target.getBoundingClientRect();
   const user = userEvent.setup();
-
   await user.keyboard("{Alt>}");
-  // Selection resolves its target from the pointer position, which a synthetic click only carries when given.
   await user.pointer({
-    coords: {
-      clientX: cornerRectangle.left + cornerRectangle.width / 2,
-      clientY: cornerRectangle.top + cornerRectangle.height / 2,
-    },
+    coords: { clientX: rectangle.left + rectangle.width / 2, clientY: rectangle.top + rectangle.height / 2 },
     keys: "[MouseLeft]",
-    target: cornerTarget,
+    target,
   });
   await user.keyboard("{/Alt}");
-
-  const annotationDraft = await shadowCanvas.findByRole("dialog", { name: "Annotation draft" });
+  const chat = await shadowCanvas.findByRole("complementary", { name: "Agent chat" });
   await waitFor(() => {
-    expectDevtoolsSurfaceAbove(shadowRoot, toolbar, annotationDraft);
-  });
-
-  await user.click(within(toolbar).getByRole("button", { name: /^Pi terminal, / }));
-  const terminal = await shadowCanvas.findByRole("dialog", { name: "Pi terminal" });
-  // Hovered, the minimap widens from its edge strip into the area a fullscreen terminal covers.
-  await user.hover(minimap);
-  await waitFor(() => {
-    expectDevtoolsSurfaceAbove(shadowRoot, terminal, annotationDraft);
-    expectDevtoolsSurfaceAbove(shadowRoot, terminal, toolbar);
-    expectDevtoolsSurfaceAbove(shadowRoot, terminal, minimap);
+    expectDevtoolsSurfaceOnTop(shadowRoot, chat);
+    expectDevtoolsSurfaceOnTop(shadowRoot, toolbar);
   });
 }
 
@@ -68,74 +49,38 @@ export async function verifySelectionLayering(canvasElement: HTMLElement): Promi
     "Missing story shadow root.",
   );
   const toolbar = await shadowCanvas.findByRole("toolbar", { name: "devhost" });
-  const minimap = await shadowCanvas.findByTestId("LogMinimap");
-  await within(toolbar).findByRole("button", { name: /^Pi terminal, / });
-  // One session keeps the Alt key state between calls, so releasing it dispatches the keyup that ends selection.
   const user = userEvent.setup();
-
   await user.keyboard("{Alt>}");
   await user.click(canvas.getByRole("button", { name: "Viewport target" }));
   await user.keyboard("{/Alt}");
-
-  const annotationDraft = await shadowCanvas.findByRole("dialog", { name: "Annotation draft" });
-  const selectionHighlight = await shadowCanvas.findByTestId("AnnotationComposer--selection-highlight");
-  const expectAboveSelection = (surface: HTMLElement): void => {
-    const rectangle = surface.getBoundingClientRect();
-    // Include the passive highlight in native hit testing only while checking the browser's paint order.
-    selectionHighlight.style.pointerEvents = "auto";
-    try {
-      const topElement = shadowRoot.elementFromPoint(
-        rectangle.left + rectangle.width / 2,
-        rectangle.top + rectangle.height / 2,
-      );
-      expect(surface.contains(topElement)).toBe(true);
-    } finally {
-      selectionHighlight.style.removeProperty("pointer-events");
-    }
-  };
-
-  await waitFor(() => {
-    expectAboveSelection(annotationDraft);
-    expectAboveSelection(toolbar);
-    expectAboveSelection(minimap);
-  });
-
-  await user.click(within(toolbar).getByRole("button", { name: /^Pi terminal, / }));
-  const terminal = await shadowCanvas.findByRole("dialog", { name: "Pi terminal" });
-  await waitFor(() => {
-    expectAboveSelection(terminal);
-  });
-  expect(selectionHighlight).toBeVisible();
+  const chat = await shadowCanvas.findByRole("complementary", { name: "Agent chat" });
+  const highlight = await shadowCanvas.findByTestId("AnnotationSelectionOverlay--selection-highlight");
+  highlight.style.pointerEvents = "auto";
+  try {
+    await waitFor(() => {
+      expectDevtoolsSurfaceOnTop(shadowRoot, chat);
+      expectDevtoolsSurfaceOnTop(shadowRoot, toolbar);
+    });
+  } finally {
+    highlight.style.removeProperty("pointer-events");
+  }
+  expect(highlight).toBeVisible();
 }
 
 export async function verifyDevtoolsClickDuringSelection(canvasElement: HTMLElement): Promise<void> {
   const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
   const toolbar = await shadowCanvas.findByRole("toolbar", { name: "devhost" });
-  const terminalChip = await within(toolbar).findByRole("button", { name: /^Pi terminal, / });
-  const chipRectangle = terminalChip.getBoundingClientRect();
-  // One session keeps the Alt key state between calls, so releasing it dispatches the keyup that ends selection.
+  const button = await within(toolbar).findByRole("button", { name: "Chat" });
+  const rectangle = button.getBoundingClientRect();
   const user = userEvent.setup();
-
   await user.keyboard("{Alt>}");
-  const selectionHint = await shadowCanvas.findByRole("status", { name: "Annotation selection" });
-  // Selection resolves its target from the pointer position, which a synthetic click only carries when given.
   await user.pointer({
-    coords: {
-      clientX: chipRectangle.left + chipRectangle.width / 2,
-      clientY: chipRectangle.top + chipRectangle.height / 2,
-    },
+    coords: { clientX: rectangle.left + rectangle.width / 2, clientY: rectangle.top + rectangle.height / 2 },
     keys: "[MouseLeft]",
-    target: terminalChip,
+    target: button,
   });
-
-  const terminal = await shadowCanvas.findByRole("dialog", { name: "Pi terminal" });
-  await waitFor(() => {
-    expect(terminal).toBeVisible();
-  });
-  // The page element beneath the toolbar stays unmarked, so selection is still waiting for its first target.
-  expect(selectionHint).toBeVisible();
-  expect(shadowCanvas.queryByRole("dialog", { name: "Annotation draft" })).toBeNull();
-
+  await expect(await shadowCanvas.findByRole("complementary", { name: "Agent chat" })).toBeVisible();
+  expect(shadowCanvas.queryByRole("region", { name: "Page context" })).toBeNull();
   await user.keyboard("{/Alt}");
 }
 
@@ -164,12 +109,12 @@ export async function verifyRestartShortcut(canvasElement: HTMLElement): Promise
     await user.keyboard("{Alt>}{Control>}r{/Control}{/Alt}");
     expect(readRestartRequests()).toEqual([]);
 
-    await user.click(await shadowCanvas.findByRole("button", { name: /^Pi terminal, / }));
-    const terminal = await shadowCanvas.findByRole("dialog", { name: "Pi terminal" });
-    await user.click(await within(terminal).findByRole("textbox", { name: "Terminal input" }));
+    await user.click(await shadowCanvas.findByRole("button", { name: "Chat" }));
+    const chat = await shadowCanvas.findByRole("complementary", { name: "Agent chat" });
+    await user.click(await within(chat).findByRole("textbox"));
     await user.keyboard("{Alt>}{Control>}r{/Control}{/Alt}");
     expect(readRestartRequests()).toEqual([]);
-    await user.click(within(terminal).getByRole("button", { name: "Minimize" }));
+    await user.click(within(chat).getByRole("button", { name: "Collapse chat" }));
 
     await user.click(canvas.getByRole("button", { name: "Host button" }));
     await user.keyboard("{Alt>}{Control>}r{/Control}{/Alt}");

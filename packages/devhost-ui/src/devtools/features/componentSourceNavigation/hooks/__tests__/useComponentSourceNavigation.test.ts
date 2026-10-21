@@ -1,16 +1,14 @@
 import { act, renderHook } from "@testing-library/react";
-import { afterEach, assert, beforeEach, describe, expect, onTestFinished, test, vi, type Mock } from "vitest";
+import { afterEach, beforeEach, describe, expect, onTestFinished, test, vi, type Mock } from "vitest";
 import { userEvent } from "vitest/browser";
 
-import { addDevtoolsButton, addHostButton, placeElement } from "../../../../../../test-support/hostPageUtils";
+import { addDevtoolsButton, addHostButton } from "../../../../../../test-support/hostPageUtils";
 import type { IWorktreeRepository } from "../../../../shared/types";
-import type { ITerminalSessionStartResult } from "../../../terminalSessions/types";
-import type { ComponentSourceMenuItem } from "../../types";
+import type { IComponentSourceMenuItem } from "../../types";
 import { useComponentSourceNavigation } from "../useComponentSourceNavigation";
 import { addComponentMenuItem, addInspectableButton, captureNavigations } from "./helpers";
 
 type NavigationParams = Parameters<typeof useComponentSourceNavigation>[0];
-type StartComponentSourceSession = NavigationParams["startComponentSourceSession"];
 type WriteClipboardText = Clipboard["writeText"];
 type CanceledEventType = "contextmenu" | "keydown";
 
@@ -28,14 +26,12 @@ const repository: IWorktreeRepository = {
 };
 
 let saveButton: HTMLButtonElement;
-let startComponentSourceSession: Mock<StartComponentSourceSession>;
 let writeClipboardText: Mock<WriteClipboardText>;
 
 function navigationParams(overrides: Partial<NavigationParams> = {}): NavigationParams {
   return {
     componentEditor: "vscode",
     projectRootPath: "/projects/shop",
-    startComponentSourceSession,
     ...overrides,
   };
 }
@@ -97,9 +93,6 @@ function recordCancellations(type: CanceledEventType): boolean[] {
 
 beforeEach(() => {
   saveButton = addInspectableButton({ height: 20, width: 80, x: 100, y: 50 });
-  startComponentSourceSession = vi.fn<StartComponentSourceSession>(
-    async (): Promise<ITerminalSessionStartResult> => ({ success: true }),
-  );
   // Headless Chromium refuses clipboard writes from a page that does not have focus.
   writeClipboardText = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue(undefined);
 });
@@ -211,12 +204,7 @@ describe("useComponentSourceNavigation", () => {
 
   test("closes the menu on Escape or a press outside it, but not on a press inside it", async () => {
     const menuItem: HTMLButtonElement = addComponentMenuItem({ height: 20, width: 120, x: 140, y: 80 });
-    const terminalInput: HTMLTextAreaElement = document.createElement("textarea");
     const hook = renderNavigation();
-
-    terminalInput.className = "xterm-helper-textarea";
-    placeElement(terminalInput, { height: 40, width: 200, x: 600, y: 400 });
-    document.body.append(terminalInput);
 
     await inspect(saveButton);
 
@@ -224,15 +212,8 @@ describe("useComponentSourceNavigation", () => {
 
     await click(menuItem);
     await pressKey("Enter");
-    // A terminal takes the focus without a press, and Escape belongs to the program running in it.
-    terminalInput.focus();
     await pressKey("Escape");
-    expect(cancellations).toEqual([false, false]);
-    expect(hook.result.current.componentMenu).not.toBeNull();
-
-    terminalInput.blur();
-    await pressKey("Escape");
-    expect(cancellations).toEqual([false, false, true]);
+    expect(cancellations).toEqual([false, true]);
     expect(hook.result.current.componentMenu).toBeNull();
 
     await inspect(saveButton);
@@ -266,7 +247,7 @@ describe("useComponentSourceNavigation", () => {
     await inspect(saveButton);
 
     expect(
-      hook.result.current.componentMenu?.items.map((item: ComponentSourceMenuItem): string => item.source.fileName),
+      hook.result.current.componentMenu?.items.map((item: IComponentSourceMenuItem): string => item.source.fileName),
     ).toEqual(["/worktrees/cart/src/components/Button.tsx", "/worktrees/cart/src/Toolbar.tsx"]);
   });
 
@@ -279,7 +260,6 @@ describe("useComponentSourceNavigation", () => {
 
     expect(writeClipboardText.mock.calls).toEqual([["src/Toolbar.tsx:18:3"]]);
     expect(navigations).toEqual(["vscode://file//projects/shop/src/Toolbar.tsx:18:3"]);
-    expect(startComponentSourceSession).toHaveBeenCalledTimes(0);
     expect(hook.result.current.componentMenu).toBeNull();
   });
 
@@ -293,38 +273,6 @@ describe("useComponentSourceNavigation", () => {
 
     expect(navigations).toEqual(["vscode://file//projects/shop/src/components/Button.tsx:48:9"]);
     expect(hook.result.current.componentMenu).toBeNull();
-  });
-
-  test("openComponentSource starts a session for the Neovim editor and closes the menu", async () => {
-    const navigations: string[] = captureNavigations();
-    const hook = renderNavigation({ componentEditor: "neovim" });
-
-    await inspect(saveButton);
-    expect(hook.result.current.componentMenu?.title).toBe("Open in Neovim");
-
-    const menuItem: ComponentSourceMenuItem | undefined = hook.result.current.componentMenu?.items[0];
-
-    assert(menuItem !== undefined);
-    expect(menuItem.action).toEqual({ kind: "neovim" });
-    await act(() => hook.result.current.openComponentSource(0));
-
-    expect(startComponentSourceSession.mock.calls).toEqual([[menuItem]]);
-    expect(navigations).toEqual([]);
-    expect(hook.result.current.componentMenu).toBeNull();
-  });
-
-  test("openComponentSource keeps the menu open and shows why a Neovim session did not start", async () => {
-    const hook = renderNavigation({ componentEditor: "neovim" });
-
-    startComponentSourceSession.mockResolvedValueOnce({ errorMessage: "nvim is not installed.", success: false });
-    await inspect(saveButton);
-    await act(() => hook.result.current.openComponentSource(0));
-    expect(hook.result.current.componentMenu?.errorMessage).toBe("nvim is not installed.");
-
-    startComponentSourceSession.mockResolvedValueOnce({ success: false });
-    await act(() => hook.result.current.openComponentSource(0));
-    expect(hook.result.current.componentMenu?.errorMessage).toBe("Failed to start the Neovim session.");
-    expect(hook.result.current.componentMenu?.items).toHaveLength(2);
   });
 
   test("openComponentSource ignores an index the menu does not have", async () => {

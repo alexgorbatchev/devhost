@@ -29,7 +29,6 @@ type ResolvedManifest struct {
 	// requested holds the service or group names given to devhost start and services started
 	// since; empty means every service runs.
 	requested             []string
-	Annotation            manifest.ValidatedAnnotation
 	Caddy                 manifest.CaddyConfig
 	Devtools              manifest.DevtoolsConfig
 	Worktrees             manifest.WorktreesConfig
@@ -218,7 +217,6 @@ func resolveServicePorts(value manifest.Manifest, options portResolutionOptions)
 	return ResolvedManifest{
 		configuration:         &value,
 		requested:             slices.Clone(options.Requested),
-		Annotation:            value.Annotation,
 		Caddy:                 value.Caddy,
 		Devtools:              value.Devtools,
 		Worktrees:             value.Worktrees,

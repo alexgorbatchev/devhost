@@ -4,6 +4,7 @@ import { viewport } from "./constants";
 export async function launchDemoBrowser(env: NodeJS.ProcessEnv, captureScale: number = 1): Promise<Browser> {
   return await chromium.launch({
     env,
+    headless: env.DEVHOST_DEMO_INTERACTIVE !== "1",
     // The recorder owns these signals so its finally block can stop the stack and remove routes.
     handleSIGINT: false,
     handleSIGTERM: false,

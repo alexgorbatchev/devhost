@@ -15,7 +15,6 @@ func validateReloadBoundary(previous, next manifest.Manifest) error {
 		{"name", previous.Name, next.Name},
 		{"caddy", previous.Caddy, next.Caddy},
 		{"devtools", previous.Devtools, next.Devtools},
-		{"annotation", previous.Annotation, next.Annotation},
 		{"worktrees.enabled", previous.Worktrees, next.Worktrees},
 		{"killZombies", previous.KillZombies, next.KillZombies},
 	}

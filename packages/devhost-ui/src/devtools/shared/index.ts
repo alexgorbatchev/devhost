@@ -9,12 +9,9 @@ export {
 export { InlineNotice } from "./components/InlineNotice";
 export { installDevtoolsStyles } from "./devtoolsStyles";
 export {
-  defaultAnnotationActionId,
   readDevtoolsComponentEditorLabel,
-  type AnnotationActionKind,
   type DevtoolsComponentEditor,
   type DevtoolsPosition,
-  type IAnnotationAction,
 } from "./devtoolsConfig";
 export { type DevtoolsColorScheme } from "./DevtoolsColorScheme";
 export { resolveDevtoolsPortalContainer } from "./resolveDevtoolsPortalContainer";

@@ -104,10 +104,6 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			return fail(stderr, validateError)
 		}
 
-		if err := resolveAnnotationTempDir(validatedManifest.Annotation, cwd); err != nil {
-			return fail(stderr, err)
-		}
-
 		if err := services.ValidateRequestedServices(validatedManifest, arguments.Services); err != nil {
 			return fail(stderr, &cliout.Failure{Err: err, Hint: "Run \"devhost service list\" to print the service names."})
 		}
@@ -319,23 +315,6 @@ func describeManifestReadError(manifestPath string, err error) error {
 		Summary: "manifest file not found: " + absoluteManifestPath,
 		Hint:    "Check the path given with --manifest or DEVHOST_MANIFEST.",
 	}
-}
-
-func resolveAnnotationTempDir(annotation manifest.ValidatedAnnotation, cwd string) error {
-	if annotation.TempDir == nil {
-		return nil
-	}
-	dir := *annotation.TempDir
-	if !filepath.IsAbs(dir) {
-		dir = filepath.Join(cwd, dir)
-	}
-	resolved, err := filepath.Abs(dir)
-	if err != nil {
-		return fmt.Errorf("resolve annotation.tempDir: %w", err)
-	}
-	// Actions share this pointer so every file handoff uses the startup location.
-	*annotation.TempDir = resolved
-	return nil
 }
 
 func readEnvironment() map[string]string {

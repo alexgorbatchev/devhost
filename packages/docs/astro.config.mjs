@@ -67,7 +67,7 @@ export default defineConfig({
             "guides/annotations",
             {
               label: "Architecture",
-              items: ["architecture/external-devtools", "architecture/annotations/queue"],
+              items: ["architecture/external-devtools", "architecture/chat"],
             },
           ],
         },

@@ -22,6 +22,17 @@ export async function createDemoPage(browser: Browser, runtime: IDemoRuntime, ca
   page.on("pageerror", onPageError);
   try {
     page.setDefaultTimeout(15_000);
+    if (captureScale !== 1) {
+      // Size actual browser contents: headed window decorations are outside the captured viewport.
+      const session = await context.newCDPSession(page);
+      try {
+        const { windowId } = await session.send("Browser.getWindowForTarget");
+        await session.send("Browser.setContentsSize", { windowId, ...viewport });
+        await page.waitForFunction(({ width, height }) => innerWidth === width && innerHeight === height, viewport);
+      } finally {
+        await session.detach();
+      }
+    }
     const response = await page.goto(runtime.url, { waitUntil: "domcontentloaded" });
     await Bun.write(
       join(runtime.directoryPath, "browser-response.json"),

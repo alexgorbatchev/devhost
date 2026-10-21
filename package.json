@@ -6,7 +6,7 @@
     "packages/playground/frontend"
   ],
   "type": "module",
-  "packageManager": "bun@1.4.0",
+  "packageManager": "bun@1.4.2",
   "scripts": {
     "postinstall": "just ui install-browser",
     "prepare": "husky"

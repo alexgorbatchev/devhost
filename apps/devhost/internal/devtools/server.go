@@ -21,41 +21,35 @@ import (
 )
 
 const (
-	controlPathPrefix                = "/__devhost__"
-	injectedScriptPath               = controlPathPrefix + "/inject.js"
-	terminalSessionsPath             = controlPathPrefix + "/terminal-sessions"
-	terminalWebsocketPath            = controlPathPrefix + "/ws/terminal"
-	reactHighlightCursorPath         = controlPathPrefix + "/react-highlight/cursor"
-	reactHighlightWebsocketPath      = controlPathPrefix + "/ws/react-highlight"
-	xtermStylesheetPath              = controlPathPrefix + "/xterm.css"
-	restartServicePath               = controlPathPrefix + "/restart-service"
-	restartStackPath                 = controlPathPrefix + "/restart-stack"
-	startServicePath                 = controlPathPrefix + "/start-service"
-	healthWebsocketPath              = controlPathPrefix + "/ws/health"
-	resourcesWebsocketPath           = controlPathPrefix + "/ws/resources"
-	logsWebsocketPath                = controlPathPrefix + "/ws/logs"
-	maximumRetainedLogEntries        = 512
-	healthPollInterval               = time.Second
-	websocketCloseFrameTimeout       = time.Second
-	websocketCloseReasonStopping     = "devhost is stopping"
-	websocketCloseReasonSessionEnded = "terminal session ended"
+	controlPathPrefix            = "/__devhost__"
+	injectedScriptPath           = controlPathPrefix + "/inject.js"
+	reactHighlightCursorPath     = controlPathPrefix + "/react-highlight/cursor"
+	reactHighlightWebsocketPath  = controlPathPrefix + "/ws/react-highlight"
+	restartServicePath           = controlPathPrefix + "/restart-service"
+	restartStackPath             = controlPathPrefix + "/restart-stack"
+	startServicePath             = controlPathPrefix + "/start-service"
+	healthWebsocketPath          = controlPathPrefix + "/ws/health"
+	resourcesWebsocketPath       = controlPathPrefix + "/ws/resources"
+	logsWebsocketPath            = controlPathPrefix + "/ws/logs"
+	maximumRetainedLogEntries    = 512
+	healthPollInterval           = time.Second
+	websocketCloseFrameTimeout   = time.Second
+	websocketCloseReasonStopping = "devhost is stopping"
 	// A page that reads nothing for this long while its connection is full, such as one paused in a debugger, is
 	// dropped.
 	defaultWebsocketWriteTimeout     = 10 * time.Second
-	defaultIdleTerminalSessionPeriod = 10 * time.Second
 	applicationJavascriptContentType = "application/javascript; charset=utf-8"
 	textCSSContentType               = "text/css; charset=utf-8"
 	cacheControlNoStore              = "no-store"
 )
 
 type FeatureToggles struct {
+	ChatEnabled             bool
 	AnnotationEnabled       bool
-	AnnotationQueueEnabled  bool
 	EditorEnabled           bool
 	ExternalToolbarsEnabled bool
 	MinimapEnabled          bool
 	StatusEnabled           bool
-	TerminalEnabled         bool
 }
 
 type RoutedServiceIdentity struct {
@@ -103,19 +97,15 @@ type ServiceLogEntry struct {
 }
 
 type StartControlServerOptions struct {
-	NativeBrowser              manifest.DevtoolsBrowserConfig
-	AllowsNativeBrowserURL     func(int, string) (bool, error)
-	AnnotationDefaultActionID  string
-	AnnotationActions          []manifest.ValidatedAnnotationAction
-	ComponentEditor            string
-	DevSource                  *DevSourceCheckout
-	OnLog                      func(string)
-	FeatureToggles             FeatureToggles
-	GetHealthResponse          func() (HealthResponse, error)
-	IdleTerminalSessionTimeout time.Duration
+	NativeBrowser          manifest.DevtoolsBrowserConfig
+	AllowsNativeBrowserURL func(int, string) (bool, error)
+	ComponentEditor        string
+	DevSource              *DevSourceCheckout
+	OnLog                  func(string)
+	FeatureToggles         FeatureToggles
+	GetHealthResponse      func() (HealthResponse, error)
 	// WebsocketWriteTimeout bounds one write to a browser connection. Zero selects the default.
 	WebsocketWriteTimeout   time.Duration
-	ManifestPath            string
 	Position                string
 	ProjectRootPath         string
 	PrimaryService          string
@@ -128,38 +118,30 @@ type StartControlServerOptions struct {
 	GetToolContext          func(string) (ToolContext, error)
 	RestartServicesShortcut string
 	RoutedServices          []RoutedServiceIdentity
-	StateDirectoryPath      string
-	RuntimeDirectoryPath    string
-	StartTerminalSession    terminalSessionStarter
 	StackName               string
 }
 
 type ControlServer struct {
-	nativeBrowser              manifest.DevtoolsBrowserConfig
-	nativeBrowserInstanceID    string
-	allowsNativeBrowserURL     func(int, string) (bool, error)
-	listener                   net.Listener
-	server                     *http.Server
-	componentEditor            string
-	featureToggles             FeatureToggles
-	idleTerminalSessionTimeout time.Duration
-	websocketWriteTimeout      time.Duration
-	restartService             func([]string) error
-	restartStack               func() error
-	startService               func([]string) error
-	switchWorktree             func(string, string) error
-	refreshWorktrees           func() error
-	getToolContext             func(string) (ToolContext, error)
-	routedServices             []RoutedServiceIdentity
-	primaryService             string
-	getHealth                  func() (HealthResponse, error)
-	annotationActions          []manifest.ValidatedAnnotationAction
-	projectRootPath            string
-	stackName                  string
-	startTerminalSession       terminalSessionStarter
-	annotationQueueStore       *annotationQueueStore
-	neovimShellIntegration     *neovimPluginShellIntegrationFiles
-	tracker                    *ActivityTracker
+	chat                    *chatStore
+	nativeBrowser           manifest.DevtoolsBrowserConfig
+	nativeBrowserInstanceID string
+	allowsNativeBrowserURL  func(int, string) (bool, error)
+	listener                net.Listener
+	server                  *http.Server
+	featureToggles          FeatureToggles
+	websocketWriteTimeout   time.Duration
+	restartService          func([]string) error
+	restartStack            func() error
+	startService            func([]string) error
+	switchWorktree          func(string, string) error
+	refreshWorktrees        func() error
+	getToolContext          func(string) (ToolContext, error)
+	routedServices          []RoutedServiceIdentity
+	primaryService          string
+	getHealth               func() (HealthResponse, error)
+	projectRootPath         string
+	stackName               string
+	tracker                 *ActivityTracker
 
 	devSource  *DevSourceCheckout
 	onLog      func(string)
@@ -181,9 +163,6 @@ type ControlServer struct {
 	resourceClients        map[*websocketClient]struct{}
 	nextLogEntryID         int
 	retainedLogEntries     []ServiceLogEntry
-	terminalSessionOrder   []string
-	terminalSessions       map[string]*terminalSessionState
-	annotationQueueClients map[*websocketClient]struct{}
 	healthClients          map[*websocketClient]struct{}
 	logsClients            map[*websocketClient]struct{}
 	reactHighlightClients  map[*websocketClient]struct{}
@@ -201,33 +180,23 @@ type websocketClient struct {
 }
 
 type injectedConfig struct {
-	NativeBrowserConfigured   bool                       `json:"nativeBrowserConfigured"`
-	NativeBrowserInstanceID   string                     `json:"nativeBrowserInstanceId"`
-	AnnotationDefaultActionID string                     `json:"annotationDefaultActionId"`
-	AnnotationActions         []injectedAnnotationAction `json:"annotationActions"`
-	ComponentEditor           string                     `json:"componentEditor"`
-	HomeDirectoryPath         string                     `json:"homeDirectoryPath"`
-	Position                  string                     `json:"position"`
-	ProjectRootPath           string                     `json:"projectRootPath"`
-	StackName                 string                     `json:"stackName"`
-	EditorEnabled             bool                       `json:"editorEnabled"`
-	ExternalToolbarsEnabled   bool                       `json:"externalToolbarsEnabled"`
-	MinimapEnabled            bool                       `json:"minimapEnabled"`
-	StatusEnabled             bool                       `json:"statusEnabled"`
-	ResourcesEnabled          bool                       `json:"resourcesEnabled"`
-	AnnotationEnabled         bool                       `json:"annotationEnabled"`
-	AnnotationQueueEnabled    bool                       `json:"annotationQueueEnabled"`
-	TerminalEnabled           bool                       `json:"terminalEnabled"`
-	RoutedServices            []RoutedServiceIdentity    `json:"routedServices"`
-	RestartServicesShortcut   string                     `json:"restartServicesShortcut"`
-	PrimaryService            string                     `json:"primaryService"`
-}
-
-type injectedAnnotationAction struct {
-	ID           string `json:"id"`
-	Label        string `json:"label"`
-	Kind         string `json:"kind"`
-	QueueEnabled bool   `json:"queueEnabled"`
+	ComponentEditor         string                  `json:"componentEditor"`
+	ChatEnabled             bool                    `json:"chatEnabled"`
+	NativeBrowserConfigured bool                    `json:"nativeBrowserConfigured"`
+	NativeBrowserInstanceID string                  `json:"nativeBrowserInstanceId"`
+	HomeDirectoryPath       string                  `json:"homeDirectoryPath"`
+	Position                string                  `json:"position"`
+	ProjectRootPath         string                  `json:"projectRootPath"`
+	StackName               string                  `json:"stackName"`
+	EditorEnabled           bool                    `json:"editorEnabled"`
+	ExternalToolbarsEnabled bool                    `json:"externalToolbarsEnabled"`
+	MinimapEnabled          bool                    `json:"minimapEnabled"`
+	StatusEnabled           bool                    `json:"statusEnabled"`
+	ResourcesEnabled        bool                    `json:"resourcesEnabled"`
+	AnnotationEnabled       bool                    `json:"annotationEnabled"`
+	RoutedServices          []RoutedServiceIdentity `json:"routedServices"`
+	RestartServicesShortcut string                  `json:"restartServicesShortcut"`
+	PrimaryService          string                  `json:"primaryService"`
 }
 
 type restartServiceRequest struct {
@@ -271,8 +240,6 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		return nil, fmt.Errorf("start devtools control listener: %w", err)
 	}
 
-	annotationActions := append([]manifest.ValidatedAnnotationAction{}, options.AnnotationActions...)
-	annotationDefaultActionID := normalizeAnnotationDefaultActionID(options.AnnotationDefaultActionID, annotationActions)
 	home, err := os.UserHomeDir()
 	if err != nil {
 		// Path abbreviation is optional; keep absolute paths when no home is available.
@@ -284,26 +251,23 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		return nil, fmt.Errorf("create native browser instance identity: %w", err)
 	}
 	config := injectedConfig{
-		NativeBrowserConfigured:   options.NativeBrowser.Endpoint != "",
-		NativeBrowserInstanceID:   instanceID,
-		AnnotationDefaultActionID: annotationDefaultActionID,
-		AnnotationActions:         createInjectedAnnotationActions(annotationActions),
-		AnnotationEnabled:         options.FeatureToggles.AnnotationEnabled,
-		AnnotationQueueEnabled:    options.FeatureToggles.AnnotationQueueEnabled,
-		ComponentEditor:           options.ComponentEditor,
-		HomeDirectoryPath:         home,
-		EditorEnabled:             options.FeatureToggles.EditorEnabled,
-		ExternalToolbarsEnabled:   options.FeatureToggles.ExternalToolbarsEnabled,
-		MinimapEnabled:            options.FeatureToggles.MinimapEnabled,
-		Position:                  options.Position,
-		ProjectRootPath:           options.ProjectRootPath,
-		RoutedServices:            append([]RoutedServiceIdentity{}, options.RoutedServices...),
-		StackName:                 options.StackName,
-		StatusEnabled:             options.FeatureToggles.StatusEnabled,
-		ResourcesEnabled:          options.ResourceUsage.isEnabled(),
-		TerminalEnabled:           options.FeatureToggles.TerminalEnabled,
-		RestartServicesShortcut:   options.RestartServicesShortcut,
-		PrimaryService:            options.PrimaryService,
+		ChatEnabled:             options.FeatureToggles.ChatEnabled,
+		NativeBrowserConfigured: options.NativeBrowser.Endpoint != "",
+		NativeBrowserInstanceID: instanceID,
+		AnnotationEnabled:       options.FeatureToggles.AnnotationEnabled,
+		ComponentEditor:         options.ComponentEditor,
+		HomeDirectoryPath:       home,
+		EditorEnabled:           options.FeatureToggles.EditorEnabled,
+		ExternalToolbarsEnabled: options.FeatureToggles.ExternalToolbarsEnabled,
+		MinimapEnabled:          options.FeatureToggles.MinimapEnabled,
+		Position:                options.Position,
+		ProjectRootPath:         options.ProjectRootPath,
+		RoutedServices:          append([]RoutedServiceIdentity{}, options.RoutedServices...),
+		StackName:               options.StackName,
+		StatusEnabled:           options.FeatureToggles.StatusEnabled,
+		ResourcesEnabled:        options.ResourceUsage.isEnabled(),
+		RestartServicesShortcut: options.RestartServicesShortcut,
+		PrimaryService:          options.PrimaryService,
 	}
 	configJSON, err := json.Marshal(config)
 	if err != nil {
@@ -313,160 +277,57 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 
 	ctx, cancel := context.WithCancel(context.Background())
 	controlServer := &ControlServer{
-		nativeBrowser:              options.NativeBrowser,
-		nativeBrowserInstanceID:    instanceID,
-		allowsNativeBrowserURL:     options.AllowsNativeBrowserURL,
-		ctx:                        ctx,
-		cancel:                     cancel,
-		devSource:                  options.DevSource,
-		onLog:                      options.OnLog,
-		configJSON:                 configJSON,
-		annotationActions:          annotationActions,
-		componentEditor:            options.ComponentEditor,
-		featureToggles:             options.FeatureToggles,
-		annotationQueueClients:     map[*websocketClient]struct{}{},
-		getHealth:                  options.GetHealthResponse,
-		healthClients:              map[*websocketClient]struct{}{},
-		idleTerminalSessionTimeout: options.IdleTerminalSessionTimeout,
-		websocketWriteTimeout:      options.WebsocketWriteTimeout,
-		listener:                   listener,
-		logsClients:                map[*websocketClient]struct{}{},
-		nextLogEntryID:             1,
-		projectRootPath:            options.ProjectRootPath,
-		reactHighlightClients:      map[*websocketClient]struct{}{},
-		resourceClients:            map[*websocketClient]struct{}{},
-		restartService:             options.RestartService,
-		restartStack:               options.RestartStack,
-		startService:               options.StartService,
-		switchWorktree:             options.SwitchWorktree,
-		refreshWorktrees:           options.RefreshWorktrees,
-		getToolContext:             options.GetToolContext,
-		routedServices:             append([]RoutedServiceIdentity{}, options.RoutedServices...),
-		primaryService:             options.PrimaryService,
-		stackName:                  options.StackName,
-		startTerminalSession:       options.StartTerminalSession,
-		terminalSessions:           map[string]*terminalSessionState{},
-		tracker:                    NewActivityTracker(),
+		nativeBrowser:           options.NativeBrowser,
+		nativeBrowserInstanceID: instanceID,
+		allowsNativeBrowserURL:  options.AllowsNativeBrowserURL,
+		ctx:                     ctx,
+		cancel:                  cancel,
+		devSource:               options.DevSource,
+		onLog:                   options.OnLog,
+		configJSON:              configJSON,
+		featureToggles:          options.FeatureToggles,
+		getHealth:               options.GetHealthResponse,
+		healthClients:           map[*websocketClient]struct{}{},
+		websocketWriteTimeout:   options.WebsocketWriteTimeout,
+		listener:                listener,
+		logsClients:             map[*websocketClient]struct{}{},
+		nextLogEntryID:          1,
+		projectRootPath:         options.ProjectRootPath,
+		reactHighlightClients:   map[*websocketClient]struct{}{},
+		resourceClients:         map[*websocketClient]struct{}{},
+		restartService:          options.RestartService,
+		restartStack:            options.RestartStack,
+		startService:            options.StartService,
+		switchWorktree:          options.SwitchWorktree,
+		refreshWorktrees:        options.RefreshWorktrees,
+		getToolContext:          options.GetToolContext,
+		routedServices:          append([]RoutedServiceIdentity{}, options.RoutedServices...),
+		primaryService:          options.PrimaryService,
+		stackName:               options.StackName,
+		tracker:                 NewActivityTracker(),
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(*http.Request) bool {
 				return true
 			},
 		},
 	}
-	if controlServer.idleTerminalSessionTimeout <= 0 {
-		controlServer.idleTerminalSessionTimeout = defaultIdleTerminalSessionPeriod
-	}
 	if controlServer.websocketWriteTimeout <= 0 {
 		controlServer.websocketWriteTimeout = defaultWebsocketWriteTimeout
 	}
-	if options.FeatureToggles.EditorEnabled {
-		neovimShellIntegration, err := createNeovimPluginShellIntegrationFiles(
-			options.ProjectRootPath,
-			options.StackName,
-			fmt.Sprintf("http://127.0.0.1:%d%s", controlServer.Port(), reactHighlightCursorPath),
-			options.RuntimeDirectoryPath,
-		)
-		if err != nil {
-			_ = listener.Close()
-			return nil, err
-		}
-		controlServer.neovimShellIntegration = neovimShellIntegration
-	}
-	if options.FeatureToggles.AnnotationQueueEnabled {
-		controlServer.annotationQueueStore = newAnnotationQueueStore(annotationQueueStoreOptions{
-			manifestPath: options.ManifestPath,
-			onQueuesChanged: func(queues []annotationQueueSnapshot) {
-				controlServer.publishAnnotationQueues(queues)
-			},
-			readLiveAgentSession: func(sessionID string) *liveAgentSessionSnapshot {
-				controlServer.mu.Lock()
-				defer controlServer.mu.Unlock()
-
-				session := controlServer.terminalSessions[sessionID]
-				if session == nil || session.closed || session.exited != nil || session.request.Kind != terminalSessionRequestKindAgent || session.request.Annotation == nil {
-					return nil
-				}
-
-				return &liveAgentSessionSnapshot{
-					actionID:    session.request.ActionID,
-					agentStatus: session.agentStatus,
-					annotation:  *session.request.Annotation,
-					colorScheme: session.request.ColorScheme,
-					sessionID:   sessionID,
-				}
-			},
-			routedServices:     options.RoutedServices,
-			stackName:          options.StackName,
-			stateDirectoryPath: options.StateDirectoryPath,
-			startAgentSession: func(actionID string, annotation annotationSubmitDetail, colorScheme agentColorScheme) (string, error) {
-				return controlServer.createTerminalSession(terminalSessionRequest{ActionID: actionID, Annotation: &annotation, ColorScheme: colorScheme, Kind: terminalSessionRequestKindAgent})
-			},
-			writeAnnotationToSession: func(actionID string, sessionID string, annotation annotationSubmitDetail) error {
-				action, ok := findAnnotationAction(annotationActions, actionID)
-				if !ok || action.Kind != terminalSessionRequestKindAgent {
-					return fmt.Errorf("Annotation action %s is not available.", actionID)
-				}
-				toolContext, err := controlServer.toolContext(terminalSessionRequest{Annotation: &annotation})
-				if err != nil {
-					return err
-				}
-				controlServer.mu.Lock()
-				session := controlServer.terminalSessions[sessionID]
-				if session == nil || session.closed || session.exited != nil || session.request.Kind != terminalSessionRequestKindAgent || session.request.ActionID != actionID {
-					controlServer.mu.Unlock()
-					return fmt.Errorf("Agent terminal session %s is not available.", sessionID)
-				}
-				if session.projectRootPath != toolContext.ProjectRootPath {
-					controlServer.mu.Unlock()
-					return fmt.Errorf("Agent session belongs to the previous checkout; resume the queue to start a session in the selected worktree.")
-				}
-				session.request.Annotation = &annotation
-				write := session.write
-				controlServer.mu.Unlock()
-
-				// The agent is already running with its adapter support files, so the handoff needs only the annotation.
-				sessionFiles, err := createAnnotationSessionFiles(agentSessionDirectoryPrefix, annotationSessionFilesOptions{
-					action:          action,
-					annotation:      annotation,
-					projectRootPath: toolContext.ProjectRootPath,
-					stackName:       options.StackName,
-				})
-				if err != nil {
-					return err
-				}
-				controlServer.mu.Lock()
-				activeSession := controlServer.terminalSessions[sessionID]
-				if activeSession == nil || activeSession.closed {
-					controlServer.mu.Unlock()
-					sessionFiles.cleanup()
-					return fmt.Errorf("Agent terminal session %s is not available.", sessionID)
-				}
-				activeSession.cleanup = chainCleanup(activeSession.cleanup, sessionFiles.cleanup)
-				controlServer.mu.Unlock()
-				// The carriage return submits the instruction to the running agent.
-				write(createAnnotationPromptInstruction(sessionFiles.promptFilePath) + "\r")
-				return nil
-			},
-		})
-		if err := controlServer.annotationQueueStore.resumePersistedQueues(); err != nil {
-			_ = listener.Close()
-			return nil, err
-		}
-	}
-
 	mux := http.NewServeMux()
+	controlServer.chat = newChatStore(controlServer.ctx)
+	if options.FeatureToggles.ChatEnabled {
+		mux.HandleFunc(chatHarnessesPath, controlServer.handleChatHarnesses)
+		mux.HandleFunc(chatSessionsPath, controlServer.handleChatSessions)
+		mux.HandleFunc(chatSessionsPath+"/", controlServer.handleChatSessions)
+		mux.HandleFunc(chatWebsocketPath, controlServer.handleChatWebsocket)
+	}
 	mux.HandleFunc(nativeBrowserWebsocketPath, controlServer.handleNativeBrowserWebsocket)
 	mux.HandleFunc(injectedScriptPath, controlServer.handleInjectedScript)
 	mux.HandleFunc(injectedConfigPath, controlServer.handleInjectedConfig)
 	mux.HandleFunc(devtoolsAssetsPath, controlServer.handleDevtoolsAsset)
-	mux.HandleFunc(terminalSessionsPath, controlServer.handleTerminalSessions)
-	mux.HandleFunc(annotationQueuesPath, controlServer.handleAnnotationQueues)
-	mux.HandleFunc(annotationQueuesPath+"/", controlServer.handleAnnotationQueues)
 	mux.HandleFunc(reactHighlightCursorPath, controlServer.handleReactHighlightCursor)
-	mux.HandleFunc(terminalWebsocketPath, controlServer.handleTerminalWebsocket)
-	mux.HandleFunc(annotationQueuesWebsocketPath, controlServer.handleAnnotationQueueWebsocket)
 	mux.HandleFunc(reactHighlightWebsocketPath, controlServer.handleReactHighlightWebsocket)
-	mux.HandleFunc(xtermStylesheetPath, controlServer.handleXtermStylesheet)
 	mux.HandleFunc("GET "+reduxMonitorPath, controlServer.handleReduxMonitor)
 	mux.HandleFunc("GET "+reduxRegistrationScriptPath, controlServer.handleReduxRegistrationScript)
 	mux.HandleFunc("GET "+reduxMonitorScriptPath, controlServer.handleReduxMonitorScript)
@@ -513,31 +374,6 @@ func (s *ControlServer) pollHealth() {
 		}
 	}
 }
-func normalizeAnnotationDefaultActionID(actionID string, actions []manifest.ValidatedAnnotationAction) string {
-	for _, action := range actions {
-		if action.ID == actionID {
-			return actionID
-		}
-	}
-	if len(actions) > 0 {
-		return actions[0].ID
-	}
-	return ""
-}
-
-func createInjectedAnnotationActions(actions []manifest.ValidatedAnnotationAction) []injectedAnnotationAction {
-	result := make([]injectedAnnotationAction, 0, len(actions))
-	for _, action := range actions {
-		result = append(result, injectedAnnotationAction{
-			ID:           action.ID,
-			Label:        action.Label,
-			Kind:         action.Kind,
-			QueueEnabled: action.Kind == terminalSessionRequestKindAgent,
-		})
-	}
-	return result
-}
-
 func (s *ControlServer) Port() int {
 	return s.listener.Addr().(*net.TCPAddr).Port
 }
@@ -643,27 +479,15 @@ func (s *ControlServer) Stop() error {
 	}
 	healthClients := snapshotClients(s.healthClients)
 	logsClients := snapshotClients(s.logsClients)
-	annotationQueueClients := snapshotClients(s.annotationQueueClients)
 	reactHighlightClients := snapshotClients(s.reactHighlightClients)
 	resourceClients := snapshotClients(s.resourceClients)
 	resourceSampler := s.resourceSampler
-	terminalSessionIDs := append([]string{}, s.terminalSessionOrder...)
-	neovimShellIntegration := s.neovimShellIntegration
 	s.healthClients = map[*websocketClient]struct{}{}
 	s.logsClients = map[*websocketClient]struct{}{}
-	s.annotationQueueClients = map[*websocketClient]struct{}{}
 	s.reactHighlightClients = map[*websocketClient]struct{}{}
 	s.resourceClients = map[*websocketClient]struct{}{}
-	s.neovimShellIntegration = nil
 	s.mu.Unlock()
-	if s.annotationQueueStore != nil {
-		_ = s.annotationQueueStore.prepareForShutdown()
-	}
-
-	for _, sessionID := range terminalSessionIDs {
-		s.closeTerminalSession(sessionID)
-	}
-	for _, client := range slices.Concat(healthClients, logsClients, annotationQueueClients, reactHighlightClients, resourceClients) {
+	for _, client := range slices.Concat(healthClients, logsClients, reactHighlightClients, resourceClients) {
 		client.closeWith(websocket.CloseGoingAway, websocketCloseReasonStopping)
 	}
 	if resourceSampler != nil {
@@ -672,12 +496,12 @@ func (s *ControlServer) Stop() error {
 	}
 
 	shutdownContext, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	if s.chat != nil {
+		s.chat.close()
+	}
 	defer cancel()
 	shutdownError := s.server.Shutdown(shutdownContext)
 	s.serverWG.Wait()
-	if neovimShellIntegration != nil {
-		neovimShellIntegration.cleanup()
-	}
 	return shutdownError
 }
 
@@ -1070,17 +894,4 @@ func snapshotClients(clients map[*websocketClient]struct{}) []*websocketClient {
 	}
 
 	return result
-}
-
-func chainCleanup(current func(), next func()) func() {
-	if current == nil {
-		return next
-	}
-	if next == nil {
-		return current
-	}
-	return func() {
-		current()
-		next()
-	}
 }

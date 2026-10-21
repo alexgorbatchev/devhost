@@ -16,11 +16,11 @@ What it does well:
 - hot-reloads `devhost.toml` and included manifests, adding or removing services and applying configuration edits without restarting devhost
 - switches Git worktrees and refreshes added or deleted checkouts from the browser
 - recovers services from the browser, with stable ports for individual restarts and **Restart Stack** for automatic-port conflicts
-- optionally injects browser devtools for logs, service status, annotations, browser-hosted Neovim sessions, hotkey-driven restarts, and aggregated third-party launcher buttons
+- optionally injects browser devtools for logs, service status, page context and native CLI chat, hotkey-driven restarts, and aggregated third-party launcher buttons
 
 The injected log minimap is intentionally a compact preview: each log entry stays on a single row and clips horizontally instead of wrapping into a full log viewer.
 
-The injected devtools appear above page content, including popovers the page opens, without blocking clicks on the page around them. When selecting page nodes with Alt, the selection rectangle and node label stay beneath the annotation draft, toolbar, and terminal windows.
+The injected devtools appear above page content, including popovers the page opens, without blocking clicks on the page around them. When selecting page nodes with Alt, the selection rectangle and node label stay beneath the chat panel and toolbar.
 
 With `[devtools.externalToolbars].enabled = true`, the toolbar aggregates host-mounted TanStack Query, TanStack Router, the unified TanStack shell, React Hook Form, Jotai, and Vue inspectors. Mount `@tanstack/react-devtools` with its native plugins for one **TanStack** entry; Form, Table, and Pacer inspection stays inside the upstream workspace. Standalone Query and Router keep separate entries. Mount `@hookform/devtools` with each form's control for separate **Form N** launchers, or `jotai-devtools` with each custom store for separate **Jotai N** launchers with native live atoms and history. The **Vue** entry uses the host-installed Vue DevTools **9.0.0-beta.1** with its Vite **8.3.3** development host, after native authorization and Vue application mounting; Components, live state, and page selection stay in the native inspector. Hidden hosts and unrelated pages expose no Vue entry. Disabling aggregation restores native launcher buttons without changing panel state. See [External Devtools](https://alexgorbatchev.github.io/devhost/architecture/external-devtools/) for exact supported combinations, setup, lifecycle, and project boundaries.
 
@@ -73,20 +73,11 @@ Without the variable, a failure has an `[ERROR]` tag and, where `devhost` knows 
 - either:
   - a global `caddy` on your `PATH`, or
   - a managed Caddy binary downloaded with `devhost caddy download`
-- `nvim` and `curl` when `[devtools.editor].ide = "neovim"`
+- an installed, signed-in Codex or Claude Code CLI for optional browser chat
 - an explicitly configured dedicated Chrome for Testing **154.0.8037.92** profile and original React Developer Tools **8.0.0** for optional native React access; the inspected host must contain mounted React DOM **19.2.5**. Install the extension before loading that host. The browser stays user-owned; `devhost` attaches to its literal-loopback debugging endpoint.
 
 Stopping the last stack removes its routes while retaining the running Caddy instance's configured admin address,
 bind host, and HTTP/HTTPS ports. Separate instances keep their own listeners through stack shutdown.
-
-When Neovim editor integration is enabled, devhost loads a bundled `devhost-react-highlight.nvim` plugin for that
-devhost instance. The plugin streams TSX/JSX cursor locations back to the injected browser overlay through the
-instance's local control port, so multiple devhost stacks can run at the same time without sharing editor
-state. Cursor highlights appear above page content, including existing popovers, without blocking page clicks.
-The browser overlay matches React fiber source metadata first and falls back to fetchable source maps for
-bundlers that do not expose fiber source locations. While the stack is running, devhost also writes an instance-scoped
-shell launcher at `.tmp/devhost/<stack-name>/nvim-shell/bin/devhost-nvim`; run it from the project to open Neovim with
-the same plugin and project root as the browser-launched editor. Cursor requests use the instance's token-free local endpoint.
 
 ### Minimal example
 
@@ -152,13 +143,13 @@ If a foreground service exits, including with exit code `0` or before its startu
 
 With `[devtools.status].enabled = true`, a service that exits while the stack is running opens a full-screen recovery overlay in pages with injected devtools. Stopping the stack does not open this overlay. The overlay shows its exit code, retained stdout/stderr logs, and a **Restart** button. Failed restarts keep the overlay open with an error and allow another attempt. Service domains serve a startup or recovery page before the app is ready, including for path routes and with devtools disabled. The page shows the recorded failure and recent logs, enables **Restart** after stack initialization, and returns the open tab to its original URL when health checks and routing succeed. Devhost does not launch a browser. Executable launch errors and health timeouts keep the stack running for recovery; configuration, ownership, and initial routing errors still stop startup. Daemon lifecycle services and external services report health without foreground process exit codes.
 
-When a page loses its connection to devhost, for example after the machine sleeps, the Services panel shows every service as unavailable and the injected UI reconnects on its own, retrying every one to ten seconds. Open terminals reattach to their sessions the same way. devhost also drops a page's connection when the page reads nothing for ten seconds while updates wait for it, for example while it is paused in a debugger; the page reconnects in the same way once it runs again.
+When a page loses its connection to devhost, for example after the machine sleeps, the Services panel shows every service as unavailable and the injected UI reconnects on its own, retrying every one to ten seconds. Chat reconnects to an existing session with its retained events. devhost also drops a page's connection when the page reads nothing for ten seconds while updates wait for it, for example while it is paused in a debugger; the page reconnects in the same way once it runs again.
 
 A foreground restart preserves its assigned automatic port and completes after the replacement passes its health check and its routes refresh. If the port is occupied, the service remains stopped and the error points to **Restart Stack**. A routing failure restores the previous route registration, configuration, and document backend, stops the replacement, and keeps recovery retryable. The restart response and retained service logs include the error; restoration failures are also reported.
 
 Before launching a foreground service, devhost checks whether its assigned automatic port is available. Startup, manifest reload, and **Restart Stack** retry detected bind collisions with another automatic port, up to three times. Individual restarts retain their assigned port and report a conflict instead.
 
-Use **Restart Stack** in the Services panel or recovery overlay to reassign every managed automatic port. Devhost stops all managed services in reverse dependency order, rebuilds their port references and injected environments, and starts them in dependency order before refreshing routes. Fixed ports, selected worktrees, devtools listeners, and existing terminal sessions are retained; externally managed processes keep running. This action uses the last accepted manifest, so an invalid edit on disk does not block recovery. Launch or routing failures attempt to restore the previous stack and report any restoration errors; another stack restart remains available. Fixed-port conflicts require freeing the configured port or changing its manifest setting.
+Use **Restart Stack** in the Services panel or recovery overlay to reassign every managed automatic port. Devhost stops all managed services in reverse dependency order, rebuilds their port references and injected environments, and starts them in dependency order before refreshing routes. Fixed ports, selected worktrees, devtools listeners, and existing chat sessions are retained; externally managed processes keep running. This action uses the last accepted manifest, so an invalid edit on disk does not block recovery. Launch or routing failures attempt to restore the previous stack and report any restoration errors; another stack restart remains available. Fixed-port conflicts require freeing the configured port or changing its manifest setting.
 
 ### Configuration Hot Reload
 
@@ -166,9 +157,9 @@ While `devhost start` is running, saving `devhost.toml` or an included manifest 
 
 Service additions, removals, commands, environment, working directories, health checks, dependencies, routes, watch paths, and primary-service selection can reload. Devhost preserves existing automatic ports when the bind address and automatic-port setting remain compatible. It restarts affected services and their dependents in dependency order, stopping them in reverse order first. Services in an affected Git repository restart together in its selected checkout. Changes to the ports exported through `DEVHOST_PORT_*` can require restarting otherwise unchanged services.
 
-Routes and reservations follow the accepted configuration, and open devtools connections and terminal sessions remain available. A failed replacement launch or route update triggers restoration of the previous services and routing. Restoration failures are reported and remain available for explicit recovery; unrelated edits retain stopped services' recovery state. A successful reload prints `configuration reloaded: <files>`, listing the root manifest and all current included manifests relative to the root manifest directory. Shutdown signals interrupt replacement health waits, stop the replacement, and clean up the stack without launching restoration services.
+Routes and reservations follow the accepted configuration, and open devtools connections and chat sessions remain available. A failed replacement launch or route update triggers restoration of the previous services and routing. Restoration failures are reported and remain available for explicit recovery; unrelated edits retain stopped services' recovery state. A successful reload prints `configuration reloaded: <files>`, listing the root manifest and all current included manifests relative to the root manifest directory. Shutdown signals interrupt replacement health waits, stop the replacement, and clean up the stack without launching restoration services.
 
-Changes to `name`, `killZombies`, `[caddy]`, `[devtools]`, `[annotation]`, or `[worktrees].enabled` require stopping and restarting devhost. An edit changing any of these settings is rejected as a whole, including any service changes in that edit. Selecting a worktree loads its manifest and includes; its manifest name may differ, while the running instance retains its startup name and the other settings above must match.
+Changes to `name`, `killZombies`, `[caddy]`, `[devtools]` or `[worktrees].enabled` require stopping and restarting devhost. An edit changing any of these settings is rejected as a whole, including any service changes in that edit. Selecting a worktree loads its manifest and includes; its manifest name may differ, while the running instance retains its startup name and the other settings above must match.
 
 ### Multiple Domains for One Service
 
@@ -183,7 +174,7 @@ host = ["app.localhost", "alias.localhost"]
 
 Each hostname uses the same port and `path`. The array must contain at least one valid, unique hostname, and every hostname must resolve to the machine running `devhost`. A single string, such as `host = "app.localhost"`, is also accepted.
 
-The first hostname supplies `DEVHOST_HOST`, `{{ services.web.host }}`, and the devtools service link. Startup logs list every routed URL. Annotations from any of the service's domains share its agent queue for the selected annotation action.
+The first hostname supplies `DEVHOST_HOST`, `{{ services.web.host }}`, and the devtools service link. Startup logs list every routed URL. New chat conversations resolve their checkout from the routed hostname and path.
 
 All domains follow the service's port when it restarts. If a route refresh fails, `devhost` restores the previous routes for every domain and keeps recovery available in devtools.
 
@@ -206,7 +197,7 @@ The local address comes from the service's `bindHost` and resolved `port`. `bind
 
 Before launching a foreground service, `devhost` checks that its working directory exists and is a directory. If that check fails, the error identifies `services.<name>.cwd`, shows the resolved path, and asks you to check the configured path. Other launch failures show the executable and working directory alongside the underlying operating-system error.
 
-Service and annotation action `cwd` values accept absolute paths or paths relative to the manifest directory. Absolute paths are used directly and may point outside the manifest directory. Relative paths resolve against the manifest directory and must stay within it.
+Service `cwd` values accept absolute paths or paths relative to the manifest directory. Absolute paths are used directly and may point outside the manifest directory. Relative paths resolve against the manifest directory and must stay within it.
 
 ### Git Worktrees
 
@@ -219,13 +210,13 @@ enabled = false
 
 Configure service `cwd` values in one checkout per repository. Submodule repositories use their actual checkout directories. Open **Worktrees** in the toolbar to see the checkout list directly. For multiple repositories, choose one in the popout header. The current branch stays visible beside the fork icon, including on the default branch; detached checkouts show their abbreviated commit ID. The icon turns red for unavailable selections and repository errors; open the panel for details. **Find worktree** stays at the bottom; unavailable badges open detailed reasons in a popover.
 
-**Switch and restart stack** reads the target checkout's manifest and includes, validates service directories, stops the entire managed stack in reverse dependency order, and starts the target services in dependency order. Configured checkouts without a local manifest use their owning stack's manifest, even when it lives outside their repository. An existing checkout-local manifest takes precedence. New targets use the same repository-relative manifest path, or its filename at the checkout root when the original manifest is outside that repository. Service names, commands, environments, directories, and routes can differ. The target manifest name may differ; the running instance retains its startup name. Caddy, devtools, annotation, worktree enablement, and `killZombies` settings must match the running instance. Subsequent manifest edits reload from the selected checkout. Invalid targets leave the stack running; launch or routing failures attempt to restore the previous stack. Existing terminal sessions remain available.
+**Switch and restart stack** reads the target checkout's manifest and includes, validates service directories, stops the entire managed stack in reverse dependency order, and starts the target services in dependency order. Configured checkouts without a local manifest use their owning stack's manifest, even when it lives outside their repository. An existing checkout-local manifest takes precedence. New targets use the same repository-relative manifest path, or its filename at the checkout root when the original manifest is outside that repository. Service names, commands, environments, directories, and routes can differ. The target manifest name may differ; the running instance retains its startup name. Caddy, devtools, worktree enablement, and `killZombies` settings must match the running instance. Subsequent manifest edits reload from the selected checkout. Invalid targets leave the stack running; launch or routing failures attempt to restore the previous stack. Existing chat sessions remain available.
 
 Opening the picker or pressing **Refresh** discovers newly created and deleted worktrees without editing the manifest. Deleting an inactive checkout does not disturb services. If the running checkout disappears, refresh stops its repository services and blocks new tools there until an available checkout is selected.
 
 One active stack selection is saved locally per original manifest path, shared across browser tabs, and restored before the next run starts services. A missing saved checkout leaves its group stopped with a recovery error. Choose an available checkout from the toolbar or standalone recovery page. Successful switches reload the current browser URL; if the old app route is absent, the proxy's 404 page lists the target stack's available routes. Recovery pages also provide checkout selection with the toolbar disabled.
 
-A repository containing a `managed = false` service cannot switch because devhost does not own that service's process. New browser-launched editors and annotation actions use the selected checkout, remapping configured action directories inside that repository. Existing terminal sessions retain their original directories. A queued handoff to a session from another checkout pauses with an error; resume the queue to launch a session in the selected checkout.
+A repository containing a `managed = false` service cannot switch because devhost does not own that service's process. External editor source links and new chat conversations use the selected checkout. Existing chat sessions retain their original directories; start a new conversation after switching when you want the agent to work in the selected checkout.
 
 ### Zombie Process Recovery (killZombies)
 
@@ -274,57 +265,17 @@ name = "my-monorepo-stack"
 includes = ["packages/*/devhost.toml", "apps/*/devhost.toml"]
 ```
 
-Included manifests are recursively parsed, and their services, groups, and annotation actions are merged into the root stack. Relative paths for `cwd` and `watch` folders are automatically resolved, and missing `cwd` keys default to the directory of the manifest they were defined in. See the [Manifest Includes Documentation](https://alexgorbatchev.github.io/devhost/guides/manifest-includes/) page for more details.
+Included manifests are recursively parsed, and their services and groups are merged into the root stack. Relative paths for `cwd` and `watch` folders are automatically resolved, and missing `cwd` keys default to the directory of the manifest they were defined in. See the [Manifest Includes Documentation](https://alexgorbatchev.github.io/devhost/guides/manifest-includes/) page for more details.
 
-### Annotation Temporary Files
+### Browser chat and page context
 
-Set `tempDir` under `[annotation]` to choose the parent directory for annotation JSON,
-prompt files, and agent support files shared by all annotation actions:
+Open **Chat** in the toolbar to talk to your installed Codex or Claude Code CLI. Sign in through that CLI's normal login flow; devhost uses its existing account, settings, and selected checkout. Harness and model choices come from the native clients. **Configured default** preserves the model in your CLI configuration.
 
-```toml
-[annotation]
-tempDir = ".tmp/annotations"
-```
+Use **Select element**, or hold Alt and click page elements, to add numbered context. **Arrow**, **Line**, and **Box** add drawings over the page. Type your request in the chat composer. Sending selected context opens the browser's sharing picker: choose the current tab to include its visible page and annotations in one PNG snapshot. Text-only messages do not open the picker. Cancelling sharing retains the draft. **Clear page context** removes selections and drawings.
 
-This setting belongs alongside your annotation actions. Omit `tempDir` to use the
-system temporary directory (`$TMPDIR` when set on Unix, otherwise `/tmp`). Relative
-paths resolve against the working directory where you start `devhost`, independently
-of the manifest location and action `cwd`; absolute paths are used directly. Set the
-option in the root manifest when using includes.
+Agent replies stream into the browser conversation, including native tool activity and explicit permission or question requests. Devhost never approves a native request automatically. Interrupt stops the current turn; **Close conversation** ends that session's owned process. Collapsing chat keeps its session running. Reopening an existing conversation restores its native event history while the stack remains running; stopping devhost ends its processes.
 
-`devhost` creates missing parent directories and a unique private directory for each
-session. Session cleanup removes that session's files and directory, leaving the
-configured parent and other sessions intact. Directory creation failures are reported
-without falling back to another location. Empty values are invalid. This setting does
-not change durable queue storage.
-
-### Annotation agents
-
-Browser annotations can launch Pi, Claude Code, OpenCode, or Codex in the embedded devtools terminal.
-Agent and command annotation sessions keep running when you reload a page, close a tab, or close
-the browser. Reopening a routed page reconnects to existing sessions with retained terminal output.
-Running annotation sessions keep the stack alive through its idle timeout. Use the terminal's
-terminate action or stop `devhost` to end a running session.
-Terminal output is retained from process startup, including output from commands that exit quickly.
-For Codex, install and sign in to the [Codex CLI](https://learn.chatgpt.com/docs/cli), then configure:
-
-```toml
-[annotation]
-agent = "codex"
-```
-
-Use a Codex CLI version that supports `--no-daemon` and lifecycle hooks; the adapter is validated
-against 0.159.2. Devhost hands off the annotation prompt and launches an independent interactive
-session with working/finished hooks. Review and trust those hooks using `/hooks` inside the Codex
-terminal. Queued annotations wait until the hooks report readiness; they cannot drain while the
-hooks are untrusted, disabled, or restricted by a managed-hooks-only policy. Codex retains your
-authentication, sandbox, approval, and syntax theme settings. Use the detailed action configuration
-in the annotation guide to pass optional Codex CLI flags.
-If the initial annotation finishes before you trust the hooks, send another prompt after trusting
-them so Codex can report readiness and drain waiting annotations.
-
-See the [annotation guide](https://alexgorbatchev.github.io/devhost/guides/annotations/) for other
-adapters, custom commands, and durable queues.
+Both features are enabled by default. Set `[devtools.chat].enabled = false` to disable chat, or `[devtools.annotations].enabled = false` to keep plain chat while disabling page selection and drawing controls. The [chat and context guide](https://alexgorbatchev.github.io/devhost/guides/annotations/) covers sharing permissions, authentication failures, native approvals, and selection plugins.
 
 ### Service Commands
 
@@ -369,7 +320,7 @@ Run `just cli <args>` to use the CLI from source. `just run` starts the reposito
 
 ## Frontend UI development
 
-Production devtools scripts, native Redux inspector styles, terminal styles, lazy terminal chunks, and font subsets are cached for one year at content-versioned URLs. The static entry loads fresh instance configuration from an uncached endpoint before mounting. Font subsets download only when needed, and the terminal runtime loads when a session mounts. The Redux inspector loads its upstream stylesheet in its separate browser window, preserving host-page style isolation.
+Production devtools scripts, native Redux inspector styles, lazy JavaScript chunks, and font subsets are cached for one year at content-versioned URLs. The static entry loads fresh instance configuration from an uncached endpoint before mounting. Font subsets download only when needed. The Redux inspector loads its upstream stylesheet in its separate browser window, preserving host-page style isolation.
 
 Devtools controls use no authentication token for trusted local development. Each stack has its own control server and routed hosts. See [Control API](https://alexgorbatchev.github.io/devhost/guides/devtools/#control-api) for instance configuration, endpoints, and failure responses.
 

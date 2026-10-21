@@ -1,12 +1,15 @@
 import { rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { Browser } from "playwright";
+import type { Subprocess } from "bun";
+import assert from "node:assert/strict";
 import { createOwnedBrowserEnvironment } from "../../../../../../test-support/createOwnedBrowserEnvironment";
 import { createDemoPage } from "../../createDemoPage";
 import { createDemoRuntime } from "../../createDemoRuntime";
 import { launchDemoBrowser } from "../../launchDemoBrowser";
 import { readMediaInfo } from "../../readMediaInfo";
 import { recordBrowserScene } from "../../recordBrowserScene";
+import { stopProcess } from "../../stopProcess";
 import type { IDemoRuntime } from "../../types";
 
 const captureScale = Number(process.argv[2]);
@@ -25,9 +28,24 @@ const fixtureRuntime = await createDemoRuntime(
 );
 const runtime: IDemoRuntime = { ...fixtureRuntime, url: server.url.href };
 let browser: Browser | undefined;
+let displayServer: Subprocess | undefined;
 try {
+  const env = await createOwnedBrowserEnvironment(process.cwd());
+  if (process.argv[3] === "true") {
+    displayServer = Bun.spawn(["Xvfb", "-displayfd", "1", "-screen", "0", "3200x1800x24", "-nolisten", "tcp"], {
+      stdout: "pipe",
+      stderr: "ignore",
+    });
+    assert(displayServer.stdout instanceof ReadableStream);
+    const reader = displayServer.stdout.getReader();
+    const display = new TextDecoder().decode((await reader.read()).value).trim();
+    reader.releaseLock();
+    assert(/^\d+$/.test(display), "Xvfb did not announce its owned display");
+    env.DISPLAY = `:${display}`;
+    env.DEVHOST_DEMO_INTERACTIVE = "1";
+  }
   // The test that runs this script gives it a working directory of its own.
-  browser = await launchDemoBrowser(await createOwnedBrowserEnvironment(process.cwd()), captureScale);
+  browser = await launchDemoBrowser(env, captureScale);
   const page = await createDemoPage(browser, runtime, captureScale);
   const clips = await recordBrowserScene(
     page,
@@ -54,6 +72,7 @@ try {
   console.log(JSON.stringify({ video: { width: video.width, height: video.height }, page: pageSize }));
 } finally {
   await browser?.close();
+  if (displayServer) await stopProcess(displayServer);
   await server.stop(true);
   await rm(runtime.directoryPath, { recursive: true, force: true });
 }

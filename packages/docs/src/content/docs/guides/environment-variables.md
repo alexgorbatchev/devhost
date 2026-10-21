@@ -65,4 +65,4 @@ DEVHOST_PORT_POSTGRES=5433
 
 This allows programs to dynamically query ports directly from the environment at startup.
 
-These values are snapshots for each process invocation. A configuration reload restarts services whose injected port variables change, including otherwise unchanged consumers. **Restart Stack** rebuilds these variables for every managed service. Individual restarts keep their assigned port, so other running services retain valid port references. Existing terminal sessions keep their launch environment. See [Stack lifecycle](./stack-lifecycle/) for recovery behavior.
+These values are snapshots for each process invocation. A configuration reload restarts services whose injected port variables change, including otherwise unchanged consumers. **Restart Stack** rebuilds these variables for every managed service. Individual restarts keep their assigned port, so other running services retain valid port references. Existing native chat sessions keep their launch environment. See [Stack lifecycle](./stack-lifecycle/) for recovery behavior.

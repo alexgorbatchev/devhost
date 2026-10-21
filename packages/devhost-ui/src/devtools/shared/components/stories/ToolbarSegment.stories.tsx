@@ -9,7 +9,7 @@ const meta: Meta<typeof ToolbarSegment> = {
   title: "@alexgorbatchev/devhost-ui/devtools/shared/components/ToolbarSegment",
   component: ToolbarSegment,
   args: {
-    ariaLabel: "Terminal sessions",
+    ariaLabel: "External devtools",
   },
   // The toolbar row is narrower than the segment's three buttons.
   render: (args, context) =>
@@ -17,9 +17,9 @@ const meta: Meta<typeof ToolbarSegment> = {
       <StorybookThemeProvider globals={context.globals}>
         <div data-testid="ToolbarSegmentStory--row" style={{ display: "flex", width: 120 }}>
           <ToolbarSegment {...args}>
-            <Button>Agent one</Button>
-            <Button>Agent two</Button>
-            <Button>Agent three</Button>
+            <Button>Router</Button>
+            <Button>Query</Button>
+            <Button>Form</Button>
           </ToolbarSegment>
         </div>
       </StorybookThemeProvider>,
@@ -35,7 +35,7 @@ export const Fixed: Story = {
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
     const row = canvas.getByTestId("ToolbarSegmentStory--row");
-    const segment = canvas.getByRole("group", { name: "Terminal sessions" });
+    const segment = canvas.getByRole("group", { name: "External devtools" });
 
     await expect(segment.scrollWidth).toBe(segment.clientWidth);
     await expect(segment.getBoundingClientRect().right).toBeLessThanOrEqual(row.getBoundingClientRect().right);
@@ -55,7 +55,7 @@ export const Shrinking: Story = {
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
     const row = canvas.getByTestId("ToolbarSegmentStory--row");
-    const segment = canvas.getByRole("group", { name: "Terminal sessions" });
+    const segment = canvas.getByRole("group", { name: "External devtools" });
 
     await expect(segment.getBoundingClientRect().right).toBeLessThanOrEqual(row.getBoundingClientRect().right);
     await expect(segment.scrollWidth).toBeGreaterThan(segment.clientWidth);

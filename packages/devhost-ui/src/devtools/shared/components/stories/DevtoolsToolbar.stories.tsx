@@ -94,21 +94,20 @@ export const Mobile: Story = {
     const toolbar = canvas.getByRole("toolbar", { name: "devhost" });
     await waitFor(() => {
       const bounds = toolbar.getBoundingClientRect();
-      expect(bounds.height).toBeGreaterThan(26);
+      expect(bounds.height).toBeGreaterThanOrEqual(26);
       expect(bounds.left).toBeGreaterThanOrEqual(8);
       for (const button of within(toolbar).getAllByRole("button")) {
         expect(button.getBoundingClientRect().right).toBeLessThanOrEqual(bounds.right);
       }
     });
-    await userEvent.click(canvas.getByRole("button", { name: /^All terminal sessions/ }));
-    const sessions = canvas.getByRole("region", { name: "Terminal sessions" });
-    await waitFor(() => expect(sessions).toBeVisible());
-    await expect(within(sessions).getAllByRole("listitem")).toHaveLength(16);
-    await userEvent.click(canvas.getByRole("button", { name: /^All terminal sessions/ }));
-    await waitFor(() => expect(sessions).not.toBeVisible());
+    await userEvent.click(canvas.getByRole("button", { name: "Worktrees" }));
+    const worktrees = canvas.getByRole("region", { name: "Worktrees" });
+    await waitFor(() => expect(worktrees).toBeVisible());
+    await userEvent.click(canvas.getByRole("button", { name: "Worktrees" }));
+    await waitFor(() => expect(worktrees).not.toBeVisible());
     await userEvent.click(canvas.getByRole("button", { name: "Collapse devhost toolbar" }));
     await expect(toolbar.getBoundingClientRect().height).toBe(26);
     await userEvent.click(canvas.getByRole("button", { name: "Expand devhost toolbar" }));
-    await waitFor(() => expect(toolbar.getBoundingClientRect().height).toBeGreaterThan(26));
+    await waitFor(() => expect(toolbar.getBoundingClientRect().height).toBeGreaterThanOrEqual(26));
   },
 };

@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -15,45 +14,9 @@ import (
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/skill"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/version"
 )
-
-func TestResolveAnnotationTempDir(t *testing.T) {
-	for _, relative := range []bool{true, false} {
-		t.Run(fmt.Sprintf("relative=%t", relative), func(t *testing.T) {
-			cwd := t.TempDir()
-			dir := "custom/annotations"
-			want := filepath.Join(cwd, dir)
-			if !relative {
-				dir = filepath.Join(t.TempDir(), "annotations")
-				want = dir
-			}
-			annotation := manifest.ValidatedAnnotation{TempDir: &dir, Actions: []manifest.ValidatedAnnotationAction{{TempDir: &dir}}}
-			if err := resolveAnnotationTempDir(annotation, cwd); err != nil {
-				t.Fatal(err)
-			}
-			if *annotation.Actions[0].TempDir != want {
-				t.Fatalf("resolved action tempDir = %q, want %q", *annotation.Actions[0].TempDir, want)
-			}
-			if err := os.MkdirAll(*annotation.Actions[0].TempDir, 0o700); err != nil {
-				t.Fatal(err)
-			}
-			path, err := os.MkdirTemp(*annotation.Actions[0].TempDir, "session-")
-			if err != nil {
-				t.Fatal(err)
-			}
-			if filepath.Dir(path) != want {
-				t.Fatalf("session directory = %q", path)
-			}
-		})
-	}
-	annotation := manifest.ValidatedAnnotation{}
-	if err := resolveAnnotationTempDir(annotation, t.TempDir()); err != nil || annotation.TempDir != nil {
-		t.Fatalf("omitted tempDir = %v, error = %v", annotation.TempDir, err)
-	}
-}
 
 func TestRunHelpShortCircuitsInvalidArguments(t *testing.T) {
 	t.Setenv("AGENT", "0")

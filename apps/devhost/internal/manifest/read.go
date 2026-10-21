@@ -113,6 +113,9 @@ func loadAndMergeManifests(manifestPath string, rootManifestDir string, visited 
 					return nil, nil, err
 				}
 
+				if _, obsolete := subManifest["annotation"]; obsolete {
+					return nil, nil, fmt.Errorf("annotation Unrecognized key in included manifest %s", matchAbs)
+				}
 				if len(subManifest) == 0 {
 					continue
 				}
@@ -148,38 +151,6 @@ func loadAndMergeManifests(manifestPath string, rootManifestDir string, visited 
 					}
 				}
 
-				if subAnnotation, ok := preparedSub["annotation"].(map[string]any); ok {
-					if subActions, ok := subAnnotation["actions"]; ok {
-						if _, exists := manifestValue["annotation"]; !exists {
-							manifestValue["annotation"] = map[string]any{}
-						}
-						annotationMap, ok := manifestValue["annotation"].(map[string]any)
-						if !ok {
-							return nil, nil, fmt.Errorf("annotation in %s must be a table", absPath)
-						}
-
-						var existingActions []any
-						if rawActions, ok := annotationMap["actions"].([]any); ok {
-							existingActions = rawActions
-						} else if rawActions, ok := annotationMap["actions"].([]map[string]any); ok {
-							existingActions = make([]any, len(rawActions))
-							for i, act := range rawActions {
-								existingActions[i] = act
-							}
-						}
-
-						switch val := subActions.(type) {
-						case []any:
-							existingActions = append(existingActions, val...)
-						case []map[string]any:
-							for _, act := range val {
-								existingActions = append(existingActions, act)
-							}
-						}
-
-						annotationMap["actions"] = existingActions
-					}
-				}
 			}
 		}
 	}
@@ -193,38 +164,6 @@ func prepareSubManifest(subManifest map[string]any, rootDir, subDir string) map[
 			if serviceMap, ok := serviceVal.(map[string]any); ok {
 				if _, exists := serviceMap["cwd"]; !exists {
 					serviceMap["cwd"] = "."
-				}
-			}
-		}
-	}
-
-	if annotation, ok := subManifest["annotation"].(map[string]any); ok {
-		if actions, ok := annotation["actions"].([]any); ok {
-			for _, actionVal := range actions {
-				if actionMap, ok := actionVal.(map[string]any); ok {
-					if cmdVal, ok := actionMap["command"].(map[string]any); ok {
-						if _, exists := cmdVal["cwd"]; !exists {
-							cmdVal["cwd"] = "."
-						}
-					}
-					if agentVal, ok := actionMap["agent"].(map[string]any); ok {
-						if _, exists := agentVal["cwd"]; !exists {
-							agentVal["cwd"] = "."
-						}
-					}
-				}
-			}
-		} else if actions, ok := annotation["actions"].([]map[string]any); ok {
-			for _, actionMap := range actions {
-				if cmdVal, ok := actionMap["command"].(map[string]any); ok {
-					if _, exists := cmdVal["cwd"]; !exists {
-						cmdVal["cwd"] = "."
-					}
-				}
-				if agentVal, ok := actionMap["agent"].(map[string]any); ok {
-					if _, exists := agentVal["cwd"]; !exists {
-						agentVal["cwd"] = "."
-					}
 				}
 			}
 		}

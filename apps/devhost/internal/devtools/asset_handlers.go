@@ -67,15 +67,6 @@ func (s *ControlServer) handleInjectedScript(w http.ResponseWriter, r *http.Requ
 	serveVersionedAsset(w, r, assetResponse{name: "devtools.js", contentType: applicationJavascriptContentType, content: content, compressed: compressed})
 }
 
-func (s *ControlServer) handleXtermStylesheet(w http.ResponseWriter, r *http.Request) {
-	content, compressed, err := s.readAsset("xterm.css")
-	if err != nil {
-		http.Error(w, "Terminal stylesheet unavailable", http.StatusNotFound)
-		return
-	}
-	serveVersionedAsset(w, r, assetResponse{name: "xterm.css", contentType: textCSSContentType, content: content, compressed: compressed})
-}
-
 func (s *ControlServer) handleDevtoolsAsset(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", cacheControlNoStore)
 	name := strings.TrimPrefix(r.URL.Path, devtoolsAssetsPath)

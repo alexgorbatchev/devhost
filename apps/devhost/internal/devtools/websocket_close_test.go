@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/gorilla/websocket"
 )
 
@@ -23,7 +22,6 @@ func TestControlServerStopTellsStreamClientsItIsGoingAway(t *testing.T) {
 	}{
 		{"health", healthWebsocketPath, func(s *ControlServer) int { return len(s.healthClients) }},
 		{"logs", logsWebsocketPath, func(s *ControlServer) int { return len(s.logsClients) }},
-		{"annotation queues", annotationQueuesWebsocketPath, func(s *ControlServer) int { return len(s.annotationQueueClients) }},
 		{"react highlight", reactHighlightWebsocketPath, func(s *ControlServer) int { return len(s.reactHighlightClients) }},
 	}
 	for _, tt := range tests {
@@ -46,76 +44,20 @@ func TestControlServerStopTellsStreamClientsItIsGoingAway(t *testing.T) {
 	}
 }
 
-func TestControlServerEndsTerminalConnectionsNormallyWithTheirSession(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name string
-		end  func(t *testing.T, controlServer *ControlServer, attached *websocket.Conn)
-	}{
-		{"a page closes the session", func(t *testing.T, _ *ControlServer, attached *websocket.Conn) {
-			t.Helper()
-			if err := attached.WriteMessage(websocket.TextMessage, []byte(`{"type":"close"}`)); err != nil {
-				t.Fatalf("WriteMessage(close) error = %v", err)
-			}
-		}},
-		{"the stack stops", func(t *testing.T, controlServer *ControlServer, _ *websocket.Conn) {
-			t.Helper()
-			if err := controlServer.Stop(); err != nil {
-				t.Fatalf("Stop() error = %v", err)
-			}
-		}},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			controlServer := startTerminalTestControlServer(t, newTestTerminalStarter(), time.Hour)
-			sessionID := startTerminalTestSession(t, controlServer, editorTerminalTestRequest)
-			first := mustDialWebsocket(t, terminalWebsocketURL(controlServer.Port(), sessionID))
-			defer first.Close()
-			second := mustDialWebsocket(t, terminalWebsocketURL(controlServer.Port(), sessionID))
-			defer second.Close()
-			awaitWebsocketClients(t, controlServer, 2, func(s *ControlServer) int {
-				return len(s.terminalSessions[sessionID].clients)
-			})
-
-			tt.end(t, controlServer, first)
-
-			for _, connection := range []*websocket.Conn{first, second} {
-				if code := readWebsocketCloseCode(t, connection); code != websocket.CloseNormalClosure {
-					t.Fatalf("close code = %d, want %d", code, websocket.CloseNormalClosure)
-				}
-			}
-		})
-	}
-}
-
 func startStreamTestControlServer(t *testing.T) *ControlServer {
 	t.Helper()
 
 	controlServer, err := StartControlServer(StartControlServerOptions{
-		AnnotationActions: []manifest.ValidatedAnnotationAction{{
-			Agent: manifest.ValidatedAgent{Kind: "pi"},
-			Label: "Pi",
-			ID:    defaultAnnotationActionID,
-			Kind:  "agent",
-		}},
-		AnnotationDefaultActionID: defaultAnnotationActionID,
 		FeatureToggles: FeatureToggles{
-			AnnotationEnabled:      true,
-			AnnotationQueueEnabled: true,
-			StatusEnabled:          true,
-			TerminalEnabled:        true,
+			AnnotationEnabled: true,
+			StatusEnabled:     true,
 		},
 		GetHealthResponse: func() (HealthResponse, error) {
 			return HealthResponse{Services: []ServiceHealth{}}, nil
 		},
-		Position:             "bottom-right",
-		ProjectRootPath:      t.TempDir(),
-		StackName:            "hello-stack",
-		StartTerminalSession: newTestTerminalStarter().start,
-		StateDirectoryPath:   t.TempDir(),
+		Position:        "bottom-right",
+		ProjectRootPath: t.TempDir(),
+		StackName:       "hello-stack",
 	})
 	if err != nil {
 		t.Fatalf("StartControlServer(...) error = %v", err)

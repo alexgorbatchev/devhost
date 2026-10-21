@@ -31,6 +31,7 @@ export function DevtoolsToolbar(props: IDevtoolsToolbarProps): JSX.Element {
           : "right-2 max-w-[calc(100vw-var(--spacing)*4)]",
       )}
       data-position={props.position}
+      data-devhost-capture-exclude=""
       data-testid="DevtoolsToolbar"
     >
       <div

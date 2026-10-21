@@ -14,5 +14,5 @@ export async function restoreDemoPlayground(runtime: IDemoRuntime): Promise<void
       await Bun.write(path, original);
     }
   }
-  await Bun.write(join(runtime.directoryPath, "pi-changes.json"), JSON.stringify(changes, null, 2) + "\n");
+  await Bun.write(join(runtime.directoryPath, "agent-changes.json"), JSON.stringify(changes, null, 2) + "\n");
 }

@@ -1,11 +1,15 @@
 import { mkdir } from "node:fs/promises";
-import { relative, resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { BunPlugin } from "bun";
 import tailwindPlugin from "bun-plugin-tailwind";
 
+const devtoolsPackageUrl: URL = new URL("../../../packages/devhost-ui/package.json", import.meta.url);
 const devtoolsEntrypointPath: string = fileURLToPath(
-  new URL("../../../packages/devhost-ui/src/devtools/main.ts", import.meta.url),
+  import.meta.resolve("@alexgorbatchev/devhost-ui/main", devtoolsPackageUrl.href),
+);
+const reduxEntrypointPath: string = fileURLToPath(
+  import.meta.resolve("@alexgorbatchev/devhost-ui/redux", devtoolsPackageUrl.href),
 );
 const devtoolsStylesheetPath: string = fileURLToPath(
   new URL("../../../packages/devhost-ui/src/devtools/shared/devtools.css", import.meta.url),
@@ -13,9 +17,6 @@ const devtoolsStylesheetPath: string = fileURLToPath(
 const devtoolsStylesheetTextModuleImportPath: string = "./devtoolsCssText";
 const assetOutputDirectoryPath: string = fileURLToPath(new URL("../internal/devtools/dist/", import.meta.url));
 const tsconfigPath: string = fileURLToPath(new URL("../../../packages/devhost-ui/tsconfig.json", import.meta.url));
-const xtermStylesheetPath: string = fileURLToPath(
-  new URL("../../../packages/devhost-ui/node_modules/@xterm/xterm/css/xterm.css", import.meta.url),
-);
 
 interface IBuildDevtoolsBundleOptions {
   isProduction?: boolean;
@@ -49,9 +50,9 @@ export async function buildDevtoolsBundle(options: IBuildDevtoolsBundleOptions =
     throw new Error(`Failed to build devtools script:\n${logMessages}`);
   }
 
-  const reduxBuild = await buildReduxBrowserAsset("index.ts", "redux.js", outputDirectoryPath, isProduction);
+  const reduxBuild = await buildReduxBrowserAsset(reduxEntrypointPath, "redux.js", outputDirectoryPath, isProduction);
   const reduxMonitorBuild = await buildReduxBrowserAsset(
-    "startReduxDevtoolsMonitor.ts",
+    resolve(dirname(reduxEntrypointPath), "startReduxDevtoolsMonitor.ts"),
     "redux-monitor.js",
     outputDirectoryPath,
     isProduction,
@@ -67,13 +68,6 @@ export async function buildDevtoolsBundle(options: IBuildDevtoolsBundleOptions =
       outputNames.add(`${outputName}.gz`);
     }
   }
-  await Bun.write(resolve(outputDirectoryPath, "xterm.css"), Bun.file(xtermStylesheetPath));
-  outputNames.add("xterm.css");
-  await Bun.write(
-    resolve(outputDirectoryPath, "xterm.css.gz"),
-    Bun.gzipSync(await Bun.file(xtermStylesheetPath).bytes()),
-  );
-  outputNames.add("xterm.css.gz");
 
   // Source-mode tabs may still request chunks from a previous page load. Release builds embed only the current graph.
   if (isProduction) {
@@ -84,14 +78,11 @@ export async function buildDevtoolsBundle(options: IBuildDevtoolsBundleOptions =
 }
 
 async function buildReduxBrowserAsset(
-  entrypoint: string,
+  sourcePath: string,
   filename: string,
   outputDirectoryPath: string,
   isProduction: boolean,
 ): Promise<BrowserBuildResult> {
-  const sourcePath: string = fileURLToPath(
-    new URL(`../../../packages/devhost-ui/src/devtools/features/reduxDevtools/${entrypoint}`, import.meta.url),
-  );
   const result = await Bun.build({
     define: { "process.env.NODE_ENV": JSON.stringify(isProduction ? "production" : "development") },
     entrypoints: [sourcePath],

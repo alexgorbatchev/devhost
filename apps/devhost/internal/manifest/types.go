@@ -17,7 +17,6 @@ type Inputs struct {
 
 type Manifest struct {
 	Inputs                Inputs
-	Annotation            ValidatedAnnotation
 	Caddy                 CaddyConfig
 	Devtools              DevtoolsConfig
 	Worktrees             WorktreesConfig
@@ -33,24 +32,6 @@ type Manifest struct {
 
 type WorktreesConfig struct {
 	Enabled bool
-}
-
-type ValidatedAnnotation struct {
-	TempDir         *string
-	Actions         []ValidatedAnnotationAction
-	DefaultActionID string
-}
-
-type ValidatedAnnotationAction struct {
-	// TempDir is inherited from the stack's annotation configuration.
-	TempDir *string
-	Agent   ValidatedAgent
-	Command []string
-	Cwd     string
-	Env     map[string]string
-	ID      string
-	Kind    string
-	Label   string
 }
 
 type CaddyConfig struct {
@@ -71,6 +52,8 @@ type DevtoolsBrowserConfig struct {
 }
 
 type DevtoolsConfig struct {
+	Chat             DevtoolsToggleConfig
+	Annotations      DevtoolsToggleConfig
 	Browser          DevtoolsBrowserConfig
 	Editor           DevtoolsEditorConfig
 	ExternalToolbars DevtoolsToggleConfig
@@ -116,14 +99,6 @@ type DevtoolsResourceConfig struct {
 type DevtoolsStatusConfig struct {
 	Enabled  bool
 	Position string
-}
-
-type ValidatedAgent struct {
-	Args    []string
-	Command []string
-	Cwd     string
-	Env     map[string]string
-	Kind    string
 }
 
 type ValidatedService struct {

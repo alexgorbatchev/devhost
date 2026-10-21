@@ -1,11 +1,20 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "@alexgorbatchev/shadcn/theme.css";
+@import "@alexgorbatchev/shadcn/assistant-ui.css";
+@import "@alexgorbatchev/shadcn/assistant-ui/markdown.css";
+
 /* Shared devhost color, radius, and marker tokens (`--dh-*`), the single source for devtools and docs. */
 @import "@alexgorbatchev/devhost-design/tokens.css";
+
+[data-devhost-capturing] [data-devhost-capture-exclude] {
+  visibility: hidden;
+}
 
 @custom-variant dark (&:where(:host([data-theme="dark"]) *, [data-devhost-story-theme][data-theme="dark"] *));
 
 @source "../../**/*.{ts,tsx}";
+@source "../../../node_modules/@alexgorbatchev/shadcn/dist";
 
 /*
  * Visual design reference: packages/design/references/devtools.html
@@ -130,6 +139,8 @@
 
   --background: var(--dh-surface);
   --foreground: var(--dh-fg);
+  --frame-edge: var(--edge);
+  --frame-halo: var(--halo);
   --card: var(--dh-surface);
   --card-foreground: var(--dh-fg);
   --popover: var(--dh-surface);

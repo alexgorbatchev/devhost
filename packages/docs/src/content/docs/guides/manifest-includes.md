@@ -44,7 +44,7 @@ Groups defined under `[groups]` merge alongside services. Each app can own its g
 
 ## Changes while the stack is running
 
-Saving the root manifest or an included manifest reloads the merged service configuration. Adding or deleting files matching an `includes` glob adds or removes their services without restarting devhost. Devhost validates the whole candidate before changing running services; rejected edits leave the accepted configuration in place. Changing annotation actions requires stopping and restarting devhost, including when the actions come from an included file.
+Saving the root manifest or an included manifest reloads the merged service configuration. Adding or deleting files matching an `includes` glob adds or removes their services without restarting devhost. Devhost validates the whole candidate before changing running services; rejected edits leave the accepted configuration in place. Changing devtools configuration, including chat and page-selection enablement, requires stopping and restarting devhost.
 
 Affected services, their dependents, and affected repository groups restart together. Compatible automatic ports and selected checkouts are retained. Selecting a worktree loads that checkout's root manifest and includes, restarts the whole managed stack, and watches those files for subsequent edits. See [Stack lifecycle](./stack-lifecycle/) for reload boundaries and restoration after launch or routing failures.
 
@@ -60,7 +60,7 @@ Hot reload reserves newly included files before changing services. An include ow
 
 However, when included in a root manifest:
 
-1. Local services (`services`), groups (`groups`), and annotation actions (`annotation.actions`) are extracted and merged.
+1. Local services (`services`) and groups (`groups`) are extracted and merged.
 2. Root global settings (like stack name, Caddy proxy front door, and devtools toggle settings) remain authoritative and **cannot be overridden** by the sub-manifests.
 
 This enables you to use the exact same configuration files both for individual sub-application solo runs and as modular components of a large multi-service stack.
