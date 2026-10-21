@@ -24,6 +24,8 @@ Install and sign in to the [Codex CLI](https://learn.chatgpt.com/docs/cli) or [C
 
 Open **Chat Settings** using the gear button. Choose **Harness**, then select a model advertised by that client's native catalog. **Configured default** restores the CLI's configured model for the next turn, including after selecting another model or resuming a conversation. **Refresh Harnesses** repeats discovery; discovery can succeed even when the account needs to sign in before inference. A native authentication failure is displayed in the conversation; sign in through the CLI and retry.
 
+Chat Settings receives pointer input above the page and chat panel. Its backdrop blocks clicks on page controls until the dialog closes; closing it restores ordinary page interaction.
+
 Type a message and send it through the browser composer. Agent replies and native tool activity stream into the conversation, which keeps the latest reply in view while you are at the bottom; scroll back and the conversation stays where you left it until you return to the bottom. Claude Code confirms receipt by replaying the actual user message into the conversation; a later model or authentication failure keeps that submitted message in history. **New Conversation** starts a separate native session; **Conversation** selects an existing session. Collapsing the panel does not terminate it. Interrupt cancels the current turn, while **Close Conversation** ends its owned process.
 
 Live sessions and retained events belong to the running devhost stack, so a page reload can reconnect. Stopping devhost ends its processes. Session replay in the browser is not a separate durable queue or an automatic replay of prompts after a stack restart.

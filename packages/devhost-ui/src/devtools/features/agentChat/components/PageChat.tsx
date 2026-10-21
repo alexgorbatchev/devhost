@@ -35,6 +35,8 @@ export function PageChat({
   settingsStore,
 }: IPageChatProps): JSX.Element {
   const sharing = useTabShare();
+  // Portals inherit from this interactive surface rather than the passive full-viewport devtools root.
+  const portalReference = useRef<HTMLDivElement | null>(null);
   const [sessionPageURL] = useState(() => window.location.href);
   const plugin = useSyncExternalStore(subscribeToAnnotationSelectionPlugins, readActiveAnnotationSelectionPlugin);
   const [tool, setTool] = useState<AnnotationShapeKind | null>(null);
@@ -110,7 +112,8 @@ export function PageChat({
   const chat = useAgentChat({ pageURL: sessionPageURL, beforeSend, onSent: clearSentContext, settingsStore });
   const isContextDisabled = isCapturing || chat.isPreparing;
   return (
-    <PortalProvider container={rootReference}>
+    <PortalProvider container={portalReference}>
+      <div ref={portalReference} className="pointer-events-auto relative z-(--devhost-z-modal)" />
       <DensityProvider density="compact">
         <AnnotationSelectionHint
           isVisible={isSelectionMode || tool !== null}
