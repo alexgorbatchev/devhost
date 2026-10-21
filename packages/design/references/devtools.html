@@ -492,6 +492,10 @@
         <label><input type="checkbox" id="pc-minimap" checked /> Log minimap</label>
         <label><input type="checkbox" id="pc-react" /> React highlight (Neovim cursor)</label>
         <label><input type="checkbox" id="pc-worktrees" checked /> Worktrees enabled ([worktrees].enabled)</label>
+        <label
+          ><input type="checkbox" id="pc-config-editor" checked /> Config editor
+          ([devtools.configEditor].enabled)</label
+        >
       </fieldset>
       <fieldset>
         <legend>Simulate</legend>
@@ -510,6 +514,20 @@
             <option value="critical">Critical (danger)</option>
           </select>
         </label>
+        <label
+          >Config save outcome
+          <select id="pc-config-outcome">
+            <option value="none">None</option>
+            <option value="applying">Applying</option>
+            <option value="applied">Applied</option>
+            <option value="rejected">Rejected by the reload</option>
+            <option value="conflict">Changed on disk</option>
+            <option value="refused">Refused (issues)</option>
+            <option value="failed">Failed</option>
+          </select>
+        </label>
+        <label><input type="checkbox" id="pc-config-dirty" checked /> Config file has unsaved changes</label>
+        <label><input type="checkbox" id="pc-config-rejected" /> Manifest reload rejected</label>
         <label><input type="checkbox" id="pc-svc-error" /> Health poll error</label>
         <label><input type="checkbox" id="pc-restart-fail" /> Restarts fail</label>
         <label><input type="checkbox" id="pc-worktree-fail" /> Worktree switch fails</label>
@@ -1724,6 +1742,120 @@
         }
 
         /* ================================================================
+         * CONFIG EDITOR: the terminal window with a file picker, a notice
+         * row, and a TOML editor whose colors match the shipped CodeMirror
+         * theme.
+         * ================================================================ */
+        .term.config {
+          width: min(960px, calc(100vw - 32px));
+          grid-template-rows: auto auto 1fr;
+        }
+        .config-file {
+          flex: 1 1 auto;
+          min-width: 0;
+          height: var(--dh-control-h);
+          padding: 0 var(--dh-space-2);
+          border: 1px solid var(--dh-input-line);
+          border-radius: var(--dh-radius-sm);
+          background: var(--dh-surface);
+          color: var(--dh-fg);
+          font: inherit;
+          font-size: var(--dh-text-md);
+        }
+        .notice.info {
+          background: var(--dh-surface-2);
+          color: var(--dh-fg);
+          font-weight: 400;
+        }
+        .notice-title {
+          display: block;
+        }
+        .notice-body {
+          display: block;
+          font-weight: 400;
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+        }
+        .config-body {
+          display: flex;
+          min-height: 0;
+          flex-direction: column;
+          background: var(--dh-surface);
+        }
+        .config-code {
+          flex: 1 1 auto;
+          min-height: 0;
+          margin: 0;
+          overflow: auto;
+          font-size: var(--dh-text-md);
+          line-height: 1.45;
+        }
+        .config-line {
+          display: flex;
+          white-space: pre;
+        }
+        .config-line.active {
+          background: var(--dh-surface-2);
+        }
+        .config-gutter {
+          flex: 0 0 auto;
+          width: 32px;
+          padding: 0 var(--dh-space-2);
+          border-right: 1px solid var(--dh-line);
+          background: var(--dh-surface-2);
+          color: var(--dh-fg-muted);
+          text-align: right;
+        }
+        .config-line.active .config-gutter {
+          background: var(--dh-surface-3);
+          color: var(--dh-fg);
+        }
+        .config-text {
+          padding: 0 var(--dh-space-3);
+        }
+        .tk-table {
+          color: var(--dh-accent);
+          font-weight: 700;
+        }
+        .tk-comment {
+          color: var(--dh-fg-muted);
+          font-style: italic;
+        }
+        .tk-number {
+          color: var(--dh-warn);
+        }
+        .tk-key {
+          color: var(--dh-fg);
+        }
+        .tk-string {
+          color: var(--dh-ok);
+        }
+        .tk-bracket {
+          color: var(--dh-fg-muted);
+        }
+        .tk-issue {
+          text-decoration: underline wavy var(--dh-danger);
+        }
+        .config-lint {
+          margin: 0;
+          padding: var(--dh-space-2) 0;
+          list-style: none;
+          border-top: 1px solid var(--dh-line);
+          background: var(--dh-surface);
+          font-size: var(--dh-text-md);
+        }
+        .config-lint li {
+          padding: var(--dh-space-1) var(--dh-space-4);
+          border-left: 3px solid var(--dh-danger);
+        }
+        .config-lint li[aria-selected="true"] {
+          background: var(--dh-surface-3);
+        }
+        .config-rejection {
+          display: contents;
+        }
+
+        /* ================================================================
          * LOG MINIMAP: always-visible opaque strip; widens on hover.
          * ================================================================ */
         .minimap {
@@ -1898,6 +2030,11 @@
           '<path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
         collapse: '<path d="m15 18-6-6 6-6"/>',
         expand: '<path d="m9 18 6-6-6-6"/>',
+        fileCog:
+          '<path d="M15 8a1 1 0 0 1-1-1V2a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8z"/><path d="M20 8v12a2 2 0 0 1-2 2h-4.182"/><path d="m3.305 19.53.923-.382"/><path d="M4 10.592V4a2 2 0 0 1 2-2h8"/><path d="m4.228 16.852-.924-.383"/><path d="m5.852 15.228-.383-.923"/><path d="m5.852 20.772-.383.924"/><path d="m8.148 15.228.383-.923"/><path d="m8.53 21.696-.382-.924"/><path d="m9.773 16.852.922-.383"/><path d="m9.773 19.148.922.383"/><circle cx="7" cy="18" r="3"/>',
+        save: '<path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/>',
+        undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/>',
+        copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
         branch:
           '<path d="M6 3v12"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="6" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>',
       };
@@ -1927,6 +2064,84 @@
         critical: { cpu: 96, cores: 8, memory: { used: 30.9, total: 32 }, disk: { used: 498, total: 512 } },
       };
       const USAGE_WARN_PERCENT = 70;
+
+      // Tokens are [kind, text]; kinds map to the CodeMirror highlight style (table, key, string, number, comment,
+      // bracket). "issue" marks the text a diagnostic underlines.
+      const CONFIG_FILES = [
+        {
+          id: "manifest",
+          label: "devhost.toml",
+          lines: [
+            [
+              ["key", "name"],
+              ["", " = "],
+              ["string", '"shop"'],
+            ],
+            [
+              ["key", "includes"],
+              ["", " = "],
+              ["bracket", "["],
+              ["string", '"packages/*/devhost.toml"'],
+              ["bracket", "]"],
+            ],
+            [],
+            [["table", "[devtools.configEditor]"]],
+            [
+              ["key", "enabled"],
+              ["", " = "],
+              ["table", "true"],
+            ],
+            [],
+            [["table", "[devtools.status]"]],
+            [
+              ["key", "position"],
+              ["", " = "],
+              ["string", '"top-right"'],
+              ["", " "],
+              ["comment", "# toolbar corner"],
+            ],
+          ],
+        },
+        {
+          id: "include",
+          label: "packages/api/devhost.toml",
+          lines: [
+            [["table", "[services.api]"]],
+            [
+              ["key", "command"],
+              ["", " = "],
+              ["bracket", "["],
+              ["string", '"bun"'],
+              ["", ", "],
+              ["string", '"run"'],
+              ["", ", "],
+              ["string", '"dev"'],
+              ["bracket", "]"],
+            ],
+            [["issue", "port = 0"]],
+          ],
+        },
+        {
+          id: "config",
+          label: "~/.config/devhost/config.toml",
+          lines: [
+            [["table", "[caddy]"]],
+            [
+              ["key", "httpsPort"],
+              ["", " = "],
+              ["number", "443"],
+            ],
+            [
+              ["key", "bindHost"],
+              ["", " = "],
+              ["string", '"127.0.0.1"'],
+            ],
+          ],
+        },
+      ];
+      const CONFIG_PORT_ISSUE = 'services.api.port must be an integer between 1 and 65535 or "auto".';
+      const CONFIG_REJECTION =
+        'Failed to parse /projects/shop/devhost.toml: toml: line 8 (last key "position"): expected value';
       const USAGE_DANGER_PERCENT = 90;
 
       const state = {
@@ -2027,6 +2242,14 @@
         isBrowserControlConnected: false,
         isReactHostDetected: true,
         nativeBrowserNotice: null,
+        // Config editor: the file shown, whether it has unsaved changes, the outcome of the last save, and whether
+        // devhost rejected the last manifest reload.
+        configEditorEnabled: true,
+        configOpen: false,
+        configFile: "manifest",
+        configDirty: true,
+        configOutcome: "none",
+        configRejected: false,
         sessions: [],
         expandedSessionId: null,
         minimap: true,
@@ -2206,6 +2429,7 @@
         <div class="dock" data-surface="dock">
           <div class="bar frame" data-surface="bar" role="toolbar" aria-label="devhost"></div>
           <div class="native-readout" data-surface="native-readout">
+            <div class="config-rejection" data-surface="config-rejection"></div>
             <div class="native-command frame" role="group" aria-label="Native browser control">
               <button class="btn" type="button" data-action="native-connect" data-surface="native-command" aria-describedby="native-browser-status">Connect browser control</button>
             </div>
@@ -2217,6 +2441,8 @@
         <div data-region="minimap"></div>
         <div class="backdrop fade" data-surface="backdrop" data-action="session-minimize" hidden></div>
         <section class="term frame fade" data-surface="term" role="dialog" hidden></section>
+        <div class="backdrop fade" data-surface="config-backdrop" data-action="config-close" hidden></div>
+        <section class="term config frame fade" data-surface="config" role="dialog" aria-labelledby="config-title" hidden></section>
         <dialog class="crash" data-surface="crash" aria-label="Service exited"></dialog>`;
       shadow.appendChild(rootElement);
       const region = (name) => rootElement.querySelector(`[data-region="${name}"]`);
@@ -2265,6 +2491,7 @@
         hostElement.dataset.theme = resolveTheme();
         renderDockFitted();
         renderTerminal();
+        renderConfigEditor();
         renderComponentMenu();
         setSurfaceVisible(surface("hint"), state.selecting && state.markers.length === 0);
         renderComposer();
@@ -2397,6 +2624,15 @@
             ${readResourceUsage().map(renderUsageItem).join("")}
           </span>`);
 
+        if (state.configEditorEnabled) {
+          segments.push(`
+            <span class="seg tight" role="group" aria-label="Configuration">
+              <button class="btn ${state.configRejected ? "danger" : ""}" type="button" data-action="config-toggle"
+                aria-haspopup="dialog" aria-expanded="${state.configOpen}"
+                title="${state.configRejected ? "Edit the configuration; devhost rejected its last change" : "Edit the configuration"}">${icon("fileCog")}Config</button>
+            </span>`);
+        }
+
         if (tools.length > 0) {
           segments.push(`
             <span class="seg tight" role="group" aria-label="External devtools">
@@ -2480,6 +2716,18 @@
 
       function renderNativeBrowserReadout() {
         setSurfaceVisible(surface("native-readout"), !state.dockCollapsed);
+        patch(
+          surface("config-rejection"),
+          state.configRejected
+            ? renderTitledNotice(
+                "Manifest change not applied",
+                CONFIG_REJECTION,
+                state.configEditorEnabled
+                  ? `<button class="btn" type="button" data-action="config-open">Edit</button>`
+                  : "",
+              )
+            : "",
+        );
         surface("native-command").textContent = state.isBrowserControlConnected
           ? "Disconnect browser control"
           : "Connect browser control";
@@ -2810,6 +3058,11 @@
         }</div>`;
       }
 
+      // A danger notice with a title and a message, as InlineNotice renders one; danger notices offer a copy.
+      function renderTitledNotice(title, message, actions) {
+        return `<div class="notice" role="alert">${icon("alert")}<span class="grow"><strong class="notice-title">${esc(title)}</strong><span class="notice-body">${esc(message)}</span></span>${actions}<button class="btn icon ghost" type="button" data-action="config-copy" aria-label="Copy to clipboard" title="Copy to clipboard">${icon("copy")}</button></div>`;
+      }
+
       function routeLabel(url) {
         try {
           const parsed = new URL(url);
@@ -2944,6 +3197,89 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
               ${primary}
             </header>
             <pre class="term-body">${lines}</pre>`;
+      }
+
+      // --- Config editor ----------------------------------------------------
+      function renderConfigEditor() {
+        const isOpen = state.configEditorEnabled && state.configOpen;
+        setSurfaceVisible(surface("config-backdrop"), isOpen);
+        if (isOpen) patch(surface("config"), renderConfigEditorContent());
+        setSurfaceVisible(surface("config"), isOpen);
+        document.getElementById("pc-config-outcome").value = state.configOutcome;
+        document.getElementById("pc-config-dirty").checked = state.configDirty;
+      }
+
+      function renderConfigEditorContent() {
+        const file = CONFIG_FILES.find((entry) => entry.id === state.configFile);
+        const isSaving = state.configOutcome === "saving";
+        const isRefused = state.configOutcome === "refused";
+        const shortcut = /Mac|iP(hone|[oa]d)/.test(navigator.platform) ? "Meta+S" : "Ctrl+S";
+        const lines = file.lines
+          .map(
+            (tokens, index) =>
+              `<div class="config-line ${index === 0 ? "active" : ""}"><span class="config-gutter">${index + 1}</span><span class="config-text">${
+                tokens
+                  .map(([kind, text]) =>
+                    kind === "issue" && !isRefused
+                      ? `<span class="tk-key">port</span> = <span class="tk-number">0</span>`
+                      : kind === "issue"
+                        ? `<span class="tk-issue"><span class="tk-key">port</span> = <span class="tk-number">0</span></span>`
+                        : kind === ""
+                          ? esc(text)
+                          : `<span class="tk-${kind}">${esc(text)}</span>`,
+                  )
+                  .join("") || " "
+              }</span></div>`,
+          )
+          .join("");
+        return `
+            <header class="term-head">
+              ${icon("fileCog")}
+              <strong id="config-title">Configuration</strong>
+              <select class="config-file" aria-label="File" data-input="config-file">
+                ${CONFIG_FILES.map((entry) => `<option value="${entry.id}" ${entry.id === state.configFile ? "selected" : ""}>${esc(entry.label)}${state.configDirty && entry.id === state.configFile ? " (unsaved)" : ""}</option>`).join("")}
+              </select>
+              <button class="btn" type="button" data-action="config-revert" title="Discard the unsaved changes to this file" ${!state.configDirty || isSaving ? "disabled" : ""}>${icon("undo")}Revert</button>
+              <button class="btn primary" type="button" data-action="config-save" title="Save after devhost checks the file" ${!state.configDirty || isSaving ? "disabled" : ""}>${icon("save")}${isSaving ? "Saving" : "Save"}<span class="kbd" aria-hidden="true">${shortcut}</span></button>
+              <button class="btn" type="button" data-action="config-close" title="Close; unsaved changes are kept">${icon("x")}Close</button>
+            </header>
+            <div>${renderConfigNotice()}</div>
+            <div class="config-body">
+              <div class="config-code" role="textbox" aria-multiline="true" aria-label="Configuration file">${lines}</div>
+              ${isRefused && state.configFile === "include" ? `<ul class="config-lint" role="listbox" aria-label="Diagnostics"><li role="option" aria-selected="true">${esc(CONFIG_PORT_ISSUE)}</li></ul>` : ""}
+            </div>`;
+      }
+
+      // The texts of ConfigEditorPanel's notices, one per save outcome.
+      function renderConfigNotice() {
+        switch (state.configOutcome) {
+          case "applying":
+            return `<div class="notice info" role="alert"><span class="grow">Saved. devhost is applying the change.</span></div>`;
+          case "applied":
+            return `<div class="notice info" role="alert"><span class="grow">Saved and applied.</span></div>`;
+          case "rejected":
+            return renderTitledNotice("devhost kept the previous configuration", CONFIG_REJECTION, "");
+          case "conflict":
+            return renderTitledNotice(
+              "The file changed on disk",
+              "It changed since it was opened. Load the version on disk to edit it; the unsaved changes to this file are discarded.",
+              `<button class="btn" type="button" data-action="config-load-disk">Load from disk</button>`,
+            );
+          case "refused":
+            return renderTitledNotice(
+              "devhost refused the save",
+              "The file was not written. The issues are listed below the editor.",
+              "",
+            );
+          case "failed":
+            return renderTitledNotice(
+              "The save failed",
+              "Only a browser on this machine can save the configuration.",
+              "",
+            );
+          default:
+            return "";
+        }
       }
 
       // --- Composer ---------------------------------------------------------
@@ -3377,6 +3713,11 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
           state.worktreePicker.path = event.target.value;
           render();
         }
+        if (event.target.dataset.input === "config-file") {
+          state.configFile = event.target.value;
+          state.configOutcome = "none";
+          render();
+        }
         if (event.target.dataset.input === "append") {
           state.appendToActive = event.target.checked;
           render();
@@ -3543,6 +3884,35 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
           case "session-minimize":
             state.expandedSessionId = null;
             break;
+          case "config-toggle":
+            state.configOpen = !state.configOpen;
+            state.openPanel = null;
+            break;
+          case "config-open":
+            state.configOpen = true;
+            state.openPanel = null;
+            break;
+          case "config-close":
+            state.configOpen = false;
+            break;
+          case "config-revert":
+            state.configDirty = false;
+            break;
+          case "config-load-disk":
+            state.configDirty = false;
+            state.configOutcome = "none";
+            break;
+          case "config-copy":
+            return;
+          case "config-save":
+            // Mock save: devhost writes the file, then the reload that follows it finishes.
+            state.configDirty = false;
+            state.configOutcome = "applying";
+            setTimeout(() => {
+              state.configOutcome = state.configRejected ? "rejected" : "applied";
+              render();
+            }, 900);
+            break;
           case "session-terminate":
           case "session-close":
             state.sessions = state.sessions.filter((s) => s.id !== id);
@@ -3601,6 +3971,12 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
             render();
           }
           if (event.key === "Escape") {
+            if (state.configOpen) {
+              event.preventDefault();
+              state.configOpen = false;
+              render();
+              return;
+            }
             if (state.expandedSessionId) return;
             if (state.markers.length || state.selecting || state.openPanel || state.componentMenu) {
               event.preventDefault();
@@ -3776,6 +4152,25 @@ ${running ? `<span class="t-dim">… thinking</span>` : `<span class="t-ok">✓ 
       bind("pc-worktrees", "change", (e) => {
         state.worktreesEnabled = e.target.checked;
         state.worktreePicker = null;
+        render();
+      });
+      bind("pc-config-editor", "change", (event) => {
+        state.configEditorEnabled = event.target.checked;
+        if (!state.configEditorEnabled) state.configOpen = false;
+        render();
+      });
+      bind("pc-config-outcome", "change", (event) => {
+        state.configOutcome = event.target.value;
+        if (state.configOutcome === "refused") state.configFile = "include";
+        state.configOpen = state.configEditorEnabled;
+        render();
+      });
+      bind("pc-config-dirty", "change", (event) => {
+        state.configDirty = event.target.checked;
+        render();
+      });
+      bind("pc-config-rejected", "change", (event) => {
+        state.configRejected = event.target.checked;
         render();
       });
       bind("pc-native-react-host", "change", (event) => {

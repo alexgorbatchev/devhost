@@ -59,6 +59,7 @@ type DevtoolsBrowserConfig struct {
 
 type DevtoolsConfig struct {
 	Browser          DevtoolsBrowserConfig
+	ConfigEditor     DevtoolsToggleConfig
 	Editor           DevtoolsEditorConfig
 	ExternalToolbars DevtoolsToggleConfig
 	Minimap          DevtoolsMinimapConfig

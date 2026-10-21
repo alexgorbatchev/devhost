@@ -204,6 +204,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			return 0, err
 		}
 	}
+	state.configPath = configPath
 	shared, err := config.Read(configPath)
 	if err != nil {
 		return 0, err
@@ -399,7 +400,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		settings := devtoolsControlSettings(*manifest)
 		controlServer, err := startDevtoolsControlServer(devtools.StartControlServerOptions{
 			NativeBrowser: settings.NativeBrowser,
-			AllowsNativeBrowserURL: func(port int, href string) (bool, error) {
+			OwnsDocumentURL: func(port int, href string) (bool, error) {
 				return caddy.AllowsDevtoolsURL(paths, caddy.DevtoolsRouteOwner{ManifestPath: manifest.ManifestPath, ControlPort: port}, href)
 			},
 			AnnotationActions:         settings.AnnotationActions,
@@ -430,6 +431,8 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			RestartStack:            func() error { return state.restartStack(lifecycleCtx) },
 			SwitchWorktree:          switchWorktree,
 			RefreshWorktrees:        state.refreshWorktrees,
+			ListConfigFiles:         state.configFiles,
+			CheckConfigFile:         state.checkConfigFile,
 			GetToolContext:          state.toolContext,
 			RestartServicesShortcut: settings.RestartServicesShortcut,
 			RoutedServices:          settings.RoutedServices,
@@ -545,7 +548,6 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	state.manifestMu.Lock()
 	state.startupComplete = true
 	state.manifestMu.Unlock()
-	lastReloadError, lastConfigError := "", ""
 	var reloadResults, configResults <-chan error
 	defer func() {
 		cancelLifecycle()
@@ -578,13 +580,8 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		case err := <-configResults:
 			configResults = nil
 			configEvents = configWatch.events
-			if err != nil {
-				if message := err.Error(); message != lastConfigError {
-					writeLogLine(options.LogWriter, state.stackName(), fmt.Sprintf("shared Caddy settings rejected: %v", err))
-					lastConfigError = message
-				}
-			} else {
-				lastConfigError = ""
+			if state.recordConfigurationResult(devtools.ConfigurationSourceConfig, err) && err != nil {
+				writeLogLine(options.LogWriter, state.stackName(), fmt.Sprintf("shared Caddy settings rejected: %v", err))
 			}
 		case err := <-manifestEvents:
 			completed := make(chan error, 1)
@@ -599,13 +596,8 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		case err := <-reloadResults:
 			reloadResults = nil
 			manifestEvents = manifestWatch.events
-			if err != nil {
-				if message := err.Error(); message != lastReloadError {
-					writeLogLine(options.LogWriter, state.stackName(), fmt.Sprintf("configuration reload rejected: %v", err))
-					lastReloadError = message
-				}
-			} else {
-				lastReloadError = ""
+			if state.recordConfigurationResult(devtools.ConfigurationSourceManifest, err) && err != nil {
+				writeLogLine(options.LogWriter, state.stackName(), fmt.Sprintf("configuration reload rejected: %v", err))
 			}
 		case result := <-state.exits:
 			writeLogLine(options.LogWriter, state.stackName(), fmt.Sprintf("%s exited with code %d; devhost is waiting for a restart.", result.serviceName, result.exitCode))
@@ -1406,7 +1398,7 @@ func collectClaimedHosts(services map[string]ResolvedService) []string {
 }
 
 func hasEnabledDevtools(config manifest.DevtoolsConfig) bool {
-	return config.Editor.Enabled || config.ExternalToolbars.Enabled || config.Minimap.Enabled || config.Status.Enabled
+	return config.ConfigEditor.Enabled || config.Editor.Enabled || config.ExternalToolbars.Enabled || config.Minimap.Enabled || config.Status.Enabled
 }
 
 // devtoolsControlSettings are the settings of m the control server applies, at
@@ -1441,6 +1433,7 @@ func resolveSupportedDevtoolsFeatures(config manifest.DevtoolsConfig, annotation
 	return devtools.FeatureToggles{
 		AnnotationEnabled:       devtoolsEnabled && hasAnnotationActions,
 		AnnotationQueueEnabled:  devtoolsEnabled && hasQueuedAnnotationActions,
+		ConfigEditorEnabled:     config.ConfigEditor.Enabled,
 		EditorEnabled:           config.Editor.Enabled,
 		ExternalToolbarsEnabled: config.ExternalToolbars.Enabled,
 		MinimapEnabled:          config.Minimap.Enabled,

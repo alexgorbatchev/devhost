@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { cn } from "../../lib/utils";
 
@@ -8,6 +8,12 @@ import type { IAnnotationAction } from "../shared/devtoolsConfig";
 import { AnnotationComposer } from "../features/annotationComposer";
 import { AnnotationQueuePanel, useAnnotationQueues } from "../features/annotationQueue";
 import { ComponentSourceMenu, useComponentSourceNavigation } from "../features/componentSourceNavigation";
+import {
+  ConfigEditorButton,
+  ConfigEditorPanel,
+  ConfigRejectionNotice,
+  createConfigEditorClient,
+} from "../features/configEditor";
 import { ExternalDevtoolsPanel, useExternalDevtoolsLaunchers } from "../features/externalDevtoolsPanel";
 import { LogMinimap, useServiceLogs } from "../features/minimap";
 import { TerminalSessionChips, TerminalSessionHost, useTerminalSessions } from "../features/terminalSessions";
@@ -56,8 +62,10 @@ function AppContent(): JSX.Element {
     annotationEnabled,
     annotationQueueEnabled,
     componentEditor,
+    configEditorEnabled,
     editorEnabled,
     externalToolbarsEnabled,
+    homeDirectoryPath,
     minimapEnabled,
     position: devtoolsPosition,
     projectRootPath: configuredProjectRootPath,
@@ -74,7 +82,10 @@ function AppContent(): JSX.Element {
   const nativeBrowser = useNativeBrowserConnection(isNativeBrowserEnabled);
   const nativeBrowserStatusId: string = useId();
   const colorScheme = useDevtoolsColorScheme();
+  const [isConfigEditorOpen, setIsConfigEditorOpen] = useState<boolean>(false);
+  const configEditorClient = useMemo(() => createConfigEditorClient(pristineFetch), []);
   const {
+    configuration,
     errorMessage,
     setErrorMessage,
     services,
@@ -170,7 +181,11 @@ function AppContent(): JSX.Element {
   const shouldRenderPanel: boolean = statusEnabled && (errorMessage !== null || services.length > 0);
   const shouldRenderExternalDevtoolsPanel: boolean = externalToolbarsEnabled && externalDevtoolsLaunchers.length > 0;
   const shouldRenderToolbar: boolean =
-    statusEnabled || annotationQueueEnabled || externalToolbarsEnabled || terminalEnabled;
+    statusEnabled || annotationQueueEnabled || externalToolbarsEnabled || terminalEnabled || configEditorEnabled;
+  const isConfigurationRejected: boolean = configuration.some((status) => status.error !== undefined);
+  const openConfigEditor = useCallback((): void => {
+    setIsConfigEditorOpen(true);
+  }, []);
   const shouldRenderMinimap: boolean = minimapEnabled && logEntries.length > 0;
   const selectedAnnotationAction: IAnnotationAction | null = annotationEnabled
     ? resolveSelectedAnnotationAction(annotationActions, selectedAnnotationActionId)
@@ -243,15 +258,23 @@ function AppContent(): JSX.Element {
             </>
           }
           readout={
-            isNativeBrowserEnabled ? (
+            isNativeBrowserEnabled || isConfigurationRejected ? (
               <>
-                <NativeBrowserConnectionControl
-                  view={nativeBrowser.view}
-                  statusId={nativeBrowserStatusId}
-                  onConnect={nativeBrowser.connect}
-                  onDisconnect={nativeBrowser.disconnect}
+                <ConfigRejectionNotice
+                  configuration={configuration}
+                  onEdit={configEditorEnabled ? openConfigEditor : undefined}
                 />
-                <NativeBrowserConnectionStatus view={nativeBrowser.view} id={nativeBrowserStatusId} />
+                {isNativeBrowserEnabled ? (
+                  <>
+                    <NativeBrowserConnectionControl
+                      view={nativeBrowser.view}
+                      statusId={nativeBrowserStatusId}
+                      onConnect={nativeBrowser.connect}
+                      onDisconnect={nativeBrowser.disconnect}
+                    />
+                    <NativeBrowserConnectionStatus view={nativeBrowser.view} id={nativeBrowserStatusId} />
+                  </>
+                ) : null}
               </>
             ) : undefined
           }
@@ -287,6 +310,15 @@ function AppContent(): JSX.Element {
             />
           ) : null}
           {resourcesEnabled ? <ResourceUsagePanel usage={resourceUsage} /> : null}
+          {configEditorEnabled ? (
+            <ConfigEditorButton
+              isOpen={isConfigEditorOpen}
+              isRejected={isConfigurationRejected}
+              onToggle={(): void => {
+                setIsConfigEditorOpen((isOpen: boolean): boolean => !isOpen);
+              }}
+            />
+          ) : null}
           {isNativeBrowserEnabled ? (
             <ReactNativeAccessButton
               isAvailable={nativeBrowser.view.observation?.isReactAvailable === true}
@@ -314,6 +346,18 @@ function AppContent(): JSX.Element {
           onMinimizeSession={minimizeSession}
           onRemoveSession={removeSession}
           onSessionStatusChange={updateSessionStatus}
+        />
+      ) : null}
+      {configEditorEnabled ? (
+        <ConfigEditorPanel
+          client={configEditorClient}
+          configuration={configuration}
+          homeDirectoryPath={homeDirectoryPath}
+          isOpen={isConfigEditorOpen}
+          projectRootPath={configuredProjectRootPath}
+          onClose={(): void => {
+            setIsConfigEditorOpen(false);
+          }}
         />
       ) : null}
       {shouldRenderMinimap ? (

@@ -95,6 +95,22 @@ describe("useServiceHealth", () => {
     expect(hook.result.current.stoppedServices).toEqual([]);
   });
 
+  test("publishes the reloads of each configuration source and forgets them when the stream drops", async () => {
+    const { connection, hook } = await connectServiceHealth();
+    const rejected = { error: "Failed to parse devhost.toml", reloads: 2, source: "manifest" as const };
+
+    await settle(() => connection.send({ configuration: [rejected], services: [apiService] }));
+    expect(hook.result.current.configuration).toEqual([rejected]);
+
+    await settle(() =>
+      connection.send({ configuration: [{ reloads: 3, source: "manifest" }], services: [apiService] }),
+    );
+    expect(hook.result.current.configuration).toEqual([{ reloads: 3, source: "manifest" }]);
+
+    await settle(() => connection.close(1006));
+    expect(hook.result.current.configuration).toEqual([]);
+  });
+
   test("publishes the services and repositories of each health message", async () => {
     const { connection, hook } = await connectServiceHealth();
 

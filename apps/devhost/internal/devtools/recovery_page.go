@@ -74,21 +74,14 @@ func renderRecoveryDocument(state RecoveryState, status int, injectToolbar bool)
 
 func serveRecoveryControl(w http.ResponseWriter, r *http.Request, options StartDocumentInjectionServerOptions, proxy http.Handler) {
 	w.Header().Set("Cache-Control", "no-store")
-	origins := r.Header.Values("Origin")
-	if len(origins) > 0 && (len(origins) != 1 || (origins[0] != "https://"+r.Host && origins[0] != "http://"+r.Host)) {
-		http.Error(w, "Origin does not match the routed host", http.StatusForbidden)
-		return
-	}
-	if r.Header.Get("Sec-Fetch-Site") == "cross-site" {
-		http.Error(w, "Recovery requires the routed host", http.StatusForbidden)
+	// The routed host belongs to the service, not to this stack's routes, so only the cross-origin rule of the control
+	// server's guard applies here.
+	if err := crossOriginProtection.Check(r); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
 	switch r.Header.Get(recoveryHeader) {
 	case "worktrees":
-		if r.Method == http.MethodPost && len(origins) != 1 {
-			http.Error(w, "Origin does not match the routed host", http.StatusForbidden)
-			return
-		}
 		if options.Worktrees == nil {
 			http.Error(w, "Worktrees are not enabled.", http.StatusNotImplemented)
 			return
@@ -115,10 +108,6 @@ func serveRecoveryControl(w http.ResponseWriter, r *http.Request, options StartD
 		if r.Method != http.MethodPost {
 			w.Header().Set("Allow", http.MethodPost)
 			http.Error(w, "Use POST to restart", http.StatusMethodNotAllowed)
-			return
-		}
-		if len(origins) != 1 || (origins[0] != "https://"+r.Host && origins[0] != "http://"+r.Host) {
-			http.Error(w, "Origin does not match the routed host", http.StatusForbidden)
 			return
 		}
 		if options.Restart == nil || !options.GetRecovery().CanRestart {

@@ -174,6 +174,7 @@ func startAnnotationLifecycleSession(t *testing.T, server *ControlServer, kind s
 	if err != nil {
 		t.Fatal(err)
 	}
+	request.Header.Set("Content-Type", jsonMediaType)
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
 		t.Fatal(err)
