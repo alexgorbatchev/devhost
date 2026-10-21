@@ -54,26 +54,22 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 			request.Header.Set("x-forwarded-proto", "https")
 		},
 		ModifyResponse: func(response *http.Response) error {
-			if options.GetRecovery != nil && response.StatusCode == http.StatusNotFound &&
+			if options.GetRecovery != nil && (response.StatusCode == http.StatusNotFound || response.StatusCode >= http.StatusInternalServerError) &&
 				(response.Request.Header.Get("Sec-Fetch-Dest") == "document" || response.Request.Header.Get(recoveryHeader) == "probe") {
 				state := options.GetRecovery()
-				state.Phase, state.Title = "not-found", "Page not found"
-				state.Message = "This path does not exist in the current checkout. Check the URL."
-				if len(state.Repositories) > 0 {
-					state.Message = "This path does not exist in the current checkout. Choose another worktree below or check the URL."
-				}
-				document, err := renderRecoveryDocument(state, http.StatusNotFound, !options.DisableInjection)
+				setDocumentRecoveryError(&state, response.StatusCode)
+				document, err := renderRecoveryDocument(state, response.StatusCode, !options.DisableInjection)
 				if err != nil {
 					return err
 				}
-				_ = response.Body.Close() // The missing application's document is replaced by recovery controls.
+				_ = response.Body.Close() // The failed application's document is replaced by recovery controls.
 				response.Body = io.NopCloser(strings.NewReader(document))
 				response.ContentLength = -1
 				response.Header = http.Header{"Content-Type": {"text/html; charset=utf-8"}, "Cache-Control": {"no-store"}}
 				return nil
 			}
 			if options.GetRecovery != nil && response.Request.Header.Get(recoveryHeader) == "probe" {
-				// An upstream response other than a missing page, including an error or redirect,
+				// An upstream response other than a missing page or server error, including a redirect,
 				// proves document transport works. Keep the probe from navigating or
 				// downloading the app before the browser performs its real navigation.
 				_ = response.Body.Close()
@@ -141,6 +137,19 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 	}()
 
 	return documentServer, nil
+}
+
+func setDocumentRecoveryError(state *RecoveryState, status int) {
+	if status != http.StatusNotFound {
+		state.Phase, state.Title = "unavailable", state.Service+" could not load"
+		state.Message = fmt.Sprintf("The application returned HTTP %d. Review the service logs and restart after addressing the error.", status)
+		return
+	}
+	state.Phase, state.Title = "not-found", "Page not found"
+	state.Message = "This path does not exist in the current checkout. Check the URL."
+	if len(state.Repositories) > 0 {
+		state.Message = "This path does not exist in the current checkout. Choose another worktree below or check the URL."
+	}
 }
 
 func (s *DocumentInjectionServer) SetBackend(host string, port int) {

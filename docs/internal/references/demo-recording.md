@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-20 21:52
+last_modified: 2026-10-20 22:38
 status: current
 ---
 
@@ -149,7 +149,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Start part of a stack by naming services                                               | `guides/stack-lifecycle.md`, "Starting part of a stack"                                                                   | No demo                                          |
 | Named service groups                                                                   | `guides/stack-lifecycle.md`, "Named service groups"                                                                       | No demo                                          |
 | Start a stopped service from the Services panel                                        | `guides/stack-lifecycle.md`, "Stopped services"; `guides/devtools.md`                                                     | No demo                                          |
-| Startup and recovery pages                                                             | `guides/stack-lifecycle.md`, "Startup and recovery pages"                                                                 | No demo                                          |
+| Startup and recovery pages, including application HTTP 5xx failures                    | `guides/stack-lifecycle.md`, "Startup and recovery pages"                                                                 | No demo                                          |
 | Configuration hot reload, applied and rejected                                         | README, "Configuration Hot Reload"; `guides/stack-lifecycle.md`; `guides/troubleshooting.md`, "Manifest changes rejected" | `troubleshooting` step-4 to step-9               |
 | Unmanaged services, such as a Docker container                                         | `guides/docker-backed-services.md`                                                                                        | `docker-backed-services` step-1 to step-9        |
 | Daemon-style services with start, status, and stop commands                            | `guides/managed-daemon-style-services.md`                                                                                 | `managed-daemon-style-services` step-1 to step-6 |
@@ -180,22 +180,22 @@ When a change adds or alters a user-visible feature, update its row in the same 
 
 ### Devtools
 
-| Feature                                                                                                                    | Documented in                                             | Shown in                            |
-| -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------- |
-| Log minimap with real-time service output                                                                                  | `guides/devtools.md`                                      | `devtools` overview-1; promo line-4 |
-| Services panel with restart controls                                                                                       | `guides/devtools.md`                                      | `devtools` overview-2; promo line-4 |
-| Worktree picker and worktree search                                                                                        | README, "Git Worktrees"; `guides/devtools.md`             | `devtools` overview-3               |
-| Submodule checkout discovery, external owning manifests, and red worktree error icon                                       | `guides/devtools.md`                                      | **No demo**                         |
-| Service status updates with unavailable checkouts                                                                          | `guides/devtools.md`                                      | **No demo**                         |
-| Recovery dialog after a service exits; stack shutdown preserves the loaded app without flashing recovery                   | `guides/devtools.md`, `guides/stack-lifecycle.md`         | No demo                             |
-| Host resource usage                                                                                                        | `guides/devtools.md`, "Host resource usage"               | No demo                             |
-| Terminal session chips                                                                                                     | `guides/devtools.md`                                      | No demo                             |
-| Toolbar layout on narrow viewports                                                                                         | `guides/devtools.md`                                      | No demo                             |
-| TanStack Query devtools in the toolbar                                                                                     | `guides/devtools.md`; `architecture/external-devtools.md` | `devtools` query-1; promo line-5    |
-| Other third-party devtools: native React DevTools, Redux Toolkit, Zustand, Vue, the TanStack shell, React Hook Form, Jotai | `architecture/external-devtools.md`                       | No demo                             |
-| Open component source                                                                                                      | `guides/devtools.md`, "Open component source"             | No demo                             |
-| Automatic idle timeout                                                                                                     | `guides/devtools.md`, "Automatic Idle Timeout"            | No demo                             |
-| Control API                                                                                                                | `guides/devtools.md`, "Control API"                       | No demo                             |
+| Feature                                                                                                                                         | Documented in                                             | Shown in                            |
+| ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------- |
+| Log minimap with real-time service output                                                                                                       | `guides/devtools.md`                                      | `devtools` overview-1; promo line-4 |
+| Services panel with restart controls                                                                                                            | `guides/devtools.md`                                      | `devtools` overview-2; promo line-4 |
+| Worktree picker and worktree search                                                                                                             | README, "Git Worktrees"; `guides/devtools.md`             | `devtools` overview-3               |
+| Submodule checkout discovery, external owning manifests, and red worktree error icon                                                            | `guides/devtools.md`                                      | **No demo**                         |
+| Service status updates with unavailable checkouts                                                                                               | `guides/devtools.md`                                      | **No demo**                         |
+| Recovery dialog after a service exits; stack shutdown preserves the loaded app without flashing recovery and cancels health polling immediately | `guides/devtools.md`, `guides/stack-lifecycle.md`         | No demo                             |
+| Host resource usage                                                                                                                             | `guides/devtools.md`, "Host resource usage"               | No demo                             |
+| Terminal session chips                                                                                                                          | `guides/devtools.md`                                      | No demo                             |
+| Toolbar layout on narrow viewports                                                                                                              | `guides/devtools.md`                                      | No demo                             |
+| TanStack Query devtools in the toolbar                                                                                                          | `guides/devtools.md`; `architecture/external-devtools.md` | `devtools` query-1; promo line-5    |
+| Other third-party devtools: native React DevTools, Redux Toolkit, Zustand, Vue, the TanStack shell, React Hook Form, Jotai                      | `architecture/external-devtools.md`                       | No demo                             |
+| Open component source                                                                                                                           | `guides/devtools.md`, "Open component source"             | No demo                             |
+| Automatic idle timeout                                                                                                                          | `guides/devtools.md`, "Automatic Idle Timeout"            | No demo                             |
+| Control API                                                                                                                                     | `guides/devtools.md`, "Control API"                       | No demo                             |
 
 ### Annotations and editor
 
