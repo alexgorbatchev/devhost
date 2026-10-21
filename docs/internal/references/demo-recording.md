@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-21 10:26
+last_modified: 2026-10-21 13:35
 status: current
 ---
 
@@ -203,6 +203,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Feature                                                                                                  | Documented in                                                    | Shown in    |
 | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ----------- |
 | Browser chat through installed Codex or Claude Code, using native catalogs and configured accounts       | README, "Browser chat and page context"; `guides/annotations.md` | **No demo** |
+| Chat Settings captures pointer input above page controls and restores page interaction when closed       | `guides/annotations.md`, "Connect an installed CLI"              | **No demo** |
 | Native turn interruption, conversation replay, explicit approvals and questions                          | `guides/annotations.md`; `architecture/chat.md`                  | **No demo** |
 | Restore chat visibility, side, conversation, text draft, harness/model and scroll after reload           | `guides/annotations.md`; `architecture/chat.md`                  | **No demo** |
 | Composer stays at the panel bottom; settings dialog; collapsed sent context and contrasting user bubbles | `guides/annotations.md`                                          | **No demo** |
