@@ -142,7 +142,10 @@ export async function recordGuideTerminal(
     const brightness = await readFrameBrightness(recordingPath, signal);
     const recording = await readMediaInfo(recordingPath, signal);
     const windows = findGuideStepWindows(brightness, brightness.length / recording.duration, scene.steps.length);
-    clips = windows.map((window, index) => ({ clip: `step-${index + 1}`, footage: { sourceId: "guide", ...window } }));
+    clips = windows.map(({ from, to }, index) => ({
+      clip: `step-${index + 1}`,
+      footage: { sourceId: "guide", from, to },
+    }));
   } catch (error) {
     recordingError = error;
     await Bun.write(

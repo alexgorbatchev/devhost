@@ -17,6 +17,7 @@ Local React workspace for the injected `devhost` browser UI that gets embedded i
 ## Local conventions
 
 - Keep the injected UI source under `src/devtools/` so the Go app and the public website can both consume the same entrypoint.
+- `just ui check` runs `ts-unused` over `src/` and `scripts/`. Its `[INFO]` findings, such as an export or property "Used only in tests", pass the check but must be addressed when possible; the root `AGENTS.md` says how. One kind cannot be: the shared lint policy forbids type declarations in fixture files (`no-local-type-declarations-in-fixture-files`) and limits `__tests__/` to tests, helpers, and fixtures, so a type that only a fixture uses, such as `IStartingStackState` in `scripts/demo/types.ts`, stays in its domain `types.ts` and is reported "Used only in tests".
 - Render button keyboard hints through `Button`'s `shortcut` prop. It owns the shared `Kbd` treatment and keeps the hint outside the accessible button name. Reserve enhancers for icons or other content; use `Kbd` directly only for standalone hints.
 - Re-export public entrypoints through `package.json` exports. Consumers should use `@alexgorbatchev/devhost-ui` or `@alexgorbatchev/devhost-ui/main` instead of reaching into source paths.
 - Keep package-owned Storybook and browser tests inside this workspace. Storybook discovers owning stories in both `src/**` and `scripts/**`; the native fixture components' stories exercise their UI callbacks and host state, while genuine extension inspection remains in the separately provisioned native command.
