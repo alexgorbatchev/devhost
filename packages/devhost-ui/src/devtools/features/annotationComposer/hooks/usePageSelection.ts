@@ -25,6 +25,7 @@ interface IUsePageSelectionResult {
   isHoveredElementSelected: boolean;
   isSelectionMode: boolean;
   clearSelection: () => void;
+  removeSelection: (id: string) => void;
   startSelection: () => void;
   stopSelection: () => void;
   selectedTargets: ISelectedAnnotationTarget[];
@@ -59,6 +60,14 @@ export function usePageSelection({
   const startSelection = useCallback((): void => {
     if (!isDisabled) setIsSelectionMode(true);
   }, [isDisabled]);
+  const removeSelection = useCallback((id: string): void => {
+    selectionRevisionReference.current += 1;
+    const next = selectedTargetsReference.current
+      .filter((target) => target.candidate.id !== id)
+      .map((target, index) => ({ ...target, markerNumber: index + 1 }));
+    selectedTargetsReference.current = next;
+    setSelectedTargets(next);
+  }, []);
   const stopSelection = useCallback((): void => {
     setIsSelectionMode(false);
   }, []);
@@ -296,6 +305,7 @@ export function usePageSelection({
     isHoveredElementSelected,
     isSelectionMode,
     clearSelection,
+    removeSelection,
     startSelection,
     stopSelection,
     selectedTargets,

@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-21 09:33
+last_modified: 2026-10-21 09:59
 status: current
 ---
 
@@ -200,15 +200,15 @@ When a change adds or alters a user-visible feature, update its row in the same 
 
 ### Browser chat, context and editor
 
-| Feature                                                                                                               | Documented in                                                    | Shown in    |
-| --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ----------- |
-| Browser chat through installed Codex or Claude Code, using native catalogs and configured accounts                    | README, "Browser chat and page context"; `guides/annotations.md` | **No demo** |
-| Native turn interruption, conversation replay, explicit approvals and questions                                       | `guides/annotations.md`; `architecture/chat.md`                  | **No demo** |
-| Composer stays at the panel bottom before and during a new message                                                    | `guides/annotations.md`                                          | **No demo** |
-| Select page elements with source metadata and selection plugins                                                       | `guides/annotations.md`, "Select page context"                   | **No demo** |
-| Draw arrows, lines and boxes over the page; undo and clear context                                                    | `guides/annotations.md`, "Draw over the page"                    | **No demo** |
-| User-approved single tab snapshot attached to a context message; conversation controls locked until send confirmation | `guides/annotations.md`, "Share one tab snapshot"                | **No demo** |
-| Source-locator highlights through the retained instance control API                                                   | `guides/react-highlight.md`                                      | **No demo** |
+| Feature                                                                                                  | Documented in                                                    | Shown in    |
+| -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ----------- |
+| Browser chat through installed Codex or Claude Code, using native catalogs and configured accounts       | README, "Browser chat and page context"; `guides/annotations.md` | **No demo** |
+| Native turn interruption, conversation replay, explicit approvals and questions                          | `guides/annotations.md`; `architecture/chat.md`                  | **No demo** |
+| Composer stays at the panel bottom; settings dialog; collapsed sent context and contrasting user bubbles | `guides/annotations.md`                                          | **No demo** |
+| Select page elements with source metadata and selection plugins                                          | `guides/annotations.md`, "Select page context"                   | **No demo** |
+| Floating drawing toolbar; move arrows, lines and boxes; remove individual items and clear context        | `guides/annotations.md`, "Draw over the page"                    | **No demo** |
+| Share Tab beside Send; reuse an active share for snapshots; clear context after confirmed submission     | `guides/annotations.md`, "Share one tab snapshot"                | **No demo** |
+| Source-locator highlights through the retained instance control API                                      | `guides/react-highlight.md`                                      | **No demo** |
 
 ### CLI
 

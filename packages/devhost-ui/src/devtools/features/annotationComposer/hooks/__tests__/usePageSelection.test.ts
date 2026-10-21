@@ -98,6 +98,18 @@ beforeEach(() => {
 });
 
 describe("usePageSelection", () => {
+  test("removes one marker and renumbers subsequent context without duplicating the next marker", async () => {
+    const hook = renderSelectionDraft();
+    act(() => hook.result.current.startSelection());
+    await click(saveButton);
+    await click(cancelButton);
+    const first = hook.result.current.selectedTargets[0];
+    assert(first);
+    act(() => hook.result.current.removeSelection(first.candidate.id));
+    expect(hook.result.current.selectedTargets.map((target) => target.markerNumber)).toEqual([1]);
+    await click(saveButton);
+    expect(hook.result.current.selectedTargets.map((target) => target.markerNumber)).toEqual([1, 2]);
+  });
   test("lets the toolbar start and stop selection without trapping ordinary page clicks", async () => {
     const hook = renderSelectionDraft();
     const listener = vi.fn<HostClickListener>();

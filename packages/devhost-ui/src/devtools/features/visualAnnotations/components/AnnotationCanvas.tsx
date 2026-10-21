@@ -8,16 +8,25 @@ interface IAnnotationCanvasProps {
   shapes: IAnnotationShape[];
   tool: AnnotationShapeKind | null;
   onDraw: (shape: IAnnotationShape) => void;
+  onMove?: (shape: IAnnotationShape) => void;
+  isDisabled?: boolean;
 }
 
 interface IShapeGesture {
   pointerId: number;
   kind: AnnotationShapeKind;
   start: IAnnotationPoint;
+  original?: IAnnotationShape;
 }
 
 /** Document-coordinate drawings stay with page content when the main viewport scrolls. */
-export function AnnotationCanvas({ shapes, tool, onDraw }: IAnnotationCanvasProps): JSX.Element {
+export function AnnotationCanvas({
+  shapes,
+  tool,
+  onDraw,
+  onMove,
+  isDisabled = false,
+}: IAnnotationCanvasProps): JSX.Element {
   const arrowId = useId();
   const canvasReference = useRef<SVGSVGElement | null>(null);
   const gesture = useRef<IShapeGesture | null>(null);
@@ -42,17 +51,22 @@ export function AnnotationCanvas({ shapes, tool, onDraw }: IAnnotationCanvasProp
     window.addEventListener("resize", refresh);
     window.addEventListener("scroll", refresh);
     window.addEventListener("blur", cancel);
+    const escape = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") cancel();
+    };
+    window.addEventListener("keydown", escape);
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", refresh);
       window.removeEventListener("scroll", refresh);
       window.removeEventListener("blur", cancel);
+      window.removeEventListener("keydown", escape);
     };
   }, []);
   useEffect(() => {
     gesture.current = null;
     setPreview(null);
-  }, [tool]);
+  }, [tool, isDisabled]);
 
   const cancelGesture = (): void => {
     gesture.current = null;
@@ -63,17 +77,18 @@ export function AnnotationCanvas({ shapes, tool, onDraw }: IAnnotationCanvasProp
     if (active === null || active.pointerId !== event.pointerId) {
       return;
     }
-    setPreview(createAnnotationShape("preview", active.kind, active.start, readPoint(event)));
+    setPreview(gestureShape(active, readPoint(event)));
   };
   const finish = (event: PointerEvent<SVGSVGElement>): void => {
     const active = gesture.current;
     if (active === null || active.pointerId !== event.pointerId) {
       return;
     }
-    const shape = createAnnotationShape(crypto.randomUUID(), active.kind, active.start, readPoint(event));
+    const shape = gestureShape(active, readPoint(event));
     cancelGesture();
     if (shape !== null) {
-      onDraw(shape);
+      if (active.original) onMove?.(shape);
+      else onDraw({ ...shape, id: crypto.randomUUID() });
     }
   };
   return (
@@ -90,12 +105,22 @@ export function AnnotationCanvas({ shapes, tool, onDraw }: IAnnotationCanvasProp
       onLostPointerCapture={cancelGesture}
       onPointerCancel={cancelGesture}
       onPointerDown={(event) => {
-        if (tool === null || event.button !== 0 || gesture.current !== null) {
+        if (isDisabled || event.button !== 0 || gesture.current !== null) {
           return;
         }
+        const target = event.target;
+        const shapeId =
+          target instanceof Element ? target.closest("[data-shape-id]")?.getAttribute("data-shape-id") : null;
+        const original = tool === null ? shapes.find((shape) => shape.id === shapeId) : undefined;
+        if (tool === null && (!original || !onMove)) return;
         event.preventDefault();
         event.currentTarget.setPointerCapture(event.pointerId);
-        gesture.current = { pointerId: event.pointerId, kind: tool, start: readPoint(event) };
+        gesture.current = {
+          pointerId: event.pointerId,
+          kind: original?.kind ?? tool ?? "arrow",
+          start: readPoint(event),
+          original,
+        };
       }}
       onPointerMove={move}
       onPointerUp={finish}
@@ -105,8 +130,13 @@ export function AnnotationCanvas({ shapes, tool, onDraw }: IAnnotationCanvasProp
           <path d="M 0 0 L 8 4 L 0 8 Z" fill="currentColor" />
         </marker>
       </defs>
-      {[...shapes, ...(preview === null ? [] : [preview])].map((shape) => (
-        <AnnotationShape key={shape.id} shape={shape} arrowId={arrowId} />
+      {[...shapes.filter((shape) => shape.id !== preview?.id), ...(preview === null ? [] : [preview])].map((shape) => (
+        <AnnotationShape
+          key={shape.id}
+          shape={shape}
+          arrowId={arrowId}
+          canMove={!isDisabled && tool === null && onMove !== undefined}
+        />
       ))}
     </svg>
   );
@@ -115,12 +145,15 @@ export function AnnotationCanvas({ shapes, tool, onDraw }: IAnnotationCanvasProp
 interface IAnnotationShapeProps {
   shape: IAnnotationShape;
   arrowId: string;
+  canMove: boolean;
 }
 
-function AnnotationShape({ shape, arrowId }: IAnnotationShapeProps): JSX.Element {
+function AnnotationShape({ shape, arrowId, canMove }: IAnnotationShapeProps): JSX.Element {
   return (
     <g
       aria-label={`${shape.kind} annotation`}
+      data-shape-id={shape.id}
+      className={canMove ? "pointer-events-auto touch-none cursor-move" : "pointer-events-none"}
       role="img"
       fill="none"
       stroke="currentColor"
@@ -150,4 +183,16 @@ function AnnotationShape({ shape, arrowId }: IAnnotationShapeProps): JSX.Element
 
 function readPoint(event: PointerEvent<SVGSVGElement>): IAnnotationPoint {
   return { x: event.clientX + window.scrollX, y: event.clientY + window.scrollY };
+}
+
+function gestureShape(gesture: IShapeGesture, point: IAnnotationPoint): IAnnotationShape | null {
+  if (!gesture.original) return createAnnotationShape("preview", gesture.kind, gesture.start, point);
+  const { original, start } = gesture;
+  const x = point.x - start.x;
+  const y = point.y - start.y;
+  return {
+    ...original,
+    start: { x: original.start.x + x, y: original.start.y + y },
+    end: { x: original.end.x + x, y: original.end.y + y },
+  };
 }

@@ -16,7 +16,7 @@ const Default: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole("complementary", { name: "Agent chat" })).toBeVisible();
     await expect(canvas.getByRole("toolbar", { name: "devhost" })).toBeVisible();
-    await userEvent.click(canvas.getByRole("button", { name: "Collapse chat" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Collapse Chat" }));
     await expect(canvas.queryByRole("complementary", { name: "Agent chat" })).not.toBeInTheDocument();
     await expect(canvas.getByRole("toolbar", { name: "devhost" })).toBeVisible();
   },

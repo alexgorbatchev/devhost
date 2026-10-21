@@ -45,7 +45,8 @@ afterEach(async () => {
 });
 
 test("server rejection restores the native composer draft using the matching command ID", async () => {
-  const hook = renderHook(() => useAgentChat({ pageURL: "https://app.localhost/page" }));
+  const onSent = vi.fn();
+  const hook = renderHook(() => useAgentChat({ pageURL: "https://app.localhost/page", onSent }));
   await waitFor(() => expect(hook.result.current.isCatalogLoading).toBe(false));
   mockFetch.fetch.mockResolvedValueOnce(Response.json(session));
   await act(async () => {
@@ -75,6 +76,7 @@ test("server rejection restores the native composer draft using the matching com
     expect(hook.result.current.runtime.thread.composer.getState().text).toBe("Keep rejected request"),
   );
   expect(hook.result.current.sendError).toBe("Invalid image");
+  expect(onSent).not.toHaveBeenCalled();
 });
 
 test("oversized UTF-8 context preserves the draft before creating a session", async () => {
@@ -97,9 +99,11 @@ test("oversized UTF-8 context preserves the draft before creating a session", as
 
 test("native composer invokes capture before session HTTP, sends prepared context and receives actual frames", async () => {
   const sequence: string[] = [];
+  const onSent = vi.fn();
   const hook = renderHook(() =>
     useAgentChat({
       pageURL: "https://app.localhost/page",
+      onSent,
       beforeSend: (text) => {
         sequence.push("capture");
         return { text: `Context\n${text}`, images: [{ dataURL: "data:image/png;base64,cGl4ZWw=" }] };
@@ -118,6 +122,7 @@ test("native composer invokes capture before session HTTP, sends prepared contex
   });
   await waitFor(() => expect(sockets.connections).toHaveLength(1));
   expect(sequence).toEqual(["capture", "session-http"]);
+  expect(onSent).not.toHaveBeenCalled();
   const connection = sockets.connections[0];
   expect(connection).toBeDefined();
   await act(async () => {
@@ -154,6 +159,7 @@ test("native composer invokes capture before session HTTP, sends prepared contex
     ]),
   );
   hook.unmount();
+  expect(onSent).toHaveBeenCalledOnce();
   await act(async () => {});
   expect(connection?.readClientClosure()?.code).toBe(1000);
 });

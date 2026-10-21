@@ -8,6 +8,7 @@ export interface ITabCaptureOptions {
   document: Document;
   mediaDevices: Pick<MediaDevices, "getDisplayMedia">;
   signal?: AbortSignal;
+  sharedStream?: MediaStream;
   prepare: () => Promise<void>;
 }
 

@@ -138,7 +138,7 @@ export const App: Story = {
     await expect(shadowCanvas.queryByRole("complementary", { name: "Agent chat" })).toBeNull();
     await userEvent.click(within(toolbar).getByRole("button", { name: "Chat" }));
     await expect(await shadowCanvas.findByRole("complementary", { name: "Agent chat" })).toBeVisible();
-    await userEvent.click(shadowCanvas.getByRole("button", { name: "Collapse chat" }));
+    await userEvent.click(shadowCanvas.getByRole("button", { name: "Collapse Chat" }));
     await expect(shadowCanvas.queryByRole("complementary", { name: "Agent chat" })).toBeNull();
   },
 };

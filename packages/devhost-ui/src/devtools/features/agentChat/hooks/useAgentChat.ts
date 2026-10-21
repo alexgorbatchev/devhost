@@ -11,7 +11,7 @@ import type { IAgentChatController, IAgentChatOptions } from "../types";
 
 type ChatAction = () => Promise<void>;
 
-export function useAgentChat({ pageURL, beforeSend }: IAgentChatOptions): IAgentChatController {
+export function useAgentChat({ pageURL, beforeSend, onSent }: IAgentChatOptions): IAgentChatController {
   const lifetime = useMemo(
     () => ({ client: createAgentChatClient(pageURL, window.location), generation: 0 }),
     [pageURL],
@@ -47,6 +47,7 @@ export function useAgentChat({ pageURL, beforeSend }: IAgentChatOptions): IAgent
         if (prepared === null)
           throw new MessageNotSentError("Tab sharing was cancelled. Your draft has been retained.");
         await client.send(prepared, text);
+        onSent?.();
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         client.setSendError(message);
@@ -55,7 +56,7 @@ export function useAgentChat({ pageURL, beforeSend }: IAgentChatOptions): IAgent
         setIsPreparing(false);
       }
     },
-    [beforeSend, client],
+    [beforeSend, client, onSent],
   );
   const isRunning = state.session?.status === "running";
   const reportAction = useCallback(

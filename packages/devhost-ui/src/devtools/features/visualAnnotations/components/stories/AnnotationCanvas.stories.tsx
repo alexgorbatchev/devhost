@@ -7,10 +7,63 @@ import { AnnotationCanvas } from "../AnnotationCanvas";
 const meta: Meta<typeof AnnotationCanvas> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/visualAnnotations/components/AnnotationCanvas",
   component: AnnotationCanvas,
-  args: { shapes: [], tool: "arrow", onDraw: fn() },
+  args: { shapes: [], tool: "arrow", onDraw: fn(), onMove: fn() },
 };
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+export const MoveArrow: Story = {
+  args: { tool: null, shapes: [{ id: "moving", kind: "arrow", start: { x: 100, y: 120 }, end: { x: 240, y: 200 } }] },
+  play: async ({ canvasElement, args }) => {
+    const surface = within(canvasElement).getByRole("img", { name: "Annotation drawing canvas" });
+    await userEvent.dragAndDrop(surface, surface, {
+      sourcePosition: { x: 170, y: 160 },
+      targetPosition: { x: 230, y: 200 },
+    });
+    await expect(args.onMove).toHaveBeenCalledWith({
+      id: "moving",
+      kind: "arrow",
+      start: { x: 160, y: 160 },
+      end: { x: 300, y: 240 },
+    });
+    await expect(args.onDraw).not.toHaveBeenCalled();
+  },
+};
+
+export const MoveLine: Story = {
+  ...MoveArrow,
+  args: { tool: null, shapes: [{ id: "moving", kind: "line", start: { x: 100, y: 120 }, end: { x: 240, y: 200 } }] },
+  play: async ({ canvasElement, args }) => {
+    const surface = within(canvasElement).getByRole("img", { name: "Annotation drawing canvas" });
+    await userEvent.dragAndDrop(surface, surface, {
+      sourcePosition: { x: 170, y: 160 },
+      targetPosition: { x: 230, y: 200 },
+    });
+    await expect(args.onMove).toHaveBeenCalledWith({
+      id: "moving",
+      kind: "line",
+      start: { x: 160, y: 160 },
+      end: { x: 300, y: 240 },
+    });
+  },
+};
+
+export const MoveBox: Story = {
+  args: { tool: null, shapes: [{ id: "moving", kind: "box", start: { x: 100, y: 120 }, end: { x: 240, y: 200 } }] },
+  play: async ({ canvasElement, args }) => {
+    const surface = within(canvasElement).getByRole("img", { name: "Annotation drawing canvas" });
+    await userEvent.dragAndDrop(surface, surface, {
+      sourcePosition: { x: 170, y: 120 },
+      targetPosition: { x: 230, y: 160 },
+    });
+    await expect(args.onMove).toHaveBeenCalledWith({
+      id: "moving",
+      kind: "box",
+      start: { x: 160, y: 160 },
+      end: { x: 300, y: 240 },
+    });
+  },
+};
 
 export const DrawArrow: Story = {
   play: async ({ canvasElement, args }) => {
