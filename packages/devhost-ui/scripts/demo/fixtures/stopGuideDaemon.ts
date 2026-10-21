@@ -16,10 +16,11 @@ export async function stopGuideDaemon(): Promise<void> {
     } catch {
       return;
     }
-    const stat = await Bun.file(`/proc/${pid}/stat`)
-      .text()
-      .catch(() => "");
-    if (stat.split(") ")[1]?.startsWith("Z ")) return;
+    // An exited daemon its new parent has not reaped yet still answers kill(pid, 0); ps reports it as a zombie.
+    const stat = Bun.spawnSync(["ps", "-o", "stat=", "-p", String(pid)])
+      .stdout.toString()
+      .trim();
+    if (stat === "" || stat.startsWith("Z")) return;
     await Bun.sleep(50);
   }
   throw new Error("Daemon is still running after cooperative shutdown");

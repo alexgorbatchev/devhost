@@ -93,7 +93,8 @@ export function createGuideTerminalScene(slug: string, port: number): IGuideTerm
           curl,
           stop,
           {
-            command: "test ! -e /proc/$(cat daemon.pid)/exe && echo 'Daemon stopped'",
+            // ps prints nothing for a reaped daemon and Z for one its new parent has not reaped yet.
+            command: "ps -o stat= -p \"$(cat daemon.pid)\" | grep -qv Z || echo 'Daemon stopped'",
             waitPattern: "(?m)^Daemon stopped",
             holdMs: 3_000,
           },

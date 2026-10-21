@@ -32,7 +32,8 @@ export async function renderPromoComposition(
       ],
       {
         cwd: projectPath,
-        // A relative path keeps Chrome's profile sockets within Linux's 108-byte limit in deep worktrees.
+        // A relative path keeps Chrome's profile sockets within the socket path limit (108 bytes on Linux, 104 on macOS)
+        // in deep worktrees.
         env: createPromoRendererEnvironment(process.env, relative(projectPath, temporaryPath)),
         signal,
         timeoutMs: 30 * 60_000,
