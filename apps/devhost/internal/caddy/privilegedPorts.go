@@ -2,6 +2,7 @@ package caddy
 
 import (
 	"fmt"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"io"
 	"os"
 )
@@ -22,7 +23,7 @@ func ConfigureManagedCaddyPrivilegedPorts(
 	dependencies PrivilegedPortsDependencies,
 ) (int, error) {
 	if runtimeOS == "darwin" {
-		if err := logInfo(logWriter, "managed caddy does not need privileged-port setup on macOS."); err != nil {
+		if err := cliout.WriteLog(logWriter, "devhost", "managed caddy does not need privileged-port setup on macOS."); err != nil {
 			return 0, fmt.Errorf("log macOS privileged-port skip: %w", err)
 		}
 		return 0, nil
@@ -54,7 +55,7 @@ func ConfigureManagedCaddyPrivilegedPorts(
 
 	if !hasManagedCaddyBinary(paths.ExecutablePath) {
 		message := fmt.Sprintf("managed caddy binary not found at %s. Downloading it first.", paths.ExecutablePath)
-		if err := logInfo(logWriter, message); err != nil {
+		if err := cliout.WriteLog(logWriter, "devhost", message); err != nil {
 			return 0, fmt.Errorf("log missing managed caddy binary: %w", err)
 		}
 
@@ -64,7 +65,7 @@ func ConfigureManagedCaddyPrivilegedPorts(
 	}
 
 	message := "managed caddy privileged-port setup may prompt for your password because granting low-port bind capability is privileged."
-	if err := logInfo(logWriter, message); err != nil {
+	if err := cliout.WriteLog(logWriter, "devhost", message); err != nil {
 		return 0, fmt.Errorf("log privileged-port warning: %w", err)
 	}
 
@@ -79,7 +80,7 @@ func ConfigureManagedCaddyPrivilegedPorts(
 	}
 
 	message = fmt.Sprintf("managed caddy low-port binding enabled for %s", paths.ExecutablePath)
-	if err := logInfo(logWriter, message); err != nil {
+	if err := cliout.WriteLog(logWriter, "devhost", message); err != nil {
 		return 0, fmt.Errorf("log privileged-port success: %w", err)
 	}
 

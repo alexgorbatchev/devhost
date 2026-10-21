@@ -21,6 +21,7 @@ import (
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
@@ -154,10 +155,10 @@ func TestWriteLogLinePrefixBehavior(t *testing.T) {
 		t.Parallel()
 
 		var output strings.Builder
-		writeLogLine(&output, "hello-stack", "ready")
+		cliout.Log(&output, "hello-stack", "ready")
 
 		if output.String() != "[hello-stack] ready\n" {
-			t.Fatalf("writeLogLine(...) = %q, want %q", output.String(), "[hello-stack] ready\n")
+			t.Fatalf("cliout.Log(...) = %q, want %q", output.String(), "[hello-stack] ready\n")
 		}
 	})
 
@@ -165,10 +166,10 @@ func TestWriteLogLinePrefixBehavior(t *testing.T) {
 		t.Parallel()
 
 		var output strings.Builder
-		writeLogLine(&output, "", "ready")
+		cliout.Log(&output, "", "ready")
 
 		if output.String() != "[devhost] ready\n" {
-			t.Fatalf("writeLogLine(...) = %q, want %q", output.String(), "[devhost] ready\n")
+			t.Fatalf("cliout.Log(...) = %q, want %q", output.String(), "[devhost] ready\n")
 		}
 	})
 }

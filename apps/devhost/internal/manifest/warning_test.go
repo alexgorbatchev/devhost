@@ -17,8 +17,8 @@ func TestValidateManifestWarnsAboutAWatchPathOutsideTheManifestDirectory(t *test
 		agent string
 		want  string
 	}{
-		{name: "for a person", agent: "0", want: "[WARN] " + message},
-		{name: "for an agent", agent: "1", want: "WARN: " + message},
+		{name: "for a person", agent: "0", want: "devhost | [WARN] " + message},
+		{name: "for an agent", agent: "1", want: "devhost: WARN: " + message},
 	}
 
 	for _, tc := range tests {

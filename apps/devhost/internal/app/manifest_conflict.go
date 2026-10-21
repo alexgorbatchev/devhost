@@ -2,10 +2,8 @@ package app
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
@@ -28,10 +26,6 @@ func failStart(stderr, serviceStderr io.Writer, cwd string, err error) int {
 			message = conflict.Message("devhost stop")
 		}
 	}
-	var output strings.Builder
-	cliout.WriteFailure(&output, errors.New(message))
-	for line := range strings.SplitSeq(strings.TrimSuffix(output.String(), "\n"), "\n") {
-		_, _ = fmt.Fprintln(serviceStderr, "[devhost] "+line) // No further reporting is possible if stderr fails.
-	}
+	cliout.WriteFailure(serviceStderr, errors.New(message))
 	return 1
 }

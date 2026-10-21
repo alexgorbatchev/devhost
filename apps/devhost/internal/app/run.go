@@ -50,7 +50,8 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			return fail(stderr, err)
 		}
 
-		if err := services.StopStack(manifestPath, readEnvironment(), stdout, stderr); err != nil {
+		logStdout, logStderr := cliout.ServiceOutputWriters(stdout, stderr, []string{"devhost"})
+		if err := services.StopStack(manifestPath, readEnvironment(), logStdout, logStderr); err != nil {
 			return fail(stderr, err)
 		}
 
@@ -256,7 +257,7 @@ func writeServiceNames(stdout io.Writer, value manifest.Manifest, startableOnly 
 	sort.Strings(names)
 
 	for _, name := range names {
-		if _, err := fmt.Fprintln(stdout, name); err != nil {
+		if err := cliout.WriteData(stdout, []byte(name+"\n")); err != nil {
 			return fmt.Errorf("writing service names: %w", err)
 		}
 	}
@@ -270,7 +271,7 @@ func writeServiceNames(stdout io.Writer, value manifest.Manifest, startableOnly 
 // stays one field when it holds spaces.
 func writeRunningStacks(stdout io.Writer, stacks []caddy.StackOwner) error {
 	for _, stack := range stacks {
-		if _, err := fmt.Fprintf(stdout, "%d\t%s\n", stack.PID, stack.ManifestPath); err != nil {
+		if err := cliout.WriteData(stdout, []byte(fmt.Sprintf("%d\t%s\n", stack.PID, stack.ManifestPath))); err != nil {
 			return fmt.Errorf("writing running stacks: %w", err)
 		}
 	}

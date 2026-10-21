@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 )
 
 const defaultMacOSSystemKeychainPath = "/Library/Keychains/System.keychain"
@@ -32,7 +34,7 @@ func TrustManagedCaddyRemoteCertificate(
 		return 0, fmt.Errorf("Managed Caddy remote trust is currently supported on macOS only.")
 	}
 
-	if err := logInfo(logWriter, "managed caddy remote trust may prompt for your password because installing a root CA into the system trust store is privileged."); err != nil {
+	if err := cliout.WriteLog(logWriter, "devhost", "managed caddy remote trust may prompt for your password because installing a root CA into the system trust store is privileged."); err != nil {
 		return 0, fmt.Errorf("log remote trust warning: %w", err)
 	}
 
@@ -69,7 +71,7 @@ func TrustManagedCaddyRemoteCertificate(
 	}()
 
 	message := fmt.Sprintf("managed caddy remote root sha256 from %s: %s", sshTarget, hex.EncodeToString(certificateFingerprint[:]))
-	if err := logInfo(logWriter, message); err != nil {
+	if err := cliout.WriteLog(logWriter, "devhost", message); err != nil {
 		return 0, fmt.Errorf("log remote certificate fingerprint: %w", err)
 	}
 
@@ -78,7 +80,7 @@ func TrustManagedCaddyRemoteCertificate(
 	}
 
 	message = fmt.Sprintf("managed caddy local CA from %s trusted.", sshTarget)
-	if err := logInfo(logWriter, message); err != nil {
+	if err := cliout.WriteLog(logWriter, "devhost", message); err != nil {
 		return 0, fmt.Errorf("log remote trust success: %w", err)
 	}
 

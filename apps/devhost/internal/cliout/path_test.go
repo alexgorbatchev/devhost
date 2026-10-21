@@ -29,3 +29,18 @@ func TestShellPathRoundTrip(t *testing.T) {
 		}
 	}
 }
+
+func TestFoldPaths(t *testing.T) {
+	t.Setenv("HOME", "/home/dev")
+	for _, tc := range []struct{ message, want string }{
+		{"/home/dev", "~"},
+		{"open /home/dev/my project/file: missing", "open ~/my project/file: missing"},
+		{"path=\"/home/dev/file\"", "path=\"~/file\""},
+		{"/home/developer/file /srv/home/dev/file", "/home/developer/file /srv/home/dev/file"},
+		{"home (/home/dev); next '/home/dev/child'", "home (~); next '~/child'"},
+	} {
+		if got := FoldPaths(tc.message); got != tc.want {
+			t.Errorf("FoldPaths(%q) = %q, want %q", tc.message, got, tc.want)
+		}
+	}
+}

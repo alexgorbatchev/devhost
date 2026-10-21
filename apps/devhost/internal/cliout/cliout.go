@@ -5,7 +5,6 @@ package cliout
 
 import (
 	"errors"
-	"fmt"
 	"io"
 
 	cobrahelptree "github.com/alexgorbatchev/cobra-help-tree/v2"
@@ -38,12 +37,13 @@ func IsAgentMode() bool {
 
 // WriteFailure writes err as the last thing a failed command says. A person gets
 // a tagged line and, when the error carries one, a hint; an agent gets the whole
-// error on one line.
+// error. Both use the devhost log label and fold home-directory paths.
 func WriteFailure(writer io.Writer, err error) {
+	writer = diagnosticWriter(writer)
 	// The writes are unchecked: this is the report of a failure, and nothing is
 	// left to report a failed write to.
 	if IsAgentMode() {
-		_, _ = fmt.Fprintf(writer, "ERR: %s\n", err.Error())
+		Log(writer, "devhost", "ERR: "+err.Error())
 		return
 	}
 
@@ -58,9 +58,9 @@ func WriteFailure(writer io.Writer, err error) {
 		}
 	}
 
-	_, _ = fmt.Fprintf(writer, "[ERROR] %s\n", message)
+	Log(writer, "devhost", "[ERROR] "+message)
 	if hint != "" {
-		_, _ = fmt.Fprintf(writer, "[INFO] %s\n", hint)
+		Log(writer, "devhost", "[INFO] "+hint)
 	}
 }
 

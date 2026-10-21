@@ -615,7 +615,7 @@ func validateService(
 			resolvedPath := filepath.Clean(filepath.Join(manifestDirectoryPath, p))
 			relativePath, err := filepath.Rel(manifestDirectoryPath, resolvedPath)
 			if err != nil || relativePath == ".." || strings.HasPrefix(relativePath, ".."+string(filepath.Separator)) {
-				fmt.Fprintln(os.Stderr, cliout.Warning(fmt.Sprintf("services.%s.watch path %q resolves outside the manifest directory %q", serviceName, p, manifestDirectoryPath)))
+				cliout.WriteWarning(os.Stderr, fmt.Sprintf("services.%s.watch path %q resolves outside the manifest directory %q", serviceName, p, manifestDirectoryPath))
 			}
 			watch = append(watch, p)
 		}

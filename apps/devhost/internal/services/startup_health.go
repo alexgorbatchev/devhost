@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"io"
 	"net"
 	"strconv"
@@ -33,14 +34,14 @@ func waitForStartupHealth(ctx context.Context, service ResolvedService, options 
 				return
 			}
 			lastProgressLog = now
-			writeLogLine(options.logWriter, options.stackName, fmt.Sprintf(
+			cliout.Log(options.logWriter, options.stackName, fmt.Sprintf(
 				"Waiting for service %s to pass its %s (elapsed: %s; timeout: %s)...",
 				service.Name, describeStartupHealth(service.Health), elapsed.Round(time.Second), time.Duration(service.Health.Timeout)*time.Millisecond,
 			))
 			if mismatch == "" {
 				mismatch = startupBindMismatch(ctx, service)
 				if mismatch != "" {
-					writeLogLine(options.logWriter, options.stackName, fmt.Sprintf("WARNING: Service %s: %s", service.Name, mismatch))
+					cliout.Log(options.logWriter, options.stackName, cliout.Warning(fmt.Sprintf("Service %s: %s", service.Name, mismatch)))
 				}
 			}
 		},

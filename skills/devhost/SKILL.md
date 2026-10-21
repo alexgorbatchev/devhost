@@ -4,7 +4,7 @@ description: Use when running devhost, serving static files or Markdown, routing
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-20 21:28
+  last_modified: 2026-10-20 21:52
   status: current
 ---
 
@@ -12,7 +12,7 @@ metadata:
 
 Read on-demand devtools asset rebuild notices and every line of compiler diagnostics with the same stack prefix and output formatting as other foreground stack logs.
 
-Run `devhost` with `AGENT=1`: help becomes `key: value` text, and a failed command ends with one `ERR:` line that holds the whole error. Without it, a failure ends with an `[ERROR]` line and, where the next step is known, an `[INFO]` hint. Failure lines and warnings (`WARN:`, or `[WARN]` without `AGENT=1`) go to stderr. Exit code `0` means success and `1` a failure. `devhost start` ended by a signal exits with `128` plus the signal number: `130` after Ctrl-C, `143` after SIGTERM.
+Run `devhost` with `AGENT=1`: help becomes `key: value` text, and a failed command reports the complete error with `devhost: ERR:`. Without it, a failure uses `devhost | [ERROR]` and, where the next step is known, an `[INFO]` hint with the same prefix. Failure lines and warnings (`WARN:`, or `[WARN]` without `AGENT=1`) go to stderr. Stop-command progress also uses the `devhost` log label. Devhost-owned diagnostics fold home-directory paths to `~` or `~/...`; child output, machine-readable lists, and certificates retain their original bytes and paths. Exit code `0` means success and `1` a failure. `devhost start` ended by a signal exits with `128` plus the signal number: `130` after Ctrl-C, `143` after SIGTERM.
 
 Read lines Caddy writes with the `caddy` log label (`caddy | ` in human mode, `caddy: ` in agent mode) and devhost's messages about Caddy with the `devhost` label. After a successful Caddy command devhost shows Caddy's warnings and errors only; after a failure it shows Caddy's other lines too. It leaves out lines it reports itself or that no setting changes, such as the Firefox and Java trust-store skips of a local CA installation. Successful route reloads are quiet unless `--debug` is selected; failed reloads display diagnostics. Human admin-availability errors give the recovery command, while agent errors also retain the transport detail. For a Linux HTTPS port 443 permission failure, run `devhost caddy privileged-ports`, then `devhost caddy start`. Runtime logs stay in `<state-dir>/caddy/caddy.runtime.log` with Caddy's automatic rotation. Startup `caddy.stdout.log` and `caddy.stderr.log` beside it are replaced on each start. Background Caddy output remains in these files after the command exits.
 
