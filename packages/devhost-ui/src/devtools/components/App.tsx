@@ -1,5 +1,7 @@
 import type { JSX } from "react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useStore } from "zustand";
+import { createDevtoolsSettingsStore } from "../shared/createDevtoolsSettingsStore";
 import { PageChat } from "../features/agentChat/components/PageChat";
 
 import { Button } from "../shared";
@@ -84,7 +86,24 @@ function AppContent(): JSX.Element {
     useExternalDevtoolsLaunchers(externalToolbarsEnabled);
   const resourceUsage = useResourceUsage(resourcesEnabled);
   const [isMinimapHovered, setIsMinimapHovered] = useState<boolean>(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const settingsStore = useMemo(
+    () =>
+      createDevtoolsSettingsStore(
+        {
+          projectRootPath,
+          pageURL: window.location.href,
+        },
+        () => window.localStorage,
+      ),
+    [projectRootPath],
+  );
+  const isChatOpen = useStore(settingsStore, (state) => state.chat.isOpen);
+  const setIsChatOpen = useCallback(
+    (isOpen: boolean): void => {
+      settingsStore.getState().updateChat({ isOpen });
+    },
+    [settingsStore],
+  );
   const exitedServices = services.filter(
     (service) =>
       service.managed &&
@@ -149,6 +168,7 @@ function AppContent(): JSX.Element {
       {chatEnabled ? (
         <PageChat
           key={projectRootPath}
+          settingsStore={settingsStore}
           isOpen={isChatOpen}
           onOpenChange={setIsChatOpen}
           isSelectionEnabled={annotationEnabled}
@@ -220,7 +240,7 @@ function AppContent(): JSX.Element {
             <ExternalDevtoolsPanel launchers={externalDevtoolsLaunchers} onToggleLauncher={toggleLauncher} />
           ) : null}
           {chatEnabled ? (
-            <Button aria-expanded={isChatOpen} onClick={() => setIsChatOpen((current) => !current)}>
+            <Button aria-expanded={isChatOpen} onClick={() => setIsChatOpen(!isChatOpen)}>
               Chat
             </Button>
           ) : null}

@@ -18,6 +18,94 @@ import { AgentChatPanel } from "../AgentChatPanel";
 import { AssistantRuntimeProvider, useExternalStoreRuntime, type ThreadMessageLike } from "@assistant-ui/react";
 import { Thread } from "@alexgorbatchev/shadcn/assistant-ui/native/thread";
 import { ChatUserText } from "../ChatUserText";
+import { App } from "../../../../components/App";
+import { DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "../../../../shared/constants";
+import { createMockWebSocket, type IMockWebSocketConnection } from "../../../../../../test-support/createMockWebSocket";
+import { fixture_reloadEvents, fixture_reloadSession } from "./fixtures";
+
+export function readChatViewport(panel: HTMLElement): HTMLDivElement {
+  const viewport = panel.querySelector<HTMLDivElement>('[data-slot="aui_thread-viewport"]');
+  if (!viewport) throw new Error("The native chat viewport has not mounted.");
+  return viewport;
+}
+
+export function isChatViewportAtBottom(viewport: HTMLDivElement): boolean {
+  return viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop <= 1;
+}
+
+// The chat stream the reload server last accepted, so a story can deliver live events after the replay.
+let liveChatConnection: IMockWebSocketConnection | null = null;
+
+/** Delivers a completed agent reply, `Live reply <sequence>.`, to the saved conversation. */
+export function deliverChatReply(sequence: number): void {
+  if (!liveChatConnection) throw new Error("The chat stream is not connected.");
+  liveChatConnection.send({
+    type: "event",
+    sessionId: fixture_reloadSession.id,
+    sequence,
+    payload: {
+      method: "item/completed",
+      params: { item: { type: "agentMessage", id: `live-${sequence}`, text: `Live reply ${sequence}.` } },
+    },
+  });
+}
+
+export function ChatReloadScene(): JSX.Element {
+  const [generation, setGeneration] = useState(0);
+  return (
+    <div>
+      <button type="button" onClick={() => setGeneration((value) => value + 1)}>
+        Reload devtools
+      </button>
+      <App key={generation} />
+    </div>
+  );
+}
+
+/** Serves the saved conversation; its stream replays `events` first. */
+export function installChatReloadServer(events: readonly IChatEvent[] = fixture_reloadEvents): VoidFunction {
+  const restoreCatalog = installPageChatCatalog();
+  const catalogFetch = globalThis.fetch;
+  const originalWebSocket = globalThis.WebSocket;
+  const originalConfig: unknown = Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME);
+  Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
+    projectRootPath: fixture_reloadSession.projectRootPath,
+    chatEnabled: true,
+    statusEnabled: false,
+    minimapEnabled: false,
+    editorEnabled: false,
+    externalToolbarsEnabled: false,
+  });
+  const fetch: FetchFunction = async (input, init) => {
+    const url = new URL(input instanceof Request ? input.url : String(input), window.location.href);
+    if (url.pathname === "/__devhost__/chat/sessions") return Response.json({ sessions: [fixture_reloadSession] });
+    return catalogFetch(input, init);
+  };
+  Reflect.set(globalThis, "fetch", fetch);
+  Reflect.set(
+    globalThis,
+    "WebSocket",
+    createMockWebSocket((connection) => {
+      if (connection.url.pathname === "/__devhost__/ws/chat") {
+        liveChatConnection = connection;
+        connection.send({
+          type: "snapshot",
+          sessionId: fixture_reloadSession.id,
+          session: fixture_reloadSession,
+          events,
+          pendingRequestIds: [],
+        });
+      } else connection.send({ services: [] });
+    }),
+  );
+  return () => {
+    liveChatConnection = null;
+    restoreCatalog();
+    Reflect.set(globalThis, "WebSocket", originalWebSocket);
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, originalConfig);
+  };
+}
+
 export function UserMessageScene(): JSX.Element {
   const [messages] = useState<ThreadMessageLike[]>([
     {

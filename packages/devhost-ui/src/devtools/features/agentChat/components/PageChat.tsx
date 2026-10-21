@@ -17,15 +17,23 @@ import { AgentChatPanel } from "./AgentChatPanel";
 import { PageAnnotationToolbar } from "./PageAnnotationToolbar";
 import { PageContextList } from "./PageContextList";
 import { useTabShare } from "../../visualAnnotations/hooks/useTabShare";
+import type { DevtoolsSettingsStore } from "../../../shared/types";
 
 interface IPageChatProps {
+  settingsStore?: DevtoolsSettingsStore;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   isSelectionEnabled: boolean;
   rootReference: RefObject<HTMLDivElement | null>;
 }
 
-export function PageChat({ isOpen, onOpenChange, isSelectionEnabled, rootReference }: IPageChatProps): JSX.Element {
+export function PageChat({
+  isOpen,
+  onOpenChange,
+  isSelectionEnabled,
+  rootReference,
+  settingsStore,
+}: IPageChatProps): JSX.Element {
   const sharing = useTabShare();
   const [sessionPageURL] = useState(() => window.location.href);
   const plugin = useSyncExternalStore(subscribeToAnnotationSelectionPlugins, readActiveAnnotationSelectionPlugin);
@@ -99,7 +107,7 @@ export function PageChat({ isOpen, onOpenChange, isSelectionEnabled, rootReferen
     const sentIds = new Set(shapes.map((shape) => shape.id));
     setShapes((current) => current.filter((shape) => !sentIds.has(shape.id)));
   }, [selectedTargets, removeSelection, shapes]);
-  const chat = useAgentChat({ pageURL: sessionPageURL, beforeSend, onSent: clearSentContext });
+  const chat = useAgentChat({ pageURL: sessionPageURL, beforeSend, onSent: clearSentContext, settingsStore });
   const isContextDisabled = isCapturing || chat.isPreparing;
   return (
     <PortalProvider container={rootReference}>

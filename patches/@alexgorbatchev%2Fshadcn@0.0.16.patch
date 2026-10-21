@@ -1,8 +1,62 @@
 diff --git a/dist/chunk-5ntb7p4q.js b/dist/chunk-5ntb7p4q.js
-index 4cfa3adc367b6eac648614dbc8169e43a5f2a598..426f518fd91bf7c2258d956afbf544666823358a 100644
+index 4cfa3adc367b6eac648614dbc8169e43a5f2a598..c7541576be39ed4d6c0641c3f4e5bf12df2ef299 100644
 --- a/dist/chunk-5ntb7p4q.js
 +++ b/dist/chunk-5ntb7p4q.js
-@@ -488,6 +488,7 @@ var Composer = ({ autoFocus }) => {
+@@ -157,7 +157,8 @@ var ThreadHistorySkeleton = () => /* @__PURE__ */ jsxs("div", {
+ function Thread2({
+   components = EMPTY_COMPONENTS,
+   autoFocus = true,
+-  emptyComposerPosition = "center"
++  emptyComposerPosition = "center",
++  viewportProps
+ }) {
+   const isEmpty = useAuiState(isNewChatView);
+   return /* @__PURE__ */ jsx(ThreadComponentsContext.Provider, {
+@@ -165,11 +166,12 @@ function Thread2({
+     children: /* @__PURE__ */ jsx(ThreadRoot, {
+       isEmpty,
+       autoFocus,
+-      emptyComposerPosition
++      emptyComposerPosition,
++      viewportProps
+     })
+   });
+ }
+-var ThreadRoot = ({ isEmpty, autoFocus, emptyComposerPosition }) => {
++var ThreadRoot = ({ isEmpty, autoFocus, emptyComposerPosition, viewportProps }) => {
+   const { Welcome = ThreadWelcome } = useContext(ThreadComponentsContext);
+   const isCentered = isEmpty && emptyComposerPosition === "center";
+   return /* @__PURE__ */ jsx(ThreadPrimitive.Root, {
+@@ -178,6 +180,7 @@ var ThreadRoot = ({ isEmpty, autoFocus, emptyComposerPosition }) => {
+     }),
+     children: /* @__PURE__ */ jsx(ThreadPrimitive.Viewport, {
+       turnAnchor: "top",
++      ...viewportProps,
+       "data-slot": "aui_thread-viewport",
+       render: /* @__PURE__ */ jsx("div", {
+         className: "relative flex flex-1 flex-col overflow-x-auto overflow-y-scroll scroll-smooth"
+@@ -201,15 +204,19 @@ var ThreadRoot = ({ isEmpty, autoFocus, emptyComposerPosition }) => {
+               children: () => /* @__PURE__ */ jsx(ThreadMessage, {})
+             })
+           }),
++          /* @__PURE__ */ jsx("div", {
++            "aria-hidden": "true",
++            className: cn2(!isCentered && "flex-1")
++          }),
+           /* @__PURE__ */ jsxs(ThreadPrimitive.ViewportFooter, {
+             render: /* @__PURE__ */ jsx("div", {
+-              className: cn2("aui-thread-viewport-footer bg-background sticky bottom-0 flex flex-col gap-4 overflow-visible pb-4 md:pb-6", !isCentered && "mt-auto rounded-t-(--composer-radius)")
++              className: cn2("aui-thread-viewport-footer bg-background sticky bottom-0 flex flex-col gap-4 overflow-visible pb-4 md:pb-6", !isCentered && "rounded-t-(--composer-radius)")
+             }),
+             children: [
+               /* @__PURE__ */ jsx(ThreadScrollToBottom, {}),
+               /* @__PURE__ */ jsx(ThreadFollowupSuggestions2, {}),
+               /* @__PURE__ */ jsx(Composer, {
+                 autoFocus
+               }),
+               /* @__PURE__ */ jsx(AuiIf, {
+                 condition: (s) => isNewChatView(s) && s.composer.isEmpty,
+@@ -488,6 +495,7 @@ var Composer = ({ autoFocus }) => {
    });
  };
  var ComposerAction = () => {
@@ -10,7 +64,7 @@ index 4cfa3adc367b6eac648614dbc8169e43a5f2a598..426f518fd91bf7c2258d956afbf54466
    const isSending = useAuiState((s) => s.composer.submission !== undefined && !(s.thread.isRunning && s.thread.capabilities.cancel));
    return /* @__PURE__ */ jsxs("div", {
      className: "aui-composer-action-wrapper relative flex items-center justify-between",
-@@ -496,6 +497,7 @@ var ComposerAction = () => {
+@@ -496,6 +504,7 @@ var ComposerAction = () => {
        /* @__PURE__ */ jsxs("div", {
          className: "flex items-center gap-1.5",
          children: [
@@ -18,7 +72,7 @@ index 4cfa3adc367b6eac648614dbc8169e43a5f2a598..426f518fd91bf7c2258d956afbf54466
            /* @__PURE__ */ jsxs(AuiIf, {
              condition: (s) => s.thread.capabilities.dictation,
              children: [
-@@ -504,11 +506,11 @@ var ComposerAction = () => {
+@@ -504,11 +513,11 @@ var ComposerAction = () => {
                  children: /* @__PURE__ */ jsx(ComposerPrimitive.Dictate, {
                    asChild: true,
                    children: /* @__PURE__ */ jsx(TooltipIconButton2, {
@@ -32,7 +86,7 @@ index 4cfa3adc367b6eac648614dbc8169e43a5f2a598..426f518fd91bf7c2258d956afbf54466
                      children: /* @__PURE__ */ jsx(MicIcon, {
                        "aria-hidden": "true",
                        className: "size-4 shrink-0"
-@@ -521,11 +523,11 @@ var ComposerAction = () => {
+@@ -521,11 +530,11 @@ var ComposerAction = () => {
                  children: /* @__PURE__ */ jsx(ComposerPrimitive.StopDictation, {
                    asChild: true,
                    children: /* @__PURE__ */ jsx(TooltipIconButton2, {
@@ -46,7 +100,7 @@ index 4cfa3adc367b6eac648614dbc8169e43a5f2a598..426f518fd91bf7c2258d956afbf54466
                      children: /* @__PURE__ */ jsx(SquareIcon, {
                        "aria-hidden": "true",
                        className: "size-3.5 shrink-0 animate-pulse motion-reduce:animate-none"
-@@ -540,11 +542,11 @@ var ComposerAction = () => {
+@@ -540,11 +549,11 @@ var ComposerAction = () => {
              children: /* @__PURE__ */ jsx(ComposerPrimitive.Send, {
                asChild: true,
                children: /* @__PURE__ */ jsx(TooltipIconButton2, {
@@ -60,7 +114,7 @@ index 4cfa3adc367b6eac648614dbc8169e43a5f2a598..426f518fd91bf7c2258d956afbf54466
                  children: /* @__PURE__ */ jsx(ArrowUpIcon, {
                    "aria-hidden": "true",
                    className: "size-4 shrink-0"
-@@ -557,11 +559,11 @@ var ComposerAction = () => {
+@@ -557,11 +566,11 @@ var ComposerAction = () => {
              children: /* @__PURE__ */ jsx(ComposerPrimitive.Resume, {
                asChild: true,
                children: /* @__PURE__ */ jsx(TooltipIconButton2, {
@@ -74,7 +128,7 @@ index 4cfa3adc367b6eac648614dbc8169e43a5f2a598..426f518fd91bf7c2258d956afbf54466
                  children: /* @__PURE__ */ jsx(PlayIcon, {
                    "aria-hidden": "true",
                    className: "size-4 shrink-0"
-@@ -576,7 +578,7 @@ var ComposerAction = () => {
+@@ -576,7 +585,7 @@ var ComposerAction = () => {
                children: /* @__PURE__ */ jsx(Button2, {
                  type: "button",
                  variant: "default",
@@ -83,7 +137,7 @@ index 4cfa3adc367b6eac648614dbc8169e43a5f2a598..426f518fd91bf7c2258d956afbf54466
                  children: /* @__PURE__ */ jsx(SquareIcon, {
                    "aria-hidden": "true",
                    className: "size-3.5 shrink-0"
-@@ -874,6 +876,7 @@ var UserImagePart = (part) => /* @__PURE__ */ jsx("div", {
+@@ -874,6 +883,7 @@ var UserImagePart = (part) => /* @__PURE__ */ jsx("div", {
    })
  });
  var UserMessage = () => {
@@ -91,7 +145,7 @@ index 4cfa3adc367b6eac648614dbc8169e43a5f2a598..426f518fd91bf7c2258d956afbf54466
    return /* @__PURE__ */ jsxs(MessagePrimitive.Root, {
      "data-slot": "aui_user-message-root",
      "data-role": "user",
-@@ -888,7 +891,7 @@ var UserMessage = () => {
+@@ -888,7 +898,7 @@ var UserMessage = () => {
            /* @__PURE__ */ jsx("div", {
              className: "aui-user-message-content peer bg-muted text-foreground rounded-(--composer-radius) px-4 py-2 wrap-break-word empty:hidden",
              children: /* @__PURE__ */ jsx(MessagePrimitive.Parts, {
@@ -107,8 +161,8 @@ index f2ca13e6df646eedc1f2797a674a74dacdd0ea39..485ef165fc2cf83e60f4c1716b351f9a
 @@ -1,5 +1,5 @@
 -import type { ReactElement } from "react";
 -import { MessagePrimitive, type ToolCallMessagePartComponent } from "@assistant-ui/react";
-+import type { ReactElement } from "react";
-+import { MessagePrimitive, type ToolCallMessagePartComponent, type TextMessagePartProps } from "@assistant-ui/react";
++import type { ComponentPropsWithRef, ReactElement } from "react";
++import { MessagePrimitive, ThreadPrimitive, type ToolCallMessagePartComponent, type TextMessagePartProps } from "@assistant-ui/react";
  import { type ComponentType, type PropsWithChildren } from "react";
  export type ThreadGroupPart = MessagePrimitive.GroupedParts.GroupPart;
  /**
@@ -121,3 +175,12 @@ index f2ca13e6df646eedc1f2797a674a74dacdd0ea39..485ef165fc2cf83e60f4c1716b351f9a
      AssistantMessage?: ComponentType | undefined;
      Welcome?: ComponentType | undefined;
      ToolFallback?: ToolCallMessagePartComponent | undefined;
+@@ -26,6 +28,8 @@ export type ThreadComponents = {
+     }> | undefined;
+ };
+ export type ThreadProps = {
++    /** Native viewport controls and ref, including scroll restoration. */
++    viewportProps?: Omit<ComponentPropsWithRef<typeof ThreadPrimitive.Viewport>, "children" | "render"> | undefined;
+     components?: ThreadComponents | undefined;
+     autoFocus?: boolean | undefined;
+     /** Place the composer at the bottom even before the first message. */

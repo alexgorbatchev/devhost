@@ -29,6 +29,14 @@ The response contains `id`, `harness`, `projectRootPath`, `status`, an optional 
 
 Sessions and retained events are owned by the running stack. Reloading or closing a browser does not end an in-flight turn. New sessions follow a newly selected checkout; existing sessions retain the directory they started in. Stack shutdown stops and joins its processes. Browser replay is in memory and does not constitute a durable prompt queue across stack restarts; native clients own their own saved conversation history.
 
+## Browser view persistence
+
+The injected UI uses the shared Zustand settings store with `persist` and `createJSONStorage`. Local storage keys start with `devhost:settings:` and include the resolved project directory and full page URL. The versioned payload contains chat visibility, panel side, selected harness and model, active devhost session ID, text draft, and conversation scroll position. Zod validates saved settings; invalid data and unknown versions reset to defaults. Storage access and quota failures leave the in-memory UI usable.
+
+On reload, the client lists the routed project's sessions and attaches the saved ID only if that record still exists and is not closed. It obtains messages and pending request IDs from the authoritative WebSocket snapshot, then restores the scroll position once the panel is visible. A position at the bottom follows the end of the replay and then each new reply; a position above the bottom stays in place as replies arrive. Closing a conversation clears its saved ID and scroll position. Stored harness/model preferences are reconciled with discovery; a missing model returns to the configured default.
+
+Draft text remains saved until send acknowledgement, and reloading never submits it. Browser storage contains no transcript, snapshot images, page selections, drawings, tab-sharing permissions, or approval responses. Those remain owned by the server, page, or browser permission lifecycle.
+
 ## Event replay and commands
 
 Connect to `/__devhost__/ws/chat?sessionId=<id>&pageURL=<page-url>` on the routed origin. Supply the same routed page URL for discovery, listing, attachment, and closure. The server checks the resolved project before attachment and again before every command, so an old socket cannot send into the previous checkout after a project switch. Chat mutations and WebSocket attachments require a matching `Origin` header.
