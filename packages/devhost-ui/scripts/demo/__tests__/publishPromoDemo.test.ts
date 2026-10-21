@@ -1,11 +1,17 @@
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { expect, it } from "bun:test";
+import { beforeAll, expect, it } from "bun:test";
+import { assertDemoFfmpeg } from "../assertDemoFfmpeg";
 import { publishPromoDemo } from "../publishPromoDemo";
 import { runCommand } from "../runCommand";
 import { createColorFilm } from "./fixtures/createColorFilm";
 import { readPosterColor } from "./fixtures/readPosterColor";
+
+// These tests encode with the same FFmpeg the films use; a build that cannot fails here with the reason.
+beforeAll(async () => {
+  await assertDemoFfmpeg(runCommand);
+});
 
 it("publishes the promo's media and a landing-page player whose poster is the end card", async () => {
   const parentPath = resolve(import.meta.dir, "../../../../../.tmp/demo-tests");
