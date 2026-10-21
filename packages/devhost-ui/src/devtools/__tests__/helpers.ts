@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import { buildDevtoolsBundle } from "../../../../../apps/devhost/scripts/buildDevtoolsBundle";
 import { createOwnedBrowserEnvironment } from "../../../../../test-support/createOwnedBrowserEnvironment";
 import type { Page } from "playwright";
+import { z } from "zod";
 import type { IChatSnapshot } from "../features/agentChat/types";
 
 interface IBuiltDevtoolsHost {
@@ -104,7 +105,28 @@ export async function startBuiltDevtoolsHost(chat?: IChatSnapshot): Promise<IBui
         socket.send(JSON.stringify(socket.data === "/__devhost__/ws/chat" && chat ? chat : { services: [] }));
       },
       message(socket, message): void {
-        if (socket.data === "/__devhost__/ws/chat") chatCommands.push(String(message));
+        if (socket.data !== "/__devhost__/ws/chat" || !chat) return;
+        chatCommands.push(String(message));
+        const command = z
+          .object({ type: z.literal("send"), commandId: z.string() })
+          .safeParse(JSON.parse(String(message)));
+        if (!command.success) return;
+        socket.send(
+          JSON.stringify({ type: "command_result", sessionId: chat.session.id, commandId: command.data.commandId }),
+        );
+        socket.send(
+          JSON.stringify({
+            type: "event",
+            sessionId: chat.session.id,
+            sequence: (chat.events?.length ?? 0) + 1,
+            payload: {
+              method: "item/completed",
+              params: {
+                item: { type: "agentMessage", id: "continued-reply", text: `Continued in ${chat.session.id}` },
+              },
+            },
+          }),
+        );
       },
     },
   });

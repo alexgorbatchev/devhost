@@ -3,6 +3,47 @@ import { chromium, type Browser } from "playwright";
 import { fixture_runningChatSnapshot, fixture_savedChatSnapshot } from "./fixtures";
 import { startBuiltDevtoolsHost, waitForChatScroll } from "./helpers";
 
+test("client navigation and reload keep the open chat and its selected conversation", async () => {
+  const host = await startBuiltDevtoolsHost(fixture_savedChatSnapshot);
+  let browser: Browser | undefined;
+  try {
+    browser = await chromium.launch({ env: host.browserEnvironment, headless: true });
+    const page = await browser.newPage();
+    page.setDefaultTimeout(5000);
+    await page.goto(host.url);
+    await page.getByRole("button", { name: "Chat", exact: true }).click();
+    await page.getByRole("button", { name: "Chat Settings" }).click();
+    await page.getByRole("option", { name: "codex · saved-conversation" }).waitFor({ state: "attached" });
+    await page.getByRole("combobox", { name: "Conversation" }).selectOption("saved-conversation");
+    await page.keyboard.press("Escape");
+    await page.getByText("codex · idle", { exact: true }).waitFor();
+    await page.getByRole("textbox").fill("Continue this conversation after navigation");
+    // A host router changes its URL without remounting the injected devtools.
+    await page.evaluate(() => window.history.pushState(null, "", "/details?view=review#context"));
+    await page.reload();
+    const chat = page.getByRole("button", { name: "Chat", exact: true });
+    await chat.waitFor();
+    expect(await chat.getAttribute("aria-expanded")).toBe("true");
+    await page.getByText("codex · idle", { exact: true }).waitFor();
+    expect(await page.getByRole("textbox").inputValue()).toBe("Continue this conversation after navigation");
+    await page.getByRole("button", { name: "Chat Settings" }).click();
+    expect(await page.getByRole("combobox", { name: "Conversation" }).inputValue()).toBe("saved-conversation");
+    expect(host.chatCommands).toEqual([]);
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Send Message" }).click();
+    await page.getByText("Continued in saved-conversation", { exact: true }).waitFor();
+    expect(host.chatCommands).toHaveLength(1);
+    expect(JSON.parse(String(host.chatCommands[0]))).toMatchObject({
+      type: "send",
+      text: "Continue this conversation after navigation",
+    });
+    expect(host.requestMethods.every((method) => method === "GET")).toBe(true);
+  } finally {
+    await browser?.close();
+    await host.close();
+  }
+}, 30_000);
+
 test.each([fixture_savedChatSnapshot, fixture_runningChatSnapshot])(
   "the compiled chat restores an idle or running session view across actual page reloads",
   async (snapshot) => {

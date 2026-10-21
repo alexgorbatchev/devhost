@@ -24,19 +24,19 @@ describe("createDevtoolsSettingsStore", () => {
     expect(third.getState().chat.draft).toBe("Review cart");
   });
 
-  it("isolates projects, pages and origins sharing the same storage", () => {
+  it("shares a conversation across pages while isolating projects and origins", () => {
     const storage = factory_settingsStorage();
     const first = createDevtoolsSettingsStore(
       { projectRootPath: "/shop", pageURL: "https://app.localhost/cart" },
       () => storage,
     );
-    first.getState().updateChat({ isOpen: true, draft: "Private cart review" });
+    first.getState().updateChat({ isOpen: true, draft: "Private cart review", sessionId: "cart-review" });
     const anotherProject = createDevtoolsSettingsStore(
       { projectRootPath: "/other", pageURL: "https://app.localhost/cart" },
       () => storage,
     );
     const anotherPage = createDevtoolsSettingsStore(
-      { projectRootPath: "/shop", pageURL: "https://app.localhost/profile" },
+      { projectRootPath: "/shop", pageURL: "https://app.localhost/profile?view=details#context" },
       () => storage,
     );
     const anotherOrigin = createDevtoolsSettingsStore(
@@ -44,7 +44,9 @@ describe("createDevtoolsSettingsStore", () => {
       () => storage,
     );
     expect(anotherProject.getState().chat.draft).toBe("");
-    expect(anotherPage.getState().chat.draft).toBe("");
+    expect(anotherPage.getState().chat.draft).toBe("Private cart review");
+    expect(anotherPage.getState().chat.isOpen).toBe(true);
+    expect(anotherPage.getState().chat.sessionId).toBe("cart-review");
     expect(anotherOrigin.getState().chat.draft).toBe("");
     anotherProject.getState().updateChat({ draft: "Other project" });
     expect(
@@ -63,7 +65,10 @@ describe("createDevtoolsSettingsStore", () => {
   ])("discards invalid saved data and can save again: %s", (saved) => {
     const storage = factory_settingsStorage();
     const scope = { projectRootPath: "/shop", pageURL: "https://app.localhost/" };
-    storage.setItem(`devhost:settings:${JSON.stringify([scope.projectRootPath, scope.pageURL])}`, saved);
+    storage.setItem(
+      `devhost:settings:${JSON.stringify([scope.projectRootPath, new URL(scope.pageURL).origin])}`,
+      saved,
+    );
     const store = createDevtoolsSettingsStore(scope, () => storage);
     expect(store.getState().chat.draft).toBe("");
     expect(store.getState().chat.isOpen).toBe(false);

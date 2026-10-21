@@ -39,7 +39,7 @@ export function createDevtoolsSettingsStore(
         updateChat: (patch) => set((state) => ({ chat: { ...state.chat, ...patch } })),
       }),
       {
-        name: `devhost:settings:${JSON.stringify([scope.projectRootPath, scope.pageURL])}`,
+        name: `devhost:settings:${JSON.stringify([scope.projectRootPath, new URL(scope.pageURL).origin])}`,
         version: 1,
         storage: createJSONStorage<IDevtoolsSettings>(() => createSafeStorage(getStorage)),
         partialize: (state) => ({ chat: state.chat }),
