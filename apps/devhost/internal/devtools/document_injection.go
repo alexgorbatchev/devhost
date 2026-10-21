@@ -11,8 +11,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/statuspage"
 )
 
 type StartDocumentInjectionServerOptions struct {
@@ -111,7 +109,7 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 			writer.WriteHeader(http.StatusBadGateway)
 			// Keep the injected control UI available when a document's backend is down.
 			// A disconnected browser cannot receive the recovery response, so delivery is best-effort.
-			document := fmt.Sprintf(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Service unavailable · devhost</title><script>%s</script><style>%s</style></head><body data-devhost-recovery><main class="devhost-status"><p class="devhost-status__brand">devhost / connection</p><p class="devhost-status__code">502</p><h1 class="devhost-status__title">Service unavailable</h1><p class="devhost-status__body">Use devhost to view logs and restart it.</p></main></body></html>`, statuspage.ThemeScript, statuspage.CSS)
+			document := renderUnavailableDocument()
 			_, _ = io.WriteString(writer, injectDevtoolsScript(document))
 		},
 	}

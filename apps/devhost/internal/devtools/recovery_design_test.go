@@ -106,4 +106,5 @@ func TestRecoveryDesignInBrowser(t *testing.T) {
 	if _, err := chromedp.Run(ctx, chromedp.Poll[bool](`document.documentElement.dataset.theme === 'dark'`)); err != nil {
 		t.Fatal(err)
 	}
+	assertPagePreviewNavigation(t, ctx)
 }

@@ -32,6 +32,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Download the pinned guide videos a checkout lacks: `just docs media` (`just docs run`, `test`, and `build` run it first).
 - Upload reviewed guide videos to the `media` release and pin them: `just docs publish-media`. This needs the GitHub CLI signed in with write access; commit the rewritten `packages/docs/demo-media.json`.
 - Start the root devhost stack locally: `just run`
+- Preview standalone 404, recovery, error, directory, and Markdown pages while that stack runs: open `/__devhost__/pages/` on a root-routed development domain. The gallery requires `DEVHOST_DEV_SOURCE_DIR`, which `just run` sets.
 - Preview startup timeout and recovery pages: `just devhost demo-recovery`; configure `DEVHOST_RECOVERY` through `.envrc` / `.envrc.local`.
 - Start the docs site locally: `just docs` (or `just docs run`)
 - Open the injected devtools UI design reference (`packages/design/references/devtools.html`) in the default browser: `just design devtools`
