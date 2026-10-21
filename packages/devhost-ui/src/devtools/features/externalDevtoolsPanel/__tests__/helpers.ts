@@ -76,6 +76,7 @@ export async function startNativeVueHost(options: INativeVueHostOptions = {}): P
         "@vitejs/devtools-kit": "0.7.6",
         "@devframes/hub": "1.2.2",
         "@devframes/hub-ui": "1.2.2",
+        "@devframes/agentic": "1.2.2",
         devframe: "1.2.2",
       },
     }),
