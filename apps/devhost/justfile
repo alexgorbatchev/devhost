@@ -28,9 +28,9 @@ run-ai *args: build-devtools-bundle
 demo-recovery: build-devtools-bundle
     ./scripts/runFromSource.sh start --manifest ../../demos/recovery/devhost.toml
 
-# Run Go tests
+# Run Go tests fresh: live-process integration tests have volatile /proc inputs
 test: build-devtools-bundle
-    go test ./...
+    go test -count=1 ./...
 
 # Fail on unformatted Go files, go vet findings, shadowed built-ins such as a variable named error, and module drift
 lint: build-devtools-bundle
