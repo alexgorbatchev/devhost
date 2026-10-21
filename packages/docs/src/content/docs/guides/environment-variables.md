@@ -17,6 +17,23 @@ Only `DEVHOST_BIND_HOST` and `PORT` are operational bind inputs.
 The remaining variables are context metadata and must not be used as socket bind targets.
 Undocumented `DEVHOST_*` variables are reserved for internal supervision and may change without notice.
 
+## Environment variables in the manifest
+
+Manifest string values read environment variables through `{{ env.NAME }}` placeholders. This applies to string fields throughout the manifest, including hosts, paths, `cwd` values, command arguments, labels, and `env` maps:
+
+```toml
+name = "{{ env.USER }}-stack"
+
+[services.web]
+command = ["bun", "run", "dev"]
+port = "auto"
+host = "web-{{ env.USER }}.localhost"
+```
+
+Placeholder names start with a letter or underscore, followed by letters, digits, or underscores. Other text stays literal, including malformed `{{ ... }}` sequences, and an unterminated `{{` keeps the rest of that string literal. A valid placeholder naming an undefined variable is a manifest read error; a defined variable may expand to the empty string.
+
+For values another service resolves at launch, such as an automatic port, use [service references](../service-references/) instead.
+
 ## Operational bind inputs
 
 - `DEVHOST_BIND_HOST`
