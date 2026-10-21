@@ -22,9 +22,9 @@ Open **Chat** in the injected toolbar to talk to an installed coding agent while
 
 Install and sign in to the [Codex CLI](https://learn.chatgpt.com/docs/cli) or [Claude Code](https://code.claude.com/docs/en/cli-reference) on the machine running devhost. Devhost launches the installed client with its existing account, settings, environment, and selected checkout. Enter no API key into the browser.
 
-Choose **Harness**, then select a model advertised by that client's native catalog. **Configured default** restores the CLI's configured model for the next turn, including after selecting another model or resuming a conversation. **Refresh harnesses** repeats discovery; discovery can succeed even when the account needs to sign in before inference. A native authentication failure is displayed in the conversation; sign in through the CLI and retry.
+Open **Chat Settings** using the gear button. Choose **Harness**, then select a model advertised by that client's native catalog. **Configured default** restores the CLI's configured model for the next turn, including after selecting another model or resuming a conversation. **Refresh Harnesses** repeats discovery; discovery can succeed even when the account needs to sign in before inference. A native authentication failure is displayed in the conversation; sign in through the CLI and retry.
 
-Type a message and send it through the browser composer. Agent replies and native tool activity stream into the conversation. Claude Code confirms receipt by replaying the actual user message into the conversation; a later model or authentication failure keeps that submitted message in history. **New conversation** starts a separate native session; **Conversation** selects an existing session. Collapsing the panel does not terminate it. Interrupt cancels the current turn, while **Close conversation** ends its owned process.
+Type a message and send it through the browser composer. Agent replies and native tool activity stream into the conversation. Claude Code confirms receipt by replaying the actual user message into the conversation; a later model or authentication failure keeps that submitted message in history. **New Conversation** starts a separate native session; **Conversation** selects an existing session. Collapsing the panel does not terminate it. Interrupt cancels the current turn, while **Close Conversation** ends its owned process.
 
 Live sessions and retained events belong to the running devhost stack, so a page reload can reconnect. Stopping devhost ends its processes. Session replay in the browser is not a separate durable queue or an automatic replay of prompts after a stack restart.
 
@@ -32,26 +32,26 @@ Client-side navigation within the same project keeps the conversation, draft, an
 
 ## Select page context
 
-1. Choose **Select element**, or hold Alt (Option on macOS).
+1. Choose **Select Elements** in the floating toolbar at the top of the page, or hold Alt (Option on macOS).
 2. Click one or more page elements to add numbered markers. Releasing Alt ends selection mode without discarding the context.
 3. Write your request in the chat composer, referring to markers such as #1 and #2.
-4. Send the message and choose the current tab in the browser's sharing picker.
+4. Send the message. If you have not already shared the tab, choose the current tab in the browser's sharing picker.
 
-Selecting elements opens chat. Escape leaves selection or drawing mode so the page accepts ordinary interactions. **Clear page context** removes the selected markers and drawings; context otherwise stays available for another message.
+Selecting elements opens chat. Escape leaves selection or drawing mode so the page accepts ordinary interactions. The instruction tip follows the pointer without moving the chat layout. Use the remove button beside any element or drawing to discard just that item, or **Clear Page Context** to discard all context. A successfully submitted message clears its markers and drawings so the next message starts with fresh context. Cancelled sharing and failed sends retain context. In conversation history, the attached **Page Context** section is collapsed by default; expand it to inspect the metadata.
 
 Selected element metadata includes its path, nearby text, accessibility information, bounds and computed styles. React development source locations and fetchable source maps are used when the host exposes them; source resolution remains best effort.
 
 ## Draw over the page
 
-Choose **Arrow**, **Line**, or **Box**, then drag on the visible page. Each completed drawing returns control to the page and appears in **Page context**. Use **Undo drawing** to remove the most recent shape. Drawing coordinates and selected element metadata accompany the captured image.
+Choose **Arrow**, **Line**, or **Box** from the floating toolbar, then drag on the visible page. Each completed drawing returns control to the page and appears in **Page context**. Drag an existing drawing by its stroke to move it. Escape cancels an in-progress move or drawing. Use **Undo Drawing** to remove the most recent shape, or remove any drawing individually from the context list. Drawing coordinates and selected element metadata accompany the captured image.
 
 ## Share one tab snapshot
 
-Sending text without page context does not open the sharing picker. Sending selected elements or drawings asks for an explicit browser share so the agent receives the visible page and its annotations as one PNG image.
+Sending text without page context does not open the sharing picker. Use **Share Tab** beside **Send Message** to share ahead of time. Sending selected elements or drawings captures the active share, or opens the sharing picker when there is no active share, so the agent receives the visible page and its annotations as one PNG image.
 
 Choose the current tab so the image matches the selected elements and drawings. The browser owns that choice; preferring the current tab does not prevent choosing another browser tab. Window and entire-screen captures are rejected. Screen capture requires a supporting browser in a secure context, such as the routed HTTPS page.
 
-The capture stops every media track after the frame is read, or on cancellation or failure. It is a single snapshot rather than continuous sharing. Cancelling the picker retains the message draft and sends no context. Conversation, harness, and model controls stay locked while a send is being prepared or confirmed, so sharing cannot redirect it to another conversation. The complete encoded message, including PNG/JPEG attachments, must fit within 8 MiB; the selected client and model must accept the image input.
+A share opened through **Share Tab** stays active for subsequent snapshots until you choose **Stop Sharing**, stop it in the browser, reload, or unmount the chat integration. Collapsing chat keeps that share active. Each message takes a fresh snapshot; it does not send continuous video. A share opened directly by sending a message stops after that snapshot, including on failure. Browser sharing permission is not persisted after the stream ends. Cancelling the picker retains the message draft and sends no context. Conversation, harness, and model controls stay locked while a send is being prepared or confirmed, so sharing cannot redirect it to another conversation. The complete encoded message, including PNG/JPEG attachments, must fit within 8 MiB; the selected client and model must accept the image input.
 
 The configured coding agent receives the message, selected metadata, page URL/title, drawing coordinates, and image. Review what is visible before sharing.
 

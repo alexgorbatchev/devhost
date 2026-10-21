@@ -15,7 +15,7 @@ export const Deny: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Deny" }));
     await expect(canvas.getByLabelText("Native response")).toHaveTextContent('"decision":"decline"');
-    await expect(canvas.queryByRole("button", { name: "Allow once" })).not.toBeInTheDocument();
+    await expect(canvas.queryByRole("button", { name: "Allow Once" })).not.toBeInTheDocument();
   },
 };
 export const ProposedFileDiff: Story = {
@@ -23,7 +23,7 @@ export const ProposedFileDiff: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByLabelText("Proposed diff for /project/app.ts")).toHaveTextContent("+hello world");
-    await userEvent.click(canvas.getByRole("button", { name: "Allow once" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Allow Once" }));
     await expect(canvas.getByLabelText("Native response")).toHaveTextContent('"decision":"accept"');
   },
 };
@@ -32,7 +32,7 @@ export const MissingFileDiff: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText("The harness has not supplied a file diff for this request.")).toBeVisible();
-    await expect(canvas.queryByRole("button", { name: "Allow once" })).not.toBeInTheDocument();
+    await expect(canvas.queryByRole("button", { name: "Allow Once" })).not.toBeInTheDocument();
     await userEvent.click(canvas.getByRole("button", { name: "Deny" }));
     await expect(canvas.getByLabelText("Native response")).toHaveTextContent('"decision":"decline"');
   },
@@ -41,8 +41,8 @@ export const SendError: Story = {
   render: () => <ChatRequestsFixture target="approval" request={fixture_commandRequest} shouldFail />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("button", { name: "Allow once" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Allow Once" }));
     await expect(canvas.getByRole("alert")).toHaveTextContent("no longer pending");
-    await expect(canvas.getByRole("button", { name: "Allow once" })).toBeEnabled();
+    await expect(canvas.getByRole("button", { name: "Allow Once" })).toBeEnabled();
   },
 };

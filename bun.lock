@@ -165,6 +165,7 @@
     },
   },
   "patchedDependencies": {
+    "@alexgorbatchev/shadcn@0.0.16": "patches/@alexgorbatchev%2Fshadcn@0.0.16.patch",
     "jotai-devtools@0.14.0": "patches/jotai-devtools@0.14.0.patch",
   },
   "packages": {

@@ -62,7 +62,7 @@ export async function runTabCaptureAcceptance(): Promise<ITabCaptureAcceptancePr
         assert(panel);
         assert(dock);
         await page.getByRole("textbox").fill("Review this annotated page.");
-        await page.getByRole("button", { name: "Send message", exact: true }).click();
+        await page.getByRole("button", { name: "Send Message", exact: true }).click();
         const command = await Promise.race([
           fixture.sentCommand,
           new Promise<never>((_resolve, reject) => {
@@ -74,14 +74,16 @@ export async function runTabCaptureAcceptance(): Promise<ITabCaptureAcceptancePr
         assert("type" in command && command.type === "send");
         assert("text" in command && typeof command.text === "string");
         await page.getByRole("textbox").fill("A follow-up draft");
-        await page.getByRole("button", { name: "Send message", exact: true }).waitFor();
-        assert(await page.getByRole("button", { name: "Send message", exact: true }).isEnabled());
+        await page.getByRole("button", { name: "Send Message", exact: true }).waitFor();
+        assert(await page.getByRole("button", { name: "Send Message", exact: true }).isEnabled());
         const serializedContext: unknown = JSON.parse(command.text.split("\n").at(-1) ?? "");
         assert(typeof serializedContext === "object" && serializedContext !== null && "shapes" in serializedContext);
         assert(Array.isArray(serializedContext.shapes));
         assert.equal(serializedContext.shapes.length, 1);
         assert.equal(serializedContext.shapes[0].kind, "box");
         assert(Array.isArray(command.images));
+        await page.getByRole("region", { name: "Page context", exact: true }).waitFor({ state: "detached" });
+        assert.equal(await page.getByRole("img", { name: "box annotation", exact: true }).count(), 0);
         const attachment: unknown = command.images[0];
         assert(typeof attachment === "object" && attachment !== null && "dataURL" in attachment);
         assert(typeof attachment.dataURL === "string");

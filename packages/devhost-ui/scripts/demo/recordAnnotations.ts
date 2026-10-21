@@ -26,8 +26,11 @@ export async function recordAnnotations(
   }
   const chat = page.getByRole("complementary", { name: "Agent chat", exact: true });
   await chat.waitFor();
-  await chat.getByRole("combobox", { name: "Harness", exact: true }).selectOption("codex");
-  await chat.getByRole("combobox", { name: "Model", exact: true }).selectOption("");
+  await clickWithIndicator(page, chat.getByRole("button", { name: "Chat Settings", exact: true }));
+  const settings = page.getByRole("dialog", { name: "Chat Settings", exact: true });
+  await settings.getByRole("combobox", { name: "Harness", exact: true }).selectOption("codex");
+  await settings.getByRole("combobox", { name: "Model", exact: true }).selectOption("");
+  await page.keyboard.press("Escape");
   const sourcePath = runtime.env.DEVHOST_DEMO_EDIT_FILE;
   assert(sourcePath);
   await chat
@@ -40,7 +43,7 @@ export async function recordAnnotations(
   console.log(
     "Choose this current tab in the browser sharing picker. Review native requests in chat; the recorder never approves them.",
   );
-  await clickWithIndicator(page, chat.getByRole("button", { name: "Send message", exact: true }));
+  await clickWithIndicator(page, chat.getByRole("button", { name: "Send Message", exact: true }));
   await chat.getByRole("status").filter({ hasText: "codex · running" }).waitFor({ timeout: 180_000 });
   await changeCaption("Codex is working on the selected page context.");
   await page.screenshot({ path: join(runtime.directoryPath, "agent-working.png") });
@@ -52,7 +55,7 @@ export async function recordAnnotations(
   );
   await changeCaption("The heading updates live from the source edit.");
   await chat.getByRole("status").filter({ hasText: "codex · idle" }).waitFor({ timeout: 180_000 });
-  await clickWithIndicator(page, chat.getByRole("button", { name: "Collapse chat", exact: true }));
+  await clickWithIndicator(page, chat.getByRole("button", { name: "Collapse Chat", exact: true }));
   await page.screenshot({ path: join(runtime.directoryPath, "agent-live-fix.png") });
   await page.waitForTimeout(6_000);
 }

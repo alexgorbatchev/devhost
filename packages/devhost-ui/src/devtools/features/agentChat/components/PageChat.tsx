@@ -1,4 +1,4 @@
-import { Button, DensityProvider, PortalProvider } from "@alexgorbatchev/shadcn";
+import { DensityProvider, PortalProvider } from "@alexgorbatchev/shadcn";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type JSX, type RefObject } from "react";
 import { AnnotationSelectionOverlay } from "../../annotationComposer/components/AnnotationSelectionOverlay";
 import { AnnotationSelectionHint } from "../../annotationComposer/components/AnnotationSelectionHint";
@@ -14,6 +14,9 @@ import type { ChatBeforeSend } from "../types";
 import { preparePageChatSend } from "../preparePageChatSend";
 import { useAgentChat } from "../hooks/useAgentChat";
 import { AgentChatPanel } from "./AgentChatPanel";
+import { PageAnnotationToolbar } from "./PageAnnotationToolbar";
+import { PageContextList } from "./PageContextList";
+import { useTabShare } from "../../visualAnnotations/hooks/useTabShare";
 
 interface IPageChatProps {
   isOpen: boolean;
@@ -23,6 +26,7 @@ interface IPageChatProps {
 }
 
 export function PageChat({ isOpen, onOpenChange, isSelectionEnabled, rootReference }: IPageChatProps): JSX.Element {
+  const sharing = useTabShare();
   const [sessionPageURL] = useState(() => window.location.href);
   const plugin = useSyncExternalStore(subscribeToAnnotationSelectionPlugins, readActiveAnnotationSelectionPlugin);
   const [tool, setTool] = useState<AnnotationShapeKind | null>(null);
@@ -33,7 +37,7 @@ export function PageChat({ isOpen, onOpenChange, isSelectionEnabled, rootReferen
     annotationSelectionPlugin: plugin,
     isDisabled: !isSelectionEnabled || tool !== null || isCapturing,
   });
-  const { selectedTargets, stopSelection, isSelectionMode } = selection;
+  const { selectedTargets, stopSelection, clearSelection, removeSelection, isSelectionMode } = selection;
   useEffect(() => () => captureReference.current?.abort(), []);
   useEffect(() => {
     if (selectedTargets.length > 0) onOpenChange(true);
@@ -69,6 +73,7 @@ export function PageChat({ isOpen, onOpenChange, isSelectionEnabled, rootReferen
               document,
               mediaDevices: navigator.mediaDevices,
               signal: controller.signal,
+              sharedStream: sharing.stream,
             });
             setIsCapturing(true);
             stopSelection();
@@ -82,29 +87,55 @@ export function PageChat({ isOpen, onOpenChange, isSelectionEnabled, rootReferen
           }
         },
       }),
-    [rootReference, selectedTargets, stopSelection, shapes],
+    [rootReference, selectedTargets, stopSelection, shapes, sharing.stream],
   );
-  const chat = useAgentChat({ pageURL: sessionPageURL, beforeSend });
-  const hasContext = selectedTargets.length > 0 || shapes.length > 0;
-  const changeTool = (next: AnnotationShapeKind): void => {
-    stopSelection();
-    setTool(tool === next ? null : next);
-  };
+  const clearContext = useCallback((): void => {
+    clearSelection();
+    setShapes([]);
+    setTool(null);
+  }, [clearSelection]);
+  const clearSentContext = useCallback((): void => {
+    for (const target of selectedTargets) removeSelection(target.candidate.id);
+    const sentIds = new Set(shapes.map((shape) => shape.id));
+    setShapes((current) => current.filter((shape) => !sentIds.has(shape.id)));
+  }, [selectedTargets, removeSelection, shapes]);
+  const chat = useAgentChat({ pageURL: sessionPageURL, beforeSend, onSent: clearSentContext });
+  const isContextDisabled = isCapturing || chat.isPreparing;
   return (
     <PortalProvider container={rootReference}>
       <DensityProvider density="compact">
-        <AnnotationSelectionHint isVisible={isSelectionMode && selectedTargets.length === 0} />
+        <AnnotationSelectionHint
+          isVisible={isSelectionMode || tool !== null}
+          text={tool ? `Drag To Draw A ${tool}. Esc To Cancel.` : "Click Elements To Add Context. Esc To Finish."}
+        />
         <AnnotationSelectionOverlay {...selection} />
         <AnnotationCanvas
           shapes={shapes}
           tool={tool}
+          isDisabled={isContextDisabled || isSelectionMode}
+          onMove={(moved) => setShapes((current) => current.map((shape) => (shape.id === moved.id ? moved : shape)))}
           onDraw={(shape) => {
             setShapes((current) => [...current, shape]);
             setTool(null);
             onOpenChange(true);
           }}
         />
+        {isSelectionEnabled && (isOpen || isSelectionMode || tool !== null) ? (
+          <PageAnnotationToolbar
+            tool={tool}
+            isSelecting={isSelectionMode}
+            isDisabled={isContextDisabled}
+            canUndo={shapes.length > 0}
+            onUndo={() => setShapes((current) => current.slice(0, -1))}
+            onToolChange={(next) => {
+              setTool(next === "select" ? null : next);
+              if (next === "select") selection.startSelection();
+              else stopSelection();
+            }}
+          />
+        ) : null}
         <AgentChatPanel
+          sharing={sharing}
           chat={chat}
           isOpen={isOpen}
           onClose={() => {
@@ -113,97 +144,14 @@ export function PageChat({ isOpen, onOpenChange, isSelectionEnabled, rootReferen
             onOpenChange(false);
           }}
         >
-          {isSelectionEnabled ? (
-            <div className="shrink-0 border-b border-border p-2">
-              <div className="flex flex-wrap gap-1" aria-label="Page annotation tools" role="group">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  aria-pressed={isSelectionMode}
-                  disabled={isCapturing}
-                  onClick={() => {
-                    setTool(null);
-                    if (isSelectionMode) stopSelection();
-                    else selection.startSelection();
-                  }}
-                >
-                  Select element
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  aria-pressed={tool === "arrow"}
-                  disabled={isCapturing}
-                  onClick={() => changeTool("arrow")}
-                >
-                  Arrow
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  aria-pressed={tool === "line"}
-                  disabled={isCapturing}
-                  onClick={() => changeTool("line")}
-                >
-                  Line
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  aria-pressed={tool === "box"}
-                  disabled={isCapturing}
-                  onClick={() => changeTool("box")}
-                >
-                  Box
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  disabled={isCapturing || shapes.length === 0}
-                  onClick={() => setShapes((current) => current.slice(0, -1))}
-                >
-                  Undo drawing
-                </Button>
-              </div>
-              {isSelectionMode || tool !== null ? (
-                <p role="status" className="pt-1 text-muted-foreground">
-                  {tool === null ? "Click elements to add context." : `Drag on the page to draw a ${tool}.`} Press Esc
-                  to interact with the page.
-                </p>
-              ) : null}
-              {hasContext ? (
-                <section aria-label="Page context" className="mt-2 max-h-28 overflow-auto">
-                  <ul>
-                    {selectedTargets.map((target) => (
-                      <li key={target.candidate.id}>
-                        #{target.markerNumber} {target.candidate.label}
-                      </li>
-                    ))}
-                    {shapes.map((shape, index) => (
-                      <li key={shape.id}>
-                        {index + 1}. {shape.kind}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="text-muted-foreground">
-                    Sending includes this context and asks you to share this tab for a snapshot.
-                  </p>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={isCapturing}
-                    onClick={() => {
-                      selection.clearSelection();
-                      setShapes([]);
-                      setTool(null);
-                    }}
-                  >
-                    Clear page context
-                  </Button>
-                </section>
-              ) : null}
-            </div>
-          ) : null}
+          <PageContextList
+            targets={selectedTargets}
+            shapes={shapes}
+            isDisabled={isContextDisabled}
+            onRemoveTarget={selection.removeSelection}
+            onRemoveShape={(id) => setShapes((current) => current.filter((shape) => shape.id !== id))}
+            onClear={clearContext}
+          />
         </AgentChatPanel>
       </DensityProvider>
     </PortalProvider>

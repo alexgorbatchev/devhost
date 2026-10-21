@@ -89,6 +89,7 @@ export interface IChatProjection {
 export interface IAgentChatOptions {
   pageURL: string;
   beforeSend?: ChatBeforeSend;
+  onSent?: () => void;
 }
 export interface IAgentChatClientState {
   harnesses: readonly IChatHarness[];

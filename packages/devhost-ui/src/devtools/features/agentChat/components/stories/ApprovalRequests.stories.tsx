@@ -14,8 +14,8 @@ export const ExplicitApproval: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText(/"command": "bun test"/)).toBeVisible();
-    await expect(canvas.queryByRole("button", { name: "Always allow" })).not.toBeInTheDocument();
-    await userEvent.click(canvas.getByRole("button", { name: "Allow once" }));
+    await expect(canvas.queryByRole("button", { name: "Always Allow" })).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole("button", { name: "Allow Once" }));
     await expect(within(canvas.getByRole("region", { name: "Run command" })).getByRole("status")).toHaveTextContent(
       "Decision sent",
     );
@@ -30,10 +30,10 @@ export const Unsupported: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole("region", { name: "Unsupported agent request" })).toBeVisible();
-    await expect(canvas.queryByRole("button", { name: "Allow once" })).not.toBeInTheDocument();
+    await expect(canvas.queryByRole("button", { name: "Allow Once" })).not.toBeInTheDocument();
     await userEvent.click(canvas.getByText("Native request details"));
     await expect(canvas.getByText(/Native-only interaction/)).toBeVisible();
-    await userEvent.click(canvas.getByRole("button", { name: "Stop turn" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Stop Turn" }));
     await expect(canvas.getByLabelText("Native response")).toHaveTextContent("Interrupted");
   },
 };
@@ -42,8 +42,8 @@ export const Questions: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole("form", { name: "Agent questions" })).toBeVisible();
-    await expect(canvas.queryByRole("button", { name: "Allow once" })).not.toBeInTheDocument();
-    await userEvent.click(canvas.getByRole("button", { name: "Stop turn" }));
+    await expect(canvas.queryByRole("button", { name: "Allow Once" })).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole("button", { name: "Stop Turn" }));
     await expect(canvas.getByLabelText("Native response")).toHaveTextContent("Interrupted");
   },
 };

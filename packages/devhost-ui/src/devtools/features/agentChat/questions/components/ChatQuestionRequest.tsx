@@ -1,5 +1,7 @@
 import { getChatQuestionAnswers } from "../getChatQuestionAnswers";
 import { Button } from "@alexgorbatchev/shadcn";
+import { CheckIcon, SquareIcon } from "lucide-react";
+import { Icon } from "../../../../../components/ui/Icon";
 import { useState, type ReactElement } from "react";
 import type { ChatRequestId, IChatPendingRequest } from "../../types";
 import type { IChatQuestions, IChatQuestionSelection } from "../types";
@@ -69,10 +71,12 @@ export function ChatQuestionRequest({
       ) : null}
       <div className="flex items-center gap-2">
         <Button type="submit" disabled={!isComplete || isSent}>
-          Submit answers
+          <Icon glyph={CheckIcon} />
+          Submit Answers
         </Button>
         <Button type="button" variant="outline" onClick={interrupt}>
-          Stop turn
+          <Icon glyph={SquareIcon} />
+          Stop Turn
         </Button>
       </div>
     </form>

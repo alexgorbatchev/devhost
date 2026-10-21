@@ -4,6 +4,18 @@ import { captureTabSnapshot } from "../captureTabSnapshot";
 import { createSharedTabFixture } from "./helpers";
 
 describe("captureTabSnapshot", () => {
+  test("reuses an active share without opening a picker or stopping its track", async () => {
+    const fixture = createSharedTabFixture();
+    const picker = vi.spyOn(fixture.mediaDevices, "getDisplayMedia");
+    try {
+      const snapshot = await captureTabSnapshot({ ...fixture, sharedStream: fixture.stream, prepare: async () => {} });
+      expect(snapshot.width).toBe(64);
+      expect(picker).not.toHaveBeenCalled();
+      expect(fixture.stream.active).toBe(true);
+    } finally {
+      fixture.track.stop();
+    }
+  });
   test("captures actual video pixels and releases the shared tab", async () => {
     const { stream, track, mediaDevices, document } = createSharedTabFixture();
     const stop = vi.spyOn(track, "stop");

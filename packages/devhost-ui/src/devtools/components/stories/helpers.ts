@@ -114,7 +114,7 @@ export async function verifyRestartShortcut(canvasElement: HTMLElement): Promise
     await user.click(await within(chat).findByRole("textbox"));
     await user.keyboard("{Alt>}{Control>}r{/Control}{/Alt}");
     expect(readRestartRequests()).toEqual([]);
-    await user.click(within(chat).getByRole("button", { name: "Collapse chat" }));
+    await user.click(within(chat).getByRole("button", { name: "Collapse Chat" }));
 
     await user.click(canvas.getByRole("button", { name: "Host button" }));
     await user.keyboard("{Alt>}{Control>}r{/Control}{/Alt}");

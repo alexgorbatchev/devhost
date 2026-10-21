@@ -3,7 +3,7 @@ import { getChatQuestionAnswers } from "../../questions/getChatQuestionAnswers";
 import { DevtoolsTopLayer } from "../../../../shared/components/DevtoolsTopLayer";
 import { PageChat } from "../PageChat";
 import { fixture_codexQuestion } from "../../questions/components/stories/fixtures";
-import { DensityProvider } from "@alexgorbatchev/shadcn";
+import { DensityProvider, PortalProvider } from "@alexgorbatchev/shadcn";
 import { useRef, useState, type JSX, type ReactElement } from "react";
 import type { ChatRequestId, IChatEvent, IChatPendingRequest } from "../../types";
 import { ApprovalRequests } from "../ApprovalRequests";
@@ -15,19 +15,49 @@ import { readChatQuestions } from "../../readChatQuestions";
 import type { FetchFunction } from "../../../../shared/pristineFetch";
 import { useAgentChat } from "../../hooks/useAgentChat";
 import { AgentChatPanel } from "../AgentChatPanel";
+import { AssistantRuntimeProvider, useExternalStoreRuntime, type ThreadMessageLike } from "@assistant-ui/react";
+import { Thread } from "@alexgorbatchev/shadcn/assistant-ui/native/thread";
+import { ChatUserText } from "../ChatUserText";
+export function UserMessageScene(): JSX.Element {
+  const [messages] = useState<ThreadMessageLike[]>([
+    {
+      id: "user-message",
+      role: "user",
+      metadata: { custom: {} },
+      content: [
+        {
+          type: "text",
+          text: 'Improve This Layout\n\nPage context (the attached tab snapshot includes the annotations):\n{"title":"Example Page","url":"https://app.localhost/","markers":[],"shapes":[]}',
+        },
+      ],
+    },
+  ]);
+  const runtime = useExternalStoreRuntime({ messages, convertMessage: (message) => message, onNew: async () => {} });
+  return (
+    <div className="h-100 bg-background text-foreground">
+      <h2>User Message Preview</h2>
+      <AssistantRuntimeProvider runtime={runtime}>
+        <Thread autoFocus={false} emptyComposerPosition="bottom" components={{ UserText: ChatUserText }} />
+      </AssistantRuntimeProvider>
+    </div>
+  );
+}
 
 export function ChatPreparationScene(): JSX.Element {
+  const root = useRef<HTMLDivElement | null>(null);
   const [preparation] = useState(() => Promise.withResolvers<null>());
   const [isOpen, setIsOpen] = useState(true);
   const chat = useAgentChat({ pageURL: window.location.href, beforeSend: () => preparation.promise });
   return (
-    <DevtoolsTopLayer>
-      <button type="button" className="pointer-events-auto" onClick={() => preparation.resolve(null)}>
-        Cancel capture
-      </button>
-      <AgentChatPanel chat={chat} isOpen={isOpen} onClose={() => setIsOpen(false)}>
-        {null}
-      </AgentChatPanel>
+    <DevtoolsTopLayer ref={root}>
+      <PortalProvider container={root}>
+        <button type="button" className="pointer-events-auto" onClick={() => preparation.resolve(null)}>
+          Cancel capture
+        </button>
+        <AgentChatPanel chat={chat} isOpen={isOpen} onClose={() => setIsOpen(false)}>
+          {null}
+        </AgentChatPanel>
+      </PortalProvider>
     </DevtoolsTopLayer>
   );
 }

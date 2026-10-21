@@ -1,4 +1,6 @@
 import { Button } from "@alexgorbatchev/shadcn";
+import { SquareIcon } from "lucide-react";
+import { Icon } from "../../../../components/ui/Icon";
 import { ApprovalCard } from "@alexgorbatchev/shadcn/assistant-ui/approval-card";
 import { useState, type ReactElement } from "react";
 import type { IChatApproval } from "../approvals/types";
@@ -54,6 +56,8 @@ export function ChatApprovalRequest({
         <p className="text-sm text-muted-foreground">The harness has not supplied a file diff for this request.</p>
       ) : null}
       <ApprovalCard
+        allowOnceLabel="Allow Once"
+        alwaysAllowLabel="Always Allow"
         state={isSent ? "running" : "request"}
         title={approval.title}
         subtitle={request.harness === "codex" ? "Codex" : "Claude Code"}
@@ -72,7 +76,8 @@ export function ChatApprovalRequest({
         </p>
       ) : null}
       <Button type="button" variant="outline" onClick={interrupt}>
-        Stop turn
+        <Icon glyph={SquareIcon} />
+        Stop Turn
       </Button>
     </section>
   );

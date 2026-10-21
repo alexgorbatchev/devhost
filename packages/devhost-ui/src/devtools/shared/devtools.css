@@ -11,6 +11,13 @@
   visibility: hidden;
 }
 
+/* Native chat bubbles retain the shared palette while separating user messages from the thread. */
+.aui-user-message-content {
+  background: color-mix(in srgb, var(--foreground) 14%, var(--secondary));
+  color: var(--foreground);
+  border: 1px solid var(--input);
+}
+
 @custom-variant dark (&:where(:host([data-theme="dark"]) *, [data-devhost-story-theme][data-theme="dark"] *));
 
 @source "../../**/*.{ts,tsx}";

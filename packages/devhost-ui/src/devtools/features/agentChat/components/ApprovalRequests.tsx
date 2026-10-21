@@ -1,4 +1,6 @@
 import { Button } from "@alexgorbatchev/shadcn";
+import { SquareIcon } from "lucide-react";
+import { Icon } from "../../../../components/ui/Icon";
 import type { ReactElement } from "react";
 import type { ChatRequestId, IChatEvent, IChatPendingRequest } from "../types";
 import { readChatApproval } from "../readChatApproval";
@@ -61,7 +63,8 @@ export function ApprovalRequests({
               </pre>
             </details>
             <Button type="button" variant="outline" onClick={interrupt}>
-              Stop turn
+              <Icon glyph={SquareIcon} />
+              Stop Turn
             </Button>
           </section>
         );
