@@ -51,6 +51,9 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
   const { restartServicesShortcut, primaryService } = readInjectedDevtoolsConfig();
   const restartServiceNames = selectRestartServiceNames(props.services, primaryService);
   const [isStackRestarting, setIsStackRestarting] = useState<boolean>(false);
+  const [isChangedRestarting, setIsChangedRestarting] = useState<boolean>(false);
+  const [restartError, setRestartError] = useState<string | null>(null);
+  const isRestartPending = isStackRestarting || isChangedRestarting;
   const [isChoosingStoppedService, setIsChoosingStoppedService] = useState<boolean>(false);
   const stoppedServicesButton = useRef<HTMLButtonElement | null>(null);
   const repositories = props.repositories ?? [];
@@ -66,7 +69,8 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
       stoppedServicesButton.current?.focus();
     });
   };
-  const hasError: boolean = props.errorMessage !== null;
+  const errorMessage = props.errorMessage ?? restartError;
+  const hasError: boolean = errorMessage !== null;
 
   if (!hasError && props.services.length === 0 && stoppedServices.length === 0) {
     return null;
@@ -77,127 +81,161 @@ export function ServiceStatusPanel(props: IServiceStatusPanelProps): JSX.Element
     return service.dirty === true && service.restarting !== true;
   }).length;
   const onSetErrorMessage = props.onSetErrorMessage;
+  const changedServiceNames = props.services
+    .filter((service) => service.dirty && service.managed)
+    .map((service) => service.name);
+  const isRestartBlocked =
+    isRestartPending ||
+    props.services.some((service) => service.restarting === true) ||
+    repositories.some((repository) => repository.switching);
+  const handleRestartChanged = async (): Promise<void> => {
+    if (isRestartBlocked || changedServiceNames.length === 0) return;
+    setIsChangedRestarting(true);
+    setRestartError(null);
+    const message = await restartServices(changedServiceNames, pristineFetch);
+    setRestartError(message);
+    onSetErrorMessage?.(message);
+    setIsChangedRestarting(false);
+  };
 
   return (
-    <ToolbarPopover
-      headerEndEnhancer={
-        isShowingServices ? undefined : (
-          <Button
-            aria-label="Back to services"
-            variant="ghost"
-            startEnhancer={<Icon glyph={ArrowLeftIcon} />}
-            onClick={onBack}
-          />
-        )
-      }
-      notice={
-        props.errorMessage !== null ? (
-          <InlineNotice
-            testId="ServiceStatusPanel--error"
-            tone="danger"
-            onDismiss={
-              onSetErrorMessage === undefined
-                ? undefined
-                : (): void => {
-                    onSetErrorMessage(null);
-                  }
-            }
-          >
-            {props.errorMessage}
-          </InlineNotice>
-        ) : undefined
-      }
-      panelLabel={isShowingStoppedServices ? "Stopped services" : "Services"}
-      panelWidth={isShowingServices ? "lg" : "sm"}
-      testId="ServiceStatusPanel"
-      triggerContent={
-        <>
-          {hasError ? <Icon glyph={TriangleAlertIcon} tone="destructive" /> : null}
-          <span aria-hidden="true" className="flex gap-[3px]">
-            {props.services.map((service: ServiceHealth) => (
-              <ServiceStatusDot key={service.name} service={service} />
-            ))}
-          </span>
-          <span aria-hidden="true">{`${upCount}/${props.services.length}`}</span>
-          {changedCount > 0 && !hasError ? (
-            <Badge aria-hidden="true" variant="warning">{`${changedCount} changed`}</Badge>
-          ) : null}
-        </>
-      }
-      triggerLabel={readServicesTriggerLabel(upCount, props.services.length, changedCount, hasError)}
-      triggerTone={hasError ? "alert" : "default"}
-    >
-      {isShowingStoppedServices && onStartServices !== undefined ? (
-        <StoppedServices
-          services={stoppedServices}
-          isBlocked={
-            isStackRestarting ||
-            props.services.some((service) => service.restarting === true) ||
-            repositories.some((repository) => repository.switching)
-          }
-          onStart={onStartServices}
-        />
-      ) : (
-        <>
-          {repositories.map((repository) => {
-            return (
-              <section
-                key={repository.id}
-                aria-label={repository.name + " repository"}
-                className="not-first:border-t-2"
-              >
-                <header className="flex items-center gap-1.5 border-b bg-secondary px-2 py-1">
-                  <strong className="min-w-0 flex-1 truncate">{repository.name}</strong>
-                  {repository.switching ? (
-                    <Badge variant="warning">switching</Badge>
-                  ) : repository.error !== undefined ? (
-                    <Badge variant="destructive">stopped</Badge>
-                  ) : null}
-                </header>
-                <ServiceLists
-                  services={props.services.filter((service) => repository.serviceNames.includes(service.name))}
-                  onSetErrorMessage={onSetErrorMessage}
-                  isBlocked={isStackRestarting || repository.switching || repository.error !== undefined}
-                />
-              </section>
-            );
-          })}
-          <ServiceLists
-            services={props.services.filter(
-              (service) => !repositories.some((repository) => repository.serviceNames.includes(service.name)),
-            )}
-            onSetErrorMessage={onSetErrorMessage}
-            isBlocked={isStackRestarting}
-          />
-          {stoppedServices.length > 0 ? (
-            <PanelActions>
-              <Button
-                ref={stoppedServicesButton}
-                disabled={onStartServices === undefined}
-                endEnhancer={<Icon glyph={ChevronRightIcon} />}
-                onClick={(): void => {
-                  setIsChoosingStoppedService(true);
-                }}
-              >
-                {`Stopped services (${stoppedServices.length})`}
-              </Button>
-            </PanelActions>
-          ) : null}
-          {props.services.some((service) => service.managed) ? (
-            <RestartStackButton
-              isDisabled={
-                props.services.some((service) => service.restarting === true) ||
-                repositories.some((repository) => repository.switching)
-              }
-              onPendingChange={setIsStackRestarting}
-              onRestartChanged={() => restartServices(restartServiceNames, pristineFetch)}
-              isRestartChangedDisabled={restartServiceNames.length === 0}
-              restartChangedShortcut={formatShortcutLabel(restartServicesShortcut ?? DEFAULT_RESTART_SERVICES_SHORTCUT)}
+    <span className="flex max-w-full items-center" data-testid="ServiceStatusPanel">
+      <ToolbarPopover
+        headerEndEnhancer={
+          isShowingServices ? undefined : (
+            <Button
+              aria-label="Back to services"
+              variant="ghost"
+              startEnhancer={<Icon glyph={ArrowLeftIcon} />}
+              onClick={onBack}
             />
-          ) : null}
-        </>
-      )}
-    </ToolbarPopover>
+          )
+        }
+        notice={
+          errorMessage !== null ? (
+            <InlineNotice
+              testId="ServiceStatusPanel--error"
+              tone="danger"
+              onDismiss={
+                restartError === null && onSetErrorMessage === undefined
+                  ? undefined
+                  : () => {
+                      setRestartError(null);
+                      onSetErrorMessage?.(null);
+                    }
+              }
+            >
+              {errorMessage}
+            </InlineNotice>
+          ) : undefined
+        }
+        panelLabel={isShowingStoppedServices ? "Stopped services" : "Services"}
+        panelWidth={isShowingServices ? "lg" : "sm"}
+        testId="ServiceStatusPanel--popover"
+        triggerContent={
+          <>
+            {hasError ? <Icon glyph={TriangleAlertIcon} tone="destructive" /> : null}
+            <span aria-hidden="true" className="flex gap-[3px]">
+              {props.services.map((service: ServiceHealth) => (
+                <ServiceStatusDot key={service.name} service={service} />
+              ))}
+            </span>
+            <span aria-hidden="true">{`${upCount}/${props.services.length}`}</span>
+            {changedCount > 0 && !hasError ? (
+              <Badge aria-hidden="true" variant="warning">{`${changedCount} changed`}</Badge>
+            ) : null}
+          </>
+        }
+        triggerLabel={readServicesTriggerLabel(upCount, props.services.length, changedCount, hasError)}
+        triggerTone={hasError ? "alert" : "default"}
+      >
+        {isShowingStoppedServices && onStartServices !== undefined ? (
+          <StoppedServices
+            services={stoppedServices}
+            isBlocked={
+              isRestartPending ||
+              props.services.some((service) => service.restarting === true) ||
+              repositories.some((repository) => repository.switching)
+            }
+            onStart={onStartServices}
+          />
+        ) : (
+          <>
+            {repositories.map((repository) => {
+              return (
+                <section
+                  key={repository.id}
+                  aria-label={repository.name + " repository"}
+                  className="not-first:border-t-2"
+                >
+                  <header className="flex items-center gap-1.5 border-b bg-secondary px-2 py-1">
+                    <strong className="min-w-0 flex-1 truncate">{repository.name}</strong>
+                    {repository.switching ? (
+                      <Badge variant="warning">switching</Badge>
+                    ) : repository.error !== undefined ? (
+                      <Badge variant="destructive">stopped</Badge>
+                    ) : null}
+                  </header>
+                  <ServiceLists
+                    services={props.services.filter((service) => repository.serviceNames.includes(service.name))}
+                    onSetErrorMessage={onSetErrorMessage}
+                    isBlocked={isRestartPending || repository.switching || repository.error !== undefined}
+                  />
+                </section>
+              );
+            })}
+            <ServiceLists
+              services={props.services.filter(
+                (service) => !repositories.some((repository) => repository.serviceNames.includes(service.name)),
+              )}
+              onSetErrorMessage={onSetErrorMessage}
+              isBlocked={isRestartPending}
+            />
+            {stoppedServices.length > 0 ? (
+              <PanelActions>
+                <Button
+                  ref={stoppedServicesButton}
+                  disabled={onStartServices === undefined}
+                  endEnhancer={<Icon glyph={ChevronRightIcon} />}
+                  onClick={(): void => {
+                    setIsChoosingStoppedService(true);
+                  }}
+                >
+                  {`Stopped services (${stoppedServices.length})`}
+                </Button>
+              </PanelActions>
+            ) : null}
+            {props.services.some((service) => service.managed) ? (
+              <RestartStackButton
+                isDisabled={
+                  isChangedRestarting ||
+                  props.services.some((service) => service.restarting === true) ||
+                  repositories.some((repository) => repository.switching)
+                }
+                onPendingChange={setIsStackRestarting}
+                onRestartChanged={() => restartServices(restartServiceNames, pristineFetch)}
+                isRestartChangedDisabled={restartServiceNames.length === 0}
+                restartChangedShortcut={formatShortcutLabel(
+                  restartServicesShortcut ?? DEFAULT_RESTART_SERVICES_SHORTCUT,
+                )}
+              />
+            ) : null}
+          </>
+        )}
+      </ToolbarPopover>
+      {changedCount > 0 && !hasError ? (
+        <Button
+          aria-label="Restart changed services"
+          title="Restart changed services"
+          variant="ghost"
+          disabled={isRestartBlocked || changedServiceNames.length === 0}
+          startEnhancer={<Icon glyph={RotateCwIcon} isSpinning={isChangedRestarting} />}
+          onClick={() => {
+            void handleRestartChanged();
+          }}
+        />
+      ) : null}
+    </span>
   );
 }
 
