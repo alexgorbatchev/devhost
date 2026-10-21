@@ -2,10 +2,11 @@ package services
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"strings"
 	"sync"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 )
 
 type lifecycleCommandOutputWriter struct {
@@ -57,7 +58,7 @@ func (w *lifecycleCommandOutputWriter) Flush() {
 
 func (w *lifecycleCommandOutputWriter) emitLine(text string) {
 	line := w.prefix + strings.TrimRight(text, "\r")
-	_, _ = fmt.Fprintln(w.writer, line)
+	_ = cliout.WriteChildLine(w.writer, line)
 	if w.onLine != nil {
 		w.onLine(line)
 	}

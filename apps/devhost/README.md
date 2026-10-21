@@ -56,17 +56,17 @@ To keep completion across sessions, write the script to the directory your shell
 
 ### Output for agents and scripts
 
-Set `AGENT=1` (`true` and `yes` work too) when an agent or a script reads the output. Help screens become compact `key: value` text without tree glyphs or column padding, each listing every command below the one asked about, and a command that fails ends with one `ERR:` line that carries the whole error:
+Set `AGENT=1` (`true` and `yes` work too) when an agent or a script reads the output. Help screens become compact `key: value` text without tree glyphs or column padding, each listing every command below the one asked about, and a command that fails reports the whole error with `devhost: ERR:`:
 
 ```console
 $ devhost star
-[ERROR] unknown command "star" for "devhost"; did you mean "start" or "stop"?
-[INFO] Run "devhost --help" for usage.
+devhost | [ERROR] unknown command "star" for "devhost"; did you mean "stack" or "start" or "stop"?
+devhost | [INFO] Run "devhost --help" for usage.
 $ AGENT=1 devhost star
-ERR: unknown command "star" for "devhost"; did you mean "start" or "stop"?
+devhost: ERR: unknown command "star" for "devhost"; did you mean "stack" or "start" or "stop"?
 ```
 
-Without the variable, a failure ends with an `[ERROR]` line and, where `devhost` knows the next step, an `[INFO]` hint. Warnings are split the same way: `[WARN]` for people and `WARN:` for agents. These lines go to stderr, and the exit code is the same in both modes. Human stack and service logs share aligned `name | ` prefixes, distinct terminal colors, and indented wrapping when the output width is known. Agent logs use compact `name: ` prefixes without padding, added colors, or wrapping. Already-running manifest errors also carry the `devhost` log prefix. `--version`, completion scripts, and `devhost caddy print-root-cert` print the same text in both.
+Without the variable, a failure has an `[ERROR]` tag and, where `devhost` knows the next step, an `[INFO]` hint. Warnings use `[WARN]` for people and `WARN:` for agents. These diagnostics go to stderr with the `devhost` prefix, and the exit code is the same in both modes. Human stack and service logs share aligned `name | ` prefixes, distinct terminal colors, and indented wrapping when the output width is known. Agent logs use compact `name: ` prefixes without padding, added colors, or wrapping. Stop-command progress uses the same `devhost` prefix. Devhost-owned diagnostics shorten home-directory paths to `~/`; child output and machine-readable command data retain their original paths. `--version`, completion scripts, and `devhost caddy print-root-cert` print the same text in both.
 
 ### Requirements
 

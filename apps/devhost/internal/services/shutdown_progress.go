@@ -3,6 +3,8 @@ package services
 import (
 	"fmt"
 	"io"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 )
 
 // Shutdown announces a service before forwarding the user's signal, then again
@@ -22,11 +24,11 @@ func (p *shutdownProgress) stopping(name string) {
 		return
 	}
 	p.announced[name] = true
-	writeLogLine(p.writer, p.label, fmt.Sprintf("Stopping service %s...", name))
+	cliout.Log(p.writer, p.label, fmt.Sprintf("Stopping service %s...", name))
 }
 
 func (p *shutdownProgress) stopped(name string, err error) {
 	if err == nil {
-		writeLogLine(p.writer, p.label, fmt.Sprintf("Stopped service %s.", name))
+		cliout.Log(p.writer, p.label, fmt.Sprintf("Stopped service %s.", name))
 	}
 }

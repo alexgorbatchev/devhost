@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-20 21:28
+last_modified: 2026-10-20 21:52
 status: current
 ---
 
@@ -207,11 +207,11 @@ When a change adds or alters a user-visible feature, update its row in the same 
 
 ### CLI
 
-| Feature                             | Documented in                           | Shown in |
-| ----------------------------------- | --------------------------------------- | -------- |
-| Output for agents and scripts       | README, "Output for agents and scripts" | No demo  |
-| Shell completion                    | README, "Shell completion"              | No demo  |
-| The devhost skill for coding agents | README, "AI devhost skill"              | No demo  |
+| Feature                                                                            | Documented in                                                        | Shown in                                                                                                             |
+| ---------------------------------------------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Output for agents and scripts; shared diagnostic prefixes and home-path formatting | README, "Output for agents and scripts"; `guides/stack-lifecycle.md` | No demo for errors or home-path formatting; stop progress appears in the final stop step of all nine terminal guides |
+| Shell completion                                                                   | README, "Shell completion"                                           | No demo                                                                                                              |
+| The devhost skill for coding agents                                                | README, "AI devhost skill"                                           | No demo                                                                                                              |
 
 Pages under `guides/` are in `packages/docs/src/content/docs/guides/`, and `architecture/` pages beside them; the README is `apps/devhost/README.md`. The table leaves out sections that describe setup or failure diagnosis rather than a feature, such as installation, requirements, and the troubleshooting entries other than reload.
 

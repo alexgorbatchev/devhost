@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
@@ -269,7 +270,7 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	r.pendingReload = nil
 	r.manifestMu.Unlock()
 	r.publish()
-	writeLogLine(r.options.LogWriter, r.manifest.Name, change.message)
+	cliout.Log(r.options.LogWriter, r.manifest.Name, change.message)
 	LogServiceURLs(*r.manifest, r.options.LogWriter)
 	logStoppedServices(*r.manifest, r.options.LogWriter)
 	return r.releaseClaimsExcept(collectClaimedHosts(r.manifest.Services), manifestFixedPortClaims(*r.manifest))

@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 )
 
 // caddyOutputLabel is the log label of the lines Caddy writes.
@@ -63,7 +65,7 @@ func writeCaddyOutput(writer io.Writer, output []byte, failed bool) error {
 		if entry.level != "" && entry.level != "DEBUG" && entry.level != "INFO" {
 			text = entry.level + " " + text
 		}
-		if _, err := fmt.Fprintf(writer, "[%s] %s\n", caddyOutputLabel, text); err != nil {
+		if err := cliout.WriteLog(writer, caddyOutputLabel, text); err != nil {
 			return err
 		}
 	}

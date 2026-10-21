@@ -54,6 +54,10 @@ func ServiceOutputWriters(stdout, stderr io.Writer, names []string) (io.Writer, 
 // password prompt, so that text lines up with the records around it. A writer
 // without the shared layout gets the record form itself.
 func Prefix(writer io.Writer, name string) string {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		name = "devhost"
+	}
 	record := "[" + name + "] "
 	w, ok := writer.(*serviceOutputWriter)
 	if !ok {

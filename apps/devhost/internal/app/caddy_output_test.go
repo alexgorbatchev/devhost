@@ -119,7 +119,7 @@ func TestCaddyUnavailableHumanMessage(t *testing.T) {
 	if code := Run([]string{"start", "--manifest", manifest}, filepath.Dir(manifest), &stdout, &stderr); code != 1 {
 		t.Fatalf("exit %d", code)
 	}
-	if got := stderr.String(); got != "[ERROR] Caddy is not available.\n[INFO] Run 'devhost caddy start' first.\n" {
+	if got := stderr.String(); got != "devhost | [ERROR] Caddy is not available.\ndevhost | [INFO] Run 'devhost caddy start' first.\n" {
 		t.Fatalf("stderr = %q", got)
 	}
 	t.Setenv("AGENT", "1")

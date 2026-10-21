@@ -208,67 +208,67 @@ func TestRunReportsFailuresForTheReader(t *testing.T) {
 			name:    "a person mistypes a command",
 			agent:   "0",
 			rawArgs: []string{"star"},
-			wantStderr: "[ERROR] unknown command \"star\" for \"devhost\"; did you mean \"stack\" or \"start\" or \"stop\"?\n" +
-				"[INFO] Run \"devhost --help\" for usage.\n",
+			wantStderr: "devhost | [ERROR] unknown command \"star\" for \"devhost\"; did you mean \"stack\" or \"start\" or \"stop\"?\n" +
+				"devhost | [INFO] Run \"devhost --help\" for usage.\n",
 		},
 		{
 			name:       "an agent mistypes a command",
 			agent:      "1",
 			rawArgs:    []string{"star"},
-			wantStderr: "ERR: unknown command \"star\" for \"devhost\"; did you mean \"stack\" or \"start\" or \"stop\"?\n",
+			wantStderr: "devhost: ERR: unknown command \"star\" for \"devhost\"; did you mean \"stack\" or \"start\" or \"stop\"?\n",
 		},
 		{
 			name:    "a person names a manifest that does not exist",
 			agent:   "0",
 			rawArgs: []string{"start", "--manifest", missingManifestPath},
-			wantStderr: "[ERROR] manifest file not found: " + missingManifestPath + "\n" +
-				"[INFO] Check the path given with --manifest or DEVHOST_MANIFEST.\n",
+			wantStderr: "devhost | [ERROR] manifest file not found: " + missingManifestPath + "\n" +
+				"devhost | [INFO] Check the path given with --manifest or DEVHOST_MANIFEST.\n",
 		},
 		{
 			name:    "an agent names a manifest that does not exist",
 			agent:   "1",
 			rawArgs: []string{"start", "--manifest", missingManifestPath},
-			wantStderr: "ERR: read manifest " + missingManifestPath + ": open " + missingManifestPath +
+			wantStderr: "devhost: ERR: read manifest " + missingManifestPath + ": open " + missingManifestPath +
 				": no such file or directory\n",
 		},
 		{
 			name:    "a person runs outside a project",
 			agent:   "0",
 			rawArgs: []string{"stop"},
-			wantStderr: "[ERROR] Could not find devhost.toml from " + projectPath + " upward.\n" +
-				"[INFO] Run devhost from your project folder, or pass --manifest <path>.\n",
+			wantStderr: "devhost | [ERROR] Could not find devhost.toml from " + projectPath + " upward.\n" +
+				"devhost | [INFO] Run devhost from your project folder, or pass --manifest <path>.\n",
 		},
 		{
 			name:       "an agent runs outside a project",
 			agent:      "1",
 			rawArgs:    []string{"stop"},
-			wantStderr: "ERR: Could not find devhost.toml from " + projectPath + " upward.\n",
+			wantStderr: "devhost: ERR: Could not find devhost.toml from " + projectPath + " upward.\n",
 		},
 		{
 			name:    "a person names a service the manifest does not define",
 			agent:   "0",
 			rawArgs: []string{"start", "--manifest", manifestPath, "wroker"},
-			wantStderr: "[ERROR] unknown service: \"wroker\"; the manifest defines: worker\n" +
-				"[INFO] Run \"devhost service list\" to print the service names.\n",
+			wantStderr: "devhost | [ERROR] unknown service: \"wroker\"; the manifest defines: worker\n" +
+				"devhost | [INFO] Run \"devhost service list\" to print the service names.\n",
 		},
 		{
 			name:       "an agent names a service the manifest does not define",
 			agent:      "1",
 			rawArgs:    []string{"start", "--manifest", manifestPath, "wroker"},
-			wantStderr: "ERR: unknown service: \"wroker\"; the manifest defines: worker\n",
+			wantStderr: "devhost: ERR: unknown service: \"wroker\"; the manifest defines: worker\n",
 		},
 		{
 			name:    "a person gives an idle timeout that is not a duration",
 			agent:   "0",
 			rawArgs: []string{"start", "--manifest", manifestPath, "--idle-timeout", "soon"},
-			wantStderr: "[ERROR] the idle timeout \"soon\" is not a duration\n" +
-				"[INFO] Set --idle-timeout or DEVHOST_IDLE_TIMEOUT to a value such as 30s or 1m.\n",
+			wantStderr: "devhost | [ERROR] the idle timeout \"soon\" is not a duration\n" +
+				"devhost | [INFO] Set --idle-timeout or DEVHOST_IDLE_TIMEOUT to a value such as 30s or 1m.\n",
 		},
 		{
 			name:       "an agent gives an idle timeout that is not a duration",
 			agent:      "1",
 			rawArgs:    []string{"start", "--manifest", manifestPath, "--idle-timeout", "soon"},
-			wantStderr: "ERR: invalid idle-timeout: time: invalid duration \"soon\"\n",
+			wantStderr: "devhost: ERR: invalid idle-timeout: time: invalid duration \"soon\"\n",
 		},
 	}
 
@@ -679,7 +679,7 @@ func TestRunCaddyTrustRequiresRunningManagedCaddy(t *testing.T) {
 		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
 	}
 	wantStderr := strings.Join([]string{
-		"[ERROR] Managed Caddy is not running. Run 'devhost caddy start' first.",
+		"devhost | [ERROR] Managed Caddy is not running. Run 'devhost caddy start' first.",
 		"",
 	}, "\n")
 	if stderr.String() != wantStderr {

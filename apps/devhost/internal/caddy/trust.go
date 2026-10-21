@@ -84,7 +84,7 @@ func installManagedCaddyTrust(
 	adminAddress string,
 	runManagedCaddyCommand func([]string, ManagedCaddyCommandOptions) CommandResult,
 ) (CommandResult, error) {
-	if err := logInfo(logWriter, "managed caddy is installing its local CA into the system trust store so browsers accept devhost HTTPS certificates. This may ask for your password."); err != nil {
+	if err := cliout.WriteLog(logWriter, "devhost", "managed caddy is installing its local CA into the system trust store so browsers accept devhost HTTPS certificates. This may ask for your password."); err != nil {
 		return CommandResult{}, fmt.Errorf("log managed caddy trust installation: %w", err)
 	}
 	prompt := strings.ReplaceAll(cliout.Prefix(logWriter, caddyOutputLabel), "%", "%%") + "Password: "

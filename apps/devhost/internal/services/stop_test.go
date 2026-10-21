@@ -16,7 +16,7 @@ import (
 // An unreachable grace period, for a stack expected to stop when asked.
 const unreachableGracePeriod = time.Hour
 
-const stackListHint = "Other stacks are running. Run \"devhost stack list\" to print their PIDs and manifests.\n"
+const stackListHint = "[devhost] Other stacks are running. Run \"devhost stack list\" to print their PIDs and manifests.\n"
 
 // endedBySignal reports whether a process that has been waited for was ended by
 // signal rather than by exiting.
@@ -41,7 +41,7 @@ func TestStopStackWithoutAnyStack(t *testing.T) {
 		t.Fatalf("StopStack() unexpected error = %v", err)
 	}
 
-	if want := "No active devhost stack process found for manifest: " + manifestPath + "\n"; stdout.String() != want {
+	if want := "[devhost] No active devhost stack process found for manifest: " + manifestPath + "\n"; stdout.String() != want {
 		t.Fatalf("StopStack() stdout = %q, want %q", stdout.String(), want)
 	}
 
@@ -76,9 +76,9 @@ func TestStopStackStopsTheStackOfTheManifest(t *testing.T) {
 	}
 
 	targetPID := strconv.Itoa(target.Process.Pid)
-	wantStdout := "Stopping 1 active stack process(es) associated with manifest...\n" +
-		"Sending SIGTERM to process " + targetPID + "...\n" +
-		"Process " + targetPID + " stopped cleanly.\n"
+	wantStdout := "[devhost] Stopping 1 active stack process(es) associated with manifest...\n" +
+		"[devhost] Sending SIGTERM to process " + targetPID + "...\n" +
+		"[devhost] Process " + targetPID + " stopped cleanly.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("stopStack() stdout = %q, want %q", stdout.String(), wantStdout)
 	}
@@ -112,14 +112,14 @@ func TestStopStackKillsAStackThatIgnoresTheRequest(t *testing.T) {
 	}
 
 	stackPID := strconv.Itoa(stack.Process.Pid)
-	wantStdout := "Stopping 1 active stack process(es) associated with manifest...\n" +
-		"Sending SIGTERM to process " + stackPID + "...\n" +
-		"Process " + stackPID + " terminated.\n"
+	wantStdout := "[devhost] Stopping 1 active stack process(es) associated with manifest...\n" +
+		"[devhost] Sending SIGTERM to process " + stackPID + "...\n" +
+		"[devhost] Process " + stackPID + " terminated.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("stopStack() stdout = %q, want %q", stdout.String(), wantStdout)
 	}
 
-	if want := "Process " + stackPID + " did not stop in time. Sending SIGKILL...\n"; stderr.String() != want {
+	if want := "[devhost] Process " + stackPID + " did not stop in time. Sending SIGKILL...\n"; stderr.String() != want {
 		t.Fatalf("stopStack() stderr = %q, want %q", stderr.String(), want)
 	}
 }
@@ -140,7 +140,7 @@ func TestStopStackPointsAtTheOtherRunningStacks(t *testing.T) {
 		t.Fatalf("StopStack() unexpected error = %v", err)
 	}
 
-	if want := "No active devhost stack process found for manifest: " + manifestPath + "\n" + stackListHint; stdout.String() != want {
+	if want := "[devhost] No active devhost stack process found for manifest: " + manifestPath + "\n" + stackListHint; stdout.String() != want {
 		t.Fatalf("StopStack() stdout = %q, want %q", stdout.String(), want)
 	}
 
@@ -163,7 +163,7 @@ func TestStopStackIgnoresTheRecordsOfACrashedStack(t *testing.T) {
 	}
 
 	// Nothing runs, so there is nothing to stop and no other stack to point at.
-	if want := "No active devhost stack process found for manifest: " + manifestPath + "\n"; stdout.String() != want {
+	if want := "[devhost] No active devhost stack process found for manifest: " + manifestPath + "\n"; stdout.String() != want {
 		t.Fatalf("StopStack() stdout = %q, want %q", stdout.String(), want)
 	}
 }

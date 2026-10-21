@@ -132,7 +132,7 @@ func (l managedCaddyLifecycle) start() (int, error) {
 		if !l.hasManagedPidFile() {
 			return 0, errors.New(foreignManagedCaddyError)
 		}
-		if err := logInfo(l.logWriter, fmt.Sprintf("managed caddy is already running with %s", l.paths.CaddyfilePath)); err != nil {
+		if err := cliout.WriteLog(l.logWriter, "devhost", fmt.Sprintf("managed caddy is already running with %s", l.paths.CaddyfilePath)); err != nil {
 			return 0, fmt.Errorf("log managed caddy already running: %w", err)
 		}
 		return 0, l.trustAfterStart()
@@ -152,7 +152,7 @@ func (l managedCaddyLifecycle) start() (int, error) {
 		return 0, err
 	}
 
-	if err := logInfo(l.logWriter, fmt.Sprintf("managed caddy started with %s", l.paths.CaddyfilePath)); err != nil {
+	if err := cliout.WriteLog(l.logWriter, "devhost", fmt.Sprintf("managed caddy started with %s", l.paths.CaddyfilePath)); err != nil {
 		return 0, fmt.Errorf("log managed caddy start success: %w", err)
 	}
 
@@ -187,7 +187,7 @@ func (l managedCaddyLifecycle) trustAfterStart() error {
 	if err := l.writeSuccessfulOutput(result); err != nil {
 		return err
 	}
-	if err := logInfo(l.logWriter, "managed caddy local CA trusted."); err != nil {
+	if err := cliout.WriteLog(l.logWriter, "devhost", "managed caddy local CA trusted."); err != nil {
 		return fmt.Errorf("log managed caddy trust success: %w", err)
 	}
 	return nil
@@ -201,13 +201,13 @@ func (l managedCaddyLifecycle) stop() (int, error) {
 			if err := l.removeManagedPidFile(); err != nil {
 				return 0, fmt.Errorf("remove stale managed caddy pid file: %w", err)
 			}
-			if err := logInfo(l.logWriter, "managed caddy is not running. Removed the stale pid file."); err != nil {
+			if err := cliout.WriteLog(l.logWriter, "devhost", "managed caddy is not running. Removed the stale pid file."); err != nil {
 				return 0, fmt.Errorf("log managed caddy stale pidfile cleanup: %w", err)
 			}
 			return 0, nil
 		}
 
-		if err := logInfo(l.logWriter, "managed caddy is not running."); err != nil {
+		if err := cliout.WriteLog(l.logWriter, "devhost", "managed caddy is not running."); err != nil {
 			return 0, fmt.Errorf("log managed caddy not running: %w", err)
 		}
 		return 0, nil
@@ -228,7 +228,7 @@ func (l managedCaddyLifecycle) stop() (int, error) {
 	if err := l.removeManagedPidFile(); err != nil {
 		return 0, fmt.Errorf("remove managed caddy pid file after stop: %w", err)
 	}
-	if err := logInfo(l.logWriter, "managed caddy stopped."); err != nil {
+	if err := cliout.WriteLog(l.logWriter, "devhost", "managed caddy stopped."); err != nil {
 		return 0, fmt.Errorf("log managed caddy stop success: %w", err)
 	}
 
@@ -248,7 +248,7 @@ func (l managedCaddyLifecycle) trust() (int, error) {
 		return 0, err
 	}
 	if trust == RootCertificateTrusted {
-		if err := logInfo(l.logWriter, "managed caddy local CA is already trusted."); err != nil {
+		if err := cliout.WriteLog(l.logWriter, "devhost", "managed caddy local CA is already trusted."); err != nil {
 			return 0, fmt.Errorf("log managed caddy trust state: %w", err)
 		}
 		return 0, nil
@@ -267,7 +267,7 @@ func (l managedCaddyLifecycle) trust() (int, error) {
 		return 0, err
 	}
 
-	if err := logInfo(l.logWriter, "managed caddy local CA trusted."); err != nil {
+	if err := cliout.WriteLog(l.logWriter, "devhost", "managed caddy local CA trusted."); err != nil {
 		return 0, fmt.Errorf("log managed caddy trust success: %w", err)
 	}
 
@@ -282,7 +282,7 @@ func (l managedCaddyLifecycle) writeSuccessfulOutput(result CommandResult) error
 }
 
 func (l managedCaddyLifecycle) warn(message string) error {
-	if err := logInfo(l.logWriter, cliout.Warning(message)); err != nil {
+	if err := cliout.WriteLog(l.logWriter, "devhost", cliout.Warning(message)); err != nil {
 		return fmt.Errorf("log managed caddy warning: %w", err)
 	}
 	return nil
