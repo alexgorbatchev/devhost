@@ -2,6 +2,7 @@ import type {
   IAnnotationQueueSnapshot,
   IAnnotationQueuesSnapshotMessage,
 } from "../src/devtools/features/annotationQueue/types";
+import type { IConfigFile } from "../src/devtools/features/configEditor/types";
 import type { IResourceUsage } from "../src/devtools/features/resourceUsage";
 import type {
   ActiveTerminalSessionSnapshot,
@@ -21,11 +22,17 @@ import {
 import type { IInjectedDevtoolsConfig } from "../src/devtools/shared/readInjectedDevtoolsConfig";
 import type {
   HealthResponse,
+  IConfigurationStatus,
   ServiceHealth,
   ServiceLogEntry,
   ServiceLogSnapshotMessage,
 } from "../src/devtools/shared/types";
 import { createMockWebSocket, type IMockWebSocketConnection } from "../test-support/createMockWebSocket";
+import {
+  CONFIG_FILES_PATH,
+  CONFIG_SCHEMA_PATH,
+  CONFIG_VALIDATE_PATH,
+} from "../src/devtools/features/configEditor/constants";
 
 type FetchRequestInput = Parameters<typeof fetch>[0];
 type FetchRequestInit = Parameters<typeof fetch>[1];
@@ -34,6 +41,10 @@ type FetchRequestInit = Parameters<typeof fetch>[1];
 export interface IDevhostStoryStack {
   annotationQueues: IAnnotationQueueSnapshot[];
   config: IInjectedDevtoolsConfig;
+  /** The files the config editor lists; absent, its routes are not answered. */
+  configFiles?: IConfigFile[];
+  /** The reloads of each configuration source the health stream reports. */
+  configuration?: IConfigurationStatus[];
   /** Sent to terminal sessions that have no entry in `terminalSnapshots`; `null` sends nothing. */
   fallbackTerminalSnapshot: string | null;
   logEntries: ServiceLogEntry[];
@@ -55,7 +66,7 @@ export function installDevhostStackMock(stack: IDevhostStoryStack): IDevhostStac
   const originalFetch = globalThis.fetch;
   const sendSnapshot = (connection: IMockWebSocketConnection): void => {
     if (connection.url.pathname === HEALTH_WEBSOCKET_PATH) {
-      const health: HealthResponse = { services: stack.services };
+      const health: HealthResponse = { configuration: stack.configuration, services: stack.services };
 
       connection.send(health);
     } else if (connection.url.pathname === LOGS_WEBSOCKET_PATH) {
@@ -92,6 +103,21 @@ export function installDevhostStackMock(stack: IDevhostStoryStack): IDevhostStac
         const sessions: IListTerminalSessionsResponse = { sessions: stack.terminalSessions };
 
         return Response.json(sessions);
+      }
+
+      if (stack.configFiles !== undefined && requestUrl.pathname === CONFIG_FILES_PATH) {
+        return Response.json({ files: stack.configFiles });
+      }
+
+      if (stack.configFiles !== undefined && requestUrl.pathname === CONFIG_SCHEMA_PATH) {
+        return Response.json({
+          config: { tables: { "": ["caddy"] }, values: {} },
+          manifest: { tables: { "": ["name", "services"] }, values: {} },
+        });
+      }
+
+      if (stack.configFiles !== undefined && requestUrl.pathname === CONFIG_VALIDATE_PATH) {
+        return Response.json({ issues: [] });
       }
 
       return originalFetch(input, init);

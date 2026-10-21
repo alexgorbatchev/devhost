@@ -28,6 +28,14 @@ describe("readInjectedDevtoolsConfig", () => {
     expect(readInjectedDevtoolsConfig().resourcesEnabled).toBe(false);
   });
 
+  test("turns the config editor on only when the server says so", () => {
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, { configEditorEnabled: true });
+    expect(readInjectedDevtoolsConfig().configEditorEnabled).toBe(true);
+
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, { configEditorEnabled: "yes" });
+    expect(readInjectedDevtoolsConfig().configEditorEnabled).toBe(false);
+  });
+
   test("returns defaults when the injected config is unavailable", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, undefined);
 
@@ -44,6 +52,7 @@ describe("readInjectedDevtoolsConfig", () => {
       stackName: "devhost",
       annotationEnabled: false,
       annotationQueueEnabled: false,
+      configEditorEnabled: false,
       editorEnabled: true,
       externalToolbarsEnabled: true,
       minimapEnabled: true,
@@ -80,6 +89,7 @@ describe("readInjectedDevtoolsConfig", () => {
       stackName: "hello-stack",
       annotationEnabled: true,
       annotationQueueEnabled: true,
+      configEditorEnabled: false,
       editorEnabled: true,
       externalToolbarsEnabled: true,
       minimapEnabled: true,
@@ -109,6 +119,7 @@ describe("readInjectedDevtoolsConfig", () => {
       stackName: "devhost",
       annotationEnabled: false,
       annotationQueueEnabled: false,
+      configEditorEnabled: false,
       editorEnabled: true,
       externalToolbarsEnabled: true,
       minimapEnabled: true,
@@ -124,6 +135,7 @@ describe("readInjectedDevtoolsConfig", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
       annotationEnabled: false,
       annotationQueueEnabled: false,
+      configEditorEnabled: false,
       terminalEnabled: false,
     });
 
@@ -140,6 +152,7 @@ describe("readInjectedDevtoolsConfig", () => {
       stackName: "devhost",
       annotationEnabled: false,
       annotationQueueEnabled: false,
+      configEditorEnabled: false,
       editorEnabled: true,
       externalToolbarsEnabled: true,
       minimapEnabled: true,
@@ -176,6 +189,7 @@ describe("readInjectedDevtoolsConfig", () => {
       stackName: "devhost",
       annotationEnabled: true,
       annotationQueueEnabled: true,
+      configEditorEnabled: false,
       editorEnabled: true,
       externalToolbarsEnabled: true,
       minimapEnabled: true,

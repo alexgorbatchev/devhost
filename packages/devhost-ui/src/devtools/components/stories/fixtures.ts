@@ -72,6 +72,7 @@ export function factory_appStack(): IDevhostStoryStack {
       stackName: "storybook-stack",
       annotationEnabled: true,
       annotationQueueEnabled: true,
+      configEditorEnabled: false,
       editorEnabled: true,
       externalToolbarsEnabled: true,
       minimapEnabled: true,
@@ -140,6 +141,31 @@ export function factory_appStack(): IDevhostStoryStack {
   };
 }
 
+/** The app stack with the config editor on, after devhost rejected the last reload of the manifest. */
+export function factory_configEditorStack(): IDevhostStoryStack {
+  const stack: IDevhostStoryStack = factory_appStack();
+
+  return {
+    ...stack,
+    config: { ...stack.config, configEditorEnabled: true },
+    configFiles: [
+      {
+        content: 'name = "storybook-stack"\n',
+        kind: "manifest",
+        path: "/storybook-workspace/devhost.toml",
+        version: "manifest-1",
+      },
+    ],
+    configuration: [
+      {
+        error: "Failed to parse /storybook-workspace/devhost.toml: toml: line 2: expected value",
+        reloads: 2,
+        source: "manifest",
+      },
+    ],
+  };
+}
+
 export function factory_designOverviewStack(): IDevhostStoryStack {
   const now: number = Date.now();
 
@@ -184,6 +210,7 @@ export function factory_designOverviewStack(): IDevhostStoryStack {
       stackName: "overview-stack",
       annotationEnabled: true,
       annotationQueueEnabled: true,
+      configEditorEnabled: false,
       editorEnabled: true,
       externalToolbarsEnabled: true,
       minimapEnabled: true,

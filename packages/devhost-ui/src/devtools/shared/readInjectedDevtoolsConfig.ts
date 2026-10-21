@@ -26,6 +26,7 @@ export interface IInjectedDevtoolsConfig {
   stackName: string;
   annotationEnabled: boolean;
   annotationQueueEnabled: boolean;
+  configEditorEnabled: boolean;
   editorEnabled: boolean;
   externalToolbarsEnabled: boolean;
   minimapEnabled: boolean;
@@ -49,6 +50,7 @@ const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
   stackName: DEVHOST_SERVICE_NAME,
   annotationEnabled: false,
   annotationQueueEnabled: false,
+  configEditorEnabled: false,
   editorEnabled: true,
   externalToolbarsEnabled: true,
   minimapEnabled: true,
@@ -103,6 +105,7 @@ function parseInjectedDevtoolsConfig(injectedConfig: object): IInjectedDevtoolsC
     "annotationQueueEnabled",
     annotationActions.some((action: IAnnotationAction): boolean => action.kind === "agent" && action.queueEnabled),
   );
+  const configEditorEnabled: boolean = readBooleanValue(injectedConfig, "configEditorEnabled", false);
   const editorEnabled: boolean = readBooleanValue(injectedConfig, "editorEnabled", true);
   const externalToolbarsEnabled: boolean = readBooleanValue(injectedConfig, "externalToolbarsEnabled", true);
   const minimapEnabled: boolean = readBooleanValue(injectedConfig, "minimapEnabled", true);
@@ -127,6 +130,7 @@ function parseInjectedDevtoolsConfig(injectedConfig: object): IInjectedDevtoolsC
     annotationDefaultActionId,
     annotationQueueEnabled,
     componentEditor,
+    configEditorEnabled,
     homeDirectoryPath: typeof homeDirectoryPath === "string" ? homeDirectoryPath : "",
     position,
     projectRootPath,

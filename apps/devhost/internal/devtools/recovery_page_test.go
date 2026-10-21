@@ -211,23 +211,26 @@ func TestRecoveryDocumentsPreserveApplicationResponses(t *testing.T) {
 	}
 }
 
+// Recovery controls refuse what the control server refuses: a state change a browser sends from another origin.
+// Reading status changes nothing, and a tool that sends no browser headers is not a page on another site.
 func TestRecoveryControlsValidateMethodAndOrigin(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {
-		name, action, method, origin string
-		want                         int
-		restart                      bool
+		name, action, method, origin, fetchSite string
+		want                                    int
+		restart                                 bool
 	}{
 		{name: "status", action: "status", method: "GET", want: 200},
-		{name: "foreign status", action: "status", method: "GET", origin: "https://foreign.test", want: 403},
+		{name: "status read by another site", action: "status", method: "GET", origin: "https://foreign.test", want: 200},
 		{name: "status method", action: "status", method: "POST", want: 405},
 		{name: "restart", action: "restart", method: "POST", origin: "http://service.test", want: 204, restart: true},
 		{name: "restart method", action: "restart", method: "GET", origin: "http://service.test", want: 405},
-		{name: "missing origin", action: "restart", method: "POST", want: 403},
+		{name: "restart from a tool", action: "restart", method: "POST", want: 204, restart: true},
 		{name: "foreign origin", action: "restart", method: "POST", origin: "https://foreign.test", want: 403},
+		{name: "cross-site fetch", action: "restart", method: "POST", fetchSite: "cross-site", want: 403},
 		{name: "unknown", action: "unknown", method: "GET", want: 400},
 		{name: "worktrees disabled", action: "worktrees", method: "GET", want: 501},
-		{name: "worktree missing origin", action: "worktrees", method: "POST", want: 403},
+		{name: "worktree switch from a tool", action: "worktrees", method: "POST", want: 501},
 		{name: "worktree foreign origin", action: "worktrees", method: "POST", origin: "https://foreign.test", want: 403},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -236,6 +239,9 @@ func TestRecoveryControlsValidateMethodAndOrigin(t *testing.T) {
 			request.Header.Set(recoveryHeader, tc.action)
 			if tc.origin != "" {
 				request.Header.Set("Origin", tc.origin)
+			}
+			if tc.fetchSite != "" {
+				request.Header.Set("Sec-Fetch-Site", tc.fetchSite)
 			}
 			response := httptest.NewRecorder()
 			serveRecoveryControl(response, request, StartDocumentInjectionServerOptions{GetRecovery: func() RecoveryState { return RecoveryState{CanRestart: true} }, Restart: func() error { restarted = true; return nil }}, nil)

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import type { HealthResponse } from "../../../shared/types";
 import { parseHealthResponse } from "../parseHealthResponse";
 
 describe("parseHealthResponse", () => {
@@ -49,8 +50,23 @@ describe("parseHealthResponse", () => {
     expect(parseHealthResponse(JSON.stringify(payload))).toEqual(payload);
   });
 
+  test("retains the reloads of each configuration source and the last rejection", () => {
+    const payload: HealthResponse = {
+      services: [{ name: "web", managed: true, status: true }],
+      configuration: [
+        { source: "config", reloads: 1 },
+        { source: "manifest", reloads: 3, error: "Failed to parse devhost.toml" },
+      ],
+    };
+    expect(parseHealthResponse(JSON.stringify(payload))).toEqual(payload);
+  });
+
   test.each([
     "not json",
+    JSON.stringify({ services: [], configuration: "manifest" }),
+    JSON.stringify({ services: [], configuration: [{ source: "caddy", reloads: 1 }] }),
+    JSON.stringify({ services: [], configuration: [{ source: "manifest", reloads: "1" }] }),
+    JSON.stringify({ services: [], configuration: [{ source: "manifest", reloads: 1, error: 42 }] }),
     JSON.stringify({ services: [], stoppedServices: "docs" }),
     JSON.stringify({ services: [], stoppedServices: ["docs"] }),
     JSON.stringify({ services: [], stoppedServices: [{ name: 42 }] }),

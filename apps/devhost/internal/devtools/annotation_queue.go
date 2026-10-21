@@ -24,13 +24,6 @@ var (
 	errAnnotationQueueConflict   = errors.New("annotation queue conflict")
 	errAnnotationQueueNotFound   = errors.New("annotation queue not found")
 	errAnnotationQueueValidation = errors.New("annotation queue validation")
-	annotationQueueOpenFile      = os.OpenFile
-	annotationQueueRenameFile    = os.Rename
-	annotationQueueRemoveFile    = os.Remove
-	annotationQueueSyncFile      = func(file *os.File) error {
-		return file.Sync()
-	}
-	annotationQueueSyncDirectory = syncDirectory
 )
 
 type queueMutationError struct {
@@ -883,49 +876,6 @@ func isPersistedPauseReason(value string) bool {
 func moveCorruptQueueFile(queueFilePath string) {
 	corruptPath := strings.TrimSuffix(queueFilePath, filepath.Ext(queueFilePath)) + ".corrupt-" + fmt.Sprintf("%d", time.Now().UnixMilli()) + ".json"
 	_ = os.Rename(queueFilePath, corruptPath)
-}
-
-func writeFileDurably(filePath string, payload []byte, mode os.FileMode) error {
-	directoryPath := filepath.Dir(filePath)
-	if err := os.MkdirAll(directoryPath, 0o700); err != nil {
-		return err
-	}
-	temporaryPath := filePath + "." + mustCreateID() + ".tmp"
-	file, err := annotationQueueOpenFile(temporaryPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode)
-	if err != nil {
-		return err
-	}
-	if _, err := file.Write(payload); err != nil {
-		_ = file.Close()
-		return err
-	}
-	if err := annotationQueueSyncFile(file); err != nil {
-		_ = file.Close()
-		return err
-	}
-	if err := file.Close(); err != nil {
-		return err
-	}
-	if err := annotationQueueRenameFile(temporaryPath, filePath); err != nil {
-		return err
-	}
-	return annotationQueueSyncDirectory(directoryPath)
-}
-
-func removeFileDurably(filePath string) error {
-	if err := annotationQueueRemoveFile(filePath); err != nil {
-		return err
-	}
-	return annotationQueueSyncDirectory(filepath.Dir(filePath))
-}
-
-func syncDirectory(directoryPath string) error {
-	directory, err := os.Open(directoryPath)
-	if err != nil {
-		return err
-	}
-	defer directory.Close()
-	return directory.Sync()
 }
 
 func readDispatchTargetSession(activeSessionID *string, preferredSession *liveAgentSessionSnapshot, readLiveAgentSession func(string) *liveAgentSessionSnapshot) *liveAgentSessionSnapshot {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -48,7 +49,11 @@ type stackRuntime struct {
 	dirty             *DirtyTracker
 	worktrees         *stackWorktrees
 	blocked           map[string]string
-	idle              *idleWatch
+	// configPath is the devhost config file the stack reads.
+	configPath string
+	// configuration holds the reloads of each configuration source.
+	configuration map[devtools.ConfigurationSource]devtools.ConfigurationStatus
+	idle          *idleWatch
 }
 
 func (r *stackRuntime) health(ctx context.Context) (devtools.HealthResponse, error) {
@@ -68,8 +73,12 @@ func (r *stackRuntime) health(ctx context.Context) (devtools.HealthResponse, err
 	for name, reason := range r.blocked {
 		blocked[name] = reason
 	}
+	configuration := maps.Clone(r.configuration)
 	r.manifestMu.RUnlock()
 	h := collectServicesHealth(m, started, r.dirty)
+	for _, source := range slices.Sorted(maps.Keys(configuration)) {
+		h.Configuration = append(h.Configuration, configuration[source])
+	}
 	h.Repositories = worktrees.snapshot()
 	for i := range h.Services {
 		s := &h.Services[i]
@@ -92,6 +101,26 @@ func (r *stackRuntime) health(ctx context.Context) (devtools.HealthResponse, err
 		return devtools.HealthResponse{}, err
 	}
 	return h, nil
+}
+
+// recordConfigurationResult counts a finished reload of source and reports its rejection on open pages until a
+// reload of it is accepted. It reports whether the rejection changed, so one that repeats is logged once.
+func (r *stackRuntime) recordConfigurationResult(source devtools.ConfigurationSource, err error) bool {
+	message := ""
+	if err != nil {
+		message = err.Error()
+	}
+	r.manifestMu.Lock()
+	status := r.configuration[source]
+	changed := status.Error != message
+	status.Source, status.Reloads, status.Error = source, status.Reloads+1, message
+	if r.configuration == nil {
+		r.configuration = map[devtools.ConfigurationSource]devtools.ConfigurationStatus{}
+	}
+	r.configuration[source] = status
+	r.manifestMu.Unlock()
+	r.publish()
+	return changed
 }
 
 // stackName reads the stack's name, which labels its logs. A reload can rename

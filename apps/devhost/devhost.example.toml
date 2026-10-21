@@ -18,6 +18,7 @@
 # - `[worktrees]` (optional; Git checkout selection for repository service groups, enabled by default)
 # - `[devtools]` (optional)
 # - `[devtools.browser]` (optional; explicitly configured native browser control)
+# - `[devtools.configEditor]` (optional; edit the configuration from the browser, off by default)
 # - `[devtools.editor]` (optional)
 # - `[devtools.externalToolbars]` (optional)
 # - `[devtools.minimap]` (optional)
@@ -119,6 +120,14 @@ app = ["web"]
 # the same repository-relative path (or filename at the root for an outside manifest).
 # The stack takes the selected checkout's manifest settings, including its name.
 # Turning worktrees off while another checkout runs switches back to the root checkout.
+
+[devtools.configEditor]
+# `enabled` controls whether the toolbar's Config button edits this manifest, its includes, and the
+# shared config.toml from the browser. Saves pass the checks a reload makes and then hot reload.
+# Only a browser on this machine can save, because the manifest sets the commands devhost runs.
+# - `false` (default): no editor, and its control routes answer 404.
+# - `true`: show the Config button.
+enabled = false
 
 [devtools.editor]
 # `enabled` controls whether editor integration is available in the injected overlay.

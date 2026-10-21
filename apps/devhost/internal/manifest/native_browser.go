@@ -19,8 +19,8 @@ func validateNativeBrowser(rawValue any, schemaIssues *[]string) DevtoolsBrowser
 	if !ok {
 		return result
 	}
-	allowKeys(value, []string{"endpoint", "reactExtensionId"}, "devtools.browser", schemaIssues)
-	if endpoint, ok := readOptionalString(value, "endpoint", schemaIssues); ok {
+	allowKeys(value, "devtools.browser", "devtools.browser", schemaIssues)
+	if endpoint, ok := readOptionalString(value, "devtools.browser", "endpoint", schemaIssues); ok {
 		if endpoint != "" {
 			if _, err := nativebrowser.ParseEndpoint(endpoint); err != nil {
 				*schemaIssues = append(*schemaIssues, "devtools.browser.endpoint: "+err.Error())
@@ -28,7 +28,7 @@ func validateNativeBrowser(rawValue any, schemaIssues *[]string) DevtoolsBrowser
 		}
 		result.Endpoint = endpoint
 	}
-	if id, ok := readOptionalString(value, "reactExtensionId", schemaIssues); ok {
+	if id, ok := readOptionalString(value, "devtools.browser", "reactExtensionId", schemaIssues); ok {
 		if !extensionIDPattern.MatchString(id) {
 			*schemaIssues = append(*schemaIssues, "devtools.browser.reactExtensionId must be a 32-letter Chrome extension ID using a through p.")
 		} else {

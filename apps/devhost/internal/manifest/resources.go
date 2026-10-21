@@ -28,9 +28,9 @@ func validateDevtoolsResources(rawValue any, schemaIssues *[]string) DevtoolsRes
 	if !ok {
 		return result
 	}
-	allowKeys(value, []string{"cpu", "disk", "enabled", "memory", "pollInterval"}, path, schemaIssues)
+	allowKeys(value, path, path, schemaIssues)
 
-	if enabled, ok := readOptionalBool(value, "enabled", schemaIssues); ok {
+	if enabled, ok := readOptionalBool(value, path, "enabled", schemaIssues); ok {
 		result.Enabled = enabled
 	}
 	if pollInterval, ok := readOptionalPollInterval(value, path, schemaIssues); ok {
@@ -57,8 +57,8 @@ func validateDevtoolsResources(rawValue any, schemaIssues *[]string) DevtoolsRes
 		if !ok {
 			continue
 		}
-		allowKeys(readoutValue, []string{"enabled", "pollInterval"}, readoutPath, schemaIssues)
-		if enabled, ok := readOptionalBool(readoutValue, "enabled", schemaIssues); ok {
+		allowKeys(readoutValue, path+".*", readoutPath, schemaIssues)
+		if enabled, ok := readOptionalBool(readoutValue, readoutPath, "enabled", schemaIssues); ok {
 			readout.config.Enabled = enabled
 		}
 		if pollInterval, ok := readOptionalPollInterval(readoutValue, readoutPath, schemaIssues); ok {

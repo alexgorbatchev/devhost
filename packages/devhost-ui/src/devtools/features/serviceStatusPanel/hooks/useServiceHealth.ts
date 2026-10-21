@@ -5,7 +5,13 @@ import { createDevtoolsWebSocketUrl } from "../../../shared/createDevtoolsWebSoc
 import { openReconnectingWebSocket } from "../../../shared/openReconnectingWebSocket";
 import { pristineFetch } from "../../../shared/pristineFetch";
 import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
-import type { HealthResponse, ServiceHealth, IStoppedService, IWorktreeRepository } from "../../../shared/types";
+import type {
+  HealthResponse,
+  IConfigurationStatus,
+  ServiceHealth,
+  IStoppedService,
+  IWorktreeRepository,
+} from "../../../shared/types";
 import { parseHealthResponse } from "../parseHealthResponse";
 import { requestWorktrees } from "../requestWorktrees";
 import { startServices } from "../startServices";
@@ -13,6 +19,8 @@ import { markServicesAsUnavailable } from "../markServicesAsUnavailable";
 import { updateInjectedConfig } from "../updateInjectedConfig";
 
 interface IUseServiceHealthResult {
+  /** The reloads of each configuration source, with the reason the last one was rejected. */
+  configuration: IConfigurationStatus[];
   errorMessage: string | null;
   setErrorMessage: (message: string | null) => void;
   services: ServiceHealth[];
@@ -27,6 +35,7 @@ export function useServiceHealth(): IUseServiceHealthResult {
   const [repositories, setRepositories] = useState<IWorktreeRepository[]>([]);
   const [services, setServices] = useState<ServiceHealth[]>([]);
   const [stoppedServices, setStoppedServices] = useState<IStoppedService[]>([]);
+  const [configuration, setConfiguration] = useState<IConfigurationStatus[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { stackName: devtoolsStackName } = readInjectedDevtoolsConfig();
 
@@ -39,6 +48,7 @@ export function useServiceHealth(): IUseServiceHealthResult {
     setServices(health.services);
     setStoppedServices(health.stoppedServices ?? []);
     setRepositories(health.repositories ?? []);
+    setConfiguration(health.configuration ?? []);
   }, []);
 
   useEffect(() => {
@@ -66,6 +76,7 @@ export function useServiceHealth(): IUseServiceHealthResult {
       });
       setStoppedServices([]);
       setRepositories([]);
+      setConfiguration([]);
       setErrorMessage(null);
     };
 
@@ -101,6 +112,7 @@ export function useServiceHealth(): IUseServiceHealthResult {
     return startServices(serviceNames, pristineFetch);
   }, []);
   return {
+    configuration,
     repositories,
     refreshWorktrees,
     switchWorktree,

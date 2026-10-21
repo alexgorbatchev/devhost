@@ -114,6 +114,7 @@ func worktreeHTTPResponse(t *testing.T, server *ControlServer, method, body stri
 	if err != nil {
 		t.Fatal(err)
 	}
+	r.Header.Set("Content-Type", jsonMediaType)
 	response, err := http.DefaultClient.Do(r)
 	if err != nil {
 		t.Fatal(err)
