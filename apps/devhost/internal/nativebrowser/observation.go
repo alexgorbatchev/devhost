@@ -14,8 +14,6 @@ import (
 
 const operationTimeout = 5 * time.Second
 const supportedReactVersion = "19.2.5"
-const supportedReactExtensionVersion = "8.0.0"
-const supportedBrowserProduct = "Chrome/154.0.8037.92"
 
 // This reads the maintained hook/Fiber root contract without adding a backend,
 // registering a renderer, subscribing to the hook, or changing the host tree.
@@ -95,7 +93,7 @@ func observeReactExtension(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return m.Version == supportedReactExtensionVersion && m.DevtoolsPage == "main.html" && m.Background.ServiceWorker == "build/background.js", nil
+	return isSupportedReactExtensionVersion(m.Version) && m.DevtoolsPage == "main.html" && m.Background.ServiceWorker == "build/background.js", nil
 }
 
 func isReactExtensionWorker(info *target.Info, id string) bool {
@@ -104,7 +102,7 @@ func isReactExtensionWorker(info *target.Info, id string) bool {
 
 func extensionStateMessage(available bool) string {
 	if !available {
-		return "React Developer Tools 8.0.0 is missing, disabled, suspended, or unverified in this browser."
+		return "React Developer Tools 8.0.0 or newer is missing, disabled, suspended, or unverified in this browser."
 	}
 	return "React host and extension detected. Open native DevTools, then select Components or Profiler to verify live inspection there."
 }

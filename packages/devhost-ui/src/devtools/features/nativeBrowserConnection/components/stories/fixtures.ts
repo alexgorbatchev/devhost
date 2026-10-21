@@ -12,7 +12,7 @@ export function factory_nativeBrowserView(changes: Partial<INativeBrowserObserva
       isNativeWindowOpen: false,
       isNativeSessionLost: false,
       browserVersion: "Chrome/154.0.8037.92",
-      message: "React Developer Tools 8.0.0 is missing, disabled, suspended, or unverified in this browser.",
+      message: "React Developer Tools 8.0.0 or newer is missing, disabled, suspended, or unverified in this browser.",
       ...changes,
     },
   };
