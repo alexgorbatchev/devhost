@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
@@ -86,7 +85,7 @@ func TestManifestReloadReservesAcceptedIncludes(t *testing.T) {
 	}
 	f.header = "includes = [\"child.toml\"]\n" + header
 	f.write(t, body)
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.count("configuration reloaded") == 1 })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.count("configuration reloaded") == 1 })
 	if files := registeredManifestFiles(t, f.paths); !slices.Contains(files, child) {
 		t.Fatalf("accepted include is unreserved: %v", files)
 	}
@@ -94,7 +93,7 @@ func TestManifestReloadReservesAcceptedIncludes(t *testing.T) {
 	f.header = "includes = [\"added.toml\"]\n" + header
 	broken := "[services.web]\ncommand = [\"devhost-nonexistent-test-command\"]\nport = \"auto\"\nhost = \"reload.localhost\"\n"
 	f.write(t, broken)
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reload rejected") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reload rejected") })
 	if files := registeredManifestFiles(t, f.paths); !slices.Contains(files, child) || slices.Contains(files, added) {
 		t.Fatalf("failed reload changed reservations: %v", files)
 	}
@@ -102,7 +101,7 @@ func TestManifestReloadReservesAcceptedIncludes(t *testing.T) {
 	assertRestartResponse(t, serverURL(route.DocumentInjectionPort, "/"), "original")
 	f.header = header
 	f.write(t, body)
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.count("configuration reloaded") == 2 })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.count("configuration reloaded") == 2 })
 	if files := registeredManifestFiles(t, f.paths); slices.Contains(files, child) || slices.Contains(files, added) {
 		t.Fatalf("removed includes remain reserved: %v", files)
 	}
@@ -117,7 +116,7 @@ func TestManifestReloadRejectsIncludeOwnedByAnotherStack(t *testing.T) {
 	owner := startStackOwner(t, f.paths.StateDirectoryPath, stackOwnerOptions{ManifestPath: child, ManifestFiles: []string{child}, Port: 4010, Behavior: stackOwnerStopsOnRequest})
 	f.header = "includes = [\"child.toml\"]\n" + f.header
 	f.write(t, reloadServiceBody("web", "replacement", "reload.localhost"))
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reload rejected") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reload rejected") })
 	if !f.logs.contains("already running") || !processExists(owner.Process.Pid) {
 		t.Fatal("reload failed to preserve the other stack")
 	}
