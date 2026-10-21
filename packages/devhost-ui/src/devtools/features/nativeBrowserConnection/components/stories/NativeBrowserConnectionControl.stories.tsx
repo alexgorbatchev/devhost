@@ -86,9 +86,12 @@ export const ExtensionUnverified: Story = {
     const panel = await readDevtoolsStoryShadowCanvas(canvasElement);
     await expect(panel.getByRole("status")).toHaveTextContent("Browser control is connected.");
     await expect(
-      panel.getByText("React Developer Tools 8.0.0 is missing, disabled, suspended, or unverified in this browser.", {
-        exact: true,
-      }),
+      panel.getByText(
+        "React Developer Tools 8.0.0 or newer is missing, disabled, suspended, or unverified in this browser.",
+        {
+          exact: true,
+        },
+      ),
     ).toBeVisible();
     await userEvent.click(panel.getByRole("button", { name: "Disconnect browser control" }));
     await expect(onDisconnect).toHaveBeenCalledTimes(1);

@@ -3,6 +3,10 @@ name = "devhost"
 [devtools.shortcuts]
 restartServices = "alt+ctrl+r"
 
+# The browser `just dev-browser` starts; DEVHOST_BROWSER_ENDPOINT is empty, and native React access off, until it is set.
+[devtools.browser]
+endpoint = "{{ env.DEVHOST_BROWSER_ENDPOINT }}"
+
 [annotation]
 defaultAction = "fix"
 

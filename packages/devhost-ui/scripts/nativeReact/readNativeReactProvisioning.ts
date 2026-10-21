@@ -1,25 +1,13 @@
-import { z } from "zod";
 import { resolve } from "node:path";
 import type { INativeReactProvisioning } from "./types";
 
-const provisioningSchema = z.strictObject({
-  chromeArchivePath: z.string().min(1),
-  reactCrxPath: z.string().min(1),
-  caddyExecutablePath: z.string().min(1),
-  devhostExecutablePath: z.string().min(1),
-});
-
-export async function readNativeReactProvisioning(path: string | undefined): Promise<INativeReactProvisioning> {
-  if (path === undefined || path.length === 0)
-    throw new Error(
-      "Set DEVHOST_NATIVE_REACT_ASSETS to the provisioned asset JSON path. Missing assets fail acceptance.",
-    );
-  const input: unknown = await Bun.file(resolve(path)).json();
-  const configuration = provisioningSchema.parse(input);
-  return {
-    chromeArchivePath: resolve(configuration.chromeArchivePath),
-    reactCrxPath: resolve(configuration.reactCrxPath),
-    caddyExecutablePath: resolve(configuration.caddyExecutablePath),
-    devhostExecutablePath: resolve(configuration.devhostExecutablePath),
-  };
+// Finds the executables the acceptance runs: Caddy on PATH and the devhost binary `just devhost compile` builds.
+export async function readNativeReactProvisioning(repositoryRoot: string): Promise<INativeReactProvisioning> {
+  const caddyExecutablePath = Bun.which("caddy");
+  if (caddyExecutablePath === null) throw new Error("Native React acceptance needs caddy on PATH.");
+  const devhostExecutablePath = resolve(repositoryRoot, "apps/devhost/bin/devhost");
+  if (!(await Bun.file(devhostExecutablePath).exists())) {
+    throw new Error(`Run \`just devhost compile\` first: ${devhostExecutablePath} is missing.`);
+  }
+  return { caddyExecutablePath, devhostExecutablePath };
 }

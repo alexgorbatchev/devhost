@@ -201,8 +201,8 @@ func observeConnection(ctx context.Context, options Options, binding Binding, pr
 		return result, nil
 	}
 	result.state.DocumentState = "bound"
-	if product != supportedBrowserProduct {
-		result.state.Message = "This browser version is outside the tested Chrome 154.0.8037.92 native-window contract."
+	if !isSupportedBrowserProduct(product) {
+		result.state.Message = "This browser is not Chrome 154.0.8037.92 or newer, the oldest release the native-window contract was verified with."
 		return result, nil
 	}
 	call, cancel = context.WithTimeout(ctx, operationTimeout)

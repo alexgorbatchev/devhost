@@ -60,6 +60,8 @@ export async function startNativeReactStack(options: INativeReactStackOptions): 
     XDG_CACHE_HOME: resolve(statePath, "cache"),
     XDG_DATA_HOME: resolve(statePath, "data"),
     XDG_STATE_HOME: resolve(statePath, "xdg-state"),
+    // Named explicitly so a DEVHOST_CONFIG_DIR inherited from the caller cannot select the user's Caddy settings.
+    DEVHOST_CONFIG_DIR: resolve(statePath, "config", "devhost"),
   };
   await Promise.all(
     [
@@ -68,6 +70,11 @@ export async function startNativeReactStack(options: INativeReactStackOptions): 
       environment.XDG_DATA_HOME,
       environment.XDG_STATE_HOME,
     ].map((path) => mkdir(path, { recursive: true, mode: 0o700 })),
+  );
+  await mkdir(environment.DEVHOST_CONFIG_DIR, { recursive: true, mode: 0o700 });
+  await Bun.write(
+    resolve(environment.DEVHOST_CONFIG_DIR, "config.toml"),
+    `[caddy]\nadminAddress = "127.0.0.1:${adminPort}"\nbindHost = "127.0.0.1"\nhttp = true\nhttpPort = ${httpPort}\nhttpsPort = ${httpsPort}\n`,
   );
   const projects: INativeReactProject[] = [];
   const projectPids = new Set<number>();
@@ -78,7 +85,15 @@ export async function startNativeReactStack(options: INativeReactStackOptions): 
     await Bun.write(
       resolve(options.outputPath, `${label}.command.json`),
       JSON.stringify(
-        { command, cwd: process.cwd(), environment: { DEVHOST_STATE_DIR: statePath, TMPDIR: environment.TMPDIR } },
+        {
+          command,
+          cwd: process.cwd(),
+          environment: {
+            DEVHOST_STATE_DIR: statePath,
+            DEVHOST_CONFIG_DIR: environment.DEVHOST_CONFIG_DIR,
+            TMPDIR: environment.TMPDIR,
+          },
+        },
         null,
         2,
       ),
@@ -157,7 +172,7 @@ export async function startNativeReactStack(options: INativeReactStackOptions): 
       const manifestPath = resolve(projectPath, "devhost.toml");
       await Bun.write(
         manifestPath,
-        `name = "React native ${name}"\nkillZombies = false\n[worktrees]\nenabled = false\n[caddy.global]\nadminAddress = "127.0.0.1:${adminPort}"\nbindHost = "127.0.0.1"\nhttp = true\nhttpPort = ${httpPort}\nhttpsPort = ${httpsPort}\n[devtools.editor]\nenabled = false\n[devtools.minimap]\nenabled = false\n[devtools.status]\nenabled = false\nposition = ${JSON.stringify(name === "A" ? "top-right" : "bottom-right")}\n[devtools.browser]\nendpoint = ${JSON.stringify(options.browserEndpoint)}\nreactExtensionId = ${JSON.stringify(options.extensionId)}\n[services.web]\nmanaged = false\nprimary = true\nport = ${fixturePort}\nbindHost = "127.0.0.1"\nhost = [${JSON.stringify(host)}, ${JSON.stringify(alias)}]\nproxyLocalOrigin = true\n`,
+        `name = "React native ${name}"\nkillZombies = false\n[worktrees]\nenabled = false\n[devtools.editor]\nenabled = false\n[devtools.minimap]\nenabled = false\n[devtools.status]\nenabled = false\nposition = ${JSON.stringify(name === "A" ? "top-right" : "bottom-right")}\n[devtools.resources]\nenabled = false\n[devtools.browser]\nendpoint = ${JSON.stringify(options.browserEndpoint)}\nreactExtensionId = ${JSON.stringify(options.extensionId)}\n[services.web]\nmanaged = false\nprimary = true\nport = ${fixturePort}\nbindHost = "127.0.0.1"\nhost = [${JSON.stringify(host)}, ${JSON.stringify(alias)}]\nproxyLocalOrigin = true\n`,
       );
       let child: Subprocess | null = null;
       let generation: number = 0;
@@ -253,7 +268,7 @@ export async function startNativeReactStack(options: INativeReactStackOptions): 
     const first = projects[0];
     assert(first);
     isCaddyStarted = true;
-    await run(["caddy", "start", "--manifest", first.manifestPath], "caddy-start");
+    await run(["caddy", "start"], "caddy-start");
     await waitForNativeReactCondition("actual isolated Caddy admin before project startup", async () => {
       try {
         return (

@@ -37,9 +37,12 @@ export const ExtensionUnverified: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole("status")).toHaveTextContent("Browser control is connected.");
     await expect(
-      canvas.getByText("React Developer Tools 8.0.0 is missing, disabled, suspended, or unverified in this browser.", {
-        exact: true,
-      }),
+      canvas.getByText(
+        "React Developer Tools 8.0.0 or newer is missing, disabled, suspended, or unverified in this browser.",
+        {
+          exact: true,
+        },
+      ),
     ).toBeVisible();
   },
 };

@@ -140,8 +140,8 @@ ide = "vscode"
 [devtools.browser]
 # Native React DevTools uses an already running dedicated browser/profile owned by you.
 # Install the original React Developer Tools extension before loading your React app.
-# Tested native versions: Chrome for Testing 154.0.8037.92, extension 8.0.0,
-# and a mounted React DOM 19.2.5 Element/ShadowRoot host; other combinations need verification.
+# Supported native versions: Chrome 154.0.8037.92 or newer, React Developer Tools 8.0.0 or newer,
+# and a mounted React DOM 19.2.5 Element/ShadowRoot host.
 # Native tests cover live host Components/Profiler and preserved-window connection lifetimes.
 # Empty endpoint (default) disables native browser access and starts no browser connection.
 # Set an explicit literal-loopback HTTP discovery endpoint with a nonzero port,
