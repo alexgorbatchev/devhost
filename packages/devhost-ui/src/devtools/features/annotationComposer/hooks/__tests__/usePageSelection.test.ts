@@ -4,6 +4,7 @@ import { page, userEvent } from "vitest/browser";
 
 import {
   addDevtoolsButton,
+  addDevtoolsTextarea,
   addHostButton,
   addHostFrame,
   makePageScrollable,
@@ -217,6 +218,23 @@ describe("usePageSelection", () => {
 
     await holdAlt();
     expect(typingHook.result.current.isSelectionMode).toBe(false);
+  });
+
+  test("starts Alt selection from a devtools field, such as the chat composer", async () => {
+    const hook = renderSelectionDraft();
+    const composer: HTMLTextAreaElement = addDevtoolsTextarea({ height: 40, width: 200, x: 400, y: 400 });
+
+    await click(composer);
+    const shadowRoot: Node = composer.getRootNode();
+    assert(shadowRoot instanceof ShadowRoot);
+    expect(shadowRoot.activeElement).toBe(composer);
+
+    await holdAlt();
+    expect(hook.result.current.isSelectionMode).toBe(true);
+    await click(saveButton);
+    expect(hook.result.current.selectedTargets.map((target) => target.candidate.label)).toEqual(['button "Save"']);
+    await releaseAlt();
+    expect(hook.result.current.isSelectionMode).toBe(false);
   });
 
   test("tracks the element under the pointer only while selecting", async () => {

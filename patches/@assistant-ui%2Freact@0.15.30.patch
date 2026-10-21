@@ -1,0 +1,31 @@
+diff --git a/dist/primitives/composer/ComposerInput.js b/dist/primitives/composer/ComposerInput.js
+index dc818f57702ade2f266b8a894f4aa516b8fd845f..0a17d45eb375930a007adb0861b9fb9c551307a2 100644
+--- a/dist/primitives/composer/ComposerInput.js
++++ b/dist/primitives/composer/ComposerInput.js
+@@ -66,7 +66,8 @@ const ComposerPrimitiveInput = forwardRef(({ autoFocus = false, asChild, render,
+ 	const ref = useComposedRefs(forwardedRef, textareaRef);
+ 	const compositionRef = useRef(false);
+ 	useEscapeKeydown((e) => {
+-		if (!textareaRef.current?.contains(e.target)) return;
++		const origin = e.composedPath()[0];
++		if (!(origin instanceof Node) || !textareaRef.current?.contains(origin)) return;
+ 		if (isCompositionKey(e)) return;
+ 		if (pluginRegistry) {
+ 			for (const plugin of pluginRegistry.getPlugins()) if (plugin.handleKeyDown(e)) return;
+diff --git a/src/primitives/composer/ComposerInput.tsx b/src/primitives/composer/ComposerInput.tsx
+index ff51e1dfb0b0567c445363d9a8ccbfab914e931e..4a10fb37ba0eab596f8377bc6c843ffcadf41ca2 100644
+--- a/src/primitives/composer/ComposerInput.tsx
++++ b/src/primitives/composer/ComposerInput.tsx
+@@ -220,8 +220,10 @@ export const ComposerPrimitiveInput = forwardRef<
+     const compositionRef = useRef(false);
+ 
+     useEscapeKeydown((e) => {
+-      // Only handle ESC if it originated from within this input
+-      if (!textareaRef.current?.contains(e.target as Node)) return;
++      // Only handle ESC if it originated from within this input. The listener is on the document, where a key
++      // pressed inside a shadow root targets the shadow host, so read the original target from the event path.
++      const origin = e.composedPath()[0];
++      if (!(origin instanceof Node) || !textareaRef.current?.contains(origin)) return;
+ 
+       // ignore IME composition events
+       if (isCompositionKey(e)) return;

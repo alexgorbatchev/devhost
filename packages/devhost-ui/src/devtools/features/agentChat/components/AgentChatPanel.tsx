@@ -1,6 +1,6 @@
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { Button } from "@alexgorbatchev/shadcn";
-import { lazy, Suspense, type JSX, type ReactNode } from "react";
+import { lazy, Suspense, type JSX, type ReactNode, type Ref } from "react";
 import { useStore } from "zustand";
 import { cn } from "../../../../lib/utils";
 import type { IAgentChatController } from "../types";
@@ -9,7 +9,8 @@ import { ArrowLeftRightIcon, ChevronDownIcon, XIcon } from "lucide-react";
 import { Icon } from "../../../../components/ui/Icon";
 import { ChatSettings } from "./ChatSettings";
 import { ChatUserText } from "./ChatUserText";
-import { TabShareActions } from "./TabShareActions";
+import { ChatComposerActions } from "./ChatComposerActions";
+import { AgentChatContext } from "../AgentChatContext";
 import { TabShareContext } from "../TabShareContext";
 import type { useTabShare } from "../../visualAnnotations/hooks/useTabShare";
 import { AgentChatBody } from "../layouts/AgentChatBody";
@@ -21,13 +22,21 @@ const Thread = lazy(() =>
 
 interface IAgentChatPanelProps {
   chat: IAgentChatController;
+  composerInputRef?: Ref<HTMLTextAreaElement>;
   isOpen: boolean;
   onClose: () => void;
   children: ReactNode;
   sharing?: ReturnType<typeof useTabShare>;
 }
 
-export function AgentChatPanel({ chat, isOpen, onClose, children, sharing }: IAgentChatPanelProps): JSX.Element {
+export function AgentChatPanel({
+  chat,
+  composerInputRef,
+  isOpen,
+  onClose,
+  children,
+  sharing,
+}: IAgentChatPanelProps): JSX.Element {
   const side = useStore(chat.settingsStore, (state) => state.chat.side);
   const viewportProps = useChatScrollPosition({
     settingsStore: chat.settingsStore,
@@ -110,12 +119,15 @@ export function AgentChatPanel({ chat, isOpen, onClose, children, sharing }: IAg
         >
           <Suspense fallback={<p role="status">Loading conversation…</p>}>
             <TabShareContext value={sharing}>
-              <Thread
-                viewportProps={viewportProps}
-                autoFocus={false}
-                emptyComposerPosition="bottom"
-                components={{ Welcome: ChatWelcome, UserText: ChatUserText, ComposerActions: TabShareActions }}
-              />
+              <AgentChatContext value={chat}>
+                <Thread
+                  viewportProps={viewportProps}
+                  composerInputRef={composerInputRef}
+                  autoFocus={false}
+                  emptyComposerPosition="bottom"
+                  components={{ Welcome: ChatWelcome, UserText: ChatUserText, ComposerActions: ChatComposerActions }}
+                />
+              </AgentChatContext>
             </TabShareContext>
           </Suspense>
         </AgentChatBody>

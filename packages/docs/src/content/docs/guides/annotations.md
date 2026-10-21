@@ -26,7 +26,7 @@ Open **Chat Settings** using the gear button. Choose **Harness**, then select a 
 
 Chat Settings receives pointer input above the page and chat panel. Its backdrop blocks clicks on page controls until the dialog closes; closing it restores ordinary page interaction.
 
-Type a message and send it through the browser composer. Agent replies and native tool activity stream into the conversation, which keeps the latest reply in view while you are at the bottom; scroll back and the conversation stays where you left it until you return to the bottom. Claude Code confirms receipt by replaying the actual user message into the conversation; a later model or authentication failure keeps that submitted message in history. **New Conversation** starts a separate native session; **Conversation** selects an existing session. Collapsing the panel does not terminate it. Interrupt cancels the current turn, while **Close Conversation** ends its owned process.
+Type a message and send it through the browser composer. Opening chat places the cursor in the composer. Agent replies and native tool activity stream into the conversation, which keeps the latest reply in view while you are at the bottom; scroll back and the conversation stays where you left it until you return to the bottom. Claude Code confirms receipt by replaying the actual user message into the conversation; a later model or authentication failure keeps that submitted message in history. The **New Conversation** (+) button beside **Share Tab** starts a separate native session; **Conversation** in Chat Settings selects an existing session. New Conversation is disabled while connecting, preparing a send, running a turn, or waiting for a native response. Collapsing the panel does not terminate it. Interrupt, or Escape in the composer, cancels the current turn, while **Close Conversation** ends its owned process.
 
 Live sessions and retained events belong to the running devhost stack, so a page reload can reconnect. Stopping devhost ends its processes. Session replay in the browser is not a separate durable queue or an automatic replay of prompts after a stack restart.
 
@@ -38,12 +38,12 @@ Client-side navigation within the same project keeps the conversation, draft, an
 
 ## Select page context
 
-1. Choose **Select Elements** in the floating toolbar at the top of the page, or hold Alt (Option on macOS).
+1. Choose **Select Elements** in the floating toolbar at the top of the page, or hold Alt (Option on macOS). Alt works while you type in the chat composer, but not while you type in one of the page's own fields.
 2. Click one or more page or devhost UI elements to add numbered markers. During selection, clicking a devhost control selects it without activating it. Releasing Alt ends selection mode without discarding the context.
 3. Write your request in the chat composer, referring to markers such as #1 and #2.
 4. Send the message. If you have not already shared the tab, choose the current tab in the browser's sharing picker.
 
-Selecting elements opens chat. Escape leaves selection or drawing mode so the page accepts ordinary interactions. The instruction tip follows the pointer without moving the chat layout. Use the remove button beside any element or drawing to discard just that item, or **Clear Page Context** to discard all context. A successfully submitted message clears its markers and drawings so the next message starts with fresh context. Cancelled sharing and failed sends retain context. In conversation history, the attached **Page Context** section is collapsed by default; expand it to inspect the metadata.
+Selecting elements opens chat and places the cursor in the composer, so you can describe the selection straight away. Escape leaves selection or drawing mode, also while you type in the composer, so the page accepts ordinary interactions. The instruction tip follows the pointer without moving the chat layout. Use the remove button beside any element or drawing to discard just that item, or **Clear Page Context** to discard all context. A successfully submitted message clears its markers and drawings so the next message starts with fresh context. Cancelled sharing and failed sends retain context. In conversation history, the attached **Page Context** section is collapsed by default; expand it to inspect the metadata.
 
 Selected element metadata includes its path, nearby text, accessibility information, bounds and computed styles. React development source locations and fetchable source maps are used when the host exposes them; source resolution remains best effort.
 
@@ -51,7 +51,7 @@ Selection highlights and drawings render above the devhost toolbar and chat pane
 
 ## Draw over the page
 
-Choose **Arrow**, **Line**, or **Box** from the floating toolbar, then drag on the visible page, including over the devhost toolbar or chat panel. Each completed drawing returns control to the page and appears in **Page context**. Drag an existing drawing by its stroke to move it. Escape cancels an in-progress move or drawing. Use **Undo Drawing** to remove the most recent shape, or remove any drawing individually from the context list. Drawing coordinates and selected element metadata accompany the captured image.
+Choose **Arrow**, **Line**, or **Box** from the floating toolbar, then drag on the visible page, including over the devhost toolbar or chat panel. Each completed drawing ends drawing mode, appears in **Page context**, and places the cursor in the composer. Drag an existing drawing by its stroke to move it. Escape cancels an in-progress move or drawing. Use **Undo Drawing** to remove the most recent shape, or remove any drawing individually from the context list. Drawing coordinates and selected element metadata accompany the captured image.
 
 ## Share one tab snapshot
 

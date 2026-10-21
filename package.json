@@ -24,6 +24,7 @@
     "ts-unused": "^3.2.0"
   },
   "patchedDependencies": {
-    "jotai-devtools@0.14.0": "patches/jotai-devtools@0.14.0.patch"
+    "jotai-devtools@0.14.0": "patches/jotai-devtools@0.14.0.patch",
+    "@assistant-ui/react@0.15.30": "patches/@assistant-ui%2Freact@0.15.30.patch"
   }
 }

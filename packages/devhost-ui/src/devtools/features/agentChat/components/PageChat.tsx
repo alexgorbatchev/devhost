@@ -13,6 +13,7 @@ import type { AnnotationShapeKind, IAnnotationShape } from "../../visualAnnotati
 import type { ChatBeforeSend } from "../types";
 import { preparePageChatSend } from "../preparePageChatSend";
 import { useAgentChat } from "../hooks/useAgentChat";
+import { useChatComposerFocus } from "../hooks/useChatComposerFocus";
 import { AgentChatPanel } from "./AgentChatPanel";
 import { PageAnnotationToolbar } from "./PageAnnotationToolbar";
 import { PageContextList } from "./PageContextList";
@@ -113,6 +114,7 @@ export function PageChat({
   }, [selectedTargets, removeSelection, shapes]);
   const chat = useAgentChat({ pageURL: sessionPageURL, beforeSend, onSent: clearSentContext, settingsStore });
   const isContextDisabled = isCapturing || chat.isPreparing;
+  const composerInputReference = useChatComposerFocus({ isOpen, contextCount: selectedTargets.length + shapes.length });
   return (
     <PortalProvider container={portalReference}>
       <div ref={portalReference} className="pointer-events-auto relative z-(--devhost-z-modal)" />
@@ -150,6 +152,7 @@ export function PageChat({
         <AgentChatPanel
           sharing={sharing}
           chat={chat}
+          composerInputRef={composerInputReference}
           isOpen={isOpen}
           onClose={() => {
             stopSelection();
