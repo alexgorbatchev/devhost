@@ -490,23 +490,28 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 			return
 		}
 	}()
-	go func() {
-		defer controlServer.serverWG.Done()
-		ticker := time.NewTicker(healthPollInterval)
-		defer ticker.Stop()
-
-		for range ticker.C {
-			if controlServer.isClosed() {
-				return
-			}
-			if !controlServer.hasHealthSubscribers() {
-				continue
-			}
-			_ = controlServer.PublishHealthResponse()
-		}
-	}()
+	go controlServer.pollHealth()
 
 	return controlServer, nil
+}
+
+func (s *ControlServer) pollHealth() {
+	defer s.serverWG.Done()
+	ticker := time.NewTicker(healthPollInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-s.ctx.Done():
+			return
+		case <-ticker.C:
+			if s.isClosed() {
+				return
+			}
+			if s.hasHealthSubscribers() {
+				_ = s.PublishHealthResponse()
+			}
+		}
+	}
 }
 func normalizeAnnotationDefaultActionID(actionID string, actions []manifest.ValidatedAnnotationAction) string {
 	for _, action := range actions {
