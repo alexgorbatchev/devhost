@@ -17,7 +17,7 @@ func TestManifestReloadFailedRestorationRemainsManuallyRecoverable(t *testing.T)
 		t.Fatal(err)
 	}
 	f.write(t, reloadServiceBody("web", "replacement", "reload.localhost"))
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("restore previous services") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("restore previous services") })
 	if _, err := f.control.GetToolContext("web"); err == nil {
 		t.Fatal("failed restoration allowed a new tool launch")
 	}
@@ -54,12 +54,12 @@ func TestManifestReloadPreservesUnaffectedServiceRecoveryBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.write(t, reloadServiceBody("web", "replacement", "reload.localhost")+worker)
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("restore previous services") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("restore previous services") })
 	if _, err := f.control.GetToolContext("web"); err == nil {
 		t.Fatal("failed restoration did not block tools")
 	}
 	f.write(t, web+strings.Replace(worker, "VALUE = \"original\"", "VALUE = \"replacement\"", 1))
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reloaded") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reloaded") })
 	if _, err := f.control.GetToolContext("web"); err == nil {
 		t.Fatal("unrelated accepted edit cleared the stopped service's recovery block")
 	}

@@ -134,7 +134,7 @@ func TestStackRestartFailureRemainsRetryableWithAcceptedManifest(t *testing.T) {
 			path := filepath.Join(f.paths.RegistrationsDirectoryPath, "reload.localhost_web_2f.json")
 			previous := readRestartRoute(t, path)
 			f.write(t, "\n[services.web]\ncommand = [")
-			waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reload rejected") })
+			waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reload rejected") })
 			marker := filepath.Join(filepath.Dir(f.path), "fail")
 			if failure == "launch" {
 				if err := os.WriteFile(marker, nil, 0600); err != nil {
