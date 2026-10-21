@@ -46,6 +46,9 @@ export async function startNativeReactBrowser(options: INativeReactBrowserOption
     `--disable-extensions-except=${options.reactExtensionDirectoryPath}`,
     "--no-first-run",
     "--no-default-browser-check",
+    // macOS Chrome otherwise reads the login keychain to encrypt cookies, and in a session that cannot answer the
+    // keychain prompt no navigation ever commits. Other platforms ignore the switch.
+    "--use-mock-keychain",
     "--no-sandbox",
     "--disable-dev-shm-usage",
     "--ignore-certificate-errors",
